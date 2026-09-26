@@ -3,7 +3,7 @@
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
   "status": "partial",
-  "migrated_count": 3,
+  "migrated_count": 4,
   "apps": [
     {
       "id": "app_store",
@@ -45,7 +45,7 @@
       "manifest_path": "Apps/file_browser.json",
       "upstream_source_sha": "26829771ecc0690d6c50f34c37ed604bd91da903",
       "upstream_manifest_sha": "cb767d15bfa0d92f77164dbf4739f3de896aae2e",
-      "migration_status": "manifest-updated-source-and-doc-sync-pending"
+      "migration_status": "complete"
     }
   ]
 }

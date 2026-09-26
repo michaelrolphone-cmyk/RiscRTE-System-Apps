@@ -1,122 +1,100 @@
 # File Browser
 
-## Purpose and scope
+## Purpose and classification
 
-File Browser is the foundational SD-card navigation application. It enumerates the SD volume, presents directories before files using a case-insensitive natural sort, opens directories in place, dispatches ordinary files to registered handlers, launches native ELF applications, and supports file deletion through a firmware-owned confirmation handoff.
+File Browser is RiscRTE's foundational file-navigation app. It browses SD storage, exposes an attached optional `storage.volume` provider as `USB Storage`, opens directories, dispatches files to registered handlers, launches native ELF apps, deletes files through firmware confirmation, and copies files between SD and removable storage.
 
-The implementation is bounded to 256 visible directory entries at a time and 512-byte path buffers. It does not implement arbitrary filesystem mutation beyond the firmware-provided delete operation used for selected files.
+It is classified here as a foundational system app because file browsing, handler dispatch, native-app launch, and storage handoff are core device workflows.
 
-## Manifest metadata
+## Manifest
 
-- Display name: **File Browser**
+- Version: **1.2.0**
+- Minimum firmware: **1.3.4**
 - ELF: `file_browser.elf`
-- Version: **1.1.0**
-- Minimum firmware: **1.2.85**
 - Icon: `solid:f07c`
-- Manifest categories: `Files`, `Utilities`
-- Manifest-declared optional capabilities: none
+- Categories: `Files`, `Utilities`
+- Optional capability: `storage.volume` API `>=1`
 
-This repository classifies File Browser as a **foundational system app** because browsing files, launching ELF files, and dispatching registered file handlers are part of the base device workflow.
+## Host interfaces
 
-## Runtime interfaces
+### T5AppApi
+Used for SD directory enumeration and for disabling normal Back-to-exit behavior while the browser owns hierarchical navigation.
 
-The source imports six versioned RiscRTE interfaces.
+### T5StorageApi
+Used for the persisted handoff/session file at `/sd/System/State/Applications/file_browser/Session.txt` and for streamed SD reads / transactional streamed SD writes during SD↔removable-storage copies.
 
-### T5AppApi ABI 1
+The current session record contains four newline-delimited fields: logical path, selected entry name, pending-delete path, and storage marker (`U` for removable storage, otherwise `S`).
 
-Used for `dir_open`, `dir_next`, and `dir_close` to enumerate SD directories through the native VFS namespace, plus `set_back_exits_app(false)` so Back can navigate upward inside the browser instead of immediately terminating the ELF.
+### T5SystemUiApi
+Uses `navigate_home()` when Back is pressed at logical root.
 
-### T5StorageApi API 1
+### T5FileBrowserApi
+Provides hidden-file policy, browser rendering/event polling, page sizing, delete confirmation handoff/result, SD delete/open operations, and native ELF launch handoff/result.
 
-Used only for File Browser handoff/session state through `read_file`, `write_file_atomic`, and `remove_file`.
+The handoff cookie is `0x4642524f57534552`.
 
-The session file is:
+### T5FileOpenApi
+Used for installed handler discovery and file-open handoff. Up to **8 handlers** are loaded into the chooser. A single handler is selected directly; multiple handlers use an **Open with** list.
 
-`/sd/System/State/Applications/file_browser/Session.txt`
+### T5UiApi
+Used for list rendering, event polling, hit testing, index movement, the handler chooser, and the copy-destination picker.
 
-Its current serialized format is three newline-delimited fields: current logical path, selected entry name, and pending delete path. This allows firmware to unload File Browser for a handoff and later relaunch it at the previous location.
+### T5ProviderCapabilityApi / RiscStorageVolumeV1
+Used to acquire/release optional `storage.volume` API 1. The provider is validated before use and supplies refresh/readiness, stat, directory iteration, file read/write/close, remove, and optional last-error reporting.
 
-### T5SystemUiApi API 1
+## Filesystem behavior
 
-Uses `navigate_home()` when Back is pressed at the logical root.
+SD logical root is `/`; host VFS access prepends `/sd`. A ready removable-volume provider appears as synthetic root entry `USB Storage`, internally rooted at `/USB Storage`.
 
-### T5FileBrowserApi API 1
+Hidden entries beginning with `.` are omitted unless firmware enables hidden files. `System Volume Information` is always filtered.
 
-The browser requires:
+Entries are sorted directories-first, then with a case-insensitive natural-name comparison.
 
-- `show_hidden_files`
-- `render`
-- `poll_event`
-- `page_items`
-- `confirm_delete_request` / `confirm_delete_take_result`
-- `delete_document`
-- `open_document`
-- `launch_elf_request` / `launch_elf_take_result`
+## Limits
 
-The app uses the fixed handoff cookie `0x4642524f57534552` for delete confirmation and ELF launch requests.
+- Browser entries: **256**
+- Copy destination directories: **96**
+- Path buffers: **512 bytes**
+- Status buffer: **160 bytes**
+- Copy chunk: **4096 bytes**
+- Open-handler chooser: **8 handlers**
 
-### T5FileOpenApi API 1
+## Navigation
 
-Used to discover and invoke file handlers registered by the system and installed applications. The app checks both `api_version` and `struct_size`.
+Opening a directory updates the logical path and reloads entries. Back away from root moves to the parent and attempts to preserve selection on the directory just exited. Back at root clears session state, navigates Home, restores normal Back-exit behavior, and exits.
 
-For an ordinary selected file it queries `handler_count(path)`, reads up to eight handlers with `handler_get`, directly selects a sole handler or renders an **Open with** chooser, calls `open_request(path, app_id, cookie)`, returns so firmware can unload it, then consumes the result with `open_take_result` after relaunch.
-
-System-reader handlers are dispatched through `T5FileBrowserApi::open_document`.
-
-### T5UiApi API 1
-
-Used for the multi-handler chooser. Required members are `render_list`, `poll_event`, `hit_test`, `next_index`, and `previous_index`.
-
-## Filesystem model
-
-The app maintains a logical SD path beginning at `/`. Firmware directory enumeration uses the VFS prefix `/sd`, so logical root maps to `/sd` and `/Books` maps to `/sd/Books`.
-
-Hidden names beginning with `.` are omitted unless `show_hidden_files()` is enabled. The literal directory `System Volume Information` is always skipped.
-
-Directories sort before files. Names then use a case-insensitive natural comparison in which numeric runs are compared by significant length/value rather than simple bytewise lexicographic order.
-
-## Navigation and input
-
-Firmware supplies browser events for previous/next row, previous/next page, row activation, open, delete, root, Back, and Exit.
-
-Opening a directory updates the logical path and reloads entries. Away from root, Back moves to the parent directory and tries to preserve selection on the child directory just exited. At root, Back clears session state, calls `navigate_home()`, restores normal Back-exit semantics, and returns.
+The destination picker exposes **Copy here**, optional parent navigation, and child directories.
 
 ## File opening
 
-### ELF files
+SD `.elf` files are launched through the firmware native-app handoff. Other SD files use registered handlers. System-reader handlers use the File Browser host API; application handlers use `T5FileOpenApi`.
 
-Names ending in `.elf` case-insensitively are launched with `launch_elf_request`. File Browser saves session state and returns immediately after a successful request. On relaunch it consumes `launch_elf_take_result`; non-zero ESP errors are rendered as `Native app failed: <code>`.
+Removable-storage files are not directly handed to file handlers or ELF loading in 1.2.0. The app explicitly tells the user to copy them to SD before opening.
 
-### Other files
+## Copy behavior
 
-Registered handlers are queried through `T5FileOpenApi`. With no handler the status becomes **No registered app for this file type**. A cancelled multi-handler chooser reports **Open cancelled**. Handler-launch failures are shown in the browser status area.
+Copy applies to files, not directories.
 
-## Delete workflow
+For SD→USB, the app streams the SD source and writes the provider destination in 4096-byte chunks. For USB→SD, it reads the provider source and writes through the storage API's transactional write stream, committing only on success and aborting on failure.
 
-Directories are not delete candidates in the current source. For a selected file, the app saves the logical path to session state and requests firmware confirmation. After relaunch it consumes the confirmation result and, when confirmed, calls `delete_document` on the saved path.
+Existing destination files are rejected rather than overwritten. Provider-specific errors are surfaced through `last_error` when available.
 
-Selection is repaired after deletion so it remains inside the current entry range.
+## Delete behavior
 
-## Confirmed implementation limits and failure behavior
+Delete applies to files. The app persists the pending path, asks firmware for confirmation, exits for the handoff, and consumes the result after relaunch. SD deletes use `delete_document`; removable-storage deletes use the provider's `remove`.
 
-- Maximum entries: **256**
-- Path buffers: **512 bytes**
-- Handler chooser: **8 handlers**
-- Status buffer: **128 bytes**
-- Missing required API/functions cause `app_main` to return.
-- Failed system-reader open, app-handler open, ELF launch, and delete operations produce explicit status text.
-- A directory-open failure is returned internally by `load_files`; current source does not synthesize a separate user-facing directory-open error.
+## Failure and lifecycle behavior
 
-## Persistence and ownership boundaries
+Missing required host interfaces/functions cause `app_main` to return. Confirmed user-visible failures include missing handlers, cancelled handler choice, failed handler/open/ELF launch, disconnected or unopenable removable storage, copy failures, destination-exists rejection, failed delete, and trying to open a removable file before copying it to SD.
 
-File Browser persists only its handoff session file. Handler registration, association generation, readers, ELF loading, delete confirmation UI, themed rendering, and Home navigation are firmware-owned services.
+The removable-storage capability lease is released on exit.
 
 ## Source
 
 - `Apps/file_browser.c`
 - `Apps/file_browser.json`
 
-Authoritative upstream blobs observed during migration:
+Authoritative upstream blobs for 1.2.0:
 
-- source: `f1bc16a6b435d0b8386d9ec404c7cc6fd7a584bc`
-- manifest: `69d19e01c2c9e33d1fba8852c22e1fb9cf53445b`
+- source: `26829771ecc0690d6c50f34c37ed604bd91da903`
+- manifest: `cb767d15bfa0d92f77164dbf4739f3de896aae2e`

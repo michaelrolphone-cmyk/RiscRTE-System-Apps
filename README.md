@@ -4,7 +4,7 @@ Independent source repository for foundational RiscRTE system applications migra
 
 ## Scope
 
-This repository contains only applications required for basic operation and first-use system workflows: launching installed apps, installing/updating/managing software, and configuring the runtime. Optional utilities, productivity tools, developer/debug tools, games, and domain-specific apps belong in their respective repositories.
+This repository contains applications required for basic operation and first-use system workflows: launching installed apps, installing/updating/managing software, configuring the runtime, and foundational file browsing/dispatch. Optional utilities, productivity tools, developer/debug tools, games, and domain-specific apps belong in their respective repositories.
 
 During migration, `T5S3-Reader` is a strictly read-only upstream compatibility/source reference.
 
@@ -13,6 +13,7 @@ During migration, `T5S3-Reader` is a strictly read-only upstream compatibility/s
 - [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, and Home pin persistence.
 - [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package inbox, and uninstall workflow.
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
+- [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, delete workflow, and SD↔USB file copy.
 
 ## Repository tree
 
@@ -20,6 +21,8 @@ During migration, `T5S3-Reader` is a strictly read-only upstream compatibility/s
 Apps/
   app_store.c
   app_store.json
+  file_browser.c
+  file_browser.json
   settings.c
   settings.json
   springboard.c
@@ -28,6 +31,7 @@ Apps/
 docs/
   apps/
     app_store.md
+    file_browser.md
     settings.md
     springboard.md
 
@@ -40,7 +44,7 @@ system-apps-manifest.json
 - App IDs and published versions must remain compatible with corresponding RiscRTE releases while migration is in progress.
 - `system-apps-manifest.json` tracks the approved foundational system-app set.
 - Every migrated app must have a dedicated documentation page linked above.
-- Documentation is derived from the actual app source, manifest, ABI headers, and observed implementation behavior; it must not invent future APIs or specifications.
-- A migrated app is not considered parity-complete until source, manifest/version, build/release behavior, and documentation are aligned.
+- Documentation is derived from actual app source, manifests, ABI headers, and observed implementation behavior; it must not invent future APIs or specifications.
+- An app is not parity-complete until source, manifest/version, build/release behavior, and documentation are aligned.
 
 Until the runtime is officially switched to this repository, relevant upstream changes are synchronized here without modifying `T5S3-Reader`.
