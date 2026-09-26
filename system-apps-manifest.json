@@ -3,7 +3,7 @@
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
   "status": "partial",
-  "migrated_count": 4,
+  "migrated_count": 5,
   "apps": [
     {
       "id": "app_store",
@@ -45,6 +45,18 @@
       "manifest_path": "Apps/file_browser.json",
       "upstream_source_sha": "26829771ecc0690d6c50f34c37ed604bd91da903",
       "upstream_manifest_sha": "cb767d15bfa0d92f77164dbf4739f3de896aae2e",
+      "migration_status": "complete"
+    },
+    {
+      "id": "time_zone",
+      "display_name": "Time Zone",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.24",
+      "file_name": "time_zone.elf",
+      "source_path": "Apps/time_zone.c",
+      "manifest_path": "Apps/time_zone.json",
+      "upstream_source_sha": "7c5fd087bc12b7114cd9bbf61d1b142dfadf43c8",
+      "upstream_manifest_sha": "676c0d5df652a2f398f05b157cb27ae6854b13f3",
       "migration_status": "complete"
     }
   ]

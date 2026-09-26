@@ -14,6 +14,7 @@ During migration, `T5S3-Reader` is a strictly read-only upstream compatibility/s
 - [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package inbox, and uninstall workflow.
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, delete workflow, and SD↔USB file copy.
+- [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
 
 ## Repository tree
 
@@ -27,6 +28,8 @@ Apps/
   settings.json
   springboard.c
   springboard.json
+  time_zone.c
+  time_zone.json
 
 docs/
   apps/
@@ -34,6 +37,7 @@ docs/
     file_browser.md
     settings.md
     springboard.md
+    time_zone.md
 
 system-apps-manifest.json
 ```
