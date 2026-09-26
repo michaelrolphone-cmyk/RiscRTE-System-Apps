@@ -3,7 +3,7 @@
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
   "status": "partial",
-  "migrated_count": 4,
+  "migrated_count": 3,
   "apps": [
     {
       "id": "app_store",
@@ -38,14 +38,14 @@
     {
       "id": "file_browser",
       "display_name": "File Browser",
-      "version": "1.1.0",
-      "min_firmware_version": "1.2.85",
+      "version": "1.2.0",
+      "min_firmware_version": "1.3.4",
       "file_name": "file_browser.elf",
       "source_path": "Apps/file_browser.c",
       "manifest_path": "Apps/file_browser.json",
-      "upstream_source_sha": "f1bc16a6b435d0b8386d9ec404c7cc6fd7a584bc",
-      "upstream_manifest_sha": "69d19e01c2c9e33d1fba8852c22e1fb9cf53445b",
-      "migration_status": "documentation-complete-source-write-pending"
+      "upstream_source_sha": "26829771ecc0690d6c50f34c37ed604bd91da903",
+      "upstream_manifest_sha": "cb767d15bfa0d92f77164dbf4739f3de896aae2e",
+      "migration_status": "manifest-updated-source-and-doc-sync-pending"
     }
   ]
 }
