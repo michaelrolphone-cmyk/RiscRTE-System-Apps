@@ -4,7 +4,7 @@
   "source_ref": "master",
   "last_audited_upstream_sha": "525e32689203502a7b22f6350b7ef04f272271db",
   "status": "partial",
-  "migrated_count": 14,
+  "migrated_count": 18,
   "parity_ready_count": 0,
   "apps": [
     {
@@ -173,6 +173,54 @@
       "manifest_path": "Apps/ota_update.json",
       "upstream_source_sha": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
       "upstream_manifest_sha": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "font_manager",
+      "display_name": "Manage Fonts",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.24",
+      "file_name": "font_manager.elf",
+      "source_path": "Apps/font_manager.c",
+      "manifest_path": "Apps/font_manager.json",
+      "upstream_source_sha": "f188b6f5eaf0ee7c2746cee3736ebbe9951ce141",
+      "upstream_manifest_sha": "2ae0e6992dfca124b682a81dc1b4f9976182bcb7",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "font_selection",
+      "display_name": "Font Family",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.24",
+      "file_name": "font_selection.elf",
+      "source_path": "Apps/font_selection.c",
+      "manifest_path": "Apps/font_selection.json",
+      "upstream_source_sha": "e7ef8428a17ff85b99a365098c251b3c0b99e152",
+      "upstream_manifest_sha": "0e15372fff714f626d25b2f4dd73802bc8bd39eb",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "image_viewer",
+      "display_name": "Image Viewer",
+      "version": "1.1.0",
+      "min_firmware_version": "1.2.85",
+      "file_name": "image_viewer.elf",
+      "source_path": "Apps/image_viewer.c",
+      "manifest_path": "Apps/image_viewer.json",
+      "upstream_source_sha": "f97d4875bd89054966b3f22ed0442e4ccb8b9c36",
+      "upstream_manifest_sha": "f84588b1f89a8906c59283007dfefdb2efafcbe7",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "file_transfer",
+      "display_name": "File Transfer",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.24",
+      "file_name": "file_transfer.elf",
+      "source_path": "Apps/file_transfer.c",
+      "manifest_path": "Apps/file_transfer.json",
+      "upstream_source_sha": "1a030a3c9531cef1d627f88b58ae5920550984df",
+      "upstream_manifest_sha": "b3e315ece23e1e7a2ce0df46ef4e4dd71f8e0334",
       "migration_status": "source-doc-parity-build-release-pending"
     }
   ]

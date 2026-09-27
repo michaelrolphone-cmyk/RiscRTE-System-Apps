@@ -24,6 +24,10 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Firmware Update](docs/apps/ota_update.md) — firmware-owned OTA check/install/progress/restart workflow.
 - [Language](docs/apps/language_settings.md) — firmware interface-language selection through the language provider.
 - [Customize Status Bar](docs/apps/status_bar_settings.md) — provider-defined status-bar item activation and appearance settings.
+- [Manage Fonts](docs/apps/font_manager.md) — downloadable SD-font catalog, install/update progress, and removal.
+- [Font Family](docs/apps/font_selection.md) — reader font-family selection through the firmware font provider.
+- [Image Viewer](docs/apps/image_viewer.md) — image file dispatch, probing, firmware decoding/rendering, and the current PNG safety guard.
+- [File Transfer](docs/apps/file_transfer.md) — handoff to the firmware-owned wireless/Calibre/hotspot file-transfer session.
 
 ## Repository tree
 
@@ -37,6 +41,14 @@ Apps/
   clear_cache.json
   driver_manager.c
   driver_manager.json
+  file_transfer.c
+  file_transfer.json
+  font_manager.c
+  font_manager.json
+  font_selection.c
+  font_selection.json
+  image_viewer.c
+  image_viewer.json
   language_settings.c
   language_settings.json
   ota_update.c
@@ -64,6 +76,10 @@ docs/
     button_remap.md
     clear_cache.md
     driver_manager.md
+    file_transfer.md
+    font_manager.md
+    font_selection.md
+    image_viewer.md
     language_settings.md
     ota_update.md
     status_bar_settings.md
