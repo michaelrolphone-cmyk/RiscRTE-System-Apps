@@ -2,18 +2,22 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
+  "last_audited_upstream_sha": "6675a270cc9a2cb7720e021a2dac7c766ae1bf0b",
   "status": "partial",
   "migrated_count": 5,
+  "parity_ready_count": 0,
   "apps": [
     {
       "id": "app_store",
       "display_name": "App Store",
-      "version": "1.0.4",
-      "min_firmware_version": "1.2.17",
+      "version": "1.0.5",
+      "min_firmware_version": "1.3.10",
       "file_name": "app_store.elf",
       "source_path": "Apps/app_store.c",
       "manifest_path": "Apps/app_store.json",
-      "upstream_manifest_sha": "d7da8ce6fb5621d42b5156d314fb7e8420bca9aa"
+      "upstream_source_sha": "c1c6e3ef056214b6fc459372c2e3f8702b444432",
+      "upstream_manifest_sha": "58152184d974282b3216d5c427da6a81c7503153",
+      "migration_status": "source-sync-pending"
     },
     {
       "id": "settings",
@@ -23,7 +27,9 @@
       "file_name": "settings.elf",
       "source_path": "Apps/settings.c",
       "manifest_path": "Apps/settings.json",
-      "upstream_manifest_sha": "83825514dc10a4ea1212ae9f648f8c69f7581c03"
+      "upstream_source_sha": "0e2b5fb00c877837789e503e91a4a220f10c83e1",
+      "upstream_manifest_sha": "83825514dc10a4ea1212ae9f648f8c69f7581c03",
+      "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "springboard",
@@ -33,19 +39,21 @@
       "file_name": "springboard.elf",
       "source_path": "Apps/springboard.c",
       "manifest_path": "Apps/springboard.json",
-      "upstream_manifest_sha": "8e34237da5ad90907a6b9b89b2c6a9d9c0dd15e8"
+      "upstream_source_sha": "3758b7e248306c8a782118384445ae72680135fd",
+      "upstream_manifest_sha": "8e34237da5ad90907a6b9b89b2c6a9d9c0dd15e8",
+      "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "file_browser",
       "display_name": "File Browser",
-      "version": "1.2.0",
-      "min_firmware_version": "1.3.4",
+      "version": "1.3.0",
+      "min_firmware_version": "1.3.8",
       "file_name": "file_browser.elf",
       "source_path": "Apps/file_browser.c",
       "manifest_path": "Apps/file_browser.json",
-      "upstream_source_sha": "26829771ecc0690d6c50f34c37ed604bd91da903",
-      "upstream_manifest_sha": "cb767d15bfa0d92f77164dbf4739f3de896aae2e",
-      "migration_status": "complete"
+      "upstream_source_sha": "97676067f1410ed55e3f351c43c2530bc7842849",
+      "upstream_manifest_sha": "8e14e164ea7c0867d1ad8128279e56b24d0467b8",
+      "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "time_zone",
@@ -57,7 +65,31 @@
       "manifest_path": "Apps/time_zone.json",
       "upstream_source_sha": "7c5fd087bc12b7114cd9bbf61d1b142dfadf43c8",
       "upstream_manifest_sha": "676c0d5df652a2f398f05b157cb27ae6854b13f3",
-      "migration_status": "complete"
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "package_manager",
+      "display_name": "Package Manager",
+      "version": "1.1.0",
+      "min_firmware_version": "1.2.84",
+      "file_name": "package_manager.elf",
+      "source_path": "Apps/package_manager.c",
+      "manifest_path": "Apps/package_manager.json",
+      "upstream_source_sha": "87ed7a414fcdadd052412d0b1d9b79234ad09b4b",
+      "upstream_manifest_sha": "87842e2b46e84a5c3701f103dc7f3adaf24d77b7",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "driver_manager",
+      "display_name": "Driver Manager",
+      "version": "1.0.5",
+      "min_firmware_version": "1.3.10",
+      "file_name": "driver_manager.elf",
+      "source_path": "Apps/driver_manager.c",
+      "manifest_path": "Apps/driver_manager.json",
+      "upstream_source_sha": "3dd66d6ef9a5152931ad29e7ebe8b14d8ad9aaee",
+      "upstream_manifest_sha": "66bd8af3514c0a11cf711d165739e388e558d786",
+      "migration_status": "source-sync-pending"
     }
   ]
 }
