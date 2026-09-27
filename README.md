@@ -21,6 +21,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Package Manager](docs/apps/package_manager.md) — installed-package inventory, SD Inbox, verified install, replacement/downgrade, and uninstall.
 - [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, compact installed-state icons, and retained-stage recovery.
 - [SD Firmware Update](docs/apps/sd_firmware_update.md) — selected-image validation, confirmation, progress reporting, firmware installation, and restart handoff.
+- [Language](docs/apps/language_settings.md) — firmware interface-language selection through the language provider.
 
 ## Repository tree
 
@@ -34,6 +35,8 @@ Apps/
   clear_cache.json
   driver_manager.c
   driver_manager.json
+  language_settings.c
+  language_settings.json
   file_browser.c
   file_browser.json
   package_manager.c
@@ -55,6 +58,7 @@ docs/
     button_remap.md
     clear_cache.md
     driver_manager.md
+    language_settings.md
     file_browser.md
     package_manager.md
     sd_firmware_update.md

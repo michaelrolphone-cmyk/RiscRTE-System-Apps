@@ -4,7 +4,7 @@
   "source_ref": "master",
   "last_audited_upstream_sha": "525e32689203502a7b22f6350b7ef04f272271db",
   "status": "partial",
-  "migrated_count": 11,
+  "migrated_count": 12,
   "parity_ready_count": 0,
   "apps": [
     {
@@ -137,6 +137,18 @@
       "manifest_path": "Apps/clear_cache.json",
       "upstream_source_sha": "1c51c862f8b9626c1182302f1c2390f4cafb87e2",
       "upstream_manifest_sha": "86fc4a3edf36c7fd7ec7025d8539313d1e6e3a7a",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "language_settings",
+      "display_name": "Language",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.24",
+      "file_name": "language_settings.elf",
+      "source_path": "Apps/language_settings.c",
+      "manifest_path": "Apps/language_settings.json",
+      "upstream_source_sha": "c9e81623fcd306793ce81c75d7d4f82ae46634ce",
+      "upstream_manifest_sha": "549e821c8c7a924f81a25082ad1604791fc823a2",
       "migration_status": "source-doc-parity-build-release-pending"
     }
   ]
