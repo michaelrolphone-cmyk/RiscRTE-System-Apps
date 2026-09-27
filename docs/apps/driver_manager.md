@@ -6,7 +6,7 @@ Driver Manager manages RiscRTE driver packages from the online driver catalog, t
 
 ## Manifest metadata
 
-- Version: **1.0.5**
+- Version: **1.0.6**
 - Minimum firmware: **1.3.10**
 - Artifact: `driver_manager.elf`
 - Icon: `solid:f085`
@@ -40,7 +40,7 @@ Used for list rendering, event polling, touch hit testing, and selection movemen
 
 The app initially opens recovery handling when the recovery API is available, then selects the online catalog. `catalog_refresh` is called once before rows are populated. A failed online refresh falls back to the SD Inbox and reports that online access is unavailable.
 
-Up to **64** catalog rows are retained. Each valid entry displays driver ID, capability, available version, and installed state. Current source uses the shared UI installed/update/download icons; update rows are also value-highlighted.
+Up to **64** catalog rows are retained. Each valid entry displays driver ID, capability, available version, and installed state. Current source uses the shared UI installed/update/download icons; update rows are also value-highlighted. Version 1.0.6 adds `T5_UI_LIST_ICON_COMPACT` to any row carrying one of those state icons, delegating the actual compact pixel size to firmware.
 
 Activating an online row first performs the installed-version preflight. Current, installed-newer, and invalid-version rows do not install. Install/update calls `install_with_progress` when available, otherwise `install`.
 
@@ -76,5 +76,5 @@ Missing required API operations causes startup to return. Online failure falls b
 
 Current upstream source of truth:
 
-- `Apps/driver_manager.c`: `3dd66d6ef9a5152931ad29e7ebe8b14d8ad9aaee`
-- `Apps/driver_manager.json`: `66bd8af3514c0a11cf711d165739e388e558d786`
+- `Apps/driver_manager.c`: `a609ba5a36a45ebcb949330a07f90e5712a6582b`
+- `Apps/driver_manager.json`: `34921197e720b2112e8415f6997dfd2d2739d3b6`

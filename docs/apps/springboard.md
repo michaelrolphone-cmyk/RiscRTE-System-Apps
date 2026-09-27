@@ -2,74 +2,84 @@
 
 ## Purpose and scope
 
-Springboard is the foundational RiscRTE installed-application launcher. The manifest identifies it as **Apps** (`springboard.elf`), version **1.1.0**, minimum firmware **1.1.5**, categories `System` and `Launcher`.
+Springboard is the foundational RiscRTE installed-application launcher. The manifest identifies it as **Apps** (`springboard.elf`), version **1.2.0**, minimum firmware **1.1.5**, categories `System` and `Launcher`.
 
-The source establishes three responsibilities: refresh and display the host-provided installed-app inventory, provide grid navigation and application launch handoff, and maintain the Home-screen pin list. The app does not load another ELF directly; launch requests are delegated to the host.
+The source refreshes and displays the host-provided installed-app inventory, owns grid navigation and launch handoff, and maintains the Home-screen pin list. It does not load another ELF directly; launches are delegated through the host API.
 
-## User-visible workflow
+## Startup and inventory
 
-At startup the app refreshes installed applications, caps the working set at 128 entries, loads Home pins when storage support is available, computes its grid, and renders the first page.
+At startup the app obtains `T5AppApi` and the optional `T5StorageApi`. It refreshes installed applications, caps the working set at **128** entries, loads Home pins when storage is available, computes grid geometry, clears edit/selection state, and renders.
 
-In normal mode, directional input moves selection. A short Confirm release launches the selected compatible app. Holding Confirm for at least 700 ms enters Home edit mode when storage is available. Touching an app cell selects it and immediately requests launch. The bottom controls page backward, enter **Edit**, or page forward.
+A missing required App API returns immediately. Storage is optional: launch remains usable without it, but Home editing is disabled.
 
-In Home edit mode the title changes to **Apps - Edit Home**. Pinned apps are marked with a rounded highlight band around their cells. A short Confirm release toggles the selected app's Home membership; touching an app cell selects it and toggles membership. The center bottom control becomes **Done**. Holding Confirm again also toggles edit mode.
+## Navigation and launch behavior
 
-Home edit mode is unavailable without the optional storage API. Incompatible apps remain visible but cannot be launched or pinned; the status displays the required firmware version.
+Displays at least 700 pixels wide use four columns; narrower displays use three. The row count is derived from remaining vertical space and is never below one. The current page is `selected / page_size`; total pages are rounded up from the installed-app count.
 
-## Manifest metadata
+Physical directional navigation changes `selected` and makes the selection underline visible. A short Confirm release launches the selected compatible app in normal mode. Holding Confirm for at least **700 ms** toggles Home edit mode.
 
-Confirmed from `Apps/springboard.json`:
-- version: `1.1.0`
-- minimum firmware: `1.1.5`
-- display name: `Apps`
-- ELF: `springboard.elf`
-- icon: `solid:f00a`
-- categories: `System`, `Launcher`
+Touch behaves differently from physical navigation:
+- tapping an app cell launches it immediately in normal mode or toggles its Home pin in edit mode;
+- touch does not leave the navigation underline visible;
+- the top-right rounded **EDIT/DONE** button toggles edit mode;
+- the page-dot hit region at the bottom advances to the next page, wrapping to page zero.
 
-No capability list is declared by this manifest.
+Version 1.2.0 removes the old bottom **Previous / Edit / Next** text controls and the always-visible launcher title/help footer. Page position is represented by centered page dots; the current page dot is larger. Status text is rendered near the bottom only for an explicit status or an icon-rendering warning.
+
+## Home edit mode
+
+Pinned apps are shown with a rounded outline/highlight around their cells. A short Confirm release toggles the selected app's Home membership; tapping an app cell toggles that app immediately. Entering or leaving edit mode clears navigation-selection visibility.
+
+Incompatible apps remain visible but cannot be launched or pinned. Attempting either displays the required firmware version.
 
 ## Host interfaces
 
-Springboard includes `T5AppApi.h` and `T5StorageApi.h`.
+### `T5AppApi`
 
-It obtains `t5_app_api_v1` through `t5_app_get_api(T5_APP_ABI_VERSION)`, verifies `struct_size` through `draw_label`, and requires screen geometry, clear/text/rectangle/present drawing, input polling, `millis`, installed-app refresh/count/get, launch request, icon drawing, and label drawing.
+The app validates `struct_size` through `draw_label` and requires:
+- screen width/height;
+- clear, text, rectangle, icon, label, and present drawing;
+- `poll` and `millis`;
+- installed-app refresh/count/get;
+- `request_app_launch`.
 
-Installed apps are read through `installed_apps_refresh`, `installed_apps_count`, and `installed_apps_get`. The app consumes the manifest filename, display name, icon, compatibility flag, and minimum-firmware string. A successful `request_app_launch(selected)` causes Springboard to return from `app_main`.
+Installed app manifests supply file name, display name, icon, compatibility state, and minimum firmware. A successful launch request causes Springboard to return.
 
-Input is polled with a 20 ms wait and uses directional buttons, Confirm press/release/hold timing, taps, touch coordinates, and the exit-request flag.
+Input polling uses a 20 ms wait and consumes directional buttons, Confirm press/release/hold timing, taps, touch coordinates, and `exit_requested`.
 
-The optional `t5_storage_api_v1` is requested through `t5_storage_get_api(T5_STORAGE_API_VERSION)`. The app requires the provider structure through `write_file_atomic` and uses `exists`, `read_file`, and `write_file_atomic`.
+### `T5StorageApi`
+
+The optional storage table is accepted only when its structure reaches `write_file_atomic` and exposes `exists`, `read_file`, and `write_file_atomic`.
 
 ## Persistence
 
-Home pins are stored in `/sd/Apps/.home_apps` as a newline-delimited list of application ELF filenames. Each loaded line is matched exactly to an installed app's `file_name`.
+Home pins are stored in `/sd/Apps/.home_apps` as newline-delimited application ELF filenames. Loaded lines are matched exactly to installed manifest `file_name` values.
 
-The implementation tracks at most 128 installed apps and limits the pin payload to `128 * 128` bytes. Saves use atomic-write semantics supplied by the storage provider. On save failure the previous in-memory pin state is restored.
+The implementation tracks at most 128 installed apps and bounds the pin payload to `128 * 128` bytes. Saving uses provider-owned atomic writes. On save failure the prior in-memory pin state is restored.
 
-## Layout and rendering
+## Rendering details and limits
 
-Displays at least 700 pixels wide use four columns; narrower displays use three. Row count is calculated from the remaining vertical space and has a minimum of one. The app draws rounded icon boxes and the edit-mode pin highlight with host rectangle primitives. App icons and labels are rendered through shared host functions.
+The app draws rounded icon boxes using its own rectangle helper and uses host `draw_icon`/ `draw_label` for icons and names. Edit-mode pin outlines, the top-right edit button, and page dots are also composed from host rectangle primitives.
 
-If any app icon cannot be drawn, the footer reports that some Font Awesome icons are unavailable.
+The navigation underline is now conditional on `selection_visible`, which is set by physical directional navigation and cleared by touch/page/edit actions. If an app icon cannot be drawn, the bottom status reports that some Font Awesome icons are unavailable.
 
 ## Failure handling
 
 Confirmed behavior:
-- a missing required App API causes an immediate return;
-- missing storage disables Home editing but not launching;
+- missing required App API operations returns immediately;
+- missing storage disables Home editing only;
 - incompatible apps cannot be launched or pinned;
 - launch-request failure is reported on screen;
-- pin-save failure restores the previous state;
-- an empty installed-app inventory is reported with instructions to place matching ELF and JSON pairs in the SD Apps directory;
-- `exit_requested` exits the app.
+- pin-save failure restores the previous pin state;
+- an empty inventory displays instructions to place matching ELF/JSON pairs in `/Apps` on SD;
+- `exit_requested` exits.
 
 ## Network and hardware
 
-The source performs no network operations and contains no direct external-hardware access. Discovery, drawing, input, launch scheduling, and storage are host/provider responsibilities.
+The source contains no network operations and no direct external-hardware access. Discovery, drawing, input, launch scheduling, and storage are host/provider responsibilities.
 
-## Source files
+## Source identity
 
-- `Apps/springboard.c`
-- `Apps/springboard.json`
-
-Anything outside these source/interface boundaries is not established here.
+At audited upstream commit `ff08d329489c62af107c906036d0a926f1a0241f`:
+- `Apps/springboard.c`: `171df81857d694aa6cb761178f294df9da2b379b`
+- `Apps/springboard.json`: `ab70214eb49ec0c98d3c9f776efd91c1a70b148b`

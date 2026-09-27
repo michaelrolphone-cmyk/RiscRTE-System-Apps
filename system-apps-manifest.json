@@ -2,21 +2,21 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "74d2417a0e9c88e6e0a8b71c8fc337d4d6d1da4e",
+  "last_audited_upstream_sha": "ff08d329489c62af107c906036d0a926f1a0241f",
   "status": "partial",
-  "migrated_count": 6,
+  "migrated_count": 5,
   "parity_ready_count": 0,
   "apps": [
     {
       "id": "app_store",
       "display_name": "App Store",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "min_firmware_version": "1.3.10",
       "file_name": "app_store.elf",
       "source_path": "Apps/app_store.c",
       "manifest_path": "Apps/app_store.json",
-      "upstream_source_sha": "c1c6e3ef056214b6fc459372c2e3f8702b444432",
-      "upstream_manifest_sha": "58152184d974282b3216d5c427da6a81c7503153",
+      "upstream_source_sha": "50177ddbd885a3980cad3045445f28916518eea3",
+      "upstream_manifest_sha": "2f09e08c34c732329303a1f9a1a42e3ce124743d",
       "migration_status": "source-sync-pending"
     },
     {
@@ -34,14 +34,14 @@
     {
       "id": "springboard",
       "display_name": "Apps",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "min_firmware_version": "1.1.5",
       "file_name": "springboard.elf",
       "source_path": "Apps/springboard.c",
       "manifest_path": "Apps/springboard.json",
-      "upstream_source_sha": "4e09a4597bac3ab8a2b0c748eee55393a1a66ac1",
-      "upstream_manifest_sha": "d4dcc9ac95cae216e2eed9ae26977761c3dc5fec",
-      "migration_status": "source-doc-parity-build-release-pending"
+      "upstream_source_sha": "171df81857d694aa6cb761178f294df9da2b379b",
+      "upstream_manifest_sha": "ab70214eb49ec0c98d3c9f776efd91c1a70b148b",
+      "migration_status": "source-sync-pending"
     },
     {
       "id": "file_browser",
@@ -94,13 +94,25 @@
     {
       "id": "driver_manager",
       "display_name": "Driver Manager",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "min_firmware_version": "1.3.10",
       "file_name": "driver_manager.elf",
       "source_path": "Apps/driver_manager.c",
       "manifest_path": "Apps/driver_manager.json",
-      "upstream_source_sha": "3dd66d6ef9a5152931ad29e7ebe8b14d8ad9aaee",
-      "upstream_manifest_sha": "66bd8af3514c0a11cf711d165739e388e558d786",
+      "upstream_source_sha": "a609ba5a36a45ebcb949330a07f90e5712a6582b",
+      "upstream_manifest_sha": "34921197e720b2112e8415f6997dfd2d2739d3b6",
+      "migration_status": "source-sync-pending"
+    },
+    {
+      "id": "sd_firmware_update",
+      "display_name": "SD Firmware Update",
+      "version": "1.0.1",
+      "min_firmware_version": "1.1.23",
+      "file_name": "sd_firmware_update.elf",
+      "source_path": "Apps/sd_firmware_update.c",
+      "manifest_path": "Apps/sd_firmware_update.json",
+      "upstream_source_sha": "060753f86e85022c901f6f6b5c0542a9daf4eb7f",
+      "upstream_manifest_sha": "e445e18c14ef70dd9280897c62b4380400d1b0b6",
       "migration_status": "source-sync-pending"
     }
   ]

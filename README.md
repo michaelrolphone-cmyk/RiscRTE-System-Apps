@@ -4,36 +4,39 @@ Independent source repository for foundational RiscRTE system applications migra
 
 ## Scope and classification
 
-This repository contains applications required for basic operation and first-use system workflows: launching installed apps, installing/updating/managing software and packages, configuring the runtime, foundational file browsing/dispatch, and management of runtime driver packages. Optional hardware utilities, productivity tools, MCU-development/debug tools, games, ROM/catalog apps, LLM-specific apps, KOReader-specific tools, and other domain-specific applications belong elsewhere.
+This repository contains applications required for basic operation and first-use system workflows: launching installed apps, installing/updating/managing software and packages, configuring the runtime, foundational file browsing/dispatch, runtime driver-package management, and device firmware maintenance. Optional hardware utilities, productivity tools, MCU-development/debug tools, games, ROM/catalog apps, LLM-specific apps, KOReader-specific tools, and other domain-specific applications belong elsewhere.
 
 During migration, `T5S3-Reader` remains a strictly read-only upstream source of truth.
 
 ## Application documentation
 
-- [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, and explicit Home-screen edit/pin workflow.
-- [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package Inbox, uninstall workflow, and install-state icons.
+- [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, page/edit controls, and Home-screen pin workflow.
+- [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package Inbox, uninstall workflow, and compact install-state icons.
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
 - [Wi-Fi Networks](docs/apps/wifi_settings.md) — firmware-owned wireless selection handoff, connection-status display, and core network configuration workflow.
 - [Package Manager](docs/apps/package_manager.md) — installed-package inventory, SD Inbox, verified install, replacement/downgrade, and uninstall.
-- [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, installed-state icons, and retained-stage recovery.
+- [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, compact installed-state icons, and retained-stage recovery.
+- [SD Firmware Update](docs/apps/sd_firmware_update.md) — selected-image validation, confirmation, progress reporting, firmware installation, and restart handoff.
 
 ## Repository tree
 
 ```text
 Apps/
-  app_store.c
+  app_store.c                 # source sync pending for current upstream
   app_store.json
-  driver_manager.c            # approved migration target; source sync may be pending
+  driver_manager.c            # source sync pending for current upstream
   driver_manager.json
   file_browser.c
   file_browser.json
   package_manager.c
   package_manager.json
+  sd_firmware_update.c        # approved migration target; source sync pending
+  sd_firmware_update.json
   settings.c
   settings.json
-  springboard.c
+  springboard.c               # source sync pending for current upstream
   springboard.json
   time_zone.c
   time_zone.json
@@ -46,6 +49,7 @@ docs/
     driver_manager.md
     file_browser.md
     package_manager.md
+    sd_firmware_update.md
     settings.md
     springboard.md
     time_zone.md
@@ -58,12 +62,12 @@ system-apps-manifest.json
 
 - App source and manifests remain byte-identical to the approved upstream blobs while `T5S3-Reader` is authoritative.
 - `system-apps-manifest.json` records the approved System App set, upstream identities, versions, and migration state.
-- Every approved migrated app has one implementation-derived documentation page linked above.
+- Every approved app has one implementation-derived documentation page linked above.
 - Documentation is derived from current source, manifests, and ABI/interface headers; it does not define provider-owned behavior that the app source does not establish.
 - A source/docs migration is not the same as full parity readiness. Build, test, packaging, release automation, and published-version parity must also be established before an app is reported parity-ready.
 
 ## Current parity limitations
 
-This bootstrap repository does not yet contain a complete independent compatibility-header/toolchain/build/release pipeline for all listed apps. The manifest therefore distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This bootstrap repository does not yet contain a complete independent compatibility-header/toolchain/build/release pipeline for all listed apps. App Store 1.0.6, Driver Manager 1.0.6, Springboard 1.2.0, and SD Firmware Update 1.0.1 currently have source-sync work pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
