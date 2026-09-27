@@ -4,7 +4,7 @@
   "source_ref": "master",
   "last_audited_upstream_sha": "74d2417a0e9c88e6e0a8b71c8fc337d4d6d1da4e",
   "status": "partial",
-  "migrated_count": 5,
+  "migrated_count": 6,
   "parity_ready_count": 0,
   "apps": [
     {
@@ -65,6 +65,18 @@
       "manifest_path": "Apps/time_zone.json",
       "upstream_source_sha": "7c5fd087bc12b7114cd9bbf61d1b142dfadf43c8",
       "upstream_manifest_sha": "676c0d5df652a2f398f05b157cb27ae6854b13f3",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "wifi_settings",
+      "display_name": "Wi-Fi Networks",
+      "version": "1.0.1",
+      "min_firmware_version": "1.1.24",
+      "file_name": "wifi_settings.elf",
+      "source_path": "Apps/wifi_settings.c",
+      "manifest_path": "Apps/wifi_settings.json",
+      "upstream_source_sha": "28120a6c62cf71d8726daa7b3eaebf0601ec2483",
+      "upstream_manifest_sha": "3de13ab2b467315fa6ffbd6fa8d8635569623930",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

@@ -15,6 +15,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
+- [Wi-Fi Networks](docs/apps/wifi_settings.md) — firmware-owned wireless selection handoff, connection-status display, and core network configuration workflow.
 - [Package Manager](docs/apps/package_manager.md) — installed-package inventory, SD Inbox, verified install, replacement/downgrade, and uninstall.
 - [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, installed-state icons, and retained-stage recovery.
 
@@ -36,6 +37,8 @@ Apps/
   springboard.json
   time_zone.c
   time_zone.json
+  wifi_settings.c
+  wifi_settings.json
 
 docs/
   apps/
@@ -46,6 +49,7 @@ docs/
     settings.md
     springboard.md
     time_zone.md
+    wifi_settings.md
 
 system-apps-manifest.json
 ```
