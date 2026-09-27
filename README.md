@@ -13,6 +13,8 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, page/edit controls, and Home-screen pin workflow.
 - [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package Inbox, uninstall workflow, and compact install-state icons.
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
+- [Remap Front Buttons](docs/apps/button_remap.md) — core front-button role mapping, duplicate-assignment prevention, reset-to-defaults, and provider-owned persistence.
+- [Clear Reading Cache](docs/apps/clear_cache.md) — confirmation and reporting workflow for firmware-owned EPUB/XTC reading-cache cleanup.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
 - [Wi-Fi Networks](docs/apps/wifi_settings.md) — firmware-owned wireless selection handoff, connection-status display, and core network configuration workflow.
@@ -24,19 +26,23 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 
 ```text
 Apps/
-  app_store.c                 # source sync pending for current upstream
+  app_store.c
   app_store.json
-  driver_manager.c            # source sync pending for current upstream
+  button_remap.c
+  button_remap.json
+  clear_cache.c
+  clear_cache.json
+  driver_manager.c
   driver_manager.json
   file_browser.c
   file_browser.json
   package_manager.c
   package_manager.json
-  sd_firmware_update.c        # approved migration target; source sync pending
+  sd_firmware_update.c
   sd_firmware_update.json
   settings.c
   settings.json
-  springboard.c               # source sync pending for current upstream
+  springboard.c
   springboard.json
   time_zone.c
   time_zone.json
@@ -46,6 +52,8 @@ Apps/
 docs/
   apps/
     app_store.md
+    button_remap.md
+    clear_cache.md
     driver_manager.md
     file_browser.md
     package_manager.md
@@ -68,6 +76,6 @@ system-apps-manifest.json
 
 ## Current parity limitations
 
-This bootstrap repository does not yet contain a complete independent compatibility-header/toolchain/build/release pipeline for all listed apps. App Store 1.0.6, Driver Manager 1.0.6, Springboard 1.2.0, and SD Firmware Update 1.0.1 currently have source-sync work pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This bootstrap repository does not yet contain a complete independent compatibility-header/toolchain/build/release pipeline for all listed apps. The tracked app sources, manifests, README links, and dedicated documentation are synchronized to the audited upstream identities recorded in `system-apps-manifest.json`, but build/test/package/release parity is still pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
