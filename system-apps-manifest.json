@@ -4,7 +4,7 @@
   "source_ref": "master",
   "last_audited_upstream_sha": "525e32689203502a7b22f6350b7ef04f272271db",
   "status": "partial",
-  "migrated_count": 13,
+  "migrated_count": 14,
   "parity_ready_count": 0,
   "apps": [
     {
@@ -161,6 +161,18 @@
       "manifest_path": "Apps/status_bar_settings.json",
       "upstream_source_sha": "b3a9b2e4a1259c1ccb1f5c6b39f747387025dfc1",
       "upstream_manifest_sha": "ad5cb1756d4d067237f2cfc77873e86c91673fcf",
+      "migration_status": "source-doc-parity-build-release-pending"
+    },
+    {
+      "id": "ota_update",
+      "display_name": "Firmware Update",
+      "version": "1.0.0",
+      "min_firmware_version": "1.1.22",
+      "file_name": "ota_update.elf",
+      "source_path": "Apps/ota_update.c",
+      "manifest_path": "Apps/ota_update.json",
+      "upstream_source_sha": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
+      "upstream_manifest_sha": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
       "migration_status": "source-doc-parity-build-release-pending"
     }
   ]
