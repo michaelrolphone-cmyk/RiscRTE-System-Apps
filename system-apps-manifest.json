@@ -2,7 +2,7 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "6675a270cc9a2cb7720e021a2dac7c766ae1bf0b",
+  "last_audited_upstream_sha": "74d2417a0e9c88e6e0a8b71c8fc337d4d6d1da4e",
   "status": "partial",
   "migrated_count": 5,
   "parity_ready_count": 0,
@@ -34,13 +34,13 @@
     {
       "id": "springboard",
       "display_name": "Apps",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "min_firmware_version": "1.1.5",
       "file_name": "springboard.elf",
       "source_path": "Apps/springboard.c",
       "manifest_path": "Apps/springboard.json",
-      "upstream_source_sha": "3758b7e248306c8a782118384445ae72680135fd",
-      "upstream_manifest_sha": "8e34237da5ad90907a6b9b89b2c6a9d9c0dd15e8",
+      "upstream_source_sha": "4e09a4597bac3ab8a2b0c748eee55393a1a66ac1",
+      "upstream_manifest_sha": "d4dcc9ac95cae216e2eed9ae26977761c3dc5fec",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

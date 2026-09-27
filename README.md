@@ -10,7 +10,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 
 ## Application documentation
 
-- [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, and Home pin persistence.
+- [Springboard / Apps](docs/apps/springboard.md) — installed-app discovery, launcher grid, launch handoff, and explicit Home-screen edit/pin workflow.
 - [App Store](docs/apps/app_store.md) — release catalog, application install/update, SD package Inbox, uninstall workflow, and install-state icons.
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
