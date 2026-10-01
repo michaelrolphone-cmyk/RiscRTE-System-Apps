@@ -8,7 +8,7 @@ def validate_imports(symbol_listing, exports):
     required = set()
     for line in symbol_listing.splitlines():
         fields = line.split()
-        if len(fields) >= 8 and fields[4] == 'GLOBAL' and fields[6] == 'UND':
+        if len(fields) >= 8 and fields[4] in {'GLOBAL', 'WEAK'} and fields[6] == 'UND':
             required.add(fields[7])
     missing = sorted(required - exports)
     if missing:

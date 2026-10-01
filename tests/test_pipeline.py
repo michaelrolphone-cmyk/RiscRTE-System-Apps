@@ -5,6 +5,7 @@ import tempfile
 import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'scripts'))
 from app_manifest import validate_manifest
+from build_all_apps import validate_inventory
 from check_baseline import ROOT, audit, check_sdk, classify, git_blob
 from native_app_symbols import validate_imports
 from package_integrity import stamp_app_manifest
@@ -35,6 +36,8 @@ class PipelineTests(unittest.TestCase):
     def test_unknown_import_rejected(self):
         with self.assertRaises(ValueError):
             validate_imports(' 1: 00000000 0 FUNC GLOBAL DEFAULT UND privileged_unsafe', {'printf'})
+        with self.assertRaises(ValueError):
+            validate_imports(' 1: 00000000 0 FUNC WEAK DEFAULT UND privileged_unsafe', {'printf'})
         self.assertEqual(validate_imports(' 1: 00000000 0 FUNC GLOBAL DEFAULT UND printf', {'printf'}), {'printf'})
 
     def test_stamped_artifact_cannot_silently_change(self):
@@ -46,6 +49,18 @@ class PipelineTests(unittest.TestCase):
             elf.write_bytes(b'y' * 64)
             with self.assertRaises(ValueError):
                 stamp_app_manifest(stamped, elf)
+
+    def test_inventory_cannot_escape_output_or_collide(self):
+        good = {'id': 'settings', 'source_path': 'Apps/settings.c',
+                'manifest_path': 'Apps/settings.json', 'file_name': 'settings.elf'}
+        self.assertEqual(validate_inventory([good]), [good])
+        for field, value in [('id', '../settings'), ('source_path', '../settings.c'),
+                             ('manifest_path', '/tmp/settings.json'),
+                             ('file_name', '../../settings.elf')]:
+            with self.assertRaises(ValueError):
+                validate_inventory([{**good, field: value}])
+        with self.assertRaises(ValueError):
+            validate_inventory([good, good])
 
     def test_bad_manifest_name_rejected(self):
         with self.assertRaises(ValueError):

@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -15,12 +16,30 @@ from package_integrity import stamp_app_manifest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 
+def validate_inventory(apps):
+    if not isinstance(apps, list) or not 1 <= len(apps) <= 128:
+        raise ValueError('Invalid app inventory size')
+    seen = set()
+    for app in apps:
+        app_id = app.get('id') if isinstance(app, dict) else None
+        if not isinstance(app_id, str) or not re.fullmatch(r'[a-z][a-z0-9_]{0,63}', app_id):
+            raise ValueError('Invalid inventory app ID')
+        if app_id in seen:
+            raise ValueError('Duplicate inventory app ID: ' + app_id)
+        seen.add(app_id)
+        if (app.get('source_path') != f'Apps/{app_id}.c' or
+                app.get('manifest_path') != f'Apps/{app_id}.json' or
+                app.get('file_name') != f'{app_id}.elf'):
+            raise ValueError('Inventory paths/filename do not match ID: ' + app_id)
+    return apps
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--id', help='Build one inventory app ID')
     args = parser.parse_args()
     sdk = check_sdk()
-    inventory = json.loads((ROOT / 'system-apps-manifest.json').read_text())['apps']
+    inventory = validate_inventory(json.loads((ROOT / 'system-apps-manifest.json').read_text())['apps'])
     apps = [app for app in inventory if not args.id or app['id'] == args.id]
     if not apps:
         parser.error('No matching app in the migration inventory')
@@ -48,7 +67,7 @@ def main():
         manifest = stamp_app_manifest(manifest, elf)
         if manifest['version'] != app['version']:
             raise ValueError('Inventory/manifest version mismatch: ' + app['id'])
-        elf.with_suffix('.json').write_text(json.dumps(manifest, indent=2) + '\n')
+        elf.with_suffix('.json').write_text(json.dumps(manifest, separators=(',', ':'), ensure_ascii=False) + '\n')
         records.append({'id': app['id'], 'version': manifest['version'], 'file_name': elf.name,
                         'sha256': manifest['sha256'], 'size_bytes': manifest['size_bytes'],
                         'source_blob': git_blob(source.read_bytes()),
