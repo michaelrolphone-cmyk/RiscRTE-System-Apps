@@ -117,6 +117,6 @@ repositories and the criteria that still prevent deleting Reader copies.
 [Source drift](docs/source-drift.json) records a three-way immutable-blob audit;
 never overwrite external changes during synchronization.
 
-Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): eight synchronized apps match; ten historical artifact differences remain visible.
+Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): eight synchronized apps match; ten historical artifact differences remain visible and are now [explained by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
 
 Current bounded refresh and verification limits: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
