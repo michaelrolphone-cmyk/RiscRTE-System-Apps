@@ -104,6 +104,15 @@ system-apps-manifest.json
 
 ## Current parity limitations
 
-This bootstrap repository does not yet contain a complete independent compatibility-header/toolchain/build/release pipeline for all listed apps. The tracked app sources, manifests, README links, and dedicated documentation are synchronized to the audited upstream identities recorded in `system-apps-manifest.json`, but build/test/package/release parity is still pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This repository now has an independent pinned-SDK compiler pipeline, host fixtures for 17 apps, ELF/import validation for all 18 apps, and CI development artifacts. It does not yet have an independent release/package/index pipeline. The tracked app sources, manifests, README links, and dedicated documentation are synchronized to the audited upstream identities recorded in `system-apps-manifest.json`, but build/test/package/release parity is still pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
+
+## Independent development and maintenance
+
+See [Build and validation](docs/BUILD.md) for the standalone commands, pinned
+SDK provenance and test boundaries. No Reader checkout is required to build.
+The [readiness matrix](docs/MIGRATION_READINESS.md) tracks the five external
+repositories and the criteria that still prevent deleting Reader copies.
+[Source drift](docs/source-drift.json) records a three-way immutable-blob audit;
+never overwrite external changes during synchronization.
