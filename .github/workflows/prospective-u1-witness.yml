@@ -1,0 +1,41 @@
+name: Prospective U1 package witness (non-live)
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  witness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: external
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: external
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c80bdee158eb7ef98096c7b000cd92f339c7442b
+          path: prospective-source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pinned public compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build representative external payload with existing independent builder
+        run: python scripts/build_all_apps.py --id button_remap
+      - name: Validate isolated ZIP with pinned prospective upstream tools
+        run: python scripts/witness_u1_zip.py --reader ../prospective-source
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-u1-button-remap-${{ github.sha }}
+          path: external/build/prospective-u1/
+          if-no-files-found: error
+          retention-days: 14
