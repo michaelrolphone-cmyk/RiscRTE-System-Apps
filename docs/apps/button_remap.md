@@ -5,7 +5,7 @@
 Remap Front Buttons is the RiscRTE settings application for assigning the four logical front-button roles Back, Confirm, Left, and Right to physical front buttons. It is classified as a foundational System App because it configures the device's core input mapping.
 
 Manifest metadata:
-- version **1.0.0**
+- version **1.0.1**
 - minimum firmware **1.1.24**
 - artifact `button_remap.elf`
 - icon `solid:f11c`
@@ -37,7 +37,7 @@ When one of the four logical role buttons is pressed, `physical_from_input` reso
 
 After all four roles have assignments, `apply_mapping` is called. Success exits. Failure returns selection to the last role and shows **Could not save button mapping** so the user can try again.
 
-Up invokes `reset_defaults`, displays either **Default mapping restored** or **Could not save defaults**, redraws once, and exits. Down cancels and exits without applying the pending mapping. The chrome labels these actions **Reset** and **Cancel**.
+Up invokes `reset_defaults`, displays either **Default mapping restored** or **Could not save defaults**, redraws once, and exits. Down cancels and exits without applying the pending mapping. The subtitle explicitly labels these actions **Side Up: Reset | Side Down: Cancel**. Front-button action hints are blank; the initial status says **Press a front button for the selected role**.
 
 ## Failure handling
 
@@ -56,11 +56,15 @@ Working state is static/in-memory: original and pending four-entry mappings, fou
 
 The app performs no direct file-system access and no network I/O.
 
-## Source and interface identities
+## Source and build provenance
 
-At upstream commit `525e32689203502a7b22f6350b7ef04f272271db`:
-- `Apps/button_remap.c`: `e9864c464ea9c3f1919d275de31deccaa19c2acc`
-- `Apps/button_remap.json`: `23b2d0c1bfa48ec1bdfb6971f3c670cba5936add`
-- `T5ButtonRemapApi.h`: `792ca01aac6055d0a2a707ac01e4df54063d2b64`
-- current `T5AppApi.h`: `fda810300de5cadff16e81efd42ba7efff8fe33b`
-- `T5UiApi.h`: `ef09b405fc2518ee7ecf039f8b251939d80b14a6`
+Source and manifest synchronized from Reader `1e0188c1ff0234dd33fe054c9a6fb4fde36596df`:
+- `Apps/button_remap.c`: `ead8a4d0a346fc42b27bbf525c1ec91855d08c5f`
+- `Apps/button_remap.json`: `7fed7c136db258c971b7b76320e06f7dce753efc`
+
+The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
+The matching app host fixture is pinned there to the inspected Reader master.
+Published version 1.0.1 is copied unchanged, with canonical ELF identity from
+release-index `572746f4fcf3fde19947a066b7e5c8028cd76d21` recorded in `sdk/release-baseline.json`.
+Host fixtures exercise app/provider behavior; firmware touch/orientation dispatch
+and hardware operation are not qualified by this external repository run.

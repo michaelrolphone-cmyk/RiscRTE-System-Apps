@@ -1,5 +1,5 @@
 {
-  "reader_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+  "reader_commit": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df",
   "files": [
     {
       "id": "app_store",
@@ -164,33 +164,33 @@
     {
       "id": "button_remap",
       "path": "Apps/button_remap.c",
-      "baseline_blob": "e9864c464ea9c3f1919d275de31deccaa19c2acc",
-      "external_blob": "e9864c464ea9c3f1919d275de31deccaa19c2acc",
-      "upstream_blob": "e9864c464ea9c3f1919d275de31deccaa19c2acc",
+      "baseline_blob": "ead8a4d0a346fc42b27bbf525c1ec91855d08c5f",
+      "external_blob": "ead8a4d0a346fc42b27bbf525c1ec91855d08c5f",
+      "upstream_blob": "ead8a4d0a346fc42b27bbf525c1ec91855d08c5f",
       "state": "unchanged"
     },
     {
       "id": "button_remap",
       "path": "Apps/button_remap.json",
-      "baseline_blob": "23b2d0c1bfa48ec1bdfb6971f3c670cba5936add",
-      "external_blob": "23b2d0c1bfa48ec1bdfb6971f3c670cba5936add",
-      "upstream_blob": "23b2d0c1bfa48ec1bdfb6971f3c670cba5936add",
+      "baseline_blob": "7fed7c136db258c971b7b76320e06f7dce753efc",
+      "external_blob": "7fed7c136db258c971b7b76320e06f7dce753efc",
+      "upstream_blob": "7fed7c136db258c971b7b76320e06f7dce753efc",
       "state": "unchanged"
     },
     {
       "id": "clear_cache",
       "path": "Apps/clear_cache.c",
-      "baseline_blob": "1c51c862f8b9626c1182302f1c2390f4cafb87e2",
-      "external_blob": "1c51c862f8b9626c1182302f1c2390f4cafb87e2",
-      "upstream_blob": "1c51c862f8b9626c1182302f1c2390f4cafb87e2",
+      "baseline_blob": "84c7daedf20b81cac64bb260a7a2fe3db19552be",
+      "external_blob": "84c7daedf20b81cac64bb260a7a2fe3db19552be",
+      "upstream_blob": "84c7daedf20b81cac64bb260a7a2fe3db19552be",
       "state": "unchanged"
     },
     {
       "id": "clear_cache",
       "path": "Apps/clear_cache.json",
-      "baseline_blob": "86fc4a3edf36c7fd7ec7025d8539313d1e6e3a7a",
-      "external_blob": "86fc4a3edf36c7fd7ec7025d8539313d1e6e3a7a",
-      "upstream_blob": "86fc4a3edf36c7fd7ec7025d8539313d1e6e3a7a",
+      "baseline_blob": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
+      "external_blob": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
+      "upstream_blob": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
       "state": "unchanged"
     },
     {
@@ -228,17 +228,17 @@
     {
       "id": "ota_update",
       "path": "Apps/ota_update.c",
-      "baseline_blob": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
-      "external_blob": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
-      "upstream_blob": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
+      "baseline_blob": "2cd2738da338dbf52f28aaad611def8aba1bad43",
+      "external_blob": "2cd2738da338dbf52f28aaad611def8aba1bad43",
+      "upstream_blob": "2cd2738da338dbf52f28aaad611def8aba1bad43",
       "state": "unchanged"
     },
     {
       "id": "ota_update",
       "path": "Apps/ota_update.json",
-      "baseline_blob": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
-      "external_blob": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
-      "upstream_blob": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
+      "baseline_blob": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
+      "external_blob": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
+      "upstream_blob": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
       "state": "unchanged"
     },
     {

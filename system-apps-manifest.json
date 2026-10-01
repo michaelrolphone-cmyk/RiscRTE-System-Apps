@@ -2,7 +2,7 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+  "last_audited_upstream_sha": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df",
   "status": "partial",
   "migrated_count": 18,
   "parity_ready_count": 0,
@@ -128,25 +128,25 @@
     {
       "id": "button_remap",
       "display_name": "Remap Front Buttons",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_firmware_version": "1.1.24",
       "file_name": "button_remap.elf",
       "source_path": "Apps/button_remap.c",
       "manifest_path": "Apps/button_remap.json",
-      "upstream_source_sha": "e9864c464ea9c3f1919d275de31deccaa19c2acc",
-      "upstream_manifest_sha": "23b2d0c1bfa48ec1bdfb6971f3c670cba5936add",
+      "upstream_source_sha": "ead8a4d0a346fc42b27bbf525c1ec91855d08c5f",
+      "upstream_manifest_sha": "7fed7c136db258c971b7b76320e06f7dce753efc",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "clear_cache",
       "display_name": "Clear Reading Cache",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_firmware_version": "1.1.21",
       "file_name": "clear_cache.elf",
       "source_path": "Apps/clear_cache.c",
       "manifest_path": "Apps/clear_cache.json",
-      "upstream_source_sha": "1c51c862f8b9626c1182302f1c2390f4cafb87e2",
-      "upstream_manifest_sha": "86fc4a3edf36c7fd7ec7025d8539313d1e6e3a7a",
+      "upstream_source_sha": "84c7daedf20b81cac64bb260a7a2fe3db19552be",
+      "upstream_manifest_sha": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -176,13 +176,13 @@
     {
       "id": "ota_update",
       "display_name": "Firmware Update",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_firmware_version": "1.1.22",
       "file_name": "ota_update.elf",
       "source_path": "Apps/ota_update.c",
       "manifest_path": "Apps/ota_update.json",
-      "upstream_source_sha": "5f2163083b41aebfd3bb472a7d1148fc3848e833",
-      "upstream_manifest_sha": "6e4b57b7c1502ad87cb4f9fdd32c1ba54e7b02a5",
+      "upstream_source_sha": "2cd2738da338dbf52f28aaad611def8aba1bad43",
+      "upstream_manifest_sha": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

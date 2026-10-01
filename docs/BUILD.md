@@ -38,9 +38,7 @@ The vendored source retains its upstream license and comments.
 
 There are 18 host interaction fixtures: one each for 17 apps plus Springboard's
 live video fixture (drag/settle, cancellation, vertical locking, backpressure and
-cleanup). The five synchronized apps' fixtures are pinned to Reader
-`be82695ea0ecb14525c0de1ddc78cd0c77e4614b`; unchanged apps retain their recorded
-`525e3268` fixtures. All origins are individually recorded in the SDK lock.
+cleanup). Fixtures retain their individually recorded Reader origins in the SDK lock. The three apps updated in this refresh use fixtures from Reader `1e0188c1`; unchanged fixtures and the pinned SDK remain intact.
 Image Viewer lacks an upstream app fixture and receives compiler, manifest/
 import and ELF checks only. The File Browser oversized-USB-handle regression
 also runs with sanitizers in CI. These are focused host fixtures, not exhaustive
@@ -51,13 +49,10 @@ Springboard's `springboard_video.inc` and `springboard_slide.h` are tracked as
 additional source inputs, including their blobs in both audits and build evidence.
 
 `python scripts/check_release_parity.py` compares actual emitted ELF bytes,
-lengths and versions against `sdk/release-baseline.json`. All five synchronized
+lengths and versions against `sdk/release-baseline.json`. All eight synchronized
 apps reproduce their published bytes exactly and are mandatory CI checks. The
-other 13 older released artifacts differ from these development builds; the
-report preserves those mismatches rather than hiding them. A [historical no-strip probe](historical-build-probe.json) reproduced 11 of those
-13 exactly; Button Remap and Driver Manager still differ. That diagnostic does
-not replace the normal builder or its reported parity result. Their remaining
-build-context differences still need investigation. See [release parity](release-parity.json).
+other 10 older released artifacts differ from these development builds; the
+report preserves those mismatches rather than hiding them. The earlier [historical no-strip probe](historical-build-probe.json) remains a historical diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. Driver Manager still has an unresolved historical build-context difference; the other unchanged mismatches remain explicitly reported. See [release parity](release-parity.json).
 None is ready for independent publication or Reader removal: ZIP/index and
 runtime integration remain separate unfinished work.
 
@@ -76,3 +71,5 @@ Review upstream-only changes with their versioned manifests and docs. Preserve
 external-only edits; reconcile both-side conflicts before advancing the baseline.
 SDK lock updates require inspection of pinned APIs/exports and rerunning all
 checks. Do not use a passing build to automatically copy or cut over apps.
+
+Current bounded refresh and verification limits: [2026-10-01 provenance](PARITY_REFRESH_2026-10-01.md).
