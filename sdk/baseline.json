@@ -1,0 +1,336 @@
+{
+  "schema": 1,
+  "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
+  "source_commit": "524e2cb3ea27311b062f3d7f182668c6912829fc",
+  "toolchain": "espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5",
+  "files": [
+    {
+      "path": "LICENSE",
+      "upstream_path": "LICENSE",
+      "git_blob": "b8c074800342d88eb4892d9ef79a65485d1bfcf9",
+      "sha256": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+    },
+    {
+      "path": "lib/NativeApps/include/T5AppApi.h",
+      "upstream_path": "lib/NativeApps/include/T5AppApi.h",
+      "git_blob": "b5d5cc0162aa6c5caa055563b928c8ceaf3e5cfd",
+      "sha256": "eb0acebe0b1a151916b9f05afd98025e8e516c251337b8fe48fd3961bd58a981"
+    },
+    {
+      "path": "lib/NativeApps/include/T5ButtonRemapApi.h",
+      "upstream_path": "lib/NativeApps/include/T5ButtonRemapApi.h",
+      "git_blob": "792ca01aac6055d0a2a707ac01e4df54063d2b64",
+      "sha256": "2a1d8091221712c1cf7b7e500aad22e03f5db7d660a7f749684fca9d054a16ea"
+    },
+    {
+      "path": "lib/NativeApps/include/T5CacheApi.h",
+      "upstream_path": "lib/NativeApps/include/T5CacheApi.h",
+      "git_blob": "f3bd3a4a18dd80f7238b4d28533fac012041afcc",
+      "sha256": "2fd5da1a4e034310be041726b77f5ff5a5069e3a272f902294c4d0887425aff4"
+    },
+    {
+      "path": "lib/NativeApps/include/T5DriverManagerApi.h",
+      "upstream_path": "lib/NativeApps/include/T5DriverManagerApi.h",
+      "git_blob": "42f4d913e017af8aeec3dedc302a39336ac61395",
+      "sha256": "f03a43f5c1fdc0e13b33af5300c655ba3a856d0f28907a59aa874ce7db151478"
+    },
+    {
+      "path": "lib/NativeApps/include/T5FileBrowserApi.h",
+      "upstream_path": "lib/NativeApps/include/T5FileBrowserApi.h",
+      "git_blob": "4ff1991bac664b0bfe86b86a5eeecf4f86e6f8d9",
+      "sha256": "4af0cf7ee92b85b72eadbdfcb988d7b562fc1f24b744c58d01047ad4a2b6fca9"
+    },
+    {
+      "path": "lib/NativeApps/include/T5FileOpenApi.h",
+      "upstream_path": "lib/NativeApps/include/T5FileOpenApi.h",
+      "git_blob": "4b697ae5bc8e2613959954556ceab0c48e6ac4f6",
+      "sha256": "c1b873e364dba81ce39d8c8a62668db618735407a6291dca87b9795ce4accc30"
+    },
+    {
+      "path": "lib/NativeApps/include/T5FontApi.h",
+      "upstream_path": "lib/NativeApps/include/T5FontApi.h",
+      "git_blob": "f019bf858c9ec85d316ac35c79cf12ab8139a7c2",
+      "sha256": "06f5de46f0e373e77fb331029940c3db505a8b91b9d0fd35bf4f5ae9f8554bab"
+    },
+    {
+      "path": "lib/NativeApps/include/T5ImageApi.h",
+      "upstream_path": "lib/NativeApps/include/T5ImageApi.h",
+      "git_blob": "6b767a71810b65ab3651f13703f79e55666d5bcf",
+      "sha256": "845638fc39cd391b5d043eeea9e39fb78f966d56b854f322542fc50d20695780"
+    },
+    {
+      "path": "lib/NativeApps/include/T5LanguageApi.h",
+      "upstream_path": "lib/NativeApps/include/T5LanguageApi.h",
+      "git_blob": "d5126e0eb05b66836491af67ebdfa2cfb20c1235",
+      "sha256": "cc6c343f52e0033b032cce5a6009d20a74a9464eea59019b3b128f7bc4fbbfff"
+    },
+    {
+      "path": "lib/NativeApps/include/T5NetworkApi.h",
+      "upstream_path": "lib/NativeApps/include/T5NetworkApi.h",
+      "git_blob": "0866fc8d75b854c4c6af895bab8987fcd5da7636",
+      "sha256": "7aff710c9216c3e2af9e78c7312a5d31d9510d7326cf8dfafe847418ff2f7c33"
+    },
+    {
+      "path": "lib/NativeApps/include/T5OtaApi.h",
+      "upstream_path": "lib/NativeApps/include/T5OtaApi.h",
+      "git_blob": "257c52496b0b3a2dfc651714b626dd0758af11b7",
+      "sha256": "2cd1cf9de3bf99bea9c67fa2bf80faffb8bce1b6dcc62ea223f98883329f64da"
+    },
+    {
+      "path": "lib/NativeApps/include/T5PackageManagerApi.h",
+      "upstream_path": "lib/NativeApps/include/T5PackageManagerApi.h",
+      "git_blob": "6feea1a07c81e364dfa926056ec766585d1e38f6",
+      "sha256": "acf274738ce71e519168ac606b37b04300be93eed72ba181e2d18d6c7e34053c"
+    },
+    {
+      "path": "lib/NativeApps/include/T5PackageVersion.h",
+      "upstream_path": "lib/NativeApps/include/T5PackageVersion.h",
+      "git_blob": "af26164fcc5ff9588cfb3c6bc4fe3d4f2b998ffa",
+      "sha256": "956106b2dd21c8e5a25cdb93814d20c4cf62ef758339ef23b79cc2b959d89f2a"
+    },
+    {
+      "path": "lib/NativeApps/include/T5ProviderCapabilityApi.h",
+      "upstream_path": "lib/NativeApps/include/T5ProviderCapabilityApi.h",
+      "git_blob": "1d4a90561b53002147a4aec06b547b66482f3269",
+      "sha256": "f348bc6b64017607ada44f5370631693e240c0cbef45251cae52a7dbcbe9894c"
+    },
+    {
+      "path": "lib/NativeApps/include/T5SdFirmwareApi.h",
+      "upstream_path": "lib/NativeApps/include/T5SdFirmwareApi.h",
+      "git_blob": "3a3c87d74edd99dd2bb06b437dff580b2a976f9b",
+      "sha256": "8c6d467c2bc105256c22d5343778874358d82e8d1f49d4f81937f59da9647633"
+    },
+    {
+      "path": "lib/NativeApps/include/T5StatusBarApi.h",
+      "upstream_path": "lib/NativeApps/include/T5StatusBarApi.h",
+      "git_blob": "d0cd8e4d77671a596ffa2b1a05daf07b3a0083b2",
+      "sha256": "6a2011799bff49e29cbacf3214b86a4d6db9751f385c36a05d40860e527bf6ec"
+    },
+    {
+      "path": "lib/NativeApps/include/T5StorageApi.h",
+      "upstream_path": "lib/NativeApps/include/T5StorageApi.h",
+      "git_blob": "e6c49d4b7c665d8c07bf4e756fc46acef9cf7c98",
+      "sha256": "be0d63a89943a75a58723b703284992e8c6e95956c7cb39a9b3523af2c5d23ba"
+    },
+    {
+      "path": "lib/NativeApps/include/T5SystemUiApi.h",
+      "upstream_path": "lib/NativeApps/include/T5SystemUiApi.h",
+      "git_blob": "41d06ae089ddb7d7e4e7378123ff7c6854e642d2",
+      "sha256": "aea03c2fe4ea5944dbda4ad6cfc499baa69fc2711bb55167a1e10461d500c8d1"
+    },
+    {
+      "path": "lib/NativeApps/include/T5TimeZoneApi.h",
+      "upstream_path": "lib/NativeApps/include/T5TimeZoneApi.h",
+      "git_blob": "dfc3a0c90efe0a4b7069b447134c9933abfa7615",
+      "sha256": "e01ce2583308f89387d75bd1f5a697741d936f996dff8d10ce6d9e158b719021"
+    },
+    {
+      "path": "lib/NativeApps/include/T5UiApi.h",
+      "upstream_path": "lib/NativeApps/include/T5UiApi.h",
+      "git_blob": "ef09b405fc2518ee7ecf039f8b251939d80b14a6",
+      "sha256": "88dbfde2a45ab385c69ee0b8192e8025446c9872711e4810f799251479b1057a"
+    },
+    {
+      "path": "lib/NativeApps/src/SingleFloatDivisionCompat.c",
+      "upstream_path": "lib/NativeApps/src/SingleFloatDivisionCompat.c",
+      "git_blob": "26a63947ae37f9b8c62610826a825b91d3c911d1",
+      "sha256": "e7e54837bbbd6c99be51367729a03b09d6df0553b635e692fad9b4264442befb"
+    },
+    {
+      "path": "lib/NativeApps/src/UnsignedDivisionCompat.c",
+      "upstream_path": "lib/NativeApps/src/UnsignedDivisionCompat.c",
+      "git_blob": "6c692b28aae97379f5daf017861d3dc651339830",
+      "sha256": "cf49adc0be03fbf852a95018be1342dbebdf9953047a9f7e2600728d7f070fff"
+    },
+    {
+      "path": "lib/elf_loader/include/private/elf_types.h",
+      "upstream_path": "lib/elf_loader/include/private/elf_types.h",
+      "git_blob": "c9b4f7a15378f5118219107a4824e5a72c7e72a7",
+      "sha256": "13a6aa3f2977c9da9d83ed7101a6deed9c01e96d0c614be3f84963be0c1a3eda"
+    },
+    {
+      "path": "lib/elf_loader/src/esp_elf_validate.c",
+      "upstream_path": "lib/elf_loader/src/esp_elf_validate.c",
+      "git_blob": "6a2aaf8245690df8f09d1f2badd3f7607a65470a",
+      "sha256": "67b6a0c09038821cb51c7d04a0c00d8c7e25eb974f3d4df6e51fa95febbf46fe"
+    },
+    {
+      "path": "scripts/app_manifest.py",
+      "upstream_path": "scripts/app_manifest.py",
+      "git_blob": "f1a86b0a6946036a012bfcd92bb61e09f7aad2a2",
+      "sha256": "22b8d525c586dd1a24e5318a894c0c666a3483aae35df202e47cf685082b5fcd"
+    },
+    {
+      "path": "scripts/package_integrity.py",
+      "upstream_path": "scripts/package_integrity.py",
+      "git_blob": "11b9bc5a9329b4d2024326ef0c838e3a2144807c",
+      "sha256": "d8fc39aaf8dcaa3dadbaeaa8e51ef14771c7e4b0d4f1f035f03c648299c316d4"
+    },
+    {
+      "path": "sdk/driver/RiscStorageVolumeV1.h",
+      "upstream_path": "sdk/driver/RiscStorageVolumeV1.h",
+      "git_blob": "69b7a67999a2ae52c87c96c4efab0bec0918c3e6",
+      "sha256": "96902eb6cca4356d44066798d0edb1260e32ae23721a401404450cdb191cd7e7"
+    },
+    {
+      "path": "test/native_apps/stubs/sdkconfig.h",
+      "upstream_path": "test/native_apps/stubs/sdkconfig.h",
+      "git_blob": "c27490ad1599092b07c362ca280830625b0f6914",
+      "sha256": "d18f0fce9e3255f9b1f5f934c5441b0685edd310375c68745c61ec0ce275e4ae"
+    },
+    {
+      "path": "test/native_apps/validate_test.c",
+      "upstream_path": "test/native_apps/validate_test.c",
+      "git_blob": "cfe444ddf8a1e8451887cef29c1ee6c7564b4baa",
+      "sha256": "1fcb4274a6b8df77fd5c31dee8ee7dfb929c7fd62a634071a19cd6c9697b42a2"
+    },
+    {
+      "path": "test/native_apps/app_store_test.c",
+      "upstream_path": "test/native_apps/app_store_test.c",
+      "git_blob": "d67619df4661c7728a5f0c88dd97791927424a41",
+      "sha256": "8b5760589338e844e96b3cfd2b8f0ca783fd6db44b430cdbd917dcc974dae213",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/settings_test.c",
+      "upstream_path": "test/native_apps/settings_test.c",
+      "git_blob": "d533a61c236813cea7c3b923ba173d48a84a45be",
+      "sha256": "24c6fae59228ede658a3fbe5cb79a9cdc37c1e26e1168dcce38baa4b469c8501",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/springboard_test.c",
+      "upstream_path": "test/native_apps/springboard_test.c",
+      "git_blob": "034ad605ee503895e72c2a26ac230e86791c621d",
+      "sha256": "6598674007dd8b2c702b20f3deea5e43820e76d20e78902264f9abf61dad176d",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/file_browser_test.c",
+      "upstream_path": "test/native_apps/file_browser_test.c",
+      "git_blob": "9544b5874061ee7253516de7321c3528cfa8901e",
+      "sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/time_zone_test.c",
+      "upstream_path": "test/native_apps/time_zone_test.c",
+      "git_blob": "bfcd4aa4e9f385ba01fdc11b57fbfa13e883a543",
+      "sha256": "6f9eee7e2b09021c45b308c6ecd758a93affb2e09196d866e6d075412e98b176",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/wifi_settings_test.c",
+      "upstream_path": "test/native_apps/wifi_settings_test.c",
+      "git_blob": "d12b7b8636ba3bc25bb1f163541c25e8e41f5645",
+      "sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/package_manager_test.c",
+      "upstream_path": "test/native_apps/package_manager_test.c",
+      "git_blob": "bd081c463fa90782c0bac2b3bc6d96383f1cd863",
+      "sha256": "979f252f2356b61bee89e163511fd8db7e77c711c39d65891b146ade92410cb0",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/driver_manager_test.c",
+      "upstream_path": "test/native_apps/driver_manager_test.c",
+      "git_blob": "7d9b5e2c3a071580c5b54cd43e1a5634c835f135",
+      "sha256": "d99333cdbba9717853af9df7b26829aae3dd8b7da89b5f60a0136994226c954c",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/sd_firmware_update_test.c",
+      "upstream_path": "test/native_apps/sd_firmware_update_test.c",
+      "git_blob": "6caec07cf009d615007515018ed6586ea4222956",
+      "sha256": "421d85dbfccce22d540f31e72afb295baac94ab4e08a2d31b70a4ec50e12a812",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/button_remap_test.c",
+      "upstream_path": "test/native_apps/button_remap_test.c",
+      "git_blob": "e5658347b8839ca6f1ecb454373fae255dd89da1",
+      "sha256": "65100edf830df2fd9f5f980d30463b9dc7cba58c36a286ac86f163c6a71e4c70",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/clear_cache_test.c",
+      "upstream_path": "test/native_apps/clear_cache_test.c",
+      "git_blob": "d8665b9b7a81e3f8cfc0f98c43b7e5b7f79c5717",
+      "sha256": "5698a6f87bc8bea6d4753a9065e24907ba7e19a2c1b5e4cfdcd61d15ece7ab97",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/language_settings_test.c",
+      "upstream_path": "test/native_apps/language_settings_test.c",
+      "git_blob": "f57a9a7d1b84bd424a43d66817381359d51e0eed",
+      "sha256": "07d64372d87cd75ccc3879f37022523c1dc356fb845980801d44b0d3f0c31225",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/status_bar_settings_test.c",
+      "upstream_path": "test/native_apps/status_bar_settings_test.c",
+      "git_blob": "eb9256991098d5a1c4e4e1f8acb96b639f58b97f",
+      "sha256": "c50cadce2d8a8d5501ee33a87349d68d45b8851fc516d06974773ca041fb29cb",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/ota_update_test.c",
+      "upstream_path": "test/native_apps/ota_update_test.c",
+      "git_blob": "192a18e227ac6738c0747f4d17579d8b86ec919d",
+      "sha256": "3a4b8c0fbd5840b8a45be79125767493081806e292dd1c61a1510d553d57130e",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/font_manager_test.c",
+      "upstream_path": "test/native_apps/font_manager_test.c",
+      "git_blob": "1ca2a7eb752c546e1e0a4c126d7feb4e636cdfd7",
+      "sha256": "403efcc586a842894c95fe409ce3a3888bfff99a56013538e857ce6aa58203a4",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/font_selection_test.c",
+      "upstream_path": "test/native_apps/font_selection_test.c",
+      "git_blob": "b2d94ef288efcda19c58698b9155bc5e618dcb47",
+      "sha256": "03de43a39410d97204a3a12899cd5930111586f0e5405ce60957d2c69dac6116",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "test/native_apps/file_transfer_test.c",
+      "upstream_path": "test/native_apps/file_transfer_test.c",
+      "git_blob": "879c3ce73e9c069cfb7b2db5f860b16bd22afd08",
+      "sha256": "706f0c92d0db8e75c80328a48d2adadfbca15d530028aaac88ee7c533e4e381f",
+      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+    },
+    {
+      "path": "lib/NativeApps/include/T5VideoApi.h",
+      "upstream_path": "lib/NativeApps/include/T5VideoApi.h",
+      "git_blob": "25795a4a8b8befb8c17237a63e70de8f6b44e9e6",
+      "sha256": "af3f2318e53e20efb4e8e9e98d93abae11f1788fe14640c7b02392c22d08c6a4"
+    }
+  ],
+  "exports_sha256": "a88ca6059db7ab70ee41f5557f30e41158812de58eb6d898902a48b0a19c1649",
+  "export_inputs": [
+    {
+      "path": "lib/NativeApps/src/NativeAppLauncher.c",
+      "git_blob": "b033b3df223958ab055499e2aeb78ad65a03e2ac"
+    },
+    {
+      "path": "lib/elf_loader/src/esp_elf_symbol.c",
+      "git_blob": "7b548136aa87b8acc035809993fab82a03005556"
+    },
+    {
+      "path": "lib/NativeApps/include/NativeHardwareCompatSymbols.def",
+      "git_blob": "75b54556a96d2a798a1230369f11fc25b836f279"
+    },
+    {
+      "path": "src/native/NativeHardwareCompat.cpp",
+      "git_blob": "b8452540f01dccedd29fac926eb91d82604e9aa6"
+    },
+    {
+      "path": "platformio.ini",
+      "git_blob": "789e3b2f126957e602bd0661a4785550c5ea8159"
+    }
+  ]
+}

@@ -223,5 +223,12 @@
       "upstream_manifest_sha": "b3e315ece23e1e7a2ce0df46ef4e4dd71f8e0334",
       "migration_status": "source-doc-parity-build-release-pending"
     }
-  ]
+  ],
+  "independent_build": {
+    "sdk_baseline": "sdk/baseline.json",
+    "builder": "scripts/build_all_apps.py",
+    "host_tests": "scripts/test_apps.py",
+    "development_artifact_only": true,
+    "release_index_ready": false
+  }
 }
