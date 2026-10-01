@@ -52,7 +52,7 @@ additional source inputs, including their blobs in both audits and build evidenc
 lengths and versions against `sdk/release-baseline.json`. All eight synchronized
 apps reproduce their published bytes exactly and are mandatory CI checks. The
 other 10 older released artifacts differ from these development builds; the
-report preserves those mismatches rather than hiding them. The earlier [historical no-strip probe](historical-build-probe.json) remains a historical diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. Driver Manager still has an unresolved historical build-context difference; the other unchanged mismatches remain explicitly reported. See [release parity](release-parity.json).
+report preserves those mismatches rather than hiding them. The earlier [historical no-strip probe](historical-build-probe.json) remains a historical diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. The [lineage investigation](HISTORICAL_ELF_LINEAGE.md) now explains all ten current mismatches: stripping verified published copies produces the current development bytes exactly. Driver Manager's old probe also omitted the required source-owned unsigned-division helper. This explains the diagnostic failure without changing the builder or relaxing exact-byte parity. See [release parity](release-parity.json).
 None is ready for independent publication or Reader removal: ZIP/index and
 runtime integration remain separate unfinished work.
 

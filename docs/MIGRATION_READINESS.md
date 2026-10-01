@@ -10,7 +10,9 @@ synchronization of Button Remap, Clear Cache and OTA Update, each 1.0.0 → 1.0.
 No external source conflict was found. Independent tooling and SDK are retained.
 Ten pipeline tests, 18 host fixtures and 18 ELF/sidecar checks pass locally.
 Eight required published-byte comparisons pass; ten unchanged historical build
-mismatches remain visible in [release parity](release-parity.json).
+mismatches remain visible in [release parity](release-parity.json). All ten are now
+[classified as historical unstripped versus current stripped builds](HISTORICAL_ELF_LINEAGE.md);
+explanation does not make the changed development bytes publishable under old identities.
 See [refresh provenance](PARITY_REFRESH_2026-10-01.md) for exact identities and limits.
 
 The companion Drivers refresh starts at `9039be6c9abb30742b7a77a8ef39d507aaf01cea`
