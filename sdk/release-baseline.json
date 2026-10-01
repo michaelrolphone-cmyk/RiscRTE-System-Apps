@@ -1,13 +1,16 @@
 {
   "schema": 1,
   "repository": "michaelrolphone-cmyk/T5S3-Reader",
-  "release_index_commit": "7f07d124dc20435618ae32bb2f89e0f9595d6d9a",
+  "release_index_commit": "572746f4fcf3fde19947a066b7e5c8028cd76d21",
   "required_byte_parity": [
     "app_store",
     "springboard",
     "file_browser",
     "wifi_settings",
-    "font_manager"
+    "font_manager",
+    "button_remap",
+    "clear_cache",
+    "ota_update"
   ],
   "apps": [
     {
@@ -20,19 +23,19 @@
     },
     {
       "id": "button_remap",
-      "version": "1.0.0",
-      "sha256": "296d98355dc7d44e1e917b704858ba747f5192441a7b52d006a6f3e9090d9376",
-      "size": 4808,
-      "tag": "app-button_remap-v1.0.0",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-button_remap-v1.0.0/button_remap.elf"
+      "version": "1.0.1",
+      "sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154",
+      "size": 3812,
+      "tag": "app-button_remap-v1.0.1",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-button_remap-v1.0.1/button_remap.elf"
     },
     {
       "id": "clear_cache",
-      "version": "1.0.0",
-      "sha256": "b3e47191d1d7fa4f2e4a70501655c2f542056919ec0dbc1292bec3fbb3b93efc",
-      "size": 4556,
-      "tag": "app-clear_cache-v1.0.0",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-clear_cache-v1.0.0/clear_cache.elf"
+      "version": "1.0.1",
+      "sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30",
+      "size": 3560,
+      "tag": "app-clear_cache-v1.0.1",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-clear_cache-v1.0.1/clear_cache.elf"
     },
     {
       "id": "driver_manager",
@@ -92,11 +95,11 @@
     },
     {
       "id": "ota_update",
-      "version": "1.0.0",
-      "sha256": "2fa61ffeca506f22635f469d005fd335c2b4223037a500272abf81385c00e607",
-      "size": 5064,
-      "tag": "app-ota_update-v1.0.0",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-ota_update-v1.0.0/ota_update.elf"
+      "version": "1.0.1",
+      "sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5",
+      "size": 4060,
+      "tag": "app-ota_update-v1.0.1",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-ota_update-v1.0.1/ota_update.elf"
     },
     {
       "id": "package_manager",

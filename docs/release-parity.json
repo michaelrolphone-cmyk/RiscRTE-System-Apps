@@ -1,5 +1,5 @@
 {
-  "release_index_commit": "7f07d124dc20435618ae32bb2f89e0f9595d6d9a",
+  "release_index_commit": "572746f4fcf3fde19947a066b7e5c8028cd76d21",
   "apps": [
     {
       "id": "app_store",
@@ -12,21 +12,21 @@
     },
     {
       "id": "button_remap",
-      "version": "1.0.0",
-      "published_version": "1.0.0",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "3143d7f04d91f00b2e04af658f1001173d4c906218cf7bbee21026ab09ad40ef",
-      "published_sha256": "296d98355dc7d44e1e917b704858ba747f5192441a7b52d006a6f3e9090d9376"
+      "version": "1.0.1",
+      "published_version": "1.0.1",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154",
+      "published_sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154"
     },
     {
       "id": "clear_cache",
-      "version": "1.0.0",
-      "published_version": "1.0.0",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "e0696eed360d58674fd96f2ef7fc25852973dffbbb0701dc820b6bd3c1592f39",
-      "published_sha256": "b3e47191d1d7fa4f2e4a70501655c2f542056919ec0dbc1292bec3fbb3b93efc"
+      "version": "1.0.1",
+      "published_version": "1.0.1",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30",
+      "published_sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30"
     },
     {
       "id": "driver_manager",
@@ -93,12 +93,12 @@
     },
     {
       "id": "ota_update",
-      "version": "1.0.0",
-      "published_version": "1.0.0",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "4266eb392d3c3be53fab2f48a43af36d1266f14b4adc6a6bb9f69f1dc33ee364",
-      "published_sha256": "2fa61ffeca506f22635f469d005fd335c2b4223037a500272abf81385c00e607"
+      "version": "1.0.1",
+      "published_version": "1.0.1",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5",
+      "published_sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5"
     },
     {
       "id": "package_manager",

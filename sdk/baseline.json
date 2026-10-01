@@ -252,14 +252,14 @@
       "upstream_path": "test/native_apps/button_remap_test.c",
       "git_blob": "e5658347b8839ca6f1ecb454373fae255dd89da1",
       "sha256": "65100edf830df2fd9f5f980d30463b9dc7cba58c36a286ac86f163c6a71e4c70",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "source_commit": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df"
     },
     {
       "path": "test/native_apps/clear_cache_test.c",
       "upstream_path": "test/native_apps/clear_cache_test.c",
-      "git_blob": "d8665b9b7a81e3f8cfc0f98c43b7e5b7f79c5717",
-      "sha256": "5698a6f87bc8bea6d4753a9065e24907ba7e19a2c1b5e4cfdcd61d15ece7ab97",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "git_blob": "7ad940661f6a27a027ed1436c25cda676247c1ef",
+      "sha256": "8cc53a053e6130dc72a7e2d297e54c20d21dd135e678e65523a7774b0e58fa99",
+      "source_commit": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df"
     },
     {
       "path": "test/native_apps/language_settings_test.c",
@@ -278,9 +278,9 @@
     {
       "path": "test/native_apps/ota_update_test.c",
       "upstream_path": "test/native_apps/ota_update_test.c",
-      "git_blob": "192a18e227ac6738c0747f4d17579d8b86ec919d",
-      "sha256": "3a4b8c0fbd5840b8a45be79125767493081806e292dd1c61a1510d553d57130e",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "git_blob": "b992db08af9290d71232f29c4f664636a436af07",
+      "sha256": "7d8ec9c57b831c52f1f792f72e71694eb5c3447b5a0a514f60446a7484b2d1ea",
+      "source_commit": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df"
     },
     {
       "path": "test/native_apps/font_manager_test.c",
