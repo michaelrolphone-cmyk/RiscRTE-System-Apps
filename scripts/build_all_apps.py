@@ -31,6 +31,16 @@ def validate_inventory(apps):
                 app.get('manifest_path') != f'Apps/{app_id}.json' or
                 app.get('file_name') != f'{app_id}.elf'):
             raise ValueError('Inventory paths/filename do not match ID: ' + app_id)
+        additional = app.get('additional_sources', [])
+        if not isinstance(additional, list) or len(additional) > 32:
+            raise ValueError('Invalid additional source inventory')
+        paths = set()
+        for item in additional:
+            path = item.get('path') if isinstance(item, dict) else None
+            if (not isinstance(path, str) or not re.fullmatch(
+                    re.escape(f'Apps/{app_id}_') + r'[a-z0-9_]+\.(h|inc)', path) or path in paths):
+                raise ValueError('Unsafe or duplicate additional source path')
+            paths.add(path)
     return apps
 
 
@@ -71,7 +81,9 @@ def main():
         records.append({'id': app['id'], 'version': manifest['version'], 'file_name': elf.name,
                         'sha256': manifest['sha256'], 'size_bytes': manifest['size_bytes'],
                         'source_blob': git_blob(source.read_bytes()),
-                        'manifest_blob': git_blob(source.with_suffix('.json').read_bytes())})
+                        'manifest_blob': git_blob(source.with_suffix('.json').read_bytes()),
+                        'additional_source_blobs': {item['path']: git_blob((ROOT / item['path']).read_bytes())
+                                                    for item in app.get('additional_sources', [])}})
     cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:
         cc = str(pathlib.Path(os.environ.get('PLATFORMIO_CORE_DIR', pathlib.Path.home() / '.platformio')) / 'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')

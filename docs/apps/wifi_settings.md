@@ -2,7 +2,7 @@
 
 ## Purpose and classification
 
-Wi-Fi Networks is the RiscRTE front end for the firmware-owned wireless network selection workflow. Its manifest identifies it as `wifi_settings.elf`, version **1.0.1**, minimum firmware **1.1.24**, display name **Wi-Fi Networks**, icon `solid:f1eb`, categories `Connectivity` and `Settings`.
+Wi-Fi Networks is the RiscRTE front end for the firmware-owned wireless network selection workflow. Its manifest identifies it as `wifi_settings.elf`, version **1.0.2**, minimum firmware **1.1.24**, display name **Wi-Fi Networks**, icon `solid:f1eb`, categories `Connectivity` and `Settings`.
 
 The implementation is classified as a foundational System App because it exposes core network configuration used by normal system/app workflows. It does not implement Wi-Fi scanning, credential entry, association, or persistence itself; those operations are delegated to firmware through the System UI and Network APIs.
 
@@ -12,9 +12,9 @@ On entry the app obtains the App, Network, System UI, and UI APIs. If any requir
 
 The app reads the current connection state through `network->wifi_connected()` and then checks whether a previous firmware Wi-Fi-selection request has a result through `system_ui->wifi_take_result()`.
 
-If no result is waiting, the app requests the firmware Wi-Fi selector with `wifi_request(WIFI_COOKIE)` and returns. The fixed cookie is `0x5749464900000001ULL`.
+If no result is waiting or the returned cookie does not match `WIFI_COOKIE`, the app requests the firmware Wi-Fi selector with `wifi_request(WIFI_COOKIE)` and returns. The fixed cookie is `0x5749464900000001ULL`.
 
-When a result is available, the app renders a two-row list:
+The app renders a two-row list only when a matching result is available:
 1. **Wi-Fi status** — shows whether the selector was cancelled or completed, and whether the device is connected.
 2. **Choose another network** — opens the firmware Wi-Fi selector again.
 
@@ -48,7 +48,7 @@ The app obtains `t5_system_ui_api_v1` with `t5_system_ui_get_api(T5_SYSTEM_UI_AP
 - `wifi_request`
 - `wifi_take_result`
 
-`wifi_request` transfers control of network selection to firmware. `wifi_take_result` supplies three outputs used by the app: connected state, cancellation state, and a returned cookie. The current source does not branch on the returned cookie after retrieval.
+`wifi_request` transfers control of network selection to firmware. `wifi_take_result` supplies three outputs used by the app: connected state, cancellation state, and a returned cookie. Version 1.0.2 accepts only a result whose cookie equals `WIFI_COOKIE`; a mismatched result triggers a fresh selector request and immediate return instead of rendering another request’s result.
 
 ### `T5UiApi`
 
@@ -72,14 +72,15 @@ The app performs no direct storage operations and defines no persistent file for
 
 Confirmed behavior:
 - missing any required API pointer or required function causes an immediate return;
-- failure to obtain a pending selector result is treated as the initial/continuation handoff case: the app requests the selector and returns;
+- failure to obtain a pending selector result, or a cookie mismatch, is treated as a fresh handoff case: the app requests the selector and returns;
 - the UI contains exactly two rows;
 - return values from `wifi_request` are intentionally ignored by the current source;
 - no retry loop, timeout, or error-specific status text is implemented here.
 
-## Source files
+## Source and release identity
 
-- `Apps/wifi_settings.c`
-- `Apps/wifi_settings.json`
+Synchronized from Reader commit `be82695ea0ecb14525c0de1ddc78cd0c77e4614b`:
+- `Apps/wifi_settings.c`: `33fd4a4045daecce210e1e347bedd599e146245d`
+- `Apps/wifi_settings.json`: `d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3`
 
-Behavior outside these source and interface boundaries is not established by this document.
+The audited upstream release-index snapshot lists [Reader release `app-wifi_settings-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/tag/app-wifi_settings-v1.0.2), `wifi_settings.elf`, **3,084 bytes**, SHA-256 `e50adecc5308600b5637db6806aa933d24e70686ad86c77e34b755afd9998f32`. These are upstream published metadata; destination development builds are not independent releases and do not establish runtime parity.

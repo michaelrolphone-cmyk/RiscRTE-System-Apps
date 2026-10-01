@@ -15,5 +15,6 @@
   "ota_update",
   "font_manager",
   "font_selection",
-  "file_transfer"
+  "file_transfer",
+  "springboard_video"
 ]
