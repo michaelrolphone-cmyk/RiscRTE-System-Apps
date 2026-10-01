@@ -43,3 +43,10 @@ The historical no-strip probe remains evidence about older published builds,
 not current proof for the refreshed 1.0.1 apps. Image Viewer has no host UI fixture.
 Controller replay in Drivers still depends on historical Reader build context;
 this bounded update does not resolve that unrelated limitation.
+
+## Optional prospective packaging witness
+
+A [non-live Button Remap ZIP witness](PROSPECTIVE_U1_ZIP_WITNESS.md) now exercises
+the existing packer/manifest validator pinned to verified green U1 `c80bdee1`.
+This is one host-only future-compatibility result, separate from master parity;
+independent publication, runtime installation and cutover remain unqualified.

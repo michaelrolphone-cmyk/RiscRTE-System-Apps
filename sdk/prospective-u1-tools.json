@@ -1,0 +1,31 @@
+{
+  "purpose": "non-live prospective package witness only",
+  "repository": "michaelrolphone-cmyk/T5S3-Reader",
+  "commit": "c80bdee158eb7ef98096c7b000cd92f339c7442b",
+  "verified_green_runs": [
+    36835619954,
+    36835620195
+  ],
+  "files": [
+    {
+      "path": "scripts/pack_rte_zip.py",
+      "git_blob": "f7fe28d45af8b2077825a5564045cc67b4799820",
+      "sha256": "0461b527d908abb68d9110c6635083496de934573ddddc66505051c972da6f8b"
+    },
+    {
+      "path": "scripts/package_resource_paths.py",
+      "git_blob": "b414f93da0ce32d8b78680eddae097dea26caffd",
+      "sha256": "c7a495ca62fc5725c9da189a267a65b1fe630e9e43d44f5131445c2d5a74422b"
+    },
+    {
+      "path": "scripts/update_release_index.py",
+      "git_blob": "3e5164ab6ed3e7f3fad5ea21e80c039b9d29e66d",
+      "sha256": "951a4c5e74dc893091bb0bd9ee57a2f11db0ad8e4c091577504c4d808c842634"
+    },
+    {
+      "path": "scripts/app_manifest.py",
+      "git_blob": "c2daefafcf3ea869b9ef46cdc25feef7c2751468",
+      "sha256": "8f4e82498470533338aad437096ea7ae3088067d44e859cc754ed1cdfa6bc502"
+    }
+  ]
+}

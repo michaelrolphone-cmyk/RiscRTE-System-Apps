@@ -120,3 +120,5 @@ never overwrite external changes during synchronization.
 Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): eight synchronized apps match; ten historical artifact differences remain visible and are now [explained by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
 
 Current bounded refresh and verification limits: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
+
+Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).
