@@ -2,7 +2,7 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "525e32689203502a7b22f6350b7ef04f272271db",
+  "last_audited_upstream_sha": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
   "status": "partial",
   "migrated_count": 18,
   "parity_ready_count": 0,
@@ -10,13 +10,13 @@
     {
       "id": "app_store",
       "display_name": "App Store",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "min_firmware_version": "1.3.10",
       "file_name": "app_store.elf",
       "source_path": "Apps/app_store.c",
       "manifest_path": "Apps/app_store.json",
-      "upstream_source_sha": "50177ddbd885a3980cad3045445f28916518eea3",
-      "upstream_manifest_sha": "2f09e08c34c732329303a1f9a1a42e3ce124743d",
+      "upstream_source_sha": "cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a",
+      "upstream_manifest_sha": "0984daf21c7f744628da793018e1e50093bf8780",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -34,25 +34,35 @@
     {
       "id": "springboard",
       "display_name": "Apps",
-      "version": "1.2.2",
-      "min_firmware_version": "1.3.17",
+      "version": "1.3.0",
+      "min_firmware_version": "1.3.39",
       "file_name": "springboard.elf",
       "source_path": "Apps/springboard.c",
       "manifest_path": "Apps/springboard.json",
-      "upstream_source_sha": "671a1a9894359cdbd799c65933a10665e3d93a2d",
-      "upstream_manifest_sha": "300114bdd5face6568423146ac3e874142557efd",
-      "migration_status": "source-doc-parity-build-release-pending"
+      "upstream_source_sha": "929136ccef3e24df0f177b790cf0aee7ed5a5bec",
+      "upstream_manifest_sha": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
+      "migration_status": "source-doc-parity-build-release-pending",
+      "additional_sources": [
+        {
+          "path": "Apps/springboard_video.inc",
+          "upstream_blob": "78930d039534ae7592428ff8125c64eb67b0d946"
+        },
+        {
+          "path": "Apps/springboard_slide.h",
+          "upstream_blob": "4162adc873b20f20db1141d46effd6d52e4f75ac"
+        }
+      ]
     },
     {
       "id": "file_browser",
       "display_name": "File Browser",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "min_firmware_version": "1.3.8",
       "file_name": "file_browser.elf",
       "source_path": "Apps/file_browser.c",
       "manifest_path": "Apps/file_browser.json",
-      "upstream_source_sha": "97676067f1410ed55e3f351c43c2530bc7842849",
-      "upstream_manifest_sha": "8e14e164ea7c0867d1ad8128279e56b24d0467b8",
+      "upstream_source_sha": "c7a4882d7abf12e8fb51627947cb645f296abf66",
+      "upstream_manifest_sha": "9368525ea10333b070af48f8531cc23addf4cfbb",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -70,13 +80,13 @@
     {
       "id": "wifi_settings",
       "display_name": "Wi-Fi Networks",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "min_firmware_version": "1.1.24",
       "file_name": "wifi_settings.elf",
       "source_path": "Apps/wifi_settings.c",
       "manifest_path": "Apps/wifi_settings.json",
-      "upstream_source_sha": "28120a6c62cf71d8726daa7b3eaebf0601ec2483",
-      "upstream_manifest_sha": "3de13ab2b467315fa6ffbd6fa8d8635569623930",
+      "upstream_source_sha": "33fd4a4045daecce210e1e347bedd599e146245d",
+      "upstream_manifest_sha": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -178,13 +188,13 @@
     {
       "id": "font_manager",
       "display_name": "Manage Fonts",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "min_firmware_version": "1.1.24",
       "file_name": "font_manager.elf",
       "source_path": "Apps/font_manager.c",
       "manifest_path": "Apps/font_manager.json",
-      "upstream_source_sha": "f188b6f5eaf0ee7c2746cee3736ebbe9951ce141",
-      "upstream_manifest_sha": "2ae0e6992dfca124b682a81dc1b4f9976182bcb7",
+      "upstream_source_sha": "fe4852dd9adfbb7ed9903a92fa34795c224a4622",
+      "upstream_manifest_sha": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

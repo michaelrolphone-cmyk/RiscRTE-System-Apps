@@ -18,13 +18,17 @@ jobs:
       - name: Test SDK baseline, manifests, integrity and drift classification
         run: python -m unittest discover -s tests -v
       - name: Exercise app UI and provider interaction fixtures
-        run: python scripts/test_apps.py
+        run: |
+          python scripts/test_apps.py
+          python test/native_apps/file_browser_oversize_usb_handle_runtime_test.py
       - name: Install pinned public compiler
         run: |
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
       - name: Build and structurally validate all application ELFs
-        run: python scripts/build_all_apps.py
+        run: |
+          python scripts/build_all_apps.py
+          python scripts/check_release_parity.py
       - uses: actions/upload-artifact@v4
         with:
           name: system-app-development-${{ github.sha }}

@@ -1,0 +1,111 @@
+{
+  "reader_source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+  "release_index_commit": "7f07d124dc20435618ae32bb2f89e0f9595d6d9a",
+  "compiler": "xtensa-esp32s3-elf-gcc 8.4.0 (esp-2021r2-patch5)",
+  "apps": [
+    {
+      "id": "button_remap",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": false,
+      "size_bytes": 4808,
+      "sha256": "54014be7a4dbff37af665fc51c03689da8964f18bb82c7b44bda283e71fca137",
+      "published_sha256": "296d98355dc7d44e1e917b704858ba747f5192441a7b52d006a6f3e9090d9376"
+    },
+    {
+      "id": "clear_cache",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 4556,
+      "sha256": "b3e47191d1d7fa4f2e4a70501655c2f542056919ec0dbc1292bec3fbb3b93efc",
+      "published_sha256": "b3e47191d1d7fa4f2e4a70501655c2f542056919ec0dbc1292bec3fbb3b93efc"
+    },
+    {
+      "id": "driver_manager",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": false,
+      "size_bytes": 18628,
+      "sha256": "f3a584d5758f47c91b881f65502dec895b66add17326a780ea8c4c0f2b053cf2",
+      "published_sha256": "ce32b180f0fc1bbea117076a7159dd993915e53f937fab92db1f5619d72649c1"
+    },
+    {
+      "id": "file_transfer",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 3024,
+      "sha256": "684f3bca5f4ea3cc76ad7ff60de570954020e1180916bd2d6906e18471a95771",
+      "published_sha256": "684f3bca5f4ea3cc76ad7ff60de570954020e1180916bd2d6906e18471a95771"
+    },
+    {
+      "id": "font_selection",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 3836,
+      "sha256": "468e9549319dea78f22bac44d9fdc206706b34a63516ebc6857916e3bd42071e",
+      "published_sha256": "468e9549319dea78f22bac44d9fdc206706b34a63516ebc6857916e3bd42071e"
+    },
+    {
+      "id": "image_viewer",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 3924,
+      "sha256": "624d25088a6caec59674b54ee48a6a33b15218b50026579eba3c3ae3e9ecd24e",
+      "published_sha256": "624d25088a6caec59674b54ee48a6a33b15218b50026579eba3c3ae3e9ecd24e"
+    },
+    {
+      "id": "language_settings",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 6524,
+      "sha256": "7b083503c49ccdd2c774f17a106c14649722e4d6e7464187e502f266e629b12d",
+      "published_sha256": "7b083503c49ccdd2c774f17a106c14649722e4d6e7464187e502f266e629b12d"
+    },
+    {
+      "id": "ota_update",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 5064,
+      "sha256": "2fa61ffeca506f22635f469d005fd335c2b4223037a500272abf81385c00e607",
+      "published_sha256": "2fa61ffeca506f22635f469d005fd335c2b4223037a500272abf81385c00e607"
+    },
+    {
+      "id": "package_manager",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 10368,
+      "sha256": "62ba7a169030476d4f87985d58f6a6f619c0f69cb5f9ee55af5f30c0c5701904",
+      "published_sha256": "62ba7a169030476d4f87985d58f6a6f619c0f69cb5f9ee55af5f30c0c5701904"
+    },
+    {
+      "id": "sd_firmware_update",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 5344,
+      "sha256": "e2d7a5ed38511ef0195c69badf3154730fa07da5de5d99ccb559cb5abad0a2ed",
+      "published_sha256": "e2d7a5ed38511ef0195c69badf3154730fa07da5de5d99ccb559cb5abad0a2ed"
+    },
+    {
+      "id": "settings",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 3252,
+      "sha256": "68344680f7125a2b460ce2e9b5e2ed570c1292e0de1493ed3569a0e1e77cd901",
+      "published_sha256": "68344680f7125a2b460ce2e9b5e2ed570c1292e0de1493ed3569a0e1e77cd901"
+    },
+    {
+      "id": "status_bar_settings",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 3788,
+      "sha256": "aea1b9604702292eda69a6bd69ccdd6db784c161beb37783b32cad686ebce6ac",
+      "published_sha256": "aea1b9604702292eda69a6bd69ccdd6db784c161beb37783b32cad686ebce6ac"
+    },
+    {
+      "id": "time_zone",
+      "profile": "C11-Os-PIC-hidden-shared-SysV-no-strip-no-libgcc",
+      "byte_parity": true,
+      "size_bytes": 4364,
+      "sha256": "68537451a344af956ee36630eeafa33380498b780e9647b69d4d4c2554aae068",
+      "published_sha256": "68537451a344af956ee36630eeafa33380498b780e9647b69d4d4c2554aae068"
+    }
+  ]
+}

@@ -1,21 +1,21 @@
 {
-  "reader_commit": "524e2cb3ea27311b062f3d7f182668c6912829fc",
+  "reader_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
   "files": [
     {
       "id": "app_store",
       "path": "Apps/app_store.c",
-      "baseline_blob": "50177ddbd885a3980cad3045445f28916518eea3",
-      "external_blob": "50177ddbd885a3980cad3045445f28916518eea3",
+      "baseline_blob": "cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a",
+      "external_blob": "cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a",
       "upstream_blob": "cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "app_store",
       "path": "Apps/app_store.json",
-      "baseline_blob": "2f09e08c34c732329303a1f9a1a42e3ce124743d",
-      "external_blob": "2f09e08c34c732329303a1f9a1a42e3ce124743d",
+      "baseline_blob": "0984daf21c7f744628da793018e1e50093bf8780",
+      "external_blob": "0984daf21c7f744628da793018e1e50093bf8780",
       "upstream_blob": "0984daf21c7f744628da793018e1e50093bf8780",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "settings",
@@ -36,34 +36,50 @@
     {
       "id": "springboard",
       "path": "Apps/springboard.c",
-      "baseline_blob": "671a1a9894359cdbd799c65933a10665e3d93a2d",
-      "external_blob": "671a1a9894359cdbd799c65933a10665e3d93a2d",
+      "baseline_blob": "929136ccef3e24df0f177b790cf0aee7ed5a5bec",
+      "external_blob": "929136ccef3e24df0f177b790cf0aee7ed5a5bec",
       "upstream_blob": "929136ccef3e24df0f177b790cf0aee7ed5a5bec",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "springboard",
       "path": "Apps/springboard.json",
-      "baseline_blob": "300114bdd5face6568423146ac3e874142557efd",
-      "external_blob": "300114bdd5face6568423146ac3e874142557efd",
+      "baseline_blob": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
+      "external_blob": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
       "upstream_blob": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
-      "state": "upstream-only"
+      "state": "unchanged"
+    },
+    {
+      "id": "springboard",
+      "path": "Apps/springboard_video.inc",
+      "baseline_blob": "78930d039534ae7592428ff8125c64eb67b0d946",
+      "external_blob": "78930d039534ae7592428ff8125c64eb67b0d946",
+      "upstream_blob": "78930d039534ae7592428ff8125c64eb67b0d946",
+      "state": "unchanged"
+    },
+    {
+      "id": "springboard",
+      "path": "Apps/springboard_slide.h",
+      "baseline_blob": "4162adc873b20f20db1141d46effd6d52e4f75ac",
+      "external_blob": "4162adc873b20f20db1141d46effd6d52e4f75ac",
+      "upstream_blob": "4162adc873b20f20db1141d46effd6d52e4f75ac",
+      "state": "unchanged"
     },
     {
       "id": "file_browser",
       "path": "Apps/file_browser.c",
-      "baseline_blob": "97676067f1410ed55e3f351c43c2530bc7842849",
-      "external_blob": "97676067f1410ed55e3f351c43c2530bc7842849",
+      "baseline_blob": "c7a4882d7abf12e8fb51627947cb645f296abf66",
+      "external_blob": "c7a4882d7abf12e8fb51627947cb645f296abf66",
       "upstream_blob": "c7a4882d7abf12e8fb51627947cb645f296abf66",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "file_browser",
       "path": "Apps/file_browser.json",
-      "baseline_blob": "8e14e164ea7c0867d1ad8128279e56b24d0467b8",
-      "external_blob": "8e14e164ea7c0867d1ad8128279e56b24d0467b8",
+      "baseline_blob": "9368525ea10333b070af48f8531cc23addf4cfbb",
+      "external_blob": "9368525ea10333b070af48f8531cc23addf4cfbb",
       "upstream_blob": "9368525ea10333b070af48f8531cc23addf4cfbb",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "time_zone",
@@ -84,18 +100,18 @@
     {
       "id": "wifi_settings",
       "path": "Apps/wifi_settings.c",
-      "baseline_blob": "28120a6c62cf71d8726daa7b3eaebf0601ec2483",
-      "external_blob": "28120a6c62cf71d8726daa7b3eaebf0601ec2483",
+      "baseline_blob": "33fd4a4045daecce210e1e347bedd599e146245d",
+      "external_blob": "33fd4a4045daecce210e1e347bedd599e146245d",
       "upstream_blob": "33fd4a4045daecce210e1e347bedd599e146245d",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "wifi_settings",
       "path": "Apps/wifi_settings.json",
-      "baseline_blob": "3de13ab2b467315fa6ffbd6fa8d8635569623930",
-      "external_blob": "3de13ab2b467315fa6ffbd6fa8d8635569623930",
+      "baseline_blob": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
+      "external_blob": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
       "upstream_blob": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "package_manager",
@@ -228,18 +244,18 @@
     {
       "id": "font_manager",
       "path": "Apps/font_manager.c",
-      "baseline_blob": "f188b6f5eaf0ee7c2746cee3736ebbe9951ce141",
-      "external_blob": "f188b6f5eaf0ee7c2746cee3736ebbe9951ce141",
+      "baseline_blob": "fe4852dd9adfbb7ed9903a92fa34795c224a4622",
+      "external_blob": "fe4852dd9adfbb7ed9903a92fa34795c224a4622",
       "upstream_blob": "fe4852dd9adfbb7ed9903a92fa34795c224a4622",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "font_manager",
       "path": "Apps/font_manager.json",
-      "baseline_blob": "2ae0e6992dfca124b682a81dc1b4f9976182bcb7",
-      "external_blob": "2ae0e6992dfca124b682a81dc1b4f9976182bcb7",
+      "baseline_blob": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
+      "external_blob": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
       "upstream_blob": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
-      "state": "upstream-only"
+      "state": "unchanged"
     },
     {
       "id": "font_selection",

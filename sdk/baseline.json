@@ -187,9 +187,9 @@
     {
       "path": "test/native_apps/app_store_test.c",
       "upstream_path": "test/native_apps/app_store_test.c",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
       "git_blob": "d67619df4661c7728a5f0c88dd97791927424a41",
-      "sha256": "8b5760589338e844e96b3cfd2b8f0ca783fd6db44b430cdbd917dcc974dae213",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "sha256": "8b5760589338e844e96b3cfd2b8f0ca783fd6db44b430cdbd917dcc974dae213"
     },
     {
       "path": "test/native_apps/settings_test.c",
@@ -201,16 +201,16 @@
     {
       "path": "test/native_apps/springboard_test.c",
       "upstream_path": "test/native_apps/springboard_test.c",
-      "git_blob": "034ad605ee503895e72c2a26ac230e86791c621d",
-      "sha256": "6598674007dd8b2c702b20f3deea5e43820e76d20e78902264f9abf61dad176d",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+      "git_blob": "8d19e501b2e820bea2be02d70e2471f0e4a8dba8",
+      "sha256": "a33828f2e16cd622aad657d933e735534fb40f1b03ee21f24138229371a1e4cb"
     },
     {
       "path": "test/native_apps/file_browser_test.c",
       "upstream_path": "test/native_apps/file_browser_test.c",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
       "git_blob": "9544b5874061ee7253516de7321c3528cfa8901e",
-      "sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d"
     },
     {
       "path": "test/native_apps/time_zone_test.c",
@@ -222,9 +222,9 @@
     {
       "path": "test/native_apps/wifi_settings_test.c",
       "upstream_path": "test/native_apps/wifi_settings_test.c",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
       "git_blob": "d12b7b8636ba3bc25bb1f163541c25e8e41f5645",
-      "sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd"
     },
     {
       "path": "test/native_apps/package_manager_test.c",
@@ -285,9 +285,9 @@
     {
       "path": "test/native_apps/font_manager_test.c",
       "upstream_path": "test/native_apps/font_manager_test.c",
-      "git_blob": "1ca2a7eb752c546e1e0a4c126d7feb4e636cdfd7",
-      "sha256": "403efcc586a842894c95fe409ce3a3888bfff99a56013538e857ce6aa58203a4",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+      "git_blob": "50272ed7956ea0de3c24ec1d4acc8d2e372f2944",
+      "sha256": "0303ef31e977601f4cbb1b49a87ea729e32f7f9f135297bd0ebb1444a0d5a41e"
     },
     {
       "path": "test/native_apps/font_selection_test.c",
@@ -308,6 +308,27 @@
       "upstream_path": "lib/NativeApps/include/T5VideoApi.h",
       "git_blob": "25795a4a8b8befb8c17237a63e70de8f6b44e9e6",
       "sha256": "af3f2318e53e20efb4e8e9e98d93abae11f1788fe14640c7b02392c22d08c6a4"
+    },
+    {
+      "path": "test/native_apps/springboard_video_test.c",
+      "upstream_path": "test/native_apps/springboard_video_test.c",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+      "git_blob": "acf5c27fc12315bd980b5e5efbb62d0322cd9546",
+      "sha256": "117a81026466bb51d3cbf80ab3eb371401b6cff74a3f8a40c98c6f39bc75b756"
+    },
+    {
+      "path": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
+      "upstream_path": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+      "git_blob": "fe214f1eb86b154bcc7644c9176b84b4485db20a",
+      "sha256": "7a2d752e61cd64e60f2174d417fe41dca028b61f803eae3573f8185ee61dac24"
+    },
+    {
+      "path": "lib/NativeApps/include/T5HardwareTakeover.h",
+      "upstream_path": "lib/NativeApps/include/T5HardwareTakeover.h",
+      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
+      "git_blob": "33f7180cfb71a4f5fcef8a62f0bf9c61693b5e85",
+      "sha256": "4e4bdfd0e923a41dde2fada074ed79365aafa48190140cd18153ad95ed922664"
     }
   ],
   "exports_sha256": "a88ca6059db7ab70ee41f5557f30e41158812de58eb6d898902a48b0a19c1649",

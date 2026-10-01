@@ -1,4 +1,5 @@
 import json
+import hashlib
 import pathlib
 import sys
 import tempfile
@@ -7,6 +8,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'scripts'))
 from app_manifest import validate_manifest
 from build_all_apps import validate_inventory
 from check_baseline import ROOT, audit, check_sdk, classify, git_blob
+from check_release_parity import compare, validate_cohort
 from native_app_symbols import validate_imports
 from package_integrity import stamp_app_manifest
 
@@ -15,7 +17,7 @@ class PipelineTests(unittest.TestCase):
     def test_sdk_snapshot_and_inventory(self):
         check_sdk()
         rows = audit()['files']
-        self.assertEqual(len(rows), 36)
+        self.assertEqual(len(rows), 38)
         self.assertTrue(all(row['state'] == 'unchanged' for row in rows))
 
     def test_three_way_conflict_preservation(self):
@@ -61,6 +63,25 @@ class PipelineTests(unittest.TestCase):
                 validate_inventory([{**good, field: value}])
         with self.assertRaises(ValueError):
             validate_inventory([good, good])
+        with self.assertRaises(ValueError):
+            validate_inventory([{**good, 'additional_sources': [{'path': '../../unsafe.h'}]}])
+
+    def test_release_parity_uses_actual_bytes_and_version(self):
+        data = b'artifact'
+        expected = {'version': '1.0.0', 'size': len(data), 'sha256': hashlib.sha256(data).hexdigest()}
+        self.assertTrue(compare(expected, {'version': '1.0.0'}, data))
+        self.assertFalse(compare(expected, {'version': '1.0.1'}, data))
+        self.assertFalse(compare(expected, {'version': '1.0.0'}, b'changed!'))
+
+    def test_release_report_cannot_hide_nonrequired_apps(self):
+        rows = [{'id': 'one', 'file_name': 'one.elf'}, {'id': 'two', 'file_name': 'two.elf'}]
+        baseline = {'apps': rows, 'required_byte_parity': ['one']}
+        validate_cohort(baseline, {'apps': rows}, {'apps': rows})
+        for invalid in [rows[:1], rows + [rows[0]]]:
+            with self.assertRaises(ValueError):
+                validate_cohort(baseline, {'apps': invalid}, {'apps': rows})
+        with self.assertRaises(ValueError):
+            validate_cohort(baseline, {'apps': [{**rows[0], 'file_name': '../one.elf'}, rows[1]]}, {'apps': rows})
 
     def test_bad_manifest_name_rejected(self):
         with self.assertRaises(ValueError):

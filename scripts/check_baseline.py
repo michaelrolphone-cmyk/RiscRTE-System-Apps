@@ -46,10 +46,11 @@ def audit(reader=None, ref=None, root=ROOT):
         commit = subprocess.check_output(['git', '-C', str(reader), 'rev-parse', '--verify', (ref or 'HEAD') + '^{commit}'], text=True).strip()
     result = []
     for app in manifest['apps']:
-        for field, base_field in [('source_path', 'upstream_source_sha'), ('manifest_path', 'upstream_manifest_sha')]:
-            path = app[field]
+        inputs = [(app['source_path'], app['upstream_source_sha']),
+                  (app['manifest_path'], app['upstream_manifest_sha'])]
+        inputs += [(item['path'], item['upstream_blob']) for item in app.get('additional_sources', [])]
+        for path, base in inputs:
             local = git_blob((root / path).read_bytes())
-            base = app[base_field]
             upstream = None
             if reader:
                 upstream = subprocess.check_output(['git', '-C', str(reader), 'rev-parse', f'{commit}:{path}'], text=True).strip()
