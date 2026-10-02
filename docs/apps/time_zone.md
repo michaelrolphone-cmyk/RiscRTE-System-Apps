@@ -10,7 +10,7 @@ This page is derived from the actual `Apps/time_zone.c` implementation and `Apps
 
 - App/source ID: `time_zone`
 - Display name: `Time Zone`
-- Version: `1.0.0`
+- Version: `1.0.1`
 - Minimum firmware: `1.1.24`
 - Runtime artifact: `time_zone.elf`
 - Icon: `solid:f0ac`
@@ -145,3 +145,12 @@ The manifest names `time_zone.elf` as the application artifact. This repository 
 ## Not specified by this app
 
 The source does not establish the underlying zone database, UTC-offset computation, daylight-saving policy, persistence schema, RTC behavior, or network time synchronization. Those concerns are intentionally not documented here as app guarantees.
+
+
+## Current manifest, source and release provenance (2026-10-02)
+
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both declare version **1.0.1**; the application C source is synchronized without source edits. Source blob `7c5fd087bc12b7114cd9bbf61d1b142dfadf43c8`; manifest blob `350b5af07fee6b533f71addecf838b90e14ac259`. The manifest-only change from the recorded external baseline was the version field.
+
+Reader published release [`app-time_zone-v1.0.1`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-time_zone-v1.0.1/application-time_zone-1.0.1-xtensa-esp32s3.rte.zip) has a **4435**-byte package with SHA-256 `6d2ce40503961940f6afeb1fd262aac2a18ceda315d30c751b46e0ed72ae8249`. Its embedded `time_zone.elf` is **3404** bytes with SHA-256 `c6092d550e9f50a6454ce448e390f6aef735eb7831357ae31ea98b13497e313f`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
+
+This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.

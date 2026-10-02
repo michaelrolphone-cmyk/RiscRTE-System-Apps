@@ -29,9 +29,9 @@
       "id": "settings",
       "path": "Apps/settings.json",
       "baseline_blob": "83825514dc10a4ea1212ae9f648f8c69f7581c03",
-      "external_blob": "83825514dc10a4ea1212ae9f648f8c69f7581c03",
+      "external_blob": "984129ec3823717c6476f9fea70e5d079549b5e7",
       "upstream_blob": "984129ec3823717c6476f9fea70e5d079549b5e7",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "springboard",
@@ -45,9 +45,9 @@
       "id": "springboard",
       "path": "Apps/springboard.json",
       "baseline_blob": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
-      "external_blob": "11b3f479bd7c550d261228dab534c5b05aabf4c1",
+      "external_blob": "db221d3198ad2a81457bf079cda2b6446c1fe649",
       "upstream_blob": "db221d3198ad2a81457bf079cda2b6446c1fe649",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "springboard",
@@ -77,9 +77,9 @@
       "id": "file_browser",
       "path": "Apps/file_browser.json",
       "baseline_blob": "9368525ea10333b070af48f8531cc23addf4cfbb",
-      "external_blob": "9368525ea10333b070af48f8531cc23addf4cfbb",
+      "external_blob": "51fac9c13b01755f9542388a1026aee8fdff6e61",
       "upstream_blob": "51fac9c13b01755f9542388a1026aee8fdff6e61",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "time_zone",
@@ -93,9 +93,9 @@
       "id": "time_zone",
       "path": "Apps/time_zone.json",
       "baseline_blob": "676c0d5df652a2f398f05b157cb27ae6854b13f3",
-      "external_blob": "676c0d5df652a2f398f05b157cb27ae6854b13f3",
+      "external_blob": "350b5af07fee6b533f71addecf838b90e14ac259",
       "upstream_blob": "350b5af07fee6b533f71addecf838b90e14ac259",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "wifi_settings",
@@ -109,9 +109,9 @@
       "id": "wifi_settings",
       "path": "Apps/wifi_settings.json",
       "baseline_blob": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
-      "external_blob": "d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3",
+      "external_blob": "4bce101a4b1db443765d1e2aa82c2e8be8064fbd",
       "upstream_blob": "4bce101a4b1db443765d1e2aa82c2e8be8064fbd",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "package_manager",
@@ -157,9 +157,9 @@
       "id": "sd_firmware_update",
       "path": "Apps/sd_firmware_update.json",
       "baseline_blob": "e445e18c14ef70dd9280897c62b4380400d1b0b6",
-      "external_blob": "e445e18c14ef70dd9280897c62b4380400d1b0b6",
+      "external_blob": "d8dbd0821ab0116a5d6d9174a11955f26155638e",
       "upstream_blob": "d8dbd0821ab0116a5d6d9174a11955f26155638e",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "button_remap",
@@ -205,9 +205,9 @@
       "id": "language_settings",
       "path": "Apps/language_settings.json",
       "baseline_blob": "549e821c8c7a924f81a25082ad1604791fc823a2",
-      "external_blob": "549e821c8c7a924f81a25082ad1604791fc823a2",
+      "external_blob": "2ee7a2db76826820cb5bd9882f85e21f161ef74f",
       "upstream_blob": "2ee7a2db76826820cb5bd9882f85e21f161ef74f",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "status_bar_settings",
@@ -221,9 +221,9 @@
       "id": "status_bar_settings",
       "path": "Apps/status_bar_settings.json",
       "baseline_blob": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
-      "external_blob": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
+      "external_blob": "31d16b7c7afd5ee36049cf33eaab6751cfc03830",
       "upstream_blob": "31d16b7c7afd5ee36049cf33eaab6751cfc03830",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "ota_update",
@@ -253,9 +253,9 @@
       "id": "font_manager",
       "path": "Apps/font_manager.json",
       "baseline_blob": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
-      "external_blob": "1cc6a3544a3c2fa2af9fa1bfc51612f47c795cd1",
+      "external_blob": "6e8535179951a2d4a96d39a52340f0bb7dedf670",
       "upstream_blob": "6e8535179951a2d4a96d39a52340f0bb7dedf670",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "font_selection",
@@ -269,9 +269,9 @@
       "id": "font_selection",
       "path": "Apps/font_selection.json",
       "baseline_blob": "0e15372fff714f626d25b2f4dd73802bc8bd39eb",
-      "external_blob": "0e15372fff714f626d25b2f4dd73802bc8bd39eb",
+      "external_blob": "462193437c9e81b2cc251ed7d5b847d077fcdb16",
       "upstream_blob": "462193437c9e81b2cc251ed7d5b847d077fcdb16",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "image_viewer",
@@ -285,9 +285,9 @@
       "id": "image_viewer",
       "path": "Apps/image_viewer.json",
       "baseline_blob": "f84588b1f89a8906c59283007dfefdb2efafcbe7",
-      "external_blob": "f84588b1f89a8906c59283007dfefdb2efafcbe7",
+      "external_blob": "6fbf0c557886e26946de0a5451719f19bb43cccf",
       "upstream_blob": "6fbf0c557886e26946de0a5451719f19bb43cccf",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "file_transfer",
@@ -301,10 +301,10 @@
       "id": "file_transfer",
       "path": "Apps/file_transfer.json",
       "baseline_blob": "b3e315ece23e1e7a2ce0df46ef4e4dd71f8e0334",
-      "external_blob": "b3e315ece23e1e7a2ce0df46ef4e4dd71f8e0334",
+      "external_blob": "c521692a6bb3d6d878d8229454b9907b3721bf00",
       "upstream_blob": "c521692a6bb3d6d878d8229454b9907b3721bf00",
-      "state": "upstream-only"
+      "state": "converged"
     }
   ],
-  "scope_note": "Tracked System-Apps inputs only. Optional Camera Utility and changes owned by other external repositories are excluded. Twelve remaining Reader-manifest-only updates stay classified as upstream-only."
+  "scope_note": "All 38 tracked System-Apps source, manifest, and helper inputs match the accepted Reader master snapshot. Optional Camera Utility and other-repository-owned changes remain excluded."
 }

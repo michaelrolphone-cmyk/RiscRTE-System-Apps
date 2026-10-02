@@ -44,18 +44,20 @@ import and ELF checks only. The File Browser oversized-USB-handle regression
 also runs with sanitizers in CI. These are focused host fixtures, not exhaustive
 hardware certification.
 
-All 18 approved app C sources match the audited Reader commit. The current source-drift ledger records nine converged inputs, 17 unchanged inputs, and 12 manifest-only Reader updates still upstream-only.
+All 18 approved app C sources match the audited Reader commit. The current source-drift ledger records all 38 approved inputs matching Reader master: 17 unchanged and 21 converged from recorded baseline blobs.
 Springboard's `springboard_video.inc` and `springboard_slide.h` are tracked as
 additional source inputs, including their blobs in both audits and build evidence.
 
 `python scripts/check_release_parity.py` compares actual emitted ELF bytes,
-lengths and versions against `sdk/release-baseline.json`. Nine synchronized
-apps reproduce their published bytes exactly and are mandatory CI checks, including
-Status Bar Settings 1.0.2. Its 1.0.0 mismatch is superseded by the new current release identity. The
-other nine older released artifacts differ from these development builds; the
-report preserves those mismatches rather than hiding them. The 2026-10-02 manifest-only sync also brings Button Remap, Clear Reading Cache, and Firmware Update to their existing published 1.0.2 versions without changing their reproduced ELF bytes. The earlier [historical no-strip probe](historical-build-probe.json) remains a diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. The dated [lineage investigation](HISTORICAL_ELF_LINEAGE.md) explains the ten mismatches recorded on 2026-10-01; Status Bar Settings' old 1.0.0 mismatch has since been superseded by its exact 1.0.2 release match. Driver Manager's old probe also omitted the required source-owned unsigned-division helper. See [release parity](release-parity.json).
-None is ready for independent publication or Reader removal: ZIP/index and
-runtime integration remain separate unfinished work.
+lengths and versions against `sdk/release-baseline.json`. All 18 current Reader
+published identities now reproduce exactly; the original 11 mandatory exact-byte
+checks remain unchanged and pass. Seven mismatches recorded against superseded
+older releases were resolved by syncing the already-published current versions,
+not by weakening gates. Historical lineage remains in
+[HISTORICAL_ELF_LINEAGE.md](HISTORICAL_ELF_LINEAGE.md). The all-app source,
+manifest and helper inputs also match Reader master. This evidence does not make
+the external repository an independent publisher: package/catalog integration and
+U1 runtime behavior remain separate readiness gates.
 
 ## Safe ongoing synchronization
 
