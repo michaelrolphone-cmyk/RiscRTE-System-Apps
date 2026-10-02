@@ -5,7 +5,7 @@
 Remap Front Buttons is the RiscRTE settings application for assigning the four logical front-button roles Back, Confirm, Left, and Right to physical front buttons. It is classified as a foundational System App because it configures the device's core input mapping.
 
 Manifest metadata:
-- version **1.0.1**
+- version **1.0.2**
 - minimum firmware **1.1.24**
 - artifact `button_remap.elf`
 - icon `solid:f11c`
@@ -58,13 +58,8 @@ The app performs no direct file-system access and no network I/O.
 
 ## Source and build provenance
 
-Source and manifest synchronized from Reader `1e0188c1ff0234dd33fe054c9a6fb4fde36596df`:
-- `Apps/button_remap.c`: `ead8a4d0a346fc42b27bbf525c1ec91855d08c5f`
-- `Apps/button_remap.json`: `7fed7c136db258c971b7b76320e06f7dce753efc`
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies the matching application source and the manifest is synchronized at version **1.0.2**. Source blob `ead8a4d0a346fc42b27bbf525c1ec91855d08c5f`; manifest blob `2ed1cbc32dbf261f229a57e68e61e78d4e73112b`. The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
 
-The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
-The matching app host fixture is pinned there to the inspected Reader master.
-Published version 1.0.1 is copied unchanged, with canonical ELF identity from
-release-index `572746f4fcf3fde19947a066b7e5c8028cd76d21` recorded in `sdk/release-baseline.json`.
-Host fixtures exercise app/provider behavior; firmware touch/orientation dispatch
-and hardware operation are not qualified by this external repository run.
+Reader published release [`app-button_remap-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-button_remap-v1.0.2/application-button_remap-1.0.2-xtensa-esp32s3.rte.zip) contains a `4881`-byte package with SHA-256 `34900287855c4ae0f14d61defb99bca05dc539fe9474fedb8eae5aea252135ab`. The downloaded package contains `button_remap.elf` (3812 bytes, SHA-256 `46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154`). Release metadata and the downloaded workflow artifact agree; the ELF identity matches the earlier 1.0.1 release, so no additional bump was needed. The release was produced from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; these app inputs are unchanged at current Reader master.
+
+Host fixtures exercise app/provider behavior; device operation and U1 runtime readiness are not established by this evidence.

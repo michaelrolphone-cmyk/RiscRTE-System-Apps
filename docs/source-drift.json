@@ -173,9 +173,9 @@
       "id": "button_remap",
       "path": "Apps/button_remap.json",
       "baseline_blob": "7fed7c136db258c971b7b76320e06f7dce753efc",
-      "external_blob": "7fed7c136db258c971b7b76320e06f7dce753efc",
+      "external_blob": "2ed1cbc32dbf261f229a57e68e61e78d4e73112b",
       "upstream_blob": "2ed1cbc32dbf261f229a57e68e61e78d4e73112b",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "clear_cache",
@@ -189,9 +189,9 @@
       "id": "clear_cache",
       "path": "Apps/clear_cache.json",
       "baseline_blob": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
-      "external_blob": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
+      "external_blob": "a2c6be0f8f7430edb56caab03eef7db4a8aec4b0",
       "upstream_blob": "a2c6be0f8f7430edb56caab03eef7db4a8aec4b0",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "language_settings",
@@ -237,9 +237,9 @@
       "id": "ota_update",
       "path": "Apps/ota_update.json",
       "baseline_blob": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
-      "external_blob": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
+      "external_blob": "a777ffc968e481fecea8a51b9fa970fb856400d5",
       "upstream_blob": "a777ffc968e481fecea8a51b9fa970fb856400d5",
-      "state": "upstream-only"
+      "state": "converged"
     },
     {
       "id": "font_manager",
@@ -306,5 +306,5 @@
       "state": "upstream-only"
     }
   ],
-  "scope_note": "Tracked System-Apps inputs only. Optional Camera Utility and changes owned by other external repositories are excluded. Reader-manifest-only updates outside the three package workflow apps remain classified as upstream-only."
+  "scope_note": "Tracked System-Apps inputs only. Optional Camera Utility and changes owned by other external repositories are excluded. Twelve remaining Reader-manifest-only updates stay classified as upstream-only."
 }

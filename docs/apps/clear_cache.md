@@ -5,7 +5,7 @@
 Clear Reading Cache is the RiscRTE maintenance application that asks the firmware cache service to remove generated reading-cache data. It is classified as a foundational System App because it provides a core reader/system maintenance workflow.
 
 Manifest metadata:
-- version **1.0.1**
+- version **1.0.2**
 - minimum firmware **1.1.21**
 - artifact `clear_cache.elf`
 - icon `solid:f2ed`
@@ -55,13 +55,8 @@ It performs no direct file-system mutation, no network I/O, and defines no persi
 
 ## Source and build provenance
 
-Source and manifest synchronized from Reader `1e0188c1ff0234dd33fe054c9a6fb4fde36596df`:
-- `Apps/clear_cache.c`: `84c7daedf20b81cac64bb260a7a2fe3db19552be`
-- `Apps/clear_cache.json`: `beeb66a9ce48e4ef64987af46303dc4e2f4c396d`
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies the matching application source and the manifest is synchronized at version **1.0.2**. Source blob `84c7daedf20b81cac64bb260a7a2fe3db19552be`; manifest blob `a2c6be0f8f7430edb56caab03eef7db4a8aec4b0`. The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
 
-The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
-The matching app host fixture is pinned there to the inspected Reader master.
-Published version 1.0.1 is copied unchanged, with canonical ELF identity from
-release-index `572746f4fcf3fde19947a066b7e5c8028cd76d21` recorded in `sdk/release-baseline.json`.
-Host fixtures exercise app/provider behavior; firmware touch/orientation dispatch
-and hardware operation are not qualified by this external repository run.
+Reader published release [`app-clear_cache-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-clear_cache-v1.0.2/application-clear_cache-1.0.2-xtensa-esp32s3.rte.zip) contains a `4624`-byte package with SHA-256 `7456674bf42fcb73709a65cd648ec741f4db64181920f72d82533089adf872b1`. The downloaded package contains `clear_cache.elf` (3560 bytes, SHA-256 `8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30`). Release metadata and the downloaded workflow artifact agree; the ELF identity matches the earlier 1.0.1 release, so no additional bump was needed. The release was produced from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; these app inputs are unchanged at current Reader master.
+
+Host fixtures exercise app/provider behavior; device operation and U1 runtime readiness are not established by this evidence.
