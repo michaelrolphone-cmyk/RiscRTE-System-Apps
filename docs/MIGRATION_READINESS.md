@@ -1,5 +1,9 @@
 # External migration readiness — 2026-10-02
 
+## Scoped source-master recheck — Reader `3722a3f`
+
+At Reader master `3722a3f44a3294ba5e8adab830807a2523df3b03` and System-Apps main `45b6478ee270371c281d8b9ccd4e7643db82b24d`, the three requested app C/manifest pairs match byte-for-byte by Git blob identity: Button Remap `ead8a4d0` / `2ed1cbc3`, Clear Reading Cache `84c7daed` / `a2c6be0f`, and Firmware Update `2cd2738d` / `a777ffc9`. All remain at already-published version 1.0.2; no code or version update is needed. The current-main independent app build, fixtures, and ELF validation passed on run `36987620114`. The separate non-live package witness passed on `36987620020`; this does not establish U1 or cutover readiness. The previous full 38-input audit below remains pinned to its recorded Reader snapshot.
+
 Reader remains the read-only source of truth. This audit refreshed current Reader master after U1 #96 and CAM #344 merged.
 
 ## System-Apps source and release parity
