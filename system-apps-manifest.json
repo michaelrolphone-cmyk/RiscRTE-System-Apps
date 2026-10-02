@@ -2,7 +2,7 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "ca66db298c2e735f45e5029083a9bfbd7b6740bd",
+  "last_audited_upstream_sha": "82caa0997e913f01c1f5f9ab942d056bc9f04a82",
   "status": "partial",
   "migrated_count": 18,
   "parity_ready_count": 0,
@@ -10,13 +10,13 @@
     {
       "id": "app_store",
       "display_name": "App Store",
-      "version": "1.0.7",
+      "version": "1.0.8",
       "min_firmware_version": "1.3.10",
       "file_name": "app_store.elf",
       "source_path": "Apps/app_store.c",
       "manifest_path": "Apps/app_store.json",
-      "upstream_source_sha": "cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a",
-      "upstream_manifest_sha": "0984daf21c7f744628da793018e1e50093bf8780",
+      "upstream_source_sha": "25b362620a5c7866a4526080363acb6c8527a9cf",
+      "upstream_manifest_sha": "71274d3a079caaa7b87c2b7838425f58a14d9534",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -92,25 +92,25 @@
     {
       "id": "package_manager",
       "display_name": "Package Manager",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "min_firmware_version": "1.2.84",
       "file_name": "package_manager.elf",
       "source_path": "Apps/package_manager.c",
       "manifest_path": "Apps/package_manager.json",
-      "upstream_source_sha": "87ed7a414fcdadd052412d0b1d9b79234ad09b4b",
-      "upstream_manifest_sha": "87842e2b46e84a5c3701f103dc7f3adaf24d77b7",
+      "upstream_source_sha": "126fe86e20eaec0a92dd74872fff16def8ebf615",
+      "upstream_manifest_sha": "2176963ba3b355c24c71c12118e716ebe1c2e876",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "driver_manager",
       "display_name": "Driver Manager",
-      "version": "1.0.6",
+      "version": "1.0.8",
       "min_firmware_version": "1.3.10",
       "file_name": "driver_manager.elf",
       "source_path": "Apps/driver_manager.c",
       "manifest_path": "Apps/driver_manager.json",
-      "upstream_source_sha": "a609ba5a36a45ebcb949330a07f90e5712a6582b",
-      "upstream_manifest_sha": "34921197e720b2112e8415f6997dfd2d2739d3b6",
+      "upstream_source_sha": "b85473ec83247517421f360792212d5db9aeacf1",
+      "upstream_manifest_sha": "7b12d3524b7d395fbfe524a50e87d410273334b0",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

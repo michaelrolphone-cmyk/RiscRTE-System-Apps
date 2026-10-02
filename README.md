@@ -96,7 +96,7 @@ system-apps-manifest.json
 
 ## Migration and parity policy
 
-- App source and manifests remain byte-identical to the approved upstream blobs while `T5S3-Reader` is authoritative.
+- App source and manifests are synchronized by immutable upstream blob identity. `docs/source-drift.json` records any bounded upstream-only changes still awaiting their own refresh.
 - `system-apps-manifest.json` records the approved System App set, upstream identities, versions, and migration state.
 - Every approved app has one implementation-derived documentation page linked above.
 - Documentation is derived from current source, manifests, and ABI/interface headers; it does not define provider-owned behavior that the app source does not establish.
@@ -104,7 +104,7 @@ system-apps-manifest.json
 
 ## Current parity limitations
 
-This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Nine apps reproduce current published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. The tracked app sources and manifests are synchronized to the current audited Reader inputs recorded in `system-apps-manifest.json`. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Eleven apps reproduce their recorded published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. All 18 approved app sources match the latest audited Reader source; 15 manifest-only upstream updates remain visible as upstream-only in `docs/source-drift.json`. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
@@ -117,8 +117,8 @@ repositories and the criteria that still prevent deleting Reader copies.
 [Source drift](docs/source-drift.json) records a three-way immutable-blob audit;
 never overwrite external changes during synchronization.
 
-Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): nine synchronized apps match; nine older artifact differences remain visible and are now [explained by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
+Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): 11 of 18 identities match exactly, with seven older artifact differences retained and [classified by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
 
-Current bounded refresh and verification limits: [2026-10-02 provenance](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
+Current bounded refresh and verification limits: [U1 package workflow apps](docs/PARITY_REFRESH_U1_PACKAGE_APPS_2026-10-02.md), [Status Bar Settings](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
 
 Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).

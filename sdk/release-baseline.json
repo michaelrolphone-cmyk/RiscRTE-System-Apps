@@ -4,23 +4,29 @@
   "release_index_commit": "f9fb899c5e22da26280b97587fff79b42118e56a",
   "required_byte_parity": [
     "app_store",
-    "springboard",
-    "file_browser",
-    "wifi_settings",
-    "font_manager",
     "button_remap",
     "clear_cache",
+    "driver_manager",
+    "file_browser",
+    "font_manager",
     "ota_update",
-    "status_bar_settings"
+    "package_manager",
+    "springboard",
+    "status_bar_settings",
+    "wifi_settings"
   ],
   "apps": [
     {
       "id": "app_store",
-      "version": "1.0.7",
-      "sha256": "636678aebc3f936184da7d23a69be0d5a7e70b9ea5abafb8f47f6d564cb7fd12",
-      "size": 9640,
-      "tag": "app-app_store-v1.0.7",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-app_store-v1.0.7/app_store.elf"
+      "version": "1.0.8",
+      "sha256": "bc57c7f92a77e273a0b061bb1d189313689717453bb3b55d87f846c4cd74ea74",
+      "size": 9044,
+      "tag": "app-app_store-v1.0.8",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-app_store-v1.0.8/application-app_store-1.0.8-xtensa-esp32s3.rte.zip",
+      "source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "archive_size": 10077,
+      "archive_sha256": "bd05715b3d7e1177f9c2c399c6bdbf78367838f44e3a3455171614db63694d47",
+      "archive_member": "app_store.elf"
     },
     {
       "id": "button_remap",
@@ -40,11 +46,15 @@
     },
     {
       "id": "driver_manager",
-      "version": "1.0.6",
-      "sha256": "ce32b180f0fc1bbea117076a7159dd993915e53f937fab92db1f5619d72649c1",
-      "size": 18792,
-      "tag": "app-driver_manager-v1.0.6",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-driver_manager-v1.0.6/driver_manager.elf"
+      "version": "1.0.8",
+      "sha256": "eea98d1d7909e27871714882cba652bdf377d2ceec309d06ca105e012ab43867",
+      "size": 11852,
+      "tag": "app-driver_manager-v1.0.8",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-driver_manager-v1.0.8/application-driver_manager-1.0.8-xtensa-esp32s3.rte.zip",
+      "source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "archive_size": 12949,
+      "archive_sha256": "30591aed79ba0e85cd51235fd031cb6549ac23701f7f7737c46e4f138b48460e",
+      "archive_member": "driver_manager.elf"
     },
     {
       "id": "file_browser",
@@ -104,11 +114,15 @@
     },
     {
       "id": "package_manager",
-      "version": "1.1.0",
-      "sha256": "62ba7a169030476d4f87985d58f6a6f619c0f69cb5f9ee55af5f30c0c5701904",
-      "size": 10368,
-      "tag": "app-package_manager-v1.1.0",
-      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-package_manager-v1.1.0/package_manager.elf"
+      "version": "1.1.1",
+      "sha256": "1afd83a38e53ef5dae26a8da8cf0929aa7fdd9cd4bd28d417bb7b1458d2c4b07",
+      "size": 11704,
+      "tag": "app-package_manager-v1.1.1",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-package_manager-v1.1.1/application-package_manager-1.1.1-xtensa-esp32s3.rte.zip",
+      "source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "archive_size": 12798,
+      "archive_sha256": "392d8904c03d0270b01ae6f67373957cf0a73d9d9a7a12145928a869de857ced",
+      "archive_member": "package_manager.elf"
     },
     {
       "id": "sd_firmware_update",
@@ -158,5 +172,6 @@
       "tag": "app-wifi_settings-v1.0.2",
       "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-wifi_settings-v1.0.2/wifi_settings.elf"
     }
-  ]
+  ],
+  "supplemental_release_note": "The pinned Reader release-index commit remains the provenance for unchanged rows. The three U1 package workflow rows above use exact 2026-10-02 Reader release assets; archive size/digest are checked against GitHub release metadata and the downloaded workflow artifact."
 }

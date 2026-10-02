@@ -79,8 +79,9 @@
     {
       "path": "lib/NativeApps/include/T5PackageManagerApi.h",
       "upstream_path": "lib/NativeApps/include/T5PackageManagerApi.h",
-      "git_blob": "6feea1a07c81e364dfa926056ec766585d1e38f6",
-      "sha256": "acf274738ce71e519168ac606b37b04300be93eed72ba181e2d18d6c7e34053c"
+      "git_blob": "6a2802e25dbcee5d8f31f3046250fac1c8bc3965",
+      "sha256": "0b468ff5d6a45a79a82c9003dc6270a4859c821850250693fbb60148d34bdf2c",
+      "source_commit": "82caa0997e913f01c1f5f9ab942d056bc9f04a82"
     },
     {
       "path": "lib/NativeApps/include/T5PackageVersion.h",
@@ -187,9 +188,9 @@
     {
       "path": "test/native_apps/app_store_test.c",
       "upstream_path": "test/native_apps/app_store_test.c",
-      "source_commit": "be82695ea0ecb14525c0de1ddc78cd0c77e4614b",
-      "git_blob": "d67619df4661c7728a5f0c88dd97791927424a41",
-      "sha256": "8b5760589338e844e96b3cfd2b8f0ca783fd6db44b430cdbd917dcc974dae213"
+      "source_commit": "82caa0997e913f01c1f5f9ab942d056bc9f04a82",
+      "git_blob": "0690e33c54d4bbcb511f7e3606767233cc5d7041",
+      "sha256": "61de94d5a35c1f14cce0b0b4b56002fe147b617359d00ec31e5c30d217f3670a"
     },
     {
       "path": "test/native_apps/settings_test.c",
@@ -231,14 +232,14 @@
       "upstream_path": "test/native_apps/package_manager_test.c",
       "git_blob": "bd081c463fa90782c0bac2b3bc6d96383f1cd863",
       "sha256": "979f252f2356b61bee89e163511fd8db7e77c711c39d65891b146ade92410cb0",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "source_commit": "82caa0997e913f01c1f5f9ab942d056bc9f04a82"
     },
     {
       "path": "test/native_apps/driver_manager_test.c",
       "upstream_path": "test/native_apps/driver_manager_test.c",
-      "git_blob": "7d9b5e2c3a071580c5b54cd43e1a5634c835f135",
-      "sha256": "d99333cdbba9717853af9df7b26829aae3dd8b7da89b5f60a0136994226c954c",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "git_blob": "45dce0bfab696470d8416c7d9e740fd1f24e1a1b",
+      "sha256": "603e786f324fc41eb4912b0ae4d78c9d3235f27fd315d6b11e09490394509cdc",
+      "source_commit": "82caa0997e913f01c1f5f9ab942d056bc9f04a82"
     },
     {
       "path": "test/native_apps/sd_firmware_update_test.c",
