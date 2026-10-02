@@ -3,12 +3,18 @@
   "apps": [
     {
       "id": "app_store",
-      "version": "1.0.7",
-      "published_version": "1.0.7",
+      "version": "1.0.8",
+      "published_version": "1.0.8",
       "byte_parity": true,
       "required": true,
-      "built_sha256": "636678aebc3f936184da7d23a69be0d5a7e70b9ea5abafb8f47f6d564cb7fd12",
-      "published_sha256": "636678aebc3f936184da7d23a69be0d5a7e70b9ea5abafb8f47f6d564cb7fd12"
+      "built_sha256": "bc57c7f92a77e273a0b061bb1d189313689717453bb3b55d87f846c4cd74ea74",
+      "published_sha256": "bc57c7f92a77e273a0b061bb1d189313689717453bb3b55d87f846c4cd74ea74",
+      "published_tag": "app-app_store-v1.0.8",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 10077,
+      "published_archive_sha256": "bd05715b3d7e1177f9c2c399c6bdbf78367838f44e3a3455171614db63694d47",
+      "published_archive_member": "app_store.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-app_store-v1.0.8/application-app_store-1.0.8-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "button_remap",
@@ -30,12 +36,18 @@
     },
     {
       "id": "driver_manager",
-      "version": "1.0.6",
-      "published_version": "1.0.6",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "a7960e50f745b7e5ecda77014e7abb7d84e974d4b58556cbd2f369f02fbaa54a",
-      "published_sha256": "ce32b180f0fc1bbea117076a7159dd993915e53f937fab92db1f5619d72649c1"
+      "version": "1.0.8",
+      "published_version": "1.0.8",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "eea98d1d7909e27871714882cba652bdf377d2ceec309d06ca105e012ab43867",
+      "published_sha256": "eea98d1d7909e27871714882cba652bdf377d2ceec309d06ca105e012ab43867",
+      "published_tag": "app-driver_manager-v1.0.8",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 12949,
+      "published_archive_sha256": "30591aed79ba0e85cd51235fd031cb6549ac23701f7f7737c46e4f138b48460e",
+      "published_archive_member": "driver_manager.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-driver_manager-v1.0.8/application-driver_manager-1.0.8-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "file_browser",
@@ -102,12 +114,18 @@
     },
     {
       "id": "package_manager",
-      "version": "1.1.0",
-      "published_version": "1.1.0",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "7b5fe984d6b8c53b715c3d73b5e942a5a89553eed69f25805e280801f1b96e38",
-      "published_sha256": "62ba7a169030476d4f87985d58f6a6f619c0f69cb5f9ee55af5f30c0c5701904"
+      "version": "1.1.1",
+      "published_version": "1.1.1",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "1afd83a38e53ef5dae26a8da8cf0929aa7fdd9cd4bd28d417bb7b1458d2c4b07",
+      "published_sha256": "1afd83a38e53ef5dae26a8da8cf0929aa7fdd9cd4bd28d417bb7b1458d2c4b07",
+      "published_tag": "app-package_manager-v1.1.1",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 12798,
+      "published_archive_sha256": "392d8904c03d0270b01ae6f67373957cf0a73d9d9a7a12145928a869de857ced",
+      "published_archive_member": "package_manager.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-package_manager-v1.1.1/application-package_manager-1.1.1-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "sd_firmware_update",
@@ -163,5 +181,6 @@
       "built_sha256": "e50adecc5308600b5637db6806aa933d24e70686ad86c77e34b755afd9998f32",
       "published_sha256": "e50adecc5308600b5637db6806aa933d24e70686ad86c77e34b755afd9998f32"
     }
-  ]
+  ],
+  "supplemental_release_note": "The pinned Reader release-index commit remains the provenance for unchanged rows. The three U1 package workflow rows above use exact 2026-10-02 Reader release assets; archive size/digest are checked against GitHub release metadata and the downloaded workflow artifact."
 }

@@ -1,82 +1,23 @@
 # App Store
 
-## Purpose and classification
+App Store installs and updates first party application packages and exposes the SD Inbox workflow. It is one of the foundational system applications.
 
-App Store is the foundational RiscRTE application installation, update, and SD-package management interface. It is classified as a System App because installing and updating applications is a first-use/core software-management workflow.
+## Manifest
 
-## Manifest metadata
-
-- Version: **1.0.7**
+- Version: **1.0.8** (Reader 1.0.7 → 1.0.8)
 - Minimum firmware: **1.3.10**
 - Artifact: `app_store.elf`
 - Icon: `solid:f019`
 - Categories: `System`, `Software`
 
-## Host APIs
+## Source behavior
 
-### `T5AppApi`
+The app uses the versioned `T5PackageManagerApi` for its online release list and staged packages. It filters the online catalog to application packages, then displays compatibility, installed-version, update, and blocked-stage state. The SD Inbox accepts `.rte.zip` archives and legacy package directories under `/sd/Packages/Inbox`; it previews packages before offering installation. Removal is an explicit confirmed action when the selected package has no allowed staged update.
 
-The source requires the application catalog operations `app_catalog_refresh`, `app_catalog_count`, `app_catalog_get`, and `app_catalog_download`. When present it also uses `app_catalog_manifest_get`, `app_catalog_version_get`, `installed_app_version_get`, `app_catalog_download_with_progress`, and `app_catalog_download_last_error`.
+The source checks the API version and the struct size before using the archive and online API tail. It bounds both catalog and Inbox rows to 64, accepts only safe Inbox basenames, and delegates network transfer, archive validation, package publishing, and persistent state to firmware services. This UI does not activate installed packages directly.
 
-It uses `dir_open`, `dir_next`, and `dir_close` to enumerate `/sd/Packages/Inbox`, and disables normal Back-to-exit behavior while its own UI loop is active.
+## Current source and release evidence
 
-### `T5PackageManagerApi`
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies source blob `25b362620a5c7866a4526080363acb6c8527a9cf` and manifest blob `71274d3a079caaa7b87c2b7838425f58a14d9534`. The app uses `T5PackageManagerApi.h` blob `6a2802e25dbcee5d8f31f3046250fac1c8bc3965`; its Reader regression fixture is `0690e33c54d4bbcb511f7e3606767233cc5d7041`.
 
-The package manager is version/size checked and must expose `preview`, `install`, and `uninstall`. It is used for offline application packages staged under the SD Inbox.
-
-### `T5UiApi`
-
-The app requires list rendering, event polling, hit testing, and next/previous selection helpers. The source also uses `T5_UI_LIST_ICON_COMPACT` when a row already carries an installed/update/download state icon; the current UI ABI defines that flag as bit 4 and firmware owns the rendered compact size.
-
-## User-visible workflows
-
-The app has two primary views.
-
-**Release catalog:** refreshes the firmware-owned application catalog, displays compatibility and installed-version state, and installs or updates selected applications.
-
-**SD Inbox:** enumerates package directories beneath `/sd/Packages/Inbox`, previews application packages, installs eligible staged packages, and allows uninstall of an installed package after explicit confirmation when no update is allowed.
-
-Tapping the header from the release catalog opens and rebuilds SD Inbox. From SD Inbox, it attempts a release refresh and switches only on success. Version 1.0.7 keeps the existing SD Inbox view and rows when that refresh fails, resets selection to row 0, and reports `Release refresh failed; SD packages available`. Directional events move selection. Confirm acts on the selected row. A tap on a different row selects it; a tap on the already-selected row activates it. Back or Exit restores normal Back behavior and returns.
-
-## Catalog state and icons
-
-The UI is bounded to **64** rows. Current source distinguishes:
-
-- incompatible release: `Requires newer firmware`
-- installed and equal to latest: `Installed`
-- installed with a different catalog version: `Update available` (the app compares version strings for equality; it does not order versions)
-- not installed: `Not installed`
-
-The source uses the shared UI row-state flags to show the firmware-rendered **installed**, **update**, and **download** state icons. Any row with one of those state icons also sets `T5_UI_LIST_ICON_COMPACT`; update rows retain value highlighting. The app does not choose a pixel size itself.
-
-## Download/install behavior
-
-Before catalog refresh, the app renders a connection/loading state. For install/update, it refuses incompatible manifests and no-ops when the installed version already equals the catalog version.
-
-If the host exposes `app_catalog_download_with_progress`, the app renders a progress screen and redraws when the 10%-step bucket changes (buckets 0 through 10); the displayed percentage and byte counts are derived from the callback. Older compatible firmware falls back to `app_catalog_download`.
-
-After a failed catalog install, the app uses `app_catalog_download_last_error` when available and otherwise reports a generic installation failure.
-
-The app itself does not implement the network transport, endpoint selection, TLS, verification, or publishing transaction; those belong to firmware catalog/package services.
-
-## SD Inbox behavior
-
-Only directory entries that preview as `T5_PACKAGE_APPLICATION` are shown. Truncated package-directory identities are rejected rather than silently shortened.
-
-Rows surface valid-installation state, installed version, update availability, fresh-install readiness, and dependency/version/stage blocks. Fresh or updated staged packages call `manager->install(folder)`. Installed packages with no allowed staged install can reach the explicit uninstall confirmation path and then `manager->uninstall(T5_PACKAGE_APPLICATION, id)`.
-
-## Storage and persistence
-
-The only direct filesystem enumeration in this app is `/sd/Packages/Inbox`. The source defines no app-specific persistent state file, direct hardware access, or dynamic provider capability; catalog/package operations mutate installed applications through firmware services.
-
-## Failure handling and constraints
-
-Missing required API tables/function pointers cause startup to return. Initial catalog refresh failure leaves the release list empty but SD packages remain accessible through the header. A failed refresh when returning from SD Inbox preserves the inbox view and data, so subsequent actions still operate on packages. Package install/uninstall refusals and catalog-download failures are reported in the status line. String and row buffers are statically bounded.
-
-## Source and release identity
-
-Synchronized from Reader commit `be82695ea0ecb14525c0de1ddc78cd0c77e4614b`:
-- `Apps/app_store.c`: `cbf5aa30e6d5d12a093c7cc12daee4eb6a308b1a`
-- `Apps/app_store.json`: `0984daf21c7f744628da793018e1e50093bf8780`
-
-The audited upstream release-index snapshot lists [Reader release `app-app_store-v1.0.7`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/tag/app-app_store-v1.0.7), `app_store.elf`, **9,640 bytes**, SHA-256 `636678aebc3f936184da7d23a69be0d5a7e70b9ea5abafb8f47f6d564cb7fd12`. These are upstream published metadata; destination development builds are not independent releases and do not establish runtime parity.
+Reader's released [1.0.8 package](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-app_store-v1.0.8/application-app_store-1.0.8-xtensa-esp32s3.rte.zip) is 10,077 bytes with SHA-256 `bd05715b3d7e1177f9c2c399c6bdbf78367838f44e3a3455171614db63694d47`. Its `app_store.elf` member is 9,044 bytes, SHA-256 `bc57c7f92a77e273a0b061bb1d189313689717453bb3b55d87f846c4cd74ea74`. The independent Xtensa build reproduced that ELF exactly. This evidence does not establish U1 runtime installation or cutover readiness.

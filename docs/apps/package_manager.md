@@ -1,76 +1,23 @@
 # Package Manager
 
-## Purpose and classification
+Package Manager is the foundational UI for inspecting installed packages and staged packages, then installing, replacing, downgrading, or uninstalling with explicit confirmation.
 
-Package Manager is the foundational RiscRTE interface for inspecting installed managed packages and packages staged under `/sd/Packages/Inbox`, then performing verified install, replacement/downgrade, or uninstall actions. It is classified as a System App because package lifecycle management is a core software-management workflow.
+## Manifest
 
-## Manifest metadata
-
-- Version: **1.1.0**
-- Minimum firmware: **1.2.84**
+- Version: **1.1.1** (Reader 1.1.0 → 1.1.1)
+- Minimum firmware: **1.2.8**
 - Artifact: `package_manager.elf`
 - Icon: `solid:f187`
 - Categories: `System`, `Software`
 
-## Host APIs
+## Source behavior
 
-### `T5AppApi`
+The app builds a bounded 64-row inventory from installed packages, legacy staged directories, and `.rte.zip` archives in `/sd/Packages/Inbox`. It can also display the online generic release catalog when the firmware exposes the size-checked `T5PackageManagerApi` online tail. Package kind, identity, installed version, dependencies, and stage state determine which actions are available.
 
-Used for `/sd/Packages/Inbox` directory enumeration and for owning/restoring Back-to-exit behavior.
+Fresh installs, online installs, replacement or downgrade, and uninstall each pass through firmware package-manager calls. Replace/downgrade actions require matching package kind and ID, valid installed and staged generations, a distinct parseable three-part version, and confirmation. The app does not handle archive parsing, integrity validation, persistent generations, network transport, hardware access, or package activation directly.
 
-### `T5PackageManagerApi`
+## Current source and release evidence
 
-The source validates the API version and struct size through the `replace` member and requires `preview`, `install`, `uninstall`, `installed_refresh`, `installed_count`, `installed_get`, and `replace`.
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies source blob `126fe86e20eaec0a92dd74872fff16def8ebf615` and manifest blob `2176963ba3b355c24c71c12118e716ebe1c2e876`. The app uses `T5PackageManagerApi.h` blob `6a2802e25dbcee5d8f31f3046250fac1c8bc3965`; its Reader regression fixture is `bd081c463fa90782c0bac2b3bc6d96383f1cd863`.
 
-### `T5UiApi`
-
-Used for list rendering, event polling, touch hit testing, and previous/next index movement.
-
-## Inventory construction
-
-The app stores at most **64** rows in static memory.
-
-It first refreshes installed packages and retrieves each installed record. For each installed package it attempts `preview(installed.id)`; a staged package is attached only when package kind and ID match the installed record.
-
-It then enumerates directories under `/sd/Packages/Inbox`. A preview that succeeds and is not already represented as the staged counterpart of an installed package becomes an Inbox-only row.
-
-Invalid installed generations are displayed as requiring recovery and cannot be mutated by this app.
-
-## Version comparison
-
-Replacement/downgrade decisions use a local parser that accepts exactly three dot-separated numeric components with 32-bit overflow checks. Invalid version text compares as equal for action-ordering purposes, so the app does not infer a newer/older relationship from malformed versions.
-
-## Actions
-
-Actions are confirmation-gated.
-
-**Fresh install:** an Inbox-only row is actionable only when `preview.install_allowed` is true. Confirmation calls `manager->install(staged.id)`.
-
-**Replace/downgrade:** an installed row offers replacement only when both installed and staged generations are valid, IDs/kinds match, and the parsed versions differ. The title distinguishes **Replace with staged version** from **Downgrade to staged version**. Confirmation calls `manager->replace(staged.id)`.
-
-**Uninstall:** a valid installed row can offer uninstall. Confirmation calls `manager->uninstall(installed.kind, installed.id)`. Failure text explicitly notes that mapped/active users may need to stop first.
-
-The UI text states that fresh install publishes verified staged bytes without activation. The app does not manipulate package generations directly.
-
-## Navigation and input
-
-Previous/Next move selection. Confirm opens management for the selected row. A tap on a different row selects it; a tap on the selected row opens its actions. Tapping the header refreshes the inventory and resets selection to row zero. Back/Exit restores normal Back behavior and returns.
-
-## Storage and persistence
-
-The only direct filesystem path is `/sd/Packages/Inbox`. The app defines no private persistent state file. Package generations, verification metadata, mappings, and recovery storage are owned by the package-manager service.
-
-## Network and hardware
-
-The source performs no network operations and no direct external-hardware access.
-
-## Failure handling and implementation limits
-
-Missing required APIs cause startup to return. Failed installed-package metadata calls are skipped. Failed/blocked package operations are reported in the status line. Confirm/cancel menus do not mutate until Confirm. Static limits include 64 inventory rows, 88-byte title buffers, 160-byte subtitle buffers, and 192-byte status text.
-
-## Source identity
-
-Current upstream source of truth:
-
-- `Apps/package_manager.c`: `87ed7a414fcdadd052412d0b1d9b79234ad09b4b`
-- `Apps/package_manager.json`: `87842e2b46e84a5c3701f103dc7f3adaf24d77b7`
+Reader's released [1.1.1 package](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-package_manager-v1.1.1/application-package_manager-1.1.1-xtensa-esp32s3.rte.zip) is 12,798 bytes with SHA-256 `392d8904c03d0270b01ae6f67373957cf0a73d9d9a7a12145928a869de857ced`. Its `package_manager.elf` member is 11,704 bytes, SHA-256 `1afd83a38e53ef5dae26a8da8cf0929aa7fdd9cd4bd28d417bb7b1458d2c4b07`. The independent Xtensa build reproduced that ELF exactly. This evidence does not establish U1 runtime installation or cutover readiness.
