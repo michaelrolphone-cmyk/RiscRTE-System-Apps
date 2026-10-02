@@ -104,7 +104,7 @@ system-apps-manifest.json
 
 ## Current parity limitations
 
-This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Eleven apps reproduce their recorded published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. All 18 approved app sources match the latest audited Reader source; 15 manifest-only upstream updates remain visible as upstream-only in `docs/source-drift.json`. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Eleven apps reproduce their recorded published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. All 18 approved app sources match the latest audited Reader source; 12 manifest-only upstream updates remain visible as upstream-only in `docs/source-drift.json`. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
@@ -119,6 +119,6 @@ never overwrite external changes during synchronization.
 
 Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): 11 of 18 identities match exactly, with seven older artifact differences retained and [classified by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
 
-Current bounded refresh and verification limits: [U1 package workflow apps](docs/PARITY_REFRESH_U1_PACKAGE_APPS_2026-10-02.md), [Status Bar Settings](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
+Current bounded refresh and verification limits: [published manifest reconciliation](docs/PARITY_REFRESH_MANIFESTS_2026-10-02.md), [U1 package workflow apps](docs/PARITY_REFRESH_U1_PACKAGE_APPS_2026-10-02.md), [Status Bar Settings](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
 
 Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).

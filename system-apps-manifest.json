@@ -128,25 +128,25 @@
     {
       "id": "button_remap",
       "display_name": "Remap Front Buttons",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "min_firmware_version": "1.1.24",
       "file_name": "button_remap.elf",
       "source_path": "Apps/button_remap.c",
       "manifest_path": "Apps/button_remap.json",
       "upstream_source_sha": "ead8a4d0a346fc42b27bbf525c1ec91855d08c5f",
-      "upstream_manifest_sha": "7fed7c136db258c971b7b76320e06f7dce753efc",
+      "upstream_manifest_sha": "2ed1cbc32dbf261f229a57e68e61e78d4e73112b",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
       "id": "clear_cache",
       "display_name": "Clear Reading Cache",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "min_firmware_version": "1.1.21",
       "file_name": "clear_cache.elf",
       "source_path": "Apps/clear_cache.c",
       "manifest_path": "Apps/clear_cache.json",
       "upstream_source_sha": "84c7daedf20b81cac64bb260a7a2fe3db19552be",
-      "upstream_manifest_sha": "beeb66a9ce48e4ef64987af46303dc4e2f4c396d",
+      "upstream_manifest_sha": "a2c6be0f8f7430edb56caab03eef7db4a8aec4b0",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {
@@ -176,13 +176,13 @@
     {
       "id": "ota_update",
       "display_name": "Firmware Update",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "min_firmware_version": "1.1.22",
       "file_name": "ota_update.elf",
       "source_path": "Apps/ota_update.c",
       "manifest_path": "Apps/ota_update.json",
       "upstream_source_sha": "2cd2738da338dbf52f28aaad611def8aba1bad43",
-      "upstream_manifest_sha": "7e43fc14f94b59bd02b3d46f937f9d6df08495e7",
+      "upstream_manifest_sha": "a777ffc968e481fecea8a51b9fa970fb856400d5",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

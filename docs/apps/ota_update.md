@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-Firmware Update is the foundational OTA firmware-update workflow. Upstream version **1.0.1** requires firmware **1.1.22** and builds as `ota_update.elf`.
+Firmware Update is the foundational OTA firmware-update workflow. Upstream version **1.0.2** requires firmware **1.1.22** and builds as `ota_update.elf`.
 
 ## Confirmed workflow
 
@@ -20,13 +20,8 @@ During installation, a provider callback reads `processed_size` and `total_size`
 
 ## Source and build provenance
 
-Source and manifest synchronized from Reader `1e0188c1ff0234dd33fe054c9a6fb4fde36596df`:
-- `Apps/ota_update.c`: `2cd2738da338dbf52f28aaad611def8aba1bad43`
-- `Apps/ota_update.json`: `7e43fc14f94b59bd02b3d46f937f9d6df08495e7`
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies the matching application source and the manifest is synchronized at version **1.0.2**. Source blob `2cd2738da338dbf52f28aaad611def8aba1bad43`; manifest blob `a777ffc968e481fecea8a51b9fa970fb856400d5`. The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
 
-The SDK/ABI baseline remains independently pinned in `sdk/baseline.json`.
-The matching app host fixture is pinned there to the inspected Reader master.
-Published version 1.0.1 is copied unchanged, with canonical ELF identity from
-release-index `572746f4fcf3fde19947a066b7e5c8028cd76d21` recorded in `sdk/release-baseline.json`.
-Host fixtures exercise app/provider behavior; firmware touch/orientation dispatch
-and hardware operation are not qualified by this external repository run.
+Reader published release [`app-ota_update-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-ota_update-v1.0.2/application-ota_update-1.0.2-xtensa-esp32s3.rte.zip) contains a `5108`-byte package with SHA-256 `ed71c3f7d2de88f48e0758e0000b03cbb35d86e75b91673b3fb2f7a8c9ce31de`. The downloaded package contains `ota_update.elf` (4060 bytes, SHA-256 `159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5`). Release metadata and the downloaded workflow artifact agree; the ELF identity matches the earlier 1.0.1 release, so no additional bump was needed. The release was produced from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; these app inputs are unchanged at current Reader master.
+
+Host fixtures exercise app/provider behavior; device operation and U1 runtime readiness are not established by this evidence.

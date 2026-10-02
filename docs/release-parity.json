@@ -18,21 +18,33 @@
     },
     {
       "id": "button_remap",
-      "version": "1.0.1",
-      "published_version": "1.0.1",
+      "version": "1.0.2",
+      "published_version": "1.0.2",
       "byte_parity": true,
       "required": true,
       "built_sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154",
-      "published_sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154"
+      "published_sha256": "46ff711c7a3cf9ca5ed2bab41088b57e0821dde6c5be0e3abb891c6a5f17f154",
+      "published_tag": "app-button_remap-v1.0.2",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 4881,
+      "published_archive_sha256": "34900287855c4ae0f14d61defb99bca05dc539fe9474fedb8eae5aea252135ab",
+      "published_archive_member": "button_remap.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-button_remap-v1.0.2/application-button_remap-1.0.2-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "clear_cache",
-      "version": "1.0.1",
-      "published_version": "1.0.1",
+      "version": "1.0.2",
+      "published_version": "1.0.2",
       "byte_parity": true,
       "required": true,
       "built_sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30",
-      "published_sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30"
+      "published_sha256": "8d2eaa8ea68bae515fd2b51ce4553ba723d58c8fd838a5ded6c125dee1d77b30",
+      "published_tag": "app-clear_cache-v1.0.2",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 4624,
+      "published_archive_sha256": "7456674bf42fcb73709a65cd648ec741f4db64181920f72d82533089adf872b1",
+      "published_archive_member": "clear_cache.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-clear_cache-v1.0.2/application-clear_cache-1.0.2-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "driver_manager",
@@ -105,12 +117,18 @@
     },
     {
       "id": "ota_update",
-      "version": "1.0.1",
-      "published_version": "1.0.1",
+      "version": "1.0.2",
+      "published_version": "1.0.2",
       "byte_parity": true,
       "required": true,
       "built_sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5",
-      "published_sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5"
+      "published_sha256": "159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5",
+      "published_tag": "app-ota_update-v1.0.2",
+      "published_source_commit": "f7f006f78bf1f83c28f3ce05728b8973e895956b",
+      "published_archive_size": 5108,
+      "published_archive_sha256": "ed71c3f7d2de88f48e0758e0000b03cbb35d86e75b91673b3fb2f7a8c9ce31de",
+      "published_archive_member": "ota_update.elf",
+      "published_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-ota_update-v1.0.2/application-ota_update-1.0.2-xtensa-esp32s3.rte.zip"
     },
     {
       "id": "package_manager",
