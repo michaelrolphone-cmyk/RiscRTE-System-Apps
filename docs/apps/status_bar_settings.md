@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-Customize Status Bar is a foundational appearance/settings app for activating firmware-defined status-bar items. Upstream version **1.0.2** requires firmware **1.1.24** and builds as `status_bar_settings.elf`.
+Customize Status Bar is a foundational appearance/settings app for activating firmware-defined status-bar items. Upstream version **1.0.3** requires firmware **1.1.24** and builds as `status_bar_settings.elf`.
 
 ## Confirmed workflow
 
@@ -21,3 +21,12 @@ The source does not define how `item_activate` changes or persists firmware stat
 Audited against Reader master `ca66db298c2e735f45e5029083a9bfbd7b6740bd`: source `3a9167d761b6cbc0af01e88e4feec054b7375e88`, manifest `d406b3b5c1365c90b148037c0d85b74dbeaf8b17`, `T5StatusBarApi.h` `d0cd8e4d77671a596ffa2b1a05daf07b3a0083b2`, and `T5UiApi.h` `ef09b405fc2518ee7ecf039f8b251939d80b14a6`.
 
 The upstream held-confirm regression fixture is pinned to this source commit and verifies one activation per press across repeated held polls. The independent Xtensa build reproduces the existing published 1.0.2 ELF byte-for-byte: 2,920 bytes, SHA-256 `ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b`. This host/build evidence does not establish U1 ZIP/runtime compatibility or external cutover readiness.
+
+
+## Current manifest, source and release provenance (2026-10-02)
+
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both declare version **1.0.3**; the application C source is synchronized without source edits. Source blob `3a9167d761b6cbc0af01e88e4feec054b7375e88`; manifest blob `31d16b7c7afd5ee36049cf33eaab6751cfc03830`. The manifest-only change from the recorded external baseline was the version field.
+
+Reader published release [`app-status_bar_settings-v1.0.3`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-status_bar_settings-v1.0.3/application-status_bar_settings-1.0.3-xtensa-esp32s3.rte.zip) has a **4058**-byte package with SHA-256 `ff035cd74f8810ea30dacb364ea37df2d0863628c9db39558b2a08405e76c69b`. Its embedded `status_bar_settings.elf` is **2920** bytes with SHA-256 `ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
+
+This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.

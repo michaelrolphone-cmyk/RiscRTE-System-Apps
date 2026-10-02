@@ -2,7 +2,7 @@
 
 ## Purpose and classification
 
-Wi-Fi Networks is the RiscRTE front end for the firmware-owned wireless network selection workflow. Its manifest identifies it as `wifi_settings.elf`, version **1.0.2**, minimum firmware **1.1.24**, display name **Wi-Fi Networks**, icon `solid:f1eb`, categories `Connectivity` and `Settings`.
+Wi-Fi Networks is the RiscRTE front end for the firmware-owned wireless network selection workflow. Its manifest identifies it as `wifi_settings.elf`, version **1.0.3**, minimum firmware **1.1.24**, display name **Wi-Fi Networks**, icon `solid:f1eb`, categories `Connectivity` and `Settings`.
 
 The implementation is classified as a foundational System App because it exposes core network configuration used by normal system/app workflows. It does not implement Wi-Fi scanning, credential entry, association, or persistence itself; those operations are delegated to firmware through the System UI and Network APIs.
 
@@ -84,3 +84,12 @@ Synchronized from Reader commit `be82695ea0ecb14525c0de1ddc78cd0c77e4614b`:
 - `Apps/wifi_settings.json`: `d4ea5dbb60de7fa178efd951dd07ae4f3572ccd3`
 
 The audited upstream release-index snapshot lists [Reader release `app-wifi_settings-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/tag/app-wifi_settings-v1.0.2), `wifi_settings.elf`, **3,084 bytes**, SHA-256 `e50adecc5308600b5637db6806aa933d24e70686ad86c77e34b755afd9998f32`. These are upstream published metadata; destination development builds are not independent releases and do not establish runtime parity.
+
+
+## Current manifest, source and release provenance (2026-10-02)
+
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both declare version **1.0.3**; the application C source is synchronized without source edits. Source blob `33fd4a4045daecce210e1e347bedd599e146245d`; manifest blob `4bce101a4b1db443765d1e2aa82c2e8be8064fbd`. The manifest-only change from the recorded external baseline was the version field.
+
+Reader published release [`app-wifi_settings-v1.0.3`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-wifi_settings-v1.0.3/application-wifi_settings-1.0.3-xtensa-esp32s3.rte.zip) has a **4164**-byte package with SHA-256 `d382883cf73e7d1969d38b6470001e36f81677f629216e21d190d8826f7ec8d6`. Its embedded `wifi_settings.elf` is **3084** bytes with SHA-256 `e50adecc5308600b5637db6806aa933d24e70686ad86c77e34b755afd9998f32`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
+
+This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.

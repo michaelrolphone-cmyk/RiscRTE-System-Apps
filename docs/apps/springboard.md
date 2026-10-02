@@ -2,7 +2,7 @@
 
 ## Purpose and scope
 
-Springboard is the foundational RiscRTE installed-application launcher. The synchronized manifest identifies it as **Apps** (`springboard.elf`), version **1.3.0**, minimum firmware **1.3.39**, icon `solid:f00a`, categories `System` and `Launcher`.
+Springboard is the foundational RiscRTE installed-application launcher. The synchronized manifest identifies it as **Apps** (`springboard.elf`), version **1.3.1**, minimum firmware **1.3.39**, icon `solid:f00a`, categories `System` and `Launcher`.
 
 The app owns grid layout, selection, pagination, input, Home pins, and the optional cached-page slide animation. Firmware supplies installed-app discovery, drawing primitives, touch capture, video scan services, and launch handoff. Springboard does not map or execute another ELF directly.
 
@@ -98,3 +98,12 @@ Synchronized from Reader commit `be82695ea0ecb14525c0de1ddc78cd0c77e4614b`:
 - `Apps/springboard_slide.h`: `4162adc873b20f20db1141d46effd6d52e4f75ac`
 
 The audited upstream release-index snapshot lists [Reader release `app-springboard-v1.3.0`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/tag/app-springboard-v1.3.0), `springboard.elf`, **12,020 bytes**, SHA-256 `6863a4a8f08b5cc5c518a0dec212e9817fce13c5dcd318ca26bc0eeb9a69a150`. These are upstream published metadata, not an independent destination release. Destination development builds do not establish an independent release or runtime parity.
+
+
+## Current manifest, source and release provenance (2026-10-02)
+
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both declare version **1.3.1**; the application C source is synchronized without source edits. Source blob `929136ccef3e24df0f177b790cf0aee7ed5a5bec`; manifest blob `db221d3198ad2a81457bf079cda2b6446c1fe649`. The manifest-only change from the recorded external baseline was the version field.
+
+Reader published release [`app-springboard-v1.3.1`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-springboard-v1.3.1/application-springboard-1.3.1-xtensa-esp32s3.rte.zip) has a **13068**-byte package with SHA-256 `d2c16c687ec3f8f3040323feb71b2287ad38fb1c552e705c815228c0de926780`. Its embedded `springboard.elf` is **12020** bytes with SHA-256 `6863a4a8f08b5cc5c518a0dec212e9817fce13c5dcd318ca26bc0eeb9a69a150`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
+
+This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.

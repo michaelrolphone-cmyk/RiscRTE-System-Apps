@@ -1,3 +1,5 @@
+> Follow-up: a later grouped pass reconciled the remaining twelve manifest-only versions. All approved source/manifest inputs now match Reader master; see [complete manifest reconciliation](PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md).
+
 # Published manifest reconciliation — 2026-10-02
 
 - Reader master snapshot: `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.

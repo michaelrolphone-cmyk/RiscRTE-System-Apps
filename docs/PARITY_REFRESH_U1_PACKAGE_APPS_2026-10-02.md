@@ -1,4 +1,4 @@
-> Follow-up: the three manifest-only updates for Button Remap, Clear Reading Cache, and Firmware Update were synchronized in [the published manifest reconciliation](PARITY_REFRESH_MANIFESTS_2026-10-02.md). Twelve other manifest-only differences remain upstream-only. This follow-up does not alter the PR #14 package-workflow result.
+> Follow-up: the three manifest-only updates for Button Remap, Clear Reading Cache, and Firmware Update were synchronized in [the published manifest reconciliation](PARITY_REFRESH_MANIFESTS_2026-10-02.md). The later grouped refresh reconciled the twelve remaining manifest-only rows; see [the complete manifest batch](PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md). This follow-up does not alter the PR #14 package-workflow result.
 
 # U1 package workflow app refresh — 2026-10-02
 

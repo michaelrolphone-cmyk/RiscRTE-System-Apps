@@ -8,7 +8,7 @@ It is a System App because file navigation, file-type dispatch, and native-app l
 
 ## Manifest metadata
 
-- Version: **1.3.1**
+- Version: **1.3.2**
 - Minimum firmware: **1.3.8**
 - Artifact: `file_browser.elf`
 - Icon: `solid:f07c`
@@ -116,3 +116,14 @@ Synchronized from Reader commit `be82695ea0ecb14525c0de1ddc78cd0c77e4614b`:
 - `Apps/file_browser.json`: `9368525ea10333b070af48f8531cc23addf4cfbb`
 
 The audited upstream release-index snapshot lists [Reader release `app-file_browser-v1.3.1`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/tag/app-file_browser-v1.3.1), `file_browser.elf`, **21,128 bytes**, SHA-256 `5eb80bc076739938f8b99d1f9292c6a7f471b2783c4ebebcfdf2fa1481abff2d`. These are upstream published metadata; destination development builds are not independent releases and do not establish runtime parity.
+
+
+## Current manifest, source and release provenance (2026-10-02)
+
+Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both declare version **1.3.2**; the application C source is synchronized without source edits. Source blob `c7a4882d7abf12e8fb51627947cb645f296abf66`; manifest blob `51fac9c13b01755f9542388a1026aee8fdff6e61`. The manifest-only change from the recorded external baseline was the version field.
+
+Reader published release [`app-file_browser-v1.3.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-file_browser-v1.3.2/application-file_browser-1.3.2-xtensa-esp32s3.rte.zip) has a **22249**-byte package with SHA-256 `77c11282d1f2caab348b1b204465e5195828c23e16d4e359a3cb088441b5dcef`. Its embedded `file_browser.elf` is **21128** bytes with SHA-256 `5eb80bc076739938f8b99d1f9292c6a7f471b2783c4ebebcfdf2fa1481abff2d`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
+
+This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.
+
+Reader PR #357 proposes a separate, unmerged 1.3.3 picker fix. That prospective version and code were not copied; this sync ends at current master/released 1.3.2.
