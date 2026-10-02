@@ -1,52 +1,51 @@
-# External migration readiness — 2026-10-01
+# External migration readiness — 2026-10-02
 
-Reader remains authoritative. This bounded refresh compares Reader master
-`1e0188c1ff0234dd33fe054c9a6fb4fde36596df` and release-index
-`572746f4fcf3fde19947a066b7e5c8028cd76d21` with System-Apps base
-`b64e1c99371946b7f7ff19a0ec0587859beb584b`.
+Reader remains the read-only source of truth. This focused update audits System-Apps
+main `dfc226998553888b8a736a985ba248b938e70ddf` against Reader master
+`ca66db298c2e735f45e5029083a9bfbd7b6740bd` and release-index
+`f9fb899c5e22da26280b97587fff79b42118e56a`.
 
-All 38 app source/manifest/helper inputs match that master after base-aware
-synchronization of Button Remap, Clear Cache and OTA Update, each 1.0.0 → 1.0.1.
-No external source conflict was found. Independent tooling and SDK are retained.
-Ten pipeline tests, 18 host fixtures and 18 ELF/sidecar checks pass locally.
-Eight required published-byte comparisons pass; ten unchanged historical build
-mismatches remain visible in [release parity](release-parity.json). All ten are now
-[classified as historical unstripped versus current stripped builds](HISTORICAL_ELF_LINEAGE.md);
-explanation does not make the changed development bytes publishable under old identities.
-See [refresh provenance](PARITY_REFRESH_2026-10-01.md) for exact identities and limits.
+## Current source and release parity
 
-The companion Drivers refresh starts at `9039be6c9abb30742b7a77a8ef39d507aaf01cea`
-and is limited to USB navigation 0.1.1 → 0.1.2 plus its fixture, build identity,
-documentation and source/release inventory. Its exact-head CI and merge evidence
-belong to that repository's PR and maintenance claim #5.
+Reader master advanced to `ca66db29` when the separately owned Hollow Trail PR #352 merged during this check; its changes are confined to Hollow Trail and are excluded from this System-Apps batch. A fresh immutable comparison confirmed the Status Bar Settings sources and fixture are unchanged by that merge. The base-aware audit covered all 38 tracked source/manifest/helper inputs. Before
+this update, exactly two files were upstream-only: Status Bar Settings source and
+manifest. The external files exactly matched their recorded Reader `1e0188c1`
+baseline; no external-only app changes or conflicts were found. After this
+increment, all 38 tracked inputs match current master. The other 17 System-Apps
+release rows already matched the current Reader release index. Status Bar Settings
+moves from 1.0.0 to the already-published 1.0.2 identity.
 
-Productivity, MCU and Utilities were already synchronized and green per the
-maintenance handoff. They were deliberately not re-audited or modified in this
-run. The old matrix describing their earlier missing pipelines is superseded;
-this document does not manufacture fresh verification for those repositories.
+| App | Source and manifest | Version | Published ELF | Focused validation | U1/cutover |
+| --- | --- | --- | --- | --- | --- |
+| [Status Bar Settings](apps/status_bar_settings.md) | Exact to Reader `ca66db29` | 1.0.0 → 1.0.2 | Exact, 2,920 bytes, SHA-256 `ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b` | Held-confirm edge fixture; independent pinned Xtensa build | Not qualified |
+| Other 17 tracked apps | Unchanged; audit clean at `ca66db29` | Existing identities | Existing release records retained | Existing evidence retained; not rebuilt locally for this increment | Not qualified |
+
+The synchronized cohort now has nine required published-byte matches out of 18.
+The remaining nine historical build mismatches remain visible in [release parity](release-parity.json)
+and [historical ELF lineage](HISTORICAL_ELF_LINEAGE.md). Their historical
+classification is not changed by this app update. See [refresh provenance](PARITY_REFRESH_2026-10-02.md)
+for the exact base-aware blobs, test result and CI/merge checkpoints.
+
+## Other external repositories
+
+The fresh repo-state check found no open work in MCU-Dev-Tools, Utilities,
+Productivity or System-Apps before this claim. Drivers has the separate X4 Pro
+PR #12; it is owned by Grok and was left untouched. Reader changes since the
+previous checkpoint contain no source files for those other target repos. Their
+latest verified external main heads remain recorded in the maintenance handoff;
+this focused increment does not claim new per-repo builds or U1 readiness for them.
 
 ## Current claims and limits
 
-System-Apps maintenance claim #5 owns this refresh through validation/merge and
-records release of the claim. Final PR CI must pass before ready/merge, followed
-by target-main and postmerge CI verification. A local File Browser sanitizer
-regression timed out on this Mac at its existing 10-second runtime limit; the
-unchanged Linux CI gate remains required and has not been weakened.
+System-Apps claim #11 owns this single-app refresh through postmerge CI. Its exact
+head workflow must pass before merge; merge is followed by target-main CI. The
+remaining nine historical artifact mismatches and local File Browser sanitizer
+timeout are preserved from the prior checkpoint; neither is hidden or weakened.
+See [2026-10-01 readiness evidence](PARITY_REFRESH_2026-10-01.md) for that
+previously completed batch.
 
-Master source parity and released-byte reproduction do not establish prospective
-U1 ZIP compatibility. `parity_ready_count` remains zero: independent publication,
-ZIP/catalog/runtime integration and explicit cutover authorization remain separate.
-No package-format migration, release automation change, release, live catalog,
-Reader removal, hardware qualification or runtime switch is part of this refresh.
-
-The historical no-strip probe remains evidence about older published builds,
-not current proof for the refreshed 1.0.1 apps. Image Viewer has no host UI fixture.
-Controller replay in Drivers still depends on historical Reader build context;
-this bounded update does not resolve that unrelated limitation.
-
-## Optional prospective packaging witness
-
-A [non-live Button Remap ZIP witness](PROSPECTIVE_U1_ZIP_WITNESS.md) now exercises
-the existing packer/manifest validator pinned to verified green U1 `c80bdee1`.
-This is one host-only future-compatibility result, separate from master parity;
-independent publication, runtime installation and cutover remain unqualified.
+`parity_ready_count` remains zero. Current-master source and published-ELF parity
+do not establish prospective U1 ZIP compatibility, independent publication,
+runtime install/update/rollback behavior or external-provider cutover. No package
+format migration, release automation change, release, live catalog, Reader
+removal, hardware qualification or runtime ownership switch is part of this work.

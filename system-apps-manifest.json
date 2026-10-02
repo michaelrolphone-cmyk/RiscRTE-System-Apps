@@ -2,7 +2,7 @@
   "schema": 1,
   "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
   "source_ref": "master",
-  "last_audited_upstream_sha": "1e0188c1ff0234dd33fe054c9a6fb4fde36596df",
+  "last_audited_upstream_sha": "ca66db298c2e735f45e5029083a9bfbd7b6740bd",
   "status": "partial",
   "migrated_count": 18,
   "parity_ready_count": 0,
@@ -164,13 +164,13 @@
     {
       "id": "status_bar_settings",
       "display_name": "Customize Status Bar",
-      "version": "1.0.0",
+      "version": "1.0.2",
       "min_firmware_version": "1.1.24",
       "file_name": "status_bar_settings.elf",
       "source_path": "Apps/status_bar_settings.c",
       "manifest_path": "Apps/status_bar_settings.json",
-      "upstream_source_sha": "b3a9b2e4a1259c1ccb1f5c6b39f747387025dfc1",
-      "upstream_manifest_sha": "ad5cb1756d4d067237f2cfc77873e86c91673fcf",
+      "upstream_source_sha": "3a9167d761b6cbc0af01e88e4feec054b7375e88",
+      "upstream_manifest_sha": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
       "migration_status": "source-doc-parity-build-release-pending"
     },
     {

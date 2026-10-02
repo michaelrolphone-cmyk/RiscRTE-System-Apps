@@ -38,7 +38,7 @@ The vendored source retains its upstream license and comments.
 
 There are 18 host interaction fixtures: one each for 17 apps plus Springboard's
 live video fixture (drag/settle, cancellation, vertical locking, backpressure and
-cleanup). Fixtures retain their individually recorded Reader origins in the SDK lock. The three apps updated in this refresh use fixtures from Reader `1e0188c1`; unchanged fixtures and the pinned SDK remain intact.
+cleanup). Fixtures retain their individually recorded Reader origins in the SDK lock. The three apps updated in the 2026-10-01 refresh use fixtures from Reader `1e0188c1`. Status Bar Settings uses the held-confirm regression fixture from Reader `91f3768e`; the pinned ABI/SDK remains unchanged.
 Image Viewer lacks an upstream app fixture and receives compiler, manifest/
 import and ELF checks only. The File Browser oversized-USB-handle regression
 also runs with sanitizers in CI. These are focused host fixtures, not exhaustive
@@ -49,10 +49,11 @@ Springboard's `springboard_video.inc` and `springboard_slide.h` are tracked as
 additional source inputs, including their blobs in both audits and build evidence.
 
 `python scripts/check_release_parity.py` compares actual emitted ELF bytes,
-lengths and versions against `sdk/release-baseline.json`. All eight synchronized
-apps reproduce their published bytes exactly and are mandatory CI checks. The
-other 10 older released artifacts differ from these development builds; the
-report preserves those mismatches rather than hiding them. The earlier [historical no-strip probe](historical-build-probe.json) remains a historical diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. The [lineage investigation](HISTORICAL_ELF_LINEAGE.md) now explains all ten current mismatches: stripping verified published copies produces the current development bytes exactly. Driver Manager's old probe also omitted the required source-owned unsigned-division helper. This explains the diagnostic failure without changing the builder or relaxing exact-byte parity. See [release parity](release-parity.json).
+lengths and versions against `sdk/release-baseline.json`. Nine synchronized
+apps reproduce their published bytes exactly and are mandatory CI checks, including
+Status Bar Settings 1.0.2. Its 1.0.0 mismatch is superseded by the new current release identity. The
+other nine older released artifacts differ from these development builds; the
+report preserves those mismatches rather than hiding them. The earlier [historical no-strip probe](historical-build-probe.json) remains a diagnostic for old versions. It is not current evidence for the refreshed 1.0.1 apps. The dated [lineage investigation](HISTORICAL_ELF_LINEAGE.md) explains the ten mismatches recorded on 2026-10-01; Status Bar Settings' old 1.0.0 mismatch has since been superseded by its exact 1.0.2 release match. Driver Manager's old probe also omitted the required source-owned unsigned-division helper. See [release parity](release-parity.json).
 None is ready for independent publication or Reader removal: ZIP/index and
 runtime integration remain separate unfinished work.
 
@@ -72,4 +73,4 @@ external-only edits; reconcile both-side conflicts before advancing the baseline
 SDK lock updates require inspection of pinned APIs/exports and rerunning all
 checks. Do not use a passing build to automatically copy or cut over apps.
 
-Current bounded refresh and verification limits: [2026-10-01 provenance](PARITY_REFRESH_2026-10-01.md).
+Current bounded refresh and verification limits: [2026-10-02 provenance](PARITY_REFRESH_2026-10-02.md).

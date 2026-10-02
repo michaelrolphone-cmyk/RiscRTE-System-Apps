@@ -2,13 +2,13 @@
 
 ## Purpose and scope
 
-Customize Status Bar is a foundational appearance/settings app for activating firmware-defined status-bar items. Upstream version **1.0.0** requires firmware **1.1.24** and builds as `status_bar_settings.elf`.
+Customize Status Bar is a foundational appearance/settings app for activating firmware-defined status-bar items. Upstream version **1.0.2** requires firmware **1.1.24** and builds as `status_bar_settings.elf`.
 
 ## Confirmed workflow
 
 The app obtains `T5AppApi`, `T5StatusBarApi` v1, and `T5UiApi` v1. It reads up to `T5_STATUS_BAR_ITEM_COUNT` provider items and renders their provider-supplied label/value pairs under **Customize Status Bar** / **Reader status information**.
 
-Back or `exit_requested` exits. Up/Left and Down/Right move through rows using the shared UI index helpers. Confirm calls `item_activate(selected)` and redraws. Tapping a valid row selects, activates, and redraws immediately.
+Back or `exit_requested` exits. Up/Left and Down/Right move through rows using the shared UI index helpers. Confirm activates only on a newly pressed edge: holding Confirm across multiple polls does not repeatedly toggle the selected item. Releasing and pressing again activates it again. Tapping a valid row selects, activates, and redraws immediately.
 
 ## Host interfaces and limits
 
@@ -18,6 +18,6 @@ The source does not define how `item_activate` changes or persists firmware stat
 
 ## Source identity
 
-Audited against upstream `T5S3-Reader` commit `525e32689203502a7b22f6350b7ef04f272271db`: source `b3a9b2e4a1259c1ccb1f5c6b39f747387025dfc1`, manifest `ad5cb1756d4d067237f2cfc77873e86c91673fcf`, `T5StatusBarApi.h` `d0cd8e4d77671a596ffa2b1a05daf07b3a0083b2`, and `T5UiApi.h` `ef09b405fc2518ee7ecf039f8b251939d80b14a6`.
+Audited against Reader master `ca66db298c2e735f45e5029083a9bfbd7b6740bd`: source `3a9167d761b6cbc0af01e88e4feec054b7375e88`, manifest `d406b3b5c1365c90b148037c0d85b74dbeaf8b17`, `T5StatusBarApi.h` `d0cd8e4d77671a596ffa2b1a05daf07b3a0083b2`, and `T5UiApi.h` `ef09b405fc2518ee7ecf039f8b251939d80b14a6`.
 
-No independent destination build or release artifact has been established yet.
+The upstream held-confirm regression fixture is pinned to this source commit and verifies one activation per press across repeated held polls. The independent Xtensa build reproduces the existing published 1.0.2 ELF byte-for-byte: 2,920 bytes, SHA-256 `ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b`. This host/build evidence does not establish U1 ZIP/runtime compatibility or external cutover readiness.

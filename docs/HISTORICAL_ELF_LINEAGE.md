@@ -1,12 +1,12 @@
-# Historical ELF mismatch classification — 2026-10-01
+# Historical ELF mismatch classification — snapshot 2026-10-01
 
-All ten remaining current development/published ELF mismatches are explained by
+At the 2026-10-01 snapshot, all ten development/published ELF mismatches are explained by
 build lineage. Applying the pinned compiler's `strip --strip-unneeded` to local
 copies of each verified published ELF produces the corresponding existing
 current development ELF byte-for-byte. The current builder is not defective;
 no production code, SDK, manifest, build profile or version needs changing.
 
-The exact published-byte result remains **8/18**. The ten transformed comparisons
+The exact published-byte result at that snapshot was **8/18**. The ten transformed comparisons
 are diagnostic evidence, not permission to call different published bytes equal,
 reissue them under existing identities, or weaken the eight mandatory parity gates.
 
@@ -18,6 +18,11 @@ refreshed and now have exact current-byte parity; Button Remap's old unmatched
 1.0.0 was superseded by the verified 1.0.1 refresh. Thus nine of today's ten
 mismatches already had historical no-strip matches. Driver Manager 1.0.6 was the
 only genuinely unresolved current package.
+
+Since that snapshot, Status Bar Settings moved to the current released 1.0.2 source
+and its published bytes now match exactly. The current readiness matrix has nine
+matches; the nine remaining older mismatch rows retain their historical
+classification below. This record preserves the earlier version comparison.
 
 The old Driver Manager probe produced 18,628 bytes, hash
 `f3a584d5758f47c91b881f65502dec895b66add17326a780ea8c4c0f2b053cf2`.
