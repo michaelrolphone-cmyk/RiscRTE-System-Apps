@@ -271,9 +271,9 @@
     {
       "path": "test/native_apps/status_bar_settings_test.c",
       "upstream_path": "test/native_apps/status_bar_settings_test.c",
-      "git_blob": "eb9256991098d5a1c4e4e1f8acb96b639f58b97f",
-      "sha256": "c50cadce2d8a8d5501ee33a87349d68d45b8851fc516d06974773ca041fb29cb",
-      "source_commit": "525e32689203502a7b22f6350b7ef04f272271db"
+      "git_blob": "fc5b31287300093e5f3a6b004769cbcee0a8bf5b",
+      "sha256": "0b126cda47fb10ffd914ff6e8f2cc96140be65aeec862d8b7ce3854d5144489a",
+      "source_commit": "91f3768ebb402c218aff64d41cfcef689d743b2e"
     },
     {
       "path": "test/native_apps/ota_update_test.c",

@@ -104,7 +104,7 @@ system-apps-manifest.json
 
 ## Current parity limitations
 
-This repository now has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, ELF/import validation for all 18 apps, eight exact published-byte matches, and CI development artifacts. It does not yet have an independent release/package/index pipeline. The tracked app sources, manifests, README links, and dedicated documentation are synchronized to the audited upstream identities recorded in `system-apps-manifest.json`, but build/test/package/release parity is still pending. The manifest distinguishes source/document migration state from full parity readiness. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
+This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Nine apps reproduce current published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. The tracked app sources and manifests are synchronized to the current audited Reader inputs recorded in `system-apps-manifest.json`. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
@@ -117,8 +117,8 @@ repositories and the criteria that still prevent deleting Reader copies.
 [Source drift](docs/source-drift.json) records a three-way immutable-blob audit;
 never overwrite external changes during synchronization.
 
-Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): eight synchronized apps match; ten historical artifact differences remain visible and are now [explained by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
+Published-byte comparison is tracked separately in [release parity](docs/release-parity.json): nine synchronized apps match; nine older artifact differences remain visible and are now [explained by release build lineage](docs/HISTORICAL_ELF_LINEAGE.md).
 
-Current bounded refresh and verification limits: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
+Current bounded refresh and verification limits: [2026-10-02 provenance](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
 
 Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).

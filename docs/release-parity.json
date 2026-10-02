@@ -1,5 +1,5 @@
 {
-  "release_index_commit": "572746f4fcf3fde19947a066b7e5c8028cd76d21",
+  "release_index_commit": "f9fb899c5e22da26280b97587fff79b42118e56a",
   "apps": [
     {
       "id": "app_store",
@@ -138,12 +138,12 @@
     },
     {
       "id": "status_bar_settings",
-      "version": "1.0.0",
-      "published_version": "1.0.0",
-      "byte_parity": false,
-      "required": false,
-      "built_sha256": "f68126b6ffeda8390c263860c91b0bd8ad7fb0d58f6ce82664e0e1345f2d4f38",
-      "published_sha256": "aea1b9604702292eda69a6bd69ccdd6db784c161beb37783b32cad686ebce6ac"
+      "version": "1.0.2",
+      "published_version": "1.0.2",
+      "byte_parity": true,
+      "required": true,
+      "built_sha256": "ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b",
+      "published_sha256": "ef294e50c5007b301245b0a5aaf3e2abcfb19328a91ce24ab718af7325ad4e0b"
     },
     {
       "id": "time_zone",

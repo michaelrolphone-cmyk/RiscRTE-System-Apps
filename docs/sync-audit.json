@@ -1,5 +1,5 @@
 {
-  "reader_commit": "ca66db298c2e735f45e5029083a9bfbd7b6740bd",
+  "reader_commit": "91f3768ebb402c218aff64d41cfcef689d743b2e",
   "files": [
     {
       "id": "app_store",
@@ -212,18 +212,18 @@
     {
       "id": "status_bar_settings",
       "path": "Apps/status_bar_settings.c",
-      "baseline_blob": "3a9167d761b6cbc0af01e88e4feec054b7375e88",
-      "external_blob": "3a9167d761b6cbc0af01e88e4feec054b7375e88",
+      "baseline_blob": "b3a9b2e4a1259c1ccb1f5c6b39f747387025dfc1",
+      "external_blob": "b3a9b2e4a1259c1ccb1f5c6b39f747387025dfc1",
       "upstream_blob": "3a9167d761b6cbc0af01e88e4feec054b7375e88",
-      "state": "unchanged"
+      "state": "upstream-only"
     },
     {
       "id": "status_bar_settings",
       "path": "Apps/status_bar_settings.json",
-      "baseline_blob": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
-      "external_blob": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
+      "baseline_blob": "ad5cb1756d4d067237f2cfc77873e86c91673fcf",
+      "external_blob": "ad5cb1756d4d067237f2cfc77873e86c91673fcf",
       "upstream_blob": "d406b3b5c1365c90b148037c0d85b74dbeaf8b17",
-      "state": "unchanged"
+      "state": "upstream-only"
     },
     {
       "id": "ota_update",
