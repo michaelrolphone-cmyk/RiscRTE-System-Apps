@@ -5,7 +5,7 @@ Reader remains the read-only source of truth. This audit refreshed current Reade
 ## System-Apps source and release parity
 
 - Reader master: `82caa0997e913f01c1f5f9ab942d056bc9f04a82` (CAM #344 merge; first parent includes merged U1 #96).
-- System-Apps current main: `74568c40520c21576628fb6adc46e7b66c92152f` after PR #16; PR #17 batches the final twelve manifest-only synchronizations from the same Reader master.
+- System-Apps current main: `74568c40520c21576628fb6adc46e7b66c92152f` after PR #16; the current grouped manifest PR batches the final twelve manifest-only synchronizations from the same Reader master.
 - Current durable claim: [System-Apps issue #17](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/issues/17); prior claims #13 and #15 closed after postmerge verification.
 - The 38-input base-aware audit is fully synchronized: 17 unchanged and 21 converged, with no upstream-only, external-only, or conflict entries. All 18 app C sources and all 18 manifests match Reader master. See [source drift](source-drift.json).
 - All 18 app release identities now match the current published Reader ELF bytes exactly. The 11 required exact-byte checks are unchanged and pass. Current release URLs, source commits, archive SHA-256 values, and embedded ELF identities are recorded in `sdk/release-baseline.json` and [release parity](release-parity.json).
@@ -31,4 +31,4 @@ Current Reader master declares Button Remap, Clear Reading Cache, and Firmware U
 
 ## Complete app-manifest source sync
 
-All twelve remaining manifest-only version differences from Reader `82caa0997e913f01c1f5f9ab942d056bc9f04a82` were reconciled together in [PR #17](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/pull/17). Each change was only the already-published version field; app C sources, remaining manifest fields, and external SDK/build customizations were preserved. See [current manifest provenance](PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md). This completes source/manifest parity for all 18 approved apps; it does not change `parity_ready_count=0` or qualify runtime/cutover readiness.
+All twelve remaining manifest-only version differences from Reader `82caa0997e913f01c1f5f9ab942d056bc9f04a82` were reconciled together in the current grouped manifest PR. Each change was only the already-published version field; app C sources, remaining manifest fields, and external SDK/build customizations were preserved. See [current manifest provenance](PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md). This completes source/manifest parity for all 18 approved apps; it does not change `parity_ready_count=0` or qualify runtime/cutover readiness.
