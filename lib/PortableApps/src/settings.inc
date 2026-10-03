@@ -10,6 +10,18 @@ static const twatch_rtc_api_v1 *rtc;
 static const char *settings_message = "";
 static const char *editor_message = "";
 static unsigned editor_field;
+#ifdef PORTABLE_SLEEP_SETTINGS
+#include "PortableSleepPolicy.h"
+static risc_runtime_capability_v1 sleep_grant;
+static const risc_key_value_v1 *sleep_store;
+static unsigned sleep_choice;
+static const char *sleep_message;
+#define SETTINGS_ROW_COUNT 6u
+#define SETTINGS_ABOUT_ROW 5u
+#else
+#define SETTINGS_ROW_COUNT 5u
+#define SETTINGS_ABOUT_ROW 4u
+#endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
 static unsigned save_candidate_count;
@@ -48,11 +60,15 @@ static bool settings_category(uint32_t category,char *out,size_t capacity) {
   if(category || !out || capacity<sizeof("System"))return false;
   memcpy(out,"System",sizeof("System"));return true;
 }
-static uint32_t settings_count(uint32_t category) { return category?0:5; }
+static uint32_t settings_count(uint32_t category) { return category?0:SETTINGS_ROW_COUNT; }
 static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out) {
-  if(category || index>=5 || !out)return false;
+  if(category || index>=SETTINGS_ROW_COUNT || !out)return false;
   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
-  static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis","About"};
+  static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
+#ifdef PORTABLE_SLEEP_SETTINGS
+    "Sleep Mode",
+#endif
+    "About"};
   strcpy(out->label,names[index]);
   if(index==0) {
     out->type=T5_APP_SETTING_ACTION;twatch_rtc_time_v1 raw,local;
@@ -63,6 +79,13 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   } else if(index==1)strcpy(out->value,portable_time_zone());
   else if(index==2)strcpy(out->value,"12-hour");
   else if(index==3)strcpy(out->value,portable_time_basis());
+#ifdef PORTABLE_SLEEP_SETTINGS
+  else if(index==4) {
+    unsigned mode;int loaded=portable_sleep_load(sleep_store,&mode);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":"Light");
+  }
+#endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
   return true;
 }
@@ -105,7 +128,7 @@ static void settings_render(uint32_t category,int32_t selected) {
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
   sv_selected=selected<0?0:(unsigned)selected;list_mode=true;sv_active=true;
-  if(changed && selected>0 && selected<=5) {
+  if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
     else if(y+40>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-134;
@@ -149,9 +172,38 @@ static bool editor_try_save(void) {
   sv_switch(SV_FIELDS);return false;
 }
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
-  if(category || index>=5)return T5_APP_SETTING_ERROR;
-  if(index!=0 && index!=4)return T5_APP_SETTING_NO_CHANGE;
+  if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
+#ifdef PORTABLE_SLEEP_SETTINGS
   if(index==4) {
+    int loaded=portable_sleep_load(sleep_store,&sleep_choice);
+    sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
+                  loaded==PORTABLE_SLEEP_INVALID?"Invalid record: Light default":"";
+    sv_switch(SV_SLEEP);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice^=1u;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,34))sleep_choice=PORTABLE_SLEEP_LIGHT;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,110,184,34))sleep_choice=PORTABLE_SLEEP_DEEP;
+      if(save) {
+        if(portable_sleep_save(sleep_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
+        /* A failed commit may or may not have persisted. Re-read rather than
+         * claim the old mode or display a false Saved confirmation. */
+        (void)portable_sleep_load(sleep_store,&sleep_choice);
+        sleep_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Sleep mode saved":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
+  if(index!=0 && index!=SETTINGS_ABOUT_ROW)return T5_APP_SETTING_NO_CHANGE;
+  if(index==SETTINGS_ABOUT_ROW) {
     sv_switch(SV_ABOUT);t5_app_input_t input;
     while(poll(&input,20))if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
     sv_switch(SV_ROOT);return T5_APP_SETTING_NO_CHANGE;
@@ -208,7 +260,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
   if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
   *category=0;
-  for(unsigned i=0;i<5;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+40) {
+  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+40) {
     *selected=(int32_t)i+1;return settings_activate(0,i);
   }
   return T5_APP_SETTING_NO_CHANGE;
@@ -217,6 +269,13 @@ static bool settings_open(void) {
   if(width()<240 || height()<240)return false;
   rtc_grant.struct_size=sizeof(rtc_grant);back_exits_app=true;settings_message="";
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;
+#ifdef PORTABLE_SLEEP_SETTINGS
+  sleep_grant=(risc_runtime_capability_v1){.struct_size=sizeof(sleep_grant)};
+  sleep_store=NULL;sleep_choice=PORTABLE_SLEEP_LIGHT;sleep_message="";
+  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_SLEEP_STORE_INSTANCE,&sleep_grant)) {
+    if(portable_sleep_api_valid(sleep_grant.api))sleep_store=sleep_grant.api;
+  }
+#endif
   if(!rt->acquire(TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,0,&rtc_grant))return false;
   rtc=rtc_grant.api;
   if(!rtc || rtc->api_version!=TWATCH_RTC_API_V1 || rtc->struct_size<sizeof(*rtc) || !rtc->read || !rtc->write)return false;
@@ -227,6 +286,10 @@ static bool settings_open(void) {
 }
 static void settings_close(void) {
   sv_active=false;
+#ifdef PORTABLE_SLEEP_SETTINGS
+  if(sleep_grant.api && !rt->release(&sleep_grant))rt->diagnostic("PORTABLE_APP error=settings-release");
+  sleep_store=NULL;
+#endif
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_close();
 #endif

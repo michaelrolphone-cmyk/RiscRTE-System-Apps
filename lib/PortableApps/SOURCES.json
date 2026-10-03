@@ -42,5 +42,11 @@
     "path": "sdk/driver/RiscInputNavigationV1.h",
     "commit": "9ed7bd48a97aea192c8cc9e75c22c1f87c8c7313",
     "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+  },
+  "RiscKeyValueV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "commit": "bd73f918bd2392693e4ee7719f289da7531da4b1",
+    "path": "sdk/app/RiscKeyValueV1.h",
+    "sha256": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56"
   }
 }

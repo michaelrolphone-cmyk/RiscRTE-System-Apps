@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -85,7 +85,7 @@ static void sv_heading(const char *title) {
 }
 static void sv_back(void) { sv_button(82,192,76,26,"< BACK",false); }
 static int sv_row_y(unsigned index) { return index<3?124+(int)index*40:278+(int)(index-3)*40; }
-static int sv_max_scroll(void) { return sv_page==SV_ROOT?220:144; }
+static int sv_max_scroll(void) { return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*40:144; }
 static void sv_clamp_scroll(void) {
   unsigned p=sv_page==SV_ROOT?0:1;
   if(sv_scroll[p]<0)sv_scroll[p]=0;
@@ -98,7 +98,7 @@ static void sv_root(void) {
   sv_rect(20,94-offset,200,1,SV_DIM);
   sv_text(3,20,104-offset,"TIME",0x0e8ea3,38);
   sv_text(3,20,258-offset,"SYSTEM",0x0e8ea3,38);
-  for(unsigned i=0;i<5;++i) {
+  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i) {
     t5_app_setting_t row; if(!settings_get(0,i,&row))continue;
     int y=sv_row_y(i)-offset;
     sv_rect(20,y,2,40,sv_selected==i+1?SV_CYAN:SV_LINE);
@@ -164,10 +164,25 @@ static void sv_about(void) {
   sv_rect(20,128,200,1,SV_LINE);
   sv_center(2,148,"Only reported device data",SV_CAP,0);sv_back();
 }
+#ifdef PORTABLE_SLEEP_SETTINGS
+static void sv_sleep(void) {
+  sv_heading("SLEEP MODE");
+  sv_button(28,66,184,34,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
+  sv_button(28,110,184,34,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
+  sv_center(3,151,"Deep restarts Clock on wake",SV_CAP,0);
+  sv_center(3,166,"Crown wake - 60 second idle",SV_CAP,0);
+  sv_center(3,184,sleep_message,SV_CYAN,0);
+  sv_button(24,200,86,26,"CANCEL",false);
+  sv_button(130,200,86,26,"SAVE",false);
+}
+#endif
 static void settings_view_redraw(void) {
   if(!sv_active)return;
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
+  #ifdef PORTABLE_SLEEP_SETTINGS
+  else if(sv_page==SV_SLEEP)sv_sleep();
+#endif
   else if(sv_page==SV_VALUE)sv_value();else if(sv_page==SV_FOLD)sv_fold();else sv_about();
   present(false);
 }
@@ -177,7 +192,11 @@ static void sv_switch(unsigned page) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
-  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD;
+  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD
+#ifdef PORTABLE_SLEEP_SETTINGS
+      || page==SV_SLEEP
+#endif
+      ;
   settings_view_redraw();
 }
 static bool sv_inside(int x,int y,int left,int top,int w,int h) {
@@ -241,7 +260,11 @@ static bool settings_view_poll(t5_app_input_t *out) {
     if(sv_axis==2 && dx>=36 && dx>sv_abs(dy)*2) {sv_back_input(out);return true;}
     if(sv_dragged || sample.moved || sv_axis==3)return true;
     x=sv_start_x;y=sv_start_y;
-    if(sv_page==SV_FIELDS) {
+    if(sv_page==SV_FIELDS
+#ifdef PORTABLE_SLEEP_SETTINGS
+       || sv_page==SV_SLEEP
+#endif
+      ) {
       if(sv_inside(x,y,24,200,86,26)) {sv_back_input(out);return true;}
       if(sv_inside(x,y,130,200,86,26)) {editor_field=6;out->buttons=T5_APP_BUTTON_CONFIRM;return true;}
     } else if(sv_inside(x,y,82,192,76,26)) {sv_back_input(out);return true;}

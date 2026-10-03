@@ -56,7 +56,7 @@ static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_re
   if(scenario==10)return false;
   frame_count=0;*token=++displays;
   const char *directory=getenv("PORTABLE_SETTINGS_FRAME_DIR");
-  if(directory && displays<=12 && (scenario==0 || scenario==21 || scenario==34)){
+  if(directory && displays<=12 && (scenario==0 || scenario==21 || scenario==34 || scenario>=40)){
     char path[512];snprintf(path,sizeof(path),"%s/scenario-%u-frame-%u.ppm",directory,scenario,displays);
     FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P6\n240 240\n255\n");
     for(unsigned i=0;i<240*240;++i){unsigned v=framebuffer[i];
@@ -136,7 +136,30 @@ void portable_input_navigation_close(const risc_runtime_api_v1 *runtime){
 }
 #endif
 #endif
+#ifdef PORTABLE_SLEEP_SETTINGS
+static uint8_t kv_bytes[64];static uint32_t kv_size;static unsigned kv_writes;
+static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {
+  (void)c;assert(!strcmp(key,PORTABLE_SLEEP_KEY));*size=0;
+  if(!kv_size)return RISC_KEY_VALUE_NOT_FOUND;
+  if(cap<kv_size){*size=kv_size;return RISC_KEY_VALUE_BUFFER_SMALL;}
+  memcpy(data,kv_bytes,kv_size);*size=kv_size;return RISC_KEY_VALUE_OK;
+}
+static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
+  (void)c;assert(!strcmp(key,PORTABLE_SLEEP_KEY) && size<=64);++kv_writes;
+  if(scenario==42)return RISC_KEY_VALUE_IO;
+  memcpy(kv_bytes,data,size);kv_size=size;
+  return scenario==47?RISC_KEY_VALUE_IO:RISC_KEY_VALUE_OK;
+}
+static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,kv_get,kv_put};
+#endif
 static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){
+#ifdef PORTABLE_SLEEP_SETTINGS
+  if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
+    assert(version==1 && id==PORTABLE_SLEEP_STORE_INSTANCE);
+    if(scenario==43)return false;
+    grant->api=&kv_api;++grants;return true;
+  }
+#endif
   assert(!id && grant->struct_size==sizeof(*grant));
   if(!strcmp(name,"display.output")){assert(version==1);grant->api=&display_api;}
   else if(!strcmp(name,"input.touch.raw")){assert(version==1);grant->api=&touch_api;}
@@ -176,7 +199,39 @@ int main(int argc,char **argv){
   if(scenario>=20 && scenario<=24)return 0;
 #endif
 #ifndef PORTABLE_INPUT_NAVIGATION
-  if((scenario>=30 && scenario<=32) || scenario>=36)return 0;
+  if((scenario>=30 && scenario<=32) || (scenario>=36 && scenario<40))return 0;
+#endif
+#ifdef PORTABLE_SLEEP_SETTINGS
+  if(scenario>=40) {
+    if(scenario==44){kv_size=4;memset(kv_bytes,0xff,4);}
+    if(scenario==45){kv_size=4;memcpy(kv_bytes,(uint8_t[]){0x53,1,1,0xa4},4);}
+    unsigned selected;int before=portable_sleep_load(&kv_api,&selected);
+    if(scenario==44)assert(before==PORTABLE_SLEEP_INVALID && selected==PORTABLE_SLEEP_LIGHT);
+    tap(3,100,126); /* Select Deep, still draft. */
+    tap(7,scenario==41?60:170,213); /* Cancel or Save. */
+    if(scenario==42 || scenario==43 || scenario==47)tap(12,60,213);
+    assert(app_module_init()==0);
+    t5_app_setting_t item;assert(settings_count(0)==6 && settings_get(0,4,&item));
+    assert(!strcmp(item.label,"Sleep Mode"));
+    if(scenario==43)assert(!strcmp(item.value,"Unavailable"));
+    settings_render(0,0);polls=0;
+    uint8_t result=settings_activate(0,4);
+    bool saved=scenario==40 || scenario==44 || scenario==45 || scenario==46;
+    assert((result==T5_APP_SETTING_UPDATED)==saved);
+    assert((strcmp(settings_message,"Sleep mode saved")==0)==saved);
+    assert(!writes); /* Mode selection never mutates RTC. */
+    if(scenario==41 || scenario==43 || scenario==45)assert(kv_writes==0);
+    else assert(kv_writes==1);
+    if(scenario==42 || scenario==47)assert(!strcmp(sleep_message,"Save unconfirmed - retry"));
+    app_module_fini();assert(!grants && !subscriptions && !frame_count);
+    if(saved || scenario==47) {
+      assert(portable_sleep_load(&kv_api,&selected)==PORTABLE_SLEEP_LOADED && selected==PORTABLE_SLEEP_DEEP);
+      polls=0;assert(app_module_init()==0);
+      assert(settings_get(0,4,&item) && !strcmp(item.value,"Deep"));
+      app_module_fini();assert(!grants && !subscriptions && !frame_count);
+    }
+    printf("portable sleep Settings scenario %u passed\n",scenario);return 0;
+  }
 #endif
   if(scenario==6)rtc_api.struct_size=8;
   if(scenario==16)rtc_api.api_version=1;
