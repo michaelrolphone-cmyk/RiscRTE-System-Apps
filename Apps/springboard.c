@@ -258,7 +258,10 @@ static void change_page(bool forward) {
 static void raster_page(const char *status) {
     api->clear();
     if (has_storage_api()) draw_edit_button();
-    else api->draw_label(8, 16, api->screen_width() - 16, "APPS");
+    else {
+        api->draw_label(8, 16, 48, "BACK");
+        api->draw_label(56, 16, api->screen_width() - 64, "APPS");
+    }
     const uint32_t first = count ? current_page() * (uint32_t)page_size : 0;
     missing_icons = false;
     if (!count) {
@@ -458,6 +461,7 @@ __attribute__((visibility("default"))) void app_main(void) {
 
         if (input.tapped && !swiped) {
             const int x = input.touch_x, y = input.touch_y;
+            if (!has_storage_api() && x < 56 && y < 40) goto cleanup;
             if (has_storage_api() && edit_button_hit(x, y)) {
                 selection_visible = false;
                 toggle_edit_mode();

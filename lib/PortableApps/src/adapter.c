@@ -7,6 +7,7 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
+#include <limits.h>
 static const risc_runtime_api_v1 *rt;
 static risc_runtime_capability_v1 dg, bg;
 static const risc_display_output_api_v1 *display;
@@ -379,4 +380,10 @@ __attribute__((visibility("default"))) int app_module_init(void) {
   if (status)
     app_module_fini();
   return status;
+}
+
+/* Minimal runtime does not export abs. App-local implementation; gesture
+ * differences are bounded, with saturation guarding malformed coordinates. */
+int abs(int value) {
+  return value >= 0 ? value : (value == INT_MIN ? INT_MAX : -value);
 }
