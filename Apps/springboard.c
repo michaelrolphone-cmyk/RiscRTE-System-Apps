@@ -18,7 +18,8 @@
 static const t5_app_api_v1 *api;
 static const t5_storage_api_v1 *storage;
 static uint32_t selected, count;
-static int columns, rows, page_size, cell_w, cell_h;
+static int columns, rows, page_size, cell_w, cell_h, grid_top;
+static bool compact;
 static bool missing_icons;
 static bool edit_mode;
 static bool selection_visible;
@@ -175,11 +176,14 @@ static bool save_home_pins(void) {
 
 static void layout(void) {
     int w = api->screen_width(), h = api->screen_height();
-    columns = w >= 700 ? 4 : 3;
-    rows = (h - 180) / 150;
+    compact = w < 400 || h < 400;
+    grid_top = compact ? 56 : 80;
+    columns = compact ? (w >= 200 ? 2 : 1) : (w >= 700 ? 4 : 3);
+    rows = compact ? (h - 110) / 94 : (h - 180) / 150;
     if (rows < 1) rows = 1;
     cell_w = (w - 32) / columns;
-    cell_h = (h - 180) / rows;
+    cell_h = (h - (compact ? 110 : 180)) / rows;
+    if (cell_h < 1) cell_h = 1;
     page_size = columns * rows;
 }
 
@@ -253,7 +257,8 @@ static void change_page(bool forward) {
 
 static void raster_page(const char *status) {
     api->clear();
-    draw_edit_button();
+    if (has_storage_api()) draw_edit_button();
+    else api->draw_label(8, 16, api->screen_width() - 16, "APPS");
     const uint32_t first = count ? current_page() * (uint32_t)page_size : 0;
     missing_icons = false;
     if (!count) {
@@ -264,8 +269,8 @@ static void raster_page(const char *status) {
         t5_app_manifest_t app;
         if (!api->installed_apps_get(first + cell, &app)) continue;
         const int x = 16 + (cell % columns) * cell_w;
-        const int y = 80 + (cell / columns) * cell_h;
-        const int box = 82;
+        const int y = grid_top + (cell / columns) * cell_h;
+        const int box = compact ? 56 : 82;
         const int icon_cell = 18;
         const int bx = x + (cell_w - box) / 2;
         const int by = y + 8;
@@ -285,11 +290,11 @@ static void raster_page(const char *status) {
                             app.icon, icon_cell, false)) {
             missing_icons = true;
         }
-        api->draw_label(x + 6, y + 98, cell_w - 12, app.display_name);
+        api->draw_label(x + 6, y + (compact ? 72 : 98), cell_w - 12, app.display_name);
         if (!app.compatible) {
             char required[48];
             snprintf(required, sizeof(required), "Needs %s", app.min_firmware_version);
-            api->draw_label(x + 6, y + 115, cell_w - 12, required);
+            api->draw_label(x + 6, y + (compact ? 88 : 115), cell_w - 12, required);
         }
         if (selection_visible && first + cell == selected)
             api->fill_rect(x + 12, y + cell_h - 8, cell_w - 24, 3, true);
@@ -367,9 +372,15 @@ static bool launch(void) {
 __attribute__((visibility("default"))) uint32_t app_hardware_takeover(void) {
     const t5_app_api_v1* host=t5_app_get_api(T5_APP_ABI_VERSION);
     t5_app_frame_t frame={0};
-    return host && host->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(host->touch_contact) &&
-        host->copy_ui_frame && host->touch_contact && host->copy_ui_frame(NULL,0,&frame)
-        ? T5_HARDWARE_TAKEOVER_DISPLAY|T5_HARDWARE_TAKEOVER_UI_VIDEO : 0;
+    const t5_video_api_v1* video=t5_video_get_api(T5_VIDEO_API_VERSION);
+    // Select animation only when both geometry and the fast provider exist.
+    // Without them retain ordinary display ownership and render static pages.
+    sv_requested = host && host->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(host->touch_contact) &&
+        host->copy_ui_frame && host->touch_contact && host->copy_ui_frame(NULL,0,&frame) &&
+        frame.width==960 && frame.height==540 && frame.stride_bytes==240 && frame.orientation<=3 &&
+        video && video->struct_size>=offsetof(t5_video_api_v1,start_format)+sizeof(video->start_format) &&
+        video->start_format && video->backbuffer && video->can_submit && video->submit && video->stop;
+    return sv_requested ? T5_HARDWARE_TAKEOVER_DISPLAY|T5_HARDWARE_TAKEOVER_UI_VIDEO : 0;
 }
 
 __attribute__((visibility("default"))) void app_main(void) {
@@ -447,7 +458,7 @@ __attribute__((visibility("default"))) void app_main(void) {
 
         if (input.tapped && !swiped) {
             const int x = input.touch_x, y = input.touch_y;
-            if (edit_button_hit(x, y)) {
+            if (has_storage_api() && edit_button_hit(x, y)) {
                 selection_visible = false;
                 toggle_edit_mode();
                 old = selected;
@@ -456,9 +467,9 @@ __attribute__((visibility("default"))) void app_main(void) {
                 draw(0);
                 old = selected;
             } else if (count && x >= 16 && x < 16 + columns * cell_w &&
-                       y >= 80 && y < 80 + rows * cell_h) {
+                       y >= grid_top && y < grid_top + rows * cell_h) {
                 const uint32_t tapped = current_page() * (uint32_t)page_size +
-                    (uint32_t)((y - 80) / cell_h) * (uint32_t)columns +
+                    (uint32_t)((y - grid_top) / cell_h) * (uint32_t)columns +
                     (uint32_t)((x - 16) / cell_w);
                 if (tapped < count) {
                     selected = tapped;

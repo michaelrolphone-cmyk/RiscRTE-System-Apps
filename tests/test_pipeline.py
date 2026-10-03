@@ -18,7 +18,7 @@ class PipelineTests(unittest.TestCase):
         check_sdk()
         rows = audit()['files']
         self.assertEqual(len(rows), 38)
-        self.assertTrue(all(row['state'] == 'unchanged' for row in rows))
+        self.assertEqual({row['path'] for row in rows if row['state'] != 'unchanged'}, set(['Apps/springboard.c', 'Apps/springboard.json', 'Apps/springboard_video.inc']))
 
     def test_three_way_conflict_preservation(self):
         for base, local, upstream, state in [('a','a','a','unchanged'), ('a','b','b','converged'),
