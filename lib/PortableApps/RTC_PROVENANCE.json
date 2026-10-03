@@ -1,0 +1,12 @@
+{
+  "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+  "commit": "79cbca2cdc216ba1cc280b99856c646d72d9f58c",
+  "path": "include/twatch_caps.h",
+  "source_blob": "87e06b057e72e489b845ee3252fa20f2f28ac493",
+  "source_sha256": "b4338e9ce96c47edd510ac0baddb92c04db9d3c0e66ef684f45b7134c346fdcd",
+  "consumer_header": "lib/PortableApps/include/PortableRtcClock.h",
+  "verbatim_block_sha256": "edba4f1db543737c1733cd26ed747778f27b8b8b1c7ce6623059bf8597c37f89",
+  "capability": "rtc.clock",
+  "api": 2,
+  "status": "Existing project-local declaration; no new ABI or canonical SDK promotion; source has no per-header license notice."
+}

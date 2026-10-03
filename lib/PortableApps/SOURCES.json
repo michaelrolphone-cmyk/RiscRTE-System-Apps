@@ -1,0 +1,46 @@
+{
+  "RiscStreamProviderV1.h": {
+    "repository": "T5S3-Reader",
+    "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
+    "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  },
+  "RiscRuntimeV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscRuntimeV1.h",
+    "commit": "be6efce33a19d3a21ced4077a038fdcc7b9b94a3",
+    "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b"
+  },
+  "T5BatteryApi.h": {
+    "repository": "RiscRTE-Utilities",
+    "commit": "67b21bbef5ef5df48c5c4eecade4f28942af9b33",
+    "path": "lib/NativeApps/include/T5BatteryApi.h",
+    "sha256": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5"
+  },
+  "RiscTouchV1.h": {
+    "repository": "T5S3-Reader",
+    "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
+    "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d"
+  },
+  "RiscDisplayOutputV1.h": {
+    "repository": "T5S3-Reader",
+    "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
+    "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726"
+  },
+  "RiscBatteryGaugeV1.h": {
+    "repository": "RiscRTE-Utilities",
+    "commit": "67b21bbef5ef5df48c5c4eecade4f28942af9b33",
+    "path": "lib/NativeApps/include/RiscBatteryGaugeV1.h",
+    "sha256": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86"
+  },
+  "RiscProviderV2.h": {
+    "repository": "T5S3-Reader",
+    "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
+    "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17"
+  },
+  "RiscInputNavigationV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "path": "sdk/driver/RiscInputNavigationV1.h",
+    "commit": "9ed7bd48a97aea192c8cc9e75c22c1f87c8c7313",
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+  }
+}

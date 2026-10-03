@@ -12,6 +12,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -20,6 +22,8 @@ jobs:
       - name: Exercise app UI and provider interaction fixtures
         run: |
           python scripts/test_apps.py
+          python scripts/test_portable_apps.py
+          python scripts/test_springboard_nova.py
           python test/native_apps/file_browser_oversize_usb_handle_runtime_test.py
       - name: Install pinned public compiler
         run: |
@@ -29,9 +33,18 @@ jobs:
         run: |
           python scripts/build_all_apps.py
           python scripts/check_release_parity.py
+          python scripts/build_portable_settings.py
+          python scripts/build_portable_springboard.py
+          python scripts/build_portable_springboard.py --denver --touch-rotation 180 --output-dir dist/portable/springboard-denver
+          python scripts/build_portable_settings.py --denver --touch-rotation 180 --output-dir dist/portable-denver
+          python scripts/build_portable_settings.py --denver --navigation --touch-rotation 180 --output-dir dist/portable-navigation
       - uses: actions/upload-artifact@v4
         with:
           name: system-app-development-${{ github.sha }}
-          path: dist/apps/
+          path: |
+            dist/apps/
+            dist/portable/
+            dist/portable-denver/
+            dist/portable-navigation/
           if-no-files-found: error
           retention-days: 14
