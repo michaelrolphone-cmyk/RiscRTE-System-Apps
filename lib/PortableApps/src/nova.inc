@@ -19,8 +19,8 @@ static uint16_t np_rgb(uint32_t rgb) {
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
-  if(a>255)a=255;
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
+  if(a>=255){uint16_t color=np_rgb(rgb);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);return;}
   uint16_t old=(uint16_t)(p[0]|p[1]<<8),color;
   unsigned r=((old>>11)&31)*255/31,g=((old>>5)&63)*255/63,b=(old&31)*255/31;
   r=(r*(255-a)+((rgb>>16)&255)*a)/255;
@@ -44,7 +44,7 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   }
   return true;
 }
-static void np_begin(void) { clear();fill(0,0,width(),height(),0);nova_mask_pending=true; }
+static void np_begin(void) { clear_color(0);nova_mask_pending=true; }
 static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
   if(radius<1 || radius>64)return;
   for(int j=-radius;j<=radius;++j)for(int i=-radius;i<=radius;++i){
@@ -63,6 +63,7 @@ static void np_mask(void) {
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
     unsigned a=ax*ay/255;
+    if(a==255)continue;
     if(dx<22 && dy<22 && (22-dx)*(22-dx)+(22-dy)*(22-dy)>22*22)a=0;
     uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
     uint16_t c=(uint16_t)(p[0]|p[1]<<8);
@@ -109,6 +110,7 @@ static void np_close(void) {
   np_rtc=NULL;
 #endif
 }
+static void np_poll(t5_app_input_t *out);
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
   if(width()>=400 && height()>=400)return NULL;
@@ -122,7 +124,12 @@ const springboard_presentation *springboard_presentation_get(void) {
     else if(np_rtc_grant.api && !rt->release(&np_rtc_grant))failed=true;
   }
 #endif
-  nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &np_view;
+  nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  handoff_pending=true;
+  t5_app_input_t initial={0};np_poll(&initial);
+#endif
+  return &np_view;
 }
 static void np_poll(t5_app_input_t *out) {
   portable_touch_sample s;input_take(&s);

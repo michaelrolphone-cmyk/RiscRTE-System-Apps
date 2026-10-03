@@ -39,14 +39,20 @@ static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
 #ifdef PORTABLE_INPUT_NAVIGATION
-#include "RiscInputNavigationV1.h"
+#include "PortableNavigation.h"
+#ifndef PORTABLE_INPUT_NAVIGATION_LOCAL
 static risc_runtime_capability_v1 navigation_grant;
+#endif
 static const risc_input_navigation_api_v1 *navigation;
 static bool navigation_neutral,navigation_ready;
 static bool input_navigation_open(void) {
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+ navigation=portable_input_navigation_open(rt);
+#else
  navigation_grant.struct_size=sizeof(navigation_grant);
  if(!rt->acquire("input.navigation",1,0,&navigation_grant))return false;
  navigation=navigation_grant.api;
+#endif
  if(!navigation || navigation->api_version!=1 || navigation->struct_size<sizeof(*navigation) ||
     !navigation->poll || !navigation->foreground || !navigation->reset)return false;
  navigation_ready=true;
@@ -64,7 +70,11 @@ static void input_navigation_close(void) {
   if(!cleared||!reset)rt->diagnostic("PORTABLE_APP error=navigation-reset");
   navigation_ready=false;
  }
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+ portable_input_navigation_close(rt);
+#else
  if(navigation_grant.api && !rt->release(&navigation_grant))rt->diagnostic("PORTABLE_APP error=navigation-release");
+#endif
  navigation=NULL;navigation_pending=0;
 }
 #endif
@@ -100,6 +110,20 @@ static void input_navigation_take(t5_app_input_t*out) {
 }
 static uint16_t *previous_pixels;
 static bool previous_valid;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+#include "PortableTransition.h"
+/* Deployment opt-in ONLY: acquire returns the exact last completed RGB565
+ * frame from a persistent provider. It is not a display.output@1 guarantee.
+ * See docs/PORTABLE_TRANSITIONS.md. Copy before clear, never retain a lease
+ * or an outgoing app pointer. Unsupported builds do not compile this path. */
+static uint16_t *handoff_old,*handoff_scratch;
+static bool handoff_pending,handoff_active,handoff_first;
+static uint32_t handoff_started;
+bool springboard_transition_active(void) { return handoff_active && !failed; }
+static void handoff_finish(void) {
+ free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
+}
+#endif
 static int32_t width(void) { return info.width; }
 static int32_t height(void) { return info.height; }
 static void fill(int x, int y, int w, int h, uint16_t color) {
@@ -118,7 +142,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
       p[1] = color >> 8;
     }
 }
-static void clear(void) {
+static void clear_color(uint16_t color) {
   if (failed)
     return;
   if (surface.frame) {
@@ -139,8 +163,29 @@ static void clear(void) {
     failed = true;
     return;
   }
-  fill(0, 0, width(), height(), 0xffff);
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  if(handoff_pending) {
+    handoff_pending=false;
+    if(info.width<=PORTABLE_TRANSITION_MAX_SIDE &&
+       info.height<=PORTABLE_TRANSITION_MAX_SIDE &&
+       info.nominal_refresh_millihz>=20000 &&
+       !(info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
+       info.typical_present_latency_us<=50000) {
+      size_t bytes=(size_t)info.width*info.height*2;
+      handoff_old=malloc(bytes);
+      handoff_scratch=handoff_old?malloc(bytes):NULL;
+      if(!handoff_scratch){free(handoff_old);handoff_old=NULL;}
+      else {
+        for(unsigned y=0;y<info.height;y++)memcpy(handoff_old+(size_t)y*info.width,
+          (uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
+        handoff_first=true;handoff_active=true;
+      }
+    }
+  }
+#endif
+  fill(0, 0, width(), height(), color);
 }
+static void clear(void) { clear_color(0xffff); }
 static void rect(int32_t x, int32_t y, int32_t w, int32_t h, bool black) {
   fill(x, y, w, h, black ? 0 : 0xffff);
 }
@@ -245,7 +290,24 @@ static void present(bool full) {
     return;
   risc_display_present_token_v1 token = 0;
   risc_display_rect_v1 damage={0};size_t damage_count=0;
-  if(previous_pixels) {
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  if(handoff_active) {
+    uint32_t now=millis_now();
+    if(failed)return;
+    /* Start at the first submission, not during allocation/initial rendering.
+     * The first frame is byte-exact outgoing content even on a busy target. */
+    if(handoff_first){handoff_started=now;handoff_first=false;}
+    unsigned alpha=portable_transition_alpha(now-handoff_started);
+    if(alpha==256u || !portable_transition_rgb565(surface.pixels,surface.stride_bytes,
+        handoff_old,info.width*2,handoff_scratch,(size_t)info.width*info.height*2,
+        info.width,info.height,alpha))handoff_finish();
+  }
+#endif
+  if(previous_pixels
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+     && !handoff_active
+#endif
+  ) {
     unsigned first=info.height,last=0;
     if(previous_valid)for(unsigned y=0;y<info.height;y++) {
       if(memcmp(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2)) {
@@ -275,7 +337,13 @@ static void present(bool full) {
       failed = true;
       break;
     }
-    if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){previous_valid=previous_pixels!=NULL;return;}
+    if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+      previous_valid=previous_pixels!=NULL;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+      if(handoff_active)previous_valid=false;
+#endif
+      return;
+    }
     if ((uint32_t)(millis_now() - start) >= 10000) {
       failed = true;
       break;
@@ -340,7 +408,11 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
-  return !failed && !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
+  return !failed &&
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+      !handoff_active &&
+#endif
+      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
 }
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
@@ -459,6 +531,9 @@ static int initialize(void) {
   nova_mode = false;
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
+#endif
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
   display = dg.api;
@@ -473,8 +548,10 @@ static int initialize(void) {
         RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
     return -1;
   if (!portable_touch_open(&touch, rt))return -1;
+#ifndef PORTABLE_FORCE_FULL_FRAMES
   if((info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
     previous_pixels=malloc((size_t)info.width*info.height*2); /* optional; full-frame fallback */
+#endif
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
   if(!input_navigation_open())return -1;
 #endif
@@ -495,6 +572,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (surface.frame)
     display->release(display->context, surface.frame);
   surface.frame = 0;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  handoff_finish();
+#endif
   np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
   input_navigation_close();

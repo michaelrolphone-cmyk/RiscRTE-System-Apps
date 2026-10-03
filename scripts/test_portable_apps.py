@@ -14,7 +14,8 @@ for name,source,flags in [('springboard',ROOT/'Apps/springboard.c',[])]+([('batt
 # The original Settings app executes through the production compact view.
 profiles=[('settings',[],list(range(13))+list(range(14,20))+list(range(25,30))+[34,35]),
  ('settings-denver',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_TOUCH_ROTATION=180'],[0]+list(range(20,30))+[34,35]),
- ('settings-navigation',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_INPUT_NAVIGATION'],[30,31,32,36,37])]
+ ('settings-navigation',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_INPUT_NAVIGATION'],[30,31,32,36,37]),
+ ('settings-local-navigation',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_INPUT_NAVIGATION_LOCAL'],[30,31,32,36,37,38])]
 for name,flags,cases in profiles:
  binary=out/name
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',

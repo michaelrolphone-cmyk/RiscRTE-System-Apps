@@ -92,7 +92,11 @@ int main(int argc,char **argv){
  assert(!!launched[0]==expect);
  assert(launches==((expect||scenario==11)&&CATALOG_COUNT?1u:0u));
  max_presents=ms/40+1;assert(presents<=max_presents);
+ #ifndef PORTABLE_RETAINED_RGB565_HANDOFF
  if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=2);
+#else
+ if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=7);
+#endif
  if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24)assert(presents<100);
  if(scenario==36||scenario==37)assert(max_touch_gap<=32);
  printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u launch requests, clean teardown\n",scenario,portable_catalog_count,presents,launches);

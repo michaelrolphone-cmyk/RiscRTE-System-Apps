@@ -18,3 +18,5 @@ typedef struct {
     bool (*clock)(uint8_t *hour, uint8_t *minute);
 } springboard_presentation;
 const springboard_presentation *springboard_presentation_get(void);
+/* App-local optional redraw request; weak false in the shared app. */
+bool springboard_transition_active(void);

@@ -22,6 +22,7 @@ def build(args):
     out = args.output_dir or ROOT/'dist/portable'
     flags=['-DPORTABLE_SETTINGS_APP']
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
+    if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
     version=json.loads((ROOT/'Apps/settings.json').read_text())['version']
@@ -93,7 +94,7 @@ def build(args):
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
-        'navigation':args.navigation,'touch_rotation':args.touch_rotation,
+        'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
@@ -101,6 +102,7 @@ def build(args):
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')
+    parser.add_argument('--full-frames',action='store_true',help='Disable optional partial-damage and previous-frame cache')
     parser.add_argument('--navigation',action='store_true',help='Require a granted input.navigation@1 provider')
     parser.add_argument('--touch-rotation',type=int,choices=[0,180],default=0)
     parser.add_argument('--output-dir',type=Path)

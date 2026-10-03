@@ -9,6 +9,8 @@ typedef struct {
     nova_point points[NOVA_PAGE_APPS];
     unsigned n, first, focus, moved, frames;
     int pulse, pending, last_x, last_y,visible_x,visible_y;
+    unsigned launch_duration;
+    float launch_x,launch_y;
     sb_motion motion;
     bool down, tap, initial, dirty;
     uint32_t last_frame, last_clock, last_input, last_motion;
@@ -128,6 +130,14 @@ static void nova_cancel(nova_state *s) {
     s->down=s->tap=s->initial=false;sb_motion_cancel(&s->motion);
     s->pending=-1;s->pulse=0;s->dirty=true;
 }
+static void nova_prepare_launch(nova_state *s,unsigned hit,unsigned duration) {
+    /* Follow the position the user actually tapped. A spring would still be
+     * halfway to a neighboring icon when the short launch pulse completes. */
+    s->launch_x=(float)s->visible_x/16.0f;s->launch_y=(float)s->visible_y/16.0f;
+    s->launch_duration=duration;s->pending=(int)hit;s->pulse=(int)duration;
+    s->motion.x=s->launch_x;s->motion.y=s->launch_y;
+    s->motion.vx=s->motion.vy=0;sb_motion_target(&s->motion,hit);s->dirty=true;
+}
 static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32_t elapsed) {
     if (!c->valid || c->cancelled) { nova_cancel(s); return; }
     if (c->down) {
@@ -158,8 +168,9 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
                     }
                     int dx=s->points[hit].x-s->points[center].x,dy=s->points[hit].y-s->points[center].y;
                     bool first_ring=dx*dx+dy*dy<=896*896; /* center plus one54px hex ring */
-                    sb_motion_target(&s->motion,(unsigned)hit);s->pending=first_ring?hit:-1;
-                    s->pulse=first_ring?160:0;s->status[0]=0;s->dirty=true;
+                    sb_motion_target(&s->motion,(unsigned)hit);s->pending=-1;s->pulse=0;
+                    if(first_ring)nova_prepare_launch(s,(unsigned)hit,160);
+                    s->status[0]=0;s->dirty=true;
                 }
                 else if (count>NOVA_PAGE_APPS && c->y>=api->screen_height()-24) {
                     s->first=(s->first+NOVA_PAGE_APPS<count)?s->first+NOVA_PAGE_APPS:0;nova_layout(s);
@@ -171,10 +182,16 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
 }
 static void nova_tick(nova_state *s,uint32_t elapsed) {
     int oldx=(int)(s->motion.x*16),oldy=(int)(s->motion.y*16);
-    sb_motion_step(&s->motion,elapsed);
+    if(s->pending>=0 && s->launch_duration) {
+        s->pulse=(unsigned)s->pulse>elapsed?s->pulse-(int)elapsed:0;
+        float remaining=(float)s->pulse/(float)s->launch_duration;
+        float ease=1.0f-remaining*remaining*remaining;
+        sb_point target=s->motion.points[s->pending];
+        s->motion.x=s->launch_x+(target.x-s->launch_x)*ease;
+        s->motion.y=s->launch_y+(target.y-s->launch_y)*ease;
+        s->motion.vx=s->motion.vy=0;s->motion.settled=!s->pulse;s->dirty=true;
+    } else sb_motion_step(&s->motion,elapsed);
     s->dirty |= oldx!=(int)(s->motion.x*16)||oldy!=(int)(s->motion.y*16);
-    if(s->pulse){s->pulse=(unsigned)s->pulse>elapsed?s->pulse-(int)elapsed:0;s->dirty=true;}
-    if(s->pending>=0 && !s->pulse) {s->motion.x=s->motion.points[s->pending].x;s->motion.y=s->motion.points[s->pending].y;s->motion.vx=s->motion.vy=0;s->motion.settled=true;s->dirty=true;}
     if(s->n){unsigned n=nova_nearest(s);s->dirty|=n!=s->focus;s->focus=n;selected=s->first+n;}
 }
 static bool nova_run(void) {
@@ -184,7 +201,11 @@ static bool nova_run(void) {
     nova_state s={.view=v,.initial=true,.pending=-1};
     nova_layout(&s);
     s.time_known=v->clock(&s.hour,&s.minute) && s.hour<24 && s.minute<60;
-    s.last_frame=s.last_clock=s.last_input=s.last_motion=api->millis();nova_render(&s);
+    s.last_frame=s.last_clock=s.last_input=s.last_motion=api->millis();
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+    springboard_contact initial={0};v->contact(&initial);nova_contact_input(&s,&initial,0);
+#endif
+    nova_render(&s);
     t5_app_input_t in;uint32_t previous=0;bool buttons_armed=false;
     while(api->poll(&in,20)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK)) break;
@@ -204,7 +225,7 @@ static bool nova_run(void) {
             if(first!=s.first){s.first=first;nova_layout(&s);}
             sb_motion_target(&s.motion,next-s.first);s.status[0]=0;
         }
-        if(s.n && (pressed&T5_APP_BUTTON_CONFIRM)) {s.pending=(int)(s.motion.snapping?s.motion.target:s.focus);sb_motion_target(&s.motion,(unsigned)s.pending);s.pulse=320;s.dirty=true;}
+        if(s.n && (pressed&T5_APP_BUTTON_CONFIRM)) nova_prepare_launch(&s,s.motion.snapping?s.motion.target:s.focus,320);
         nova_tick(&s,elapsed);s.last_motion=now;
         if((uint32_t)(now-s.last_clock)>=1000) {
             uint8_t hour=0,minute=0;bool known=v->clock(&hour,&minute)&&hour<24&&minute<60;
@@ -213,8 +234,8 @@ static bool nova_run(void) {
         }
         if((uint32_t)(now-s.last_frame)<NOVA_FRAME_MS) continue;
         s.last_frame=now;
-        if(s.dirty) nova_render(&s);
-        if(s.pending>=0 && !s.pulse) {
+        if(s.dirty || springboard_transition_active()) nova_render(&s);
+        if(s.pending>=0 && !s.pulse && !springboard_transition_active()) {
             selected=s.first+(unsigned)s.pending;
             t5_app_manifest_t app;
             if(api->installed_apps_get(selected,&app) && app.compatible && api->request_app_launch(selected)) break;

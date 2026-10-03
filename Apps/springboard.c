@@ -22,6 +22,7 @@ static uint32_t selected, count;
 static int columns, rows, page_size, cell_w, cell_h, grid_top;
 static bool compact;
 __attribute__((weak)) const springboard_presentation *springboard_presentation_get(void) { return NULL; }
+__attribute__((weak)) bool springboard_transition_active(void) { return false; }
 static bool missing_icons;
 static bool edit_mode;
 static bool selection_visible;

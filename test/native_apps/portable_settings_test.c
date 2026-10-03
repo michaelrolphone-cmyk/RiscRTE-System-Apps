@@ -119,13 +119,22 @@ static bool nav_foreground(void *c,const risc_input_foreground_v1 *f,size_t n){
   return scenario!=36 || !n;
 }
 static risc_input_navigation_api_v1 nav_api={1,sizeof(nav_api),NULL,nav_poll,nav_foreground,nav_reset};
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+static unsigned local_opens,local_closes;
+const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1 *runtime){
+  assert(runtime);++local_opens;return scenario==38?NULL:&nav_api;
+}
+void portable_input_navigation_close(const risc_runtime_api_v1 *runtime){
+  assert(runtime);++local_closes;
+}
+#endif
 #endif
 static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){
   assert(!id && grant->struct_size==sizeof(*grant));
   if(!strcmp(name,"display.output")){assert(version==1);grant->api=&display_api;}
   else if(!strcmp(name,"input.touch.raw")){assert(version==1);grant->api=&touch_api;}
   else if(!strcmp(name,"rtc.clock")){assert(version==2);if(scenario==7)return false;grant->api=&rtc_api;}
-#ifdef PORTABLE_INPUT_NAVIGATION
+#if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_INPUT_NAVIGATION_LOCAL)
   else if(!strcmp(name,"input.navigation")){assert(version==1);grant->api=&nav_api;}
 #endif
   else {assert(!strcmp(name,"board.battery"));return false;}
@@ -204,11 +213,20 @@ int main(int argc,char **argv){
     }
   }
   int init=app_module_init();
-  if(scenario==6 || scenario==7 || scenario==16 || scenario==17 || scenario==32 || scenario==36 || scenario==37){assert(init!=0);assert(!grants && !subscriptions && !frame_count);return 0;}
+  if(scenario==6 || scenario==7 || scenario==16 || scenario==17 || scenario==32 || scenario==36 || scenario==37 || scenario==38){
+    assert(init!=0);assert(!grants && !subscriptions && !frame_count);
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+    if(scenario>=32)assert(local_opens==1 && local_closes==1);
+#endif
+    return 0;
+  }
   assert(init==0);app_main();app_module_fini();
   assert(!grants && !subscriptions && !frame_count && !diagnostics);
 #ifdef PORTABLE_INPUT_NAVIGATION
   assert(nav_resets>=2 && nav_foregrounds==2);
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+  assert(local_opens==1 && local_closes==1);
+#endif
 #endif
   bool no_write=scenario==1 || scenario==8 || scenario==9 || scenario==10 || scenario==14 || scenario==15 ||
                 scenario==20 || scenario==23 || scenario==24 || (scenario>=25 && scenario<=29) || scenario==31 || scenario==34 || scenario==35;
