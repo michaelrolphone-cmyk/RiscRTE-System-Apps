@@ -9,4 +9,4 @@ out=ROOT/'build/portable';out.mkdir(parents=True,exist_ok=True)
 for name,source,flags in [('springboard',ROOT/'Apps/springboard.c',[])]+([('battery',a.utilities.resolve()/'Apps/battery.c',['-DBATTERY_TEST'])] if a.utilities else []):
  binary=out/name
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror','-fsanitize=undefined',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(source),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/portable_adapter_test.c'),'-o',str(binary)],check=True,timeout=60)
- for n in range(5):subprocess.run([str(binary),str(n)],check=True,timeout=10)
+ for n in range(8 if name == "battery" else 5):subprocess.run([str(binary),str(n)],check=True,timeout=10)

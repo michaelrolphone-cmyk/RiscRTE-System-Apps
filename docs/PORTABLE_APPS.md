@@ -44,3 +44,5 @@ external development delta; do not overwrite it when synchronizing Reader.
 Published-byte checks still require identical bytes for unchanged published
 versions; strictly newer versions are reported as development builds, never
 reported byte-identical to an older publication. Springboard: 1.3.1 -> 1.3.3.
+
+The adapter preserves successful battery reads when SOC is missing or unprofiled: voltage and charging status remain valid, while `soc_percent` is UINT16_MAX. Deploy with Battery >=1.0.4, which renders this out-of-range value as Unknown; do not pair with earlier Battery builds. This is a paired client/app interpretation, not a change to the pinned SDK layout.

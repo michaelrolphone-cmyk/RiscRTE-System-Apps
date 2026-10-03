@@ -1,4 +1,5 @@
 #include "PortableApps.h"
+#include "T5BatteryApi.h"
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscRuntimeV1.h"
@@ -132,6 +133,9 @@ static bool battery_read(void *c, risc_battery_sample_v1 *s) {
   reads++;
   *s = (risc_battery_sample_v1){
       .percent = 73, .millivolts = 3970, .flags = RISC_BATTERY_CHARGING};
+  if (scenario == 5) s->percent = 255;
+  if (scenario == 6) s->flags |= RISC_BATTERY_PROFILE_MISSING;
+  if (scenario == 7) s->percent = 0;
   return true;
 }
 static const risc_display_output_api_v1 d = {.api_version = 1,
@@ -181,13 +185,23 @@ int main(int argc, char **argv) {
     return 0;
   }
   assert(init == 0);
+#ifdef BATTERY_TEST
+  if (scenario >= 5) {
+    t5_battery_state_t state;
+    const t5_battery_api_v1 *api = t5_battery_get_api(1);
+    assert(api && api->read(&state));
+    assert(state.available && state.gauge_read_ok && state.gauge_voltage_mv == 3970 && state.charging);
+    assert(state.soc_percent == (scenario == 7 ? 0 : UINT16_MAX));
+    reads = 0;
+  }
+#endif
   app_main();
   app_module_fini();
   assert(!frames && !grants && !subs);
 #ifdef BATTERY_TEST
   assert(reads >= 1);
-  if (scenario == 0)
-    assert(reads == 2);
+  if (scenario == 0 || scenario >= 5)
+    assert(reads == 2 && presents >= 2);
 #else
   if (scenario != 2)
     assert(!strcmp(launched, "battery.elf"));
