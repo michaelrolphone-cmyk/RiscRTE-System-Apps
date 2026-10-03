@@ -2,6 +2,7 @@
 #include "T5StorageApi.h"
 #include "T5VideoApi.h"
 #include "T5HardwareTakeover.h"
+#include "SpringboardPresentation.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -20,6 +21,7 @@ static const t5_storage_api_v1 *storage;
 static uint32_t selected, count;
 static int columns, rows, page_size, cell_w, cell_h, grid_top;
 static bool compact;
+__attribute__((weak)) const springboard_presentation *springboard_presentation_get(void) { return NULL; }
 static bool missing_icons;
 static bool edit_mode;
 static bool selection_visible;
@@ -386,6 +388,8 @@ __attribute__((visibility("default"))) uint32_t app_hardware_takeover(void) {
     return sv_requested ? T5_HARDWARE_TAKEOVER_DISPLAY|T5_HARDWARE_TAKEOVER_UI_VIDEO : 0;
 }
 
+#include "springboard_nova.inc"
+
 __attribute__((visibility("default"))) void app_main(void) {
     api = t5_app_get_api(T5_APP_ABI_VERSION);
     storage = t5_storage_get_api(T5_STORAGE_API_VERSION);
@@ -398,6 +402,7 @@ __attribute__((visibility("default"))) void app_main(void) {
     selection_visible = false;
     load_home_pins();
     layout();
+    if (nova_run()) return;
     sv_fatal=false;sv_video=NULL;
     (void)sv_open();
     if(sv_fatal) goto cleanup;

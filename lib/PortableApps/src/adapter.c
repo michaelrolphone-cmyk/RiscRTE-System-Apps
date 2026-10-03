@@ -17,6 +17,11 @@ static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
 static unsigned first_row, last_rows;
+#ifdef PORTABLE_SETTINGS_APP
+#include "PortableRtcClock.h"
+static bool back_exits_app = true, settings_editing;
+static bool settings_view_poll(t5_app_input_t *out);
+#endif
 static uint32_t millis_now(void) {
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
@@ -143,28 +148,26 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
     n = w / 6;
   text_color(x + (w - n * 6) / 2, y, s, n, 0);
 }
-static bool icon(int32_t x, int32_t y, const char *name, uint8_t size,
-                 bool black) {
-  uint16_t c = black ? 0 : 0xffff;
-  if (!name || size < 8)
-    return false;
-  if (!strcmp(name, "solid:f240")) {
-    fill(x, y + 3, size - 2, size - 6, c);
-    fill(x + size - 2, y + size / 3, 2, size / 3, c);
-    return true;
-  }
-  if (!strcmp(name, "solid:f017")) {
-    for (int i = 0; i < size; ++i) {
-      fill(x + i, y, 1, 1, c);
-      fill(x + i, y + size - 1, 1, 1, c);
-      fill(x, y + i, 1, 1, c);
-      fill(x + size - 1, y + i, 1, 1, c);
+#include "nova.inc"
+static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool black) {
+  /* Preserve the existing call contract; genuine glyph raster, no handmade FA IDs. */
+  if (black) {
+    /* np_icon normally draws white; invert its bounded output on a white tile. */
+    if (!name || size < 1 || size > 96) return false;
+    const rpi_glyph *g = NULL;
+    for (unsigned i = 0; i < sizeof(rpi_icons)/sizeof(rpi_icons[0]); ++i)
+      if (!strcmp(rpi_icons[i].name, name)) { g = &rpi_icons[i]; break; }
+    if (!g) return false;
+    int max = g->width > g->height ? g->width : g->height;
+    int w = g->width*size/max, h = g->height*size/max;
+    for (int j = 0; j < h; ++j) for (int i = 0; i < w; ++i) {
+      unsigned n = (unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
+      unsigned a = (g->bits[n/4] >> (6-2*(n%4))) & 3;
+      np_pixel(x+(size-w)/2+i, y+(size-h)/2+j, 0, a*85);
     }
-    fill(x + size / 2, y + 3, 1, size / 2, c);
-    fill(x + size / 2, y + size / 2, size / 3, 1, c);
     return true;
   }
-  return false;
+  return np_icon(x+size/2,y+size/2,size,name,255);
 }
 static void present(bool full) {
   (void)full;
@@ -204,15 +207,29 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     return false;
   rt->yield_ms(wait);
   (void)millis_now();
+  if (nova_mode) { np_poll(out); return !failed; }
+#ifdef PORTABLE_SETTINGS_APP
+  if (settings_view_poll(out)) return !failed;
+#endif
   uint16_t x, y;
   if (portable_touch_tap(&touch, &x, &y)) {
     if (x >= info.width || y >= info.height)
       return !failed;
     if (y < 40 && x < 56) {
+#ifdef PORTABLE_SETTINGS_APP
+      out->exit_requested = back_exits_app;
+#else
       out->exit_requested = true;
+#endif
       out->buttons = T5_APP_BUTTON_BACK;
     } else if (list_mode && y >= info.height - 32)
+#ifdef PORTABLE_SETTINGS_APP
+      out->buttons = settings_editing
+                         ? (x < info.width / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
+                         : (x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN);
+#else
       out->buttons = x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN;
+#endif
     else if (list_mode && y < 40 && x >= info.width - 56)
       out->buttons = T5_APP_BUTTON_CONFIRM;
     else {
@@ -234,7 +251,7 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
-  return i < count() && rt->request_launch(portable_catalog[i].file_name);
+  return !failed && i < count() && rt->request_launch(portable_catalog[i].file_name);
 }
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
@@ -286,6 +303,9 @@ static int32_t next(int32_t i, uint32_t n) {
 static int32_t prev(int32_t i, uint32_t n) {
   return n ? (i > 0 ? i - 1 : (int32_t)n - 1) : 0;
 }
+#ifdef PORTABLE_SETTINGS_APP
+#include "settings.inc"
+#endif
 static const t5_app_api_v1 app = {.abi_version = 1,
                                   .struct_size = sizeof(app),
                                   .screen_width = width,
@@ -296,6 +316,16 @@ static const t5_app_api_v1 app = {.abi_version = 1,
                                   .present = present,
                                   .poll = poll,
                                   .millis = millis_now,
+#ifdef PORTABLE_SETTINGS_APP
+                                  .set_back_exits_app = set_back_exits,
+                                  .settings_category_count = settings_categories,
+                                  .settings_category_get = settings_category,
+                                  .settings_count = settings_count,
+                                  .settings_get = settings_get,
+                                  .settings_activate = settings_activate,
+                                  .settings_render = settings_render,
+                                  .settings_touch = settings_touch,
+#endif
                                   .installed_apps_refresh = refresh,
                                   .installed_apps_count = count,
                                   .installed_apps_get = get,
@@ -337,6 +367,8 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+  nova_mode = false;
+  list_mode = false;
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
   display = dg.api;
@@ -358,6 +390,9 @@ static int initialize(void) {
         gauge->struct_size < sizeof(*gauge) || !gauge->read)
       return -1;
   }
+#ifdef PORTABLE_SETTINGS_APP
+  if (!settings_open()) return -1;
+#endif
   return 0;
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {
@@ -366,8 +401,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (surface.frame)
     display->release(display->context, surface.frame);
   surface.frame = 0;
+  np_close();
   if (!portable_touch_close(&touch, rt))
     rt->diagnostic("PORTABLE_APP error=touch-release");
+#ifdef PORTABLE_SETTINGS_APP
+  settings_close();
+#endif
   if (bg.api && !rt->release(&bg))
     rt->diagnostic("PORTABLE_APP error=battery-release");
   if (dg.api && !rt->release(&dg))

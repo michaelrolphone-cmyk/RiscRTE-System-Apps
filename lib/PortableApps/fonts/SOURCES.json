@@ -1,0 +1,33 @@
+{
+  "fontawesome_commit": "14c65a3747d0f3b751f15831fc719236aea8729d",
+  "reader_commit": "4ff926a4595924f7528147418013ab7f8762db17",
+  "license": "SIL OFL 1.1",
+  "files": {
+    "SD_fonts/FAClassicSolid/FAClassicSolid_18.cpfont": "7b2f820afb525f62c280292e63b01ef302e8392c1fe6fc707719588c41c8204c",
+    "SD_fonts/FAClassicRegular/FAClassicRegular_18.cpfont": "deeed2a726e370b5e030f231f621e3c3cc5a74fb98014b539088a90f15386d07",
+    "Orbitron-500.ttf": "e1dd2875a4cf1711615b7bc7eb2ae8d05bef3861f87a7fdd847a78199169b458",
+    "Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144"
+  },
+  "icons": [
+    "regular:f03e",
+    "solid:f00a",
+    "solid:f013",
+    "solid:f017",
+    "solid:f019",
+    "solid:f021",
+    "solid:f031",
+    "solid:f07c",
+    "solid:f085",
+    "solid:f0ac",
+    "solid:f0ec",
+    "solid:f11c",
+    "solid:f187",
+    "solid:f1ab",
+    "solid:f1eb",
+    "solid:f240",
+    "solid:f2ed",
+    "solid:f550"
+  ],
+  "icons.inc_sha256": "6dda01875f1c9d96e16ab83e3b31762643e02f820f8344cc8f329d703542a5b4",
+  "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
+}

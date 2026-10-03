@@ -36,5 +36,11 @@
     "repository": "T5S3-Reader",
     "commit": "3d9bc4f373679f5ae8dd184db6a8d0afa5a40231",
     "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17"
+  },
+  "RiscInputNavigationV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "path": "sdk/driver/RiscInputNavigationV1.h",
+    "commit": "9ed7bd48a97aea192c8cc9e75c22c1f87c8c7313",
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
   }
 }
