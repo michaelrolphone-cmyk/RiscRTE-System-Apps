@@ -17,7 +17,7 @@ const t5_app_manifest_t portable_catalog[]={
  {.display_name="Settings",.file_name="settings.elf",.icon="solid:f013",.compatible=true},
  {.display_name="Battery",.file_name="battery.elf",.icon="solid:f240",.compatible=true}};
 const unsigned portable_catalog_count=CATALOG_COUNT;
-static unsigned event_index;
+static unsigned event_index,present_started,last_touch_ms,max_touch_gap;
 static unsigned ms,polls,subs,grants,frames,presents,scenario,launches,last_present,max_presents;
 static uint16_t pixels[240*240];static char launched[128];
 static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<350;}
@@ -30,11 +30,11 @@ static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&
 static void save_frame(void){
  const char *dir=getenv("NOVA_FRAMES");if(!dir)return;char name[512];snprintf(name,sizeof(name),"%s/frame-%04u-%06u.rgb565",dir,presents,ms);FILE *f=fopen(name,"wb");assert(f);assert(fwrite(pixels,1,sizeof(pixels),f)==sizeof(pixels));fclose(f);
 }
-static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&polls>=18))return false;frames=0;if(presents && scenario!=22)assert(ms-last_present>=40);last_present=ms;*token=++presents;save_frame();return true;}
-static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
+static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&polls>=6))return false;frames=0;if(presents && scenario!=22)assert(ms-last_present>=40);last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
+static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=(scenario==36||scenario==37)&&presents>1&&ms-present_started<(scenario==36?120u:600u)?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static uint64_t subscribe(void *c){(void)c;++subs;return 1;}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);--subs;return true;}
-static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);++polls;event_index=0;return !(scenario==17&&polls==3);}
+static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);++polls;if(last_touch_ms&&ms-last_touch_ms>max_touch_gap)max_touch_gap=ms-last_touch_ms;last_touch_ms=ms;event_index=0;return !(scenario==17&&polls==3);}
 static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){
  (void)c;(void)n;
  if((scenario==3||scenario==18)&&polls==3)return -1;
@@ -88,11 +88,12 @@ int main(int argc,char **argv){
  if(scenario!=33){assert(v->clock(&hour,&minute));assert(hour==10&&minute==40);}else assert(!v->clock(&hour,&minute));
 #endif
  app_main();app_module_fini();assert(!frames&&!grants&&!subs);
- bool expect=CATALOG_COUNT>0&&(scenario==0||scenario==16||scenario==20||scenario==22);
+ bool expect=CATALOG_COUNT>0&&(scenario==0||scenario==16||scenario==19||scenario==20||scenario==22||scenario==30||scenario==36||scenario==37);
  assert(!!launched[0]==expect);
  assert(launches==((expect||scenario==11)&&CATALOG_COUNT?1u:0u));
  max_presents=ms/40+1;assert(presents<=max_presents);
  if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=2);
  if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24)assert(presents<100);
+ if(scenario==36||scenario==37)assert(max_touch_gap<=32);
  printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u launch requests, clean teardown\n",scenario,portable_catalog_count,presents,launches);
 }

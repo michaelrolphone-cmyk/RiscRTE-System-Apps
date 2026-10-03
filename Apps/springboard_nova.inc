@@ -1,5 +1,6 @@
 /* Shared compact presentation; all gesture and layout state stays in the app. */
 #include "springboard_motion.h"
+#include <limits.h>
 #define NOVA_PAGE_APPS 19u
 #define NOVA_FRAME_MS 40u
 typedef struct { int16_t x, y; } nova_point;
@@ -7,7 +8,7 @@ typedef struct {
     const springboard_presentation *view;
     nova_point points[NOVA_PAGE_APPS];
     unsigned n, first, focus, moved, frames;
-    int pulse, pending, last_x, last_y;
+    int pulse, pending, last_x, last_y,visible_x,visible_y;
     sb_motion motion;
     bool down, tap, initial, dirty;
     uint32_t last_frame, last_clock, last_input, last_motion;
@@ -109,13 +110,13 @@ static void nova_render(nova_state *s) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
         s->view->caption(api->screen_height()-16,page,true,0x7d8c90);
     }
-    api->present(false);s->dirty=false;
+    api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;
 }
 static int nova_hit(nova_state *s,int x,int y) {
     int best=-1, nearest=10000;
     x-=api->screen_width()/2;y-=api->screen_height()/2;
     for (unsigned i=0;i<s->n;++i) {
-        int dx=s->points[i].x+(int)(s->motion.x*16),dy=s->points[i].y+(int)(s->motion.y*16);
+        int dx=s->points[i].x+s->visible_x,dy=s->points[i].y+s->visible_y;
         int scale=nova_scale(abs(dx)>abs(dy)?abs(dx):abs(dy));
         int d=nova_distance(x-dx/16,y-dy/16);
         if (nova_alpha(api->screen_width()/2+dx/16,api->screen_height()/2+dy/16)<32) continue;
@@ -144,11 +145,22 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
         }
     } else {
         s->initial=false;
-        if (s->down && c->released) {
+        if (c->released) {
+            bool tap=(!s->down || (s->tap && s->moved<6)) && c->tap_eligible;
             s->down=false;sb_motion_release(&s->motion);
-            if (s->tap && c->tap_eligible && s->moved<6) {
+            if (tap) {
                 int hit=nova_hit(s,c->x,c->y);
-                if (hit>=0) { sb_motion_target(&s->motion,(unsigned)hit);s->pending=hit;s->pulse=320;s->status[0]=0;s->dirty=true; }
+                if (hit>=0) {
+                    unsigned center=0;int nearest=INT_MAX;
+                    for(unsigned i=0;i<s->n;i++) {
+                        int x=s->points[i].x+s->visible_x,y=s->points[i].y+s->visible_y,d=x*x+y*y;
+                        if(d<nearest){nearest=d;center=i;}
+                    }
+                    int dx=s->points[hit].x-s->points[center].x,dy=s->points[hit].y-s->points[center].y;
+                    bool first_ring=dx*dx+dy*dy<=896*896; /* center plus one54px hex ring */
+                    sb_motion_target(&s->motion,(unsigned)hit);s->pending=first_ring?hit:-1;
+                    s->pulse=first_ring?160:0;s->status[0]=0;s->dirty=true;
+                }
                 else if (count>NOVA_PAGE_APPS && c->y>=api->screen_height()-24) {
                     s->first=(s->first+NOVA_PAGE_APPS<count)?s->first+NOVA_PAGE_APPS:0;nova_layout(s);
                 }
@@ -162,6 +174,7 @@ static void nova_tick(nova_state *s,uint32_t elapsed) {
     sb_motion_step(&s->motion,elapsed);
     s->dirty |= oldx!=(int)(s->motion.x*16)||oldy!=(int)(s->motion.y*16);
     if(s->pulse){s->pulse=(unsigned)s->pulse>elapsed?s->pulse-(int)elapsed:0;s->dirty=true;}
+    if(s->pending>=0 && !s->pulse) {s->motion.x=s->motion.points[s->pending].x;s->motion.y=s->motion.points[s->pending].y;s->motion.vx=s->motion.vy=0;s->motion.settled=true;s->dirty=true;}
     if(s->n){unsigned n=nova_nearest(s);s->dirty|=n!=s->focus;s->focus=n;selected=s->first+n;}
 }
 static bool nova_run(void) {
@@ -176,7 +189,9 @@ static bool nova_run(void) {
     while(api->poll(&in,20)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK)) break;
         uint32_t now=api->millis(),elapsed=now-s.last_motion;
-        if(elapsed>250)nova_cancel(&s);
+        /* A slow valid display frame is not an input cancellation. Keep a
+         * deliberate pending launch, while bounding only physics integration. */
+        if(elapsed>250)elapsed=250;
         springboard_contact c={0};v->contact(&c);nova_contact_input(&s,&c,now-s.last_input);s.last_input=now;
         if(!in.buttons) buttons_armed=true;
         uint32_t pressed=buttons_armed?(in.buttons&~previous):0;previous=in.buttons;

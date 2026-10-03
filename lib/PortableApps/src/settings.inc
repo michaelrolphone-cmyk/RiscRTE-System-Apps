@@ -4,12 +4,7 @@
 #ifndef PORTABLE_SETTINGS_VERSION
 #define PORTABLE_SETTINGS_VERSION "dev"
 #endif
-#ifdef PORTABLE_INPUT_NAVIGATION
-#include "RiscInputNavigationV1.h"
-static risc_runtime_capability_v1 navigation_grant;
-static const risc_input_navigation_api_v1 *navigation;
-static bool navigation_neutral, navigation_ready;
-#endif
+
 static risc_runtime_capability_v1 rtc_grant;
 static const twatch_rtc_api_v1 *rtc;
 static const char *settings_message = "";
@@ -104,17 +99,7 @@ static void editor_step(bool forward) {
   unsigned lo,hi;editor_bounds(editor_field,&lo,&hi);unsigned value=editor_value(editor_field);
   editor_set_value(forward?(value<hi?value+1:lo):(value>lo?value-1:hi));
 }
-static void settings_navigation_poll(t5_app_input_t *out) {
-#ifdef PORTABLE_INPUT_NAVIGATION
-  risc_input_navigation_frame_v1 frame;
-  if(!navigation || !navigation->poll(navigation->context,&frame)) {navigation_neutral=false;return;}
-  if(!navigation_neutral) {if(!frame.buttons)navigation_neutral=true;return;}
-  out->buttons=frame.pressed&(T5_APP_BUTTON_BACK|T5_APP_BUTTON_CONFIRM|T5_APP_BUTTON_LEFT|
-                              T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN);
-#else
-  (void)out;
-#endif
-}
+static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
 #include "settings_view.inc"
 static void settings_render(uint32_t category,int32_t selected) {
   (void)category;
@@ -236,32 +221,14 @@ static bool settings_open(void) {
   rtc=rtc_grant.api;
   if(!rtc || rtc->api_version!=TWATCH_RTC_API_V1 || rtc->struct_size<sizeof(*rtc) || !rtc->read || !rtc->write)return false;
 #ifdef PORTABLE_INPUT_NAVIGATION
-  navigation_grant.struct_size=sizeof(navigation_grant);
-  if(!rt->acquire("input.navigation",1,0,&navigation_grant))return false;
-  navigation=navigation_grant.api;
-  if(!navigation || navigation->api_version!=1 || navigation->struct_size<sizeof(*navigation) ||
-     !navigation->poll || !navigation->reset || !navigation->foreground)return false;
-  navigation_ready=true;
-  /* The raw touch consumer owns this source; navigation must suppress any
-   * overlapping derived touch mapping before we accept its button events. */
-  const risc_input_foreground_v1 foreground[]={{"input.touch.raw",1}};
-  if(!navigation->foreground(navigation->context,foreground,1) ||
-     !navigation->reset(navigation->context))return false;
-  navigation_neutral=false;
+  if(!input_navigation_open())return false;
 #endif
   return true;
 }
 static void settings_close(void) {
   sv_active=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
-  if(navigation_ready) {
-    bool cleared=navigation->foreground(navigation->context,NULL,0);
-    bool reset=navigation->reset(navigation->context);
-    if(!cleared || !reset)rt->diagnostic("PORTABLE_APP error=navigation-reset");
-    navigation_ready=false;
-  }
-  if(navigation_grant.api && !rt->release(&navigation_grant))rt->diagnostic("PORTABLE_APP error=navigation-release");
-  navigation=NULL;
+  input_navigation_close();
 #endif
   if(rtc_grant.api && !rt->release(&rtc_grant))rt->diagnostic("PORTABLE_APP error=rtc-release");
   rtc=NULL;

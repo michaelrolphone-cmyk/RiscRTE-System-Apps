@@ -8,6 +8,7 @@
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
 #include <limits.h>
+#include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
 static risc_runtime_capability_v1 dg, bg;
 static const risc_display_output_api_v1 *display;
@@ -30,6 +31,75 @@ static uint32_t millis_now(void) {
   }
   return h.uptime_ms;
 }
+/* Sample while a physical presentation is draining, rather than freezing
+ * input for a whole frame. Keep only current movement and one completed tap;
+ * overlapping unconsumed gestures cancel safely instead of replaying a backlog. */
+static portable_touch_sample input_sample;
+static bool input_pending;
+static uint32_t input_sampled_at,last_poll_at;
+static uint32_t navigation_pending;
+#ifdef PORTABLE_INPUT_NAVIGATION
+#include "RiscInputNavigationV1.h"
+static risc_runtime_capability_v1 navigation_grant;
+static const risc_input_navigation_api_v1 *navigation;
+static bool navigation_neutral,navigation_ready;
+static bool input_navigation_open(void) {
+ navigation_grant.struct_size=sizeof(navigation_grant);
+ if(!rt->acquire("input.navigation",1,0,&navigation_grant))return false;
+ navigation=navigation_grant.api;
+ if(!navigation || navigation->api_version!=1 || navigation->struct_size<sizeof(*navigation) ||
+    !navigation->poll || !navigation->foreground || !navigation->reset)return false;
+ navigation_ready=true;
+ const risc_input_foreground_v1 claims[]={{"input.touch.raw",1}};
+ navigation_neutral=false;
+ return navigation->foreground(navigation->context,claims,1) && navigation->reset(navigation->context);
+}
+static inline void input_navigation_reset(void) {
+ navigation_pending=0;navigation_neutral=false;
+ if(navigation_ready && !navigation->reset(navigation->context))failed=true;
+}
+static void input_navigation_close(void) {
+ if(navigation_ready) {
+  bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
+  if(!cleared||!reset)rt->diagnostic("PORTABLE_APP error=navigation-reset");
+  navigation_ready=false;
+ }
+ if(navigation_grant.api && !rt->release(&navigation_grant))rt->diagnostic("PORTABLE_APP error=navigation-release");
+ navigation=NULL;navigation_pending=0;
+}
+#endif
+static void input_service(void) {
+ portable_touch_sample next;portable_touch_read(&touch,&next);
+ input_sampled_at=millis_now();
+ if(input_pending && input_sample.released && next.down) {
+  input_sample=(portable_touch_sample){.cancelled=true};touch.neutral=touch.down=false;
+ } else if(!(input_pending && input_sample.released && next.valid && !next.down)) {
+  if(input_pending && input_sample.down && next.down) {
+   next.began|=input_sample.began;next.moved|=input_sample.moved;
+   next.tap_eligible&=input_sample.tap_eligible;
+  }
+  input_sample=next;
+ }
+ input_pending=true;
+#ifdef PORTABLE_INPUT_NAVIGATION
+ if(navigation_ready) {
+  risc_input_navigation_frame_v1 frame={0};
+  if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
+  else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
+  else navigation_pending|=frame.pressed;
+ }
+#endif
+}
+static void input_take(portable_touch_sample *out) {
+ if(!input_pending)input_service();
+ *out=input_sample;input_pending=false;
+}
+static void input_navigation_take(t5_app_input_t*out) {
+ out->buttons|=navigation_pending & (T5_APP_BUTTON_BACK|T5_APP_BUTTON_CONFIRM|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN);
+ navigation_pending=0;
+}
+static uint16_t *previous_pixels;
+static bool previous_valid;
 static int32_t width(void) { return info.width; }
 static int32_t height(void) { return info.height; }
 static void fill(int x, int y, int w, int h, uint16_t color) {
@@ -174,9 +244,23 @@ static void present(bool full) {
   if (failed || !surface.frame)
     return;
   risc_display_present_token_v1 token = 0;
+  risc_display_rect_v1 damage={0};size_t damage_count=0;
+  if(previous_pixels) {
+    unsigned first=info.height,last=0;
+    if(previous_valid)for(unsigned y=0;y<info.height;y++) {
+      if(memcmp(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2)) {
+        if(first==info.height)first=y;
+        last=y+1;
+      }
+    }
+    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;return;}
+    if(previous_valid){damage=(risc_display_rect_v1){0,(int32_t)first,info.width,last-first};damage_count=1;}
+    for(unsigned y=0;y<info.height;y++)memcpy(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
+    previous_valid=false;
+  }
   const risc_display_present_options_v1 options = {RISC_DISPLAY_PRESENT_DEFAULT,
                                                    RISC_DISPLAY_QUEUE_FIFO, 0};
-  if (!display->submit(display->context, surface.frame, NULL, 0, &options,
+  if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
                        &token)) {
     failed = true;
     return;
@@ -191,12 +275,12 @@ static void present(bool full) {
       failed = true;
       break;
     }
-    if (s.state == RISC_DISPLAY_PRESENT_COMPLETE)
-      return;
+    if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){previous_valid=previous_pixels!=NULL;return;}
     if ((uint32_t)(millis_now() - start) >= 10000) {
       failed = true;
       break;
     }
+    if((uint32_t)(millis_now()-input_sampled_at)>=16)input_service();
     rt->yield_ms(1);
   }
   failed = true;
@@ -205,14 +289,19 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   if (failed)
     return false;
-  rt->yield_ms(wait);
-  (void)millis_now();
-  if (nova_mode) { np_poll(out); return !failed; }
+  uint32_t now=millis_now(),spent=now-last_poll_at;
+  rt->yield_ms(spent<wait?wait-spent:1);
+  last_poll_at=millis_now();
+  input_service();
+  if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
   if (settings_view_poll(out)) return !failed;
 #endif
-  uint16_t x, y;
-  if (portable_touch_tap(&touch, &x, &y)) {
+  input_navigation_take(out);
+  if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
+  portable_touch_sample sample;input_take(&sample);
+  uint16_t x=sample.x,y=sample.y;
+  if (sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled) {
     if (x >= info.width || y >= info.height)
       return !failed;
     if (y < 40 && x < 56) {
@@ -251,7 +340,7 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
-  return !failed && i < count() && rt->request_launch(portable_catalog[i].file_name);
+  return !failed && !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
 }
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
@@ -368,7 +457,8 @@ static int initialize(void) {
   bg.struct_size = sizeof(bg);
   failed = false;
   nova_mode = false;
-  list_mode = false;
+  list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
+  input_sampled_at=last_poll_at=0;previous_pixels=NULL;
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
   display = dg.api;
@@ -382,8 +472,12 @@ static int initialize(void) {
       !(info.supported_formats &
         RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
     return -1;
-  if (!portable_touch_open(&touch, rt))
-    return -1;
+  if (!portable_touch_open(&touch, rt))return -1;
+  if((info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
+    previous_pixels=malloc((size_t)info.width*info.height*2); /* optional; full-frame fallback */
+#if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
+  if(!input_navigation_open())return -1;
+#endif
   if (rt->acquire("board.battery", 1, 0, &bg)) {
     gauge = bg.api;
     if (!gauge || gauge->api_version != 1 ||
@@ -401,7 +495,10 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (surface.frame)
     display->release(display->context, surface.frame);
   surface.frame = 0;
-  np_close();
+  np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
+#if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
+  input_navigation_close();
+#endif
   if (!portable_touch_close(&touch, rt))
     rt->diagnostic("PORTABLE_APP error=touch-release");
 #ifdef PORTABLE_SETTINGS_APP

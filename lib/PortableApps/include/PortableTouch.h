@@ -109,7 +109,7 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   out->moved = t->moved;
   portable_touch_orient(s.width,s.height,&out->x,&out->y);
 }
-static bool portable_touch_tap(portable_touch *t, uint16_t *x, uint16_t *y) {
+static inline bool portable_touch_tap(portable_touch *t, uint16_t *x, uint16_t *y) {
   portable_touch_sample s;
   portable_touch_read(t, &s);
   if (!s.released || !s.tap_eligible || s.moved || s.cancelled) return false;

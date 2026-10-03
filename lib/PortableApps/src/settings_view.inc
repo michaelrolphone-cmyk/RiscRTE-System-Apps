@@ -173,8 +173,9 @@ static void settings_view_redraw(void) {
 }
 static void sv_switch(unsigned page) {
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
+  input_pending=false;touch.neutral=touch.down=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
-  navigation_neutral=false;
+  input_navigation_reset();
 #endif
   settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD;
   settings_view_redraw();
@@ -195,15 +196,22 @@ static void sv_slider(int x) {
 }
 static bool settings_view_poll(t5_app_input_t *out) {
   if(!sv_active)return false;
+  settings_navigation_poll(out);
+  if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
   portable_touch_sample sample;
-  portable_touch_read(&touch,&sample);
+  input_take(&sample);
   if(!sample.valid || sample.cancelled) {
     sv_gesture=false;sv_need_neutral=true;return true;
   }
   int x=(int)sample.x-(width()-240)/2,y=(int)sample.y-(height()-240)/2;
+  bool fresh_tap=sample.released && sample.tap_eligible && !sample.moved;
   if(sv_need_neutral) {
-    if(!sample.down)sv_need_neutral=false;
-    return true;
+    if(!sample.down || (sample.began && sample.tap_eligible))sv_need_neutral=false;
+    else return true;
+  }
+  if(fresh_tap && !sv_gesture) {
+    sv_gesture=sv_eligible=true;sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;
+    sv_axis=0;sv_dragged=false;
   }
   if(sample.began) {
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
@@ -242,7 +250,7 @@ static bool settings_view_poll(t5_app_input_t *out) {
     else {out->tapped=true;out->touch_x=(int16_t)x;out->touch_y=(int16_t)y;}
     return true;
   }
-  if(!sample.down && !sv_gesture)settings_navigation_poll(out);
+
   if((out->buttons&T5_APP_BUTTON_BACK) && sv_page==SV_ROOT)out->exit_requested=true;
   return true;
 }
