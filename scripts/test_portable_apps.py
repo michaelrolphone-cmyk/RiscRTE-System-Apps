@@ -12,7 +12,7 @@ for name,source,flags in [('springboard',ROOT/'Apps/springboard.c',[])]+([('batt
  for n in range(8 if name == "battery" else 5):subprocess.run([str(binary),str(n)],check=True,timeout=10)
 
 # The original Settings app executes through the production compact view.
-profiles=[('settings',[],list(range(13))+list(range(14,20))+list(range(25,30))+[34,35]),
+profiles=[('settings-return',['-DPORTABLE_RETURN_APP="springboard.elf"'],[0,1,25,29,34,35]),('settings',[],list(range(13))+list(range(14,20))+list(range(25,30))+[34,35]),
  ('settings-denver',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_TOUCH_ROTATION=180'],[0]+list(range(20,30))+[34,35]),
  ('settings-navigation',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_INPUT_NAVIGATION'],[30,31,32,36,37]),
  ('settings-local-navigation',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_INPUT_NAVIGATION_LOCAL'],[30,31,32,36,37,38])]

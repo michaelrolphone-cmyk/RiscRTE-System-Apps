@@ -90,3 +90,9 @@ on-device frame-rate claims.
 On ptrace-based hosts where LeakSanitizer cannot run, `ASAN_OPTIONS=detect_leaks=0`
 keeps AddressSanitizer and UBSan enabled; the allocation-count fixture still
 checks transition ownership. Standard CI uses its ordinary leak checking.
+
+## Explicit return and lower-latency handoff
+
+Deployment may set `PORTABLE_RETURN_APP` to a named .elf destination. A successful input poll queues it only for an explicit root exit; nested Settings Back remains inside Settings. Errors, health termination and ordinary app launches do not synthesize a return.
+
+`PORTABLE_HANDOFF_EAGER_MS=60` opts into a faster retained-image transition. The outgoing completed image is already visible. Initial incoming drawing time counts toward the60ms phase and the first transfer already contains incoming content, avoiding the prior extra full-frame alpha-zero retransmission. The ordinary180ms exact-first-submission behavior remains the default for existing consumers. Actual target load/SPI/render latency is additional and is not inferred from a host clock model.

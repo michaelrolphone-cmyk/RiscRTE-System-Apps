@@ -29,7 +29,14 @@ static bool test_health(risc_runtime_health_v1 *h) {
 }
 static void test_yield(uint32_t ms) { ticks += ms; }
 static bool test_diagnostic(const char *s) { assert(s); ++diagnostics; return true; }
-static bool test_launch(const char *path) { (void)path; assert(!"Unexpected app launch"); return false; }
+static unsigned return_launches;
+static bool test_launch(const char *path) {
+#ifdef PORTABLE_RETURN_APP
+ assert(!strcmp(path,PORTABLE_RETURN_APP));assert(sv_page==SV_ROOT);return_launches++;return true;
+#else
+ (void)path; assert(!"Unexpected app launch"); return false;
+#endif
+}
 static bool display_info(void *c, risc_display_info_v1 *out) {
   (void)c; *out = (risc_display_info_v1){.width=240,.height=240,
     .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)}; return true;
@@ -240,5 +247,10 @@ int main(int argc,char **argv){
   if(scenario==3 || scenario==4 || scenario==11 || scenario==18 || scenario==19)assert(!settings_message[0]);
   if(scenario==27 || scenario==28 || scenario==34)assert(sv_scroll[0]>0);
   assert(polls<120 || scenario==10);
+  #ifdef PORTABLE_RETURN_APP
+  assert(return_launches==1);
+#else
+  assert(!return_launches);
+#endif
   printf("portable Settings scenario %u passed\n",scenario);return 0;
 }

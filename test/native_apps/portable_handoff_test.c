@@ -38,7 +38,14 @@ static unsigned mock_launches;
 static bool mock_health(risc_runtime_health_v1 *h){h->uptime_ms=mock_ms;return true;}
 static void mock_yield(uint32_t n){mock_ms+=n;}
 static bool mock_diagnostic(const char *s){(void)s;return true;}
-static bool mock_launch(const char *s){assert(!strcmp(s,"default.elf"));mock_launches++;return true;}
+static bool mock_launch(const char *s){
+#ifdef PORTABLE_RETURN_APP
+ assert(!strcmp(s,"default.elf") || !strcmp(s,PORTABLE_RETURN_APP));
+#else
+ assert(!strcmp(s,"default.elf"));
+#endif
+ mock_launches++;return true;}
+
 static bool mock_info(void *c,risc_display_info_v1 *out){
     (void)c;*out=(risc_display_info_v1){.width=240,.height=240,
         .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565),
@@ -148,4 +155,5 @@ static void unsupported_display(void){
 int main(void){
     lifecycle();allocation_fallback();failed_and_interrupted();delayed_held_contact_and_wrap();unsupported_display();
     puts("Retained handoff: exact first/final frame, held touch, delayed full-frame submit, rollover, allocation failures and interrupted cleanup passed");
+    return 0;
 }

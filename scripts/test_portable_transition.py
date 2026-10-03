@@ -39,6 +39,17 @@ def main():
             "-o", str(adapter),
         ], check=True, timeout=60)
         subprocess.run([str(adapter)], check=True, timeout=60)
+        eager = Path(temporary) / "portable_eager_return_test"
+        subprocess.run([
+            *shlex.split(os.environ.get("CC", "cc")), "-std=c11", "-O1", "-Wall", "-Wextra", "-Werror",
+            "-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie",
+            "-DPORTABLE_RETAINED_RGB565_HANDOFF", "-DPORTABLE_FORCE_FULL_FRAMES",
+            "-DPORTABLE_HANDOFF_EAGER_MS=60", '-DPORTABLE_RETURN_APP="return.elf"',
+            "-I" + str(ROOT / "lib/PortableApps/include"), "-I" + str(ROOT / "lib/NativeApps/include"),
+            str(ROOT / "test/native_apps/portable_eager_return_test.c"), "-o", str(eager),
+        ], check=True, timeout=60)
+        subprocess.run([str(eager)], check=True, timeout=60)
+
 
 
 if __name__ == "__main__":

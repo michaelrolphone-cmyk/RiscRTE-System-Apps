@@ -179,6 +179,12 @@ static void clear_color(uint16_t color) {
         for(unsigned y=0;y<info.height;y++)memcpy(handoff_old+(size_t)y*info.width,
           (uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
         handoff_first=true;handoff_active=true;
+#ifdef PORTABLE_HANDOFF_EAGER_MS
+        /* The outgoing image is already visible. Count initial drawing time
+         * and start with incoming content, rather than retransmitting an
+         * identical alpha-zero frame before beginning the transition. */
+        handoff_started=millis_now();handoff_first=false;
+#endif
       }
     }
   }
@@ -297,7 +303,15 @@ static void present(bool full) {
     /* Start at the first submission, not during allocation/initial rendering.
      * The first frame is byte-exact outgoing content even on a busy target. */
     if(handoff_first){handoff_started=now;handoff_first=false;}
+    #ifdef PORTABLE_HANDOFF_EAGER_MS
+    _Static_assert(PORTABLE_HANDOFF_EAGER_MS > 0 && PORTABLE_HANDOFF_EAGER_MS <= 180,
+                   "Bounded eager handoff duration required");
+    uint32_t elapsed=now-handoff_started;
+    unsigned alpha=elapsed>=PORTABLE_HANDOFF_EAGER_MS?256u:elapsed*256u/PORTABLE_HANDOFF_EAGER_MS;
+    if(!alpha)alpha=1; /* Even a zero-cost host paint must not duplicate old RAM. */
+#else
     unsigned alpha=portable_transition_alpha(now-handoff_started);
+#endif
     if(alpha==256u || !portable_transition_rgb565(surface.pixels,surface.stride_bytes,
         handoff_old,info.width*2,handoff_scratch,(size_t)info.width*info.height*2,
         info.width,info.height,alpha))handoff_finish();
@@ -353,7 +367,7 @@ static void present(bool full) {
   }
   failed = true;
 }
-static bool poll(t5_app_input_t *out, uint32_t wait) {
+static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   if (failed)
     return false;
@@ -396,6 +410,25 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     }
   }
   return !failed;
+}
+/* Explicit deployment return destination. Queue only a deliberate root exit,
+ * while this invocation is active; nested Settings Back remains app-owned.
+ * Launch requests and error/health exits never acquire a synthetic return. */
+static bool poll(t5_app_input_t *out, uint32_t wait) {
+  bool ok=poll_input(out,wait);
+#ifdef PORTABLE_RETURN_APP
+  bool returning=out->exit_requested;
+#ifndef PORTABLE_SETTINGS_APP
+  returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
+#endif
+  if(ok && returning) {
+    if(!rt->request_launch(PORTABLE_RETURN_APP)) {
+      rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
+    }
+    out->exit_requested=true;
+  }
+#endif
+  return ok;
 }
 static bool refresh(void) { return portable_catalog_count <= 16; }
 static uint32_t count(void) {
