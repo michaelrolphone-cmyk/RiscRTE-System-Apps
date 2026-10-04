@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #define PORTABLE_SETTINGS_APP
 #include "../../lib/PortableApps/src/adapter.c"
+#include "nova_settings_coordinates.h"
 
 int app_module_init(void);
 void app_module_fini(void);
@@ -77,6 +78,9 @@ static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
   (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
   for(size_t i=0;i<input_count;++i)if(input_script[i].poll==polls){
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=polls==replace_at?2:1,.x=input_script[i].x,.y=input_script[i].y};
+#ifdef PORTABLE_NOVA_UI
+    nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
+#endif
 #if PORTABLE_TOUCH_ROTATION == 180
     out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
 #endif
