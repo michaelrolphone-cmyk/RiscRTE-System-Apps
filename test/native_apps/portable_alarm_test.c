@@ -125,7 +125,12 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
    if(!setjmp(retained)){bool consumed;assert(!alarm_foreground(&consumed));assert(!output_bad);assert(!alarm_foreground(&consumed));}
    assert(stop_calls==3&&service_steps==before);puts("alarm display-failure bounded stop-only passed");return 0;}
  if(test==3){alarm_fake.state=ALARM_STATE_BLOCKED;alarm_fake.error=ALARM_RTC;tap(3,100,215);}
- else {alarm_fake.state=test==1?ALARM_STATE_LOADING:ALARM_STATE_ALERT;alarm_fake.occurrence=test==1?(alarm_token_v1){0}:(alarm_token_v1){1,7,88,9};
+ else {alarm_fake.state=test==1?ALARM_STATE_LOADING:ALARM_STATE_ALERT;
+#ifdef PORTABLE_AUDIO_SESSION
+   alarm_fake.occurrence=test==1?(alarm_token_v1){0}:(alarm_token_v1){1,7,88,9};
+#else
+   alarm_fake.occurrence=(alarm_token_v1){1,7,88,9};
+#endif
    navigation_pending=T5_APP_BUTTON_BACK;input_pending=true;input_sample=(portable_touch_sample){.valid=true,.released=true,.tap_eligible=true,.x=100,.y=180};
    tap(3,100,180);if(test==6||test==7)tap(12,100,180);
    if(test==8){tap(8,100,180);tap(20,100,180);}}
