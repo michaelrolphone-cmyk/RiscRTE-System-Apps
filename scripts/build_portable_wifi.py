@@ -21,6 +21,7 @@ def build(args):
         cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable/wifi'
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
+    if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
@@ -95,6 +96,7 @@ def build(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--full-frames',action='store_true',help='Disable optional partial-damage and previous-frame cache')
     parser.add_argument('--wifi-instance',type=int,default=0,help='Exact deployment-authorized net.wifi instance; 0 requires a unique provider')

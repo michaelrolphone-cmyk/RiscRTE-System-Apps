@@ -42,6 +42,7 @@ jobs:
           python scripts/build_portable_settings.py
           python scripts/build_portable_settings.py --nova-ui --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-nova
           python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15
+          python scripts/build_portable_wifi.py --nova-ui --alarm-client --navigation --full-frames --wifi-instance 15 --output-dir dist/portable/wifi-nova
           python scripts/build_portable_settings.py --alarm-client --alarm-settings --sleep-settings --full-frames --output-dir dist/portable/settings-alarm
           python scripts/build_portable_springboard.py --alarm-client --full-frames --output-dir dist/portable/springboard-alarm
           python scripts/build_portable_settings.py --denver --full-frames --sleep-settings --output-dir dist/portable/settings-sleep
