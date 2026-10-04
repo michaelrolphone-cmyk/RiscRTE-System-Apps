@@ -12,6 +12,13 @@
 #include <setjmp.h>
 #include "../../lib/PortableApps/src/adapter.c"
 #include "../../Apps/wifi_settings.c"
+#ifdef PORTABLE_NOVA_UI
+#define TEST_KEY_DELETE 10
+#define TEST_KEY_DONE 11
+#else
+#define TEST_KEY_DELETE 33
+#define TEST_KEY_DONE 34
+#endif
 
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
@@ -109,14 +116,14 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 0:draft();wifi_connect();assert(joining && connects==1 && native_active);fake_link=WIFI_LINK_UP;tick(250);assert(!joining && link_state==WIFI_LINK_UP && strstr(ip_text,"192.0.2.10"));wifi_activate(6);assert(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED);assert(wifi_disconnect());assert(!native_active);break;
  case 1:draft();fail_connect=1;wifi_connect();assert(!joining && connects==1);fail_connect=0;wifi_connect();assert(joining && connects==2);wifi_activate(4);assert(!joining && !native_active);break;
  case 2:draft();wifi_connect();tick(30001);assert(!joining && !native_active && strstr(wifi_message,"timed out"));wifi_connect();fake_link=WIFI_LINK_DOWN;tick(250);assert(!joining && strstr(wifi_message,"failed"));break;
- case 3:wifi_scan_start();assert(scanning && page==WP_SCAN);fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=2;strcpy(fake_scan.entries[0].ssid,"Fixture open");fake_scan.entries[0].auth=0;strcpy(fake_scan.entries[1].ssid,"Fixture private");fake_scan.entries[1].auth=2;tick(250);assert(!scanning && scan_active && scan_result.count==2);render();wifi_activate(1);assert(page==WP_PASSWORD && !scan_active && !native_active && !strcmp(credentials.ssid,"Fixture private"));strcpy(editor,"testpass123");wifi_key(34);wifi_connect();assert(connects==1);break;
+ case 3:wifi_scan_start();assert(scanning && page==WP_SCAN);fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=2;strcpy(fake_scan.entries[0].ssid,"Fixture open");fake_scan.entries[0].auth=0;strcpy(fake_scan.entries[1].ssid,"Fixture private");fake_scan.entries[1].auth=2;tick(250);assert(!scanning && scan_active && scan_result.count==2);render();wifi_activate(1);assert(page==WP_PASSWORD && !scan_active && !native_active && !strcmp(credentials.ssid,"Fixture private"));strcpy(editor,"testpass123");wifi_key(TEST_KEY_DONE);wifi_connect();assert(connects==1);break;
  case 4:wifi_scan_start();assert(!wifi_back() && page==WP_ROOT && !native_active);wifi_scan_start();tick(15001);assert(!scanning && !native_active);break;
  case 5:wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=17;tick(250);assert(!scanning && !native_active);wifi_scan_start();fail_poll=1;tick(250);assert(!scanning && !native_active);break;
  case 6:assert(!wifi);draft();wifi_connect();assert(!connects);acquire_denied=0;wifi_connect();assert(connects==1);break;
  case 7:assert(!wifi_store);draft();wifi_activate(6);assert(saved_state!=PORTABLE_WIFI_CREDENTIALS_LOADED && !writes);wifi_connect();assert(connects==1);break;
  case 8:assert(!wifi && !wg.api);draft();wifi_connect();assert(!connects);break;
- case 9:draft();wifi_edit(WP_PASSWORD);strcpy(editor,"discarded");assert(!wifi_back() && page==WP_ROOT && !strcmp(credentials.password,"testpass123") && !editor[0]);wifi_edit(WP_SSID);memset(editor,'s',32);editor[32]=0;key_page=2;wifi_key(1);assert(strlen(editor)==32);wifi_key(33);assert(strlen(editor)==31);wifi_key(34);assert(strlen(credentials.ssid)==31);break;
- case 10:wifi_edit(WP_PASSWORD);for(unsigned i=0;i<100;++i)wifi_key(1);assert(strlen(editor)==63);render();assert(!strstr(view.entry,"a") && strlen(view.entry)==25);wifi_key(34);assert(strlen(credentials.password)==63);break;
+ case 9:draft();wifi_edit(WP_PASSWORD);strcpy(editor,"discarded");assert(!wifi_back() && page==WP_ROOT && !strcmp(credentials.password,"testpass123") && !editor[0]);wifi_edit(WP_SSID);memset(editor,'s',32);editor[32]=0;key_page=2;wifi_key(1);assert(strlen(editor)==32);wifi_key(TEST_KEY_DELETE);assert(strlen(editor)==31);wifi_key(TEST_KEY_DONE);assert(strlen(credentials.ssid)==31);break;
+ case 10:wifi_edit(WP_PASSWORD);for(unsigned i=0;i<100;++i)wifi_key(1);assert(strlen(editor)==63);render();assert(!strstr(view.entry,"a") && strlen(view.entry)==25);wifi_key(TEST_KEY_DONE);assert(strlen(credentials.password)==63);break;
  case 11:draft();wifi_activate(6);wifi_activate(7);assert(page==WP_FORGET);wifi_activate(0);assert(page==WP_ROOT && credentials.ssid[0]);wifi_activate(7);wifi_activate(1);assert(!credentials.ssid[0] && !credentials.password[0] && saved_state==PORTABLE_WIFI_CREDENTIALS_EMPTY);break;
  case 12:draft();fail_store=1;wifi_activate(6);assert(saved_state!=PORTABLE_WIFI_CREDENTIALS_LOADED);fail_store=0;wifi_activate(6);assert(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED);break;
  case 13:draft();wifi_connect();fail_disconnect=1;assert(!wifi_back() && opened && !launches && cleanup_pending);fail_disconnect=0;assert(wifi_back() && launches==1 && !opened);break;
@@ -128,19 +135,37 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 19:draft();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};event(poll_count+4,0,100,180);bool consumed=false;assert(alarm_foreground(&consumed) && consumed && alarm_acks==1);assert(page==WP_PASSWORD && !strcmp(editor,"testpass123") && !launches);break;
  case 20:draft();wifi_scan_start();fail_scan_cancel=1;assert(!wifi_back() && cleanup_pending && scan_active);fail_scan_cancel=0;assert(!wifi_back() && page==WP_ROOT && !scan_active);break;
  case 21:draft();wifi_connect();fail_disconnect=1;block_expected=true;if(!setjmp(blocked)){app_module_fini();assert(!"Unsafe fini must retain invocation");}block_expected=false;assert(opened && wg.api && wk.api && native_active);break;
- case 22:/* Real app_main touch nesting: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());event(poll_count+3,0,60,72);event(poll_count+6,0,50,80);event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);app_main();assert(launches==1 && !opened && !connects && !writes);break;
+ case 22:/* Real app_main touch nesting: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());event(poll_count+3,0,60,72);event(poll_count+6,0,50,
+#ifdef PORTABLE_NOVA_UI
+ 104
+#else
+ 80
+#endif
+ );event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);app_main();assert(launches==1 && !opened && !connects && !writes);break;
  case 23:/* Navigation Back cancels draft before root Back queues launch. */assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,T5_APP_BUTTON_BACK,-1,0);event(poll_count+9,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1 && !opened && !writes);break;
  case 24:wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;memset(fake_scan.entries[0].ssid,'x',33);tick(250);assert(!scanning && !native_active);break;
- case 25:wifi_edit(WP_PASSWORD);for(key_page=0;key_page<3;++key_page){for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);}}break;
+ case 25:wifi_edit(WP_PASSWORD);
+#ifdef PORTABLE_NOVA_UI
+ for(key_page=0;key_page<12;++key_page)for(unsigned k=0;k<8;k++){editor[0]=0;wifi_key(k);assert((unsigned char)editor[0]==portable_nova_key_character(key_page,k));}
+#else
+ for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);}
+#endif
+ break;
  case 26:fail_scan=1;wifi_scan_start();assert(!scanning && !native_active);fail_scan=0;wifi_scan_start();assert(scanning);break;
  case 27:draft();wifi_activate(2);assert(open_network && !credentials.password[0]);wifi_connect();assert(connects==1);break;
  case 28:draft();wifi_connect();fake_link=(wifi_link_t)99;tick(250);assert(!cleanup_pending && !native_active);assert(wifi_disconnect());break;
  case 29:fail_display=1;render();assert(failed);fail_display=0;break;
  case 30:draft();wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;strcpy(fake_scan.entries[0].ssid,"Unsupported");fake_scan.entries[0].auth=255;tick(250);wifi_activate(0);assert(page==WP_SCAN && !connects);break;
- case 31:/* Footer hit testing cannot activate rows; all keyboard keys bounded. */wifi_make_view();assert(portable_wifi_hit(&view,30,192)<0 && portable_wifi_hit(&view,30,220)<0);wifi_edit(WP_SSID);wifi_make_view();assert(portable_wifi_hit(&view,227,171)==31 && portable_wifi_hit(&view,227,206)==34 && portable_wifi_hit(&view,228,206)<0);break;
+ case 31:/* Footer hit testing cannot activate rows; all keyboard keys bounded. */wifi_make_view();assert(portable_wifi_hit(&view,30,192)<0 && portable_wifi_hit(&view,30,220)<0);wifi_edit(WP_SSID);wifi_make_view();
+#ifdef PORTABLE_NOVA_UI
+ assert(portable_wifi_hit(&view,223,175)==7 && portable_wifi_hit(&view,223,231)==11 && portable_wifi_hit(&view,224,231)<0);
+#else
+ assert(portable_wifi_hit(&view,227,171)==31 && portable_wifi_hit(&view,227,206)==34 && portable_wifi_hit(&view,228,206)<0);
+#endif
+break;
  case 32:draft();wifi_connect();fail_disconnect=1;render();ticks+=60001;t5_app_input_t refused;assert(poll(&refused,25) && !failed && !sleeps && cleanup_pending && native_active && sub_count);fail_disconnect=0;wifi_activate(5);assert(!cleanup_pending && !native_active);break;
  case 33:draft();wifi_activate(9);assert(page==WP_HELP);render();assert(!wifi_back() && page==WP_ROOT && !launches);break;
- case 34:/* Empty password editor never silently converts protected to open. */draft();wifi_edit(WP_PASSWORD);editor[0]=0;wifi_key(34);assert(!open_network);wifi_connect();assert(!connects);break;
+ case 34:/* Empty password editor never silently converts protected to open. */draft();wifi_edit(WP_PASSWORD);editor[0]=0;wifi_key(TEST_KEY_DONE);assert(!open_network);wifi_connect();assert(!connects);break;
  case 35:draft();fail_connect=1;uncertain_start=true;wifi_connect();assert(cleanup_pending && native_active);unsigned before=service_calls;bool pending=false;assert(alarm_foreground(&pending) && !pending && service_calls==before);fail_disconnect=0;wifi_activate(5);assert(!cleanup_pending && !native_active);assert(alarm_foreground(&pending) && service_calls>before);break;
  case 36:fail_scan=1;uncertain_start=true;wifi_scan_start();assert(cleanup_pending && native_active);bool scan_pending=false;unsigned scan_before=service_calls;assert(alarm_foreground(&scan_pending) && service_calls==scan_before);break;
  case 37:draft();wifi_connect();fake_link=WIFI_LINK_DOWN;fail_disconnect=1;bool link_pending=false;unsigned link_before=service_calls;assert(alarm_foreground(&link_pending) && cleanup_pending && service_calls==link_before);break;
@@ -151,7 +176,7 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 42:draft();wifi_connect();fake_link=WIFI_LINK_UP;fail_addresses=1;assert(portable_wifi_services_safe() && !native_active && !cleanup_pending && link_state==WIFI_LINK_DOWN && !strcmp(status_text,"Disconnected"));break;
  case 43:draft();wifi_connect();fake_link=WIFI_LINK_UP;fail_addresses=1;uncertain_start=true;unsigned address_before=service_calls;bool address_pending=false;assert(alarm_foreground(&address_pending) && cleanup_pending && native_active && service_calls==address_before && !strcmp(status_text,"Cleanup required"));break;
  case 44:draft();wifi_connect();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};break_radio_on_yield=true;fail_alarm_stop=1;block_expected=true;if(!setjmp(blocked)){bool trapped=false;(void)alarm_foreground(&trapped);assert(!"Expected bounded stop-only retention");}block_expected=false;assert(alarm_stops==3 && opened && wg.api && wk.api && alarm_failed_cleaned);fail_alarm_stop=0;break;
- case 45:draft();wifi_activate(6);assert(!draft_dirty);unsigned saved_writes=writes;wifi_edit(WP_SSID);strcpy(editor,"New draft");wifi_key(34);wifi_make_view();assert(draft_dirty && !strcmp(view.values[6],"Draft not saved") && writes==saved_writes);wifi_activate(6);assert(!draft_dirty && writes>saved_writes);break;
+ case 45:draft();wifi_activate(6);assert(!draft_dirty);unsigned saved_writes=writes;wifi_edit(WP_SSID);strcpy(editor,"New draft");wifi_key(TEST_KEY_DONE);wifi_make_view();assert(draft_dirty && !strcmp(view.values[6],"Draft not saved") && writes==saved_writes);wifi_activate(6);assert(!draft_dirty && writes>saved_writes);break;
  case 46:draft();wifi_connect();render();fail_display=1;render();assert(failed && native_active);t5_app_input_t display_error;assert(!poll(&display_error,25));assert(!native_active && !scan_active && !wg.api && wk.api && !native_sleep_retained);/* This is the Runtime pre-fini barrier point: no fini has run. */fail_display=0;break;
  case 47:draft();wifi_connect();render();limit_polls=poll_count; t5_app_input_t input_error;assert(!poll(&input_error,25));assert(!native_active && !wg.api && wk.api && !native_sleep_retained);break;
  default:assert(!"Unknown scenario");

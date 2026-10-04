@@ -1,3 +1,6 @@
+#ifdef PORTABLE_NOVA_UI
+#include "wifi_nova.inc"
+#else
 /* Wi-Fi's compact client-side view shares Settings typography and palette. */
 #include "PortableWifiView.h"
 #include "../settings_fonts/text.inc"
@@ -80,3 +83,5 @@ void portable_wifi_render(const portable_wifi_view *v) {
   }
   present(false);
 }
+
+#endif

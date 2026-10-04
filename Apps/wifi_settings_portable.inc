@@ -1,3 +1,6 @@
+#ifdef PORTABLE_NOVA_UI
+#include "PortableNovaKeyboard.h"
+#endif
 /* Explicit portable build only. Reader's firmware selector remains in the
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
@@ -97,7 +100,12 @@ static void wifi_edit(unsigned field) {
   wifi_zero(editor,sizeof(editor));
   const char *source=field==WP_SSID?credentials.ssid:credentials.password;
   size_t n=wifi_length(source,field==WP_SSID?32:63);memcpy(editor,source,n);
-  key_page=2;wifi_page(field); /* Start on lowercase; all printable ASCII is reachable. */
+  #ifdef PORTABLE_NOVA_UI
+  key_page=0;
+#else
+  key_page=64/PORTABLE_WIFI_KEYS_PER_PAGE;
+#endif
+  wifi_page(field); /* Start on lowercase; all printable ASCII is reachable. */
 }
 static bool wifi_draft_valid(void) {
   if(!credentials.ssid[0]) {wifi_message="Enter a network name";return false;}
@@ -236,12 +244,35 @@ static void wifi_make_view(void) {
 }
 static void wifi_key(unsigned key) {
   size_t n=wifi_length(editor,sizeof(editor));
-  if(key<32) {
-    unsigned ch=32+key_page*32+key,limit=page==WP_SSID?32:63;
-    if(ch<=126 && n<limit){editor[n]=(char)ch;editor[n+1]=0;}
+  if(key<PORTABLE_WIFI_KEYS_PER_PAGE) {
+    unsigned ch=
+#ifdef PORTABLE_NOVA_UI
+        portable_nova_key_character(key_page,key),
+#else
+        32+key_page*PORTABLE_WIFI_KEYS_PER_PAGE+key,
+#endif
+        limit=page==WP_SSID?32:63;
+    if(ch && ch<=126 && n<limit){editor[n]=(char)ch;editor[n+1]=0;}
+#ifdef PORTABLE_NOVA_UI
+  } else if(key==8){key_page=(key_page+11)%12;choice=0;}
+  else if(key==9){key_page=(key_page+1)%12;choice=0;}
+#else
   } else if(key==32)key_page=(key_page+1)%3;
-  else if(key==33){if(n)editor[n-1]=0;}
-  else if(key==34) {
+#endif
+  else if(key==
+#ifdef PORTABLE_NOVA_UI
+          10
+#else
+          33
+#endif
+  ){if(n)editor[n-1]=0;}
+  else if(key==
+#ifdef PORTABLE_NOVA_UI
+          11
+#else
+          34
+#endif
+  ) {
     char *dst=page==WP_SSID?credentials.ssid:credentials.password;
     size_t capacity=page==WP_SSID?sizeof(credentials.ssid):sizeof(credentials.password);
     wifi_zero(dst,capacity);memcpy(dst,editor,n);draft_dirty=true;
@@ -360,10 +391,17 @@ void app_main(void) {
     wifi_make_view();
     if(input.tapped) {
       int x=input.touch_x-(wa->screen_width()-240)/2,y=input.touch_y-(wa->screen_height()-240)/2;
+#ifdef PORTABLE_NOVA_UI
+      if(!view.keyboard && y>=188 && y<232) {
+        if(x>=16 && x<80)input.buttons=T5_APP_BUTTON_UP;
+        else if(x>=88 && x<152)input.buttons=T5_APP_BUTTON_CONFIRM;
+        else if(x>=160 && x<224)input.buttons=T5_APP_BUTTON_DOWN;
+#else
       if(!view.keyboard && y>=212 && y<238) {
         if(x>=12 && x<76)input.buttons=T5_APP_BUTTON_UP;
         else if(x>=88 && x<152)input.buttons=T5_APP_BUTTON_CONFIRM;
         else if(x>=164 && x<228)input.buttons=T5_APP_BUTTON_DOWN;
+#endif
       } else {
         int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);
         if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;
