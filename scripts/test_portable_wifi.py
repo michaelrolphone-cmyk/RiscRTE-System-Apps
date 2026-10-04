@@ -17,12 +17,13 @@ for sanitizer in (False, True):
                         *flags, '-I'+str(ROOT/'lib/PortableApps/include'),
                         str(ROOT/'test/native_apps'/f'{fixture}.c'), '-o', str(binary)], check=True, timeout=60)
         subprocess.run([str(binary)], check=True, timeout=20, env=environment)
-    for rotation in (0, 180):
-        binary = OUT / (f'wifi-{rotation}' + ('-san' if sanitizer else ''))
-        subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
-                        *flags, f'-DPORTABLE_TOUCH_ROTATION={rotation}',
-                        '-I'+str(ROOT/'lib/PortableApps/include'), '-I'+str(ROOT/'lib/NativeApps/include'),
-                        str(ROOT/'test/native_apps/portable_wifi_test.c'), '-o', str(binary)], check=True, timeout=60)
-        for scenario in range(48):
-            subprocess.run([str(binary), str(scenario)], check=True, timeout=10, env=environment)
-print('Portable Wi-Fi: 48 app scenarios x 2 orientations x 2 compiler modes; credential and saved-client fault suites passed')
+    for nova in (False, True):
+        for rotation in (0, 180):
+            binary = OUT / (f'wifi-{int(nova)}-{rotation}' + ('-san' if sanitizer else ''))
+            subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
+                            *flags, *(['-DPORTABLE_NOVA_UI'] if nova else []), f'-DPORTABLE_TOUCH_ROTATION={rotation}',
+                            '-I'+str(ROOT/'lib/PortableApps/include'), '-I'+str(ROOT/'lib/NativeApps/include'),
+                            str(ROOT/'test/native_apps/portable_wifi_test.c'), '-o', str(binary)], check=True, timeout=60)
+            for scenario in range(48):
+                subprocess.run([str(binary), str(scenario)], check=True, timeout=10, env=environment)
+print('Portable Wi-Fi: 48 app scenarios x 2 UI profiles x 2 orientations x 2 compiler modes; credential and saved-client fault suites passed')
