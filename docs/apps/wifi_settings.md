@@ -1,5 +1,17 @@
 # Wi-Fi Networks
 
+## Portable 1.1.0 opt-in
+
+The current shared manifest is **1.1.0**. An explicit portable build now provides
+app-owned scan/manual entry, connect/status/cancel/retry/disconnect, explicit
+Save/Forget, and retained alarm/sleep lifecycle support. See
+[Portable Wi-Fi Settings](../PORTABLE_WIFI.md) for the capability, storage and
+verification contracts. The legacy Reader branch below is preserved byte-for-byte
+inside the non-portable preprocessor branch; the historical release identities
+below remain historical evidence, not a new 1.1.0 publication claim.
+
+## Legacy Reader behavior
+
 ## Purpose and classification
 
 Wi-Fi Networks is the RiscRTE front end for the firmware-owned wireless network selection workflow. Its manifest identifies it as `wifi_settings.elf`, version **1.0.3**, minimum firmware **1.1.24**, display name **Wi-Fi Networks**, icon `solid:f1eb`, categories `Connectivity` and `Settings`.

@@ -2,7 +2,7 @@
 """Build the shared Settings app against the minimal capability client.
 
 Development artifact only. The deployment supplies display.output@1,
-input.touch.raw@1 and rtc.clock@2 grants; no additional runtime exports.
+input.touch.raw@1, rtc.clock@2 and namespace-1 storage.key-value@1 grants; no additional runtime exports.
 """
 import argparse
 import hashlib
@@ -22,6 +22,8 @@ def build(args):
     out = args.output_dir or ROOT/'dist/portable'
     flags=['-DPORTABLE_SETTINGS_APP']
     if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
+    if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
+    if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
@@ -62,7 +64,8 @@ def build(args):
         'file_name':'settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'rtc.clock','api':2}]}
-    if args.sleep_settings: manifest['requires'].append({'capability':'storage.key-value','api':1})
+    if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
+    manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/settings.c','Apps/settings.json','lib/PortableApps/src/adapter.c',
@@ -103,6 +106,8 @@ def build(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
+    parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
     parser.add_argument('--sleep-settings',action='store_true',help='Enable explicit namespace-1 sleep choice; requires storage.key-value@1 grant')
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')
     parser.add_argument('--full-frames',action='store_true',help='Disable optional partial-damage and previous-frame cache')

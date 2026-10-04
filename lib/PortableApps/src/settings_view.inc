@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -132,7 +132,7 @@ static void sv_fields(void) {
 static void sv_value(void) {
   sv_heading(editor_names[editor_field]);
   char value[24]; unsigned v=editor_value(editor_field),shown=v;
-  if(editor_field==3)shown=v%12?v%12:12;
+  if(editor_field==3 && !settings_hour_24())shown=v%12?v%12:12;
   snprintf(value,sizeof(value),"%u",shown);
   sv_center(4,59,value,SV_CYAN,0);
   sv_button(24,66,36,36,"",false);sv_button(180,66,36,36,"",false);
@@ -143,7 +143,7 @@ static void sv_value(void) {
   unsigned lo,hi;editor_bounds(editor_field,&lo,&hi);
   unsigned filled=hi>lo?(v-lo)*10/(hi-lo):0;
   for(unsigned i=0;i<10;++i)sv_rect(72+(int)i*10,124,7,8,i<filled?SV_CYAN:0x032027);
-  if(editor_field==3)sv_center(1,145,v<12?"AM":"PM",SV_TEXT,12);
+  if(editor_field==3 && !settings_hour_24())sv_center(1,145,v<12?"AM":"PM",SV_TEXT,12);
   else {snprintf(value,sizeof(value),"%u - %u",lo,hi);sv_center(2,145,value,SV_CAP,12);}
   sv_center(3,163,"Draft only - use SAVE",SV_CAP,2);sv_back();
 }
@@ -164,6 +164,15 @@ static void sv_about(void) {
   sv_rect(20,128,200,1,SV_LINE);
   sv_center(2,148,"Only reported device data",SV_CAP,0);sv_back();
 }
+static void sv_time_format(void) {
+  sv_heading("TIME FORMAT");
+  sv_button(28,76,184,32,"12-HOUR  AM / PM",time_format_choice==PORTABLE_TIME_FORMAT_12);
+  sv_button(28,124,184,32,"24-HOUR",time_format_choice==PORTABLE_TIME_FORMAT_24);
+  sv_center(3,177,time_format_message[0]?time_format_message:"Draft only - use SAVE",
+            time_format_message[0]?SV_CYAN:SV_CAP,0);
+  sv_button(24,200,86,26,"CANCEL",false);
+  sv_button(130,200,86,26,"SAVE",false);
+}
 #ifdef PORTABLE_SLEEP_SETTINGS
 static void sv_sleep(void) {
   sv_heading("CLOCK SLEEP MODE");
@@ -176,12 +185,28 @@ static void sv_sleep(void) {
   sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
+#ifdef PORTABLE_ALARM_SETTINGS
+static void sv_alert(void) {
+  sv_heading("ALARM ALERTS");
+  sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
+  sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
+  sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
+  sv_center(3,177,alert_message[0]?alert_message:"Alarms and Countdown",
+            alert_message[0]?SV_CYAN:SV_CAP,0);
+  sv_button(24,200,86,26,"CANCEL",false);
+  sv_button(130,200,86,26,"SAVE",false);
+}
+#endif
 static void settings_view_redraw(void) {
   if(failed || !sv_active)return;
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
-  #ifdef PORTABLE_SLEEP_SETTINGS
+  else if(sv_page==SV_TIME_FORMAT)sv_time_format();
+#ifdef PORTABLE_SLEEP_SETTINGS
   else if(sv_page==SV_SLEEP)sv_sleep();
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  else if(sv_page==SV_ALERT)sv_alert();
 #endif
   else if(sv_page==SV_VALUE)sv_value();else if(sv_page==SV_FOLD)sv_fold();else sv_about();
   present(false);
@@ -193,9 +218,12 @@ static void sv_switch(unsigned page) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
-  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD
+  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+      || page==SV_ALERT
 #endif
       ;
   settings_view_redraw();
@@ -261,9 +289,12 @@ static bool settings_view_poll(t5_app_input_t *out) {
     if(sv_axis==2 && dx>=36 && dx>sv_abs(dy)*2) {sv_back_input(out);return true;}
     if(sv_dragged || sample.moved || sv_axis==3)return true;
     x=sv_start_x;y=sv_start_y;
-    if(sv_page==SV_FIELDS
+    if(sv_page==SV_FIELDS || sv_page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
        || sv_page==SV_SLEEP
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+       || sv_page==SV_ALERT
 #endif
       ) {
       if(sv_inside(x,y,24,200,86,26)) {sv_back_input(out);return true;}

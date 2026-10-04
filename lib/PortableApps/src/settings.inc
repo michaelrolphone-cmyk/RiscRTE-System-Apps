@@ -1,6 +1,7 @@
 /* Settings-only model/controller, reusing Apps/settings.c and the compact view. */
 #include <stdio.h>
 #include "PortableTime.h"
+#include "PortableTimeFormat.h"
 #ifndef PORTABLE_SETTINGS_VERSION
 #define PORTABLE_SETTINGS_VERSION "dev"
 #endif
@@ -10,17 +11,39 @@ static const twatch_rtc_api_v1 *rtc;
 static const char *settings_message = "";
 static const char *editor_message = "";
 static unsigned editor_field;
+static risc_runtime_capability_v1 settings_grant;
+static const risc_key_value_v1 *settings_store;
+static unsigned time_format_mode, time_format_choice;
+static int time_format_status;
+static const char *time_format_message;
+static void settings_time_format_load(void) {
+  unsigned mode;
+  time_format_status=portable_time_format_load(settings_store,&mode);
+  /* An unavailable refresh must not replace the last confirmed choice. */
+  if(time_format_status!=PORTABLE_TIME_FORMAT_UNAVAILABLE)time_format_mode=mode;
+}
+static bool settings_hour_24(void) { return time_format_mode==PORTABLE_TIME_FORMAT_24; }
 #ifdef PORTABLE_SLEEP_SETTINGS
 #include "PortableSleepPolicy.h"
-static risc_runtime_capability_v1 sleep_grant;
-static const risc_key_value_v1 *sleep_store;
 static unsigned sleep_choice;
 static const char *sleep_message;
-#define SETTINGS_ROW_COUNT 6u
+#define SETTINGS_BASE_ROW_COUNT 6u
 #define SETTINGS_ABOUT_ROW 5u
 #else
-#define SETTINGS_ROW_COUNT 5u
+#define SETTINGS_BASE_ROW_COUNT 5u
 #define SETTINGS_ABOUT_ROW 4u
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+#include "PortableAlarmSettings.h"
+static const risc_key_value_v1 *alert_store;
+static unsigned alert_choice;
+static const char *alert_message;
+static bool alert_unconfirmed;
+/* Append after About so pre-existing configurations retain every row index. */
+#define SETTINGS_ALERT_ROW SETTINGS_BASE_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_BASE_ROW_COUNT+1u)
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_BASE_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
@@ -49,6 +72,10 @@ static uint8_t calendar_weekday(const twatch_rtc_time_v1 *t) {
   return (uint8_t)((calendar_day_index(t) + 6) % 7); /* 2000-01-01 was Saturday. */
 }
 static inline void format_wall_time(char *out, size_t capacity, const twatch_rtc_time_v1 *t) {
+  if(settings_hour_24()) {
+    snprintf(out,capacity,"%02u:%02u:%02u",(unsigned)t->hour,(unsigned)t->minute,(unsigned)t->second);
+    return;
+  }
   unsigned hour = t->hour % 12;
   snprintf(out, capacity, "%u:%02u:%02u %s", hour ? hour : 12,
            (unsigned)t->minute, (unsigned)t->second, t->hour < 12 ? "AM" : "PM");
@@ -68,22 +95,41 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_SLEEP_SETTINGS
     "Clock Sleep Mode",
 #endif
-    "About"};
+    "About"
+#ifdef PORTABLE_ALARM_SETTINGS
+    ,"Alarm Alerts"
+#endif
+    };
   strcpy(out->label,names[index]);
   if(index==0) {
     out->type=T5_APP_SETTING_ACTION;twatch_rtc_time_v1 raw,local;
     if(rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&local)) {
-      unsigned h=local.hour%12;
-      snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
+      if(settings_hour_24())snprintf(out->value,sizeof(out->value),"%02u:%02u",(unsigned)local.hour,(unsigned)local.minute);
+      else {
+        unsigned h=local.hour%12;
+        snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
+      }
     } else strcpy(out->value,"Unavailable");
   } else if(index==1)strcpy(out->value,portable_time_zone());
-  else if(index==2)strcpy(out->value,"12-hour");
+  else if(index==2) {
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Unavailable":settings_hour_24()?"24-hour":"12-hour");
+  }
   else if(index==3)strcpy(out->value,portable_time_basis());
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(index==4) {
-    unsigned mode;int loaded=portable_sleep_load(sleep_store,&mode);
+    unsigned mode;int loaded=portable_sleep_load(settings_store,&mode);
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":mode==PORTABLE_SLEEP_LIGHT?"Light":"Light then Deep");
+  }
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  else if(index==SETTINGS_ALERT_ROW) {
+    unsigned mode;int loaded=portable_alert_load(alert_store,&mode);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,alert_unconfirmed?"Unconfirmed":
+        loaded==PORTABLE_ALERT_UNAVAILABLE?"Unavailable":
+        loaded==PORTABLE_ALERT_INVALID?"Invalid":portable_alert_name(mode));
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -115,7 +161,7 @@ static void editor_set_value(unsigned value) {
 }
 static void editor_value_text(unsigned field,char *out,size_t capacity) {
   unsigned v=editor_value(field);
-  if(field==3)snprintf(out,capacity,"%u %s",v%12?v%12:12,v<12?"AM":"PM");
+  if(field==3 && !settings_hour_24())snprintf(out,capacity,"%u %s",v%12?v%12:12,v<12?"AM":"PM");
   else snprintf(out,capacity,"%u",v);
 }
 static void editor_step(bool forward) {
@@ -173,9 +219,37 @@ static bool editor_try_save(void) {
 }
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
+  if(index==2) {
+    settings_time_format_load();time_format_choice=time_format_mode;
+    time_format_message=time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Storage unavailable":
+                        time_format_status==PORTABLE_TIME_FORMAT_INVALID?"Invalid: 12-hour default":"";
+    sv_switch(SV_TIME_FORMAT);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))time_format_choice^=1u;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,76,184,32))time_format_choice=PORTABLE_TIME_FORMAT_12;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,124,184,32))time_format_choice=PORTABLE_TIME_FORMAT_24;
+      if(save) {
+        if(portable_time_format_save(settings_store,time_format_choice)) {
+          time_format_mode=time_format_choice;time_format_status=PORTABLE_TIME_FORMAT_LOADED;
+          result=T5_APP_SETTING_UPDATED;break;
+        }
+        time_format_choice=time_format_mode;
+        time_format_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Time format saved":time_format_message;
+    sv_switch(SV_ROOT);return result;
+  }
 #ifdef PORTABLE_SLEEP_SETTINGS
   if(index==4) {
-    int loaded=portable_sleep_load(sleep_store,&sleep_choice);
+    int loaded=portable_sleep_load(settings_store,&sleep_choice);
     sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
                   loaded==PORTABLE_SLEEP_INVALID?"Invalid: Hybrid default":"";
     sv_switch(SV_SLEEP);bool armed=false;t5_app_input_t input;
@@ -191,15 +265,55 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))sleep_choice=PORTABLE_SLEEP_DEEP;
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))sleep_choice=PORTABLE_SLEEP_HYBRID;
       if(save) {
-        if(portable_sleep_save(sleep_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
+        if(portable_sleep_save(settings_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
         /* A failed commit may or may not have persisted. Re-read rather than
          * claim the old mode or display a false Saved confirmation. */
-        (void)portable_sleep_load(sleep_store,&sleep_choice);
+        (void)portable_sleep_load(settings_store,&sleep_choice);
         sleep_message="Save unconfirmed - retry";
       }
       settings_view_redraw();
     }
     settings_message=result==T5_APP_SETTING_UPDATED?"Sleep mode saved":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  if(index==SETTINGS_ALERT_ROW) {
+    if(!alert_unconfirmed) {
+      int loaded=portable_alert_load(alert_store,&alert_choice);
+      alert_message=loaded==PORTABLE_ALERT_UNAVAILABLE?"Storage unavailable":
+                    loaded==PORTABLE_ALERT_INVALID?"Invalid - choose a mode":"";
+    }
+    sv_switch(SV_ALERT);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))
+        alert_choice=alert_choice<PORTABLE_ALERT_BOTH?alert_choice+1u:PORTABLE_ALERT_VIBRATE;
+      else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))
+        alert_choice=alert_choice>PORTABLE_ALERT_VIBRATE?alert_choice-1u:PORTABLE_ALERT_BOTH;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,30))alert_choice=PORTABLE_ALERT_VIBRATE;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))alert_choice=PORTABLE_ALERT_SOUND;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))alert_choice=PORTABLE_ALERT_BOTH;
+      if(save) {
+        if(alert_choice<PORTABLE_ALERT_VIBRATE || alert_choice>PORTABLE_ALERT_BOTH)
+          alert_message="Choose an alert mode";
+        else if(portable_alert_save(alert_store,alert_choice)) {
+          alert_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+        } else {
+          /* Keep the selected draft for explicit retry. Neither an IO return
+           * nor a failed/mismatching readback proves the old value survived. */
+          alert_unconfirmed=true;alert_message="Save unconfirmed - retry";
+        }
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Alert mode saved":
+        alert_unconfirmed?"Alert mode unconfirmed":"";
     sv_switch(SV_ROOT);return result;
   }
 #endif
@@ -270,12 +384,19 @@ static bool settings_open(void) {
   if(width()<240 || height()<240)return false;
   rtc_grant.struct_size=sizeof(rtc_grant);back_exits_app=true;settings_message="";
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;
-#ifdef PORTABLE_SLEEP_SETTINGS
-  sleep_grant=(risc_runtime_capability_v1){.struct_size=sizeof(sleep_grant)};
-  sleep_store=NULL;sleep_choice=PORTABLE_SLEEP_HYBRID;sleep_message="";
-  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_SLEEP_STORE_INSTANCE,&sleep_grant)) {
-    if(portable_sleep_api_valid(sleep_grant.api))sleep_store=sleep_grant.api;
+  settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
+  settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
+  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {
+    if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
   }
+  settings_time_format_load();
+#ifdef PORTABLE_SLEEP_SETTINGS
+  sleep_choice=PORTABLE_SLEEP_HYBRID;sleep_message="";
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  alert_choice=0;alert_message="";alert_unconfirmed=false;alert_store=NULL;
+  /* All preferences share the same explicit namespace-1 grant. */
+  alert_store=settings_store;
 #endif
   if(!rt->acquire(TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,0,&rtc_grant))return false;
   rtc=rtc_grant.api;
@@ -287,10 +408,11 @@ static bool settings_open(void) {
 }
 static void settings_close(void) {
   sv_active=false;
-#ifdef PORTABLE_SLEEP_SETTINGS
-  if(sleep_grant.api && !rt->release(&sleep_grant))rt->diagnostic("PORTABLE_APP error=settings-release");
-  sleep_store=NULL;
+#ifdef PORTABLE_ALARM_SETTINGS
+  alert_store=NULL;
 #endif
+  if(settings_grant.api && !rt->release(&settings_grant))rt->diagnostic("PORTABLE_APP error=settings-release");
+  settings_store=NULL;
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_close();
 #endif

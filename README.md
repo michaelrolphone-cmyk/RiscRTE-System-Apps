@@ -17,7 +17,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Clear Reading Cache](docs/apps/clear_cache.md) — confirmation and reporting workflow for firmware-owned EPUB/XTC reading-cache cleanup.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
-- [Wi-Fi Networks](docs/apps/wifi_settings.md) — firmware-owned wireless selection handoff, connection-status display, and core network configuration workflow.
+- [Wi-Fi Networks](docs/apps/wifi_settings.md) — Reader wireless-selector handoff, plus an explicit [portable Wi-Fi client](docs/PORTABLE_WIFI.md) with scan, credential entry, Save/Forget and safe session lifecycle.
 - [Package Manager](docs/apps/package_manager.md) — installed-package inventory, SD Inbox, verified install, replacement/downgrade, and uninstall.
 - [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, compact installed-state icons, and retained-stage recovery.
 - [SD Firmware Update](docs/apps/sd_firmware_update.md) — selected-image validation, confirmation, progress reporting, firmware installation, and restart handoff.
@@ -107,6 +107,13 @@ system-apps-manifest.json
 This repository has an independent pinned-SDK compiler pipeline, 18 host fixtures covering 17 apps, and ELF/import validation for all 18 apps. Eleven apps reproduce their recorded published bytes exactly; CI stores development artifacts. Independent release/package/index publication and prospective U1/runtime compatibility remain unqualified. All 18 approved app sources and all 18 manifests match the accepted Reader master baseline; `docs/source-drift.json` records immutable source/blob provenance. GitHub remains the source of truth for integrated work; staged Drive handoffs are recovery/integration aids only.
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
+
+## Portable update development
+
+The shared [portable Firmware Update and App Store prerequisites](docs/PORTABLE_UPDATES.md)
+provide separate update services, bounded Watch catalog parsing and foreground
+network/bank lifecycle. They are development artifacts and do not change a live
+release index or make legacy single-bank installations OTA-capable.
 
 ## Independent development and maintenance
 

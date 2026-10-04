@@ -23,6 +23,10 @@ jobs:
         run: |
           python scripts/test_apps.py
           python scripts/test_portable_apps.py
+          python scripts/test_portable_wifi.py
+          python scripts/test_portable_update.py
+          python scripts/test_portable_alarm.py
+          python scripts/test_portable_alarm_settings.py
           python scripts/test_springboard_nova.py
           python scripts/test_portable_transition.py
           python test/native_apps/file_browser_oversize_usb_handle_runtime_test.py
@@ -35,6 +39,10 @@ jobs:
           python scripts/build_all_apps.py
           python scripts/check_release_parity.py
           python scripts/build_portable_settings.py
+          python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800
+          python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15
+          python scripts/build_portable_settings.py --alarm-client --alarm-settings --sleep-settings --full-frames --output-dir dist/portable/settings-alarm
+          python scripts/build_portable_springboard.py --alarm-client --full-frames --output-dir dist/portable/springboard-alarm
           python scripts/build_portable_settings.py --denver --full-frames --sleep-settings --output-dir dist/portable/settings-sleep
           python scripts/build_portable_springboard.py --denver --full-frames --retained-rgb565-handoff --handoff-ms 60 --return-app clock.elf --output-dir dist/portable/springboard-handoff
           python scripts/build_portable_springboard.py

@@ -1,3 +1,6 @@
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+#include "wifi_settings_portable.inc"
+#else
 #include "T5AppApi.h"
 #include "T5NetworkApi.h"
 #include "T5SystemUiApi.h"
@@ -81,3 +84,5 @@ void app_main(void) {
         }
     }
 }
+
+#endif /* Reader firmware-owned Wi-Fi selector remains unchanged. */
