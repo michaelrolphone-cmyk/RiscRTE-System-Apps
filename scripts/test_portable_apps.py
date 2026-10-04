@@ -48,3 +48,12 @@ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror'
  str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_idle_sleep_test.c'),
  '-o',str(binary)],check=True,timeout=60)
 for scenario in range(8):subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
+
+# Retained-error unwind must not reach normal provider I/O from nested Settings.
+binary=out/'retained-sleep'
+subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+ '-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie',
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+ str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_retained_sleep_test.c'),
+ '-o',str(binary)],check=True,timeout=60)
+subprocess.run([str(binary)],check=True,timeout=10)

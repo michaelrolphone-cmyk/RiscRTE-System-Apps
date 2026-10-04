@@ -177,7 +177,7 @@ static void sv_sleep(void) {
 }
 #endif
 static void settings_view_redraw(void) {
-  if(!sv_active)return;
+  if(failed || !sv_active)return;
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
   #ifdef PORTABLE_SLEEP_SETTINGS
@@ -187,6 +187,7 @@ static void settings_view_redraw(void) {
   present(false);
 }
 static void sv_switch(unsigned page) {
+  if(failed)return; /* Retained sleep must unwind without provider I/O. */
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
   input_pending=false;touch.neutral=touch.down=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
