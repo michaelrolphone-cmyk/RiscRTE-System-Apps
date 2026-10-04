@@ -17,6 +17,16 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+#ifdef PORTABLE_ALARM_CLIENT
+#include "AlarmServiceV1.h"
+static bool display_settled,alarm_pixels_valid,alarm_modal;
+static uint16_t *alarm_pixels;
+static bool alarm_foreground(bool *consumed);
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+static const alarm_service_v1 *alarm_sleep_api(void);
+#endif
+static bool alarm_failure(void);
+#endif
 static unsigned first_row, last_rows;
 #ifdef PORTABLE_SETTINGS_APP
 #include "PortableRtcClock.h"
@@ -346,6 +356,14 @@ static void present(bool full) {
   }
   const risc_display_present_options_v1 options = {RISC_DISPLAY_PRESENT_DEFAULT,
                                                    RISC_DISPLAY_QUEUE_FIFO, 0};
+#ifdef PORTABLE_ALARM_CLIENT
+  display_settled=false;
+  if(!alarm_modal) {
+    alarm_pixels_valid=false;
+    for(unsigned y=0;y<info.height;y++)memcpy(alarm_pixels+(size_t)y*info.width,
+      (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
+  }
+#endif
   if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
                        &token)) {
     failed = true;
@@ -362,6 +380,9 @@ static void present(bool full) {
       break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+#ifdef PORTABLE_ALARM_CLIENT
+      display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
+#endif
       previous_valid=previous_pixels!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       if(handoff_active)previous_valid=false;
@@ -392,7 +413,11 @@ static bool idle_sleep(void) {
   if(failed)return false;
   input_pending=false;navigation_pending=0;
   rt->diagnostic("PORTABLE_APP sleep=idle");
+#ifdef PORTABLE_ALARM_CLIENT
+  int status=portable_app_alarm_sleep(rt,display,gauge,alarm_sleep_api());
+#else
   int status=portable_app_sleep(rt,display,gauge);
+#endif
   if(status<0){failed=true;return false;}
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -408,10 +433,19 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   if (failed)
     return false;
+#ifdef PORTABLE_ALARM_CLIENT
+  bool consumed=false;
+  if(!alarm_foreground(&consumed))return false;
+  if(consumed)return true;
+#endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
   rt->yield_ms(spent<wait?wait-spent:1);
   last_poll_at=millis_now();
   input_service();
+#ifdef PORTABLE_ALARM_CLIENT
+  if(!alarm_foreground(&consumed))return false;
+  if(consumed)return true;
+#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
      !navigation_pending && !(input_pending && (input_sample.down || input_sample.released))) {
@@ -460,6 +494,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
   bool ok=poll_input(out,wait);
+#ifdef PORTABLE_ALARM_CLIENT
+  if(!ok)return alarm_failure();
+#endif
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
 #ifndef PORTABLE_SETTINGS_APP
@@ -474,6 +511,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   return ok;
 }
+#ifdef PORTABLE_ALARM_CLIENT
+#include "alarm.inc"
+#endif
 static bool refresh(void) { return portable_catalog_count <= 16; }
 static uint32_t count(void) {
   return portable_catalog_count <= 16 ? portable_catalog_count : 0;
@@ -485,6 +525,10 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
+#ifdef PORTABLE_ALARM_CLIENT
+  bool consumed=false;
+  if(!alarm_foreground(&consumed) || consumed)return false;
+#endif
   return !failed &&
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       !handoff_active &&
@@ -605,6 +649,10 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+#ifdef PORTABLE_ALARM_CLIENT
+  display_settled=true;alarm_pixels_valid=alarm_modal=false;alarm_pixels=NULL;
+  alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
+#endif
   nova_mode = false;
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
@@ -624,6 +672,10 @@ static int initialize(void) {
       !(info.supported_formats &
         RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
     return -1;
+#ifdef PORTABLE_ALARM_CLIENT
+  alarm_pixels=malloc((size_t)info.width*info.height*2);
+  if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
+#endif
   if (!portable_touch_open(&touch, rt))return -1;
 #ifndef PORTABLE_FORCE_FULL_FRAMES
   if((info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
@@ -649,6 +701,16 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
+#ifdef PORTABLE_ALARM_CLIENT
+  if(alarms.api && !alarm_failed_cleaned &&
+      (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms)) &&
+      !portable_alarm_failure_stop(&alarms)) {
+    rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
+  if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
+  free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
+#endif
   if (surface.frame)
     display->release(display->context, surface.frame);
   surface.frame = 0;

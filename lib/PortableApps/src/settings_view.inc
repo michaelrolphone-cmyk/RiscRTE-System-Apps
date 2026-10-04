@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -176,12 +176,27 @@ static void sv_sleep(void) {
   sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
+#ifdef PORTABLE_ALARM_SETTINGS
+static void sv_alert(void) {
+  sv_heading("ALARM ALERTS");
+  sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
+  sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
+  sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
+  sv_center(3,177,"Alarms and Countdown",SV_CAP,0);
+  sv_center(3,190,alert_message,SV_CYAN,0);
+  sv_button(24,200,86,26,"CANCEL",false);
+  sv_button(130,200,86,26,"SAVE",false);
+}
+#endif
 static void settings_view_redraw(void) {
   if(failed || !sv_active)return;
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
   #ifdef PORTABLE_SLEEP_SETTINGS
   else if(sv_page==SV_SLEEP)sv_sleep();
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  else if(sv_page==SV_ALERT)sv_alert();
 #endif
   else if(sv_page==SV_VALUE)sv_value();else if(sv_page==SV_FOLD)sv_fold();else sv_about();
   present(false);
@@ -196,6 +211,9 @@ static void sv_switch(unsigned page) {
   settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+      || page==SV_ALERT
 #endif
       ;
   settings_view_redraw();
@@ -264,6 +282,9 @@ static bool settings_view_poll(t5_app_input_t *out) {
     if(sv_page==SV_FIELDS
 #ifdef PORTABLE_SLEEP_SETTINGS
        || sv_page==SV_SLEEP
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+       || sv_page==SV_ALERT
 #endif
       ) {
       if(sv_inside(x,y,24,200,86,26)) {sv_back_input(out);return true;}

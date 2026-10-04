@@ -1,6 +1,10 @@
 # Settings
 
-Current manifest version: **1.0.1** (`settings.elf`; minimum firmware 1.1.24).
+Current development manifest version: **1.2.0** (`settings.elf`; minimum firmware 1.1.24).
+The original app source is unchanged. The optional generic portable client adds
+an opt-in alarm alert chooser; see [Portable Settings](../PORTABLE_SETTINGS.md).
+The 1.0.1 publication evidence below is historical and does not publish or deploy
+this new development version.
 
 ## Purpose
 

@@ -16,11 +16,26 @@ static risc_runtime_capability_v1 sleep_grant;
 static const risc_key_value_v1 *sleep_store;
 static unsigned sleep_choice;
 static const char *sleep_message;
-#define SETTINGS_ROW_COUNT 6u
+#define SETTINGS_BASE_ROW_COUNT 6u
 #define SETTINGS_ABOUT_ROW 5u
 #else
-#define SETTINGS_ROW_COUNT 5u
+#define SETTINGS_BASE_ROW_COUNT 5u
 #define SETTINGS_ABOUT_ROW 4u
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+#include "PortableAlarmSettings.h"
+#ifndef PORTABLE_SLEEP_SETTINGS
+static risc_runtime_capability_v1 alert_grant;
+#endif
+static const risc_key_value_v1 *alert_store;
+static unsigned alert_choice;
+static const char *alert_message;
+static bool alert_unconfirmed;
+/* Append after About so pre-existing configurations retain every row index. */
+#define SETTINGS_ALERT_ROW SETTINGS_BASE_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_BASE_ROW_COUNT+1u)
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_BASE_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
@@ -68,7 +83,11 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_SLEEP_SETTINGS
     "Clock Sleep Mode",
 #endif
-    "About"};
+    "About"
+#ifdef PORTABLE_ALARM_SETTINGS
+    ,"Alarm Alerts"
+#endif
+    };
   strcpy(out->label,names[index]);
   if(index==0) {
     out->type=T5_APP_SETTING_ACTION;twatch_rtc_time_v1 raw,local;
@@ -84,6 +103,15 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     unsigned mode;int loaded=portable_sleep_load(sleep_store,&mode);
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":mode==PORTABLE_SLEEP_LIGHT?"Light":"Light then Deep");
+  }
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  else if(index==SETTINGS_ALERT_ROW) {
+    unsigned mode;int loaded=portable_alert_load(alert_store,&mode);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,alert_unconfirmed?"Unconfirmed":
+        loaded==PORTABLE_ALERT_UNAVAILABLE?"Unavailable":
+        loaded==PORTABLE_ALERT_INVALID?"Invalid":portable_alert_name(mode));
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -203,6 +231,46 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     sv_switch(SV_ROOT);return result;
   }
 #endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  if(index==SETTINGS_ALERT_ROW) {
+    if(!alert_unconfirmed) {
+      int loaded=portable_alert_load(alert_store,&alert_choice);
+      alert_message=loaded==PORTABLE_ALERT_UNAVAILABLE?"Storage unavailable":
+                    loaded==PORTABLE_ALERT_INVALID?"Invalid - choose a mode":"";
+    }
+    sv_switch(SV_ALERT);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))
+        alert_choice=alert_choice<PORTABLE_ALERT_BOTH?alert_choice+1u:PORTABLE_ALERT_VIBRATE;
+      else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))
+        alert_choice=alert_choice>PORTABLE_ALERT_VIBRATE?alert_choice-1u:PORTABLE_ALERT_BOTH;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,30))alert_choice=PORTABLE_ALERT_VIBRATE;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))alert_choice=PORTABLE_ALERT_SOUND;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))alert_choice=PORTABLE_ALERT_BOTH;
+      if(save) {
+        if(alert_choice<PORTABLE_ALERT_VIBRATE || alert_choice>PORTABLE_ALERT_BOTH)
+          alert_message="Choose an alert mode";
+        else if(portable_alert_save(alert_store,alert_choice)) {
+          alert_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+        } else {
+          /* Keep the selected draft for explicit retry. Neither an IO return
+           * nor a failed/mismatching readback proves the old value survived. */
+          alert_unconfirmed=true;alert_message="Save unconfirmed - retry";
+        }
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Alert mode saved":
+        alert_unconfirmed?"Alert mode unconfirmed":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
   if(index!=0 && index!=SETTINGS_ABOUT_ROW)return T5_APP_SETTING_NO_CHANGE;
   if(index==SETTINGS_ABOUT_ROW) {
     sv_switch(SV_ABOUT);t5_app_input_t input;
@@ -277,6 +345,18 @@ static bool settings_open(void) {
     if(portable_sleep_api_valid(sleep_grant.api))sleep_store=sleep_grant.api;
   }
 #endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  alert_choice=0;alert_message="";alert_unconfirmed=false;alert_store=NULL;
+#ifdef PORTABLE_SLEEP_SETTINGS
+  /* Both controls own the same namespace; acquire/release its grant once. */
+  alert_store=sleep_store;
+#else
+  alert_grant=(risc_runtime_capability_v1){.struct_size=sizeof(alert_grant)};
+  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_ALERT_STORE_INSTANCE,&alert_grant)) {
+    if(portable_alert_api_valid(alert_grant.api))alert_store=alert_grant.api;
+  }
+#endif
+#endif
   if(!rt->acquire(TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,0,&rtc_grant))return false;
   rtc=rtc_grant.api;
   if(!rtc || rtc->api_version!=TWATCH_RTC_API_V1 || rtc->struct_size<sizeof(*rtc) || !rtc->read || !rtc->write)return false;
@@ -287,6 +367,12 @@ static bool settings_open(void) {
 }
 static void settings_close(void) {
   sv_active=false;
+#ifdef PORTABLE_ALARM_SETTINGS
+#ifndef PORTABLE_SLEEP_SETTINGS
+  if(alert_grant.api && !rt->release(&alert_grant))rt->diagnostic("PORTABLE_APP error=settings-release");
+#endif
+  alert_store=NULL;
+#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   if(sleep_grant.api && !rt->release(&sleep_grant))rt->diagnostic("PORTABLE_APP error=settings-release");
   sleep_store=NULL;

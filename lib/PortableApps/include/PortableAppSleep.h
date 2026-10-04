@@ -12,3 +12,13 @@
 int portable_app_sleep(const risc_runtime_api_v1 *runtime,
                        const risc_display_output_api_v1 *display,
                        const risc_battery_gauge_api_v1 *gauge);
+
+#ifdef PORTABLE_ALARM_CLIENT
+#include "AlarmServiceV1.h"
+/* Alarm-aware deployment hook consumes prepare_sleep immediately before entry.
+ * Returning wake/refusal must reconcile again at the caller's safe point. */
+int portable_app_alarm_sleep(const risc_runtime_api_v1 *runtime,
+                            const risc_display_output_api_v1 *display,
+                            const risc_battery_gauge_api_v1 *gauge,
+                            const alarm_service_v1 *alarms);
+#endif
