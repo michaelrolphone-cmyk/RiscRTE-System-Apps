@@ -7,8 +7,15 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 #include "PortableWifiView.h"
+#ifdef PORTABLE_UPDATE_APP
+#include "PortableUpdate.h"
+#define portable_wifi_suspend portable_update_suspend
+#define portable_wifi_resume portable_update_resume
+#define portable_wifi_close portable_update_close
+#define portable_wifi_services_safe portable_update_services_safe
+#endif
 #endif
 #include <limits.h>
 #include <stdlib.h>
@@ -410,7 +417,7 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active || handoff_pending)return true;
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   /* A radio drain refusal is recoverable app UI, not a native sleep entry.
    * Keep touch/navigation live so the user can explicitly retry cleanup. */
   if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
@@ -431,7 +438,7 @@ static bool idle_sleep(void) {
   if(status==-2){native_sleep_retained=true;failed=true;return false;}
 #endif
   if(status<0){failed=true;return false;}
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   portable_wifi_resume();
 #endif
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
@@ -526,7 +533,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   return ok;
 }
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 #include "wifi_view.inc"
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
@@ -722,7 +729,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);

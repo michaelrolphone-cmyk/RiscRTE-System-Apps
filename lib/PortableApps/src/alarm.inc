@@ -19,7 +19,7 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     /* Even healthy RF must drain before app_main returns: Runtime checks its
      * exit barrier before invoking fini, so deferring cleanup there deadlocks
      * an ordinary display/input failure behind our own live radio session. */
@@ -74,7 +74,7 @@ static bool alarm_restore(const uint16_t *saved) {
         saved+(size_t)y*info.width,info.width*2);
     present(false);return !failed && display_settled;
 }
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 /* A failed radio cleanup forbids storage-backed service calls. Output-only
  * stop does not acknowledge or change the persisted occurrence. Restore the
  * editor so cleanup can be retried; normal reconciliation resumes afterward. */
@@ -96,7 +96,7 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
     if(failed || !display_settled || surface.frame)return alarm_failure();
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
     if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
@@ -105,7 +105,7 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING;n++) {
         if(n>=64){failed=true;return alarm_failure();}
         rt->yield_ms(1);
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
@@ -126,7 +126,7 @@ static bool alarm_foreground(bool *consumed) {
         if(failed || !display_settled){alarm_modal=false;return alarm_failure();}
         rt->yield_ms(20);input_service();
         if(failed){alarm_modal=false;return alarm_failure();}
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
@@ -147,7 +147,7 @@ static bool alarm_foreground(bool *consumed) {
             }
         }
         if(failed || !display_settled || surface.frame){alarm_modal=false;return alarm_failure();}
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         uint32_t old_state=alarms.status.state;int32_t old_error=alarms.status.error;

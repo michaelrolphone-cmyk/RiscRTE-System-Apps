@@ -1,0 +1,34 @@
+{
+  "repository": "michaelrolphone-cmyk/T5S3-Reader",
+  "commit": "cff6ef0c11b79634dfa2c688d880df393d8c153c",
+  "extraction": "src/runtime/packages/PackageIndependentCatalog.h: WorkBudget and Cursor verbatim, namespace/includes only adapted",
+  "version_helper": "existing lib/NativeApps/include/T5PackageVersion.h unchanged",
+  "reason": "Reuse bounded parser and version policy; Watch loose ELF records intentionally do not use Reader rte.zip admission",
+  "source_sha256": "ab240b9df9b6b0c79ee73d2f2866949ab22116e5433c22554360a021a84a1147",
+  "native_sdk": {
+    "RiscBankStoreV1.h": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "path": "sdk/driver/RiscBankStoreV1.h",
+      "sha256": "644dc270c3f5f7c464761e6ff916fc7526ae855ebc9ad4e9dabe0744e1e30da2",
+      "commit": "b12d99d922fcd61d8e95370b7a14877cc28be363"
+    },
+    "RiscHttpClientV1.h": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "path": "sdk/driver/RiscHttpClientV1.h",
+      "sha256": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+      "commit": "b12d99d922fcd61d8e95370b7a14877cc28be363"
+    },
+    "RiscPlatformClockV1.h": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "path": "sdk/driver/RiscPlatformClockV1.h",
+      "sha256": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+      "commit": "b12d99d922fcd61d8e95370b7a14877cc28be363"
+    }
+  },
+  "catalog_fixture": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "commit": "38c5be065c69a493bfc0d075fcf76ecd9b99450e",
+    "path": "release-index.json",
+    "sha256": "bd3c5e970ac031cb9d4da40a313447502d7c1adc088b9b339e2c709f8aeb537c"
+  }
+}
