@@ -96,3 +96,12 @@ checks transition ownership. Standard CI uses its ordinary leak checking.
 Deployment may set `PORTABLE_RETURN_APP` to a named .elf destination. A successful input poll queues it only for an explicit root exit; nested Settings Back remains inside Settings. Errors, health termination and ordinary app launches do not synthesize a return.
 
 `PORTABLE_HANDOFF_EAGER_MS=60` opts into a faster retained-image transition. The outgoing completed image is already visible. Initial incoming drawing time counts toward the60ms phase and the first transfer already contains incoming content, avoiding the prior extra full-frame alpha-zero retransmission. The ordinary180ms exact-first-submission behavior remains the default for existing consumers. Actual target load/SPI/render latency is additional and is not inferred from a host clock model.
+
+## Daily-tool catalog revision
+
+Springboard 1.3.8 versions the next bounded deployment catalog containing the
+shared Calculator and Stopwatch applications from RiscRTE-Utilities. The
+Springboard source, portable adapter, Font Awesome font assets, retained handoff,
+touch/crown navigation and saved Settings source are unchanged in this revision.
+A deployment must link its authorized catalog and grant policies explicitly;
+this manifest increment does not add runtime discovery or install other apps.

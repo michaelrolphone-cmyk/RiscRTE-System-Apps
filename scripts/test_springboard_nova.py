@@ -4,6 +4,7 @@ import hashlib,json,os,pathlib,subprocess
 ROOT=pathlib.Path(__file__).resolve().parents[1];out=ROOT/'build/nova';out.mkdir(parents=True,exist_ok=True)
 fonts=ROOT/'lib/PortableApps/fonts';pins=json.loads((fonts/'SOURCES.json').read_text())
 for file in ['icons.inc','text.inc']:assert hashlib.sha256((fonts/file).read_bytes()).hexdigest()==pins[file+'_sha256']
+assert 'solid:f2f2' in pins['icons'] and pins['glyph_names']['solid:f2f2']=='stopwatch'
 flags=[os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all']
 subprocess.run([*flags,str(ROOT/'test/native_apps/springboard_motion_test.c'),'-o',str(out/'motion')],check=True)
 subprocess.run([str(out/'motion')],check=True)
@@ -27,3 +28,16 @@ for test in ['bounds','timing']:
 
 subprocess.run([*flags,'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/springboard_tap_layers_test.c'),'-o',str(out/'tap-layers')],check=True)
 subprocess.run([str(out/'tap-layers')],check=True)
+
+# Direct production caption pixels on bright backgrounds, with ASan/UBSan.
+subprocess.run([*flags,'-fsanitize=address','-fno-omit-frame-pointer','-no-pie',
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+ str(ROOT/'test/native_apps/springboard_caption_test.c'),'-o',str(out/'caption-pixels')],check=True)
+subprocess.run([str(out/'caption-pixels')],check=True)
+
+binary=out/'daily-catalog'
+subprocess.run([*flags,'-DNOVA_DAILY_CATALOG','-DCATALOG_COUNT=5','-DPORTABLE_RTC_UTC8_DENVER',
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+ str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
+ str(ROOT/'test/native_apps/springboard_nova_test.c'),'-o',str(binary)],check=True)
+for scenario in [0,6,14,16,32,33]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

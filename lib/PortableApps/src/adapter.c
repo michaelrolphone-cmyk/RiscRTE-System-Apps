@@ -38,6 +38,10 @@ static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+#include "PortableAppSleep.h"
+static uint32_t last_activity;
+#endif
 #ifdef PORTABLE_INPUT_NAVIGATION
 #include "PortableNavigation.h"
 #ifndef PORTABLE_INPUT_NAVIGATION_LOCAL
@@ -91,12 +95,18 @@ static void input_service(void) {
   input_sample=next;
  }
  input_pending=true;
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+ if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
+#endif
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(navigation_ready) {
   risc_input_navigation_frame_v1 frame={0};
   if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else navigation_pending|=frame.pressed;
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+  if(frame.buttons || frame.pressed || frame.released)last_activity=input_sampled_at;
+#endif
  }
 #endif
 }
@@ -367,6 +377,33 @@ static void present(bool full) {
   }
   failed = true;
 }
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+static bool idle_sleep(void) {
+  /* Existing app stack, editor draft and private storage grants stay live.
+   * No handoff, unload or settings grant is introduced by idle sleeping. */
+  if(surface.frame)return true;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+  if(handoff_active || handoff_pending)return true;
+#endif
+  if(!portable_touch_close(&touch,rt)){failed=true;return false;}
+#ifdef PORTABLE_INPUT_NAVIGATION
+  input_navigation_reset();
+#endif
+  if(failed)return false;
+  input_pending=false;navigation_pending=0;
+  rt->diagnostic("PORTABLE_APP sleep=idle");
+  int status=portable_app_sleep(rt,display,gauge);
+  if(status<0){failed=true;return false;}
+  if(!portable_touch_open(&touch,rt)){failed=true;return false;}
+#ifdef PORTABLE_INPUT_NAVIGATION
+  input_navigation_reset();
+#endif
+  input_sample=(portable_touch_sample){0};input_pending=false;navigation_pending=0;
+  last_activity=last_poll_at=input_sampled_at=millis_now();previous_valid=false;
+  rt->diagnostic(status?"PORTABLE_APP sleep=resumed":"PORTABLE_APP sleep=refused");
+  return !failed;
+}
+#endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   if (failed)
@@ -375,6 +412,13 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   rt->yield_ms(spent<wait?wait-spent:1);
   last_poll_at=millis_now();
   input_service();
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+  if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
+     !navigation_pending && !(input_pending && (input_sample.down || input_sample.released))) {
+    if(!idle_sleep())return false;
+    return !failed; /* Waking crown/contact never becomes an app action. */
+  }
+#endif
   if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
   if (settings_view_poll(out)) return !failed;
@@ -597,7 +641,10 @@ static int initialize(void) {
 #ifdef PORTABLE_SETTINGS_APP
   if (!settings_open()) return -1;
 #endif
-  return 0;
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+  last_activity=millis_now();
+#endif
+  return failed?-1:0;
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)

@@ -66,7 +66,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
   static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
 #ifdef PORTABLE_SLEEP_SETTINGS
-    "Sleep Mode",
+    "Clock Sleep Mode",
 #endif
     "About"};
   strcpy(out->label,names[index]);
@@ -83,7 +83,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   else if(index==4) {
     unsigned mode;int loaded=portable_sleep_load(sleep_store,&mode);
     out->type=T5_APP_SETTING_ACTION;
-    strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":"Light");
+    strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":mode==PORTABLE_SLEEP_LIGHT?"Light":"Light then Deep");
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -177,7 +177,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(index==4) {
     int loaded=portable_sleep_load(sleep_store,&sleep_choice);
     sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
-                  loaded==PORTABLE_SLEEP_INVALID?"Invalid record: Light default":"";
+                  loaded==PORTABLE_SLEEP_INVALID?"Invalid: Hybrid default":"";
     sv_switch(SV_SLEEP);bool armed=false;t5_app_input_t input;
     uint8_t result=T5_APP_SETTING_NO_CHANGE;
     while(poll(&input,20)) {
@@ -186,9 +186,10 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(!armed)continue;
       armed=false;
       bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
-      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice^=1u;
-      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,34))sleep_choice=PORTABLE_SLEEP_LIGHT;
-      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,110,184,34))sleep_choice=PORTABLE_SLEEP_DEEP;
+      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice=(sleep_choice+1u)%3u;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,30))sleep_choice=PORTABLE_SLEEP_LIGHT;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))sleep_choice=PORTABLE_SLEEP_DEEP;
+      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))sleep_choice=PORTABLE_SLEEP_HYBRID;
       if(save) {
         if(portable_sleep_save(sleep_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
         /* A failed commit may or may not have persisted. Re-read rather than
@@ -271,7 +272,7 @@ static bool settings_open(void) {
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;
 #ifdef PORTABLE_SLEEP_SETTINGS
   sleep_grant=(risc_runtime_capability_v1){.struct_size=sizeof(sleep_grant)};
-  sleep_store=NULL;sleep_choice=PORTABLE_SLEEP_LIGHT;sleep_message="";
+  sleep_store=NULL;sleep_choice=PORTABLE_SLEEP_HYBRID;sleep_message="";
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_SLEEP_STORE_INSTANCE,&sleep_grant)) {
     if(portable_sleep_api_valid(sleep_grant.api))sleep_store=sleep_grant.api;
   }
