@@ -8,7 +8,7 @@ from PIL import ImageFont
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--reader',type=pathlib.Path,required=True);p.add_argument('--fonts',type=pathlib.Path,required=True);a=p.parse_args()
 out=ROOT/'lib/PortableApps/fonts';out.mkdir(exist_ok=True)
-# The deployed cross-repository inventory is an explicit shared contract.
+# The deployed cross-repository inventory is an explicit shared contract, including external Audio Tools.
 registry=json.loads((ROOT/'lib/PortableApps/catalog-icons.json').read_text())['apps']
 assert len({v['icon'] for v in registry.values()})==len(registry), 'Every app needs its own icon'
 names=sorted({json.loads(f.read_text())['icon'] for f in (ROOT/'Apps').glob('*.json')}|{v['icon'] for v in registry.values()})
