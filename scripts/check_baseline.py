@@ -53,7 +53,13 @@ def audit(reader=None, ref=None, root=ROOT):
             local = git_blob((root / path).read_bytes())
             upstream = None
             if reader:
-                upstream = subprocess.check_output(['git', '-C', str(reader), 'rev-parse', f'{commit}:{path}'], text=True).strip()
+                # A repository-owned opt-in source may have no Reader baseline.
+                # Preserve that distinction instead of inventing an upstream blob.
+                exists = base is not None or subprocess.run(
+                    ['git', '-C', str(reader), 'cat-file', '-e', f'{commit}:{path}'],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+                if exists:
+                    upstream = subprocess.check_output(['git', '-C', str(reader), 'rev-parse', f'{commit}:{path}'], text=True).strip()
             result.append({'id': app['id'], 'path': path, 'baseline_blob': base,
                            'external_blob': local, 'upstream_blob': upstream,
                            'state': classify(base, local, upstream) if upstream else ('unchanged' if base == local else 'external-only-unverified')})

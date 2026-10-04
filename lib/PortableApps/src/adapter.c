@@ -7,6 +7,9 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+#include "PortableWifiView.h"
+#endif
 #include <limits.h>
 #include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
@@ -407,6 +410,11 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active || handoff_pending)return true;
 #endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  /* A radio drain refusal is recoverable app UI, not a native sleep entry.
+   * Keep touch/navigation live so the user can explicitly retry cleanup. */
+  if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
+#endif
   if(!portable_touch_close(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
@@ -423,6 +431,9 @@ static bool idle_sleep(void) {
   if(status==-2){native_sleep_retained=true;failed=true;return false;}
 #endif
   if(status<0){failed=true;return false;}
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  portable_wifi_resume();
+#endif
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
@@ -515,6 +526,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   return ok;
 }
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+#include "wifi_view.inc"
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "alarm.inc"
 #endif
@@ -707,6 +721,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
     return;
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  if(!portable_wifi_close()) {
+    rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(alarms.api && !alarm_failed_cleaned &&

@@ -17,7 +17,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Clear Reading Cache](docs/apps/clear_cache.md) — confirmation and reporting workflow for firmware-owned EPUB/XTC reading-cache cleanup.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
-- [Wi-Fi Networks](docs/apps/wifi_settings.md) — firmware-owned wireless selection handoff, connection-status display, and core network configuration workflow.
+- [Wi-Fi Networks](docs/apps/wifi_settings.md) — Reader wireless-selector handoff, plus an explicit [portable Wi-Fi client](docs/PORTABLE_WIFI.md) with scan, credential entry, Save/Forget and safe session lifecycle.
 - [Package Manager](docs/apps/package_manager.md) — installed-package inventory, SD Inbox, verified install, replacement/downgrade, and uninstall.
 - [Driver Manager](docs/apps/driver_manager.md) — online/SD driver packages, install progress, compact installed-state icons, and retained-stage recovery.
 - [SD Firmware Update](docs/apps/sd_firmware_update.md) — selected-image validation, confirmation, progress reporting, firmware installation, and restart handoff.

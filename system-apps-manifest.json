@@ -80,14 +80,20 @@
     {
       "id": "wifi_settings",
       "display_name": "Wi-Fi Networks",
-      "version": "1.0.3",
+      "version": "1.1.0",
       "min_firmware_version": "1.1.24",
       "file_name": "wifi_settings.elf",
       "source_path": "Apps/wifi_settings.c",
       "manifest_path": "Apps/wifi_settings.json",
       "upstream_source_sha": "33fd4a4045daecce210e1e347bedd599e146245d",
       "upstream_manifest_sha": "4bce101a4b1db443765d1e2aa82c2e8be8064fbd",
-      "migration_status": "source-doc-parity-build-release-pending"
+      "migration_status": "portable-opt-in-reader-path-preserved",
+      "additional_sources": [
+        {
+          "path": "Apps/wifi_settings_portable.inc",
+          "upstream_blob": null
+        }
+      ]
     },
     {
       "id": "package_manager",

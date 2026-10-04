@@ -19,6 +19,15 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    /* Even healthy RF must drain before app_main returns: Runtime checks its
+     * exit barrier before invoking fini, so deferring cleanup there deadlocks
+     * an ordinary display/input failure behind our own live radio session. */
+    if(!portable_wifi_suspend()) {
+        rt->diagnostic("WIFI alarm-failure cleanup-unconfirmed; invocation retained");
+        for(;;)rt->yield_ms(50);
+    }
+#endif
     if(alarm_failed_cleaned)return false;
     alarm_failed_cleaned=true;
     if(!portable_alarm_failure_stop(&alarms)) {
@@ -65,17 +74,40 @@ static bool alarm_restore(const uint16_t *saved) {
         saved+(size_t)y*info.width,info.width*2);
     present(false);return !failed && display_settled;
 }
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+/* A failed radio cleanup forbids storage-backed service calls. Output-only
+ * stop does not acknowledge or change the persisted occurrence. Restore the
+ * editor so cleanup can be retried; normal reconciliation resumes afterward. */
+static bool alarm_wifi_pause(const uint16_t *saved) {
+    if(!portable_alarm_failure_stop(&alarms)) {
+        /* The bounded stop-only sequence is exhausted: never repeat it through
+         * alarm_failure, release grants, or resume normal provider work. */
+        alarm_modal=false;failed=true;alarm_failed_cleaned=true;
+        rt->diagnostic("ALARM Wi-Fi pause stop-unconfirmed; invocation retained");
+        for(;;)rt->yield_ms(50);
+    }
+    alarm_cancel_input();bool ok=alarm_restore(saved);alarm_modal=false;
+    if(!ok)return alarm_failure();
+    alarm_cancel_input();return !failed;
+}
+#endif
 /* Returns false only on foreground failure; consumed prevents initiating Back
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
     if(failed || !display_settled || surface.frame)return alarm_failure();
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    if(!portable_wifi_services_safe())return !failed;
+#endif
     if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING;n++) {
         if(n>=64){failed=true;return alarm_failure();}
         rt->yield_ms(1);
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+        if(!portable_wifi_services_safe())return !failed;
+#endif
         if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
     }
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
@@ -94,6 +126,9 @@ static bool alarm_foreground(bool *consumed) {
         if(failed || !display_settled){alarm_modal=false;return alarm_failure();}
         rt->yield_ms(20);input_service();
         if(failed){alarm_modal=false;return alarm_failure();}
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+        if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
+#endif
         portable_touch_sample sample;input_take(&sample);
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
@@ -112,6 +147,9 @@ static bool alarm_foreground(bool *consumed) {
             }
         }
         if(failed || !display_settled || surface.frame){alarm_modal=false;return alarm_failure();}
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+        if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
+#endif
         uint32_t old_state=alarms.status.state;int32_t old_error=alarms.status.error;
         if(!portable_alarm_pump(&alarms)){failed=true;alarm_modal=false;return alarm_failure();}
         if(memcmp(&shown,&alarms.status.occurrence,sizeof(shown))) {
