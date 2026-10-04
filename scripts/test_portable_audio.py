@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise actual optional audio/alarm/sleep adapter without physical I/O."""
+"""Exercise actual optional audio/alarm/sleep adapter without physical I/O.\nCurrent-main forward-port regression for the Watch Audio Tools lifecycle.\n"""
 import os
 from pathlib import Path
 import subprocess
