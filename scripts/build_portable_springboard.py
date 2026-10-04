@@ -16,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--nova-ui",action="store_true",help="Settings-derived 240x240 shared utility profile")
     parser.add_argument("--alarm-client",action="store_true",help="Explicit alarm.service foreground overlay consumer")
     parser.add_argument("--denver",action="store_true",help="Select RTC UTC+08 to America/Denver display policy")
     parser.add_argument("--rotation","--touch-rotation",dest="rotation",type=int,choices=[0,180],default=0)
@@ -28,6 +29,7 @@ def build():
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
+    if args.nova_ui: flags.append("-DPORTABLE_NOVA_UI")
     if args.alarm_client: flags.append("-DPORTABLE_ALARM_CLIENT")
     if args.full_frames: flags.append("-DPORTABLE_FORCE_FULL_FRAMES")
     if args.retained_rgb565_handoff: flags.append("-DPORTABLE_RETAINED_RGB565_HANDOFF")
