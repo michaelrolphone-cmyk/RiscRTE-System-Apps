@@ -21,18 +21,22 @@
     "solid:f085",
     "solid:f0ac",
     "solid:f0ec",
+    "solid:f0f3",
     "solid:f11c",
     "solid:f187",
     "solid:f1ab",
     "solid:f1eb",
     "solid:f240",
+    "solid:f254",
     "solid:f2ed",
     "solid:f2f2",
     "solid:f550"
   ],
   "glyph_names": {
+    "solid:f0f3": "bell",
+    "solid:f254": "hourglass",
     "solid:f2f2": "stopwatch"
   },
-  "icons.inc_sha256": "008094438569f709131d5ee4e263a190151599cb1f306c56aa3fcaa6a7113ab8",
+  "icons.inc_sha256": "5a3a548b3605179561125b48e5b6cc52f647bade8752d011a78bae8e4b8daca3",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }
