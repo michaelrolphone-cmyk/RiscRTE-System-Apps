@@ -17,5 +17,5 @@ for sanitized in (False,True):
  for firmware,rotation in ((0,0),(0,180),(1,0),(1,180)):
   binary=OUT/f'app-{firmware}-{rotation}-{sanitized}'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11',f'-DPORTABLE_UPDATE_FIRMWARE={firmware}','-Wall','-Wextra','-Werror','-Wno-misleading-indentation',*flags,f'-DPORTABLE_TOUCH_ROTATION={rotation}','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/portable_update_app_test.c'),'-o',str(binary)],check=True)
-  for scenario in range(26): subprocess.run([str(binary),str(scenario)],check=True,timeout=15)
-print('Portable updates: catalog mutations; 20 service scenarios x 2 kinds x 2 modes; 26 UI scenarios x 2 kinds x 2 orientations x 2 modes passed')
+  for scenario in range(34): subprocess.run([str(binary),str(scenario)],check=True,timeout=15)
+print('Portable updates: catalog mutations; 20 service scenarios x 2 kinds x 2 modes; 34 UI scenarios x 2 kinds x 2 orientations x 2 modes passed')
