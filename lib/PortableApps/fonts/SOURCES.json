@@ -26,17 +26,25 @@
     "solid:f187",
     "solid:f1ab",
     "solid:f1eb",
+    "solid:f1ec",
     "solid:f240",
     "solid:f254",
     "solid:f2ed",
     "solid:f2f2",
-    "solid:f550"
+    "solid:f550",
+    "solid:f783"
   ],
   "glyph_names": {
+    "solid:f017": "clock",
+    "solid:f240": "battery-full",
+    "solid:f013": "gear",
+    "solid:f1ec": "calculator",
+    "solid:f2f2": "stopwatch",
     "solid:f0f3": "bell",
     "solid:f254": "hourglass",
-    "solid:f2f2": "stopwatch"
+    "solid:f1eb": "wifi",
+    "solid:f783": "calendar-day"
   },
-  "icons.inc_sha256": "5a3a548b3605179561125b48e5b6cc52f647bade8752d011a78bae8e4b8daca3",
+  "icons.inc_sha256": "4aa87b9e5ff35e145eecda69306b9f219f62424b9a5b34eef47b20c71101afa3",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }
