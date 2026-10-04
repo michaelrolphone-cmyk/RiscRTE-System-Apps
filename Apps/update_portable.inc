@@ -45,13 +45,15 @@ static bool update_radio_close(void) {
 }
 bool portable_update_suspend(void) {
  if(!opened)return true;
- if(restart_pending){message="Update activated; restart required";dirty=true;return false;}
+ if(restart_pending){message=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Update activated; restart required";dirty=true;return false;}
  bool service_closed=!us||us->cancel(us->context);
  /* Native checked radio leave refuses while HTTP still owns a session. If
   * HTTP is closed but a bank abort is blocked by uncertain RF, radio cleanup
   * can recover first, then one bank-abort retry can complete safely. */
  if(!update_radio_close())return false;
  if(!service_closed&&us&&!us->cancel(us->context)){cleanup_pending=true;message="Update cleanup failed; retry Back";dirty=true;return false;}
+ /* Render the completed cancellation, not the previous progress snapshot. */
+ if(us&&!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return false;}
  cleanup_pending=false;confirming=false;install_after_connect=false;armed=false;message="Cancelled; check again when ready";dirty=true;return true;
 }
 void portable_update_resume(void) {if(opened){armed=false;dirty=true;message="Woke; check again when ready";}}
@@ -63,8 +65,10 @@ bool portable_update_close(void) {
 }
 bool portable_update_services_safe(void) {
  if(!opened)return true;if(cleanup_pending||restart_pending)return false;
- if(us&&!us->status(us->context,&ust)){cleanup_pending=true;return false;}
- if(ust.state==SOFTWARE_UPDATE_RETAINED){cleanup_pending=true;return false;}
+ software_update_status_v1 before=ust;
+ if(us&&!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return false;}
+ if(memcmp(&before,&ust,sizeof(ust)))dirty=true;
+ if(ust.state==SOFTWARE_UPDATE_RETAINED){cleanup_pending=true;message="Cleanup required; retry Back";dirty=true;return false;}
  if(uw){
   wifi_link_t state=uw->status(uw->context);wifi_ipv4_v1 ip={0},ap={0};
   bool unhealthy=state>WIFI_LINK_UP||state==WIFI_LINK_DOWN||(!connecting&&state!=WIFI_LINK_UP);
@@ -154,7 +158,7 @@ static bool open_update(void) {
  ua=t5_app_get_api(1);ur=risc_runtime_get_api(1);
  if(!ua||!ua->poll||!ua->millis||!ua->screen_width||!ua->screen_height||ua->screen_width()<240||ua->screen_height()<240||!ur||ur->api_version!=1||ur->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!ur->acquire||!ur->release||!ur->yield_ms||!ur->diagnostic)return false;
  opened=true;dirty=true;armed=false;connecting=cleanup_pending=confirming=install_after_connect=restart_pending=false;selected=confirm_choice=0;
- memset(&ust,0,sizeof(ust));ust.struct_size=sizeof(ust);message="Check uses saved Wi-Fi; no background updates";
+ memset(&ust,0,sizeof(ust));ust.struct_size=sizeof(ust);message="Saved Wi-Fi; Check to connect";
  usg=(risc_runtime_capability_v1){.struct_size=sizeof(usg)};ukg=(risc_runtime_capability_v1){.struct_size=sizeof(ukg)};ucg=(risc_runtime_capability_v1){.struct_size=sizeof(ucg)};memset(&uwg,0,sizeof(uwg));uw=NULL;us=NULL;uk=NULL;uc=NULL;
  if(ur->acquire(PORTABLE_UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY,1,0,&usg)){
   const software_update_v1 *s=usg.api;if(s&&s->api_version==1&&s->struct_size>=sizeof(*s)&&s->refresh&&s->step&&s->status&&s->get&&s->begin&&s->cancel&&s->activate&&s->restart)us=s;}
