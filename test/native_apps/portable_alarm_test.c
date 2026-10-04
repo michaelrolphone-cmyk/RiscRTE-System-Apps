@@ -1,4 +1,5 @@
 #define PORTABLE_ALARM_CLIENT
+#define PORTABLE_APP_SLEEP_LOCAL
 #define PORTABLE_INPUT_NAVIGATION
 #define PORTABLE_RETURN_APP "springboard.elf"
 #define main original_settings_main
@@ -40,6 +41,11 @@ static void yield_retained(uint32_t ms){if(alarm_failed_cleaned&&output_bad)long
 static bool frame_delayed(void*c,risc_display_present_token_v1 token,risc_display_present_status_v1*out){
  (void)c;(void)token;pending_status_calls++;
  assert(!service_steps);if(pending_status_calls<3){live_display=true;out->state=RISC_DISPLAY_PRESENT_ACTIVE;}else{live_display=false;out->state=RISC_DISPLAY_PRESENT_COMPLETE;}return true;}
+static unsigned native_sleep_calls;
+int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,
+        const risc_battery_gauge_api_v1*g,const alarm_service_v1*a){
+ (void)r;(void)d;(void)g;(void)a;assert(!subscriptions&&!surface.frame);native_sleep_calls++;return -2;
+}
 int main(int argc,char**argv){
  unsigned test=argc>1?(unsigned)atoi(argv[1]):0;alarm_scenario=test;scenario=100;
  risc_runtime_api_v1 r=runtime_api;r.acquire=acquire_alarm;r.yield_ms=yield_retained;
@@ -54,6 +60,13 @@ int main(int argc,char**argv){
  if(test==9){nav.reset=reset_after_ack;navigation=&nav;navigation_ready=true;navigation_neutral=true;}
  if(test==0){risc_display_output_api_v1 delayed=display_api;delayed.present_status=frame_delayed;display=&delayed;clear();present(false);assert(display_settled&&pending_status_calls==3&&!service_steps);display=&display_api;}
  clear();fill(0,0,240,240,0x1234);present(false);assert(alarm_pixels_valid);
+ if(test==10){
+  ticks=60000;last_activity=0;alarm_fake.state=ALARM_STATE_READY;t5_app_input_t input;
+  assert(!poll(&input,20)&&native_sleep_calls==1&&portable_app_sleep_retained()&&!stop_calls);
+  unsigned before=service_steps,live=grants;app_module_fini();
+  assert(service_steps==before&&grants==live&&live&&!stop_calls);
+  puts("native-retained sleep bypasses service cleanup/fini and keeps grants passed");return 0;
+ }
  if(test==4||test==5){failed=true;display_settled=false;output_bad=test==5;unsigned before=service_steps;
    if(!setjmp(retained)){bool consumed;assert(!alarm_foreground(&consumed));assert(!output_bad);assert(!alarm_foreground(&consumed));}
    assert(stop_calls==3&&service_steps==before);puts("alarm display-failure bounded stop-only passed");return 0;}

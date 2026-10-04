@@ -18,6 +18,7 @@ static void alarm_cancel_input(void) {
 }
 static bool alarm_failure(void) {
     failed=true;
+    if(native_sleep_retained)return false;
     if(alarm_failed_cleaned)return false;
     alarm_failed_cleaned=true;
     if(!portable_alarm_failure_stop(&alarms)) {

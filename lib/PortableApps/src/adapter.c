@@ -19,7 +19,8 @@ static risc_display_surface_v1 surface;
 static bool failed, list_mode;
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
-static bool display_settled,alarm_pixels_valid,alarm_modal;
+static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained;
+bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -418,6 +419,9 @@ static bool idle_sleep(void) {
 #else
   int status=portable_app_sleep(rt,display,gauge);
 #endif
+#ifdef PORTABLE_ALARM_CLIENT
+  if(status==-2){native_sleep_retained=true;failed=true;return false;}
+#endif
   if(status<0){failed=true;return false;}
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -650,7 +654,7 @@ static int initialize(void) {
   bg.struct_size = sizeof(bg);
   failed = false;
 #ifdef PORTABLE_ALARM_CLIENT
-  display_settled=true;alarm_pixels_valid=alarm_modal=false;alarm_pixels=NULL;
+  display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
   nova_mode = false;
@@ -701,6 +705,9 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
+#ifdef PORTABLE_ALARM_CLIENT
+  if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(alarms.api && !alarm_failed_cleaned &&
       (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms)) &&

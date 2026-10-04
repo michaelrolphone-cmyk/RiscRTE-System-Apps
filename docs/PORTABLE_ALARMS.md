@@ -12,7 +12,8 @@ loop only polls display/input and yields. Submission marks the boundary unsafe;
 only COMPLETE makes it safe. Timeout/FAILED/SUPERSEDED/health failure cannot
 be treated as a completed frame. Failure calls `stop_only` at most three times;
 unsafe cleanup retains the invocation and grants, emits a one-way diagnostic,
-and yields forever without further I/O. Safe cleanup never implies durable ACK.
+and yields without further foreground/service I/O. Runtime provider polling
+follows the existing yield contract; this is not a claim that all providers stop. Safe cleanup never implies durable ACK.
 
 Reconciliation completes before input dispatch and Back/request_launch. An
 active occurrence or new service error takes over an in-place modal. The
@@ -47,3 +48,14 @@ Pinned target builds validate the optional Settings and Springboard ELF paths.
 The complete Watch integration additionally requires the selected service,
 Runtime capacity/storage/output support, owned Light/Deep calls and hardware
 qualification. No stable release is repinned by this shared client change.
+
+## Native retained sleep is distinct from presentation failure
+
+The explicit alarm-aware local sleep hook preserves result-2 for native retention.
+The adapter latches it, returns false without stop_only or any normal provider
+cleanup, and refuses fini cleanup. The Runtime's pre-fini native barrier keeps
+the invocation image, app-owned frame and grants. This path does not yield again
+because a Runtime yield polls providers. Apps with private grants use the hidden
+application-local portable_app_sleep_retained() link after false poll and return
+without close_state. It is not a new Runtime export or capability. Ordinary
+presentation failure still uses its independent bounded output cleanup path.

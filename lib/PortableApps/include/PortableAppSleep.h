@@ -6,7 +6,9 @@
  * compiled only by an explicit target deployment. No device names, storage
  * privileges or firmware UI enter the generic adapter. Caller closes touch
  * subscriptions and holds no display lease; app RAM and grants remain live.
- * 1: woke, 0: ordinary refusal with display restored, -1: stop invocation.
+ * 1: woke, 0: ordinary refusal with display restored, -1: foreground failure.
+ * -2: native retention; return immediately to Runtime without freeing state,
+ * provider I/O, grant release or normal failure cleanup.
  * A retained native error is returned without provider restore/normal I/O;
  * the runtime's pre-fini barrier must retain the app and dependency graph. */
 int portable_app_sleep(const risc_runtime_api_v1 *runtime,
@@ -15,6 +17,9 @@ int portable_app_sleep(const risc_runtime_api_v1 *runtime,
 
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
+/* Hidden application-local link, not a Runtime export/capability. Writers with
+ * private grants use this only after a false poll to preserve native retention. */
+bool portable_app_sleep_retained(void);
 /* Alarm-aware deployment hook consumes prepare_sleep immediately before entry.
  * Returning wake/refusal must reconcile again at the caller's safe point. */
 int portable_app_alarm_sleep(const risc_runtime_api_v1 *runtime,

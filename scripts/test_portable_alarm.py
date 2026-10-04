@@ -9,4 +9,4 @@ for suffix,flags in [('plain',[]),('san',['-fsanitize=address,undefined','-fno-o
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,
   '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
   str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_alarm_test.c'),'-o',str(exe)],check=True)
- for scenario in range(10):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
+ for scenario in range(11):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
