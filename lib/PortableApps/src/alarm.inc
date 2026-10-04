@@ -52,7 +52,7 @@ static bool alarm_audio_pump(void) {
     if(!portable_audio_services_safe() || !portable_alarm_status(&alarms))return false;
     if((portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) &&
        !portable_audio_suspend())return false;
-    if(!alarm_audio_pump())return false;
+    if(!portable_alarm_pump(&alarms))return false;
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
         portable_audio_suspend();
 }
