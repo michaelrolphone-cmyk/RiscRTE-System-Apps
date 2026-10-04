@@ -52,6 +52,10 @@ static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
+#ifdef PORTABLE_NOVA_UI
+static bool nu_gesture;
+static int nu_start_x,nu_start_y;
+#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 #include "PortableAppSleep.h"
 static uint32_t last_activity;
@@ -294,6 +298,9 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
   text_color(x + (w - n * 6) / 2, y, s, n, 0);
 }
 #include "nova.inc"
+#ifdef PORTABLE_NOVA_UI
+#include "nova_ui.inc"
+#endif
 static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool black) {
   /* Preserve the existing call contract; genuine glyph raster, no handmade FA IDs. */
   if (black) {
@@ -476,17 +483,46 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
+#ifdef PORTABLE_NOVA_UI
+  if(sample.cancelled || !sample.valid)nu_gesture=false;
+  if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
+  if(sample.released && nu_gesture) {
+    nu_gesture=false;
+    int dx=(int)x-nu_start_x,dy=(int)y-nu_start_y;
+    if(sample.moved && !sample.cancelled) {
+      if(dy>=28 && dy>abs(dx)*2)out->buttons|=T5_APP_BUTTON_UP;
+      else if(dy<=-28 && -dy>abs(dx)*2)out->buttons|=T5_APP_BUTTON_DOWN;
+      else if(dx>=36 && dx>abs(dy)*2)out->buttons|=T5_APP_BUTTON_BACK;
+      return !failed;
+    }
+  }
+#endif
   if (sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled) {
     if (x >= info.width || y >= info.height)
       return !failed;
-    if (y < 40 && x < 56) {
+    if (
+#ifdef PORTABLE_NOVA_UI
+        y>=4 && y<48 && x>=8 && x<52
+#else
+        y<40 && x<56
+#endif
+       ) {
 #ifdef PORTABLE_SETTINGS_APP
       out->exit_requested = back_exits_app;
 #else
       out->exit_requested = true;
 #endif
       out->buttons = T5_APP_BUTTON_BACK;
-    } else if (list_mode && y >= info.height - 32)
+    }
+#ifdef PORTABLE_NOVA_UI
+    else if(list_mode && y>=184 && y<228) {
+      if(x>=12 && x<64)out->buttons=T5_APP_BUTTON_UP;
+      else if(x>=72 && x<168)out->buttons=T5_APP_BUTTON_CONFIRM;
+      else if(x>=176 && x<228)out->buttons=T5_APP_BUTTON_DOWN;
+    }
+#endif
+#ifndef PORTABLE_NOVA_UI
+    else if (list_mode && y >= info.height - 32)
 #ifdef PORTABLE_SETTINGS_APP
       out->buttons = settings_editing
                          ? (x < info.width / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
@@ -496,6 +532,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
     else if (list_mode && y < 40 && x >= info.width - 56)
       out->buttons = T5_APP_BUTTON_CONFIRM;
+#endif
     else {
       out->tapped = true;
       out->touch_x = x;
@@ -570,6 +607,19 @@ static bool read_battery(t5_battery_state_t *out) {
 }
 static void list(const t5_ui_chrome_t *chrome, const t5_ui_list_row_t *rows,
                  uint32_t n, int32_t selected) {
+#ifdef PORTABLE_NOVA_UI
+  portable_nova_begin();list_mode=true;
+  portable_nova_header(chrome->title);
+  if(selected<0)selected=0;
+  first_row=(unsigned)selected/2*2;last_rows=n;
+  for(unsigned j=0;j<2 && first_row+j<n;j++)
+    portable_nova_row(16,56+(int)j*60,208,54,rows[first_row+j].title,rows[first_row+j].value,(int)(first_row+j)==selected);
+  portable_nova_center(2,16,169,208,chrome->status,NOVA_CAP);
+  portable_nova_button(12,184,52,44,"Prev",false);
+  portable_nova_button(72,184,96,44,"Update",false);
+  portable_nova_button(176,184,52,44,"Next",false);
+  present(false);
+#else
   list_mode = true;
   clear();
   text(8, 16, "BACK");
@@ -589,13 +639,21 @@ static void list(const t5_ui_chrome_t *chrome, const t5_ui_list_row_t *rows,
   }
   label(0, height() - 18, width(), "PREVIOUS         NEXT");
   present(false);
+#endif
 }
 static int32_t hit(int16_t x, int16_t y) {
+#ifdef PORTABLE_NOVA_UI
+  if(x<16 || x>=224)return -1;
+  for(unsigned row=0;row<2;row++)if(y>=56+(int)row*60 && y<110+(int)row*60)
+    return first_row+row<last_rows?(int32_t)(first_row+row):-1;
+  return -1;
+#else
   (void)x;
   if (y < 48)
     return -1;
   unsigned i = first_row + (y - 48) / 28;
   return i < last_rows ? (int32_t)i : -1;
+#endif
 }
 static int32_t next(int32_t i, uint32_t n) {
   return n ? (int32_t)(((uint32_t)i + 1) % n) : 0;
@@ -672,6 +730,9 @@ static int initialize(void) {
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
   nova_mode = false;
+#ifdef PORTABLE_NOVA_UI
+  nu_gesture=false;
+#endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -690,6 +751,9 @@ static int initialize(void) {
       !(info.supported_formats &
         RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
     return -1;
+#ifdef PORTABLE_NOVA_UI
+  if(info.width!=240 || info.height!=240)return -1;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   alarm_pixels=malloc((size_t)info.width*info.height*2);
   if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
