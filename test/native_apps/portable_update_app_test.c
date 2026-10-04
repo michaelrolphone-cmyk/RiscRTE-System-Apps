@@ -159,6 +159,37 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
  case 31:ust.state=SOFTWARE_UPDATE_ACTIVATION_UNKNOWN;restart_pending=true;message="Activation uncertain; restart required";render_update();assert(!portable_update_suspend());assert(!strcmp(message,"Activation uncertain; restart required"));render_update();assert(!strcmp(uv.message,"Activation uncertain; restart required"));restart_pending=false;break;
  case 32:{render_update();assert(!strcmp(uv.message,"Saved Wi-Fi; Check to connect"));int pen=0;for(const char *s=uv.message;*s;++s){unsigned ch=(unsigned char)*s;assert(ch>=32&&ch<=126);const rps_glyph *g=&rps_text[3*95+ch-32];assert(pen/16+g->advance_q4/16<=204);pen+=g->advance_q4;}break;}
  case 33:mock_update.state=SOFTWARE_UPDATE_RETAINED;ust=mock_update;dirty=false;assert(!portable_update_services_safe()&&cleanup_pending&&dirty);render_update();assert(!strcmp(uv.rows[0],"Retry cleanup")&&!strcmp(uv.message,"Cleanup required; retry Back"));mock_update.state=SOFTWARE_UPDATE_IDLE;assert(portable_update_suspend());break;
+ case 34: {
+  mock_update.count=5;mock_update.state=SOFTWARE_UPDATE_LIST;ust=mock_update;selected=3;render_update();
+#ifdef PORTABLE_NOVA_UI
+  assert(portable_wifi_hit(&uv,16,62)==2 && portable_wifi_hit(&uv,223,115)==2);
+  assert(portable_wifi_hit(&uv,16,120)==3 && portable_wifi_hit(&uv,223,173)==3);
+  assert(portable_wifi_hit(&uv,15,62)==-1 && portable_wifi_hit(&uv,224,120)==-1);
+#endif
+  assert(!begins&&!activations);break;
+ }
+ case 35: {
+  assert(portable_update_close());mock_update.count=1;mock_update.state=SOFTWARE_UPDATE_LIST;
+  event(2,T5_APP_BUTTON_DOWN,-1,0);event(4,T5_APP_BUTTON_CONFIRM,-1,0);
+  event(6,0,30,25);event(14,T5_APP_BUTTON_BACK,-1,0);app_main();
+  assert(!begins&&!activations&&!opened&&launches==1);break;
+ }
+ case 36: {
+  mock_update.count=1;mock_update.state=SOFTWARE_UPDATE_LIST;ust=mock_update;selected=1;
+  selected_row=(software_update_row_v1){.struct_size=sizeof(selected_row)};assert(update_get(NULL,0,&selected_row));
+  confirming=true;confirm_choice=1;render_update();assert(!begins&&!activations);
+  assert(!strcmp(uv.rows[1],"Install and restart"));break;
+ }
+ case 37: {
+  assert(portable_update_close());mock_update.count=1;mock_update.state=SOFTWARE_UPDATE_LIST;
+#ifdef PORTABLE_NOVA_UI
+  event(2,0,192,200);event(8,0,120,200);
+#else
+  event(2,0,192,225);event(8,0,120,225);
+#endif
+  event(14,T5_APP_BUTTON_BACK,-1,0);event(18,T5_APP_BUTTON_BACK,-1,0);app_main();
+  assert(selected==1&&!begins&&!activations&&!opened&&launches==1);break;
+ }
  default:assert(!"Unknown scenario");
  }
  fail_disconnect=fail_release=fail_cancel=false;app_module_fini();assert(!opened&&!grant_count&&!sub_count&&!frame_count&&!native_active&&!writes);printf("Portable update UI scenario %u passed\n",scenario);return 0;

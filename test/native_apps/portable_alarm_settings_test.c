@@ -6,6 +6,7 @@
 #define PORTABLE_ALARM_SETTINGS
 #define PORTABLE_INPUT_NAVIGATION
 #include "../../lib/PortableApps/src/adapter.c"
+#include "nova_settings_coordinates.h"
 int app_module_init(void);
 void app_module_fini(void);
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
@@ -67,6 +68,9 @@ static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
   for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==polls) {
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};
+#ifdef PORTABLE_NOVA_UI
+    nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
+#endif
 #if PORTABLE_TOUCH_ROTATION == 180
     out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
 #endif

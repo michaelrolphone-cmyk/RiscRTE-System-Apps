@@ -166,6 +166,9 @@ static void editor_value_text(unsigned field,char *out,size_t capacity) {
 }
 static void editor_step(bool forward) {
   unsigned lo,hi;editor_bounds(editor_field,&lo,&hi);unsigned value=editor_value(editor_field);
+#ifdef PORTABLE_NOVA_UI
+  if(editor_field==3 && !settings_hour_24()) {editor_set_value((value/12)*12+(value%12+(forward?1:11))%12);return;}
+#endif
   editor_set_value(forward?(value<hi?value+1:lo):(value>lo?value-1:hi));
 }
 static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
@@ -177,7 +180,7 @@ static void settings_render(uint32_t category,int32_t selected) {
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
-    else if(y+40>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-134;
+    else if(y+SV_ROW_HEIGHT>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(174-SV_ROW_HEIGHT);
   }
   if(sv_page!=SV_ROOT)sv_switch(SV_ROOT);else settings_view_redraw();
 }
@@ -201,11 +204,11 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
 static void editor_select_field(unsigned field) {
   editor_field=field;
   if(field<6) {
-    int y=60+(int)field*40-sv_scroll[1];
-    if(y<60)sv_scroll[1]=(int)field*40;
-    else if(y+40>176)sv_scroll[1]=60+(int)field*40-136;
+    int y=60+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
+    if(y<60)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
+    else if(y+SV_ROW_HEIGHT>SV_FIELD_BOTTOM)sv_scroll[1]=60+(int)field*SV_ROW_HEIGHT-(SV_FIELD_BOTTOM-SV_ROW_HEIGHT);
     if(sv_scroll[1]<0)sv_scroll[1]=0;
-    if(sv_scroll[1]>144)sv_scroll[1]=144;
+    if(sv_scroll[1]>sv_max_scroll())sv_scroll[1]=sv_max_scroll();
   }
 }
 static bool editor_try_save(void) {
@@ -339,6 +342,11 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       sv_switch(SV_FIELDS);continue;
     }
     if(sv_page==SV_VALUE) {
+#ifdef PORTABLE_NOVA_UI
+      if(input.tapped && editor_field==3 && !settings_hour_24() && sv_inside(input.touch_x,input.touch_y,76,140,88,44)) {
+        editor_set_value((settings_draft.hour+12)%24);settings_view_redraw();continue;
+      }
+#endif
       if(input.buttons&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_DOWN))editor_step(false);
       else if(input.buttons&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP))editor_step(true);
       else if(input.buttons&T5_APP_BUTTON_CONFIRM){sv_switch(SV_FIELDS);continue;}
@@ -360,7 +368,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     else if(input.buttons&T5_APP_BUTTON_DOWN)editor_select_field((editor_field+1)%8);
     else if(input.tapped && input.touch_y>=50 && input.touch_y<184) {
       int y=input.touch_y+sv_scroll[1]-60;
-      if(y>=0 && y<240){editor_field=(unsigned)y/40;sv_switch(SV_VALUE);continue;}
+      if(y>=0 && y<6*SV_ROW_HEIGHT){editor_field=(unsigned)y/SV_ROW_HEIGHT;sv_switch(SV_VALUE);continue;}
     } else if(input.buttons&T5_APP_BUTTON_CONFIRM) {
       if(editor_field==7)break;
       if(editor_field<6){sv_switch(SV_VALUE);continue;}
@@ -375,7 +383,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
   if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
   *category=0;
-  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+40) {
+  for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+SV_ROW_HEIGHT) {
     *selected=(int32_t)i+1;return settings_activate(0,i);
   }
   return T5_APP_SETTING_NO_CHANGE;
