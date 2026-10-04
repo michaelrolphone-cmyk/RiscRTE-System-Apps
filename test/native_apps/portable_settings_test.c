@@ -136,30 +136,55 @@ void portable_input_navigation_close(const risc_runtime_api_v1 *runtime){
 }
 #endif
 #endif
+static uint8_t format_bytes[64];static uint32_t format_size;
+static unsigned format_writes,format_reads;
+static bool format_read_error,format_write_error,format_committed_error,format_verify_error,format_mismatch;
 #ifdef PORTABLE_SLEEP_SETTINGS
 static uint8_t kv_bytes[64];static uint32_t kv_size;static unsigned kv_writes;
+#endif
 static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {
-  (void)c;assert(!strcmp(key,PORTABLE_SLEEP_KEY));*size=0;
+  (void)c;*size=0;
+  if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)) {
+    ++format_reads;
+    if(format_read_error || (format_verify_error && format_writes))return RISC_KEY_VALUE_IO;
+    if(!format_size)return RISC_KEY_VALUE_NOT_FOUND;
+    if(cap<format_size){*size=format_size;return RISC_KEY_VALUE_BUFFER_SMALL;}
+    memcpy(data,format_bytes,format_size);*size=format_size;return RISC_KEY_VALUE_OK;
+  }
+#ifdef PORTABLE_SLEEP_SETTINGS
+  assert(!strcmp(key,PORTABLE_SLEEP_KEY));
   if(!kv_size)return RISC_KEY_VALUE_NOT_FOUND;
   if(cap<kv_size){*size=kv_size;return RISC_KEY_VALUE_BUFFER_SMALL;}
   memcpy(data,kv_bytes,kv_size);*size=kv_size;return RISC_KEY_VALUE_OK;
+#else
+  assert(!"Unexpected key");return RISC_KEY_VALUE_INVALID;
+#endif
 }
 static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
-  (void)c;assert(!strcmp(key,PORTABLE_SLEEP_KEY) && size<=64);++kv_writes;
+  (void)c;
+  if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)) {
+    assert(size==4);++format_writes;
+    if(format_write_error)return RISC_KEY_VALUE_IO;
+    memcpy(format_bytes,data,size);format_size=size;
+    if(format_mismatch){format_bytes[2]=0;format_bytes[3]=0xa5;}
+    return format_committed_error?RISC_KEY_VALUE_IO:RISC_KEY_VALUE_OK;
+  }
+#ifdef PORTABLE_SLEEP_SETTINGS
+  assert(!strcmp(key,PORTABLE_SLEEP_KEY) && size<=64);++kv_writes;
   if(scenario==42)return RISC_KEY_VALUE_IO;
   memcpy(kv_bytes,data,size);kv_size=size;
   return scenario==47?RISC_KEY_VALUE_IO:RISC_KEY_VALUE_OK;
+#else
+  assert(!"Unexpected key");return RISC_KEY_VALUE_INVALID;
+#endif
 }
 static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,kv_get,kv_put};
-#endif
 static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){
-#ifdef PORTABLE_SLEEP_SETTINGS
   if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
-    assert(version==1 && id==PORTABLE_SLEEP_STORE_INSTANCE);
+    assert(version==1 && id==PORTABLE_TIME_FORMAT_STORE_INSTANCE);
     if(scenario==43)return false;
     grant->api=&kv_api;++grants;return true;
   }
-#endif
   assert(!id && grant->struct_size==sizeof(*grant));
   if(!strcmp(name,"display.output")){assert(version==1);grant->api=&display_api;}
   else if(!strcmp(name,"input.touch.raw")){assert(version==1);grant->api=&touch_api;}

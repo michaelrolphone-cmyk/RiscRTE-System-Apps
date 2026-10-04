@@ -2,7 +2,7 @@
 """Build the shared Settings app against the minimal capability client.
 
 Development artifact only. The deployment supplies display.output@1,
-input.touch.raw@1 and rtc.clock@2 grants; no additional runtime exports.
+input.touch.raw@1, rtc.clock@2 and namespace-1 storage.key-value@1 grants; no additional runtime exports.
 """
 import argparse
 import hashlib
@@ -62,7 +62,7 @@ def build(args):
         'file_name':'settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'rtc.clock','api':2}]}
-    if args.sleep_settings: manifest['requires'].append({'capability':'storage.key-value','api':1})
+    manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/settings.c','Apps/settings.json','lib/PortableApps/src/adapter.c',
