@@ -53,7 +53,7 @@ int portable_app_sleep(const risc_runtime_api_v1 *runtime,const risc_display_out
                        const risc_battery_gauge_api_v1 *battery){
  assert(runtime==&idle_runtime && output==&display_api && !battery);
  assert(!surface.frame && !frame_count && !subscriptions && !touch.subscription && !touch.grant.api);
- assert(rtc_grant.api==&rtc_api && sleep_grant.api==&kv_api && sleep_store==&kv_api);
+ assert(rtc_grant.api==&rtc_api && settings_grant.api==&kv_api && settings_store==&kv_api);
  assert(!writes && !kv_writes && !return_launches);
  if(expected_grants)assert(grants==expected_grants-1); /* Only touch was released. */
  sleep_at=ticks;sleeps++;

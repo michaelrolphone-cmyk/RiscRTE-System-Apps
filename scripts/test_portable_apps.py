@@ -57,3 +57,16 @@ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror'
  str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_retained_sleep_test.c'),
  '-o',str(binary)],check=True,timeout=60)
 subprocess.run([str(binary)],check=True,timeout=10)
+subprocess.run([str(binary),'time-format'],check=True,timeout=10)
+
+# Shared namespace-1 time-format contract, real selector, and local civil labels.
+for name,flags in [('time-format',[]),('time-format-denver',['-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_TOUCH_ROTATION=180']),
+                   ('time-format-navigation',['-DPORTABLE_INPUT_NAVIGATION'])]:
+ binary=out/name
+ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+  '-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie',*flags,
+  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+  str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_time_format_test.c'),'-o',str(binary)],check=True,timeout=60)
+ for scenario in range(19):
+  if scenario in (13,14) and flags!=['-DPORTABLE_INPUT_NAVIGATION']:continue
+  subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

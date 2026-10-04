@@ -46,7 +46,10 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_outp
         const risc_battery_gauge_api_v1*g,const alarm_service_v1*a){
  (void)r;(void)d;(void)g;(void)a;assert(!subscriptions&&!surface.frame);native_sleep_calls++;return -2;
 }
-int main(int argc,char**argv){
+#ifndef PORTABLE_ALARM_FIXTURE_MAIN
+#define PORTABLE_ALARM_FIXTURE_MAIN main
+#endif
+int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
  unsigned test=argc>1?(unsigned)atoi(argv[1]):0;alarm_scenario=test;scenario=100;
  risc_runtime_api_v1 r=runtime_api;r.acquire=acquire_alarm;r.yield_ms=yield_retained;
  /* Fixture initialize calls the original static runtime; acquire service
@@ -87,5 +90,5 @@ int main(int argc,char**argv){
  for(unsigned i=0;i<240*240;i++)assert(framebuffer[i]==0x1234);
  assert(!input_pending&&!navigation_pending&&!touch.down);
  assert(alarm_fake.state==ALARM_STATE_READY);
- app_module_fini();assert(!grants&&!subscriptions&&!frame_count);puts("alarm retained frame/input/exact dismiss/retry passed");
+ app_module_fini();assert(!grants&&!subscriptions&&!frame_count);puts("alarm retained frame/input/exact dismiss/retry passed");return 0;
 }

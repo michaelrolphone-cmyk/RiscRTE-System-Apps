@@ -1,8 +1,26 @@
-# Portable Settings 1.2.0 (development)
+# Portable Settings 1.2.2 (development)
 
 The shared Settings source continues to use the original `Apps/settings.c`
 navigation through the portable adapter. This development version is reserved;
 it is not a published package or a deployment pin.
+
+## Combined time-format and alert Settings
+
+Version 1.2.2 combines the reviewed Settings 1.2.1 time-format selector with
+Settings 1.2.0 alert settings and its retained-sleep-safe foreground prerequisite.
+The follow-on is based on System Apps PR #24 (`f204477b287263fa6c5a2d095829caf86b327506`)
+and carries the Settings changes from PR #25 (`bd1032ec02a6dc21a1ad21c67b37a4579307672a`).
+It does not change the shared adapter, another app, or the canonical alarm service.
+The two original PRs remain separate prerequisites/checkpoints.
+
+**Time Format** selects 12-hour or 24-hour with explicit Save/Cancel; the time
+preview and hour editor follow the confirmed mode. `PortableTimeFormat.h` is
+unchanged from PR #25: namespace **1**, key **`time_format`**, exactly four bytes
+`{0x54, 1, mode, mode ^ 0xa5}` where 0 is 12-hour and 1 is 24-hour. Missing/invalid
+values default to 12-hour without writes. Changed saves require put plus exact
+readback; failures preserve the last confirmed display choice with an unconfirmed
+message. A failed IO result can already have persisted, so no rollback is promised.
+Neither preference changes RTC civil values or timezone policy.
 
 ## Optional persisted sleep choice
 
@@ -41,8 +59,8 @@ Settings view; selecting a mode alone does not write storage or play a preview.
   editor preserves the draft for an explicit retry, rather than claiming the
   previously persisted mode survived. There is no automatic write retry.
 
-If Sleep settings is compiled too, both controls reuse its one namespace-1
-acquisition and release. An alert-only build acquires namespace 1 once itself.
+Time Format, Alarm Alerts and optional Sleep settings share one namespace-1
+acquisition and release. Each control accesses only its own exact key.
 The feature does not change boot grants, add namespace-3/4 access, request an
 alarm-service/output grant, or operate haptics/audio. The service consumes this
 preference independently. Deployment selection, target packaging, shared alert
@@ -68,3 +86,14 @@ sleep unwinds. Under ptrace-based local execution only, LeakSanitizer requires
 Optional `PORTABLE_ALERT_FRAME_DIR` captures actual RGB565-rendered PPMs for
 visual inspection. Host tests establish controller/ABI behavior, not physical
 alarm sound, wake delivery, or target hardware qualification.
+
+The same alert test command also runs nine combined same-invocation scenarios
+in raw and Denver/180-degree touch profiles, normally and with ASan/UBSan (36
+runs). They cover both selectors via scrolled root-row touches, held confirmation,
+Cancel, time-format IO before/after commit, readback errors/mismatch, alert IO
+and mismatch, explicit retries, independent exact key contents, unchanged sleep
+preference, no RTC writes, single grant cleanup, and persistence after reopening.
+Four additional plain/sanitized native-retained tests enter from both selectors
+and assert zero later KV/RTC/navigation/service I/O, stop calls, or grant release.
+Actual rendered normal/error pages were inspected at 240x240; captions sit clear
+of Save/Cancel. Physical device behavior remains unqualified.

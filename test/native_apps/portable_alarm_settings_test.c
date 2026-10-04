@@ -45,7 +45,7 @@ static bool frame_submit(void *c,risc_display_frame_v1 frame,const risc_display_
     assert(settings_editing);
   }
   const char *directory=getenv("PORTABLE_ALERT_FRAME_DIR");
-  if(directory && (sv_page==SV_ROOT || (sv_page==SV_ALERT && (alert_frames==1 || alert_message[0])))) {
+  if(directory && (sv_page==SV_ROOT || sv_page==SV_TIME_FORMAT || (sv_page==SV_ALERT && (alert_frames==1 || alert_message[0])))) {
     char path[512];snprintf(path,sizeof(path),"%s/scenario-%u-frame-%u.ppm",directory,scenario,presents);
     FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P6\n240 240\n255\n");
     for(unsigned i=0;i<240*240;++i) {
@@ -66,7 +66,11 @@ static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {(void)c;
 static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
   for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==polls) {
-    out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};break;
+    out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};
+#if PORTABLE_TOUCH_ROTATION == 180
+    out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
+#endif
+    break;
   }
   return true;
 }
@@ -74,6 +78,7 @@ static bool rtc_read(void *c,twatch_rtc_time_v1 *out) {(void)c;*out=(twatch_rtc_
 static bool rtc_write(void *c,const twatch_rtc_time_v1 *value) {(void)c;(void)value;++rtc_writes;assert(!"Alert settings cannot write RTC");return false;}
 static int32_t kv_get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size) {
   (void)c;++kv_reads;*size=0;
+  if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #ifdef PORTABLE_SLEEP_SETTINGS
   if(!strcmp(key,PORTABLE_SLEEP_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
@@ -172,7 +177,7 @@ int main(int argc,char **argv) {
   assert(init==0 && kv_grants==1);
 #ifdef PORTABLE_SLEEP_SETTINGS
   assert(SETTINGS_ABOUT_ROW==5 && SETTINGS_ALERT_ROW==6 && settings_count(0)==7);
-  assert(alert_store==sleep_store);
+  assert(alert_store==settings_store);
   t5_app_setting_t row;assert(settings_get(0,4,&row) && !strcmp(row.label,"Clock Sleep Mode"));
 #else
   assert(SETTINGS_ABOUT_ROW==4 && SETTINGS_ALERT_ROW==5 && settings_count(0)==6);
