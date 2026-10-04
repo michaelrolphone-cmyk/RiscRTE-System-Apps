@@ -67,16 +67,15 @@ static int nova_axis_alpha(int p,int extent) {
 static int nova_alpha(int x,int y) {
     return nova_axis_alpha(x,api->screen_width())*nova_axis_alpha(y,api->screen_height())/255;
 }
-static uint32_t nova_color(const char *icon) {
-    /* Presentation palette only; icons and app identity always come from catalog. */
-    if (!strcmp(icon,"solid:f017")) return 0x0891b2;
-    if (!strcmp(icon,"solid:f240")) return 0x22b45a;
-    if (!strcmp(icon,"solid:f013")) return 0x7b8794;
-    if (!strcmp(icon,"solid:f07b")) return 0xc99700;
-    if (!strcmp(icon,"solid:f03e")) return 0xec4899;
-    if (!strcmp(icon,"solid:f1eb")) return 0x2563eb;
-    if (!strcmp(icon,"solid:f0f3")) return 0xff6a1a;
-    return 0x3d9bff;
+static uint32_t nova_color(nova_point p) {
+    /* Seven colors on the fixed axial lattice. Neighbors differ by +/-1,
+     * +/-2 or +/-3 modulo seven, so every neighbor has a distinct color even
+     * when several catalog entries share a glyph. Panning never recolors it. */
+    static const uint32_t palette[]={0x0891b2,0xf08c22,0x22b45a,0x8b5cf6,
+                                     0xed4f54,0x3978e8,0xe448a4};
+    int r=p.y/748,q=(p.x-432*r)/864;
+    int color=(2*q+3*r)%7;
+    return palette[color<0?color+7:color];
 }
 static void nova_render(nova_state *s) {
     s->view->begin();
@@ -93,14 +92,14 @@ static void nova_render(nova_state *s) {
         }
         int x=cx+dx/16, y=cy+dy/16;
         if (x < -32 || y < -32 || x > api->screen_width()+32 || y > api->screen_height()+32) continue;
-        s->view->circle(x,y,22*scale/256,nova_color(app.icon),255);
+        s->view->circle(x,y,22*scale/256,nova_color(s->points[i]),255);
         if (!s->view->icon(x,y,24*scale/256,app.icon,255))
             unavailable_icon=true;
     }
     char clock[16];
     if (s->time_known) snprintf(clock,sizeof(clock),"%u:%02u %s",s->hour%12?s->hour%12:12,s->minute,s->hour<12?"AM":"PM");
     else strcpy(clock,"--:--");
-    s->view->caption(16,clock,true,0x7d8c90);
+    s->view->caption(16,clock,true,0xffffff);
     if (s->status[0]) s->view->caption(api->screen_height()-43,s->status,false,0xffffff);
     else if (s->n) {
         t5_app_manifest_t app;

@@ -71,6 +71,22 @@ static void np_mask(void) {
     p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
   }
 }
+/* One solid backing for the whole text block, including spaces. Six pixels of
+ * smooth alpha falloff hide the rectangle's edge; no glyph dilation, blur
+ * buffer, or repeated darkening at overlapping letter shadows is needed. */
+static void np_caption_backing(int left,int top,int right,int bottom) {
+  const int feather=6,range=feather*16;
+  left-=2;top-=2;right+=2;bottom+=2;
+  for(int y=top-feather;y<=bottom+feather;++y)
+    for(int x=left-feather;x<=right+feather;++x) {
+      int dx=x<left?left-x:x>right?x-right:0;
+      int dy=y<top?top-y:y>bottom?y-bottom:0;
+      int t=range-(int)np_root((unsigned)(dx*dx+dy*dy)*256u);
+      if(t<=0)continue;
+      unsigned alpha=(unsigned)(t*t*(3*range-2*t))*255u/(unsigned)(range*range*range);
+      np_pixel(x,y,0,alpha);
+    }
+}
 static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
   np_mask();if(!s)return;
   int length=0,total=0,spacing=clock?21:34,max=width()-16;
@@ -82,7 +98,23 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
     if(next>max*16)break;
     total=next;++length;
   }
-  int x=(width()*16-total)/2;
+  if(!length)return;
+  int start=(width()*16-total)/2,x=start;
+  int left=width(),top=height(),right=-1,bottom=-1;
+  for(int k=0;k<length;++k){
+    unsigned c=(unsigned char)s[k];if(c>='a' && c<='z')c-=32;if(c<32 || c>126)c='?';
+    const rpt_glyph *g=&rpt_text[(clock?0:95)+c-32];
+    if(g->width && g->height){
+      int l=x/16+g->left,t=y+g->top,r=l+g->width-1,b=t+g->height-1;
+      if(l<left)left=l;
+      if(t<top)top=t;
+      if(r>right)right=r;
+      if(b>bottom)bottom=b;
+    }
+    x+=g->advance_q4+spacing;
+  }
+  if(right>=left && bottom>=top)np_caption_backing(left,top,right,bottom);
+  x=start;
   for(int k=0;k<length;++k){
     unsigned c=(unsigned char)s[k];if(c>='a' && c<='z')c-=32;if(c<32 || c>126)c='?';
     const rpt_glyph *g=&rpt_text[(clock?0:95)+c-32];

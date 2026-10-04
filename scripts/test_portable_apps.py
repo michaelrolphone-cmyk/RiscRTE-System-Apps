@@ -37,3 +37,14 @@ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-W
  '-I'+str(ROOT/'lib/PortableApps/include'),str(ROOT/'test/native_apps/portable_sleep_policy_test.c'),
  '-o',str(binary)],check=True,timeout=30)
 subprocess.run([str(binary)],check=True,timeout=10)
+
+# Generic adapter sleep boundaries, including real nested Settings controllers.
+# The fixture supplies a fake local sleep hook; Watch hardware policy is tested
+# independently by its deployment repository.
+binary=out/'idle-sleep'
+subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+ '-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie',
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+ str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_idle_sleep_test.c'),
+ '-o',str(binary)],check=True,timeout=60)
+for scenario in range(8):subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

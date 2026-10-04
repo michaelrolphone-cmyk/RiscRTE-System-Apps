@@ -166,12 +166,12 @@ static void sv_about(void) {
 }
 #ifdef PORTABLE_SLEEP_SETTINGS
 static void sv_sleep(void) {
-  sv_heading("SLEEP MODE");
-  sv_button(28,66,184,34,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
-  sv_button(28,110,184,34,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
-  sv_center(3,151,"Deep restarts Clock on wake",SV_CAP,0);
-  sv_center(3,166,"Crown wake - 60 second idle",SV_CAP,0);
-  sv_center(3,184,sleep_message,SV_CYAN,0);
+  sv_heading("CLOCK SLEEP MODE");
+  sv_button(28,66,184,30,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
+  sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
+  sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
+  sv_center(3,177,"Apps: Light 5 min then Deep",SV_CAP,0);
+  sv_center(3,190,sleep_message,SV_CYAN,0);
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
 }

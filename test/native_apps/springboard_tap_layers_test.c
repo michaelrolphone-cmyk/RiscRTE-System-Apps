@@ -13,6 +13,17 @@ static void tap_at(nova_state*s,unsigned hit){
  nova_contact_input(s,&down,20);nova_contact_input(s,&up,20);
 }
 int main(void){api=&fixture;count=19;
+ /* Every honeycomb neighbor has a different color, regardless of inventory
+  * size, page, duplicate icon IDs, panning, or launch scale. */
+ for(unsigned inventory=1;inventory<=57;inventory++)for(unsigned first=0;first<inventory;first+=19){
+  count=inventory;nova_state palette={.first=first};nova_layout(&palette);
+  for(unsigned i=0;i<palette.n;i++)for(unsigned j=i+1;j<palette.n;j++){
+   int dx=palette.points[i].x-palette.points[j].x,dy=palette.points[i].y-palette.points[j].y;
+   if(dx*dx+dy*dy<(55*16)*(55*16))assert(nova_color(palette.points[i])!=nova_color(palette.points[j]));
+   if(i<7 && j<7)assert(nova_color(palette.points[i])!=nova_color(palette.points[j]));
+  }
+ }
+ count=19;
  for(unsigned i=0;i<19;i++){
   nova_state s={.initial=true,.pending=-1};nova_layout(&s);tap_at(&s,i);
   if(i<=6)assert(s.pending==(int)i);else assert(s.pending<0);

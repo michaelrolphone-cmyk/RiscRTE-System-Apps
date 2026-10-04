@@ -206,13 +206,13 @@ int main(int argc,char **argv){
     if(scenario==44){kv_size=4;memset(kv_bytes,0xff,4);}
     if(scenario==45){kv_size=4;memcpy(kv_bytes,(uint8_t[]){0x53,1,1,0xa4},4);}
     unsigned selected;int before=portable_sleep_load(&kv_api,&selected);
-    if(scenario==44)assert(before==PORTABLE_SLEEP_INVALID && selected==PORTABLE_SLEEP_LIGHT);
+    if(scenario==44)assert(before==PORTABLE_SLEEP_INVALID && selected==PORTABLE_SLEEP_HYBRID);
     tap(3,100,126); /* Select Deep, still draft. */
     tap(7,scenario==41?60:170,213); /* Cancel or Save. */
     if(scenario==42 || scenario==43 || scenario==47)tap(12,60,213);
     assert(app_module_init()==0);
     t5_app_setting_t item;assert(settings_count(0)==6 && settings_get(0,4,&item));
-    assert(!strcmp(item.label,"Sleep Mode"));
+    assert(!strcmp(item.label,"Clock Sleep Mode"));
     if(scenario==43)assert(!strcmp(item.value,"Unavailable"));
     settings_render(0,0);polls=0;
     uint8_t result=settings_activate(0,4);

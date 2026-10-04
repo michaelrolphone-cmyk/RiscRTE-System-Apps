@@ -14,8 +14,15 @@
 void app_main(void);int app_module_init(void);void app_module_fini(void);
 const t5_app_manifest_t portable_catalog[]={
  {.display_name="Clock",.file_name="default.elf",.icon="solid:f017",.compatible=true},
+#ifdef NOVA_DAILY_CATALOG
+ {.display_name="Battery",.file_name="battery.elf",.icon="solid:f240",.compatible=true},
+ {.display_name="Settings",.file_name="settings.elf",.icon="solid:f013",.compatible=true},
+ {.display_name="Calculator",.file_name="calculator.elf",.icon="solid:f00a",.compatible=true},
+ {.display_name="Stopwatch",.file_name="stopwatch.elf",.icon="solid:f2f2",.compatible=true}};
+#else
  {.display_name="Settings",.file_name="settings.elf",.icon="solid:f013",.compatible=true},
  {.display_name="Battery",.file_name="battery.elf",.icon="solid:f240",.compatible=true}};
+#endif
 const unsigned portable_catalog_count=CATALOG_COUNT;
 static unsigned event_index,present_started,last_touch_ms,max_touch_gap;
 static unsigned ms,polls,subs,grants,frames,presents,scenario,launches,last_present,max_presents;
