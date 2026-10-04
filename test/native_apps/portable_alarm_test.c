@@ -50,6 +50,13 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_outp
 #define PORTABLE_ALARM_FIXTURE_MAIN main
 #endif
 int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
+ char title[24];alarm_status_v1 named={0};
+ strcpy(named.label,"LUNCH END");assert(!strcmp(alarm_title(&named,title),"LUNCH END"));
+ strcpy(named.label,"WORK START");assert(!strcmp(alarm_title(&named,title),"WORK START"));
+ memset(named.label,'X',sizeof(named.label));assert(!strcmp(alarm_title(&named,title),"ALARM"));
+ named.label[0]=1;named.label[1]=0;assert(!strcmp(alarm_title(&named,title),"ALARM"));
+ named=(alarm_status_v1){.occurrence={ALARM_KIND_COUNTDOWN,0,0,0}};
+ assert(!strcmp(alarm_title(&named,title),"COUNTDOWN FINISHED"));
  unsigned test=argc>1?(unsigned)atoi(argv[1]):0;alarm_scenario=test;scenario=100;
  risc_runtime_api_v1 r=runtime_api;r.acquire=acquire_alarm;r.yield_ms=yield_retained;
  /* Fixture initialize calls the original static runtime; acquire service

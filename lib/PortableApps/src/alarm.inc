@@ -28,10 +28,22 @@ static bool alarm_failure(void) {
     }
     return false;
 }
+/* Service labels are copied status, never retained storage pointers. Accept
+ * bounded printable titles; a malformed provider title keeps the old fallback. */
+static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
+    for(unsigned i=0;i<24;i++) {
+        unsigned ch=(unsigned char)s->label[i];
+        if(!ch) { if(i) {out[i]=0;return out;} break; }
+        if(ch<32||ch>126)break;
+        out[i]=(char)ch;
+    }
+    return s->occurrence.kind==ALARM_KIND_COUNTDOWN?"COUNTDOWN FINISHED":"ALARM";
+}
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
+    char title[24];
     clear();
-    label(8,38,width()-16,s->occurrence.kind==ALARM_KIND_COUNTDOWN?"COUNTDOWN FINISHED":"ALARM");
+    label(8,38,width()-16,alarm_title(s,title));
     label(8,78,width()-16,s->state==ALARM_STATE_BLOCKED?
         (s->error==ALARM_RTC?"RTC ERROR":"SERVICE ERROR"):
         s->state==ALARM_STATE_DISMISSING?"STOPPING / SAVING":"TIME IS UP");
