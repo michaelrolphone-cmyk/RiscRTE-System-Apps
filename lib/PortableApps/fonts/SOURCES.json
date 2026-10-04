@@ -16,6 +16,7 @@
     "solid:f017",
     "solid:f019",
     "solid:f021",
+    "solid:f028",
     "solid:f031",
     "solid:f07c",
     "solid:f085",
@@ -23,6 +24,7 @@
     "solid:f0ec",
     "solid:f0f3",
     "solid:f11c",
+    "solid:f130",
     "solid:f187",
     "solid:f1ab",
     "solid:f1eb",
@@ -43,8 +45,10 @@
     "solid:f0f3": "bell",
     "solid:f254": "hourglass",
     "solid:f1eb": "wifi",
-    "solid:f783": "calendar-day"
+    "solid:f783": "calendar-day",
+    "solid:f028": "volume-high",
+    "solid:f130": "microphone"
   },
-  "icons.inc_sha256": "4aa87b9e5ff35e145eecda69306b9f219f62424b9a5b34eef47b20c71101afa3",
+  "icons.inc_sha256": "a9866dea61587265cd7746f5cd03e75c162d5fe4e19f90574c40f438d9fdd1da",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }
