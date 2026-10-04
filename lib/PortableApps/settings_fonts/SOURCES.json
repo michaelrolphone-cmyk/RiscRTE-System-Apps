@@ -1,0 +1,35 @@
+{
+  "source": "Unmodified NOVA font inputs; raster subset renamed RiscPortableSettingsText",
+  "license": "SIL OFL 1.1",
+  "files": {
+    "Orbitron-700.ttf": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
+    "Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144"
+  },
+  "faces": [
+    [
+      "Orbitron-700.ttf",
+      14
+    ],
+    [
+      "Rajdhani-600.ttf",
+      15
+    ],
+    [
+      "Rajdhani-600.ttf",
+      12
+    ],
+    [
+      "Rajdhani-600.ttf",
+      11
+    ],
+    [
+      "Orbitron-700.ttf",
+      30
+    ],
+    [
+      "Rajdhani-600.ttf",
+      22
+    ]
+  ],
+  "text.inc_sha256": "9ceb9985eccb6eb70d47c4c434668422eb129c049b1aedbba9d4265fd5e9a825"
+}

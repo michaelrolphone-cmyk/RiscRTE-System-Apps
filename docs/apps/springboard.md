@@ -107,3 +107,11 @@ Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` and System-Apps both de
 Reader published release [`app-springboard-v1.3.1`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-springboard-v1.3.1/application-springboard-1.3.1-xtensa-esp32s3.rte.zip) has a **13068**-byte package with SHA-256 `d2c16c687ec3f8f3040323feb71b2287ad38fb1c552e705c815228c0de926780`. Its embedded `springboard.elf` is **12020** bytes with SHA-256 `6863a4a8f08b5cc5c518a0dec212e9817fce13c5dcd318ca26bc0eeb9a69a150`. The archive digest and size match GitHub release metadata and the downloaded Reader release workflow artifact `11209466823` (run `36965130240`). The independent external Xtensa build reproduces this ELF byte-for-byte. The release was built from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; the current audited source is Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82`.
 
 This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.
+
+## External compact development version 1.3.4
+
+The shared app now includes a capability-gated compact [NOVA presentation](../SPRINGBOARD_NOVA.md).
+Its real app catalog, Font Awesome provenance, continuous spring motion,
+held-contact drag-only handoff, cancellation rules, explicit time policy and
+verification limits are documented there. This external development delta does
+not change the paper layout or claim parity with an earlier published release.
