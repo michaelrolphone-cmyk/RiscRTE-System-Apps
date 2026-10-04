@@ -31,6 +31,9 @@ static int32_t service_step(void*c){(void)c;assert(display_settled&&!live_displa
  if(alarm_fake.state==ALARM_STATE_LOADING){if(++phases==(alarm_scenario==8?10u:3u)){
    alarm_fake.state=ALARM_STATE_ALERT;
    if(alarm_scenario==8)alarm_fake.occurrence=(alarm_token_v1){ALARM_KIND_COUNTDOWN,8,88,10};
+#ifdef PORTABLE_AUDIO_SESSION
+   else if(alarm_scenario==1)alarm_fake.occurrence=(alarm_token_v1){1,7,88,9};
+#endif
  }}
  if(alarm_fake.state==ALARM_STATE_DISMISSING){if(++phases==3){
    if(alarm_scenario==8&&acks==1){
