@@ -13,6 +13,10 @@
 void portable_nova_begin(void);
 void portable_nova_text(unsigned face,int x,int y,int width,const char *text,uint32_t color);
 void portable_nova_center(unsigned face,int x,int y,int width,const char *text,uint32_t color);
+void portable_nova_right(unsigned face,int x,int y,int width,const char *text,uint32_t color);
+int portable_nova_measure(unsigned face,const char *text);
+void portable_nova_fill(int x,int y,int width,int height,uint32_t color);
+void portable_nova_round(int x,int y,int width,int height,int radius,uint32_t color);
 void portable_nova_button(int x,int y,int width,int height,const char *text,bool selected);
 void portable_nova_row(int x,int y,int width,int height,const char *label,const char *value,bool selected);
 void portable_nova_header(const char *title);
