@@ -46,7 +46,7 @@ static bool fb_api_valid(const risc_storage_volume_api_v1 *p) {
 }
 static bool fb_acquire(void) {
  if(fb_volume)return true;
- if(fb_grant.api)return false;
+ if(fb_grant.api){if(!fb_runtime->release(&fb_grant))return false;memset(&fb_grant,0,sizeof(fb_grant));}
  fb_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_grant)};
  if(!fb_runtime->acquire(PORTABLE_FILE_BROWSER_CAPABILITY,1,PORTABLE_FILE_BROWSER_INSTANCE,&fb_grant))return false;
  if(!fb_api_valid(fb_grant.api))return false;
@@ -67,7 +67,7 @@ static void fb_error(const char *fallback) {
  else fb_message(fallback);
 }
 static bool fb_ready(void) {
- if(fb_retained_file){fb_message("Close failed. Back retries safely.");return false;}
+ if(fb_retained_file){fb_error("Close failed. Back retries safely.");return false;}
  if(!fb_acquire()){fb_message("Storage unavailable. Try Refresh.");return false;}
  if(!fb_volume->refresh(fb_volume->context) || !fb_volume->ready(fb_volume->context)){fb_error("Storage unavailable. Try Refresh.");return false;}
  memset(fb_label,0,sizeof(fb_label));
@@ -115,8 +115,8 @@ static bool fb_load(int direction) {
  fb_message(!fb_count?(fb_query[0]?"No matching files":"This folder is empty"):"Browse files / read-only volume");
  return true;
 }
-static void fb_page_next(void){if(fb_more)(void)fb_load(1);else fb_message("Last page");}
-static void fb_page_previous(void){if(fb_page)(void)fb_load(-1);else fb_message("First page");}
+static void fb_page_next(void){if(!fb_loaded){(void)fb_load(0);return;}if(fb_more)(void)fb_load(1);else fb_message("Last page");}
+static void fb_page_previous(void){if(!fb_loaded){(void)fb_load(0);return;}if(fb_page)(void)fb_load(-1);else fb_message("First page");}
 static void fb_size_text(uint64_t value,char *out,size_t cap) {
  /* Avoid target's unsupported 64-bit printf while preserving exact size. */
  char reversed[21];unsigned n=0;
@@ -151,7 +151,7 @@ static bool fb_preview_read(void) {
   size_t got=fb_volume->file_read(fb_volume->context,file,fb_preview+fb_preview_count,remaining);
   if(!got || got>remaining){ok=false;break;}fb_preview_count+=(unsigned)got;
  }
- if(!fb_volume->file_close(fb_volume->context,file,true)){fb_retained_file=file;fb_preview_count=0;fb_message("Close failed. Back retries safely.");return false;}
+ if(!fb_volume->file_close(fb_volume->context,file,true)){fb_retained_file=file;fb_preview_count=0;fb_error("Close failed. Back retries safely.");return false;}
  if(!ok){fb_preview_count=0;fb_message("File changed or read failed. Retry.");return false;}
  fb_message(size?"Preview only / no execution":"Empty file");return true;
 }
@@ -171,7 +171,7 @@ static void fb_filter_key(unsigned key) {
  fb_dirty=true;
 }
 static bool fb_back(void) {
- if(fb_retained_file){if(!portable_file_browser_close()){fb_message("Close failed. Back retries safely.");return false;}fb_message("Storage closed. Refresh to retry.");}
+ if(fb_retained_file){if(!portable_file_browser_close()){fb_error("Close failed. Back retries safely.");return false;}fb_message("Storage closed. Refresh to retry.");}
  if(fb_mode==FB_PREVIEW){fb_mode=FB_DETAIL;fb_dirty=true;return false;}
  if(fb_mode!=FB_LIST){fb_mode=FB_LIST;fb_choice=0;fb_dirty=true;return false;}
  if(fb_parent(fb_path)){fb_query[0]=0;(void)fb_load(0);return false;}

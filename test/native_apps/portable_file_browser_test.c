@@ -107,9 +107,10 @@ int main(int argc,char**argv){
  fb_preview_page(1);assert(fb_offset==192 && fb_preview[0]=='K');fb_preview_page(1);assert(fb_offset==384 && fb_preview_count==192);fb_preview_page(1);assert(fb_offset==576 && fb_preview_count==1);fb_preview_page(1);assert(fb_offset==576);fb_preview_page(-1);assert(fb_offset==384);
  fb_activate();assert(fb_hex && !fb_offset && fb_preview_count==64);fb_draw();
  test_fail_read=true;assert(!fb_preview_read() && !fb_preview_count);fb_draw();test_fail_read=false;
- test_fail_close=true;assert(!fb_preview_read() && fb_retained_file);unsigned reads=test_reads;assert(!fb_preview_read() && reads==test_reads);assert(!portable_file_browser_close());test_fail_close=false;assert(portable_file_browser_close() && !fb_retained_file);
+ test_fail_close=true;strcpy(test_error,"Storage close failed. Restart needed.");assert(!fb_preview_read() && fb_retained_file);assert(!strcmp(fb_status,test_error));fb_draw();unsigned before_close_frame=test_presents;assert(!fb_back() && test_presents==before_close_frame && !strcmp(fb_status,test_error));unsigned reads=test_reads;assert(!fb_preview_read() && reads==test_reads);assert(!portable_file_browser_close());test_fail_close=false;test_error[0]=0;assert(portable_file_browser_close() && !fb_retained_file);
  assert(fb_back()==false);assert(fb_mode==FB_DETAIL);assert(fb_back()==false);assert(fb_mode==FB_LIST);
- test_fail_listing=true;assert(!fb_load(0) && !fb_count);fb_draw();test_fail_listing=false;test_invalid_name=true;assert(!fb_load(0));test_invalid_name=false;
+ fb_page_next();assert(fb_page==1);test_fail_listing=true;assert(!fb_load(0) && !fb_count);fb_draw();test_fail_listing=false;fb_page_previous();assert(fb_page==0 && !strcmp(fb_rows[0].name,"file1.txt"));test_invalid_name=true;assert(!fb_load(0));test_invalid_name=false;
+ assert(portable_file_browser_close());test_volume.struct_size=8;assert(!fb_load(0));test_volume.struct_size=sizeof(test_volume);assert(fb_load(0));
  test_entries=0;assert(fb_load(0) && fb_loaded && !fb_count);fb_draw();test_entries=8;
  assert(portable_file_browser_close());test_fail_acquire=true;assert(!fb_load(0));fb_draw();test_fail_acquire=false;assert(fb_load(0));
  test_length=0;fb_activate_file(0);fb_activate();assert(!fb_preview_count && !strcmp(fb_status,"Empty file"));fb_draw();

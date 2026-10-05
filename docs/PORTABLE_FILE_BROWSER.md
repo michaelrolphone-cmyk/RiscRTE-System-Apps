@@ -26,7 +26,9 @@ ELF. NOVA uses the same licensed Settings typography/palette and the exact
   explicit byte ranges. Empty files, changing files, short/failed reads,
   unavailable/malformed volumes and failed close/release all have explicit UI.
 - Failed close retains its grant, blocks further storage work and sleeps, and
-  offers Back retry. Normal callbacks leave no open file/directory across poll.
+  offers Back retry. A Runtime-reported native close failure remains latched and
+  explicitly says a restart is needed. Successful callbacks leave no open
+  file/directory across poll.
   Alarm and quick-control foreground rendering preserves the app's local state.
 - No time values are displayed, so no independent 12/24-hour convention is added.
 
