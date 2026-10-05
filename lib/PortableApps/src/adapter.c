@@ -52,6 +52,11 @@ static bool settings_view_poll(t5_app_input_t *out);
 #endif
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
 static bool back_exits_app = true;
+static t5_app_contact_t app_contact;
+static bool current_app_contact(t5_app_contact_t *out) {
+  if(!out || failed)return false;
+  *out=app_contact;return true;
+}
 static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 #endif
 static uint32_t millis_now(void) {
@@ -475,6 +480,9 @@ static bool idle_sleep(void) {
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
   if (failed)
     return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -505,6 +513,10 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<info.width && y<info.height)
+    app_contact=(t5_app_contact_t){true,(int16_t)x,(int16_t)y};
+#endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   if(sample.cancelled || !sample.valid)nu_gesture=false;
   if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
@@ -721,7 +733,11 @@ static const t5_app_api_v1 app = {.abi_version = 1,
                                   .request_app_launch = launch,
                                   .draw_icon = icon,
                                   .draw_label = label,
-                                  .fill_rounded_rect_tone = rounded};
+                                  .fill_rounded_rect_tone = rounded,
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+                                  .touch_contact = current_app_contact,
+#endif
+};
 static const t5_ui_api_v1 ui = {.api_version = 1,
                                 .struct_size = sizeof(ui),
                                 .render_list = list,
@@ -763,6 +779,9 @@ static int initialize(void) {
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
   back_exits_app=true;
+#ifndef PORTABLE_SETTINGS_APP
+  app_contact=(t5_app_contact_t){0};
+#endif
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
