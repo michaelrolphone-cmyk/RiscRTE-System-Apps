@@ -6,7 +6,7 @@ class DeliveredIcons(unittest.TestCase):
   catalog=json.loads((ROOT/'tests/fixtures/nova-delivered-catalog.json').read_text())
   registry=json.loads((ROOT/'lib/PortableApps/catalog-icons.json').read_text())['apps']
   raster=(ROOT/'lib/PortableApps/fonts/icons.inc').read_text()
-  self.assertEqual(len(catalog),9)
+  self.assertEqual(len(catalog),11)
   self.assertEqual({a['file_name'].split('.')[0] for a in catalog},set(registry))
   self.assertEqual(len(catalog),len({a['icon'] for a in catalog}))
   for a in catalog:
