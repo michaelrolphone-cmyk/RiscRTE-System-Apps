@@ -1,3 +1,6 @@
+#ifdef PORTABLE_FILE_BROWSER_APP
+#include "PortableFileBrowser.h"
+#endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #include "PortableTouch.h"
@@ -477,6 +480,9 @@ static bool idle_sleep(void) {
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
+#endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active || handoff_pending)return true;
 #endif
@@ -919,6 +925,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
     return;
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
+#endif
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close()) {
+    rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {

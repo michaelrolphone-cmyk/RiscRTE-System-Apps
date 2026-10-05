@@ -6,6 +6,9 @@
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
 static bool quick_storage_safe(void) {
+#ifdef PORTABLE_FILE_BROWSER_APP
+ if(!portable_file_browser_safe())return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
  if(!portable_radio_services_safe())return false;
 #endif
@@ -111,6 +114,9 @@ static bool quick_foreground(bool *consumed) {
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
  if(wifi && !failed) {
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close())return false;
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
   if(!portable_audio_suspend())return false;
 #endif

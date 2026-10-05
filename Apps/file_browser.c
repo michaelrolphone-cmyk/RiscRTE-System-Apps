@@ -1,3 +1,6 @@
+#ifdef PORTABLE_FILE_BROWSER_APP
+#include "file_browser_portable.inc"
+#else
 #include "T5AppApi.h"
 #include "T5FileBrowserApi.h"
 #include "T5FileOpenApi.h"
@@ -1104,3 +1107,5 @@ void app_main(void) {
     }
     app->set_back_exits_app(true);
 }
+
+#endif

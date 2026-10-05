@@ -1,0 +1,13 @@
+{
+  "type": "application",
+  "id": "file_browser",
+  "version": "1.4.0",
+  "architecture": "xtensa-esp32s3",
+  "file_name": "file_browser.elf",
+  "entry": "app_main",
+  "requires": [
+    {"capability": "display.output", "api": 1},
+    {"capability": "input.touch.raw", "api": 1},
+    {"capability": "storage.installed-files", "api": 1}
+  ]
+}

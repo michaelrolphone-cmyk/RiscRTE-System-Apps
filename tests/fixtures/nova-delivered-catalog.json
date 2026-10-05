@@ -53,5 +53,20 @@
     "display_name": "Audio Spectrum",
     "file_name": "audio_spectrum.elf",
     "icon": "solid:f130"
+  },
+  {
+    "display_name": "File Browser",
+    "file_name": "file_browser.elf",
+    "icon": "solid:f07c"
+  },
+  {
+    "display_name": "BLE Scanner",
+    "file_name": "ble_scanner.elf",
+    "icon": "solid:f7c0"
+  },
+  {
+    "display_name": "LoRa Messages",
+    "file_name": "lora_messages.elf",
+    "icon": "solid:f27a"
   }
 ]

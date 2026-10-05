@@ -44,6 +44,18 @@
     "audio_spectrum": {
       "icon": "solid:f130",
       "glyph": "microphone"
+    },
+    "file_browser": {
+      "icon": "solid:f07c",
+      "glyph": "folder-open"
+    },
+    "ble_scanner": {
+      "icon": "solid:f7c0",
+      "glyph": "satellite-dish"
+    },
+    "lora_messages": {
+      "icon": "solid:f27a",
+      "glyph": "message"
     }
   }
 }

@@ -156,6 +156,9 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
+#ifdef PORTABLE_FILE_BROWSER_APP
+    if(!portable_file_browser_safe())return !failed;
+#endif
     if(failed || !display_settled || surface.frame)return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
