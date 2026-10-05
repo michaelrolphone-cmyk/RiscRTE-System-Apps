@@ -3,7 +3,7 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;

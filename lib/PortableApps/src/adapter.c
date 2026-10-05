@@ -59,7 +59,7 @@ static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 static bool alarm_failure(void);

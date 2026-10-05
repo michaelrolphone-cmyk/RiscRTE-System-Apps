@@ -22,3 +22,6 @@ for san in (False,True):
  subprocess.run([os.environ.get('CC','cc'),*flags,'-DPORTABLE_QUICK_RADIOS',*map(str,sources),'-o',str(exe)],check=True)
  for case in range(13):subprocess.run([str(exe),str(case)],check=True,env=env,timeout=20)
 print('Radio alarm, cue, retained failure, sleep, handoff and quick-controls lifecycle: 58 executions passed')
+# The independent app builder can select quick controls without board-local
+# sleep functions. Keep its alarm accessor declaration and definition available.
+subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror','-DPORTABLE_RADIO_SESSION','-DPORTABLE_ALARM_CLIENT','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS','-DPORTABLE_NOVA_UI','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),'-c',str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(out/'standalone.o')],check=True)
