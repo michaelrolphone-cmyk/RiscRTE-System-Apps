@@ -1,3 +1,9 @@
+#ifdef PORTABLE_UPDATE_APP
+#if PORTABLE_UPDATE_FIRMWARE
+#error "App Store requires its apps-only service"
+#endif
+#include "update_portable.inc"
+#else
 #include "T5AppApi.h"
 #include "T5PackageManagerApi.h"
 #include "T5UiApi.h"
@@ -351,3 +357,5 @@ __attribute__((visibility("default"))) void app_main(void) {
     }
     app->set_back_exits_app(true);
 }
+
+#endif /* Reader package/SD installer remains byte-identical. */

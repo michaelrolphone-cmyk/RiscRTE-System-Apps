@@ -19,6 +19,14 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#ifdef PORTABLE_AUDIO_SESSION
+    /* Runtime checks app exit safety before fini. Never defer live/uncertain
+     * audio cleanup until fini or let alarm stop close another owner's stream. */
+    if(!portable_audio_suspend()) {
+        rt->diagnostic("AUDIO foreground-failed cleanup-unconfirmed; invocation retained");
+        for(;;)rt->yield_ms(50);
+    }
+#endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     /* Even healthy RF must drain before app_main returns: Runtime checks its
      * exit barrier before invoking fini, so deferring cleanup there deadlocks
@@ -37,6 +45,20 @@ static bool alarm_failure(void) {
     }
     return false;
 }
+#ifdef PORTABLE_AUDIO_SESSION
+static bool alarm_audio_pump(void) {
+    /* Status is memory-only. Existing due work preempts before a service step;
+     * newly exposed due work preempts before the next phase can own output. */
+    if(!portable_audio_services_safe() || !portable_alarm_status(&alarms))return false;
+    if((portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) &&
+       !portable_audio_suspend())return false;
+    if(!portable_alarm_pump(&alarms))return false;
+    return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
+        portable_audio_suspend();
+}
+#else
+#define alarm_audio_pump() portable_alarm_pump(&alarms)
+#endif
 /* Service labels are copied status, never retained storage pointers. Accept
  * bounded printable titles; a malformed provider title keeps the old fallback. */
 static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
@@ -111,16 +133,27 @@ static bool alarm_foreground(bool *consumed) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
-    if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
+    if(!alarm_audio_pump()){failed=true;return alarm_failure();}
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
-    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING;n++) {
+    bool cue_seen=false;
+    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
-        rt->yield_ms(1);
+        if(portable_alarm_cue(&alarms)){cue_seen=true;*consumed=true;}
+        rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
-        if(!portable_alarm_pump(&alarms)){failed=true;return alarm_failure();}
+        if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+        /* Drain one short cue with the original frame untouched. Finish once
+         * its outputs and durable ACK are settled; subsequent simultaneous
+         * cues reconcile on the next foreground call rather than exhausting
+         * one loading-loop budget. Consumed input cannot leak into an exit. */
+        if(cue_seen && !portable_alarm_cue(&alarms)) {
+            alarm_cancel_input();
+            if(alarms.status.state!=ALARM_STATE_BLOCKED)return true;
+            break;
+        }
     }
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
@@ -168,7 +201,7 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         uint32_t old_state=alarms.status.state;int32_t old_error=alarms.status.error;
-        if(!portable_alarm_pump(&alarms)){failed=true;alarm_modal=false;return alarm_failure();}
+        if(!alarm_audio_pump()){failed=true;alarm_modal=false;return alarm_failure();}
         if(memcmp(&shown,&alarms.status.occurrence,sizeof(shown))) {
             shown=alarms.status.occurrence;alarm_cancel_input();redraw=true;
         }

@@ -10,6 +10,12 @@ for san in (False,True):
  binary=out/f'primitives-{int(san)}';frames=out/f'frames-{int(san)}';frames.mkdir(exist_ok=True)
  subprocess.run([*common,str(ROOT/'test/native_apps/nova_ui_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),'-o',str(binary)],check=True)
  subprocess.run([str(binary),str(frames)],check=True)
+ binary=out/f'watch-keyboard-{int(san)}'
+ subprocess.run([*common,str(ROOT/'test/native_apps/watch_keyboard_test.c'),'-o',str(binary)],check=True)
+ subprocess.run([str(binary)],check=True)
+ binary=out/f'touch-chrome-{int(san)}'
+ subprocess.run([*common,'-DPORTABLE_APP_OWNS_TOUCH_CHROME',str(ROOT/'test/native_apps/nova_touch_chrome_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),'-o',str(binary)],check=True)
+ subprocess.run([str(binary),str(frames)],check=True)
  binary=out/f'alarms-{int(san)}'
  subprocess.run([*common,str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_alarm_test.c'),'-o',str(binary)],check=True)
  for case in range(11):subprocess.run([str(binary),str(case)],check=True,timeout=20)

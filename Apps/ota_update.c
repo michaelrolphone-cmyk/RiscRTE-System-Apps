@@ -1,3 +1,9 @@
+#ifdef PORTABLE_UPDATE_APP
+#if !PORTABLE_UPDATE_FIRMWARE
+#error "Firmware Update requires its firmware-only service"
+#endif
+#include "update_portable.inc"
+#else
 #include "T5AppApi.h"
 #include "T5OtaApi.h"
 #include "T5UiApi.h"
@@ -121,3 +127,5 @@ void app_main(void) {
         return;
     }
 }
+
+#endif /* Reader firmware-owned OTA path remains byte-identical. */
