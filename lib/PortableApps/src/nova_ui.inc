@@ -38,7 +38,7 @@ void portable_nova_text(unsigned face,int x,int y,int max_width,const char *s,ui
       unsigned sx=(unsigned)i*256u/scale,sy=(unsigned)j*256u/scale;
       if(sx>=g->width||sy>=g->height)continue;
       unsigned n=sy*g->width+sx,a=(g->bits[n/4]>>(6-2*(n%4)))&3;
-      int px=pen/16+(int)(g->left*scale/256u)+i,py=y+(int)(g->top*scale/256u)+j;
+      int px=pen/16+((int)g->left*(int)scale/256)+i,py=y+((int)g->top*(int)scale/256)+j;
       if(px>=x && px<x+max_width)nu_pixel(px,py,rgb,a*85);
     }
     pen+=advance;
