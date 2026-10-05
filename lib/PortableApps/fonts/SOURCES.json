@@ -31,6 +31,7 @@
     "solid:f1ec",
     "solid:f240",
     "solid:f254",
+    "solid:f274",
     "solid:f27a",
     "solid:f2ed",
     "solid:f2f2",
@@ -52,8 +53,9 @@
     "solid:f130": "microphone",
     "solid:f07c": "folder-open",
     "solid:f7c0": "satellite-dish",
-    "solid:f27a": "message"
+    "solid:f27a": "message",
+    "solid:f274": "calendar-check"
   },
-  "icons.inc_sha256": "473c3c6cca765b1826ee258180e6472991d87c4050c1e80815553875bc96761b",
+  "icons.inc_sha256": "0eb6b1b3a8d4091f4b9fd1336f9a1fb1938dcd2c909f53b16c5605e64bc6ffaf",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }

@@ -688,9 +688,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
 #include "alarm.inc"
 #endif
-static bool refresh(void) { return portable_catalog_count <= 16; }
+static bool refresh(void) { return portable_catalog_count <= 17; }
 static uint32_t count(void) {
-  return portable_catalog_count <= 16 ? portable_catalog_count : 0;
+  return portable_catalog_count <= 17 ? portable_catalog_count : 0;
 }
 static bool get(uint32_t i, t5_app_manifest_t *out) {
   if (!out || i >= count())

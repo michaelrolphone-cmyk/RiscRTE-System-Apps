@@ -16,7 +16,7 @@ the new Portable headers are private library interfaces. Upstream licenses are
 retained under the repository license. No hardware register, bus or pin appears
 in the adapter.
 
-The deployment links a bounded catalog of at most 16 explicit apps. It does not
+The deployment links a bounded catalog of at most 17 explicit apps. It does not
 pretend to discover installed files. Runtime boot policy must grant each app's
 own required capabilities. A successful launch request returns through the
 existing app lifecycle; there is no recursive loader or retained app state.
