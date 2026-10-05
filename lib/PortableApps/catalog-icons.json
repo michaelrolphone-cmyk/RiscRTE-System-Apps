@@ -1,14 +1,49 @@
 {
   "schema": 1,
   "apps": {
-    "clock": {"icon": "solid:f017", "glyph": "clock"},
-    "battery": {"icon": "solid:f240", "glyph": "battery-full"},
-    "settings": {"icon": "solid:f013", "glyph": "gear"},
-    "calculator": {"icon": "solid:f1ec", "glyph": "calculator"},
-    "stopwatch": {"icon": "solid:f2f2", "glyph": "stopwatch"},
-    "alarms": {"icon": "solid:f0f3", "glyph": "bell"},
-    "countdown": {"icon": "solid:f254", "glyph": "hourglass"},
-    "wifi_settings": {"icon": "solid:f1eb", "glyph": "wifi"},
-    "points_in_time": {"icon": "solid:f783", "glyph": "calendar-day"}
+    "clock": {
+      "icon": "solid:f017",
+      "glyph": "clock"
+    },
+    "battery": {
+      "icon": "solid:f240",
+      "glyph": "battery-full"
+    },
+    "settings": {
+      "icon": "solid:f013",
+      "glyph": "gear"
+    },
+    "calculator": {
+      "icon": "solid:f1ec",
+      "glyph": "calculator"
+    },
+    "stopwatch": {
+      "icon": "solid:f2f2",
+      "glyph": "stopwatch"
+    },
+    "alarms": {
+      "icon": "solid:f0f3",
+      "glyph": "bell"
+    },
+    "countdown": {
+      "icon": "solid:f254",
+      "glyph": "hourglass"
+    },
+    "wifi_settings": {
+      "icon": "solid:f1eb",
+      "glyph": "wifi"
+    },
+    "points_in_time": {
+      "icon": "solid:f783",
+      "glyph": "calendar-day"
+    },
+    "frequency_generator": {
+      "icon": "solid:f028",
+      "glyph": "volume-high"
+    },
+    "audio_spectrum": {
+      "icon": "solid:f130",
+      "glyph": "microphone"
+    }
   }
 }

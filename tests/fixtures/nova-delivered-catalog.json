@@ -1,0 +1,57 @@
+[
+  {
+    "display_name": "Clock",
+    "file_name": "clock.elf",
+    "icon": "solid:f017"
+  },
+  {
+    "display_name": "Battery",
+    "file_name": "battery.elf",
+    "icon": "solid:f240"
+  },
+  {
+    "display_name": "Settings",
+    "file_name": "settings.elf",
+    "icon": "solid:f013"
+  },
+  {
+    "display_name": "Calculator",
+    "file_name": "calculator.elf",
+    "icon": "solid:f1ec"
+  },
+  {
+    "display_name": "Stopwatch",
+    "file_name": "stopwatch.elf",
+    "icon": "solid:f2f2"
+  },
+  {
+    "display_name": "Alarms",
+    "file_name": "alarms.elf",
+    "icon": "solid:f0f3"
+  },
+  {
+    "display_name": "Countdown",
+    "file_name": "countdown.elf",
+    "icon": "solid:f254"
+  },
+  {
+    "display_name": "Wi-Fi",
+    "file_name": "wifi_settings.elf",
+    "icon": "solid:f1eb"
+  },
+  {
+    "display_name": "Points in Time",
+    "file_name": "points_in_time.elf",
+    "icon": "solid:f783"
+  },
+  {
+    "display_name": "Frequency Generator",
+    "file_name": "frequency_generator.elf",
+    "icon": "solid:f028"
+  },
+  {
+    "display_name": "Audio Spectrum",
+    "file_name": "audio_spectrum.elf",
+    "icon": "solid:f130"
+  }
+]

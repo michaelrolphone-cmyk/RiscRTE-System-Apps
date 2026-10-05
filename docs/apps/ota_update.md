@@ -25,3 +25,20 @@ Reader master `82caa0997e913f01c1f5f9ab942d056bc9f04a82` supplies the matching a
 Reader published release [`app-ota_update-v1.0.2`](https://github.com/michaelrolphone-cmyk/T5S3-Reader/releases/download/app-ota_update-v1.0.2/application-ota_update-1.0.2-xtensa-esp32s3.rte.zip) contains a `5108`-byte package with SHA-256 `ed71c3f7d2de88f48e0758e0000b03cbb35d86e75b91673b3fb2f7a8c9ce31de`. The downloaded package contains `ota_update.elf` (4060 bytes, SHA-256 `159845f5504f74cc60a3464f34968f07b098b916cebd678ee99373fe882d04d5`). Release metadata and the downloaded workflow artifact agree; the ELF identity matches the earlier 1.0.1 release, so no additional bump was needed. The release was produced from Reader `f7f006f78bf1f83c28f3ce05728b8973e895956b`; these app inputs remain unchanged at Reader master `3722a3f44a3294ba5e8adab830807a2523df3b03`.
 
 Host fixtures exercise app/provider behavior; device operation and U1 runtime readiness are not established by this evidence.
+
+## Portable capability build
+
+`PORTABLE_UPDATE_APP` with `PORTABLE_UPDATE_FIRMWARE=1` selects the existing
+shared [portable update controller](../PORTABLE_UPDATES.md). It requests only
+`software.update.firmware@1`, saved-profile namespace 6 and foreground Wi-Fi.
+Catalog rows lacking explicit compatible Runtime OTA metadata show USB install
+only; the merged Watch 1.0.0 image cannot be installed through this app.
+
+The initial Check, explicit Cancel/Install confirmation, progress, verified-bank
+activation and Restart flows share the established portable presentation.
+Ordinary builds without the define retain the Reader implementation below the
+compile-time branch and reproduce its published ELF bytes. Portable development
+manifest version is 1.1.0; no legacy manifest or production release is changed.
+
+Springboard deployment manifest advances to 1.4.2 for the Firmware Update
+launcher entry. The shared Springboard rendering/legacy implementation is unchanged.
