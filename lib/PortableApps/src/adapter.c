@@ -7,6 +7,12 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
+#ifdef PORTABLE_AUDIO_SESSION
+#include "PortableAudioSession.h"
+#ifndef PORTABLE_ALARM_CLIENT
+#error "Audio lifecycle integration requires the foreground alarm client"
+#endif
+#endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 #include "PortableWifiView.h"
 #ifdef PORTABLE_UPDATE_APP
@@ -44,6 +50,15 @@ static unsigned first_row, last_rows;
 static bool back_exits_app = true, settings_editing;
 static bool settings_view_poll(t5_app_input_t *out);
 #endif
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+static bool back_exits_app = true;
+static t5_app_contact_t app_contact;
+static bool current_app_contact(t5_app_contact_t *out) {
+  if(!out || failed)return false;
+  *out=app_contact;return true;
+}
+static void set_back_exits(bool enabled) { back_exits_app=enabled; }
+#endif
 static uint32_t millis_now(void) {
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
@@ -59,7 +74,7 @@ static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
 static bool nu_gesture;
 static int nu_start_x,nu_start_y;
 #endif
@@ -429,6 +444,11 @@ static bool idle_sleep(void) {
    * Keep touch/navigation live so the user can explicitly retry cleanup. */
   if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
 #endif
+#ifdef PORTABLE_AUDIO_SESSION
+  /* Close app-owned audio before sleep preparation can call storage or alarm
+   * output. Wake never restarts capture/playback without a fresh user action. */
+  if(!portable_audio_suspend()){failed=true;return false;}
+#endif
   if(!portable_touch_close(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
@@ -460,6 +480,9 @@ static bool idle_sleep(void) {
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
   if (failed)
     return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -490,7 +513,11 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<info.width && y<info.height)
+    app_contact=(t5_app_contact_t){true,(int16_t)x,(int16_t)y};
+#endif
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   if(sample.cancelled || !sample.valid)nu_gesture=false;
   if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
   if(sample.released && nu_gesture) {
@@ -508,7 +535,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     if (x >= info.width || y >= info.height)
       return !failed;
     if (
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
+        false /* App tabs and drag gestures own the whole touch surface. */
+#elif defined(PORTABLE_NOVA_UI)
         y>=4 && y<48 && x>=8 && x<52
 #else
         y<40 && x<56
@@ -558,10 +587,15 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
-#ifndef PORTABLE_SETTINGS_APP
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  returning|=back_exits_app && !!(out->buttons&T5_APP_BUTTON_BACK);
+#elif !defined(PORTABLE_SETTINGS_APP)
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
   if(ok && returning) {
+#ifdef PORTABLE_AUDIO_SESSION
+    if(!portable_audio_suspend())return alarm_failure();
+#endif
     if(!rt->request_launch(PORTABLE_RETURN_APP)) {
       rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
     }
@@ -681,8 +715,10 @@ static const t5_app_api_v1 app = {.abi_version = 1,
                                   .present = present,
                                   .poll = poll,
                                   .millis = millis_now,
-#ifdef PORTABLE_SETTINGS_APP
+#if defined(PORTABLE_SETTINGS_APP) || defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
                                   .set_back_exits_app = set_back_exits,
+#endif
+#ifdef PORTABLE_SETTINGS_APP
                                   .settings_category_count = settings_categories,
                                   .settings_category_get = settings_category,
                                   .settings_count = settings_count,
@@ -697,7 +733,11 @@ static const t5_app_api_v1 app = {.abi_version = 1,
                                   .request_app_launch = launch,
                                   .draw_icon = icon,
                                   .draw_label = label,
-                                  .fill_rounded_rect_tone = rounded};
+                                  .fill_rounded_rect_tone = rounded,
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+                                  .touch_contact = current_app_contact,
+#endif
+};
 static const t5_ui_api_v1 ui = {.api_version = 1,
                                 .struct_size = sizeof(ui),
                                 .render_list = list,
@@ -737,7 +777,13 @@ static int initialize(void) {
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
   nova_mode = false;
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
+  back_exits_app=true;
+#ifndef PORTABLE_SETTINGS_APP
+  app_contact=(t5_app_contact_t){0};
+#endif
+#endif
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
 #endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
@@ -796,6 +842,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
+#endif
+#ifdef PORTABLE_AUDIO_SESSION
+  if(!portable_audio_suspend()) {
+    rt->diagnostic("AUDIO cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);
   }
 #endif

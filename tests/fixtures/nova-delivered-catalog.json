@@ -43,5 +43,15 @@
     "display_name": "Points in Time",
     "file_name": "points_in_time.elf",
     "icon": "solid:f783"
+  },
+  {
+    "display_name": "Frequency Generator",
+    "file_name": "frequency_generator.elf",
+    "icon": "solid:f028"
+  },
+  {
+    "display_name": "Audio Spectrum",
+    "file_name": "audio_spectrum.elf",
+    "icon": "solid:f130"
   }
 ]

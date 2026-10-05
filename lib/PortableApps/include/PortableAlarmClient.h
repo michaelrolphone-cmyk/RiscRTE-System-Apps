@@ -22,14 +22,18 @@ static inline bool portable_alarm_status(portable_alarm_client *c) {
     c->status=(alarm_status_v1){.struct_size=sizeof(c->status)};
     return c->api && c->api->status(c->api->context,&c->status)==ALARM_OK &&
         c->status.api_version==1 && c->status.struct_size>=sizeof(c->status) &&
-        c->status.state<=ALARM_STATE_BLOCKED;
+        c->status.state<=ALARM_STATE_CUE;
 }
 static inline bool portable_alarm_pump(portable_alarm_client *c) {
     (void)c->api->step(c->api->context);return portable_alarm_status(c);
 }
 static inline bool portable_alarm_owned(const portable_alarm_client *c) {
-    return c->status.occurrence.generation || c->status.output_uncertain ||
+    return c->status.state==ALARM_STATE_CUE || c->status.occurrence.generation || c->status.output_uncertain ||
         c->status.state==ALARM_STATE_ALERT || c->status.state==ALARM_STATE_DISMISSING;
+}
+/* A cue reserves outputs but is not a foreground modal occurrence. */
+static inline bool portable_alarm_cue(const portable_alarm_client *c) {
+    return c->status.state==ALARM_STATE_CUE;
 }
 static inline bool portable_alarm_failure_stop(portable_alarm_client *c) {
     if(!c->api)return true;
