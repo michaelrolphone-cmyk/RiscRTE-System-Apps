@@ -24,8 +24,10 @@ jobs:
           python scripts/test_apps.py
           python scripts/test_portable_apps.py
           python scripts/test_portable_wifi.py
+          python scripts/test_portable_update.py
           python scripts/test_portable_alarm.py
           python scripts/test_nova_ui.py
+          python scripts/test_portable_audio.py
           python scripts/test_portable_alarm_settings.py
           python scripts/test_springboard_nova.py
           python scripts/test_portable_transition.py
@@ -39,6 +41,7 @@ jobs:
           python scripts/build_all_apps.py
           python scripts/check_release_parity.py
           python scripts/build_portable_settings.py
+          python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800
           python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15
           python scripts/build_portable_settings.py --alarm-client --alarm-settings --sleep-settings --full-frames --output-dir dist/portable/settings-alarm
           python scripts/build_portable_springboard.py --alarm-client --full-frames --output-dir dist/portable/springboard-alarm
