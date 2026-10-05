@@ -58,7 +58,26 @@ static void sv_center(unsigned face,int y,const char *s,uint32_t color,int spaci
 static void sv_right(unsigned face,int x,int y,const char *s,uint32_t color,int spacing) {
   sv_text(face,x-sv_measure(face,s,spacing),y,s,color,spacing);
 }
+#ifdef PORTABLE_NOVA_UI
+#define SV_ROW_HEIGHT 44
+#define SV_MESSAGE_Y 172
+#define SV_FIELD_BOTTOM 166
+static void sv_geometry(int *x,int *y,int *w,int *h) {
+  if(*h==26 && (*y==192 || *y==200)){*y=188;*h=44;}
+  else if(*h==36 && *y==66){*x=*x<100?20:176;*y=74;*w=*h=44;}
+  else if(*h==30 && (*y==66 || *y==104 || *y==142)) {
+    bool first=*y==66,last=*y==142;*x=first || last?20:124;*y=last?120:64;*w=last?200:96;*h=44;
+  } else if(*h==32){*y=*y==76?64:*y==124?118:*y==100?82:*y==142?132:*y;*h=44;}
+}
+#else
+#define SV_ROW_HEIGHT 40
+#define SV_MESSAGE_Y 177
+#define SV_FIELD_BOTTOM 176
+#endif
 static void sv_button(int x,int y,int w,int h,const char *caption,bool selected) {
+#ifdef PORTABLE_NOVA_UI
+  sv_geometry(&x,&y,&w,&h);
+#endif
   /* Rounded outline follows the mockup, with a usable complete hit rectangle. */
   for(int j=0;j<h;++j)for(int i=0;i<w;++i) {
     int dx=i<6?6-i:i>=w-6?i-(w-7):0;
@@ -84,8 +103,8 @@ static void sv_heading(const char *title) {
   sv_text(2,20,24,title,SV_CAP,28);sv_rect(20,46,200,1,SV_DIM);
 }
 static void sv_back(void) { sv_button(82,192,76,26,"< BACK",false); }
-static int sv_row_y(unsigned index) { return index<3?124+(int)index*40:278+(int)(index-3)*40; }
-static int sv_max_scroll(void) { return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*40:144; }
+static int sv_row_y(unsigned index) { return index<3?124+(int)index*SV_ROW_HEIGHT:278+(int)(index-3)*SV_ROW_HEIGHT; }
+static int sv_max_scroll(void) { return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144); }
 static void sv_clamp_scroll(void) {
   unsigned p=sv_page==SV_ROOT?0:1;
   if(sv_scroll[p]<0)sv_scroll[p]=0;
@@ -101,33 +120,45 @@ static void sv_root(void) {
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i) {
     t5_app_setting_t row; if(!settings_get(0,i,&row))continue;
     int y=sv_row_y(i)-offset;
-    sv_rect(20,y,2,40,sv_selected==i+1?SV_CYAN:SV_LINE);
-    sv_rect(22,y+39,198,1,SV_LINE);
+    sv_rect(20,y,2,SV_ROW_HEIGHT,sv_selected==i+1?SV_CYAN:SV_LINE);
+    sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
     sv_text(1,32,y+10,row.label,0xffffff,4);
     sv_right(2,row.type==T5_APP_SETTING_ACTION?204:216,y+12,row.value,SV_CYAN,0);
     if(row.type==T5_APP_SETTING_ACTION)sv_text(1,211,y+9,">",SV_DIM,0);
   }
+#ifdef PORTABLE_NOVA_UI
+  sv_fade(0,184);sv_rect(0,184,240,56,0);
+#else
   sv_fade(0,192);sv_rect(0,190,240,50,0);
+#endif
   if(settings_message[0])sv_center(3,173,settings_message,SV_CYAN,0);
   sv_back();
 }
 static void sv_fields(void) {
   sv_heading("TIME AND DATE");
   for(unsigned i=0;i<6;++i) {
-    int y=60+(int)i*40-sv_scroll[1];
-    if(y+40<=50 || y>=184)continue;
+    int y=60+(int)i*SV_ROW_HEIGHT-sv_scroll[1];
+    if(y+SV_ROW_HEIGHT<=50 || y>=184)continue;
     char value[24];editor_value_text(i,value,sizeof(value));
-    sv_rect(20,y,2,40,editor_field==i?SV_CYAN:SV_LINE);
-    sv_rect(22,y+39,198,1,SV_LINE);
+    sv_rect(20,y,2,SV_ROW_HEIGHT,editor_field==i?SV_CYAN:SV_LINE);
+    sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
     sv_text(1,32,y+10,editor_names[i],0xffffff,4);
     sv_right(1,202,y+10,value,SV_CYAN,0);sv_text(1,211,y+9,">",SV_DIM,0);
   }
   /* Keep the fixed heading/buttons intact while rows move behind them. */
-  sv_fade(50,188);sv_rect(0,0,240,50,0);sv_heading("TIME AND DATE");
-  sv_rect(0,188,240,52,0);
+#ifdef PORTABLE_NOVA_UI
+  sv_fade(50,166);sv_rect(0,166,240,74,0);
+#else
+  sv_fade(50,188);sv_rect(0,188,240,52,0);
+#endif
+  sv_rect(0,0,240,50,0);sv_heading("TIME AND DATE");
   sv_button(24,200,86,26,"CANCEL",editor_field==7);
   sv_button(130,200,86,26,"SAVE",editor_field==6);
+#ifdef PORTABLE_NOVA_UI
+  sv_center(3,171,editor_message,SV_CAP,0);
+#else
   sv_center(3,185,editor_message,SV_CAP,0);
+#endif
 }
 static void sv_value(void) {
   sv_heading(editor_names[editor_field]);
@@ -138,14 +169,27 @@ static void sv_value(void) {
   sv_button(24,66,36,36,"",false);sv_button(180,66,36,36,"",false);
   for(unsigned i=0;i<2;++i) {
     const char *symbol=i?"+":"-";const rps_glyph *g=&rps_text[5*95+(unsigned)symbol[0]-32];
+#ifdef PORTABLE_NOVA_UI
+    sv_text(5,(i?176:20)+(44-(int)g->advance_q4/16)/2,74+(44-g->height)/2-g->top,symbol,SV_CYAN,0);
+#else
     sv_text(5,(i?180:24)+(36-(int)g->advance_q4/16)/2,66+(36-g->height)/2-g->top,symbol,SV_CYAN,0);
+#endif
   }
   unsigned lo,hi;editor_bounds(editor_field,&lo,&hi);
   unsigned filled=hi>lo?(v-lo)*10/(hi-lo):0;
   for(unsigned i=0;i<10;++i)sv_rect(72+(int)i*10,124,7,8,i<filled?SV_CYAN:0x032027);
-  if(editor_field==3 && !settings_hour_24())sv_center(1,145,v<12?"AM":"PM",SV_TEXT,12);
+  if(editor_field==3 && !settings_hour_24()) {
+#ifdef PORTABLE_NOVA_UI
+    sv_button(76,140,88,44,v<12?"AM":"PM",true);
+#else
+    sv_center(1,145,v<12?"AM":"PM",SV_TEXT,12);
+#endif
+  }
   else {snprintf(value,sizeof(value),"%u - %u",lo,hi);sv_center(2,145,value,SV_CAP,12);}
-  sv_center(3,163,"Draft only - use SAVE",SV_CAP,2);sv_back();
+#ifndef PORTABLE_NOVA_UI
+  sv_center(3,163,"Draft only - use SAVE",SV_CAP,2);
+#endif
+  sv_back();
 }
 static void sv_fold(void) {
   sv_heading("REPEATED LOCAL TIME");
@@ -168,7 +212,7 @@ static void sv_time_format(void) {
   sv_heading("TIME FORMAT");
   sv_button(28,76,184,32,"12-HOUR  AM / PM",time_format_choice==PORTABLE_TIME_FORMAT_12);
   sv_button(28,124,184,32,"24-HOUR",time_format_choice==PORTABLE_TIME_FORMAT_24);
-  sv_center(3,177,time_format_message[0]?time_format_message:"Draft only - use SAVE",
+  sv_center(3,SV_MESSAGE_Y,time_format_message[0]?time_format_message:"Draft only - use SAVE",
             time_format_message[0]?SV_CYAN:SV_CAP,0);
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
@@ -179,8 +223,12 @@ static void sv_sleep(void) {
   sv_button(28,66,184,30,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
   sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
   sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
+#ifdef PORTABLE_NOVA_UI
+  sv_center(3,172,sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
+#else
   sv_center(3,177,"Apps: Light 5 min then Deep",SV_CAP,0);
   sv_center(3,190,sleep_message,SV_CYAN,0);
+#endif
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
 }
@@ -191,7 +239,7 @@ static void sv_alert(void) {
   sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
   sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
   sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
-  sv_center(3,177,alert_message[0]?alert_message:"Alarms and Countdown",
+  sv_center(3,SV_MESSAGE_Y,alert_message[0]?alert_message:"Alarms and Countdown",
             alert_message[0]?SV_CYAN:SV_CAP,0);
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
@@ -229,6 +277,9 @@ static void sv_switch(unsigned page) {
   settings_view_redraw();
 }
 static bool sv_inside(int x,int y,int left,int top,int w,int h) {
+#ifdef PORTABLE_NOVA_UI
+  sv_geometry(&left,&top,&w,&h);
+#endif
   return x>=left && x<left+w && y>=top && y<top+h;
 }
 static void sv_back_input(t5_app_input_t *out) {
@@ -265,9 +316,11 @@ static bool settings_view_poll(t5_app_input_t *out) {
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
     sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_axis=0;sv_dragged=false;
     sv_start_scroll=sv_scroll[sv_page==SV_ROOT?0:1];
+#ifndef PORTABLE_NOVA_UI
     if(sv_eligible && sv_page==SV_VALUE && y>=116 && y<142 && x>=64 && x<=176) {
       sv_axis=3;sv_slider(x);
     }
+#endif
   }
   if(sample.down && sv_gesture && sv_eligible) {
     int dx=x-sv_start_x,dy=y-sv_start_y;
