@@ -9,6 +9,7 @@
 #define PQA_BRIGHTNESS_KEY "brightness"
 #define PQA_VOLUME_KEY "alarm_volume"
 #define PQA_RESTORE_VOLUME_KEY "quick_volume"
+#define PQA_DND_KEY "alert_dnd"
 #define PQA_BRIGHTNESS_DEFAULT 40u
 #define PQA_VOLUME_DEFAULT 50u
 static inline bool pqa_preferences_valid(const risc_key_value_v1 *kv) {
@@ -30,4 +31,22 @@ static inline bool pqa_preference_save(const risc_key_value_v1 *kv,const char *k
  if(rc!=RISC_KEY_VALUE_OK && rc!=RISC_KEY_VALUE_IO)return false;
  uint8_t actual=255;uint32_t size=0;
  return kv->get(kv->context,key,&actual,1,&size)==RISC_KEY_VALUE_OK && size==1 && actual==value;
+}
+
+/* DND is an independent one-byte Boolean. Missing means off without a write.
+ * Unavailable or malformed storage must never be rendered as confirmed state. */
+static inline bool pqa_dnd_load(const risc_key_value_v1 *kv,bool *enabled) {
+ *enabled=false;if(!pqa_preferences_valid(kv))return false;
+ uint8_t byte=0;uint32_t size=0;int32_t rc=kv->get(kv->context,PQA_DND_KEY,&byte,1,&size);
+ if(rc==RISC_KEY_VALUE_NOT_FOUND)return true;
+ if(rc!=RISC_KEY_VALUE_OK || size!=1 || byte>1)return false;
+ *enabled=byte!=0;return true;
+}
+static inline bool pqa_dnd_save(const risc_key_value_v1 *kv,bool enabled) {
+ if(!pqa_preferences_valid(kv))return false;
+ const uint8_t byte=enabled?1u:0u;
+ int32_t rc=kv->put(kv->context,PQA_DND_KEY,&byte,1);
+ if(rc!=RISC_KEY_VALUE_OK && rc!=RISC_KEY_VALUE_IO)return false;
+ uint8_t actual=255;uint32_t size=0;
+ return kv->get(kv->context,PQA_DND_KEY,&actual,1,&size)==RISC_KEY_VALUE_OK && size==1 && actual==byte;
 }

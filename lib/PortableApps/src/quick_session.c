@@ -15,10 +15,13 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  bool bv=pqa_preference_load(kv,PQA_BRIGHTNESS_KEY,s->brightness,10,&b);
  bool vv=pqa_preference_load(kv,PQA_VOLUME_KEY,PQA_VOLUME_DEFAULT,0,&v);
  (void)pqa_preference_load(kv,PQA_RESTORE_VOLUME_KEY,PQA_VOLUME_DEFAULT,1,&r);
+ bool dnd=false,dnd_valid=pqa_dnd_load(kv,&dnd);
  unsigned mode=PORTABLE_TIME_FORMAT_12;(void)portable_time_format_load(kv,&mode);s->hour_24=mode==PORTABLE_TIME_FORMAT_24;
  if(g.api && !rt->release(&g))return false;
  if(bv)s->brightness=b;
  if(vv)s->volume=v;
+ if(dnd_valid)s->dnd_enabled=dnd;
+ s->ui.dnd_valid=dnd_valid;s->ui.dnd_enabled=s->dnd_enabled;
  s->restore_volume=v?v:r;
  pqa_set_levels(&s->ui,bv,s->brightness,vv,s->volume);s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;
  s->loaded=true;return true;
@@ -26,9 +29,9 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
 bool pqa_session_restore(const pqa_session *s,const risc_display_output_api_v1 *d) {
  return d && d->set_brightness && d->set_brightness(d->context,(uint16_t)s->brightness,100);
 }
-bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *volume_changed) {
- *volume_changed=false;
- if(actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT)) {
+bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *alerts_changed) {
+ *alerts_changed=false;
+ if(actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND)) {
   risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
   if(actions&PQA_BRIGHTNESS_COMMIT) {
    unsigned wanted=s->ui.action_brightness;
@@ -44,8 +47,19 @@ bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_d
    if(ready && pqa_preference_save(kv,PQA_VOLUME_KEY,wanted,0)) {
     if(s->volume)s->restore_volume=s->volume;
     s->volume=wanted;if(wanted)s->restore_volume=wanted;
-    s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*volume_changed=true;
+    s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*alerts_changed=true;
    } else {s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
+  }
+  if(actions&PQA_DND) {
+   bool wanted=s->ui.action_dnd;
+   if(pqa_dnd_save(kv,wanted)) {
+    *alerts_changed|=s->dnd_enabled!=wanted;
+    s->dnd_enabled=wanted;s->ui.dnd_enabled=wanted;s->ui.dnd_valid=true;
+    s->ui.error_flags&=~(PQA_ERROR_DND|PQA_ERROR_SAVE);
+   } else {
+    s->ui.dnd_enabled=s->dnd_enabled;s->ui.dnd_valid=false;
+    s->ui.error_flags|=PQA_ERROR_DND|PQA_ERROR_SAVE;
+   }
   }
   if(g.api && !rt->release(&g))return false;
  }

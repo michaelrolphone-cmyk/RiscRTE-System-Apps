@@ -17,7 +17,7 @@ for name, file, size, chars, tracking in [
     ('time','Orbitron-700.ttf',13,'0123456789:-APM ',.78),
     ('percent','Orbitron-700.ttf',10,'0123456789%!-',0),
     ('label','Rajdhani-600.ttf',10,'ABCDEFGHIJKLMNOPQRSTUVWXYZ -',.72),
-    ('caption','Rajdhani-600.ttf',9,'NOTIFICATIONSUNAVAILABLE',.55),
+    ('caption','Rajdhani-600.ttf',9,'ABCDEFGHIJKLMNOPQRSTUVWXYZ -',.55),
     ('torch','Rajdhani-600.ttf',11,'TAP TO TURN OFF',2.2)]:
     font=ImageFont.truetype(str(F/file),size*4)
     glyphs=[]

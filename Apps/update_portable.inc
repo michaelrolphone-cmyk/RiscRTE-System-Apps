@@ -1,3 +1,6 @@
+#ifdef PORTABLE_QUICK_RADIOS
+#include "PortableRadioPolicy.h"
+#endif
 /* Shared portable controller. Product action authority comes only from the
  * selected service grant. Wi-Fi credentials and foreground radio belong here. */
 #include "T5AppApi.h"
@@ -89,6 +92,9 @@ static bool utc_now(uint64_t *out) {
  if(seconds<1704067200LL||seconds>4102444799LL)return false;*out=(uint64_t)seconds;return true;
 }
 static bool connect_saved(bool install) {
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!portable_radio_wifi_allowed(ur)){message="Wi-Fi is off in Quick Controls";dirty=true;return false;}
+#endif
  if(!us||!portable_update_suspend())return false;
  uwg=(risc_runtime_capability_v1){.struct_size=sizeof(uwg)};
  if(!ur->acquire("net.wifi",1,PORTABLE_WIFI_INSTANCE,&uwg)){message="Wi-Fi unavailable; retry Check";dirty=true;return false;}

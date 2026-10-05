@@ -16,7 +16,10 @@ typedef enum {
     PQA_VOLUME_COMMIT = 1u << 2,
     PQA_SILENT = 1u << 3,
     PQA_TORCH = 1u << 4,
-    PQA_WIFI = 1u << 5
+    PQA_WIFI = 1u << 5,
+    PQA_AIRPLANE = 1u << 6,
+    PQA_BLUETOOTH = 1u << 7,
+    PQA_DND = 1u << 8
 } pqa_action;
 typedef enum { PQA_PASS, PQA_RESERVED, PQA_CONSUMED, PQA_REPLAY } pqa_route;
 typedef enum {
@@ -24,7 +27,7 @@ typedef enum {
     PQA_PANEL_DRAG, PQA_BRIGHTNESS_DRAG, PQA_VOLUME_DRAG, PQA_TORCH_TAP
 } pqa_gesture;
 enum { PQA_ERROR_BRIGHTNESS = 1u, PQA_ERROR_VOLUME = 2u,
-       PQA_ERROR_SAVE = 4u, PQA_ERROR_WIFI = 8u };
+       PQA_ERROR_SAVE = 4u, PQA_ERROR_WIFI = 8u, PQA_ERROR_RADIO=16u, PQA_ERROR_DND=32u };
 
 typedef struct {
     /* Controller scratch/proposed values; adapter owns persisted preferences.
@@ -32,6 +35,8 @@ typedef struct {
      * user choices have a 10% floor. Unknown values never become fake states. */
     uint8_t brightness, volume, last_nonzero_volume;
     bool brightness_valid, volume_valid, torch;
+    bool dnd_valid, dnd_enabled;
+    bool radio_controls,radios_valid,wifi_enabled,bluetooth_enabled,airplane;
     uint8_t error_flags;
     int32_t position_q8, target_q8, velocity_q8;
     pqa_gesture gesture;
@@ -41,7 +46,7 @@ typedef struct {
     /* Snapshots for pending actions; commits dominate previews until taken.
      * action_volume applies to VOLUME_COMMIT and SILENT. */
     uint8_t action_brightness, action_volume;
-    bool action_torch;
+    bool action_torch, action_dnd;
     uint32_t start_ms, last_ms, animation_ms, animation_remainder_ms;
     uint32_t start_id;
     int16_t start_x, start_y, last_x, last_y;

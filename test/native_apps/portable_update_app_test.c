@@ -15,6 +15,9 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include "../../lib/PortableApps/src/adapter.c"
+#ifdef TEST_RADIO_POLICY
+#define PORTABLE_QUICK_RADIOS
+#endif
 #include "../../Apps/update_portable.inc"
 
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
@@ -102,7 +105,11 @@ static const twatch_rtc_api_v1 rtc_api={2,sizeof(rtc_api),NULL,rtc_read,NULL,NUL
 
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out) && (v==1||v==2));if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
- else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6);if(kv_denied)return false;out->api=&kv_api;}
+ else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
+#ifdef TEST_RADIO_POLICY
+ || id==1
+#endif
+ );if(kv_denied)return false;out->api=&kv_api;}
  else {assert(!id);if(!strcmp(name,PORTABLE_UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY))out->api=&update_api;else if(!strcmp(name,TWATCH_RTC_CAPABILITY))out->api=&rtc_api;else if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&alarm_api;else return false;}
  ++grant_count;return true;
 }
@@ -190,7 +197,15 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
   event(14,T5_APP_BUTTON_BACK,-1,0);event(18,T5_APP_BUTTON_BACK,-1,0);app_main();
   assert(selected==1&&!begins&&!activations&&!opened&&launches==1);break;
  }
+#ifdef TEST_RADIO_POLICY
+ case 48:{uint8_t r[]={0x51,1,0,0xa5};assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);assert(!connect_saved(false)&&!connects&&strstr(message,"off"));r[2]=1;r[3]=0xa4;assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);assert(connect_saved(false)&&connects==1);break;}
+ case 49:fail_store=1;assert(!connect_saved(false)&&!connects);fail_store=0;break;
+#endif
  default:assert(!"Unknown scenario");
  }
- fail_disconnect=fail_release=fail_cancel=false;app_module_fini();assert(!opened&&!grant_count&&!sub_count&&!frame_count&&!native_active&&!writes);printf("Portable update UI scenario %u passed\n",scenario);return 0;
+ unsigned expected_writes=0;
+#ifdef TEST_RADIO_POLICY
+ if(scenario==48)expected_writes=2;
+#endif
+ fail_disconnect=fail_release=fail_cancel=false;app_module_fini();assert(!opened&&!grant_count&&!sub_count&&!frame_count&&!native_active&&writes==expected_writes);printf("Portable update UI scenario %u passed\n",scenario);return 0;
 }

@@ -4,10 +4,10 @@
 #define PORTABLE_ALARM_FIXTURE_MAIN base_alarm_fixture_main
 #include "portable_alarm_test.c"
 
-static uint8_t pref_value[3];
+static uint8_t pref_value[4];
 static uint16_t expected_background[240*240];
-static bool pref_present[3], pref_write_fail, pref_read_fail;
-static unsigned pref_writes[3], brightness_calls, hardware_brightness=40;
+static bool pref_present[4], pref_write_fail, pref_read_fail;
+static unsigned pref_writes[4], brightness_calls, hardware_brightness=40;
 static unsigned inject_alarm_at, wifi_launches;
 static bool alarm_injected;
 static const char *capture_directory;
@@ -20,10 +20,23 @@ static int pref_index(const char *key) {
  if(!strcmp(key,PQA_BRIGHTNESS_KEY))return 0;
  if(!strcmp(key,PQA_VOLUME_KEY))return 1;
  if(!strcmp(key,PQA_RESTORE_VOLUME_KEY))return 2;
+ if(!strcmp(key,PQA_DND_KEY))return 3;
  return -1;
 }
+#ifdef PORTABLE_QUICK_RADIOS
+static uint8_t radio_record[4],ble_state;static bool radio_saved;
+static bool radio_bluetooth_enable(void*c,bool on){(void)c;ble_state=on?1:0;return true;}
+static bool radio_bluetooth_status(void*c,uint8_t*out){(void)c;*out=ble_state;return true;}
+static wifi_link_t radio_wifi_status(void*c){(void)c;return WIFI_LINK_DOWN;}
+static bool radio_wifi_off(void*c){(void)c;return true;}
+static const portable_bluetooth_control_v1 radio_ble={.api_version=1,.struct_size=sizeof(radio_ble),.set_enabled=radio_bluetooth_enable,.status=radio_bluetooth_status};
+static const wifi_api_v1 radio_wifi={.api_version=1,.struct_size=sizeof(radio_wifi),.status=radio_wifi_status,.disconnect_checked=radio_wifi_off};
+#endif
 static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size) {
  assert(!surface.frame && display_settled);
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!strcmp(key,PORTABLE_RADIO_KEY)){*size=0;if(!radio_saved)return RISC_KEY_VALUE_NOT_FOUND;assert(capacity>=4);memcpy(data,radio_record,4);*size=4;return RISC_KEY_VALUE_OK;}
+#endif
  int index=pref_index(key);if(index<0)return kv_get(c,key,data,capacity,size);
  *size=0;if(pref_read_fail)return RISC_KEY_VALUE_IO;
  if(!pref_present[index])return RISC_KEY_VALUE_NOT_FOUND;
@@ -32,6 +45,9 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
 }
 static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size) {
  assert(!surface.frame && display_settled);
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!strcmp(key,PORTABLE_RADIO_KEY)){assert(size==4);memcpy(radio_record,data,4);radio_saved=true;return RISC_KEY_VALUE_OK;}
+#endif
  int index=pref_index(key);if(index<0)return kv_put(c,key,data,size);
  assert(size==1);pref_writes[index]++;
  if(pref_write_fail)return RISC_KEY_VALUE_IO;
@@ -76,6 +92,10 @@ static int32_t quick_next(void *c,uint64_t subscription,risc_touch_event_v1 *eve
  return 0;
 }
 static bool quick_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!strcmp(name,"net.wifi")){assert(version==1&&instance==15);grant->api=&radio_wifi;grants++;return true;}
+ if(!strcmp(name,"bluetooth.hci")){assert(version==1&&instance==16);grant->api=&radio_ble;grants++;return true;}
+#endif
  if(!strcmp(name,"input.touch.raw")){assert(version==1 && !instance);grant->api=&quick_touch_api;++grants;return true;}
  if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {assert(version==1 && instance==1);grant->api=&quick_kv_api;++grants;return true;}
  if(!strcmp(name,"display.output")){assert(version==1 && !instance);grant->api=&quick_display_api;++grants;return true;}
@@ -114,6 +134,9 @@ static void setup(void) {
  alarm_fake.state=ALARM_STATE_READY;
  assert(settings_open());
  pqa_session_init(&quick);assert(pqa_session_load(&quick,rt));
+#ifdef PORTABLE_QUICK_RADIOS
+ assert(pqa_radios_load(&quick_radios,&quick.ui,rt));assert(quick.ui.radios_valid&&quick.ui.wifi_enabled&&!quick.ui.bluetooth_enabled);
+#endif
  assert(quick.volume==50 && quick.restore_volume==50 && quick.brightness==40);
  assert(!pref_writes[0] && !pref_writes[1] && !pref_writes[2]);
  settings_draft=(twatch_rtc_time_v1){2028,4,20,4,17,23,31};
@@ -185,10 +208,18 @@ int main(int argc,char **argv) {
   assert(quick.brightness==40 && quick.volume==50 && hardware_brightness==40);
   assert(quick.ui.error_flags&PQA_ERROR_SAVE);assert(!pref_present[0] && !pref_present[1]);
  } else if(test==7) {
+#ifdef PORTABLE_QUICK_RADIOS
+  opening(3);tap(80,51,185);tap(86,122,185);tap(92,193,139);tap(98,120,222);drain_to(160);background_unchanged();
+  assert(quick.ui.airplane&&!quick.ui.wifi_enabled&&!quick.ui.bluetooth_enabled&&!ble_state&&radio_saved&&!wifi_launches&&!return_launches);
+  opening(180);tap(260,193,139);tap(266,51,185);tap(272,120,222);drain_to(330);background_unchanged();
+  assert(!quick.ui.airplane&&quick.ui.wifi_enabled&&quick.ui.bluetooth_enabled&&ble_state==1);
+  assert(pqa_radios_suspend(rt)&&ble_state==0);assert(pqa_radios_resume(&quick_radios,&quick.ui,rt)&&ble_state==1);
+#else
   opening(3);tap(80,51,185);t5_app_input_t input={0};
   while(!input.exit_requested)assert(poll(&input,8));
   assert(wifi_launches==1 && !return_launches && quick_launch_pending);
   assert(!pref_writes[0] && !pref_writes[1]);
+#endif
  } else if(test==8) {
   /* Actual provider cancellation restores preview without saving. */
   opening(3);tap(80,182,62);tap(81,182,62);fail_poll_at=82;tap(90,120,222);

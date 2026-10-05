@@ -17,6 +17,14 @@ static bool quick_storage_safe(void) {
 static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
  if(!quick_storage_safe())return false;
+#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+ if(((actions&PQA_AIRPLANE)&&!quick.ui.airplane)||((actions&PQA_WIFI)&&quick.ui.wifi_enabled)) {
+  if(!portable_wifi_suspend())return false;
+ }
+#endif
+ if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions))return false;
+#endif
  bool changed=false;
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
  const alarm_service_v1 *service=alarm_sleep_api();
@@ -57,6 +65,9 @@ static bool quick_foreground(bool *consumed) {
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
  if(!pqa_session_load(&quick,rt))return false;
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
+#endif
  quick_background=malloc(240u*240u*2u);
  if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
  memcpy(quick_background,alarm_pixels,240u*240u*2u);quick_modal=true;
@@ -71,7 +82,7 @@ static bool quick_foreground(bool *consumed) {
   if((uint32_t)(now-last_activity)>=60000u)pqa_cancel(&quick.ui);
 #endif
   uint32_t actions=pqa_take_action(&quick.ui);
-  if(actions&PQA_WIFI){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
+  if(!quick.ui.radio_controls && (actions&PQA_WIFI)){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
   if(!quick_apply(actions)){failed=true;break;}
   pqa_animate(&quick.ui,now);
   if(pqa_visible(&quick.ui) || painted) {

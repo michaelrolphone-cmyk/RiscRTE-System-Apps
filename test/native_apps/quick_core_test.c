@@ -112,4 +112,26 @@ static void test_fuzz(void) {
         assert(s.volume<=100 && s.brightness<=100);if(random&2)pqa_take_action(&s);
     }
 }
-int main(void){test_routes();test_controls();test_cancel();test_animation();test_render();test_fuzz();puts("quick actions: all controller, animation, surface and fuzz tests passed");return 0;}
+static void test_dnd(void) {
+ pqa_state s=opened();s.dnd_valid=true;
+ s.radios_valid=s.wifi_enabled=s.bluetooth_enabled=true;
+ click(&s,10,122,139);assert(pqa_take_action(&s)==PQA_DND);
+ assert(s.dnd_enabled && s.action_dnd && s.volume==50 && s.brightness==40);
+ assert(s.radios_valid && s.wifi_enabled && s.bluetooth_enabled && !s.airplane);
+ click(&s,30,122,139);assert(pqa_take_action(&s)==PQA_DND);
+ assert(!s.dnd_enabled && !s.action_dnd);
+ s.dnd_valid=false;click(&s,50,122,139);assert(!s.pending && !s.dnd_enabled);
+ /* Genuine moon tile gains active cyan without modifying any other tile. */
+ unsigned char off[240*240*2]={0},on[240*240*2]={0};
+ risc_display_surface_v1 a={1,off,240,240,480,sizeof(off),RISC_DISPLAY_FORMAT_RGB565};
+ risc_display_surface_v1 b={1,on,240,240,480,sizeof(on),RISC_DISPLAY_FORMAT_RGB565};
+ s.dnd_valid=true;assert(pqa_render(&a,&s,"12:34",true,50));
+ s.dnd_enabled=true;assert(pqa_render(&b,&s,"12:34",true,50));
+ unsigned changed=0;
+ for(unsigned y=0;y<240;y++)for(unsigned x=0;x<240;x++) {
+  bool different=memcmp(off+(y*240+x)*2,on+(y*240+x)*2,2)!=0;
+  if(different){assert(x>=91 && x<153 && y>=118 && y<160);changed++;}
+ }
+ assert(changed>1000);
+}
+int main(void){test_dnd();test_routes();test_controls();test_cancel();test_animation();test_render();test_fuzz();puts("quick actions: all controller, animation, surface and fuzz tests passed");return 0;}

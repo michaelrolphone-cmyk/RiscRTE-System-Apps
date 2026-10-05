@@ -37,6 +37,10 @@ static bool failed, list_mode;
 #include "PortableQuickSession.h"
 #include "PortableQuickRender.h"
 static pqa_session quick;
+#ifdef PORTABLE_QUICK_RADIOS
+#include "PortableQuickRadios.h"
+static pqa_radios quick_radios;
+#endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending;
 static bool quick_foreground(bool *consumed);
@@ -480,6 +484,9 @@ static bool idle_sleep(void) {
    * output. Wake never restarts capture/playback without a fresh user action. */
   if(!portable_audio_suspend()){failed=true;return false;}
 #endif
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
+#endif
   if(!portable_touch_close(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
@@ -498,6 +505,9 @@ static bool idle_sleep(void) {
   if(status<0){failed=true;return false;}
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   portable_wifi_resume();
+#endif
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
 #endif
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -886,6 +896,9 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   if(!pqa_session_load(&quick,rt))return -1;
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
+#endif
 #endif
   return failed?-1:0;
 }

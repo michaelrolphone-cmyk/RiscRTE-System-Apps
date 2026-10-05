@@ -11,6 +11,9 @@
 #include <stdlib.h>
 #include <setjmp.h>
 #include "../../lib/PortableApps/src/adapter.c"
+#ifdef TEST_RADIO_POLICY
+#define PORTABLE_QUICK_RADIOS
+#endif
 #include "../../Apps/wifi_settings.c"
 #define TEST_KEY_DELETE PWK_DELETE
 #define TEST_KEY_DONE PWK_DONE
@@ -84,7 +87,11 @@ static int32_t fake_alarm_stop(void*c){(void)c;observed();++alarm_stops;return f
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,fake_alarm_status,fake_alarm_step,fake_alarm_refresh,fake_alarm_ack,fake_alarm_prepare,fake_alarm_stop};
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out) && v==1);if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
- else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6);if(kv_denied)return false;out->api=&kv_api;}
+ else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
+#ifdef TEST_RADIO_POLICY
+ || id==1
+#endif
+ );if(kv_denied)return false;out->api=&kv_api;}
  else {assert(!id);if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&alarm_api;else return false;}
  ++grant_count;return true;
 }
@@ -169,6 +176,10 @@ break;
  case 45:draft();wifi_activate(6);assert(!draft_dirty);unsigned saved_writes=writes;wifi_edit(WP_SSID);strcpy(editor,"New draft");wifi_key(TEST_KEY_DONE);wifi_make_view();assert(draft_dirty && !strcmp(view.values[6],"Draft not saved") && writes==saved_writes);wifi_activate(6);assert(!draft_dirty && writes>saved_writes);break;
  case 46:draft();wifi_connect();render();fail_display=1;render();assert(failed && native_active);t5_app_input_t display_error;assert(!poll(&display_error,25));assert(!native_active && !scan_active && !wg.api && wk.api && !native_sleep_retained);/* This is the Runtime pre-fini barrier point: no fini has run. */fail_display=0;break;
  case 47:draft();wifi_connect();render();limit_polls=poll_count; t5_app_input_t input_error;assert(!poll(&input_error,25));assert(!native_active && !wg.api && wk.api && !native_sleep_retained);break;
+#ifdef TEST_RADIO_POLICY
+ case 48:{draft();uint8_t r[]={0x51,1,0,0xa5};assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);wifi_connect();wifi_scan_start();assert(!connects&&!scan_starts&&strstr(wifi_message,"off"));r[2]=1;r[3]=0xa4;assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);wifi_connect();assert(connects==1);break;}
+ case 49:draft();fail_store=1;wifi_connect();wifi_scan_start();assert(!connects&&!scan_starts);fail_store=0;break;
+#endif
  default:assert(!"Unknown scenario");
  }
  finish();printf("Portable Wi-Fi scenario %u passed\n",scenario);return 0;

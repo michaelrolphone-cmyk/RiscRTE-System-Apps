@@ -155,8 +155,15 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 if (s->volume) { s->last_nonzero_volume = s->volume; s->volume = 0; }
                 else s->volume = s->last_nonzero_volume ? s->last_nonzero_volume : 50;
                 emit_volume(s, PQA_SILENT);
-            } else if (s->pressed_tile == 3) {
-                s->pending |= PQA_WIFI; s->target_q8 = 0;
+            } else if(s->pressed_tile==1 && s->dnd_valid) {
+                s->dnd_enabled=!s->dnd_enabled;
+                s->action_dnd=s->dnd_enabled;s->pending|=PQA_DND;
+            } else if(s->pressed_tile==2 && s->radios_valid) {
+                s->pending|=PQA_AIRPLANE;
+            } else if(s->pressed_tile==4 && s->radios_valid) {
+                s->pending|=PQA_BLUETOOTH;
+            } else if (s->pressed_tile == 3 && (!s->radio_controls || s->radios_valid)) {
+                s->pending |= PQA_WIFI;if(!s->radio_controls)s->target_q8=0;
             } else if (s->pressed_tile == 5) {
                 s->torch = true; s->target_q8 = 0; emit_torch(s);
             }

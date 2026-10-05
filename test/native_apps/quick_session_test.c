@@ -6,8 +6,8 @@
 #include <string.h>
 
 typedef struct {uint8_t bytes[8];uint32_t size;bool present;} record;
-static record records[3];
-static unsigned put_count[3],gets[3],grants,releases,hardware,calls;
+static record records[4];static bool time_format_24;
+static unsigned put_count[4],gets[4],grants,releases,hardware,calls;
 static bool unavailable,invalid_api,release_fail,hardware_fail;
 static int fail_get_key=-1,fail_after_put_key=-1,fail_put_key=-1,committed_io_key=-1,mismatch_key=-1;
 static char write_order[16];static unsigned order_count;
@@ -15,10 +15,11 @@ static int index_for(const char *key){
  if(!strcmp(key,PQA_BRIGHTNESS_KEY))return 0;
  if(!strcmp(key,PQA_VOLUME_KEY))return 1;
  if(!strcmp(key,PQA_RESTORE_VOLUME_KEY))return 2;
+ if(!strcmp(key,PQA_DND_KEY))return 3;
  assert(!strcmp(key,PORTABLE_TIME_FORMAT_KEY));return -1;
 }
 static int32_t get(void *c,const char *key,void *out,uint32_t capacity,uint32_t *size){
- (void)c;int i=index_for(key);*size=0;if(i<0)return RISC_KEY_VALUE_NOT_FOUND;
+ (void)c;int i=index_for(key);*size=0;if(i<0){if(!time_format_24)return RISC_KEY_VALUE_NOT_FOUND;uint8_t bytes[]={0x54,1,1,0xa4};assert(capacity>=4);memcpy(out,bytes,4);*size=4;return RISC_KEY_VALUE_OK;}
  gets[i]++;if(i==fail_get_key || (i==fail_after_put_key && put_count[i]))return RISC_KEY_VALUE_IO;
  if(!records[i].present)return RISC_KEY_VALUE_NOT_FOUND;
  *size=records[i].size;if(capacity<*size)return RISC_KEY_VALUE_BUFFER_SMALL;
@@ -51,7 +52,7 @@ static bool set_brightness(void *c,uint16_t level,uint16_t maximum){
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release};
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.set_brightness=set_brightness};
 static pqa_session fresh(void){
- memset(records,0,sizeof(records));memset(put_count,0,sizeof(put_count));memset(gets,0,sizeof(gets));
+ time_format_24=false;memset(records,0,sizeof(records));memset(put_count,0,sizeof(put_count));memset(gets,0,sizeof(gets));
  grants=releases=calls=order_count=0;hardware=40;
  unavailable=invalid_api=release_fail=hardware_fail=false;
  fail_get_key=fail_after_put_key=fail_put_key=committed_io_key=mismatch_key=-1;
@@ -131,4 +132,39 @@ static void transient_and_lifecycle(void){
  assert(!put_count[0] && !put_count[1] && !put_count[2]);
  s=fresh();release_fail=true;assert(!pqa_session_load(&s,&runtime));assert(releases==1 && grants==1);
 }
-int main(void){defaults();corruption();brightness_matrix();silent_matrix();transient_and_lifecycle();puts("quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed");return 0;}
+static void time_format(void){pqa_session s=fresh();time_format_24=true;assert(pqa_session_load(&s,&runtime)&&s.hour_24);time_format_24=false;assert(pqa_session_load(&s,&runtime)&&!s.hour_24);}
+static void dnd_matrix(void) {
+ pqa_session s=fresh();load(&s);
+ assert(s.ui.dnd_valid && !s.ui.dnd_enabled && !s.dnd_enabled && !put_count[3]);
+ for(unsigned size=0;size<=2;size++)for(unsigned value=0;value<=2;value++) {
+  s=fresh();saved(3,value,size);load(&s);
+  bool valid=size==1 && value<=1;
+  assert(s.ui.dnd_valid==valid && s.dnd_enabled==(valid && value==1));
+  assert(!put_count[0] && !put_count[1] && !put_count[2] && !put_count[3]);
+ }
+ s=fresh();fail_get_key=3;load(&s);
+ assert(!s.ui.dnd_valid && s.ui.volume_valid && s.ui.brightness_valid);
+ for(unsigned mode=0;mode<5;mode++) {
+  s=fresh();load(&s);s.ui.action_dnd=s.ui.dnd_enabled=true;
+  s.ui.radios_valid=true;s.ui.wifi_enabled=true;s.ui.bluetooth_enabled=true;
+  if(mode==1)committed_io_key=3;
+  if(mode==2)fail_put_key=3;
+  if(mode==3)fail_after_put_key=3;
+  if(mode==4)mismatch_key=3;
+  bool confirmed=mode<=1;
+  assert(apply(&s,PQA_DND)==confirmed);
+  assert(s.dnd_enabled==confirmed && s.ui.dnd_enabled==confirmed && s.ui.dnd_valid==confirmed);
+  assert(!!(s.ui.error_flags&PQA_ERROR_DND)==!confirmed);
+  assert(s.volume==50 && s.restore_volume==50 && s.brightness==40 && s.ui.last_nonzero_volume==50);
+  assert(s.ui.radios_valid && s.ui.wifi_enabled && s.ui.bluetooth_enabled && !s.ui.airplane);
+  assert(put_count[3]==1 && !put_count[0] && !put_count[1] && !put_count[2] && !calls);
+  if(confirmed) {
+   assert(!apply(&s,PQA_DND)); /* Same confirmed state needs no service refresh. */
+   pqa_session loaded;pqa_session_init(&loaded);load(&loaded);
+   assert(loaded.dnd_enabled && loaded.ui.dnd_valid);
+   loaded.ui.action_dnd=false;assert(apply(&loaded,PQA_DND));
+   assert(!loaded.dnd_enabled && !records[3].bytes[0]);
+  }
+ }
+}
+int main(void){dnd_matrix();time_format();defaults();corruption();brightness_matrix();silent_matrix();transient_and_lifecycle();puts("quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed");return 0;}

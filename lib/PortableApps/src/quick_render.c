@@ -107,20 +107,21 @@ static void panel_row(pqa_row *r,const pqa_state *s,const char *time,bool bv,uns
     const pqa_icon *const icons[]={&pqa_icon_silent,&pqa_icon_dnd,&pqa_icon_airplane,&pqa_icon_wifi,&pqa_icon_bluetooth,&pqa_icon_torch};
     for(int i=0;i<6;++i) {
         int x=20+(i%3)*71,y=118+(i/3)*48;
-        bool disabled=i==1 || i==2 || i==4 || (i==0 && !s->volume_valid);
-        bool on=(i==0 && s->volume_valid && !s->volume) || (i==5 && s->torch);
+        bool disabled=(i==1 && !s->dnd_valid) || ((i==2||i==4||(i==3&&s->radio_controls)) && !s->radios_valid) || (i==0 && !s->volume_valid);
+        bool on=(i==1 && s->dnd_valid && s->dnd_enabled) || (i==0 && s->volume_valid && !s->volume) || (i==5 && s->torch) || (s->radios_valid && ((i==2&&s->airplane)||(i==3&&s->wifi_enabled)||(i==4&&s->bluetooth_enabled)));
         rect(r,x,y,62,42,12,on?CYAN:LINE,256);
         if(!on)rect(r,x+1,y+1,60,40,11,TILE,256);
         uint16_t color=on?RGB(0,20,24):disabled?RGB(66,82,88):MUTED;
         if(i==3 && (s->error_flags&PQA_ERROR_WIFI))color=RGB(255,135,65);
+        if(i==1 && (s->error_flags&PQA_ERROR_DND))color=RGB(255,135,65);
         icon(r,icons[i],x+31,y+6+(18-icons[i]->height)/2,color,256);
-        center_text(r,GLYPHS(label),labels[i],x+31,y+36,color,256);
+        center_text(r,GLYPHS(label),(i==3&&s->radio_controls)?"WI-FI":labels[i],x+31,y+36,color,256);
         /* Small unavailable dash reinforces dim disabled tiles, no fake state. */
         if(disabled)rect(r,x+49,y+6,5,1,0,RGB(66,82,88),256);
     }
     rect(r,104,216,32,4,2,CYAN,128);
     if(s->error_flags&PQA_ERROR_SAVE)
-        center_text(r,GLYPHS(percent),"!",120,232,RGB(255,135,65),256);
+        center_text(r,GLYPHS(caption),"SAVE UNCONFIRMED",120,231,RGB(255,135,65),256);
 }
 static uint16_t read_pixel(const uint8_t *p) { return (uint16_t)(p[0]|((uint16_t)p[1]<<8)); }
 static void write_pixel(uint8_t *p,uint16_t v) {p[0]=(uint8_t)v;p[1]=(uint8_t)(v>>8);}

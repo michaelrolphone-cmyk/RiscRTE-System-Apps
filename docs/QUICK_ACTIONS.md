@@ -20,15 +20,25 @@ keyboard is added. The real foreground stack, draft and pixels survive closing.
   across a fresh invocation. Failed writes are visibly unconfirmed.
 - Torch: transient warm-white light at full brightness. Tap, Back, alarm modal,
   sleep or exit restores the saved brightness. Torch state is never persisted.
-- WI-FI SETUP: ordinary navigation to the existing Wi-Fi Settings app. It is
-  clearly navigation, not a claimed system-wide radio toggle.
-- DND, Airplane and Bluetooth remain visibly unavailable. Their global policy
-  and exceptions are not defined by the existing app-owned providers. This
-  candidate is not completion of those integrations.
+- Wi-Fi: persistent enable/disable policy shared by Wi-Fi Settings and update
+  clients. Off cancels/drains current radio work and prevents scans/joins until
+  enabled. On permits connection using the existing Wi-Fi Settings flow; it
+  never creates credentials or claims to be connected without an existing link.
+- Bluetooth: actual controller On/Off, queried through a size-gated driver
+  extension. This does not implicitly advertise, pair, or run a host protocol.
+- Airplane: turns Wi-Fi and Bluetooth off and saves their prior preferences;
+  turning it off restores them. Individually enabling a radio clears Airplane.
+- DND uses the selected "Silence everything" behavior. Its independent namespace-1
+  `alert_dnd` record is one byte, 0 or 1; missing means off without an implicit
+  write. Malformed or unreadable records disable the tile. Confirmed writes
+  refresh alarm.service; that service owns suppression of alert occurrences.
+  DND never changes Silent, volume, brightness or radio preferences.
+  The initial non-radio test profile retains the honest Wi-Fi Settings shortcut;
+  the complete current deployment selects PORTABLE_QUICK_RADIOS.
 
 The profile grants namespace 1 and read-only RTC capability selection to each
-client, preserving every prior grant. Runtime's policy must support nine exact
-grants for the two update apps. No raw hardware permissions or new persistent
+client, preserving every prior grant. Runtime's policy must support ten exact
+grants and nine capability types for the two update apps. No raw hardware permissions or new persistent
 credentials are added. Storage calls occur at settled service/display boundaries;
 alarms retain priority and cancelled contacts never leak through the modal.
 
@@ -39,3 +49,13 @@ nested Settings draft retention, top-edge replay, every slider/tile path,
 notification preemption, corrupt/uncertain persistence and cancellation.
 `generate_quick_assets.py` regenerates bounded raster masks from retained licensed
 Font Awesome, Orbitron and Rajdhani sources. Firmware has no SVG/font parser.
+
+Radio policy is one checked four-byte namespace-1 record, so Airplane/restoration
+cannot persist a torn pair of preferences. Radio changes are applied and verified
+before save; an unconfirmed save tries to restore the previous hardware state.
+An unreadable/corrupt saved mode quiesces both radios without overwriting the
+record; controls remain unavailable until the preference can be read safely.
+Unconfirmed native cleanup retains the invocation. Healthy persistent Bluetooth
+survives app navigation; explicit Light/Deep preparation closes it and wake reloads
+the desired mode. Tests cover actual adapter taps, both touch rotations, shared
+Wi-Fi/update guards and the controller cleanup/storage fault matrix.
