@@ -14,5 +14,5 @@ for suffix,flags in [('plain',[]),('san',['-fsanitize=address,undefined','-fno-o
         '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
         str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_alarm_test.c'),
         '-o',str(exe)],check=True)
-    for scenario in range(13):
+    for scenario in range(16):
         subprocess.run([str(exe),str(scenario)],check=True,timeout=10)

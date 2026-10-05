@@ -136,13 +136,24 @@ static bool alarm_foreground(bool *consumed) {
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
-    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING;n++) {
+    bool cue_seen=false;
+    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
-        rt->yield_ms(1);
+        if(portable_alarm_cue(&alarms)){cue_seen=true;*consumed=true;}
+        rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+        /* Drain one short cue with the original frame untouched. Finish once
+         * its outputs and durable ACK are settled; subsequent simultaneous
+         * cues reconcile on the next foreground call rather than exhausting
+         * one loading-loop budget. Consumed input cannot leak into an exit. */
+        if(cue_seen && !portable_alarm_cue(&alarms)) {
+            alarm_cancel_input();
+            if(alarms.status.state!=ALARM_STATE_BLOCKED)return true;
+            break;
+        }
     }
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||

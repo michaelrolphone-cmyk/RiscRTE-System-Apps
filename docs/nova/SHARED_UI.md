@@ -57,3 +57,18 @@ Nova rendering, plain and ASan/UBSan (52 executions). In particular, idle alarm
 checks retain live audio, due alarms suspend it before output ownership, and
 uncertain cleanup retains the invocation without storage calls. Local runs use
 the caller's ptrace workaround; hosted sanitizer policy is no longer overridden.
+
+## Non-modal cue output reservation
+
+Matched service0.4.0 adds the copied CUE state. The client treats it as output
+ownership, so current app audio suspends before the cue opens the speaker, but
+drains one short cue with the existing frame intact rather than showing an
+alarm modal. Stale Back/touch input is consumed through cue cleanup. A64-phase
+bound catches an unresponsive cue; stop-only and resource retention remain
+unchanged. Subsequent simultaneous cues get a new foreground-call budget.
+
+The actual service/client24-case integration verifies live-audio preemption,
+no modal/frame replacement and failed preemption retention. The shared audio
+fixture additionally covers successful cue drain, stuck-cue cleanup and failed
+app-audio closure in both rendering profiles and sanitizer modes. The matching
+Utilities source is pinned byte-exact at `d5a8b206` (service0.4.0, PR22).
