@@ -10,6 +10,7 @@
 #define NOVA_TEXT 0xcfe9eeu
 #define NOVA_WHITE 0xffffffu
 #define NOVA_MIN_TARGET 44
+#define NOVA_FACE_ORBITRON_10 6u
 void portable_nova_begin(void);
 void portable_nova_text(unsigned face,int x,int y,int width,const char *text,uint32_t color);
 void portable_nova_center(unsigned face,int x,int y,int width,const char *text,uint32_t color);
