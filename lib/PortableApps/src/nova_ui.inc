@@ -32,7 +32,8 @@ void portable_nova_text(unsigned face,int x,int y,int max_width,const char *s,ui
     int advance=(int)(g->advance_q4*scale/256u);
     if(pen/16+(advance+15)/16>x+max_width)break;
     int gw=(int)(g->width*scale/256u),gh=(int)(g->height*scale/256u);
-    if(gw<1&&g->width)gw=1;if(gh<1&&g->height)gh=1;
+    if(gw<1&&g->width)gw=1;
+    if(gh<1&&g->height)gh=1;
     for(int j=0;j<gh;j++)for(int i=0;i<gw;i++) {
       unsigned sx=(unsigned)i*256u/scale,sy=(unsigned)j*256u/scale;
       if(sx>=g->width||sy>=g->height)continue;
@@ -56,7 +57,9 @@ void portable_nova_right(unsigned face,int x,int y,int w,const char *s,uint32_t 
 void portable_nova_fill(int x,int y,int w,int h,uint32_t rgb){nu_rect(x,y,w,h,rgb);}
 void portable_nova_round(int x,int y,int w,int h,int radius,uint32_t rgb) {
   if(w<=0||h<=0||w>240||h>240)return;
-  if(radius<0)radius=0;if(radius>w/2)radius=w/2;if(radius>h/2)radius=h/2;
+  if(radius<0)radius=0;
+  if(radius>w/2)radius=w/2;
+  if(radius>h/2)radius=h/2;
   for(int j=0;j<h;j++)for(int i=0;i<w;i++) {
     int dx=i<radius?radius-i:i>=w-radius?i-(w-radius-1):0,dy=j<radius?radius-j:j>=h-radius?j-(h-radius-1):0;
     if(!dx||!dy||dx*dx+dy*dy<=radius*radius)nu_pixel(x+i,y+j,rgb,255);
