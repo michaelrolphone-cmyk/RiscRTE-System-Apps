@@ -1,6 +1,3 @@
-#ifdef PORTABLE_NOVA_UI
-#include "PortableNovaKeyboard.h"
-#endif
 /* Explicit portable build only. Reader's firmware selector remains in the
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
@@ -100,11 +97,7 @@ static void wifi_edit(unsigned field) {
   wifi_zero(editor,sizeof(editor));
   const char *source=field==WP_SSID?credentials.ssid:credentials.password;
   size_t n=wifi_length(source,field==WP_SSID?32:63);memcpy(editor,source,n);
-  #ifdef PORTABLE_NOVA_UI
-  key_page=0;
-#else
-  key_page=64/PORTABLE_WIFI_KEYS_PER_PAGE;
-#endif
+  key_page=PWK_INITIAL_PAGE;
   wifi_page(field); /* Start on lowercase; all printable ASCII is reachable. */
 }
 static bool wifi_draft_valid(void) {
@@ -245,34 +238,11 @@ static void wifi_make_view(void) {
 static void wifi_key(unsigned key) {
   size_t n=wifi_length(editor,sizeof(editor));
   if(key<PORTABLE_WIFI_KEYS_PER_PAGE) {
-    unsigned ch=
-#ifdef PORTABLE_NOVA_UI
-        portable_nova_key_character(key_page,key),
-#else
-        32+key_page*PORTABLE_WIFI_KEYS_PER_PAGE+key,
-#endif
-        limit=page==WP_SSID?32:63;
-    if(ch && ch<=126 && n<limit){editor[n]=(char)ch;editor[n+1]=0;}
-#ifdef PORTABLE_NOVA_UI
-  } else if(key==8){key_page=(key_page+11)%12;choice=0;}
-  else if(key==9){key_page=(key_page+1)%12;choice=0;}
-#else
-  } else if(key==32)key_page=(key_page+1)%3;
-#endif
-  else if(key==
-#ifdef PORTABLE_NOVA_UI
-          10
-#else
-          33
-#endif
-  ){if(n)editor[n-1]=0;}
-  else if(key==
-#ifdef PORTABLE_NOVA_UI
-          11
-#else
-          34
-#endif
-  ) {
+    unsigned ch=portable_watch_key_character(key_page,key),limit=page==WP_SSID?32:63;
+    if(ch && n<limit){editor[n]=(char)ch;editor[n+1]=0;}
+  } else if(key==PWK_PAGE){key_page=(key_page+1)%PWK_PAGES;choice=0;}
+  else if(key==PWK_DELETE){if(n)editor[n-1]=0;}
+  else if(key==PWK_DONE) {
     char *dst=page==WP_SSID?credentials.ssid:credentials.password;
     size_t capacity=page==WP_SSID?sizeof(credentials.ssid):sizeof(credentials.password);
     wifi_zero(dst,capacity);memcpy(dst,editor,n);draft_dirty=true;
