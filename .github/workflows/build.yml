@@ -26,6 +26,7 @@ jobs:
           python scripts/test_portable_wifi.py
           python scripts/test_portable_update.py
           python scripts/test_portable_alarm.py
+          python scripts/test_nova_ui.py
           python scripts/test_portable_audio.py
           python scripts/test_portable_alarm_settings.py
           python scripts/test_springboard_nova.py

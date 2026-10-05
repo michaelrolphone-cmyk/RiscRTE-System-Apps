@@ -73,6 +73,17 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
+#ifdef PORTABLE_NOVA_UI
+    portable_nova_begin();
+    portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
+    portable_nova_rule(20,65,200);
+    portable_nova_center(1,16,88,208,s->state==ALARM_STATE_BLOCKED?
+        (s->error==ALARM_RTC?"RTC error":"Service error"):
+        s->state==ALARM_STATE_DISMISSING?"Stopping / saving":"Time is up",NOVA_TEXT);
+    portable_nova_center(2,16,117,208,s->output_uncertain?"Output stop unconfirmed":"",NOVA_CAP);
+    portable_nova_button(24,144,192,44,s->occurrence.generation?"Dismiss":"Back",false);
+    if(s->state==ALARM_STATE_BLOCKED)portable_nova_button(24,192,192,44,"Retry",false);
+#else
     clear();
     label(8,38,width()-16,alarm_title(s,title));
     label(8,78,width()-16,s->state==ALARM_STATE_BLOCKED?
@@ -81,6 +92,7 @@ static void alarm_draw(void) {
     label(8,108,width()-16,s->output_uncertain?"OUTPUT STOP UNCONFIRMED":"");
     label(8,height()-67,width()-16,s->occurrence.generation?"DISMISS":"BACK");
     if(s->state==ALARM_STATE_BLOCKED)label(8,height()-27,width()-16,"RETRY");
+    #endif
     present(false);
 }
 static bool alarm_save_frame(uint16_t **saved) {
@@ -124,13 +136,24 @@ static bool alarm_foreground(bool *consumed) {
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
-    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING;n++) {
+    bool cue_seen=false;
+    for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
-        rt->yield_ms(1);
+        if(portable_alarm_cue(&alarms)){cue_seen=true;*consumed=true;}
+        rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+        /* Drain one short cue with the original frame untouched. Finish once
+         * its outputs and durable ACK are settled; subsequent simultaneous
+         * cues reconcile on the next foreground call rather than exhausting
+         * one loading-loop budget. Consumed input cannot leak into an exit. */
+        if(cue_seen && !portable_alarm_cue(&alarms)) {
+            alarm_cancel_input();
+            if(alarms.status.state!=ALARM_STATE_BLOCKED)return true;
+            break;
+        }
     }
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
@@ -154,8 +177,13 @@ static bool alarm_foreground(bool *consumed) {
         portable_touch_sample sample;input_take(&sample);
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
+#ifdef PORTABLE_NOVA_UI
+        bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_nova_hit(sample.x,sample.y,24,192,192,44));
+        bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_nova_hit(sample.x,sample.y,24,144,192,44));
+#else
         bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=info.height-42);
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=info.height-88 && sample.y<info.height-42);
+#endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
             (void)alarms.api->refresh(alarms.api->context);alarm_cancel_input();redraw=true;
         } else if(dismiss) {

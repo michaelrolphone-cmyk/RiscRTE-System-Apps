@@ -26,8 +26,9 @@ static bool reset_after_ack(void*c){(void)c;return acks==0;}
 static int32_t service_status(void*c,alarm_status_v1*out){(void)c;*out=alarm_fake;return ALARM_OK;}
 static int32_t service_step(void*c){(void)c;assert(display_settled&&!live_display&&!surface.frame);service_steps++;if(failed)normal_after_failure++;
 #ifdef PORTABLE_AUDIO_SESSION
- if(alarm_fake.state==ALARM_STATE_ALERT||alarm_fake.state==ALARM_STATE_DISMISSING)assert(!application_audio);
+ if(alarm_fake.state==ALARM_STATE_ALERT||alarm_fake.state==ALARM_STATE_DISMISSING||alarm_fake.state==ALARM_STATE_CUE)assert(!application_audio);
 #endif
+ if(alarm_fake.state==ALARM_STATE_CUE){if(alarm_scenario!=14&&++phases>=5){alarm_fake.state=ALARM_STATE_READY;alarm_fake.output_uncertain=0;}return ALARM_OK;}
  if(alarm_fake.state==ALARM_STATE_LOADING){if(++phases==(alarm_scenario==8?10u:3u)){
    alarm_fake.state=ALARM_STATE_ALERT;
    if(alarm_scenario==8)alarm_fake.occurrence=(alarm_token_v1){ALARM_KIND_COUNTDOWN,8,88,10};
@@ -97,8 +98,8 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
  if(test==0){risc_display_output_api_v1 delayed=display_api;delayed.present_status=frame_delayed;display=&delayed;clear();present(false);assert(display_settled&&pending_status_calls==3&&!service_steps);display=&display_api;}
  clear();fill(0,0,240,240,0x1234);present(false);assert(alarm_pixels_valid);
 #ifdef PORTABLE_AUDIO_SESSION
- if(test==11){
-  alarm_fake.state=ALARM_STATE_ALERT;alarm_fake.occurrence=(alarm_token_v1){1,7,88,9};audio_close_bad=true;
+ if(test==11||test==15){
+  alarm_fake.state=test==15?ALARM_STATE_CUE:ALARM_STATE_ALERT;alarm_fake.occurrence=test==15?(alarm_token_v1){0}:(alarm_token_v1){1,7,88,9};audio_close_bad=true;
   unsigned before=service_steps,live=grants;
   if(!setjmp(retained)){bool consumed;alarm_foreground(&consumed);assert(!"uncertain audio must retain");}
   assert(service_steps==before&&!stop_calls&&grants==live&&application_audio);
@@ -114,6 +115,18 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
   puts("healthy stream survives idle alarm checks; Back stops before return passed");return 0;
  }
 #endif
+ if(test==13||test==14){
+  alarm_fake.state=ALARM_STATE_CUE;alarm_fake.output_uncertain=1;
+  navigation_pending=T5_APP_BUTTON_BACK;input_pending=true;
+  bool consumed=false,result=alarm_foreground(&consumed);assert(consumed&&!alarm_modal&&!acks&&!return_launches);
+  for(unsigned i=0;i<240*240;i++)assert(framebuffer[i]==0x1234);
+  if(test==14){assert(!result&&failed&&stop_calls==3);puts("Non-modal cue timeout performs bounded cleanup without changing frame passed");return 0;}
+  assert(result&&!stop_calls&&!input_pending&&!navigation_pending&&alarm_fake.state==ALARM_STATE_READY);
+#ifdef PORTABLE_AUDIO_SESSION
+  assert(!application_audio&&application_audio_stops==1);
+#endif
+  app_module_fini();assert(!grants);puts("Non-modal cue reserves outputs, consumes stale input and keeps frame passed");return 0;
+ }
  if(test==10){
   ticks=60000;last_activity=0;alarm_fake.state=ALARM_STATE_READY;t5_app_input_t input;
   assert(!poll(&input,20)&&native_sleep_calls==1&&portable_app_sleep_retained()&&!stop_calls);
