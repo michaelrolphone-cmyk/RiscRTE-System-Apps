@@ -33,6 +33,16 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+#ifdef PORTABLE_QUICK_ACTIONS
+#include "PortableQuickSession.h"
+#include "PortableQuickRender.h"
+static pqa_session quick;
+static uint16_t *quick_background;
+static bool quick_modal,quick_launch_pending,quick_replay_pending;
+static bool quick_foreground(bool *consumed);
+static bool quick_interrupt(void);
+unsigned portable_quick_brightness(void) {return quick.brightness;}
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
 static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained;
@@ -125,6 +135,27 @@ static void input_navigation_close(void) {
 static void input_service(void) {
  portable_touch_sample next;portable_touch_read(&touch,&next);
  input_sampled_at=millis_now();
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+ if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(!alarm_modal) {
+  bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
+      next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible&&info.width==240&&info.height==240);
+  if(reserved) {
+   input_pending=false;input_sample=(portable_touch_sample){0};
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+   nu_gesture=false;
+#endif
+  } else if(quick.ui.route==PQA_REPLAY) {
+   quick_replay_pending=true;next.began=true;
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+   nu_gesture=true;nu_start_x=quick.ui.start_x;nu_start_y=quick.ui.start_y;
+#endif
+  }
+  if(reserved)next=(portable_touch_sample){0};
+ }
+#endif
  if(input_pending && input_sample.released && next.down) {
   input_sample=(portable_touch_sample){.cancelled=true};touch.neutral=touch.down=false;
  } else if(!(input_pending && input_sample.released && next.valid && !next.down)) {
@@ -478,6 +509,9 @@ static bool idle_sleep(void) {
   return !failed;
 }
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+#include "quick_adapter.inc"
+#endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
@@ -505,6 +539,11 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     return !failed; /* Waking crown/contact never becomes an app action. */
   }
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  bool quick_consumed=false;
+  if(!quick_foreground(&quick_consumed))return false;
+  if(quick_consumed){out->exit_requested=quick_launch_pending;return true;}
+#endif
   if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
   if (settings_view_poll(out)) return !failed;
@@ -519,7 +558,14 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   if(sample.cancelled || !sample.valid)nu_gesture=false;
-  if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
+  if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;
+#ifdef PORTABLE_QUICK_ACTIONS
+   if(quick_replay_pending){nu_start_x=quick.ui.start_x;nu_start_y=quick.ui.start_y;}
+#endif
+  }
+#ifdef PORTABLE_QUICK_ACTIONS
+  quick_replay_pending=false;
+#endif
   if(sample.released && nu_gesture) {
     nu_gesture=false;
     int dx=(int)x-nu_start_x,dy=(int)y-nu_start_y;
@@ -592,7 +638,11 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #elif !defined(PORTABLE_SETTINGS_APP)
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
-  if(ok && returning) {
+  if(ok && returning
+#ifdef PORTABLE_QUICK_ACTIONS
+     && !quick_launch_pending
+#endif
+  ) {
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
@@ -776,6 +826,9 @@ static int initialize(void) {
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
+#endif
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
   back_exits_app=true;
@@ -831,6 +884,9 @@ static int initialize(void) {
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   last_activity=millis_now();
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(!pqa_session_load(&quick,rt))return -1;
+#endif
   return failed?-1:0;
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {
@@ -860,6 +916,10 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
   if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick.ui.torch && !pqa_session_restore(&quick,display))rt->diagnostic("QUICK brightness-restore-failed");
+  free(quick_background);quick_background=NULL;
 #endif
   if (surface.frame)
     display->release(display->context, surface.frame);

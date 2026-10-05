@@ -16,7 +16,7 @@ class PortableWifiContract(unittest.TestCase):
         manifest = json.loads((ROOT/'Apps/wifi_settings.json').read_text())
         inventory = json.loads((ROOT/'system-apps-manifest.json').read_text())
         app = next(x for x in inventory['apps'] if x['id']=='wifi_settings')
-        self.assertEqual(manifest['version'], '1.1.2')
+        self.assertEqual(manifest['version'], '1.1.3')
         self.assertEqual(manifest['version'], app['version'])
         self.assertIsNone(app['additional_sources'][0]['upstream_blob'])
 

@@ -10,6 +10,9 @@ static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
 static uint32_t alarm_seen_snapshot;
 static void alarm_cancel_input(void) {
+#ifdef PORTABLE_QUICK_ACTIONS
+    if(quick_modal)pqa_cancel_input(&quick.ui);
+#endif
     input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
     touch.neutral=touch.down=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -158,6 +161,9 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
+#ifdef PORTABLE_QUICK_ACTIONS
+    if(!quick_interrupt())return alarm_failure();
+#endif
     uint16_t *saved;
     if(!alarm_save_frame(&saved)){failed=true;return alarm_failure();}
     *consumed=true;alarm_cancel_input();

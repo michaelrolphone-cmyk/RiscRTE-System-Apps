@@ -19,6 +19,7 @@ jobs:
           python-version: '3.11'
       - name: Test SDK baseline, manifests, integrity and drift classification
         run: python -m unittest discover -s tests -v
+      - run: python -m pip install Pillow==11.3.0
       - name: Exercise app UI and provider interaction fixtures
         run: |
           python scripts/test_apps.py
@@ -28,6 +29,7 @@ jobs:
           python scripts/test_portable_alarm.py
           python scripts/test_nova_ui.py
           python scripts/test_nova_settings.py
+          python scripts/test_quick_actions.py
           python scripts/test_portable_audio.py
           python scripts/test_portable_alarm_settings.py
           python scripts/test_springboard_nova.py
@@ -60,6 +62,7 @@ jobs:
         with:
           name: system-app-development-${{ github.sha }}
           path: |
+            build/quick-actions/
             dist/apps/
             dist/portable/
             dist/portable-denver/
