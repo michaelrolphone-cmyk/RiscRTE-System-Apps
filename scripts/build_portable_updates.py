@@ -3,6 +3,12 @@
 import argparse,hashlib,json,os,shutil,subprocess,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+def native_update_manifest(name):
+ if name not in ('ota_update','app_store'):raise ValueError('Unknown native update app')
+ manifest=json.loads((ROOT/'Apps/native'/(name+'.json')).read_text())
+ if manifest.get('id')!=name or manifest.get('file_name')!=name+'.elf' or manifest.get('type')!='application':raise ValueError('Native update manifest identity mismatch')
+ return manifest
+
 def build(args):
  cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
  if not cc:
@@ -40,7 +46,7 @@ def build(args):
     function,size,kind=line.split('\t');stack_frames[function]=int(size)
     if kind!='static' or int(size)>2048:raise ValueError('Provider per-function stack budget exceeded: '+line)
   (dest/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-  inputs=[p for d in ['Services/update','lib/PortableApps'] for p in (ROOT/d).rglob('*') if p.is_file()]+[ROOT/'Apps/update_portable.inc',ROOT/'scripts/build_portable_updates.py',ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c']+list(sources)
+  inputs=[p for d in ['Services/update','lib/PortableApps'] for p in (ROOT/d).rglob('*') if p.is_file()]+[ROOT/'Apps/update_portable.inc',ROOT/'scripts/build_portable_updates.py',ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c']+list(sources)+list((ROOT/'Apps/native').glob('*.json'))
   record={'purpose':'development-only-not-deployment','sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],'imports':sorted(imports),'exports':sorted(exports),'build_defines':flags,'bss_bytes':bss,'section_sizes':sizes,'stack_frames':stack_frames,'source_sha256':{str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}}
   (dest/'build-record.json').write_text(json.dumps(record,indent=2)+'\n')
   return elf
@@ -57,7 +63,8 @@ def build(args):
   if args.navigation:flags+=['-DPORTABLE_INPUT_NAVIGATION']
   if args.full_frames:flags+=['-DPORTABLE_FORCE_FULL_FRAMES']
   flags+=['-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation)]
-  manifest={'type':'application','id':name,'version':'1.1.1' if args.nova_ui else '1.1.0','architecture':'xtensa-esp32s3','file_name':name+'.elf','entry':'app_main','requires':[{'capability':c,'api':v} for c,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('storage.key-value',1),('net.wifi',1),('software.update.'+('firmware' if firmware else 'apps'),1)]]}
+  manifest={'type':'application','id':name,'version':'1.1.0','architecture':'xtensa-esp32s3','file_name':name+'.elf','entry':'app_main','requires':[{'capability':c,'api':v} for c,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('storage.key-value',1),('net.wifi',1),('software.update.'+('firmware' if firmware else 'apps'),1)]]}
+  if args.nova_ui:manifest=native_update_manifest(name)
   if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
   if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
   compile_artifact(name,cc,[ROOT/'Apps'/(name+'.c'),ROOT/'lib/PortableApps/src/adapter.c',catalog],flags,{'app_main','app_module_init','app_module_fini'},manifest)

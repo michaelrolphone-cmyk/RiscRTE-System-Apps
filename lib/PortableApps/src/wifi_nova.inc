@@ -1,14 +1,12 @@
 /* Wi-Fi keeps its controller and credential lifecycle. Only app-local view and
- * hit geometry change; every visible action uses a >=44px target. */
+ * hit geometry change; text entry retains the standard 32-key Watch cells. */
 #include "PortableWifiView.h"
 #include <stdio.h>
-#include "PortableNovaKeyboard.h"
+#include "PortableWatchKeyboard.h"
 int portable_wifi_hit(const portable_wifi_view *v,int x,int y) {
   x-=(width()-240)/2;y-=(height()-240)/2;
   if(v->keyboard) {
-    for(unsigned i=0;i<8;i++)if(portable_nova_hit(x,y,16+(int)(i%4)*53,84+(int)(i/4)*48,49,44))
-      return portable_nova_key_character(v->key_page,i)!=0?(int)i:-1;
-    for(unsigned i=0;i<4;i++)if(portable_nova_hit(x,y,16+(int)i*53,188,49,44))return (int)(8+i);
+    return portable_watch_key_hit(x,y);
   } else {
     for(unsigned j=0;j<2;j++)if(portable_nova_hit(x,y,16,62+(int)j*58,208,54)) {
       unsigned i=v->selected/2*2+j;return i<v->count?(int)i:-1;
@@ -20,15 +18,16 @@ void portable_wifi_render(const portable_wifi_view *v) {
   if(failed || width()<240 || height()<240)return;
   portable_nova_begin();portable_nova_header(v->title);
   if(v->keyboard) {
-    portable_nova_text(1,18,52,204,v->entry,NOVA_CYAN);
-    char status[40];snprintf(status,sizeof(status),"Characters %u / 12",v->key_page+1);
-    portable_nova_center(3,18,69,204,status,NOVA_CAP);
-    for(unsigned i=0;i<8;i++) {
-      unsigned ch=portable_nova_key_character(v->key_page,i);if(!ch)continue;
-      char key[]={(char)ch,0};portable_nova_button(16+(int)(i%4)*53,84+(int)(i/4)*48,49,44,ch==32?"Space":key,v->selected==i);
+    portable_nova_text(2,18,48,204,v->entry,NOVA_CYAN);
+    for(unsigned i=0;i<PWK_COUNT;i++) {
+      portable_watch_key_rect r;if(!portable_watch_key_bounds(i,&r))continue;
+      unsigned ch=portable_watch_key_character(v->key_page,i);
+      char text[]={(char)(ch?ch:' '),0};
+      const char *label=i==PWK_PAGE?"ABC/#":i==PWK_DELETE?"DELETE":i==PWK_DONE?"DONE":ch==32?"_":text;
+      portable_nova_fill(r.x,r.y,r.w,r.h,v->selected==i?NOVA_DIM:NOVA_LINE);
+      portable_nova_fill(r.x,r.y,r.w,1,v->selected==i?NOVA_CYAN:NOVA_DIM);
+      portable_nova_text(2,r.x+5,r.y+7,r.w-10,label,NOVA_CYAN);
     }
-    const char *labels[]={"Prev","Next","Del","Done"};
-    for(unsigned i=0;i<4;i++)portable_nova_button(16+(int)i*53,188,49,44,labels[i],v->selected==8+i);
   } else {
     portable_nova_text(3,18,50,204,v->detail,NOVA_CYAN);
     unsigned first=v->selected/2*2;

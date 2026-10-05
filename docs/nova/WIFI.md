@@ -19,3 +19,7 @@ masked entry, nested Back, held input, Save/Forget, scan/connect/cancel, radio
 cleanup failure, alarm interruptions and retained sleep. Pinned GCC8.4 Nova
 Wi-Fi ELF passes structural/import/export checks. No real credentials, RF,
 network changes, merge, release, or device writes.
+
+## Stable Watch 1.0.1 keyboard preservation
+
+Wi-Fi 1.1.2 retains the exact Points/Spectrum standard 32-key, three-page Watch keyboard while keeping the enlarged Nova non-keyboard pages. Both UI profiles use the same bounded printable-ASCII mapping, ABC/#, DELETE, DONE ordering and hit cells. Credential masking, 32/63-byte limits, transactional Back, explicit Save and uncertain cleanup are unchanged. The real app/adapter regression covers all 95 characters, three-page cycling and every key hit in both orientations with sanitizers. Update apps have no text-entry keyboard. The final Points app uses its identical standard helper; its obsolete eight-key header is unused.

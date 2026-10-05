@@ -12,13 +12,8 @@
 #include <setjmp.h>
 #include "../../lib/PortableApps/src/adapter.c"
 #include "../../Apps/wifi_settings.c"
-#ifdef PORTABLE_NOVA_UI
-#define TEST_KEY_DELETE 10
-#define TEST_KEY_DONE 11
-#else
-#define TEST_KEY_DELETE 33
-#define TEST_KEY_DONE 34
-#endif
+#define TEST_KEY_DELETE PWK_DELETE
+#define TEST_KEY_DONE PWK_DONE
 
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
@@ -144,12 +139,10 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  );event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);app_main();assert(launches==1 && !opened && !connects && !writes);break;
  case 23:/* Navigation Back cancels draft before root Back queues launch. */assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,T5_APP_BUTTON_BACK,-1,0);event(poll_count+9,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1 && !opened && !writes);break;
  case 24:wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;memset(fake_scan.entries[0].ssid,'x',33);tick(250);assert(!scanning && !native_active);break;
- case 25:wifi_edit(WP_PASSWORD);
-#ifdef PORTABLE_NOVA_UI
- for(key_page=0;key_page<12;++key_page)for(unsigned k=0;k<8;k++){editor[0]=0;wifi_key(k);assert((unsigned char)editor[0]==portable_nova_key_character(key_page,k));}
-#else
- for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);}
-#endif
+ case 25:wifi_edit(WP_PASSWORD);assert(key_page==PWK_INITIAL_PAGE && PORTABLE_WIFI_KEY_COUNT==35 && PORTABLE_WIFI_KEYS_PER_PAGE==32);
+ for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);wifi_make_view();portable_watch_key_rect rect;assert(portable_watch_key_bounds(k,&rect));assert(portable_wifi_hit(&view,rect.x+1,rect.y+1)==(int)k);}
+ key_page=2;wifi_key(PWK_PAGE);assert(key_page==0);wifi_key(PWK_PAGE);assert(key_page==1);wifi_key(PWK_PAGE);assert(key_page==2);
+
  break;
  case 26:fail_scan=1;wifi_scan_start();assert(!scanning && !native_active);fail_scan=0;wifi_scan_start();assert(scanning);break;
  case 27:draft();wifi_activate(2);assert(open_network && !credentials.password[0]);wifi_connect();assert(connects==1);break;
@@ -157,11 +150,8 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 29:fail_display=1;render();assert(failed);fail_display=0;break;
  case 30:draft();wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;strcpy(fake_scan.entries[0].ssid,"Unsupported");fake_scan.entries[0].auth=255;tick(250);wifi_activate(0);assert(page==WP_SCAN && !connects);break;
  case 31:/* Footer hit testing cannot activate rows; all keyboard keys bounded. */wifi_make_view();assert(portable_wifi_hit(&view,30,192)<0 && portable_wifi_hit(&view,30,220)<0);wifi_edit(WP_SSID);wifi_make_view();
-#ifdef PORTABLE_NOVA_UI
- assert(portable_wifi_hit(&view,223,175)==7 && portable_wifi_hit(&view,223,231)==11 && portable_wifi_hit(&view,224,231)<0);
-#else
  assert(portable_wifi_hit(&view,227,171)==31 && portable_wifi_hit(&view,227,206)==34 && portable_wifi_hit(&view,228,206)<0);
-#endif
+
 break;
  case 32:draft();wifi_connect();fail_disconnect=1;render();ticks+=60001;t5_app_input_t refused;assert(poll(&refused,25) && !failed && !sleeps && cleanup_pending && native_active && sub_count);fail_disconnect=0;wifi_activate(5);assert(!cleanup_pending && !native_active);break;
  case 33:draft();wifi_activate(9);assert(page==WP_HELP);render();assert(!wifi_back() && page==WP_ROOT && !launches);break;

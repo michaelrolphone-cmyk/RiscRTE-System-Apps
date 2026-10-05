@@ -3,13 +3,9 @@
 #include <stdint.h>
 /* App-local shared renderer, never a Runtime export or firmware UI API. */
 #define PORTABLE_WIFI_VIEW_ROWS 17u
-#ifdef PORTABLE_NOVA_UI
-#define PORTABLE_WIFI_KEY_COUNT 12u
-#define PORTABLE_WIFI_KEYS_PER_PAGE 8u
-#else
-#define PORTABLE_WIFI_KEY_COUNT 35u
-#define PORTABLE_WIFI_KEYS_PER_PAGE 32u
-#endif
+#include "PortableWatchKeyboard.h"
+#define PORTABLE_WIFI_KEY_COUNT PWK_COUNT
+#define PORTABLE_WIFI_KEYS_PER_PAGE PWK_CHARACTERS
 typedef struct {
   const char *title, *message, *detail;
   const char *rows[PORTABLE_WIFI_VIEW_ROWS];

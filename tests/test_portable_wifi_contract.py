@@ -16,9 +16,23 @@ class PortableWifiContract(unittest.TestCase):
         manifest = json.loads((ROOT/'Apps/wifi_settings.json').read_text())
         inventory = json.loads((ROOT/'system-apps-manifest.json').read_text())
         app = next(x for x in inventory['apps'] if x['id']=='wifi_settings')
-        self.assertEqual(manifest['version'], '1.1.1')
+        self.assertEqual(manifest['version'], '1.1.2')
         self.assertEqual(manifest['version'], app['version'])
         self.assertIsNone(app['additional_sources'][0]['upstream_blob'])
+
+    def test_standard_watch_keyboard_shared_by_both_views(self):
+        header = (ROOT/'lib/PortableApps/include/PortableWifiView.h').read_text()
+        controller = (ROOT/'Apps/wifi_settings_portable.inc').read_text()
+        view = (ROOT/'lib/PortableApps/src/wifi_nova.inc').read_text()
+        self.assertIn('PWK_COUNT', header)
+        self.assertIn('PWK_CHARACTERS', header)
+        self.assertIn('portable_watch_key_character(key_page,key)', controller)
+        self.assertIn('PWK_INITIAL_PAGE', controller)
+        self.assertIn('portable_watch_key_hit(x,y)', view)
+        self.assertIn('portable_watch_key_bounds(i,&r)', view)
+        for text in (header, controller, view):
+            self.assertNotIn('PortableNovaKeyboard', text)
+            self.assertNotIn('portable_nova_key_character', text)
 
     def test_no_firmware_network_ui_or_eager_return(self):
         source = (ROOT/'Apps/wifi_settings_portable.inc').read_text()
