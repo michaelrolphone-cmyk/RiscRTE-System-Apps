@@ -50,6 +50,10 @@ static unsigned first_row, last_rows;
 static bool back_exits_app = true, settings_editing;
 static bool settings_view_poll(t5_app_input_t *out);
 #endif
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+static bool back_exits_app = true;
+static void set_back_exits(bool enabled) { back_exits_app=enabled; }
+#endif
 static uint32_t millis_now(void) {
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
@@ -65,7 +69,7 @@ static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
 static bool nu_gesture;
 static int nu_start_x,nu_start_y;
 #endif
@@ -501,7 +505,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   if(sample.cancelled || !sample.valid)nu_gesture=false;
   if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
   if(sample.released && nu_gesture) {
@@ -519,7 +523,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     if (x >= info.width || y >= info.height)
       return !failed;
     if (
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
+        false /* App tabs and drag gestures own the whole touch surface. */
+#elif defined(PORTABLE_NOVA_UI)
         y>=4 && y<48 && x>=8 && x<52
 #else
         y<40 && x<56
@@ -569,7 +575,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
-#ifndef PORTABLE_SETTINGS_APP
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  returning|=back_exits_app && !!(out->buttons&T5_APP_BUTTON_BACK);
+#elif !defined(PORTABLE_SETTINGS_APP)
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
   if(ok && returning) {
@@ -695,8 +703,10 @@ static const t5_app_api_v1 app = {.abi_version = 1,
                                   .present = present,
                                   .poll = poll,
                                   .millis = millis_now,
-#ifdef PORTABLE_SETTINGS_APP
+#if defined(PORTABLE_SETTINGS_APP) || defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
                                   .set_back_exits_app = set_back_exits,
+#endif
+#ifdef PORTABLE_SETTINGS_APP
                                   .settings_category_count = settings_categories,
                                   .settings_category_get = settings_category,
                                   .settings_count = settings_count,
@@ -751,7 +761,10 @@ static int initialize(void) {
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
   nova_mode = false;
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
+  back_exits_app=true;
+#endif
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
 #endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
