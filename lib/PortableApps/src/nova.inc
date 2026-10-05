@@ -3,6 +3,7 @@
 #include "../../../Apps/SpringboardPresentation.h"
 #include "../fonts/icons.inc"
 #include "../fonts/text.inc"
+#include "../settings_fonts/text.inc"
 static bool nova_mode, nova_mask_pending;
 static springboard_contact nova_contact;
 #ifdef PORTABLE_RTC_UTC8_DENVER
@@ -26,6 +27,45 @@ static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   r=(r*(255-a)+((rgb>>16)&255)*a)/255;
   g=(g*(255-a)+((rgb>>8)&255)*a)/255;b=(b*(255-a)+(rgb&255)*a)/255;
   color=np_rgb((r<<16)|(g<<8)|b);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);
+}
+static void np_rect(int x,int y,int w,int h,uint32_t rgb,uint8_t opacity) {
+  if(w<=0||h<=0||!opacity)return;
+  for(int j=0;j<h;j++)for(int i=0;i<w;i++)np_pixel(x+i,y+j,rgb,opacity);
+}
+static void np_round_rect(int x,int y,int w,int h,int radius,uint32_t rgb,uint8_t opacity) {
+  if(w<=0||h<=0||!opacity)return;
+  if(radius<0)radius=0;if(radius>w/2)radius=w/2;if(radius>h/2)radius=h/2;
+  for(int j=0;j<h;j++)for(int i=0;i<w;i++) {
+    int dx=i<radius?radius-i:i>=w-radius?i-(w-radius-1):0;
+    int dy=j<radius?radius-j:j>=h-radius?j-(h-radius-1):0;
+    if(!dx||!dy||dx*dx+dy*dy<=radius*radius)np_pixel(x+i,y+j,rgb,opacity);
+  }
+}
+static const rps_glyph *np_text_glyph(unsigned face,unsigned ch) {
+  if(face>3)return NULL;if(ch<' '||ch>'~')ch='?';return &rps_text[face*95u+ch-32u];
+}
+static int np_text(int x,int y,int w,const char *s,uint8_t face,uint8_t align,int8_t tracking_q4,uint32_t rgb,uint8_t opacity) {
+  np_mask();if(!s||w<=0||face>3||align>SPRINGBOARD_ALIGN_RIGHT||!opacity)return 0;
+  int length=0,total=0;
+  while(length<95&&s[length]) {
+    unsigned ch=(unsigned char)s[length];const rps_glyph *g=np_text_glyph(face,ch);if(!g)break;
+    int next=total+g->advance_q4+(length?tracking_q4:0);
+    if(next>w*16)break;total=next;length++;
+  }
+  if(!length)return 0;
+  int pen=x*16;
+  if(align==SPRINGBOARD_ALIGN_CENTER)pen+=(w*16-total)/2;
+  else if(align==SPRINGBOARD_ALIGN_RIGHT)pen+=w*16-total;
+  int start=pen;
+  for(int k=0;k<length;k++) {
+    unsigned ch=(unsigned char)s[k];const rps_glyph *g=np_text_glyph(face,ch);
+    for(unsigned gy=0;gy<g->height;gy++)for(unsigned gx=0;gx<g->width;gx++) {
+      unsigned n=gy*g->width+gx,coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
+      if(coverage)np_pixel(pen/16+g->left+(int)gx,y+g->top+(int)gy,rgb,coverage*opacity/3);
+    }
+    pen+=g->advance_q4+tracking_q4;
+  }
+  return (pen-start+15)/16;
 }
 static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   if(!name || size<1 || size>96)return false;
@@ -143,7 +183,10 @@ static void np_close(void) {
 #endif
 }
 static void np_poll(t5_app_input_t *out);
-static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
+static const springboard_presentation np_view={
+  .struct_size=sizeof(np_view),.begin=np_begin,.circle=np_circle,.icon=np_icon,.caption=np_caption,
+  .contact=np_contact,.clock=np_clock,.rect=np_rect,.round_rect=np_round_rect,.text=np_text
+};
 const springboard_presentation *springboard_presentation_get(void) {
   if(width()>=400 && height()>=400)return NULL;
   if(info.nominal_refresh_millihz<20000 ||
