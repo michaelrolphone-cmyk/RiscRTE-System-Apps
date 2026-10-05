@@ -52,11 +52,12 @@ def build(args):
  for firmware,name in [(1,'ota_update'),(0,'app_store')]:
   if args.app and name!=args.app:continue
   flags=['-std=c11','-DPORTABLE_UPDATE_APP','-DPORTABLE_UPDATE_FIRMWARE='+str(firmware),'-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance),'-DPORTABLE_UPDATE_RTC_UTC_OFFSET_SECONDS='+str(args.rtc_utc_offset_seconds)]
+  if args.nova_ui:flags+=['-DPORTABLE_NOVA_UI']
   if args.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
   if args.navigation:flags+=['-DPORTABLE_INPUT_NAVIGATION']
   if args.full_frames:flags+=['-DPORTABLE_FORCE_FULL_FRAMES']
   flags+=['-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation)]
-  manifest={'type':'application','id':name,'version':'1.1.0','architecture':'xtensa-esp32s3','file_name':name+'.elf','entry':'app_main','requires':[{'capability':c,'api':v} for c,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('storage.key-value',1),('net.wifi',1),('software.update.'+('firmware' if firmware else 'apps'),1)]]}
+  manifest={'type':'application','id':name,'version':'1.1.1' if args.nova_ui else '1.1.0','architecture':'xtensa-esp32s3','file_name':name+'.elf','entry':'app_main','requires':[{'capability':c,'api':v} for c,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('storage.key-value',1),('net.wifi',1),('software.update.'+('firmware' if firmware else 'apps'),1)]]}
   if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
   if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
   compile_artifact(name,cc,[ROOT/'Apps'/(name+'.c'),ROOT/'lib/PortableApps/src/adapter.c',catalog],flags,{'app_main','app_module_init','app_module_fini'},manifest)
@@ -64,4 +65,4 @@ def build(args):
   for source in [ROOT/'LICENSE',*list((ROOT/'lib/PortableApps/settings_fonts').glob('LICENSE-*'))]:shutil.copyfile(source,licenses/source.name)
  print('Portable update target ELFs, bounded imports/exports and structural validator passed')
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args())
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args())

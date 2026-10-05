@@ -118,7 +118,7 @@ static void update_tick(void) {
  if(!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return;}
  if(memcmp(&before,&ust,sizeof(ust)))dirty=true;
  if(ust.state==SOFTWARE_UPDATE_RETAINED){cleanup_pending=true;message="Cleanup required; retry Back";dirty=true;return;}
- if(ust.state==SOFTWARE_UPDATE_ERROR){if(update_radio_close()){message="Update failed; active bank unchanged";dirty=true;}return;}
+ if(ust.state==SOFTWARE_UPDATE_ERROR){if(update_radio_close()){message="Update failed; current install kept";dirty=true;}return;}
  if(ust.state==SOFTWARE_UPDATE_LIST&&uw){if(update_radio_close()){message=ust.count?"Select a release; Check refreshes":"No releases in catalog";dirty=true;}return;}
  if(ust.state==SOFTWARE_UPDATE_READY){
   /* Verified bytes alone are not install success. The radio and HTTP session
@@ -138,7 +138,7 @@ static void render_update(void) {
  else if(connecting||ust.state==SOFTWARE_UPDATE_CATALOG||(ust.state>=SOFTWARE_UPDATE_PREPARING&&ust.state<=SOFTWARE_UPDATE_READY)){
   uv.count=1;uv.rows[0]="Cancel operation";
   snprintf(progress,sizeof(progress),"%lu / %lu bytes",(unsigned long)ust.done,(unsigned long)ust.total);uv.values[0]=progress;
-  uv.detail=connecting?"Connecting...":ust.state==SOFTWARE_UPDATE_CATALOG?"Checking catalog":ust.state==SOFTWARE_UPDATE_PREPARING?"Preparing inactive bank":ust.state==SOFTWARE_UPDATE_DOWNLOAD?"Downloading update":"Verifying inactive bank";
+  uv.detail=connecting?"Connecting...":ust.state==SOFTWARE_UPDATE_CATALOG?"Checking catalog":ust.state==SOFTWARE_UPDATE_PREPARING?"Preparing update":ust.state==SOFTWARE_UPDATE_DOWNLOAD?"Downloading update":"Verifying update";
  }else if(confirming){uv.count=2;uv.selected=confirm_choice;uv.rows[0]="Cancel";uv.values[0]="Keep current installation";uv.rows[1]="Install and restart";uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
  else {
   uint32_t total=ust.count+1;if(selected>=total)selected=0;uint32_t first=selected/16*16;
@@ -190,7 +190,11 @@ void app_main(void) {
   }
   bool activate=false;
   if(input.tapped){int x=input.touch_x-(ua->screen_width()-240)/2,y=input.touch_y-(ua->screen_height()-240)/2;
+#ifdef PORTABLE_NOVA_UI
+   if(y>=188&&y<232){if(x>=16&&x<80)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=160&&x<224)input.buttons=T5_APP_BUTTON_DOWN;}
+#else
    if(y>=212&&y<238){if(x>=12&&x<76)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=164&&x<228)input.buttons=T5_APP_BUTTON_DOWN;}
+#endif
    else {int hit=portable_wifi_hit(&uv,input.touch_x,input.touch_y);if(hit>=0){if(confirming)confirm_choice=(uint32_t)hit;else if(!connecting&&ust.state==SOFTWARE_UPDATE_LIST)selected=selected/16*16+(uint32_t)hit;dirty=true;}continue;}
   }
   bool busy=connecting||(ust.state>=SOFTWARE_UPDATE_CATALOG&&ust.state!=SOFTWARE_UPDATE_LIST&&ust.state<=SOFTWARE_UPDATE_READY);
