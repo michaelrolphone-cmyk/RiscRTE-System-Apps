@@ -25,7 +25,7 @@ jobs:
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
       - name: Build Firmware Update target and check unchanged legacy bytes
         run: |
-          python scripts/build_portable_updates.py --app ota_update --rtc-utc-offset-seconds 28800 --wifi-instance 15 --alarm-client --navigation --full-frames
+          python scripts/build_portable_updates.py --app ota_update --nova-ui --rtc-utc-offset-seconds 28800 --wifi-instance 15 --alarm-client --navigation --full-frames
           python scripts/build_all_apps.py
           python scripts/check_release_parity.py
       - uses: actions/upload-artifact@v4
