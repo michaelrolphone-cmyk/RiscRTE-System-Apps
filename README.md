@@ -108,6 +108,13 @@ This repository has an independent pinned-SDK compiler pipeline, 18 host fixture
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
+## Portable update development
+
+The shared [portable Firmware Update and App Store prerequisites](docs/PORTABLE_UPDATES.md)
+provide separate update services, bounded Watch catalog parsing and foreground
+network/bank lifecycle. They are development artifacts and do not change a live
+release index or make legacy single-bank installations OTA-capable.
+
 ## Independent development and maintenance
 
 See [Build and validation](docs/BUILD.md) for the standalone commands, pinned

@@ -43,3 +43,17 @@ adds real touch-through-adapter controller tests for updated utility sources.
 Existing legacy portable, Settings, Wi-Fi, alarm and transition regressions
 remain separate required gates. LeakSanitizer alone is disabled locally under
 ptrace; hosted defaults are unchanged. No release, merge or device operation.
+
+## Current-source reconciliation (2026-10-05)
+
+The shared profile is reconciled with System Apps main `7723df2`, retaining
+the newer portable update services, audio session lifecycle, alarm pump fix,
+and all eleven registered distinct glyphs. The prior nine-app icon correction
+is already on main; this change adds the missing shared utility presentation.
+The optional profile does not enable it for other apps or change their versions.
+
+The audio/retained-alarm fixture runs all thirteen cases under both legacy and
+Nova rendering, plain and ASan/UBSan (52 executions). In particular, idle alarm
+checks retain live audio, due alarms suspend it before output ownership, and
+uncertain cleanup retains the invocation without storage calls. Local runs use
+the caller's ptrace workaround; hosted sanitizer policy is no longer overridden.
