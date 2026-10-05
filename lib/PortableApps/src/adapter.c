@@ -7,6 +7,12 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
+#ifdef PORTABLE_RADIO_SESSION
+#include "PortableRadioSession.h"
+#ifndef PORTABLE_ALARM_CLIENT
+#error "Radio lifecycle integration requires the foreground alarm client"
+#endif
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
 #include "PortableAudioSession.h"
 #ifndef PORTABLE_ALARM_CLIENT
@@ -479,6 +485,9 @@ static bool idle_sleep(void) {
    * Keep touch/navigation live so the user can explicitly retry cleanup. */
   if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
 #endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_suspend()){failed=true;return false;}
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
   /* Close app-owned audio before sleep preparation can call storage or alarm
    * output. Wake never restarts capture/playback without a fresh user action. */
@@ -653,6 +662,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
      && !quick_launch_pending
 #endif
   ) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend())return alarm_failure();
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
@@ -911,6 +923,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_suspend()) {
+    rt->diagnostic("RADIO cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);
   }
 #endif

@@ -6,6 +6,9 @@
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
 static bool quick_storage_safe(void) {
+#ifdef PORTABLE_RADIO_SESSION
+ if(!portable_radio_services_safe())return false;
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
  if(!portable_audio_services_safe())return false;
 #endif
@@ -64,6 +67,10 @@ static bool quick_foreground(bool *consumed) {
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
+#ifdef PORTABLE_RADIO_SESSION
+ /* Drain before radio controls load/apply; a dismiss never resumes RF. */
+ if(!portable_radio_suspend())return false;
+#endif
  if(!pqa_session_load(&quick,rt))return false;
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;

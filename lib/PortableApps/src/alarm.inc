@@ -22,6 +22,12 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend()) {
+        rt->diagnostic("RADIO foreground-failed cleanup-unconfirmed; invocation retained");
+        for(;;)rt->yield_ms(50);
+    }
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
     /* Runtime checks app exit safety before fini. Never defer live/uncertain
      * audio cleanup until fini or let alarm stop close another owner's stream. */
@@ -48,16 +54,34 @@ static bool alarm_failure(void) {
     }
     return false;
 }
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION)
+static bool alarm_sessions_safe(void) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_services_safe())return false;
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
+    if(!portable_audio_services_safe())return false;
+#endif
+    return true;
+}
+static bool alarm_sessions_suspend(void) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend())return false;
+#endif
+#ifdef PORTABLE_AUDIO_SESSION
+    if(!portable_audio_suspend())return false;
+#endif
+    return true;
+}
 static bool alarm_audio_pump(void) {
-    /* Status is memory-only. Existing due work preempts before a service step;
-     * newly exposed due work preempts before the next phase can own output. */
-    if(!portable_audio_services_safe() || !portable_alarm_status(&alarms))return false;
+    /* Check copied status before storage-backed reconciliation, then again
+     * before a newly exposed occurrence can own output in the next phase. */
+    if(!alarm_sessions_safe() || !portable_alarm_status(&alarms))return false;
     if((portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) &&
-       !portable_audio_suspend())return false;
+       !alarm_sessions_suspend())return false;
     if(!portable_alarm_pump(&alarms))return false;
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
-        portable_audio_suspend();
+        alarm_sessions_suspend();
 }
 #else
 #define alarm_audio_pump() portable_alarm_pump(&alarms)
