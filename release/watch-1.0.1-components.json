@@ -1,0 +1,55 @@
+{
+  "release": "Watch1.0.1",
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "source_sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+  "required_workflows": [
+    ".github/workflows/build.yml",
+    ".github/workflows/portable-app-store.yml",
+    ".github/workflows/portable-firmware-update.yml",
+    ".github/workflows/prospective-u1-witness.yml"
+  ],
+  "components": [
+    {
+      "kind": "app",
+      "id": "settings",
+      "version": "1.2.4",
+      "manifest": "Apps/settings.json"
+    },
+    {
+      "kind": "app",
+      "id": "wifi_settings",
+      "version": "1.1.2",
+      "manifest": "Apps/wifi_settings.json"
+    },
+    {
+      "kind": "app",
+      "id": "springboard",
+      "version": "1.4.6",
+      "manifest": "Apps/springboard.json"
+    },
+    {
+      "kind": "app",
+      "id": "ota_update",
+      "version": "1.1.1",
+      "manifest": "Apps/native/ota_update.json"
+    },
+    {
+      "kind": "app",
+      "id": "app_store",
+      "version": "1.1.1",
+      "manifest": "Apps/native/app_store.json"
+    },
+    {
+      "kind": "service",
+      "id": "software-update-firmware",
+      "version": "0.1.0",
+      "manifest": "Services/update/firmware/manifest.json"
+    },
+    {
+      "kind": "service",
+      "id": "software-update-apps",
+      "version": "0.1.0",
+      "manifest": "Services/update/apps/manifest.json"
+    }
+  ]
+}
