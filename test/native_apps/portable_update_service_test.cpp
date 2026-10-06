@@ -42,7 +42,7 @@ int32_t b_get(void*,uint32_t i,void *out,uint32_t cap,uint32_t *n){assert(!i);st
 uint64_t time_ms(void*){return now_ms;}
 void sleep_ms(void*,uint32_t n){now_ms+=n;}
 const risc_http_client_v1 http_api={1,sizeof(http_api),nullptr,h_open,h_read,h_info,h_close};
-const risc_bank_store_v1 bank_api={1,sizeof(bank_api),nullptr,b_status,b_firmware,b_app,b_step,b_write,b_finish,b_activate,b_abort,b_restart,b_get};
+const risc_bank_store_v1 bank_api={1,sizeof(bank_api),nullptr,b_status,b_firmware,b_app,b_step,b_write,b_finish,b_activate,b_abort,b_restart,b_get,nullptr,nullptr};
 const risc_platform_clock_api_v1 time_api={1,sizeof(time_api),nullptr,time_ms,sleep_ms};
 void run_until(uint32_t target){for(unsigned i=0;i<10000&&view.state!=target&&view.state!=SOFTWARE_UPDATE_ERROR&&view.state!=SOFTWARE_UPDATE_RETAINED;++i)step(nullptr);}
 }
@@ -60,7 +60,10 @@ int main(int argc,char**argv){assert(argc==2);int scenario=atoi(argv[1]);
  if(scenario==11){auto at=provided_catalog.find("github.com");provided_catalog.replace(at,10,"evil.test/");}
  if(scenario==12)oversize=true;
  if(scenario==18||scenario==19){firmware_size=scenario==18?2621440u:3145729u;provided_catalog=index_json();}
- risc_provider_dependency_v1 deps[]={{RISC_HTTP_CLIENT_CAPABILITY,1,&http_api},{RISC_BANK_STORE_CAPABILITY,1,&bank_api},{"platform.clock",1,&time_api}};
+ risc_bank_store_v1 selected_bank=bank_api;
+ if(scenario==28)selected_bank.struct_size=RISC_BANK_STORE_V1_PREFIX_SIZE;
+ void *table=malloc(selected_bank.struct_size);assert(table);memcpy(table,&selected_bank,selected_bank.struct_size);
+ risc_provider_dependency_v1 deps[]={{RISC_HTTP_CLIENT_CAPABILITY,1,&http_api},{RISC_BANK_STORE_CAPABILITY,1,table},{"platform.clock",1,&time_api}};
  const risc_driver_v2 *d=t5_driver_get(2);assert(d&&d->start(deps,3));assert(!strcmp(d->capability_id,UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY));
  assert(!refresh(nullptr,0));assert(refresh(nullptr,1800000000ULL));assert(!begin(nullptr,0,1800000000ULL));run_until(SOFTWARE_UPDATE_LIST);
  bool catalog_failure=scenario==4||scenario==5||scenario==10||scenario==12||(scenario==11&&UPDATE_FIRMWARE)||scenario==21||(scenario==27&&!UPDATE_FIRMWARE);
@@ -83,5 +86,5 @@ int main(int argc,char**argv){assert(argc==2);int scenario=atoi(argv[1]);
    }}
   }
  }
- fail_abort=fail_close=false;assert(d->quiesce());assert(!http_handle&&!bank_handle&&!catalog&&!json);printf("update service kind %d scenario %d passed\n",UPDATE_FIRMWARE,scenario);
+ fail_abort=fail_close=false;assert(d->quiesce());assert(!http_handle&&!bank_handle&&!catalog&&!json);free(table);printf("update service kind %d scenario %d passed\n",UPDATE_FIRMWARE,scenario);
 }

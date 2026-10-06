@@ -48,11 +48,46 @@ bool open(const char *url,uint32_t bytes) {
  int32_t e=http->open(http->context,&r,&http_handle);
  if(e!=RISC_HTTP_OK)return fail(e);return true;
 }
+bool cohortSupported() {
+ /* Read no optional pointer until its full appended field is present. */
+ return bank->struct_size>=offsetof(risc_bank_store_v1,cohort_status)+sizeof(bank->cohort_status)&&
+  bank->struct_size>=offsetof(risc_bank_store_v1,begin_cohort)+sizeof(bank->begin_cohort)&&
+  bank->cohort_status&&bank->begin_cohort;
+}
+template<size_t N> bool terminated(const char (&s)[N]) {
+ for(size_t i=0;i<N;++i)if(!s[i])return true;return false;
+}
+bool classifyCohort(WatchUpdate::Row& r,const risc_bank_status_v1& current) {
+ r.view.availability=SOFTWARE_UPDATE_UNSUPPORTED;
+ if(!cohortSupported()){std::strcpy(r.view.reason,"Runtime has no paired cohort update support");return false;}
+ const auto& target=catalog->cohort;
+ if(!terminated(current.layout)||!terminated(current.runtime_version)||
+    std::strcmp(r.layout,current.layout)||r.storeAbi!=current.store_abi||
+    target.firmware_size>current.firmware_capacity||target.store_size!=current.store_capacity){
+  std::strcpy(r.view.reason,"Unsupported bank layout, store ABI or capacity");return false;
+ }
+ risc_bank_cohort_status_v1 have={};have.struct_size=sizeof(have);
+ if(bank->cohort_status(bank->context,&have)!=RISC_BANK_OK||
+    !terminated(have.product)||!terminated(have.version)||!terminated(have.source_repo)||!terminated(have.source_revision)||
+    std::strcmp(have.product,target.product)||std::strcmp(have.source_repo,target.source_repo)||
+    !WatchUpdate::revision(have.source_revision)||!WatchUpdate::version(have.version)){
+  std::strcpy(r.view.reason,"Installed product cohort identity unavailable or mismatched");return false;
+ }
+ std::strcpy(r.view.installed,have.version);
+ if(!WatchUpdate::version(current.runtime_version)||t5_package_version_compare(target.runtime_version,current.runtime_version)<0){
+  std::strcpy(r.view.reason,"Paired cohort would downgrade or cannot identify Runtime");return false;
+ }
+ int order=t5_package_version_compare(target.version,have.version);
+ r.view.availability=order==1?SOFTWARE_UPDATE_AVAILABLE:SOFTWARE_UPDATE_CURRENT;
+ std::strcpy(r.view.reason,order==1?"New product cohort; paired Runtime and boot store":"Current or older product cohort");
+ return order==1;
+}
 bool classify() {
  risc_bank_status_v1 current={};current.struct_size=sizeof(current);
  if(!bank->status(bank->context,&current)||!current.store_abi)return false;
  if(UPDATE_FIRMWARE){
   for(uint32_t i=0;i<catalog->count;++i){auto& r=catalog->rows[i];
+   if(r.pairedCohort){(void)classifyCohort(r,current);continue;}
    std::snprintf(r.view.installed,sizeof(r.view.installed),"%s",current.runtime_version);
    if(r.view.availability==SOFTWARE_UPDATE_USB_ONLY)continue;
    if(std::strcmp(r.layout,current.layout)||r.storeAbi!=current.store_abi||r.view.size>current.firmware_capacity){std::strcpy(r.view.reason,"Unsupported bank layout or store ABI");continue;}
@@ -100,13 +135,18 @@ bool begin(void*,uint32_t i,uint64_t seconds) {
   * layout/ABI/capacity before beginning; native admission still owns all bank
   * writes, image marker checks and the exact active-store digest. The v1 table
   * can serve both legacy ABI1 and the explicitly provisioned ABI2 layout. */
- if(!current.store_abi || (UPDATE_FIRMWARE &&
-    (std::strcmp(r.layout,current.layout)||r.storeAbi!=current.store_abi||r.view.size>current.firmware_capacity))) {
+ if(!current.store_abi || (UPDATE_FIRMWARE && (r.pairedCohort?!classifyCohort(r,current):
+    (std::strcmp(r.layout,current.layout)||r.storeAbi!=current.store_abi||r.view.size>current.firmware_capacity)))) {
   in_call=false;return fail(RISC_BANK_INVALID);
  }
  risc_bank_image_v1 image={};image.struct_size=sizeof(image);image.size=r.view.size;image.store_abi=current.store_abi;
  std::memcpy(image.sha256,r.digest,32);std::memcpy(image.active_store_sha256,current.active_store_sha256,32);
- int32_t e=UPDATE_FIRMWARE?bank->begin_firmware(bank->context,&image,&bank_handle):
+ int32_t e;
+ if(UPDATE_FIRMWARE&&r.pairedCohort){
+  auto& cohort=catalog->cohort;
+  std::memcpy(cohort.active_store_sha256,current.active_store_sha256,sizeof(cohort.active_store_sha256));
+  e=bank->begin_cohort(bank->context,&cohort,&bank_handle);
+ }else e=UPDATE_FIRMWARE?bank->begin_firmware(bank->context,&image,&bank_handle):
   bank->begin_app(bank->context,r.native_id,r.manifest.data,(uint32_t)r.manifest.size,&image,&bank_handle);
  view.done=0;view.total=r.view.size;view.error=0;deadline=clock_api->monotonic_ms(clock_api->context)+300000;
  view.state=SOFTWARE_UPDATE_PREPARING;bool ok=e==RISC_BANK_OK;if(!ok)fail(e);in_call=false;return ok;
@@ -169,7 +209,7 @@ const void *dependency(const risc_provider_dependency_v1 *deps,size_t count,cons
 bool start(const risc_provider_dependency_v1 *deps,size_t count) {
  if(started||in_call||http_handle||bank_handle||!deps||count!=3)return false;
  http=(const risc_http_client_v1*)dependency(deps,count,RISC_HTTP_CLIENT_CAPABILITY,sizeof(*http));
- bank=(const risc_bank_store_v1*)dependency(deps,count,RISC_BANK_STORE_CAPABILITY,sizeof(*bank));
+ bank=(const risc_bank_store_v1*)dependency(deps,count,RISC_BANK_STORE_CAPABILITY,RISC_BANK_STORE_V1_PREFIX_SIZE);
  clock_api=(const risc_platform_clock_api_v1*)dependency(deps,count,"platform.clock",sizeof(*clock_api));
  if(!http||!http->open||!http->read||!http->info||!http->close||!bank||!bank->status||!bank->get_app||!bank->begin_app||!bank->begin_firmware||!bank->step||!bank->write||!bank->finish||!bank->activate||!bank->abort||!bank->restart||!clock_api||!clock_api->monotonic_ms||!clock_api->sleep_ms)return false;
  catalog=&catalog_storage;json=json_storage;catalog->count=0;json_size=0;
