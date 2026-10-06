@@ -7,12 +7,16 @@ namespace {
 uint64_t now_ms=0;
 unsigned opened_http,closed_http,began_app,began_firmware,written,activated,restarted,aborted;
 bool fail_close,fail_abort,fail_write,fail_finish,fail_activate,fail_restart,wrong_status,truncated,oversize,unknown_app,changed_grants,current_release,usb_only,unknown_activation;
+bool multi_api,duplicate_pair;
 uint32_t bank_state=RISC_BANK_IDLE,firmware_size=4,current_abi=1,catalog_abi=1,current_capacity=3u*1024u*1024u;
 const char *current_layout="riscrte-paired-16m-v1",*catalog_layout="riscrte-paired-16m-v1";
 std::string response_body,provided_catalog;
 size_t at;
 std::string manifest_json(const char *v,bool changed=false) {
- return std::string("{\"type\":\"application\",\"id\":\"clock\",\"version\":\"")+v+"\",\"architecture\":\"xtensa-esp32s3\",\"file_name\":\"clock.elf\",\"entry\":\"app_main\",\"requires\":[{\"capability\":\""+(changed?"software.update.firmware":"display.output")+"\",\"api\":1}]}";
+ std::string requirements="{\"capability\":\""+std::string(changed?"software.update.firmware":"display.output")+"\",\"api\":1}";
+ if(multi_api)requirements+=",{\"capability\":\"storage.key-value\",\"api\":2},{\"capability\":\"storage.key-value\",\"api\":1}";
+ if(duplicate_pair)requirements+=",{\"capability\":\"storage.key-value\",\"api\":1}";
+ return std::string("{\"type\":\"application\",\"id\":\"clock\",\"version\":\"")+v+"\",\"architecture\":\"xtensa-esp32s3\",\"file_name\":\"clock.elf\",\"entry\":\"app_main\",\"requires\":["+requirements+"]}";
 }
 std::string index_json() {
  const char *v=current_release?"1.0.0":"1.1.0";std::string digest(64,'a');
@@ -43,6 +47,8 @@ const risc_platform_clock_api_v1 time_api={1,sizeof(time_api),nullptr,time_ms,sl
 void run_until(uint32_t target){for(unsigned i=0;i<10000&&view.state!=target&&view.state!=SOFTWARE_UPDATE_ERROR&&view.state!=SOFTWARE_UPDATE_RETAINED;++i)step(nullptr);}
 }
 int main(int argc,char**argv){assert(argc==2);int scenario=atoi(argv[1]);
+ if(scenario==26||scenario==27)multi_api=true;
+ if(scenario==27)duplicate_pair=true;
  if(scenario==20){current_abi=catalog_abi=2;current_layout=catalog_layout="riscrte-paired-appdata-v2";current_capacity=0x280000;}
  if(scenario==21)current_abi=0;
  if(scenario==22){current_abi=2;current_layout="riscrte-paired-appdata-v2";}
@@ -57,7 +63,7 @@ int main(int argc,char**argv){assert(argc==2);int scenario=atoi(argv[1]);
  risc_provider_dependency_v1 deps[]={{RISC_HTTP_CLIENT_CAPABILITY,1,&http_api},{RISC_BANK_STORE_CAPABILITY,1,&bank_api},{"platform.clock",1,&time_api}};
  const risc_driver_v2 *d=t5_driver_get(2);assert(d&&d->start(deps,3));assert(!strcmp(d->capability_id,UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY));
  assert(!refresh(nullptr,0));assert(refresh(nullptr,1800000000ULL));assert(!begin(nullptr,0,1800000000ULL));run_until(SOFTWARE_UPDATE_LIST);
- bool catalog_failure=scenario==4||scenario==5||scenario==10||scenario==12||(scenario==11&&UPDATE_FIRMWARE)||scenario==21;
+ bool catalog_failure=scenario==4||scenario==5||scenario==10||scenario==12||(scenario==11&&UPDATE_FIRMWARE)||scenario==21||(scenario==27&&!UPDATE_FIRMWARE);
  if(catalog_failure){assert(view.state==SOFTWARE_UPDATE_ERROR||view.state==SOFTWARE_UPDATE_RETAINED);assert(!activated&&!began_app&&!began_firmware);}
  else {assert(view.state==SOFTWARE_UPDATE_LIST&&catalog->count==1);bool unavailable=scenario==6||(!UPDATE_FIRMWARE&&(scenario==7||scenario==8))||(UPDATE_FIRMWARE&&(scenario==9||scenario==19||scenario==22));
   if(unavailable){assert(catalog->rows[0].view.availability!=SOFTWARE_UPDATE_AVAILABLE);assert(!begin(nullptr,0,1800000000ULL));}

@@ -61,7 +61,7 @@ inline bool manifest(Slice s,const char *id,Manifest& out,WorkBudget& b) {
  Slice req;if(!field(s,"requires",req,b))return false;Cursor c(req.data,req.size,b);if(!c.take('['))return false;if(c.take(']'))return c.end();
  for(;;){Slice row;if(out.count==32||!c.slice(row.data,row.size))return false;Requirement& r=out.requirements[out.count];
   if(!str(row,"capability",r.name,sizeof(r.name),b)||!number(row,"api",r.api,b)||!r.api)return false;
-  for(unsigned i=0;i<out.count;++i)if(!std::strcmp(out.requirements[i].name,r.name))return false;
+  for(unsigned i=0;i<out.count;++i)if(out.requirements[i].api==r.api&&!std::strcmp(out.requirements[i].name,r.name))return false;
   ++out.count;bool more=false;if(!c.next(']',more))return false;if(!more)return c.end();}
 }
 inline bool authority(const Manifest& a,const Manifest& b) {
