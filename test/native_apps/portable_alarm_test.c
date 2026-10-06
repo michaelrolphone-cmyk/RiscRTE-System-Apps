@@ -18,6 +18,8 @@ static unsigned application_audio_stops;
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
 static bool continuous_capture;
 bool portable_audio_capture_active(void){return continuous_capture&&application_audio;}
+static unsigned audio_resumes;
+void portable_audio_capture_resume(void){if(continuous_capture&&!audio_close_bad&&!application_audio){application_audio=true;audio_resumes++;}}
 #endif
 bool portable_audio_services_safe(void){return !audio_close_bad;}
 bool portable_audio_suspend(void){
@@ -106,9 +108,16 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
  if(test==16){
   continuous_capture=true;last_activity=0;alarm_fake.state=ALARM_STATE_READY;
   for(unsigned minute=1;minute<=20;minute++){ticks=minute*60000u;t5_app_input_t input;assert(poll(&input,1)&&!native_sleep_calls&&application_audio&&!application_audio_stops);}
-  application_audio=false;t5_app_input_t input;assert(!poll(&input,1)&&native_sleep_calls==1&&portable_app_sleep_retained());
+  continuous_capture=false;application_audio=false;t5_app_input_t input;assert(!poll(&input,1)&&native_sleep_calls==1&&portable_app_sleep_retained());
   unsigned live=grants;app_module_fini();assert(grants==live&&live);
   puts("Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS");return 0;
+ }
+ if(test==17){
+  continuous_capture=true;alarm_fake.state=ALARM_STATE_CUE;bool consumed=false;
+  assert(alarm_foreground(&consumed)&&consumed&&!application_audio&&application_audio_stops==1);
+  t5_app_input_t input;assert(poll(&input,1)&&application_audio&&audio_resumes==1&&!native_sleep_calls);
+  continuous_capture=false;assert(portable_audio_suspend());assert(poll(&input,1)&&!application_audio&&audio_resumes==1);
+  app_module_fini();assert(!grants);puts("Requested capture resumes after settled cue; explicit stop stays stopped PASS");return 0;
  }
  #endif
  if(test==11||test==15){

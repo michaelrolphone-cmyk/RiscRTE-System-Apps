@@ -557,6 +557,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!alarm_foreground(&consumed))return false;
   if(consumed)return true;
 #endif
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+  portable_audio_capture_resume();
+#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
