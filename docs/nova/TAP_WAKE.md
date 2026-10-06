@@ -25,6 +25,7 @@ in `test/native_apps`; they do not enter the target dependency closure.
 - Failed hardware restoration keeps its live ownership and offers Retry Restore;
   health/display/poll failure retries cleanup before returning, because Runtime
   checks its exit barrier before calling fini
+- Quick controls restore sensor ownership before performing a navigation action
 - Long sessions suppress idle sleep and restart inactivity timing afterward
 - An uncertain storage write/readback is labeled unconfirmed
 
@@ -51,7 +52,8 @@ pickup/tilt rejection. Physical Watch qualification remains pending.
 profiles, both touch rotations, and normal/ASan/UBSan builds. It also runs the
 1,024-record persistence and corruption/state-machine suite plus a real alarm
 arbitration regression: a sub-500 ms CUE is rejected before its disturbance can
-be read as the user's tap. Combined poll/restore failure is checked with the
+be read as the user's tap. The real Quick Wi-Fi navigation test verifies that
+sensor ownership is restored before requestLaunch. Combined poll/restore failure is checked with the
 live app authority retained until restoration succeeds.
 
 Existing Nova Settings tests remain required (272 executions). The pinned

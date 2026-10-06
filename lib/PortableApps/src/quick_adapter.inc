@@ -68,6 +68,14 @@ static bool quick_foreground(bool *consumed) {
  if(!pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))return true;
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
+#ifdef PORTABLE_TAP_SETTINGS
+ /* Controls can request an app launch before returning to the Settings poll.
+  * Restore its sensor enrollment first, while this app still owns authority. */
+ if(settings_motion_active){
+  settings_motion_interrupted=true;
+  if(!settings_tap_close()){*consumed=true;return true;}
+ }
+#endif
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
 #ifdef PORTABLE_RADIO_SESSION

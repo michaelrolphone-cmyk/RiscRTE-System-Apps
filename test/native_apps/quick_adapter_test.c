@@ -161,7 +161,10 @@ static void drain_to(unsigned target) {
 static void cleanup(void) {
  assert(!failed);app_module_fini();assert(!grants && !subscriptions && !frame_count);
 }
-int main(int argc,char **argv) {
+#ifndef PORTABLE_QUICK_FIXTURE_MAIN
+#define PORTABLE_QUICK_FIXTURE_MAIN main
+#endif
+int PORTABLE_QUICK_FIXTURE_MAIN(int argc,char **argv) {
  assert(argc>=2);unsigned test=(unsigned)atoi(argv[1]);if(argc>2)capture_directory=argv[2];setup();
  if(test==0) {
   opening(3);tap(80,120,222);drain_to(160);background_unchanged();
