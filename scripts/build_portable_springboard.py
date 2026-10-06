@@ -25,8 +25,11 @@ def build():
     parser.add_argument("--full-frames",action="store_true",help="Disable optional partial-damage and previous-frame cache")
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
+    parser.add_argument("--catalog-limit",type=int,choices=[17,18],default=17,
+                        help="18 is opt-in for the SDR Springboard; historical default is 17")
     args=parser.parse_args()
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
+    if args.catalog_limit != 17: flags.append("-DPORTABLE_CATALOG_LIMIT="+str(args.catalog_limit))
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
     if args.nova_ui: flags.append("-DPORTABLE_NOVA_UI")
@@ -90,7 +93,7 @@ def build():
     inputs=sorted(set(inputs))
     record={'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-        'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
+        'catalog_limit':args.catalog_limit,'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
         'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),

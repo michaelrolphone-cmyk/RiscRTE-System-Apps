@@ -71,11 +71,18 @@ for name,flags in [('time-format',[]),('time-format-denver',['-DPORTABLE_RTC_UTC
   if scenario in (13,14) and flags!=['-DPORTABLE_INPUT_NAVIGATION']:continue
   subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
 
-# A future admitted Timecard is the seventeenth visible entry, not a placeholder.
-for count in (17,18):
- binary=out/('catalog-capacity-'+str(count))
- subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
-  '-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie','-DTEST_CATALOG_COUNT='+str(count),
-  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
-  str(ROOT/'test/native_apps/portable_catalog_capacity_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(binary)],check=True,timeout=60)
- subprocess.run([str(binary)],check=True,timeout=10)
+# Historical catalog capacity remains 17; only the SDR Springboard opts into 18.
+common=[os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+ '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include')]
+for mode,sanitizers in [('normal',[]),('sanitized',['-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie'])]:
+ for profile,limit in [('historical',[]),('explicit-17',['-DPORTABLE_CATALOG_LIMIT=17']),('sdr',['-DPORTABLE_CATALOG_LIMIT=18'])]:
+  for count in (0,1,16,17,18,19,128,4294967295):
+   binary=out/('catalog-'+mode+'-'+profile+'-'+str(count))
+   subprocess.run([*common,*sanitizers,*limit,'-DTEST_CATALOG_COUNT='+str(count)+'U',
+    str(ROOT/'test/native_apps/portable_catalog_capacity_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(binary)],check=True,timeout=60)
+   subprocess.run([str(binary)],check=True,timeout=10)
+# Reject unsupported compile-time limits before any app can be built.
+for limit in (-1,0,16,19,128,4294967295):
+ result=subprocess.run([*common,'-DPORTABLE_CATALOG_LIMIT='+str(limit),'-fsyntax-only',
+  str(ROOT/'lib/PortableApps/src/adapter.c')],capture_output=True,text=True,timeout=60)
+ assert result.returncode and 'PORTABLE_CATALOG_LIMIT must be 17 or 18' in result.stderr, limit

@@ -60,6 +60,7 @@ jobs:
           python scripts/build_portable_settings.py --denver --full-frames --sleep-settings --output-dir dist/portable/settings-sleep
           python scripts/build_portable_springboard.py --denver --full-frames --retained-rgb565-handoff --handoff-ms 60 --return-app clock.elf --output-dir dist/portable/springboard-handoff
           python scripts/build_portable_springboard.py
+          python scripts/build_portable_springboard.py --catalog-limit 18 --nova-ui --alarm-client --denver --full-frames --retained-rgb565-handoff --handoff-ms 60 --return-app clock.elf --output-dir dist/portable/springboard-sdr
           python scripts/build_portable_springboard.py --denver --touch-rotation 180 --output-dir dist/portable/springboard-denver
           python scripts/build_portable_settings.py --denver --touch-rotation 180 --output-dir dist/portable-denver
           python scripts/build_portable_settings.py --denver --navigation --touch-rotation 180 --output-dir dist/portable-navigation

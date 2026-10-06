@@ -18,6 +18,9 @@ class TimecardPreparation(unittest.TestCase):
   self.assertEqual(json.loads((root/'additional-icons.json').read_text()),{'solid:f274':'calendar-check'})
  def test_declared_capacity_and_version_are_explicit(self):
   source=(ROOT/'lib/PortableApps/src/adapter.c').read_text()
-  self.assertEqual(source.count('portable_catalog_count <= 17'),2)
-  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.4.9')
+  self.assertEqual(source.count('portable_catalog_count <= PORTABLE_CATALOG_LIMIT'),2)
+  header=(ROOT/'lib/PortableApps/include/PortableApps.h').read_text()
+  self.assertIn('#define PORTABLE_CATALOG_LIMIT 17',header)
+  self.assertIn('PORTABLE_CATALOG_LIMIT < 17 || PORTABLE_CATALOG_LIMIT > 18',header)
+  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.4.10')
 if __name__=='__main__':unittest.main()
