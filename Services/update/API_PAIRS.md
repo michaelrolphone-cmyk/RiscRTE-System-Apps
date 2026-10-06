@@ -14,7 +14,9 @@ manifest, a version-only update, duplicate-pair refusal and changed/missing API
 authority, plus the complete service classification/download/cleanup path.
 
 This parser repair does not make the old installed provider self-updatable.
-Firmware OTA clones its old boot store and app OTA replaces only an authorized
-app ELF/manifest. An existing 0.1.1 provider therefore needs a separately
+Native-only firmware OTA clones its old boot store and app OTA replaces only
+an authorized app ELF/manifest. Provider 0.1.3 adds paired-cohort OTA when the
+native Runtime also exposes its size-gated cohort suffix, but an already
+installed updater without that path cannot use it to replace itself. An existing 0.1.1 provider therefore needs a separately
 verified bootstrap path preserving NVS/app-data before it can process this
 Spectrum update. No requirements, native privileges or data layout change.

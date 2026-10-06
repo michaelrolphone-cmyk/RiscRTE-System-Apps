@@ -9,8 +9,8 @@
     "RiscBankStoreV1.h": {
       "repository": "michaelrolphone-cmyk/RiscRTE",
       "path": "sdk/driver/RiscBankStoreV1.h",
-      "sha256": "644dc270c3f5f7c464761e6ff916fc7526ae855ebc9ad4e9dabe0744e1e30da2",
-      "commit": "b12d99d922fcd61d8e95370b7a14877cc28be363"
+      "sha256": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
+      "commit": "203bf8d4fcbf7cfb09293453beeecd0bc02e38d3"
     },
     "RiscHttpClientV1.h": {
       "repository": "michaelrolphone-cmyk/RiscRTE",

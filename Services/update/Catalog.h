@@ -1,6 +1,7 @@
 #pragma once
 #include "JsonCursor.h"
 #include "SoftwareUpdateV1.h"
+#include "RiscBankStoreV1.h"
 #include "T5PackageVersion.h"
 #include <cstdio>
 namespace WatchUpdate {
@@ -13,9 +14,9 @@ struct Manifest {char id[65]{},version[32]{},file[80]{},entry[64]{};Requirement 
 struct Row {
  software_update_row_v1 view{};
  char url[512]{},native_id[65]{};uint8_t digest[32]{};
- Slice manifest{};uint32_t storeAbi=0;char layout[40]{};
+ Slice manifest{};uint32_t storeAbi=0;char layout[40]{};bool pairedCohort=false;
 };
-struct Catalog { Row rows[SOFTWARE_UPDATE_ROWS_MAX]{};uint32_t count=0;Manifest scratch[2]{}; };
+struct Catalog { Row rows[SOFTWARE_UPDATE_ROWS_MAX]{};uint32_t count=0;Manifest scratch[2]{};risc_bank_cohort_v1 cohort{}; };
 inline bool field(Slice object,const char *name,Slice& out,WorkBudget& b) {
  Cursor c(object.data,object.size,b);if(!c.take('{'))return false;
  if(c.take('}'))return false;
@@ -38,6 +39,10 @@ inline bool safeId(const char *s) {
  size_t n=std::strlen(s);if(!n||n>64)return false;
  for(size_t i=0;i<n;++i){char c=s[i];bool a=(c>='a'&&c<='z')||(c>='0'&&c<='9');
   if(!a&&(!i||(c!='-'&&c!='_'&&c!='.')))return false;if(c=='.'&&i&&s[i-1]=='.')return false;}return true;
+}
+inline bool revision(const char *s) {
+ if(std::strlen(s)!=40)return false;
+ for(unsigned i=0;i<40;++i)if(!((s[i]>='0'&&s[i]<='9')||(s[i]>='a'&&s[i]<='f')))return false;return true;
 }
 inline bool sha(Slice s,const char *key,uint8_t out[32],WorkBudget& b) {
  char t[65]{};if(!str(s,key,t,sizeof(t),b)||std::strlen(t)!=64)return false;
@@ -80,24 +85,42 @@ inline bool appRecord(Slice s,Row& out,Manifest& scratch,WorkBudget& b) {
  if(!manifest(out.manifest,out.native_id,scratch,b)||std::strcmp(scratch.version,out.view.version))return false;
  std::snprintf(out.view.reason,sizeof(out.view.reason),"Not an installed authorized application");return true;
 }
-inline bool firmwareRecord(Slice s,Row& out,WorkBudget& b) {
+inline bool firmwareRecord(Slice s,Row& out,risc_bank_cohort_v1& cohort,WorkBudget& b) {
  out=Row{};out.view.struct_size=sizeof(out.view);std::strcpy(out.view.id,"Runtime");
  if(!str(s,"version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version))return false;
  char tag[96],asset[128];std::snprintf(tag,sizeof(tag),"firmware-v%s",out.view.version);std::snprintf(asset,sizeof(asset),"twatch-s3-launcher-%s.bin",out.view.version);
  Slice kind;if(field(s,"kind",kind,b)&&!equals(s,"kind","firmware",b))return false;
  if(!equals(s,"tag",tag,b)||!payload(s,tag,asset,out,b))return false;
  Slice ota;if(!field(s,"ota",ota,b)){out.view.availability=SOFTWARE_UPDATE_USB_ONLY;out.url[0]=0;std::strcpy(out.view.reason,"USB install only; merged image is not OTA");return true;}
- if(!equals(ota,"kind","runtime-image",b)||!str(ota,"runtime_version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version)||
- !str(ota,"layout",out.layout,sizeof(out.layout),b)||!number(ota,"store_abi",out.storeAbi,b))return false;
- std::snprintf(asset,sizeof(asset),"riscrte-runtime-%s.bin",out.view.version);
- if(!payload(ota,tag,asset,out,b)||out.view.size>8u*1024u*1024u)return false;
- out.view.availability=SOFTWARE_UPDATE_UNSUPPORTED;std::strcpy(out.view.reason,"Runtime compatibility not established");return true;
+ if(!str(ota,"layout",out.layout,sizeof(out.layout),b)||!number(ota,"store_abi",out.storeAbi,b))return false;
+ if(equals(ota,"kind","paired-cohort",b)){
+  cohort={};cohort.struct_size=sizeof(cohort);cohort.store_abi=out.storeAbi;
+  if(!out.storeAbi||!str(ota,"product",cohort.product,sizeof(cohort.product),b)||std::strcmp(cohort.product,"twatch-s3")||
+     !str(ota,"version",cohort.version,sizeof(cohort.version),b)||std::strcmp(cohort.version,out.view.version)||
+     !str(ota,"runtime_version",cohort.runtime_version,sizeof(cohort.runtime_version),b)||!version(cohort.runtime_version)||
+     !str(ota,"source_repo",cohort.source_repo,sizeof(cohort.source_repo),b)||std::strcmp(cohort.source_repo,Repository)||
+     !str(ota,"source_revision",cohort.source_revision,sizeof(cohort.source_revision),b)||!revision(cohort.source_revision)||
+     !number(ota,"firmware_size",cohort.firmware_size,b)||cohort.firmware_size<32||
+     !number(ota,"store_size",cohort.store_size,b)||!cohort.store_size||
+     cohort.firmware_size>8u*1024u*1024u||cohort.store_size>8u*1024u*1024u||
+     !sha(ota,"firmware_sha256",cohort.firmware_sha256,b)||!sha(ota,"store_sha256",cohort.store_sha256,b))return false;
+  std::snprintf(asset,sizeof(asset),"twatch-s3-cohort-%s.bin",out.view.version);
+  if(!payload(ota,tag,asset,out,b)||out.view.size>8u*1024u*1024u||out.view.size!=cohort.firmware_size+cohort.store_size)return false;
+  std::memcpy(cohort.sha256,out.digest,sizeof(cohort.sha256));out.pairedCohort=true;std::strcpy(out.view.id,"twatch-s3");
+  std::strcpy(out.view.reason,"Paired cohort compatibility not established");
+ }else{
+  if(!equals(ota,"kind","runtime-image",b)||!str(ota,"runtime_version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version))return false;
+  std::snprintf(asset,sizeof(asset),"riscrte-runtime-%s.bin",out.view.version);
+  if(!payload(ota,tag,asset,out,b)||out.view.size>8u*1024u*1024u)return false;
+  std::strcpy(out.view.reason,"Runtime compatibility not established");
+ }
+ out.view.availability=SOFTWARE_UPDATE_UNSUPPORTED;return true;
 }
 inline bool parseImpl(Slice json,bool firmware,Catalog& out,bool (*yield)(void*),void *ctx) {
- out.count=0;if(!json.data||json.size<2||json.size>CatalogMax)return false;WorkBudget b(yield,ctx);Cursor valid(json.data,json.size,b);
+ out.count=0;out.cohort={};if(!json.data||json.size<2||json.size>CatalogMax)return false;WorkBudget b(yield,ctx);Cursor valid(json.data,json.size,b);
  if(!b.poll(true)||!valid.objectOnly())return false;uint32_t schema=0;if(!number(json,"schema",schema,b)||schema!=1)return false;
  Slice section;if(!field(json,firmware?"firmware":"apps",section,b))return false;Cursor c(section.data,section.size,b);
- if(firmware){if(c.nullValue()&&c.end())return true;if(!firmwareRecord(section,out.rows[0],b))return false;out.count=1;return b.poll(true);}
+ if(firmware){if(c.nullValue()&&c.end())return true;if(!firmwareRecord(section,out.rows[0],out.cohort,b))return false;out.count=1;return b.poll(true);}
  if(!c.take('['))return false;if(c.take(']'))return c.end();
  for(;;){Slice s;if(out.count==SOFTWARE_UPDATE_ROWS_MAX||!c.slice(s.data,s.size)||!appRecord(s,out.rows[out.count],out.scratch[0],b)) {out.count=0;return false;}
   for(unsigned i=0;i<out.count;++i)if((!std::strcmp(out.rows[i].view.id,out.rows[out.count].view.id)||!std::strcmp(out.rows[i].native_id,out.rows[out.count].native_id))){out.count=0;return false;}

@@ -16,8 +16,9 @@ selection and progress are outside Runtime. Native bank admission independently
 validates downloaded bytes, exact size/SHA, ELF/imports, existing app identity,
 unchanged executable paths and requirements, and a strictly newer app manifest.
 Catalog URLs, descriptions and manifests never expand installed boot grants.
-Driver, provider and arbitrary new-app installation are out of scope. No package
-signing system is introduced.
+The installed-app action cannot install drivers, providers or arbitrary new apps.
+Full owner-published paired cohorts use the separate firmware action and native
+cohort admission described below. No package signing system is introduced.
 
 The client requires display, touch, configured `rtc.clock@2`, namespace-6
 `storage.key-value@1`, `net.wifi@1` and its action-specific service. Deployment
@@ -60,7 +61,7 @@ attempt checked radio cleanup, then retry bank abort once if radio recovery
 made storage safe. The native CPU refuses radio leave while HTTP is retained.
 Repeated failures retain ownership; no native safety guard is bypassed.
 
-## Catalog and additive future OTA records
+## Catalog and native-image OTA records
 
 The read-only catalog is:
 https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/release-index/release-index.json
@@ -79,7 +80,7 @@ unsupported and USB-only rows stay visible without an enabled install action.
 Existing firmware 1.0.0 is an 8 MiB merged USB image at flash offset zero. Its
 outer record is immutable and can NEVER be downloaded as an OTA image. Absent
 an explicit `ota` field the UI says USB install only. A future publisher can
-add the following metadata to a *new* firmware record (example only):
+add the following native-only metadata to a *new* firmware record (example only):
 
 ```json
 "ota": {
@@ -102,10 +103,87 @@ drivers. This implementation does not modify a production release/index or
 make an existing single-bank USB installation OTA-capable. Paired-bank bootstrap
 requires the coordinated deployment prerequisite and physical qualification.
 
+
+## Paired product cohort OTA (service 0.1.3)
+
+The firmware provider also accepts `ota.kind="paired-cohort"`. This is a separate
+asset containing exactly the native firmware bytes followed by the complete
+bootfs partition image, with no header, offsets, partition table, NVS or app-data
+bytes. It can replace the paired Runtime and boot store together, including
+owner-published provider/driver/app versions, subject to native admission.
+Neither this path nor native-image OTA downloads a merged USB image.
+
+A new owner-published firmware record can carry the following additive metadata
+(example only; the digest placeholders are not valid catalog values):
+
+```json
+"ota": {
+  "kind": "paired-cohort",
+  "product": "twatch-s3",
+  "version": "1.2.0",
+  "runtime_version": "0.1.33",
+  "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+  "source_revision": "<40 lowercase hex characters>",
+  "layout": "riscrte-paired-appdata-v2",
+  "store_abi": 2,
+  "asset": "twatch-s3-cohort-1.2.0.bin",
+  "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/releases/download/firmware-v1.2.0/twatch-s3-cohort-1.2.0.bin",
+  "size": 6541872,
+  "sha256": "<SHA-256 of firmware bytes followed by bootfs bytes>",
+  "firmware_size": 1233456,
+  "firmware_sha256": "<SHA-256 of exactly firmware_size bytes>",
+  "store_size": 5308416,
+  "store_sha256": "<SHA-256 of exactly store_size bytes>"
+}
+```
+
+All fields shown are required. The product is exactly `twatch-s3`, source_repo
+is the exact Watch owner repository, and version equals the outer firmware
+version. The asset and URL must match that product version and the outer
+`firmware-v<version>` release. Versions use strict numeric MAJOR.MINOR.PATCH;
+all SHA-256 values have exactly 64 lowercase hex digits. Size equals the sum of
+the component sizes (native firmware at least 32 bytes, positive full bootfs)
+and cannot exceed the existing 8 MiB HTTP ceiling.
+The URL/source constraints are an admission boundary, not a signing system.
+
+Before showing an enabled action, and again immediately before `begin_cohort`,
+the provider reads current native status and `cohort_status`. Product and source
+must match; installed cohort version and source revision must be well formed.
+The product version must be strictly newer, while Runtime may remain the same
+or become newer. This permits a provider/driver/app cohort fix with unchanged
+native Runtime, but never a Runtime downgrade. For cohorts, the available
+and installed versions shown in the UI are product versions.
+
+Layout and store ABI must match fresh native status; firmware must fit its
+native partition and the complete bootfs size must equal store capacity. Both
+provisioned geometries are supported without migrating between them:
+
+- ABI1: `riscrte-paired-16m-v1`, native capacity `0x300000`, bootfs `0x4f0000`
+- ABI2: `riscrte-paired-appdata-v2`, native capacity `0x260000`, bootfs `0x510000`
+
+The exact catalog identities, three digests, component sizes, store ABI and
+fresh active-store digest are passed to native admission. The provider streams
+all bytes through existing write/finish/step operations. Native code owns
+independent digest/readback and candidate-store/graph admission before READY.
+The existing transport-close, activation, uncertain-activation retention,
+checked cancellation and restart rules remain unchanged.
+
+`platform.bank-store@1` keeps its original prefix through `get_app`.
+Providers accept `RISC_BANK_STORE_V1_PREFIX_SIZE`; native-only and installed-app
+updates work with that older table. Each optional cohort suffix field must fit
+the advertised table size and both function pointers must be present before
+any cohort call. Older tables or missing cohort identity leave the cohort row
+visible but unsupported; they never fall back to native-only or USB download.
+An installed updater without cohort support still needs an independently
+verified bootstrap path before this mechanism is usable. No live release
+index, release tag or deployment configuration is changed here.
+
 ## Verification
 
 `python scripts/test_portable_update.py` runs fake HTTPS/native-bank service
-fault tests for both action-kind ELFs, and the production controller/renderer/
+fault tests for both action-kind ELFs, 46 paired-cohort cases (both real layout
+geometries, metadata/identity refusals, suffix compatibility, fresh-state
+changes, streaming errors, cancellation and retained activation), and the production controller/renderer/
 adapter with fake Wi-Fi, storage, navigation, alarm and sleep providers in two
 touch orientations, plain C/C++ and ASan/UBSan. Fixtures use only synthetic data.
 Native bank power-loss/SHA/path/ELF/import safety is tested separately by Runtime;
