@@ -715,6 +715,17 @@ static bool launch(uint32_t i) {
 #endif
       !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
 }
+#ifdef PORTABLE_POWER_STATUS
+#include "PortablePowerStatus.h"
+bool portable_power_read(risc_battery_sample_v1 *out) {
+  if (!out) return false;
+  *out=(risc_battery_sample_v1){0,255,RISC_BATTERY_PROFILE_MISSING};
+  risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
+  if (failed || !bg.api || !gauge || !gauge->read || !gauge->read(gauge->context,&sample)) return false;
+  *out=sample;
+  return true;
+}
+#endif
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
   if (!gauge || !out || !gauge->read(gauge->context, &b))
