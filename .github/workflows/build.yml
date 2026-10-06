@@ -33,6 +33,7 @@ jobs:
           python scripts/test_tap_settings.py
           python scripts/test_quick_actions.py
           python scripts/test_quick_radios.py
+          python scripts/test_low_battery.py
           python scripts/test_portable_audio.py
           python scripts/test_portable_radio.py
           python scripts/test_portable_alarm_settings.py
@@ -49,6 +50,7 @@ jobs:
           python scripts/build_all_apps.py
           python scripts/check_release_parity.py
           python scripts/build_portable_settings.py
+          python scripts/build_portable_settings.py --low-battery --nova-ui --full-frames --output-dir dist/portable/settings-low-battery
           python scripts/build_portable_settings.py --nova-ui --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-nova
           python scripts/build_portable_settings.py --nova-ui --tap-settings --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-tap
           python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800

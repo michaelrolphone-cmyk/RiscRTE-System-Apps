@@ -20,6 +20,32 @@ static bool quick_storage_safe(void) {
 #endif
  return true;
 }
+#ifdef PORTABLE_LOW_BATTERY
+static bool low_battery_poll(void) {
+ if(!display_settled||surface.frame||!quick_storage_safe())return true;
+ uint32_t now=millis_now();
+ if(low_battery_sampled&&(uint32_t)(now-low_battery_sampled_at)<5000u)return true;
+ low_battery_sampled=true;low_battery_sampled_at=now;
+ risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
+ if(!gauge||!gauge->read||!gauge->read(gauge->context,&sample))return true;
+ unsigned result=portable_low_battery_update(&low_battery,rt,&sample);
+ if(result&PORTABLE_LOW_BATTERY_RETAINED)return false;
+ if(result&PORTABLE_LOW_BATTERY_ERROR)rt->diagnostic("LOW_BATTERY settings=unconfirmed");
+ if(!(result&PORTABLE_LOW_BATTERY_ENTERED))return true;
+ /* Cancel stale preview/pending actions before reloading confirmed settings.
+  * A later new gesture is a manual override and remains authoritative. */
+ pqa_cancel(&quick.ui);(void)pqa_take_action(&quick.ui);
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+ if(!portable_wifi_suspend())return false;
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+ if(!portable_radio_suspend())return false;
+#endif
+ if(!pqa_session_load(&quick,rt)||!pqa_radios_load(&quick_radios,&quick.ui,rt)||
+    !pqa_session_restore(&quick,display))return false;
+ rt->diagnostic(result&PORTABLE_LOW_BATTERY_ERROR?"LOW_BATTERY crossing=partial-once":"LOW_BATTERY crossing=applied-once");return true;
+}
+#endif
 static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
  if(!quick_storage_safe())return false;
@@ -95,9 +121,12 @@ static bool quick_foreground(bool *consumed) {
   uint32_t now=millis_now();bool alarm_consumed=false;
   if(!alarm_foreground(&alarm_consumed)){failed=true;break;}
   if(alarm_consumed){*consumed=true;break;}
+#ifdef PORTABLE_LOW_BATTERY
+  if(!low_battery_poll()){failed=true;break;}
+#endif
   if(navigation_pending&T5_APP_BUTTON_BACK){navigation_pending=0;pqa_close(&quick.ui);}
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-  if((uint32_t)(now-last_activity)>=60000u)pqa_cancel(&quick.ui);
+  if((uint32_t)(now-last_activity)>=portable_idle_ms())pqa_cancel(&quick.ui);
 #endif
   uint32_t actions=pqa_take_action(&quick.ui);
   if(!quick.ui.radio_controls && (actions&PQA_WIFI)){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}

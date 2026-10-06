@@ -55,6 +55,23 @@ static bool alert_unconfirmed;
 #define SETTINGS_ROW_COUNT (SETTINGS_TAP_ROW+1u)
 #include "tap_settings_model.inc"
 #endif
+#ifdef PORTABLE_LOW_BATTERY
+#ifndef PORTABLE_SLEEP_SETTINGS
+#error Low battery Settings requires sleep settings
+#endif
+#ifdef PORTABLE_TAP_SETTINGS
+#define SETTINGS_TIMER_ROW (SETTINGS_TAP_ROW+1u)
+#elif defined(PORTABLE_ALARM_SETTINGS)
+#define SETTINGS_TIMER_ROW (SETTINGS_ALERT_ROW+1u)
+#else
+#define SETTINGS_TIMER_ROW SETTINGS_BASE_ROW_COUNT
+#endif
+#undef SETTINGS_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_TIMER_ROW+2u)
+static bool timer_deep;
+static uint32_t timer_choice;
+static const char *timer_message="";
+#endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
 static unsigned save_candidate_count;
@@ -112,6 +129,9 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_TAP_SETTINGS
     ,"Tap to Wake"
 #endif
+#ifdef PORTABLE_LOW_BATTERY
+    ,"Sleep Timer","Deep Sleep Timer"
+#endif
     };
   strcpy(out->label,names[index]);
   if(index==0) {
@@ -151,6 +171,15 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,tap_unconfirmed?"Unconfirmed":loaded==PORTABLE_TAP_UNAVAILABLE?"Unavailable":
         loaded==PORTABLE_TAP_INVALID?"Invalid":preference.enabled?"On":"Off");
+  }
+#endif
+#ifdef PORTABLE_LOW_BATTERY
+  else if(index>=SETTINGS_TIMER_ROW) {
+    uint32_t value;int loaded=portable_sleep_timer_load(settings_store,index==SETTINGS_TIMER_ROW+1u,&value);
+    out->type=T5_APP_SETTING_ACTION;
+    if(loaded==PORTABLE_SLEEP_UNAVAILABLE)strcpy(out->value,"Unavailable");
+    else if(loaded==PORTABLE_SLEEP_INVALID)strcpy(out->value,"Invalid");
+    else snprintf(out->value,sizeof(out->value),"%lu sec",(unsigned long)(value/1000u));
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -249,6 +278,41 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   #ifdef PORTABLE_TAP_SETTINGS
   if(index==SETTINGS_TAP_ROW)return settings_tap_activate();
   #endif
+#ifdef PORTABLE_LOW_BATTERY
+  if(index>=SETTINGS_TIMER_ROW) {
+    timer_deep=index==SETTINGS_TIMER_ROW+1u;
+    int loaded=portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+    timer_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":loaded==PORTABLE_SLEEP_INVALID?"Invalid: default shown":"";
+    sv_switch(SV_TIMER);bool armed=false;t5_app_input_t input;uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons&&!input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=!!(input.buttons&T5_APP_BUTTON_CONFIRM);
+      bool down=!!(input.buttons&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_DOWN));
+      bool up=!!(input.buttons&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP));
+      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,20,88,64,44))down=true;
+      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,156,88,64,44))up=true;
+      if(down||up) {
+        uint32_t step=timer_deep?60000u:5000u;
+        timer_choice=down?(timer_choice<=step?step:timer_choice-step):
+            (timer_choice>=3600000u-step?3600000u:timer_choice+step);
+      }
+      if(save) {
+        if(portable_sleep_timer_save(settings_store,timer_deep,timer_choice)) {
+          if(!pqa_session_load(&quick,rt)){failed=true;break;}
+          result=T5_APP_SETTING_UPDATED;break;
+        }
+        (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+        timer_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Timer saved":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
   if(index==2) {
     settings_time_format_load();time_format_choice=time_format_mode;
     time_format_message=time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Storage unavailable":

@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_TAP, SV_TAP_INTRO, SV_TAP_CAL };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_TAP, SV_TAP_INTRO, SV_TAP_CAL, SV_TIMER };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -122,7 +122,12 @@ static void sv_root(void) {
     int y=sv_row_y(i)-offset;
     sv_rect(20,y,2,SV_ROW_HEIGHT,sv_selected==i+1?SV_CYAN:SV_LINE);
     sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
-    sv_text(1,32,y+10,row.label,0xffffff,4);
+    unsigned label_face=1;
+#ifdef PORTABLE_LOW_BATTERY
+    int value_left=(row.type==T5_APP_SETTING_ACTION?204:216)-sv_measure(2,row.value,0);
+    if(32+sv_measure(1,row.label,4)+8>value_left)label_face=2;
+#endif
+    sv_text(label_face,32,y+10,row.label,0xffffff,label_face==1?4:0);
     sv_right(2,row.type==T5_APP_SETTING_ACTION?204:216,y+12,row.value,SV_CYAN,0);
     if(row.type==T5_APP_SETTING_ACTION)sv_text(1,211,y+9,">",SV_DIM,0);
   }
@@ -222,6 +227,10 @@ static void sv_sleep(void) {
   sv_heading("CLOCK SLEEP MODE");
   sv_button(28,66,184,30,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
   sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
+#ifdef PORTABLE_LOW_BATTERY
+  sv_button(28,142,184,30,"LIGHT THEN DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
+  sv_center(3,172,sleep_message[0]?sleep_message:"Uses Deep Sleep Timer",SV_CAP,0);
+#else
   sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
 #ifdef PORTABLE_NOVA_UI
   sv_center(3,172,sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
@@ -229,8 +238,20 @@ static void sv_sleep(void) {
   sv_center(3,177,"Apps: Light 5 min then Deep",SV_CAP,0);
   sv_center(3,190,sleep_message,SV_CYAN,0);
 #endif
+#endif
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
+}
+#endif
+#ifdef PORTABLE_LOW_BATTERY
+static void sv_timer(void) {
+  sv_heading(timer_deep?"DEEP SLEEP TIMER":"SLEEP TIMER");
+  char value[24];snprintf(value,sizeof(value),"%lu SEC",(unsigned long)(timer_choice/1000u));
+  sv_center(0,66,value,SV_CYAN,0);
+  sv_button(20,88,64,44,"-",false);sv_button(156,88,64,44,"+",false);
+  sv_center(3,150,timer_deep?"Time asleep before Deep":"Idle time before sleep",SV_CAP,0);
+  sv_center(3,172,timer_message,SV_CYAN,0);
+  sv_button(24,200,86,26,"CANCEL",false);sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
@@ -259,6 +280,9 @@ static void settings_view_redraw(void) {
 #endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(sv_page==SV_SLEEP)sv_sleep();
+#ifdef PORTABLE_LOW_BATTERY
+  else if(sv_page==SV_TIMER)sv_timer();
+#endif
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   else if(sv_page==SV_ALERT)sv_alert();
@@ -276,6 +300,9 @@ static void sv_switch(unsigned page) {
   settings_editing=page==SV_TAP || page==SV_TAP_INTRO || page==SV_TAP_CAL || page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
+#ifdef PORTABLE_LOW_BATTERY
+      || page==SV_TIMER
+#endif
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
       || page==SV_ALERT
@@ -358,6 +385,9 @@ static bool settings_view_poll(t5_app_input_t *out) {
 #endif
 #ifdef PORTABLE_SLEEP_SETTINGS
        || sv_page==SV_SLEEP
+#ifdef PORTABLE_LOW_BATTERY
+       || sv_page==SV_TIMER
+#endif
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
        || sv_page==SV_ALERT
