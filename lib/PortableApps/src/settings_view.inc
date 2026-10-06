@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_TAP, SV_TAP_INTRO, SV_TAP_CAL };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -245,11 +245,18 @@ static void sv_alert(void) {
   sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
+#ifdef PORTABLE_TAP_SETTINGS
+#include "tap_settings_view.inc"
+#endif
 static void settings_view_redraw(void) {
   if(failed || !sv_active)return;
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
   else if(sv_page==SV_TIME_FORMAT)sv_time_format();
+#ifdef PORTABLE_TAP_SETTINGS
+  else if(sv_page==SV_TAP)sv_tap();
+  else if(sv_page==SV_TAP_INTRO || sv_page==SV_TAP_CAL)sv_tap_calibration();
+#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(sv_page==SV_SLEEP)sv_sleep();
 #endif
@@ -266,7 +273,7 @@ static void sv_switch(unsigned page) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
-  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
+  settings_editing=page==SV_TAP || page==SV_TAP_INTRO || page==SV_TAP_CAL || page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
 #endif
@@ -346,6 +353,9 @@ static bool settings_view_poll(t5_app_input_t *out) {
     if(sv_dragged || sample.moved || sv_axis==3)return true;
     x=sv_start_x;y=sv_start_y;
     if(sv_page==SV_FIELDS || sv_page==SV_TIME_FORMAT
+#ifdef PORTABLE_TAP_SETTINGS
+       || sv_page==SV_TAP || sv_page==SV_TAP_INTRO || (sv_page==SV_TAP_CAL && tap_calibration.phase==TAP_CAL_READY)
+#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
        || sv_page==SV_SLEEP
 #endif

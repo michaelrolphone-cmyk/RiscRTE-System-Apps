@@ -45,6 +45,16 @@ static bool alert_unconfirmed;
 #else
 #define SETTINGS_ROW_COUNT SETTINGS_BASE_ROW_COUNT
 #endif
+#ifdef PORTABLE_TAP_SETTINGS
+#ifdef PORTABLE_ALARM_SETTINGS
+#define SETTINGS_TAP_ROW (SETTINGS_BASE_ROW_COUNT+1u)
+#else
+#define SETTINGS_TAP_ROW SETTINGS_BASE_ROW_COUNT
+#endif
+#undef SETTINGS_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_TAP_ROW+1u)
+#include "tap_settings_model.inc"
+#endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
 static unsigned save_candidate_count;
@@ -99,6 +109,9 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_ALARM_SETTINGS
     ,"Alarm Alerts"
 #endif
+#ifdef PORTABLE_TAP_SETTINGS
+    ,"Tap to Wake"
+#endif
     };
   strcpy(out->label,names[index]);
   if(index==0) {
@@ -130,6 +143,14 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     strcpy(out->value,alert_unconfirmed?"Unconfirmed":
         loaded==PORTABLE_ALERT_UNAVAILABLE?"Unavailable":
         loaded==PORTABLE_ALERT_INVALID?"Invalid":portable_alert_name(mode));
+  }
+#endif
+#ifdef PORTABLE_TAP_SETTINGS
+  else if(index==SETTINGS_TAP_ROW){
+    portable_tap_settings preference;int loaded=portable_tap_load(settings_store,&preference);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,tap_unconfirmed?"Unconfirmed":loaded==PORTABLE_TAP_UNAVAILABLE?"Unavailable":
+        loaded==PORTABLE_TAP_INVALID?"Invalid":preference.enabled?"On":"Off");
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -173,6 +194,9 @@ static void editor_step(bool forward) {
 }
 static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
 #include "settings_view.inc"
+#ifdef PORTABLE_TAP_SETTINGS
+#include "tap_settings_controller.inc"
+#endif
 static void settings_render(uint32_t category,int32_t selected) {
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
@@ -222,6 +246,9 @@ static bool editor_try_save(void) {
 }
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
+  #ifdef PORTABLE_TAP_SETTINGS
+  if(index==SETTINGS_TAP_ROW)return settings_tap_activate();
+  #endif
   if(index==2) {
     settings_time_format_load();time_format_choice=time_format_mode;
     time_format_message=time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Storage unavailable":
@@ -398,6 +425,10 @@ static bool settings_open(void) {
     if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
   }
   settings_time_format_load();
+#ifdef PORTABLE_TAP_SETTINGS
+  tap_message="";tap_unconfirmed=tap_cleanup_pending=false;tap_motion=NULL;settings_motion_active=false;
+  tap_grant=(risc_runtime_capability_v1){.struct_size=sizeof(tap_grant)};
+#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   sleep_choice=PORTABLE_SLEEP_HYBRID;sleep_message="";
 #endif

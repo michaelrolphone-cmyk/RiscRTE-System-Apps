@@ -42,6 +42,10 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+#ifdef PORTABLE_TAP_SETTINGS
+static bool settings_motion_active,settings_motion_interrupted;
+static bool settings_tap_close(void);
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "PortableQuickSession.h"
 #include "PortableQuickRender.h"
@@ -547,7 +551,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed))return false;
-  if(consumed)return true;
+  if(consumed){
+#ifdef PORTABLE_TAP_SETTINGS
+    if(settings_motion_active)settings_motion_interrupted=true;
+#endif
+    return true;
+  }
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
   rt->yield_ms(spent<wait?wait-spent:1);
@@ -555,13 +564,21 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   input_service();
 #ifdef PORTABLE_ALARM_CLIENT
   if(!alarm_foreground(&consumed))return false;
-  if(consumed)return true;
+  if(consumed){
+#ifdef PORTABLE_TAP_SETTINGS
+    if(settings_motion_active)settings_motion_interrupted=true;
+#endif
+    return true;
+  }
 #endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
+#ifdef PORTABLE_TAP_SETTINGS
+     !settings_motion_active &&
+#endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
      !portable_audio_capture_active() &&
 #endif
@@ -573,7 +590,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
-  if(quick_consumed){out->exit_requested=quick_launch_pending;return true;}
+  if(quick_consumed){
+#ifdef PORTABLE_TAP_SETTINGS
+    if(settings_motion_active)settings_motion_interrupted=true;
+#endif
+    out->exit_requested=quick_launch_pending;return true;
+  }
 #endif
   if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
@@ -715,6 +737,17 @@ static bool launch(uint32_t i) {
 #endif
       !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
 }
+#ifdef PORTABLE_POWER_STATUS
+#include "PortablePowerStatus.h"
+bool portable_power_read(risc_battery_sample_v1 *out) {
+  if (!out) return false;
+  *out=(risc_battery_sample_v1){0,255,RISC_BATTERY_PROFILE_MISSING};
+  risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
+  if (failed || !bg.api || !gauge || !gauge->read || !gauge->read(gauge->context,&sample)) return false;
+  *out=sample;
+  return true;
+}
+#endif
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
   if (!gauge || !out || !gauge->read(gauge->context, &b))
@@ -931,6 +964,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
     return;
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
+#endif
+#ifdef PORTABLE_TAP_SETTINGS
+  while(!settings_tap_close()){rt->diagnostic("TAP cleanup-unconfirmed; invocation retained");rt->yield_ms(50);}
 #endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close()) {

@@ -25,7 +25,7 @@ def build():
     parser.add_argument("--full-frames",action="store_true",help="Disable optional partial-damage and previous-frame cache")
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
-    parser.add_argument("--catalog-limit",type=int,choices=[17,18],default=17,
+    parser.add_argument("--catalog-limit",type=int,choices=[17,18,19,20],default=17,
                         help="18 is opt-in for the SDR Springboard; historical default is 17")
     args=parser.parse_args()
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])

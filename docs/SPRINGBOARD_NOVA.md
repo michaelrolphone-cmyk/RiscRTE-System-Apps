@@ -111,3 +111,9 @@ placement is approximated in those reconstruction panels. Prototype glyphs and
 24-entry inventory differ deliberately from the real FA/catalog implementation.
 No physical Watch frame rate, touch alignment or installation is claimed by
 host/ELF evidence. Clock fade/handoff and bundle wiring are deployment work.
+
+## Focused icon, development 1.5.0
+
+The nearest/labelled icon now receives a modest focused-only size increase.
+See [production before/after pixels and regression coverage](SPRINGBOARD_FOCUS.md).
+Touch geometry, other icons and the existing launch pulse are unchanged.

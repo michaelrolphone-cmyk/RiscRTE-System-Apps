@@ -2,7 +2,7 @@
 
 The SDR Watch catalog has 18 visible entries. Compile only its Springboard with
 `-DPORTABLE_CATALOG_LIMIT=18`. The shared adapter otherwise retains its historical
-17-entry bound and the same generated machine code. Values outside 17..18 fail
+17-entry bound and the same generated machine code. The later HID-enabled Watch may explicitly select 20. Values outside 17..20 fail
 compilation. A count above the selected bound fails refresh as a whole, reports
 zero entries, and rejects get/launch without reading the catalog or calling the
 runtime. This does not discover, install, or authorize any app.

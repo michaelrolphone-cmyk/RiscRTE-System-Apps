@@ -14,13 +14,14 @@
 
 /* Fixed backing storage also catches accidental reads of a rejected count. */
 #define ENTRY(n) {.display_name="Entry " #n,.file_name="app-" #n ".elf",.icon="solid:f017",.compatible=true}
-const t5_app_manifest_t portable_catalog[18] = {
+const t5_app_manifest_t portable_catalog[20] = {
  ENTRY(0),
  {.display_name="Unavailable",.file_name="unavailable.elf",.icon="solid:f017",.compatible=false},
  ENTRY(2),ENTRY(3),ENTRY(4),ENTRY(5),ENTRY(6),ENTRY(7),ENTRY(8),
  ENTRY(9),ENTRY(10),ENTRY(11),ENTRY(12),ENTRY(13),ENTRY(14),ENTRY(15),
  {.display_name="Timecard",.file_name="timecard.elf",.icon="solid:f274",.compatible=true},
- {.display_name="Waterfall",.file_name="waterfall.elf",.icon="solid:f0ec",.compatible=true}
+ {.display_name="Waterfall",.file_name="waterfall.elf",.icon="solid:f0ec",.compatible=true},
+ ENTRY(18),ENTRY(19)
 };
 const unsigned portable_catalog_count=TEST_CATALOG_COUNT;
 static unsigned launch_calls;
