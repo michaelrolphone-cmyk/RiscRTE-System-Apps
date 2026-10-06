@@ -71,6 +71,14 @@ void app_main(void) {
  }
  api->clear();api->fill_rect(0,0,240,240,true);
  assert(api->draw_icon(90,90,"solid:f274",36,false));api->present(false);
+ /* HID Touchpad must use an actual shared raster, not a metadata-only icon. */
+ api->clear();api->fill_rect(0,0,240,240,true);
+ const uint16_t background=pixels[0];
+ assert(api->draw_icon(90,90,"solid:f245",36,false));
+ unsigned painted=0;
+ for(unsigned i=0;i<240u*240u;i++)painted+=pixels[i]!=background;
+ assert(painted>30 && painted<36u*36u);
+ api->present(false);
 }
 int main(void) {
  assert(app_module_init()==0);app_main();app_module_fini();
