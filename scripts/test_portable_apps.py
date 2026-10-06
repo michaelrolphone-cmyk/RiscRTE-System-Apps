@@ -70,3 +70,12 @@ for name,flags in [('time-format',[]),('time-format-denver',['-DPORTABLE_RTC_UTC
  for scenario in range(19):
   if scenario in (13,14) and flags!=['-DPORTABLE_INPUT_NAVIGATION']:continue
   subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
+
+# A future admitted Timecard is the seventeenth visible entry, not a placeholder.
+for count in (17,18):
+ binary=out/('catalog-capacity-'+str(count))
+ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
+  '-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie','-DTEST_CATALOG_COUNT='+str(count),
+  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+  str(ROOT/'test/native_apps/portable_catalog_capacity_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(binary)],check=True,timeout=60)
+ subprocess.run([str(binary)],check=True,timeout=10)

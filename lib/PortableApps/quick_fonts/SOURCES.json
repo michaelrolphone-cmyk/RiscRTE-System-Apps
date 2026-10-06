@@ -1,0 +1,32 @@
+{
+  "description": "NOVA-7 original Orbitron/Rajdhani and genuine Font Awesome masks, renamed PortableQuickActionsAssets.",
+  "fontawesome_commit": "14c65a3747d0f3b751f15831fc719236aea8729d",
+  "fontawesome_font_license": "SIL OFL 1.1; FAClassic-LICENSE.txt",
+  "bluetooth_icon_license": "CC BY 4.0; attribution Fonticons, Inc. See FAClassic-LICENSE.txt.",
+  "bluetooth_source": "https://github.com/FortAwesome/Font-Awesome/blob/14c65a3747d0f3b751f15831fc719236aea8729d/svgs/brands/bluetooth-b.svg",
+  "orbitron_source": "Watch/apps/clock/nova/fonts/Orbitron-700.ttf; SIL OFL 1.1",
+  "rajdhani_source": "Watch/apps/clock/nova/fonts/Rajdhani-600.ttf; SIL OFL 1.1",
+  "cpfont_source": "Reader SD_fonts/FAClassicSolid/FAClassicSolid_18.cpfont",
+  "icons": {
+    "sun": "0xf185",
+    "volume": "0xf028",
+    "muted": "0xf6a9",
+    "silent": "0xf1f6",
+    "dnd": "0xf186",
+    "airplane": "0xf072",
+    "wifi": "0xf1eb",
+    "torch": "0xf0eb"
+  },
+  "torch_equivalent": "Font Awesome Free lightbulb (the Free font has no flashlight glyph).",
+  "sha256": {
+    "FAClassic-LICENSE.txt": "b2a1cf9b4d876a266020de7ff41ce6f58e814f8efd07d4cdb7695a86e875c17c",
+    "FAClassicSolid_18.cpfont": "7b2f820afb525f62c280292e63b01ef302e8392c1fe6fc707719588c41c8204c",
+    "FAClassicSolid_codepoints.csv": "106697ae65dbae1fe66380ba1e6825a2321d1fa287ca433a2bc5b5da23165031",
+    "Orbitron-700.ttf": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
+    "Orbitron-OFL.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144",
+    "Rajdhani-OFL.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "bluetooth-b.svg": "f861bad525b3445f142f5f06cccedba0b337677d0b778baba095a34c59d90744"
+  },
+  "assets_sha256": "6e0eadad1387eee501f4524d3b21d86fac61e9051822c368070468b9c41d896c"
+}

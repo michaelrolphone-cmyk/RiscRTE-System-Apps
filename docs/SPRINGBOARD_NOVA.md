@@ -16,7 +16,7 @@ edge masks (0 → 40% at 14 px → opaque at 46 px), 54 px honeycomb spacing,
 shrink, nearest label and top clock. Text uses actual Orbitron 500 / Rajdhani 600
 raster subsets. Application identities always come from `installed_apps_get`;
 the prototype's 24 Phone/Mail/etc entries are never admitted or implemented.
-The portable deployment catalog remains bounded to 16 real entries. One and two
+The portable deployment catalog remains bounded to 17 real entries. One and two
 apps work naturally; zero apps has no motion or launch. The shared presentation
 also pages larger host inventories in groups of 19 using the bottom page counter
 or ordinary directional navigation.

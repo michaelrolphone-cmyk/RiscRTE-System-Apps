@@ -1,3 +1,6 @@
+#ifdef PORTABLE_FILE_BROWSER_APP
+#include "PortableFileBrowser.h"
+#endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #include "PortableTouch.h"
@@ -7,6 +10,12 @@
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
 #include "T5VideoApi.h"
+#ifdef PORTABLE_RADIO_SESSION
+#include "PortableRadioSession.h"
+#ifndef PORTABLE_ALARM_CLIENT
+#error "Radio lifecycle integration requires the foreground alarm client"
+#endif
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
 #include "PortableAudioSession.h"
 #ifndef PORTABLE_ALARM_CLIENT
@@ -33,13 +42,27 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+#ifdef PORTABLE_QUICK_ACTIONS
+#include "PortableQuickSession.h"
+#include "PortableQuickRender.h"
+static pqa_session quick;
+#ifdef PORTABLE_QUICK_RADIOS
+#include "PortableQuickRadios.h"
+static pqa_radios quick_radios;
+#endif
+static uint16_t *quick_background;
+static bool quick_modal,quick_launch_pending,quick_replay_pending;
+static bool quick_foreground(bool *consumed);
+static bool quick_interrupt(void);
+unsigned portable_quick_brightness(void) {return quick.brightness;}
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
 static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained;
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 static bool alarm_failure(void);
@@ -125,6 +148,27 @@ static void input_navigation_close(void) {
 static void input_service(void) {
  portable_touch_sample next;portable_touch_read(&touch,&next);
  input_sampled_at=millis_now();
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+ if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(!alarm_modal) {
+  bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
+      next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible&&info.width==240&&info.height==240);
+  if(reserved) {
+   input_pending=false;input_sample=(portable_touch_sample){0};
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+   nu_gesture=false;
+#endif
+  } else if(quick.ui.route==PQA_REPLAY) {
+   quick_replay_pending=true;next.began=true;
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+   nu_gesture=true;nu_start_x=quick.ui.start_x;nu_start_y=quick.ui.start_y;
+#endif
+  }
+  if(reserved)next=(portable_touch_sample){0};
+ }
+#endif
  if(input_pending && input_sample.released && next.down) {
   input_sample=(portable_touch_sample){.cancelled=true};touch.neutral=touch.down=false;
  } else if(!(input_pending && input_sample.released && next.valid && !next.down)) {
@@ -436,6 +480,9 @@ static bool idle_sleep(void) {
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
+#endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active || handoff_pending)return true;
 #endif
@@ -444,10 +491,16 @@ static bool idle_sleep(void) {
    * Keep touch/navigation live so the user can explicitly retry cleanup. */
   if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
 #endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_suspend()){failed=true;return false;}
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
   /* Close app-owned audio before sleep preparation can call storage or alarm
    * output. Wake never restarts capture/playback without a fresh user action. */
   if(!portable_audio_suspend()){failed=true;return false;}
+#endif
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
 #endif
   if(!portable_touch_close(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -468,6 +521,9 @@ static bool idle_sleep(void) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   portable_wifi_resume();
 #endif
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
+#endif
   if(!portable_touch_open(&touch,rt)){failed=true;return false;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
@@ -477,6 +533,9 @@ static bool idle_sleep(void) {
   rt->diagnostic(status?"PORTABLE_APP sleep=resumed":"PORTABLE_APP sleep=refused");
   return !failed;
 }
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+#include "quick_adapter.inc"
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
@@ -498,12 +557,23 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!alarm_foreground(&consumed))return false;
   if(consumed)return true;
 #endif
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+  portable_audio_capture_resume();
+#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+     !portable_audio_capture_active() &&
+#endif
      !navigation_pending && !(input_pending && (input_sample.down || input_sample.released))) {
     if(!idle_sleep())return false;
     return !failed; /* Waking crown/contact never becomes an app action. */
   }
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  bool quick_consumed=false;
+  if(!quick_foreground(&quick_consumed))return false;
+  if(quick_consumed){out->exit_requested=quick_launch_pending;return true;}
 #endif
   if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
@@ -519,7 +589,14 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   if(sample.cancelled || !sample.valid)nu_gesture=false;
-  if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;}
+  if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;
+#ifdef PORTABLE_QUICK_ACTIONS
+   if(quick_replay_pending){nu_start_x=quick.ui.start_x;nu_start_y=quick.ui.start_y;}
+#endif
+  }
+#ifdef PORTABLE_QUICK_ACTIONS
+  quick_replay_pending=false;
+#endif
   if(sample.released && nu_gesture) {
     nu_gesture=false;
     int dx=(int)x-nu_start_x,dy=(int)y-nu_start_y;
@@ -592,7 +669,14 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #elif !defined(PORTABLE_SETTINGS_APP)
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
-  if(ok && returning) {
+  if(ok && returning
+#ifdef PORTABLE_QUICK_ACTIONS
+     && !quick_launch_pending
+#endif
+  ) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend())return alarm_failure();
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
@@ -610,9 +694,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
 #include "alarm.inc"
 #endif
-static bool refresh(void) { return portable_catalog_count <= 16; }
+static bool refresh(void) { return portable_catalog_count <= 17; }
 static uint32_t count(void) {
-  return portable_catalog_count <= 16 ? portable_catalog_count : 0;
+  return portable_catalog_count <= 17 ? portable_catalog_count : 0;
 }
 static bool get(uint32_t i, t5_app_manifest_t *out) {
   if (!out || i >= count())
@@ -776,6 +860,9 @@ static int initialize(void) {
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
+#endif
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
   back_exits_app=true;
@@ -831,6 +918,12 @@ static int initialize(void) {
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   last_activity=millis_now();
 #endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(!pqa_session_load(&quick,rt))return -1;
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
+#endif
+#endif
   return failed?-1:0;
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {
@@ -839,9 +932,21 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
 #endif
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close()) {
+    rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
+#endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
+    for(;;)rt->yield_ms(50);
+  }
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_suspend()) {
+    rt->diagnostic("RADIO cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);
   }
 #endif
@@ -860,6 +965,10 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
   if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick.ui.torch && !pqa_session_restore(&quick,display))rt->diagnostic("QUICK brightness-restore-failed");
+  free(quick_background);quick_background=NULL;
 #endif
   if (surface.frame)
     display->release(display->context, surface.frame);

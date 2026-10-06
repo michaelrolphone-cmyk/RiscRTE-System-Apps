@@ -1,3 +1,6 @@
+#ifdef PORTABLE_QUICK_RADIOS
+#include "PortableRadioPolicy.h"
+#endif
 /* Explicit portable build only. Reader's firmware selector remains in the
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
@@ -107,6 +110,9 @@ static bool wifi_draft_valid(void) {
   return true;
 }
 static void wifi_connect(void) {
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!portable_radio_wifi_allowed(wr)){wifi_message="Wi-Fi is off in Quick Controls";dirty=true;return;}
+#endif
   if(!wifi_draft_valid()){dirty=true;return;}
   if(!wifi_acquire()) {wifi_message="Wi-Fi unavailable - retry Connect";dirty=true;return;}
   if(!wifi_disconnect())return;
@@ -118,6 +124,9 @@ static void wifi_connect(void) {
   wifi_message="Connecting - select Cancel to stop";dirty=true;
 }
 static void wifi_scan_start(void) {
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!portable_radio_wifi_allowed(wr)){wifi_message="Wi-Fi is off in Quick Controls";dirty=true;return;}
+#endif
   if(!wifi_acquire()){wifi_message="Wi-Fi unavailable - enter manually";dirty=true;return;}
   if(!wifi_disconnect())return;
   if(!wifi->scan_start(wifi->context)){if(wifi_disconnect())wifi_message="Scan failed - retry or enter manually";dirty=true;return;}

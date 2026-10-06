@@ -127,3 +127,19 @@ hooks; standalone target ELF validation alone is not deployed sleep/return proof
 Run the normal legacy aggregate build, interaction fixtures and release-byte
 comparison independently. Host and ELF checks do not qualify real TLS/radio,
 physical power-loss behavior, display ergonomics or flash wear.
+
+## Explicit paired-layout ABI handling (service 0.1.1)
+
+The provider-only bank-store function table remains API v1. Its live status now
+supplies the selected paired-layout ABI; the historical SDK constant `1` is not
+an instruction to overwrite that value. Both app and Runtime transactions carry
+`status.store_abi` and the fresh active-store digest to native admission.
+
+For Runtime updates, layout, ABI and firmware capacity are rechecked immediately
+before beginning, as well as during catalog classification. A stale/mismatched
+selection causes no transaction. A new-layout ABI2 device can receive only a
+matching catalog/firmware image; native Runtime still rejects wrong markers,
+wrong journal/layout and changed app authority. This does not offer a partition
+migration, install app-data on old hardware, authorize a new app or weaken the
+old-layout rejection of ABI2 images. ABI1 and ABI2 service tests cover both kinds
+of update, invalid status, mismatched catalogs and changes after classification.

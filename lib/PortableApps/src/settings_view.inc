@@ -315,6 +315,9 @@ static bool settings_view_poll(t5_app_input_t *out) {
   if(sample.began) {
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
     sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_axis=0;sv_dragged=false;
+#ifdef PORTABLE_QUICK_ACTIONS
+    if(quick_replay_pending){sv_start_x=quick.ui.start_x;sv_start_y=quick.ui.start_y;quick_replay_pending=false;}
+#endif
     sv_start_scroll=sv_scroll[sv_page==SV_ROOT?0:1];
 #ifndef PORTABLE_NOVA_UI
     if(sv_eligible && sv_page==SV_VALUE && y>=116 && y<142 && x>=64 && x<=176) {

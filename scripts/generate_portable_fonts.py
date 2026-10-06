@@ -11,7 +11,8 @@ out=ROOT/'lib/PortableApps/fonts';out.mkdir(exist_ok=True)
 # The deployed cross-repository inventory is an explicit shared contract, including external Audio Tools.
 registry=json.loads((ROOT/'lib/PortableApps/catalog-icons.json').read_text())['apps']
 assert len({v['icon'] for v in registry.values()})==len(registry), 'Every app needs its own icon'
-names=sorted({json.loads(f.read_text())['icon'] for f in (ROOT/'Apps').glob('*.json')}|{v['icon'] for v in registry.values()})
+additional=json.loads((ROOT/'lib/PortableApps/additional-icons.json').read_text())
+names=sorted({json.loads(f.read_text())['icon'] for f in (ROOT/'Apps').glob('*.json')}|{v['icon'] for v in registry.values()}|set(additional))
 provenance={'fontawesome_commit':'14c65a3747d0f3b751f15831fc719236aea8729d','reader_commit':'4ff926a4595924f7528147418013ab7f8762db17','license':'SIL OFL 1.1','files':{},'icons':names}
 lookup=a.reader/'SD_fonts/FAClassicSolid/FAClassicSolid_codepoints.csv'
 cmap={row[0]:row[2] for row in csv.reader(lookup.read_text().splitlines())}
@@ -19,7 +20,9 @@ assert cmap['U+F2F2']=='stopwatch', 'Stopwatch must be the actual upstream glyph
 provenance['files'][str(lookup.relative_to(a.reader))]=hashlib.sha256(lookup.read_bytes()).hexdigest()
 for value in registry.values():
  assert cmap['U+'+value['icon'].split(':')[1].upper()]==value['glyph'], value
-provenance['glyph_names']={v['icon']:v['glyph'] for v in registry.values()}
+for icon,glyph in additional.items():
+ assert cmap['U+'+icon.split(':')[1].upper()]==glyph, icon
+provenance['glyph_names']={**{v['icon']:v['glyph'] for v in registry.values()},**additional}
 arrays=[];rows=[]
 for style in ('solid','regular'):
  family='FAClassic'+style.title(); path=a.reader/'SD_fonts'/family/(family+'_18.cpfont');data=path.read_bytes();provenance['files'][str(path.relative_to(a.reader))]=hashlib.sha256(data).hexdigest()

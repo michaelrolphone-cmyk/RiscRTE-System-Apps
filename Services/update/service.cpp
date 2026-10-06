@@ -50,7 +50,7 @@ bool open(const char *url,uint32_t bytes) {
 }
 bool classify() {
  risc_bank_status_v1 current={};current.struct_size=sizeof(current);
- if(!bank->status(bank->context,&current))return false;
+ if(!bank->status(bank->context,&current)||!current.store_abi)return false;
  if(UPDATE_FIRMWARE){
   for(uint32_t i=0;i<catalog->count;++i){auto& r=catalog->rows[i];
    std::snprintf(r.view.installed,sizeof(r.view.installed),"%s",current.runtime_version);
@@ -96,7 +96,15 @@ bool begin(void*,uint32_t i,uint64_t seconds) {
  if(!started||in_call||http_handle||bank_handle||seconds<1704067200ULL||seconds>4102444799ULL||i>=catalog->count||catalog->rows[i].view.availability!=SOFTWARE_UPDATE_AVAILABLE)return false;
  in_call=true;utc=seconds;selected=i;auto& r=catalog->rows[i];risc_bank_status_v1 current={};current.struct_size=sizeof(current);
  if(!bank->status(bank->context,&current)){in_call=false;return fail(RISC_BANK_UNAVAILABLE);}
- risc_bank_image_v1 image={};image.struct_size=sizeof(image);image.size=r.view.size;image.store_abi=RISC_BANK_STORE_ABI;
+ /* A catalog classification is not transaction authority. Re-read the live
+  * layout/ABI/capacity before beginning; native admission still owns all bank
+  * writes, image marker checks and the exact active-store digest. The v1 table
+  * can serve both legacy ABI1 and the explicitly provisioned ABI2 layout. */
+ if(!current.store_abi || (UPDATE_FIRMWARE &&
+    (std::strcmp(r.layout,current.layout)||r.storeAbi!=current.store_abi||r.view.size>current.firmware_capacity))) {
+  in_call=false;return fail(RISC_BANK_INVALID);
+ }
+ risc_bank_image_v1 image={};image.struct_size=sizeof(image);image.size=r.view.size;image.store_abi=current.store_abi;
  std::memcpy(image.sha256,r.digest,32);std::memcpy(image.active_store_sha256,current.active_store_sha256,32);
  int32_t e=UPDATE_FIRMWARE?bank->begin_firmware(bank->context,&image,&bank_handle):
   bank->begin_app(bank->context,r.native_id,r.manifest.data,(uint32_t)r.manifest.size,&image,&bank_handle);

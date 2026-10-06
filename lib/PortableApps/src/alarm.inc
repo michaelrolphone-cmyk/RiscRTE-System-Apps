@@ -3,13 +3,16 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
 static uint32_t alarm_seen_snapshot;
 static void alarm_cancel_input(void) {
+#ifdef PORTABLE_QUICK_ACTIONS
+    if(quick_modal)pqa_cancel_input(&quick.ui);
+#endif
     input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
     touch.neutral=touch.down=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -19,6 +22,12 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend()) {
+        rt->diagnostic("RADIO foreground-failed cleanup-unconfirmed; invocation retained");
+        for(;;)rt->yield_ms(50);
+    }
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
     /* Runtime checks app exit safety before fini. Never defer live/uncertain
      * audio cleanup until fini or let alarm stop close another owner's stream. */
@@ -45,16 +54,34 @@ static bool alarm_failure(void) {
     }
     return false;
 }
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION)
+static bool alarm_sessions_safe(void) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_services_safe())return false;
+#endif
 #ifdef PORTABLE_AUDIO_SESSION
+    if(!portable_audio_services_safe())return false;
+#endif
+    return true;
+}
+static bool alarm_sessions_suspend(void) {
+#ifdef PORTABLE_RADIO_SESSION
+    if(!portable_radio_suspend())return false;
+#endif
+#ifdef PORTABLE_AUDIO_SESSION
+    if(!portable_audio_suspend())return false;
+#endif
+    return true;
+}
 static bool alarm_audio_pump(void) {
-    /* Status is memory-only. Existing due work preempts before a service step;
-     * newly exposed due work preempts before the next phase can own output. */
-    if(!portable_audio_services_safe() || !portable_alarm_status(&alarms))return false;
+    /* Check copied status before storage-backed reconciliation, then again
+     * before a newly exposed occurrence can own output in the next phase. */
+    if(!alarm_sessions_safe() || !portable_alarm_status(&alarms))return false;
     if((portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) &&
-       !portable_audio_suspend())return false;
+       !alarm_sessions_suspend())return false;
     if(!portable_alarm_pump(&alarms))return false;
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
-        portable_audio_suspend();
+        alarm_sessions_suspend();
 }
 #else
 #define alarm_audio_pump() portable_alarm_pump(&alarms)
@@ -129,6 +156,9 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
+#ifdef PORTABLE_FILE_BROWSER_APP
+    if(!portable_file_browser_safe())return !failed;
+#endif
     if(failed || !display_settled || surface.frame)return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
@@ -158,6 +188,9 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
+#ifdef PORTABLE_QUICK_ACTIONS
+    if(!quick_interrupt())return alarm_failure();
+#endif
     uint16_t *saved;
     if(!alarm_save_frame(&saved)){failed=true;return alarm_failure();}
     *consumed=true;alarm_cancel_input();

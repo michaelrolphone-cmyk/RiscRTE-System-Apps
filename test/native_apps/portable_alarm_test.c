@@ -15,6 +15,12 @@ static unsigned normal_after_failure;
 #ifdef PORTABLE_AUDIO_SESSION
 static bool application_audio=true,audio_close_bad;
 static unsigned application_audio_stops;
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+static bool continuous_capture;
+bool portable_audio_capture_active(void){return continuous_capture&&application_audio;}
+static unsigned audio_resumes;
+void portable_audio_capture_resume(void){if(continuous_capture&&!audio_close_bad&&!application_audio){application_audio=true;audio_resumes++;}}
+#endif
 bool portable_audio_services_safe(void){return !audio_close_bad;}
 bool portable_audio_suspend(void){
  if(audio_close_bad)return false;
@@ -98,6 +104,22 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
  if(test==0){risc_display_output_api_v1 delayed=display_api;delayed.present_status=frame_delayed;display=&delayed;clear();present(false);assert(display_settled&&pending_status_calls==3&&!service_steps);display=&display_api;}
  clear();fill(0,0,240,240,0x1234);present(false);assert(alarm_pixels_valid);
 #ifdef PORTABLE_AUDIO_SESSION
+ #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+ if(test==16){
+  continuous_capture=true;last_activity=0;alarm_fake.state=ALARM_STATE_READY;
+  for(unsigned minute=1;minute<=20;minute++){ticks=minute*60000u;t5_app_input_t input;assert(poll(&input,1)&&!native_sleep_calls&&application_audio&&!application_audio_stops);}
+  continuous_capture=false;application_audio=false;t5_app_input_t input;assert(!poll(&input,1)&&native_sleep_calls==1&&portable_app_sleep_retained());
+  unsigned live=grants;app_module_fini();assert(grants==live&&live);
+  puts("Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS");return 0;
+ }
+ if(test==17){
+  continuous_capture=true;alarm_fake.state=ALARM_STATE_CUE;bool consumed=false;
+  assert(alarm_foreground(&consumed)&&consumed&&!application_audio&&application_audio_stops==1);
+  t5_app_input_t input;assert(poll(&input,1)&&application_audio&&audio_resumes==1&&!native_sleep_calls);
+  continuous_capture=false;assert(portable_audio_suspend());assert(poll(&input,1)&&!application_audio&&audio_resumes==1);
+  app_module_fini();assert(!grants);puts("Requested capture resumes after settled cue; explicit stop stays stopped PASS");return 0;
+ }
+ #endif
  if(test==11||test==15){
   alarm_fake.state=test==15?ALARM_STATE_CUE:ALARM_STATE_ALERT;alarm_fake.occurrence=test==15?(alarm_token_v1){0}:(alarm_token_v1){1,7,88,9};audio_close_bad=true;
   unsigned before=service_steps,live=grants;

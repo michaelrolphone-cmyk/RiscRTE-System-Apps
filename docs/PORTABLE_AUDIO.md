@@ -36,3 +36,16 @@ events, display/navigation failure, bounded stop-only, failed app-audio cleanup,
 normal Back and native-retained sleep. Existing alarm/Wi-Fi suites remain
 required. Tests simulate providers; no physical audio or timing qualification is
 claimed.
+
+`PORTABLE_AUDIO_CONTINUOUS_CAPTURE` enables the additional app-local
+`portable_audio_capture_active()` hook. A requested active capture suppresses
+ordinary touch-inactivity sleep. Explicit stop restores the usual idle policy;
+alarm, exit and failed-cleanup paths retain their existing behavior. The opt-in
+is intended for continuous microphone monitoring. Other audio apps are unchanged.
+The adapter fixture tests twenty idle deadlines in plain/Nova and sanitizer builds.
+
+The opt-in also supplies portable_audio_capture_resume(). The adapter calls it
+only after alarm handling is settled. The app may reopen only a previously
+requested capture; explicit Stop, Freeze, Exit or an input fault clears that
+intent. Cleanup failures retain the invocation without resuming. The fixture
+covers cue suspension/resume and confirms explicit Stop stays stopped.
