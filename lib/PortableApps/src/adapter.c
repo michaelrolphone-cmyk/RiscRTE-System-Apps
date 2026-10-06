@@ -559,6 +559,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+     !portable_audio_capture_active() &&
+#endif
      !navigation_pending && !(input_pending && (input_sample.down || input_sample.released))) {
     if(!idle_sleep())return false;
     return !failed; /* Waking crown/contact never becomes an app action. */

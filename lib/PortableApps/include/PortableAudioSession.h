@@ -8,3 +8,7 @@
  * that preserves the distinction between active and failed/closing I2S. */
 bool portable_audio_suspend(void);
 bool portable_audio_services_safe(void);
+#ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
+/* App-local opt-in: active capture suppresses touch-inactivity sleep. */
+bool portable_audio_capture_active(void);
+#endif
