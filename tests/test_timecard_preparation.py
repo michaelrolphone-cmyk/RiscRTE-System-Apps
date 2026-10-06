@@ -19,5 +19,5 @@ class TimecardPreparation(unittest.TestCase):
  def test_declared_capacity_and_version_are_explicit(self):
   source=(ROOT/'lib/PortableApps/src/adapter.c').read_text()
   self.assertEqual(source.count('portable_catalog_count <= 17'),2)
-  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.4.9')
+  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.5.0')
 if __name__=='__main__':unittest.main()

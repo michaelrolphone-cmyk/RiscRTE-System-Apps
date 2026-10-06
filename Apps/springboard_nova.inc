@@ -86,6 +86,10 @@ static void nova_render(nova_state *s) {
         if (!api->installed_apps_get(s->first+i,&app)) continue;
         int dx=s->points[i].x+(int)(s->motion.x*16), dy=s->points[i].y+(int)(s->motion.y*16);
         int edge=abs(dx)>abs(dy)?abs(dx):abs(dy), scale=nova_scale(edge);
+        /* Make the nearest/labelled app visibly focused without moving the
+         * lattice or enlarging hit targets. Keep the existing launch pulse
+         * unchanged rather than stacking another enlargement onto it. */
+        if (i == s->focus && s->pending < 0) scale += scale/8;
         if ((int)i == s->pending && s->pulse) {
             int triangle=s->pulse <= 160 ? s->pulse : 320-s->pulse;
             scale += scale*triangle*22/(160*100);
