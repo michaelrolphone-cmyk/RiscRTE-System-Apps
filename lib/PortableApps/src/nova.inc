@@ -1,11 +1,14 @@
 /* Client implementation of the shared compact presentation. No hardware pins,
  * register access, or runtime ABI. True FA glyphs are copied OFL font rasters. */
 #include "../../../Apps/SpringboardPresentation.h"
+#if defined(PORTABLE_RTC_UTC8_DENVER) && defined(PORTABLE_RTC_WALL_TIME)
+#error "Select exactly one explicit RTC policy"
+#endif
 #include "../fonts/icons.inc"
 #include "../fonts/text.inc"
 static bool nova_mode, nova_mask_pending;
 static springboard_contact nova_contact;
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
 #include "PortableTime.h"
 static risc_runtime_capability_v1 np_rtc_grant;
 static const twatch_rtc_api_v1 *np_rtc;
@@ -137,7 +140,7 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
 }
 static void np_contact(springboard_contact *out) { *out=nova_contact; }
 static bool np_clock(uint8_t *hour,uint8_t *minute) {
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   twatch_rtc_time_v1 raw,local;
   if(!np_rtc || !np_rtc->read(np_rtc->context,&raw) || !portable_time_forward(&raw,&local))return false;
   *hour=local.hour;*minute=local.minute;return true;
@@ -147,7 +150,7 @@ static bool np_clock(uint8_t *hour,uint8_t *minute) {
 #endif
 }
 static void np_close(void) {
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   if(np_rtc_grant.api && !rt->release(&np_rtc_grant))rt->diagnostic("PORTABLE_APP error=toolbar-clock-release");
   np_rtc=NULL;
 #endif
@@ -158,7 +161,7 @@ const springboard_presentation *springboard_presentation_get(void) {
   if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);
   if(!np_rtc_grant.api && rt->acquire("rtc.clock",TWATCH_RTC_API_V1,0,&np_rtc_grant)) {
     const twatch_rtc_api_v1 *clock=np_rtc_grant.api;
