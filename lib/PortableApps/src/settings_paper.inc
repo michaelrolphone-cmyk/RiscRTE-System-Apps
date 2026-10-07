@@ -69,6 +69,12 @@ static void sp_redraw(void) {
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   } else if(sv_page==SV_ALERT) {
+    if(settings_visual_alerts()) {
+      sp_text(32,144,width()-64,"VISUAL ONLY",true,true);
+      sp_text(32,208,width()-64,"NO SOUND OR VIBRATION",false,true);
+      sp_text(32,264,width()-64,"SAVED PREFERENCE KEPT",false,true);sp_footer(false);
+      present(sp_clean);sp_clean=false;return;
+    }
     const char *options[]={"VIBRATE","SOUND","BOTH"};
     for(unsigned i=0;i<3;i++)sp_button(32,144+(int)i*112,width()-64,88,options[i],alert_choice==i+1);
     sp_text(32,height()-142,width()-64,alert_message,false,true);sp_footer(true);
@@ -106,6 +112,9 @@ static bool sp_poll(t5_app_input_t *out) {
   sv_gesture=false;if(!tap||s.x>=width()||s.y>=height())return true;
   int x=s.x,y=s.y;
   bool editable=sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
+#ifdef PORTABLE_ALARM_SETTINGS
+  if(sv_page==SV_ALERT&&settings_visual_alerts())editable=false;
+#endif
   if(y>=height()-112&&y<height()-24) {
     if((editable||(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()))&&x>=width()/2-8&&x<width()/2+8)return true;
     if(editable&&x>=width()/2){editor_field=6;out->buttons=T5_APP_BUTTON_CONFIRM;}

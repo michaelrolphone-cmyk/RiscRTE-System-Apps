@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -21,6 +22,10 @@ def build(args):
         cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable'
     flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
+    if args.return_app:
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.return_app):
+            raise ValueError('Return app must be a plain .elf filename')
+        flags.append('-DPORTABLE_RETURN_APP=\"'+args.return_app+'\"')
     if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
     if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
@@ -101,7 +106,7 @@ def build(args):
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
-        'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
+        'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
@@ -117,5 +122,6 @@ if __name__ == '__main__':
     parser.add_argument('--full-frames',action='store_true',help='Disable optional partial-damage and previous-frame cache')
     parser.add_argument('--navigation',action='store_true',help='Require a granted input.navigation@1 provider')
     parser.add_argument('--touch-rotation',type=int,choices=[0,180],default=0)
+    parser.add_argument('--return-app',help='Explicit root Back destination as a plain .elf filename')
     parser.add_argument('--output-dir',type=Path)
     build(parser.parse_args())

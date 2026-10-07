@@ -35,6 +35,14 @@ static const char *sleep_message;
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
 #include "PortableAlarmSettings.h"
+#include "AlarmServiceV1.h"
+static bool settings_visual_alerts(void) {
+#ifdef PORTABLE_ALARM_CLIENT
+  return alarms.api && alarm_service_output_modes(alarms.api)==ALARM_MODE_VISUAL;
+#else
+  return false;
+#endif
+}
 static const risc_key_value_v1 *alert_store;
 static unsigned alert_choice;
 static const char *alert_message;
@@ -125,6 +133,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   else if(index==SETTINGS_ALERT_ROW) {
+    if(settings_visual_alerts()){out->type=T5_APP_SETTING_ACTION;strcpy(out->value,"VISUAL ONLY");return true;}
     unsigned mode;int loaded=portable_alert_load(alert_store,&mode);
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,alert_unconfirmed?"Unconfirmed":
@@ -300,6 +309,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(!input.buttons && !input.tapped){armed=true;continue;}
       if(!armed)continue;
       armed=false;
+      if(settings_visual_alerts()){if(input.buttons&T5_APP_BUTTON_CONFIRM)break;continue;}
       bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
       if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))
         alert_choice=alert_choice<PORTABLE_ALERT_BOTH?alert_choice+1u:PORTABLE_ALERT_VIBRATE;

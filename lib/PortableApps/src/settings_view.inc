@@ -240,6 +240,12 @@ static void sv_sleep(void) {
 #ifdef PORTABLE_ALARM_SETTINGS
 static void sv_alert(void) {
   sv_heading("ALARM ALERTS");
+  if(settings_visual_alerts()) {
+    sv_center(1,86,"VISUAL ONLY",SV_CYAN,0);
+    sv_center(3,124,"No sound or vibration",SV_CAP,0);
+    sv_center(3,160,"Saved preference kept",SV_CAP,0);
+    sv_button(24,200,192,26,"BACK",false);return;
+  }
   sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
   sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
   sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
