@@ -15,7 +15,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [Remap Front Buttons](docs/apps/button_remap.md) — core front-button role mapping, duplicate-assignment prevention, reset-to-defaults, and provider-owned persistence.
 - [Clear Reading Cache](docs/apps/clear_cache.md) — confirmation and reporting workflow for firmware-owned EPUB/XTC reading-cache cleanup.
-- [Portable NOVA File Browser](docs/PORTABLE_FILE_BROWSER.md) — Watch installed-file navigation, name filter and text/hex preview.
+- [Portable NOVA File Browser](docs/PORTABLE_FILE_BROWSER.md) — capability-selected Watch/e-paper navigation, filtering/preview, and writable-volume file operations.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
 - [Wi-Fi Networks](docs/apps/wifi_settings.md) — Reader wireless-selector handoff, plus an explicit [portable Wi-Fi client](docs/PORTABLE_WIFI.md) with scan, credential entry, Save/Forget and safe session lifecycle.

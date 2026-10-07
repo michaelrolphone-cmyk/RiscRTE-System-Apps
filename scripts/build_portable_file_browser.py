@@ -1,14 +1,22 @@
 #!/usr/bin/env python3
 """Build the capability-only NOVA-7 File Browser. No firmware filesystem/UI ABI."""
-import argparse,hashlib,json,os,shutil,subprocess
+import argparse,hashlib,json,os,re,shutil,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def build(args):
+    if not re.fullmatch(r'[a-z][a-z0-9.-]*',args.storage_capability):raise ValueError('Invalid storage capability')
+    if not re.fullmatch(r'[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.elf',args.return_app) or any(part in ('.','..') for part in args.return_app.split('/')):raise ValueError('Return app must be a normalized installed relative ELF path')
+    if not 0<=args.storage_instance<=0x7fffffff:raise ValueError('Storage instance is out of range')
+    if args.secondary_storage_instance is not None:
+        if not 0<args.secondary_storage_instance<=0x7fffffff:raise ValueError('Secondary storage requires an explicit valid instance')
+        if args.storage_capability=='storage.volume' and (not args.storage_instance or args.storage_instance==args.secondary_storage_instance):raise ValueError('Two storage.volume providers require distinct explicit instances')
     cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:
         cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out=args.output_dir or ROOT/'dist/portable/file-browser';out.mkdir(parents=True,exist_ok=True)
-    flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}']
+    flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DPORTABLE_FILE_BROWSER_CAPABILITY=\"{args.storage_capability}\"',f'-DPORTABLE_FILE_BROWSER_INSTANCE={args.storage_instance}u',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
+    if args.secondary_storage_instance is not None:flags.append(f'-DPORTABLE_FILE_BROWSER_SECONDARY_INSTANCE={args.secondary_storage_instance}u')
+    if args.file_handlers:flags.append('-DPORTABLE_FILE_BROWSER_HANDLERS')
     if args.alarm_client:flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.navigation:flags.append('-DPORTABLE_INPUT_NAVIGATION')
     if args.quick_controls:
@@ -32,17 +40,25 @@ def build(args):
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
     subprocess.run([str(validator),str(elf)],check=True)
     manifest=json.loads((ROOT/'Apps/native/file_browser.json').read_text())
+    for requirement in manifest['requires']:
+        if requirement['capability']=='storage.installed-files':requirement['capability']=args.storage_capability
+    if args.secondary_storage_instance is not None and args.storage_capability!='storage.volume':manifest['requires'].append({'capability':'storage.volume','api':1})
+    if args.file_handlers:manifest['requires'].append({'capability':'file.open','api':1})
     if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
     if args.quick_controls:manifest['requires'] += [{'capability':c,'api':v} for c,v in [('storage.key-value',1),('rtc.clock',2),('net.wifi',1),('bluetooth.hci',1)]]
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
+    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
     (out/'file_browser-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     licenses=out/'licenses';licenses.mkdir(exist_ok=True)
     shutil.copyfile(ROOT/'LICENSE',licenses/'System-Apps-LICENSE.txt')
-    for p in (ROOT/'lib/PortableApps/settings_fonts').glob('LICENSE-*'):shutil.copyfile(p,licenses/p.name)
+    for group in ('settings_fonts','fonts','paper_fonts'):
+        destination=licenses/group;destination.mkdir(exist_ok=True)
+        for p in (ROOT/'lib/PortableApps'/group).glob('LICENSE*'):shutil.copyfile(p,destination/p.name)
+        source=ROOT/'lib/PortableApps'/group/'SOURCES.json'
+        if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true');build(p.parse_args())
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=0);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true');build(p.parse_args())

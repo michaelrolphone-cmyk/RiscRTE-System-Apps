@@ -59,6 +59,7 @@ static uint64_t test_sub(void*c){(void)c;test_subs++;return 1;}
 static bool test_unsub(void*c,uint64_t n){(void)c;assert(n==1 && test_subs);test_subs--;return true;}
 static bool test_poll(void*c,size_t n){(void)c;assert(n==1);test_polls++;return true;}
 static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
+static void (*test_touch_script)(int*,int*);
 static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
  (void)c;int x=-1,y=-1;
 #ifdef FILE_BROWSER_PAPER_PROFILE
@@ -71,6 +72,7 @@ static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
 #endif
  if(test_script==1 || test_script==3){if(test_polls==5){x=100;y=82;}if(test_polls==11){x=120;y=207;}if(test_polls==17||test_polls==23||test_polls==29){x=25;y=25;}}
  if(test_script==2){if(test_polls==5){x=100;y=154;}if(test_polls==6){x=100;y=82;}if(test_polls==13){x=25;y=25;}}
+ if(test_touch_script)test_touch_script(&x,&y);
  if(x>=0){
 #if PORTABLE_TOUCH_ROTATION == 180
   x=239-x;y=239-y;
@@ -102,7 +104,8 @@ static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capabi
  test_grants++;return true;}
 static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_grants);if(g->api==&test_volume && test_fail_release)return false;g->api=NULL;test_grants--;return true;}
 static const risc_runtime_api_v1 test_runtime={1,sizeof(test_runtime),test_health,test_yield,test_diag,test_launch,test_acquire,test_release};
-const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&test_runtime:NULL;}
+static const risc_runtime_api_v1 *test_runtime_override;
+const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){
  bool ok=t5_app_get_api(1)->poll(out,wait);
  if(ok && test_script==3 && test_polls>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}

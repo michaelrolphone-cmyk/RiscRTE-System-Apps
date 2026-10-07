@@ -1,7 +1,7 @@
 #define FILE_BROWSER_PAPER_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
 #define PORTABLE_FILE_BROWSER_CAPABILITY "storage.volume"
-#define FILE_BROWSER_RETURN_APP "default.elf"
+#define FILE_BROWSER_RETURN_APP "springboard.elf"
 #define main legacy_file_browser_fixture_main
 #include "portable_file_browser_test.c"
 #undef main
