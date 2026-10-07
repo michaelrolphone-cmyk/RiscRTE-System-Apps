@@ -125,7 +125,7 @@ static bool quick_foreground(bool *consumed) {
  }
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
- if(wifi && !failed) {
+ if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close())return false;
 #endif
