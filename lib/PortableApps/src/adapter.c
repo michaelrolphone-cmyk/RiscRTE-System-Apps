@@ -613,8 +613,15 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "quick_adapter.inc"
 #endif
+static void clear_contact_snapshots(void) {
+  nova_contact=(springboard_contact){0};
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
+}
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+  clear_contact_snapshots();
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   app_contact=(t5_app_contact_t){0};
 #endif
@@ -654,7 +661,13 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
-  if(quick_consumed){crown_pending=false;out->exit_requested=quick_launch_pending;return true;}
+  if(quick_consumed){
+    crown_pending=false;out->exit_requested=quick_launch_pending;
+    /* A reserved gesture is not app contact. Keep the presentation neutral
+     * without an invented release, so deliberate replay can begin normally. */
+    if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui))nova_contact.valid=true;
+    return true;
+  }
 replay_input:
 #endif
 #ifdef PORTABLE_HOME_APP
@@ -744,7 +757,7 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
-  if(handoff_requested){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
+  if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
@@ -778,7 +791,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
   ) {
     if(!app_allows_launch(destination)) {
       home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
-      memset(out,0,sizeof(*out));return true;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
     }
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_close())return false;
@@ -795,7 +808,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
       /* Admission refusal is not a cleanup failure. The guarded app remains
        * paused and can offer a fresh explicit attempt without losing edits. */
       home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
-      memset(out,0,sizeof(*out));return true;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
 #else
       failed=true;return false;
 #endif

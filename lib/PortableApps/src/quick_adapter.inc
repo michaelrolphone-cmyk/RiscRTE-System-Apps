@@ -70,6 +70,12 @@ static void quick_time(char out[6]) {
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
  if(!pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))return true;
+ /* Reserve a possible top-edge gesture without owning a modal yet.
+  * Keep ordinary tabs/gear taps replayable without pausing the foreground
+  * radio, touching storage, copying pixels or acquiring controls resources. */
+ if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui)) {
+  *consumed=true;return true;
+ }
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;

@@ -24,10 +24,11 @@ is a linked client contract, not a native ABI or capability expansion.
 
 `python scripts/test_launch_guard.py` covers Home, crown, root Back and Wi-Fi
 veto/retry, Runtime refusal/retry and terminal handoff across both Watch input
-orientations with ASan+UBSan (24 cases). The existing124 paper control cases
+orientations with ASan+UBSan (36 cases, including contact and reservation regressions). The existing124 paper control cases
 also pass. The RF application's own tests cover its pending-edit controller.
 
-Without the option, the default controls Clock ELF is byte-identical to the
+At the initial guard-only commit3c881ef9, without the option the default
+controls Clock ELF was byte-identical to the
 2aa0cf63 baseline (SHA256
 2e74292d268f311ac0ffb8c7bfd5d5b128e9efaf7094a724381d501255b094f8).
 The disabled gate is preprocessed away rather than adding a helper symbol.

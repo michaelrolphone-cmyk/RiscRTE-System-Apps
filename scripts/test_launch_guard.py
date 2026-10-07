@@ -10,5 +10,5 @@ for san in (False,True):
   flags=['-DPORTABLE_NOVA_UI',f'-DPORTABLE_TOUCH_ROTATION={rotation}']
   if san:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/launch_guard_test.c'),*[str(ROOT/'lib/PortableApps/src'/n) for n in ('quick_actions.c','quick_render.c','quick_session.c')],'-o',str(exe)],check=True)
-  for case in range(6):subprocess.run([str(exe),str(case)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
-print('24 real-adapter launch guard scenarios passed')
+  for case in range(9):subprocess.run([str(exe),str(case)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+print('36 real-adapter launch guard scenarios passed')

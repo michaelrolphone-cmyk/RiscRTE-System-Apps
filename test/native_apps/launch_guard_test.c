@@ -1,7 +1,11 @@
+#define PORTABLE_RADIO_SESSION
 #define PORTABLE_APP_LAUNCH_GUARD
 #define PORTABLE_HOME_APP "default.elf"
 #define PORTABLE_QUICK_FIXTURE_MAIN base_quick_fixture_main
 #include "quick_adapter_test.c"
+static unsigned radio_suspends;
+bool portable_radio_suspend(void){radio_suspends++;return true;}
+bool portable_radio_services_safe(void){return true;}
 static bool allowed;
 static unsigned guard_calls;
 static bool refuse_request;
@@ -56,6 +60,22 @@ int main(int argc,char **argv) {
   refuse_request=false;opening(180);tap(260,51,185);t5_app_input_t in={0};
   while(!in.exit_requested)assert(poll(&in,8));
   assert(guard_calls==2&&wifi_launches==1);
+ } else if(test==6) {
+  nova_mode=true;sv_page=SV_VALUE;settings_editing=true;
+  nova_contact=(springboard_contact){.valid=true,.released=true,.tap_eligible=true,.x=120,.y=100};
+  home_pending=true;t5_app_input_t in={0};unsigned before=radio_suspends;
+  assert(poll(&in,0));springboard_contact c;np_contact(&c);
+  assert(guard_calls==1&&!in.exit_requested&&!c.valid&&!c.released&&!c.down);
+  assert(radio_suspends==before); /* veto does not invoke handoff cleanup */
+  assert(poll(&in,0));np_contact(&c);assert(!c.released);
+ } else if(test==7 || test==8) {
+  quick.ui.paper=test==7;quick.ui.gesture=PQA_TOP_PENDING;
+  quick.ui.position_q8=quick.ui.target_q8=0;bool consumed=false;
+  unsigned before=radio_suspends,polls_before=polls;uint32_t time_before=ticks;
+  assert(quick_foreground(&consumed)&&consumed);
+  assert(radio_suspends==before&&polls==polls_before&&ticks==time_before);
+  assert(!quick_modal&&!quick_background&&!quick_launch_pending);
+  pqa_cancel(&quick.ui);
  } else assert(!"unknown launch guard case");
  cleanup();puts("App-owned launch guard: one-shot veto, retry and terminal handoff PASS");
 }
