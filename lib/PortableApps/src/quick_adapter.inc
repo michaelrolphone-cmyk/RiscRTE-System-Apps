@@ -132,7 +132,9 @@ static bool quick_foreground(bool *consumed) {
 #ifdef PORTABLE_AUDIO_SESSION
   if(!portable_audio_suspend())return false;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  if(!portable_wifi_close())return false;
+#elif defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_suspend())return false;
 #endif
   if(!rt->request_launch("wifi_settings.elf")){quick.ui.error_flags|=PQA_ERROR_WIFI;rt->diagnostic("QUICK Wi-Fi launch-failed");}

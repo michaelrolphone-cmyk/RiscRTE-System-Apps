@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """Wi-Fi fake-provider tests; never touches a host network or user credentials."""
 import os
+import sys
 from pathlib import Path
 import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/portable'
 OUT.mkdir(parents=True, exist_ok=True)
 for sanitizer in (False, True):
-    flags = ['-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-no-pie'] if sanitizer else []
+    flags = ['-fsanitize='+os.environ.get('WIFI_SANITIZERS','address,undefined'), '-fno-omit-frame-pointer', '-no-pie'] if sanitizer else []
+    if sys.platform == 'darwin': flags = [f for f in flags if f != '-no-pie']
     environment = os.environ.copy()
     # Inherit sanitizer policy: hosted CI retains LeakSanitizer. A ptrace-based
     # local executor may explicitly set ASAN_OPTIONS=detect_leaks=0.

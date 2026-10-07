@@ -777,6 +777,13 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    /* Wi-Fi owns checked cleanup and nested Back. Home is a direct root exit;
+     * refusal leaves its controller available for an explicit cleanup retry. */
+    if(!portable_wifi_close()) {
+      crown_pending=false;memset(out,0,sizeof(*out));return true;
+    }
+#endif
     if(!rt->request_launch(destination)) {
       rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
     }

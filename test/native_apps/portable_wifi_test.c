@@ -20,6 +20,10 @@
 
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
+static unsigned fail_launch,home_at;
+#ifdef PORTABLE_HOME_APP
+static unsigned home_launches;
+#endif
 static unsigned ticks,grant_count,sub_count,frame_count,presents,poll_count,launches;
 static unsigned connects,disconnects,scan_starts,scan_polls,scan_cancels,writes,sleeps,alarm_acks;
 static unsigned fail_connect,fail_disconnect,fail_release,fail_scan,fail_scan_cancel,fail_poll,fail_store,fail_addresses;
@@ -29,7 +33,22 @@ static unsigned script_count,limit_polls=500,scenario;
 static bool native_active,scan_active;
 static wifi_link_t fake_link;
 static garden_radio_scan_result_v1 fake_scan;
+#ifdef TEST_WIFI_PAPER
+#ifndef TEST_PAPER_WIDTH
+#define TEST_PAPER_WIDTH 480
+#define TEST_PAPER_HEIGHT 800
+#endif
+#ifdef TEST_WIFI_LANDSCAPE
+#define TEST_NATIVE_WIDTH TEST_PAPER_HEIGHT
+#define TEST_NATIVE_HEIGHT TEST_PAPER_WIDTH
+#else
+#define TEST_NATIVE_WIDTH TEST_PAPER_WIDTH
+#define TEST_NATIVE_HEIGHT TEST_PAPER_HEIGHT
+#endif
+static uint8_t pixels[(TEST_NATIVE_WIDTH+7)/8*TEST_NATIVE_HEIGHT];
+#else
 static uint16_t pixels[240*240];
+#endif
 static alarm_status_v1 fake_alarm={.api_version=1,.struct_size=sizeof(fake_alarm),.state=ALARM_STATE_READY};
 static jmp_buf blocked;
 static bool block_expected,blocked_note;
@@ -42,13 +61,47 @@ static void observed(void){if(terminal_sleep)++late_calls;}
 static bool fake_health(risc_runtime_health_v1 *h){h->uptime_ms=ticks;return poll_count<limit_polls;}
 static void fake_yield(uint32_t ms){ticks+=ms;if(break_radio_on_yield){break_radio_on_yield=false;fake_link=WIFI_LINK_DOWN;fail_disconnect=1;}if(block_expected && blocked_note)longjmp(blocked,1);}
 static bool fake_diag(const char *s){assert(!strstr(s,"testpass") && !strstr(s,"Fixture"));if(strstr(s,"retained"))blocked_note=true;return true;}
-static bool fake_launch(const char *s){assert(!strcmp(s,WIFI_RETURN_APP));assert(!opened && !wg.api && !wk.api && !native_active);++launches;return true;}
-static bool fake_info(void*c,risc_display_info_v1*out){(void)c;*out=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;}
-static bool fake_frame(void*c,uint32_t format,risc_display_surface_v1*out){(void)c;observed();assert(!frame_count);frame_count=1;*out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(pixels),.pixel_format=format};return true;}
+static bool fake_launch(const char *s){
+#ifdef PORTABLE_HOME_APP
+ assert(!strcmp(s,WIFI_RETURN_APP) || !strcmp(s,PORTABLE_HOME_APP));
+#else
+ assert(!strcmp(s,WIFI_RETURN_APP));
+#endif
+assert(!opened && !wg.api && !wk.api && !native_active);
+#ifdef PORTABLE_HOME_APP
+ if(!strcmp(s,PORTABLE_HOME_APP))++home_launches;
+#endif
+ ++launches;return !fail_launch;}
+static bool fake_info(void*c,risc_display_info_v1*out){(void)c;
+#ifdef TEST_WIFI_PAPER
+ *out=(risc_display_info_v1){.width=TEST_NATIVE_WIDTH,.height=TEST_NATIVE_HEIGHT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE};
+#else
+ *out=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+#endif
+ return true;}
+static bool fake_frame(void*c,uint32_t format,risc_display_surface_v1*out){(void)c;observed();assert(!frame_count);frame_count=1;
+#ifdef TEST_WIFI_PAPER
+ *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=TEST_NATIVE_WIDTH,.height=TEST_NATIVE_HEIGHT,.stride_bytes=(TEST_NATIVE_WIDTH+7)/8,.size_bytes=sizeof(pixels),.pixel_format=format};
+#else
+ *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(pixels),.pixel_format=format};
+#endif
+ return true;}
 static void fake_frame_release(void*c,risc_display_frame_v1 f){(void)c;observed();assert(f==1 && frame_count);frame_count=0;}
 static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){
  (void)c;(void)r;(void)n;(void)o;observed();assert(f==1 && frame_count);if(fail_display)return false;frame_count=0;*t=++presents;
- const char *dir=getenv("PORTABLE_WIFI_FRAME_DIR");if(dir && presents<=12){char path[512];snprintf(path,sizeof(path),"%s/wifi-%u-%u.ppm",dir,scenario,presents);FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P6\n240 240\n255\n");for(unsigned i=0;i<240*240;++i){unsigned v=pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}fclose(file);}return true;
+ const char *dir=getenv("PORTABLE_WIFI_FRAME_DIR");if(dir && presents<=24){char path[512];snprintf(path,sizeof(path),"%s/wifi-%u-%u.ppm",dir,scenario,presents);FILE *file=fopen(path,"wb");assert(file);
+#ifdef TEST_WIFI_PAPER
+ fprintf(file,"P6\n%d %d\n255\n",width(),height());
+ for(int y=0;y<height();y++)for(int x=0;x<width();x++) {
+  int px=x,py=y;
+  if(paper_rotated){px=y;py=info.height-1-x;}
+  unsigned char c=(pixels[py*((TEST_NATIVE_WIDTH+7)/8)+px/8]&(0x80u>>(px%8)))?0:255;
+  unsigned char rgb[]={c,c,c};assert(fwrite(rgb,1,3,file)==3);
+ }
+#else
+ fprintf(file,"P6\n240 240\n255\n");for(unsigned i=0;i<240*240;++i){unsigned v=pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}
+#endif
+ fclose(file);}return true;
 }
 static bool fake_present(void*c,risc_display_present_token_v1 token,risc_display_present_status_v1*out){(void)c;observed();assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.get_info=fake_info,.acquire=fake_frame,.release=fake_frame_release,.submit=fake_submit,.present_status=fake_present};
@@ -56,9 +109,9 @@ static uint64_t fake_subscribe(void*c){(void)c;observed();++sub_count;return 1;}
 static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
 static bool fake_touch_poll(void*c,size_t n){(void)c;observed();assert(n==1);++poll_count;return true;}
 static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){(void)c;(void)id;(void)e;observed();return 0;}
-static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=out->height=240;for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
+static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=width();out->height=height();if(home_at && poll_count>=home_at && poll_count<home_at+5)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
 #if PORTABLE_TOUCH_ROTATION == 180
- out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
+ out->contacts[0].x=width()-1-out->contacts[0].x;out->contacts[0].y=height()-1-out->contacts[0].y;
 #endif
  }return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,fake_subscribe,fake_unsubscribe,fake_touch_poll,fake_next,fake_snapshot};
@@ -85,14 +138,15 @@ static int32_t fake_alarm_ack(void*c,const alarm_token_v1*t){(void)c;assert(t->g
 static int32_t fake_alarm_prepare(void*c,alarm_sleep_v1*out){(void)c;(void)out;return ALARM_OK;}
 static int32_t fake_alarm_stop(void*c){(void)c;observed();++alarm_stops;return fail_alarm_stop?ALARM_PENDING:ALARM_OK;}
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,fake_alarm_status,fake_alarm_step,fake_alarm_refresh,fake_alarm_ack,fake_alarm_prepare,fake_alarm_stop};
+static alarm_service_outputs_v1 visual_alarm;
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
- observed();assert(out->struct_size==sizeof(*out) && v==1);if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
+ observed();assert(out->struct_size==sizeof(*out));if(!strcmp(name,"rtc.clock")){assert(v==2);return false;}assert(v==1);if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
-#ifdef TEST_RADIO_POLICY
+#if defined(TEST_RADIO_POLICY) || defined(PORTABLE_QUICK_ACTIONS)
  || id==1
 #endif
  );if(kv_denied)return false;out->api=&kv_api;}
- else {assert(!id);if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&alarm_api;else return false;}
+ else {assert(!id);if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=scenario==60?&visual_alarm.service:&alarm_api;else return false;}
  ++grant_count;return true;
 }
 static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api && grant_count);if(g->api==&radio_api){assert(!native_active || fail_disconnect);if(fail_release)return false;}--grant_count;g->api=NULL;return true;}
@@ -103,6 +157,7 @@ static void start(void){
  runtime_api=(risc_runtime_api_v1){1,sizeof(runtime_api),fake_health,fake_yield,fake_diag,fake_launch,fake_acquire,fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=short_api?WIFI_PREFIX_V1_SIZE:sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  fake_scan=(garden_radio_scan_result_v1){.struct_size=sizeof(fake_scan),.state=GARDEN_RADIO_SCAN_RUNNING};
+ visual_alarm=(alarm_service_outputs_v1){.service=alarm_api,.output_modes=ALARM_MODE_VISUAL};visual_alarm.service.struct_size=sizeof(visual_alarm);
  assert(app_module_init()==0);assert(wifi_open());
 }
 static void draft(void){strcpy(credentials.ssid,"Fixture network");strcpy(credentials.password,"testpass123");open_network=false;}
@@ -134,30 +189,45 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 16:draft();wifi_connect();fail_release=1;assert(!portable_wifi_suspend() && wg.api && !native_active);fail_release=0;assert(portable_wifi_suspend() && !wg.api);break;
  case 17:draft();wifi_edit(WP_PASSWORD);render();sleep_outcome=-2;ticks+=60001;t5_app_input_t in;assert(!poll(&in,25) && native_sleep_retained && sleeps==1);unsigned retained_live=grant_count;app_module_fini();assert(!late_calls && grant_count==retained_live && wk.api && editor[0] && !wg.api);/* Simulated runtime resume only for test-process leak cleanup. */terminal_sleep=0;native_sleep_retained=false;failed=false;break;
  case 18:draft();wifi_connect();render();ticks+=60001;t5_app_input_t wake;assert(poll(&wake,25) && sleeps==1 && !wake.buttons && !wake.tapped && !joining && wg.api && connects==1);break;
- case 19:draft();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};event(poll_count+4,0,100,180);bool consumed=false;assert(alarm_foreground(&consumed) && consumed && alarm_acks==1);assert(page==WP_PASSWORD && !strcmp(editor,"testpass123") && !launches);break;
+ case 19:draft();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};event(poll_count+4,0,100,portable_wifi_paper()?height()-150:180);bool consumed=false;assert(alarm_foreground(&consumed) && consumed && alarm_acks==1);assert(page==WP_PASSWORD && !strcmp(editor,"testpass123") && !launches);break;
  case 20:draft();wifi_scan_start();fail_scan_cancel=1;assert(!wifi_back() && cleanup_pending && scan_active);fail_scan_cancel=0;assert(!wifi_back() && page==WP_ROOT && !scan_active);break;
  case 21:draft();wifi_connect();fail_disconnect=1;block_expected=true;if(!setjmp(blocked)){app_module_fini();assert(!"Unsafe fini must retain invocation");}block_expected=false;assert(opened && wg.api && wk.api && native_active);break;
- case 22:/* Real app_main touch nesting: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());event(poll_count+3,0,60,72);event(poll_count+6,0,50,
+ case 22:/* Real app_main touch nesting: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());
+#ifdef TEST_WIFI_PAPER
+ event(poll_count+3,0,60,170);event(poll_count+6,0,wpv_key(1).x+10,wpv_key(1).y+10);
+ event(poll_count+9,0,wpv_key(PWK_DONE).x+10,wpv_key(PWK_DONE).y+10);event(poll_count+12,0,60,height()-60);
+#else
+ event(poll_count+3,0,60,72);event(poll_count+6,0,50,
 #ifdef PORTABLE_NOVA_UI
  104
 #else
  80
 #endif
- );event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);app_main();assert(launches==1 && !opened && !connects && !writes);break;
+ );event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);
+#endif
+ app_main();assert(launches==1 && !opened && !connects && !writes);break;
  case 23:/* Navigation Back cancels draft before root Back queues launch. */assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,T5_APP_BUTTON_BACK,-1,0);event(poll_count+9,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1 && !opened && !writes);break;
  case 24:wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;memset(fake_scan.entries[0].ssid,'x',33);tick(250);assert(!scanning && !native_active);break;
  case 25:wifi_edit(WP_PASSWORD);assert(key_page==PWK_INITIAL_PAGE && PORTABLE_WIFI_KEY_COUNT==35 && PORTABLE_WIFI_KEYS_PER_PAGE==32);
- for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);wifi_make_view();portable_watch_key_rect rect;assert(portable_watch_key_bounds(k,&rect));assert(portable_wifi_hit(&view,rect.x+1,rect.y+1)==(int)k);}
+ for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);wifi_make_view();portable_watch_key_rect rect;assert(portable_watch_key_bounds(k,&rect));
+#ifdef TEST_WIFI_PAPER
+ rect=wpv_key(k);
+#endif
+ assert(portable_wifi_hit(&view,rect.x+1,rect.y+1)==(int)k);}
  key_page=2;wifi_key(PWK_PAGE);assert(key_page==0);wifi_key(PWK_PAGE);assert(key_page==1);wifi_key(PWK_PAGE);assert(key_page==2);
 
  break;
  case 26:fail_scan=1;wifi_scan_start();assert(!scanning && !native_active);fail_scan=0;wifi_scan_start();assert(scanning);break;
  case 27:draft();wifi_activate(2);assert(open_network && !credentials.password[0]);wifi_connect();assert(connects==1);break;
  case 28:draft();wifi_connect();fake_link=(wifi_link_t)99;tick(250);assert(!cleanup_pending && !native_active);assert(wifi_disconnect());break;
- case 29:fail_display=1;render();assert(failed);fail_display=0;break;
+ case 29:fail_display=1;wifi_message="Display failure fixture";render();assert(failed);fail_display=0;break;
  case 30:draft();wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;strcpy(fake_scan.entries[0].ssid,"Unsupported");fake_scan.entries[0].auth=255;tick(250);wifi_activate(0);assert(page==WP_SCAN && !connects);break;
  case 31:/* Footer hit testing cannot activate rows; all keyboard keys bounded. */wifi_make_view();assert(portable_wifi_hit(&view,30,192)<0 && portable_wifi_hit(&view,30,220)<0);wifi_edit(WP_SSID);wifi_make_view();
+#ifdef TEST_WIFI_PAPER
+ for(unsigned k=0;k<PWK_COUNT;k++){portable_watch_key_rect r=wpv_key(k);assert(portable_wifi_hit(&view,r.x,r.y)==(int)k);assert(portable_wifi_hit(&view,r.x+r.w-1,r.y+r.h-1)==(int)k);assert(portable_wifi_hit(&view,r.x+r.w,r.y)==-1);}
+#else
  assert(portable_wifi_hit(&view,227,171)==31 && portable_wifi_hit(&view,227,206)==34 && portable_wifi_hit(&view,228,206)<0);
+#endif
 
 break;
  case 32:draft();wifi_connect();fail_disconnect=1;render();ticks+=60001;t5_app_input_t refused;assert(poll(&refused,25) && !failed && !sleeps && cleanup_pending && native_active && sub_count);fail_disconnect=0;wifi_activate(5);assert(!cleanup_pending && !native_active);break;
@@ -174,11 +244,60 @@ break;
  case 43:draft();wifi_connect();fake_link=WIFI_LINK_UP;fail_addresses=1;uncertain_start=true;unsigned address_before=service_calls;bool address_pending=false;assert(alarm_foreground(&address_pending) && cleanup_pending && native_active && service_calls==address_before && !strcmp(status_text,"Cleanup required"));break;
  case 44:draft();wifi_connect();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};break_radio_on_yield=true;fail_alarm_stop=1;block_expected=true;if(!setjmp(blocked)){bool trapped=false;(void)alarm_foreground(&trapped);assert(!"Expected bounded stop-only retention");}block_expected=false;assert(alarm_stops==3 && opened && wg.api && wk.api && alarm_failed_cleaned);fail_alarm_stop=0;break;
  case 45:draft();wifi_activate(6);assert(!draft_dirty);unsigned saved_writes=writes;wifi_edit(WP_SSID);strcpy(editor,"New draft");wifi_key(TEST_KEY_DONE);wifi_make_view();assert(draft_dirty && !strcmp(view.values[6],"Draft not saved") && writes==saved_writes);wifi_activate(6);assert(!draft_dirty && writes>saved_writes);break;
- case 46:draft();wifi_connect();render();fail_display=1;render();assert(failed && native_active);t5_app_input_t display_error;assert(!poll(&display_error,25));assert(!native_active && !scan_active && !wg.api && wk.api && !native_sleep_retained);/* This is the Runtime pre-fini barrier point: no fini has run. */fail_display=0;break;
+ case 46:draft();wifi_connect();render();fail_display=1;wifi_message="Display failure fixture";render();assert(failed && native_active);t5_app_input_t display_error;assert(!poll(&display_error,25));assert(!native_active && !scan_active && !wg.api && wk.api && !native_sleep_retained);/* This is the Runtime pre-fini barrier point: no fini has run. */fail_display=0;break;
  case 47:draft();wifi_connect();render();limit_polls=poll_count; t5_app_input_t input_error;assert(!poll(&input_error,25));assert(!native_active && !wg.api && wk.api && !native_sleep_retained);break;
 #ifdef TEST_RADIO_POLICY
  case 48:{draft();uint8_t r[]={0x51,1,0,0xa5};assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);wifi_connect();wifi_scan_start();assert(!connects&&!scan_starts&&strstr(wifi_message,"off"));r[2]=1;r[3]=0xa4;assert(fake_put(NULL,PORTABLE_RADIO_KEY,r,4)==0);wifi_connect();assert(connects==1);break;}
  case 49:draft();fail_store=1;wifi_connect();wifi_scan_start();assert(!connects&&!scan_starts);fail_store=0;break;
+#endif
+ #ifdef TEST_WIFI_HOME
+ case 50: /* Home in a nested editor is terminal even before app neutral gating. */
+  assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);home_at=poll_count+6;
+  app_main();assert(home_launches==1 && launches==1 && !opened && !writes);
+  {unsigned before=presents;t5_app_input_t end;assert(poll(&end,25)&&end.exit_requested);assert(presents==before&&launches==1);}break;
+ case 51: /* Active RF is drained before Home can queue a launch. */
+  draft();wifi_connect();wifi_edit(WP_PASSWORD);render();home_at=poll_count+3;
+  for(unsigned i=0;i<5&&!handoff_requested;i++){t5_app_input_t in;assert(poll(&in,25));}
+  assert(home_launches==1&&!opened&&!native_active&&!writes);break;
+ case 52: /* Refused cleanup stays interactive; a new Home edge may retry. */
+  draft();wifi_connect();fail_disconnect=1;home_at=poll_count+3;
+  for(unsigned i=0;i<9;i++){t5_app_input_t in;assert(poll(&in,25));}
+  assert(!launches&&opened&&cleanup_pending&&!failed);fail_disconnect=0;home_at=poll_count+3;
+  for(unsigned i=0;i<5&&!handoff_requested;i++){t5_app_input_t in;assert(poll(&in,25));}
+  assert(home_launches==1&&!opened&&!native_active);break;
+ case 53: /* Denied launch does not queue the local Back target. */
+  fail_launch=1;home_at=poll_count+3;
+  for(unsigned i=0;i<5&&!failed;i++){t5_app_input_t in;(void)poll(&in,25);}
+  assert(failed&&home_launches==1&&launches==1&&!opened);break;
+ case 54: /* Physical navigation Home follows the same terminal root path. */
+  assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,RISC_NAV_HOME,-1,0);
+  app_main();assert(home_launches==1&&launches==1&&!writes&&!opened);break;
+ case 55: /* Root local Back remains springboard. */
+  assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!home_launches&&!opened);break;
+#ifdef TEST_WIFI_PAPER
+ case 56: /* Footer gaps and keyboard gaps cannot activate a row/key. */
+  wifi_make_view();assert(portable_wifi_hit(&view,width()/2,height()-50)==-1);assert(portable_wifi_hit(&view,width()*3/4,height()-50)==-1);
+  for(unsigned i=0;i<view.count;i++){choice=i;wifi_make_view();unsigned j=i%wpv_rows();assert(portable_wifi_hit(&view,60,WPV_TOP+j*WPV_ROW+20)==(int)i);render();}break;
+ case 57: /* Completed drags do not type, connect, save, or follow a row. */
+  assert(portable_wifi_close());event(poll_count+3,0,100,180);event(poll_count+4,0,110,230);event(poll_count+8,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!writes&&!connects);break;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ case 58: /* Capability sheet has unavailable radios/brightness/torch. */
+  assert(quick.ui.paper&&quick.ui.radio_controls&&!quick.ui.radios_valid&&!quick.ui.torch_valid&&!quick.ui.brightness_valid);
+  {unsigned w=writes;uint8_t saved[sizeof(pixels)];memcpy(saved,pixels,sizeof(saved));
+   event(poll_count+3,0,200,20);event(poll_count+4,0,200,100);event(poll_count+8,RISC_NAV_HOME,-1,0);
+   for(unsigned i=0;i<8;i++){t5_app_input_t in;assert(poll(&in,25));}
+   assert(!quick_modal&&!launches&&!writes&&!connects&&writes==w&&!memcmp(saved,pixels,sizeof(saved)));}break;
+ case 60: /* A visual-only provider cannot offer sound/Silent controls. */
+  assert(!quick.ui.volume_valid&&quick.ui.dnd_valid&&!quick.ui.radios_valid);
+  event(poll_count+3,0,200,20);event(poll_count+4,0,200,100);
+  event(poll_count+8,0,width()*130/480,height()*345/800);event(poll_count+12,RISC_NAV_HOME,-1,0);
+  for(unsigned i=0;i<8;i++){t5_app_input_t in;assert(poll(&in,25));}
+  assert(!writes&&!launches&&!connects&&!quick_modal);break;
+ case 59: /* Center Home from the sheet bypasses local Back and closes editor. */
+  assert(portable_wifi_close());event(poll_count+3,0,200,20);event(poll_count+4,0,200,100);home_at=poll_count+8;
+  app_main();assert(home_launches==1&&launches==1&&!opened&&!quick_modal&&!writes);break;
+#endif
 #endif
  default:assert(!"Unknown scenario");
  }
