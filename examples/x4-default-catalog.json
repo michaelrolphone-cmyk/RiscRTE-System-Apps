@@ -1,0 +1,8 @@
+{
+  "apps": [
+    {"display_name": "File Browser", "file_name": "file_browser.elf", "icon": "solid:f07c"},
+    {"display_name": "Bluetooth Scanner", "file_name": "ble_scanner.elf", "icon": "solid:f7c0"},
+    {"display_name": "Points in Time", "file_name": "points_in_time.elf", "icon": "solid:f017"},
+    {"display_name": "Settings", "file_name": "settings.elf", "icon": "solid:f013"}
+  ]
+}

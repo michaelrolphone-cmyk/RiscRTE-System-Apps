@@ -1,0 +1,36 @@
+name: Nova7 paper clock
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  clock:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native mono clock, gestures, wall time and retained alarm
+        run: python scripts/test_paper_clock.py
+      - name: Install pinned target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build clock and launcher navigation pair
+        run: |
+          python scripts/build_paper_clock.py --navigation --alarm-client
+          python scripts/build_portable_springboard.py --display-rotation 90 --navigation --alarm-client --wall-time --return-app default.elf --output-dir dist/clock-springboard
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paper-clock-${{ github.sha }}
+          path: |
+            dist/paper-clock/
+            dist/clock-springboard/
+            build/paper-clock/
+          retention-days: 14
+          if-no-files-found: error

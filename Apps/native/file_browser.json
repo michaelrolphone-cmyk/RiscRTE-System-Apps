@@ -1,7 +1,7 @@
 {
   "type": "application",
   "id": "file_browser",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "architecture": "xtensa-esp32s3",
   "file_name": "file_browser.elf",
   "entry": "app_main",
