@@ -5,6 +5,8 @@
 /* Text uses display typography; OR this flag into the text option for a
  * literal user-entry/key label, preserving ASCII letter case. */
 #define PAPER_TEXT_LITERAL 256u
+/* Private bitmap magnification for the main clock; measure remains unscaled. */
+#define PAPER_TEXT_CLOCK 512u
 typedef struct {
     uint32_t struct_size;
     void (*begin)(void);
