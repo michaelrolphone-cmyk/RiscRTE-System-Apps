@@ -633,7 +633,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
 #endif
-#ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
   if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
      !portable_audio_capture_active() &&
@@ -740,6 +740,13 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
+#endif
+#ifdef PORTABLE_CROWN_SLEEP_LOCAL
+  if(ok && crown_pending) {
+    crown_pending=home_pending=false;navigation_pending=0;input_pending=false;
+    memset(out,0,sizeof(*out));
+    return idle_sleep();
+  }
 #endif
 #if defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP)
   const char *destination=NULL;
