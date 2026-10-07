@@ -22,6 +22,7 @@ def build(args):
     out = args.output_dir or ROOT/'dist/portable'
     flags=['-DPORTABLE_SETTINGS_APP']
     if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
+    if args.tap_settings: flags.append('-DPORTABLE_TAP_SETTINGS')
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
     if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
@@ -66,6 +67,7 @@ def build(args):
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'rtc.clock','api':2}]}
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
+    if args.tap_settings: manifest['requires'].append({'capability':'motion.accel','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
@@ -110,6 +112,7 @@ if __name__ == '__main__':
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
+    parser.add_argument('--tap-settings',action='store_true',help='Explicit motion.accel calibration and namespace-1 tap wake settings')
     parser.add_argument('--sleep-settings',action='store_true',help='Enable explicit namespace-1 sleep choice; requires storage.key-value@1 grant')
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')
     parser.add_argument('--full-frames',action='store_true',help='Disable optional partial-damage and previous-frame cache')

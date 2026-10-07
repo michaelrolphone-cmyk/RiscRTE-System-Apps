@@ -17,6 +17,7 @@ SPEC.loader.exec_module(p)
 CONFIG = json.loads((ROOT / 'release/watch-1.0.2-components.json').read_text())
 REPO = CONFIG['repository']
 SOURCE = CONFIG['source_sha']
+SNAPSHOT = json.loads((ROOT / 'tests/fixtures/watch-1.0.2-manifests.json').read_text())
 OTHER = 'b' * 40
 TAGS = [
     'app-settings-v1.2.5', 'app-wifi_settings-v1.1.3',
@@ -61,13 +62,18 @@ def git(*args):
         source, path = args[1].split(':', 1)
         if source != SOURCE:
             raise AssertionError(source)
-        return (ROOT / path).read_text()
+        # Model immutable git show, not the subsequently edited checkout.
+        if SNAPSHOT['source_sha'] != source:
+            raise AssertionError(source)
+        return json.dumps(SNAPSHOT['manifests'][path])
     return SOURCE
 
 
 class Watch102PublisherTests(unittest.TestCase):
     def test_exact_reviewed_component_inventory(self):
         self.assertEqual(TAGS, p.validate_config(CONFIG, REPO))
+        self.assertEqual({c['manifest'] for c in CONFIG['components']},
+                         set(SNAPSHOT['manifests']))
         self.assertEqual('4be93c46afaba87b8aeec88d1787f0a3648e8a3d', SOURCE)
         self.assertEqual(4, len(CONFIG['required_workflows']))
         file_browser = next(c for c in CONFIG['components'] if c['id'] == 'file_browser')

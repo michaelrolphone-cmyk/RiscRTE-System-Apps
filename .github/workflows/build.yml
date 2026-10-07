@@ -30,6 +30,7 @@ jobs:
           python scripts/test_portable_alarm.py
           python scripts/test_nova_ui.py
           python scripts/test_nova_settings.py
+          python scripts/test_tap_settings.py
           python scripts/test_quick_actions.py
           python scripts/test_quick_radios.py
           python scripts/test_portable_audio.py
@@ -49,6 +50,7 @@ jobs:
           python scripts/check_release_parity.py
           python scripts/build_portable_settings.py
           python scripts/build_portable_settings.py --nova-ui --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-nova
+          python scripts/build_portable_settings.py --nova-ui --tap-settings --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-tap
           python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800
           python scripts/build_portable_file_browser.py --alarm-client --navigation
           python scripts/build_portable_file_browser.py --alarm-client --navigation --quick-controls --output-dir dist/portable/file-browser-quick
@@ -60,6 +62,7 @@ jobs:
           python scripts/build_portable_settings.py --denver --full-frames --sleep-settings --output-dir dist/portable/settings-sleep
           python scripts/build_portable_springboard.py --denver --full-frames --retained-rgb565-handoff --handoff-ms 60 --return-app clock.elf --output-dir dist/portable/springboard-handoff
           python scripts/build_portable_springboard.py
+          python scripts/build_portable_springboard.py --catalog-limit 18 --nova-ui --alarm-client --denver --full-frames --retained-rgb565-handoff --handoff-ms 60 --return-app clock.elf --output-dir dist/portable/springboard-sdr
           python scripts/build_portable_springboard.py --denver --touch-rotation 180 --output-dir dist/portable/springboard-denver
           python scripts/build_portable_settings.py --denver --touch-rotation 180 --output-dir dist/portable-denver
           python scripts/build_portable_settings.py --denver --navigation --touch-rotation 180 --output-dir dist/portable-navigation
