@@ -799,6 +799,9 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
+  /* A terminal Home/return is already accepted. Do not replace its target or
+   * report a false launch failure to an unwinding nested app. */
+  if(handoff_requested)return true;
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed) || consumed)return false;

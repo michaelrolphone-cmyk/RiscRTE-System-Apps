@@ -92,7 +92,14 @@ static const risc_runtime_api_v1 qa_runtime={1,sizeof(qa_runtime),qa_health,yiel
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&qa_runtime:NULL;}
 int main(int argc,char**argv){
  assert(argc>=2);qa_case=(unsigned)atoi(argv[1]);capture_dir=argc>2?argv[2]:NULL;bad_storage=qa_case==7;
- assert(app_module_init()==0);app_main();app_module_fini();assert(!frames&&!grants&&!subs&&!radio_acquires);
+ assert(app_module_init()==0);app_main();
+#ifdef TEST_SPRINGBOARD
+ if(qa_case==20||qa_case==22||qa_case==25||qa_case==26){
+  unsigned accepted=launches;assert(t5_app_get_api(1)->request_app_launch(0));assert(launches==accepted);
+  t5_app_input_t terminal={0};assert(t5_app_get_api(1)->poll(&terminal,0)&&terminal.exit_requested&&launches==accepted);
+ }
+#endif
+ app_module_fini();assert(!frames&&!grants&&!subs&&!radio_acquires);
 #ifdef TEST_SPRINGBOARD
  if(qa_case==21||qa_case==27)assert(!launches);else if(qa_case==24)assert(launches==1&&!strcmp(launched,"parent.elf"));else if(qa_case==23)assert(launches==1&&!strcmp(launched,"file_browser.elf"));else assert(launches==1&&!strcmp(launched,"default.elf"));
 #else

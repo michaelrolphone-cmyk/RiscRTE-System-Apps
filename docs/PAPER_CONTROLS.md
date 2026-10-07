@@ -16,6 +16,9 @@ GPIO3 is a different physical key. The provider need not change for center Home.
 
 `--home-app default.elf` selects `PORTABLE_HOME_APP` as a direct root destination.
 It bypasses an app's local Back ownership and its ordinary `--return-app` path.
+An accepted root handoff remains terminal across nested polls and subsequent
+catalog launch calls. Apps using `runtime->request_launch` directly must honor
+`exit_requested` as terminal rather than issuing another app-owned Back request.
 Center Home also leaves QuickActions for that root. The clock omits this option,
 so center Home keeps the already-visible clock.
 
