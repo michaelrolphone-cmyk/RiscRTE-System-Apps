@@ -253,7 +253,8 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     }
 }
 static void display_failure(const char *detail) {
-  if(!failed)rt->diagnostic(detail);
+  if(!failed && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
   failed=true;
 }
 static void clear_color(uint16_t color) {
