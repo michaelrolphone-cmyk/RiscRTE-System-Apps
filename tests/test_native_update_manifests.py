@@ -14,7 +14,7 @@ class NativeUpdateManifestTests(unittest.TestCase):
             manifest = builder.native_update_manifest(name)
             self.assertEqual(name, manifest['id'])
             self.assertEqual(name + '.elf', manifest['file_name'])
-            self.assertEqual('1.1.2', manifest['version'])
+            self.assertEqual('1.1.5', manifest['version'])
 
     def test_manifests_are_fresh_per_build(self):
         manifest = builder.native_update_manifest('ota_update')

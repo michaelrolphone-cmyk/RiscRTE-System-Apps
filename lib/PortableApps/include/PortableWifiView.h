@@ -15,6 +15,8 @@ typedef struct {
   unsigned key_page;
   const char *entry; /* Already masked by the controller for passwords. */
 } portable_wifi_view;
+enum { WIFI_HIT_BACK=-2, WIFI_HIT_PREVIOUS=-3, WIFI_HIT_NEXT=-4 };
+bool portable_wifi_paper(void);
 void portable_wifi_render(const portable_wifi_view *view);
 /* Called only after a complete adapter-owned input frame. */
 int portable_wifi_hit(const portable_wifi_view *view,int x,int y);

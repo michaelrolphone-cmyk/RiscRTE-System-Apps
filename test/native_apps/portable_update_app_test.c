@@ -22,6 +22,7 @@
 
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
+static char last_launch[64];
 static unsigned ticks,grant_count,sub_count,frame_count,presents,poll_count,launches;
 static unsigned connects,disconnects,scan_starts,scan_polls,scan_cancels,writes,sleeps,alarm_acks;
 static unsigned fail_connect,fail_disconnect,fail_release,fail_scan,fail_scan_cancel,fail_poll,fail_store,fail_addresses;
@@ -31,7 +32,23 @@ static unsigned script_count,limit_polls=500,scenario;
 static bool native_active,scan_active;
 static wifi_link_t fake_link;
 static garden_radio_scan_result_v1 fake_scan;
-static uint16_t pixels[240*240];
+#ifdef TEST_PAPER_UPDATE
+#if PORTABLE_DISPLAY_ROTATION == 90
+#define UW 800
+#define UH 480
+#else
+#define UW 480
+#define UH 800
+#endif
+#define UF RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1)
+#define UI_FLAGS RISC_DISPLAY_INFO_RETAINS_IMAGE
+#else
+#define UW 240
+#define UH 240
+#define UF RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)
+#define UI_FLAGS 0
+#endif
+static uint16_t pixels[UW*UH];
 static alarm_status_v1 fake_alarm={.api_version=1,.struct_size=sizeof(fake_alarm),.state=ALARM_STATE_READY};
 static jmp_buf blocked;
 static bool block_expected,blocked_note;
@@ -44,13 +61,19 @@ static void observed(void){if(terminal_sleep)++late_calls;}
 static bool fake_health(risc_runtime_health_v1 *h){h->uptime_ms=ticks;return poll_count<limit_polls;}
 static void fake_yield(uint32_t ms){ticks+=ms;if(scenario>=24&&scenario<=25&&connects&&fake_link==WIFI_LINK_JOINING)fake_link=WIFI_LINK_UP;if(break_radio_on_yield){break_radio_on_yield=false;fake_link=WIFI_LINK_DOWN;fail_disconnect=1;}if(block_expected && blocked_note)longjmp(blocked,1);}
 static bool fake_diag(const char *s){assert(!strstr(s,"testpass") && !strstr(s,"Fixture"));if(strstr(s,"retained"))blocked_note=true;return true;}
-static bool fake_launch(const char *s){assert(!strcmp(s,UPDATE_RETURN_APP));assert(!opened && !uwg.api && !ukg.api && !usg.api && !ucg.api && !native_active);++launches;return true;}
-static bool fake_info(void*c,risc_display_info_v1*out){(void)c;*out=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;}
-static bool fake_frame(void*c,uint32_t format,risc_display_surface_v1*out){(void)c;observed();assert(!frame_count);frame_count=1;*out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(pixels),.pixel_format=format};return true;}
+static bool fake_launch(const char *s){
+#ifdef TEST_PAPER_UPDATE
+assert(!strcmp(s,UPDATE_RETURN_APP)||!strcmp(s,"default.elf"));
+#else
+assert(!strcmp(s,UPDATE_RETURN_APP));
+#endif
+assert(!opened && !uwg.api && !ukg.api && !usg.api && !ucg.api && !native_active);snprintf(last_launch,sizeof(last_launch),"%s",s);++launches;return true;}
+static bool fake_info(void*c,risc_display_info_v1*out){(void)c;*out=(risc_display_info_v1){.width=UW,.height=UH,.supported_formats=UF,.flags=UI_FLAGS};return true;}
+static bool fake_frame(void*c,uint32_t format,risc_display_surface_v1*out){(void)c;observed();assert(!frame_count);frame_count=1;*out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=UW,.height=UH,.stride_bytes=format==RISC_DISPLAY_FORMAT_MONO1?(UW+7)/8:UW*2,.size_bytes=sizeof(pixels),.pixel_format=format};return true;}
 static void fake_frame_release(void*c,risc_display_frame_v1 f){(void)c;observed();assert(f==1 && frame_count);frame_count=0;}
 static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){
  (void)c;(void)r;(void)n;(void)o;observed();assert(f==1 && frame_count);if(fail_display)return false;frame_count=0;*t=++presents;
- const char *dir=getenv("PORTABLE_UPDATE_FRAME_DIR");if(dir && presents<=12){char path[512];snprintf(path,sizeof(path),"%s/update-%u-%u.ppm",dir,scenario,presents);FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P6\n240 240\n255\n");for(unsigned i=0;i<240*240;++i){unsigned v=pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}fclose(file);}return true;
+ const char *dir=getenv("PORTABLE_UPDATE_FRAME_DIR");if(dir && presents<=12){char path[512];snprintf(path,sizeof(path),"%s/update-%u-%u.ppm",dir,scenario,presents);FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P6\n%d %d\n255\n",UW,UH);for(unsigned i=0;i<UW*UH;++i){unsigned v=surface_format==RISC_DISPLAY_FORMAT_MONO1?((((uint8_t*)pixels)[i/8]&(0x80u>>(i%8)))?0:65535):pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}fclose(file);}return true;
 }
 static bool fake_present(void*c,risc_display_present_token_v1 token,risc_display_present_status_v1*out){(void)c;observed();assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.get_info=fake_info,.acquire=fake_frame,.release=fake_frame_release,.submit=fake_submit,.present_status=fake_present};
@@ -58,7 +81,11 @@ static uint64_t fake_subscribe(void*c){(void)c;observed();++sub_count;return 1;}
 static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
 static bool fake_touch_poll(void*c,size_t n){(void)c;observed();assert(n==1);++poll_count;return true;}
 static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){(void)c;(void)id;(void)e;observed();return 0;}
-static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=out->height=240;for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
+static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=UW;out->height=UH;
+#ifdef TEST_PAPER_UPDATE
+out->width=480;out->height=800;
+#endif
+for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
 #if PORTABLE_TOUCH_ROTATION == 180
  out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
 #endif
@@ -106,7 +133,7 @@ static const twatch_rtc_api_v1 rtc_api={2,sizeof(rtc_api),NULL,rtc_read,NULL,NUL
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out) && (v==1||v==2));if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
-#ifdef TEST_RADIO_POLICY
+#if defined(TEST_RADIO_POLICY) || defined(PORTABLE_QUICK_ACTIONS)
  || id==1
 #endif
  );if(kv_denied)return false;out->api=&kv_api;}
