@@ -34,26 +34,65 @@ const t5_app_manifest_t portable_catalog[]={
  {.display_name="Settings",.file_name="settings.elf",.icon="solid:f013",.compatible=true},
  ENTRY("Six"),ENTRY("Seven"),ENTRY("Eight"),ENTRY("Nine"),ENTRY("Ten"),ENTRY("Eleven"),ENTRY("Twelve"),ENTRY("Thirteen"),ENTRY("Fourteen"),ENTRY("Fifteen"),ENTRY("Sixteen"),ENTRY("Seventeen")};
 const unsigned portable_catalog_count=CATALOG_COUNT;
-static unsigned scenario,ms,polls,grants,subs,frames,presents,launches;
+#ifndef TEST_DISPLAY_FAILURE
+#define TEST_DISPLAY_FAILURE 0
+#endif
+static unsigned scenario,ms,polls,grants,subs,frames,presents,launches,diagnostics,waits;
+static char last_diagnostic[96];
+#ifdef TEST_WAIT_PRESENT
+static unsigned status_reads;
+static bool pending_present;
+#endif
 static uint8_t pixels[60*800];static char launched[128];
 static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<120;}
 static void yield_ms(uint32_t n){ms+=n;}
-static bool diagnostic(const char *s){(void)s;return true;}
+static bool diagnostic(const char *s){diagnostics++;snprintf(last_diagnostic,sizeof(last_diagnostic),"%s",s);return true;}
 static bool launch_app(const char *s){launches++;if(scenario==9&&launches==1)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
-static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=PANEL_WIDTH;o->height=PANEL_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1);o->flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;o->damage_x_alignment=o->damage_width_alignment=8;return true;}
-static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==RISC_DISPLAY_FORMAT_MONO1);assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=PANEL_WIDTH/8,.pixel_format=f};return true;}
+static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=PANEL_WIDTH;o->height=PANEL_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1);o->flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;o->damage_x_alignment=o->damage_width_alignment=8;
+#ifdef TEST_ASYNC_PRESENT
+ o->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
+#endif
+ return true;}
+static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==RISC_DISPLAY_FORMAT_MONO1);if(TEST_DISPLAY_FAILURE==1)return false;assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=PANEL_WIDTH/8,.pixel_format=f};if(TEST_DISPLAY_FAILURE==2)s->stride_bytes=0;return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){
- (void)c;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+ (void)c;if(TEST_DISPLAY_FAILURE==3)return false;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
 
 #ifdef PORTABLE_ALARM_CLIENT
  if(!presents)memcpy(saved_pixels,pixels,sizeof(pixels));
 #endif
  frames=0;*token=++presents;
+#ifdef TEST_WAIT_PRESENT
+ pending_present=true;status_reads=0;
+#endif
  if(presents==1){const char *path=getenv("PAPER_FRAME");if(path){FILE *out=fopen(path,"wb");assert(out);fprintf(out,"P4\n%u %u\n",PANEL_WIDTH,PANEL_HEIGHT);assert(fwrite(pixels,1,sizeof(pixels),out)==sizeof(pixels));fclose(out);}}
  return true;
 }
-static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
+static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;
+#ifdef TEST_WAIT_PRESENT
+ status_reads++;
+#ifdef TEST_ASYNC_PRESENT
+ if(status_reads>=3)pending_present=false;
+#endif
+ s->state=pending_present?RISC_DISPLAY_PRESENT_QUEUED:RISC_DISPLAY_PRESENT_COMPLETE;
+#else
+ s->state=RISC_DISPLAY_PRESENT_COMPLETE;
+#endif
+ return true;
+}
+#ifdef TEST_WAIT_PRESENT
+static bool wait_present(void *c,risc_display_present_token_v1 t,uint32_t timeout,risc_display_present_status_v1 *s){
+ (void)c;assert(t==presents&&pending_present);assert(timeout>1000&&timeout<=10000);
+#ifdef TEST_ASYNC_PRESENT
+ assert(!"Asynchronous presentation must keep the input-serving poll path");
+#endif
+ waits++;
+ if(TEST_DISPLAY_FAILURE==7){ms+=timeout;s->state=RISC_DISPLAY_PRESENT_QUEUED;return true;}
+ ms+=1500;pending_present=false;
+ if(TEST_DISPLAY_FAILURE==4)return false;
+ s->state=TEST_DISPLAY_FAILURE==5?RISC_DISPLAY_PRESENT_FAILED:TEST_DISPLAY_FAILURE==6?RISC_DISPLAY_PRESENT_SUPERSEDED:RISC_DISPLAY_PRESENT_COMPLETE;return true;
+}
+#endif
 static uint64_t subscribe(void *c){(void)c;subs++;return 1;}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
 static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);polls++;return true;}
@@ -96,7 +135,11 @@ static bool battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_b
 static const risc_battery_gauge_api_v1 battery_api={1,sizeof(battery_api),NULL,battery_read};
 static int32_t get(void*c,const char*k,void*out,uint32_t cap,uint32_t*len){(void)c;assert(!strcmp(k,"time_format")&&cap>=4);uint8_t b[]={0x54,1,1,0xa4};memcpy(out,b,4);*len=4;return 0;}
 static const risc_key_value_v1 kv={1,sizeof(kv),NULL,get,NULL};
-static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d),.get_info=get_info,.acquire=acquire_frame,.release=release_frame,.submit=submit,.present_status=present_status};
+static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d),.get_info=get_info,.acquire=acquire_frame,.release=release_frame,.submit=submit,.present_status=present_status
+#ifdef TEST_WAIT_PRESENT
+ ,.wait_present=wait_present
+#endif
+};
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
 static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){
 #ifdef PORTABLE_ALARM_CLIENT
@@ -114,6 +157,19 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);a
  const paper_presentation*view=paper_presentation_get();uint8_t h=0,m=0;assert(view);if(scenario==11)assert(!view->clock(&h,&m));else assert(view->clock(&h,&m)&&h==20&&m==59);
 #endif
  app_main();app_module_fini();assert(!grants&&!subs&&!frames);
+#ifdef TEST_WAIT_PRESENT
+ assert(pending_present==(TEST_DISPLAY_FAILURE==7));
+#ifdef TEST_ASYNC_PRESENT
+ assert(!waits);
+#else
+ if(TEST_DISPLAY_FAILURE!=3)assert(waits==presents);
+#endif
+#endif
+ if(TEST_DISPLAY_FAILURE){
+  static const char *const errors[]={"","display-acquire","display-surface","display-submit","display-wait","display-failed","display-failed","display-timeout"};
+  assert(diagnostics==1&&strstr(last_diagnostic,errors[TEST_DISPLAY_FAILURE]));
+  assert(!launches);assert(waits<=1);puts("Paper display failure: one diagnostic, no launch or retry");return 0;
+ }
  if(scenario>=1&&scenario<=4)assert(launches==1&&!strcmp(launched,"springboard.elf"));
  else if(scenario==9)assert(launches==2&&!strcmp(launched,"springboard.elf"));
  else assert(!launches);

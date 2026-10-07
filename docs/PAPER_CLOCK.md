@@ -45,7 +45,7 @@ and alarm.service@1. It releases its own grants before launch and retains on
 unconfirmed release. Common alarm overlay/sleep ownership remains in the
 shared adapter. No provider callback or app pointer survives handoff.
 
-`python scripts/test_paper_clock.py` runs 28 normal/sanitized cases over the real
+`python scripts/test_paper_clock.py` runs 98 normal/sanitized cases over the real
 app and adapter with native 800×480/100-byte MONO1 and portrait snapshot touch:
 four directions, tap, jitter, startup contact, cancelled contact, failed-launch
 retry, minute-only update, missing RTC/battery and alarm dismiss/byte-exact
@@ -54,3 +54,25 @@ separately. Both clock/launcher target ELFs pass GCC8.4 structural and symbol
 validation. This is development evidence, not hardware qualification.
 
 Actual native-buffer capture: `docs/nova/screens/paper-clock.png`.
+
+## Synchronous retaining-panel completion
+
+Clock 0.1.1 and Springboard 1.6.1 use the shared adapter's bounded
+`wait_present` callback for retaining MONO1 providers that do not advertise
+`ASYNC_PRESENT`. Such a provider may leave a submitted frame QUEUED until a
+positive wait budget initiates its physical transfer. Repeated status reads
+alone cannot advance that implementation. The existing 10-second total frame
+budget is preserved; a short per-poll timeout is not substituted for it.
+Asynchronous MONO1 and RGB565 still use the input-serving status loop, and a
+missing optional wait callback retains the existing status fallback.
+
+The clock fixture covers immediate, wait-driven and async completion with all
+14 interaction scenarios in normal and sanitized builds (84 executions), plus
+seven failure modes in both builds: acquire, surface, submit, wait callback,
+FAILED, SUPERSEDED and pending timeout (14 executions). Each failure emits one
+bounded diagnostic and does not retry or launch a replacement application.
+A never-completed provider remains responsible for refusing unsafe quiescence.
+
+All applications linking `lib/PortableApps/src/adapter.c` must be rebuilt to
+receive this correction. Source updates alone cannot fix an installed ELF.
+This is software regression evidence; physical panel verification is separate.
