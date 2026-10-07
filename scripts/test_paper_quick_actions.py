@@ -16,10 +16,10 @@ for san in (False,True):
    sources=[ROOT/'Apps'/('springboard.c' if launcher else 'paper_clock.c'),ROOT/'test/native_apps/paper_quick_test.c']
    sources += [ROOT/'lib/PortableApps/src'/p for p in ['adapter.c','quick_actions.c','quick_render.c','quick_session.c']]
    subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-o',str(target)],check=True)
-   for case in (range(20,28) if launcher else range(19)):
+   for case in (range(20,28) if launcher else [*range(19),30,31,32,33]):
     frames=OUT/f'frames-{int(landscape)}-{int(san)}-{int(launcher)}-{case}';frames.mkdir(exist_ok=True)
     subprocess.run([str(target),str(case),str(frames)],check=True,timeout=20,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
-print('108 normal/sanitized native/portrait paper modal and Home cases passed')
+print('124 normal/sanitized native/portrait paper modal and Home cases passed')
 
 for san in (False,True):
  target=OUT/f'home-{int(san)}'

@@ -52,8 +52,10 @@ No controls imply new grants:
 - Frontlight and Torch require the advertised display brightness flag and callback.
 - Without explicit `--quick-radios`, all radio tiles say `UNAVAILABLE`; no radio
   capability is acquired and no missing Wi-Fi app is launched.
-- Volume and Silent share the existing notification volume preference; DND remains
-  independent. Unknown or unreadable preference state is unavailable.
+- Volume and Silent also require the alarm service output descriptor to advertise
+  sound. Visual-only/vibrate-only providers show unavailable sound controls and
+  cannot save or change the volume. DND remains independent. Unknown or unreadable
+  preference state is unavailable; legacy providers retain their existing outputs.
 - No Low Power or Clean Refresh policy is invented from the mockup's extra tiles.
 
 Swipe up, tap the close row, or use the crown-style key to dismiss. Center Home
@@ -98,11 +100,12 @@ copied into the output directory. No extra app is added to the X4 catalog.
 
 ## Verification
 
-`python scripts/test_paper_quick_actions.py` runs 108 normal/sanitized cases with
+`python scripts/test_paper_quick_actions.py` runs 124 normal/sanitized cases with
 the real clock/launcher and adapter, at portrait and native-rotated MONO1 geometry.
 It checks edge-vs-body gestures, tap/rejected gesture replay, modal close, exact
 foreground restoration, Silent/mute restoration, DND, frontlight commit,
-unavailable radios/Torch, enabled Torch cleanup, storage errors, alarms, held Home,
+unavailable radios/Torch, visual-only/vibrate-only/sound descriptors, independent
+DND, enabled Torch cleanup, storage errors, alarms, held Home,
 direct Home vs ordinary Back, and crown dismissal/unsupported sleep reporting.
 Real nested Settings editor and File Browser preview tests additionally verify
 that Home leaves drafts unsaved, closes storage before launch, and never queues

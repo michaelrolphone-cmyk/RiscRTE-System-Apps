@@ -23,7 +23,7 @@ static int32_t qa_get(void*c,const char*k,void*out,uint32_t cap,uint32_t*len){
 static int32_t qa_put(void*c,const char*k,const void*data,uint32_t size){(void)c;assert(!frames&&size==1);int n=key_index(k);assert(n>=0);writes++;if(bad_storage)return RISC_KEY_VALUE_IO;preferences[n]=*(const uint8_t*)data;has_preference[n]=true;return RISC_KEY_VALUE_OK;}
 static const risc_key_value_v1 qa_kv={1,sizeof(qa_kv),NULL,qa_get,qa_put};
 static bool qa_brightness(void*c,uint16_t level,uint16_t max){(void)c;assert(!frames&&level<=100&&max==100);brightness_calls++;return true;}
-static bool qa_info(void*c,risc_display_info_v1*out){get_info(c,out);if(qa_case==9||qa_case==16)out->flags|=RISC_DISPLAY_INFO_BRIGHTNESS;return true;}
+static bool qa_info(void*c,risc_display_info_v1*out){get_info(c,out);if(qa_case==9||qa_case==16||qa_case>=30)out->flags|=RISC_DISPLAY_INFO_BRIGHTNESS;return true;}
 static bool qa_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*tkn){
  bool ok=submit(c,f,r,n,o,tkn);if(!ok)return false;
  if(presents==1)memcpy(background,pixels,sizeof(background));else extra_frames++;
@@ -32,7 +32,7 @@ static bool qa_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*
 }
 static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s){
  (void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;unsigned step=polls;int x=200,y=20;bool down=false;
- if(qa_case>=20){
+ if(qa_case>=20&&qa_case<28){
   if(qa_case==26||qa_case==27){
    if(step==2||step==3){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=200,.y=step==3?100:20};}
    if(qa_case==26&&step==6)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;
@@ -59,6 +59,11 @@ static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s){
   if(qa_case==13 && step==6)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;
   if(qa_case==15 && (step==9||step==10)){down=true;x=240;y=step==9?620:560;}
   if(qa_case==16 && (step==6||step==10)){down=true;x=340;y=553;}
+  if(qa_case==30||qa_case==31||qa_case==33){
+   if(step==6){down=true;x=130;y=345;}
+   if(step==9||step==10){down=true;x=step==9?100:364;y=240;}
+  }
+  if(qa_case==32&&step==6){down=true;x=340;y=345;}
   if(step==14){down=true;x=240;y=675;}
  }
  if(down){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=(uint16_t)x,.y=(uint16_t)y};}return true;
@@ -84,7 +89,10 @@ static bool qa_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capab
  if(!strcmp(name,"storage.key-value")){assert(id==1);g->api=&qa_kv;grants++;return true;}
  if(!strcmp(name,"input.touch.raw")){touch=t;touch.snapshot=qa_snapshot;g->api=&touch;grants++;return true;}
  if(!strcmp(name,"display.output")){display=d;display.get_info=qa_info;display.submit=qa_submit;display.set_brightness=qa_brightness;g->api=&display;grants++;return true;}
- if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){service=alarm_api;service.step=qa_alarm_step;service.refresh=qa_refresh;g->api=&service;grants++;return true;}
+ if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){service=alarm_api;service.step=qa_alarm_step;service.refresh=qa_refresh;
+  static alarm_service_outputs_v1 outputs;
+  if(qa_case>=30){outputs=(alarm_service_outputs_v1){.service=service,.output_modes=qa_case==31?ALARM_MODE_VIBRATE:qa_case==33?ALARM_MODE_SOUND:ALARM_MODE_VISUAL};outputs.service.struct_size=sizeof(outputs);g->api=&outputs;}else g->api=&service;
+  grants++;return true;}
  if(strstr(name,"wifi")||strstr(name,"bluetooth"))radio_acquires++;
  return acquire(name,v,id,g);
 }
@@ -107,11 +115,13 @@ int main(int argc,char**argv){
  if(qa_case==0||qa_case==7||qa_case==10||qa_case==11||qa_case==13||qa_case==14||qa_case==15||qa_case==17)assert(presents==3&&!memcmp(background,pixels,sizeof(pixels)));
  if(qa_case==1||qa_case==2||qa_case==3||qa_case==4||qa_case==5)assert(presents==1);
  if(qa_case==6)assert(writes==3&&preferences[1]==50&&refreshes==2);
- else if(qa_case==8)assert(writes==1&&preferences[3]==1&&refreshes==1);
+ else if(qa_case==8||qa_case==32)assert(writes==1&&preferences[3]==1&&refreshes==1);
  else if(qa_case==9)assert(writes==1&&preferences[0]==100&&brightness_calls>=1);
+ else if(qa_case==33)assert(writes==3&&preferences[1]==100);
  else assert(!writes);
  if(qa_case==16)assert(brightness_calls==2&&presents==4&&!memcmp(background,pixels,sizeof(pixels)));
  else if(qa_case!=9)assert(!brightness_calls);
+ if(qa_case==30||qa_case==31)assert(presents==3&&!writes&&!refreshes&&!memcmp(background,pixels,sizeof(pixels)));
  if(qa_case==18)assert(diagnostics>=1&&strstr(last_diagnostic,"sleep=unavailable")&&presents==4);
  if(qa_case==12)assert(alarm_acks==1&&!memcmp(background,pixels,sizeof(pixels)));
 #endif
