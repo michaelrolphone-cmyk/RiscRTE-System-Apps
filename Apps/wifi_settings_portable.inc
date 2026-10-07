@@ -362,12 +362,23 @@ void app_main(void) {
       }
       return;
     }
+    /* Physical Home already closed this session and queued its root target.
+     * Never turn that terminal handoff into nested Back or redraw the old app. */
+    if(input.exit_requested && !opened)return;
     wifi_tick();
     if(!input.buttons && !input.tapped && !input.exit_requested){armed=true;continue;}
     if(!armed)continue;
     armed=false;
     if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
     wifi_make_view();
+    if(input.tapped && portable_wifi_paper()) {
+      int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);
+      input.tapped=false;
+      if(hit==WIFI_HIT_BACK){if(wifi_back())return;continue;}
+      if(hit==WIFI_HIT_PREVIOUS)input.buttons=T5_APP_BUTTON_UP;
+      else if(hit==WIFI_HIT_NEXT)input.buttons=T5_APP_BUTTON_DOWN;
+      else {if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;}
+    }
     if(input.tapped) {
       int x=input.touch_x-(wa->screen_width()-240)/2,y=input.touch_y-(wa->screen_height()-240)/2;
 #ifdef PORTABLE_NOVA_UI

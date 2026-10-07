@@ -40,7 +40,10 @@ static portable_wifi_view uv;
 static char row_names[16][65],row_values[16][80],progress[64];
 static const char *message;
 static uint32_t selected,confirm_choice,connect_started;
+static bool home_handoff;
+void portable_update_handoff(void){home_handoff=true;}
 static bool opened,dirty,armed,connecting,cleanup_pending,confirming,install_after_connect,restart_pending,radio_owned;
+#include "update_paper.inc"
 static bool update_radio_close(void) {
  if(uw&&radio_owned&&!uw->disconnect_checked(uw->context)){cleanup_pending=true;message="Cleanup failed; retry Back";dirty=true;return false;}
  if(uwg.api&&!ur->release(&uwg)){cleanup_pending=true;message="Wi-Fi release failed; retry Back";dirty=true;return false;}
@@ -150,7 +153,7 @@ static void render_update(void) {
   uint32_t total=ust.count+1;if(selected>=total)selected=0;uint32_t first=selected/16*16;
   uv.count=total-first>16?16:total-first;uv.selected=selected-first;
   for(unsigned i=0;i<uv.count;++i){uint32_t index=first+i;
-   if(!index){uv.rows[i]="Check / retry";uv.values[i]="Watch repository release catalog";continue;}
+   if(!index){uv.rows[i]="Check / retry";uv.values[i]=up?"Repository release catalog":"Watch repository release catalog";continue;}
    software_update_row_v1 r={.struct_size=sizeof(r)};
    if(!us||!us->get(us->context,index-1,&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
    snprintf(row_names[i],sizeof(row_names[i]),"%s",r.id);
@@ -158,11 +161,12 @@ static void render_update(void) {
    snprintf(row_values[i],sizeof(row_values[i]),"%s  %s",r.version,state);uv.rows[i]=row_names[i];uv.values[i]=row_values[i];
   }
  }
- portable_wifi_render(&uv);dirty=false;
+ if(up)up_draw();else portable_wifi_render(&uv);dirty=false;
 }
 static bool open_update(void) {
  ua=t5_app_get_api(1);ur=risc_runtime_get_api(1);
  if(!ua||!ua->poll||!ua->millis||!ua->screen_width||!ua->screen_height||ua->screen_width()<240||ua->screen_height()<240||!ur||ur->api_version!=1||ur->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!ur->acquire||!ur->release||!ur->yield_ms||!ur->diagnostic)return false;
+ home_handoff=false;up=paper_presentation_get();
  opened=true;dirty=true;armed=false;connecting=cleanup_pending=confirming=install_after_connect=restart_pending=false;selected=confirm_choice=0;
  memset(&ust,0,sizeof(ust));ust.struct_size=sizeof(ust);message="Saved Wi-Fi; Check to connect";
  usg=(risc_runtime_capability_v1){.struct_size=sizeof(usg)};ukg=(risc_runtime_capability_v1){.struct_size=sizeof(ukg)};ucg=(risc_runtime_capability_v1){.struct_size=sizeof(ucg)};memset(&uwg,0,sizeof(uwg));uw=NULL;us=NULL;uk=NULL;uc=NULL;
@@ -182,19 +186,26 @@ void app_main(void) {
    if(portable_app_sleep_retained())return;
 #endif
    if(!portable_update_suspend()){ur->diagnostic("UPDATE cleanup-unconfirmed; invocation retained");for(;;)ur->yield_ms(50);}return;}
+  if(up)up_input(&input);
   /* Fresh Cancel/Back owns this frame before any irreversible bank step. In
    * particular, a VERIFYING -> READY result must not overtake pending input. */
   if(!input.buttons&&!input.tapped&&!input.exit_requested){armed=true;update_tick();continue;}
   if(!armed&&!input.exit_requested){update_tick();continue;}armed=false;
   if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK)){
-   if(confirming){confirming=false;dirty=true;continue;}
+   if(confirming&&!home_handoff){confirming=false;dirty=true;continue;}
    if(!portable_update_close()){dirty=true;continue;}
 #ifdef UPDATE_RETURN_APP
-   if(!ur->request_launch(UPDATE_RETURN_APP))ur->diagnostic("UPDATE return-request-failed");
+   if(!home_handoff&&!ur->request_launch(UPDATE_RETURN_APP))ur->diagnostic("UPDATE return-request-failed");
 #endif
    return;
   }
   bool activate=false;
+  if(input.tapped&&up){
+   if(input.touch_x>=32&&input.touch_x<ua->screen_width()-32&&input.touch_y>=108&&input.touch_y<492){
+    unsigned hit=up_first+(unsigned)(input.touch_y-108)/96;
+    if(hit<uv.count){if(confirming)confirm_choice=hit;else if(!connecting&&(ust.state==SOFTWARE_UPDATE_LIST||ust.state==SOFTWARE_UPDATE_IDLE))selected=selected/16*16+hit;dirty=true;}
+   }continue;
+  }
   if(input.tapped){int x=input.touch_x-(ua->screen_width()-240)/2,y=input.touch_y-(ua->screen_height()-240)/2;
 #ifdef PORTABLE_NOVA_UI
    if(y>=188&&y<232){if(x>=16&&x<80)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=160&&x<224)input.buttons=T5_APP_BUTTON_DOWN;}

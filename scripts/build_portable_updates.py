@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 """Build ordinary update providers and existing shared apps; no publication."""
-import argparse,hashlib,json,os,shutil,subprocess,struct
+import argparse,sys,hashlib,json,os,shutil,subprocess,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT/'scripts'))
+import portable_quick_build
 def native_update_manifest(name):
  if name not in ('ota_update','app_store'):raise ValueError('Unknown native update app')
  manifest=json.loads((ROOT/'Apps/native'/(name+'.json')).read_text())
  if manifest.get('id')!=name or manifest.get('file_name')!=name+'.elf' or manifest.get('type')!='application':raise ValueError('Native update manifest identity mismatch')
  return manifest
 
-def build(args):
+def build(args,parser=None):
  cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
  if not cc:
   cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
  cxx=cc.removesuffix('gcc')+'g++';nm=cc.removesuffix('gcc')+'nm'
  out=args.output_dir;out.mkdir(parents=True,exist_ok=True)
+ quick_flags,quick_sources=portable_quick_build.configure(args,parser or argparse.ArgumentParser(),ROOT,out)
  common=['-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include')]
  validator=out/'validate-elf'
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
@@ -46,8 +49,8 @@ def build(args):
     function,size,kind=line.split('\t');stack_frames[function]=int(size)
     if kind!='static' or int(size)>2048:raise ValueError('Provider per-function stack budget exceeded: '+line)
   (dest/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-  inputs=[p for d in ['Services/update','lib/PortableApps'] for p in (ROOT/d).rglob('*') if p.is_file()]+[ROOT/'Apps/update_portable.inc',ROOT/'scripts/build_portable_updates.py',ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c']+list(sources)+list((ROOT/'Apps/native').glob('*.json'))
-  record={'purpose':'development-only-not-deployment','sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],'imports':sorted(imports),'exports':sorted(exports),'build_defines':flags,'bss_bytes':bss,'section_sizes':sizes,'stack_frames':stack_frames,'source_sha256':{str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}}
+  inputs=[p for d in ['Services/update','lib/PortableApps'] for p in (ROOT/d).rglob('*') if p.is_file()]+[ROOT/'Apps/update_portable.inc',ROOT/'Apps/update_paper.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'scripts/build_portable_updates.py',ROOT/'scripts/portable_quick_build.py',ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c']+list(sources)+list((ROOT/'Apps/native').glob('*.json'))
+  record={'purpose':'development-only-not-deployment','notes':['Capability-selected paper UI shares existing controller; no product backend qualification','Home and Quick Wi-Fi handoffs require successful update cleanup; local Back returns to springboard.elf','Quick Actions requires KV namespace 1; saved Wi-Fi requires namespace 6; provider instances remain explicit owner grants'],'sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],'imports':sorted(imports),'exports':sorted(exports),'build_defines':flags,'bss_bytes':bss,'section_sizes':sizes,'stack_frames':stack_frames,'source_sha256':{str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}}
   (dest/'build-record.json').write_text(json.dumps(record,indent=2)+'\n')
   return elf
  for firmware,kind in [(1,'firmware'),(0,'apps')]:
@@ -57,19 +60,21 @@ def build(args):
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  for firmware,name in [(1,'ota_update'),(0,'app_store')]:
   if args.app and name!=args.app:continue
-  flags=['-std=c11','-DPORTABLE_UPDATE_APP','-DPORTABLE_UPDATE_FIRMWARE='+str(firmware),'-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance),'-DPORTABLE_UPDATE_RTC_UTC_OFFSET_SECONDS='+str(args.rtc_utc_offset_seconds)]
+  flags=['-std=c11','-DPORTABLE_UPDATE_APP','-DUPDATE_RETURN_APP="springboard.elf"',*quick_flags,'-DPORTABLE_UPDATE_FIRMWARE='+str(firmware),'-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance),'-DPORTABLE_UPDATE_RTC_UTC_OFFSET_SECONDS='+str(args.rtc_utc_offset_seconds)]
   if args.nova_ui:flags+=['-DPORTABLE_NOVA_UI']
   if args.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
   if args.navigation:flags+=['-DPORTABLE_INPUT_NAVIGATION']
   if args.full_frames:flags+=['-DPORTABLE_FORCE_FULL_FRAMES']
-  flags+=['-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation)]
+  flags+=['-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation),'-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
   manifest={'type':'application','id':name,'version':'1.1.0','architecture':'xtensa-esp32s3','file_name':name+'.elf','entry':'app_main','requires':[{'capability':c,'api':v} for c,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('storage.key-value',1),('net.wifi',1),('software.update.'+('firmware' if firmware else 'apps'),1)]]}
   if args.nova_ui:manifest=native_update_manifest(name)
+  portable_quick_build.requirements(args,manifest['requires'])
   if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
   if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
-  compile_artifact(name,cc,[ROOT/'Apps'/(name+'.c'),ROOT/'lib/PortableApps/src/adapter.c',catalog],flags,{'app_main','app_module_init','app_module_fini'},manifest)
+  manifest['requires']=list({(r['capability'],r['api']):r for r in manifest['requires']}.values())
+  compile_artifact(name,cc,[ROOT/'Apps'/(name+'.c'),ROOT/'lib/PortableApps/src/adapter.c',catalog,*quick_sources],flags,{'app_main','app_module_init','app_module_fini'},manifest)
   licenses=out/name/'licenses';licenses.mkdir(exist_ok=True)
-  for source in [ROOT/'LICENSE',*list((ROOT/'lib/PortableApps/settings_fonts').glob('LICENSE-*'))]:shutil.copyfile(source,licenses/source.name)
+  for source in [ROOT/'LICENSE',*[p for group in ('settings_fonts','paper_fonts','fonts') for p in (ROOT/'lib/PortableApps'/group).glob('LICENSE-*')]]:shutil.copyfile(source,licenses/source.name)
  print('Portable update target ELFs, bounded imports/exports and structural validator passed')
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args())
+ p=argparse.ArgumentParser(description=__doc__);parser=p;portable_quick_build.options(p);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--display-rotation',type=int,choices=[0,90],default=0);p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args(),p)

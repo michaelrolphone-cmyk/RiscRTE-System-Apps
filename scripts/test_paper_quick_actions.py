@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Real paper clock/launcher QuickActions, Home and clean-restore regressions."""
 from pathlib import Path
-import subprocess,os
+import subprocess,os,sys
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'build/paper-quick';OUT.mkdir(parents=True,exist_ok=True)
 for san in (False,True):
@@ -11,7 +11,7 @@ for san in (False,True):
    if launcher:flags+=['-DTEST_SPRINGBOARD','-DPORTABLE_RETURN_APP="parent.elf"','-DPORTABLE_HOME_APP="default.elf"']
    else:flags+=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_CROWN_SLEEP_UNAVAILABLE']
    if landscape:flags+=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90']
-   if san:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
+   if san:flags+=['-fsanitize='+os.environ.get('UPDATE_SANITIZERS','address,undefined'),'-fno-sanitize-recover=all','-fno-omit-frame-pointer',*(['-no-pie'] if sys.platform!='darwin' else [])]
    target=OUT/f'paper-{int(landscape)}-{int(san)}-{int(launcher)}'
    sources=[ROOT/'Apps'/('springboard.c' if launcher else 'paper_clock.c'),ROOT/'test/native_apps/paper_quick_test.c']
    sources += [ROOT/'lib/PortableApps/src'/p for p in ['adapter.c','quick_actions.c','quick_render.c','quick_session.c']]
@@ -23,6 +23,6 @@ print('124 normal/sanitized native/portrait paper modal and Home cases passed')
 
 for san in (False,True):
  target=OUT/f'home-{int(san)}'
- flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if san else []
+ flags=['-fsanitize='+os.environ.get('UPDATE_SANITIZERS','address,undefined'),'-fno-sanitize-recover=all','-fno-omit-frame-pointer',*(['-no-pie'] if sys.platform!='darwin' else [])] if san else []
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),str(ROOT/'test/native_apps/portable_home_test.c'),'-o',str(target)],check=True)
  subprocess.run([str(target)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))

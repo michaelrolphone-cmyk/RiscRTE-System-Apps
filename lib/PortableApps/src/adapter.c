@@ -662,7 +662,10 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
   if(quick_consumed){
-    crown_pending=false;out->exit_requested=quick_launch_pending;
+    #if !defined(PORTABLE_UPDATE_APP) || !defined(PORTABLE_HOME_APP)
+    crown_pending=false;
+#endif
+    out->exit_requested=quick_launch_pending;
     /* A reserved gesture is not app contact. Keep the presentation neutral
      * without an invented release, so deliberate replay can begin normally. */
     if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui))nova_contact.valid=true;
@@ -793,6 +796,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
       home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
       clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
     }
+#ifdef PORTABLE_UPDATE_APP
+    if(!portable_update_close()){home_pending=crown_pending=false;navigation_pending=0;input_pending=false;clear_contact_snapshots();memset(out,0,sizeof(*out));return true;}
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_close())return false;
 #endif
@@ -801,6 +807,13 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    /* Wi-Fi owns checked cleanup and nested Back. Home is a direct root exit;
+     * refusal leaves its controller available for an explicit cleanup retry. */
+    if(!portable_wifi_close()) {
+      crown_pending=false;memset(out,0,sizeof(*out));return true;
+    }
 #endif
     if(!rt->request_launch(destination)) {
       rt->diagnostic("PORTABLE_APP error=return-request");
@@ -813,6 +826,10 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
       failed=true;return false;
 #endif
     }
+#ifdef PORTABLE_UPDATE_APP
+    extern void portable_update_handoff(void);
+    portable_update_handoff();
+#endif
     handoff_requested=true;out->exit_requested=true;
   }
 #endif
@@ -852,6 +869,17 @@ static bool launch(uint32_t i) {
 #endif
       !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && app_allows_launch(portable_catalog[i].file_name) && rt->request_launch(portable_catalog[i].file_name);
 }
+#ifdef PORTABLE_POWER_STATUS
+#include "PortablePowerStatus.h"
+bool portable_power_read(risc_battery_sample_v1 *out) {
+  if (!out) return false;
+  *out=(risc_battery_sample_v1){0,255,RISC_BATTERY_PROFILE_MISSING};
+  risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
+  if (failed || !bg.api || !gauge || !gauge->read || !gauge->read(gauge->context,&sample)) return false;
+  *out=sample;
+  return true;
+}
+#endif
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
   if (!gauge || !out || !gauge->read(gauge->context, &b))
