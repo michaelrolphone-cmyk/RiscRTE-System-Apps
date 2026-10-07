@@ -646,7 +646,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
-  if(quick_consumed){crown_pending=false;out->exit_requested=quick_launch_pending;return true;}
+  if(quick_consumed){
+#if !defined(PORTABLE_UPDATE_APP) || !defined(PORTABLE_HOME_APP)
+    crown_pending=false;
+#endif
+    out->exit_requested=quick_launch_pending;return true;
+  }
 replay_input:
 #endif
 #ifdef PORTABLE_HOME_APP
@@ -768,6 +773,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
      && !quick_launch_pending
 #endif
   ) {
+#ifdef PORTABLE_UPDATE_APP
+    if(!portable_update_close()){memset(out,0,sizeof(*out));return true;}
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_close())return false;
 #endif
@@ -780,6 +788,10 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     if(!rt->request_launch(destination)) {
       rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
     }
+#ifdef PORTABLE_UPDATE_APP
+    extern void portable_update_handoff(void);
+    portable_update_handoff();
+#endif
     handoff_requested=true;out->exit_requested=true;
   }
 #endif

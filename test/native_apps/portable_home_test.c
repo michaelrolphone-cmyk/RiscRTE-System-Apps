@@ -2,12 +2,12 @@
 #include <assert.h>
 #include <stdio.h>
 static risc_touch_snapshot_v1 snap;
-static risc_touch_event_v1 queue[40];static unsigned length,index;
+static risc_touch_event_v1 queue[40];static unsigned length,event_index;
 static bool okay=true;static int end=0;static unsigned grants,subscriptions;
 static uint64_t sub(void*c){(void)c;subscriptions++;return 1;}
 static bool unsub(void*c,uint64_t token){(void)c;assert(token==1);subscriptions--;return true;}
-static bool poll(void*c,size_t n){(void)c;(void)n;index=0;return okay;}
-static int32_t next(void*c,uint64_t token,risc_touch_event_v1*e){(void)c;(void)token;if(index<length){*e=queue[index++];return 1;}return end;}
+static bool poll(void*c,size_t n){(void)c;(void)n;event_index=0;return okay;}
+static int32_t next(void*c,uint64_t token,risc_touch_event_v1*e){(void)c;(void)token;if(event_index<length){*e=queue[event_index++];return 1;}return end;}
 static bool snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=snap;return true;}
 static const risc_touch_api_v1 api={1,sizeof(api),NULL,sub,unsub,poll,next,snapshot};
 static bool acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){assert(!strcmp(n,"input.touch.raw")&&v==1&&!id);g->api=&api;grants++;return true;}
