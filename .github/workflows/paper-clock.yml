@@ -12,9 +12,44 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Canonical typed desk-clock SDK
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: aac8c06d3221139084acd0cfc64f7b0ba194a97a
+          path: .desk-deps/reader
+          sparse-checkout: sdk
+      - name: Canonical retained Runtime source
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 3c39aa7ac50ecd7f6da0296a62a2d7af066f82d1
+          path: .desk-deps/runtime
+      - name: Isolated X4 typed Clock client
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
+          ref: c8a4f951abccd2e88660468958621612c82083c3
+          path: .desk-deps/x4
+          sparse-checkout: minimal
+      - name: Real retained Clock and adapter, normal and sanitizers
+        run: python scripts/test_paper_desk_clock.py --sdk .desk-deps/reader/sdk/driver
+      - name: Actual Runtime and CPU retained staging gate
+        run: python scripts/test_desk_clock_runtime_gate.py --runtime .desk-deps/runtime
+      - name: Checked X4 client and real Clock integration under sanitizers
+        env:
+          RISCRTE_RUNTIME_ROOT: ${{ github.workspace }}/.desk-deps/runtime
+          RISCRTE_APPS_ROOT: ${{ github.workspace }}
+          RISCRTE_DESK_SDK_ROOT: ${{ github.workspace }}/.desk-deps/reader
+          SANITIZE: '1'
+        run: |
+          bash .desk-deps/x4/minimal/test/run_desk_clock_sleep_test.sh
+          bash .desk-deps/x4/minimal/test/run_desk_clock_typed_app_test.sh
       - name: Bounded desk-clock checkpoint and minute policy
         run: python scripts/test_desk_clock_policy.py
       - name: Portable six-face rasters and frozen Reader comparison
@@ -45,6 +80,14 @@ jobs:
           python scripts/build_portable_springboard.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --return-app default.elf --home-app default.elf --catalog examples/x4-default-catalog.json --output-dir dist/paper-controls/springboard
           python scripts/build_portable_settings.py --display-rotation 90 --navigation --alarm-client --alarm-settings --quick-actions --wall-time --return-app springboard.elf --home-app default.elf --output-dir dist/paper-controls/settings
           python scripts/build_portable_file_browser.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --home-app default.elf --storage-capability storage.volume --file-handlers --output-dir dist/paper-controls/file-browser
+      - name: Build opt-in retained desk Clock and validate actual ELF loader
+        run: >-
+          python scripts/build_paper_clock.py --navigation --alarm-client
+          --quick-actions --quick-radios --desk-clock
+          --local-sleep-source .desk-deps/x4/minimal/apps/portable_sleep.c
+          --sleep-capability x4.power --sleep-sdk .desk-deps/reader/sdk/driver
+          --retained-wake-sdk .desk-deps/runtime/sdk/app
+          --output-dir dist/desk-clock-future
       - name: Build future opt-in desk-clock Settings without deployment
         run: python scripts/build_portable_settings.py --settings-profile x4-desk-clock --display-rotation 90 --navigation --alarm-client --alarm-settings --quick-actions --wall-time --return-app springboard.elf --home-app default.elf --output-dir dist/desk-settings-future
       - uses: actions/upload-artifact@v4
@@ -56,6 +99,7 @@ jobs:
             build/paper-clock/
             dist/paper-controls/
             dist/desk-settings-future/
+            dist/desk-clock-future/
             build/desk-settings/
             build/paper-quick/
           retention-days: 14
