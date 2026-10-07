@@ -28,9 +28,20 @@ static void sp_row(int y,const char *title,const char *value,bool selected,bool 
   if(action)(void)icon(width()-72,y+30,"solid:f054",24,!selected);
   fill(32,y+SP_ROW-3,width()-64,3,0);
 }
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+static int sp_sleep_top(void) {return height()>=640?144:112;}
+static int sp_sleep_step(void) {int step=(height()-sp_sleep_top()-160)/(int)settings_sleep_count();return step<112?step:112;}
+static unsigned sp_face_columns(void) {return height()>=720?1u:2u;}
+static int sp_face_step(void) {int step=(height()-280)/(int)(PORTABLE_DESK_FACE_COUNT/sp_face_columns());return step<84?step:84;}
+static int sp_face_width(void) {return sp_face_columns()==1?width()-64:(width()-80)/2;}
+#endif
 static void sp_redraw(void) {
   pp_begin();
   const char *title=sv_page==SV_ROOT?"SETTINGS":sv_page==SV_FIELDS?"TIME AND DATE":sv_page==SV_VALUE?editor_names[editor_field]:
+
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+    sv_page==SV_DESK_FACE?"DESK CLOCK FACE":
+#endif
     sv_page==SV_TIME_FORMAT?"TIME FORMAT":sv_page==SV_FOLD?"REPEATED TIME":sv_page==SV_SLEEP?"SLEEP MODE":sv_page==SV_ALERT?"ALARM ALERTS":"ABOUT";
   sp_header(title);
   if(sv_page==SV_ROOT) {
@@ -64,8 +75,25 @@ static void sp_redraw(void) {
 #ifdef PORTABLE_SLEEP_SETTINGS
   } else if(sv_page==SV_SLEEP) {
     const char *options[]={"LIGHT SLEEP","DEEP SLEEP","LIGHT 5 MIN - DEEP"};
-    for(unsigned i=0;i<3;i++)sp_button(32,144+(int)i*112,width()-64,88,options[i],sleep_choice==i);
+    for(unsigned row=0;row<settings_sleep_count();++row){unsigned mode=settings_sleep_at(row);
+      const char *name=options[mode];
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+      if(mode==PORTABLE_SLEEP_DEEP)name="DEEP DESK CLOCK";
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+      sp_button(32,sp_sleep_top()+(int)row*sp_sleep_step(),width()-64,sp_sleep_step()-24,name,sleep_choice==mode);
+#else
+      sp_button(32,144+(int)row*112,width()-64,88,name,sleep_choice==mode);
+#endif
+    }
     sp_text(32,height()-142,width()-64,sleep_message,false,true);sp_footer(true);
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  } else if(sv_page==SV_DESK_FACE) {
+    unsigned columns=sp_face_columns();int step=sp_face_step(),w=sp_face_width();
+    for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i)
+      sp_button(32+(int)(i%columns)*(w+16),120+(int)(i/columns)*step,w,step-12,portable_desk_face_name(i),face_choice==i);
+    sp_text(32,height()-142,width()-64,face_message[0]?face_message:"DRAFT ONLY - USE SAVE",false,true);sp_footer(true);
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   } else if(sv_page==SV_ALERT) {
@@ -112,6 +140,9 @@ static bool sp_poll(t5_app_input_t *out) {
   sv_gesture=false;if(!tap||s.x>=width()||s.y>=height())return true;
   int x=s.x,y=s.y;
   bool editable=sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(sv_page==SV_DESK_FACE)editable=true;
+#endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(sv_page==SV_ALERT&&settings_visual_alerts())editable=false;
 #endif
@@ -134,8 +165,24 @@ static bool sp_poll(t5_app_input_t *out) {
   } else if(sv_page==SV_TIME_FORMAT) {
     if(y>=144&&y<232)sp_emit_hit(out,28,76,184,32);
     else if(y>=256&&y<344)sp_emit_hit(out,28,124,184,32);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  } else if(sv_page==SV_DESK_FACE) {
+    unsigned columns=sp_face_columns();int step=sp_face_step(),w=sp_face_width();
+    for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i){int left=32+(int)(i%columns)*(w+16),top=120+(int)(i/columns)*step;
+      if(x>=left&&x<left+w&&y>=top&&y<top+step-12)
+        sp_emit_hit(out,20+(int)(i%2)*104,62+(int)(i/2)*36,96,30);
+    }
+#endif
   } else if(sv_page==SV_SLEEP||sv_page==SV_ALERT) {
-    for(unsigned i=0;i<3;i++)if(y>=144+(int)i*112&&y<232+(int)i*112)sp_emit_hit(out,28,66+(int)i*38,184,30);
+    unsigned count=3;
+#ifdef PORTABLE_SLEEP_SETTINGS
+    if(sv_page==SV_SLEEP)count=settings_sleep_count();
+#endif
+    int top=144,step=112,h=88;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+    if(sv_page==SV_SLEEP){top=sp_sleep_top();step=sp_sleep_step();h=step-24;}
+#endif
+    for(unsigned i=0;i<count;i++)if(y>=top+(int)i*step&&y<top+(int)i*step+h)sp_emit_hit(out,28,66+(int)i*38,184,30);
   }
   return true;
 }

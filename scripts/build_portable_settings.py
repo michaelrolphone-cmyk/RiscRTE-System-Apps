@@ -23,12 +23,15 @@ def build(args,parser=None):
         core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
         cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable'
+    profile=getattr(args,'settings_profile','default')
+    desk_clock=profile=='x4-desk-clock'
     flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
     if args.return_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.return_app):
             raise ValueError('Return app must be a plain .elf filename')
         flags.append('-DPORTABLE_RETURN_APP=\"'+args.return_app+'\"')
-    if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
+    if args.sleep_settings or desk_clock: flags.append('-DPORTABLE_SLEEP_SETTINGS')
+    if desk_clock: flags.append('-DPORTABLE_SETTINGS_X4_DESK_CLOCK')
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
     if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
@@ -38,7 +41,8 @@ def build(args,parser=None):
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
-    version=json.loads((ROOT/'Apps/settings.json').read_text())['version']
+    version_path='lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json'
+    version=json.loads((ROOT/version_path).read_text())['version']
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
@@ -70,7 +74,8 @@ def build(args,parser=None):
         str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),
         '-o',str(validator)],check=True,timeout=60)
     subprocess.run([str(validator),str(elf)],check=True,timeout=60)
-    version=json.loads((ROOT/'Apps/settings.json').read_text())['version']
+    version_path='lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json'
+    version=json.loads((ROOT/version_path).read_text())['version']
     manifest={'type':'application','id':'settings','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
@@ -94,6 +99,7 @@ def build(args,parser=None):
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
     inputs.append('Apps/PaperPresentation.h')
+    inputs += ['scripts/build_portable_settings.py',version_path]
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
         source=ROOT/'lib/PortableApps'/group
@@ -111,6 +117,9 @@ def build(args,parser=None):
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
+        'settings_profile':profile,'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
+        'sleep_fallback':'light' if desk_clock else 'hybrid','desk_clock_faces':['Segments','Sans','Serif','Minimal','Railway','Deco'] if desk_clock else [],
+        'preferences':{'instance':1,'sleep_key':'sleep_mode','face_key':'desk_clock_face' if desk_clock else None},
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
@@ -119,6 +128,7 @@ def build(args,parser=None):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--settings-profile',choices=['default','x4-desk-clock'],default='default',help='Future paper-only face and Light/Deep Desk Clock preference profile; does not qualify a sleep backend')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=0)
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')

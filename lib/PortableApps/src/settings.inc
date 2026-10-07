@@ -27,6 +27,35 @@ static bool settings_hour_24(void) { return time_format_mode==PORTABLE_TIME_FORM
 #include "PortableSleepPolicy.h"
 static unsigned sleep_choice;
 static const char *sleep_message;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+#define SETTINGS_SLEEP_MODES (PORTABLE_SLEEP_MASK_LIGHT|PORTABLE_SLEEP_MASK_DEEP)
+#define SETTINGS_SLEEP_DEFAULT PORTABLE_SLEEP_LIGHT
+static bool sleep_unconfirmed;
+#else
+#define SETTINGS_SLEEP_MODES PORTABLE_SLEEP_MASK_ALL
+#define SETTINGS_SLEEP_DEFAULT PORTABLE_SLEEP_HYBRID
+#endif
+static int settings_sleep_load(unsigned *mode) {
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  return portable_sleep_load_profile(settings_store,SETTINGS_SLEEP_MODES,SETTINGS_SLEEP_DEFAULT,mode);
+#else
+  return portable_sleep_load(settings_store,mode);
+#endif
+}
+static unsigned settings_sleep_count(void) {
+  unsigned n=0;for(unsigned mode=0;mode<=PORTABLE_SLEEP_HYBRID;++mode)
+    if(portable_sleep_supported(SETTINGS_SLEEP_MODES,mode))++n;
+  return n;
+}
+static unsigned settings_sleep_at(unsigned row) {
+  for(unsigned mode=0;mode<=PORTABLE_SLEEP_HYBRID;++mode)
+    if(portable_sleep_supported(SETTINGS_SLEEP_MODES,mode)){if(!row)return mode;--row;}
+  return SETTINGS_SLEEP_DEFAULT;
+}
+static unsigned settings_sleep_next(unsigned mode) {
+  for(unsigned i=0;i<3;++i){mode=(mode+1u)%3u;if(portable_sleep_supported(SETTINGS_SLEEP_MODES,mode))return mode;}
+  return SETTINGS_SLEEP_DEFAULT;
+}
 #define SETTINGS_BASE_ROW_COUNT 6u
 #define SETTINGS_ABOUT_ROW 5u
 #else
@@ -49,9 +78,22 @@ static const char *alert_message;
 static bool alert_unconfirmed;
 /* Append after About so pre-existing configurations retain every row index. */
 #define SETTINGS_ALERT_ROW SETTINGS_BASE_ROW_COUNT
-#define SETTINGS_ROW_COUNT (SETTINGS_BASE_ROW_COUNT+1u)
+#define SETTINGS_NON_FACE_ROW_COUNT (SETTINGS_BASE_ROW_COUNT+1u)
 #else
-#define SETTINGS_ROW_COUNT SETTINGS_BASE_ROW_COUNT
+#define SETTINGS_NON_FACE_ROW_COUNT SETTINGS_BASE_ROW_COUNT
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+#ifndef PORTABLE_SLEEP_SETTINGS
+#error "X4 desk-clock Settings requires sleep settings"
+#endif
+#include "PortableDeskClockSettings.h"
+#define SETTINGS_FACE_ROW SETTINGS_NON_FACE_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+1u)
+static unsigned face_choice;
+static const char *face_message;
+static bool face_unconfirmed;
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_NON_FACE_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 static portable_time_candidate save_candidates[2];
@@ -107,6 +149,9 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #ifdef PORTABLE_ALARM_SETTINGS
     ,"Alarm Alerts"
 #endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+    ,"Desk Clock Face"
+#endif
     };
   strcpy(out->label,names[index]);
   if(index==0) {
@@ -126,8 +171,15 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   else if(index==3)strcpy(out->value,portable_time_basis());
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(index==4) {
-    unsigned mode;int loaded=portable_sleep_load(settings_store,&mode);
+    unsigned mode;int loaded=settings_sleep_load(&mode);
     out->type=T5_APP_SETTING_ACTION;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+    if(sleep_unconfirmed){strcpy(out->value,"Unconfirmed");return true;}
+    if(loaded==PORTABLE_SLEEP_UNSUPPORTED){strcpy(out->value,"Light (unsupported saved)");return true;}
+    if(loaded==PORTABLE_SLEEP_INVALID){strcpy(out->value,"Light (invalid saved)");return true;}
+    if(loaded==PORTABLE_SLEEP_MISSING){strcpy(out->value,"Light (default)");return true;}
+    if(loaded==PORTABLE_SLEEP_LOADED&&mode==PORTABLE_SLEEP_DEEP){strcpy(out->value,"Deep Desk Clock");return true;}
+#endif
     strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":mode==PORTABLE_SLEEP_LIGHT?"Light":"Light then Deep");
   }
 #endif
@@ -139,6 +191,15 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     strcpy(out->value,alert_unconfirmed?"Unconfirmed":
         loaded==PORTABLE_ALERT_UNAVAILABLE?"Unavailable":
         loaded==PORTABLE_ALERT_INVALID?"Invalid":portable_alert_name(mode));
+  }
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  else if(index==SETTINGS_FACE_ROW) {
+    unsigned face;int loaded=portable_desk_face_load(settings_store,&face);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,face_unconfirmed?"Unconfirmed":loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable":
+        loaded==PORTABLE_DESK_FACE_INVALID?"Segments (invalid saved)":
+        loaded==PORTABLE_DESK_FACE_MISSING?"Segments (default)":portable_desk_face_name(face));
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -268,9 +329,17 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   }
 #ifdef PORTABLE_SLEEP_SETTINGS
   if(index==4) {
-    int loaded=portable_sleep_load(settings_store,&sleep_choice);
+    int loaded=settings_sleep_load(&sleep_choice);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+    sleep_message=sleep_unconfirmed?"Save unconfirmed - retry":
+                  loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable: Light default":
+                  loaded==PORTABLE_SLEEP_UNSUPPORTED?"Unsupported: Light default":
+                  loaded==PORTABLE_SLEEP_INVALID?"Invalid: Light default":
+                  loaded==PORTABLE_SLEEP_MISSING?"Missing: Light default":"";
+#else
     sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
                   loaded==PORTABLE_SLEEP_INVALID?"Invalid: Hybrid default":"";
+#endif
     sv_switch(SV_SLEEP);bool armed=false;t5_app_input_t input;
     uint8_t result=T5_APP_SETTING_NO_CHANGE;
     while(poll(&input,20)) {
@@ -279,20 +348,31 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(!armed)continue;
       armed=false;
       bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
-      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice=(sleep_choice+1u)%3u;
-      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,66,184,30))sleep_choice=PORTABLE_SLEEP_LIGHT;
-      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))sleep_choice=PORTABLE_SLEEP_DEEP;
-      else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))sleep_choice=PORTABLE_SLEEP_HYBRID;
+      if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT))sleep_choice=settings_sleep_next(sleep_choice);
+      else if(input.tapped)for(unsigned row=0;row<settings_sleep_count();++row)
+        if(sv_inside(input.touch_x,input.touch_y,28,66+(int)row*38,184,30))sleep_choice=settings_sleep_at(row);
       if(save) {
-        if(portable_sleep_save(settings_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
+        if(portable_sleep_save_profile(settings_store,SETTINGS_SLEEP_MODES,sleep_choice)) {
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+          sleep_unconfirmed=false;
+#endif
+          result=T5_APP_SETTING_UPDATED;break;
+        }
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+        sleep_unconfirmed=true;
+#endif
         /* A failed commit may or may not have persisted. Re-read rather than
          * claim the old mode or display a false Saved confirmation. */
-        (void)portable_sleep_load(settings_store,&sleep_choice);
+        (void)settings_sleep_load(&sleep_choice);
         sleep_message="Save unconfirmed - retry";
       }
       settings_view_redraw();
     }
-    settings_message=result==T5_APP_SETTING_UPDATED?"Sleep mode saved":"";
+    settings_message=result==T5_APP_SETTING_UPDATED?"Sleep mode saved":
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+      sleep_unconfirmed?"Sleep mode unconfirmed":
+#endif
+      "";
     sv_switch(SV_ROOT);return result;
   }
 #endif
@@ -334,6 +414,37 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     }
     settings_message=result==T5_APP_SETTING_UPDATED?"Alert mode saved":
         alert_unconfirmed?"Alert mode unconfirmed":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(index==SETTINGS_FACE_ROW) {
+    int loaded=portable_desk_face_load(settings_store,&face_choice);
+    face_message=face_unconfirmed?"Save unconfirmed - retry":
+        loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable: Segments default":
+        loaded==PORTABLE_DESK_FACE_INVALID?"Invalid: Segments default":
+        loaded==PORTABLE_DESK_FACE_MISSING?"Missing: Segments default":"";
+    sv_switch(SV_DESK_FACE);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))face_choice=(face_choice+1u)%PORTABLE_DESK_FACE_COUNT;
+      else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))face_choice=(face_choice+PORTABLE_DESK_FACE_COUNT-1u)%PORTABLE_DESK_FACE_COUNT;
+      else if(input.tapped)for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i)
+        if(sv_inside(input.touch_x,input.touch_y,20+(int)(i%2)*104,62+(int)(i/2)*36,96,30))face_choice=i;
+      if(save) {
+        if(portable_desk_face_save(settings_store,face_choice)) {
+          face_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+        }
+        face_unconfirmed=true;face_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Clock face saved":face_unconfirmed?"Clock face unconfirmed":"";
     sv_switch(SV_ROOT);return result;
   }
 #endif
@@ -421,12 +532,17 @@ static bool settings_open(void) {
   }
   settings_time_format_load();
 #ifdef PORTABLE_SLEEP_SETTINGS
-  sleep_choice=PORTABLE_SLEEP_HYBRID;sleep_message="";
+  sleep_choice=SETTINGS_SLEEP_DEFAULT;sleep_message="";
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   alert_choice=0;alert_message="";alert_unconfirmed=false;alert_store=NULL;
   /* All preferences share the same explicit namespace-1 grant. */
   alert_store=settings_store;
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  face_choice=PORTABLE_DESK_SEGMENTS;face_message="";face_unconfirmed=sleep_unconfirmed=false;
+  /* This profile is only qualified for the retaining monochrome paper UI. */
+  if(!pp_enabled())return false;
 #endif
   if(!rt->acquire(TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,0,&rtc_grant))return false;
   rtc=rtc_grant.api;

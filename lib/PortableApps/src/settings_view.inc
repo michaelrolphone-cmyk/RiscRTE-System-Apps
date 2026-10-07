@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -224,9 +224,9 @@ static void sv_time_format(void) {
 #ifdef PORTABLE_SLEEP_SETTINGS
 static void sv_sleep(void) {
   sv_heading("CLOCK SLEEP MODE");
-  sv_button(28,66,184,30,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
-  sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
-  sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
+  const char *options[]={"LIGHT SLEEP","DEEP SLEEP","LIGHT 5 MIN - DEEP"};
+  for(unsigned row=0;row<settings_sleep_count();++row){unsigned mode=settings_sleep_at(row);
+    sv_button(28,66+(int)row*38,184,30,options[mode],sleep_choice==mode);}
 #ifdef PORTABLE_NOVA_UI
   sv_center(3,172,sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
 #else
@@ -282,6 +282,9 @@ static void sv_switch(unsigned page) {
   settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+      || page==SV_DESK_FACE
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
       || page==SV_ALERT
