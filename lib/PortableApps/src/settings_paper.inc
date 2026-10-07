@@ -101,6 +101,7 @@ static bool sp_poll(t5_app_input_t *out) {
   int x=s.x,y=s.y;
   bool editable=sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
   if(y>=height()-112&&y<height()-24) {
+    if((editable||(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()))&&x>=width()/2-8&&x<width()/2+8)return true;
     if(editable&&x>=width()/2){editor_field=6;out->buttons=T5_APP_BUTTON_CONFIRM;}
     else if(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()&&x>=width()/2){sp_first=sp_first?0:sp_rows();settings_view_redraw();}
     else sv_back_input(out);

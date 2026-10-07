@@ -13,11 +13,11 @@ selecting a draft, dragging, or cancelling. Physical navigation remains live.
 Lists change pages only after completed gestures and do not animate. Displays
 with fewer visible rows page rather than clipping actionable fields.
 
-`python scripts/test_settings_paper.py` adds 15 ASan/UBSan scenarios using the
+`python scripts/test_settings_paper.py` adds 16 ASan/UBSan scenarios using the
 real adapter and controllers: render, format commit/cancel/failed write,
 calendar edit with leap-day clamp and verified RTC write, draft discard,
 inherited contacts, drag cancellation, snapshot-only page gestures, queue/poll faults, About, sleep choice
-commit/cancel, bad native stride and complete teardown. Existing 272 Watch
+commit/cancel, blank footer-gap rejection, bad native stride and complete teardown. Existing 272 Watch
 Settings regression executions remain unchanged. Host evidence is not hardware
 qualification or an installed bundle.
 

@@ -35,6 +35,7 @@ int main(int argc,char **argv) {
   tap(3,200,300);tap(7,test==13?100:350,730);
   uint8_t result=settings_activate(0,4);assert((result==T5_APP_SETTING_UPDATED)==(test==12));assert(kv_writes==(test==12?1u:0u));assert(!writes&&!format_writes);
  } else if(test==16){tap(3,100,600);tap(4,100,180);tap(8,100,730);app_main();assert(sp_first==6&&!writes&&!format_writes);}
+ else if(test==17){tap(3,200,300);tap(7,240,730);tap(11,100,730);assert(settings_activate(0,2)==T5_APP_SETTING_NO_CHANGE);assert(!format_writes&&!writes);}
  else if(test==15){assert(failed);}
  else assert(!"Unknown paper scenario");
  app_module_fini();assert(!grants&&!subscriptions&&!frame_count);
