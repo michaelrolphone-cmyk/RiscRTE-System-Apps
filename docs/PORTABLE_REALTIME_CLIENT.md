@@ -3,8 +3,10 @@
 `PortableRealtimeClient.h/.c` is an invocation-local consumer of Runtime
 0.1.49's typed realtime API. It is deliberately not linked into any default
 Clock, Settings, Watch, paper adapter, or product profile. This change has no
-manifest or boot-policy edits. It does not include user Set Time writes, RTC
-writes, time synchronization, networking, storage reads, or persistence.
+manifest or boot-policy edits. Its read/recovery path has no RTC writes, networking, storage reads, or
+persistence. The separately called confirmed native-seed method below supports
+the opt-in [checked Set Time client](PORTABLE_SET_TIME.md); no open/read/boot
+path calls it automatically.
 
 The canonical `RiscRealtimeV1.h` comes from public Runtime commit
 `341e6e38ce00b7c57d5daaf5f8c829c3575db931`; its SHA-256 is
@@ -55,8 +57,10 @@ stronger rule: even false plus an empty output cannot distinguish missing/denied
 capability from failed provider activation/rollback with internal retention.
 It therefore stops as UNCERTAIN (with operation reason UNAVAILABLE), without
 releasing the existing native grant. The app phase guard cannot override that
-ambiguity or prove internal rollback succeeded. A failed
-release is never retried; its original grant is preserved as non-retryable
+ambiguity or prove internal rollback succeeded. A false RTC read is also
+UNCERTAIN with operation reason IO, even when the guard remains SAFE: it cannot rule out provider-local retained custody. Neither
+grant is released and no later read, seed, recovery or release is attempted.
+A failed release is never retried; its original grant is preserved as non-retryable
 evidence. A successful release must clear its grant as the pinned broker does.
 An app must honor its existing Runtime-retained return path on RETAINED and
 must not attempt generic provider cleanup after CONTEXT or UNCERTAIN.
@@ -148,6 +152,27 @@ seed/cleanup outcome is automatically retried or hidden by subsequent success.
 Native IO may mean the native clock has been invalidated by a failed set; the
 caller must not continue using earlier sampled time as though recovery worked.
 
+## Explicit checked native seed
+
+`portable_realtime_seed_confirmed(client, epoch, budget_us, result)` is a
+narrow app-helper entrypoint for an explicit confirmed Set Time action. It
+requires a NORMAL_START CONTROL client and no live recovery RTC grant. It writes
+whole UTC seconds in the native 0..2147483647 domain and then reads once. The
+readback must be a fully checked VALID snapshot within the inclusive interval
+`[epoch, epoch + budget_us]`, including fractional seconds. The caller chooses
+0..5,000,000 microseconds of tolerance. A mismatch returns VERIFY; UNSET after
+an accepted seed returns IO. Epoch zero is valid. This is bounded observation,
+not proof of an atomic operation or protection against another clock writer.
+
+The result separates `attempted`, `seeded` (the callback returned OK and the
+phase remained safe), and `verified`, and carries a checked readback snapshot
+when available. On IO the Runtime may have invalidated the clock; never reuse
+an earlier sampled value as current valid time. There is no retry, rollback,
+RTC acquisition or storage I/O. A caller may explicitly retry known native
+IO/INVALID or clean readback failure while still in a safe phase; CONTEXT,
+unknown status and unsafe phase permanently halt this client. The independently
+tested Set Time client composes RTC and metadata operations around this method.
+
 ## Focused verification
 
 From this repository, with the existing public Runtime objects available:
@@ -162,12 +187,12 @@ python scripts/test_portable_timezone.py \
 python scripts/test_rtc_basis.py
 ```
 
-The production client runs 121 deterministic scenarios normally and with
+The production client runs 123 deterministic scenarios normally and with
 ASan/UBSan, with `ASAN_OPTIONS=detect_leaks=0` for traced executors. Coverage
 includes reader/control grants, unset/valid timer isolation, stale and copied
 clients, missing capabilities, physically short API headers, malformed tables
 and snapshots, IO/CONTEXT/unknown native failures, RTC acquisition/read/release
-failure, incomplete broker outputs, gaps/folds/basis choices, 2038 boundaries,
+failure including hidden retention after read=false with a still-SAFE app guard, incomplete broker outputs, gaps/folds/basis choices, 2038 boundaries,
 failed readback after seed, the real Runtime false/empty RTC-acquisition
 retention semantics while the app phase guard still says SAFE, every
 external-call phase boundary, duplicate close,
