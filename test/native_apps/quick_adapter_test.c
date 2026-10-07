@@ -32,8 +32,21 @@ static bool radio_wifi_off(void*c){(void)c;return true;}
 static const portable_bluetooth_control_v1 radio_ble={.api_version=1,.struct_size=sizeof(radio_ble),.set_enabled=radio_bluetooth_enable,.status=radio_bluetooth_status};
 static const wifi_api_v1 radio_wifi={.api_version=1,.struct_size=sizeof(radio_wifi),.status=radio_wifi_status,.disconnect_checked=radio_wifi_off};
 #endif
+#ifdef PORTABLE_LOW_BATTERY
+static uint8_t low_records[3][5];static uint32_t low_sizes[3];static unsigned low_writes[3];
+static int low_write_fail=-1;
+static int low_key(const char *key) {
+ return !strcmp(key,PORTABLE_LOW_BATTERY_KEY)?0:!strcmp(key,PORTABLE_SLEEP_IDLE_KEY)?1:!strcmp(key,PORTABLE_SLEEP_DEEP_KEY)?2:-1;
+}
+#endif
 static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size) {
- assert(!surface.frame && display_settled);
+ /* Settings row reads retain their existing read-only model contract. Quick
+  * control preferences still require a settled, unleased display. */
+ if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(!surface.frame && display_settled);
+#ifdef PORTABLE_LOW_BATTERY
+ int low_index=low_key(key);
+ if(low_index>=0){*size=low_sizes[low_index];if(!*size)return RISC_KEY_VALUE_NOT_FOUND;if(capacity<*size)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(data,low_records[low_index],*size);return RISC_KEY_VALUE_OK;}
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!strcmp(key,PORTABLE_RADIO_KEY)){*size=0;if(!radio_saved)return RISC_KEY_VALUE_NOT_FOUND;assert(capacity>=4);memcpy(data,radio_record,4);*size=4;return RISC_KEY_VALUE_OK;}
 #endif
@@ -45,6 +58,10 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
 }
 static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size) {
  assert(!surface.frame && display_settled);
+#ifdef PORTABLE_LOW_BATTERY
+ int low_index=low_key(key);
+ if(low_index>=0){assert(size<=5);low_writes[low_index]++;if(low_write_fail==low_index)return RISC_KEY_VALUE_IO;low_sizes[low_index]=size;memcpy(low_records[low_index],data,size);return RISC_KEY_VALUE_OK;}
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!strcmp(key,PORTABLE_RADIO_KEY)){assert(size==4);memcpy(radio_record,data,4);radio_saved=true;return RISC_KEY_VALUE_OK;}
 #endif

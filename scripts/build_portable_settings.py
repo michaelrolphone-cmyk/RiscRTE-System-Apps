@@ -20,7 +20,9 @@ def build(args):
         core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
         cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable'
+    if args.low_battery:args.sleep_settings=args.alarm_client=True
     flags=['-DPORTABLE_SETTINGS_APP']
+    if args.low_battery:flags+=['-DPORTABLE_LOW_BATTERY','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS']
     if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
     if args.tap_settings: flags.append('-DPORTABLE_TAP_SETTINGS')
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
@@ -40,6 +42,7 @@ def build(args):
     catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'settings.elf'
     sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]
+    if args.low_battery:sources += [ROOT/'lib/PortableApps/src'/name for name in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror',
@@ -66,6 +69,7 @@ def build(args):
         'file_name':'settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'rtc.clock','api':2}]}
+    if args.low_battery:manifest['requires'] += [{'capability':name,'api':1} for name in ('board.battery','net.wifi','bluetooth.hci')]
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.tap_settings: manifest['requires'].append({'capability':'motion.accel','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
@@ -109,6 +113,7 @@ def build(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--low-battery',action='store_true',help='Build the automatic low-battery Watch profile with shared Quick Controls and timers')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')

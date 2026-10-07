@@ -1,12 +1,14 @@
 #pragma once
 #include "PortableQuickActions.h"
 #include "PortableQuickPreferences.h"
+#include "PortableSleepPolicy.h"
 #include "RiscRuntimeV1.h"
 #include "RiscDisplayOutputV1.h"
 /* One invocation-local session. No retained grants or app pointers. */
 typedef struct {
  pqa_state ui;
  unsigned brightness,volume,restore_volume;
+ uint32_t idle_ms,deep_ms;
  bool loaded,hour_24,dnd_enabled;
 } pqa_session;
 void pqa_session_init(pqa_session *s);

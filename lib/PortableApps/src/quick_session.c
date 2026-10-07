@@ -2,6 +2,7 @@
 #include "PortableTimeFormat.h"
 void pqa_session_init(pqa_session *s) {
  *s=(pqa_session){0};pqa_init(&s->ui);pqa_cancel_input(&s->ui);
+ s->idle_ms=PORTABLE_SLEEP_IDLE_MS;s->deep_ms=PORTABLE_SLEEP_LIGHT_MS;
  s->brightness=PQA_BRIGHTNESS_DEFAULT;s->volume=s->restore_volume=PQA_VOLUME_DEFAULT;
 }
 static bool acquire(const risc_runtime_api_v1 *rt,risc_runtime_capability_v1 *g,const risc_key_value_v1 **kv) {
@@ -17,6 +18,10 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  (void)pqa_preference_load(kv,PQA_RESTORE_VOLUME_KEY,PQA_VOLUME_DEFAULT,1,&r);
  bool dnd=false,dnd_valid=pqa_dnd_load(kv,&dnd);
  unsigned mode=PORTABLE_TIME_FORMAT_12;(void)portable_time_format_load(kv,&mode);s->hour_24=mode==PORTABLE_TIME_FORMAT_24;
+#ifdef PORTABLE_LOW_BATTERY
+ (void)portable_sleep_timer_load(kv,false,&s->idle_ms);
+ (void)portable_sleep_timer_load(kv,true,&s->deep_ms);
+#endif
  if(g.api && !rt->release(&g))return false;
  if(bv)s->brightness=b;
  if(vv)s->volume=v;

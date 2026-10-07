@@ -59,6 +59,16 @@ static bool quick_modal,quick_launch_pending,quick_replay_pending;
 static bool quick_foreground(bool *consumed);
 static bool quick_interrupt(void);
 unsigned portable_quick_brightness(void) {return quick.brightness;}
+#ifdef PORTABLE_LOW_BATTERY
+#include "PortableLowBattery.h"
+#ifndef PORTABLE_QUICK_RADIOS
+#error Low battery policy requires existing Quick Controls radio lifecycle
+#endif
+static portable_low_battery low_battery;
+static uint32_t low_battery_sampled_at;
+static bool low_battery_sampled;
+uint32_t portable_quick_sleep_light_ms(void) {return quick.deep_ms;}
+#endif
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
@@ -108,6 +118,13 @@ static int nu_start_x,nu_start_y;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 #include "PortableAppSleep.h"
 static uint32_t last_activity;
+static uint32_t portable_idle_ms(void) {
+#if defined(PORTABLE_LOW_BATTERY) && defined(PORTABLE_QUICK_ACTIONS)
+ return quick.idle_ms;
+#else
+ return 60000u;
+#endif
+}
 #endif
 #ifdef PORTABLE_INPUT_NAVIGATION
 #include "PortableNavigation.h"
@@ -571,11 +588,14 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     return true;
   }
 #endif
+#ifdef PORTABLE_LOW_BATTERY
+  if(!low_battery_poll()){failed=true;return false;}
+#endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-  if(!failed && (uint32_t)(millis_now()-last_activity)>=60000u &&
+  if(!failed && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
 #ifdef PORTABLE_TAP_SETTINGS
      !settings_motion_active &&
 #endif
@@ -894,6 +914,9 @@ static int initialize(void) {
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
+#ifdef PORTABLE_LOW_BATTERY
+  low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
+#endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
 #endif
   nova_mode = false;
