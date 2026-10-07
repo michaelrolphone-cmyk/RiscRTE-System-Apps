@@ -13,6 +13,15 @@ static const char *editor_message = "";
 static unsigned editor_field;
 static risc_runtime_capability_v1 settings_grant;
 static const risc_key_value_v1 *settings_store;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+#include "PortableTimeZonePreference.h"
+static unsigned stz_choice,stz_region,stz_selected,stz_first;
+static bool stz_unconfirmed;
+static int stz_status;
+static const char *stz_message;
+static void stz_redraw(void);
+static bool stz_poll(t5_app_input_t *out);
+#endif
 static unsigned time_format_mode, time_format_choice;
 static int time_format_status;
 static const char *time_format_message;
@@ -163,7 +172,18 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
         snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
       }
     } else strcpy(out->value,"Unavailable");
-  } else if(index==1)strcpy(out->value,portable_time_zone());
+  } else if(index==1) {
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+    char id[PORTABLE_TIMEZONE_ID_BYTES];
+    int status=portable_timezone_preference_load(settings_store,id);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,stz_unconfirmed?"Unconfirmed":status==PORTABLE_TIMEZONE_UNAVAILABLE?"Unavailable":
+        status==PORTABLE_TIMEZONE_INVALID_RECORD?"Invalid (UTC fallback)":
+        status==PORTABLE_TIMEZONE_MISSING?"UTC (default)":id);
+#else
+    strcpy(out->value,portable_time_zone());
+#endif
+  }
   else if(index==2) {
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Unavailable":settings_hour_24()?"24-hour":"12-hour");
@@ -297,8 +317,14 @@ static bool editor_try_save(void) {
   if(editor_save_raw(&save_candidates[0].rtc))return true;
   sv_switch(SV_FIELDS);return false;
 }
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+#include "settings_timezone.inc"
+#endif
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(index==1)return stz_activate();
+#endif
   if(index==2) {
     settings_time_format_load();time_format_choice=time_format_mode;
     time_format_message=time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Storage unavailable":
@@ -531,6 +557,9 @@ static bool settings_open(void) {
     if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
   }
   settings_time_format_load();
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  stz_choice=stz_region=stz_selected=stz_first=0;stz_unconfirmed=false;stz_message="";
+#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   sleep_choice=SETTINGS_SLEEP_DEFAULT;sleep_message="";
 #endif
