@@ -19,6 +19,8 @@ jobs:
         run: python scripts/test_desk_clock_policy.py
       - name: Portable six-face rasters and frozen Reader comparison
         run: python scripts/test_desk_clock_faces.py
+      - name: Opt-in desk-clock Settings records and real paper controls
+        run: python scripts/test_desk_clock_settings.py
       - name: Native mono clock, gestures, wall time and retained alarm
         run: python scripts/test_paper_clock.py
       - name: Paper QuickActions and independent Home/crown routing
@@ -43,6 +45,8 @@ jobs:
           python scripts/build_portable_springboard.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --return-app default.elf --home-app default.elf --catalog examples/x4-default-catalog.json --output-dir dist/paper-controls/springboard
           python scripts/build_portable_settings.py --display-rotation 90 --navigation --alarm-client --alarm-settings --quick-actions --wall-time --return-app springboard.elf --home-app default.elf --output-dir dist/paper-controls/settings
           python scripts/build_portable_file_browser.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --home-app default.elf --storage-capability storage.volume --file-handlers --output-dir dist/paper-controls/file-browser
+      - name: Build future opt-in desk-clock Settings without deployment
+        run: python scripts/build_portable_settings.py --settings-profile x4-desk-clock --display-rotation 90 --navigation --alarm-client --alarm-settings --quick-actions --wall-time --return-app springboard.elf --home-app default.elf --output-dir dist/desk-settings-future
       - uses: actions/upload-artifact@v4
         with:
           name: paper-clock-${{ github.sha }}
@@ -51,6 +55,8 @@ jobs:
             dist/clock-springboard/
             build/paper-clock/
             dist/paper-controls/
+            dist/desk-settings-future/
+            build/desk-settings/
             build/paper-quick/
           retention-days: 14
           if-no-files-found: error
