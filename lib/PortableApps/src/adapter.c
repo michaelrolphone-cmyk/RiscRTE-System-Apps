@@ -252,6 +252,11 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
       } else {p[i*2]=(uint8_t)color;p[i*2+1]=(uint8_t)(color>>8);}
     }
 }
+static void display_failure(const char *detail) {
+  if(!failed && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
+  failed=true;
+}
 static void clear_color(uint16_t color) {
   if (failed)
     return;
@@ -261,7 +266,7 @@ static void clear_color(uint16_t color) {
   }
   if (!display->acquire(display->context, surface_format,
                         &surface)) {
-    failed = true;
+    display_failure("PORTABLE_APP error=display-acquire");
     return;
   }
   if (!surface.frame || !surface.pixels || surface.width != info.width ||
@@ -270,7 +275,7 @@ static void clear_color(uint16_t color) {
       surface.stride_bytes < (surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2) ||
       surface.stride_bytes > UINT32_MAX / info.height ||
       surface.size_bytes < surface.stride_bytes * info.height) {
-    failed = true;
+    display_failure("PORTABLE_APP error=display-surface");
     return;
   }
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -483,18 +488,29 @@ static void present(bool full) {
 #endif
   if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
                        &token)) {
-    failed = true;
+    display_failure("PORTABLE_APP error=display-submit");
     return;
   }
   surface.frame = 0;
   uint32_t start = millis_now();
   for (unsigned n = 0; n < 10000 && !failed; ++n) {
     risc_display_present_status_v1 s = {0};
-    if (!display->present_status(display->context, token, &s) ||
-        s.state == RISC_DISPLAY_PRESENT_FAILED ||
-        s.state == RISC_DISPLAY_PRESENT_SUPERSEDED) {
-      failed = true;
-      break;
+    uint32_t elapsed=(uint32_t)(millis_now()-start);
+    if(failed)break;
+    if(elapsed>=10000){display_failure("PORTABLE_APP error=display-timeout");break;}
+    /* A synchronous retaining panel may defer the physical transfer until
+     * wait_present. Status polling alone does not advance that provider.
+     * Give it the remaining existing frame budget, not a short poll timeout
+     * that could abort the transfer. Async and RGB565 clients keep servicing
+     * input through the existing polling path. No chip/board policy lives here. */
+    bool waited=surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+      (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
+      !(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && display->wait_present;
+    bool ok=waited?display->wait_present(display->context,token,10000-elapsed,&s):
+      display->present_status(display->context,token,&s);
+    if(!ok){display_failure(waited?"PORTABLE_APP error=display-wait":"PORTABLE_APP error=display-status");break;}
+    if(s.state==RISC_DISPLAY_PRESENT_FAILED || s.state==RISC_DISPLAY_PRESENT_SUPERSEDED) {
+      display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
 #ifdef PORTABLE_ALARM_CLIENT
@@ -507,13 +523,13 @@ static void present(bool full) {
       return;
     }
     if ((uint32_t)(millis_now() - start) >= 10000) {
-      failed = true;
+      display_failure("PORTABLE_APP error=display-timeout");
       break;
     }
     if((uint32_t)(millis_now()-input_sampled_at)>=16)input_service();
     rt->yield_ms(1);
   }
-  failed = true;
+  display_failure("PORTABLE_APP error=display-timeout");
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
