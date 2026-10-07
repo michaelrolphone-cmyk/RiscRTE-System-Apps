@@ -24,6 +24,7 @@
     "solid:f0ec",
     "solid:f0f3",
     "solid:f11c",
+    "solid:f120",
     "solid:f130",
     "solid:f187",
     "solid:f1ab",
@@ -54,8 +55,9 @@
     "solid:f07c": "folder-open",
     "solid:f7c0": "satellite-dish",
     "solid:f27a": "message",
-    "solid:f274": "calendar-check"
+    "solid:f274": "calendar-check",
+    "solid:f120": "terminal"
   },
-  "icons.inc_sha256": "0eb6b1b3a8d4091f4b9fd1336f9a1fb1938dcd2c909f53b16c5605e64bc6ffaf",
+  "icons.inc_sha256": "09ded03e80c21c5bf99c087749a3d905cf3db007dc06c7860dc09034321c0eac",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }

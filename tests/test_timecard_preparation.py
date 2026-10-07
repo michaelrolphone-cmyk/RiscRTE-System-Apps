@@ -15,9 +15,9 @@ class TimecardPreparation(unittest.TestCase):
   self.assertEqual(bytes(map(int,encoded.split(','))),data[boff+offset:boff+offset+length])
   self.assertIn('{"solid:f274",%d,%d,rpi_solid_f274}'%(w,h),source)
   self.assertNotIn('timecard',json.loads((root/'catalog-icons.json').read_text())['apps'])
-  self.assertEqual(json.loads((root/'additional-icons.json').read_text()),{'solid:f274':'calendar-check'})
+  self.assertEqual(json.loads((root/'additional-icons.json').read_text()),{'solid:f274':'calendar-check','solid:f120':'terminal'})
  def test_declared_capacity_and_version_are_explicit(self):
   source=(ROOT/'lib/PortableApps/src/adapter.c').read_text()
   self.assertEqual(source.count('portable_catalog_count <= 17'),2)
-  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.4.9')
+  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.6.0')
 if __name__=='__main__':unittest.main()

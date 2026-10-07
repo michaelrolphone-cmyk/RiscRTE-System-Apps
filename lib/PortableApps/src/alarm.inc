@@ -100,6 +100,22 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
+    if(pp_enabled()) {
+        pp_begin();
+        pp_text(32,40,width()-64,alarm_title(s,title),2,true,true);
+        fill(32,94,width()-64,3,0);
+        pp_text(32,140,width()-64,s->state==ALARM_STATE_BLOCKED?
+            (s->error==ALARM_RTC?"RTC ERROR":"SERVICE ERROR"):
+            s->state==ALARM_STATE_DISMISSING?"STOPPING / SAVING":"TIME IS UP",1,false,true);
+        pp_text(32,190,width()-64,s->output_uncertain?"OUTPUT STOP UNCONFIRMED":"",1,false,true);
+        fill(32,height()-188,width()-64,88,0);
+        pp_text(60,height()-162,width()-120,s->occurrence.generation?"DISMISS":"BACK",2,true,false);
+        if(s->state==ALARM_STATE_BLOCKED) {
+            fill(32,height()-92,width()-64,3,0);
+            pp_text(60,height()-64,width()-120,"RETRY",2,true,true);
+        }
+        present(false);return;
+    }
 #ifdef PORTABLE_NOVA_UI
     portable_nova_begin();
     portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
@@ -131,8 +147,9 @@ static bool alarm_save_frame(uint16_t **saved) {
 }
 static bool alarm_restore(const uint16_t *saved) {
     clear();if(failed)return false;
+    unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,
-        saved+(size_t)y*info.width,info.width*2);
+        (const uint8_t*)saved+(size_t)y*bytes,bytes);
     present(false);return !failed && display_settled;
 }
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -210,6 +227,7 @@ static bool alarm_foreground(bool *consumed) {
         portable_touch_sample sample;input_take(&sample);
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
+        bool paper=pp_enabled();
 #ifdef PORTABLE_NOVA_UI
         bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_nova_hit(sample.x,sample.y,24,192,192,44));
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_nova_hit(sample.x,sample.y,24,144,192,44));
@@ -217,6 +235,10 @@ static bool alarm_foreground(bool *consumed) {
         bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=info.height-42);
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=info.height-88 && sample.y<info.height-42);
 #endif
+        if(paper) {
+            retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=height()-92);
+            dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
+        }
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
             (void)alarms.api->refresh(alarms.api->context);alarm_cancel_input();redraw=true;
         } else if(dismiss) {
