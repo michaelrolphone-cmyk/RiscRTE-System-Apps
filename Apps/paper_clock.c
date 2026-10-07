@@ -127,12 +127,24 @@ static void draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notic
 #endif
  text(50,757,400,"UPDATES EVERY MINUTE",false);app->present(initial);
 }
+#ifdef PORTABLE_DESK_CLOCK
+#include "paper_desk_clock.inc"
+#endif
 void app_main(void){
  app=t5_app_get_api(1);rt=risc_runtime_get_api(1);
  if(!app||app->abi_version!=1||app->struct_size<sizeof(*app)||!app->poll||!app->millis||!app->fill_rect||!app->draw_icon||!app->set_back_exits_app||!rt||rt->api_version!=1||rt->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!rt->acquire||!rt->release||!rt->request_launch||!rt->yield_ms||!rt->diagnostic)return;
  paper=paper_presentation_get();if(!paper||paper->struct_size<sizeof(*paper)||!paper->begin||!paper->text||!paper->measure||!paper->contact)return;
  rtc=NULL;battery=NULL;open_clock();app->set_back_exits_app(false);
+#ifdef PORTABLE_DESK_CLOCK
+ int boot=desk_boot();
+ if(boot==-2){portable_desk_adapter_retain();return;}
+ if(boot<0){close_clock();return;}
+ if(!portable_desk_adapter_foreground()){if(!portable_app_sleep_retained())close_clock();return;}
+#endif
  twatch_rtc_time_v1 time={0};bool known=read_clock(&time),down=false,neutral=false;int start_x=0,start_y=0;char notice[48]={0};
+#ifdef PORTABLE_DESK_CLOCK
+ if(desk_returned){desk_returned=false;strcpy(notice,desk_notice());}
+#endif
  battery_status=paper_battery_read(paper);
  uint32_t checked=app->millis();draw_clock(&time,known,notice,true);
  for(;;){t5_app_input_t input={0};if(!app->poll(&input,20)){
@@ -141,6 +153,9 @@ void app_main(void){
 #endif
 break;}
   if(input.exit_requested)break;
+#ifdef PORTABLE_DESK_CLOCK
+  if(desk_returned){desk_returned=false;down=neutral=false;strcpy(notice,desk_notice());known=read_clock(&time);draw_clock(&time,known,notice,true);}
+#endif
   if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");draw_clock(&time,known,notice,false);}
   springboard_contact c={0};paper->contact(&c);bool launch=false;
   if(!c.valid||c.cancelled){down=false;neutral=false;}

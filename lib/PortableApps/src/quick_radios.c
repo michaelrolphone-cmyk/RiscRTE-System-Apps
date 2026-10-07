@@ -29,8 +29,19 @@ bool pqa_radios_load(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt) {
   * controller running behind disabled controls. Prove both radios Off without
   * overwriting the bad record; failed cleanup retains the invocation. */
  s->available=w&&b;bool ok=!s->available||set_hardware(w,b,s->valid?s->flags:0);
+#ifdef PORTABLE_DESK_CLOCK
+ /* The new deferred foreground path treats unconfirmed radio cleanup as
+  * retained. Preserve these live grants for the adapter's retained stop. */
+ if(!ok){u->error_flags|=PQA_ERROR_RADIO;return false;}
+#endif
  if(!s->valid)u->error_flags|=PQA_ERROR_RADIO|PQA_ERROR_SAVE;
- if(bg.api&&!rt->release(&bg))ok=false;
+ if(bg.api&&!rt->release(&bg)){
+#ifdef PORTABLE_DESK_CLOCK
+  return false;
+#else
+  ok=false;
+#endif
+ }
  if(wg.api&&!rt->release(&wg))ok=false;
  reflect(s,u);if(!ok)u->error_flags|=PQA_ERROR_RADIO;
  return ok;

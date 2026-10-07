@@ -6,6 +6,14 @@
 #include "PortableTouch.h"
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
+#ifdef PORTABLE_DESK_CLOCK
+#include "PortableDeskClockApp.h"
+#include <RiscDisplayOutputPowerV1.h>
+static bool desk_present_complete;
+#ifdef PORTABLE_QUICK_RADIOS
+static bool desk_radios_loaded;
+#endif
+#endif
 #include "T5BatteryApi.h"
 #include "T5StorageApi.h"
 #include "T5UiApi.h"
@@ -430,6 +438,9 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
 }
 #include "paper.inc"
 static void present(bool full) {
+#ifdef PORTABLE_DESK_CLOCK
+  desk_present_complete=false;
+#endif
   if (failed || !surface.frame)
     return;
   risc_display_present_token_v1 token = 0;
@@ -466,7 +477,11 @@ static void present(bool full) {
         if(y+1>bottom)bottom=y+1;
       }
     }
-    if(paper_previous_valid && !full && top==info.height){display->release(display->context,surface.frame);surface.frame=0;return;}
+    if(paper_previous_valid && !full && top==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_DESK_CLOCK
+      desk_present_complete=true;
+#endif
+      return;}
     if(paper_previous_valid && !full) {
       unsigned xa=info.damage_x_alignment?info.damage_x_alignment:1,ya=info.damage_y_alignment?info.damage_y_alignment:1;
       unsigned wa=info.damage_width_alignment?info.damage_width_alignment:1,ha=info.damage_height_alignment?info.damage_height_alignment:1;
@@ -533,6 +548,9 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+#ifdef PORTABLE_DESK_CLOCK
+      desk_present_complete=true;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
       display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
 #endif
@@ -553,6 +571,10 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_DESK_CLOCK
+  int desk_mode=portable_desk_clock_mode();
+  if(desk_mode<0){native_sleep_retained=true;failed=true;return false;}
+#endif
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
@@ -576,13 +598,27 @@ static bool idle_sleep(void) {
   if(!portable_audio_suspend()){failed=true;return false;}
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
-  if(!pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
+  if(
+#ifdef PORTABLE_DESK_CLOCK
+     desk_mode==0 &&
 #endif
-  if(!portable_touch_close(&touch,rt)){failed=true;return false;}
+     !pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
+#endif
+  if(!portable_touch_close(&touch,rt)){
+#ifdef PORTABLE_DESK_CLOCK
+    if(desk_mode==1)native_sleep_retained=true;
+#endif
+    failed=true;return false;
+  }
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
-  if(failed)return false;
+  if(failed){
+#ifdef PORTABLE_DESK_CLOCK
+    if(desk_mode==1)native_sleep_retained=true;
+#endif
+    return false;
+  }
   input_pending=false;navigation_pending=0;
   rt->diagnostic("PORTABLE_APP sleep=idle");
 #ifdef PORTABLE_ALARM_CLIENT
@@ -598,16 +634,82 @@ static bool idle_sleep(void) {
   portable_wifi_resume();
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
-  if(!pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
+  if(
+#ifdef PORTABLE_DESK_CLOCK
+     desk_mode==0 &&
 #endif
-  if(!portable_touch_open(&touch,rt)){failed=true;return false;}
+     !pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
+#endif
+  if(!portable_touch_open(&touch,rt)){
+#ifdef PORTABLE_DESK_CLOCK
+    if(desk_mode==1)native_sleep_retained=true;
+#endif
+    failed=true;return false;
+  }
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
+#ifdef PORTABLE_DESK_CLOCK
+  if(failed && desk_mode==1){native_sleep_retained=true;return false;}
+#endif
   input_sample=(portable_touch_sample){0};input_pending=false;navigation_pending=0;
+#ifdef PORTABLE_DESK_CLOCK
+  home_pending=crown_pending=false;
+  nova_contact=(springboard_contact){0};
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  quick_replay_pending=quick_replay_delivery=false;
+#endif
+#endif
   last_activity=last_poll_at=input_sampled_at=millis_now();previous_valid=false;
+#ifdef PORTABLE_DESK_CLOCK
+  if(failed && desk_mode==1)native_sleep_retained=true;
+#endif
   rt->diagnostic(status?"PORTABLE_APP sleep=resumed":"PORTABLE_APP sleep=refused");
   return !failed;
+}
+#endif
+#ifdef PORTABLE_DESK_CLOCK
+/* These are hidden app links, never ELF exports. Seed both the provider's
+ * physical-image reconstruction and the adapter's damage comparison cache. */
+bool portable_desk_adapter_ready(void) { return !failed; }
+void portable_desk_adapter_retain(void) { native_sleep_retained=true;failed=true; }
+void portable_desk_adapter_invalidate(void) {
+  if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
+  paper_previous_valid=false;previous_valid=false;
+}
+void portable_desk_adapter_begin(void) {
+  list_mode=false;
+  /* History is attached to this lease. Repaint it in place: releasing and
+   * reacquiring here would invalidate the provider's one-shot seeded image. */
+  if(!failed && surface.frame)fill(0,0,width(),height(),0xffff);
+  else pp_begin();
+}
+int portable_desk_adapter_seed(void) {
+  const risc_display_output_api_v1_history *history=risc_display_output_history(display);
+  if(failed || !surface.frame || surface_format!=RISC_DISPLAY_FORMAT_MONO1 ||
+     !paper_previous || !history)return 0;
+  if(!history->seed_previous(display->context,surface.frame))return -2;
+  unsigned bytes=(info.width+7)/8;
+  for(unsigned y=0;y<info.height;y++)memcpy(paper_previous+(size_t)y*bytes,
+    (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
+  paper_previous_valid=true;
+  return 1;
+}
+bool portable_desk_adapter_present(bool full) {
+  present(full);return !failed && desk_present_complete;
+}
+bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
+bool portable_desk_adapter_foreground(void) {
+#ifdef PORTABLE_QUICK_RADIOS
+ if(!desk_radios_loaded){
+  if(!pqa_radios_load(&quick_radios,&quick.ui,rt)){portable_desk_adapter_retain();return false;}
+  desk_radios_loaded=true;
+ }
+#endif
+ return !failed;
 }
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -1095,7 +1197,11 @@ static int initialize(void) {
   if(!pqa_session_load(&quick,rt))return -1;
   quick_paper_capabilities();
 #ifdef PORTABLE_QUICK_RADIOS
+#ifdef PORTABLE_DESK_CLOCK
+  desk_radios_loaded=false;
+#else
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
+#endif
 #endif
 #endif
   return failed?-1:0;
