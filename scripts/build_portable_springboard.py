@@ -8,18 +8,43 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
+def catalog_source(path):
+    if path is None:
+        return '#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n',None
+    raw=path.read_bytes()
+    if len(raw)>32768:raise ValueError('Catalog exceeds 32 KiB')
+    data=json.loads(raw)
+    if not isinstance(data,dict) or set(data)!={'apps'} or not isinstance(data['apps'],list) or len(data['apps'])>17:raise ValueError('Catalog must contain at most 17 apps')
+    glyphs=json.loads((ROOT/'lib/PortableApps/fonts/SOURCES.json').read_text())['icons']
+    seen=set();rows=[]
+    for app in data['apps']:
+        if not isinstance(app,dict) or set(app)!={'display_name','file_name','icon'}:raise ValueError('Catalog entry requires display_name,file_name,icon')
+        for name,bound in [('display_name',96),('file_name',128),('icon',24)]:
+            value=app[name]
+            if not isinstance(value,str) or not value or len(value.encode())>=bound or any(ord(c)<32 or ord(c)>126 for c in value):raise ValueError('Invalid bounded catalog '+name)
+        filename=app['file_name']
+        if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',filename) or filename.lower() in seen:raise ValueError('Invalid or duplicate catalog filename')
+        if app['icon'] not in glyphs:raise ValueError('Catalog icon is absent from licensed subset')
+        seen.add(filename.lower())
+        rows.append('{'+','.join('.'+key+'='+json.dumps(app[key]) for key in ['display_name','file_name','icon'])+',.compatible=true}')
+    source='#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={'+(','.join(rows) if rows else '{.compatible=false}')+'};\nconst unsigned portable_catalog_count='+str(len(rows))+';\n'
+    return source,{'sha256':hashlib.sha256(raw).hexdigest(),'count':len(rows),'apps':data['apps']}
+
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--catalog",type=Path,help="Explicit bounded installed/admitted deployment catalog JSON")
     parser.add_argument("--display-rotation",type=int,choices=[0,90],default=0,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
     parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
     parser.add_argument("--nova-ui",action="store_true",help="Settings-derived 240x240 shared utility profile")
     parser.add_argument("--alarm-client",action="store_true",help="Explicit alarm.service foreground overlay consumer")
+    parser.add_argument("--wall-time",action="store_true",help="Read RTC wall time without timezone conversion")
     parser.add_argument("--denver",action="store_true",help="Select RTC UTC+08 to America/Denver display policy")
     parser.add_argument("--rotation","--touch-rotation",dest="rotation",type=int,choices=[0,180],default=0)
     parser.add_argument("--output-dir",type=Path,default=ROOT/"dist/portable")
@@ -28,7 +53,9 @@ def build():
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
     args=parser.parse_args()
+    if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
+    if args.wall_time:flags.append("-DPORTABLE_RTC_WALL_TIME")
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
     flags.append("-DPORTABLE_DISPLAY_ROTATION="+str(args.display_rotation))
@@ -53,7 +80,8 @@ def build():
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     catalog = out/'springboard-catalog.c'
-    catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
+    catalog_text,catalog_record=catalog_source(args.catalog)
+    catalog.write_text(catalog_text)
     elf = out/'springboard.elf'
     sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
@@ -84,7 +112,7 @@ def build():
 ]}
     if args.navigation: manifest["requires"].append({"capability":"input.navigation","api":1})
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
-    if args.denver: manifest['requires'].append({'capability':'rtc.clock','api':2})
+    if args.denver or args.wall_time: manifest['requires'].append({'capability':'rtc.clock','api':2})
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
@@ -96,9 +124,9 @@ def build():
                'lib/NativeApps/include/T5StorageApi.h','lib/NativeApps/include/T5VideoApi.h']
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     inputs=sorted(set(inputs))
-    record={'purpose':'portable-development-artifact-not-deployment','version':version,
+    record={'catalog':catalog_record,'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-        'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
+        'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'rtc-wall-time' if args.wall_time else 'unavailable',
         'display_rotation':args.display_rotation,'navigation':args.navigation,'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),

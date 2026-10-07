@@ -14,16 +14,17 @@ static int pp_measure(const char *s,bool heading) {
 }
 static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool heading,bool black) {
   if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
+  int zoom=(scale&PAPER_TEXT_CLOCK)?3:1;
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
     unsigned c=(unsigned char)s[k];if(!(scale&PAPER_TEXT_LITERAL)&&c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
-    int advance=(int)g->advance_q4;
+    int advance=(int)g->advance_q4*zoom;
     if((pen+advance+15)/16>x+max_width)break;
     for(unsigned j=0;j<g->height;j++)for(unsigned i=0;i<g->width;i++) {
       unsigned n=j*g->width+i;
-      if(g->bits[n/8]&(0x80u>>(n%8)))fill(pen/16+(int)g->left+(int)i,
-        y+(int)g->top+(int)j,1,1,black?0:0xffff);
+      if(g->bits[n/8]&(0x80u>>(n%8)))fill(pen/16+((int)g->left+(int)i)*zoom,
+        y+((int)g->top+(int)j)*zoom,zoom,zoom,black?0:0xffff);
     }
     pen+=advance;
   }
@@ -36,7 +37,7 @@ static bool pp_enabled(void) {
 }
 const paper_presentation *paper_presentation_get(void) {
   if(!pp_enabled())return NULL;
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);
   if(!np_rtc_grant.api && rt->acquire("rtc.clock",TWATCH_RTC_API_V1,0,&np_rtc_grant)) {
     const twatch_rtc_api_v1 *clock=np_rtc_grant.api;
