@@ -32,3 +32,5 @@ jobs:
           path: build/timezone/evidence.json
           if-no-files-found: error
           retention-days: 14
+      - name: Explicit RTC interpretation records
+        run: python scripts/test_rtc_basis.py

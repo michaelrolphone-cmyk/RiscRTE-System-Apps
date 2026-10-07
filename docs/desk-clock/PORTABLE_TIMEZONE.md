@@ -146,3 +146,23 @@ undefined-behavior sanitizers run. The link harness is not a product app and doe
 not prove execution on Xtensa silicon, RTC electrical behavior, clock accuracy,
 deep-sleep retention, Settings rendering or end-to-end device integration.
 Those remain the responsibilities of the later opt-in app/provider integration.
+
+## App-owned RTC interpretation record
+
+The integration helper `PortableRtcBasis.h` reserves namespace 1 key
+`rtc_basis`, a canonical 12-byte little-endian versioned/checksummed record.
+It contains only whether external calendar fields store UTC and the last
+verified synchronization epoch (or zero when unknown). There is no drift
+calibration, chip selection, token, pointer, live grant or boot authority.
+
+Loading is read-only and returns distinct missing, invalid and unavailable
+states with the legacy local-calendar/unknown-reference fallback. The explicit
+save helper is for a verified time-policy/RTC change; it checks both the write
+result and exact readback. IO-after-commit remains unconfirmed. Corrupt records
+can be replaced by an explicit valid save, never merely by reading defaults.
+The accepted reference domain is 2000–2099; this storage domain does not broaden
+any native realtime seed range or authorize a clock write.
+
+The normal and ASan/UBSan runner `scripts/test_rtc_basis.py` covers both modes,
+reference boundaries, every individual corrupt bit, length/version/API errors,
+no implicit writes, uncertain commits and failed/mismatched verification.
