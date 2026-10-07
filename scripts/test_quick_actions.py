@@ -39,4 +39,15 @@ try:
  from PIL import Image
  for ppm in list(OUT.glob('frames-*/*.ppm'))+list(OUT.glob('*.ppm')):Image.open(ppm).save(ppm.with_suffix('.png'))
 except ImportError:pass
-print('Quick actions: 2 pure-core + 2 session + 104 real-adapter normal/sanitizer/rotation executions passed')
+for san in (False,True):
+ for rotation in (0,180):
+  target=OUT/f'rf-reservation-{rotation}-{int(san)}'
+  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if san else []
+  cmd=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror',
+       '-DPORTABLE_NOVA_UI',f'-DPORTABLE_TOUCH_ROTATION={rotation}',*flags,
+       '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+       str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/quick_rf_reservation_test.c')]
+  cmd += [str(ROOT/'lib/PortableApps/src'/name) for name in ['quick_actions.c','quick_render.c','quick_session.c']]
+  subprocess.run(cmd+['-o',str(target)],check=True,timeout=120)
+  subprocess.run([str(target)],check=True,timeout=20,env=env)
+print('Quick actions: 2 pure-core + 2 session + 108 real-adapter normal/sanitizer/rotation executions passed')
