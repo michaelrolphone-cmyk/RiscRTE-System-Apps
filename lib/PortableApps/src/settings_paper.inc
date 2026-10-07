@@ -86,12 +86,13 @@ static bool sp_poll(t5_app_input_t *out) {
   portable_touch_sample s;input_take(&s);
   if(!s.valid||s.cancelled){sv_gesture=false;sv_need_neutral=true;return true;}
   if(sv_need_neutral){if(!s.down||(s.began&&s.tap_eligible))sv_need_neutral=false;else return true;}
-  if(s.began){sv_gesture=true;sv_start_x=s.x;sv_start_y=s.y;}
+  if(s.began){sv_gesture=true;sv_start_x=sv_last_x=s.x;sv_start_y=sv_last_y=s.y;}
+  if(s.down&&sv_gesture){sv_last_x=s.x;sv_last_y=s.y;}
   if(!s.released)return true;
   bool tap=s.tap_eligible&&!s.moved;
   if(sv_gesture&&s.moved&&(sv_page==SV_ROOT||sv_page==SV_FIELDS)) {
-    int dy=(int)s.y-sv_start_y;
-    if(abs(dy)>=44&&abs(dy)>abs((int)s.x-sv_start_x)*2) {
+    int dy=sv_last_y-sv_start_y;
+    if(abs(dy)>=44&&abs(dy)>abs(sv_last_x-sv_start_x)*2) {
       unsigned rows=sp_rows(),limit=sv_page==SV_ROOT?SETTINGS_ROW_COUNT:6;unsigned *first=sv_page==SV_ROOT?&sp_first:&sp_field_first;
       *first=dy<0&&*first+rows<limit?*first+rows:dy>0?0:*first;settings_view_redraw();
     }

@@ -13,10 +13,10 @@ static int pp_measure(const char *s,bool heading) {
   return (n+15)/16;
 }
 static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool heading,bool black) {
-  if(!s || scale<1 || scale>4 || max_width<=0)return;
+  if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
-    unsigned c=(unsigned char)s[k];if(c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
+    unsigned c=(unsigned char)s[k];if(!(scale&PAPER_TEXT_LITERAL)&&c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
     int advance=(int)g->advance_q4;
     if((pen+advance+15)/16>x+max_width)break;

@@ -2,6 +2,9 @@
 #include "SpringboardPresentation.h"
 /* Private app/client contract. No provider or kernel ABI. Coordinates are
  * physical display pixels. Only a retaining monochrome portrait opts in. */
+/* Text uses display typography; OR this flag into the text option for a
+ * literal user-entry/key label, preserving ASCII letter case. */
+#define PAPER_TEXT_LITERAL 256u
 typedef struct {
     uint32_t struct_size;
     void (*begin)(void);
