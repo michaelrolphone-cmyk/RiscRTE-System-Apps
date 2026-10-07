@@ -256,6 +256,7 @@ static void sv_alert(void) {
 }
 #endif
 static void settings_view_redraw(void) {
+  if(handoff_requested)return;
   if(failed || !sv_active)return;
   if(pp_enabled()){sp_redraw();return;}
   sv_begin();

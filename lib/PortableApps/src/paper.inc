@@ -29,7 +29,13 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
     pen+=advance;
   }
 }
-static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock};
+static bool pp_battery(uint8_t *percent,bool *charging) {
+  risc_battery_sample_v1 sample={0};
+  if(!gauge || !gauge->read || !gauge->read(gauge->context,&sample) || sample.percent>100 ||
+     (sample.flags&RISC_BATTERY_PROFILE_MISSING))return false;
+  *percent=sample.percent;*charging=!!(sample.flags&RISC_BATTERY_CHARGING);return true;
+}
+static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock,pp_battery};
 static bool pp_enabled(void) {
   return width()>=400 && width()<=600 && height()>=600 && height()>width() &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&

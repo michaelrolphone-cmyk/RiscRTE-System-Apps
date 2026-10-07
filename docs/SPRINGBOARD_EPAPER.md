@@ -67,3 +67,10 @@ add/decrement controls use the same licensed subset. The native MONO1 fixture
 requires all eleven tested marker/control/terminal glyphs to render visible ink
 both black-on-white and white-on-black. No hand-drawn path is labeled as a Font
 Awesome icon. Existing Watch glyph rasters are unchanged.
+
+## Controls-first 1.7.0
+
+The toolbar adds real battery/charging status. `--quick-actions` enables the
+capability-selected paper sheet; `--home-app default.elf` returns physical Home
+directly to the clock independently of local Back. App hit coordinates are
+unchanged. See [PAPER_CONTROLS.md](PAPER_CONTROLS.md) for build/grant requirements.

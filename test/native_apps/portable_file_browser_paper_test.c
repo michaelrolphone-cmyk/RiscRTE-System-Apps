@@ -1,3 +1,4 @@
+#define PORTABLE_HOME_APP "default.elf"
 #define FILE_BROWSER_PAPER_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
 #define PORTABLE_FILE_BROWSER_CAPABILITY "storage.volume"
@@ -20,6 +21,6 @@ int main(void){
  test_fail_close=true;assert(!fb_preview_read()&&fb_retained_file);unsigned reads=test_reads;assert(!fb_preview_read()&&test_reads==reads);assert(!fb_back());test_fail_close=false;assert(portable_file_browser_close());
  fb_mode=FB_LIST;test_fail_acquire=true;assert(!fb_load(0));fb_draw();paper_frame("unavailable");test_fail_acquire=false;assert(fb_load(0));test_invalid_name=true;assert(!fb_load(0)&&!fb_count);test_invalid_name=false;assert(fb_load(0));
  assert(fb_back());app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);
- for(unsigned script=4;script<=6;script++){test_script=script;test_polls=0;test_seen_modes=0;unsigned before=test_launches;assert(app_module_init()==0);app_main();app_module_fini();assert(test_launches==before+1&&!test_grants&&!test_frames&&!test_subs);if(script==4)assert(test_seen_modes&(1u<<FB_PREVIEW));if(script==5)assert(fb_page==1);if(script==6)assert(!fb_query[0]);}
+ for(unsigned script=4;script<=7;script++){test_script=script;test_polls=0;test_seen_modes=0;unsigned before=test_launches;assert(app_module_init()==0);app_main();app_module_fini();assert(test_launches==before+1&&!test_grants&&!test_frames&&!test_subs);if(script==4)assert(test_seen_modes&(1u<<FB_PREVIEW));if(script==5)assert(fb_page==1);if(script==6)assert(!fb_query[0]);}
  puts("Paper File Browser: native raster, 513-item bidirectional paging, 95 filter keys, preview/error/close safety and real raw-touch lifecycle pass");
 }

@@ -10,12 +10,14 @@ import json
 import os
 import re
 from pathlib import Path
+import portable_quick_build
 import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def build(args):
+def build(args,parser=None):
+    parser=parser or argparse.ArgumentParser(description=__doc__)
     cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:
         core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
@@ -30,20 +32,23 @@ def build(args):
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
     if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
+    if args.denver and args.wall_time:parser.error('Choose one explicit RTC policy')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
+    if args.wall_time:flags.append('-DPORTABLE_RTC_WALL_TIME')
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
     version=json.loads((ROOT/'Apps/settings.json').read_text())['version']
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
+    quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'settings.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     catalog = out/'catalog.c'
     catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'settings.elf'
-    sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]
+    sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]+quick_sources
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror',
@@ -73,6 +78,7 @@ def build(args):
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
+    portable_quick_build.requirements(args,manifest['requires'])
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/settings.c','Apps/settings.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/settings.inc','lib/PortableApps/include/PortableRtcClock.h',
@@ -106,7 +112,7 @@ def build(args):
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
-        'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
+        'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
@@ -124,4 +130,6 @@ if __name__ == '__main__':
     parser.add_argument('--touch-rotation',type=int,choices=[0,180],default=0)
     parser.add_argument('--return-app',help='Explicit root Back destination as a plain .elf filename')
     parser.add_argument('--output-dir',type=Path)
-    build(parser.parse_args())
+    parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
+    portable_quick_build.options(parser)
+    build(parser.parse_args(),parser)

@@ -24,6 +24,7 @@ static void emit_torch(pqa_state *s) {
 void pqa_init(pqa_state *s) {
     if (!s) return;
     memset(s, 0, sizeof(*s));
+    s->torch_valid = true;
     s->brightness = 40;
     s->volume = 50;
     s->last_nonzero_volume = 50;
@@ -69,6 +70,7 @@ void pqa_close(pqa_state *s) {
     if (!s) return;
     pqa_cancel_input(s);
     s->target_q8 = 0;
+    if(s->paper)s->position_q8=0;
     if (s->torch) { s->torch = false; emit_torch(s); }
 }
 void pqa_cancel(pqa_state *s) {
@@ -76,7 +78,12 @@ void pqa_cancel(pqa_state *s) {
     pqa_close(s);
     s->position_q8 = 0;
 }
-static int tile_at(int x, int y) {
+static int tile_at(const pqa_state *s,int x, int y) {
+    if(s->paper) {
+        for(int row=0;row<3;row++)for(int col=0;col<2;col++)
+            if(x>=32+col*212 && x<236+col*212 && y>=302+row*104 && y<394+row*104)return row*2+col;
+        return -1;
+    }
     static const int xs[3] = {20, 91, 162};
     for (int row = 0; row != 2; ++row)
         for (int col = 0; col != 3; ++col)
@@ -91,10 +98,10 @@ static unsigned slider_value(int x, unsigned minimum) {
 }
 static void slide(pqa_state *s, int x) {
     if (s->gesture == PQA_BRIGHTNESS_DRAG) {
-        unsigned b = slider_value(x, 10);
+        unsigned b = slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
         if (b != s->brightness) { s->brightness = (uint8_t)b; emit_brightness(s, false); }
     } else {
-        s->volume = (uint8_t)slider_value(x, 0);
+        s->volume = (uint8_t)slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0);
     }
 }
 static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y) {
@@ -116,6 +123,7 @@ static bool route(pqa_state *s, pqa_route r) {
     return r == PQA_RESERVED || r == PQA_CONSUMED;
 }
 static void release_panel(pqa_state *s, uint32_t now) {
+    if(s->paper){s->position_q8=s->target_q8;return;}
     int velocity = (now - s->last_ms > 100u) ? 0 : s->release_velocity_q8;
     bool open = s->position_q8 > PQA_OPEN_Q8 / 2 ? velocity > -384 : velocity > 512;
     s->target_q8 = open ? PQA_OPEN_Q8 : 0;
@@ -164,7 +172,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 s->pending|=PQA_BLUETOOTH;
             } else if (s->pressed_tile == 3 && (!s->radio_controls || s->radios_valid)) {
                 s->pending |= PQA_WIFI;if(!s->radio_controls)s->target_q8=0;
-            } else if (s->pressed_tile == 5) {
+            } else if (s->pressed_tile == 5 && s->torch_valid) {
                 s->torch = true; s->target_q8 = 0; emit_torch(s);
             }
         }
@@ -179,22 +187,22 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         begin_contact(s, now, id, x, y);
         if (s->torch) s->gesture = PQA_TORCH_TAP;
         else if (!pqa_visible(s)) {
-            if (allow_open && y >= 0 && y < PQA_TOP_EDGE && x >= 0 && x < 240)
+            if (allow_open && y >= 0 && y < (s->paper?72:PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:240))
                 s->gesture = PQA_TOP_PENDING;
             else s->gesture = PQA_PASS_THROUGH;
         } else {
             /* Moving panels are draggable but never activate controls. */
             int local_y = y + (PQA_OPEN_Q8 - s->position_q8) / 256;
             bool settled = s->position_q8 == PQA_OPEN_Q8 && s->target_q8 == PQA_OPEN_Q8;
-            if (settled && x >= 16 && x < 224 && local_y >= 48 && local_y < 77 && s->brightness_valid)
+            if (settled && s->brightness_valid && (s->paper ? x>=32 && x<448 && y>=120 && y<180 : x>=16 && x<224 && local_y>=48 && local_y<77))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
-            else if (settled && x >= 16 && x < 224 && local_y >= 78 && local_y < 107 && s->volume_valid)
+            else if (settled && s->volume_valid && (s->paper ? x>=32 && x<448 && y>=214 && y<274 : x>=16 && x<224 && local_y>=78 && local_y<107))
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
                 if (settled) {
-                    s->pressed_tile = (int8_t)tile_at(x, local_y);
-                    s->handle_pressed = x >= 76 && x < 164 && local_y >= 207 && local_y < 239;
+                    s->pressed_tile = (int8_t)tile_at(s,x, local_y);
+                    s->handle_pressed = s->paper ? x>=32 && x<448 && y>=640 && y<714 : x>=76 && x<164 && local_y>=207 && local_y<239;
                 }
             }
         }
@@ -205,8 +213,11 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     int dx = x - s->start_x, dy = y - s->start_y;
     if (absi(dx) > 6 || absi(dy) > 6) s->moved = true;
     if (s->gesture == PQA_TOP_PENDING) {
-        if (dy > 6 && dy > absi(dx)) s->gesture = PQA_PANEL_DRAG;
-        else if (absi(dx) > 6 || dy < -6) {
+        if (dy > (s->paper?24:6) && dy > absi(dx)) {
+            s->gesture = PQA_PANEL_DRAG;
+            if(s->paper)s->position_q8=s->target_q8=PQA_OPEN_Q8;
+        }
+        else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
             s->gesture = PQA_PASS_THROUGH;
             return route(s, PQA_REPLAY);
         } else return route(s, PQA_RESERVED);
@@ -214,6 +225,11 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         s->gesture = PQA_PANEL_DRAG;
     }
     if (s->gesture == PQA_PANEL_DRAG) {
+        if(s->paper) {
+            if(s->start_position_q8 && dy < -32)s->position_q8=s->target_q8=0;
+            s->last_x=(int16_t)x;s->last_y=(int16_t)y;s->last_ms=now;
+            return route(s,PQA_CONSUMED);
+        }
         s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, PQA_OPEN_Q8);
         uint32_t elapsed = now - s->last_ms;
         if (elapsed) s->release_velocity_q8 = clampi((y - s->last_y) * 2048 / (int)(elapsed > 1000u ? 1000u : elapsed), -8192, 8192);
@@ -223,6 +239,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     return route(s, PQA_CONSUMED);
 }
 bool pqa_animate(pqa_state *s, uint32_t now) {
+    if(s && s->paper){bool changed=s->position_q8!=s->target_q8;s->position_q8=s->target_q8;s->velocity_q8=0;return changed;}
     if (!s) return false;
     if (!s->clock_valid) { s->clock_valid = true; s->animation_ms = now; return false; }
     uint32_t elapsed = now - s->animation_ms;

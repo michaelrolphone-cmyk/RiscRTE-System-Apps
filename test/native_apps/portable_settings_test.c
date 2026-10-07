@@ -38,6 +38,9 @@ static void test_yield(uint32_t ms) { ticks += ms; }
 static bool test_diagnostic(const char *s) { assert(s); ++diagnostics; return true; }
 static unsigned return_launches;
 static bool test_launch(const char *path) {
+#ifdef PORTABLE_HOME_APP
+ if(!strcmp(path,PORTABLE_HOME_APP)){assert(sv_page!=SV_ROOT);return_launches++;return true;}
+#endif
 #ifdef PORTABLE_RETURN_APP
  assert(!strcmp(path,PORTABLE_RETURN_APP));assert(sv_page==SV_ROOT);return_launches++;return true;
 #else
@@ -98,6 +101,7 @@ static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
   (void)c;memset(out,0,sizeof(*out));
 #ifdef TEST_PAPER_SETTINGS
   out->width=480;out->height=800;
+  if(scenario==218&&polls==9)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;
 #else
   out->width=out->height=240;
 #endif
@@ -144,6 +148,7 @@ static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out){
     out->buttons=out->pressed=button;
     if(polls==18)out->buttons=RISC_NAV_UP; /* Held input must not repeat. */
   }else if(scenario==31 && polls<=5)out->buttons=out->pressed=RISC_NAV_CONFIRM;
+  if(scenario==219&&polls==9)out->pressed=out->released=RISC_NAV_HOME;
   return true;
 }
 static unsigned nav_resets,nav_foregrounds;

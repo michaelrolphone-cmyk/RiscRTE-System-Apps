@@ -22,12 +22,14 @@ typedef struct {
   const risc_touch_api_v1 *api;
   uint64_t subscription;
   bool neutral, down, moved;
+  bool home_neutral, home_down;
   uint16_t x, y;
   uint8_t contact_id;
 } portable_touch;
 typedef struct {
   bool valid, down, began, released, cancelled, tap_eligible, moved;
   uint16_t x, y;
+  bool home_pressed;
 } portable_touch_sample;
 static bool portable_touch_open(portable_touch *t,
                                 const risc_runtime_api_v1 *r) {
@@ -56,12 +58,16 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   if (!t->subscription) { out->cancelled = true; return; }
   bool ok = t->api->poll(t->api->context, 1);
   unsigned drained = 0;
-  bool saw_up = false, replaced = false;
+  bool saw_up = false, replaced = false, home_edge=false;
+  bool home_down=t->home_down,home_neutral=t->home_neutral;
   uint16_t up_x=0,up_y=0;
   for (; drained < RISC_TOUCH_QUEUE_LENGTH; ++drained) {
     risc_touch_event_v1 e={0};
     int n = t->api->next(t->api->context, t->subscription, &e);
     if (n <= 0) { if (n < 0) ok = false; break; }
+    if(e.id==0 && e.kind==RISC_TOUCH_EVENT_BUTTON_DOWN){
+      home_edge|=home_neutral&&!home_down;home_down=true;
+    }else if(e.id==0 && e.kind==RISC_TOUCH_EVENT_BUTTON_UP){home_down=false;home_neutral=true;}
     if (e.kind == RISC_TOUCH_EVENT_UP && t->down && e.id == t->contact_id) {
       saw_up=true;up_x=e.x;up_y=e.y;
     }
@@ -79,9 +85,15 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   if (!t->api->snapshot(t->api->context, &s) || !ok || replaced || (saw_up && (s.contact_count || up_x>=s.width || up_y>=s.height)) || s.contact_count > 1 ||
       (s.contact_count && (s.contacts[0].x >= s.width || s.contacts[0].y >= s.height))) {
     t->neutral = t->down = false;
+    t->home_neutral=t->home_down=false;
     out->cancelled = true;
     return;
   }
+  /* Snapshot is authoritative after the bounded event drain. A fresh or
+   * faulted invocation cannot turn an inherited held Home into a press. */
+  bool held=!!(s.buttons&RISC_TOUCH_BUTTON_PRIMARY);
+  out->home_pressed=home_edge||(home_neutral && held && !home_down);
+  t->home_down=held;t->home_neutral=home_neutral||!held;
   out->valid = true;
   if (!s.contact_count) {
     out->released = t->down;

@@ -5,6 +5,9 @@
 #endif
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
+#include "quick_paper.inc"
+static size_t quick_row_bytes(void){return surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;}
+static size_t quick_frame_bytes(void){return quick_row_bytes()*info.height;}
 static bool quick_storage_safe(void) {
 #ifdef PORTABLE_FILE_BROWSER_APP
  if(!portable_file_browser_safe())return false;
@@ -40,7 +43,8 @@ static bool quick_apply(uint32_t actions) {
 static bool quick_copy_background(void) {
  clear();if(failed)return false;
  if(!quick_background)return false;
- for(unsigned y=0;y<240;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,quick_background+y*240,480);
+ size_t bytes=quick_row_bytes();
+ for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);
  return true;
 }
 static bool quick_interrupt(void) {
@@ -48,8 +52,8 @@ static bool quick_interrupt(void) {
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
  /* Alarm's saved restoration frame is the app, never the torch/controls. */
- if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,240u*240u*2u);alarm_pixels_valid=true;}
- return pqa_session_restore(&quick,display);
+ if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
+ return !quick.ui.torch_valid || pqa_session_restore(&quick,display);
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
@@ -75,14 +79,16 @@ static bool quick_foreground(bool *consumed) {
  if(!portable_radio_suspend())return false;
 #endif
  if(!pqa_session_load(&quick,rt))return false;
+ quick_paper_capabilities();
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
- quick_background=malloc(240u*240u*2u);
+ quick_background=malloc(quick_frame_bytes());
  if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
- memcpy(quick_background,alarm_pixels,240u*240u*2u);quick_modal=true;
+ memcpy(quick_background,alarm_pixels,quick_frame_bytes());quick_modal=true;
  bool painted=false,wifi=false;uint32_t began=millis_now(),telemetry_at=began-1000u;
- char time[6]="--:--";risc_battery_sample_v1 battery={0};bool battery_valid=false;
+ char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
+ pqa_state painted_state={0};uint8_t painted_battery=0;
  while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
   uint32_t now=millis_now();bool alarm_consumed=false;
   if(!alarm_foreground(&alarm_consumed)){failed=true;break;}
@@ -95,12 +101,18 @@ static bool quick_foreground(bool *consumed) {
   if(!quick.ui.radio_controls && (actions&PQA_WIFI)){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
   if(!quick_apply(actions)){failed=true;break;}
   pqa_animate(&quick.ui,now);
-  if(pqa_visible(&quick.ui) || painted) {
+  if(pqa_visible(&quick.ui) || (!quick.ui.paper && painted)) {
    if((uint32_t)(now-telemetry_at)>=1000u) {
     quick_time(time);battery_valid=gauge && gauge->read && gauge->read(gauge->context,&battery) && battery.percent<=100 && !(battery.flags&RISC_BATTERY_PROFILE_MISSING);telemetry_at=now;
    }
-   if(!quick_copy_background() || !pqa_render(&surface,&quick.ui,time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
-   present(true);painted=true;*consumed=true;
+   bool dirty=!quick.ui.paper || !painted || quick_paper_changed(&painted_state,&quick.ui) ||
+       strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
+   if(dirty) {
+    if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
+    else if(!quick_copy_background() || !pqa_render(&surface,&quick.ui,time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
+    present(!quick.ui.paper);painted=true;*consumed=true;painted_state=quick.ui;
+    memcpy(painted_time,time,sizeof(time));painted_battery_valid=battery_valid;painted_battery=battery.percent;
+   }
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
   rt->yield_ms(8);input_service();
@@ -109,7 +121,7 @@ static bool quick_foreground(bool *consumed) {
   * final action still owns a hardware restoration even after the loop ends. */
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
  if(painted && !failed) {
-  if(!quick_copy_background())failed=true;else present(true);
+  if(!quick_copy_background())failed=true;else present(!quick.ui.paper);
  }
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
@@ -124,7 +136,7 @@ static bool quick_foreground(bool *consumed) {
   if(!portable_wifi_suspend())return false;
 #endif
   if(!rt->request_launch("wifi_settings.elf")){quick.ui.error_flags|=PQA_ERROR_WIFI;rt->diagnostic("QUICK Wi-Fi launch-failed");}
-  else quick_launch_pending=true; /* caller exits via ordinary cleanup */
+  else quick_launch_pending=handoff_requested=true; /* caller exits via ordinary cleanup */
  }
  return !failed;
 }

@@ -183,6 +183,7 @@ static void editor_step(bool forward) {
 static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
 #include "settings_view.inc"
 static void settings_render(uint32_t category,int32_t selected) {
+  if(handoff_requested)return;
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
   sv_selected=selected<0?0:(unsigned)selected;list_mode=true;sv_active=true;

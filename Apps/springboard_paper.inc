@@ -1,5 +1,6 @@
 /* NOVA-7 E-Ink: fixed 3/2 rows, real catalog only, no animation or fades. */
 #include "PaperPresentation.h"
+#include "PaperBattery.h"
 __attribute__((weak)) const paper_presentation *paper_presentation_get(void) {return NULL;}
 #define PAPER_PAGE_APPS 15u
 static int paper_x(int x){return x*api->screen_width()/480;}
@@ -27,10 +28,11 @@ static void paper_name(const paper_presentation *v,int x,int y,const t5_app_mani
     v->text(x-(measured<limit?measured:limit)/2,y+paper_y(43),limit,name,1,false,true);
 }
 static void paper_draw(const paper_presentation *v,const char *status,bool initial,
-                       bool known,uint8_t hour,uint8_t minute) {
+                       bool known,uint8_t hour,uint8_t minute,paper_battery battery) {
     v->begin();v->text(paper_x(32),paper_y(30),paper_x(270),"APPS",2,true,true);
     char time[12];if(known)snprintf(time,sizeof(time),"%02u:%02u",hour,minute);else strcpy(time,"--:--");
-    v->text(paper_x(342),paper_y(30),paper_x(120),time,2,true,true);
+    v->text(paper_x(214),paper_y(30),paper_x(120),time,2,true,true);
+    paper_battery_draw(api,v,342,40,battery);
     api->fill_rect(paper_x(32),paper_y(78),paper_x(416),3,true);
     unsigned first=selected/PAPER_PAGE_APPS*PAPER_PAGE_APPS;
     for(unsigned cell=0;cell<PAPER_PAGE_APPS && first+cell<count;cell++) {
@@ -61,7 +63,8 @@ static bool paper_run(void) {
     if(!v || v->struct_size<sizeof(*v) || !v->begin || !v->text || !v->measure || !v->circle || !v->contact || !v->clock)return false;
     uint8_t hour=0,minute=0;bool known=v->clock(&hour,&minute)&&hour<24&&minute<60;
     uint32_t last_clock=api->millis(),previous=0;bool armed=false;
-    char status[64]={0};paper_draw(v,status,true,known,hour,minute);
+    paper_battery battery=paper_battery_read(v);
+    char status[64]={0};paper_draw(v,status,true,known,hour,minute,battery);
     t5_app_input_t in;
     while(api->poll(&in,20)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK))break;
@@ -91,9 +94,10 @@ static bool paper_run(void) {
         uint32_t now=api->millis();
         if((uint32_t)(now-last_clock)>=1000) {
             uint8_t h=0,m=0;bool valid=v->clock(&h,&m)&&h<24&&m<60;
+            paper_battery next=paper_battery_read(v);dirty|=paper_battery_changed(battery,next);battery=next;
             dirty|=valid!=known || (valid&&(h!=hour||m!=minute));known=valid;hour=h;minute=m;last_clock=now;
         }
-        if(dirty)paper_draw(v,status,false,known,hour,minute);
+        if(dirty)paper_draw(v,status,false,known,hour,minute,battery);
     }
     return true;
 }
