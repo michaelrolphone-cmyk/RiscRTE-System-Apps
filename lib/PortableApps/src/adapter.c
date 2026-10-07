@@ -41,7 +41,7 @@ static const risc_battery_gauge_api_v1 *gauge;
 static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
-static uint32_t surface_format;
+static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
 #ifndef PORTABLE_DISPLAY_ROTATION
 #define PORTABLE_DISPLAY_ROTATION 0
 #endif
@@ -624,7 +624,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
-  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<info.width && y<info.height)
+  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<width() && y<height())
     app_contact=(t5_app_contact_t){true,(int16_t)x,(int16_t)y};
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -649,7 +649,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   }
 #endif
   if (sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled) {
-    if (x >= info.width || y >= info.height)
+    if (x >= width() || y >= height())
       return !failed;
     if (
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
@@ -675,15 +675,15 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     }
 #endif
 #ifndef PORTABLE_NOVA_UI
-    else if (list_mode && y >= info.height - 32)
+    else if (list_mode && y >= height() - 32)
 #ifdef PORTABLE_SETTINGS_APP
       out->buttons = settings_editing
-                         ? (x < info.width / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
-                         : (x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN);
+                         ? (x < width() / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
+                         : (x < width() / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN);
 #else
-      out->buttons = x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN;
+      out->buttons = x < width() / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN;
 #endif
-    else if (list_mode && y < 40 && x >= info.width - 56)
+    else if (list_mode && y < 40 && x >= width() - 56)
       out->buttons = T5_APP_BUTTON_CONFIRM;
 #endif
     else {
@@ -935,6 +935,7 @@ static int initialize(void) {
     RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
 #ifdef PORTABLE_NOVA_UI
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
