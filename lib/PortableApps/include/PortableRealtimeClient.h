@@ -19,7 +19,7 @@ enum {
  PORTABLE_REALTIME_RETAINED=-7, PORTABLE_REALTIME_DENIED=-8,
  PORTABLE_REALTIME_FOLD=-9, PORTABLE_REALTIME_GAP=-10,
  PORTABLE_REALTIME_RANGE=-11, PORTABLE_REALTIME_BASIS_CHOICE=-12,
- PORTABLE_REALTIME_UNUSABLE=-13
+ PORTABLE_REALTIME_UNUSABLE=-13, PORTABLE_REALTIME_VERIFY=-14
 };
 enum { PORTABLE_REALTIME_READER=0, PORTABLE_REALTIME_CONTROL=1 };
 enum { PORTABLE_REALTIME_TIMER_ONLY=0, PORTABLE_REALTIME_NORMAL_START=1 };
@@ -62,6 +62,18 @@ typedef struct {
  risc_realtime_snapshot_v1 snapshot;
 } portable_realtime_recovery_result;
 typedef struct { int64_t epoch_seconds; uint32_t nanoseconds; } portable_realtime_estimate;
+typedef struct {
+ bool attempted,seeded,verified;
+ risc_realtime_snapshot_v1 snapshot;
+} portable_realtime_seed_result;
+/* Explicit user-confirmed whole-second seed. CONTROL/NORMAL_START only; no
+ * RTC/storage I/O. Requires no live RTC grant. Readback must be VALID and fall
+ * within [epoch, epoch + budget_us]; budget is caller-selected, at most 5s.
+ * IO may invalidate native time. No retry/rollback. attempted distinguishes a
+ * possibly changed clock; seeded confirms only the seed callback's OK result,
+ * verified confirms the bounded readback. CONTEXT/uncertainty is sticky. */
+int portable_realtime_seed_confirmed(portable_realtime_client *,int64_t epoch,
+ uint32_t budget_us,portable_realtime_seed_result *);
 /* Open acquires only one fresh native grant; it neither reads nor seeds time.
  * A clean close allows reopen; a halted client cannot reopen. */
 int portable_realtime_open(portable_realtime_client *,const risc_runtime_api_v1 *,

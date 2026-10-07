@@ -1,0 +1,32 @@
+{
+  "runtime_export_source_sha256": "65252bf5999c89b619e5c1264fed343cfced585688b30f04f714a59375105b3b",
+  "runtime_commit": "341e6e38ce00b7c57d5daaf5f8c829c3575db931",
+  "sdk_header_sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+  "source_sha256": {
+    "lib/PortableApps/src/PortableRealtimeClient.c": "839493df99e4e850c6ff59dd784e834e176476d113ee4c2f71825c2a0b20e4f4",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+    "lib/PortableApps/include/PortableRealtimeClient.h": "197399c9821d37c7df4affbb1922c7102b8f863b4859c13d3751f3c1e5d07dad",
+    "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+    "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "test/native_apps/portable_realtime_client_test.c": "d699b28bf57dfe1b3b53d18212b2f3014a71041161486ea18209143e5dcb786f",
+    "test/native_apps/fixtures/portable_realtime_elf.c": "8398ce29f9ba603e64c5b9e2eeaca6d94aa3f1bc22dcae02d9331d8bdf83c5f8",
+    "scripts/test_portable_realtime.py": "84c3bdad09602b806c570e65aec66e73a6b52db5265ff79347fa7c5ae05b27a1"
+  },
+  "host_plain": "Portable realtime production client: 121 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
+  "host_asan_ubsan": "Portable realtime production client: 121 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
+  "xtensa": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
+    "elf_bytes": 36664,
+    "elf_sha256": "f54a22e7530a771d3a5f33c1020e3852e421bb9f2bcef8ba93cea0073d106928",
+    "imports": [
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api"
+    ],
+    "loader_validation": "PASS",
+    "dynamic_symbols": "\nSymbol table '.dynsym' contains 8 entries:\n   Num:    Value  Size Type    Bind   Vis      Ndx Name\n     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND risc_runtime_get_api\n     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy\n     3: 000087b0     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start\n     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset\n     5: 000087b0     0 NOTYPE  GLOBAL DEFAULT   11 _edata\n     6: 000087b4     0 NOTYPE  GLOBAL DEFAULT   12 _end\n     7: 00004154   190 FUNC    GLOBAL DEFAULT    6 app_main\n"
+  }
+}

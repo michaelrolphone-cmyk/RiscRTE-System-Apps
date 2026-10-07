@@ -110,6 +110,27 @@ int portable_realtime_read(portable_realtime_client *c,risc_realtime_snapshot_v1
  rc=snapshot_status(&s);if(rc<0)return rc;
  *out=s;return rc;
 }
+int portable_realtime_seed_confirmed(portable_realtime_client *c,int64_t epoch,
+ uint32_t budget_us,portable_realtime_seed_result *out) {
+ if(!out)return PORTABLE_REALTIME_INVALID;
+ *out=(portable_realtime_seed_result){0};
+ int rc=live(c);if(rc)return rc;
+ if(c->access!=PORTABLE_REALTIME_CONTROL || c->startup!=PORTABLE_REALTIME_NORMAL_START)
+  return PORTABLE_REALTIME_DENIED;
+ if(epoch<0 || epoch>PORTABLE_REALTIME_MAX_EPOCH || budget_us>5000000u)
+  return PORTABLE_REALTIME_RANGE;
+ if(c->rtc_grant.api)return halt(c,PORTABLE_REALTIME_UNCERTAIN);
+ out->attempted=true;
+ rc=native_status(c,c->native_seed(c->native_context,epoch,0));if(rc)return rc;
+ out->seeded=true;
+ rc=portable_realtime_read(c,&out->snapshot);
+ if(rc)return rc==PORTABLE_REALTIME_UNSET?PORTABLE_REALTIME_IO:rc;
+ int64_t delta=out->snapshot.epoch_seconds-epoch;
+ uint32_t seconds=budget_us/1000000u,ns=(budget_us%1000000u)*1000u;
+ if(delta<0 || delta>seconds || (delta==seconds && out->snapshot.nanoseconds>ns))
+  return PORTABLE_REALTIME_VERIFY;
+ out->verified=true;return PORTABLE_REALTIME_OK;
+}
 static int interpretation(const portable_realtime_recovery_policy *p,
  const twatch_rtc_time_v1 *calendar,portable_realtime_recovery_result *r) {
  if(calendar->year<PORTABLE_TIMEZONE_MIN_YEAR || calendar->year>PORTABLE_TIMEZONE_MAX_YEAR) {
