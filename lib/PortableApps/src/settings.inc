@@ -177,6 +177,11 @@ static void settings_render(uint32_t category,int32_t selected) {
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
   sv_selected=selected<0?0:(unsigned)selected;list_mode=true;sv_active=true;
+  if(pp_enabled() && changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
+    unsigned row=(unsigned)selected-1,rows=sp_rows();
+    if(row<sp_first)sp_first=row;
+    else if(row>=sp_first+rows)sp_first=row-rows+1;
+  }
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
@@ -203,6 +208,7 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
 }
 static void editor_select_field(unsigned field) {
   editor_field=field;
+  if(pp_enabled()&&field<6){unsigned rows=sp_rows();if(field<sp_field_first)sp_field_first=field;else if(field>=sp_field_first+rows)sp_field_first=field-rows+1;}
   if(field<6) {
     int y=60+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
     if(y<60)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
@@ -330,7 +336,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   bool readable=rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&settings_draft);
   if(!readable)settings_draft=(twatch_rtc_time_v1){2000,1,1,6,0,0,0};
   editor_message=readable?portable_time_zone():"Unset - edit then SAVE";
-  editor_field=0;sv_scroll[1]=0;sv_switch(SV_FIELDS);
+  editor_field=0;sv_scroll[1]=0;sp_field_first=0;sv_switch(SV_FIELDS);
   uint8_t result=T5_APP_SETTING_NO_CHANGE;bool armed=false;t5_app_input_t input;
   while(poll(&input,20)) {
     if(input.exit_requested)break;
@@ -381,6 +387,11 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   sv_switch(SV_ROOT);return result;
 }
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
+  if(pp_enabled()) {
+    if(!category||!selected||x<32||x>=width()-32||y<SP_TOP||y>=SP_TOP+(int)sp_rows()*SP_ROW)return T5_APP_SETTING_NO_CHANGE;
+    unsigned row=sp_first+(unsigned)(y-SP_TOP)/SP_ROW;if(row>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_NO_CHANGE;
+    *category=0;*selected=(int32_t)row+1;return settings_activate(0,row);
+  }
   if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
   *category=0;
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+SV_ROW_HEIGHT) {
@@ -391,7 +402,7 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
 static bool settings_open(void) {
   if(width()<240 || height()<240)return false;
   rtc_grant.struct_size=sizeof(rtc_grant);back_exits_app=true;settings_message="";
-  sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;
+  sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {

@@ -16,6 +16,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--display-rotation",type=int,choices=[0,90],default=0,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
+    parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
     parser.add_argument("--nova-ui",action="store_true",help="Settings-derived 240x240 shared utility profile")
     parser.add_argument("--alarm-client",action="store_true",help="Explicit alarm.service foreground overlay consumer")
     parser.add_argument("--denver",action="store_true",help="Select RTC UTC+08 to America/Denver display policy")
@@ -29,6 +31,8 @@ def build():
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
+    flags.append("-DPORTABLE_DISPLAY_ROTATION="+str(args.display_rotation))
+    if args.navigation: flags.append("-DPORTABLE_INPUT_NAVIGATION")
     if args.nova_ui: flags.append("-DPORTABLE_NOVA_UI")
     if args.alarm_client: flags.append("-DPORTABLE_ALARM_CLIENT")
     if args.full_frames: flags.append("-DPORTABLE_FORCE_FULL_FRAMES")
@@ -42,6 +46,9 @@ def build():
     notices=out/'licenses/portable-apps';notices.mkdir(parents=True,exist_ok=True)
     for name in ['LICENSE-FontAwesome.txt','LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json']:
         shutil.copyfile(ROOT/'lib/PortableApps/fonts'/name,notices/name)
+    paper_notices=notices/"paper";paper_notices.mkdir(exist_ok=True)
+    for name in ["LICENSE-Orbitron.txt","LICENSE-Rajdhani.txt","SOURCES.json"]:
+        shutil.copyfile(ROOT/"lib/PortableApps/paper_fonts"/name,paper_notices/name)
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -75,10 +82,11 @@ def build():
         'file_name':'springboard.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
 ]}
+    if args.navigation: manifest["requires"].append({"capability":"input.navigation","api":1})
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
     if args.denver: manifest['requires'].append({'capability':'rtc.clock','api':2})
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    inputs=['lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
+    inputs=['Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
             'lib/PortableApps/RTC_PROVENANCE.json','lib/PortableApps/SOURCES.json']
     inputs += ['lib/PortableApps/include/'+name for name in json.loads((ROOT/'lib/PortableApps/SOURCES.json').read_text())]
@@ -91,7 +99,7 @@ def build():
     record={'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
-        'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
+        'display_rotation':args.display_rotation,'navigation':args.navigation,'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),

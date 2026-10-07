@@ -1,0 +1,186 @@
+{
+  "source_sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+  "manifests": {
+    "Apps/settings.json": {
+      "min_firmware_version": "1.1.24",
+      "version": "1.2.5",
+      "display_name": "Settings",
+      "file_name": "settings.elf",
+      "icon": "solid:f013",
+      "category": [
+        "Settings",
+        "System"
+      ]
+    },
+    "Apps/wifi_settings.json": {
+      "min_firmware_version": "1.1.24",
+      "version": "1.1.3",
+      "display_name": "Wi-Fi Networks",
+      "file_name": "wifi_settings.elf",
+      "icon": "solid:f1eb",
+      "category": [
+        "Connectivity",
+        "Settings"
+      ]
+    },
+    "Apps/springboard.json": {
+      "min_firmware_version": "1.3.39",
+      "version": "1.4.9",
+      "display_name": "Apps",
+      "file_name": "springboard.elf",
+      "icon": "solid:f00a",
+      "category": [
+        "System",
+        "Launcher"
+      ]
+    },
+    "Apps/native/ota_update.json": {
+      "type": "application",
+      "id": "ota_update",
+      "version": "1.1.2",
+      "architecture": "xtensa-esp32s3",
+      "file_name": "ota_update.elf",
+      "entry": "app_main",
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "rtc.clock",
+          "api": 2
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1
+        },
+        {
+          "capability": "net.wifi",
+          "api": 1
+        },
+        {
+          "capability": "software.update.firmware",
+          "api": 1
+        }
+      ]
+    },
+    "Apps/native/app_store.json": {
+      "type": "application",
+      "id": "app_store",
+      "version": "1.1.2",
+      "architecture": "xtensa-esp32s3",
+      "file_name": "app_store.elf",
+      "entry": "app_main",
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "rtc.clock",
+          "api": 2
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1
+        },
+        {
+          "capability": "net.wifi",
+          "api": 1
+        },
+        {
+          "capability": "software.update.apps",
+          "api": 1
+        }
+      ]
+    },
+    "Apps/native/file_browser.json": {
+      "type": "application",
+      "id": "file_browser",
+      "version": "1.4.0",
+      "architecture": "xtensa-esp32s3",
+      "file_name": "file_browser.elf",
+      "entry": "app_main",
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "storage.installed-files",
+          "api": 1
+        }
+      ]
+    },
+    "Services/update/firmware/manifest.json": {
+      "type": "driver",
+      "id": "software-update-firmware",
+      "version": "0.1.3",
+      "driver_abi": 2,
+      "architecture": "xtensa-esp32s3",
+      "file_name": "driver.elf",
+      "requires": [
+        {
+          "capability": "platform.http-client",
+          "api": 1
+        },
+        {
+          "capability": "platform.bank-store",
+          "api": 1
+        },
+        {
+          "capability": "platform.clock",
+          "api": 1
+        }
+      ],
+      "provides": [
+        {
+          "capability": "software.update.firmware",
+          "api": 1
+        }
+      ],
+      "status": "development-only; no deployment or release publication"
+    },
+    "Services/update/apps/manifest.json": {
+      "type": "driver",
+      "id": "software-update-apps",
+      "version": "0.1.3",
+      "driver_abi": 2,
+      "architecture": "xtensa-esp32s3",
+      "file_name": "driver.elf",
+      "requires": [
+        {
+          "capability": "platform.http-client",
+          "api": 1
+        },
+        {
+          "capability": "platform.bank-store",
+          "api": 1
+        },
+        {
+          "capability": "platform.clock",
+          "api": 1
+        }
+      ],
+      "provides": [
+        {
+          "capability": "software.update.apps",
+          "api": 1
+        }
+      ],
+      "status": "development-only; no deployment or release publication"
+    }
+  }
+}

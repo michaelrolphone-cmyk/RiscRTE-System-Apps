@@ -19,6 +19,16 @@ static uint16_t np_rgb(uint32_t rgb) {
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
+    native_point(&x,&y);
+    uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x/8;
+    uint8_t bit=(uint8_t)(0x80u>>(x&7));
+    unsigned old=(*p&bit)?0:255;
+    unsigned luminance=(((rgb>>16)&255)*299+((rgb>>8)&255)*587+(rgb&255)*114)/1000;
+    if(a>255)a=255;
+    if((old*(255-a)+luminance*a)/255<128)*p|=bit;else *p&=(uint8_t)~bit;
+    return;
+  }
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
   if(a>=255){uint16_t color=np_rgb(rgb);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);return;}
   uint16_t old=(uint16_t)(p[0]|p[1]<<8),color;
@@ -145,7 +155,7 @@ static void np_close(void) {
 static void np_poll(t5_app_input_t *out);
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
-  if(width()>=400 && height()>=400)return NULL;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #ifdef PORTABLE_RTC_UTC8_DENVER
@@ -166,6 +176,6 @@ const springboard_presentation *springboard_presentation_get(void) {
 static void np_poll(t5_app_input_t *out) {
   portable_touch_sample s;input_take(&s);
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
-  if(s.x>=info.width || s.y>=info.height){nova_contact.valid=false;nova_contact.cancelled=true;}
+  if(s.x>=width() || s.y>=height()){nova_contact.valid=false;nova_contact.cancelled=true;}
   if(s.released && s.tap_eligible && !s.moved && s.x<44 && s.y<40){out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;}
 }

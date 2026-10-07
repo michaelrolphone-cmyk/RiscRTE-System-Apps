@@ -17,6 +17,8 @@ SPEC.loader.exec_module(p)
 CONFIG = json.loads((ROOT / 'release/watch-1.0.2-components.json').read_text())
 REPO = CONFIG['repository']
 SOURCE = CONFIG['source_sha']
+FROZEN = json.loads((ROOT / 'tests/fixtures/watch-102-source-manifests.json').read_text())
+assert FROZEN['source_sha'] == SOURCE
 OTHER = 'b' * 40
 TAGS = [
     'app-settings-v1.2.5', 'app-wifi_settings-v1.1.3',
@@ -61,7 +63,8 @@ def git(*args):
         source, path = args[1].split(':', 1)
         if source != SOURCE:
             raise AssertionError(source)
-        return (ROOT / path).read_text()
+        # Emulate the requested historical Git object, never today's working file.
+        return json.dumps(FROZEN['manifests'][path])
     return SOURCE
 
 

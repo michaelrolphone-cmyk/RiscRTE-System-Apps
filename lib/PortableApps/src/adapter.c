@@ -41,6 +41,14 @@ static const risc_battery_gauge_api_v1 *gauge;
 static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
+static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
+#ifndef PORTABLE_DISPLAY_ROTATION
+#define PORTABLE_DISPLAY_ROTATION 0
+#endif
+#if PORTABLE_DISPLAY_ROTATION != 0 && PORTABLE_DISPLAY_ROTATION != 90
+#error "Portable display supports explicit native or 90-degree portrait mapping"
+#endif
+static bool paper_rotated;
 static bool failed, list_mode;
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "PortableQuickSession.h"
@@ -203,6 +211,8 @@ static void input_navigation_take(t5_app_input_t*out) {
  navigation_pending=0;
 }
 static uint16_t *previous_pixels;
+static uint8_t *paper_previous;
+static bool paper_previous_valid;
 static bool previous_valid;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
 #include "PortableTransition.h"
@@ -218,8 +228,11 @@ static void handoff_finish(void) {
  free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
 }
 #endif
-static int32_t width(void) { return info.width; }
-static int32_t height(void) { return info.height; }
+static int32_t width(void) { return paper_rotated?info.height:info.width; }
+static int32_t height(void) { return paper_rotated?info.width:info.height; }
+static void native_point(int *x,int *y) {
+  if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
+}
 static void fill(int x, int y, int w, int h, uint16_t color) {
   if (!surface.frame || w <= 0 || h <= 0)
     return;
@@ -230,10 +243,13 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     y1 = height();
   for (int j = y0; j < y1; ++j)
     for (int i = x0; i < x1; ++i) {
-      uint8_t *p =
-          (uint8_t *)surface.pixels + (size_t)j * surface.stride_bytes + i * 2;
-      p[0] = color;
-      p[1] = color >> 8;
+      int px=i,py=j;native_point(&px,&py);
+      uint8_t *p=(uint8_t *)surface.pixels+(size_t)py*surface.stride_bytes;
+      if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
+        unsigned luminance=((color>>11)&31)*299/31+((color>>5)&63)*587/63+(color&31)*114/31;
+        uint8_t bit=(uint8_t)(0x80u>>(px&7));
+        if(luminance<500)p[px/8]|=bit;else p[px/8]&=(uint8_t)~bit;
+      } else {p[i*2]=(uint8_t)color;p[i*2+1]=(uint8_t)(color>>8);}
     }
 }
 static void clear_color(uint16_t color) {
@@ -243,15 +259,15 @@ static void clear_color(uint16_t color) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
   }
-  if (!display->acquire(display->context, RISC_DISPLAY_FORMAT_RGB565,
+  if (!display->acquire(display->context, surface_format,
                         &surface)) {
     failed = true;
     return;
   }
   if (!surface.frame || !surface.pixels || surface.width != info.width ||
       surface.height != info.height ||
-      surface.pixel_format != RISC_DISPLAY_FORMAT_RGB565 ||
-      surface.stride_bytes < (uint32_t)info.width * 2 ||
+      surface.pixel_format != surface_format ||
+      surface.stride_bytes < (surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2) ||
       surface.stride_bytes > UINT32_MAX / info.height ||
       surface.size_bytes < surface.stride_bytes * info.height) {
     failed = true;
@@ -260,7 +276,7 @@ static void clear_color(uint16_t color) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_pending) {
     handoff_pending=false;
-    if(info.width<=PORTABLE_TRANSITION_MAX_SIDE &&
+    if(surface_format==RISC_DISPLAY_FORMAT_RGB565 && info.width<=PORTABLE_TRANSITION_MAX_SIDE &&
        info.height<=PORTABLE_TRANSITION_MAX_SIDE &&
        info.nominal_refresh_millihz>=20000 &&
        !(info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
@@ -387,8 +403,8 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
   }
   return np_icon(x+size/2,y+size/2,size,name,255);
 }
+#include "paper.inc"
 static void present(bool full) {
-  (void)full;
   if (failed || !surface.frame)
     return;
   risc_display_present_token_v1 token = 0;
@@ -414,6 +430,27 @@ static void present(bool full) {
         info.width,info.height,alpha))handoff_finish();
   }
 #endif
+  if(paper_previous) {
+    unsigned row_bytes=(info.width+7)/8,left=row_bytes,right=0,top=info.height,bottom=0;
+    if(paper_previous_valid && !full)for(unsigned y=0;y<info.height;y++)for(unsigned x=0;x<row_bytes;x++) {
+      uint8_t value=((uint8_t*)surface.pixels)[(size_t)y*surface.stride_bytes+x];
+      if(value!=paper_previous[(size_t)y*row_bytes+x]) {
+        if(x<left)left=x;
+        if(x+1>right)right=x+1;
+        if(y<top)top=y;
+        if(y+1>bottom)bottom=y+1;
+      }
+    }
+    if(paper_previous_valid && !full && top==info.height){display->release(display->context,surface.frame);surface.frame=0;return;}
+    if(paper_previous_valid && !full) {
+      unsigned xa=info.damage_x_alignment?info.damage_x_alignment:1,ya=info.damage_y_alignment?info.damage_y_alignment:1;
+      unsigned wa=info.damage_width_alignment?info.damage_width_alignment:1,ha=info.damage_height_alignment?info.damage_height_alignment:1;
+      unsigned x=left*8/xa*xa,y=top/ya*ya,w=((right*8-x+wa-1)/wa)*wa,h=((bottom-y+ha-1)/ha)*ha;
+      if(x+w<=info.width && y+h<=info.height){damage=(risc_display_rect_v1){(int32_t)x,(int32_t)y,w,h};damage_count=1;}
+    }
+    for(unsigned y=0;y<info.height;y++)memcpy(paper_previous+(size_t)y*row_bytes,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,row_bytes);
+    paper_previous_valid=false;
+  }
   if(previous_pixels
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
      && !handoff_active
@@ -431,14 +468,17 @@ static void present(bool full) {
     for(unsigned y=0;y<info.height;y++)memcpy(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
     previous_valid=false;
   }
-  const risc_display_present_options_v1 options = {RISC_DISPLAY_PRESENT_DEFAULT,
-                                                   RISC_DISPLAY_QUEUE_FIFO, 0};
+  const risc_display_present_options_v1 options = {
+    full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
+      surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_DEFAULT,
+    RISC_DISPLAY_QUEUE_FIFO, 0};
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
   if(!alarm_modal) {
     alarm_pixels_valid=false;
-    for(unsigned y=0;y<info.height;y++)memcpy(alarm_pixels+(size_t)y*info.width,
-      (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
+    unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
+    for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)alarm_pixels+(size_t)y*bytes,
+      (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
   }
 #endif
   if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
@@ -460,7 +500,7 @@ static void present(bool full) {
 #ifdef PORTABLE_ALARM_CLIENT
       display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
 #endif
-      previous_valid=previous_pixels!=NULL;
+      previous_valid=previous_pixels!=NULL;paper_previous_valid=paper_previous!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       if(handoff_active)previous_valid=false;
 #endif
@@ -584,7 +624,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   portable_touch_sample sample;input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
-  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<info.width && y<info.height)
+  if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<width() && y<height())
     app_contact=(t5_app_contact_t){true,(int16_t)x,(int16_t)y};
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -609,7 +649,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   }
 #endif
   if (sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled) {
-    if (x >= info.width || y >= info.height)
+    if (x >= width() || y >= height())
       return !failed;
     if (
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
@@ -635,15 +675,15 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     }
 #endif
 #ifndef PORTABLE_NOVA_UI
-    else if (list_mode && y >= info.height - 32)
+    else if (list_mode && y >= height() - 32)
 #ifdef PORTABLE_SETTINGS_APP
       out->buttons = settings_editing
-                         ? (x < info.width / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
-                         : (x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN);
+                         ? (x < width() / 2 ? T5_APP_BUTTON_LEFT : T5_APP_BUTTON_RIGHT)
+                         : (x < width() / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN);
 #else
-      out->buttons = x < info.width / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN;
+      out->buttons = x < width() / 2 ? T5_APP_BUTTON_UP : T5_APP_BUTTON_DOWN;
 #endif
-    else if (list_mode && y < 40 && x >= info.width - 56)
+    else if (list_mode && y < 40 && x >= width() - 56)
       out->buttons = T5_APP_BUTTON_CONFIRM;
 #endif
     else {
@@ -874,7 +914,7 @@ static int initialize(void) {
   nu_gesture=false;
 #endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
-  input_sampled_at=last_poll_at=0;previous_pixels=NULL;
+  input_sampled_at=last_poll_at=0;previous_pixels=NULL;paper_previous=NULL;paper_previous_valid=false;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
 #endif
@@ -888,19 +928,26 @@ static int initialize(void) {
     return -1;
   if (!display->get_info(display->context, &info) || info.width < 160 ||
       info.height < 160 || info.width > 1024 || info.height > 1024 ||
-      !(info.supported_formats &
-        RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
+      !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
+                                 RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
+  surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
+    RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
+  paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+    (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
 #ifdef PORTABLE_NOVA_UI
-  if(info.width!=240 || info.height!=240)return -1;
+  if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-  alarm_pixels=malloc((size_t)info.width*info.height*2);
+  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
   if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
 #endif
   if (!portable_touch_open(&touch, rt))return -1;
 #ifndef PORTABLE_FORCE_FULL_FRAMES
-  if((info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE))
+    paper_previous=malloc((size_t)((info.width+7)/8)*info.height); /* optional, 48 KB at 800x480 */
+  if(surface_format==RISC_DISPLAY_FORMAT_RGB565 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
     previous_pixels=malloc((size_t)info.width*info.height*2); /* optional; full-frame fallback */
 #endif
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
@@ -977,6 +1024,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   handoff_finish();
 #endif
   np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
+  free(paper_previous);paper_previous=NULL;paper_previous_valid=false;
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
   input_navigation_close();
 #endif

@@ -14,10 +14,14 @@ static unsigned sv_axis; /* 1 vertical, 2 horizontal, 3 numeric slider */
 static int sv_start_x, sv_start_y, sv_last_x, sv_last_y, sv_start_scroll;
 static bool sv_dragged;
 static void settings_view_redraw(void);
+static bool sp_clean;
+static void sp_redraw(void);
+static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
   if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
   uint8_t *p = (uint8_t *)surface.pixels + (size_t)y * surface.stride_bytes + (size_t)x * 2;
   uint16_t before = (uint16_t)(p[0] | p[1] << 8);
   if (alpha > 255) alpha = 255;
@@ -247,6 +251,7 @@ static void sv_alert(void) {
 #endif
 static void settings_view_redraw(void) {
   if(failed || !sv_active)return;
+  if(pp_enabled()){sp_redraw();return;}
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
   else if(sv_page==SV_TIME_FORMAT)sv_time_format();
@@ -261,6 +266,7 @@ static void settings_view_redraw(void) {
 }
 static void sv_switch(unsigned page) {
   if(failed)return; /* Retained sleep must unwind without provider I/O. */
+  if(pp_enabled())sp_clean=true;
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
   input_pending=false;touch.neutral=touch.down=false;
 #ifdef PORTABLE_INPUT_NAVIGATION
@@ -293,8 +299,10 @@ static void sv_slider(int x) {
   editor_set_value(lo+(unsigned)(x-64)*(hi-lo)/112);
   settings_view_redraw();
 }
+#include "settings_paper.inc"
 static bool settings_view_poll(t5_app_input_t *out) {
   if(!sv_active)return false;
+  if(pp_enabled())return sp_poll(out);
   settings_navigation_poll(out);
   if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
   portable_touch_sample sample;
