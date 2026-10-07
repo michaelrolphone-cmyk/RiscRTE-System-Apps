@@ -34,6 +34,14 @@
 #endif
 #include <limits.h>
 #include <stdlib.h>
+#ifdef PORTABLE_APP_LAUNCH_GUARD
+/* The application may consume one navigation attempt to resolve an edit.
+ * This is client policy, not native authority or an uncertain cleanup state. */
+#include "PortableAppLaunchGuard.h"
+#define app_allows_launch(destination) portable_app_before_launch(destination)
+#else
+#define app_allows_launch(destination) (true)
+#endif
 static const risc_runtime_api_v1 *rt;
 static risc_runtime_capability_v1 dg, bg;
 static const risc_display_output_api_v1 *display;
@@ -605,8 +613,15 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "quick_adapter.inc"
 #endif
+static void clear_contact_snapshots(void) {
+  nova_contact=(springboard_contact){0};
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
+}
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+  clear_contact_snapshots();
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   app_contact=(t5_app_contact_t){0};
 #endif
@@ -646,7 +661,13 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
-  if(quick_consumed){crown_pending=false;out->exit_requested=quick_launch_pending;return true;}
+  if(quick_consumed){
+    crown_pending=false;out->exit_requested=quick_launch_pending;
+    /* A reserved gesture is not app contact. Keep the presentation neutral
+     * without an invented release, so deliberate replay can begin normally. */
+    if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui))nova_contact.valid=true;
+    return true;
+  }
 replay_input:
 #endif
 #ifdef PORTABLE_HOME_APP
@@ -736,7 +757,7 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
-  if(handoff_requested){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
+  if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
@@ -768,6 +789,10 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
      && !quick_launch_pending
 #endif
   ) {
+    if(!app_allows_launch(destination)) {
+      home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
+    }
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_close())return false;
 #endif
@@ -778,7 +803,15 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     if(!portable_audio_suspend())return alarm_failure();
 #endif
     if(!rt->request_launch(destination)) {
-      rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
+      rt->diagnostic("PORTABLE_APP error=return-request");
+#ifdef PORTABLE_APP_LAUNCH_GUARD
+      /* Admission refusal is not a cleanup failure. The guarded app remains
+       * paused and can offer a fresh explicit attempt without losing edits. */
+      home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
+#else
+      failed=true;return false;
+#endif
     }
     handoff_requested=true;out->exit_requested=true;
   }
@@ -817,7 +850,7 @@ static bool launch(uint32_t i) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       !handoff_active &&
 #endif
-      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
+      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && app_allows_launch(portable_catalog[i].file_name) && rt->request_launch(portable_catalog[i].file_name);
 }
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
