@@ -26,6 +26,8 @@ jobs:
           python scripts/test_portable_apps.py
           python scripts/test_portable_wifi.py
           python scripts/test_portable_file_browser.py
+          python scripts/test_file_browser_paper.py
+          python scripts/test_file_browser_operations.py
           python scripts/test_portable_update.py
           python scripts/test_portable_alarm.py
           python scripts/test_nova_ui.py
@@ -54,6 +56,8 @@ jobs:
           python scripts/build_portable_settings.py --nova-ui --alarm-client --alarm-settings --sleep-settings --denver --navigation --full-frames --output-dir dist/portable/settings-nova
           python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800
           python scripts/build_portable_file_browser.py --alarm-client --navigation
+          python scripts/build_portable_file_browser.py --display-rotation 90 --storage-capability storage.volume --return-app springboard.elf --output-dir dist/portable/file-browser-paper
+          python scripts/build_portable_file_browser.py --display-rotation 90 --storage-capability storage.volume --storage-instance 11 --secondary-storage-instance 22 --file-handlers --return-app springboard.elf --output-dir dist/portable/file-browser-contract-test
           python scripts/build_portable_file_browser.py --alarm-client --navigation --quick-controls --output-dir dist/portable/file-browser-quick
           python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15
           python scripts/build_portable_wifi.py --nova-ui --alarm-client --navigation --full-frames --wifi-instance 15 --output-dir dist/portable/wifi-nova

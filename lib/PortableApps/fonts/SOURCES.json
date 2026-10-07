@@ -34,6 +34,8 @@
     "solid:f11c",
     "solid:f120",
     "solid:f130",
+    "solid:f141",
+    "solid:f15b",
     "solid:f187",
     "solid:f1ab",
     "solid:f1eb",
@@ -76,8 +78,10 @@
     "solid:f068": "minus",
     "solid:f7a5": "grip-lines-vertical",
     "solid:f054": "chevron-right",
-    "solid:f053": "chevron-left"
+    "solid:f053": "chevron-left",
+    "solid:f15b": "file",
+    "solid:f141": "ellipsis"
   },
-  "icons.inc_sha256": "8e6a9a5beb748d37b6e0f3dad8e14e9c19efea93c86d9eea1881f4c06bdf6054",
+  "icons.inc_sha256": "8f963dde17fc42e1e0889c18df9691cbe8471959a88a7cdd739308b933e5a4c3",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }
