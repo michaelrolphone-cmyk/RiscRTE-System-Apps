@@ -17,6 +17,8 @@ jobs:
           python-version: '3.11'
       - name: Native mono clock, gestures, wall time and retained alarm
         run: python scripts/test_paper_clock.py
+      - name: Paper QuickActions and independent Home/crown routing
+        run: python scripts/test_paper_quick_actions.py
       - name: Install pinned target compiler
         run: |
           python -m pip install platformio==6.1.19
@@ -25,6 +27,12 @@ jobs:
         run: |
           python scripts/build_paper_clock.py --navigation --alarm-client
           python scripts/build_portable_springboard.py --display-rotation 90 --navigation --alarm-client --wall-time --return-app default.elf --output-dir dist/clock-springboard
+      - name: Build controls-first paper clients with explicit Home target
+        run: |
+          python scripts/build_paper_clock.py --navigation --alarm-client --quick-actions --output-dir dist/paper-controls/default
+          python scripts/build_portable_springboard.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --return-app default.elf --home-app default.elf --catalog examples/x4-default-catalog.json --output-dir dist/paper-controls/springboard
+          python scripts/build_portable_settings.py --display-rotation 90 --navigation --alarm-client --alarm-settings --quick-actions --wall-time --return-app springboard.elf --home-app default.elf --output-dir dist/paper-controls/settings
+          python scripts/build_portable_file_browser.py --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --home-app default.elf --storage-capability storage.volume --file-handlers --output-dir dist/paper-controls/file-browser
       - uses: actions/upload-artifact@v4
         with:
           name: paper-clock-${{ github.sha }}
@@ -32,5 +40,7 @@ jobs:
             dist/paper-clock/
             dist/clock-springboard/
             build/paper-clock/
+            dist/paper-controls/
+            build/paper-quick/
           retention-days: 14
           if-no-files-found: error
