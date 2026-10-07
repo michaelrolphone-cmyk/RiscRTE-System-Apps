@@ -32,7 +32,11 @@ const t5_app_manifest_t portable_catalog[]={{.compatible=false}};const unsigned 
 static bool test_health(risc_runtime_health_v1*h){h->uptime_ms=test_ticks;return !test_script || test_polls<50;}
 static void test_yield(uint32_t n){test_ticks+=n;}
 static bool test_diag(const char*s){(void)s;return true;}
-static bool test_launch(const char*s){assert(!strcmp(s,FILE_BROWSER_RETURN_APP) || !strcmp(s,"wifi_settings.elf"));if(!strcmp(s,"wifi_settings.elf"))test_wifi_launches++;else assert(!fb_grant.api);test_launches++;return true;}
+static bool test_launch(const char*s){
+#ifdef PORTABLE_HOME_APP
+ if(!strcmp(s,PORTABLE_HOME_APP)){assert(!fb_grant.api&&!fb_retained_file&&fb_mode==FB_PREVIEW);test_launches++;return true;}
+#endif
+assert(!strcmp(s,FILE_BROWSER_RETURN_APP) || !strcmp(s,"wifi_settings.elf"));if(!strcmp(s,"wifi_settings.elf"))test_wifi_launches++;else assert(!fb_grant.api);test_launches++;return true;}
 static bool test_info(void*c,risc_display_info_v1*s){(void)c;
 #ifdef FILE_BROWSER_PAPER_PROFILE
 *s=(risc_display_info_v1){.width=800,.height=480,.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
@@ -64,6 +68,7 @@ static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
  (void)c;int x=-1,y=-1;
 #ifdef FILE_BROWSER_PAPER_PROFILE
  *s=(risc_touch_snapshot_v1){.width=480,.height=800};
+ if(test_script==7){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;}
  if(test_script==4){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17||test_polls==23||test_polls==29){x=75;y=730;}}
  if(test_script==5){if(test_polls==5){x=100;y=600;}if(test_polls==6){x=100;y=160;}if(test_polls==13){x=75;y=730;}}
  if(test_script==6){if(test_polls==5){x=420;y=50;}if(test_polls==11){x=100;y=150;}if(test_polls==17){x=100;y=624;}if(test_polls==23){x=321;y=424;}if(test_polls==29){x=100;y=730;}if(test_polls==35){x=75;y=730;}}

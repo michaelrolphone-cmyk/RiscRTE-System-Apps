@@ -76,3 +76,11 @@ A never-completed provider remains responsible for refusing unsafe quiescence.
 All applications linking `lib/PortableApps/src/adapter.c` must be rebuilt to
 receive this correction. Source updates alone cannot fix an installed ELF.
 This is software regression evidence; physical panel verification is separate.
+
+## Controls-first 0.2.0
+
+The clock now includes a battery status icon and charging readout. Optional
+`--quick-actions` selects the static Nova7 pull-down sheet while preserving
+body/rejected-top-edge swipes to Apps. Physical center Home is independent from
+the product's crown-style navigation key. See [PAPER_CONTROLS.md](PAPER_CONTROLS.md)
+for the explicit root target, build flags, and current X4 sleep capability gap.

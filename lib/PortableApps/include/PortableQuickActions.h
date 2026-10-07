@@ -35,6 +35,8 @@ typedef struct {
      * user choices have a 10% floor. Unknown values never become fake states. */
     uint8_t brightness, volume, last_nonzero_volume;
     bool brightness_valid, volume_valid, torch;
+    /* Retaining paper selects a discrete 480x800 sheet and large 2-column controls. */
+    bool paper, torch_valid;
     bool dnd_valid, dnd_enabled;
     bool radio_controls,radios_valid,wifi_enabled,bluetooth_enabled,airplane;
     uint8_t error_flags;

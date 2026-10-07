@@ -2,8 +2,10 @@
 """Build the capability-only NOVA-7 File Browser. No firmware filesystem/UI ABI."""
 import argparse,hashlib,json,os,re,shutil,subprocess
 from pathlib import Path
+import portable_quick_build
 ROOT=Path(__file__).resolve().parents[1]
-def build(args):
+def build(args,parser=None):
+    parser=parser or argparse.ArgumentParser(description=__doc__)
     if not re.fullmatch(r'[a-z][a-z0-9.-]*',args.storage_capability):raise ValueError('Invalid storage capability')
     if not re.fullmatch(r'[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.elf',args.return_app) or any(part in ('.','..') for part in args.return_app.split('/')):raise ValueError('Return app must be a normalized installed relative ELF path')
     if not 0<=args.storage_instance<=0x7fffffff:raise ValueError('Storage instance is out of range')
@@ -20,13 +22,16 @@ def build(args):
     if args.alarm_client:flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.navigation:flags.append('-DPORTABLE_INPUT_NAVIGATION')
     if args.quick_controls:
-        if not args.alarm_client:raise ValueError('Quick controls require the retained alarm-client surface')
-        flags+=['-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS','-DPORTABLE_RTC_UTC8_DENVER']
+        if args.wall_time:parser.error('Legacy Watch --quick-controls uses its explicit Denver policy')
+        args.quick_actions=args.quick_radios=True
+        flags+=['-DPORTABLE_RTC_UTC8_DENVER']
+    if args.wall_time:flags+=['-DPORTABLE_RTC_WALL_TIME']
+    quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports={'app_main','app_module_init','app_module_fini'}
     mapping=out/'file_browser.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
     catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     sources=[ROOT/'Apps/file_browser.c',ROOT/'lib/PortableApps/src/adapter.c',catalog]
-    if args.quick_controls:sources += [ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
+    sources+=quick_sources
     elf=out/'file_browser.elf'
     subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)],check=True)
     symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
@@ -46,7 +51,7 @@ def build(args):
     if args.file_handlers:manifest['requires'].append({'capability':'file.open','api':1})
     if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
-    if args.quick_controls:manifest['requires'] += [{'capability':c,'api':v} for c,v in [('storage.key-value',1),('rtc.clock',2),('net.wifi',1),('bluetooth.hci',1)]]
+    portable_quick_build.requirements(args,manifest['requires'])
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
@@ -61,4 +66,4 @@ def build(args):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=0);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true');build(p.parse_args())
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=0);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);build(p.parse_args(),p)

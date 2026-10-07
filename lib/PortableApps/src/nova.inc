@@ -178,6 +178,13 @@ const springboard_presentation *springboard_presentation_get(void) {
 }
 static void np_poll(t5_app_input_t *out) {
   portable_touch_sample s;input_take(&s);
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick.ui.paper && quick_replay_pending && s.valid && s.down) {
+    input_sample=s;input_pending=true;quick_replay_delivery=true;
+    s.x=(uint16_t)(quick.ui.start_x*width()/480);s.y=(uint16_t)(quick.ui.start_y*height()/800);s.began=true;
+  }
+  quick_replay_pending=false;
+#endif
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
   if(s.x>=width() || s.y>=height()){nova_contact.valid=false;nova_contact.cancelled=true;}
   if(s.released && s.tap_eligible && !s.moved && s.x<44 && s.y<40){out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;}

@@ -10,6 +10,7 @@ import json
 import os
 import re
 from pathlib import Path
+import portable_quick_build
 import shutil
 import subprocess
 
@@ -52,6 +53,7 @@ def build():
     parser.add_argument("--full-frames",action="store_true",help="Disable optional partial-damage and previous-frame cache")
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
+    portable_quick_build.options(parser)
     args=parser.parse_args()
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
@@ -76,6 +78,7 @@ def build():
     paper_notices=notices/"paper";paper_notices.mkdir(exist_ok=True)
     for name in ["LICENSE-Orbitron.txt","LICENSE-Rajdhani.txt","SOURCES.json"]:
         shutil.copyfile(ROOT/"lib/PortableApps/paper_fonts"/name,paper_notices/name)
+    quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -83,7 +86,7 @@ def build():
     catalog_text,catalog_record=catalog_source(args.catalog)
     catalog.write_text(catalog_text)
     elf = out/'springboard.elf'
-    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]
+    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror', *flags,
@@ -108,13 +111,14 @@ def build():
     version=json.loads((ROOT/'Apps/springboard.json').read_text())['version']
     manifest={'type':'application','id':'springboard','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'springboard.elf','entry':'app_main','requires':[
-            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
+            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'board.battery','api':1},
 ]}
     if args.navigation: manifest["requires"].append({"capability":"input.navigation","api":1})
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
     if args.denver or args.wall_time: manifest['requires'].append({'capability':'rtc.clock','api':2})
+    portable_quick_build.requirements(args,manifest['requires'])
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    inputs=['Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
+    inputs=['Apps/PaperBattery.h','scripts/portable_quick_build.py','Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
             'lib/PortableApps/RTC_PROVENANCE.json','lib/PortableApps/SOURCES.json']
     inputs += ['lib/PortableApps/include/'+name for name in json.loads((ROOT/'lib/PortableApps/SOURCES.json').read_text())]
@@ -127,7 +131,7 @@ def build():
     record={'catalog':catalog_record,'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'rtc-wall-time' if args.wall_time else 'unavailable',
-        'display_rotation':args.display_rotation,'navigation':args.navigation,'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
+        'display_rotation':args.display_rotation,'navigation':args.navigation,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'home_app':args.home_app,'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),

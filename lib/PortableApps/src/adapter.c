@@ -59,7 +59,7 @@ static pqa_session quick;
 static pqa_radios quick_radios;
 #endif
 static uint16_t *quick_background;
-static bool quick_modal,quick_launch_pending,quick_replay_pending;
+static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
 static bool quick_foreground(bool *consumed);
 static bool quick_interrupt(void);
 unsigned portable_quick_brightness(void) {return quick.brightness;}
@@ -105,6 +105,7 @@ static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
+static bool home_pending,crown_pending,handoff_requested;
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
 static bool nu_gesture;
 static int nu_start_x,nu_start_y;
@@ -156,13 +157,22 @@ static void input_navigation_close(void) {
 static void input_service(void) {
  portable_touch_sample next;portable_touch_read(&touch,&next);
  input_sampled_at=millis_now();
+ if(next.home_pressed) {
+  home_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;
+  next=(portable_touch_sample){.valid=true,.cancelled=true};touch.neutral=touch.down=false;
+ }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
   bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
-      next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible&&info.width==240&&info.height==240);
+      next.down?1u:0u,touch.contact_id,
+      quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):next.x,
+      quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):next.y,
+      next.tap_eligible&&(quick.ui.paper || (info.width==240&&info.height==240)));
+  if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
+     !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
   if(reserved) {
    input_pending=false;input_sample=(portable_touch_sample){0};
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -195,7 +205,9 @@ static void input_service(void) {
   risc_input_navigation_frame_v1 frame={0};
   if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
-  else navigation_pending|=frame.pressed;
+  else {navigation_pending|=frame.pressed;
+    if(frame.pressed&RISC_NAV_HOME){crown_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;}
+  }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   if(frame.buttons || frame.pressed || frame.released)last_activity=input_sampled_at;
 #endif
@@ -603,7 +615,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed))return false;
-  if(consumed)return true;
+  if(consumed){crown_pending=false;return true;}
+#endif
+  /* A rejected paper top-edge gesture replays its original down followed
+   * by the saved current sample before sampling another contact. */
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick_replay_delivery){quick_replay_delivery=false;goto replay_input;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
   rt->yield_ms(spent<wait?wait-spent:1);
@@ -611,7 +628,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   input_service();
 #ifdef PORTABLE_ALARM_CLIENT
   if(!alarm_foreground(&consumed))return false;
-  if(consumed)return true;
+  if(consumed){crown_pending=false;return true;}
 #endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
@@ -629,7 +646,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
   if(!quick_foreground(&quick_consumed))return false;
-  if(quick_consumed){out->exit_requested=quick_launch_pending;return true;}
+  if(quick_consumed){crown_pending=false;out->exit_requested=quick_launch_pending;return true;}
+replay_input:
+#endif
+#ifdef PORTABLE_HOME_APP
+  /* Physical root navigation must not first trigger a nested app Back/redraw. */
+  if(home_pending||crown_pending){navigation_pending=0;input_pending=false;return !failed;}
 #endif
   if (nova_mode) { np_poll(out); input_navigation_take(out); return !failed; }
 #ifdef PORTABLE_SETTINGS_APP
@@ -714,9 +736,15 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+  if(handoff_requested){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
+#endif
+#if defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP)
+  const char *destination=NULL;
+#ifdef PORTABLE_HOME_APP
+  if(home_pending||crown_pending)destination=PORTABLE_HOME_APP;
 #endif
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
@@ -725,23 +753,33 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #elif !defined(PORTABLE_SETTINGS_APP)
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
-  if(ok && returning
+  if(returning && !destination)destination=PORTABLE_RETURN_APP;
+#endif
+  home_pending=false;
+  if(ok && destination
 #ifdef PORTABLE_QUICK_ACTIONS
      && !quick_launch_pending
 #endif
   ) {
+#ifdef PORTABLE_FILE_BROWSER_APP
+    if(!portable_file_browser_close())return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return alarm_failure();
 #endif
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
-    if(!rt->request_launch(PORTABLE_RETURN_APP)) {
+    if(!rt->request_launch(destination)) {
       rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
     }
-    out->exit_requested=true;
+    handoff_requested=true;out->exit_requested=true;
   }
 #endif
+#ifdef PORTABLE_CROWN_SLEEP_UNAVAILABLE
+  if(ok && crown_pending){out->buttons|=PAPER_BUTTON_SLEEP_UNAVAILABLE;rt->diagnostic("PAPER_CLOCK sleep=unavailable");}
+#endif
+  home_pending=crown_pending=false;
   return ok;
 }
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -761,6 +799,9 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
+  /* A terminal Home/return is already accepted. Do not replace its target or
+   * report a false launch failure to an unwinding nested app. */
+  if(handoff_requested)return true;
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed) || consumed)return false;
@@ -917,7 +958,7 @@ static int initialize(void) {
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
-  pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
+  pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
 #endif
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
@@ -929,7 +970,7 @@ static int initialize(void) {
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
 #endif
-  list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
+  list_mode = false;input_pending=home_pending=crown_pending=handoff_requested=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;paper_previous=NULL;paper_previous_valid=false;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
@@ -982,7 +1023,9 @@ static int initialize(void) {
   last_activity=millis_now();
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
+  quick.ui.paper=pp_enabled();
   if(!pqa_session_load(&quick,rt))return -1;
+  quick_paper_capabilities();
 #ifdef PORTABLE_QUICK_RADIOS
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
 #endif
