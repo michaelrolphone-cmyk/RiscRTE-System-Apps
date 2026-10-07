@@ -1,3 +1,4 @@
+#include <stdio.h>
 /* Capability-selected paper presentation. Shared PaperPresentation typography,
  * MONO1 drawing and licensed FontAwesome masks; no radio or storage policy. */
 #define WPV_TOP 156
