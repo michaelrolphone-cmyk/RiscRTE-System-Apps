@@ -1,4 +1,4 @@
-name: Isolated portable timezone core
+name: Opt-in timezone Settings
 on:
   pull_request:
   push:
@@ -7,13 +7,14 @@ on:
 permissions:
   contents: read
 jobs:
-  timezone:
+  timezone-settings:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -21,16 +22,16 @@ jobs:
         run: |
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
-      - name: Pure policy, preference faults, sanitizers, independent oracle and real ELF validator
+      - name: Actual Settings controller, all catalog choices and feature-off ELF bytes
         run: >-
-          python scripts/test_portable_timezone.py
+          python scripts/test_timezone_settings.py
           --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
-          --evidence build/timezone/evidence.json
+          --evidence build/timezone-settings/evidence.json
       - uses: actions/upload-artifact@v4
         with:
-          name: portable-timezone-proof-${{ github.sha }}
-          path: build/timezone/evidence.json
+          name: timezone-settings-proof-${{ github.sha }}
+          path: |
+            build/timezone-settings/evidence.json
+            build/timezone-settings/*.log
           if-no-files-found: error
           retention-days: 14
-      - name: Explicit RTC interpretation records
-        run: python scripts/test_rtc_basis.py
