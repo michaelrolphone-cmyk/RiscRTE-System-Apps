@@ -11,6 +11,7 @@
   },
   "icons": [
     "regular:f03e",
+    "regular:f111",
     "solid:f00a",
     "solid:f013",
     "solid:f017",
@@ -18,11 +19,18 @@
     "solid:f021",
     "solid:f028",
     "solid:f031",
+    "solid:f053",
+    "solid:f054",
+    "solid:f067",
+    "solid:f068",
     "solid:f07c",
     "solid:f085",
     "solid:f0ac",
+    "solid:f0c8",
+    "solid:f0d8",
     "solid:f0ec",
     "solid:f0f3",
+    "solid:f111",
     "solid:f11c",
     "solid:f120",
     "solid:f130",
@@ -30,6 +38,7 @@
     "solid:f1ab",
     "solid:f1eb",
     "solid:f1ec",
+    "solid:f219",
     "solid:f240",
     "solid:f254",
     "solid:f274",
@@ -38,6 +47,7 @@
     "solid:f2f2",
     "solid:f550",
     "solid:f783",
+    "solid:f7a5",
     "solid:f7c0"
   ],
   "glyph_names": {
@@ -56,8 +66,18 @@
     "solid:f7c0": "satellite-dish",
     "solid:f27a": "message",
     "solid:f274": "calendar-check",
-    "solid:f120": "terminal"
+    "solid:f120": "terminal",
+    "solid:f111": "circle",
+    "regular:f111": "circle",
+    "solid:f0c8": "square",
+    "solid:f0d8": "caret-up",
+    "solid:f219": "diamond",
+    "solid:f067": "plus",
+    "solid:f068": "minus",
+    "solid:f7a5": "grip-lines-vertical",
+    "solid:f054": "chevron-right",
+    "solid:f053": "chevron-left"
   },
-  "icons.inc_sha256": "09ded03e80c21c5bf99c087749a3d905cf3db007dc06c7860dc09034321c0eac",
+  "icons.inc_sha256": "8e6a9a5beb748d37b6e0f3dad8e14e9c19efea93c86d9eea1881f4c06bdf6054",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }

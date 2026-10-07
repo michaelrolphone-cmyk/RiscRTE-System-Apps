@@ -90,7 +90,16 @@ static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capabil
 static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);grants--;g->api=NULL;return true;}
 static const risc_runtime_api_v1 rt={1,sizeof(rt),health,yield_ms,diagnostic,launch_app,acquire,release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}
-int main(int argc,char **argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);assert(paper_presentation_get());app_main();app_module_fini();assert(!frames&&!grants&&!subs);
+int main(int argc,char **argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);assert(paper_presentation_get());
+ if(scenario==12){
+  const char *names[]={"solid:f111","regular:f111","solid:f0c8","solid:f0d8","solid:f219","solid:f067","solid:f068","solid:f7a5","solid:f054","solid:f053","solid:f120"};
+  uint8_t before[sizeof(pixels)];const t5_app_api_v1 *a=t5_app_get_api(1);const paper_presentation *v=paper_presentation_get();
+  for(unsigned i=0;i<sizeof(names)/sizeof(names[0]);i++){
+   v->begin();memcpy(before,pixels,sizeof(pixels));assert(a->draw_icon(40,40,names[i],32,true));assert(memcmp(before,pixels,sizeof(pixels)));
+   a->fill_rect(40,40,32,32,true);memcpy(before,pixels,sizeof(pixels));assert(a->draw_icon(40,40,names[i],32,false));assert(memcmp(before,pixels,sizeof(pixels)));
+  }
+ }
+ app_main();app_module_fini();assert(!frames&&!grants&&!subs);
  bool expect=CATALOG_COUNT&&scenario==1;assert(!!launched[0]==expect);assert(launches==((expect||scenario==5)&&CATALOG_COUNT?1u:0u));
  if(scenario==4||scenario==7)assert(!presents);else if(scenario==5&&CATALOG_COUNT)assert(presents==2);else if(scenario==6&&CATALOG_COUNT>15)assert(presents==2);else if(scenario==10)assert(presents>=3 && presents<=4);else assert(presents==1);
 #ifdef PORTABLE_ALARM_CLIENT

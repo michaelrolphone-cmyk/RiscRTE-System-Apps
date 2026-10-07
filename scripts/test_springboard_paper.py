@@ -27,4 +27,4 @@ print('Native 800x480 raster is pixel-exact to logical portrait; touch launches 
 
 binary=out/'paper-alarm'
 subprocess.run([*flags,'-DCATALOG_COUNT=5','-DPORTABLE_ALARM_CLIENT','-DPORTABLE_DISPLAY_ROTATION=90','-DTEST_NATIVE_LANDSCAPE','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_paper_test.c'),'-o',str(binary)],check=True)
-for scenario in [0,1,2,3,4,5,6,7,9,10]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
+for scenario in [0,1,2,3,4,5,6,7,9,10,12]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

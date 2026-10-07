@@ -8,8 +8,14 @@ static void sp_text(int x,int y,int w,const char *s,bool heading,bool black){pp_
 static void sp_header(const char *title) {sp_text(32,30,width()-64,title,true,true);fill(32,88,width()-64,3,0);}
 static void sp_button(int x,int y,int w,int h,const char *caption,bool selected) {
   fill(x,y,w,h,0);if(!selected)fill(x+3,y+3,w-6,h-6,0xffff);
-  int text_width=pp_measure(caption,false);
-  sp_text(x+(w-text_width)/2,y+(h-26)/2,w-12,caption,false,!selected);
+  const char *glyph=NULL,*text=caption;
+  if(!strcmp(caption,"< BACK")){glyph="solid:f053";text="BACK";}
+  else if(!strcmp(caption,"MORE >")){glyph="solid:f054";text="MORE";}
+  else if(!strcmp(caption,"+")){glyph="solid:f067";text="";}
+  else if(!strcmp(caption,"-")){glyph="solid:f068";text="";}
+  int text_width=pp_measure(text,false),total=text_width+(glyph?(text[0]?36:24):0),left=x+(w-total)/2;
+  if(glyph)(void)icon(left,y+(h-24)/2,glyph,24,!selected);
+  if(text[0])sp_text(left+(glyph?36:0),y+(h-26)/2,w-12,text,false,!selected);
 }
 static void sp_footer(bool save) {
   if(save){sp_button(32,height()-112,(width()-80)/2,88,"CANCEL",false);sp_button(width()/2+8,height()-112,(width()-80)/2,88,"SAVE",true);}
@@ -19,7 +25,7 @@ static void sp_row(int y,const char *title,const char *value,bool selected,bool 
   if(selected)fill(32,y,width()-64,SP_ROW,0);
   sp_text(48,y+10,width()-112,title,false,!selected);
   if(value&&*value)sp_text(48,y+42,width()-112,value,false,!selected);
-  if(action)sp_text(width()-70,y+24,30,">",true,!selected);
+  if(action)(void)icon(width()-72,y+30,"solid:f054",24,!selected);
   fill(32,y+SP_ROW-3,width()-64,3,0);
 }
 static void sp_redraw(void) {

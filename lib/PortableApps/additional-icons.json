@@ -1,4 +1,14 @@
 {
   "solid:f274": "calendar-check",
-  "solid:f120": "terminal"
+  "solid:f120": "terminal",
+  "solid:f111": "circle",
+  "regular:f111": "circle",
+  "solid:f0c8": "square",
+  "solid:f0d8": "caret-up",
+  "solid:f219": "diamond",
+  "solid:f067": "plus",
+  "solid:f068": "minus",
+  "solid:f7a5": "grip-lines-vertical",
+  "solid:f054": "chevron-right",
+  "solid:f053": "chevron-left"
 }

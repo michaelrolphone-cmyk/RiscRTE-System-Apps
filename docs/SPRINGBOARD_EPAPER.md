@@ -29,7 +29,7 @@ Rajdhani 600 labels are reproducible with `scripts/generate_paper_fonts.py` from
 the existing licensed inputs. Deployments must retain the added paper font
 license notices emitted by the development builder.
 
-`python scripts/test_springboard_paper.py` runs 55 ASan/UBSan cases: 0/1/5/17
+`python scripts/test_springboard_paper.py` runs 56 ASan/UBSan cases: 0/1/5/17
 apps, idle-frame suppression, single launch, inherited held contact, drag,
 failed submit/launch, native partial damage, paging, invalid stride and failed touch polling. Each
 checks frame/grant/subscription teardown. The existing Watch motion, lifecycle,
@@ -56,3 +56,14 @@ and capability integration. The foreground alarm overlay also uses a native-form
 controls, exact-token dismissal and byte-exact foreground restoration; tests
 cover its real MONO1 lifecycle and retain the existing Watch alarm regression. No hardware
 qualification, release, merge or device flashing is implied by these tests.
+
+## Font Awesome control and marker coverage
+
+The e-paper subset includes the exact Font Awesome circle (solid and regular),
+square, caret-up, diamond, plus, minus, grip-lines-vertical, chevron-right and
+chevron-left glyphs, alongside the five launcher app glyphs. Points uses these
+as the nearest matches to the mockup's geometric markers; paper navigation and
+add/decrement controls use the same licensed subset. The native MONO1 fixture
+requires all eleven tested marker/control/terminal glyphs to render visible ink
+both black-on-white and white-on-black. No hand-drawn path is labeled as a Font
+Awesome icon. Existing Watch glyph rasters are unchanged.
