@@ -57,8 +57,10 @@ stronger rule: even false plus an empty output cannot distinguish missing/denied
 capability from failed provider activation/rollback with internal retention.
 It therefore stops as UNCERTAIN (with operation reason UNAVAILABLE), without
 releasing the existing native grant. The app phase guard cannot override that
-ambiguity or prove internal rollback succeeded. A failed
-release is never retried; its original grant is preserved as non-retryable
+ambiguity or prove internal rollback succeeded. A false RTC read is also
+UNCERTAIN with operation reason IO, even when the guard remains SAFE: it cannot rule out provider-local retained custody. Neither
+grant is released and no later read, seed, recovery or release is attempted.
+A failed release is never retried; its original grant is preserved as non-retryable
 evidence. A successful release must clear its grant as the pinned broker does.
 An app must honor its existing Runtime-retained return path on RETAINED and
 must not attempt generic provider cleanup after CONTEXT or UNCERTAIN.
@@ -185,12 +187,12 @@ python scripts/test_portable_timezone.py \
 python scripts/test_rtc_basis.py
 ```
 
-The production client runs 121 deterministic scenarios normally and with
+The production client runs 123 deterministic scenarios normally and with
 ASan/UBSan, with `ASAN_OPTIONS=detect_leaks=0` for traced executors. Coverage
 includes reader/control grants, unset/valid timer isolation, stale and copied
 clients, missing capabilities, physically short API headers, malformed tables
 and snapshots, IO/CONTEXT/unknown native failures, RTC acquisition/read/release
-failure, incomplete broker outputs, gaps/folds/basis choices, 2038 boundaries,
+failure including hidden retention after read=false with a still-SAFE app guard, incomplete broker outputs, gaps/folds/basis choices, 2038 boundaries,
 failed readback after seed, the real Runtime false/empty RTC-acquisition
 retention semantics while the app phase guard still says SAFE, every
 external-call phase boundary, duplicate close,

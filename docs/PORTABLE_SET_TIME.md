@@ -164,9 +164,9 @@ The pinned Xtensa GCC 8.4.0+2021r2-patch5 link-only ELF passes the actual struct
 validator and mutation tests. Imports are only `memcpy`, `memset`, and
 `risc_runtime_get_api`. The source-hashed receipt records the SDK, toolchain,
 generated vector and ELF identities. No privileged, libc time, ESP-IDF time or
-compiler 64-bit division imports are introduced. Existing 121 realtime client
-scenarios remain green, with RTC-basis and timezone regressions and repository
-contracts checked separately.
+compiler 64-bit division imports are introduced. The strengthened 123-scenario
+realtime client suite passes, with RTC-basis and timezone regressions and
+repository contracts checked separately.
 
 The harness is not a product image, deployable app or hardware qualification.
 It does not prove physical RTC tick/write behavior, oscillator accuracy,
