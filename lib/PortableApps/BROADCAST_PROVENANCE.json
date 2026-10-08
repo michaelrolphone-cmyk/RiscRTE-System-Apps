@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "sources": {
+    "drivers": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+      "commit": "4088b6892c2e2654b0342f04a7d191068e4a8e2e",
+      "paths": [
+        "sdk/driver/RiscTelemetryV1.h",
+        "sdk/driver/RiscBluetoothTelemetryV1.h"
+      ]
+    },
+    "utilities": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "e2aeb2a7ced5f347b1eeb4f7561bccf24ad8bbc1",
+      "path": "lib/Broadcast/include/TelemetryBroadcastV1.h"
+    }
+  },
+  "files": {
+    "RiscTelemetryV1.h": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
+    "RiscBluetoothTelemetryV1.h": "f98aaff4165ee3816846cfe9ba110e8bafce403342a870162eb1089a03d935a6",
+    "TelemetryBroadcastV1.h": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5"
+  }
+}

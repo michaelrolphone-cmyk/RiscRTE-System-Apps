@@ -22,6 +22,11 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client)) {
+        rt->diagnostic("BROADCAST foreground-failed cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
+    }
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend()) {
         rt->diagnostic("RADIO foreground-failed cleanup-unconfirmed; invocation retained");
@@ -169,7 +174,12 @@ static bool alarm_foreground(bool *consumed) {
     bool cue_seen=false;
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
-        if(portable_alarm_cue(&alarms)){cue_seen=true;*consumed=true;}
+        if(portable_alarm_cue(&alarms)){
+#ifdef PORTABLE_BLE_BROADCAST
+            if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#endif
+            cue_seen=true;*consumed=true;
+        }
         rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
@@ -188,6 +198,9 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
+#ifdef PORTABLE_BLE_BROADCAST
+    if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
     if(!quick_interrupt())return alarm_failure();
 #endif

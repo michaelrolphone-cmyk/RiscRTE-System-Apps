@@ -112,6 +112,12 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
   unsigned live=grants;app_module_fini();assert(grants==live&&live);
   puts("Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS");return 0;
  }
+ if(test==18){
+  continuous_capture=true;last_activity=0;alarm_fake.state=ALARM_STATE_READY;ticks=61000;
+  assert(!idle_sleep()&&native_sleep_calls==1&&!application_audio&&application_audio_stops==1);
+  unsigned live=grants;app_module_fini();assert(grants==live&&live);
+  puts("Explicit sleep bypasses capture idle inhibition and closes the active input PASS");return 0;
+ }
  if(test==17){
   continuous_capture=true;alarm_fake.state=ALARM_STATE_CUE;bool consumed=false;
   assert(alarm_foreground(&consumed)&&consumed&&!application_audio&&application_audio_stops==1);

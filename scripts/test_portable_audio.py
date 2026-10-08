@@ -16,5 +16,5 @@ for suffix,flags in variants:
         '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
         str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_alarm_test.c'),
         '-o',str(exe)],check=True)
-    for scenario in range(18 if '-DPORTABLE_AUDIO_CONTINUOUS_CAPTURE' in flags else 16):
+    for scenario in range(19 if '-DPORTABLE_AUDIO_CONTINUOUS_CAPTURE' in flags else 16):
         subprocess.run([str(exe),str(scenario)],check=True,timeout=10)

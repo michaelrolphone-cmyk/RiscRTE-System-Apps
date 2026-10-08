@@ -40,6 +40,9 @@ static int low_key(const char *key) {
 }
 #endif
 static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size) {
+#ifdef PORTABLE_BLE_BROADCAST
+ if(!strcmp(key,TELEMETRY_BROADCAST_KEY)){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
+#endif
  /* Settings row reads retain their existing read-only model contract. Quick
   * control preferences still require a settled, unleased display. */
  if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(!surface.frame && display_settled);
