@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "tag": "watch-v1.0.12",
+  "title": "Watch 1.0.12 source snapshot",
+  "source": {
+    "local_commit": "3d95c712ed458d3e5092fc8725a16d495dca9e22",
+    "public_commit": "13f5fd4bed27d77d566fa7c34b89b62445b86798",
+    "tree": "0ff0bcc3ea1795e1cad1c2727012b21ff83f4276"
+  },
+  "verification": {
+    "commit": "13f5fd4bed27d77d566fa7c34b89b62445b86798",
+    "checks": [
+      "portable-firmware-update",
+      "adapter",
+      "build",
+      "portable-app-store",
+      "witness"
+    ]
+  },
+  "notes": "The public source tree is identical to the original local build source."
+}
