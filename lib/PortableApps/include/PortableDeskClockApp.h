@@ -40,3 +40,21 @@ void portable_desk_clock_radios_off(void);
 /* Defer optional radio policy application until normal foreground is needed. */
 int portable_desk_clock_mode(void);
 bool portable_desk_adapter_foreground(void);
+
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+/* Selected deployment only: module init is software-only. Call start in
+ * app_main after classifying the boot. TIMER keeps display and alarm.service
+ * (including its required closure), never direct input/battery/RTC or radios. */
+enum { PORTABLE_DESK_START_TIMER=1, PORTABLE_DESK_START_FOREGROUND=2 };
+/* 1: started/already in that mode; 0: refused or clean failure; -2: retained.
+ * A clean failure permits finalization only; a refusal has no side effect. */
+int portable_desk_adapter_start(unsigned mode);
+/* Caller has already promoted the Runtime cohort. Only OK=0/ALREADY_READY=1
+ * is accepted. No promotion grant is acquired here. Require no live frame and
+ * a settled display; successful upgrade preserves mapping/history and is
+ * one-way. RETAINED=-4 fences immediately. Same return contract as start. */
+int portable_desk_adapter_upgrade(int32_t promotion_status);
+/* Pure mode query for the coordinated app-local sleep hook. Never evidence
+ * of arbitrary providers' inactivity, and never an authority to skip holds. */
+bool portable_desk_adapter_timer_only(void);
+#endif

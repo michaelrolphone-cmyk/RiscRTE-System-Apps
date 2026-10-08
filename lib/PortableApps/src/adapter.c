@@ -66,6 +66,33 @@ static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
 #endif
 static bool paper_rotated;
 static bool failed, list_mode;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#if !defined(PORTABLE_DESK_CLOCK) || !defined(PORTABLE_ALARM_CLIENT) || !defined(PORTABLE_APP_SLEEP_LOCAL)
+#error "Sparse startup requires the desk clock, alarm closure and local sleep hook"
+#endif
+#if defined(PORTABLE_SETTINGS_APP) || defined(PORTABLE_INPUT_NAVIGATION_LOCAL) || defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_FILE_BROWSER_APP) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#error "Sparse startup is an explicit desk-clock deployment contract"
+#endif
+/* The mode is adapter-owned state, not a claim about arbitrary hardware.
+ * Only the selected deployment may rely on TIMER's unopened foreground set. */
+enum { DESK_COLD, DESK_INITIALIZED, DESK_STARTING, DESK_TIMER,
+       DESK_FOREGROUND, DESK_FAILED, DESK_FINALIZED };
+static unsigned desk_phase;
+static bool desk_touch_neutral;
+static volatile risc_display_surface_v1 desk_retained_surface;
+static const risc_runtime_api_v1 *desk_runtime;
+static risc_runtime_api_v1 desk_guarded_runtime;
+#ifdef PORTABLE_QUICK_RADIOS
+static risc_runtime_api_v1 desk_quick_runtime;
+static bool desk_quick_acquire(const char *,uint32_t,uint64_t,risc_runtime_capability_v1 *);
+#endif
+static bool desk_acquire(const char *,uint32_t,uint64_t,risc_runtime_capability_v1 *);
+static bool desk_release(risc_runtime_capability_v1 *);
+static bool desk_guard_health(risc_runtime_health_v1 *);
+static void desk_guard_yield(uint32_t);
+static bool desk_guard_diagnostic(const char *);
+static bool desk_guard_launch(const char *);
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "PortableQuickSession.h"
 #include "PortableQuickRender.h"
@@ -73,6 +100,16 @@ static pqa_session quick;
 #ifdef PORTABLE_QUICK_RADIOS
 #include "PortableQuickRadios.h"
 static pqa_radios quick_radios;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+static bool desk_radios_load(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *);
+static bool desk_radios_apply(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *,uint32_t);
+static bool desk_radios_suspend(const risc_runtime_api_v1 *);
+static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *);
+#define pqa_radios_load desk_radios_load
+#define pqa_radios_apply desk_radios_apply
+#define pqa_radios_suspend desk_radios_suspend
+#define pqa_radios_resume desk_radios_resume
+#endif
 #endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
@@ -107,6 +144,9 @@ static bool current_app_contact(t5_app_contact_t *out) {
 static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 #endif
 static uint32_t millis_now(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed || desk_phase<DESK_STARTING || desk_phase>=DESK_FAILED)return 0;
+#endif
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
     failed = true;
@@ -154,8 +194,13 @@ static bool input_navigation_open(void) {
 }
 static inline void input_navigation_reset(void) {
  navigation_pending=0;navigation_neutral=false;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(navigation_ready && !navigation->reset(navigation->context))portable_desk_adapter_retain();
+#else
  if(navigation_ready && !navigation->reset(navigation->context))failed=true;
+#endif
 }
+#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
 static void input_navigation_close(void) {
  if(navigation_ready) {
   bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
@@ -170,9 +215,25 @@ static void input_navigation_close(void) {
  navigation=NULL;navigation_pending=0;
 }
 #endif
+#endif
 static void input_service(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(failed || desk_phase!=DESK_FOREGROUND || !touch.subscription)return;
+#endif
  portable_touch_sample next;portable_touch_read(&touch,&next);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ /* Discard replayed events and the complete initial held contact/Home cycle,
+  * including drag gestures. A fresh neutral snapshot arms the next contact. */
+ if(!desk_touch_neutral) {
+  if(next.valid && !next.down && !touch.home_down)desk_touch_neutral=true;
+  touch.neutral=desk_touch_neutral;touch.down=false;
+  next=(portable_touch_sample){.valid=desk_touch_neutral};
+ }
+#endif
  input_sampled_at=millis_now();
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(failed)return;
+#endif
  if(next.home_pressed) {
   home_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;
   next=(portable_touch_sample){.valid=true,.cancelled=true};touch.neutral=touch.down=false;
@@ -262,6 +323,9 @@ static void native_point(int *x,int *y) {
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed)return;
+#endif
   if (!surface.frame || w <= 0 || h <= 0)
     return;
   int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y, x1 = x + w, y1 = y + h;
@@ -281,11 +345,17 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     }
 }
 static void display_failure(const char *detail) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  (void)detail;portable_desk_adapter_retain();return;
+#endif
   if(!failed && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
      (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
   failed=true;
 }
 static void clear_color(uint16_t color) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_phase!=DESK_TIMER && desk_phase!=DESK_FOREGROUND)return;
+#endif
   if (failed)
     return;
   if (surface.frame) {
@@ -436,7 +506,20 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
   }
   return np_icon(x+size/2,y+size/2,size,name,255);
 }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#define paper_presentation_get desk_paper_presentation_get_unchecked
+#endif
 #include "paper.inc"
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#undef paper_presentation_get
+const paper_presentation *paper_presentation_get(void) {
+ if(!portable_desk_adapter_ready() || !pp_enabled())return NULL;
+ if(desk_phase==DESK_TIMER) {
+  nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &pp_view;
+ }
+ return desk_paper_presentation_get_unchecked();
+}
+#endif
 static void present(bool full) {
 #ifdef PORTABLE_DESK_CLOCK
   desk_present_complete=false;
@@ -571,9 +654,25 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed || (desk_phase!=DESK_TIMER && desk_phase!=DESK_FOREGROUND))return false;
+  if(desk_phase==DESK_TIMER) {
+    if(surface.frame || !display_settled)return false;
+    /* The alarm-service dependency closure remains live. Do not acquire touch,
+     * navigation, battery, preferences or radios just to prepare them for sleep. */
+    int status=portable_app_alarm_sleep(rt,display,NULL,alarm_sleep_api());
+    if(status==-2){portable_desk_adapter_retain();return false;}
+    if(status<0)failed=true;
+    return !failed;
+  }
+#endif
 #ifdef PORTABLE_DESK_CLOCK
   int desk_mode=portable_desk_clock_mode();
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_mode<0){portable_desk_adapter_retain();return false;}
+#else
   if(desk_mode<0){native_sleep_retained=true;failed=true;return false;}
+#endif
 #endif
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
@@ -605,6 +704,9 @@ static bool idle_sleep(void) {
      !pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
 #endif
   if(!portable_touch_close(&touch,rt)){
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    portable_desk_adapter_retain();return false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
     if(desk_mode==1)native_sleep_retained=true;
 #endif
@@ -627,7 +729,11 @@ static bool idle_sleep(void) {
   int status=portable_app_sleep(rt,display,gauge);
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(status==-2){portable_desk_adapter_retain();return false;}
+#else
   if(status==-2){native_sleep_retained=true;failed=true;return false;}
+#endif
 #endif
   if(status<0){failed=true;return false;}
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -641,6 +747,9 @@ static bool idle_sleep(void) {
      !pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
 #endif
   if(!portable_touch_open(&touch,rt)){
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    portable_desk_adapter_retain();return false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
     if(desk_mode==1)native_sleep_retained=true;
 #endif
@@ -674,9 +783,35 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_DESK_CLOCK
 /* These are hidden app links, never ELF exports. Seed both the provider's
  * physical-image reconstruction and the adapter's damage comparison cache. */
-bool portable_desk_adapter_ready(void) { return !failed; }
-void portable_desk_adapter_retain(void) { native_sleep_retained=true;failed=true; }
+bool portable_desk_adapter_ready(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ return !failed && (desk_phase==DESK_TIMER || desk_phase==DESK_FOREGROUND);
+#else
+ return !failed;
+#endif
+}
+void portable_desk_adapter_retain(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(!native_sleep_retained) {
+  /* Pin the lease descriptor while making already-copied drawing callbacks
+   * inert. Never release or free this retained surface after uncertain I/O. */
+  desk_retained_surface=surface;surface=(risc_display_surface_v1){0};
+ }
+#endif
+ native_sleep_retained=true;failed=true;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ /* Existing presentation callbacks may have been copied by the app. Their
+  * optional battery/clock sources must stop too; grants remain pinned. */
+ gauge=NULL;
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
+ np_rtc=NULL;
+#endif
+#endif
+}
 void portable_desk_adapter_invalidate(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(!portable_desk_adapter_ready())return;
+#endif
   if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
   paper_previous_valid=false;previous_valid=false;
 }
@@ -691,7 +826,11 @@ int portable_desk_adapter_seed(void) {
   const risc_display_output_api_v1_history *history=risc_display_output_history(display);
   if(failed || !surface.frame || surface_format!=RISC_DISPLAY_FORMAT_MONO1 ||
      !paper_previous || !history)return 0;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(!history->seed_previous(display->context,surface.frame)){portable_desk_adapter_retain();return -2;}
+#else
   if(!history->seed_previous(display->context,surface.frame))return -2;
+#endif
   unsigned bytes=(info.width+7)/8;
   for(unsigned y=0;y<info.height;y++)memcpy(paper_previous+(size_t)y*bytes,
     (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
@@ -703,6 +842,9 @@ bool portable_desk_adapter_present(bool full) {
 }
 bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
 bool portable_desk_adapter_foreground(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(failed || desk_phase!=DESK_FOREGROUND)return false;
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!desk_radios_loaded){
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt)){portable_desk_adapter_retain();return false;}
@@ -724,6 +866,12 @@ static void clear_contact_snapshots(void) {
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   clear_contact_snapshots();
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  /* TIMER has no foreground modal or subscriptions. The selected clock owns
+   * alarm reconciliation and the promotion decision before normal polling. */
+  if(!portable_desk_adapter_ready())return false;
+  if(desk_phase==DESK_TIMER){rt->yield_ms(wait?wait:1);return !failed;}
+#endif
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   app_contact=(t5_app_contact_t){0};
 #endif
@@ -862,6 +1010,9 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed){memset(out,0,sizeof(*out));return false;}
+#endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
@@ -958,6 +1109,9 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   return true;
 }
 static bool launch(uint32_t i) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed || desk_phase!=DESK_FOREGROUND)return false;
+#endif
   /* A terminal Home/return is already accepted. Do not replace its target or
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
@@ -983,6 +1137,9 @@ bool portable_power_read(risc_battery_sample_v1 *out) {
 }
 #endif
 static bool read_battery(t5_battery_state_t *out) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed || desk_phase!=DESK_FOREGROUND)return false;
+#endif
   risc_battery_sample_v1 b = {0};
   if (!gauge || !out || !gauge->read(gauge->context, &b))
     return false;
@@ -1097,12 +1254,21 @@ static const t5_ui_api_v1 ui = {.api_version = 1,
                                 .previous_index = prev};
 static const t5_battery_api_v1 battery = {1, sizeof(battery), read_battery};
 const t5_app_api_v1 *t5_app_get_api(uint32_t v) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(!portable_desk_adapter_ready())return NULL;
+#endif
   return v == 1 && !failed ? &app : NULL;
 }
 const t5_ui_api_v1 *t5_ui_get_api(uint32_t v) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(!portable_desk_adapter_ready())return NULL;
+#endif
   return v == 1 && !failed ? &ui : NULL;
 }
 const t5_battery_api_v1 *t5_battery_get_api(uint32_t v) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(failed || desk_phase!=DESK_FOREGROUND)return NULL;
+#endif
   return v == 1 && gauge ? &battery : NULL;
 }
 const t5_storage_api_v1 *t5_storage_get_api(uint32_t v) {
@@ -1114,6 +1280,9 @@ const t5_video_api_v1 *t5_video_get_api(uint32_t v) {
   return NULL;
 }
 static int initialize(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_phase!=DESK_COLD || native_sleep_retained)return -1;
+#endif
   rt = risc_runtime_get_api(1);
   if (!rt || rt->api_version != 1 ||
       rt->struct_size < RISC_RUNTIME_CAPABILITIES_V1_SIZE || !rt->acquire ||
@@ -1145,6 +1314,17 @@ static int initialize(void) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
 #endif
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  desk_runtime=rt;desk_guarded_runtime=*rt;
+  desk_guarded_runtime.acquire=desk_acquire;desk_guarded_runtime.release=desk_release;
+  desk_guarded_runtime.health=desk_guard_health;desk_guarded_runtime.yield_ms=desk_guard_yield;
+  desk_guarded_runtime.diagnostic=desk_guard_diagnostic;desk_guarded_runtime.request_launch=desk_guard_launch;
+#ifdef PORTABLE_QUICK_RADIOS
+  desk_quick_runtime=desk_guarded_runtime;desk_quick_runtime.acquire=desk_quick_acquire;
+#endif
+  rt=&desk_guarded_runtime;desk_phase=DESK_INITIALIZED;
+  return 0;
+#else
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
   display = dg.api;
@@ -1205,8 +1385,15 @@ static int initialize(void) {
 #endif
 #endif
   return failed?-1:0;
+#endif
 }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#include "sparse_clock_adapter.inc"
+#endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  desk_finalize();
+#else
   if (!rt)
     return;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -1270,12 +1457,15 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
     rt->diagnostic("PORTABLE_APP error=battery-release");
   if (dg.api && !rt->release(&dg))
     rt->diagnostic("PORTABLE_APP error=display-release");
+#endif
 }
 
 __attribute__((visibility("default"))) int app_module_init(void) {
   int status = initialize();
+#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
   if (status)
     app_module_fini();
+#endif
   return status;
 }
 
