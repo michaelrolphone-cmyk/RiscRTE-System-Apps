@@ -68,3 +68,18 @@ Verification:
 
 Focused suites run normally and under ASan/UBSan. They qualify software ordering
 and bounded copied data; physical audio/RF recognition remains hardware work.
+
+## Capture servicing
+
+The opted-in adapter calls the appended capture-only method during raster work,
+pending display transfers and input polling. Deliberate waits are split into
+at most 8 ms slices. These checkpoints drain only audio already owned by the
+service; they do not read preferences, open providers, sample RF or apply presets
+while a frame is borrowed. Wi-Fi and update invocations suppress background audio
+because their synchronous operations cannot promise this cadence.
+
+A capture cleanup refusal uses the Runtime terminal invocation fence before any
+more display, input, service or fini calls. Host tests cover raster, submission
+and input failures plus the intentional-wait bound. Actual hardware timing is
+not inferred from these tests; the service independently invalidates and closes
+an audio stream when its 32 ms queue deadline is missed.

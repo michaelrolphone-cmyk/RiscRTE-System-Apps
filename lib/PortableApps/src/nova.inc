@@ -18,6 +18,10 @@ static uint16_t np_rgb(uint32_t rgb) {
   return (uint16_t)(((rgb>>19)&31)<<11|((rgb>>10)&63)<<5|((rgb>>3)&31));
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint())return;
+#endif
+  if(failed)return;
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
   if(a>=255){uint16_t color=np_rgb(rgb);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);return;}
@@ -55,10 +59,13 @@ static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
   }
 }
 static void np_mask(void) {
-  if(!nova_mask_pending || !surface.frame)return;
+  if(failed || !nova_mask_pending || !surface.frame)return;
   nova_mask_pending=false;
 
   for(int y=0;y<height();++y)for(int x=0;x<width();++x){
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint())return;
+#endif
     int dx=x<width()-x?x:width()-x,dy=y<height()-y?y:height()-y;
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;

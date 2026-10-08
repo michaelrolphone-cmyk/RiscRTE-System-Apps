@@ -18,11 +18,24 @@ static inline bool portable_contexts_open(portable_contexts_client *c,const risc
     const contexts_service_v1 *p=c->grant.api;
     if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->step||!p->pause||!p->status||
        !p->request_export||!p->begin_export||!p->export_record||!p->finish_export||!p->label||
-       !p->claim_preset||!p->preset_result)return false;
+       !p->claim_preset||!p->preset_result||!p->capture_audio)return false;
     c->api=p;c->policy.struct_size=sizeof(c->policy);return true;
 }
 static inline bool portable_contexts_pause(portable_contexts_client *c) {
     c->loaded=false;return !c->api||c->api->pause(c->api->context);
+}
+static inline bool portable_contexts_capture(portable_contexts_client *c) {
+    return !c->api||c->api->capture_audio(c->api->context);
+}
+/* Runtime0.1.54 appends the terminal invocation fence after boot confirmation.
+ * A renderer may retain borrowed frame memory after capture cleanup fails, so
+ * neither normal fini nor another display operation may follow this fence. */
+static inline bool portable_contexts_retain(portable_contexts_client *c) {
+    bool (*retain)(void)=NULL;
+    const size_t offset=RISC_RUNTIME_CAPABILITIES_V1_SIZE+sizeof(bool (*)(void));
+    if(!c->runtime||c->runtime->struct_size<offset+sizeof(retain))return false;
+    memcpy(&retain,(const unsigned char*)c->runtime+offset,sizeof(retain));
+    return retain&&retain();
 }
 static inline bool portable_contexts_release_storage(portable_contexts_client *c) {
     if(c->storage.api&&!c->runtime->release(&c->storage))return false;

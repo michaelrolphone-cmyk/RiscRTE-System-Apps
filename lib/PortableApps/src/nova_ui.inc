@@ -3,7 +3,10 @@
 #include "PortableNovaUi.h"
 #include "../settings_fonts/text.inc"
 static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
-  if(!surface.frame || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint())return;
+#endif
+  if(failed || !surface.frame || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
   x+=(width()-240)/2;y+=(height()-240)/2;
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+(size_t)x*2;
   uint16_t old=(uint16_t)(p[0]|p[1]<<8);

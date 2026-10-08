@@ -8,4 +8,4 @@ for san in (False,True):
  exe=out/f'adapter-{int(san)}'
  sources=[root/'Apps/settings.c',root/'test/native_apps/context_adapter_test.c',*[root/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_session.c','quick_radios.c','quick_render.c')]]
  subprocess.run([os.environ.get('CC','cc'),*flags,*map(str,sources),'-o',str(exe)],check=True)
- for case in range(9):subprocess.run([str(exe),str(case)],check=True,timeout=30)
+ for case in range(15):subprocess.run([str(exe),str(case)],check=True,timeout=30)

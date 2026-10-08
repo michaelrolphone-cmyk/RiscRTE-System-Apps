@@ -42,7 +42,8 @@ static bool claim(void *c,uint32_t source,uint32_t slot,const char *name,uint32_
     claims++;state.preset_source=source;state.preset_slot=(int32_t)slot;state.preset_generation=generation;state.preset_result=CONTEXTS_PRESET_CLAIMED;return true;
 }
 static bool result(void *c,uint32_t source,uint32_t generation,uint32_t value){(void)c;assert(source==state.preset_source&&generation==state.preset_generation);results++;state.preset_result=value;return true;}
-static const contexts_service_v1 service={1,sizeof(service),NULL,step_service,pause_service,status_service,request,begin,export,finish,label,claim,result};
+static bool capture_service(void *c){(void)c;return true;}
+static const contexts_service_v1 service={1,sizeof(service),NULL,step_service,pause_service,status_service,request,begin,export,finish,label,claim,result,capture_service};
 static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1 *g) {
     assert(api==1);acquires++;grants++;
     if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(instance==1);g->api=&kv;}

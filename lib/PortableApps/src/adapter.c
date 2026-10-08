@@ -62,6 +62,8 @@ const char *portable_contexts_face_name(unsigned id) {
 #endif
 }
 static bool contexts_tick(void);
+static bool contexts_capture_checkpoint(void);
+static uint32_t contexts_pixels;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
@@ -150,6 +152,17 @@ static const alarm_service_v1 *alarm_sleep_api(void);
 static bool alarm_failure(void);
 #endif
 static unsigned first_row, last_rows;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+static bool contexts_capture_checkpoint(void) {
+  if(failed||native_sleep_retained)return false;
+  if(portable_contexts_capture(&contexts_client))return true;
+  failed=true;
+  if(portable_contexts_retain(&contexts_client)){native_sleep_retained=true;return false;}
+  /* Older runtimes have no terminal fence. Keep this invocation's memory
+   * alive without issuing another display, storage or service operation. */
+  for(;;)rt->yield_ms(50);
+}
+#endif
 #ifdef PORTABLE_SETTINGS_APP
 #include "PortableRtcClock.h"
 static bool back_exits_app = true, settings_editing;
@@ -235,6 +248,9 @@ static void input_navigation_close(void) {
 }
 #endif
 static void input_service(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(!contexts_capture_checkpoint())return;
+#endif
  portable_touch_sample next;portable_touch_read(&touch,&next);
  input_sampled_at=millis_now();
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -310,20 +326,24 @@ static void handoff_finish(void) {
 static int32_t width(void) { return info.width; }
 static int32_t height(void) { return info.height; }
 static void fill(int x, int y, int w, int h, uint16_t color) {
-  if (!surface.frame || w <= 0 || h <= 0)
+  if (failed || !surface.frame || w <= 0 || h <= 0)
     return;
   int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y, x1 = x + w, y1 = y + h;
   if (x1 > width())
     x1 = width();
   if (y1 > height())
     y1 = height();
-  for (int j = y0; j < y1; ++j)
+  for (int j = y0; j < y1; ++j) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!(j&15)&&!contexts_capture_checkpoint())return;
+#endif
     for (int i = x0; i < x1; ++i) {
       uint8_t *p =
           (uint8_t *)surface.pixels + (size_t)j * surface.stride_bytes + i * 2;
       p[0] = color;
       p[1] = color >> 8;
     }
+  }
 }
 static void clear_color(uint16_t color) {
   if (failed)
@@ -530,6 +550,9 @@ static void present(bool full) {
       (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
   }
 #endif
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!contexts_capture_checkpoint())return;
+#endif
   if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
                        &token)) {
     failed = true;
@@ -538,6 +561,9 @@ static void present(bool full) {
   surface.frame = 0;
   uint32_t start = millis_now();
   for (unsigned n = 0; n < 10000 && !failed; ++n) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!contexts_capture_checkpoint())return;
+#endif
     risc_display_present_status_v1 s = {0};
     if (!display->present_status(display->context, token, &s) ||
         s.state == RISC_DISPLAY_PRESENT_FAILED ||
@@ -560,6 +586,7 @@ static void present(bool full) {
       break;
     }
     if((uint32_t)(millis_now()-input_sampled_at)>=16)input_service();
+    if(failed)return;
     rt->yield_ms(1);
   }
   failed = true;
@@ -646,7 +673,7 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 static bool contexts_tick(void) {
   if(!quick_storage_safe()||quick_modal||alarm_modal)return portable_contexts_pause(&contexts_client);
   bool audio_allowed=true,radio_allowed=true;
-#ifdef PORTABLE_AUDIO_SESSION
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   audio_allowed=false;
 #endif
 #if defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP) || defined(PORTABLE_BLE_FOREGROUND)
@@ -692,9 +719,15 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(display_settled && !surface.frame && !broadcast_tick()){failed=true;return false;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  uint32_t remaining=spent<wait?wait-spent:1;
+  while(remaining){uint32_t slice=remaining>8?8:remaining;rt->yield_ms(slice);remaining-=slice;if(!contexts_capture_checkpoint())return false;}
+#else
   rt->yield_ms(spent<wait?wait-spent:1);
+#endif
   last_poll_at=millis_now();
   input_service();
+  if(failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT
   if(!alarm_foreground(&consumed))return false;
   if(consumed){
@@ -1046,6 +1079,7 @@ static int initialize(void) {
       !rt->diagnostic)
     return -1;
 #ifdef PORTABLE_CONTEXTS_CLIENT
+  contexts_pixels=0;
   if(!portable_contexts_open(&contexts_client,rt)||!portable_contexts_pause(&contexts_client))return -1;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
