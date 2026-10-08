@@ -6,7 +6,14 @@
 #include "RiscPlatformClockV1.h"
 #include "SoftwareUpdateV1.h"
 #include "Catalog.h"
+#ifndef UPDATE_SOURCE_ROUTES
+#define UPDATE_SOURCE_ROUTES 0
+#endif
+#if UPDATE_SOURCE_ROUTES
+#include "SourceRoutes.h"
+#endif
 
+#include <cstring>
 #include <cstring>
 /* Existing pinned freestanding helper, no libgcc-wide import expansion. */
 extern "C" {
@@ -31,6 +38,11 @@ uint32_t json_size,selected;
 uint64_t http_handle,bank_handle,utc,deadline;
 software_update_status_v1 view;
 bool started,in_call;
+#if UPDATE_SOURCE_ROUTES
+static_assert(UPDATE_FIRMWARE==1,"Source routes belong only to the firmware provider");
+WatchUpdate::Routes::Source selected_source{};
+bool source_routed=false;
+#endif
 uint8_t chunk[RISC_HTTP_CHUNK_MAX];
 int32_t last_error;
 bool cleanup() {
@@ -57,8 +69,38 @@ bool cohortSupported() {
 template<size_t N> bool terminated(const char (&s)[N]) {
  for(size_t i=0;i<N;++i)if(!s[i])return true;return false;
 }
+#if UPDATE_SOURCE_ROUTES
+bool readSource(const risc_bank_status_v1& status,WatchUpdate::Routes::Source& out) {
+ if(!cohortSupported()||!terminated(status.layout)||!terminated(status.runtime_version))return false;
+ risc_bank_cohort_status_v1 have={};have.struct_size=sizeof(have);
+ if(bank->cohort_status(bank->context,&have)!=RISC_BANK_OK||!terminated(have.product)||!terminated(have.version)||
+    !terminated(have.source_repo)||!terminated(have.source_revision))return false;
+ static_assert(sizeof(out.product)==sizeof(have.product),"Source product bounds must match the native ABI");
+ out={};std::strcpy(out.product,have.product);std::strcpy(out.version,have.version);
+ std::strcpy(out.source_repo,have.source_repo);std::strcpy(out.source_revision,have.source_revision);
+ std::strcpy(out.runtime_version,status.runtime_version);std::strcpy(out.layout,status.layout);out.store_abi=status.store_abi;
+ std::memcpy(out.active_store_sha256,status.active_store_sha256,sizeof(out.active_store_sha256));
+ return WatchUpdate::Routes::valid(out);
+}
+bool sourceMatches(const risc_bank_status_v1& current) {
+ if(!source_routed)return true;WatchUpdate::Routes::Source have{};
+ return readSource(current,have)&&WatchUpdate::Routes::same(have,selected_source);
+}
+bool parseFirmwareCatalog() {
+ source_routed=false;selected_source={};WatchUpdate::Slice value{json,json_size};
+ WatchUpdate::Routes::Source have{};
+ if(WatchUpdate::Routes::present(value,budget,nullptr)){
+  risc_bank_status_v1 current={};current.struct_size=sizeof(current);
+  if(!bank->status(bank->context,&current)||!readSource(current,have))return false;
+ }
+ return WatchUpdate::Routes::select(value,*catalog,have,selected_source,source_routed,budget,nullptr);
+}
+#endif
 bool classifyCohort(WatchUpdate::Row& r,const risc_bank_status_v1& current) {
  r.view.availability=SOFTWARE_UPDATE_UNSUPPORTED;
+#if UPDATE_SOURCE_ROUTES
+ if(!sourceMatches(current)){std::strcpy(r.view.reason,"Installed source changed; check for updates again");return false;}
+#endif
  if(!cohortSupported()){std::strcpy(r.view.reason,"Runtime has no paired cohort update support");return false;}
  const auto& target=catalog->cohort;
  if(!terminated(current.layout)||!terminated(current.runtime_version)||
@@ -165,7 +207,11 @@ bool tick() {
   if(http->info(http->context,http_handle,&response)!=RISC_HTTP_OK||response.status_code!=200)return fail(RISC_HTTP_STATUS);
   int closed=http->close(http->context,http_handle);if(closed!=RISC_HTTP_OK)return fail(closed);http_handle=0;
   if(view.state==SOFTWARE_UPDATE_CATALOG){
+#if UPDATE_SOURCE_ROUTES
+   if(!parseFirmwareCatalog()||!classify()){catalog->count=0;source_routed=false;selected_source={};return fail(RISC_HTTP_INVALID);}
+#else
    if(!WatchUpdate::parse({json,json_size},UPDATE_FIRMWARE,*catalog,budget,nullptr)||!classify()){catalog->count=0;return fail(RISC_HTTP_INVALID);}
+#endif
    view.state=SOFTWARE_UPDATE_LIST;view.done=view.total=0;return true;
   }
   if(view.done!=view.total)return fail(RISC_HTTP_SIZE);
