@@ -47,12 +47,14 @@ def build(args):
     if kind!='static' or int(size)>2048:raise ValueError('Provider per-function stack budget exceeded: '+line)
   (dest/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
   inputs=[p for d in ['Services/update','lib/PortableApps'] for p in (ROOT/d).rglob('*') if p.is_file()]+[ROOT/'Apps/update_portable.inc',ROOT/'scripts/build_portable_updates.py',ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c']+list(sources)+list((ROOT/'Apps/native').glob('*.json'))
-  record={'purpose':'development-only-not-deployment','sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],'imports':sorted(imports),'exports':sorted(exports),'build_defines':flags,'bss_bytes':bss,'section_sizes':sizes,'stack_frames':stack_frames,'source_sha256':{str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}}
+  record={'purpose':'development-only-not-deployment','repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),'version':manifest['version'],'sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],'imports':sorted(imports),'exports':sorted(exports),'build_defines':flags,'bss_bytes':bss,'section_sizes':sizes,'stack_frames':stack_frames,'source_sha256':{str(p.relative_to(ROOT)) if p.is_relative_to(ROOT) else p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs}}
   (dest/'build-record.json').write_text(json.dumps(record,indent=2)+'\n')
   return elf
  for firmware,kind in [(1,'firmware'),(0,'apps')]:
   manifest=json.loads((ROOT/'Services/update'/kind/'manifest.json').read_text())
-  compile_artifact('software-update-'+kind,cxx,[ROOT/'Services/update/service.cpp'],['-std=c++17','-fno-exceptions','-fno-rtti','-DUPDATE_FIRMWARE='+str(firmware)],{'t5_driver_get'},manifest)
+  routes=bool(firmware and getattr(args,'source_routes',False))
+  if routes:manifest['version']='0.1.5'
+  compile_artifact('software-update-'+kind,cxx,[ROOT/'Services/update/service.cpp'],['-std=c++17','-fno-exceptions','-fno-rtti','-DUPDATE_FIRMWARE='+str(firmware),*(['-DUPDATE_SOURCE_ROUTES=1'] if routes else [])],{'t5_driver_get'},manifest)
  if args.services_only:return
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  for firmware,name in [(1,'ota_update'),(0,'app_store')]:
@@ -72,4 +74,4 @@ def build(args):
   for source in [ROOT/'LICENSE',*list((ROOT/'lib/PortableApps/settings_fonts').glob('LICENSE-*'))]:shutil.copyfile(source,licenses/source.name)
  print('Portable update target ELFs, bounded imports/exports and structural validator passed')
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args())
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--source-routes',action='store_true',help='Select exact installed-source firmware routes; provider0.1.5');p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');p.add_argument('--services-only',action='store_true');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int,required=True);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args())
