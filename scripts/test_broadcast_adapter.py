@@ -9,6 +9,9 @@ for san in (False,True):
  sources=[ROOT/'Apps/settings.c',ROOT/'test/native_apps/broadcast_adapter_test.c',*[ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_session.c','quick_radios.c','quick_render.c')]]
  subprocess.run([os.environ.get('CC','cc'),*flags,*map(str,sources),'-o',str(exe)],check=True)
  for case in range(9):subprocess.run([str(exe),str(case)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+ audio=out/f'audio-fini-{int(san)}'
+ subprocess.run([os.environ.get('CC','cc'),*flags,'-DPORTABLE_AUDIO_SESSION',*map(str,sources),'-o',str(audio)],check=True)
+ for case in (9,10,11):subprocess.run([str(audio),str(case)],check=True,timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
 
 for san in (False,True):
  flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-I'+str(ROOT/'lib/PortableApps/include')]
