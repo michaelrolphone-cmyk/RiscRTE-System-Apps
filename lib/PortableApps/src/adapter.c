@@ -1183,63 +1183,55 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
 #endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-  if(failed || !display_settled || surface.frame)while(!portable_background_stop()) {
+  bool stop_before_cleanup=failed || !display_settled || surface.frame;
+#if defined(PORTABLE_TAP_SETTINGS) || defined(PORTABLE_FILE_BROWSER_APP) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP) || defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_AUDIO_SESSION)
+  /* These app-owned cleanup operations may retain custody. Stop background
+   * work before the first such call, while all provider contexts are usable. */
+  stop_before_cleanup=true;
+#endif
+  if(stop_before_cleanup)while(!portable_background_stop()) {
     rt->diagnostic("BROADCAST cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_TAP_SETTINGS
   while(!settings_tap_close()){
-#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
-#endif
     rt->diagnostic("TAP cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close()) {
     rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
-#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
-#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
-#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
-#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_RADIO_SESSION
   if(!portable_radio_suspend()) {
     rt->diagnostic("RADIO cleanup-unconfirmed; invocation retained");
-#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
-#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_AUDIO_SESSION
   if(!portable_audio_suspend()) {
     rt->diagnostic("AUDIO cleanup-unconfirmed; invocation retained");
-#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
-#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(alarms.api && !alarm_failed_cleaned &&
-      (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms)) &&
-      !portable_alarm_failure_stop(&alarms)) {
-    rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
+      (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms))) {
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
     while(!portable_background_stop())rt->yield_ms(50);
 #endif
-    for(;;)rt->yield_ms(50);
+    if(!portable_alarm_failure_stop(&alarms)) {
+      rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
+      for(;;)rt->yield_ms(50);
+    }
   }
   if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;

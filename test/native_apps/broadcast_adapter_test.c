@@ -3,7 +3,16 @@
 #include "quick_adapter_test.c"
 static bool publishing;
 static unsigned broadcast_steps,broadcast_pauses,pause_failures;
-static bool broadcast_pause_fake(void*c){(void)c;assert(!surface.frame&&display_settled);broadcast_pauses++;if(pause_failures){pause_failures--;return false;}publishing=false;return true;}
+#ifdef PORTABLE_AUDIO_SESSION
+static bool guard_audio_cleanup;
+static unsigned before_audio_waits;
+static void fini_yield(uint32_t ms){assert(ms==50);if(!application_audio_close_attempts){assert(publishing);before_audio_waits++;return;}longjmp(retained,1);}
+#endif
+static bool broadcast_pause_fake(void*c){(void)c;assert(!surface.frame&&display_settled);
+#ifdef PORTABLE_AUDIO_SESSION
+ if(guard_audio_cleanup)assert(!application_audio_close_attempts);
+#endif
+ broadcast_pauses++;if(pause_failures){pause_failures--;return false;}publishing=false;return true;}
 static bool broadcast_step_fake(void*c,bool allow,const telemetry_broadcast_policy_v1 *policy){(void)c;assert(!surface.frame&&display_settled);broadcast_steps++;publishing=allow&&policy->settings_valid&&policy->enabled&&policy->radios_allowed;return true;}
 static bool broadcast_status_fake(void*c,telemetry_broadcast_status_v1*out){(void)c;*out=(telemetry_broadcast_status_v1){.struct_size=sizeof(*out),.enabled=true,.settings_valid=true,.state=publishing?TELEMETRY_BROADCAST_LIVE:TELEMETRY_BROADCAST_PAUSED};return true;}
 static int32_t broadcast_enum_fake(void*c,uint32_t i,risc_telemetry_field_v1*out){(void)c;(void)i;(void)out;return 0;}
@@ -44,6 +53,25 @@ int main(int argc,char **argv){
  }else if(test==8){
   alarm_fake.state=ALARM_STATE_CUE;alarm_fake.output_uncertain=1;bool consumed=false;
   assert(alarm_foreground(&consumed)&&consumed&&!publishing&&broadcast_pauses>0);assert(broadcast_tick()&&publishing);
- }else assert(!"unknown scenario");
+ }
+#ifdef PORTABLE_AUDIO_SESSION
+ else if(test==9||test==10){
+  application_audio_close_attempts=0;audio_close_bad=true;guard_audio_cleanup=true;
+  pause_failures=test==10;
+  quick_runtime.yield_ms=fini_yield;
+  if(!setjmp(retained))app_module_fini();
+  assert(application_audio_close_attempts==1&&!publishing&&broadcast_pauses==(test==10?2u:1u));
+  assert(before_audio_waits==(test==10));
+  puts("Fini pauses publication before uncertain Audio cleanup; no later background I/O PASS");return 0;
+ }
+ else if(test==11){
+  cleanup();assert(!publishing&&broadcast_pauses==1);
+  broadcast_client.runtime=rt;broadcast_client.api=&broadcast_api;
+  broadcast_client.grant=(risc_runtime_capability_v1){.struct_size=sizeof(broadcast_client.grant),.api=&broadcast_api};grants++;
+  assert(broadcast_tick()&&publishing);assert(portable_broadcast_close(&broadcast_client,rt)&&!grants&&publishing);
+  puts("After clean Audio exit the following client resumes enabled background publication PASS");return 0;
+ }
+#endif
+ else assert(!"unknown scenario");
  cleanup();printf("Broadcast real common adapter lifecycle case%u PASS\n",test);
 }
