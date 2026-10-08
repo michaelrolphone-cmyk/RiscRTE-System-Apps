@@ -92,6 +92,12 @@ static void quick_time(char out[6]) {
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
  if(!pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))return true;
+ /* A possible top-edge gesture reserves input, not foreground resources.
+  * Ordinary tab/gear taps must replay without suspending RF or loading
+  * controls storage before a pull gesture actually commits. */
+ if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui)) {
+  *consumed=true;return true;
+ }
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
 #ifdef PORTABLE_TAP_SETTINGS
@@ -150,7 +156,7 @@ static bool quick_foreground(bool *consumed) {
  }
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
- if(wifi && !failed) {
+ if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close())return false;
 #endif

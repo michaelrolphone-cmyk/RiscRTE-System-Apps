@@ -35,6 +35,16 @@
 #include <limits.h>
 #include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
+#ifdef PORTABLE_APP_LAUNCH_GUARD
+extern bool portable_app_before_launch(const char *destination);
+#endif
+static inline bool app_allows_launch(const char *destination) {
+#ifdef PORTABLE_APP_LAUNCH_GUARD
+  return portable_app_before_launch(destination);
+#else
+  (void)destination;return true;
+#endif
+}
 static risc_runtime_capability_v1 dg, bg;
 static const risc_display_output_api_v1 *display;
 static const risc_battery_gauge_api_v1 *gauge;
@@ -716,6 +726,12 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
      && !quick_launch_pending
 #endif
   ) {
+    if(!app_allows_launch(PORTABLE_RETURN_APP)) {
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+      app_contact=(t5_app_contact_t){0};
+#endif
+      memset(out,0,sizeof(*out));return true;
+    }
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return alarm_failure();
 #endif
@@ -723,7 +739,15 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     if(!portable_audio_suspend())return alarm_failure();
 #endif
     if(!rt->request_launch(PORTABLE_RETURN_APP)) {
-      rt->diagnostic("PORTABLE_APP error=return-request");failed=true;return false;
+      rt->diagnostic("PORTABLE_APP error=return-request");
+#ifdef PORTABLE_APP_LAUNCH_GUARD
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+      app_contact=(t5_app_contact_t){0};
+#endif
+      memset(out,0,sizeof(*out));return true;
+#else
+      failed=true;return false;
+#endif
     }
     out->exit_requested=true;
   }
