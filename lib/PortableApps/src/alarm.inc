@@ -22,8 +22,8 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
-#ifdef PORTABLE_BLE_BROADCAST
-    while(!portable_broadcast_pause(&broadcast_client)) {
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    while(!portable_background_stop()) {
         rt->diagnostic("BROADCAST foreground-failed cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
     }
 #endif
@@ -59,8 +59,12 @@ static bool alarm_failure(void) {
     }
     return false;
 }
-#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION)
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_CONTEXTS_CLIENT)
 static bool alarm_sessions_safe(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    contexts_status_v1 status={.struct_size=sizeof(status)};
+    if(!contexts_client.api||!contexts_client.api->status(contexts_client.api->context,&status)||status.cleanup_pending)return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_services_safe())return false;
 #endif
@@ -70,6 +74,9 @@ static bool alarm_sessions_safe(void) {
     return true;
 }
 static bool alarm_sessions_suspend(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!portable_contexts_pause(&contexts_client))return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return false;
 #endif
@@ -175,8 +182,8 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
-#ifdef PORTABLE_BLE_BROADCAST
-            if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+            if(!portable_background_stop())return alarm_failure();
 #endif
             cue_seen=true;*consumed=true;
         }
@@ -198,8 +205,8 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
-#ifdef PORTABLE_BLE_BROADCAST
-    if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    if(!portable_background_stop())return alarm_failure();
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
     if(!quick_interrupt())return alarm_failure();

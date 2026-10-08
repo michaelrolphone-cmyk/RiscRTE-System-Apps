@@ -2,11 +2,7 @@
 #include "RiscRuntimeV1.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscBatteryGaugeV1.h"
-#ifdef PORTABLE_BLE_BROADCAST
-/* App-local cleanup hook only; do not pull copied sensor SDK tables into
- * apps that already include their provider-specific SDK from another path. */
-bool portable_broadcast_stop(void);
-#endif
+#include "PortableBackgroundServices.h"
 /* Optional deployment-local app client hook, like PortableNavigation. It is
  * compiled only by an explicit target deployment. No device names, storage
  * privileges or firmware UI enter the generic adapter. Caller closes touch
