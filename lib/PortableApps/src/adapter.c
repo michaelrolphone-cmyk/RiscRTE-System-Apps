@@ -64,6 +64,7 @@ const char *portable_contexts_face_name(unsigned id) {
 static bool contexts_tick(void);
 static bool contexts_capture_checkpoint(void);
 static uint32_t contexts_pixels;
+#define PORTABLE_CONTEXTS_RASTER 1
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
