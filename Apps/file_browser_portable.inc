@@ -280,7 +280,11 @@ void app_main(void) {
 #ifdef PORTABLE_ALARM_CLIENT
    if(portable_app_sleep_retained())return;
 #endif
-   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
+   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_stop())fb_runtime->yield_ms(50);
+#endif
+    for(;;)fb_runtime->yield_ms(50);}
    return;
   }
   if(fb_app->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(fb_app->touch_contact) && fb_app->touch_contact) {
@@ -300,7 +304,11 @@ void app_main(void) {
   /* A queued adapter handoff is terminal even while a folder/editor/preview
    * is open. Never reinterpret it as nested Back or replace its destination. */
   if(input.exit_requested) {
-   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER handoff cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
+   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER handoff cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_stop())fb_runtime->yield_ms(50);
+#endif
+    for(;;)fb_runtime->yield_ms(50);}
    return;
   }
   if(!input.buttons && !input.tapped && !input.exit_requested){fb_armed=true;continue;}

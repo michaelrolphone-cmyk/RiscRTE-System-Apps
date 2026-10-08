@@ -130,3 +130,5 @@ Published-byte comparison is tracked separately in [release parity](docs/release
 Current bounded refresh and verification limits: [all remaining Reader manifests](docs/PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md), [published manifest reconciliation](docs/PARITY_REFRESH_MANIFESTS_2026-10-02.md), [U1 package workflow apps](docs/PARITY_REFRESH_U1_PACKAGE_APPS_2026-10-02.md), [Status Bar Settings](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
 
 Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).
+
+Watch deployments may opt into the [cooperative BLE broadcast client](docs/BLE_BROADCAST.md).

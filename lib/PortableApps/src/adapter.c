@@ -35,6 +35,36 @@
 #include <limits.h>
 #include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
+#ifdef PORTABLE_BLE_BROADCAST
+#include "PortableBroadcastClient.h"
+static portable_broadcast_client broadcast_client;
+bool portable_broadcast_status(telemetry_broadcast_status_v1 *out) {
+  return broadcast_client.api && broadcast_client.api->status(broadcast_client.api->context,out);
+}
+bool portable_broadcast_enable(bool enabled) {
+  return portable_broadcast_set_enabled(&broadcast_client,enabled);
+}
+bool portable_broadcast_stop(void) { return portable_broadcast_pause(&broadcast_client); }
+static bool broadcast_tick(void) {
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_safe())return portable_broadcast_pause(&broadcast_client);
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_services_safe())return portable_broadcast_pause(&broadcast_client);
+#endif
+#ifdef PORTABLE_AUDIO_SESSION
+  if(!portable_audio_services_safe())return portable_broadcast_pause(&broadcast_client);
+#endif
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+  if(!portable_wifi_services_safe())return portable_broadcast_pause(&broadcast_client);
+#endif
+#ifdef PORTABLE_BLE_FOREGROUND
+  return portable_broadcast_step(&broadcast_client,false);
+#else
+  return portable_broadcast_step(&broadcast_client,true);
+#endif
+}
+#endif
 #ifdef PORTABLE_APP_LAUNCH_GUARD
 extern bool portable_app_before_launch(const char *destination);
 #endif
@@ -530,6 +560,9 @@ static bool idle_sleep(void) {
    * output. Wake never restarts capture/playback without a fresh user action. */
   if(!portable_audio_suspend()){failed=true;return false;}
 #endif
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_pause(&broadcast_client)){failed=true;return false;}
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
   if(!pqa_radios_suspend(rt)){rt->diagnostic("QUICK Bluetooth cleanup-unconfirmed");failed=true;return false;}
 #endif
@@ -579,11 +612,17 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   bool consumed=false;
   if(!alarm_foreground(&consumed))return false;
   if(consumed){
+#ifdef PORTABLE_BLE_BROADCAST
+    if(!portable_broadcast_pause(&broadcast_client)){failed=true;return false;}
+#endif
 #ifdef PORTABLE_TAP_SETTINGS
     if(settings_motion_active)settings_motion_interrupted=true;
 #endif
     return true;
   }
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+  if(display_settled && !surface.frame && !broadcast_tick()){failed=true;return false;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
   rt->yield_ms(spent<wait?wait-spent:1);
@@ -592,6 +631,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
   if(!alarm_foreground(&consumed))return false;
   if(consumed){
+#ifdef PORTABLE_BLE_BROADCAST
+    if(!portable_broadcast_pause(&broadcast_client)){failed=true;return false;}
+#endif
 #ifdef PORTABLE_TAP_SETTINGS
     if(settings_motion_active)settings_motion_interrupted=true;
 #endif
@@ -611,6 +653,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
      !portable_audio_capture_active() &&
+#endif
+#ifdef PORTABLE_RADIO_CONTINUOUS_CAPTURE
+     !portable_radio_capture_active() &&
 #endif
      !navigation_pending && !(input_pending && (input_sample.down || input_sample.released))) {
     if(!idle_sleep())return false;
@@ -930,6 +975,12 @@ static int initialize(void) {
       !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch ||
       !rt->diagnostic)
     return -1;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_open(&broadcast_client,rt))return -1;
+#ifdef PORTABLE_BLE_FOREGROUND
+  if(!portable_broadcast_pause(&broadcast_client))return -1;
+#endif
+#endif
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
@@ -1004,6 +1055,9 @@ static int initialize(void) {
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
 #endif
 #endif
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!broadcast_tick())return -1;
+#endif
   return failed?-1:0;
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {
@@ -1012,30 +1066,52 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
 #endif
+#ifdef PORTABLE_BLE_BROADCAST
+  if(failed || !display_settled || surface.frame)while(!portable_broadcast_pause(&broadcast_client)) {
+    rt->diagnostic("BROADCAST cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
+  }
+#endif
 #ifdef PORTABLE_TAP_SETTINGS
-  while(!settings_tap_close()){rt->diagnostic("TAP cleanup-unconfirmed; invocation retained");rt->yield_ms(50);}
+  while(!settings_tap_close()){
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
+    rt->diagnostic("TAP cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
+  }
 #endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close()) {
     rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_RADIO_SESSION
   if(!portable_radio_suspend()) {
     rt->diagnostic("RADIO cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_AUDIO_SESSION
   if(!portable_audio_suspend()) {
     rt->diagnostic("AUDIO cleanup-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
     for(;;)rt->yield_ms(50);
   }
 #endif
@@ -1044,6 +1120,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
       (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms)) &&
       !portable_alarm_failure_stop(&alarms)) {
     rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
+#ifdef PORTABLE_BLE_BROADCAST
+    while(!portable_broadcast_pause(&broadcast_client))rt->yield_ms(50);
+#endif
     for(;;)rt->yield_ms(50);
   }
   if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
@@ -1068,6 +1147,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_SETTINGS_APP
   settings_close();
 #endif
+#ifdef PORTABLE_BLE_BROADCAST
+  while(!portable_broadcast_close(&broadcast_client,rt)) {
+    (void)portable_broadcast_pause(&broadcast_client);
+    rt->diagnostic("BROADCAST grant retained");rt->yield_ms(50);
+  }
+#endif
   if (bg.api && !rt->release(&bg))
     rt->diagnostic("PORTABLE_APP error=battery-release");
   if (dg.api && !rt->release(&dg))
@@ -1076,8 +1161,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 
 __attribute__((visibility("default"))) int app_module_init(void) {
   int status = initialize();
-  if (status)
+  if (status) {
+#ifdef PORTABLE_BLE_BROADCAST
+    failed=true;
+#endif
     app_module_fini();
+  }
   return status;
 }
 

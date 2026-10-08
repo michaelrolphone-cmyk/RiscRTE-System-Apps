@@ -14,10 +14,15 @@ static void reflect(const pqa_radios*s,pqa_state*u) {
  u->radio_controls=true;u->radios_valid=s->valid&&s->available;
  u->wifi_enabled=!!(s->flags&PORTABLE_RADIO_WIFI);u->bluetooth_enabled=!!(s->flags&PORTABLE_RADIO_BLUETOOTH);u->airplane=!!(s->flags&PORTABLE_RADIO_AIRPLANE);
 }
-static bool set_hardware(const wifi_api_v1*w,const portable_bluetooth_control_v1*b,uint8_t flags) {
+static bool set_hardware(const wifi_api_v1*w,const portable_bluetooth_control_v1*b,uint8_t flags,bool preserve) {
  if(!(flags&PORTABLE_RADIO_WIFI) && (!w->disconnect_checked(w->context)||w->status(w->context)!=WIFI_LINK_DOWN))return false;
  uint8_t actual=PORTABLE_BLUETOOTH_RETAINED;
- return b->set_enabled(b->context,!!(flags&PORTABLE_RADIO_BLUETOOTH)) && b->status(b->context,&actual) && actual==((flags&PORTABLE_RADIO_BLUETOOTH)?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF);
+ const uint8_t desired=(flags&PORTABLE_RADIO_BLUETOOTH)?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;
+ /* Re-entering an ordinary app must not reset a healthy provider-owned BLE
+  * lease merely to reassert the same saved preference. Explicit changes still
+  * drain their owners before coming here. */
+ if(preserve && b->status(b->context,&actual) && actual==desired)return true;
+ return b->set_enabled(b->context,desired==PORTABLE_BLUETOOTH_ON) && b->status(b->context,&actual) && actual==desired;
 }
 bool pqa_radios_load(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt) {
  *s=(pqa_radios){0};risc_runtime_capability_v1 kg,wg,bg;
@@ -28,7 +33,7 @@ bool pqa_radios_load(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt) {
  /* An unreadable/corrupt desired state must not leave a previously enabled
   * controller running behind disabled controls. Prove both radios Off without
   * overwriting the bad record; failed cleanup retains the invocation. */
- s->available=w&&b;bool ok=!s->available||set_hardware(w,b,s->valid?s->flags:0);
+ s->available=w&&b;bool ok=!s->available||set_hardware(w,b,s->valid?s->flags:0,true);
  if(!s->valid)u->error_flags|=PQA_ERROR_RADIO|PQA_ERROR_SAVE;
  if(bg.api&&!rt->release(&bg))ok=false;
  if(wg.api&&!rt->release(&wg))ok=false;
@@ -50,13 +55,13 @@ bool pqa_radios_apply(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt,uint
  risc_runtime_capability_v1 wg,bg,kg;
  (void)bind(rt,&wg,"net.wifi",15);(void)bind(rt,&bg,"bluetooth.hci",16);(void)bind(rt,&kg,RISC_KEY_VALUE_CAPABILITY,1);
  const wifi_api_v1*w=wifi(&wg);const portable_bluetooth_control_v1*b=ble(&bg);
- bool changed=w&&b&&set_hardware(w,b,next);bool ok=true;
+ bool changed=w&&b&&set_hardware(w,b,next,false);bool ok=true;
  if(changed&&portable_radio_save(kg.api,next)){s->flags=next;u->error_flags&=~(PQA_ERROR_RADIO|PQA_ERROR_SAVE);}
  else {
   /* An explicit operation failed. Prove restoration; otherwise retain the
    * invocation instead of claiming Off or proceeding into native sleep. */
   u->error_flags|=PQA_ERROR_RADIO|PQA_ERROR_SAVE;
-  ok=w&&b&&set_hardware(w,b,s->flags);
+  ok=w&&b&&set_hardware(w,b,s->flags,false);
  }
  if(kg.api&&!rt->release(&kg))ok=false;
  if(bg.api&&!rt->release(&bg))ok=false;
