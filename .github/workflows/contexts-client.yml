@@ -1,0 +1,24 @@
+name: Contexts client lifecycle
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contexts-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Test copied records, preset custody and actual adapter lifecycle
+        run: |
+          python3 scripts/test_context_preferences.py
+          python3 scripts/test_context_client.py
+          python3 scripts/test_context_adapter.py
