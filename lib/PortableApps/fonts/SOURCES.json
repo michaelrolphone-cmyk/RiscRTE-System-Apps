@@ -13,6 +13,7 @@
     "regular:f03e",
     "solid:f00a",
     "solid:f013",
+    "solid:f015",
     "solid:f017",
     "solid:f019",
     "solid:f021",
@@ -56,8 +57,9 @@
     "solid:f7c0": "satellite-dish",
     "solid:f27a": "message",
     "solid:f274": "calendar-check",
-    "solid:f245": "arrow-pointer"
+    "solid:f245": "arrow-pointer",
+    "solid:f015": "house"
   },
-  "icons.inc_sha256": "2f265efedab33870c594e00a58f7eaddde5a0892f1bc98084c4e4d25164559a7",
+  "icons.inc_sha256": "df8c293fd11b3f9f55a0627fad79863d26d7e98944f17fa8113d8f6068d5c920",
   "text.inc_sha256": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42"
 }

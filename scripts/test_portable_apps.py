@@ -75,14 +75,14 @@ for name,flags in [('time-format',[]),('time-format-denver',['-DPORTABLE_RTC_UTC
 common=[os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',
  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include')]
 for mode,sanitizers in [('normal',[]),('sanitized',['-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie'])]:
- for profile,limit in [('historical',[]),('explicit-17',['-DPORTABLE_CATALOG_LIMIT=17']),('sdr',['-DPORTABLE_CATALOG_LIMIT=18']),('intermediate',['-DPORTABLE_CATALOG_LIMIT=19']),('hid-watch',['-DPORTABLE_CATALOG_LIMIT=20'])]:
-  for count in (0,1,16,17,18,19,20,21,128,4294967295):
+ for profile,limit in [('historical',[]),('explicit-17',['-DPORTABLE_CATALOG_LIMIT=17']),('sdr',['-DPORTABLE_CATALOG_LIMIT=18']),('intermediate',['-DPORTABLE_CATALOG_LIMIT=19']),('hid-watch',['-DPORTABLE_CATALOG_LIMIT=20']),('contexts-watch',['-DPORTABLE_CATALOG_LIMIT=21'])]:
+  for count in (0,1,16,17,18,19,20,21,22,128,4294967295):
    binary=out/('catalog-'+mode+'-'+profile+'-'+str(count))
    subprocess.run([*common,*sanitizers,*limit,'-DTEST_CATALOG_COUNT='+str(count)+'U',
     str(ROOT/'test/native_apps/portable_catalog_capacity_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(binary)],check=True,timeout=60)
    subprocess.run([str(binary)],check=True,timeout=10)
 # Reject unsupported compile-time limits before any app can be built.
-for limit in (-1,0,16,21,128,4294967295):
+for limit in (-1,0,16,22,128,4294967295):
  result=subprocess.run([*common,'-DPORTABLE_CATALOG_LIMIT='+str(limit),'-fsyntax-only',
   str(ROOT/'lib/PortableApps/src/adapter.c')],capture_output=True,text=True,timeout=60)
- assert result.returncode and 'PORTABLE_CATALOG_LIMIT must be between 17 and 20' in result.stderr, limit
+ assert result.returncode and 'PORTABLE_CATALOG_LIMIT must be between 17 and 21' in result.stderr, limit

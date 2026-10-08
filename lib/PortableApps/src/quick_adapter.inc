@@ -32,8 +32,8 @@ static bool low_battery_poll(void) {
  if(result&PORTABLE_LOW_BATTERY_RETAINED)return false;
  if(result&PORTABLE_LOW_BATTERY_ERROR)rt->diagnostic("LOW_BATTERY settings=unconfirmed");
  if(!(result&PORTABLE_LOW_BATTERY_ENTERED))return true;
-#ifdef PORTABLE_BLE_BROADCAST
- if(!portable_broadcast_pause(&broadcast_client))return false;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if(!portable_background_stop())return false;
 #endif
  /* Cancel stale preview/pending actions before reloading confirmed settings.
   * A later new gesture is a manual override and remains authoritative. */
@@ -52,8 +52,8 @@ static bool low_battery_poll(void) {
 static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
  if(!quick_storage_safe())return false;
-#ifdef PORTABLE_BLE_BROADCAST
- if((actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE)) && !portable_broadcast_pause(&broadcast_client))return false;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if((actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE)) && !portable_background_stop())return false;
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -116,8 +116,8 @@ static bool quick_foreground(bool *consumed) {
 #endif
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
-#ifdef PORTABLE_BLE_BROADCAST
- if(!portable_broadcast_pause(&broadcast_client))return false;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if(!portable_background_stop())return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
  /* Drain before radio controls load/apply; a dismiss never resumes RF. */

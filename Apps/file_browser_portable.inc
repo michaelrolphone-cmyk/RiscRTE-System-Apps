@@ -281,8 +281,8 @@ void app_main(void) {
    if(portable_app_sleep_retained())return;
 #endif
    if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
-#ifdef PORTABLE_BLE_BROADCAST
-    while(!portable_broadcast_stop())fb_runtime->yield_ms(50);
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    while(!portable_background_stop())fb_runtime->yield_ms(50);
 #endif
     for(;;)fb_runtime->yield_ms(50);}
    return;
@@ -305,8 +305,8 @@ void app_main(void) {
    * is open. Never reinterpret it as nested Back or replace its destination. */
   if(input.exit_requested) {
    if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER handoff cleanup-unconfirmed; invocation retained");
-#ifdef PORTABLE_BLE_BROADCAST
-    while(!portable_broadcast_stop())fb_runtime->yield_ms(50);
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    while(!portable_background_stop())fb_runtime->yield_ms(50);
 #endif
     for(;;)fb_runtime->yield_ms(50);}
    return;

@@ -15,13 +15,13 @@ class TimecardPreparation(unittest.TestCase):
   self.assertEqual(bytes(map(int,encoded.split(','))),data[boff+offset:boff+offset+length])
   self.assertIn('{"solid:f274",%d,%d,rpi_solid_f274}'%(w,h),source)
   self.assertNotIn('timecard',json.loads((root/'catalog-icons.json').read_text())['apps'])
-  self.assertEqual(json.loads((root/'additional-icons.json').read_text()),{'solid:f274':'calendar-check','solid:f245':'arrow-pointer'})
+  self.assertEqual(json.loads((root/'additional-icons.json').read_text()),{'solid:f274':'calendar-check','solid:f245':'arrow-pointer','solid:f015':'house'})
  def test_declared_capacity_and_version_are_explicit(self):
   source=(ROOT/'lib/PortableApps/src/adapter.c').read_text()
   self.assertEqual(source.count('portable_catalog_count <= PORTABLE_CATALOG_LIMIT'),2)
   header=(ROOT/'lib/PortableApps/include/PortableApps.h').read_text()
   self.assertIn('#define PORTABLE_CATALOG_LIMIT 17',header)
-  self.assertIn('PORTABLE_CATALOG_LIMIT < 17 || PORTABLE_CATALOG_LIMIT > 20',header)
-  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.5.0')
+  self.assertIn('PORTABLE_CATALOG_LIMIT < 17 || PORTABLE_CATALOG_LIMIT > 21',header)
+  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.7.8')
 
 if __name__=='__main__':unittest.main()
