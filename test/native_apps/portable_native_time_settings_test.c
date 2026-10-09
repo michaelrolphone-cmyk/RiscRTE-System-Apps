@@ -1,6 +1,8 @@
 /* Real Apps/settings.c, production adapter/views and checked Set Time helpers.
- * Only the native providers are doubles. Every interaction enters app_main;
- * no test calls editor_save, settings_activate or mutates the editor draft. */
+ * Only the native providers are doubles. Settings interactions enter app_main;
+ * no test calls editor_save, settings_activate or mutates the editor draft.
+ * Optional Quick clock/action checks run directly before invocation fini;
+ * these checks do not qualify the Quick gesture controller. */
 #define PORTABLE_SETTINGS_APP
 #define PORTABLE_SETTINGS_NATIVE_TIME
 #define PORTABLE_SETTINGS_TIME_ZONE
@@ -11,6 +13,11 @@
 #define PORTABLE_DISPLAY_ROTATION 90
 #define PORTABLE_HOME_APP "default.elf"
 #define PORTABLE_SETTINGS_VERSION "1.3.7"
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+#define TEST_NATIVE_SETTINGS_ALARMS
+#define PORTABLE_QUICK_ACTIONS
+#define PORTABLE_QUICK_RADIOS
+#endif
 #ifdef TEST_NATIVE_SETTINGS_ALARMS
 #define PORTABLE_ALARM_CLIENT
 #define PORTABLE_ALARM_SETTINGS
@@ -37,7 +44,7 @@
 void app_main(void);
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
-enum { K_DISPLAY=1,K_TOUCH,K_NAV,K_KV,K_NATIVE,K_CONTROL,K_RTC,K_BATTERY,K_ALARM };
+enum { K_DISPLAY=1,K_TOUCH,K_NAV,K_KV,K_NATIVE,K_CONTROL,K_RTC,K_BATTERY,K_ALARM,K_WIFI,K_BLE };
 typedef struct {unsigned kind,generation;} lease;
 static lease leases[32];
 static unsigned generation,live,high_water,provider_calls,acquires,releases;
@@ -57,6 +64,11 @@ static int64_t native_epoch,seed_epoch,expected_epoch;
 static const char *test_name,*zone_id;
 static twatch_rtc_time_v1 calendar,written,first_draft;
 static char first_basis[64],final_status[128];
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+static bool quick_exercising;
+static unsigned wifi_disconnects,wifi_statuses,ble_sets,ble_statuses,radio_puts,quick_puts;
+static uint8_t ble_value,radio_record[4]={0x51,1,0,0xa5},dnd_value;
+#endif
 static bool which(const char *s){return !strcmp(test_name,s);}
 void __real_free(void *pointer);
 void __wrap_free(void *pointer){assert(!hidden&&!retained);__real_free(pointer);}
@@ -134,6 +146,9 @@ static bool navigation_foreground(void *ctx,const risc_input_foreground_v1 *list
 static int32_t native_read(void *ctx,risc_realtime_snapshot_v1 *out) {
   io();assert(ctx==leases&&(kind_live(K_NATIVE)||kind_live(K_CONTROL)));++native_reads;
   if(which("native-context")&&!seeds){hidden=true;return RISC_REALTIME_CONTEXT;}
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  if(which("quick-time-context")&&quick_exercising){hidden=true;return RISC_REALTIME_CONTEXT;}
+#endif
   if(which("native-read-io")&&!seeds)return RISC_REALTIME_IO;
   if(which("native-readback-io")&&seeds)return RISC_REALTIME_IO;
   *out=(risc_realtime_snapshot_v1){.struct_size=sizeof(*out),.validity=native_valid?RISC_REALTIME_VALID:RISC_REALTIME_UNSET,
@@ -179,6 +194,12 @@ static int32_t kv_get(void *ctx,const char *key,void *out,uint32_t capacity,uint
 #ifdef TEST_NATIVE_SETTINGS_ALARMS
   else if(!strcmp(key,PORTABLE_ALERT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  else if(!strcmp(key,PORTABLE_RADIO_KEY)){data=radio_record;length=4;}
+  else if(!strcmp(key,PQA_DND_KEY)&&quick_puts){data=&dnd_value;length=1;}
+  else if(!strcmp(key,PQA_BRIGHTNESS_KEY)||!strcmp(key,PQA_VOLUME_KEY)||
+          !strcmp(key,PQA_RESTORE_VOLUME_KEY)||!strcmp(key,PQA_DND_KEY))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
   else assert(!"unexpected preference read");
   if(!length)return RISC_KEY_VALUE_NOT_FOUND;
   *size=length;if(capacity<length)return RISC_KEY_VALUE_BUFFER_SMALL;
@@ -196,6 +217,12 @@ static int32_t kv_put(void *ctx,const char *key,const void *data,uint32_t size) 
     assert(size==44);++zone_puts;memcpy(zone_record,data,size);zone_size=size;
   } else if(!strcmp(key,PORTABLE_READER_FLIP_KEY)) {
     assert(size==4);++other_puts;memcpy(flip_record,data,size);flipped=((const uint8_t *)data)[2]!=0;
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  } else if(!strcmp(key,PORTABLE_RADIO_KEY)) {
+    assert(size==4);++radio_puts;memcpy(radio_record,data,size);
+  } else if(!strcmp(key,PQA_DND_KEY)) {
+    assert(size==1);++quick_puts;dnd_value=*(const uint8_t *)data;
+#endif
   } else {++other_puts;assert(!"unexpected preference write");}
   return RISC_KEY_VALUE_OK;
 }
@@ -231,7 +258,7 @@ static int32_t alarm_step(void *ctx) {
   }
   return ALARM_OK;
 }
-static int32_t alarm_refresh(void *ctx){(void)ctx;io();assert(which("alarm-refresh-retained"));++alarm_refreshes;hidden=true;return -9;}
+static int32_t alarm_refresh(void *ctx){(void)ctx;io();assert(which("alarm-refresh-retained")||which("quick-refresh-retained"));++alarm_refreshes;hidden=true;return -9;}
 static int32_t alarm_ack(void *ctx,const alarm_token_v1 *token) {
   (void)ctx;io();assert(which("alarm-ack-retained")&&!memcmp(token,&alarm_state.occurrence,sizeof(*token)));
   ++alarm_acks;hidden=true;return -9;
@@ -239,6 +266,28 @@ static int32_t alarm_ack(void *ctx,const alarm_token_v1 *token) {
 static int32_t alarm_prepare(void *ctx,alarm_sleep_v1 *out){(void)ctx;(void)out;io();assert(!"unexpected sleep preparation");return ALARM_INVALID;}
 static int32_t alarm_stop(void *ctx){(void)ctx;io();assert(which("alarm-stop-retained"));++alarm_stops;hidden=true;return -9;}
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
+#endif
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+static bool wifi_disconnect(void *ctx) {
+  (void)ctx;io();++wifi_disconnects;
+  if(quick_exercising&&which("quick-wifi-disconnect")){hidden=true;return false;}return true;
+}
+static wifi_link_t wifi_status(void *ctx) {
+  (void)ctx;io();++wifi_statuses;
+  if(quick_exercising&&which("quick-wifi-status")){hidden=true;return WIFI_LINK_JOINING;}return WIFI_LINK_DOWN;
+}
+static bool ble_set(void *ctx,bool enabled) {
+  (void)ctx;io();++ble_sets;
+  if(quick_exercising&&which("quick-ble-set")){hidden=true;return false;}
+  ble_value=enabled?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;return true;
+}
+static bool ble_status(void *ctx,uint8_t *out) {
+  (void)ctx;io();++ble_statuses;
+  if(quick_exercising&&which("quick-ble-status")){hidden=true;*out=PORTABLE_BLUETOOTH_RETAINED;return false;}
+  *out=ble_value;return true;
+}
+static const wifi_api_v1 wifi_api={.api_version=1,.struct_size=sizeof(wifi_api),.status=wifi_status,.disconnect_checked=wifi_disconnect};
+static const portable_bluetooth_control_v1 ble_api={.api_version=1,.struct_size=sizeof(ble_api),.set_enabled=ble_set,.status=ble_status};
 #endif
 static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
   io();assert(in_main&&grant->struct_size==sizeof(*grant));++acquires;
@@ -254,8 +303,15 @@ static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_run
 #ifdef TEST_NATIVE_SETTINGS_ALARMS
   else if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){kind=K_ALARM;api=&alarm_api;}
 #endif
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  else if(!strcmp(name,"net.wifi")){kind=K_WIFI;api=&wifi_api;assert(instance==15);}
+  else if(!strcmp(name,"bluetooth.hci")){kind=K_BLE;api=&ble_api;assert(instance==16);}
+#endif
   else {assert(!strcmp(name,"board.battery"));kind=K_BATTERY;api=&battery_api;}
-  assert(version==(kind==K_RTC?2u:1u));assert(kind==K_KV||!instance);
+  assert(version==(kind==K_RTC?2u:1u));assert(kind==K_KV||kind==K_WIFI||kind==K_BLE||!instance);
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  if(quick_exercising&&which("quick-later-acquire")&&kind==K_BLE){hidden=true;return false;}
+#endif
   if((which("native-absent")&&(kind==K_NATIVE||kind==K_CONTROL))||
      (which("native-control-absent")&&kind==K_CONTROL))return false;
   if(which("rtc-acquire-false")&&kind==K_RTC){hidden=true;return false;}
@@ -267,6 +323,9 @@ static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_run
 static bool release(risc_runtime_capability_v1 *grant) {
   io();assert(grant->slot&&grant->slot<32&&grant->api&&live);
   lease *entry=&leases[grant->slot];assert(entry->kind&&entry->generation==grant->generation);++releases;
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  if(quick_exercising&&which("quick-release-false")&&entry->kind==K_KV){hidden=true;return false;}
+#endif
   if((which("rtc-release-false")&&entry->kind==K_RTC)||
      (which("metadata-release-false")&&entry->kind==K_KV&&basis_puts)||
      (which("native-release-false")&&entry->kind==K_CONTROL&&basis_puts)) {
@@ -298,6 +357,7 @@ static void configure_records(void) {
   memcpy(flip_record,(uint8_t[]){0x52,1,(uint8_t)flipped,(uint8_t)((unsigned)flipped^0xa5)},4);
 }
 static void plan_inputs(void) {
+  if(!strncmp(test_name,"quick-",6)){end_app();return;}
   if(which("open-only")||which("native-context")||which("native-read-io")||which("native-absent")){end_app();return;}
   if(which("timezone")) {
     nav(RISC_NAV_DOWN);nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);
@@ -378,7 +438,7 @@ static void plan_inputs(void) {
   end_app();
 }
 static bool no_save_case(void) {
-  return !strncmp(test_name,"alarm-",6)||which("open-only")||which("cancel-touch")||which("back")||which("home")||which("value-back")||
+  return !strncmp(test_name,"alarm-",6)||!strncmp(test_name,"quick-",6)||which("open-only")||which("cancel-touch")||which("back")||which("home")||which("value-back")||
    which("value-home")||which("held-entry")||which("fold-held")||which("fold-back")||which("fold-home")||
    which("gap")||which("range")||which("drag-save")||which("touch-gap")||which("touch-failed-poll")||
    which("touch-replaced")||which("bad-basis")||which("unavailable-basis")||which("native-context")||
@@ -406,7 +466,27 @@ int main(int argc,char **argv) {
     app_module_fini();assert(!provider_calls&&!live&&!barriers);
     printf("{\"case\":\"%s\",\"loader_only\":true,\"provider_calls\":0}\n",test_name);return 0;
   }
-  in_main=true;app_main();in_main=false;
+  in_main=true;app_main();
+#ifdef TEST_NATIVE_SETTINGS_QUICK
+  if(!strncmp(test_name,"quick-",6)) {
+    assert(!retained&&quick.loaded&&quick.ui.radios_valid);
+    assert(wifi_disconnects&&wifi_statuses&&ble_sets&&ble_statuses&&!rtc_reads&&!rtc_writes&&!seeds);
+    quick_exercising=true;
+    if(which("quick-time")||which("quick-time-context")) {
+      unsigned before=native_reads;char value[6];quick_time(value);
+      assert(native_reads==before+1&&!kind_live(K_RTC));
+      if(which("quick-time"))assert(!strcmp(value,"12:34")&&!kind_live(K_CONTROL));
+      else assert(retained&&!strcmp(value,"--:--"));
+    } else if(which("quick-refresh-retained")) {
+      quick.ui.action_dnd=true;assert(!quick_apply(PQA_DND));
+    } else if(!which("quick-startup")) {
+      assert(!quick_apply(PQA_AIRPLANE));
+    }
+    if(which("quick-startup")||which("quick-time"))assert(!retained&&!radio_puts&&!quick_puts);
+    else assert(retained);
+  }
+#endif
+  in_main=false;
   if(getenv("NATIVE_SETTINGS_TRACE"))fprintf(stderr,"done polls %u calls %u failed %d retained %d writes %u seeds %u fields %d status %s editor %s\n",polls,provider_calls,failed,retained,rtc_writes,seeds,saw_fields,snt_status_text,editor_message);
   snprintf(final_status,sizeof(final_status),"%s",snt_status_text);
   if(!retained){assert(!hidden);in_fini=true;app_module_fini();in_fini=false;}
@@ -464,7 +544,7 @@ int main(int argc,char **argv) {
     assert(alarm_acks==(which("alarm-ack-retained")?1u:0u));
     assert(alarm_refreshes==(which("alarm-refresh-retained")?1u:0u));
     assert(alarm_stops==(which("alarm-stop-retained")?1u:0u));
-  } else assert(!alarm_acks&&!alarm_refreshes&&!alarm_stops);
+  } else assert(!alarm_acks&&alarm_refreshes==(which("quick-refresh-retained")?1u:0u)&&!alarm_stops);
 #endif
   printf("{\"case\":\"%s\",\"rtc_writes\":%u,\"native_seeds\":%u,\"basis_puts\":%u,\"zone_puts\":%u,\"retained\":%s,\"native_reads\":%u,\"frames\":%u,\"grant_high_water\":%u,\"status\":\"%s\"}\n",
     test_name,rtc_writes,seeds,basis_puts,zone_puts,retained?"true":"false",native_reads,presents,high_water,final_status);

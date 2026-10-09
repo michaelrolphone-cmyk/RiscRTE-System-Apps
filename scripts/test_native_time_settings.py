@@ -34,9 +34,12 @@ native-seed-io native-readback-io native-readback-mismatch native-seed-context n
 metadata-acquire-false metadata-write-io metadata-read-io metadata-release-false metadata-mismatch
 native-release-false drag-save touch-gap touch-failed-poll touch-replaced timezone timezone-then-save flip-editor""".split()
 ALARM_CASES = "alarm-step-retained alarm-status-retained alarm-refresh-retained alarm-ack-retained alarm-stop-retained".split()
+QUICK_CASES = "quick-startup quick-time quick-time-context quick-later-acquire quick-wifi-disconnect quick-wifi-status quick-ble-set quick-ble-status quick-release-false quick-refresh-retained".split()
 PROFILES = {"paper": [], "short-paper": ["-DTEST_NATIVE_SETTINGS_SHORT"],
             "paper-alarms": ["-DTEST_NATIVE_SETTINGS_ALARMS"],
-            "short-paper-alarms": ["-DTEST_NATIVE_SETTINGS_SHORT", "-DTEST_NATIVE_SETTINGS_ALARMS"]}
+            "short-paper-alarms": ["-DTEST_NATIVE_SETTINGS_SHORT", "-DTEST_NATIVE_SETTINGS_ALARMS"],
+            "paper-quick": ["-DTEST_NATIVE_SETTINGS_QUICK"],
+            "short-paper-quick": ["-DTEST_NATIVE_SETTINGS_SHORT", "-DTEST_NATIVE_SETTINGS_QUICK"]}
 CAPTURE_CASES = {"save-touch", "save-touch-flip", "fold-first", "fold-second", "gap",
                  "missing-basis", "bad-basis", "unavailable-basis", "unset-local",
                  "native-seed-io", "metadata-mismatch", "timezone", "flip-editor",
@@ -137,7 +140,7 @@ def main():
     parser.add_argument("--runtime-ref", default=RUNTIME_REF)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "build/native-time-settings")
     parser.add_argument("--evidence", type=Path)
-    parser.add_argument("--case", action="append", choices=CASES + ALARM_CASES, dest="cases")
+    parser.add_argument("--case", action="append", choices=CASES + ALARM_CASES + QUICK_CASES, dest="cases")
     parser.add_argument("--profile", action="append", choices=PROFILES, dest="profiles")
     parser.add_argument("--normal-only", action="store_true", help="Development diagnostic run; final verification uses both builds")
     parser.add_argument("--no-pixels", action="store_true", help="Skip optional production raster export")
@@ -160,7 +163,9 @@ def main():
                "runtime_tree": subprocess.check_output(["git", "-C", repo, "rev-parse", RUNTIME_REF + "^{tree}"], text=True).strip(),
                "runtime_headers": {name: sha(sdk / name) for name in HEADERS},
                "compiler": subprocess.check_output([cc, "--version"], text=True).splitlines()[0],
-               "target_builder_run": False, "hardware_qualification": "not run", "runs": {}}
+               "target_builder_run": False, "hardware_qualification": "not run",
+               "quick_coverage": "startup composition and direct production clock/action calls before fini; Quick gestures not qualified here",
+               "runs": {}}
     with tempfile.TemporaryDirectory(prefix="native-time-settings-") as temporary:
         stage = Path(temporary)
         include = stage / "include"
@@ -169,10 +174,14 @@ def main():
         for header in HEADERS:
             shutil.copyfile(sdk / header, include / header)
         for profile in args.profiles or PROFILES:
-            selected_cases = args.cases or CASES + (ALARM_CASES if "alarms" in profile else [])
-            selected_cases = [case for case in selected_cases if case not in ALARM_CASES or "alarms" in profile]
+            quick = "quick" in profile
+            alarms = "alarms" in profile or quick
+            selected_cases = args.cases or CASES + (ALARM_CASES if alarms else []) + (QUICK_CASES if quick else [])
+            selected_cases = [case for case in selected_cases if (case not in ALARM_CASES or alarms) and (case not in QUICK_CASES or quick)]
             if not selected_cases:
                 continue
+            profile_sources = [*sources, *([ROOT / "lib/PortableApps/src" / name for name in
+                                ("quick_actions.c", "quick_render.c", "quick_session.c", "quick_radios.c")] if quick else [])]
             profile_out = out / profile
             profile_out.mkdir(exist_ok=True)
             frames = profile_out / "frames"
@@ -181,7 +190,7 @@ def main():
                 executable = out / ("native-time-settings-" + label)
                 flags = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie"] if sanitized else []
                 run([cc, "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror", *flags, *PROFILES[profile],
-                     "-I" + str(include), "-I" + str(ROOT / "lib/NativeApps/include"), *sources,
+                     "-I" + str(include), "-I" + str(ROOT / "lib/NativeApps/include"), *profile_sources,
                      "-Wl,--wrap=free", "-o", executable], timeout=120)
                 results = []
                 if not sanitized and not args.no_pixels:
@@ -206,6 +215,8 @@ def main():
                ROOT / "lib/PortableApps/src/settings_timezone_view.inc", ROOT / "lib/PortableApps/src/native_custody_adapter.inc",
                ROOT / "lib/PortableApps/src/alarm.inc", ROOT / "lib/PortableApps/include/PortableTouch.h",
                ROOT / "lib/PortableApps/include/PortableAlarmClient.h", ROOT / "lib/PortableApps/include/PortableNativeCustody.h",
+               *[ROOT / "lib/PortableApps/src" / name for name in
+                 ("quick_actions.c", "quick_render.c", "quick_session.c", "quick_radios.c", "quick_adapter.inc")],
                Path(__file__).resolve()]
     receipt["source_sha256"] = {str(path.relative_to(ROOT)): sha(path) for path in tracked if path.is_file()}
     assert bundled.read_bytes() == old_header, "Bundled compatibility Runtime header changed"
