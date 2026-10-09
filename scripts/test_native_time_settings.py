@@ -28,10 +28,12 @@ CASES = """init-only init-short init-no-retain open-only save-local save-utc sav
 cancel-touch back home value-back value-home value-edit held-entry
 fold-first fold-second fold-second-utc fold-held fold-back fold-home gap range
 missing-basis bad-basis unavailable-basis missing-zone bad-zone unavailable-zone
+basis-context zone-context timezone-io-before timezone-io-after timezone-retry-before timezone-retry-after
 unset-local unset-utc native-absent native-control-absent native-context native-read-io
 rtc-acquire-false rtc-write-false rtc-read-false rtc-release-false rtc-mismatch
 native-seed-io native-readback-io native-readback-mismatch native-seed-context native-retry
 metadata-acquire-false metadata-write-io metadata-read-io metadata-release-false metadata-mismatch
+metadata-before-io metadata-retry-before metadata-retry-after metadata-read-retry metadata-write-context metadata-read-context metadata-held-save
 native-release-false drag-save touch-gap touch-failed-poll touch-replaced timezone timezone-then-save flip-editor""".split()
 ALARM_CASES = "alarm-step-retained alarm-status-retained alarm-refresh-retained alarm-ack-retained alarm-stop-retained".split()
 QUICK_CASES = "quick-startup quick-time quick-time-context quick-later-acquire quick-wifi-disconnect quick-wifi-status quick-ble-set quick-ble-status quick-release-false quick-refresh-retained".split()
@@ -43,6 +45,8 @@ PROFILES = {"paper": [], "short-paper": ["-DTEST_NATIVE_SETTINGS_SHORT"],
 CAPTURE_CASES = {"save-touch", "save-touch-flip", "fold-first", "fold-second", "gap",
                  "missing-basis", "bad-basis", "unavailable-basis", "unset-local",
                  "native-seed-io", "metadata-mismatch", "timezone", "flip-editor",
+                 "metadata-write-io", "metadata-read-io", "metadata-before-io", "metadata-retry-before", "metadata-retry-after", "metadata-read-retry",
+                 "unavailable-zone", "timezone-io-before", "timezone-io-after", "timezone-retry-before", "timezone-retry-after",
                  "alarm-refresh-retained", "alarm-ack-retained"}
 
 
@@ -59,7 +63,7 @@ def epoch(date):
 
 
 def environment(name):
-    zone = "UTC" if name in {"timezone", "timezone-then-save", "missing-zone", "bad-zone", "unavailable-zone"} else "America/Denver"
+    zone = "UTC" if name.startswith("timezone") or name in {"missing-zone", "bad-zone", "unavailable-zone"} else "America/Denver"
     before = expected = epoch("2026-01-15T19:34:56")
     if name.startswith("fold-"):
         before = expected = epoch("2026-11-01T07:30:00")

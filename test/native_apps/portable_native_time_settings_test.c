@@ -50,6 +50,7 @@ static lease leases[32];
 static unsigned generation,live,high_water,provider_calls,acquires,releases;
 static unsigned ticks,polls,subscriptions,frames,presents,launches,barriers;
 static unsigned native_reads,seeds,rtc_reads,rtc_writes,kv_reads,basis_puts,zone_puts,other_puts;
+static unsigned metadata_failure_calls;
 static unsigned nav_buttons[2048],next_at=5,last_at,contact_count;
 typedef struct {unsigned at,x,y,id;} scripted_contact;
 static scripted_contact contacts[256];
@@ -59,6 +60,7 @@ static bool in_main,in_fini,hidden,retained,flipped,native_valid=true;
 static bool initial_basis_missing,initial_basis_invalid,initial_basis_unavailable;
 static bool initial_zone_missing,initial_zone_invalid,initial_zone_unavailable;
 static bool saw_fields,saw_fold,saw_default_basis,saw_snapshot_unset;
+static bool saw_zone_unconfirmed;
 static unsigned gap_poll,fail_poll,replaced_poll,capture_index;
 static int64_t native_epoch,seed_epoch,expected_epoch;
 static const char *test_name,*zone_id;
@@ -115,6 +117,7 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
   if(sv_page==SV_FOLD)saw_fold=true;
   if(snt_basis_status==PORTABLE_RTC_BASIS_MISSING)saw_default_basis=true;
   if(snt_snapshot_status==PORTABLE_REALTIME_UNSET)saw_snapshot_unset=true;
+  if(stz_unconfirmed)saw_zone_unconfirmed=true;
   capture();return true;
 }
 static bool frame_state(void *ctx,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
@@ -182,10 +185,15 @@ static int32_t kv_get(void *ctx,const char *key,void *out,uint32_t capacity,uint
   io();assert(ctx==leases&&kind_live(K_KV));++kv_reads;
   const uint8_t *data=NULL;uint32_t length=0;*size=0;
   if(!strcmp(key,PORTABLE_RTC_BASIS_KEY)) {
-    if(basis_puts&&which("metadata-read-io")){hidden=true;return RISC_KEY_VALUE_IO;}
+    if(basis_puts&&(which("metadata-read-io")||(which("metadata-read-retry")&&basis_puts==1))) {
+      metadata_failure_calls=provider_calls;return RISC_KEY_VALUE_IO;
+    }
+    if(basis_puts&&which("metadata-read-context")){hidden=true;return RISC_KEY_VALUE_CONTEXT;}
+    if(which("basis-context")){hidden=true;return RISC_KEY_VALUE_CONTEXT;}
     if(!basis_puts&&initial_basis_unavailable)return RISC_KEY_VALUE_IO;
     data=basis_record;length=basis_size;
   } else if(!strcmp(key,PORTABLE_TIMEZONE_KEY)) {
+    if(which("zone-context")){hidden=true;return RISC_KEY_VALUE_CONTEXT;}
     if(initial_zone_unavailable)return RISC_KEY_VALUE_IO;
     data=zone_record;length=zone_size;
   } else if(!strcmp(key,PORTABLE_READER_FLIP_KEY)){data=flip_record;length=flip_size;}
@@ -211,10 +219,21 @@ static int32_t kv_put(void *ctx,const char *key,const void *data,uint32_t size) 
   io();assert(ctx==leases&&kind_live(K_KV));
   if(!strcmp(key,PORTABLE_RTC_BASIS_KEY)) {
     assert(!kind_live(K_RTC)&&seeds&&size==12);++basis_puts;
+    if(which("metadata-write-context")){hidden=true;return RISC_KEY_VALUE_CONTEXT;}
+    if(which("metadata-before-io")||(which("metadata-retry-before")&&basis_puts==1)) {
+      metadata_failure_calls=provider_calls;return RISC_KEY_VALUE_IO;
+    }
     memcpy(basis_record,data,size);basis_size=size;
-    if(which("metadata-write-io")){hidden=true;return RISC_KEY_VALUE_IO;}
+    if(which("metadata-write-io")||which("metadata-held-save")||(which("metadata-retry-after")&&basis_puts==1)) {
+      metadata_failure_calls=provider_calls;return RISC_KEY_VALUE_IO;
+    }
   } else if(!strcmp(key,PORTABLE_TIMEZONE_KEY)) {
-    assert(size==44);++zone_puts;memcpy(zone_record,data,size);zone_size=size;
+    assert(size==44);++zone_puts;
+    bool before=which("timezone-io-before")||which("timezone-retry-before");
+    bool after=which("timezone-io-after")||which("timezone-retry-after");
+    if(before&&zone_puts==1)return RISC_KEY_VALUE_IO;
+    memcpy(zone_record,data,size);zone_size=size;
+    if(after&&zone_puts==1)return RISC_KEY_VALUE_IO;
   } else if(!strcmp(key,PORTABLE_READER_FLIP_KEY)) {
     assert(size==4);++other_puts;memcpy(flip_record,data,size);flipped=((const uint8_t *)data)[2]!=0;
 #ifdef TEST_NATIVE_SETTINGS_QUICK
@@ -359,10 +378,13 @@ static void configure_records(void) {
 static void plan_inputs(void) {
   if(!strncmp(test_name,"quick-",6)){end_app();return;}
   if(which("open-only")||which("native-context")||which("native-read-io")||which("native-absent")){end_app();return;}
-  if(which("timezone")) {
+  if(which("timezone")||which("timezone-io-before")||which("timezone-io-after")||
+     which("timezone-retry-before")||which("timezone-retry-after")) {
     nav(RISC_NAV_DOWN);nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);
     /* UTC starts at the UTC region. Move to Africa, then its first city. */
-    nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);nav(RISC_NAV_CONFIRM);end_app();return;
+    nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);nav(RISC_NAV_CONFIRM);
+    if(which("timezone-retry-before")||which("timezone-retry-after"))nav(RISC_NAV_CONFIRM);
+    end_app();nav(RISC_NAV_BACK);return;
   }
   if(which("timezone-then-save")) {
     nav(RISC_NAV_DOWN);nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);
@@ -421,7 +443,7 @@ static void plan_inputs(void) {
     next_at+=16;end_app();return;
   }
   save_time(touch_mode);
-  if(which("held-save")) {
+  if(which("held-save")||which("metadata-held-save")) {
     for(unsigned i=1;i<12;++i)nav_buttons[last_at+i]=RISC_NAV_CONFIRM;
     next_at=last_at+16;
   }
@@ -434,7 +456,7 @@ static void plan_inputs(void) {
     else if(which("fold-home")){nav(RISC_NAV_HOME);return;}
     else {if(which("fold-second")||which("fold-second-utc"))nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);}
   }
-  if(which("native-retry"))nav(RISC_NAV_CONFIRM);
+  if(which("native-retry")||which("metadata-retry-before")||which("metadata-retry-after")||which("metadata-read-retry"))nav(RISC_NAV_CONFIRM);
   end_app();
 }
 static bool no_save_case(void) {
@@ -443,6 +465,8 @@ static bool no_save_case(void) {
    which("gap")||which("range")||which("drag-save")||which("touch-gap")||which("touch-failed-poll")||
    which("touch-replaced")||which("bad-basis")||which("unavailable-basis")||which("native-context")||
    which("native-read-io")||which("native-absent")||which("native-control-absent")||which("timezone")||
+   which("timezone-io-before")||which("timezone-io-after")||which("timezone-retry-before")||which("timezone-retry-after")||
+   which("basis-context")||which("zone-context")||
    which("flip-editor")||which("rtc-acquire-false");
 }
 int main(int argc,char **argv) {
@@ -500,7 +524,7 @@ int main(int argc,char **argv) {
   }
   if(no_save_case())assert(!rtc_writes&&!seeds&&!basis_puts);
   else if(which("bad-zone")||which("unavailable-zone"))assert(!rtc_writes&&!seeds&&!basis_puts);
-  else assert(rtc_writes==(which("native-retry")?2u:1u));
+  else assert(rtc_writes==((which("native-retry")||which("metadata-retry-before")||which("metadata-retry-after")||which("metadata-read-retry"))?2u:1u));
   if(which("save-local")||which("save-utc")||which("save-touch")||which("save-touch-flip")||
      which("held-save")||which("held-touch")||which("value-edit")||which("fold-first")||
      which("fold-second")||which("fold-second-utc")||which("missing-zone")||which("native-retry")||which("timezone-then-save"))
@@ -509,7 +533,8 @@ int main(int argc,char **argv) {
   if(basis_puts) {
     assert(seeds&&snt_last_result.rtc_outcome==PORTABLE_SET_TIME_CONFIRMED);
     assert(snt_last_result.native.verified&&seed_epoch==expected_epoch);
-    assert(portable_rtc_basis_word(basis_record+4)==(uint32_t)expected_epoch);
+    assert(portable_rtc_basis_word(basis_record+4)==
+      (which("metadata-before-io")||which("metadata-write-context")?UINT32_C(1767225600):(uint32_t)expected_epoch));
     bool utc=which("save-utc")||which("fold-second-utc")||which("unset-utc");
     assert((basis_record[3]!=0)==utc);
     portable_timezone_civil actual={written.year,written.month,written.day,written.hour,written.minute,written.second,written.weekday};
@@ -521,7 +546,16 @@ int main(int argc,char **argv) {
   if(which("rtc-mismatch"))assert(!retained&&snt_last_result.rtc_outcome==PORTABLE_SET_TIME_UNCONFIRMED&&!seeds&&!basis_puts);
   if(which("native-seed-io")||which("native-readback-io")||which("native-readback-mismatch"))
     assert(!retained&&snt_last_result.rtc_outcome==PORTABLE_SET_TIME_CONFIRMED&&seeds==1&&!basis_puts&&!snt_last_result.native.verified);
-  if(which("metadata-write-io")||which("metadata-read-io"))assert(retained&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED);
+  if(which("metadata-write-io")||which("metadata-read-io")||which("metadata-before-io")||which("metadata-held-save")) {
+    /* Typed KV IO is ordinary persistence failure. Preserve independent
+     * outcomes and close the checked grant; retry only on a new Save. */
+    assert(!retained&&!hidden&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED);
+    assert(metadata_failure_calls&&provider_calls>metadata_failure_calls&&basis_puts==1&&seeds==1);
+    assert(strstr(final_status,"RTC verified")&&strstr(final_status,"Native verified")&&strstr(final_status,"Basis unconfirmed"));
+  }
+  if(which("metadata-retry-before")||which("metadata-retry-after")||which("metadata-read-retry"))
+    assert(!retained&&rtc_writes==2&&seeds==2&&basis_puts==2&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_CONFIRMED);
+  if(which("metadata-write-context")||which("metadata-read-context"))assert(retained&&hidden&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED);
   if(which("metadata-mismatch"))assert(!retained&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED);
   if(which("rtc-release-false"))assert(snt_last_result.rtc_outcome==PORTABLE_SET_TIME_CONFIRMED&&!seeds&&!basis_puts);
   if(which("metadata-acquire-false"))assert(snt_last_result.native.verified&&!basis_puts);
@@ -530,13 +564,23 @@ int main(int argc,char **argv) {
      which("metadata-release-false")||which("native-release-false")||which("native-context")||which("native-seed-context"))assert(retained);
   if(which("missing-basis"))assert(saw_default_basis&&strstr(first_basis,"default")&&basis_puts==1&&!basis_record[3]);
   if(which("bad-basis"))assert(saw_fields&&strstr(first_basis,"blocked"));
-  if(which("unavailable-basis")||which("unavailable-zone"))assert(retained);
+  if(which("unavailable-basis"))assert(!retained&&saw_fields&&strstr(first_basis,"Unavailable")&&strstr(first_basis,"blocked"));
+  if(which("unavailable-zone"))assert(!retained&&saw_fields&&snt_zone_status==PORTABLE_TIMEZONE_UNAVAILABLE);
+  if(which("basis-context")||which("zone-context"))assert(retained&&hidden);
   if(which("unset-local")||which("unset-utc"))assert(saw_snapshot_unset&&saw_fields&&first_draft.year==2000&&basis_puts==1);
   if(which("fold-first")||which("fold-second")||which("fold-second-utc")||which("fold-held")||which("fold-back")||which("fold-home"))assert(saw_fold);
   if(which("home")||which("value-home")||which("fold-home"))assert(launches==1);
   else assert(!launches);
   if(which("timezone-then-save"))assert(!strcmp((char *)zone_record+4,"America/Denver")&&first_draft.hour==12&&first_draft.minute==34);
-  assert(zone_puts==((which("timezone")||which("timezone-then-save"))?1u:0u));assert(other_puts==(which("flip-editor")?1u:0u));
+  if(which("timezone-io-before")||which("timezone-io-after")) {
+    assert(!retained&&saw_zone_unconfirmed&&stz_unconfirmed&&zone_puts==1);
+    assert((!strcmp((char *)zone_record+4,"UTC"))==which("timezone-io-before"));
+  } else if(which("timezone-retry-before")||which("timezone-retry-after")) {
+    assert(!retained&&saw_zone_unconfirmed&&!stz_unconfirmed);
+    assert(zone_puts==(which("timezone-retry-before")?2u:1u));
+    assert(!strcmp((char *)zone_record+4,portable_timezone_get(stz_choice)->id));
+  } else assert(zone_puts==((which("timezone")||which("timezone-then-save"))?1u:0u));
+  assert(other_puts==(which("flip-editor")?1u:0u));
   assert(!rtc_reads||rtc_writes); /* Native UNSET and opening never bootstrap RTC. */
 #ifdef TEST_NATIVE_SETTINGS_ALARMS
   if(!strncmp(test_name,"alarm-",6)) {
