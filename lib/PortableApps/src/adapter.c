@@ -158,6 +158,9 @@ static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v
 #endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+static bool quick_open_requested;
+#endif
 static bool quick_foreground(bool *consumed);
 static bool quick_interrupt(void);
 unsigned portable_quick_brightness(void) {return quick.brightness;}
@@ -1467,6 +1470,9 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+  quick_open_requested=false;
+#endif
 #endif
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME

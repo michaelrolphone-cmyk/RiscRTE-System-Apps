@@ -112,10 +112,29 @@ static void quick_time(char out[6]) {
  if(!rt->release(&g))failed=true;
 #endif
 }
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+/* Private Home tap intent. Ownership and storage work begin in the next poll,
+ * after the ordinary pending frame has reached its completion barrier. */
+bool portable_paper_quick_open(void) {
+ if(!rt || failed || native_sleep_retained || !quick.ui.paper || quick_modal ||
+    quick_launch_pending || handoff_requested || alarm_modal || pqa_visible(&quick.ui))return false;
+ quick_open_requested=true;return true;
+}
+#endif
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
+#endif
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(quick_open_requested) {
+  quick_open_requested=false;
+  if(!quick.ui.paper || quick_modal || alarm_modal)return false;
+  pqa_cancel_input(&quick.ui);
+  quick.ui.position_q8=0;quick.ui.target_q8=PQA_OPEN_Q8;quick.ui.velocity_q8=0;
+  quick.ui.clock_valid=false;quick.ui.animation_remainder_ms=0;
+  last_activity=millis_now();
+ }
 #endif
  if(!pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))return true;
  /* Reserve a possible top-edge gesture without owning a modal yet.
