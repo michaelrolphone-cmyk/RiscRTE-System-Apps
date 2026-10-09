@@ -22,6 +22,6 @@ class TimecardPreparation(unittest.TestCase):
   header=(ROOT/'lib/PortableApps/include/PortableApps.h').read_text()
   self.assertIn('#define PORTABLE_CATALOG_LIMIT 17',header)
   self.assertIn('PORTABLE_CATALOG_LIMIT < 17 || PORTABLE_CATALOG_LIMIT > 21',header)
-  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.7.8')
+  self.assertEqual(json.loads((ROOT/'Apps/springboard.json').read_text())['version'],'1.7.12')
 
 if __name__=='__main__':unittest.main()

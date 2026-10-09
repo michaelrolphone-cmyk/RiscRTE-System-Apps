@@ -49,3 +49,19 @@ subprocess.run([*flags,'-O1','-fsanitize=address','-fno-omit-frame-pointer','-no
  str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(out/'focus-pixels')],check=True)
 focus_frames=out/'focus';focus_frames.mkdir(exist_ok=True)
 subprocess.run([str(out/'focus-pixels')],env={**os.environ,'NOVA_VISUALS':str(focus_frames)},check=True,timeout=60)
+
+# Real Nova page gestures through the raw-touch adapter and RGB565 renderer.
+# Partial last pages, one-page/empty catalogs, orientation and retained entry.
+for profile,extra in [
+ ('normal',[]),('rotation180',['-DPORTABLE_TOUCH_ROTATION=180']),
+ ('handoff',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES']),
+ ('handoff180',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES','-DPORTABLE_TOUCH_ROTATION=180'])]:
+ for count in [0,1,19,20,21]:
+  binary=out/f'pages-{profile}-{count}'
+  subprocess.run([*flags,'-O1','-fsanitize=address','-fno-omit-frame-pointer','-no-pie',*extra,
+   '-DPORTABLE_CATALOG_LIMIT=21',f'-DPAGING_CATALOG_COUNT={count}',
+   '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+   str(ROOT/'test/native_apps/springboard_nova_pages_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
+   '-o',str(binary)],check=True)
+  frames=out/f'pages-{profile}';frames.mkdir(exist_ok=True)
+  subprocess.run([str(binary)],env={**os.environ,'NOVA_VISUALS':str(frames)},check=True,timeout=60)
