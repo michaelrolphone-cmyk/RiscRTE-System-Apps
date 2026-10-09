@@ -119,7 +119,7 @@ def build():
   paths.extend(['lib/PortableApps/include/PortablePerformance.h','lib/PortableApps/src/performance.inc'])
   paths.extend(str(path.relative_to(ROOT)) for path in quick_sources)
   if performance:paths.append('scripts/portable_performance_build.py')
-  if tagged_alarm:paths.extend(['scripts/portable_alarm_build.py','Apps/paper_home_points.inc','Apps/PaperHomePoints.h','lib/PortableApps/include/PortablePointsState.h'])
+  if tagged_alarm:paths.extend(['scripts/portable_alarm_build.py','Apps/paper_home_points.inc','Apps/PaperHomePoints.h','Apps/PaperQuickIntent.h','Apps/paper_home_type.inc','lib/PortableApps/home_fonts/text.inc','lib/PortableApps/home_fonts/dial.inc','lib/PortableApps/home_fonts/SOURCES.json','lib/PortableApps/home_fonts/DIAL.json','lib/PortableApps/include/PortablePointsState.h'])
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'
   record['grant_count']=len(needs)
@@ -134,10 +134,10 @@ def build():
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
    record['desk_sources'].update({path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths})
  (out/'build-evidence.json').write_text(json.dumps(record,indent=2)+'\n')
- for folder in ['fonts','paper_fonts']+(['desk_clock'] if a.desk_clock else []):
+ for folder in ['fonts','paper_fonts']+(['desk_clock'] if a.desk_clock else [])+(['home_fonts'] if tagged_alarm else []):
   target=out/'licenses'/folder;target.mkdir(parents=True,exist_ok=True)
   for path in (ROOT/'lib/PortableApps'/folder).glob('LICENSE*'):shutil.copyfile(path,target/path.name)
-  if folder=='desk_clock':shutil.copyfile(ROOT/'lib/PortableApps/desk_clock/SOURCES.json',target/'SOURCES.json')
+  if folder in ('desk_clock','home_fonts'):shutil.copyfile(ROOT/'lib/PortableApps'/folder/'SOURCES.json',target/'SOURCES.json')
  if a.sparse_start:shutil.copytree(ROOT/'lib/PortableApps/boot_logo',out/'licenses/boot_logo',dirs_exist_ok=True)
  print('Paper default clock: target structural validation and imports/exports passed')
 if __name__=='__main__':build()

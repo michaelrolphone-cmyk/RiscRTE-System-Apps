@@ -36,7 +36,8 @@ static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,prom
 static bool seeded_image,promotion_attempted,loaded_pixels,rtc_live;
 static unsigned barriers;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-static unsigned home_reads,home_acquires;
+static unsigned home_reads,home_acquires,home_feedback_bits;
+static uint8_t home_idle_pixels[48000];static bool home_idle_saved,home_quick_seen,home_quick_back;
 #endif
 static unsigned entries,seeds,restores,clears,promotions,starts,kv_reads,rtc_reads,native_reads;
 static unsigned battery_acquires,display_acquires,native_live,seed_calls,key_reads,high_water;
@@ -142,6 +143,30 @@ static bool read_key(void*c,bool*down){(void)c;io();key_reads++;
 static bool bright(void*c,uint16_t level,uint16_t max){(void)c;io();assert(max==100&&(raw_brightness||level==0||level==40));raw_hardware_brightness=level;dark=level==0;return true;}
 static bool seed_previous(void*c,risc_display_frame_v1 f){(void)c;safe();assert(loaded_pixels&&frames&&f==1&&!subs&&!memcmp(pixels,physical,sizeof(pixels)));seeds++;
  if(which("seed-retained")){terminal=true;return false;}seeded_image=true;return true;}
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+static bool home_inversion(unsigned target) {
+ static const unsigned rects[][4]={{0,0,0,0},{0,0,480,72},{40,72,400,390},{24,484,432,226}};
+ const unsigned *r=rects[target];unsigned px=r[1],py=480-r[0]-r[2],pw=r[3],ph=r[2];
+ for(unsigned y=0;y<480;y++)for(unsigned x=0;x<100;x++) {
+  unsigned mask=0;
+  if(y>=py&&y<py+ph)for(unsigned b=0;b<8;b++)if(x*8+b>=px&&x*8+b<px+pw)mask|=128u>>b;
+  if(physical[y*100+x]!=(uint8_t)(home_idle_pixels[y*100+x]^mask))return false;
+ }
+ return true;
+}
+static void home_completed_frame(void) {
+ if(strncmp(test,"home-",5))return;
+ if(!home_idle_saved){memcpy(home_idle_pixels,physical,sizeof(physical));home_idle_saved=true;return;}
+ for(unsigned target=1;target<=3;target++)if(home_inversion(target)) {
+  home_feedback_bits|=1u<<target;
+  const char *path=getenv("HOME_PRESS_FRAME");
+  if(path&&target==((which("home-top")||which("home-top-left"))?1u:which("home-dial")?2u:3u)){FILE *f=fopen(path,"wb");assert(f);assert(fwrite(physical,1,sizeof(physical),f)==sizeof(physical));assert(!fclose(f));}
+ }
+ if((which("home-top")||which("home-top-left"))&&(home_feedback_bits&(1u<<1))&&!home_inversion(1)&&memcmp(physical,home_idle_pixels,sizeof(physical)))home_quick_seen=true;
+}
+#else
+#define home_completed_frame() ((void)0)
+#endif
 static bool frame_acquire(void*c,uint32_t f,risc_display_surface_v1*out){safe();seeded_image=false;if(which("cold-acquire")){terminal=true;return false;}return acquire_frame(c,f,out);}
 static void frame_release(void*c,risc_display_frame_v1 f){safe();seeded_image=false;release_frame(c,f);}
 static bool frame_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*out){(void)c;(void)r;(void)n;safe();assert(frames&&f==1);
@@ -159,11 +184,11 @@ static bool frame_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_
  seeded_image=false;frames=0;*out=++presents;raw_submitted_at=ms;raw_present_pending=raw_async;return true;}
 static bool raw_present_status(void *c,risc_display_present_token_v1 token,risc_display_present_status_v1 *out){
  (void)c;safe();assert(token==presents);out->state=ms-raw_submitted_at<140?RISC_DISPLAY_PRESENT_QUEUED:RISC_DISPLAY_PRESENT_COMPLETE;
- if(out->state==RISC_DISPLAY_PRESENT_COMPLETE){memcpy(physical,pixels,sizeof(pixels));raw_present_pending=false;if(raw_sheet_seen)raw_sheet_completed=true;}
+ if(out->state==RISC_DISPLAY_PRESENT_COMPLETE){memcpy(physical,pixels,sizeof(pixels));home_completed_frame();raw_present_pending=false;if(raw_sheet_seen)raw_sheet_completed=true;}
  return true;
 }
 static bool raw_display_info(void *c,risc_display_info_v1 *out){get_info(c,out);if(raw_async)out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;if(raw_brightness)out->flags|=RISC_DISPLAY_INFO_BRIGHTNESS;return true;}
-static bool frame_wait(void*c,risc_display_present_token_v1 tkn,uint32_t timeout,risc_display_present_status_v1*out){(void)c;safe();assert(tkn==presents&&timeout);if(which("cold-wait")){terminal=true;return false;}if(presents==1&&getenv("PAPER_BOOT_FRAME")){FILE *capture=fopen(getenv("PAPER_BOOT_FRAME"),"wb");assert(capture);assert(fwrite(pixels,1,sizeof(pixels),capture)==sizeof(pixels));assert(!fclose(capture));}ms+=350;out->state=RISC_DISPLAY_PRESENT_COMPLETE;memcpy(physical,pixels,sizeof(pixels));if(raw_sheet_seen)raw_sheet_completed=true;return true;}
+static bool frame_wait(void*c,risc_display_present_token_v1 tkn,uint32_t timeout,risc_display_present_status_v1*out){(void)c;safe();assert(tkn==presents&&timeout);if(which("cold-wait")){terminal=true;return false;}if(presents==1&&getenv("PAPER_BOOT_FRAME")){FILE *capture=fopen(getenv("PAPER_BOOT_FRAME"),"wb");assert(capture);assert(fwrite(pixels,1,sizeof(pixels),capture)==sizeof(pixels));assert(!fclose(capture));}ms+=350;out->state=RISC_DISPLAY_PRESENT_COMPLETE;memcpy(physical,pixels,sizeof(pixels));home_completed_frame();if(raw_sheet_seen)raw_sheet_completed=true;return true;}
 static int32_t panel_prepare(void*c,uint32_t timeout){(void)c;io();assert(!panel_off&&!sd_off);assert(timeout&&!subs&&!frames&&dark&&!native_live);
  assert(promoted?touch_off:(!touch_off&&!sd_off));panel_off=true;
  if(which("panel-retained")){terminal=true;return RISC_DISPLAY_POWER_RETAINED;}
@@ -212,13 +237,17 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();a
   * a foreground confirm after a neutral first frame. */
  unsigned leave=4;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
- if(!strncmp(test,"home-",5))leave=which("home-minute")?65u:12u;
+ if(!strncmp(test,"home-",5))leave=which("home-minute")||raw_async?65u:12u;
 #endif
  if(raw_lifetime||raw_brightness){
   if(raw_dismiss_started&&!raw_navigation_sent&&raw_dismiss_polls==1){raw_navigation_sent=true;if(strstr(test,"back"))out->pressed=out->released=RISC_NAV_BACK;else if(strstr(test,"crown"))out->pressed=out->released=RISC_NAV_HOME;}
  }else if(raw_navigation){
   if(!raw_navigation_sent&&(raw_async?raw_dismiss_polls==2:polls==7)){raw_navigation_sent=true;if(strstr(test,"quick-back"))out->pressed=out->released=RISC_NAV_BACK;else if(strstr(test,"quick-crown"))out->pressed=out->released=RISC_NAV_HOME;}
- }else if(polls==leave)out->pressed=out->released=which("manual")?RISC_NAV_HOME:RISC_NAV_CONFIRM;
+ }
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ else if((which("home-top")||which("home-top-left"))&&home_quick_seen&&!home_quick_back){home_quick_back=true;out->pressed=out->released=RISC_NAV_BACK;}
+#endif
+ else if(polls==leave)out->pressed=out->released=which("manual")?RISC_NAV_HOME:RISC_NAV_CONFIRM;
  return true;}
 static bool nav_foreground(void*c,const risc_input_foreground_v1*f,size_t n){(void)c;(void)f;(void)n;safe();assert(promoted);return true;}
 static bool nav_reset(void*c){(void)c;safe();assert(promoted);return true;}
@@ -271,10 +300,14 @@ static int32_t home_get(void*c,const char*k,void*out,uint32_t cap,uint32_t*size)
 static bool home_snapshot(void*c,risc_touch_snapshot_v1*out) {
  (void)c;safe();*out=(risc_touch_snapshot_v1){.width=480,.height=800};
  bool down=false;int x=240,y=560;
- if(which("home-tap")||which("home-custom-tap")||which("home-swipe")||which("home-cancel")||which("home-retry"))down=polls>=2&&polls<=4;
+ if(which("home-tap")||which("home-dial")||which("home-custom-tap")||which("home-swipe")||which("home-cancel")||which("home-retry"))down=polls>=2&&polls<=4;
  if(which("home-retry")&&polls>=7&&polls<=9)down=true;
+ if(which("home-dial"))y=260;
+ if(which("home-top")||which("home-top-left")||which("home-top-held")||which("home-top-cancel")){x=which("home-top-left")?20:240;y=which("home-top-left")?20:40;down=polls>=2&&polls<=4;}
  if(which("home-swipe")&&polls>=3)x+=60;
  if(which("home-held"))down=polls<5;
+ if(which("home-top-held"))down=polls<5;
+ if(which("home-top-cancel")&&polls==3){out->contact_count=2;return true;}
  if(which("home-cancel")&&polls==3){out->contact_count=2;return true;}
  if(down){out->contact_count=1;out->contacts[0].id=1;out->contacts[0].x=(uint16_t)x;out->contacts[0].y=(uint16_t)y;}
  return true;
@@ -410,8 +443,18 @@ int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(argc==3);test=argv[1];state_
   assert(!strcmp(launched,tapped?"points_in_time.elf":"springboard.elf"));
   if(!which("home-unavailable"))assert(home_reads);
   if(which("home-minute"))assert(presents>=2&&home_acquires>=2);
+  if(which("home-tap")||which("home-retry"))assert(home_feedback_bits&(1u<<3));
+  if(which("home-dial"))assert(home_feedback_bits&(1u<<2));
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(which("home-top")||which("home-top-left"))assert(presents>=3&&(home_feedback_bits&(1u<<1)));
+  if(which("home-top-held")||which("home-top-cancel"))assert(!home_quick_seen);
+#endif
  }
 #endif
- const char*capture=getenv("PAPER_FRAME");if(capture){FILE*out=fopen(capture,"wb");assert(out);assert(fwrite(physical,1,sizeof(physical),out)==sizeof(physical));assert(!fclose(out));}
+ const uint8_t *capture_pixels=physical;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(home_idle_saved&&(which("home-ready")||which("home-custom")||which("home-empty")||which("home-invalid")||which("home-unavailable")||which("home-default")))capture_pixels=home_idle_pixels;
+#endif
+ const char*capture=getenv("PAPER_FRAME");if(capture){FILE*out=fopen(capture,"wb");assert(out);assert(fwrite(capture_pixels,1,sizeof(physical),out)==sizeof(physical));assert(!fclose(out));}
  printf("Sparse foreground %s PASS (%u grants max, %u native reads)\n",test,high_water,native_reads);return 0;
 }

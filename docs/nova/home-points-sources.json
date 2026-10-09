@@ -20,5 +20,15 @@
     "sha256": "9935f759eb4e4e942738dfc51e680db90968aacc3fb62ace48202157c0c41aaf",
     "screen": "WATCH FACE",
     "inspected": "Original HTML generated SVG rendered to pixels, then real native mono output"
-  }
+  },
+  "interactive_reference": {
+    "filename": "NOVA-7 E-Ink Interactive \u2014 480\u00d7800.html",
+    "size_bytes": 30321,
+    "sha256": "974c74844cdaf747ecee31c299126aee2878512cfe589acb25e1ecb19f98e4bf",
+    "view": "vFace",
+    "rendered": "Generated SVG rendered with Inkscape and the official font files. Browser launch was unavailable because socket creation was restricted.",
+    "comparison_schedule": "Same deterministic native fixture events, including real duration-end BACK rows."
+  },
+  "native_fonts": "../../lib/PortableApps/home_fonts/SOURCES.json",
+  "dial_geometry": "../../lib/PortableApps/home_fonts/DIAL.json"
 }

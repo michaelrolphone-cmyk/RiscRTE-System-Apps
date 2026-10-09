@@ -48,10 +48,13 @@ static void open_clock(void){
 #endif
 static int xscale(int x){return x*app->screen_width()/480;}
 static int yscale(int y){return y*app->screen_height()/800;}
+#ifndef PORTABLE_HOME_POINTS_NATIVE_UTC
 static void text(int x,int y,int w,const char*s,bool heading){paper->text(xscale(x),yscale(y),xscale(w),s,heading?2:1,heading,true);}
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
 #include "paper_home_points.inc"
 #endif
+#ifndef PORTABLE_HOME_POINTS_NATIVE_UTC
 static void thick_line(int x0,int y0,int x1,int y1,int thickness){
  int dx=abs(x1-x0),sx=x0<x1?1:-1,dy=-abs(y1-y0),sy=y0<y1?1:-1,error=dx+dy;
  for(;;){app->fill_rect(x0-thickness/2,y0-thickness/2,thickness,thickness,true);if(x0==x1&&y0==y1)break;int e=2*error;if(e>=dy){error+=dy;x0+=sx;}if(e<=dx){error+=dx;y0+=sy;}}
@@ -117,6 +120,7 @@ static const int16_t clock_ring[60][2]={
 {-309,-951},
 {-208,-978},
 {-105,-995}};
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
 #define CLOCK_DRAW_OR_RETURN(...) do {if(!draw_clock(__VA_ARGS__))return;} while(0)
 #define CLOCK_DRAW_RESULT bool
@@ -135,11 +139,25 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #endif
  }
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
- if(!home_points_refresh(known))return false;
+ if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;}
 #endif
- paper->begin();char buf[64];
+ paper->begin();
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ home_press_begin();
+#endif
+ char buf[64];
  static const char*const days[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
  static const char*const months[]={"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(known)snprintf(buf,sizeof(buf),"%s %02u %s",days[time->weekday%7],time->day,months[time->month-1]);else strcpy(buf,"TIME UNAVAILABLE");
+ home_type(&HOME_R700_28,32,44,buf,3,0,190,0);home_battery();
+ home_dial(known,known?time->minute:0);
+ if(known)snprintf(buf,sizeof(buf),"%02u:%02u",format==PORTABLE_TIME_FORMAT_24?time->hour:time->hour%12?time->hour%12:12,time->minute);else strcpy(buf,"--:--");
+ home_type(&HOME_O900_100,240,294,buf,0,2,0,250);
+ home_type(&HOME_O600_18,240,340,"NOVA-7",10,2,0,0);
+ if(known&&format==PORTABLE_TIME_FORMAT_12)home_type(&HOME_R700_22,240,390,time->hour<12?"AM":"PM",0,2,0,0);
+ app->fill_rect(xscale(32),yscale(472),xscale(416),yscale(4),true);
+#else
  if(known)snprintf(buf,sizeof(buf),"%s %02u %s",days[time->weekday%7],time->day,months[time->month-1]);else strcpy(buf,"TIME UNAVAILABLE");text(32,24,300,buf,true);
  paper_battery_draw(app,paper,336,32,battery_status);
  for(unsigned i=0;i<60;i++){int inner=i%5?185:174;thick_line(xscale(240+clock_ring[i][0]*inner/1000),yscale(264+clock_ring[i][1]*inner/1000),xscale(240+clock_ring[i][0]*197/1000),yscale(264+clock_ring[i][1]*197/1000),xscale(i%5?4:7));}
@@ -148,6 +166,7 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
  text(174,330,170,"N O V A - 7",false);
  if(known&&format==PORTABLE_TIME_FORMAT_12)text(224,370,60,time->hour<12?"AM":"PM",false);
  app->fill_rect(xscale(32),yscale(474),xscale(416),3,true);
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  home_points_draw(notice);
 #else
@@ -161,6 +180,9 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
  text(50,757,400,"UPDATES EVERY MINUTE",false);
 #endif
  app->present(clock_clean);clock_dirty=clock_clean=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ home_painted=home_pressed;
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  return true;
 #endif
@@ -193,6 +215,9 @@ void app_main(void){
 #endif
  battery_status=paper_battery_read(paper);
  clock_dirty=clock_clean=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ home_pressed=home_painted=home_pending=HOME_NONE;home_refresh_pending=true;
+#endif
  uint32_t checked=app->millis();CLOCK_DRAW_OR_RETURN(&time,known,notice,true);
  for(;;){
  t5_app_input_t input={0};if(!app->poll(&input,20)){
@@ -206,26 +231,73 @@ break;}
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(desk_retained)return;
 #endif
- clock_dirty=clock_clean=true;}
+ clock_dirty=clock_clean=true;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ home_pressed=home_pending=HOME_NONE;home_refresh_pending=true;
+#endif
+}
 #endif
   if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");clock_dirty=true;}
   springboard_contact c={0};paper->contact(&c);bool launch=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-  bool points_launch=false;
+  bool points_launch=false,quick_launch=false;unsigned previous_press=home_pressed;
 #endif
-  if(!c.valid||c.cancelled){down=false;neutral=false;}
+  if(!c.valid||c.cancelled){down=false;neutral=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   if(!home_pending)home_pressed=HOME_NONE;
+#endif
+  }
   else if(!c.down){
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   if(down&&c.released&&c.tap_eligible&&home_points_hit(start_x,start_y)&&home_points_hit(c.x,c.y)&&
-      abs(c.x-start_x)<xscale(20)&&abs(c.y-start_y)<yscale(28)){launch=true;points_launch=true;}
+   /* A reserved top-strip tap is replayed as one began+released sample. Its
+    * valid tap flag and the existing neutral gate preserve contact custody. */
+   if(neutral&&c.began&&c.released&&c.tap_eligible&&home_top_hit(c.x,c.y)) {
+    down=true;start_x=c.x;start_y=c.y;
+   }
+   if(down&&c.released&&c.tap_eligible&&abs(c.x-start_x)<xscale(16)&&abs(c.y-start_y)<yscale(16)) {
+    if(home_points_hit(start_x,start_y)&&home_points_hit(c.x,c.y)){launch=true;points_launch=true;}
+    else if(home_dial_hit(start_x,start_y)&&home_dial_hit(c.x,c.y))launch=true;
+#ifdef PORTABLE_QUICK_ACTIONS
+    else if(home_top_hit(start_x,start_y)&&home_top_hit(c.x,c.y))quick_launch=true;
+#endif
+   }
+#endif
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   if(!home_pending&&!launch&&!quick_launch)home_pressed=HOME_NONE;
 #endif
    down=false;neutral=true;}
-  else if(neutral){if(!down){down=true;start_x=c.x;start_y=c.y;}else if(abs(c.x-start_x)>=xscale(40)||abs(c.y-start_y)>=yscale(67)){launch=true;down=neutral=false;}}
+  else if(neutral){if(!down){down=true;start_x=c.x;start_y=c.y;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   if(!home_pending)home_pressed=home_target(c.x,c.y);
+#endif
+  }else if(abs(c.x-start_x)>=xscale(40)||abs(c.y-start_y)>=yscale(67)){launch=true;down=neutral=false;}
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   else if(!c.tap_eligible&&!home_pending)home_pressed=HOME_NONE;
+#endif
+  }
   if(input.buttons&T5_APP_BUTTON_CONFIRM){launch=true;down=neutral=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    points_launch=false;
 #endif
   }
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+  if(launch||quick_launch) {
+   home_pending=quick_launch?HOME_TOP:points_launch?HOME_POINTS:HOME_DIAL;
+   home_pressed=home_pending;launch=false;
+  }
+  if(previous_press!=home_pressed)clock_dirty=true;
+  if(home_pending&&home_painted==home_pending&&!clock_dirty&&paper_frame_ready()) {
+   unsigned chosen=home_pending;home_pending=HOME_NONE;
+#ifdef PORTABLE_QUICK_ACTIONS
+   if(chosen==HOME_TOP) {
+    home_pressed=HOME_NONE;clock_dirty=true;
+    if(portable_paper_quick_open())continue;
+    strcpy(notice,"QUICK ACTIONS UNAVAILABLE");
+   } else
+#endif
+   {launch=true;points_launch=chosen==HOME_POINTS;}
+  }
+#endif
   if(launch){portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
@@ -236,6 +308,7 @@ break;}
    portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);
    open_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   home_pressed=HOME_NONE;
    strcpy(notice,points_launch?"UNABLE TO OPEN POINTS. RETRY.":"UNABLE TO OPEN APPS. RETRY.");
 #else
    strcpy(notice,"UNABLE TO OPEN APPS. RETRY.");
@@ -245,7 +318,11 @@ break;}
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(desk_retained)return;
 #endif
- paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;clock_dirty=true;}}
+ paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;clock_dirty=true;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ home_refresh_pending=true;
+#endif
+ }}
  if(clock_dirty)CLOCK_DRAW_OR_RETURN(&time,known,notice,false);
  }
  if(!paper_frame_drain())return;

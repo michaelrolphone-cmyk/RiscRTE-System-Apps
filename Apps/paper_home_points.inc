@@ -3,6 +3,8 @@
 #error "Home Points requires the native sparse Clock profile"
 #endif
 #include "PaperHomePoints.h"
+#include "PaperQuickIntent.h"
+#include "paper_home_type.inc"
 #ifndef PAPER_POINTS_APP
 #define PAPER_POINTS_APP "points_in_time.elf"
 #endif
@@ -46,7 +48,8 @@ static bool home_points_refresh(bool known) {
 }
 static void home_duration(char *out,size_t size,uint32_t seconds) {
  uint32_t minutes=(seconds+59u)/60u;
- if(minutes>=60)snprintf(out,size,"IN %lu H %02lu M",(unsigned long)(minutes/60),(unsigned long)(minutes%60));
+ if(minutes>=1440)snprintf(out,size,"IN %lu D %lu H",(unsigned long)(minutes/1440),(unsigned long)(minutes%1440/60));
+ else if(minutes>=60)snprintf(out,size,"IN %lu H %02lu M",(unsigned long)(minutes/60),(unsigned long)(minutes%60));
  else snprintf(out,size,"IN %lu MIN",(unsigned long)minutes);
 }
 static void home_time(char *out,size_t size,const nova_point_event *event,bool next) {
@@ -54,38 +57,45 @@ static void home_time(char *out,size_t size,const nova_point_event *event,bool n
  snprintf(out,size,"%s%02u:%02u%s",next?"AT ":"",hour,event->minute,
   format==PORTABLE_TIME_FORMAT_24?"":event->hour<12?" AM":" PM");
 }
-static void home_right(int right,int y,const char *value,bool heading) {
- int width=paper->measure(value,heading);paper->text(xscale(right)-width,yscale(y),width+1,value,1,heading,true);
-}
 static void home_points_draw(const char *notice) {
  char value[48];
  if(home_points.status!=NOVA_POINTS_READY||!home_points.next_count) {
-  text(32,495,416,"POINTS IN TIME",true);
-  text(32,553,416,home_points.status==NOVA_POINTS_EMPTY?"NO UPCOMING POINTS":"POINTS UNAVAILABLE",true);
-  text(32,614,416,home_points.status==NOVA_POINTS_EMPTY?"OPEN POINTS TO EDIT":"OPEN POINTS TO CHECK",false);
+  home_type(&HOME_O900_52,32,568,home_points.status==NOVA_POINTS_EMPTY?"NO POINTS":"POINTS UNAVAILABLE",0,0,416,0);
+  home_type(&HOME_R700_26,32,608,home_points.status==NOVA_POINTS_EMPTY?"TAP TO ADD ONE":"OPEN POINTS TO CHECK",2,0,416,0);
  } else {
   const nova_point_event *next=&home_points.next[0];
-  text(32,491,160,"N E X T",false);home_time(value,sizeof(value),next,true);home_right(448,489,value,true);
-  const char *label=paper_points_label(next);
-  paper->text(xscale(32),yscale(510),xscale(416),label,1|PAPER_TEXT_LARGE|PAPER_TEXT_FIT,true,true);
+  home_type(&HOME_R700_22,32,508,"NEXT",8,0,0,0);
+  home_time(value,sizeof(value),next,true);home_type(&HOME_O700_24,448,508,value,0,1,250,0);
+  home_type(&HOME_O900_52,32,568,paper_points_label(next),0,0,416,home_svg_fit(paper_points_label(next),52,86,0,416));
   home_duration(value,sizeof(value),next->at_rtc-home_points.now_rtc);
-  paper->text(xscale(32),yscale(578),xscale(416),value,1|PAPER_TEXT_LARGE|PAPER_TEXT_FIT,false,true);
-  app->fill_rect(xscale(32),yscale(626),xscale(416),yscale(24),true);
-  app->fill_rect(xscale(36),yscale(630),xscale(408),yscale(16),false);
-  unsigned progress=paper_points_progress(&home_points,408);
-  if(progress)app->fill_rect(xscale(36),yscale(630),xscale((int)progress),yscale(16),true);
+  home_type(&HOME_R700_30,32,608,value,2,0,416,0);
+  home_round(30,624,420,28,6,true);home_round(34,628,412,20,2,false);
+  unsigned progress=paper_points_progress(&home_points,416);
+  if(home_points.previous_valid&&progress<8)progress=8;
+  if(progress)home_round(30,624,(int)progress+4,28,6,true);
   for(unsigned i=1;i<home_points.next_count&&i<3;i++) {
-   const nova_point_event *event=&home_points.next[i];int y=670+(int)(i-1)*38;
+   const nova_point_event *event=&home_points.next[i];int baseline=692+(int)(i-1)*38;
    home_time(value,sizeof(value),event,false);
-   paper->text(xscale(32),yscale(y-8),xscale(120),value,1|PAPER_TEXT_LARGE|PAPER_TEXT_FIT,false,true);
-   paper->text(xscale(166),yscale(y-8),xscale(146),paper_points_label(event),1|PAPER_TEXT_LARGE|PAPER_TEXT_FIT,false,true);
+   home_type(&HOME_O700_28,32,baseline,value,0,0,120,0);
+   home_type(&HOME_R700_28,164,baseline,paper_points_label(event),2,0,150,home_svg_fit(paper_points_label(event),28,52,2,150));
    home_duration(value,sizeof(value),event->at_rtc-home_points.now_rtc);
-   int width=paper->measure(value,false)*2;if(width>xscale(130))width=xscale(130);
-   paper->text(xscale(448)-width,yscale(y-8),width,value,1|PAPER_TEXT_LARGE|PAPER_TEXT_FIT,false,true);
+   home_type(&HOME_R600_22,448,baseline,value,0,1,130,home_svg_fit(value,22,52,0,130));
   }
  }
- if(notice&&*notice)text(32,757,416,notice,false);
+ if(notice&&*notice)home_type(&HOME_R600_22,32,778,notice,0,0,416,0);
 }
 static bool home_points_hit(int x,int y) {
- return x>=xscale(32)&&x<xscale(448)&&y>=yscale(474)&&y<yscale(744);
+ return x>=xscale(24)&&x<xscale(456)&&y>=yscale(484)&&y<yscale(710);
+}
+static bool home_dial_hit(int x,int y) {
+ return x>=xscale(40)&&x<xscale(440)&&y>=yscale(72)&&y<yscale(462);
+}
+static inline bool home_top_hit(int x,int y) {
+ return x>=0&&x<xscale(480)&&y>=0&&y<yscale(72);
+}
+static unsigned home_target(int x,int y) {
+ if(home_top_hit(x,y))return HOME_TOP;
+ if(home_dial_hit(x,y))return HOME_DIAL;
+ if(home_points_hit(x,y))return HOME_POINTS;
+ return HOME_NONE;
 }

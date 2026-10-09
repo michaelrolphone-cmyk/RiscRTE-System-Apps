@@ -30,7 +30,7 @@ incs=['-I'+str(include),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(a.runti
 names=['adapter.c','desk_clock_faces.c','PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c']
 sources=[ROOT/'Apps/paper_clock.c',*[ROOT/'lib/PortableApps/src'/n for n in names],a.sleep_source,ROOT/'test/native_apps/sparse_clock_startup_test.c']
 quick=[ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
-cases='home-ready home-custom home-empty home-invalid home-unavailable home-storage-error home-meta-invalid home-default home-acquire home-context home-release home-tap home-retry home-swipe home-cancel home-held home-minute terminal cold gpio invalid-record unset missing-zone missing-basis bad-zone bad-basis native-context native-release panel-retained retained resume-retained'.split()
+cases='home-ready home-custom home-empty home-invalid home-unavailable home-storage-error home-meta-invalid home-default home-acquire home-context home-release home-tap home-dial home-retry home-swipe home-cancel home-held home-minute terminal cold gpio invalid-record unset missing-zone missing-basis bad-zone bad-basis native-context native-release panel-retained retained resume-retained'.split()
 checks=0
 for san in (False,True):
  sf=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if san else []
@@ -42,13 +42,17 @@ for san in (False,True):
   binary=out/f'controller-{int(san)}-{int(qa)}'
   subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*sf,*flags,*incs,
    *(['-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS'] if qa else []),*sources,*(quick if qa else []),'-o',binary],check=True)
-  for case in cases:
+  for case in [*cases,*(['home-top','home-top-left','home-top-held','home-top-cancel'] if qa else [])]:
    state=out/'state.bin';state.unlink(missing_ok=True)
    capture=out/(case+'.pixels')
-   env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',CLOCK_EPOCH='1791369720',PAPER_FRAME=str(capture))
+   env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',CLOCK_EPOCH='1791369720',PAPER_FRAME=str(capture),HOME_PRESS_FRAME=str(out/(case+'-pressed.pixels')))
    if case=='home-minute':env['CLOCK_EPOCH']='1791369719'
    subprocess.run([binary,case,state],check=True,env=env,timeout=20,stdout=subprocess.DEVNULL);checks+=1
-  print(f'Home controller: sanitizer={san}, Quick Actions={qa}: {len(cases)} cases PASS',flush=True)
+  asynchronous=['home-tap','home-dial','home-cancel','home-held']+(['home-top','home-top-left','home-top-held','home-top-cancel'] if qa else [])
+  for case in asynchronous:
+   state=out/'state.bin';state.unlink(missing_ok=True)
+   subprocess.run([binary,case,state],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',CLOCK_EPOCH='1791369720',RAW_ASYNC='1'),timeout=20,stdout=subprocess.DEVNULL);checks+=1
+  print(f'Home controller: sanitizer={san}, Quick Actions={qa}: sync + async + pressed pixels PASS',flush=True)
 # Reviewed actual mono Home panels. Ignore the unrelated main Clock artwork.
 golden=json.loads((ROOT/'test/native_apps/fixtures/home-points-pixels.json').read_text())
 # Inspectable actual mono panel output, rotated back to logical portrait.
@@ -58,6 +62,7 @@ for case in ('home-ready','home-custom','home-empty','home-invalid','home-unavai
  img.save(out/(case+'.png'))
  assert img.crop((24,744,456,800)).getextrema()==(255,255),case+' instruction footer returned'
  assert hashlib.sha256(img.crop(tuple(golden['logical_crop'])).tobytes()).hexdigest()==golden['sha256'][case],case
+subprocess.run(['python3',ROOT/'scripts/compare_home_reference.py','--current',out/'home-ready.png','--output',out/'comparison'],check=True)
 # A failed launch still surfaces a real, actionable error notice.
 retry=Image.frombytes('1',(800,480),(out/'home-retry.pixels').read_bytes()).point(lambda p:255-p).rotate(270,expand=True)
 assert retry.crop((24,744,456,800)).getextrema()==(0,255)

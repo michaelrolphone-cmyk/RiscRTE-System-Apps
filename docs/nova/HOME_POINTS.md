@@ -40,3 +40,48 @@ Xtensa ELF's imports, exports, structure and corrupt-file rejection.
 
 This is host and target-artifact evidence. Physical device behavior has not been
 verified by these tests. Source/design provenance is in home-points-sources.json.
+
+## Interactive reference correction
+
+The original restoration used enlarged generic 28/20-pixel glyphs. That did not
+match the supplied interactive design's type weights, baselines or hierarchy.
+The native Home now has its own raster assets, generated at the actual physical
+sizes from the official Google Fonts files: Orbitron 900 at 52/100 pixels;
+Orbitron 700 at 20/24/28; Rajdhani 700 at 22/26/28/30; Rajdhani 600 at 22; and
+Orbitron 600 at 18. Baselines, tracking, complete-label fitting and kerning are
+explicit. The SVG's butt-ended dial marks, elapsed-minute weights, divider,
+rounded progress track, segmented real battery data and upcoming-row columns
+are preserved in one-bit output. Font licenses, source hashes and repeatable
+generators are included.
+
+The interactive targets now work against the real application/controller:
+
+- Dial: opens Springboard.
+- NEXT panel: opens Points in Time using the existing live catalog route.
+- Entire top strip, including the upper-left corner: requests the existing
+  Quick Controls owner on the next poll.
+
+Home recognizes the adapter's combined began/released replay for a stationary
+top tap only after a neutral sample. Initially held contacts and cancelled taps
+do not activate the strip. The source-defined target rectangle inverts while
+pressed. Launch waits for that feedback frame to finish, using the shared
+readiness contract; input continues to be polled. Feedback redraws use the
+copied Points snapshot and introduce no additional KV reads. Real error notices
+remain visible. Prototype-only radio/quiet status icons are omitted because
+Home does not have verified telemetry for them, and the instructional footer
+stays removed as requested.
+
+`test_home_points.py` covers normal and ASan/UBSan execution, synchronous and
+asynchronous frames, exact pixel inversion of each pressed target, top-tap
+entry/dismissal, cancelled and initially held top contacts, launch retry, timer
+custody and UTC projection. `compare_home_reference.py` independently compares
+six native type/layout regions with the actual supplied SVG rendered using the
+correct fonts and the same fixture schedule. The native black-pixel overlap is
+84–97%, compared with 14–41% before; one-bit rasterization accounts for residual
+pixel differences. This quantifies typography/layout agreement, not physical
+panel qualification or invented status parity.
+
+Actual before/after and pressed-state images are under
+`docs/evidence/home-parity/`. Legacy default Clock and Watch Springboard ELF bytes
+match the shared readiness baseline `4b72a54`; Home changes are opt-in only.
+The delivered 0.1.9 image was not modified or published again.

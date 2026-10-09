@@ -185,6 +185,7 @@ const springboard_presentation *springboard_presentation_get(void) {
   return &np_view;
 }
 static void np_poll(t5_app_input_t *out) {
+  (void)out;
   portable_touch_sample s;input_take(&s);
 #ifdef PORTABLE_QUICK_ACTIONS
   if(quick.ui.paper && quick_replay_pending && s.valid && s.down) {
@@ -195,5 +196,7 @@ static void np_poll(t5_app_input_t *out) {
 #endif
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
   if(s.x>=width() || s.y>=height()){nova_contact.valid=false;nova_contact.cancelled=true;}
+#ifndef PORTABLE_HOME_POINTS_NATIVE_UTC
   if(s.released && s.tap_eligible && !s.moved && s.x<44 && s.y<40){out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;}
+#endif
 }
