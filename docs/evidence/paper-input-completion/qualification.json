@@ -1,0 +1,2248 @@
+{
+  "purpose": "Native paper controller completion/input qualification; host doubles and development ELFs only",
+  "base_commit": "c1ff014792c9ecbc195c402e9b4c3e2c3c9d34d3",
+  "hardware": "not run",
+  "product_artifacts_changed": false,
+  "publication": "none",
+  "input_cases": 64,
+  "input_fixture_phases_ms": {
+    "queued": [
+      0,
+      40
+    ],
+    "transfer": [
+      40,
+      100
+    ],
+    "busy": [
+      100,
+      240
+    ]
+  },
+  "input_runs": {
+    "baseline-normal": [
+      {
+        "case": "latency",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "sync",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      }
+    ],
+    "current-normal": [
+      {
+        "case": "latency",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "repeat",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 3,
+        "status_polls": 24,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "sync",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "quick",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1305,
+        "frames": 5,
+        "completed": 5,
+        "state_changes": 1,
+        "status_polls": 748,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "alarm",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1041,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 1,
+        "status_polls": 507,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "fini",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 241,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "fallback",
+        "feedback_damage": [
+          24,
+          405,
+          16,
+          53
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 0,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "status-false",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 40,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 2,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "failed",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 100,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 5,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "superseded",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 100,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 5,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "timeout",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10000,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 9430,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "fini-timeout",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10000,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 10000,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "exit-busy",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 146,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "pump-count",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "stalled-clock",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10020,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 10001,
+        "launches": 0,
+        "retained": true
+      }
+    ],
+    "launch-normal": [
+      {
+        "case": "launch-feedback",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-same",
+        "feedback_damage": [
+          88,
+          326,
+          96,
+          87
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 0,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-held",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 220,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-retry",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 2,
+        "status_polls": 48,
+        "launches": 2,
+        "retained": false
+      },
+      {
+        "case": "launch-replace",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 720,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 3,
+        "completed": 3,
+        "state_changes": 2,
+        "status_polls": 36,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-cancel",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 3,
+        "completed": 3,
+        "state_changes": 1,
+        "status_polls": 36,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-drag",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-multi",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-held-entry",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 20,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-failed",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 100,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 17,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-status-false",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 40,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 14,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-submit-false",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-timeout",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 10000,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 8815,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-quick",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1305,
+        "frames": 5,
+        "completed": 5,
+        "state_changes": 1,
+        "status_polls": 748,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-alarm",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1041,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 1,
+        "status_polls": 507,
+        "launches": 0,
+        "retained": false
+      }
+    ],
+    "baseline-asan-ubsan": [
+      {
+        "case": "latency",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "sync",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      }
+    ],
+    "current-asan-ubsan": [
+      {
+        "case": "latency",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "repeat",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 3,
+        "status_polls": 24,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "sync",
+        "feedback_damage": [
+          88,
+          192,
+          640,
+          255
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 481,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 48,
+        "dispatch_ms": 241,
+        "first_visible_ms": 481,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "quick",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1305,
+        "frames": 5,
+        "completed": 5,
+        "state_changes": 1,
+        "status_polls": 748,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "alarm",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1041,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 1,
+        "status_polls": 507,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "fini",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 241,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "fallback",
+        "feedback_damage": [
+          24,
+          405,
+          16,
+          53
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 0,
+        "status_polls": 482,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "status-false",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 40,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 2,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "failed",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 100,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 5,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "superseded",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 100,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 5,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "timeout",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10000,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 9430,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "fini-timeout",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10000,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 10000,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "exit-busy",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 146,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "pump-count",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "stalled-clock",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 0,
+        "provider_steps": 10020,
+        "detected_ms": 0,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 0,
+        "state_changes": 0,
+        "status_polls": 10001,
+        "launches": 0,
+        "retained": true
+      }
+    ],
+    "launch-asan-ubsan": [
+      {
+        "case": "launch-feedback",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-same",
+        "feedback_damage": [
+          88,
+          326,
+          96,
+          87
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 0,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-held",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 220,
+        "first_visible_ms": 480,
+        "frames": 2,
+        "completed": 2,
+        "state_changes": 1,
+        "status_polls": 24,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-retry",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 480,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 2,
+        "status_polls": 48,
+        "launches": 2,
+        "retained": false
+      },
+      {
+        "case": "launch-replace",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 720,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 3,
+        "completed": 3,
+        "state_changes": 2,
+        "status_polls": 36,
+        "launches": 1,
+        "retained": false
+      },
+      {
+        "case": "launch-cancel",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 480,
+        "frames": 3,
+        "completed": 3,
+        "state_changes": 1,
+        "status_polls": 36,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-drag",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-multi",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-held-entry",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 20,
+        "dispatch_ms": 0,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 0,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-failed",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 100,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 17,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-status-false",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 40,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 14,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-submit-false",
+        "feedback_damage": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 240,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 1,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 12,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-timeout",
+        "feedback_damage": [
+          88,
+          192,
+          96,
+          225
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 0,
+        "first_completed_ms": 240,
+        "provider_steps": 10000,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 0,
+        "frames": 2,
+        "completed": 1,
+        "state_changes": 1,
+        "status_polls": 8815,
+        "launches": 0,
+        "retained": true
+      },
+      {
+        "case": "launch-quick",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1305,
+        "frames": 5,
+        "completed": 5,
+        "state_changes": 1,
+        "status_polls": 748,
+        "launches": 0,
+        "retained": false
+      },
+      {
+        "case": "launch-alarm",
+        "feedback_damage": [
+          32,
+          32,
+          752,
+          416
+        ],
+        "first_launch_ms": 0,
+        "feedback_completed_ms": 480,
+        "first_completed_ms": 240,
+        "provider_steps": 241,
+        "detected_ms": 40,
+        "dispatch_ms": 60,
+        "first_visible_ms": 1041,
+        "frames": 4,
+        "completed": 4,
+        "state_changes": 1,
+        "status_polls": 507,
+        "launches": 0,
+        "retained": false
+      }
+    ]
+  },
+  "timezone_next": {
+    "paper-normal": [
+      {
+        "case": "async-timezone-next",
+        "clock": "simulated_ms",
+        "transfer_ms": 1000,
+        "held_or_moving_rasters": 0,
+        "unchanged_page_rasters": 0,
+        "region_rasters": 2,
+        "region_presents": 2,
+        "page_dispatches": 1,
+        "busy_page_dispatches": 1,
+        "held_and_moving_samples": 57,
+        "moving_samples": 16,
+        "first_changed_visible_ms": 2000,
+        "damage": {
+          "x": 168,
+          "y": 32,
+          "width": 480,
+          "height": 416
+        },
+        "taps": [
+          {
+            "release_ms": 220,
+            "detected_ms": 220,
+            "moving": false,
+            "dispatch_ms": 220,
+            "first_visible_ms": 2000,
+            "coalesced_before_visible": false,
+            "first_region": 6
+          },
+          {
+            "release_ms": 340,
+            "detected_ms": 340,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 460,
+            "detected_ms": 460,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 580,
+            "detected_ms": 580,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 860,
+            "detected_ms": 860,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 2320,
+            "detected_ms": 2320,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 3720,
+            "detected_ms": 3720,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 5120,
+            "detected_ms": 5120,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 6720,
+            "detected_ms": 6720,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 7060,
+            "detected_ms": 7060,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          }
+        ]
+      },
+      {
+        "case": "sync-timezone-next",
+        "clock": "simulated_ms",
+        "transfer_ms": 1000,
+        "held_or_moving_rasters": 0,
+        "unchanged_page_rasters": 0,
+        "region_rasters": 2,
+        "region_presents": 2,
+        "page_dispatches": 1,
+        "busy_page_dispatches": 0,
+        "held_and_moving_samples": 62,
+        "moving_samples": 18,
+        "first_changed_visible_ms": 3321,
+        "damage": {
+          "x": 168,
+          "y": 32,
+          "width": 480,
+          "height": 416
+        },
+        "taps": [
+          {
+            "release_ms": 220,
+            "detected_ms": 224,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 340,
+            "detected_ms": 352,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 460,
+            "detected_ms": 464,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 580,
+            "detected_ms": 592,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 860,
+            "detected_ms": 864,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 2320,
+            "detected_ms": 2321,
+            "moving": false,
+            "dispatch_ms": 2321,
+            "first_visible_ms": 3321,
+            "coalesced_before_visible": false,
+            "first_region": 6
+          },
+          {
+            "release_ms": 3720,
+            "detected_ms": 3722,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 5120,
+            "detected_ms": 5122,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 6720,
+            "detected_ms": 6722,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 7060,
+            "detected_ms": 7062,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          }
+        ]
+      }
+    ],
+    "short-paper-normal": [
+      {
+        "case": "async-timezone-next",
+        "clock": "simulated_ms",
+        "transfer_ms": 1000,
+        "held_or_moving_rasters": 0,
+        "unchanged_page_rasters": 0,
+        "region_rasters": 2,
+        "region_presents": 2,
+        "page_dispatches": 3,
+        "busy_page_dispatches": 3,
+        "held_and_moving_samples": 57,
+        "moving_samples": 16,
+        "first_changed_visible_ms": 2000,
+        "damage": {
+          "x": 168,
+          "y": 32,
+          "width": 280,
+          "height": 336
+        },
+        "taps": [
+          {
+            "release_ms": 220,
+            "detected_ms": 220,
+            "moving": false,
+            "dispatch_ms": 220,
+            "first_visible_ms": null,
+            "coalesced_before_visible": true,
+            "first_region": 3
+          },
+          {
+            "release_ms": 340,
+            "detected_ms": 340,
+            "moving": false,
+            "dispatch_ms": 340,
+            "first_visible_ms": null,
+            "coalesced_before_visible": true,
+            "first_region": 6
+          },
+          {
+            "release_ms": 460,
+            "detected_ms": 460,
+            "moving": false,
+            "dispatch_ms": 460,
+            "first_visible_ms": 2000,
+            "coalesced_before_visible": false,
+            "first_region": 9
+          },
+          {
+            "release_ms": 580,
+            "detected_ms": 580,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 860,
+            "detected_ms": 860,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 2320,
+            "detected_ms": 2320,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 3720,
+            "detected_ms": 3720,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 5120,
+            "detected_ms": 5120,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 6720,
+            "detected_ms": 6720,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 7060,
+            "detected_ms": 7060,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          }
+        ]
+      },
+      {
+        "case": "sync-timezone-next",
+        "clock": "simulated_ms",
+        "transfer_ms": 1000,
+        "held_or_moving_rasters": 0,
+        "unchanged_page_rasters": 0,
+        "region_rasters": 4,
+        "region_presents": 4,
+        "page_dispatches": 3,
+        "busy_page_dispatches": 0,
+        "held_and_moving_samples": 62,
+        "moving_samples": 18,
+        "first_changed_visible_ms": 3321,
+        "damage": {
+          "x": 168,
+          "y": 32,
+          "width": 280,
+          "height": 336
+        },
+        "taps": [
+          {
+            "release_ms": 220,
+            "detected_ms": 224,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 340,
+            "detected_ms": 352,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 460,
+            "detected_ms": 464,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 580,
+            "detected_ms": 592,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 860,
+            "detected_ms": 864,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 2320,
+            "detected_ms": 2321,
+            "moving": false,
+            "dispatch_ms": 2321,
+            "first_visible_ms": 3321,
+            "coalesced_before_visible": false,
+            "first_region": 3
+          },
+          {
+            "release_ms": 3720,
+            "detected_ms": 3722,
+            "moving": false,
+            "dispatch_ms": 3722,
+            "first_visible_ms": 4722,
+            "coalesced_before_visible": false,
+            "first_region": 6
+          },
+          {
+            "release_ms": 5120,
+            "detected_ms": 5123,
+            "moving": false,
+            "dispatch_ms": 5123,
+            "first_visible_ms": 6123,
+            "coalesced_before_visible": false,
+            "first_region": 9
+          },
+          {
+            "release_ms": 6720,
+            "detected_ms": 6724,
+            "moving": false,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          },
+          {
+            "release_ms": 7060,
+            "detected_ms": 7064,
+            "moving": true,
+            "dispatch_ms": null,
+            "first_visible_ms": null,
+            "coalesced_before_visible": false,
+            "first_region": null
+          }
+        ]
+      }
+    ]
+  },
+  "verification": {
+    "native_settings_cases": 1028,
+    "original_timezone_cases": 6928,
+    "native_system_cases": 72,
+    "native_system_target_builds": 6,
+    "native_toolbar_cases": 116,
+    "native_toolbar_compile_refusals": 11,
+    "native_toolbar_xtensa_links": [
+      "paper",
+      "paper-quick"
+    ],
+    "clock_home_points_cases": 90,
+    "clock_fixture_commit": "e24f463",
+    "clock_fixture_sha256": "52437c38d085402b3a25f6913e84204b9997a45c7e5a2c856ebf744ec99a7458",
+    "watch_quick_adapter_cases": 104,
+    "paper_quick_home_cases": 124,
+    "unit_contracts": 60
+  },
+  "native_settings_target": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "sha256": "62093395bf77be45a2682cdd6b5edb6b741c356831f9d85b3b68a7883f49aee9",
+    "size_bytes": 230880,
+    "imports": [
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy"
+    ],
+    "exports": [
+      "app_main",
+      "app_module_fini",
+      "app_module_init"
+    ],
+    "settings_profile": "x4-native-time"
+  },
+  "native_system_targets": {
+    "springboard": {
+      "version": "1.7.3",
+      "elf_sha256": "f607f7f8afa2eb67cda5f98e22fa191da4839a26ee581adb609e3685eec9e291",
+      "required_grants": [
+        {
+          "capability": "display.output",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "board.battery",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "input.navigation",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1,
+          "instance_id": 1
+        },
+        {
+          "capability": "alarm.service",
+          "api": 2,
+          "instance_id": 0
+        },
+        {
+          "capability": "runtime.realtime",
+          "api": 1,
+          "instance_id": 0
+        }
+      ],
+      "sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE",
+        "commit": "30dcec5ce6ce33223f2b203a2399283e1f758567",
+        "sha256": {
+          "RiscRuntimeV1.h": "2f1b785d65729c0866691570bb920299a8c5187765f3eac204df3cb427ce9c84",
+          "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "alarm_sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "637e13b0bce62ad49b756bec2468a6271d163fc7",
+        "capability": "alarm.service",
+        "api": 2,
+        "sha256": {
+          "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+          "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ]
+    },
+    "springboard-no-quick": {
+      "version": "1.7.3",
+      "elf_sha256": "f8cfe44d5e17ce331765023ebc0f587666bfd10d76b85fcaad96bb4aeb0fbbe9"
+    },
+    "file_browser": {
+      "version": "1.5.5",
+      "elf_sha256": "ab9a252b0d4b071815b6622c7390e15f361544f93676f25a838a6924d96222e9",
+      "required_grants": [
+        {
+          "capability": "display.output",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "storage.volume",
+          "api": 1,
+          "instance_id": 9
+        },
+        {
+          "capability": "file.open",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "input.navigation",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1,
+          "instance_id": 1
+        },
+        {
+          "capability": "board.battery",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "alarm.service",
+          "api": 2,
+          "instance_id": 0
+        },
+        {
+          "capability": "runtime.realtime",
+          "api": 1,
+          "instance_id": 0
+        }
+      ],
+      "sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE",
+        "commit": "30dcec5ce6ce33223f2b203a2399283e1f758567",
+        "sha256": {
+          "RiscRuntimeV1.h": "2f1b785d65729c0866691570bb920299a8c5187765f3eac204df3cb427ce9c84",
+          "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "alarm_sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "637e13b0bce62ad49b756bec2468a6271d163fc7",
+        "capability": "alarm.service",
+        "api": 2,
+        "sha256": {
+          "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+          "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncmp",
+        "strrchr"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ]
+    },
+    "file_browser-no-quick": {
+      "version": "1.5.5",
+      "elf_sha256": "51ad684b6971580aeb0bce0ac9a8c76396794128080b1a9e3cab49f1489198f6"
+    },
+    "wifi_settings": {
+      "version": "1.1.8",
+      "elf_sha256": "127275414d02691b6bee0dffaa2e755e9b359e67370acc4a60950f91e0e11b4d",
+      "required_grants": [
+        {
+          "capability": "display.output",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "net.wifi",
+          "api": 1,
+          "instance_id": 15
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1,
+          "instance_id": 6
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1,
+          "instance_id": 1
+        },
+        {
+          "capability": "input.navigation",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "board.battery",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "alarm.service",
+          "api": 2,
+          "instance_id": 0
+        },
+        {
+          "capability": "runtime.realtime",
+          "api": 1,
+          "instance_id": 0
+        }
+      ],
+      "sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE",
+        "commit": "30dcec5ce6ce33223f2b203a2399283e1f758567",
+        "sha256": {
+          "RiscRuntimeV1.h": "2f1b785d65729c0866691570bb920299a8c5187765f3eac204df3cb427ce9c84",
+          "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "alarm_sdk": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "637e13b0bce62ad49b756bec2468a6271d163fc7",
+        "capability": "alarm.service",
+        "api": 2,
+        "sha256": {
+          "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+          "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+          "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+        }
+      },
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ]
+    },
+    "wifi_settings-no-quick": {
+      "version": "1.1.8",
+      "elf_sha256": "fa8c329558d57e600caef5423e448e16ad3dd7a49e3552ca7adb4d7a99dc16e0"
+    }
+  },
+  "receipt_sha256": {
+    "build/paper-present/evidence.json": "678c58ff6ec365c4b902ac2615ccaaa937f15085d406143a72de389c2c7ca831",
+    "build/native-time-settings-page-next-final/evidence.json": "e431438df9279b2355a10b3ea095c0e6f95aab883c6b31434d71e33c68c7a768",
+    "build/native-system-apps/evidence.json": "97c83170a72cc43ee4c09d54fcc02ae99a486babb23c4090f90585a47aa1e8ac",
+    "build/native-toolbar/evidence.json": "f9bb1ddb7cd62bb7493d30a22add757202d8455a4ed8736471d987b5fcd05c93",
+    "build/clock-present-composition/evidence.json": "2d4c3a2d33b4eb82303db87e12c2d2f81dfec9b72426be4e47285384cbb2ea99",
+    "build/timezone-settings/page-next-evidence.json": "6ebba8887cd7a8aa426be3c7f75144856f419cf18149c334ae31f8325669cec7",
+    "build/settings-native-wrapper-target-final/settings-build-record.json": "129cd4fca2e8ff80f3581490fe4a1fe50c060bf2c917a2b3dc65691b60fd4b04"
+  },
+  "source_sha256": {
+    "Apps/file_browser_paper.inc": "268b5a9eb9867fe2c8af8d1d69efeb27447f9790540ce9142a3fb0090e40a51a",
+    "Apps/file_browser_portable.inc": "18448e79ac4f4dc79023e599c3dd0b032f5d393d06128c72907da166abc7607a",
+    "Apps/paper_clock.c": "5219995c485efebe85058581960014cf37d09ba14a8c6310e1636c4ec9688c33",
+    "Apps/springboard_paper.inc": "5e5c435807ac8ecc6271430bc514d9bfdb7611972997e1275cc8de1c186a8c42",
+    "Apps/update_portable.inc": "a87f456434862ce3d1333ac762dbb7c0c9d7bfdf5342a42a29e7b3cbae32700f",
+    "Apps/wifi_settings_portable.inc": "5770871ce42044cb190598c19bf91c851250cd285effb537800e7eceb41bae96",
+    "lib/PortableApps/src/adapter.c": "a53867681863ea198c7569be5004b17d4ffefa01a0fbdeb308f886864a6ecb75",
+    "lib/PortableApps/src/alarm.inc": "77ee1551198bfcfb10ed07b6949d96a553019144db97710945de500e076139c9",
+    "lib/PortableApps/src/native_custody_adapter.inc": "eb14b04918f442fd03e8806e0947ecb3f588969cc14f0539dd5c44e3b9c68507",
+    "lib/PortableApps/src/quick_adapter.inc": "36db6b7c23973f62fd6647718bf695156ee566a92999e16650cdc5e92ee64683",
+    "lib/PortableApps/src/settings.inc": "52f9c01e643ccec4ab188aa427e11f87a59b7171efbb3eba54056bd6c9ca00b4",
+    "lib/PortableApps/src/settings_timezone.inc": "c8c9db3d0893ca70061b8420e0a3d690585e3558d6a0546ba8497bbadfd69c3e",
+    "lib/PortableApps/src/settings_timezone_view.inc": "ffd3f843aed3af684b8309f77987173a4059e7e45d663e0bc93f027fd207e0cc",
+    "lib/PortableApps/src/settings_view.inc": "e40c56943069a23d8d0145bfd3a37a6375849d4f08844dc09197df81d41d12ca",
+    "lib/PortableApps/src/sparse_clock_adapter.inc": "2ed6a2300ed90d53a643877fd824bb21f4ce6c79237bf3536c96944513acd92b",
+    "scripts/build_paper_clock.py": "bd607b74258a3e056ada407da041057e051ac3d5819f9c64394b18eb298f87d6",
+    "scripts/build_portable_file_browser.py": "d8faf3c036fbc95a297b93bdcf51a469a31999303947902374274cd68cc503c0",
+    "scripts/build_portable_settings.py": "078e0af1d5b78715d9513ca8a971ada0177001073bce1f9681b9666116a28bf6",
+    "scripts/build_portable_springboard.py": "1d4ef4bbb1835b2a8f7ae18dd3091446801c0dfe5b60f63ba4d55f6166fcef33",
+    "scripts/build_portable_updates.py": "9048eac9b2dfb68647b722b44eaab949ae4839aa347a52c17a53d2345ce6870f",
+    "scripts/build_portable_wifi.py": "2d71063a8cb50e9a20ab1487034a539b40bdbc47b8f33653880eaaac6cfbc18e",
+    "scripts/test_native_time_settings.py": "05491a59476e799a5e7426f9a264eea4925991b9cba4bc5cb5cfb8a3c4dbde8a",
+    "test/native_apps/portable_native_time_settings_test.c": "a40f841fd206ce9a161d8c174bdfaf932a3d27a6e3f4d872d1c6a2f9b35952d3",
+    "test/native_apps/portable_native_toolbar_test.c": "e4923e5f204c3024d8b24d00d68a1c43fe4ecfb21c20a7ba045b5b1ce3163965",
+    "Apps/PaperFrame.h": "ce2d4a7221cf4056ed131b27117e143cd2e39b7b86f0de4ab841275674977b24",
+    "Apps/settings_native_entry.c": "4b93dbd02e7a1623d27439f7db8288bfff05e3bc677e0420df66fd294ca59f03",
+    "scripts/test_paper_present_input.py": "a47f5dd5fa6c258b4cb5940a6dfea4aa86476be1f825a96dbbd7c18a12f97c06",
+    "test/native_apps/paper_present_input_test.c": "eeb8bd29eefc84b27068d48272c0041c614130cd5e9625bddb08a28bc3adf968",
+    "test/native_apps/paper_present_controller.c": "9d07355b33d35baf4769362ba1618cb63545783e198ede997c4ead5e8bac014d"
+  }
+}

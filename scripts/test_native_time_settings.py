@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Production native-time Settings interaction, custody and raster tests.
 
-Runs the real Apps/settings.c and adapter with checked native/RTC/KV doubles,
+Runs the native entry wrapper, unchanged Settings controller and real adapter
+with checked native/RTC/KV doubles,
 normally and under ASan/UBSan, at 480x800 and 400x600 with optional alarm clients.
 Retained provider faults forbid all subsequent I/O and wrapped free calls.
 Does not invoke builders or publish artifacts.
@@ -22,6 +23,7 @@ from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME_REF = "602ae9bd618e13407b5b94bcad86cdabc23c99ea"
+CONTROLLER_REF = "c1ff014792c9ecbc195c402e9b4c3e2c3c9d34d3"
 HEADERS = ["RiscRuntimeV1.h", "RiscRealtimeV1.h"]
 HELPERS = ["PortableSetTime.c", "PortableRealtimeClient.c", "PortableTimeZone.c",
            "PortableTimeZoneCatalog.c", "PortableTimeZonePreference.c"]
@@ -35,7 +37,8 @@ rtc-acquire-false rtc-write-false rtc-read-false rtc-release-false rtc-mismatch
 native-seed-io native-readback-io native-readback-mismatch native-seed-context native-retry
 metadata-acquire-false metadata-write-io metadata-read-io metadata-release-false metadata-mismatch
 metadata-before-io metadata-retry-before metadata-retry-after metadata-read-retry metadata-write-context metadata-read-context metadata-held-save
-native-release-false drag-save touch-gap touch-failed-poll touch-replaced timezone timezone-then-save flip-editor""".split()
+native-release-false drag-save touch-gap touch-failed-poll touch-replaced timezone timezone-then-save flip-editor
+async-edit async-touch async-exit async-retained async-timezone-next sync-timezone-next""".split()
 ALARM_CASES = "alarm-step-retained alarm-status-retained alarm-refresh-retained alarm-ack-retained alarm-stop-retained".split()
 QUICK_CASES = "quick-startup quick-time quick-time-context quick-later-acquire quick-wifi-disconnect quick-wifi-status quick-ble-set quick-ble-status quick-release-false quick-refresh-retained".split()
 PROFILES = {"paper": [], "short-paper": ["-DTEST_NATIVE_SETTINGS_SHORT"],
@@ -64,7 +67,7 @@ def epoch(date):
 
 
 def environment(name):
-    zone = "UTC" if name.startswith("timezone") or name in {"missing-zone", "bad-zone", "unavailable-zone"} else "America/Denver"
+    zone = "UTC" if name.endswith("timezone-next") or name.startswith("timezone") or name in {"missing-zone", "bad-zone", "unavailable-zone"} else "America/Denver"
     before = expected = epoch("2026-01-15T19:34:56")
     if name.startswith("fold-"):
         before = expected = epoch("2026-11-01T07:30:00")
@@ -158,19 +161,24 @@ def main():
     for header in HEADERS:
         canonical = subprocess.check_output(["git", "-C", repo, "show", args.runtime_ref + ":sdk/app/" + header])
         assert canonical == (sdk / header).read_bytes(), header + " is not the pinned canonical header"
+    controller = ROOT / "Apps/settings.c"
+    assert controller.read_bytes() == subprocess.check_output(["git", "-C", ROOT, "show", CONTROLLER_REF + ":Apps/settings.c"]), "Portable Settings controller changed"
     bundled = ROOT / "lib/PortableApps/include/RiscRuntimeV1.h"
     old_header = bundled.read_bytes()
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     cc = os.environ.get("CC", "cc")
-    sources = [ROOT / "Apps/settings.c", ROOT / "test/native_apps/portable_native_time_settings_test.c",
+    sources = [ROOT / "Apps/settings_native_entry.c", ROOT / "test/native_apps/portable_native_time_settings_test.c",
                *[ROOT / "lib/PortableApps/src" / name for name in HELPERS]]
     receipt = {"purpose": "production Settings controller/adapter/helper host composition; native providers are test doubles",
                "version": "1.3.7", "runtime_ref": RUNTIME_REF,
+               "portable_controller_ref": CONTROLLER_REF, "portable_controller_unchanged": True,
+               "native_entry": "Apps/settings_native_entry.c",
                "runtime_tree": subprocess.check_output(["git", "-C", repo, "rev-parse", RUNTIME_REF + "^{tree}"], text=True).strip(),
                "runtime_headers": {name: sha(sdk / name) for name in HEADERS},
                "compiler": subprocess.check_output([cc, "--version"], text=True).splitlines()[0],
                "target_builder_run": False, "hardware_qualification": "not run",
+               "timezone_next_coverage": "Real Settings touch/controller/renderer; fixed simulated 1000 ms transfers; times are relative to first region submission. Async and synchronous present-status paths receive the same relative tap timeline. Detection is first neutral snapshot, dispatch is observed page state change, visibility is provider completion of that exact page; coalesced intermediate pages have null visibility. Hardware timing is not measured.",
                "quick_coverage": "startup composition and direct production clock/action calls before fini; Quick gestures not qualified here",
                "runs": {}}
     with tempfile.TemporaryDirectory(prefix="native-time-settings-") as temporary:
@@ -198,7 +206,7 @@ def main():
                 label = profile + ("-asan-ubsan" if sanitized else "-normal")
                 executable = out / ("native-time-settings-" + label)
                 flags = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie"] if sanitized else []
-                run([cc, "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror", *flags, *PROFILES[profile],
+                run([cc, "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror", "-DPORTABLE_NATIVE_CUSTODY_FENCE", *flags, *PROFILES[profile],
                      *(["-DALARM_SERVICE_TAGGED_V2"] if tagged else []),
                      "-I" + str(include), "-I" + str(ROOT / "lib/NativeApps/include"), *profile_sources,
                      "-Wl,--wrap=free", "-o", executable], timeout=120)
@@ -219,7 +227,7 @@ def main():
                 print(f"Native-time Settings {label}: {len(results)} production interaction cases passed", flush=True)
             if not args.no_pixels and any(case in CAPTURE_CASES for case in selected_cases):
                 receipt.setdefault("raster", {})[profile] = raster_evidence(frames, profile_out)
-    tracked = [*sources, ROOT / "lib/PortableApps/src/adapter.c", ROOT / "lib/PortableApps/src/settings.inc",
+    tracked = [*sources, ROOT / "Apps/settings.c", ROOT / "Apps/PaperFrame.h", ROOT / "lib/PortableApps/src/adapter.c", ROOT / "lib/PortableApps/src/settings.inc",
                ROOT / "lib/PortableApps/src/settings_native_time.inc", ROOT / "lib/PortableApps/src/settings_view.inc",
                ROOT / "lib/PortableApps/src/settings_paper.inc", ROOT / "lib/PortableApps/src/settings_timezone.inc",
                ROOT / "lib/PortableApps/src/settings_timezone_view.inc", ROOT / "lib/PortableApps/src/native_custody_adapter.inc",

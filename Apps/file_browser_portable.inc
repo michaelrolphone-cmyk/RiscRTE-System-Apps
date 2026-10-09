@@ -343,7 +343,11 @@ static bool fb_open(void) {
  if(fb_app->set_back_exits_app)fb_app->set_back_exits_app(false);
  (void)fb_load(0);fbx_resume_result();return true;
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+static void file_browser_controller_main(void) {
+#else
 void app_main(void) {
+#endif
  if(!fb_open())return;
  for(;;) {
   if(fb_terminal)return;
@@ -388,3 +392,9 @@ void app_main(void) {
   else if(input.buttons&T5_APP_BUTTON_CONFIRM)fb_activate();
  }
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+void app_main(void) {
+ file_browser_controller_main();
+ (void)paper_frame_drain();
+}
+#endif

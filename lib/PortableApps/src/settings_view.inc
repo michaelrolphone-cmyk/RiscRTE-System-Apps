@@ -1,6 +1,7 @@
 /* Compact app-local presentation, following the supplied 240x240 Settings
  * reference. All functional values come from the shared Settings model. */
 #include "../settings_fonts/text.inc"
+#include "../../../Apps/PaperFrame.h"
 #define SV_CYAN 0x19e3ffu
 #define SV_DIM 0x0e4f5cu
 #define SV_LINE 0x12262bu
@@ -18,7 +19,7 @@ static unsigned sv_axis; /* 1 vertical, 2 horizontal, 3 numeric slider */
 static int sv_start_x, sv_start_y, sv_last_x, sv_last_y, sv_start_scroll;
 static bool sv_dragged;
 static void settings_view_redraw(void);
-static bool sp_clean;
+static bool sp_clean,sp_dirty;
 static void sp_redraw(void);
 static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
@@ -281,6 +282,11 @@ static void settings_view_redraw(void) {
 #endif
   if(handoff_requested)return;
   if(failed || !sv_active)return;
+  if(pp_enabled()) {
+    sp_dirty=true;
+    if(!paper_frame_ready())return;
+    sp_dirty=false;
+  }
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES){stz_redraw();return;}
 #endif
@@ -344,10 +350,21 @@ static void sv_slider(int x) {
 #endif
 static bool settings_view_poll(t5_app_input_t *out) {
   if(!sv_active)return false;
+  if(pp_enabled()) {
+    bool handled;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+    if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES)handled=stz_poll(out);
+    else
+#endif
+      handled=sp_poll(out);
+    /* The controller consumes emitted actions after poll returns. Its redraw
+     * will paint that new state; otherwise a neutral poll retries pending work. */
+    if(sp_dirty && !out->buttons && !out->tapped && !out->exit_requested)settings_view_redraw();
+    return handled;
+  }
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES)return stz_poll(out);
 #endif
-  if(pp_enabled())return sp_poll(out);
   settings_navigation_poll(out);
   if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
   portable_touch_sample sample;

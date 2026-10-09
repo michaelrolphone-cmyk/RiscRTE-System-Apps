@@ -11,7 +11,7 @@ static bool desk_guard_diagnostic(const char *line) {
  return !native_sleep_retained && desk_runtime->diagnostic(line);
 }
 static bool desk_guard_launch(const char *path) {
- return !native_sleep_retained && desk_runtime->request_launch(path);
+ return !native_sleep_retained && portable_paper_frame_drain() && desk_runtime->request_launch(path);
 }
 #ifdef PORTABLE_QUICK_RADIOS
 /* QuickActions can acquire several transient grants before applying policy.
@@ -211,6 +211,7 @@ int portable_desk_adapter_upgrade(int32_t promotion_status) {
 static void desk_finalize(void) {
  if(!rt || native_sleep_retained || desk_phase==DESK_COLD || desk_phase==DESK_FINALIZED)return;
  if(desk_phase==DESK_INITIALIZED){desk_phase=DESK_FINALIZED;return;}
+ if(paper_token && !portable_paper_frame_drain())return;
  if(alarms.api && !alarm_failed_cleaned) {
   bool stop=failed || !display_settled;
   if(!stop) {

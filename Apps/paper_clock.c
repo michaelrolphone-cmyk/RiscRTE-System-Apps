@@ -7,6 +7,7 @@
 #include "RiscBatteryGaugeV1.h"
 #include "PortableAppSleep.h"
 #include "PaperPresentation.h"
+#include "PaperFrame.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -122,7 +123,16 @@ static const int16_t clock_ring[60][2]={
 #define CLOCK_DRAW_OR_RETURN(...) draw_clock(__VA_ARGS__)
 #define CLOCK_DRAW_RESULT void
 #endif
+static bool clock_dirty,clock_clean;
 static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
+ clock_dirty=true;clock_clean|=initial;
+ if(!paper_frame_ready()) {
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+  return true;
+#else
+  return;
+#endif
+ }
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  if(!home_points_refresh(known))return false;
 #endif
@@ -149,7 +159,7 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #endif
  text(50,757,400,"UPDATES EVERY MINUTE",false);
 #endif
- app->present(initial);
+ app->present(clock_clean);clock_dirty=clock_clean=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  return true;
 #endif
@@ -181,8 +191,10 @@ void app_main(void){
  if(desk_retained)return;
 #endif
  battery_status=paper_battery_read(paper);
+ clock_dirty=clock_clean=false;
  uint32_t checked=app->millis();CLOCK_DRAW_OR_RETURN(&time,known,notice,true);
- for(;;){t5_app_input_t input={0};if(!app->poll(&input,20)){
+ for(;;){
+ t5_app_input_t input={0};if(!app->poll(&input,20)){
 #ifdef PORTABLE_ALARM_CLIENT
  if(portable_app_sleep_retained())return;
 #endif
@@ -193,9 +205,9 @@ break;}
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(desk_retained)return;
 #endif
- CLOCK_DRAW_OR_RETURN(&time,known,notice,true);}
+ clock_dirty=clock_clean=true;}
 #endif
-  if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");CLOCK_DRAW_OR_RETURN(&time,known,notice,false);}
+  if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");clock_dirty=true;}
   springboard_contact c={0};paper->contact(&c);bool launch=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   bool points_launch=false;
@@ -213,7 +225,7 @@ break;}
    points_launch=false;
 #endif
   }
-  if(launch){close_clock();
+  if(launch){if(!paper_frame_drain())return;close_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
    if(rt->request_launch(target))break;
@@ -226,12 +238,14 @@ break;}
 #else
    strcpy(notice,"UNABLE TO OPEN APPS. RETRY.");
 #endif
-   CLOCK_DRAW_OR_RETURN(&time,known,notice,false);}
+   clock_dirty=true;}
   uint32_t now=app->millis();if((uint32_t)(now-checked)>=1000){twatch_rtc_time_v1 next={0};bool valid=read_clock(&next);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(desk_retained)return;
 #endif
- paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;CLOCK_DRAW_OR_RETURN(&time,known,notice,false);}}
+ paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;clock_dirty=true;}}
+ if(clock_dirty)CLOCK_DRAW_OR_RETURN(&time,known,notice,false);
  }
+ if(!paper_frame_drain())return;
  close_clock();app->set_back_exits_app(true);
 }

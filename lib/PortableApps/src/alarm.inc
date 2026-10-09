@@ -195,6 +195,11 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    /* The app can update while paper refreshes; alarm service/presentation
+     * takes ownership only after that submitted foreground image completes. */
+    if(!failed && paper_token)return true;
+#endif
     if(failed || !display_settled || surface.frame)return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;

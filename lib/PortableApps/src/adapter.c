@@ -98,6 +98,14 @@ static bool failed, list_mode;
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
 #error "Native custody requires the complete canonical Runtime retention SDK"
 #endif
+/* A controller opts into cooperative paper completion through PaperFrame.h.
+ * The submitted lease stays provider-owned until this token completes. */
+static bool paper_async_frames;
+static risc_display_present_token_v1 paper_token;
+static uint32_t paper_submitted_at;
+static bool paper_present_progress(void);
+bool portable_paper_frame_ready(void);
+bool portable_paper_frame_drain(void);
 static bool native_custody_retained;
 static const risc_runtime_api_v1 *native_custody_runtime;
 static volatile risc_display_surface_v1 native_custody_surface;
@@ -445,6 +453,10 @@ static bool acquire_surface(void) {
 #endif
   if (failed)
     return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  /* Non-cooperative callers retain the old blocking acquisition contract. */
+  if(!portable_paper_frame_drain())return false;
+#endif
   if (surface.frame) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
@@ -612,6 +624,60 @@ const paper_presentation *paper_presentation_get(void) {
  nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &pp_view;
 }
 #endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+bool portable_paper_frame_ready(void) {
+  if(failed)return false;
+  paper_async_frames=surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+    (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && (info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  paper_async_frames=paper_async_frames && desk_phase==DESK_FOREGROUND;
+#endif
+  return !paper_token;
+}
+/* Advance once per foreground poll. Status never gives the app a writable
+ * lease; only completion promotes the submitted image into damage history. */
+static bool paper_present_progress(void) {
+  if(failed)return false;
+  if(!paper_token)return true;
+  if((uint32_t)(millis_now()-paper_submitted_at)>=10000) {
+    display_failure("PORTABLE_APP error=display-timeout");return false;
+  }
+  if(failed)return false;
+  risc_display_present_status_v1 status={0};
+  if(!display->present_status(display->context,paper_token,&status)) {
+    display_failure("PORTABLE_APP error=display-status");return false;
+  }
+  if(failed)return false;
+  if(status.state==RISC_DISPLAY_PRESENT_FAILED || status.state==RISC_DISPLAY_PRESENT_SUPERSEDED) {
+    display_failure("PORTABLE_APP error=display-failed");return false;
+  }
+  if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE)return true;
+  paper_token=0;
+#ifdef PORTABLE_PAPER_PREFERENCES
+  paper_orientation_dirty=false;
+#endif
+#ifdef PORTABLE_DESK_CLOCK
+  desk_present_complete=true;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+  display_settled=true;alarm_pixels_valid=true;
+#endif
+  paper_previous_valid=paper_previous!=NULL;
+  return true;
+}
+/* Ownership transitions deliberately settle the outstanding image. Input
+ * remains sampled during this short boundary, with the old cancellation rule. */
+bool portable_paper_frame_drain(void) {
+  if(!paper_token)return !failed;
+  for(unsigned n=0;n<10000 && !failed;++n) {
+    if(!paper_present_progress())return false;
+    if(!paper_token)return true;
+    if((uint32_t)(millis_now()-input_sampled_at)>=16)input_service();
+    rt->yield_ms(1);
+  }
+  display_failure("PORTABLE_APP error=display-timeout");return false;
+}
+#endif
 static void present(bool full) {
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(paper_orientation_dirty)full=true;
@@ -705,6 +771,19 @@ static void present(bool full) {
     return;
   }
   surface.frame = 0;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  /* Modals and unmodified callers keep their synchronous presentation path. */
+  if(paper_async_frames
+#ifdef PORTABLE_QUICK_ACTIONS
+     && !quick_modal
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+     && !alarm_modal
+#endif
+  ) {
+    paper_token=token;paper_submitted_at=millis_now();return;
+  }
+#endif
   uint32_t start = millis_now();
   for (unsigned n = 0; n < 10000 && !failed; ++n) {
     risc_display_present_status_v1 s = {0};
@@ -775,6 +854,9 @@ static bool idle_sleep(void) {
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(paper_token)return true;
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
 #endif
@@ -885,6 +967,9 @@ static bool idle_sleep(void) {
 static inline bool paper_apply_flip(unsigned value) {
   if(failed || value>1u || !pp_enabled() || surface_format!=RISC_DISPLAY_FORMAT_MONO1)return false;
   if(paper_flip_ui==(value!=0))return true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(!portable_paper_frame_drain())return false;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained || alarm_modal || !display_settled)return false;
 #endif
@@ -981,7 +1066,11 @@ int portable_desk_adapter_seed(void) {
   return 1;
 }
 bool portable_desk_adapter_present(bool full) {
-  present(full);return !failed && desk_present_complete;
+  present(full);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(!portable_paper_frame_drain())return false;
+#endif
+  return !failed && desk_present_complete;
 }
 bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
 bool portable_desk_adapter_foreground(void) {
@@ -1034,10 +1123,23 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return false;
 #endif
-  rt->yield_ms(spent<wait?wait-spent:1);
+  uint32_t delay=spent<wait?wait-spent:1;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(paper_token) {
+    /* Runtime advances async providers once per yield. Keep the former 1 ms
+     * pump cadence while respecting this controller's input-poll interval;
+     * one 20 ms sleep per transfer chunk would throttle the panel itself. */
+    for(uint32_t slices=0;slices<delay;++slices) {
+      rt->yield_ms(1);
+      if(failed)return false;
+      if((uint32_t)(millis_now()-now)>=delay)break;
+    }
+  } else
+#endif
+    rt->yield_ms(delay);
   last_poll_at=millis_now();
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-  if(failed)return false;
+  if(!paper_present_progress())return false;
 #endif
   input_service();
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -1197,6 +1299,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
      && !quick_launch_pending
 #endif
   ) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(!portable_paper_frame_drain())return false;
+#endif
     if(!app_allows_launch(destination)) {
       home_pending=crown_pending=false;navigation_pending=0;input_pending=false;
       clear_contact_snapshots();memset(out,0,sizeof(*out));return true;
@@ -1267,6 +1372,9 @@ static bool launch(uint32_t i) {
   /* A terminal Home/return is already accepted. Do not replace its target or
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(!portable_paper_frame_drain())return false;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed) || consumed)return false;
@@ -1461,6 +1569,9 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  paper_async_frames=false;paper_token=0;paper_submitted_at=0;
+#endif
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_flip_ui=paper_orientation_dirty=false;
 #endif
@@ -1532,6 +1643,7 @@ static void settings_native_finalize(void) {
 #else
   if(native_custody_retained || !rt)return;
 #endif
+  if(paper_token && !portable_paper_frame_drain())return;
   /* Foreground app-owned grants precede adapter teardown. Unconfirmed app
    * cleanup pins the entire invocation before any provider release or free. */
 #ifdef PORTABLE_FILE_BROWSER_APP

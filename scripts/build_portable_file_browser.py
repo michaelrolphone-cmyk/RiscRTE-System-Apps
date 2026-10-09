@@ -60,7 +60,7 @@ def build(args,parser=None):
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     if native_receipt:manifest['version']=native_receipt['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
+    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)

@@ -5,6 +5,7 @@
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
 #include "PortableWifiView.h"
+#include "PaperFrame.h"
 #include "PortableWifiCredentials.h"
 #include "RiscRuntimeV1.h"
 #include "WifiApi.h"
@@ -345,10 +346,17 @@ static bool wifi_open(void) {
   if(!wifi_acquire())wifi_message="Wi-Fi unavailable; retry Connect";
   return true;
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+static void wifi_controller_main(void) {
+#else
 void app_main(void) {
+#endif
   if(!wifi_open())return;
   for(;;) {
-    if(dirty){wifi_make_view();portable_wifi_render(&view);dirty=false;}
+    if(dirty){
+      wifi_make_view();
+      if(!portable_wifi_paper() || paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
+    }
     t5_app_input_t input;
     if(!wa->poll(&input,25)) {
 #ifdef PORTABLE_ALARM_CLIENT
@@ -405,3 +413,9 @@ void app_main(void) {
     dirty=true;
   }
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+void app_main(void) {
+  wifi_controller_main();
+  (void)paper_frame_drain();
+}
+#endif

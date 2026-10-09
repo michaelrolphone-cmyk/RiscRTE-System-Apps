@@ -115,7 +115,8 @@ def build(args,parser=None):
     catalog = out/'catalog.c'
     catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'settings.elf'
-    sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]+quick_sources
+    entry = 'Apps/settings_native_entry.c' if native_time else 'Apps/settings.c'
+    sources = [ROOT/entry, ROOT/'lib/PortableApps/src/adapter.c', catalog]+quick_sources
     if native_time: sources += [ROOT/p for p in NATIVE_TIME_SOURCES]
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
@@ -162,10 +163,10 @@ def build(args,parser=None):
     # Springboard presentation/fonts after the coordinated integration.
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
-    inputs.append('Apps/PaperPresentation.h')
+    inputs += ['Apps/PaperPresentation.h','Apps/PaperFrame.h']
     if tagged_alarm:inputs.append('scripts/portable_alarm_build.py')
     inputs += ['scripts/build_portable_settings.py',version_path]
-    if native_time: inputs.append('LICENSE')
+    if native_time: inputs += ['LICENSE','Apps/settings_native_entry.c']
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
         source=ROOT/'lib/PortableApps'/group

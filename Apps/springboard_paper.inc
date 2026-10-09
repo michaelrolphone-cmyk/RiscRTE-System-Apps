@@ -1,5 +1,6 @@
 /* NOVA-7 E-Ink: fixed 3/2 rows, real catalog only, no animation or fades. */
 #include "PaperPresentation.h"
+#include "PaperFrame.h"
 #include "PaperBattery.h"
 __attribute__((weak)) const paper_presentation *paper_presentation_get(void) {return NULL;}
 #define PAPER_PAGE_APPS 15u
@@ -27,8 +28,9 @@ static void paper_name(const paper_presentation *v,int x,int y,const t5_app_mani
     int limit=paper_x(122),measured=v->measure(name,false);
     v->text(x-(measured<limit?measured:limit)/2,y+paper_y(43),limit,name,1,false,true);
 }
-static void paper_draw(const paper_presentation *v,const char *status,bool initial,
-                       bool known,uint8_t hour,uint8_t minute,paper_battery battery) {
+static bool paper_draw(const paper_presentation *v,const char *status,bool initial,
+                       bool known,uint8_t hour,uint8_t minute,paper_battery battery,bool loading) {
+    if(!paper_frame_ready())return false;
     v->begin();v->text(paper_x(32),paper_y(30),paper_x(270),"APPS",2,true,true);
     char time[12];if(known)snprintf(time,sizeof(time),"%02u:%02u",hour,minute);else strcpy(time,"--:--");
     v->text(paper_x(214),paper_y(30),paper_x(120),time,2,true,true);
@@ -39,7 +41,7 @@ static void paper_draw(const paper_presentation *v,const char *status,bool initi
         t5_app_manifest_t app;if(!api->installed_apps_get(first+cell,&app))continue;
         int x,y;paper_position(cell,&x,&y);bool active=first+cell==selected;
         v->circle(x,y,paper_x(active?47:38),true);
-        v->circle(x,y,paper_x(active?43:34),false);
+        if(!active || !loading)v->circle(x,y,paper_x(active?43:34),false);
         if(active)v->circle(x,y,paper_x(36),true);
         int size=paper_x(34);
         if(!api->draw_icon(x-size/2,y-size/2,app.icon,(uint8_t)size,!active))
@@ -57,6 +59,7 @@ static void paper_draw(const paper_presentation *v,const char *status,bool initi
         if(i!=selected/PAPER_PAGE_APPS)v->circle(x,y,paper_x(7),false);
     }
     api->present(initial);
+    return true;
 }
 static bool paper_run(void) {
     const paper_presentation *v=paper_presentation_get();
@@ -64,13 +67,18 @@ static bool paper_run(void) {
     uint8_t hour=0,minute=0;bool known=v->clock(&hour,&minute)&&hour<24&&minute<60;
     uint32_t last_clock=api->millis(),previous=0;bool armed=false;
     paper_battery battery=paper_battery_read(v);
-    char status[64]={0};paper_draw(v,status,true,known,hour,minute,battery);
+    bool dirty=true,initial=true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    bool launch_pending=false,feedback=false;
+#endif
+    char status[64]={0};
+    if(paper_draw(v,status,initial,known,hour,minute,battery,false))dirty=initial=false;
     t5_app_input_t in;
     while(api->poll(&in,20)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK))break;
         if(!in.buttons)armed=true;
         uint32_t pressed=armed?(in.buttons&~previous):0;previous=in.buttons;
-        unsigned old=selected;bool activate=false,dirty=false;
+        unsigned old=selected;bool activate=false;
         if(count) {
             if(pressed&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_UP))selected=selected?selected-1:count-1;
             else if(pressed&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_DOWN))selected=(selected+1)%count;
@@ -85,11 +93,24 @@ static bool paper_run(void) {
                 if(hit>=0){selected=(unsigned)hit;activate=true;}
             }
         }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+        /* A later navigation/contact owns the current intent. Never launch a
+         * stale target after a newer drag, cancellation or modal consumed it. */
+        if(launch_pending && (pressed || selected!=old || c.released || !c.valid || c.cancelled || (c.down&&!c.tap_eligible))) {
+            launch_pending=feedback=false;dirty=true;
+        }
+#endif
         if(selected!=old){status[0]=0;dirty=true;}
         if(activate) {
             t5_app_manifest_t app;
-            if(api->installed_apps_get(selected,&app)&&app.compatible&&api->request_app_launch(selected))return true;
-            strcpy(status,"UNABLE TO OPEN APP");dirty=true;
+            if(api->installed_apps_get(selected,&app)&&app.compatible) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+                launch_pending=true;feedback=false;status[0]=0;dirty=true;
+#else
+                if(api->request_app_launch(selected))return true;
+                strcpy(status,"UNABLE TO OPEN APP");dirty=true;
+#endif
+            } else {strcpy(status,"UNABLE TO OPEN APP");dirty=true;}
         }
         uint32_t now=api->millis();
         if((uint32_t)(now-last_clock)>=1000) {
@@ -97,7 +118,20 @@ static bool paper_run(void) {
             paper_battery next=paper_battery_read(v);dirty|=paper_battery_changed(battery,next);battery=next;
             dirty|=valid!=known || (valid&&(h!=hour||m!=minute));known=valid;hour=h;minute=m;last_clock=now;
         }
-        if(dirty)paper_draw(v,status,false,known,hour,minute,battery);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+        if(dirty && paper_draw(v,status,initial,known,hour,minute,battery,launch_pending)) {
+            dirty=initial=false;feedback=launch_pending;
+        }
+        /* The active icon is a submitted state of this exact target. Surface
+         * readiness establishes completion before admission can unload us. */
+        if(launch_pending && feedback && !c.down && paper_frame_ready()) {
+            if(api->request_app_launch(selected))return true;
+            launch_pending=feedback=false;strcpy(status,"UNABLE TO OPEN APP");dirty=true;
+        }
+#else
+        if(dirty && paper_draw(v,status,initial,known,hour,minute,battery,false))dirty=initial=false;
+#endif
     }
+    (void)paper_frame_drain();
     return true;
 }

@@ -123,7 +123,7 @@ def build():
     portable_quick_build.requirements(args,manifest['requires'])
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    inputs=['Apps/PaperBattery.h','scripts/portable_quick_build.py','Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
+    inputs=['Apps/PaperBattery.h','Apps/PaperFrame.h','scripts/portable_quick_build.py','Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
             'lib/PortableApps/RTC_PROVENANCE.json','lib/PortableApps/SOURCES.json']
     inputs += ['lib/PortableApps/include/'+name for name in json.loads((ROOT/'lib/PortableApps/SOURCES.json').read_text())]

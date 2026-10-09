@@ -5,6 +5,7 @@
  * selected service grant. Wi-Fi credentials and foreground radio belong here. */
 #include "T5AppApi.h"
 #include "PortableWifiView.h"
+#include "PaperFrame.h"
 #include "PortableWifiSavedNetwork.h"
 #include "PortableRtcClock.h"
 #include "PortableUpdate.h"
@@ -161,7 +162,13 @@ static void render_update(void) {
    snprintf(row_values[i],sizeof(row_values[i]),"%s  %s",r.version,state);uv.rows[i]=row_names[i];uv.values[i]=row_values[i];
   }
  }
- if(up)up_draw();else portable_wifi_render(&uv);dirty=false;
+ if(up) {
+  /* Input uses the latest view even while the preceding paint is pending. */
+  up_first=uv.selected/4*4;
+  if(!paper_frame_ready())return;
+  up_draw();
+ }else portable_wifi_render(&uv);
+ dirty=false;
 }
 static bool open_update(void) {
  ua=t5_app_get_api(1);ur=risc_runtime_get_api(1);
@@ -178,7 +185,11 @@ static bool open_update(void) {
   const twatch_rtc_api_v1 *c=ucg.api;if(c&&c->api_version==2&&c->struct_size>=sizeof(*c)&&c->read)uc=c;}
  if(!us||!uk||!uc)message="Update service, saved network or RTC unavailable";return true;
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+static void update_controller_main(void) {
+#else
 void app_main(void) {
+#endif
  if(!open_update())return;
  for(;;){if(dirty)render_update();t5_app_input_t input;
   if(!ua->poll(&input,25)){
@@ -229,3 +240,9 @@ void app_main(void) {
   }
  }
 }
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+void app_main(void) {
+ update_controller_main();
+ (void)paper_frame_drain();
+}
+#endif

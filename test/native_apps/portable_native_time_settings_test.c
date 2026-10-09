@@ -1,4 +1,5 @@
-/* Real Apps/settings.c, production adapter/views and checked Set Time helpers.
+/* Native entry around unchanged Apps/settings.c, production adapter/views and
+ * checked Set Time helpers.
  * Only the native providers are doubles. Settings interactions enter app_main;
  * no test calls editor_save, settings_activate or mutates the editor draft.
  * Optional Quick clock/action checks run directly before invocation fini;
@@ -7,7 +8,9 @@
 #define PORTABLE_SETTINGS_NATIVE_TIME
 #define PORTABLE_SETTINGS_TIME_ZONE
 #define PORTABLE_SETTINGS_X4_DESK_CLOCK
+#ifndef PORTABLE_NATIVE_CUSTODY_FENCE
 #define PORTABLE_NATIVE_CUSTODY_FENCE
+#endif
 #define PORTABLE_SLEEP_SETTINGS
 #define PORTABLE_INPUT_NAVIGATION
 #define PORTABLE_DISPLAY_ROTATION 90
@@ -49,6 +52,35 @@ typedef struct {unsigned kind,generation;} lease;
 static lease leases[32];
 static unsigned generation,live,high_water,provider_calls,acquires,releases;
 static unsigned ticks,polls,subscriptions,frames,presents,launches,barriers;
+static bool async_pending;
+static unsigned async_submitted_at,async_edits,async_value_frames,async_completions,async_observed_year;
+static uint8_t async_pixels[NATIVE_WIDTH*NATIVE_HEIGHT/8];
+/* Milliseconds below are a deterministic provider clock, not wall time or a
+ * hardware claim. Each transfer deliberately stays busy for 1000 ms; the
+ * touch timeline starts with the first region image submission. */
+typedef struct {
+  unsigned down_ms,up_ms,detected_ms,dispatch_ms,visible_ms,first;
+  bool moving,detected,dispatched,visible;
+} timezone_tap;
+static timezone_tap timezone_taps[]={
+  {100,220,0,0,0,0,false,false,false,false},
+  {300,340,0,0,0,0,false,false,false,false},
+  {420,460,0,0,0,0,false,false,false,false},
+  {540,580,0,0,0,0,false,false,false,false},
+  {700,860,0,0,0,0,true,false,false,false},
+  {2200,2320,0,0,0,0,false,false,false,false},
+  {3600,3720,0,0,0,0,false,false,false,false},
+  {5000,5120,0,0,0,0,false,false,false,false},
+  {6500,6720,0,0,0,0,false,false,false,false},
+  {6900,7060,0,0,0,0,true,false,false,false}
+};
+static bool timezone_started,timezone_exit;
+static unsigned timezone_start,timezone_seen_first,timezone_rendered_first;
+static unsigned timezone_rasters,timezone_presents,timezone_dispatches,timezone_busy_dispatches;
+static unsigned timezone_samples,timezone_motion_samples,timezone_burst_first,timezone_visible_at;
+static unsigned timezone_final_rasters,timezone_final_presents;
+static risc_display_rect_v1 timezone_damage;
+static uint8_t timezone_prior_pixels[NATIVE_WIDTH*NATIVE_HEIGHT/8];
 static unsigned native_reads,seeds,rtc_reads,rtc_writes,kv_reads,basis_puts,zone_puts,other_puts;
 static unsigned metadata_failure_calls;
 static unsigned nav_buttons[2048],next_at=5,last_at,contact_count;
@@ -72,11 +104,29 @@ static unsigned wifi_disconnects,wifi_statuses,ble_sets,ble_statuses,radio_puts,
 static uint8_t ble_value,radio_record[4]={0x51,1,0,0xa5},dnd_value;
 #endif
 static bool which(const char *s){return !strcmp(test_name,s);}
+static bool async_case(void){return !strncmp(test_name,"async-",6);}
+static bool timezone_page_case(void){return which("async-timezone-next")||which("sync-timezone-next");}
+static bool delayed_present_case(void){return async_case()||(timezone_page_case()&&sv_page==SV_TIMEZONE_REGIONS);}
+static void timezone_observe(void) {
+  if(!timezone_page_case()||!timezone_started||sv_page!=SV_TIMEZONE_REGIONS)return;
+  if(timezone_seen_first!=stz_first) {
+    assert(stz_first>timezone_seen_first);
+    timezone_seen_first=stz_first;++timezone_dispatches;
+    if(async_pending)++timezone_busy_dispatches;
+    for(unsigned n=sizeof(timezone_taps)/sizeof(*timezone_taps);n>0;--n) {
+      timezone_tap *tap=&timezone_taps[n-1];
+      if(!tap->detected||tap->moving)continue;
+      assert(!tap->dispatched);tap->dispatched=true;tap->dispatch_ms=ticks-timezone_start;tap->first=stz_first;
+      break;
+    }
+  }
+  if(ticks-timezone_start<1000)timezone_burst_first=stz_first;
+}
 void __real_free(void *pointer);
 void __wrap_free(void *pointer){assert(!hidden&&!retained);__real_free(pointer);}
 static void io(void) {
   assert((in_main||in_fini)&&!hidden&&!retained);
-  ++provider_calls;
+  ++provider_calls;timezone_observe();
 }
 static bool kind_live(unsigned kind) {
   for(unsigned i=1;i<32;++i)if(leases[i].kind==kind)return true;
@@ -101,10 +151,19 @@ static bool get_info(void *ctx,risc_display_info_v1 *out) {
   (void)ctx;io();*out=(risc_display_info_v1){.width=NATIVE_WIDTH,.height=NATIVE_HEIGHT,
     .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),
     .flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,
-    .damage_x_alignment=8,.damage_width_alignment=8};return true;
+    .damage_x_alignment=8,.damage_width_alignment=8};
+  if(async_case())out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
+  return true;
 }
 static bool frame_get(void *ctx,uint32_t format,risc_display_surface_v1 *out) {
-  (void)ctx;io();assert(!frames&&format==RISC_DISPLAY_FORMAT_MONO1);frames=1;
+  (void)ctx;io();assert(!frames&&!async_pending&&format==RISC_DISPLAY_FORMAT_MONO1);frames=1;
+  if(timezone_page_case()&&sv_page==SV_TIMEZONE_REGIONS) {
+    ++timezone_rasters;
+    if(timezone_started)for(unsigned n=0;n<sizeof(timezone_taps)/sizeof(*timezone_taps);++n) {
+      unsigned elapsed=ticks-timezone_start;
+      assert(elapsed<timezone_taps[n].down_ms||elapsed>=timezone_taps[n].up_ms);
+    }
+  }
   *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=NATIVE_WIDTH,.height=NATIVE_HEIGHT,
     .stride_bytes=NATIVE_WIDTH/8,.size_bytes=sizeof(pixels),.pixel_format=format};return true;
 }
@@ -113,6 +172,19 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
  size_t count,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
   (void)ctx;(void)damage;(void)count;(void)options;io();assert(frame==1&&frames);
   frames=0;*token=++presents;
+  if(delayed_present_case()) {
+    assert(!async_pending);
+    if(!timezone_page_case()) {
+      if(presents==2)assert(sv_page==SV_VALUE&&options->intent==RISC_DISPLAY_PRESENT_CLEAN);
+      if(presents==3)assert(sv_page==SV_ROOT&&options->intent==RISC_DISPLAY_PRESENT_CLEAN);
+      if(sv_page==SV_VALUE) {
+        assert(settings_draft.year==2029&&async_edits==5&&!nav_buttons[polls]);
+        ++async_value_frames;
+      }
+    }
+    async_pending=true;async_submitted_at=ticks;
+    memcpy(async_pixels,pixels,sizeof(pixels));
+  }
 #if defined(ALARM_SERVICE_TAGGED_V2) && defined(TEST_NATIVE_SETTINGS_ALARMS)
   if(alarms.api)assert(settings_visual_alerts());
 #endif
@@ -121,18 +193,77 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
   if(snt_basis_status==PORTABLE_RTC_BASIS_MISSING)saw_default_basis=true;
   if(snt_snapshot_status==PORTABLE_REALTIME_UNSET)saw_snapshot_unset=true;
   if(stz_unconfirmed)saw_zone_unconfirmed=true;
+  if(timezone_page_case()&&sv_page==SV_TIMEZONE_REGIONS) {
+    if(!timezone_started){timezone_started=true;timezone_start=ticks;timezone_seen_first=stz_first;}
+    else {
+      assert(count==1&&options->intent==RISC_DISPLAY_PRESENT_QUALITY);
+      timezone_damage=damage[0];
+      assert(damage[0].x>=0&&damage[0].y>=0&&damage[0].width&&damage[0].height);
+      assert(damage[0].x+(int)damage[0].width<=NATIVE_WIDTH&&damage[0].y+(int)damage[0].height<=NATIVE_HEIGHT);
+      assert(damage[0].width*damage[0].height<NATIVE_WIDTH*NATIVE_HEIGHT);
+      for(unsigned y=0;y<NATIVE_HEIGHT;++y)for(unsigned x=0;x<NATIVE_WIDTH;++x) {
+        unsigned at=y*(NATIVE_WIDTH/8)+x/8;
+        if((pixels[at]^timezone_prior_pixels[at])&(0x80u>>(x%8)))
+          assert(x>=(unsigned)damage[0].x&&x<(unsigned)damage[0].x+damage[0].width&&
+                 y>=(unsigned)damage[0].y&&y<(unsigned)damage[0].y+damage[0].height);
+      }
+    }
+    memcpy(timezone_prior_pixels,pixels,sizeof(pixels));
+    timezone_rendered_first=stz_first;++timezone_presents;
+  }
   capture();return true;
 }
 static bool frame_state(void *ctx,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
-  (void)ctx;io();assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
+  (void)ctx;io();assert(token);
+  if(async_pending) {
+    assert(token==presents&&!memcmp(async_pixels,pixels,sizeof(pixels)));
+    unsigned elapsed=ticks-async_submitted_at;
+    if(elapsed<1000) {
+      out->state=elapsed<300?RISC_DISPLAY_PRESENT_QUEUED:RISC_DISPLAY_PRESENT_ACTIVE;
+      return true;
+    }
+    async_pending=false;++async_completions;
+    if(timezone_page_case()&&sv_page==SV_TIMEZONE_REGIONS) {
+      if(timezone_rendered_first&&!timezone_visible_at)timezone_visible_at=ticks-timezone_start;
+      for(unsigned n=0;n<sizeof(timezone_taps)/sizeof(*timezone_taps);++n) {
+        timezone_tap *tap=&timezone_taps[n];
+        if(tap->dispatched&&!tap->visible&&tap->first==timezone_rendered_first) {
+          tap->visible=true;tap->visible_ms=ticks-timezone_start;
+        }
+      }
+    }
+  }
+  out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
 static bool battery_read(void *ctx,risc_battery_sample_v1 *out){(void)ctx;io();*out=(risc_battery_sample_v1){3800,80,0};return true;}
 static uint64_t subscribe(void *ctx){(void)ctx;io();assert(!subscriptions);subscriptions=1;return 1;}
 static bool unsubscribe(void *ctx,uint64_t token){(void)ctx;io();assert(token==1&&subscriptions);subscriptions=0;return true;}
-static bool touch_poll(void *ctx,size_t limit){(void)ctx;io();assert(limit==1);++polls;return polls!=fail_poll;}
+static bool touch_poll(void *ctx,size_t limit){
+  (void)ctx;io();assert(limit==1);++polls;
+  if(async_case()&&sv_page==SV_VALUE&&async_pending) {
+    if(async_observed_year&&async_observed_year!=settings_draft.year) {
+      assert(presents==1&&sp_dirty);++async_edits;
+    }
+    async_observed_year=settings_draft.year;
+  }
+  return polls!=fail_poll;
+}
 static int32_t touch_next(void *ctx,uint64_t token,risc_touch_event_v1 *out){(void)ctx;(void)token;(void)out;io();return polls==gap_poll?-1:0;}
 static bool touch_snapshot(void *ctx,risc_touch_snapshot_v1 *out) {
   (void)ctx;io();*out=(risc_touch_snapshot_v1){.width=LOGICAL_WIDTH,.height=LOGICAL_HEIGHT};
+  if(timezone_page_case()&&timezone_started) {
+    unsigned elapsed=ticks-timezone_start;
+    for(unsigned n=0;n<sizeof(timezone_taps)/sizeof(*timezone_taps);++n) {
+      timezone_tap *tap=&timezone_taps[n];
+      if(elapsed>=tap->up_ms&&!tap->detected){tap->detected=true;tap->detected_ms=elapsed;}
+      if(elapsed<tap->down_ms||elapsed>=tap->up_ms)continue;
+      unsigned x=LOGICAL_WIDTH-80,y=LOGICAL_HEIGHT-164;
+      if(tap->moving&&elapsed>=tap->down_ms+40){if(n==9)y-=60;else x-=20;}
+      out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=y};
+      ++timezone_samples;if(tap->moving)++timezone_motion_samples;
+    }
+    return true;
+  }
   for(unsigned i=0;i<contact_count;++i)if(contacts[i].at==polls) {
     unsigned x=contacts[i].x,y=contacts[i].y;
     if(flipped){x=LOGICAL_WIDTH-1-x;y=LOGICAL_HEIGHT-1-y;}
@@ -143,7 +274,15 @@ static bool touch_snapshot(void *ctx,risc_touch_snapshot_v1 *out) {
 static bool navigation_poll(void *ctx,risc_input_navigation_frame_v1 *out) {
   (void)ctx;io();assert(polls<2048);*out=(risc_input_navigation_frame_v1){0};
   if(getenv("NATIVE_SETTINGS_TRACE")&&nav_buttons[polls])fprintf(stderr,"poll %u nav %u page %u field %u selected %u\n",polls,nav_buttons[polls],sv_page,editor_field,sv_selected);
-  out->buttons=out->pressed=nav_buttons[polls];return true;
+  out->buttons=out->pressed=nav_buttons[polls];
+  if(timezone_page_case()&&timezone_started) {
+    out->buttons=out->pressed=0;
+    if(ticks-timezone_start>=7500&&!timezone_exit) {
+      timezone_exit=true;timezone_final_rasters=timezone_rasters;timezone_final_presents=timezone_presents;
+      out->buttons=out->pressed=RISC_NAV_HOME;
+    }
+  }
+  return true;
 }
 static bool navigation_reset(void *ctx){(void)ctx;io();return true;}
 static bool navigation_foreground(void *ctx,const risc_input_foreground_v1 *list,size_t n) {
@@ -152,6 +291,7 @@ static bool navigation_foreground(void *ctx,const risc_input_foreground_v1 *list
 static int32_t native_read(void *ctx,risc_realtime_snapshot_v1 *out) {
   io();assert(ctx==leases&&(kind_live(K_NATIVE)||kind_live(K_CONTROL)));++native_reads;
   if(which("native-context")&&!seeds){hidden=true;return RISC_REALTIME_CONTEXT;}
+  if(which("async-retained")&&async_pending){hidden=true;return RISC_REALTIME_CONTEXT;}
 #ifdef TEST_NATIVE_SETTINGS_QUICK
   if(which("quick-time-context")&&quick_exercising){hidden=true;return RISC_REALTIME_CONTEXT;}
 #endif
@@ -390,6 +530,23 @@ static void configure_records(void) {
   memcpy(flip_record,(uint8_t[]){0x52,1,(uint8_t)flipped,(uint8_t)((unsigned)flipped^0xa5)},4);
 }
 static void plan_inputs(void) {
+  if(timezone_page_case()){nav(RISC_NAV_DOWN);nav(RISC_NAV_DOWN);nav(RISC_NAV_CONFIRM);return;}
+  if(async_case()) {
+    if(which("async-exit")){nav(RISC_NAV_BACK);return;}
+    if(which("async-retained")){open_time(false);return;}
+    bool touch_mode=which("async-touch");open_time(touch_mode);
+    if(touch_mode) {
+      tap(120,150);tap(LOGICAL_WIDTH-80,280);tap(LOGICAL_WIDTH-80,280);
+      tap(80,280);tap(LOGICAL_WIDTH-80,280);tap(LOGICAL_WIDTH-80,280);
+    } else {
+      nav(RISC_NAV_CONFIRM);nav(RISC_NAV_RIGHT);nav(RISC_NAV_RIGHT);
+      nav(RISC_NAV_LEFT);nav(RISC_NAV_RIGHT);nav(RISC_NAV_RIGHT);
+    }
+    /* Keep the editor neutral across completion, then change pages during
+     * its transfer and let a second neutral interval show the latest root. */
+    next_at=65;nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);
+    next_at=115;end_app();return;
+  }
   if(!strncmp(test_name,"quick-",6)){end_app();return;}
   if(which("open-only")||which("native-context")||which("native-read-io")||which("native-absent")){end_app();return;}
   if(which("timezone")||which("timezone-io-before")||which("timezone-io-after")||
@@ -474,7 +631,7 @@ static void plan_inputs(void) {
   end_app();
 }
 static bool no_save_case(void) {
-  return !strncmp(test_name,"alarm-",6)||!strncmp(test_name,"quick-",6)||which("open-only")||which("cancel-touch")||which("back")||which("home")||which("value-back")||
+  return timezone_page_case()||async_case()||!strncmp(test_name,"alarm-",6)||!strncmp(test_name,"quick-",6)||which("open-only")||which("cancel-touch")||which("back")||which("home")||which("value-back")||
    which("value-home")||which("held-entry")||which("fold-held")||which("fold-back")||which("fold-home")||
    which("gap")||which("range")||which("drag-save")||which("touch-gap")||which("touch-failed-poll")||
    which("touch-replaced")||which("bad-basis")||which("unavailable-basis")||which("native-context")||
@@ -505,6 +662,7 @@ int main(int argc,char **argv) {
     printf("{\"case\":\"%s\",\"loader_only\":true,\"provider_calls\":0}\n",test_name);return 0;
   }
   in_main=true;app_main();
+  if(async_case()&&!retained)assert(!async_pending&&async_completions==presents);
 #ifdef TEST_NATIVE_SETTINGS_QUICK
   if(!strncmp(test_name,"quick-",6)) {
     assert(!retained&&quick.loaded&&quick.ui.radios_valid);
@@ -535,6 +693,30 @@ int main(int argc,char **argv) {
     assert(provider_calls==count&&live==held&&presents==shown&&!launches);
   } else {
     assert(!live&&!subscriptions&&!frames&&!barriers);
+  }
+  if(timezone_page_case()) {
+    unsigned pages=(PORTABLE_TIMEZONE_REGION_COUNT+stz_rows()-1)/stz_rows();
+    assert(timezone_exit&&!async_pending&&timezone_dispatches==pages-1);
+    assert(timezone_seen_first==(pages-1)*stz_rows());
+    assert(timezone_samples>20&&timezone_motion_samples>5);
+    assert(timezone_final_rasters==timezone_rasters&&timezone_final_presents==timezone_presents);
+    if(getenv("NATIVE_SETTINGS_TRACE"))fprintf(stderr,"timezone rasters %u presents %u visible %u dispatch %u busy %u first %u burst %u\n",timezone_rasters,timezone_presents,timezone_visible_at,timezone_dispatches,timezone_busy_dispatches,timezone_seen_first,timezone_burst_first);
+    if(async_case()) {
+      assert(timezone_busy_dispatches==pages-1&&timezone_burst_first==(pages-1)*stz_rows());
+      assert(timezone_presents==2&&timezone_rasters==2&&timezone_visible_at==2000);
+    } else assert(!timezone_busy_dispatches&&!timezone_burst_first&&timezone_presents==pages&&timezone_rasters==pages);
+    for(unsigned n=0;n<sizeof(timezone_taps)/sizeof(*timezone_taps);++n) {
+      timezone_tap *tap=&timezone_taps[n];assert(tap->detected&&tap->detected_ms-tap->up_ms<=20);
+      if(tap->dispatched)assert(tap->dispatch_ms-tap->detected_ms<=20);
+      if(tap->moving)assert(!tap->dispatched);
+    }
+  } else if(async_case()) {
+    if(which("async-retained"))assert(retained&&hidden&&async_pending&&presents==1&&!async_completions);
+    else if(which("async-exit"))assert(!async_pending&&presents==1&&async_completions==1&&!async_edits);
+    else {
+      assert(!async_pending&&async_completions==presents&&async_value_frames==1&&async_edits==5);
+      assert(settings_draft.year==2029&&presents>=3);
+    }
   }
   if(no_save_case())assert(!rtc_writes&&!seeds&&!basis_puts);
   else if(which("bad-zone")||which("unavailable-zone"))assert(!rtc_writes&&!seeds&&!basis_puts);
@@ -583,7 +765,7 @@ int main(int argc,char **argv) {
   if(which("basis-context")||which("zone-context"))assert(retained&&hidden);
   if(which("unset-local")||which("unset-utc"))assert(saw_snapshot_unset&&saw_fields&&first_draft.year==2000&&basis_puts==1);
   if(which("fold-first")||which("fold-second")||which("fold-second-utc")||which("fold-held")||which("fold-back")||which("fold-home"))assert(saw_fold);
-  if(which("home")||which("value-home")||which("fold-home"))assert(launches==1);
+  if(timezone_page_case()||which("home")||which("value-home")||which("fold-home"))assert(launches==1);
   else assert(!launches);
   if(which("timezone-then-save"))assert(!strcmp((char *)zone_record+4,"America/Denver")&&first_draft.hour==12&&first_draft.minute==34);
   if(which("timezone-io-before")||which("timezone-io-after")) {
@@ -604,6 +786,20 @@ int main(int argc,char **argv) {
     assert(alarm_stops==(which("alarm-stop-retained")?1u:0u));
   } else assert(!alarm_acks&&alarm_refreshes==(which("quick-refresh-retained")?1u:0u)&&!alarm_stops);
 #endif
+  if(timezone_page_case()) {
+    printf("{\"case\":\"%s\",\"clock\":\"simulated_ms\",\"transfer_ms\":1000,\"held_or_moving_rasters\":0,\"unchanged_page_rasters\":0,\"region_rasters\":%u,\"region_presents\":%u,\"page_dispatches\":%u,\"busy_page_dispatches\":%u,\"held_and_moving_samples\":%u,\"moving_samples\":%u,\"first_changed_visible_ms\":%u,\"damage\":{\"x\":%d,\"y\":%d,\"width\":%u,\"height\":%u},\"taps\":[",
+      test_name,timezone_rasters,timezone_presents,timezone_dispatches,timezone_busy_dispatches,
+      timezone_samples,timezone_motion_samples,timezone_visible_at,timezone_damage.x,timezone_damage.y,timezone_damage.width,timezone_damage.height);
+    for(unsigned n=0;n<sizeof(timezone_taps)/sizeof(*timezone_taps);++n) {
+      timezone_tap *tap=&timezone_taps[n];if(n)printf(",");
+      printf("{\"release_ms\":%u,\"detected_ms\":%u,\"moving\":%s,\"dispatch_ms\":",tap->up_ms,tap->detected_ms,tap->moving?"true":"false");
+      if(tap->dispatched)printf("%u",tap->dispatch_ms);else printf("null");
+      printf(",\"first_visible_ms\":");if(tap->visible)printf("%u",tap->visible_ms);else printf("null");
+      printf(",\"coalesced_before_visible\":%s",tap->dispatched&&!tap->visible?"true":"false");
+      printf(",\"first_region\":");if(tap->dispatched)printf("%u",tap->first);else printf("null");printf("}");
+    }
+    printf("]}\n");return 0;
+  }
   printf("{\"case\":\"%s\",\"rtc_writes\":%u,\"native_seeds\":%u,\"basis_puts\":%u,\"zone_puts\":%u,\"retained\":%s,\"native_reads\":%u,\"frames\":%u,\"grant_high_water\":%u,\"status\":\"%s\"}\n",
     test_name,rtc_writes,seeds,basis_puts,zone_puts,retained?"true":"false",native_reads,presents,high_water,final_status);
   return 0;

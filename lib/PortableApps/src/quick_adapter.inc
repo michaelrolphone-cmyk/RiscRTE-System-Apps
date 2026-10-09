@@ -145,6 +145,9 @@ static bool quick_foreground(bool *consumed) {
  }
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(!failed && paper_token){*consumed=true;return true;}
+#endif
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
 #ifdef PORTABLE_RADIO_SESSION

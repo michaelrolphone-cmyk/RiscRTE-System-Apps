@@ -1,4 +1,5 @@
 /* Static portrait e-paper presentation for the same volume/controller model. */
+#include "PaperFrame.h"
 #define FBP_TOP 112
 #define FBP_ROW 88
 static unsigned fbp_last_mode;
@@ -64,6 +65,7 @@ static void fbp_management(void) {
  }else {fbp_wrap(32,144,fbp_w()-64,12,fb_status,true);fbp_button(32,fbp_h()-112,fbp_w()-64,88,"BACK",NULL,false);}
 }
 static void fbp_draw(void) {
+ if(!paper_frame_ready())return;
  fb_paper->begin();
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME)fbp_keyboard();
  else if(fb_mode>=FB_ACTIONS)fbp_management();

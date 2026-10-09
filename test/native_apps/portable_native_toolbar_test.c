@@ -19,8 +19,10 @@ static bool __attribute__((unused)) fixture_time_forward(const twatch_rtc_time_v
 #include "../../lib/PortableApps/src/adapter.c"
 #undef portable_time_forward
 
+#ifndef TEST_CUSTOM_CATALOG
 const t5_app_manifest_t portable_catalog[1]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
+#endif
 static unsigned calls,acquires,releases,live,subscriptions,frames,presents,free_calls;
 static unsigned ticks,barriers,hook_calls,reader_opens,reader_closes,reader_live;
 static unsigned rtc_acquires,rtc_reads,rtc_writes,battery_reads;

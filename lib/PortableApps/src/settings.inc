@@ -679,7 +679,7 @@ static bool settings_open(void) {
   rtc_grant.struct_size=sizeof(rtc_grant);
 #endif
   back_exits_app=true;settings_message="";
-  sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;
+  sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;sp_dirty=false;
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {

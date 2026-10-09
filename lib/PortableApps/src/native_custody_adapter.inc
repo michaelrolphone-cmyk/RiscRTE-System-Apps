@@ -137,5 +137,5 @@ static bool custody_health(risc_runtime_health_v1 *out) {
 }
 static void custody_yield(uint32_t delay) {if(!native_custody_retained)native_custody_runtime->yield_ms(delay);}
 static bool custody_diagnostic(const char *line) {return !native_custody_retained && native_custody_runtime->diagnostic(line);}
-static bool custody_launch(const char *path) {return !native_custody_retained && native_custody_runtime->request_launch(path);}
+static bool custody_launch(const char *path) {return !native_custody_retained && portable_paper_frame_drain() && native_custody_runtime->request_launch(path);}
 #endif

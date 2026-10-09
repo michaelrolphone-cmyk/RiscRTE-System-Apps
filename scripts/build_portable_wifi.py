@@ -89,7 +89,7 @@ def build(args, parser=None):
     # Springboard presentation/fonts after the coordinated integration.
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
-    inputs += ['Apps/PaperPresentation.h', 'scripts/portable_quick_build.py']
+    inputs += ['Apps/PaperPresentation.h', 'Apps/PaperFrame.h', 'scripts/portable_quick_build.py']
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
         source=ROOT/'lib/PortableApps'/group

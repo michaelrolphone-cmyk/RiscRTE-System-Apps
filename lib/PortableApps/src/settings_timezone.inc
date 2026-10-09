@@ -25,12 +25,12 @@ static uint8_t stz_activate(void) {
     if(!input.buttons&&!input.tapped){armed=true;continue;}
     if(!armed)continue;
     armed=false;
-    bool cities=sv_page==SV_TIMEZONE_CITIES,back=false,cancel=false,confirm=false;
+    bool cities=sv_page==SV_TIMEZONE_CITIES,back=false,cancel=false,confirm=false,redraw=true;
     if(input.buttons&T5_APP_BUTTON_BACK)back=true;
     else if(input.buttons&T5_APP_BUTTON_UP)stz_choose((stz_selected+stz_count()-1)%stz_count());
     else if(input.buttons&T5_APP_BUTTON_DOWN)stz_choose((stz_selected+1)%stz_count());
-    else if(input.buttons&T5_APP_BUTTON_LEFT)stz_page_step(false);
-    else if(input.buttons&T5_APP_BUTTON_RIGHT)stz_page_step(true);
+    else if(input.buttons&T5_APP_BUTTON_LEFT)redraw=stz_page_step(false);
+    else if(input.buttons&T5_APP_BUTTON_RIGHT)redraw=stz_page_step(true);
     else if(input.buttons&T5_APP_BUTTON_CONFIRM)confirm=true;
     else if(input.tapped) {
       int x=input.touch_x,y=input.touch_y,w=stz_width(),h=stz_height(),margin=stz_margin();
@@ -42,8 +42,8 @@ static uint8_t stz_activate(void) {
           unsigned row=stz_first+(unsigned)(y-stz_top())/(unsigned)stz_step();
           if(row<stz_count()){stz_choose(row);if(!cities)confirm=true;}
         } else if(y>=page_y&&y<page_y+page_h) {
-          if(x<margin+page_w)stz_page_step(false);
-          else if(x>=w-margin-page_w)stz_page_step(true);
+          if(x<margin+page_w)redraw=stz_page_step(false);
+          else if(x>=w-margin-page_w)redraw=stz_page_step(true);
         } else if(y>=foot_y&&y<foot_y+foot_h) {
           int slot=(x-margin)/(foot_w+gap);
           if((x-margin)%(foot_w+gap)<foot_w) {
@@ -74,7 +74,7 @@ static uint8_t stz_activate(void) {
         stz_unconfirmed=true;stz_message="Save unconfirmed - retry";
       } else stz_message="Invalid selection";
     }
-    settings_view_redraw();
+    if(redraw)settings_view_redraw();
   }
   settings_message=stz_unconfirmed?"Time zone unconfirmed":stz_message;
   sv_switch(SV_ROOT);return result;

@@ -98,7 +98,7 @@ def build():
   record['desk_sdk_headers']={name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in (
    'RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h',
    'RiscStorageVolumeV1.h','RiscRetainedWakeV1.h','RiscTimedSleepV1.h','RiscLightSleepV1.h','RiscDeepSleepV1.h')}
-  paths=['Apps/paper_clock.c','Apps/paper_desk_clock.inc','lib/PortableApps/src/adapter.c',
+  paths=['Apps/paper_clock.c','Apps/PaperFrame.h','Apps/paper_desk_clock.inc','lib/PortableApps/src/adapter.c',
    'lib/PortableApps/src/desk_clock_faces.c','lib/PortableApps/include/PortableDeskClockApp.h',
    'lib/PortableApps/include/PortableDeskClock.h','lib/PortableApps/include/PortableDeskClockSettings.h',
    'lib/PortableApps/include/PortableSleepPolicy.h','lib/PortableApps/include/PortableReaderPreferences.h','lib/PortableApps/src/paper.inc','scripts/build_paper_clock.py']
