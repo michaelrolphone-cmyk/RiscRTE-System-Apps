@@ -16,8 +16,9 @@ import tempfile
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--sdk',type=Path,required=True)
+p.add_argument('--runtime-sdk',type=Path,required=True,help='Canonical Runtime app SDK with invocation-retention suffix')
 p.add_argument('--xtensa-cc',required=True)
-p.add_argument('--base',default='3bcc9b3accbd8169f0441a6874114127a69507d0')
+p.add_argument('--base',default='878fc45')
 a=p.parse_args()
 FLAGS=['-DPORTABLE_DESK_CLOCK','-DPORTABLE_DESK_CLOCK_SPARSE_START','-DPORTABLE_ALARM_CLIENT',
  '-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY','-DPORTABLE_INPUT_NAVIGATION',
@@ -29,6 +30,7 @@ def run(command,**kwargs):
 with tempfile.TemporaryDirectory(prefix='sparse-adapter-') as directory:
  out=Path(directory);include=out/'include';shutil.copytree(ROOT/'lib/PortableApps/include',include)
  shutil.copytree(ROOT/'lib/PortableApps/time',out/'time')
+ shutil.copyfile(a.runtime_sdk/'RiscRuntimeV1.h',include/'RiscRuntimeV1.h')
  for name in ('RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h'):
   shutil.copyfile(a.sdk/name,include/name)
  includes=['-I'+str(include),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(ROOT/'lib/PortableApps/src')]

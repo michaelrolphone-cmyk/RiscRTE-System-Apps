@@ -211,9 +211,14 @@ int portable_desk_adapter_upgrade(int32_t promotion_status) {
 static void desk_finalize(void) {
  if(!rt || native_sleep_retained || desk_phase==DESK_COLD || desk_phase==DESK_FINALIZED)return;
  if(desk_phase==DESK_INITIALIZED){desk_phase=DESK_FINALIZED;return;}
- if(alarms.api && !alarm_failed_cleaned &&
-    (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms)) &&
-    !portable_alarm_failure_stop(&alarms)){portable_desk_adapter_retain();return;}
+ if(alarms.api && !alarm_failed_cleaned) {
+  bool stop=failed || !display_settled;
+  if(!stop) {
+   if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain){portable_desk_adapter_retain();return;}
+   stop=portable_alarm_owned(&alarms);
+  }
+  if(stop && !portable_alarm_failure_stop(&alarms)){portable_desk_adapter_retain();return;}
+ }
  if(!portable_alarm_close(&alarms,rt))return;
 #ifdef PORTABLE_QUICK_ACTIONS
  if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_desk_adapter_retain();return;}

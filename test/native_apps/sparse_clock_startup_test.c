@@ -41,7 +41,7 @@ static void io(void){assert(in_main&&!terminal);}
 static void safe(void){io();assert(!panel_off&&!touch_off&&!sd_off);}
 static bool healthy(risc_runtime_health_v1*h){io();h->uptime_ms=ms;assert(polls<80);return true;}
 static void wait_ms(uint32_t n){safe();ms+=n;}
-static bool report(const char*s){io();return diagnostic(s);}
+static bool report(const char*s){safe();return diagnostic(s);}
 static bool launch(const char*s){safe();assert(promoted);return launch_app(s);}
 static bool read_key(void*c,bool*down){(void)c;io();key_reads++;
  if(which("key-retained")&&presents){terminal=true;return false;}
@@ -76,12 +76,15 @@ static bool disable_bt(void*c,bool enabled){(void)c;(void)enabled;safe();assert(
 static bool bt_status(void*c,uint8_t*out){(void)c;safe();assert(promoted);*out=PORTABLE_BLUETOOTH_OFF;return true;}
 static const wifi_api_v1 wifi={.api_version=1,.struct_size=sizeof(wifi),.status=wifi_status,.disconnect_checked=disconnect_wifi};
 static const portable_bluetooth_control_v1 bt={.api_version=1,.struct_size=sizeof(bt),.set_enabled=disable_bt,.status=bt_status};
+static int32_t step_alarm(void*c){safe();if(promoted&&which("alarm-output")){terminal=true;return ALARM_OUTPUT;}return alarm_step(c);}
+static int32_t status_alarm(void*c,alarm_status_v1*out){safe();int32_t result=alarm_status(c,out);
+ if(promoted&&which("alarm-uncertain")){out->output_uncertain=1;terminal=true;}return result;}
 static int32_t prepare_alarm(void*c,alarm_sleep_v1*out){(void)c;safe();out->rtc_seconds=epoch+(ms-start_ms)/1000u;
  out->deadline=which("alarm-due")?out->rtc_seconds:0;return ALARM_OK;}
 static int32_t read_record(void*c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1*out,uint32_t*cause){(void)c;safe();assert(!starts&&!presents&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==1);
  *cause=which("gpio")?RISC_BOOT_DEEP_GPIO:RISC_BOOT_DEEP_TIMER;
  if(which("record-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
- if(which("cold")||which("manual")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
+ if(which("cold")||which("manual")||which("foreground")||which("alarm-output")||which("alarm-uncertain")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
  *out=value;if(which("invalid-record"))out->payload[0]=0;return RISC_RETAINED_WAKE_OK;}
 static int32_t stage_record(void*c,const risc_retained_wake_record_v1*in){(void)c;safe();assert(!subs&&!frames&&!native_live);value=*in;pending=true;ms+=17;
  if(which("stage-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
@@ -92,7 +95,7 @@ static int32_t clear_record(void*c){(void)c;safe();clears++;
 static const risc_retained_wake_api_v1 wake={1,sizeof(wake),NULL,read_record,stage_record,clear_record};
 static int32_t deep(void*c,uint32_t duration){(void)c;io();assert(pending&&duration&&duration<=60000&&!subs&&!frames&&dark&&panel_off&&!native_live);
  assert(promoted?(touch_off&&sd_off):(!touch_off&&!sd_off));entries++;
- if(which("refused")||which("clear-retained")||which("resume-retained")||which("release-retained"))return RISC_DEEP_SLEEP_BUSY;
+ if(which("refused")||which("clear-retained")||which("resume-retained")||which("release-retained")||!strncmp(test,"refused-promotion-",18))return RISC_DEEP_SLEEP_BUSY;
  if(which("retained")){terminal=true;return RISC_DEEP_SLEEP_RETAINED;}
  FILE*out=fopen(state_path,"wb");assert(out);assert(fwrite(&value,1,sizeof(value),out)==sizeof(value));assert(fwrite(physical,1,sizeof(physical),out)==sizeof(physical));assert(!fclose(out));terminal=true;longjmp(entry,1);}
 static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();assert(promoted);*out=(risc_input_navigation_frame_v1){0};
@@ -137,7 +140,7 @@ static int32_t seed_native(void*c,int64_t seconds,uint32_t nano){safe();assert(c
 static const risc_realtime_control_api_v1 realtime={1,sizeof(realtime),&native_context,read_native,seed_native};
 static int32_t promote(void*c){safe();assert(c==&promotion_context);promotion_attempted=true;promotions++;
  if(which("promotion-retained")){terminal=true;return RISC_PROVIDER_PROMOTION_RETAINED;}
- if(which("promotion-failed")||(which("promotion-partial")&&promotions==1))return RISC_PROVIDER_PROMOTION_FAILED;
+ if(which("promotion-failed")||which("refused-promotion-failed")||((which("promotion-partial")||which("refused-promotion-partial"))&&promotions==1))return RISC_PROVIDER_PROMOTION_FAILED;
  promoted=true;return which("promotion-ready")?RISC_PROVIDER_PROMOTION_ALREADY_READY:RISC_PROVIDER_PROMOTION_OK;}
 static const risc_provider_promotion_api_v1 promotion={1,sizeof(promotion),&promotion_context,promote};
 static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promoted&&rtc_live);rtc_reads++;
@@ -147,16 +150,16 @@ static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promot
 static bool read_battery(void*c,risc_battery_sample_v1*out){safe();assert(promoted);return battery_read(c,out);}
 static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_capability_v1*g){safe();assert(grants<16&&g->struct_size==sizeof(*g));const void*api=NULL;
  if(!strcmp(name,RISC_RETAINED_WAKE_CAPABILITY)){assert(version==1&&!id);api=&wake;}
- else if(!strcmp(name,RISC_REALTIME_CONTROL_CAPABILITY)){assert(version==1&&!id);if(which("absent-native"))return false;api=&realtime;native_live++;}
+ else if(!strcmp(name,RISC_REALTIME_CONTROL_CAPABILITY)){assert(version==1&&!id);assert(!promotion_attempted||promoted);if(which("absent-native"))return false;if(which("native-acquire-retained")){terminal=true;g->slot=9;return false;}api=&realtime;native_live++;}
  else if(!strcmp(name,RISC_PROVIDER_PROMOTION_CAPABILITY)){assert(version==1&&!id);api=&promotion;}
  else if(!strcmp(name,"display.output")){assert(version==1&&(id==0||id==3));starts++;display_acquires++;api=&panel;}
- else if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;api=&service;}
+ else if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;service.step=step_alarm;service.status=status_alarm;api=&service;}
  else if(!strcmp(name,X4_POWER_CAPABILITY)){assert(version==1&&id==17);api=&power;}
  else {assert(promoted&&promotion_attempted);
   if(!strcmp(name,"input.touch.raw"))api=&touch_power;
   else if(!strcmp(name,"input.navigation"))api=&navigation;
   else if(!strcmp(name,"board.battery")){static risc_battery_gauge_api_v1 b;b=battery_api;b.read=read_battery;api=&b;battery_acquires++;}
-  else if(!strcmp(name,"rtc.clock")){assert(version==2&&!id);static twatch_rtc_api_v1 r;r=rtc_api;r.read=read_rtc;api=&r;rtc_live=true;}
+  else if(!strcmp(name,"rtc.clock")){assert(version==2&&!id);if(which("rtc-acquire-retained")){terminal=true;return false;}static twatch_rtc_api_v1 r;r=rtc_api;r.read=read_rtc;api=&r;rtc_live=true;}
   else if(!strcmp(name,"storage.key-value")){assert(version==1&&id==1);static risc_key_value_v1 keyvalue;keyvalue=kv;keyvalue.get=preferences;keyvalue.put=no_put;api=&keyvalue;}
   else if(!strcmp(name,"storage.volume"))api=&sd;
   else if(!strcmp(name,"net.wifi"))api=&wifi;
@@ -171,7 +174,7 @@ static bool drop(risc_runtime_capability_v1*g){safe();assert(grants&&g->api);
  if(g->api!=&realtime&&rtc_live){/* Recovery RTC is the only transient provider then. */assert(promoted);rtc_live=false;}
  grants--;*g=(risc_runtime_capability_v1){.struct_size=sizeof(*g)};return true;}
 static bool retain_invocation(void){assert(in_main);barriers++;terminal=true;return true;}
-static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=healthy,
+static risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=healthy,
  .yield_ms=wait_ms,.diagnostic=report,.request_launch=launch,.acquire=obtain,.release=drop,
  .retain_invocation=retain_invocation};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&runtime:NULL;}
@@ -189,20 +192,28 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
  value=(risc_retained_wake_record_v1){.struct_size=sizeof(value),.type=PORTABLE_DESK_CLOCK_RECORD_TYPE,.schema_version=1,.size=PORTABLE_DESK_CLOCK_RECORD_BYTES};
  assert(portable_desk_encode(&record,value.payload,value.size));loaded=true;
  FILE*in=fopen(state_path,"rb");if(in){assert(fread(&value,1,sizeof(value),in)==sizeof(value));assert(fread(physical,1,sizeof(physical),in)==sizeof(physical));assert(!fclose(in));assert(portable_desk_decode(value.payload,value.size,&record));epoch=(uint32_t)record.displayed_minute+60u;loaded_pixels=true;}
- native_valid=!(which("unset")||which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis")||which("fold")||which("gap"));
+ native_valid=!(which("unset")||which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis")||which("fold")||which("gap")||which("rtc-acquire-retained"));
+ if(which("init-nosuffix")||which("init-missing-barrier")) {
+  if(which("init-nosuffix"))runtime.struct_size=RISC_RUNTIME_CAPABILITIES_V1_SIZE;
+  else runtime.retain_invocation=NULL;
+  assert(app_module_init()==-1);app_module_fini();assert(!grants&&!starts&&!native_reads&&!barriers);return 0;
+ }
+ if(getenv("CLOCK_MILLIS"))ms=(uint32_t)strtoul(getenv("CLOCK_MILLIS"),NULL,10);
  assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;
  if(setjmp(entry)){assert(terminal&&entries&&grants&&!subs&&!frames&&!native_live);
  if(!which("manual")){assert(!promoted&&!kv_reads&&!rtc_reads&&!battery_acquires&&!promotions);assert(high_water<=6);}
  else assert(promoted&&promotions==1&&battery_acquires==1&&high_water<=16);
  printf("Sparse terminal PASS (%u grants max, %u native reads)\n",high_water,native_reads);return 0;}
- app_main();if(portable_app_sleep_retained()){assert(terminal&&grants&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
+ app_main();if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
  assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
- assert(promotions==(which("promotion-failed")||which("promotion-partial")?2u:1u));
- if(!which("promotion-failed")){assert(promoted&&battery_acquires==1&&launches==1);}
+ assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
+ if(!which("promotion-failed")&&!which("refused-promotion-failed")){assert(promoted&&battery_acquires==1&&launches==1);}
  if(which("unset"))assert(seed_calls==1&&rtc_reads==1);
  if(which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis"))assert(!seed_calls&&!rtc_reads);
  if(which("fold")||which("gap"))assert(!seed_calls&&rtc_reads==1);
  if(which("refused"))assert(entries==1&&restores==1&&clears==1&&display_acquires==2);
  if(which("promotion-failed"))assert(!starts&&!battery_acquires&&!kv_reads&&!entries);
+ if(which("refused-promotion-failed"))assert(starts==2&&!battery_acquires&&!kv_reads&&entries==1);
+ const char*capture=getenv("PAPER_FRAME");if(capture){FILE*out=fopen(capture,"wb");assert(out);assert(fwrite(physical,1,sizeof(physical),out)==sizeof(physical));assert(!fclose(out));}
  printf("Sparse foreground %s PASS (%u grants max, %u native reads)\n",test,high_water,native_reads);return 0;
 }

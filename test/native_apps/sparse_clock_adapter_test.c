@@ -100,7 +100,11 @@ static bool fx_release(risc_runtime_capability_v1 *grant){
  assert(grant->api!=&desk_wifi_control&&grant->api!=&desk_ble_control);
  live--;grant->api=NULL;return true;
 }
-static const risc_runtime_api_v1 fx_runtime={1,sizeof(fx_runtime),fx_health,fx_yield,fx_diagnostic,fx_launch,fx_acquire,fx_release};
+static unsigned native_fences;
+static bool fx_retain(void){native_fences++;return true;}
+static const risc_runtime_api_v1 fx_runtime={.api_version=1,.struct_size=sizeof(fx_runtime),.health=fx_health,
+ .yield_ms=fx_yield,.diagnostic=fx_diagnostic,.request_launch=fx_launch,.acquire=fx_acquire,.release=fx_release,
+ .retain_invocation=fx_retain};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&fx_runtime:NULL;}
 int portable_desk_clock_mode(void){mode_calls++;return 0;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,const risc_battery_gauge_api_v1 *b,const alarm_service_v1 *a){
@@ -115,7 +119,7 @@ static void assert_minimal(void){
 }
 static void assert_fenced(void){
  unsigned before=calls;
- assert(portable_app_sleep_retained()&&!portable_desk_adapter_ready());
+ assert(portable_app_sleep_retained()&&!portable_desk_adapter_ready()&&native_fences==1);
  portable_desk_adapter_invalidate();portable_desk_adapter_begin();assert(!portable_desk_adapter_present(false));
  assert(portable_desk_adapter_seed()==0);assert(!portable_desk_adapter_sleep());
  assert(!portable_desk_adapter_foreground());assert(portable_desk_adapter_start(PORTABLE_DESK_START_TIMER)==-2);

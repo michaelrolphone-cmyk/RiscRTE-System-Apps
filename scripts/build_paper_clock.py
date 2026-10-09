@@ -22,6 +22,7 @@ def build():
  if a.desk_clock and not (a.retained_wake_sdk/'RiscRetainedWakeV1.h').is_file():p.error('Missing canonical RiscRetainedWakeV1.h')
  if a.sparse_start:
   if not a.desk_clock:p.error('Sparse startup requires --desk-clock')
+  if a.sleep_capability!='x4.power':p.error('Sparse startup requires the X4 x4.power contract')
   for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
    if not (a.retained_wake_sdk/name).is_file():p.error('Missing canonical '+name)
   if 'RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE' not in (a.retained_wake_sdk/'RiscRuntimeV1.h').read_text():p.error('Sparse startup requires the canonical invocation-retention Runtime suffix')
@@ -102,7 +103,7 @@ def build():
                  timer_preferences='retained-only',foreground_promotion=True,invocation_retention=True,
                  time_resolution='native microsecond snapshot before holds; bounded same-boot projection after holds; physical accuracy and entry latency unqualified')
    record['desk_sdk_headers'].update({name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h')})
-   paths=['Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc',
+   paths=['Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/alarm.inc',
           'lib/PortableApps/include/PortableRealtimeClient.h','lib/PortableApps/include/PortableTimeZone.h',
           'lib/PortableApps/include/PortableTimeZonePreference.h','lib/PortableApps/include/PortableRtcBasis.h']
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
