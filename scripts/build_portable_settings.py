@@ -115,13 +115,13 @@ def build(args,parser=None):
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
-    if performance_source:version=portable_performance_build.VERSIONS['settings']
+    if performance_source:version=portable_performance_build.version('settings',args)
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
     if performance_source:
         includes,performance=portable_performance_build.stage(ROOT,out,performance_source,
             display=portable_performance_build.read_display(args,parser))
-        flags.extend(portable_performance_build.defines(performance))
+        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False)))
     else:
         includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
     tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)

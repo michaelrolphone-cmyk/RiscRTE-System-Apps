@@ -9,6 +9,7 @@
 #include "PaperPresentation.h"
 #include "PaperFrame.h"
 #include "PortablePerformance.h"
+#include "PortableStageLog.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -226,7 +227,7 @@ break;}
    points_launch=false;
 #endif
   }
-  if(launch){portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
+  if(launch){portable_stage_log(rt,"action","name=clock-launch");portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
    if(rt->request_launch(target))break;

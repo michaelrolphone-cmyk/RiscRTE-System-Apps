@@ -67,7 +67,7 @@ def build():
   flags=[flag for flag in flags if flag!='-I'+str(a.sleep_sdk)]
   flags+=['-DPORTABLE_DESK_CLOCK']
  if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
- if performance:flags.extend(portable_performance_build.defines(performance))
+ if performance:flags.extend(portable_performance_build.defines(performance,getattr(a,'stage_logs',False)))
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
  if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags
@@ -85,7 +85,7 @@ def build():
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
  if a.sparse_start:version='0.3.6' if tagged_alarm else '0.3.3'
- if performance:version=portable_performance_build.VERSIONS['paper_clock']
+ if performance:version=portable_performance_build.version('paper_clock',a)
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
