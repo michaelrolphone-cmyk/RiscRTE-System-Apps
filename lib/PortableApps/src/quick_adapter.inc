@@ -50,6 +50,9 @@ static bool low_battery_poll(void) {
 }
 #endif
 static bool quick_apply(uint32_t actions) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+ if(portable_adapter_retained())return false;
+#endif
  if(!actions)return true;
  if(!quick_storage_safe())return false;
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
@@ -67,6 +70,9 @@ static bool quick_apply(uint32_t actions) {
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
  const alarm_service_v1 *service=alarm_sleep_api();
  if(changed && service)(void)service->refresh(service->context);
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+ if(portable_adapter_retained())return false;
+#endif
  return true;
 }
 static bool quick_copy_background(void) {

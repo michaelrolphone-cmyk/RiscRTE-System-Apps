@@ -1,0 +1,31 @@
+name: Watch alarm terminal retention
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-and-client:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -s tests -p test_watch_alarm_source.py -v
+      - run: python scripts/verify_watch_alarm_source.py
+      - run: python -m unittest discover -s tests -p test_watch_settings_hours_source.py -v
+      - run: python scripts/verify_watch_settings_hours_source.py
+      - run: python scripts/test_portable_alarm_retention.py
+      - run: python scripts/test_unpadded_hours.py
+      - name: Verify unchanged Xtensa profiles
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          git worktree add --detach /tmp/watch-alarm-base fbdfad1f8db4e332528387713b85cbcc15232be1
+          python scripts/test_alarm_retention_target.py --baseline /tmp/watch-alarm-base --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"

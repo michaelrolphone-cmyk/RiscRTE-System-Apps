@@ -204,7 +204,9 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runt
 }
 static bool test_release(risc_runtime_capability_v1 *grant){assert(grants && grant->api);--grants;grant->api=NULL;return true;}
 static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),test_health,test_yield,test_diagnostic,test_launch,test_acquire,test_release};
+#ifndef PORTABLE_CUSTOM_RUNTIME_FIXTURE
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime_api:NULL;}
+#endif
 
 static void calendar_checks(void){
   uint32_t day=0;

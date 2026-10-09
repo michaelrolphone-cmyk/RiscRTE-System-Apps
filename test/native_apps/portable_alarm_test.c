@@ -76,10 +76,12 @@ static bool frame_delayed(void*c,risc_display_present_token_v1 token,risc_displa
  (void)c;(void)token;pending_status_calls++;
  assert(!service_steps);if(pending_status_calls<3){live_display=true;out->state=RISC_DISPLAY_PRESENT_ACTIVE;}else{live_display=false;out->state=RISC_DISPLAY_PRESENT_COMPLETE;}return true;}
 static unsigned native_sleep_calls;
+#ifndef PORTABLE_ALARM_CUSTOM_SLEEP_FIXTURE
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,
         const risc_battery_gauge_api_v1*g,const alarm_service_v1*a){
  (void)r;(void)d;(void)g;(void)a;assert(!subscriptions&&!surface.frame);native_sleep_calls++;return -2;
 }
+#endif
 #ifndef PORTABLE_ALARM_FIXTURE_MAIN
 #define PORTABLE_ALARM_FIXTURE_MAIN main
 #endif

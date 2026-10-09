@@ -8,7 +8,13 @@ bool portable_contexts_stop(void);
 #ifdef PORTABLE_BLE_BROADCAST
 bool portable_broadcast_stop(void);
 #endif
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#include "PortableNativeCustody.h"
+#endif
 static inline bool portable_background_stop(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
     if(!portable_contexts_stop())return false;
 #endif
