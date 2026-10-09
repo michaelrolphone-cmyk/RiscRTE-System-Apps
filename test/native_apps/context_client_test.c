@@ -1,6 +1,7 @@
 #include "PortableContextsClient.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 typedef struct {char name[16];uint8_t bytes[64];uint32_t size;} record;
 static record records[32];
 static uint32_t tick,reads,writes,steps,pauses,claims,results,releases,acquires,grants;
@@ -43,11 +44,12 @@ static bool claim(void *c,uint32_t source,uint32_t slot,const char *name,uint32_
 }
 static bool result(void *c,uint32_t source,uint32_t generation,uint32_t value){(void)c;assert(source==state.preset_source&&generation==state.preset_generation);results++;state.preset_result=value;return true;}
 static bool capture_service(void *c){(void)c;return true;}
-static const contexts_service_v1 service={1,sizeof(service),NULL,step_service,pause_service,status_service,request,begin,export,finish,label,claim,result,capture_service};
+static const contexts_service_v1 service={.api_version=1,.struct_size=sizeof(service),.step=step_service,.pause=pause_service,.status=status_service,.request_export=request,.begin_export=begin,.export_record=export,.finish_export=finish,.label=label,.claim_preset=claim,.preset_result=result,.capture_audio=capture_service};
+static const contexts_service_v1 *selected_service=&service;
 static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1 *g) {
     assert(api==1);acquires++;grants++;
     if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(instance==1);g->api=&kv;}
-    else {assert(!strcmp(name,CONTEXTS_SERVICE_CAPABILITY)&&!instance);g->api=&service;}
+    else {assert(!strcmp(name,CONTEXTS_SERVICE_CAPABILITY)&&!instance);g->api=selected_service;}
     return true;
 }
 static bool release(risc_runtime_capability_v1 *g){releases++;if(g->api==&kv&&!release_ok)return false;assert(grants);grants--;g->api=NULL;return true;}
@@ -62,7 +64,27 @@ static void confirmed(void) {
     state.audio=(contexts_source_status_v1){.source=1,.model_generation=1,.room_slot=2,.room_valid=true,.current=true,.room_entry=1};
     strcpy(state.audio.room_name,"Study");state.preset_result=CONTEXTS_PRESET_NONE;
 }
+static void compatibility(void) {
+    /* An actual prefix-sized allocation catches reads into an absent optional
+     * suffix under ASan. Unknown future suffix bytes must also be ignored. */
+    const size_t prefix=offsetof(contexts_service_v1,capture_audio)+sizeof(service.capture_audio);
+    assert(prefix==CONTEXTS_SERVICE_V1_SIZE);
+    for(unsigned extra=0;extra<=64;extra+=64) {
+        unsigned char *memory=malloc(prefix+extra);assert(memory);memset(memory,0xa5,prefix+extra);
+        memcpy(memory,&service,prefix);contexts_service_v1 *api=(contexts_service_v1 *)memory;
+        api->struct_size=(uint32_t)(prefix+extra);selected_service=api;
+        portable_contexts_client client;assert(portable_contexts_open(&client,&runtime));
+        assert(portable_contexts_capture(&client)&&portable_contexts_pause(&client));
+        assert(portable_contexts_close(&client)&&!grants);
+        api->struct_size=(uint32_t)prefix-1;assert(!portable_contexts_open(&client,&runtime));
+        assert(portable_contexts_close(&client)&&!grants);
+        api->struct_size=(uint32_t)prefix;api->capture_audio=NULL;assert(!portable_contexts_open(&client,&runtime));
+        assert(portable_contexts_close(&client)&&!grants);free(memory);
+    }
+    selected_service=&service;
+}
 int main(void) {
+    compatibility();
     portable_contexts_client c;assert(portable_contexts_open(&c,&runtime)&&grants==1);
     assert(portable_contexts_step(&c,true,true)&&!last_policy.enabled);
     assert(portable_contexts_set_enabled(&c,true));assert(portable_contexts_step(&c,true,true));

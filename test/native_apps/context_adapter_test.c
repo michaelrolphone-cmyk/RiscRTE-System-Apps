@@ -17,7 +17,7 @@ static bool capture_refused,capture_refuse_pending;
 static bool ctx_capture(void*c){(void)c;capture_calls++;unsigned gap=ticks-capture_last;if(gap>capture_max_gap)capture_max_gap=gap;capture_last=ticks;return !capture_refused&&!(capture_refuse_pending&&live_display);}
 static bool ctx_retain(void){retain_calls++;return true;}
 static struct {risc_runtime_api_v1 prefix;bool(*confirm)(void);bool(*retain)(void);} fenced_runtime;
-static const contexts_service_v1 ctx_api={1,sizeof(ctx_api),NULL,ctx_step,ctx_pause,ctx_status,ctx_mask,ctx_mask,ctx_export,ctx_finish,ctx_label,ctx_claim,ctx_result,ctx_capture};
+static const contexts_service_v1 ctx_api={.api_version=1,.struct_size=sizeof(ctx_api),.step=ctx_step,.pause=ctx_pause,.status=ctx_status,.request_export=ctx_mask,.begin_export=ctx_mask,.export_record=ctx_export,.finish_export=ctx_finish,.label=ctx_label,.claim_preset=ctx_claim,.preset_result=ctx_result,.capture_audio=ctx_capture};
 static int32_t ctx_get(void*c,const char*key,void*out,uint32_t capacity,uint32_t*size) {
  if(!strcmp(key,PORTABLE_CONTEXT_ENABLED_KEY)){const uint8_t bytes[]={'C',1,1,0xa4};assert(capacity>=4);memcpy(out,bytes,4);*size=4;return 0;}
  if(!strncmp(key,"ctx_p",5)){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}

@@ -83,3 +83,16 @@ more display, input, service or fini calls. Host tests cover raster, submission
 and input failures plus the intentional-wait bound. Actual hardware timing is
 not inferred from these tests; the service independently invalidates and closes
 an audio stream when its 32 ms queue deadline is missed.
+
+## Optional model-import ABI
+
+The required API1 table ends at `capture_audio` and is sized by
+`CONTEXTS_SERVICE_V1_SIZE`. New optional import-error and model-detail methods
+append after that prefix with their own size gates. Shared clients continue to
+accept the original signature-only provider; they do not read an absent suffix.
+The existing copied status and room/preset generation records are unchanged.
+
+The client fixture uses an actual prefix-sized allocation under ASan/UBSan,
+accepts a larger unknown suffix, and rejects a short prefix or missing required
+capture method. Temporal/neural import itself belongs to the separately
+versioned Utilities service/owner change.
