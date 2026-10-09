@@ -17,11 +17,14 @@
 static const t5_app_api_v1 *app;
 static const risc_runtime_api_v1 *rt;
 static const paper_presentation *paper;
+static unsigned format;
+static paper_battery battery_status;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#include "paper_sparse_clock.inc"
+#else
 static risc_runtime_capability_v1 rtc_grant,battery_grant;
 static const twatch_rtc_api_v1 *rtc;
 static const risc_battery_gauge_api_v1 *battery;
-static unsigned format;
-static paper_battery battery_status;
 static void retain(void){rt->diagnostic("PAPER_CLOCK cleanup-unconfirmed; invocation retained");for(;;)rt->yield_ms(50);}
 static void close_clock(void){
  if(battery_grant.api&&!rt->release(&battery_grant))retain();
@@ -38,6 +41,7 @@ static void open_clock(void){
  risc_runtime_capability_v1 pref={.struct_size=sizeof(pref)};format=PORTABLE_TIME_FORMAT_12;
  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&pref)){(void)portable_time_format_load(pref.api,&format);if(!rt->release(&pref))retain();}
 }
+#endif
 static int xscale(int x){return x*app->screen_width()/480;}
 static int yscale(int y){return y*app->screen_height()/800;}
 static void text(int x,int y,int w,const char*s,bool heading){paper->text(xscale(x),yscale(y),xscale(w),s,heading?2:1,heading,true);}
@@ -127,10 +131,13 @@ static void draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notic
 #endif
  text(50,757,400,"UPDATES EVERY MINUTE",false);app->present(initial);
 }
-#ifdef PORTABLE_DESK_CLOCK
+#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_CLOCK_SPARSE_START)
 #include "paper_desk_clock.inc"
 #endif
 void app_main(void){
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(!sparse_boot())return;
+#else
  app=t5_app_get_api(1);rt=risc_runtime_get_api(1);
  if(!app||app->abi_version!=1||app->struct_size<sizeof(*app)||!app->poll||!app->millis||!app->fill_rect||!app->draw_icon||!app->set_back_exits_app||!rt||rt->api_version!=1||rt->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!rt->acquire||!rt->release||!rt->request_launch||!rt->yield_ms||!rt->diagnostic)return;
  paper=paper_presentation_get();if(!paper||paper->struct_size<sizeof(*paper)||!paper->begin||!paper->text||!paper->measure||!paper->contact)return;
@@ -141,9 +148,14 @@ void app_main(void){
  if(boot<0){close_clock();return;}
  if(!portable_desk_adapter_foreground()){if(!portable_app_sleep_retained())close_clock();return;}
 #endif
+#endif
  twatch_rtc_time_v1 time={0};bool known=read_clock(&time),down=false,neutral=false;int start_x=0,start_y=0;char notice[48]={0};
 #ifdef PORTABLE_DESK_CLOCK
  if(desk_returned){desk_returned=false;strcpy(notice,desk_notice());}
+#endif
+
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(desk_retained)return;
 #endif
  battery_status=paper_battery_read(paper);
  uint32_t checked=app->millis();draw_clock(&time,known,notice,true);
@@ -154,7 +166,11 @@ void app_main(void){
 break;}
   if(input.exit_requested)break;
 #ifdef PORTABLE_DESK_CLOCK
-  if(desk_returned){desk_returned=false;down=neutral=false;strcpy(notice,desk_notice());known=read_clock(&time);draw_clock(&time,known,notice,true);}
+  if(desk_returned){desk_returned=false;down=neutral=false;strcpy(notice,desk_notice());known=read_clock(&time);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(desk_retained)return;
+#endif
+ draw_clock(&time,known,notice,true);}
 #endif
   if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");draw_clock(&time,known,notice,false);}
   springboard_contact c={0};paper->contact(&c);bool launch=false;
@@ -163,7 +179,11 @@ break;}
   else if(neutral){if(!down){down=true;start_x=c.x;start_y=c.y;}else if(abs(c.x-start_x)>=xscale(40)||abs(c.y-start_y)>=yscale(67)){launch=true;down=neutral=false;}}
   if(input.buttons&T5_APP_BUTTON_CONFIRM){launch=true;down=neutral=false;}
   if(launch){close_clock();if(rt->request_launch(PAPER_CLOCK_LAUNCHER))break;open_clock();strcpy(notice,"UNABLE TO OPEN APPS. RETRY.");draw_clock(&time,known,notice,false);}
-  uint32_t now=app->millis();if((uint32_t)(now-checked)>=1000){twatch_rtc_time_v1 next={0};bool valid=read_clock(&next);paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;draw_clock(&time,known,notice,false);}}
+  uint32_t now=app->millis();if((uint32_t)(now-checked)>=1000){twatch_rtc_time_v1 next={0};bool valid=read_clock(&next);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(desk_retained)return;
+#endif
+ paper_battery next_battery=paper_battery_read(paper);bool battery_dirty=paper_battery_changed(battery_status,next_battery);battery_status=next_battery;checked=now;if(battery_dirty||valid!=known||(valid&&(next.minute!=time.minute||next.hour!=time.hour||next.day!=time.day||next.month!=time.month||next.year!=time.year))){known=valid;time=next;draw_clock(&time,known,notice,false);}}
  }
  close_clock();app->set_back_exits_app(true);
 }

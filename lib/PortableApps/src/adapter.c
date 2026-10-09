@@ -12,7 +12,9 @@
 #ifdef PORTABLE_PAPER_PREFERENCES
 #include "PortableReaderPreferences.h"
 static bool paper_flip_ui,paper_orientation_dirty,paper_preferences_retained;
+#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
 static risc_runtime_capability_v1 paper_preferences_grant;
+#endif
 static void paper_orient_input(portable_touch_sample *sample);
 #endif
 #include "RiscBatteryGaugeV1.h"
@@ -541,10 +543,9 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
 #undef paper_presentation_get
 const paper_presentation *paper_presentation_get(void) {
  if(!portable_desk_adapter_ready() || !pp_enabled())return NULL;
- if(desk_phase==DESK_TIMER) {
-  nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &pp_view;
- }
- return desk_paper_presentation_get_unchecked();
+ /* The selected Clock owns native realtime in both modes. Never bind the
+  * legacy toolbar RTC merely to obtain presentation callbacks. */
+ nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &pp_view;
 }
 #endif
 static void present(bool full) {
