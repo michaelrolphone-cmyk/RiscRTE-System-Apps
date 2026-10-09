@@ -171,6 +171,10 @@ int main(int argc,char **argv) {
     else assert(consumed&&!quick_modal&&!quick_background&&battery_reads&&!reader_live&&!zone_live);
   }
 #endif
+  else if(is("kv-missing")) {
+    expect_time(&(twatch_rtc_time_v1){2026,10,7,3,19,0,0});
+    assert(!zone_live&&!reader_live&&!retained);
+  }
   else if(is("already-retained")) {
     view->begin();assert(frames==1);
     portable_adapter_retain();unavailable(view);assert(!zone_reads&&!native_reads);

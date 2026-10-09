@@ -78,9 +78,8 @@ sets/seeds native time, reads or writes an external RTC, writes preferences, or
 recovers an unset clock. Any time initialization remains a separate owner.
 
 Each sample acquires checked namespace-1 KV, loads and validates the canonical
-IANA record, and closes that grant before acquiring native realtime. A missing,
-invalid or unreadable timezone record displays unavailable; no virtual UTC
-fallback is used. Explicit saved UTC is valid. Native time is read freshly,
+IANA record, and closes that grant before acquiring native realtime. An absent timezone record uses Reader’s virtual UTC default without a write.
+Invalid or unreadable records display unavailable. Explicit saved UTC is valid. Native time is read freshly,
 validated by the production helper and released before projection/output. No
 sample, selected timezone or provider pointer is cached across clean samples.
 Epoch zero can project into local 1969; the native maximum is 2147483647.

@@ -73,9 +73,9 @@ static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule 
   char id[PORTABLE_TIMEZONE_ID_BYTES];
   int status=portable_timezone_preference_load(&checked,id);
   if(portable_adapter_retained() || !release_zone(runtime))return false;
-  /* No selected zone is unavailable; do not turn a missing/invalid record
-   * into the preference helper's virtual UTC fallback. Explicit UTC works. */
-  return status==PORTABLE_TIMEZONE_LOADED &&
+  /* Reader's absent preference is the checked virtual UTC default. Corrupt
+   * or unreadable records remain unavailable and are never overwritten. */
+  return (status==PORTABLE_TIMEZONE_LOADED || status==PORTABLE_TIMEZONE_MISSING) &&
     portable_timezone_resolve(id,sizeof(id),rule)==PORTABLE_TIMEZONE_OK;
 }
 bool portable_app_native_local_time(twatch_rtc_time_v1 *out) {
