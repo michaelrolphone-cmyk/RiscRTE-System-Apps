@@ -6,6 +6,7 @@
 #include "portable_native_time_source_test.c"
 #include "RiscStorageVolumeV1.h"
 #include "WifiApi.h"
+#include "T5FileOpenApi.h"
 extern void app_main(void);
 extern bool native_system_test_open(void);
 static unsigned quick_opens,nav_polls,launches,storage_live,wifi_live,credentials_live,dirs,disconnects;
@@ -48,11 +49,30 @@ static bool wifi_addresses_fixture(void *c,wifi_ipv4_v1 *s,wifi_ipv4_v1 *a){(voi
 static bool wifi_scan_fixture(void *c,garden_radio_scan_result_v1 *out){(void)c;io();*out=(garden_radio_scan_result_v1){0};return true;}
 static bool wifi_disconnect_fixture(void *c){(void)c;io();++disconnects;if(refuse_finalize){pending_fence=true;return false;}return true;}
 static const wifi_api_v1 app_wifi={.api_version=1,.struct_size=sizeof(app_wifi),.connect=wifi_connect_fixture,.status=wifi_status_fixture,.rssi=wifi_rssi_fixture,.addresses=wifi_addresses_fixture,.scan_start=volume_ok,.scan_poll=wifi_scan_fixture,.scan_cancel=volume_ok,.disconnect_checked=wifi_disconnect_fixture};
+static uint32_t handler_count(const char *path){(void)path;io();return 0;}
+static bool handler_get(const char *path,uint32_t index,t5_file_handler_t *out){(void)path;(void)index;(void)out;io();return false;}
+static bool handler_open(const char *path,const char *handler,uint64_t cookie){(void)path;(void)handler;(void)cookie;io();return false;}
+static bool handler_result(int32_t *error,uint64_t *cookie){(void)error;(void)cookie;io();return false;}
+static const t5_file_open_api_v1 handlers={.api_version=1,.struct_size=sizeof(handlers),.handler_count=handler_count,.handler_get=handler_get,.open_request=handler_open,.open_take_result=handler_result};
+#ifdef PORTABLE_FILE_BROWSER_APP
+static risc_display_output_api_v1 app_display;
+static unsigned damage_submits;
+static bool app_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,
+ const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
+ if(n){assert(r&&options->intent!=RISC_DISPLAY_PRESENT_CLEAN);++damage_submits;}
+ return fx_submit(c,f,r,n,options,token);
+}
+#endif
 static bool app_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out){
  const void *api=NULL;
+#ifdef PORTABLE_FILE_BROWSER_APP
+ if(!strcmp(name,"display.output")){assert(version==1&&!instance);api=&app_display;}
+ else
+#endif
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){assert(version==2&&!instance);api=&tagged.base;}
  else if(!strcmp(name,"input.navigation")){assert(version==1&&!instance);api=&app_navigation;}
- else if(!strcmp(name,"storage.volume")){assert(version==1&&instance==11);api=&volume;++storage_live;}
+ else if(!strcmp(name,"storage.volume")){assert(version==1&&instance==9);api=&volume;++storage_live;}
+ else if(!strcmp(name,"file.open")){assert(version==1&&!instance);api=&handlers;}
  else if(!strcmp(name,"net.wifi")){assert(version==1&&instance==15);api=&app_wifi;++wifi_live;}
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)&&instance==6){assert(version==1);api=&credential_kv;++credentials_live;}
  else return source_acquire(name,version,instance,out);
@@ -82,7 +102,14 @@ int main(int argc,char **argv){
  if(!strcmp(name,"missing-zone"))scenario="kv-missing";
  if(!strcmp(name,"native-unset"))scenario="native-unset";
  refuse_launch=!strcmp(name,"home-refused");quick_case=true;apply_quick_action=!strcmp(name,"quick");
+
+#ifdef PORTABLE_FILE_BROWSER_APP
+ app_display=fx_display;app_display.submit=app_submit;
+#endif
  assert(app_module_init()==0);
+#ifdef PORTABLE_FILE_BROWSER_APP
+ assert(paper_previous);
+#endif
  const paper_presentation *retained_view=paper_presentation_get();assert(retained_view);
  if(!strcmp(name,"kv-context"))scenario="kv-context";
  if(!strcmp(name,"native-release-false"))scenario="native-release-false";
@@ -98,6 +125,9 @@ int main(int argc,char **argv){
  else {
   assert(launches==1);
   assert(quick_opens==1);
+#ifdef PORTABLE_FILE_BROWSER_APP
+  assert(damage_submits>0);
+#endif
   if(!strcmp(name,"quick"))assert(kv_writes==1&&refreshes==1&&dnd_saved&&dnd_value);
   assert(native_reads>0);
   assert(!reader_live&&!zone_live&&!storage_live&&!wifi_live&&!credentials_live&&!dirs);

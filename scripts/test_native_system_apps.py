@@ -16,7 +16,7 @@ BASE = 'd305e6b'
 CASES = ['home', 'home-refused', 'utc', 'zone', 'missing-zone', 'native-unset',
          'quick', 'fini-owned', 'fini-refused', 'kv-context', 'native-release-false', 'alarm-retained']
 APPS = {'springboard': ('springboard', []),
-        'file_browser': ('file_browser', ['--storage-capability','storage.volume','--storage-instance','11']),
+        'file_browser': ('file_browser', ['--storage-capability','storage.volume','--storage-instance','9','--file-handlers']),
         'wifi_settings': ('wifi', ['--wifi-instance','15','--return-app','springboard.elf'])}
 HELPERS = [ROOT/p for p in native.SOURCES]
 QUICK = [ROOT/'lib/PortableApps/src'/name for name in ['quick_actions.c','quick_render.c','quick_session.c']]
@@ -50,6 +50,7 @@ def main():
              '--alarm-client','--quick-actions','--home-app','default.elf','--output-dir',product,*extra],env=env)
         manifest=json.loads((product/(app+'.json')).read_text());record=json.loads((product/(app+'-build-record.json')).read_text())
         admission=json.loads((product/'x4-native-app.json').read_text())
+        if app=='file_browser':assert '-DPORTABLE_FORCE_FULL_FRAMES' not in record['defines']
         assert admission['alarm_api']==2 and admission['requires']==manifest['requires']
         assert admission['elf_sha256']==sha(product/(app+'.elf'))
         assert admission['elf_bytes']==(product/(app+'.elf')).stat().st_size
@@ -81,8 +82,9 @@ def main():
         flags=['-DPORTABLE_NATIVE_TIME_TOOLBAR','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DALARM_SERVICE_TAGGED_V2',
                '-DTEST_NATIVE_TOOLBAR_QUICK','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_ALARM_CLIENT',
                '-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_HOME_APP="default.elf"']
-        if app=='file_browser':flags+=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES','-DPORTABLE_FILE_BROWSER_CAPABILITY="storage.volume"','-DPORTABLE_FILE_BROWSER_INSTANCE=11u','-DFILE_BROWSER_RETURN_APP="springboard.elf"']
+        if app=='file_browser':flags+=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES','-DPORTABLE_FILE_BROWSER_CAPABILITY="storage.volume"','-DPORTABLE_FILE_BROWSER_INSTANCE=9u','-DPORTABLE_FILE_BROWSER_HANDLERS','-DFILE_BROWSER_RETURN_APP="springboard.elf"']
         if app=='wifi_settings':flags+=['-DPORTABLE_WIFI_SETTINGS_APP','-DPORTABLE_WIFI_INSTANCE=15u','-DPORTABLE_WIFI_STORAGE_INSTANCE=6','-DWIFI_RETURN_APP="springboard.elf"']
+        if app=='file_browser':flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
         for sanitized in (False, True):
             label=app+('-asan-ubsan' if sanitized else '-normal');binary=out/label
             san=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if sanitized else []

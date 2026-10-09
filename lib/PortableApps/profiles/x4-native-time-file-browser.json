@@ -1,6 +1,6 @@
 {
   "profile": "x4-native-time",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "native_time": "utc-selected-iana",
   "alarm_api": 2,
   "publication": "local-only"

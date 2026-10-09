@@ -29,6 +29,8 @@ def build(args,parser=None):
         flags+=['-DPORTABLE_RTC_UTC8_DENVER']
     if args.wall_time:flags+=['-DPORTABLE_RTC_WALL_TIME']
     includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'file-browser');flags+=native_flags
+    # Native X4 paper must retain damage history, including Quick over Files.
+    if native_receipt:flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports={'app_main','app_module_init','app_module_fini'}
     mapping=out/'file_browser.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
