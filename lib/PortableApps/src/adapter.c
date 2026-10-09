@@ -219,6 +219,8 @@ static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 #if defined(PORTABLE_QUICK_ACTIONS) && defined(ALARM_SERVICE_TAGGED_V2)
 static uint32_t alarm_output_modes(void);
+#endif
+#if defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
 static bool alarm_refresh(void);
 #endif
 static bool alarm_failure(void);
@@ -905,6 +907,9 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || (desk_phase!=DESK_TIMER && desk_phase!=DESK_FOREGROUND))return false;
   if(desk_phase==DESK_TIMER) {
@@ -912,7 +917,11 @@ static bool idle_sleep(void) {
     /* The alarm-service dependency closure remains live. Do not acquire touch,
      * navigation, battery, preferences or radios just to prepare them for sleep. */
     int status=portable_app_alarm_sleep(rt,display,NULL,alarm_sleep_api());
-    if(status==-2){portable_desk_adapter_retain();return false;}
+    if(status==-2){
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+      portable_adapter_retain_silent();
+#endif
+      portable_desk_adapter_retain();return false;}
     if(status<0)failed=true;
     return !failed;
   }
@@ -989,9 +998,17 @@ static bool idle_sleep(void) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-  if(status==-2){portable_desk_adapter_retain();return false;}
+  if(status==-2){
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+      portable_adapter_retain_silent();
+#endif
+      portable_desk_adapter_retain();return false;}
 #else
-  if(status==-2){native_sleep_retained=true;failed=true;return false;}
+  if(status==-2){
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    portable_adapter_retain_silent();
+#endif
+    native_sleep_retained=true;failed=true;return false;}
 #endif
 #endif
   if(status<0){failed=true;return false;}
