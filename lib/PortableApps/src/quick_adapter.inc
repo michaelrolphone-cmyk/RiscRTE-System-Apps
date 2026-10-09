@@ -48,7 +48,7 @@ static bool quick_apply(uint32_t actions) {
 #else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
 #endif
-#ifdef ALARM_SERVICE_TAGGED_V2
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
  if(changed && !alarm_refresh())return false;
 #else
  const alarm_service_v1 *service=alarm_sleep_api();

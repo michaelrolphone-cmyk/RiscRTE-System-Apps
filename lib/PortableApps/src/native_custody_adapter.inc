@@ -11,7 +11,10 @@ void portable_adapter_retain(void) {
   native_sleep_retained=true;
 #endif
 }
-#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+void portable_adapter_retain_silent(void) {portable_adapter_retain();}
+#endif
+#if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 bool portable_adapter_retained(void) {return native_custody_retained;}
 #endif
 #if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)

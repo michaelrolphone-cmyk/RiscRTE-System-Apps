@@ -1,0 +1,41 @@
+name: Native alarm terminal retention
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  client-and-target:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 3fcbba6a04626f8484a523e7da59fb44c82e6e49
+          path: .alarm-deps/runtime
+          sparse-checkout: sdk
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 25c386d8ca9cb41ad47b141c57c4fb8f904e547d
+          path: .alarm-deps/utilities
+          sparse-checkout: lib/Alarm/include
+          persist-credentials: false
+      - run: python scripts/verify_x4_alarm_source.py
+      - run: python scripts/test_portable_alarm_terminal.py --runtime .alarm-deps/runtime --utilities .alarm-deps/utilities
+      - name: Verify unchanged Xtensa profiles
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          git worktree add --detach /tmp/x4-alarm-base 16058588cd8e64021b8c89c4fbad3f2ecc736a5a
+          python scripts/test_alarm_terminal_target.py --baseline /tmp/x4-alarm-base --runtime .alarm-deps/runtime --utilities .alarm-deps/utilities --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
