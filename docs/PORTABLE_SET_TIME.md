@@ -109,8 +109,8 @@ stop every later I/O, including close/release, on this client:
   the bool broker cannot certify successful provider-activation rollback.
 - Any false RTC write/read. False cannot prove clean provider ownership.
 - Malformed acquired provider table or grant.
-- Any non-OK KV put/get. Even a surprising NOT_FOUND after put is conservatively
-  halted; the helper does not infer safe provider custody from it.
+- KV CONTEXT or an unknown KV result. Documented typed persistence errors are
+  handled separately below; no error implies the old record survived.
 - Any unsuccessful release or release that fails to clear the full grant.
 
 Original uncertain grants are preserved, including when a failed release
@@ -123,8 +123,25 @@ exposes the sticky outcome; it does not call an unpinned retention callback or
 claim that returning from the helper/app alone retains the invocation. Final
 controller integration requires the canonical feature-gated Runtime header.
 
-Only a clean verification mismatch, known typed native INVALID/IO, or validated
-native readback error with a safe phase allows an explicit new Set Time attempt.
+A documented KV IO, INVALID, NOT_FOUND or BUFFER_SMALL result preserves the
+unconfirmed metadata outcome and stops that save attempt. It makes no further
+get/put call, performs one checked KV release, and permits a fresh explicit
+attempt only if that release and local phase remain safe. A failed put never
+triggers readback. IO after commit may already have persisted the new record;
+there is no rollback or automatic retry. KV CONTEXT/unknown status and any
+uncertain release still halt with the original grant intact.
+
+This distinction follows canonical Runtime 602ae9bd `keyValueGet`/`keyValuePut`,
+which translate backend failures to typed IO without setting retained custody,
+and `NvsKeyValue.h`, whose RAII Handle closes NVS on every return. Its IO after
+commit means persistence is unconfirmed. Runtime's real KV lifecycle fixture
+also continues through IO to checked release and fresh-grant acquisition.
+The local phase guard and checked release remain required; this is not a claim
+that an arbitrary provider's boolean error proves safe ownership.
+
+A clean verification mismatch, ordinary typed KV failure, known typed native
+INVALID/IO, or validated native readback error with a safe phase allows an
+explicit new Set Time attempt.
 There is never an automatic retry. A successful call can also be repeated only
 as a new confirmed action; RTC and KV acquire fresh grants each time. A clean
 close is idempotent and permits opening fresh native authority. Pure planning

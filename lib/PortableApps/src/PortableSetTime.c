@@ -97,7 +97,19 @@ static int bool_result(portable_set_time_client *c,bool ok) {
 static int kv_result(portable_set_time_client *c,int32_t status) {
  int rc=safe(c);if(rc)return rc;
  if(status==RISC_KEY_VALUE_OK)return 0;
+ /* Canonical Runtime KV maps backend failures to typed persistence errors.
+  * Its NVS backend closes every handle even for IO after commit. These values
+  * do not claim retained ownership; phase and checked release remain mandatory. */
+ if(status==RISC_KEY_VALUE_IO)return PORTABLE_REALTIME_IO;
+ if(status==RISC_KEY_VALUE_INVALID)return PORTABLE_REALTIME_INVALID;
+ if(status==RISC_KEY_VALUE_NOT_FOUND || status==RISC_KEY_VALUE_BUFFER_SMALL)return PORTABLE_REALTIME_VERIFY;
  return halt(c,status==RISC_KEY_VALUE_CONTEXT?PORTABLE_REALTIME_CONTEXT:PORTABLE_REALTIME_UNCERTAIN);
+}
+static int finish_kv(portable_set_time_client *c,portable_set_time_result *r,int reason) {
+ r->reason=reason;
+ if(c->state==HALTED)return failed(c,r,reason);
+ r->stage=PORTABLE_SET_TIME_KV_RELEASE;r->cleanup=release(c,&c->kv_grant);
+ return r->cleanup?r->cleanup:reason;
 }
 static bool same_calendar(const twatch_rtc_time_v1 *a,const twatch_rtc_time_v1 *b) {
  return a->year==b->year && a->month==b->month && a->day==b->day && a->weekday==b->weekday &&
@@ -189,18 +201,17 @@ int portable_set_time_apply_confirmed(portable_set_time_client *c,
  rc=safe(c);if(rc)return failed(c,r,rc);
  r->metadata_outcome=PORTABLE_SET_TIME_UNCONFIRMED;
  int32_t status=kv->put(kv->context,PORTABLE_RTC_BASIS_KEY,bytes,sizeof(bytes));
- rc=kv_result(c,status);if(rc)return failed(c,r,status==RISC_KEY_VALUE_IO?PORTABLE_REALTIME_IO:rc);
+ rc=kv_result(c,status);if(rc)return finish_kv(c,r,status==RISC_KEY_VALUE_IO?PORTABLE_REALTIME_IO:rc);
  r->metadata_write_accepted=true;r->stage=PORTABLE_SET_TIME_KV_VERIFY;
  rc=safe(c);if(rc)return failed(c,r,rc);
  uint8_t readback[PORTABLE_RTC_BASIS_BYTES]={0};uint32_t size=0;
  status=kv->get(kv->context,PORTABLE_RTC_BASIS_KEY,readback,sizeof(readback),&size);
- rc=kv_result(c,status);if(rc)return failed(c,r,status==RISC_KEY_VALUE_IO?PORTABLE_REALTIME_IO:rc);
+ rc=kv_result(c,status);if(rc)return finish_kv(c,r,status==RISC_KEY_VALUE_IO?PORTABLE_REALTIME_IO:rc);
  bool matches=size==sizeof(bytes);
  for(unsigned i=0;i<sizeof(bytes);++i)if(bytes[i]!=readback[i])matches=false;
  rc=matches?0:PORTABLE_REALTIME_VERIFY;
  if(matches)r->metadata_outcome=PORTABLE_SET_TIME_CONFIRMED;
- r->reason=rc;r->stage=PORTABLE_SET_TIME_KV_RELEASE;
- r->cleanup=release(c,&c->kv_grant);if(r->cleanup)return r->cleanup;
+ rc=finish_kv(c,r,rc);
  if(!rc)r->stage=PORTABLE_SET_TIME_DONE;
  return rc;
 }

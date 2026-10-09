@@ -80,13 +80,13 @@ static bool read_rtc(void *ctx,twatch_rtc_time_v1 *out) {
 static int32_t put(void *ctx,const char *key,const void *data,uint32_t size) {
  assert(ctx==&f && f.live[3] && !f.live[2]);assert(!strcmp(key,PORTABLE_RTC_BASIS_KEY) && size==12);
  ++f.puts;event('P');if(!f.put_status || f.commit)memcpy(f.bytes,data,size);
- if(f.put_status)f.hidden=true;
+ if(f.put_status==RISC_KEY_VALUE_CONTEXT || f.put_status<-5 || f.put_status>0)f.hidden=true;
  return f.put_status;
 }
 static int32_t get(void *ctx,const char *key,void *data,uint32_t cap,uint32_t *size) {
  assert(ctx==&f && f.live[3] && !f.live[2]);assert(!strcmp(key,PORTABLE_RTC_BASIS_KEY) && cap==12);
  ++f.gets;event('G');
- if(f.get_status){f.hidden=true;return f.get_status;}
+ if(f.get_status){if(f.get_status==RISC_KEY_VALUE_CONTEXT || f.get_status<-5 || f.get_status>0)f.hidden=true;return f.get_status;}
  memcpy(data,f.bytes,12);*size=f.get_size;
  if(f.get_mismatch)((uint8_t *)data)[11]^=1;
  return 0;
@@ -260,13 +260,38 @@ static void failures(void) {
   assert(r.rtc_outcome==2 && r.native.attempted && r.native.seeded==(read!=0) && !r.native.verified && !f.puts);
   if(i>=2)frozen(&c,wants[i],&p);else assert(!portable_set_time_close(&c));
  }
- for(int read=0;read<2;++read)for(int status=-1;status>=-5;--status)for(int commit=0;commit<2;++commit) {
+ const int kv_statuses[]={RISC_KEY_VALUE_NOT_FOUND,RISC_KEY_VALUE_BUFFER_SMALL,RISC_KEY_VALUE_INVALID,RISC_KEY_VALUE_CONTEXT,RISC_KEY_VALUE_IO,99};
+ for(int read=0;read<2;++read)for(unsigned i=0;i<sizeof(kv_statuses)/sizeof(*kv_statuses);++i)for(int commit=0;commit<2;++commit) {
+  int status=kv_statuses[i];bool halted=status==RISC_KEY_VALUE_CONTEXT || status==99;
   reset();portable_set_time_client c={0};p=request("UTC0",true);f.commit=commit!=0;
   if(read)f.get_status=status;else f.put_status=status;
-  assert(!open_client(&c));int want=status==RISC_KEY_VALUE_CONTEXT?PORTABLE_REALTIME_CONTEXT:PORTABLE_REALTIME_UNCERTAIN;
+  assert(!open_client(&c));int want=status==RISC_KEY_VALUE_CONTEXT?PORTABLE_REALTIME_CONTEXT:
+    status==99?PORTABLE_REALTIME_UNCERTAIN:status==RISC_KEY_VALUE_IO?PORTABLE_REALTIME_IO:
+    status==RISC_KEY_VALUE_INVALID?PORTABLE_REALTIME_INVALID:PORTABLE_REALTIME_VERIFY;
   assert(portable_set_time_apply_confirmed(&c,&p,&r)==want);
-  assert(r.rtc_outcome==2 && r.native.verified && r.metadata_outcome==1 && f.releases==1);
-  assert(f.gets==(unsigned)read && r.metadata_write_accepted==(read!=0));frozen(&c,want,&p);
+  assert(r.rtc_outcome==2 && r.native.verified && r.metadata_outcome==1 && f.releases==(halted?1u:2u));
+  assert(f.gets==(unsigned)read && r.metadata_write_accepted==(read!=0));
+  if(halted){frozen(&c,want,&p);continue;}
+  assert(r.reason==want && !r.cleanup && !f.live[3] && f.live[1]);
+  /* No inferred rollback: IO after commit may already hold the exact bytes. */
+  if(commit || read)assert(f.bytes[0]==0x52 && f.bytes[1]==0x54);
+  f.put_status=f.get_status=0;
+  /* A caller's next explicit action can acquire fresh RTC/KV and verify. */
+  assert(!portable_set_time_apply_confirmed(&c,&p,&r));
+  assert(r.rtc_outcome==2 && r.native.verified && r.metadata_outcome==2);
+  assert(f.puts==2 && f.gets==(unsigned)read+1u);
+  assert(!portable_set_time_close(&c));
+ }
+ /* A typed IO never overrides an uncertain checked release. Preserve original
+  * grant evidence even when a failed callback mutates its temporary argument. */
+ for(int read=0;read<2;++read)for(unsigned shape=0;shape<2;++shape) {
+  reset();portable_set_time_client c={0};p=request("UTC0",true);
+  if(read)f.get_status=RISC_KEY_VALUE_IO;else f.put_status=RISC_KEY_VALUE_IO;
+  f.fail_release=2;f.release_shape=shape;
+  assert(!open_client(&c));assert(portable_set_time_apply_confirmed(&c,&p,&r)==PORTABLE_REALTIME_UNCERTAIN);
+  assert(r.reason==PORTABLE_REALTIME_IO && r.cleanup==PORTABLE_REALTIME_UNCERTAIN);
+  assert(r.metadata_outcome==1 && r.native.verified && c.kv_grant.slot==3);
+  frozen(&c,PORTABLE_REALTIME_UNCERTAIN,&p);
  }
 }
 static void retries(void) {

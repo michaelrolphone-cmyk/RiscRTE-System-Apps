@@ -61,7 +61,10 @@ int portable_set_time_open(portable_set_time_client *,const risc_runtime_api_v1 
  * bounded native seed/readback, and explicit namespace-1 rtc_basis put/get.
  * Partial outcomes are independent: errors do not roll back changed clocks/KV.
  * Any false RTC call/uncertain provider operation permanently stops all I/O,
- * including cleanup. Known native IO permits explicit retry but invalidates
+ * including cleanup. Documented KV IO/INVALID/NOT_FOUND/BUFFER_SMALL errors
+ * keep metadata unconfirmed, release the KV grant with phase checks and permit
+ * a new explicit attempt only after clean release. No readback follows a failed
+ * put. CONTEXT/unknown KV results still halt. Known native IO permits explicit retry but invalidates
  * previous clock assumptions. A clean verification mismatch permits retry. */
 int portable_set_time_apply_confirmed(portable_set_time_client *,
  const portable_set_time_request *,portable_set_time_result *);
