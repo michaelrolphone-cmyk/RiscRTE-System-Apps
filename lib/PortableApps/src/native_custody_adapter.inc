@@ -11,9 +11,14 @@ void portable_adapter_retain(void) {
   native_sleep_retained=true;
 #endif
 }
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+bool portable_adapter_retained(void) {return native_custody_retained;}
+#endif
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 static risc_runtime_api_v1 settings_runtime;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
 static bool settings_started,settings_initialized;
+#endif
 typedef struct {
   bool live;
   const risc_key_value_v1 *source;
@@ -75,7 +80,11 @@ static bool custody_acquire(const char *name,uint32_t version,uint64_t instance,
   if(!ok) {
     /* Native-only unavailable acquisition has a checked clean-empty exception.
      * External provider rollback cannot be established by a boolean result. */
-    if(strcmp(name,RISC_REALTIME_CONTROL_CAPABILITY) || grant->api || grant->slot || grant->generation)
+    if((strcmp(name,RISC_REALTIME_CONTROL_CAPABILITY)
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+        && strcmp(name,RISC_REALTIME_CAPABILITY)
+#endif
+       ) || grant->api || grant->slot || grant->generation)
       portable_adapter_retain();
     return false;
   }

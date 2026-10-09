@@ -59,6 +59,9 @@ static bool pp_enabled(void) {
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
 }
 const paper_presentation *paper_presentation_get(void) {
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  if(failed || native_custody_retained)return NULL;
+#endif
   if(!pp_enabled())return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);

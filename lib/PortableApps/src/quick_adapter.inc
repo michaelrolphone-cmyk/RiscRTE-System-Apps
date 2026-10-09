@@ -24,6 +24,9 @@ static bool quick_storage_safe(void) {
  return true;
 }
 static bool quick_apply(uint32_t actions) {
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ if(failed || native_custody_retained)return false;
+#endif
  if(!actions)return true;
  if(!quick_storage_safe())return false;
 #ifdef PORTABLE_QUICK_RADIOS
@@ -63,6 +66,9 @@ static bool quick_copy_background(void) {
  return true;
 }
 static bool quick_interrupt(void) {
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ if(failed || native_custody_retained)return false;
+#endif
  if(!quick_modal)return true;
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
@@ -72,9 +78,14 @@ static bool quick_interrupt(void) {
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
-#if defined(PORTABLE_DESK_CLOCK_SPARSE_START) || defined(PORTABLE_SETTINGS_NATIVE_TIME)
+#if defined(PORTABLE_DESK_CLOCK_SPARSE_START) || defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
  uint8_t hour,minute;
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ twatch_rtc_time_v1 local;
+ if(!native_toolbar_local(&local))return;
+ hour=local.hour;minute=local.minute;
+ if(true)
+#elif defined(PORTABLE_SETTINGS_NATIVE_TIME)
  if(!failed && settings_native_clock(&hour,&minute))
 #else
  if(!failed && portable_desk_clock_time(&hour,&minute))
@@ -97,6 +108,9 @@ static void quick_time(char out[6]) {
 }
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ if(failed || native_custody_retained)return false;
+#endif
  if(!pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))return true;
  /* Reserve a possible top-edge gesture without owning a modal yet.
   * Keep ordinary tabs/gear taps replayable without pausing the foreground

@@ -1,3 +1,11 @@
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+#ifndef PORTABLE_NATIVE_CUSTODY_FENCE
+#error "Native toolbar requires the canonical native custody fence"
+#endif
+#if defined(PORTABLE_SETTINGS_APP) || defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_DESK_CLOCK) || defined(PORTABLE_DESK_CLOCK_SPARSE_START) || defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
+#error "Native toolbar requires one unambiguous app-owned time source"
+#endif
+#endif
 #if defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
 #define PORTABLE_NATIVE_CUSTODY_FENCE
 #endif
@@ -93,9 +101,11 @@ static bool failed, list_mode;
 static bool native_custody_retained;
 static const risc_runtime_api_v1 *native_custody_runtime;
 static volatile risc_display_surface_v1 native_custody_surface;
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 #include "RiscRealtimeV1.h"
 #include "RiscKeyValueV1.h"
+#endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
 static int initialize_providers(void);
 #endif
 #endif
@@ -242,7 +252,7 @@ static inline void input_navigation_reset(void) {
  if(navigation_ready && !navigation->reset(navigation->context))failed=true;
 #endif
 }
-#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME)
+#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 static void input_navigation_close(void) {
  if(navigation_ready) {
   bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
@@ -547,6 +557,9 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
     n = w / 6;
   text_color(x + (w - n * 6) / 2, y, s, n, 0);
 }
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+#include "native_toolbar.inc"
+#endif
 #include "nova.inc"
 #ifdef PORTABLE_NOVA_UI
 #include "nova_ui.inc"
@@ -1475,6 +1488,12 @@ static int initialize(void) {
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;settings_initialized=true;return 0;
 #else
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  settings_runtime=*rt;settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+  settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
+  settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
+  rt=&settings_runtime;
+#endif
 #include "foreground_adapter_open.inc"
 #endif
 #endif
@@ -1488,9 +1507,13 @@ static int initialize_providers(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 #include "sparse_clock_adapter.inc"
 #endif
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 static void settings_native_finalize(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
   if(native_custody_retained || !rt || !settings_started)return;
+#else
+  if(native_custody_retained || !rt)return;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(alarms.api && !alarm_failed_cleaned) {
     if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain) {portable_adapter_retain();return;}
@@ -1511,8 +1534,10 @@ static void settings_native_finalize(void) {
   navigation=NULL;
 #endif
   if(!portable_touch_close(&touch,rt)){portable_adapter_retain();return;}
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
   if(settings_grant.api && !rt->release(&settings_grant))return;
   settings_store=NULL;sv_active=false;
+#endif
   if(bg.api && !rt->release(&bg))return;
   if(dg.api && !rt->release(&dg))return;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -1523,7 +1548,10 @@ static void settings_native_finalize(void) {
 #endif
   free(previous_pixels);previous_pixels=NULL;previous_valid=false;
   free(paper_previous);paper_previous=NULL;paper_previous_valid=false;
-  gauge=NULL;display=NULL;settings_started=false;settings_initialized=false;
+  gauge=NULL;display=NULL;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  settings_started=false;settings_initialized=false;
+#endif
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
@@ -1535,7 +1563,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_finalize();
-#elif defined(PORTABLE_SETTINGS_NATIVE_TIME)
+#elif defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
   settings_native_finalize();
 #else
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -1609,6 +1637,12 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 
 __attribute__((visibility("default"))) int app_module_init(void) {
   int status = initialize();
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  if(status) {
+    if(native_custody_runtime)portable_adapter_retain();
+    return status;
+  }
+#endif
 #ifndef PORTABLE_DESK_CLOCK_SPARSE_START
   if (status)
     app_module_fini();

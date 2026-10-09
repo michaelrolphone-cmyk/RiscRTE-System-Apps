@@ -140,7 +140,11 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
 }
 static void np_contact(springboard_contact *out) { *out=nova_contact; }
 static bool np_clock(uint8_t *hour,uint8_t *minute) {
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  twatch_rtc_time_v1 local;
+  if(!hour || !minute || !native_toolbar_local(&local))return false;
+  *hour=local.hour;*minute=local.minute;return true;
+#elif defined(PORTABLE_DESK_CLOCK_SPARSE_START)
   return !failed && portable_desk_clock_time(hour,minute);
 #elif defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   twatch_rtc_time_v1 raw,local;
@@ -151,7 +155,7 @@ static bool np_clock(uint8_t *hour,uint8_t *minute) {
   (void)hour;(void)minute;return false;
 #endif
 }
-#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 static void np_close(void) {
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   if(np_rtc_grant.api && !rt->release(&np_rtc_grant))rt->diagnostic("PORTABLE_APP error=toolbar-clock-release");
