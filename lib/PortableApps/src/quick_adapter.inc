@@ -149,7 +149,9 @@ static bool quick_foreground(bool *consumed) {
   if(alarm_consumed){*consumed=true;break;}
   if(navigation_pending&T5_APP_BUTTON_BACK){navigation_pending=0;pqa_close(&quick.ui);}
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-  if((uint32_t)(now-last_activity)>=60000u)pqa_cancel(&quick.ui);
+  /* Retaining paper controls stay available for inspection until dismissed.
+   * Keep the existing idle policy for the animated Watch sheet. */
+  if(!quick.ui.paper && (uint32_t)(now-last_activity)>=60000u)pqa_cancel(&quick.ui);
 #endif
   uint32_t actions=pqa_take_action(&quick.ui);
   if(!quick.ui.radio_controls && (actions&PQA_WIFI)){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
@@ -168,8 +170,11 @@ static bool quick_foreground(bool *consumed) {
    if(dirty) {
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
     else if(!quick_copy_background() || !pqa_render(&surface,&quick.ui,time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
-    present(!quick.ui.paper);painted=true;*consumed=true;painted_state=quick.ui;
+    /* Present can sample input while the panel is busy. Record only the state
+     * rendered above; newer input must remain dirty for the next frame. */
+    painted_state=quick.ui;
     memcpy(painted_time,time,sizeof(time));painted_battery_valid=battery_valid;painted_battery=battery.percent;
+    present(!quick.ui.paper);painted=true;*consumed=true;
    }
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
