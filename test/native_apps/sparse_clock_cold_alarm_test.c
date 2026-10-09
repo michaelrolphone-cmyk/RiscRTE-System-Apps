@@ -164,7 +164,7 @@ static bool obtain(const char *name,uint32_t version,uint64_t id,risc_runtime_ca
   else if(!strcmp(name,"net.wifi"))api=&wifi;
   else if(!strcmp(name,"bluetooth.hci"))api=&bt;
   else if(!strcmp(name,"board.battery")){static risc_battery_gauge_api_v1 battery;battery=battery_api;battery.read=battery_now;api=&battery;}
-  else if(!strcmp(name,"storage.key-value")){assert(id==1);static risc_key_value_v1 keyvalue;keyvalue=kv;keyvalue.get=preferences;keyvalue.put=no_put;api=&keyvalue;}
+  else if(!strcmp(name,"storage.key-value")){assert(id==1||id==5);static risc_key_value_v1 keyvalue;keyvalue=kv;keyvalue.get=preferences;keyvalue.put=no_put;api=&keyvalue;}
   else if(!strcmp(name,RISC_REALTIME_CONTROL_CAPABILITY)){assert(version==1&&!id);api=&native_api;native_live++;}
   else if(!strcmp(name,"rtc.clock")){assert(version==2&&!id);if(which("rtc-acquire-error")){forbid=true;return false;}static twatch_rtc_api_v1 calendar;calendar=rtc_api;calendar.read=rtc_read_now;calendar.write=rtc_write_now;api=rtc_table=&calendar;rtc_live++;}
   else {fprintf(stderr,"Unexpected capability %s\n",name);assert(0);}

@@ -68,6 +68,7 @@ def main():
     for sanitized,manual_only in ((False,True),(True,True),(False,False),(True,False)):
         label=('asan-ubsan' if sanitized else 'normal')+('' if manual_only else '-auto-idle');binary=out/label
         flags=[flag for flag in FLAGS if manual_only or flag!='PORTABLE_SLEEP_MANUAL_ONLY']
+        if receipt.get('home_points'):flags += ['PORTABLE_HOME_POINTS_NATIVE_UTC','ALARM_NATIVE_UTC']
         normal_cases=CUSTODY_CASES+NAVIGATION_CASES if manual_only else INSPECTION_CASES
         async_cases=ASYNC_CASES if manual_only else INSPECTION_CASES
         extra=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if sanitized else []

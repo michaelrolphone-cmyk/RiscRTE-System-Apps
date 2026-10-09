@@ -105,6 +105,7 @@ def main():
                                *[source_root / 'lib/PortableApps/src' / name for name in SOURCES],
                                deployment / 'minimal/apps/portable_sleep.c', ROOT / 'test/native_apps/sparse_clock_cold_alarm_test.c']
                     app_flags = list(APP_FLAGS)
+                    if label == 'current':app_flags += ['PORTABLE_HOME_POINTS_NATIVE_UTC','ALARM_NATIVE_UTC']
                     if quick:
                         app_flags += ['PORTABLE_QUICK_ACTIONS', 'PORTABLE_QUICK_RADIOS']
                         sources += [source_root / 'lib/PortableApps/src' / name for name in QUICK]
