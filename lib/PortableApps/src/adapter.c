@@ -163,13 +163,21 @@ static bool quick_interrupt(void);
 unsigned portable_quick_brightness(void) {return quick.brightness;}
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef ALARM_SERVICE_TAGGED_V2
+#include "PortableAlarmClient.h"
+#else
 #include "AlarmServiceV1.h"
+#endif
 static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained;
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void);
+#endif
+#if defined(PORTABLE_QUICK_ACTIONS) && defined(ALARM_SERVICE_TAGGED_V2)
+static uint32_t alarm_output_modes(void);
+static bool alarm_refresh(void);
 #endif
 static bool alarm_failure(void);
 #endif

@@ -1,4 +1,9 @@
 #include <stdio.h>
+#ifdef ALARM_SERVICE_TAGGED_V2
+#define quick_alarm_output_modes() alarm_output_modes()
+#else
+#define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
+#endif
 /* NOVA-7 paper sheet: large two-column tiles, static 1-bit presentation.
  * Uses existing licensed quick-control masks and shared paper text. */
 static int qp_x(int x){return x*width()/480;}
@@ -12,7 +17,7 @@ static void quick_paper_capabilities(void) {
  if(!quick.ui.paper)return;
  quick.ui.torch_valid=!!(info.flags&RISC_DISPLAY_INFO_BRIGHTNESS) && display->set_brightness;
  quick.ui.brightness_valid&=quick.ui.torch_valid;
- quick.ui.volume_valid&=!!(alarm_service_output_modes(alarm_sleep_api())&ALARM_MODE_SOUND);
+ quick.ui.volume_valid&=!!(quick_alarm_output_modes()&ALARM_MODE_SOUND);
 #ifndef PORTABLE_QUICK_RADIOS
  /* An ungranted radio is unavailable, never implicitly enabled or launched. */
  quick.ui.radio_controls=true;quick.ui.radios_valid=false;
@@ -36,7 +41,7 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
  qp_text(32,24,300,"QUICK ACTIONS",true,true);qp_text(342,30,112,time,true,true);
  qp_rect(32,78,416,4,true);
  qp_slider(126,"FRONTLIGHT",6,quick.ui.brightness,quick.ui.brightness_valid);
- qp_slider(220,(alarm_service_output_modes(alarm_sleep_api())&ALARM_MODE_SOUND)?"NOTIFICATIONS":"SOUND UNAVAILABLE",7,quick.ui.volume,quick.ui.volume_valid);qp_rect(32,284,416,3,true);
+ qp_slider(220,(quick_alarm_output_modes()&ALARM_MODE_SOUND)?"NOTIFICATIONS":"SOUND UNAVAILABLE",7,quick.ui.volume,quick.ui.volume_valid);qp_rect(32,284,416,3,true);
  static const char *const labels[]={"SILENT","DND","AIRPLANE","WI-FI","BLUETOOTH","TORCH"};
  for(unsigned i=0;i<6;i++) {
   int x=32+(int)(i%2)*212,y=302+(int)(i/2)*104;

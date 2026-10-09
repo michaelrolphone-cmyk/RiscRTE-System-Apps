@@ -3,8 +3,12 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
+#endif
+#if defined(PORTABLE_QUICK_ACTIONS) && defined(ALARM_SERVICE_TAGGED_V2)
+static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&alarms); }
+static bool alarm_refresh(void) { return portable_alarm_refresh(&alarms); }
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
@@ -89,9 +93,13 @@ static bool alarm_audio_pump(void) {
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
 static bool alarm_audio_pump(void) {
     if(native_sleep_retained)return false;
+#ifdef ALARM_SERVICE_TAGGED_V2
+    if(!portable_alarm_pump(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+#else
     int32_t result=alarms.api->step(alarms.api->context);
     if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
     if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+#endif
     return true;
 }
 #else
@@ -251,7 +259,9 @@ static bool alarm_foreground(bool *consumed) {
             dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
         }
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#ifdef ALARM_SERVICE_TAGGED_V2
+            if(!portable_alarm_refresh(&alarms))return alarm_failure();
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
             int32_t result=alarms.api->refresh(alarms.api->context);
             if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
 #else
@@ -262,7 +272,9 @@ static bool alarm_foreground(bool *consumed) {
             if(alarms.status.occurrence.generation) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#ifdef ALARM_SERVICE_TAGGED_V2
+                if(!portable_alarm_acknowledge(&alarms,&token))return alarm_failure();
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
                 int32_t result=alarms.api->acknowledge(alarms.api->context,&token);
                 if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
 #else

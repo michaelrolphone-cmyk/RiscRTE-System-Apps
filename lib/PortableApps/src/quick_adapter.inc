@@ -47,6 +47,9 @@ static bool quick_apply(uint32_t actions) {
 #else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
 #endif
+#ifdef ALARM_SERVICE_TAGGED_V2
+ if(changed && !alarm_refresh())return false;
+#else
  const alarm_service_v1 *service=alarm_sleep_api();
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(changed && service) {
@@ -55,6 +58,7 @@ static bool quick_apply(uint32_t actions) {
  }
 #else
  if(changed && service)(void)service->refresh(service->context);
+#endif
 #endif
  return true;
 }
