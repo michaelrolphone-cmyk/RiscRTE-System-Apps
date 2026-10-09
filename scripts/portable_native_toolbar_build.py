@@ -82,7 +82,11 @@ def configure(args, parser, root, out, app):
     profile_path = 'lib/PortableApps/profiles/x4-native-time-' + app + '.json'
     profile = json.loads((root/profile_path).read_text())
     if performance:
-        profile['version'] = portable_performance_build.VERSIONS[app]
+        profile['version'] = portable_performance_build.version(app,args)
+    elif getattr(args,'stage_logs',False):
+        parts=profile['version'].split('.')
+        parts[-1]=str(int(parts[-1])+1)
+        profile['version']='.'.join(parts)
     runtime = {'repository': 'michaelrolphone-cmyk/RiscRTE', 'commit': commit,
                'sha256': {name: hashlib.sha256(data).hexdigest() for name, data in sdk.items()}}
     notices = out/'licenses/native-time'; notices.mkdir(parents=True, exist_ok=True)
@@ -96,7 +100,7 @@ def configure(args, parser, root, out, app):
              '-DALARM_SERVICE_TAGGED_V2']
     if performance:
         receipt['performance_trace'] = performance
-        flags.extend(portable_performance_build.defines(performance))
+        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False),out))
     return includes, flags, [root/p for p in SOURCES], receipt
 
 

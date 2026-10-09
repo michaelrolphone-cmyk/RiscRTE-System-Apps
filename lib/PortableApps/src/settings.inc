@@ -395,6 +395,7 @@ static bool editor_try_save(void) {
 #endif
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   portable_perf_action(PORTABLE_PERF_SETTINGS_ACTION,false);
+  portable_stage_log(rt,"action","name=settings-activate");
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return T5_APP_SETTING_ERROR;
 #endif

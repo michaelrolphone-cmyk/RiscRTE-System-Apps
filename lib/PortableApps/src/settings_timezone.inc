@@ -2,6 +2,7 @@
  * change RTC interpretation or civil fields: integration is a separate opt-in. */
 static void stz_open_cities(void) {
   portable_perf_action(PORTABLE_PERF_TIMEZONE_OPEN,false);
+  portable_stage_log(rt,"action","name=timezone-open");
   stz_region=stz_selected;stz_selected=0;
   for(unsigned i=0;i<portable_timezone_region_count(stz_region);++i)
     if(portable_timezone_city_index(stz_region,i)==(int)stz_choice){stz_selected=i;break;}

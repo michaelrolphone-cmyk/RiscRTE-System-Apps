@@ -28,6 +28,7 @@ static bool quick_apply(uint32_t actions) {
  if(failed || native_custody_retained)return false;
 #endif
  if(!actions)return true;
+ portable_stage_log(rt,"quick-action","state=apply");
  if(!quick_storage_safe())return false;
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -162,6 +163,7 @@ static bool quick_foreground(bool *consumed) {
  quick_background=malloc(quick_frame_bytes());
  if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
  memcpy(quick_background,alarm_pixels,quick_frame_bytes());quick_modal=true;
+ portable_stage_log(rt,"action","name=quick-controls-open");
  bool painted=false,wifi=false;uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
  pqa_state painted_state={0};uint8_t painted_battery=0;
@@ -212,6 +214,7 @@ static bool quick_foreground(bool *consumed) {
  if(native_sleep_retained)return false; /* Keep the Runtime-owned allocation. */
 #endif
  quick_modal=false;free(quick_background);quick_background=NULL;
+ portable_stage_log(rt,"action","name=quick-controls-close");
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
  if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {
 #ifdef PORTABLE_FILE_BROWSER_APP

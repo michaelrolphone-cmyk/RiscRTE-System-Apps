@@ -24,6 +24,7 @@ static void stz_choose(unsigned row) {
 }
 static bool stz_page_step(bool forward) {
   portable_perf_action(forward?PORTABLE_PERF_TIMEZONE_NEXT:PORTABLE_PERF_TIMEZONE_PREV,false);
+  portable_stage_log(rt,"action",forward?"name=timezone-next-page":"name=timezone-previous-page");
   portable_perf_span(PORTABLE_PERF_SPAN_SETTINGS_DISPATCH,true);
   unsigned rows=stz_rows(),count=stz_count(),before=stz_first;
   if(forward){if(stz_first+rows<count)stz_choose(stz_first+rows);}

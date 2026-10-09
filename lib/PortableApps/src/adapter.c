@@ -18,6 +18,7 @@
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #include "PortablePerformance.h"
+#include "PortableStageLog.h"
 #include "PortableTouch.h"
 #if defined(PORTABLE_DESK_CLOCK) || defined(PORTABLE_SETTINGS_X4_DESK_CLOCK)
 #ifndef PORTABLE_PAPER_PREFERENCES
@@ -34,7 +35,7 @@ static void paper_orient_input(portable_touch_sample *sample);
 #endif
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
-#ifdef PORTABLE_PERFORMANCE_DISPLAY_METRICS
+#if defined(PORTABLE_PERFORMANCE_DISPLAY_METRICS) || defined(PORTABLE_STAGE_DISPLAY_METRICS)
 #include "RiscDisplayOutputMetricsV1.h"
 #endif
 #ifdef PORTABLE_DESK_CLOCK
@@ -97,6 +98,31 @@ static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
 #endif
 static bool paper_rotated;
 static bool failed, list_mode;
+#if defined(PORTABLE_STAGE_LOGS) && defined(PORTABLE_STAGE_DISPLAY_METRICS)
+static void stage_display_complete(risc_display_present_token_v1 token) {
+ const risc_display_output_api_v1_metrics *ext=risc_display_output_metrics(display);
+ if(!ext)return;
+ risc_display_present_metrics_v1 value={.api_version=1,.struct_size=sizeof(value)};
+ if(!ext->snapshot(display->context,&value) || value.token!=token)return;
+ char line[176];
+ snprintf(line,sizeof(line),"bytes=%lu gpio_calls=%lu mode=%s window=%ld,%ld,%lu,%lu",
+  (unsigned long)value.bytes_sent,(unsigned long)value.gpio_write_calls,
+  value.mode==RISC_DISPLAY_METRICS_PARTIAL?"partial":"full",
+  (long)value.effective_update.x,(long)value.effective_update.y,
+  (unsigned long)value.effective_update.width,(unsigned long)value.effective_update.height);
+ portable_stage_log(rt,"display-transfer",line);
+ snprintf(line,sizeof(line),"queued_ms=%llu start_ms=%llu end_ms=%llu valid=%lu",
+  (unsigned long long)value.queued_ms,(unsigned long long)value.transfer_start_ms,
+  (unsigned long long)value.transfer_end_ms,(unsigned long)value.valid_times);
+ portable_stage_log(rt,"display-transfer-times",line);
+ snprintf(line,sizeof(line),"refresh_ms=%llu assert_ms=%llu complete_ms=%llu valid=%lu",
+  (unsigned long long)value.refresh_ms,(unsigned long long)value.busy_assert_ms,
+  (unsigned long long)value.busy_done_ms,(unsigned long)value.valid_times);
+ portable_stage_log(rt,"display-busy-times",line);
+}
+#else
+#define stage_display_complete(token) ((void)0)
+#endif
 #include "performance.inc"
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 #include "PortableNativeCustody.h"
@@ -318,7 +344,10 @@ static void input_service(void) {
  if(failed)return;
 #endif
  if(next.valid && next.began && next.tap_eligible && !next.cancelled)perf_input_begin(1u);
+ if(next.valid && next.began && !next.cancelled)portable_stage_log(rt,"touch-picked-up","source=software-sample");
+ if(next.valid && next.released && !next.cancelled)portable_stage_log(rt,"touch-released",next.tap_eligible?"tap=eligible":"tap=no");
  if(next.home_pressed) {
+  portable_stage_log(rt,"action","name=physical-home");
   perf_input_begin(3u);
   home_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;
   next=(portable_touch_sample){.valid=true,.cancelled=true};touch.neutral=touch.down=false;
@@ -372,6 +401,9 @@ static void input_service(void) {
 #endif
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else {perf_navigation(frame.buttons,frame.pressed);navigation_pending|=frame.pressed;
+    if(frame.pressed&RISC_NAV_HOME)portable_stage_log(rt,"action","name=crown");
+    else if(frame.pressed&RISC_NAV_BACK)portable_stage_log(rt,"action","name=back");
+    else if(frame.pressed)portable_stage_log(rt,"action","name=navigation");
     if(frame.pressed&RISC_NAV_HOME){crown_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;}
   }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -450,6 +482,7 @@ static void display_failure(const char *detail) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   (void)detail;portable_adapter_retain();return;
 #endif
+  portable_stage_log(rt,"display-failed",detail);
   if(!failed && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
      (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
   failed=true;
@@ -469,6 +502,7 @@ static bool acquire_surface(void) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
   }
+  portable_stage_log(rt,"draw-begin","");
   portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,true);
   if (!display->acquire(display->context, surface_format,
                         &surface)) {
@@ -664,6 +698,7 @@ static bool paper_present_progress(void) {
     display_failure("PORTABLE_APP error=display-failed");return false;
   }
   if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE)return true;
+  stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
   paper_token=0;
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -703,6 +738,7 @@ static void present(bool full) {
 #endif
   if (failed || !surface.frame)
     return;
+  portable_stage_log(rt,"draw-end","");
   perf_draw_end();
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,true);
   risc_display_present_token_v1 token = 0;
@@ -747,6 +783,7 @@ static void present(bool full) {
       desk_present_complete=true;
 #endif
       portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();
+      portable_stage_log(rt,"display-skip","reason=pixels-unchanged");
       return;}
     if(paper_previous_valid && !full) {
       unsigned xa=info.damage_x_alignment?info.damage_x_alignment:1,ya=info.damage_y_alignment?info.damage_y_alignment:1;
@@ -779,6 +816,14 @@ static void present(bool full) {
     full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
       surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_DEFAULT,
     RISC_DISPLAY_QUEUE_FIFO, 0};
+#ifdef PORTABLE_STAGE_LOGS
+  char display_line[112];
+  snprintf(display_line,sizeof(display_line),"intent=%s damage=%ld,%ld,%lu,%lu",
+    options.intent==RISC_DISPLAY_PRESENT_CLEAN?"clean":"normal",
+    (long)damage.x,(long)damage.y,(unsigned long)(damage_count?damage.width:info.width),
+    (unsigned long)(damage_count?damage.height:info.height));
+  portable_stage_log(rt,"display-submit-begin",display_line);
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
   if(!alarm_modal) {
@@ -795,6 +840,7 @@ static void present(bool full) {
     return;
   }
   portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,false);
+  portable_stage_log(rt,"display-submit-end","result=accepted");
   surface.frame = 0;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   /* Modals and unmodified callers keep their synchronous presentation path. */
@@ -831,6 +877,7 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+      stage_display_complete(token);portable_stage_log(rt,"display-complete","result=complete");
       perf_metrics(token);perf_complete(true);
 #ifdef PORTABLE_PAPER_PREFERENCES
       paper_orientation_dirty=false;
@@ -1408,6 +1455,7 @@ static bool launch(uint32_t i) {
   /* A terminal Home/return is already accepted. Do not replace its target or
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
+  if(i<count())portable_stage_log(rt,"app-launch-request",portable_catalog[i].file_name);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(!portable_paper_frame_drain())return false;
 #endif

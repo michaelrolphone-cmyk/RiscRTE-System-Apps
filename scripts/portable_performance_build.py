@@ -11,6 +11,10 @@ DISPLAY_DEFINE = '-DPORTABLE_PERFORMANCE_DISPLAY_METRICS'
 DISPLAY_HEADERS = ('RiscDisplayOutputV1.h', 'RiscDisplayOutputPowerV1.h',
                    'RiscDisplayOutputMetricsV1.h')
 VERSIONS = {'paper_clock': '0.3.7', 'springboard': '1.7.4', 'settings': '1.3.10'}
+STAGE_VERSIONS = {'paper_clock': '0.3.8', 'springboard': '1.7.5', 'settings': '1.3.11'}
+
+def version(app,args):
+    return (STAGE_VERSIONS if getattr(args,'stage_logs',False) else VERSIONS)[app]
 
 
 def options(parser):
@@ -40,7 +44,12 @@ def read_display(args, parser):
         parser.error('Cannot read diagnostic display SDK (all three headers required): ' + str(error))
 
 
-def defines(receipt):
+def defines(receipt,plain=False,out=None):
+    if plain:
+        receipt.update(enabled=False,mode='plain-stage-statements',build_define='-DPORTABLE_STAGE_LOGS')
+        if receipt.get('display_metrics'):receipt['display_metrics']['build_define']='-DPORTABLE_STAGE_DISPLAY_METRICS'
+        if out is not None:(out/'licenses/performance-runtime/SOURCES.json').write_text(json.dumps(receipt,indent=2)+'\n')
+        return ['-DPORTABLE_STAGE_LOGS'] + (['-DPORTABLE_STAGE_DISPLAY_METRICS'] if receipt.get('display_metrics') else [])
     return [DEFINE] + ([DISPLAY_DEFINE] if receipt.get('display_metrics') else [])
 
 
