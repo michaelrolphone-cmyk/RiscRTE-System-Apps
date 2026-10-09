@@ -83,6 +83,10 @@ def configure(args, parser, root, out, app):
     profile = json.loads((root/profile_path).read_text())
     if performance:
         profile['version'] = portable_performance_build.version(app,args)
+    elif getattr(args,'stage_logs',False):
+        parts=profile['version'].split('.')
+        parts[-1]=str(int(parts[-1])+1)
+        profile['version']='.'.join(parts)
     runtime = {'repository': 'michaelrolphone-cmyk/RiscRTE', 'commit': commit,
                'sha256': {name: hashlib.sha256(data).hexdigest() for name, data in sdk.items()}}
     notices = out/'licenses/native-time'; notices.mkdir(parents=True, exist_ok=True)
