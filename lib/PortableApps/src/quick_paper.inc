@@ -7,11 +7,17 @@
 /* NOVA-7 paper sheet: large two-column tiles, static 1-bit presentation.
  * Uses existing licensed quick-control masks and shared paper text. */
 static int qp_x(int x){return x*width()/480;}
+#ifdef PORTABLE_PAPER_TRANSITIONS
+static int qp_offset;
+static bool quick_copy_background(void);
+static int qp_y(int y){return (y+qp_offset)*height()/800;}
+#else
 static int qp_y(int y){return y*height()/800;}
+#endif
 static void qp_text(int x,int y,int w,const char *s,bool heading,bool black) {
  pp_text(qp_x(x),qp_y(y),qp_x(w),s,heading?2:1,heading,black);
 }
-static void qp_rect(int x,int y,int w,int h,bool black){fill(qp_x(x),qp_y(y),qp_x(w),qp_y(h),black?0:0xffff);}
+static void qp_rect(int x,int y,int w,int h,bool black){fill(qp_x(x),qp_y(y),qp_x(w),h*height()/800,black?0:0xffff);}
 static void qp_icon(unsigned icon,int x,int y,bool black){pqa_paper_icon(icon,qp_x(x),qp_y(y),qp_x(34),black,np_pixel);}
 static void quick_paper_capabilities(void) {
  if(!quick.ui.paper)return;
@@ -30,13 +36,23 @@ static void qp_slider(int y,const char *label,unsigned icon,unsigned value,bool 
  qp_text(382,y+8,70,percent,false,true);
 }
 static bool quick_paper_changed(const pqa_state *a,const pqa_state *b) {
- return a->brightness!=b->brightness || a->volume!=b->volume || a->torch!=b->torch ||
+ return
+#ifdef PORTABLE_PAPER_TRANSITIONS
+  a->position_q8!=b->position_q8 || a->target_q8!=b->target_q8 ||
+#endif
+  a->brightness!=b->brightness || a->volume!=b->volume || a->torch!=b->torch ||
   a->brightness_valid!=b->brightness_valid || a->volume_valid!=b->volume_valid ||
   a->dnd_valid!=b->dnd_valid || a->dnd_enabled!=b->dnd_enabled || a->radios_valid!=b->radios_valid ||
   a->wifi_enabled!=b->wifi_enabled || a->bluetooth_enabled!=b->bluetooth_enabled || a->airplane!=b->airplane || a->error_flags!=b->error_flags;
 }
 static void quick_paper_render(const char *time,bool battery_valid,unsigned battery) {
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ qp_offset=quick.ui.torch?0:(quick.ui.position_q8*800/PQA_OPEN_Q8)-800;
+ if(!quick_copy_background()){failed=true;return;}
+ fill(0,qp_y(0),width(),height(),0xffff);
+#else
  pp_begin();
+#endif
  if(quick.ui.torch){qp_text(74,620,360,"TAP TO TURN OFF",true,true);return;}
  qp_text(32,24,300,"QUICK ACTIONS",true,true);qp_text(342,30,112,time,true,true);
  qp_rect(32,78,416,4,true);

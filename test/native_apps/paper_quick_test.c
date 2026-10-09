@@ -109,8 +109,14 @@ static bool qa_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capab
  return acquire(name,v,id,g);
 }
 static const risc_runtime_api_v1 qa_runtime={1,sizeof(qa_runtime),qa_health,yield_ms,diagnostic,launch_app,qa_acquire,release};
-const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&qa_runtime:NULL;}
-int main(int argc,char**argv){
+#ifndef PAPER_QUICK_RUNTIME
+#define PAPER_QUICK_RUNTIME risc_runtime_get_api
+#endif
+#ifndef PAPER_QUICK_MAIN
+#define PAPER_QUICK_MAIN main
+#endif
+const risc_runtime_api_v1*PAPER_QUICK_RUNTIME(uint32_t v){return v==1?&qa_runtime:NULL;}
+int PAPER_QUICK_MAIN(int argc,char**argv){
  assert(argc>=2);qa_case=(unsigned)atoi(argv[1]);capture_dir=argc>2?argv[2]:NULL;bad_storage=qa_case==7;
  assert(app_module_init()==0);app_main();
 #ifdef TEST_SPRINGBOARD

@@ -70,7 +70,9 @@ void pqa_close(pqa_state *s) {
     if (!s) return;
     pqa_cancel_input(s);
     s->target_q8 = 0;
+#ifndef PORTABLE_PAPER_TRANSITIONS
     if(s->paper)s->position_q8=0;
+#endif
     if (s->torch) { s->torch = false; emit_torch(s); }
 }
 void pqa_cancel(pqa_state *s) {
@@ -123,7 +125,16 @@ static bool route(pqa_state *s, pqa_route r) {
     return r == PQA_RESERVED || r == PQA_CONSUMED;
 }
 static void release_panel(pqa_state *s, uint32_t now) {
-    if(s->paper){s->position_q8=s->target_q8;return;}
+    if(s->paper){
+#ifdef PORTABLE_PAPER_TRANSITIONS
+        const int distance=s->last_y-s->start_y;
+        const bool open=s->start_position_q8==0?distance>=32:distance>-64;
+        s->target_q8=open?PQA_OPEN_Q8:0;s->velocity_q8=0;
+#else
+        s->position_q8=s->target_q8;
+#endif
+        return;
+    }
     int velocity = (now - s->last_ms > 100u) ? 0 : s->release_velocity_q8;
     bool open = s->position_q8 > PQA_OPEN_Q8 / 2 ? velocity > -384 : velocity > 512;
     s->target_q8 = open ? PQA_OPEN_Q8 : 0;
@@ -215,7 +226,9 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     if (s->gesture == PQA_TOP_PENDING) {
         if (dy > (s->paper?24:6) && dy > absi(dx)) {
             s->gesture = PQA_PANEL_DRAG;
+#ifndef PORTABLE_PAPER_TRANSITIONS
             if(s->paper)s->position_q8=s->target_q8=PQA_OPEN_Q8;
+#endif
         }
         else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
             s->gesture = PQA_PASS_THROUGH;
@@ -226,7 +239,12 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     }
     if (s->gesture == PQA_PANEL_DRAG) {
         if(s->paper) {
+#ifdef PORTABLE_PAPER_TRANSITIONS
+            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*PQA_OPEN_Q8/800,0,PQA_OPEN_Q8);
+            s->target_q8=s->position_q8;s->velocity_q8=0;
+#else
             if(s->start_position_q8 && dy < -32)s->position_q8=s->target_q8=0;
+#endif
             s->last_x=(int16_t)x;s->last_y=(int16_t)y;s->last_ms=now;
             return route(s,PQA_CONSUMED);
         }
@@ -239,7 +257,9 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     return route(s, PQA_CONSUMED);
 }
 bool pqa_animate(pqa_state *s, uint32_t now) {
+#ifndef PORTABLE_PAPER_TRANSITIONS
     if(s && s->paper){bool changed=s->position_q8!=s->target_q8;s->position_q8=s->target_q8;s->velocity_q8=0;return changed;}
+#endif
     if (!s) return false;
     if (!s->clock_valid) { s->clock_valid = true; s->animation_ms = now; return false; }
     uint32_t elapsed = now - s->animation_ms;
