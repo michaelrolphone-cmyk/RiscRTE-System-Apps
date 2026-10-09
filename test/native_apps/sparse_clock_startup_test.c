@@ -144,6 +144,7 @@ static int32_t promote(void*c){safe();assert(c==&promotion_context);promotion_at
  promoted=true;return which("promotion-ready")?RISC_PROVIDER_PROMOTION_ALREADY_READY:RISC_PROVIDER_PROMOTION_OK;}
 static const risc_provider_promotion_api_v1 promotion={1,sizeof(promotion),&promotion_context,promote};
 static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promoted&&rtc_live);rtc_reads++;
+ if(which("rtc-read-retained")){terminal=true;return false;}
  if(which("fold")){*out=(twatch_rtc_time_v1){2026,11,1,0,1,30,0};return true;}
  if(which("gap")){*out=(twatch_rtc_time_v1){2026,3,8,0,2,30,0};return true;}
  time_t stamp=epoch;struct tm*tm=gmtime(&stamp);assert(tm);*out=(twatch_rtc_time_v1){(uint16_t)(tm->tm_year+1900),(uint8_t)(tm->tm_mon+1),(uint8_t)tm->tm_mday,(uint8_t)tm->tm_wday,(uint8_t)tm->tm_hour,(uint8_t)tm->tm_min,(uint8_t)tm->tm_sec};return true;}
@@ -192,7 +193,7 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
  value=(risc_retained_wake_record_v1){.struct_size=sizeof(value),.type=PORTABLE_DESK_CLOCK_RECORD_TYPE,.schema_version=1,.size=PORTABLE_DESK_CLOCK_RECORD_BYTES};
  assert(portable_desk_encode(&record,value.payload,value.size));loaded=true;
  FILE*in=fopen(state_path,"rb");if(in){assert(fread(&value,1,sizeof(value),in)==sizeof(value));assert(fread(physical,1,sizeof(physical),in)==sizeof(physical));assert(!fclose(in));assert(portable_desk_decode(value.payload,value.size,&record));epoch=(uint32_t)record.displayed_minute+60u;loaded_pixels=true;}
- native_valid=!(which("unset")||which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis")||which("fold")||which("gap")||which("rtc-acquire-retained"));
+ native_valid=!(which("unset")||which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis")||which("fold")||which("gap")||which("rtc-acquire-retained")||which("rtc-read-retained"));
  if(which("init-nosuffix")||which("init-missing-barrier")) {
   if(which("init-nosuffix"))runtime.struct_size=RISC_RUNTIME_CAPABILITIES_V1_SIZE;
   else runtime.retain_invocation=NULL;

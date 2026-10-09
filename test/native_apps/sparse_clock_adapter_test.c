@@ -100,7 +100,10 @@ static bool fx_release(risc_runtime_capability_v1 *grant){
  assert(grant->api!=&desk_wifi_control&&grant->api!=&desk_ble_control);
  live--;grant->api=NULL;return true;
 }
-static unsigned native_fences;
+static unsigned native_fences,clock_reads;
+static bool clock_retained;
+bool portable_desk_clock_time(uint8_t *h,uint8_t *m){clock_reads++;if(clock_retained){portable_desk_adapter_retain();return false;}*h=13;*m=42;return true;}
+
 static bool fx_retain(void){native_fences++;return true;}
 static const risc_runtime_api_v1 fx_runtime={.api_version=1,.struct_size=sizeof(fx_runtime),.health=fx_health,
  .yield_ms=fx_yield,.diagnostic=fx_diagnostic,.request_launch=fx_launch,.acquire=fx_acquire,.release=fx_release,
@@ -208,5 +211,11 @@ int main(int argc,char **argv){
  if(scenario==23){assert(portable_desk_adapter_start(2)==1);fail_case=10;input_service();assert_fenced();return 0;}
  if(scenario==24){assert(portable_desk_adapter_start(2)==1);fail_case=3;assert(!portable_desk_adapter_sleep());assert_fenced();return 0;}
  if(scenario==25 || scenario==26){fail_case=scenario==25?11:12;assert(portable_desk_adapter_start(2)==-2);assert_fenced();return 0;}
+ if(scenario==27 || scenario==28){
+  assert(portable_desk_adapter_start(2)==1);unsigned before=acquires;char value[6];
+  quick.hour_24=true;clock_retained=scenario==28;quick_time(value);
+  assert(clock_reads==1&&acquires==before&&!strcmp(value,clock_retained?"--:--":"13:42"));
+  if(clock_retained){uncertain=true;assert_fenced();}else {app_module_fini();assert(!live);}return 0;
+ }
  assert(0);
 }

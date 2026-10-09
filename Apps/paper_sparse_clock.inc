@@ -79,6 +79,11 @@ static bool read_clock(twatch_rtc_time_v1 *out) {
  return desk_zone_known && desk_sample(false,&sample)==PORTABLE_REALTIME_OK &&
         desk_local(&desk_configuration,sample.epoch_seconds,out);
 }
+bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute) {
+ twatch_rtc_time_v1 local;
+ if(!hour || !minute || !read_clock(&local))return false;
+ *hour=local.hour;*minute=local.minute;return true;
+}
 static void close_clock(void) { /* No persistent clock/battery grants. */ }
 static void open_clock(void) { /* Each read takes and closes one native grant. */ }
 void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;}
@@ -241,7 +246,7 @@ static bool desk_bind(void) {
 }
 static bool sparse_boot(void) {
  rt=risc_runtime_get_api(1);
- if(!rt || rt->api_version!=1 || rt->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE ||
+ if(!rt || rt->api_version!=1 || rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation ||
     !rt->acquire || !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch || !rt->diagnostic)return false;
  risc_runtime_health_v1 begun={.struct_size=sizeof(begun)};
  if(!rt->health(&begun)){desk_fence();return false;}desk_started_at=begun.uptime_ms;

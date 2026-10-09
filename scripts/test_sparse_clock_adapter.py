@@ -34,7 +34,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-adapter-') as directory:
  for name in ('RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h'):
   shutil.copyfile(a.sdk/name,include/name)
  includes=['-I'+str(include),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(ROOT/'lib/PortableApps/src')]
- cases=[(i,) for i in range(5)]+[(i,n) for i in (5,6) for n in range(1,10)]+[(7,n) for n in range(3,10)]+[(8,)]+[(9,n) for n in (2,4,5)]+[(10,n) for n in range(1,6)]+[(i,) for i in range(11,16)]+[(16,n) for n in range(1,5)]+[(i,) for i in range(17,27)]
+ cases=[(i,) for i in range(5)]+[(i,n) for i in (5,6) for n in range(1,10)]+[(7,n) for n in range(3,10)]+[(8,)]+[(9,n) for n in (2,4,5)]+[(10,n) for n in range(1,6)]+[(i,) for i in range(11,16)]+[(16,n) for n in range(1,5)]+[(i,) for i in range(17,29)]
  for san in (False,True):
   binary=out/'fixture'
   sanitizers=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if san else []
@@ -50,6 +50,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-adapter-') as directory:
 const t5_app_manifest_t portable_catalog[1]={{.compatible=false}};
 const unsigned portable_catalog_count=0;
 int portable_desk_clock_mode(void){return 0;}
+bool portable_desk_clock_time(uint8_t*h,uint8_t*m){(void)h;(void)m;return false;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,const risc_battery_gauge_api_v1 *g,const alarm_service_v1 *a){(void)r;(void)d;(void)g;(void)a;return 0;}
 __attribute__((visibility("default"))) void app_main(void){}
 ''')

@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 ROOT=Path(__file__).resolve().parents[1]
 BASE='d52a74bfb4acc01cc3f0a9dda2c95ba2ba679ee9'
 X4_REF='1cc18a9c998a3d041cf25364fb15c98449fe99d3'
-RUNTIME_REF='623ca49402841b779e2963f7c04453269f400080'
+RUNTIME_REF='602ae9bd618e13407b5b94bcad86cdabc23c99ea'
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--runtime-sdk',type=Path,required=True)
 p.add_argument('--runtime-ref',default=RUNTIME_REF,help='Exact canonical Runtime Git object providing tested SDK')
@@ -27,7 +27,7 @@ FLAGS=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90','-DPORTABLE_AP
 NAMES=['adapter.c','desk_clock_faces.c','PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c']
 SOURCES=[ROOT/'Apps/paper_clock.c',*[ROOT/'lib/PortableApps/src'/n for n in NAMES],a.x4/'minimal/apps/portable_sleep.c']
 QUICK=[ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
-CASES='terminal cold gpio invalid-record unset absent-native invalid-native refused held cancel promotion-failed promotion-partial promotion-retained promotion-ready record-context native-context native-release native-acquire-retained rtc-acquire-retained panel-retained panel-refused retained resume-retained clear-retained release-retained key-retained stage-context stage-refused alarm-due slow-prepare cross-minute missing-zone missing-basis bad-zone bad-basis manual alarm-output alarm-uncertain refused-promotion-failed refused-promotion-partial init-nosuffix init-missing-barrier'.split()
+CASES='terminal cold gpio invalid-record unset absent-native invalid-native refused held cancel promotion-failed promotion-partial promotion-retained promotion-ready record-context native-context native-release native-acquire-retained rtc-acquire-retained rtc-read-retained panel-retained panel-refused retained resume-retained clear-retained release-retained key-retained stage-context stage-refused alarm-due slow-prepare cross-minute missing-zone missing-basis bad-zone bad-basis manual alarm-output alarm-uncertain refused-promotion-failed refused-promotion-partial init-nosuffix init-missing-barrier'.split()
 HEADERS=['RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h','RiscRetainedWakeV1.h']
 DRIVERS=['RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h','RiscStorageVolumeV1.h']
 def run(args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
@@ -115,6 +115,11 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
  base=out/'base';base.mkdir()
  archive=subprocess.check_output(['git','-C',ROOT,'archive',BASE])
  with tarfile.open(fileobj=io.BytesIO(archive)) as tar:tar.extractall(base,filter='data')
+ # The legacy builders require Git metadata for their auxiliary receipts.
+ # Build from the verified archived tree with a local synthetic metadata commit;
+ # only ELF bytes are consumed below, never that synthetic source identity.
+ run(['git','init','-q',base])
+ run(['git','-C',base,'-c','user.name=Fixture','-c','user.email=fixture@invalid','commit','-q','--allow-empty','-m','Archived public base witness'])
  compatible={}
  for name,script,args,filename in [
      ('paper','build_paper_clock.py',['--navigation','--alarm-client','--quick-actions','--quick-radios'],'default.elf'),
@@ -129,7 +134,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
  evidence['default_elf_compatibility']={'base':BASE,'sha256':compatible}
  evidence['targets']=targets
  evidence['process_cases']=count
- tracked=[*SOURCES,*QUICK,ROOT/'Apps/paper_sparse_clock.inc',ROOT/'lib/PortableApps/src/sparse_clock_adapter.inc',ROOT/'lib/PortableApps/src/alarm.inc',
+ tracked=[*SOURCES,*QUICK,ROOT/'Apps/paper_sparse_clock.inc',ROOT/'lib/PortableApps/src/sparse_clock_adapter.inc',ROOT/'lib/PortableApps/src/alarm.inc',ROOT/'lib/PortableApps/src/nova.inc',ROOT/'lib/PortableApps/src/quick_adapter.inc',
           ROOT/'test/native_apps/sparse_clock_startup_test.c',ROOT/'scripts/build_paper_clock.py',Path(__file__).resolve()]
  evidence['source_sha256']={str(f.relative_to(ROOT)) if f.is_relative_to(ROOT) else 'x4/minimal/apps/portable_sleep.c':sha(f) for f in tracked}
  if a.evidence:a.evidence.parent.mkdir(parents=True,exist_ok=True);a.evidence.write_text(json.dumps(evidence,indent=2)+'\n')

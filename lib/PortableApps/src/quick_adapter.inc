@@ -37,7 +37,14 @@ static bool quick_apply(uint32_t actions) {
  bool changed=false;
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
  const alarm_service_v1 *service=alarm_sleep_api();
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(changed && service) {
+  int32_t status=service->refresh(service->context);
+  if(status!=ALARM_OK && status!=ALARM_PENDING){portable_desk_adapter_retain();return false;}
+ }
+#else
  if(changed && service)(void)service->refresh(service->context);
+#endif
  return true;
 }
 static bool quick_copy_background(void) {
@@ -57,6 +64,13 @@ static bool quick_interrupt(void) {
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ uint8_t hour,minute;
+ if(!failed && portable_desk_clock_time(&hour,&minute)) {
+  unsigned h=quick.hour_24?hour:hour%12;if(!quick.hour_24&&!h)h=12;
+  out[0]=(char)('0'+h/10);out[1]=(char)('0'+h%10);out[3]=(char)('0'+minute/10);out[4]=(char)('0'+minute%10);
+ }
+#else
  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};
  if(!rt->acquire("rtc.clock",2,0,&g))return;
  const twatch_rtc_api_v1 *clock=g.api;twatch_rtc_time_v1 raw,local;
@@ -66,6 +80,7 @@ static void quick_time(char out[6]) {
   out[0]=(char)('0'+h/10);out[1]=(char)('0'+h%10);out[3]=(char)('0'+local.minute/10);out[4]=(char)('0'+local.minute%10);
  }
  if(!rt->release(&g))failed=true;
+#endif
 }
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
@@ -109,7 +124,11 @@ static bool quick_foreground(bool *consumed) {
   pqa_animate(&quick.ui,now);
   if(pqa_visible(&quick.ui) || (!quick.ui.paper && painted)) {
    if((uint32_t)(now-telemetry_at)>=1000u) {
-    quick_time(time);battery_valid=gauge && gauge->read && gauge->read(gauge->context,&battery) && battery.percent<=100 && !(battery.flags&RISC_BATTERY_PROFILE_MISSING);telemetry_at=now;
+    quick_time(time);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    if(native_sleep_retained)return false;
+#endif
+    battery_valid=gauge && gauge->read && gauge->read(gauge->context,&battery) && battery.percent<=100 && !(battery.flags&RISC_BATTERY_PROFILE_MISSING);telemetry_at=now;
    }
    bool dirty=!quick.ui.paper || !painted || quick_paper_changed(&painted_state,&quick.ui) ||
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
@@ -129,6 +148,9 @@ static bool quick_foreground(bool *consumed) {
  if(painted && !failed) {
   if(!quick_copy_background())failed=true;else present(!quick.ui.paper);
  }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ if(native_sleep_retained)return false; /* Keep the Runtime-owned allocation. */
+#endif
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
  if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {

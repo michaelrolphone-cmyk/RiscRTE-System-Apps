@@ -59,4 +59,7 @@ int portable_desk_adapter_upgrade(int32_t promotion_status);
 /* Pure mode query for the coordinated app-local sleep hook. Never evidence
  * of arbitrary providers' inactivity, and never an authority to skip holds. */
 bool portable_desk_adapter_timer_only(void);
+/* Foreground toolbar/Quick Actions use the Clock's native UTC/timezone client,
+ * never a second direct RTC calendar path. No live grant escapes this call. */
+bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute);
 #endif

@@ -140,7 +140,9 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
 }
 static void np_contact(springboard_contact *out) { *out=nova_contact; }
 static bool np_clock(uint8_t *hour,uint8_t *minute) {
-#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  return !failed && portable_desk_clock_time(hour,minute);
+#elif defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   twatch_rtc_time_v1 raw,local;
   if(!np_rtc || !np_rtc->read(np_rtc->context,&raw) || !portable_time_forward(&raw,&local))return false;
   *hour=local.hour;*minute=local.minute;return true;

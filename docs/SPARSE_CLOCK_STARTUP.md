@@ -60,8 +60,10 @@ never append a field to the old shared prefix or overwrite the default SDK.
 Startup checks `RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE` and the callback. Missing
 or shortened tables fail before any provider operation.
 
-The canonical local Runtime baseline is
-`623ca49402841b779e2963f7c04453269f400080` (0.1.51). Runtime0.1.50
+The canonical public Runtime baseline is
+`602ae9bd618e13407b5b94bcad86cdabc23c99ea` (0.1.51, PR41), tree
+`fc660ad52df494befd87ba8b7599b77e8c00b82e`, identical to the tested local
+`623ca49402841b779e2963f7c04453269f400080`. Runtime0.1.50
 `7e79a8f06c1ee3b71214408c2477d9aaca985834` promotion semantics remain the contract,
 but that version alone cannot qualify app teardown after provider-local
 retention. The new owner-only fence is required for this profile.
@@ -112,7 +114,7 @@ normalization, network time or radio policy is introduced here.
 CC=gcc-14 python scripts/test_sparse_clock_startup.py \
   --sdk /path/to/canonical-reader/sdk/driver \
   --runtime-sdk /path/to/canonical-runtime/sdk/app \
-  --runtime-ref 623ca49402841b779e2963f7c04453269f400080 \
+  --runtime-ref 602ae9bd618e13407b5b94bcad86cdabc23c99ea \
   --x4 /path/to/x4-sparse-sleep-client \
   --xtensa-cc /path/to/xtensa-esp32s3-elf-gcc \
   --evidence receipts/sparse-clock-startup.json
