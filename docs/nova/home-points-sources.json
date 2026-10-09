@@ -1,0 +1,24 @@
+{
+  "watch_model": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "commit": "d1d1bca8f3f1276996f84efc1fcb69d042639983",
+    "path": "apps/clock/faces/points_state.h",
+    "sha256": "a0c2867af9950cd345539047c9a9cf38a240ca723559626bb4f65dedac499be2"
+  },
+  "schedule": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+    "commit": "637e13b0bce62ad49b756bec2468a6271d163fc7",
+    "headers": [
+      "AlarmRecords.h",
+      "PointsRecords.h",
+      "PointsSchedule.h",
+      "PointsUtcSchedule.h"
+    ]
+  },
+  "design_reference": {
+    "filename": "NOVA-7 E-Ink \u2014 480\u00d7800.html",
+    "sha256": "9935f759eb4e4e942738dfc51e680db90968aacc3fb62ace48202157c0c41aaf",
+    "screen": "WATCH FACE",
+    "inspected": "Original HTML generated SVG rendered to pixels, then real native mono output"
+  }
+}

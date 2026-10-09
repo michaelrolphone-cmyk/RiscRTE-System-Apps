@@ -1,0 +1,16 @@
+{
+  "logical_crop": [
+    24,
+    484,
+    456,
+    744
+  ],
+  "sha256": {
+    "home-ready": "e047b7668f6745112600e5025c9edab2e3eb242a40915722a5b231eae4c49505",
+    "home-custom": "1a074b2a2dcf88f437fa9dadf01c308db79334c0a5380c297c7e9a69bc58cb28",
+    "home-empty": "65f2711fc5dd02e0d8f8e026903e7023000e468b9e1255714ad864b7e825743d",
+    "home-invalid": "842ffefdf75a61f6e3f92a46aec071e633273df0446ebd13a151f9924b9dabf6",
+    "home-unavailable": "842ffefdf75a61f6e3f92a46aec071e633273df0446ebd13a151f9924b9dabf6",
+    "home-default": "bc26209b2f6613d62c6f4331454d133c68f28dbd8b56c1fde653431a92ee8e98"
+  }
+}

@@ -6,6 +6,7 @@ from pathlib import Path
 
 UTILITIES_COMMIT = '637e13b0bce62ad49b756bec2468a6271d163fc7'
 HEADERS = ('AlarmServiceV1.h', 'AlarmServiceV2.h')
+POINTS_HEADERS = ('AlarmRecords.h', 'PointsRecords.h', 'PointsSchedule.h', 'PointsUtcSchedule.h')
 
 def options(parser):
     parser.add_argument('--tagged-alarm-utilities', type=Path,
@@ -17,14 +18,15 @@ def stage(args, parser, out, includes):
         return None
     if not args.alarm_client:
         parser.error('--tagged-alarm-utilities requires --alarm-client')
+    headers = (*HEADERS, *POINTS_HEADERS) if getattr(args, 'sparse_start', False) else HEADERS
     try:
         source = {name: subprocess.check_output(['git', '-C', str(repo), 'show',
             UTILITIES_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else
             'lib/Alarm/include/' + name)], stderr=subprocess.PIPE)
-            for name in (*HEADERS, 'LICENSE')}
+            for name in (*headers, 'LICENSE')}
     except (OSError, subprocess.CalledProcessError) as error:
         parser.error('Cannot read pinned tagged alarm SDK: ' + str(error))
-    for name in HEADERS:
+    for name in headers:
         (includes / name).write_bytes(source[name])
     receipt = {'repository': 'michaelrolphone-cmyk/RiscRTE-Utilities',
                'commit': UTILITIES_COMMIT, 'capability': 'alarm.service', 'api': 2,

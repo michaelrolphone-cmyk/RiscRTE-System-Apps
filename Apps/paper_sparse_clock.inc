@@ -75,10 +75,19 @@ static bool desk_local(const portable_desk_config *config,int64_t utc,twatch_rtc
  *out=(twatch_rtc_time_v1){(uint16_t)local.year,local.month,local.day,local.weekday,
                          local.hour,local.minute,local.second};return true;
 }
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+static int64_t desk_home_epoch;
+static bool desk_home_valid;
+#endif
 static bool read_clock(twatch_rtc_time_v1 *out) {
  risc_realtime_snapshot_v1 sample;
- return desk_zone_known && desk_sample(false,&sample)==PORTABLE_REALTIME_OK &&
+ bool valid=desk_zone_known && desk_sample(false,&sample)==PORTABLE_REALTIME_OK &&
         desk_local(&desk_configuration,sample.epoch_seconds,out);
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ desk_home_valid=valid;
+ if(valid)desk_home_epoch=sample.epoch_seconds;
+#endif
+ return valid;
 }
 bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute) {
  twatch_rtc_time_v1 local;

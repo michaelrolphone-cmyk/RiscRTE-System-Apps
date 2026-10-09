@@ -60,7 +60,7 @@ def build():
   flags+=['-DPORTABLE_DESK_CLOCK']
  if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
- if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2']
+ if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
@@ -75,7 +75,7 @@ def build():
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
- if a.sparse_start:version='0.3.5' if tagged_alarm else '0.3.3'
+ if a.sparse_start:version='0.3.6' if tagged_alarm else '0.3.3'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -91,7 +91,9 @@ def build():
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
- if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
+ if tagged_alarm:
+  record['tagged_alarm_sdk']=tagged_alarm
+  record['home_points']={'clock_policy':'native-utc','storage_instance':5,'foreground_only':True,'records':['points_utc_cfg','points_utc_meta'],'projection':'Utilities PointsUtcSchedule','model':'Watch nova_points_state','tap_app':'points_in_time.elf'}
  if a.desk_clock:
   record['desk_sdk_headers']={name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in (
    'RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h',
@@ -101,7 +103,7 @@ def build():
    'lib/PortableApps/include/PortableDeskClock.h','lib/PortableApps/include/PortableDeskClockSettings.h',
    'lib/PortableApps/include/PortableSleepPolicy.h','lib/PortableApps/include/PortableReaderPreferences.h','lib/PortableApps/src/paper.inc','scripts/build_paper_clock.py']
   paths.extend(str(path.relative_to(ROOT)) for path in quick_sources)
-  if tagged_alarm:paths.append('scripts/portable_alarm_build.py')
+  if tagged_alarm:paths.extend(['scripts/portable_alarm_build.py','Apps/paper_home_points.inc','Apps/PaperHomePoints.h','lib/PortableApps/include/PortablePointsState.h'])
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'
   record['grant_count']=len(needs)

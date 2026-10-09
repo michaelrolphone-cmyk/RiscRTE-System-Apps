@@ -28,10 +28,16 @@
 #endif
 #include <setjmp.h>
 #include <time.h>
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+#include "PointsUtcSchedule.h"
+#endif
 static const char *test,*state_path;
 static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,promoted,native_valid;
 static bool seeded_image,promotion_attempted,loaded_pixels,rtc_live;
 static unsigned barriers;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+static unsigned home_reads,home_acquires;
+#endif
 static unsigned entries,seeds,restores,clears,promotions,starts,kv_reads,rtc_reads,native_reads;
 static unsigned battery_acquires,display_acquires,native_live,seed_calls,key_reads,high_water;
 static uint32_t epoch=1791331197u,start_ms;static int native_context,promotion_context;
@@ -187,7 +193,7 @@ static int32_t prepare_alarm(void*c,alarm_sleep_v1*out){(void)c;safe();out->rtc_
 static int32_t read_record(void*c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1*out,uint32_t*cause){(void)c;safe();assert(!starts&&!presents&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==1);
  *cause=!strncmp(test,"cold",4)?RISC_BOOT_POWER_ON:!strncmp(test,"reset",5)?RISC_BOOT_RESET:which("other-wake")?RISC_BOOT_DEEP_OTHER:which("gpio")?RISC_BOOT_DEEP_GPIO:RISC_BOOT_DEEP_TIMER;
  if(which("record-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
- if(raw_navigation||!strncmp(test,"cold",4)||!strncmp(test,"reset",5)||which("manual")||which("foreground")||which("alarm-output")||which("alarm-uncertain")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
+ if(!strncmp(test,"home-",5)||raw_navigation||!strncmp(test,"cold",4)||!strncmp(test,"reset",5)||which("manual")||which("foreground")||which("alarm-output")||which("alarm-uncertain")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
  *out=value;if(which("invalid-record"))out->payload[0]=0;return RISC_RETAINED_WAKE_OK;}
 static int32_t stage_record(void*c,const risc_retained_wake_record_v1*in){(void)c;safe();assert(!subs&&!frames&&!native_live);value=*in;pending=true;ms+=17;
  if(which("stage-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
@@ -204,11 +210,15 @@ static int32_t deep(void*c,uint32_t duration){(void)c;io();assert(pending&&durat
 static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();assert(promoted);*out=(risc_input_navigation_frame_v1){0};
  /* Explicit manual sleep for recovery/timezone scenarios; otherwise leave via
   * a foreground confirm after a neutral first frame. */
+ unsigned leave=4;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(!strncmp(test,"home-",5))leave=which("home-minute")?65u:12u;
+#endif
  if(raw_lifetime||raw_brightness){
   if(raw_dismiss_started&&!raw_navigation_sent&&raw_dismiss_polls==1){raw_navigation_sent=true;if(strstr(test,"back"))out->pressed=out->released=RISC_NAV_BACK;else if(strstr(test,"crown"))out->pressed=out->released=RISC_NAV_HOME;}
  }else if(raw_navigation){
   if(!raw_navigation_sent&&(raw_async?raw_dismiss_polls==2:polls==7)){raw_navigation_sent=true;if(strstr(test,"quick-back"))out->pressed=out->released=RISC_NAV_BACK;else if(strstr(test,"quick-crown"))out->pressed=out->released=RISC_NAV_HOME;}
- }else if(polls==4)out->pressed=out->released=which("manual")?RISC_NAV_HOME:RISC_NAV_CONFIRM;
+ }else if(polls==leave)out->pressed=out->released=which("manual")?RISC_NAV_HOME:RISC_NAV_CONFIRM;
  return true;}
 static bool nav_foreground(void*c,const risc_input_foreground_v1*f,size_t n){(void)c;(void)f;(void)n;safe();assert(promoted);return true;}
 static bool nav_reset(void*c){(void)c;safe();assert(promoted);return true;}
@@ -235,6 +245,42 @@ static int32_t preferences(void*c,const char*k,void*out,uint32_t cap,uint32_t*si
  else if(strcmp(k,PORTABLE_SLEEP_KEY)){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
  assert(cap>=4);memcpy(out,b,4);*size=4;return RISC_KEY_VALUE_OK;
 }
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+static int32_t home_get(void*c,const char*k,void*out,uint32_t cap,uint32_t*size) {
+ (void)c;safe();assert(promoted&&cap>=POINTS_RECORD_SIZE);home_reads++;
+ if(which("home-context")){terminal=true;return RISC_KEY_VALUE_CONTEXT;}
+ if(which("home-invalid")){memset(out,0,POINTS_RECORD_SIZE);*size=POINTS_RECORD_SIZE;return RISC_KEY_VALUE_OK;}
+ if(which("home-storage-error")||which("home-unavailable"))return RISC_KEY_VALUE_IO;
+ if(which("home-default")){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
+ if(!strcmp(k,POINTS_META_KEY)) {
+  if(which("home-meta-invalid")){memset(out,0,POINTS_RECORD_SIZE);*size=POINTS_RECORD_SIZE;return RISC_KEY_VALUE_OK;}
+  points_meta meta={.revision=3,.custom={{.color=6,.name="DRIVE TO WORK"}}};
+  points_meta_encode(&meta,out);*size=POINTS_RECORD_SIZE;return RISC_KEY_VALUE_OK;
+ }
+ assert(!strcmp(k,POINTS_CONFIG_KEY));
+ points_config config={.revision=4,.created=1};
+ if(!which("home-empty")) {
+  config.points[0]=(points_item){POINTS_WORK_START,1,0,127,8,30,0,0,0};
+  config.points[1]=(points_item){POINTS_LUNCH,1,0,127,12,0,60,0,1};
+  config.points[2]=(points_item){POINTS_BREAK,1,0,127,15,0,15,0,0};
+  config.points[3]=(points_item){POINTS_WORK_END,1,0,127,17,0,0,0,0};
+  if(which("home-custom"))config.points[1].kind=POINTS_CUSTOM_1;
+ }
+ points_config_encode(&config,out);*size=POINTS_RECORD_SIZE;return RISC_KEY_VALUE_OK;
+}
+static bool home_snapshot(void*c,risc_touch_snapshot_v1*out) {
+ (void)c;safe();*out=(risc_touch_snapshot_v1){.width=480,.height=800};
+ bool down=false;int x=240,y=560;
+ if(which("home-tap")||which("home-custom-tap")||which("home-swipe")||which("home-cancel")||which("home-retry"))down=polls>=2&&polls<=4;
+ if(which("home-retry")&&polls>=7&&polls<=9)down=true;
+ if(which("home-swipe")&&polls>=3)x+=60;
+ if(which("home-held"))down=polls<5;
+ if(which("home-cancel")&&polls==3){out->contact_count=2;return true;}
+ if(down){out->contact_count=1;out->contacts[0].id=1;out->contacts[0].x=(uint16_t)x;out->contacts[0].y=(uint16_t)y;}
+ return true;
+}
+static const risc_key_value_v1 home_kv={1,sizeof(home_kv),NULL,home_get,NULL};
+#endif
 static int32_t no_put(void*c,const char*k,const void*v,uint32_t n){(void)c;
  if(raw_brightness&&!strcmp(k,"brightness")){assert(n==1);raw_brightness_writes++;raw_brightness_value=*(const uint8_t*)v;return RISC_KEY_VALUE_OK;}
  (void)k;(void)v;(void)n;assert(0);return -1;}
@@ -278,7 +324,12 @@ static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_cap
   else if(!strcmp(name,"input.navigation"))api=&navigation;
   else if(!strcmp(name,"board.battery")){static risc_battery_gauge_api_v1 b;b=battery_api;b.read=read_battery;api=&b;battery_acquires++;}
   else if(!strcmp(name,"rtc.clock")){assert(version==2&&!id);if(which("rtc-acquire-retained")){terminal=true;return false;}static twatch_rtc_api_v1 r;r=rtc_api;r.read=read_rtc;api=&r;rtc_live=true;}
-  else if(!strcmp(name,"storage.key-value")){assert(version==1&&id==1);static risc_key_value_v1 keyvalue;keyvalue=kv;keyvalue.get=preferences;keyvalue.put=no_put;api=&keyvalue;}
+  else if(!strcmp(name,"storage.key-value")){
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   if(id==5){assert(version==1);home_acquires++;if(which("home-acquire")){terminal=true;return false;}api=&home_kv;}
+   else
+#endif
+   {assert(version==1&&id==1);static risc_key_value_v1 keyvalue;keyvalue=kv;keyvalue.get=preferences;keyvalue.put=no_put;api=&keyvalue;}}
   else if(!strcmp(name,"storage.volume"))api=&sd;
   else if(!strcmp(name,"net.wifi"))api=&wifi;
   else if(!strcmp(name,"bluetooth.hci"))api=&bt;
@@ -286,6 +337,9 @@ static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_cap
  }
  g->api=api;g->slot=++grants;g->generation=1;if(grants>high_water)high_water=grants;return true;}
 static bool drop(risc_runtime_capability_v1*g){safe();assert(grants&&g->api);
+ #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(which("home-release")&&g->api==&home_kv){terminal=true;return false;}
+#endif
  if(which("native-release")&&g->api==&realtime){terminal=true;return false;}
  if(which("release-retained")&&g->api==&wake&&starts){terminal=true;return false;}
  if(g->api==&realtime){assert(native_live);native_live--;}
@@ -298,7 +352,12 @@ static risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&runtime:NULL;}
 int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];scenario=0;raw_navigation=!strncmp(test,"raw-",4);raw_async=getenv("RAW_ASYNC")!=NULL;raw_lifetime=strstr(test,"inspect")!=NULL;raw_brightness=strstr(test,"brightness")!=NULL;if(raw_brightness)epoch-=epoch%60;
  panel.history.base=d;panel.history.base.get_info=raw_display_info;if(raw_async)panel.history.base.present_status=raw_present_status;panel.history.base.struct_size=sizeof(panel);panel.history.base.acquire=frame_acquire;panel.history.base.release=frame_release;panel.history.base.submit=frame_submit;panel.history.base.wait_present=frame_wait;panel.history.base.set_brightness=bright;panel.history.extension_tag=RISC_DISPLAY_HISTORY_TAG;panel.history.extension_version=1;panel.history.seed_previous=seed_previous;panel.power_tag=RISC_DISPLAY_POWER_TAG;panel.power_version=1;panel.prepare=panel_prepare;panel.resume=panel_resume;
- touch_power.base=t;if(raw_navigation)touch_power.base.snapshot=raw_snapshot;touch_power.base.struct_size=sizeof(touch_power);touch_power.power_tag=RISC_TOUCH_POWER_TAG;touch_power.power_version=1;touch_power.prepare=touch_prepare;touch_power.resume=touch_resume;
+ touch_power.base=t;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(!strncmp(test,"home-",5))touch_power.base.snapshot=home_snapshot;
+ if(which("home-retry"))scenario=9;
+#endif
+ if(raw_navigation)touch_power.base.snapshot=raw_snapshot;touch_power.base.struct_size=sizeof(touch_power);touch_power.power_tag=RISC_TOUCH_POWER_TAG;touch_power.power_version=1;touch_power.prepare=touch_prepare;touch_power.resume=touch_resume;
  sd.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(sd)};sd.terminal.extension_tag=RISC_STORAGE_POWER_COMMIT_TAG;sd.terminal.extension_version=1;sd.terminal.commit_power_down=legacy_sd;sd.sleep_tag=RISC_STORAGE_SLEEP_TAG;sd.sleep_version=1;sd.prepare_sleep=prepare_sd;sd.commit_sleep=commit_sd;sd.resume_sleep=resume_sd;
  power=(x4_power_deep_v1){{1,sizeof(power),NULL,read_key,NULL},X4_POWER_DEEP_TAG,1,deep};
  portable_desk_record record={.config={.face=0,.time_format=1,.rtc_stores_utc=1},.displayed_minute=1791331140,.has_image=true};
@@ -322,13 +381,17 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
 #ifndef PORTABLE_SLEEP_MANUAL_ONLY
  if(raw_lifetime){assert(raw_dismiss_started&&raw_restored&&raw_sheet_updates>=3&&(uint32_t)(ms-raw_released_at)>=90000u);printf("Paper inspection completed before ordinary idle sleep PASS\n");return 0;}
 #endif
- if(!which("manual")){assert(!promoted&&!kv_reads&&!rtc_reads&&!battery_acquires&&!promotions);assert(high_water<=6);}
+ if(!which("manual")){assert(!promoted&&!kv_reads&&!rtc_reads&&!battery_acquires&&!promotions);
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ assert(!home_reads&&!home_acquires);
+#endif
+ assert(high_water<=6);}
  else assert(promoted&&promotions==1&&battery_acquires==1&&high_water<=16);
  printf("Sparse terminal PASS (%u grants max, %u native reads)\n",high_water,native_reads);return 0;}
  app_main();if(which("cold-acquire")||which("cold-submit")||which("cold-wait"))assert(!rtc_reads&&!native_reads&&!launches);if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
  assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
- if(!which("promotion-failed")&&!which("refused-promotion-failed")){assert(promoted&&battery_acquires==1&&launches==1);}
+ if(!which("promotion-failed")&&!which("refused-promotion-failed")){assert(promoted&&battery_acquires==1&&launches==(which("home-retry")?2u:1u));}
  if(raw_navigation){assert(!entries&&!strcmp(launched,"springboard.elf"));if(strstr(test,"quick"))assert(raw_overlay_frames>=3);if(strstr(test,"held"))assert(polls>=9);}
  if(raw_lifetime||raw_brightness){assert(raw_restored&&raw_dismiss_started);if(raw_lifetime)assert((uint32_t)(ms-raw_released_at)>=90000u);}
  if(which("unset")||which("missing-zone")||which("missing-basis"))assert(seed_calls==1&&rtc_reads==1);
@@ -337,6 +400,14 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
  if(which("refused"))assert(entries==1&&restores==1&&clears==1&&display_acquires==2);
  if(which("promotion-failed"))assert(!starts&&!battery_acquires&&!kv_reads&&!entries);
  if(which("refused-promotion-failed"))assert(starts==2&&!battery_acquires&&!kv_reads&&entries==1);
+ #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(!strncmp(test,"home-",5)) {
+  bool tapped=which("home-tap")||which("home-custom-tap")||which("home-retry");
+  assert(!strcmp(launched,tapped?"points_in_time.elf":"springboard.elf"));
+  if(!which("home-unavailable"))assert(home_reads);
+  if(which("home-minute"))assert(presents>=2&&home_acquires>=2);
+ }
+#endif
  const char*capture=getenv("PAPER_FRAME");if(capture){FILE*out=fopen(capture,"wb");assert(out);assert(fwrite(physical,1,sizeof(physical),out)==sizeof(physical));assert(!fclose(out));}
  printf("Sparse foreground %s PASS (%u grants max, %u native reads)\n",test,high_water,native_reads);return 0;
 }

@@ -8,6 +8,9 @@
 #define PAPER_TEXT_LITERAL 256u
 /* Private bitmap magnification for the main clock; measure remains unscaled. */
 #define PAPER_TEXT_CLOCK 512u
+#define PAPER_TEXT_LARGE 1024u
+/* Fit complete labels horizontally, keeping their glyph height. */
+#define PAPER_TEXT_FIT 2048u
 typedef struct {
     uint32_t struct_size;
     void (*begin)(void);
