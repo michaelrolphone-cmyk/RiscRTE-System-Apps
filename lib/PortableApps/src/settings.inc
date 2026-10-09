@@ -88,7 +88,12 @@ static bool alert_unconfirmed;
 #endif
 #include "PortableDeskClockSettings.h"
 #define SETTINGS_FACE_ROW SETTINGS_NON_FACE_ROW_COUNT
-#define SETTINGS_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+1u)
+#define SETTINGS_FLIP_ROW (SETTINGS_NON_FACE_ROW_COUNT+1u)
+#define SETTINGS_LANGUAGE_ROW (SETTINGS_NON_FACE_ROW_COUNT+2u)
+#define SETTINGS_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+3u)
+static unsigned reader_choice;
+static const char *reader_message;
+static bool reader_unconfirmed[2];
 static unsigned face_choice;
 static const char *face_message;
 static bool face_unconfirmed;
@@ -150,7 +155,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     ,"Alarm Alerts"
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
-    ,"Desk Clock Face"
+    ,"Clock face","Flip UI 180°","Language"
 #endif
     };
   strcpy(out->label,names[index]);
@@ -200,6 +205,15 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     strcpy(out->value,face_unconfirmed?"Unconfirmed":loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable":
         loaded==PORTABLE_DESK_FACE_INVALID?"Segments (invalid saved)":
         loaded==PORTABLE_DESK_FACE_MISSING?"Segments (default)":portable_desk_face_name(face));
+  }
+  else if(index==SETTINGS_FLIP_ROW || index==SETTINGS_LANGUAGE_ROW) {
+    bool language=index==SETTINGS_LANGUAGE_ROW;unsigned value;
+    int loaded=portable_reader_preference_load(settings_store,language,&value);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,reader_unconfirmed[language]?"Unconfirmed":
+      loaded==PORTABLE_READER_UNAVAILABLE?"Unavailable":
+      loaded==PORTABLE_READER_INVALID?"Invalid saved value":
+      language?portable_reader_language_name(value):value?"On":"Off");
   }
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
@@ -418,6 +432,35 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   }
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(index==SETTINGS_FLIP_ROW || index==SETTINGS_LANGUAGE_ROW) {
+    bool language=index==SETTINGS_LANGUAGE_ROW;unsigned count=language?PORTABLE_READER_LANGUAGE_COUNT:2u;
+    int loaded=portable_reader_preference_load(settings_store,language,&reader_choice);
+    reader_message=reader_unconfirmed[language]?"Save unconfirmed - retry":
+      loaded==PORTABLE_READER_UNAVAILABLE?"Storage unavailable":
+      loaded==PORTABLE_READER_INVALID?"Invalid saved - default used":"";
+    sv_switch(language?SV_LANGUAGE:SV_FLIP);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))reader_choice=(reader_choice+1u)%count;
+      else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))reader_choice=(reader_choice+count-1u)%count;
+      if(save) {
+        if(portable_reader_preference_save(settings_store,language,reader_choice) &&
+           (language || paper_apply_flip(reader_choice))) {
+          reader_unconfirmed[language]=false;result=T5_APP_SETTING_UPDATED;break;
+        }
+        reader_unconfirmed[language]=true;reader_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?(language?"Language saved":"UI flip saved"):
+      reader_unconfirmed[language]?"Save unconfirmed - retry":"";
+    sv_switch(SV_ROOT);return result;
+  }
   if(index==SETTINGS_FACE_ROW) {
     int loaded=portable_desk_face_load(settings_store,&face_choice);
     face_message=face_unconfirmed?"Save unconfirmed - retry":
@@ -541,6 +584,7 @@ static bool settings_open(void) {
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   face_choice=PORTABLE_DESK_SEGMENTS;face_message="";face_unconfirmed=sleep_unconfirmed=false;
+  reader_choice=0;reader_message="";reader_unconfirmed[0]=reader_unconfirmed[1]=false;
   /* This profile is only qualified for the retaining monochrome paper UI. */
   if(!pp_enabled())return false;
 #endif

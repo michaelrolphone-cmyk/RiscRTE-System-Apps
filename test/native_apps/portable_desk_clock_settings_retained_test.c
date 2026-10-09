@@ -34,7 +34,7 @@ static void idle_editor(uint32_t ms) {
   if(!jumped && sv_page==editor_page){ticks+=60000;jumped=true;}
 }
 int main(int argc,char **argv) {
-  assert(argc==2);editor_page=atoi(argv[1])?SV_SLEEP:SV_DESK_FACE;scenario=100;
+  assert(argc==2);const unsigned pages[]={SV_DESK_FACE,SV_SLEEP,SV_FLIP,SV_LANGUAGE};assert(atoi(argv[1])<4);editor_page=pages[atoi(argv[1])];scenario=100;
   risc_runtime_api_v1 r=runtime_api;r.acquire=acquire_alarm;r.yield_ms=idle_editor;
   rt=&r;dg.struct_size=sizeof(dg);bg.struct_size=sizeof(bg);
   assert(acquire_alarm("display.output",1,0,&dg));display=dg.api;assert(display_info(NULL,&info));surface_format=RISC_DISPLAY_FORMAT_MONO1;paper_rotated=true;
@@ -47,7 +47,7 @@ int main(int argc,char **argv) {
   alarm_service_v1 service=service_api;service.step=guarded_step;alarms.api=&service;
   rtc_api.read=guarded_rtc;
   settings_render(0,0);
-  uint8_t result=settings_activate(0,editor_page==SV_DESK_FACE?SETTINGS_FACE_ROW:4);
+  uint8_t result=settings_activate(0,editor_page==SV_DESK_FACE?SETTINGS_FACE_ROW:editor_page==SV_SLEEP?4:editor_page==SV_FLIP?SETTINGS_FLIP_ROW:SETTINGS_LANGUAGE_ROW);
   assert(result==T5_APP_SETTING_NO_CHANGE && jumped && native_sleep_calls==1);
   assert(failed && portable_app_sleep_retained() && !stop_calls && !return_launches);
   unsigned live=grants,shown=displays,steps=service_steps;

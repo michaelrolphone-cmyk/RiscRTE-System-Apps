@@ -103,6 +103,10 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&prefs)) {
   (void)portable_time_format_load(prefs.api,&time_format);
   (void)portable_desk_face_load(prefs.api,&face);
+  unsigned language,flip;
+  (void)portable_reader_preference_load(prefs.api,true,&language);
+  (void)portable_reader_preference_load(prefs.api,false,&flip);
+  config.language=(uint8_t)language;config.flip_ui=(uint8_t)flip;
   (void)portable_sleep_load_profile(prefs.api,3u,PORTABLE_SLEEP_LIGHT,mode);
   if(!rt->release(&prefs))return false;
  }
@@ -119,24 +123,22 @@ static bool desk_rect(void *unused,int x,int y,int w,int h,bool black) {
  app->fill_rect(x,y,w,h,black);return portable_desk_adapter_ready();
 }
 static bool desk_scene(const portable_desk_config *config,int64_t minute) {
- twatch_rtc_time_v1 time={0};if(!desk_calendar(minute,&time))return false;
+ twatch_rtc_time_v1 time={0};
+ bool valid=minute>=1704067200LL && desk_calendar(minute,&time);
+ if(!portable_desk_adapter_flip(config->flip_ui))return false;
  /* All variable scene content comes from this retained config/minute pair.
   * Battery, transient notices, ambient state and current preferences cannot
   * contaminate exact old-image reconstruction after RAM loss. */
  portable_desk_adapter_begin();desk_rectangles=0;
  portable_desk_canvas canvas={NULL,app->screen_width(),app->screen_height(),desk_rect};
  if(!portable_desk_draw_face(&canvas,config->face,time.hour,time.minute,
-     config->time_format==PORTABLE_TIME_FORMAT_12,true))return false;
- char date[48];static const char *const weekdays[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
- static const char *const months[]={"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
- snprintf(date,sizeof(date),"%s %02u %s %04u",weekdays[time.weekday],time.day,months[time.month-1],time.year);
- int size=paper->measure(date,false);paper->text((canvas.width-size)/2,yscale(620),canvas.width,date,1,false,true);
- if(config->time_format==PORTABLE_TIME_FORMAT_12) {
-  const char *period=time.hour<12?"AM":"PM";size=paper->measure(period,false);
-  paper->text((canvas.width-size)/2,yscale(670),canvas.width,period,1,false,true);
- }
- const char *wake="PRESS POWER TO WAKE";size=paper->measure(wake,false);
- paper->text((canvas.width-size)/2,yscale(748),canvas.width,wake,1,false,true);
+     config->time_format==PORTABLE_TIME_FORMAT_12,valid))return false;
+ char date[32];
+ if(valid)snprintf(date,sizeof(date),"%04u-%02u-%02u",time.year,time.month,time.day);
+ portable_desk_adapter_caption(32,valid?date:portable_reader_clock_set_time(config->language));
+ if(valid && config->time_format==PORTABLE_TIME_FORMAT_12)
+  portable_desk_adapter_caption(canvas.height-78,time.hour<12?"AM":"PM");
+ portable_desk_adapter_caption(canvas.height-44,portable_reader_clock_wake(config->language));
  return !desk_cancelled();
 }
 static int desk_restore(void) {

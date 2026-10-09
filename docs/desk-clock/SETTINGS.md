@@ -1,3 +1,6 @@
+> Current presentation/preferences continuation: [Settings 1.3.6](READER_PRESENTATION.md).
+> The original 1.3.5 implementation evidence below remains historical.
+
 # Future X4 desk-clock Settings profile
 
 This is an opt-in shared Settings client, stacked on renderer source

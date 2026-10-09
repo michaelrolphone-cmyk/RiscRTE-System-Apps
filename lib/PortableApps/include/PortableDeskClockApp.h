@@ -31,6 +31,8 @@ bool portable_desk_adapter_sleep(void);
 /* Seed returns1 on success,0 if unavailable,-2 on uncertain provider failure. */
 int portable_desk_adapter_seed(void);
 void portable_desk_adapter_begin(void);
+bool portable_desk_adapter_flip(unsigned value);
+void portable_desk_adapter_caption(int y,const char *text);
 bool portable_desk_adapter_present(bool full);
 void portable_desk_adapter_invalidate(void);
 bool portable_desk_adapter_ready(void);

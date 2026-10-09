@@ -1,5 +1,5 @@
 /* Real paper Settings renderer/controller, bounded app-owned preferences. */
-#define PORTABLE_SETTINGS_VERSION "1.3.5"
+#define PORTABLE_SETTINGS_VERSION "1.3.6"
 #define PORTABLE_RTC_WALL_TIME
 #define PORTABLE_HOME_APP "default.elf"
 #define PORTABLE_INPUT_NAVIGATION
@@ -17,6 +17,7 @@
 #define main original_fixture_main
 #include "portable_settings_test.c"
 #undef main
+static uint8_t reader_bytes[2][8];static uint32_t reader_size[2];static unsigned reader_writes[2];
 static uint8_t face_bytes[8];static uint32_t face_size;
 static unsigned face_writes,sleep_writes,late_io,release_failures,nav_step;
 static unsigned nav_buttons[128];
@@ -25,6 +26,13 @@ static unsigned retained_page;
 static int32_t preference_get(void *c,const char *key,void *out,uint32_t cap,uint32_t *size) {
   if(retained)++late_io;
   if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)||!strcmp(key,PORTABLE_ALERT_KEY))return kv_get(c,key,out,cap,size);
+  if(!strcmp(key,PORTABLE_READER_LANGUAGE_KEY)||!strcmp(key,PORTABLE_READER_FLIP_KEY)) {
+    unsigned i=!strcmp(key,PORTABLE_READER_LANGUAGE_KEY);
+    if(read_error||(verify_error&&reader_writes[i]))return RISC_KEY_VALUE_IO;
+    *size=reader_size[i];if(!*size)return RISC_KEY_VALUE_NOT_FOUND;
+    if(*size>cap)return RISC_KEY_VALUE_BUFFER_SMALL;
+    memcpy(out,reader_bytes[i],*size);return RISC_KEY_VALUE_OK;
+  }
   bool face=!strcmp(key,PORTABLE_DESK_FACE_KEY);
   assert(face||!strcmp(key,PORTABLE_SLEEP_KEY));
   if(read_error||(verify_error&&(face_writes||sleep_writes)))return RISC_KEY_VALUE_IO;
@@ -35,6 +43,13 @@ static int32_t preference_get(void *c,const char *key,void *out,uint32_t cap,uin
 }
 static int32_t preference_put(void *c,const char *key,const void *in,uint32_t size) {
   (void)c;if(retained)++late_io;assert(size==4);
+  if(!strcmp(key,PORTABLE_READER_LANGUAGE_KEY)||!strcmp(key,PORTABLE_READER_FLIP_KEY)) {
+    unsigned i=!strcmp(key,PORTABLE_READER_LANGUAGE_KEY);++reader_writes[i];
+    if(put_error)return RISC_KEY_VALUE_IO;
+    memcpy(reader_bytes[i],in,size);reader_size[i]=size;
+    if(mismatch){reader_bytes[i][2]^=1;reader_bytes[i][3]=reader_bytes[i][2]^0xa5;}
+    return commit_error?RISC_KEY_VALUE_IO:RISC_KEY_VALUE_OK;
+  }
   bool face=!strcmp(key,PORTABLE_DESK_FACE_KEY);assert(face||!strcmp(key,PORTABLE_SLEEP_KEY));
   if(face)++face_writes;else ++sleep_writes;
   if(put_error)return RISC_KEY_VALUE_IO;
@@ -98,11 +113,17 @@ static void helpers(const risc_key_value_v1 *kv) {
   record_sleep(2);assert(portable_sleep_load(kv,&n)==0&&n==2);kv_size=0;assert(portable_sleep_load(kv,&n)==PORTABLE_SLEEP_MISSING&&n==2);
 }
 int main(int argc,char **argv) {
-  assert(argc==2);unsigned test=(unsigned)atoi(argv[1]);scenario=300;
+  assert(argc==2);unsigned test=(unsigned)atoi(argv[1]);scenario=test==106?301:300;
 #if PORTABLE_DISPLAY_ROTATION == 0 || defined(TEST_DESK_RGB)
   assert(app_module_init()!=0);app_module_fini();assert(!grants&&!subscriptions&&!frame_count);
   puts("Desk profile rejected unsupported display without I/O leaks");return 0;
 #endif
+  if(test==106) {
+    assert(app_module_init()!=0&&paper_preferences_retained&&failed&&paper_preferences_grant.api);
+    unsigned held=grants;assert(held==2&&!subscriptions&&!frame_count);
+    app_module_fini();assert(grants==held&&paper_preferences_grant.api);
+    assert(app_module_init()!=0&&grants==held);puts("Initial preference release failure retains exact grant and performs no later I/O");return 0;
+  }
   assert(app_module_init()==0);assert(width()==(PORTABLE_DISPLAY_ROTATION==90?480:800)&&height()==(PORTABLE_DISPLAY_ROTATION==90?800:480)&&pp_enabled());
 #ifdef TEST_DESK_SHORT
   info.width=600;info.height=400;
@@ -145,8 +166,88 @@ int main(int argc,char **argv) {
   }
   else if(test==55){sp_first=6;settings_render(0,8);capture("root-more");}
   else if(test==56){tap(3,350,730);tap(7,200,240);tap(11,200,570);tap(15,350,730);tap(19,100,730);app_main();assert(face_writes==1&&face_bytes[2]==5);}
-  else if(test==57){nav_buttons[2]=RISC_NAV_UP;nav_buttons[4]=RISC_NAV_CONFIRM;nav_buttons[7]=RISC_NAV_RIGHT;nav_buttons[9]=RISC_NAV_CONFIRM;nav_buttons[13]=nav_buttons[15]=RISC_NAV_BACK;app_main();assert(face_writes==1&&face_bytes[2]==1);}
+  else if(test==57){nav_buttons[2]=nav_buttons[4]=nav_buttons[6]=RISC_NAV_UP;nav_buttons[8]=RISC_NAV_CONFIRM;nav_buttons[11]=RISC_NAV_RIGHT;nav_buttons[13]=RISC_NAV_CONFIRM;nav_buttons[17]=nav_buttons[19]=RISC_NAV_BACK;app_main();assert(face_writes==1&&face_bytes[2]==1);}
   else if(test==58){scenario=218;result=settings_activate(0,SETTINGS_FACE_ROW);assert(return_launches==1&&!face_writes&&!sleep_writes);}
+  else if(test>=59&&test<=80) {
+    unsigned language=test-59;reader_choice=language;
+    for(unsigned i=0;i<language;++i)nav_buttons[2+i*2]=RISC_NAV_RIGHT;
+    nav_buttons[2+language*2]=RISC_NAV_CONFIRM;
+    result=settings_activate(0,SETTINGS_LANGUAGE_ROW);expected=1;
+    assert(reader_bytes[1][2]==language&&reader_writes[1]==1);
+    sv_switch(SV_LANGUAGE);char name[32];snprintf(name,sizeof(name),"language-%02u",language);capture(name);
+  }
+  else if(test==81 || test==82) {
+    nav_buttons[2]=RISC_NAV_RIGHT;nav_buttons[4]=test==81?RISC_NAV_CONFIRM:RISC_NAV_BACK;
+    result=settings_activate(0,SETTINGS_FLIP_ROW);expected=test==81;
+    assert(paper_flip_ui==(test==81)&&reader_writes[0]==(test==81));capture("flip-saved");
+  }
+  else if(test>=83&&test<=86) {
+    bool language=test>=85;nav_buttons[3]=RISC_NAV_HOME;
+    result=settings_activate(0,language?SETTINGS_LANGUAGE_ROW:SETTINGS_FLIP_ROW);
+    assert(return_launches==1&&!reader_writes[0]&&!reader_writes[1]);
+  }
+  else if(test>=87&&test<=96) {
+    bool language=test>=92;unsigned error=(test-87)%5;
+    put_error=error==0;commit_error=error==1;verify_error=error==2;mismatch=error==3;read_error=error==4;
+    nav_buttons[2]=RISC_NAV_RIGHT;nav_buttons[4]=RISC_NAV_CONFIRM;nav_buttons[8]=RISC_NAV_BACK;
+    result=settings_activate(0,language?SETTINGS_LANGUAGE_ROW:SETTINGS_FLIP_ROW);
+    assert(reader_writes[language]==1&&reader_unconfirmed[language]&&!paper_flip_ui);
+  }
+  else if(test==97) {
+    for(unsigned language=0;language<2;++language) {
+      unsigned count=language?22:2,n=99;
+      assert(portable_reader_preference_load(&kv,language,&n)==1&&n==0);
+      assert(!portable_reader_preference_save(&kv,language,count));
+      assert(portable_reader_preference_load(NULL,language,&n)==3&&n==0);
+      assert(portable_reader_preference_load(&kv,language,NULL)==2);
+      for(unsigned j=0;j<count;++j) {
+        assert(portable_reader_preference_save(&kv,language,j));
+        assert(portable_reader_preference_load(&kv,language,&n)==0&&n==j);
+        unsigned before=reader_writes[language];assert(portable_reader_preference_save(&kv,language,j)&&reader_writes[language]==before);
+      }
+      for(unsigned j=0;j<4;++j) {reader_bytes[language][j]^=0x80;assert(portable_reader_preference_load(&kv,language,&n)==2&&n==0);reader_bytes[language][j]^=0x80;}
+      for(unsigned j=1;j<=8;++j)if(j!=4){reader_size[language]=j;assert(portable_reader_preference_load(&kv,language,&n)==2&&n==0);}
+      reader_size[language]=4;reader_bytes[language][2]=count;reader_bytes[language][3]=count^0xa5;assert(portable_reader_preference_load(&kv,language,&n)==2&&n==0);
+    }
+  }
+  else if(test==98) {
+    /* Physical pixels rotate exactly; logical touch follows, and old gesture
+     * state cannot survive a toggle or a held contact after one. */
+    uint8_t original[sizeof(framebuffer)];memcpy(original,framebuffer,sizeof(original));
+    for(unsigned cycle=0;cycle<4;++cycle) {
+      input_pending=true;input_sample=(portable_touch_sample){.released=true,.tap_eligible=true};touch.neutral=touch.down=true;
+      assert(paper_apply_flip(!(cycle&1))&&!input_pending&&!touch.neutral&&!touch.down);
+      settings_render(0,0);
+      for(unsigned y=0;y<480;++y)for(unsigned x=0;x<800;++x) {
+        unsigned px=cycle&1?x:799-x,py=cycle&1?y:479-y;
+        assert(!!(framebuffer[y*100+x/8]&(0x80u>>(x&7)))==!!(original[py*100+px/8]&(0x80u>>(px&7))));
+      }
+      portable_touch_sample sample={.valid=true,.down=true,.x=11,.y=25};paper_orient_input(&sample);
+      assert(sample.x==(cycle&1?11:468)&&sample.y==(cycle&1?25:774));
+    }
+    assert(paper_apply_flip(1));
+    tap(polls+1,40,40);portable_touch_sample sample;input_service();input_take(&sample);
+    assert(!sample.tap_eligible);
+    assert(!paper_apply_flip(2));failed=true;assert(!paper_apply_flip(0)&&paper_flip_ui);failed=false;
+  }
+  else if(test==99||test==100) {
+    reader_choice=test==99?0:21;sv_switch(SV_LANGUAGE);capture(test==99?"language-first":"language-last");
+  }
+  else if(test==101) {
+    nav_buttons[2]=RISC_NAV_RIGHT;nav_buttons[4]=RISC_NAV_CONFIRM;
+    assert(settings_activate(0,SETTINGS_FLIP_ROW)==T5_APP_SETTING_UPDATED&&paper_flip_ui);
+    memset(nav_buttons,0,sizeof(nav_buttons));input_count=0;
+    tap(polls+3,129,499);tap(polls+7,129,69);
+    result=settings_activate(0,SETTINGS_FLIP_ROW);expected=1;
+    assert(!paper_flip_ui&&reader_writes[0]==2&&reader_bytes[0][2]==0);
+    assert(!input_pending&&!touch.down&&!touch.neutral);
+  }
+  else if(test>=102&&test<=105) {
+    bool language=test>=104;tap(3,350,300);
+    if(test%2)fail_poll_at=4;else gap_at=4;
+    tap(7,100,730);result=settings_activate(0,language?SETTINGS_LANGUAGE_ROW:SETTINGS_FLIP_ROW);
+    assert(!reader_writes[0]&&!reader_writes[1]&&!paper_flip_ui);
+  }
   else assert(!"Unknown scenario");
   assert((result==T5_APP_SETTING_UPDATED)==(expected!=0));assert(!writes&&!format_writes);
   app_module_fini();assert(!grants&&!subscriptions&&!frame_count);

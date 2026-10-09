@@ -9,7 +9,15 @@ static void pp_circle(int x,int y,int radius,bool black) {
 }
 static int pp_measure(const char *s,bool heading) {
   int n=0;if(!s)return 0;
-  for(unsigned i=0;i<96 && s[i];i++) {unsigned c=(unsigned char)s[i];if(c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';n+=rpp_text[(heading?0:95)+c-32].advance_q4;}
+  for(unsigned i=0;i<96 && s[i];i++) {
+    unsigned c=(unsigned char)s[i];
+#ifdef PORTABLE_PAPER_PREFERENCES
+    if(c==0xc2 && (unsigned char)s[i+1]==0xb0){n+=160;++i;continue;}
+#endif
+    if(c>='a'&&c<='z')c-=32;
+    if(c<32||c>126)c='?';
+    n+=rpp_text[(heading?0:95)+c-32].advance_q4;
+  }
   return (n+15)/16;
 }
 static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool heading,bool black) {
@@ -17,7 +25,16 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:1;
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
-    unsigned c=(unsigned char)s[k];if(!(scale&PAPER_TEXT_LITERAL)&&c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
+    unsigned c=(unsigned char)s[k];
+#ifdef PORTABLE_PAPER_PREFERENCES
+    if(c==0xc2 && (unsigned char)s[k+1]==0xb0) {
+      if((pen+160+15)/16>x+max_width)break;
+      pp_circle(pen/16+4,y+4,3,black);pp_circle(pen/16+4,y+4,1,!black);
+      pen+=160;++k;continue;
+    }
+#endif
+    if(!(scale&PAPER_TEXT_LITERAL)&&c>='a'&&c<='z')c-=32;
+    if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
     int advance=(int)g->advance_q4*zoom;
     if((pen+advance+15)/16>x+max_width)break;

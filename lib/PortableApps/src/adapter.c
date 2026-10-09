@@ -4,6 +4,17 @@
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #include "PortableTouch.h"
+#if defined(PORTABLE_DESK_CLOCK) || defined(PORTABLE_SETTINGS_X4_DESK_CLOCK)
+#ifndef PORTABLE_PAPER_PREFERENCES
+#define PORTABLE_PAPER_PREFERENCES
+#endif
+#endif
+#ifdef PORTABLE_PAPER_PREFERENCES
+#include "PortableReaderPreferences.h"
+static bool paper_flip_ui,paper_orientation_dirty,paper_preferences_retained;
+static risc_runtime_capability_v1 paper_preferences_grant;
+static void paper_orient_input(portable_touch_sample *sample);
+#endif
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
 #ifdef PORTABLE_DESK_CLOCK
@@ -230,6 +241,9 @@ static void input_service(void) {
   next=(portable_touch_sample){.valid=desk_touch_neutral};
  }
 #endif
+#ifdef PORTABLE_PAPER_PREFERENCES
+ paper_orient_input(&next);
+#endif
  input_sampled_at=millis_now();
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(failed)return;
@@ -319,7 +333,20 @@ static void handoff_finish(void) {
 #endif
 static int32_t width(void) { return paper_rotated?info.height:info.width; }
 static int32_t height(void) { return paper_rotated?info.width:info.height; }
+#ifdef PORTABLE_PAPER_PREFERENCES
+static void paper_orient_input(portable_touch_sample *sample) {
+  if(paper_flip_ui && sample->valid && !sample->cancelled && (sample->down || sample->released)) {
+    if(sample->x>=width() || sample->y>=height()) {
+      *sample=(portable_touch_sample){.cancelled=true};touch.neutral=touch.down=false;return;
+    }
+    sample->x=(uint16_t)(width()-1-sample->x);sample->y=(uint16_t)(height()-1-sample->y);
+  }
+}
+#endif
 static void native_point(int *x,int *y) {
+#ifdef PORTABLE_PAPER_PREFERENCES
+  if(paper_flip_ui){*x=width()-1-*x;*y=height()-1-*y;}
+#endif
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
@@ -521,6 +548,9 @@ const paper_presentation *paper_presentation_get(void) {
 }
 #endif
 static void present(bool full) {
+#ifdef PORTABLE_PAPER_PREFERENCES
+  if(paper_orientation_dirty)full=true;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
   desk_present_complete=false;
 #endif
@@ -631,6 +661,9 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+#ifdef PORTABLE_PAPER_PREFERENCES
+      paper_orientation_dirty=false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
       desk_present_complete=true;
 #endif
@@ -780,7 +813,51 @@ static bool idle_sleep(void) {
   return !failed;
 }
 #endif
+#ifdef PORTABLE_PAPER_PREFERENCES
+/* Only a settled foreground can change orientation. Invalidate both physical
+ * history and modal restoration images before the next complete repaint.
+ * Do not touch retained custody; do not apply while a modal owns resources. */
+static inline bool paper_apply_flip(unsigned value) {
+  if(failed || value>1u || !pp_enabled() || surface_format!=RISC_DISPLAY_FORMAT_MONO1)return false;
+  if(paper_flip_ui==(value!=0))return true;
+#ifdef PORTABLE_ALARM_CLIENT
+  if(native_sleep_retained || alarm_modal || !display_settled)return false;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick_modal || pqa_visible(&quick.ui) || pqa_capture(&quick.ui) || quick.ui.pending)return false;
+  pqa_cancel(&quick.ui);quick_replay_pending=quick_replay_delivery=false;
+#endif
+  if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
+  paper_previous_valid=previous_valid=false;
+#ifdef PORTABLE_ALARM_CLIENT
+  alarm_pixels_valid=false;
+#endif
+  input_pending=false;input_sample=(portable_touch_sample){0};
+  touch.neutral=touch.down=false;touch.home_neutral=touch.home_down=false;
+  navigation_pending=0;home_pending=crown_pending=false;
+  nova_contact=(springboard_contact){0};
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+  nu_gesture=false;
+#endif
+#ifdef PORTABLE_INPUT_NAVIGATION
+  input_navigation_reset();if(failed)return false;
+#endif
+  paper_flip_ui=value!=0;paper_orientation_dirty=true;return true;
+}
+#endif
 #ifdef PORTABLE_DESK_CLOCK
+bool portable_desk_adapter_flip(unsigned value) {return paper_apply_flip(value);}
+void portable_desk_adapter_caption(int y,const char *text) {
+  int size=0;
+  for(unsigned i=0;text && text[i] && i<96;++i) {
+    unsigned c=(unsigned char)text[i];if(c<32||c>126)c='?';
+    size+=rpp_text[95+c-32].advance_q4;
+  }
+  pp_text((width()-(size+15)/16)/2,y,width(),text,1|PAPER_TEXT_LITERAL,false,true);
+}
 /* These are hidden app links, never ELF exports. Seed both the provider's
  * physical-image reconstruction and the adapter's damage comparison cache. */
 bool portable_desk_adapter_ready(void) {
@@ -1283,6 +1360,9 @@ static int initialize(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(desk_phase!=DESK_COLD || native_sleep_retained)return -1;
 #endif
+#ifdef PORTABLE_PAPER_PREFERENCES
+  if(paper_preferences_retained)return -1;
+#endif
   rt = risc_runtime_get_api(1);
   if (!rt || rt->api_version != 1 ||
       rt->struct_size < RISC_RUNTIME_CAPABILITIES_V1_SIZE || !rt->acquire ||
@@ -1292,6 +1372,9 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+#ifdef PORTABLE_PAPER_PREFERENCES
+  paper_flip_ui=paper_orientation_dirty=false;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
@@ -1343,6 +1426,23 @@ static int initialize(void) {
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
+#ifdef PORTABLE_PAPER_PREFERENCES
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && pp_enabled()) {
+    paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};unsigned value=0;
+    if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant)) {
+      (void)portable_reader_preference_load(paper_preferences_grant.api,false,&value);
+      if(!rt->release(&paper_preferences_grant)) {
+        /* Preserve the actual grant and every resource on uncertain cleanup. */
+        paper_preferences_retained=failed=true;
+#ifdef PORTABLE_ALARM_CLIENT
+        native_sleep_retained=true;
+#endif
+        return -1;
+      }
+    }
+    paper_flip_ui=value!=0;
+  }
+#endif
 #ifdef PORTABLE_NOVA_UI
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
@@ -1394,6 +1494,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_finalize();
 #else
+#ifdef PORTABLE_PAPER_PREFERENCES
+  if(paper_preferences_retained)return;
+#endif
   if (!rt)
     return;
 #ifdef PORTABLE_ALARM_CLIENT

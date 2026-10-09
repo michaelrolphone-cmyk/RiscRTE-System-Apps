@@ -31,6 +31,39 @@ for sanitizer in (False,True):
     if case==1:subprocess.run([str(exe),'0',str(state)],env=env,check=True,timeout=20)
     subprocess.run([str(exe),str(case),str(state)],env=dict(env,PAPER_FRAME=str(capture)),check=True,timeout=20)
     Image.open(capture).transpose(Image.Transpose.ROTATE_270).save(a.evidence_dir/(label+'.png'))
+  # Check raw physical pixels without requiring an image library in CI.
+  if not sanitizer:
+   def raster(face,extra):
+    capture=out/'assert-scene.pbm'
+    subprocess.run([str(exe),'0','-',str(face)],env=dict(env,PAPER_FRAME=str(capture),**extra),check=True,timeout=20,stdout=subprocess.DEVNULL)
+    return capture.read_bytes().split(b'\n',2)[2]
+   reverse=bytes(int(f'{i:08b}'[::-1],2) for i in range(256))
+   invalid=raster(0,{'READER_EPOCH':'946684800'})
+   english=raster(0,{})
+   for language in range(22):assert raster(0,{'READER_LANGUAGE':str(language)})==english
+   for face in range(6):
+    assert raster(face,{'READER_FLIP':'1'})==raster(face,{})[::-1].translate(reverse)
+    assert raster(face,{'READER_EPOCH':'946684800'})==invalid
+    assert raster(face,{'READER_EPOCH':'946684800','READER_FLIP':'1'})==invalid[::-1].translate(reverse)
+  boundary=out/'invalid-to-valid.bin'
+  for case in (0,1):subprocess.run([str(exe),str(case),str(boundary),'5'],env=dict(env,READER_EPOCH='1704067197'),check=True,timeout=20)
+  # Same physical output rotated 180 degrees; every fresh process reconstructs
+  # its exact old frame using retained orientation and language, not live UI.
+  reader_env=dict(env,READER_FLIP='1',READER_LANGUAGE='21')
+  for face in range(6):
+   state=out/f'flipped-{face}.bin'
+   for cycle in range(62):subprocess.run([str(exe),'1' if cycle else '0',str(state),str(face)],env=reader_env,check=True,timeout=20,stdout=subprocess.DEVNULL)
+   # A changed preference must use a clean full frame, never the old seed.
+   subprocess.run([str(exe),'1',str(state),str(face)],env=dict(env,READER_LANGUAGE='1'),check=True,timeout=20)
+  for face in range(6):
+   state=out/f'invalid-{face}.bin'
+   for cycle in range(2):subprocess.run([str(exe),'1' if cycle else '0',str(state),str(face)],env=dict(reader_env,READER_EPOCH='946684800'),check=True,timeout=20)
+  if a.evidence_dir and not sanitizer:
+   for label,extra in [('flipped',{'READER_FLIP':'1','READER_LANGUAGE':'21'}),('invalid',{'READER_EPOCH':'946684800'}),('invalid-flipped',{'READER_EPOCH':'946684800','READER_FLIP':'1'})]:
+    for face in range(6):
+     capture=out/'reader.pbm'
+     subprocess.run([str(exe),'0','-',str(face)],env=dict(env,PAPER_FRAME=str(capture),**extra),check=True,timeout=20)
+     Image.open(capture).transpose(Image.Transpose.ROTATE_270).save(a.evidence_dir/f'{label}-{face}.png')
   state12=out/'format12.bin'
   subprocess.run([str(exe),'18',str(state12)],env=env,check=True,timeout=20)
   subprocess.run([str(exe),'18',str(state12)],env=env,check=True,timeout=20)

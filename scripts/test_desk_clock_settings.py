@@ -15,8 +15,8 @@ for sanitized in (False,True):
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,
         '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
         str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_desk_clock_settings_test.c'),'-o',str(exe)],check=True)
-    for scenario in range(59):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
-print('Desk Settings: 59 scenarios in plain and ASan/UBSan passed')
+    for scenario in range(107):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
+print('Desk Settings: 107 scenarios in plain and ASan/UBSan passed')
 
 for sanitized in (False,True):
     exe=OUT/('retained-san' if sanitized else 'retained')
@@ -24,7 +24,7 @@ for sanitized in (False,True):
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,
         '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
         str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_desk_clock_settings_retained_test.c'),'-o',str(exe)],check=True)
-    for scenario in range(2):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
+    for scenario in range(4):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
 
 for definition in ('-DPORTABLE_DISPLAY_ROTATION=0','-DTEST_DESK_RGB'):
     for sanitized in (False,True):
@@ -40,14 +40,14 @@ for sanitized in (False,True):
     subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,
         '-DTEST_DESK_SHORT','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
         str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_desk_clock_settings_test.c'),'-o',str(exe)],check=True)
-    for scenario in [0,*range(47,55)]:subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
-print('Desk Settings: 144 controller, persistence, retained and display-profile executions passed')
+    for scenario in [0,*range(47,55),59,80,81,82,97]:subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
+print('Desk Settings: 254 controller, persistence, retained and display-profile executions passed')
 
 if args.evidence:
     from PIL import Image, ImageDraw
     captures=OUT/'captures';captures.mkdir(exist_ok=True)
-    evidence=ROOT/'docs/desk-clock/settings-evidence';evidence.mkdir(parents=True,exist_ok=True)
-    for scenario in [19,20,21,22,*range(32,40),55]:
+    evidence=ROOT/'docs/desk-clock/reader-settings-evidence';evidence.mkdir(parents=True,exist_ok=True)
+    for scenario in [19,20,21,22,*range(32,40),55,81,99,100]:
         subprocess.run([str(OUT/'settings'),str(scenario)],env=dict(os.environ,DESK_SETTINGS_FRAMES=str(captures)),check=True,timeout=10)
     frames=[];record={}
     for path in sorted(captures.glob('*.pbm')):
