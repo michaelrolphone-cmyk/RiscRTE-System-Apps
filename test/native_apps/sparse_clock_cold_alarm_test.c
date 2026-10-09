@@ -112,7 +112,10 @@ static bool wait_frame(void *c,risc_display_present_token_v1 token,uint32_t time
 static bool submit_frame(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *rects,size_t count,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
  safe();alarm_status_v1 state={.struct_size=sizeof(state)};assert(service->status(service->context,&state)==ALARM_OK);
  if(state.state==ALARM_STATE_BLOCKED){memcpy(error_pixels,pixels,sizeof(pixels));error_rendered=true;}
- return submit(c,frame,rects,count,options,token);
+ (void)c;assert(frame==1&&frames&&options&&token);assert(count<=8);
+ assert(options->intent==RISC_DISPLAY_PRESENT_QUALITY||options->intent==RISC_DISPLAY_PRESENT_CLEAN);
+ for(size_t i=0;i<count;i++){const risc_display_rect_v1 *r=&rects[i];assert(rects&&r->x>=0&&r->y>=0&&r->width&&r->height);assert((unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}
+ frames=0;*token=++presents;return true;
 }
 static int32_t read_record(void *c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1 *out,uint32_t *cause){(void)c;(void)type;(void)schema;(void)out;safe();assert(!provider_starts&&!promoted&&!presents);*cause=which("reset-empty")?RISC_BOOT_RESET:RISC_BOOT_POWER_ON;return RISC_RETAINED_WAKE_ABSENT;}
 static int32_t stage_record(void *c,const risc_retained_wake_record_v1 *value){(void)c;(void)value;assert(!"Cold foreground test must not stage deep sleep");return RISC_RETAINED_WAKE_INVALID;}
@@ -188,7 +191,7 @@ int main(int argc,char **argv){assert(argc==2);test=argv[1];scenario=0;native_va
  bool baseline=getenv("EXPECT_DELIVERED_FAILURE")!=NULL;
  bool error_expected=baseline||fail_policy()||ambiguous()||which("invalid-rtc")||which("seed-error");
  if(error_expected){assert(state.state==ALARM_STATE_BLOCKED);assert(state.error==(which("bad-zone")||which("unreadable-zone")?ALARM_STORAGE:ALARM_RTC));assert(error_rendered&&presents>=3);}
- else {assert(state.state==ALARM_STATE_READY&&state.error==ALARM_OK&&!state.output_uncertain&&!error_rendered&&presents==1);assert(alarm_native_reads);}
+ else {assert(state.state==ALARM_STATE_READY&&state.error==ALARM_OK&&!state.output_uncertain&&!error_rendered&&presents==2);assert(alarm_native_reads);}
  if(baseline){assert(!native_valid&&!seeds&&!rtc_reads&&!ledger_writes);}
  else if(expect_seed()){assert(seeds==1&&rtc_reads==1&&native_valid);assert(seed_epoch==INT64_C(1791331197)+(which("missing-basis")?21600:0));assert(seed_event<first_alarm_event&&native_release_event>seed_event);}
  else if(which("seed-error")){assert(seeds==1&&rtc_reads==1&&!native_valid);}

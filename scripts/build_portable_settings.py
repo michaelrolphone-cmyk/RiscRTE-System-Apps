@@ -102,7 +102,7 @@ def build(args,parser=None):
     version_path=('lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
-    if getattr(args,'tagged_alarm_utilities',None):version='1.3.8'
+    if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
     includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'

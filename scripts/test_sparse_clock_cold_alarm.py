@@ -64,6 +64,7 @@ def main():
     for name in ('utilities', 'x4', 'runtime', 'sdk'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--evidence', type=Path)
+    parser.add_argument('--current-x4-ref', default='HEAD', help='Current deployment hook; delivered control stays pinned')
     args = parser.parse_args()
     system = args.system.resolve()
     rows = []
@@ -74,12 +75,16 @@ def main():
         archive(args.utilities, UTILITIES, utilities, 'Services/alarm_service/service.c', 'lib/Alarm/include')
         archive(args.x4, X4, x4, 'minimal/apps', 'minimal/drivers/x4pro_power')
         archive(args.runtime, RUNTIME, runtime, 'sdk')
+        current_x4 = stage / 'current-x4'
+        current_x4_ref = git(args.x4, 'rev-parse', args.current_x4_ref).decode().strip()
+        archive(args.x4, current_x4_ref, current_x4, 'minimal/apps', 'minimal/drivers/x4pro_power')
         cc = os.environ.get('CC', 'cc')
         for sanitized in (False, True):
             for quick in (False, True):
                 error_frames = {}
                 for label, source_root in (('delivered', baseline), ('current', system)):
                     build = stage / f'{label}-{sanitized}-{quick}'
+                    deployment = x4 if label == 'delivered' else current_x4
                     includes = build / 'include'
                     shutil.copytree(source_root / 'lib/PortableApps/include', includes)
                     shutil.copytree(source_root / 'lib/PortableApps/time', build / 'time')
@@ -92,13 +97,13 @@ def main():
                     if sanitized:
                         flags += ['-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-no-pie']
                     include_flags = ['-I' + str(includes), '-I' + str(source_root / 'lib/NativeApps/include'),
-                                     '-I' + str(x4 / 'minimal/drivers/x4pro_power')]
+                                     '-I' + str(deployment / 'minimal/drivers/x4pro_power')]
                     provider = build / 'alarm-provider.o'
                     run([cc, *flags, *include_flags, *['-D' + name for name in PROVIDER_FLAGS],
                          '-c', utilities / 'Services/alarm_service/service.c', '-o', provider])
                     sources = [source_root / 'Apps/paper_clock.c',
                                *[source_root / 'lib/PortableApps/src' / name for name in SOURCES],
-                               x4 / 'minimal/apps/portable_sleep.c', ROOT / 'test/native_apps/sparse_clock_cold_alarm_test.c']
+                               deployment / 'minimal/apps/portable_sleep.c', ROOT / 'test/native_apps/sparse_clock_cold_alarm_test.c']
                     app_flags = list(APP_FLAGS)
                     if quick:
                         app_flags += ['PORTABLE_QUICK_ACTIONS', 'PORTABLE_QUICK_RADIOS']
@@ -126,7 +131,7 @@ def main():
         receipt = {'purpose': 'production Clock/controller/adapter/X4 client plus actual native-UTC alarm provider; host boundary doubles',
                    'delivered_system': DELIVERED, 'current_system': git(system, 'rev-parse', 'HEAD').decode().strip(),
                    'current_system_dirty': bool(git(system, 'status', '--porcelain', '--untracked-files=no').strip()),
-                   'utilities': UTILITIES, 'x4': X4, 'runtime_sdk': RUNTIME,
+                   'utilities': UTILITIES, 'delivered_x4': X4, 'current_x4': current_x4_ref, 'runtime_sdk': RUNTIME,
                    'driver_headers': {name: sha(args.sdk / name) for name in DRIVER_HEADERS},
                    'provider_sha256': sha(utilities / 'Services/alarm_service/service.c'),
                    'clock_sha256': sha(system / 'Apps/paper_sparse_clock.inc'),
