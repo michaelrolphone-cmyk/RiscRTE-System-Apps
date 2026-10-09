@@ -121,6 +121,7 @@ static void source_yield(uint32_t delay) {
   if(close_quick_on_yield&&native_reads)pqa_close(&quick.ui);
 }
 #endif
+#ifndef TEST_NATIVE_SOURCE_NO_MAIN
 int main(int argc,char **argv) {
   assert(argc==2);scenario=argv[1];
   assert(app_module_init()==0&&!portable_adapter_retained());
@@ -200,3 +201,5 @@ int main(int argc,char **argv) {
     argv[1],zone_reads,native_reads,retained?"true":"false");
   return 0;
 }
+
+#endif

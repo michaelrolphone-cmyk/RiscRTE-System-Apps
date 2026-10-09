@@ -3,9 +3,11 @@
 import argparse,hashlib,json,os,re,shutil,subprocess
 from pathlib import Path
 import portable_quick_build
+import portable_native_toolbar_build
 ROOT=Path(__file__).resolve().parents[1]
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
+    portable_native_toolbar_build.validate(args,parser)
     if not re.fullmatch(r'[a-z][a-z0-9.-]*',args.storage_capability):raise ValueError('Invalid storage capability')
     if not re.fullmatch(r'[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.elf',args.return_app) or any(part in ('.','..') for part in args.return_app.split('/')):raise ValueError('Return app must be a normalized installed relative ELF path')
     if not 0<=args.storage_instance<=0x7fffffff:raise ValueError('Storage instance is out of range')
@@ -26,14 +28,15 @@ def build(args,parser=None):
         args.quick_actions=args.quick_radios=True
         flags+=['-DPORTABLE_RTC_UTC8_DENVER']
     if args.wall_time:flags+=['-DPORTABLE_RTC_WALL_TIME']
+    includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'file-browser');flags+=native_flags
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports={'app_main','app_module_init','app_module_fini'}
     mapping=out/'file_browser.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
     catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     sources=[ROOT/'Apps/file_browser.c',ROOT/'lib/PortableApps/src/adapter.c',catalog]
-    sources+=quick_sources
+    sources+=quick_sources+native_sources
     elf=out/'file_browser.elf'
-    subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)],check=True)
+    subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)],check=True)
     symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
     imports={x.split()[-1] for x in symbols.splitlines() if ' U ' in ' '+x}
     actual={x.split()[-1] for x in symbols.splitlines() if len(x.split())>=3 and x.split()[-2] in ('T','D','B','R')}
@@ -52,10 +55,17 @@ def build(args,parser=None):
     if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
     portable_quick_build.requirements(args,manifest['requires'])
+    portable_native_toolbar_build.requirements(args,manifest['requires'])
+    if native_receipt:manifest['version']=native_receipt['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
+    portable_native_toolbar_build.record(args,record,manifest,native_receipt)
+    if native_receipt:
+        for p in ['scripts/portable_native_toolbar_build.py','scripts/portable_alarm_build.py',native_receipt['profile_source']]:
+            record['source_sha256'][p]=hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+    portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     (out/'file_browser-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     licenses=out/'licenses';licenses.mkdir(exist_ok=True)
     shutil.copyfile(ROOT/'LICENSE',licenses/'System-Apps-LICENSE.txt')
@@ -66,4 +76,4 @@ def build(args,parser=None):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=0);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);build(p.parse_args(),p)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_native_toolbar_build.options(p);build(p.parse_args(),p)

@@ -11,6 +11,7 @@ import os
 import re
 from pathlib import Path
 import portable_quick_build
+import portable_native_toolbar_build
 import shutil
 import subprocess
 
@@ -41,7 +42,7 @@ def catalog_source(path):
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--catalog",type=Path,help="Explicit bounded installed/admitted deployment catalog JSON")
-    parser.add_argument("--display-rotation",type=int,choices=[0,90],default=0,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
+    parser.add_argument("--display-rotation",type=int,choices=[0,90],default=None,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
     parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
     parser.add_argument("--nova-ui",action="store_true",help="Settings-derived 240x240 shared utility profile")
     parser.add_argument("--alarm-client",action="store_true",help="Explicit alarm.service foreground overlay consumer")
@@ -54,7 +55,9 @@ def build():
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
     portable_quick_build.options(parser)
+    portable_native_toolbar_build.options(parser)
     args=parser.parse_args()
+    portable_native_toolbar_build.validate(args,parser)
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.wall_time:flags.append("-DPORTABLE_RTC_WALL_TIME")
@@ -78,6 +81,7 @@ def build():
     paper_notices=notices/"paper";paper_notices.mkdir(exist_ok=True)
     for name in ["LICENSE-Orbitron.txt","LICENSE-Rajdhani.txt","SOURCES.json"]:
         shutil.copyfile(ROOT/"lib/PortableApps/paper_fonts"/name,paper_notices/name)
+    includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'springboard');flags+=native_flags
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'springboard.map'
@@ -86,11 +90,11 @@ def build():
     catalog_text,catalog_record=catalog_source(args.catalog)
     catalog.write_text(catalog_text)
     elf = out/'springboard.elf'
-    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources
+    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources+native_sources
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror', *flags,
-        '-I'+str(ROOT/'lib/PortableApps/include'),
+        '-I'+str(includes),
         '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
@@ -108,7 +112,7 @@ def build():
         str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),
         '-o',str(validator)],check=True,timeout=60)
     subprocess.run([str(validator),str(elf)],check=True,timeout=60)
-    version=json.loads((ROOT/'Apps/springboard.json').read_text())['version']
+    version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/springboard.json').read_text())['version']
     manifest={'type':'application','id':'springboard','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'springboard.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'board.battery','api':1},
@@ -117,6 +121,7 @@ def build():
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
     if args.denver or args.wall_time: manifest['requires'].append({'capability':'rtc.clock','api':2})
     portable_quick_build.requirements(args,manifest['requires'])
+    portable_native_toolbar_build.requirements(args,manifest['requires'])
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/PaperBattery.h','scripts/portable_quick_build.py','Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
@@ -136,6 +141,12 @@ def build():
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    portable_native_toolbar_build.record(args,record,manifest,native_receipt)
+    if native_receipt:
+        record['build_defines']=flags
+        for p in ['scripts/build_portable_springboard.py','scripts/portable_native_toolbar_build.py','scripts/portable_alarm_build.py',native_receipt['profile_source']]:
+            record['source_sha256'][p]=hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+    portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     (out/'springboard-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Springboard: target layout, ELF validator, import/export checks passed')
 
