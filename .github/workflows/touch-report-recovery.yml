@@ -1,0 +1,36 @@
+name: X4 touch report recovery
+on:
+  pull_request:
+  push:
+    branches: [main, fix/x4-touch-report-recovery]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-and-xtensa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native and legacy recovery with sanitizers
+        run: python scripts/test_touch_report_recovery.py
+      - name: Install pinned Xtensa compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Compile the production native consumer for ESP32-S3
+        run: >-
+          python scripts/test_touch_report_recovery.py
+          --target-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x4-touch-recovery-${{ github.event.pull_request.head.sha || github.sha }}
+          path: build/touch-report-recovery/
+          if-no-files-found: error
+          retention-days: 14
