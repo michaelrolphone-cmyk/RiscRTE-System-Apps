@@ -3,6 +3,7 @@
 import argparse,hashlib,json,os,shutil,subprocess
 from pathlib import Path
 import portable_quick_build
+import portable_alarm_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
@@ -16,10 +17,12 @@ def build():
  p.add_argument("--sparse-start",action="store_true",help="Opt-in native-time demand Clock; requires desk clock and canonical invocation-retention Runtime SDK")
  p.add_argument("--retained-wake-sdk",type=Path,help="Canonical Runtime app SDK containing RiscRetainedWakeV1.h")
  portable_quick_build.options(p)
+ portable_alarm_build.options(p)
  a=p.parse_args()
  if bool(a.local_sleep_source)!=bool(a.sleep_capability) or (a.local_sleep_source and (not a.navigation or not a.alarm_client or not a.sleep_sdk)):p.error('Local sleep requires source, capability, SDK, navigation and alarm client')
  if a.desk_clock and (not a.local_sleep_source or not a.retained_wake_sdk):p.error('Desk clock requires local sleep and retained-wake SDK')
  if a.desk_clock and not (a.retained_wake_sdk/'RiscRetainedWakeV1.h').is_file():p.error('Missing canonical RiscRetainedWakeV1.h')
+ if a.tagged_alarm_utilities and not a.sparse_start:p.error('Tagged alarm Clock requires the native sparse profile')
  if a.sparse_start:
   if not a.desk_clock:p.error('Sparse startup requires --desk-clock')
   if a.sleep_capability!='x4.power':p.error('Sparse startup requires the X4 x4.power contract')
@@ -45,6 +48,7 @@ def build():
    for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
     shutil.copyfile(a.retained_wake_sdk/name,includes/name)
 
+ tagged_alarm=portable_alarm_build.stage(a,p,out,includes)
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports={'app_main','app_module_init','app_module_fini'};mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
@@ -56,6 +60,7 @@ def build():
   flags+=['-DPORTABLE_DESK_CLOCK']
  if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
+ if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
@@ -70,12 +75,12 @@ def build():
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
- if a.sparse_start:version='0.3.2'
+ if a.sparse_start:version='0.3.3' if tagged_alarm else '0.3.2'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
  if a.desk_clock:needs.extend([{'capability':'runtime.retained-wake','api':1},{'capability':'storage.volume','api':1}])
- if a.alarm_client:needs.append({'capability':'alarm.service','api':1})
+ if a.alarm_client:needs.append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
  portable_quick_build.requirements(a,needs)
  if a.desk_clock:
   for name in ('net.wifi','bluetooth.hci'):
@@ -86,6 +91,7 @@ def build():
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
+ if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
  if a.desk_clock:
   record['desk_sdk_headers']={name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in (
    'RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h',
@@ -95,6 +101,7 @@ def build():
    'lib/PortableApps/include/PortableDeskClock.h','lib/PortableApps/include/PortableDeskClockSettings.h',
    'lib/PortableApps/include/PortableSleepPolicy.h','lib/PortableApps/include/PortableReaderPreferences.h','lib/PortableApps/src/paper.inc','scripts/build_paper_clock.py']
   paths.extend(str(path.relative_to(ROOT)) for path in quick_sources)
+  if tagged_alarm:paths.append('scripts/portable_alarm_build.py')
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'
   record['grant_count']=len(needs)

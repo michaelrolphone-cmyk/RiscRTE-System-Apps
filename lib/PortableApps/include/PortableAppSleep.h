@@ -16,7 +16,11 @@ int portable_app_sleep(const risc_runtime_api_v1 *runtime,
                        const risc_battery_gauge_api_v1 *gauge);
 
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef ALARM_SERVICE_TAGGED_V2
+#include <AlarmServiceV2.h>
+#else
 #include "AlarmServiceV1.h"
+#endif
 /* Hidden application-local link, not a Runtime export/capability. Writers with
  * private grants use this only after a false poll to preserve native retention. */
 bool portable_app_sleep_retained(void);

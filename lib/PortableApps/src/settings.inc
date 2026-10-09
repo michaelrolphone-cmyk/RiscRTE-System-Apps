@@ -78,7 +78,11 @@ static unsigned settings_sleep_next(unsigned mode) {
 #include "AlarmServiceV1.h"
 static bool settings_visual_alerts(void) {
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef ALARM_SERVICE_TAGGED_V2
+  return alarms.api && portable_alarm_output_modes(&alarms)==ALARM_MODE_VISUAL;
+#else
   return alarms.api && alarm_service_output_modes(alarms.api)==ALARM_MODE_VISUAL;
+#endif
 #else
   return false;
 #endif

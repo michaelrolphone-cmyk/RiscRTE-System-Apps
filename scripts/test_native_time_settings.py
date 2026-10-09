@@ -16,6 +16,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import portable_alarm_build
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -148,7 +149,9 @@ def main():
     parser.add_argument("--profile", action="append", choices=PROFILES, dest="profiles")
     parser.add_argument("--normal-only", action="store_true", help="Development diagnostic run; final verification uses both builds")
     parser.add_argument("--no-pixels", action="store_true", help="Skip optional production raster export")
+    portable_alarm_build.options(parser)
     args = parser.parse_args()
+    args.alarm_client=True
     sdk = args.runtime_sdk.resolve()
     repo = sdk.parents[1]
     assert args.runtime_ref == RUNTIME_REF, "This fixture qualifies the exact canonical Runtime pin"
@@ -177,6 +180,8 @@ def main():
         shutil.copytree(ROOT / "lib/PortableApps/time", stage / "time")
         for header in HEADERS:
             shutil.copyfile(sdk / header, include / header)
+        tagged=portable_alarm_build.stage(args,parser,out,include)
+        if tagged:receipt['tagged_alarm_sdk']=tagged
         for profile in args.profiles or PROFILES:
             quick = "quick" in profile
             alarms = "alarms" in profile or quick
@@ -194,6 +199,7 @@ def main():
                 executable = out / ("native-time-settings-" + label)
                 flags = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie"] if sanitized else []
                 run([cc, "-std=c11", "-O1", "-g", "-Wall", "-Wextra", "-Werror", *flags, *PROFILES[profile],
+                     *(["-DALARM_SERVICE_TAGGED_V2"] if tagged else []),
                      "-I" + str(include), "-I" + str(ROOT / "lib/NativeApps/include"), *profile_sources,
                      "-Wl,--wrap=free", "-o", executable], timeout=120)
                 results = []

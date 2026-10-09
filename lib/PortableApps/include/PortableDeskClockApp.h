@@ -2,7 +2,11 @@
 /* Private compile-time app/deployment links. Never native Runtime exports. */
 #include "PortableDeskClock.h"
 #include "RiscRuntimeV1.h"
+#ifdef ALARM_SERVICE_TAGGED_V2
+#include <AlarmServiceV2.h>
+#else
 #include "AlarmServiceV1.h"
+#endif
 #include "RiscDisplayOutputV1.h"
 typedef struct {
  void *context;

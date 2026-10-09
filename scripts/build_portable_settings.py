@@ -11,6 +11,7 @@ import os
 import re
 from pathlib import Path
 import portable_quick_build
+import portable_alarm_build
 import shutil
 import subprocess
 
@@ -66,6 +67,8 @@ def build(args,parser=None):
     desk_clock=profile in ('x4-desk-clock','x4-native-time')
     if args.display_rotation is None: args.display_rotation=90 if native_time else 0
     sdk=None
+    if getattr(args,'tagged_alarm_utilities',None) and not native_time:
+        parser.error('Tagged alarm Settings requires --settings-profile x4-native-time')
     if native_time:
         if args.display_rotation!=90 or args.nova_ui:
             parser.error('x4-native-time requires the portrait paper profile (--display-rotation 90, no --nova-ui)')
@@ -99,9 +102,12 @@ def build(args,parser=None):
     version_path=('lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
+    if getattr(args,'tagged_alarm_utilities',None):version='1.3.8'
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
     includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
+    tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)
+    if tagged_alarm:flags.append('-DALARM_SERVICE_TAGGED_V2')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'settings.map'
@@ -136,7 +142,7 @@ def build(args,parser=None):
         'file_name':'settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'rtc.clock','api':2}]}
-    if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
+    if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
                                               {'capability':'board.battery','api':1}]
@@ -157,6 +163,7 @@ def build(args,parser=None):
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
     inputs.append('Apps/PaperPresentation.h')
+    if tagged_alarm:inputs.append('scripts/portable_alarm_build.py')
     inputs += ['scripts/build_portable_settings.py',version_path]
     if native_time: inputs.append('LICENSE')
     inputs=sorted(set(inputs))
@@ -190,6 +197,7 @@ def build(args,parser=None):
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
     if native_time:
         record.update(time_policy='native-realtime-iana',invocation_retention=True,
             native_time_runtime_commit=NATIVE_TIME_RUNTIME_COMMIT,
@@ -226,6 +234,7 @@ def argument_parser():
     parser.add_argument('--output-dir',type=Path)
     parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
     portable_quick_build.options(parser)
+    portable_alarm_build.options(parser)
     return parser
 
 

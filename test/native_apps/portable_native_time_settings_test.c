@@ -113,6 +113,9 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
  size_t count,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
   (void)ctx;(void)damage;(void)count;(void)options;io();assert(frame==1&&frames);
   frames=0;*token=++presents;
+#if defined(ALARM_SERVICE_TAGGED_V2) && defined(TEST_NATIVE_SETTINGS_ALARMS)
+  if(alarms.api)assert(settings_visual_alerts());
+#endif
   if(sv_page==SV_FIELDS&&!saw_fields){first_draft=settings_draft;saw_fields=true;snprintf(first_basis,sizeof(first_basis),"%s",snt_basis_label());}
   if(sv_page==SV_FOLD)saw_fold=true;
   if(snt_basis_status==PORTABLE_RTC_BASIS_MISSING)saw_default_basis=true;
@@ -277,14 +280,20 @@ static int32_t alarm_step(void *ctx) {
   }
   return ALARM_OK;
 }
-static int32_t alarm_refresh(void *ctx){(void)ctx;io();assert(which("alarm-refresh-retained")||which("quick-refresh-retained"));++alarm_refreshes;hidden=true;return -9;}
+static int32_t fixture_alarm_refresh(void *ctx){(void)ctx;io();assert(which("alarm-refresh-retained")||which("quick-refresh-retained"));++alarm_refreshes;hidden=true;return -9;}
 static int32_t alarm_ack(void *ctx,const alarm_token_v1 *token) {
   (void)ctx;io();assert(which("alarm-ack-retained")&&!memcmp(token,&alarm_state.occurrence,sizeof(*token)));
   ++alarm_acks;hidden=true;return -9;
 }
 static int32_t alarm_prepare(void *ctx,alarm_sleep_v1 *out){(void)ctx;(void)out;io();assert(!"unexpected sleep preparation");return ALARM_INVALID;}
 static int32_t alarm_stop(void *ctx){(void)ctx;io();assert(which("alarm-stop-retained"));++alarm_stops;hidden=true;return -9;}
-static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
+#ifdef ALARM_SERVICE_TAGGED_V2
+static const alarm_service_descriptor_v2 alarm_api={
+  {ALARM_SERVICE_API_V2,sizeof(alarm_api),NULL,alarm_status,alarm_step,fixture_alarm_refresh,alarm_ack,alarm_prepare,alarm_stop},
+  ALARM_SERVICE_DESCRIPTOR_TAG,ALARM_SERVICE_DESCRIPTOR_VERSION,ALARM_MODE_VISUAL,0,NULL};
+#else
+static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,fixture_alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
+#endif
 #endif
 #ifdef TEST_NATIVE_SETTINGS_QUICK
 static bool wifi_disconnect(void *ctx) {
@@ -327,7 +336,12 @@ static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_run
   else if(!strcmp(name,"bluetooth.hci")){kind=K_BLE;api=&ble_api;assert(instance==16);}
 #endif
   else {assert(!strcmp(name,"board.battery"));kind=K_BATTERY;api=&battery_api;}
-  assert(version==(kind==K_RTC?2u:1u));assert(kind==K_KV||kind==K_WIFI||kind==K_BLE||!instance);
+#ifdef ALARM_SERVICE_TAGGED_V2
+  assert(version==((kind==K_RTC||kind==K_ALARM)?2u:1u));
+#else
+  assert(version==(kind==K_RTC?2u:1u));
+#endif
+assert(kind==K_KV||kind==K_WIFI||kind==K_BLE||!instance);
 #ifdef TEST_NATIVE_SETTINGS_QUICK
   if(quick_exercising&&which("quick-later-acquire")&&kind==K_BLE){hidden=true;return false;}
 #endif
