@@ -15,6 +15,9 @@ static const char *capture_dir;
 static int key_index(const char *key){return !strcmp(key,PQA_BRIGHTNESS_KEY)?0:!strcmp(key,PQA_VOLUME_KEY)?1:!strcmp(key,PQA_RESTORE_VOLUME_KEY)?2:!strcmp(key,PQA_DND_KEY)?3:-1;}
 static int32_t qa_get(void*c,const char*k,void*out,uint32_t cap,uint32_t*len){
  (void)c;assert(!frames);int n=key_index(k);*len=0;
+#ifdef TEST_READER_FLIP
+ if(!strcmp(k,"reader_flip_ui")){assert(cap>=4);const uint8_t value[]={0x52,1,1,0xa4};memcpy(out,value,4);*len=4;return RISC_KEY_VALUE_OK;}
+#endif
  if(n<0){if(!strcmp(k,"time_format"))return get(c,k,out,cap,len);return RISC_KEY_VALUE_NOT_FOUND;}
  if(bad_storage)return RISC_KEY_VALUE_IO;
  if(!has_preference[n])return RISC_KEY_VALUE_NOT_FOUND;
@@ -30,7 +33,7 @@ static bool qa_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*
  if(capture_dir){char path[512];snprintf(path,sizeof(path),"%s/frame-%u.pbm",capture_dir,presents);FILE*file=fopen(path,"wb");assert(file);fprintf(file,"P4\n%u %u\n",PANEL_WIDTH,PANEL_HEIGHT);assert(fwrite(pixels,1,sizeof(pixels),file)==sizeof(pixels));fclose(file);}
  return true;
 }
-static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s){
+static bool qa_snapshot_raw(void*c,risc_touch_snapshot_v1*s){
  (void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;unsigned step=polls;int x=200,y=20;bool down=false;
  if(qa_case>=20&&qa_case<28){
   if(qa_case==26||qa_case==27){
@@ -67,6 +70,15 @@ static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s){
   if(step==14){down=true;x=240;y=675;}
  }
  if(down){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=(uint16_t)x,.y=(uint16_t)y};}return true;
+}
+static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s) {
+ bool ok=qa_snapshot_raw(c,s);
+#ifdef TEST_READER_FLIP
+ for(unsigned i=0;i<s->contact_count && i<sizeof(s->contacts)/sizeof(s->contacts[0]);++i) {
+  s->contacts[i].x=479-s->contacts[i].x;s->contacts[i].y=799-s->contacts[i].y;
+ }
+#endif
+ return ok;
 }
 static int32_t qa_alarm_step(void*c){
  if(qa_case==12&&!alarm_fired&&polls>=5){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}

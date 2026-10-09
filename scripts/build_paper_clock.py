@@ -57,7 +57,7 @@ def build():
  subprocess.run([str(validator),str(elf)],check=True)
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
- if a.desk_clock:version='0.3.0'
+ if a.desk_clock:version='0.3.1'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -79,7 +79,7 @@ def build():
   paths=['Apps/paper_clock.c','Apps/paper_desk_clock.inc','lib/PortableApps/src/adapter.c',
    'lib/PortableApps/src/desk_clock_faces.c','lib/PortableApps/include/PortableDeskClockApp.h',
    'lib/PortableApps/include/PortableDeskClock.h','lib/PortableApps/include/PortableDeskClockSettings.h',
-   'lib/PortableApps/include/PortableSleepPolicy.h','scripts/build_paper_clock.py']
+   'lib/PortableApps/include/PortableSleepPolicy.h','lib/PortableApps/include/PortableReaderPreferences.h','lib/PortableApps/src/paper.inc','scripts/build_paper_clock.py']
   paths.extend(str(path.relative_to(ROOT)) for path in quick_sources)
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'

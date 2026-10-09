@@ -21,7 +21,8 @@ static uint8_t physical[sizeof(pixels)];
 static uint32_t base_ms;
 static const char *state_path;
 static const void *test_touch_address;
-static bool radio_uncertain;
+static bool radio_uncertain,config_changed;
+static unsigned reader_flip,reader_language;
 static bool test_health(risc_runtime_health_v1 *h){assert(!terminal);h->uptime_ms=ms;return polls<60;}
 static void test_yield(uint32_t n){assert(!terminal&&!prepared);ms+=n;}
 static bool test_rtc(void *c,twatch_rtc_time_v1 *out){
@@ -54,8 +55,8 @@ static bool test_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_
  if(test==11&&!subs){failed_present=true;return false;}
  if(n)assert(r&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);
  if(!subs){
-  assert(o->intent==((has_record&&record.refresh_modulo&&test!=13&&test!=14&&test!=29&&!resumes)?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
-  if(has_record&&record.refresh_modulo&&test!=13&&test!=14&&test!=29&&!resumes)assert(seeded);
+  assert(o->intent==((has_record&&record.refresh_modulo&&!config_changed&&test!=14&&test!=29&&!resumes)?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+  if(has_record&&record.refresh_modulo&&!config_changed&&test!=14&&test!=29&&!resumes)assert(seeded);
  }
  frames=0;*token=++presents;return true;
 }
@@ -82,6 +83,8 @@ static int32_t test_get(void*c,const char *key,void *out,uint32_t cap,uint32_t *
  (void)c;assert(!terminal);uint8_t value[4];
  if(!strcmp(key,"time_format")){value[0]=0x54;value[2]=test==18?0:1;}
  else if(!strcmp(key,"desk_clock_face")){value[0]=0x46;value[2]=(uint8_t)face;}
+ else if(!strcmp(key,PORTABLE_READER_FLIP_KEY)){value[0]=0x52;value[2]=(uint8_t)reader_flip;}
+ else if(!strcmp(key,PORTABLE_READER_LANGUAGE_KEY)){value[0]=0x4c;value[2]=(uint8_t)reader_language;}
  else if(!strcmp(key,"sleep_mode")){value[0]=0x53;value[2]=(uint8_t)mode;}
  else {*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
  assert(cap>=4);value[1]=1;value[3]=value[2]^0xa5u;memcpy(out,value,4);*size=4;return RISC_KEY_VALUE_OK;
@@ -160,10 +163,14 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1 *runtime_arg,const risc_d
 }
 int main(int argc,char **argv){
  assert(argc>=2);test=(unsigned)atoi(argv[1]);face=argc>3?(unsigned)atoi(argv[3]):0;
+ reader_flip=getenv("READER_FLIP")?(unsigned)atoi(getenv("READER_FLIP")):0;
+ reader_language=getenv("READER_LANGUAGE")?(unsigned)atoi(getenv("READER_LANGUAGE")):0;
+ if(getenv("READER_EPOCH"))epoch=(uint32_t)strtoul(getenv("READER_EPOCH"),NULL,10);
  if(argc>2&&strcmp(argv[2],"-")){state_path=argv[2];FILE *file=fopen(state_path,"rb");if(file){uint8_t bytes[80];assert(fread(bytes,1,sizeof(bytes),file)==sizeof(bytes));has_record=portable_desk_decode(bytes,sizeof(bytes),&record);assert(has_record);assert(fread(physical,1,sizeof(physical),file)==sizeof(physical));fclose(file);epoch=(uint32_t)record.displayed_minute+(test==32?10u:60u);if(test==13)face=(record.config.face+1u)%6u;}}
+ config_changed=has_record&&(record.config.face!=face || record.config.flip_ui!=reader_flip || record.config.language!=reader_language);
  if(test==16)mode=PORTABLE_SLEEP_LIGHT;
  assert(app_module_init()==0);assert(!presents);in_main=true;base_ms=ms;
  if(!setjmp(entered)){app_main();if(portable_app_sleep_retained()){unsigned held=grants;app_module_fini();assert(grants==held&&subs==((test==17||test==39||test==43||test>=44)?1u:0u)&&frames==((test==24||test==14||test==11||test==37||test==38)?1u:0u));assert(test==7||test==10||test==11||test==12||test==14||test==17||test==21||test==23||test==24||test==33||test==37||test==38||(test>=39&&test<=46));puts("Clock retained safely");return 0;}app_module_fini();assert(!grants&&!subs&&!frames);assert(!launches);assert(!terminal);if(test==10||test==11||test==12)assert(failed_present&&!stages);if(test==20)assert(prepares>=1&&prepares<=3&&resumes==prepares&&presents==5&&!stages);if(test==22)assert(stages==1&&resumes==1);}
- else {assert(terminal&&!subs&&!frames&&prepared&&grants&&stages==1);assert(checked_presents||seeds);if(test==32)assert(!presents&&seeds==1);}
+ else {assert(record.config.flip_ui==reader_flip&&record.config.language==reader_language);if(config_changed)assert(!seeds);assert(terminal&&!subs&&!frames&&prepared&&grants&&stages==1);assert(checked_presents||seeds);if(test==32)assert(!presents&&seeds==1);}
  printf("Desk Clock %u: %u presents, %u seeds, %u preparations, %u resumes, %u stages\n",test,presents,seeds,prepares,resumes,stages);return 0;
 }

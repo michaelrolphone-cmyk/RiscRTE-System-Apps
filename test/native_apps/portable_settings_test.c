@@ -178,6 +178,9 @@ static uint8_t kv_bytes[64];static uint32_t kv_size;static unsigned kv_writes;
 #endif
 static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {
   (void)c;*size=0;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(!strcmp(key,PORTABLE_READER_FLIP_KEY)||!strcmp(key,PORTABLE_READER_LANGUAGE_KEY))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(!strcmp(key,PORTABLE_ALERT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
@@ -232,7 +235,13 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runt
   else {assert(!strcmp(name,"board.battery"));return false;}
   ++grants;return true;
 }
-static bool test_release(risc_runtime_capability_v1 *grant){assert(grants && grant->api);--grants;grant->api=NULL;return true;}
+static bool test_release(risc_runtime_capability_v1 *grant){
+  assert(grants && grant->api);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(scenario==301 && grant==&paper_preferences_grant)return false;
+#endif
+  --grants;grant->api=NULL;return true;
+}
 static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),test_health,test_yield,test_diagnostic,test_launch,test_acquire,test_release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime_api:NULL;}
 

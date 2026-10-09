@@ -3,6 +3,13 @@
 #define SP_TOP 112
 #define SP_ROW 88
 static unsigned sp_first,sp_field_first;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+#define SP_MORE_CAPTION (sp_first+rows<SETTINGS_ROW_COUNT?"MORE >":"FIRST PAGE")
+#define SP_MORE_NEXT (sp_first+sp_rows()<SETTINGS_ROW_COUNT?sp_first+sp_rows():0)
+#else
+#define SP_MORE_CAPTION (sp_first?"PREVIOUS":"MORE >")
+#define SP_MORE_NEXT (sp_first?0:sp_rows())
+#endif
 static unsigned sp_rows(void) {unsigned n=(unsigned)(height()-SP_TOP-144)/SP_ROW;return n?n:1;}
 static void sp_text(int x,int y,int w,const char *s,bool heading,bool black){pp_text(x,y,w,s,heading?2:1,heading,black);}
 static void sp_header(const char *title) {sp_text(32,30,width()-64,title,true,true);fill(32,88,width()-64,3,0);}
@@ -40,7 +47,7 @@ static void sp_redraw(void) {
   const char *title=sv_page==SV_ROOT?"SETTINGS":sv_page==SV_FIELDS?"TIME AND DATE":sv_page==SV_VALUE?editor_names[editor_field]:
 
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
-    sv_page==SV_DESK_FACE?"DESK CLOCK FACE":
+    sv_page==SV_DESK_FACE?"CLOCK FACE":sv_page==SV_FLIP?"FLIP UI 180°":sv_page==SV_LANGUAGE?"LANGUAGE":
 #endif
     sv_page==SV_TIME_FORMAT?"TIME FORMAT":sv_page==SV_FOLD?"REPEATED TIME":sv_page==SV_SLEEP?"SLEEP MODE":sv_page==SV_ALERT?"ALARM ALERTS":"ABOUT";
   sp_header(title);
@@ -53,7 +60,7 @@ static void sp_redraw(void) {
     sp_text(32,height()-142,width()-64,settings_message,false,true);
     if(SETTINGS_ROW_COUNT>rows) {
       sp_button(32,height()-112,(width()-80)/2,88,"< BACK",false);
-      sp_button(width()/2+8,height()-112,(width()-80)/2,88,sp_first?"PREVIOUS":"MORE >",false);
+      sp_button(width()/2+8,height()-112,(width()-80)/2,88,SP_MORE_CAPTION,false);
     } else sp_footer(false);
   } else if(sv_page==SV_FIELDS) {
     for(unsigned at=0;at<sp_rows()&&sp_field_first+at<6;at++){unsigned i=sp_field_first+at;char value[24];editor_value_text(i,value,sizeof(value));sp_row(SP_TOP+(int)at*SP_ROW,editor_names[i],value,editor_field==i,true);}
@@ -89,6 +96,20 @@ static void sp_redraw(void) {
     sp_text(32,height()-142,width()-64,sleep_message,false,true);sp_footer(true);
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  } else if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
+    bool language=sv_page==SV_LANGUAGE;char choice[64];
+    if(language)snprintf(choice,sizeof(choice),"%s (%s)",portable_reader_language_name(reader_choice),portable_reader_language_code(reader_choice));
+    else strcpy(choice,reader_choice?"ON":"OFF");
+    int measure=pp_measure(choice,false);
+    sp_text((width()-measure)/2,144,width()-64,choice,false,true);
+    if(language) {
+      snprintf(choice,sizeof(choice),"%u / %u",reader_choice+1u,PORTABLE_READER_LANGUAGE_COUNT);
+      measure=pp_measure(choice,false);sp_text((width()-measure)/2,196,width()-64,choice,false,true);
+    }
+    sp_button(32,260,(width()-80)/2,88,"-",false);
+    sp_button(width()/2+8,260,(width()-80)/2,88,"+",false);
+    if(language)sp_text(32,388,width()-64,"CLOCK TEXT USES ENGLISH FALLBACK",false,true);
+    sp_text(32,height()-142,width()-64,reader_message[0]?reader_message:"DRAFT ONLY - USE SAVE",false,true);sp_footer(true);
   } else if(sv_page==SV_DESK_FACE) {
     unsigned columns=sp_face_columns();int step=sp_face_step(),w=sp_face_width();
     for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i)
@@ -141,7 +162,7 @@ static bool sp_poll(t5_app_input_t *out) {
   int x=s.x,y=s.y;
   bool editable=sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
-  if(sv_page==SV_DESK_FACE)editable=true;
+  if(sv_page==SV_DESK_FACE || sv_page==SV_FLIP || sv_page==SV_LANGUAGE)editable=true;
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(sv_page==SV_ALERT&&settings_visual_alerts())editable=false;
@@ -149,13 +170,22 @@ static bool sp_poll(t5_app_input_t *out) {
   if(y>=height()-112&&y<height()-24) {
     if((editable||(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()))&&x>=width()/2-8&&x<width()/2+8)return true;
     if(editable&&x>=width()/2){editor_field=6;out->buttons=T5_APP_BUTTON_CONFIRM;}
-    else if(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()&&x>=width()/2){sp_first=sp_first?0:sp_rows();settings_view_redraw();}
+    else if(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()&&x>=width()/2){sp_first=SP_MORE_NEXT;settings_view_redraw();}
     else sv_back_input(out);
     return true;
   }
   if(x<32||x>=width()-32)return true;
   if(sv_page==SV_ROOT){if(y>=SP_TOP&&y<SP_TOP+(int)sp_rows()*SP_ROW){out->tapped=true;out->touch_x=x;out->touch_y=y;}return true;}
   if(sv_page==SV_FIELDS&&y>=SP_TOP&&y<SP_TOP+(int)sp_rows()*SP_ROW&&sp_field_first+(unsigned)(y-SP_TOP)/SP_ROW<6){editor_field=sp_field_first+(unsigned)(y-SP_TOP)/SP_ROW;out->buttons=T5_APP_BUTTON_CONFIRM;return true;}
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
+    if(y>=260 && y<348) {
+      if(x<width()/2-8)out->buttons=T5_APP_BUTTON_LEFT;
+      else if(x>=width()/2+8)out->buttons=T5_APP_BUTTON_RIGHT;
+    }
+    return true;
+  }
+#endif
   if(sv_page==SV_VALUE) {
     if(y>=238&&y<350){if(x<144)out->buttons=T5_APP_BUTTON_LEFT;else if(x>=width()-144)out->buttons=T5_APP_BUTTON_RIGHT;}
     else if(y>=392&&y<480&&editor_field==3&&!settings_hour_24()){editor_set_value((settings_draft.hour+12)%24);settings_view_redraw();}
@@ -166,6 +196,20 @@ static bool sp_poll(t5_app_input_t *out) {
     if(y>=144&&y<232)sp_emit_hit(out,28,76,184,32);
     else if(y>=256&&y<344)sp_emit_hit(out,28,124,184,32);
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  } else if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
+    bool language=sv_page==SV_LANGUAGE;char choice[64];
+    if(language)snprintf(choice,sizeof(choice),"%s (%s)",portable_reader_language_name(reader_choice),portable_reader_language_code(reader_choice));
+    else strcpy(choice,reader_choice?"ON":"OFF");
+    int measure=pp_measure(choice,false);
+    sp_text((width()-measure)/2,144,width()-64,choice,false,true);
+    if(language) {
+      snprintf(choice,sizeof(choice),"%u / %u",reader_choice+1u,PORTABLE_READER_LANGUAGE_COUNT);
+      measure=pp_measure(choice,false);sp_text((width()-measure)/2,196,width()-64,choice,false,true);
+    }
+    sp_button(32,260,(width()-80)/2,88,"-",false);
+    sp_button(width()/2+8,260,(width()-80)/2,88,"+",false);
+    if(language)sp_text(32,388,width()-64,"CLOCK TEXT USES ENGLISH FALLBACK",false,true);
+    sp_text(32,height()-142,width()-64,reader_message[0]?reader_message:"DRAFT ONLY - USE SAVE",false,true);sp_footer(true);
   } else if(sv_page==SV_DESK_FACE) {
     unsigned columns=sp_face_columns();int step=sp_face_step(),w=sp_face_width();
     for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i){int left=32+(int)(i%columns)*(w+16),top=120+(int)(i/columns)*step;

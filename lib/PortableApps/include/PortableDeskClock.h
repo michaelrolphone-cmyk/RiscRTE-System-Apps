@@ -2,6 +2,7 @@
 /* App-owned desk-clock policy, not a Runtime capability or sleep operation.
  * Native retained storage owns integrity, app/cohort binding and reset cause.
  * This payload contains no addresses, claims, grants or executable state. */
+#include "PortableReaderPreferences.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -38,7 +39,7 @@ typedef struct {
 enum { PORTABLE_DESK_STOP=-1, PORTABLE_DESK_REPAINT=0, PORTABLE_DESK_READY=1 };
 static inline bool portable_desk_config_valid(const portable_desk_config *c) {
     if(!c || c->face>=PORTABLE_DESK_FACE_COUNT || c->time_format>1u ||
-       c->flip_ui>1u || c->rtc_stores_utc>1u)return false;
+       c->language>=PORTABLE_READER_LANGUAGE_COUNT || c->flip_ui>1u || c->rtc_stores_utc>1u)return false;
     bool ended=false;
     for(unsigned i=0;i<sizeof(c->time_zone);++i){
         unsigned char b=(unsigned char)c->time_zone[i];

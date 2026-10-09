@@ -20,12 +20,14 @@ int main(void){
  /* Button/cold/config changes never reuse an incompatible retained image. */
  assert(portable_desk_begin(&c,&config,&r,false));assert(c.full&&!c.current.has_image);
  for(unsigned face=0;face<PORTABLE_DESK_FACE_COUNT;++face){portable_desk_config changed=config;changed.face=(uint8_t)face;assert(portable_desk_begin(&c,&changed,&r,true));assert(c.current.has_image==(face==config.face));}
+ for(unsigned language=0;language<PORTABLE_READER_LANGUAGE_COUNT;++language){portable_desk_config changed=config;changed.language=(uint8_t)language;assert(portable_desk_begin(&c,&changed,&r,true));assert(c.current.has_image==(language==config.language));}
+ config.language=PORTABLE_READER_LANGUAGE_COUNT;assert(!portable_desk_config_valid(&config));config=cfg();
  config.flip_ui=1;assert(portable_desk_begin(&c,&config,&r,true));assert(c.full&&!c.current.has_image);config=cfg();
  assert(portable_desk_begin(&c,&config,&r,true));portable_desk_cancel(&c);assert(!portable_desk_plan_frame(&c,900,&f));
  uint8_t bytes[80],copy[80];assert(portable_desk_encode(&r,bytes,sizeof(bytes)));assert(portable_desk_decode(bytes,sizeof(bytes),&out));assert(out.displayed_minute==r.displayed_minute&&portable_desk_same_config(&out.config,&r.config));
  for(unsigned i=0;i<80;++i){bool reserved=(i>=25&&i<32)||i>=72; if(!reserved)continue;memcpy(copy,bytes,80);copy[i]=1;out.displayed_minute=-1;assert(!portable_desk_decode(copy,80,&out));assert(out.displayed_minute==-1);}
  for(unsigned i=0;i<80;++i)assert(!portable_desk_decode(bytes,i,&out));
- for(unsigned field=0;field<6;++field){memcpy(copy,bytes,80);unsigned indexes[]={4,5,6,7,9,10};copy[indexes[field]]=255;assert(!portable_desk_decode(copy,80,&out));}
+ for(unsigned field=0;field<7;++field){memcpy(copy,bytes,80);unsigned indexes[]={4,5,6,7,8,9,10};copy[indexes[field]]=255;assert(!portable_desk_decode(copy,80,&out));}
  memcpy(copy,bytes,80);copy[24]=30;assert(!portable_desk_decode(copy,80,&out));memcpy(copy,bytes,80);copy[23]=128;assert(!portable_desk_decode(copy,80,&out));memcpy(copy,bytes,80);copy[16]|=1;assert(!portable_desk_decode(copy,80,&out));
  memcpy(copy,bytes,80);memset(copy+32,'A',40);assert(!portable_desk_decode(copy,80,&out));memcpy(copy,bytes,80);copy[71]='A';assert(!portable_desk_decode(copy,80,&out));
  memset(copy,0xa5,80);portable_desk_record invalid=r;invalid.has_image=false;assert(!portable_desk_encode(&invalid,copy,80));for(unsigned i=0;i<80;++i)assert(copy[i]==0xa5);

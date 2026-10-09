@@ -1,6 +1,6 @@
 # Opt-in retained X4 desk Clock
 
-This is the development-only `paper_clock` **0.3.0** build selected with
+This is the development-only `paper_clock` **0.3.1** build selected with
 `--desk-clock`. It does not change the normal Clock, Watch UI, shipped X4 0.1.6,
 or a firmware/source lock. Product integration, a complete image and physical
 qualification remain separate. No BIN or device-flash claim is made here.
@@ -61,15 +61,13 @@ drawing normal UI, so a later manual attempt cannot seed a stale desk image.
 
 The retained scene is deterministic: face, displayed minute, date, 12/24-hour
 format, AM/PM and power-wake text. Battery readings, transient notices and current
-preferences never contaminate old-image reconstruction. This profile uses the
-explicit, unconverted RTC wall-time policy and English text. RTC UTC mode,
-legacy chip-layout variant, UTC-versus-local interpretation reference epoch,
-and UI flip are zero/unknown or inactive. The typed clock does not expose the
-Reader's legacy RTC interpretation/timezone metadata. No
-Denver conversion or process-global timezone is adopted. The English date
-format here differs from Reader's ISO YYYY-MM-DD date; localized wake/unset
-captions remain a later parity slice. Changing any stored
-rendering configuration forces a full refresh.
+preferences never contaminate old-image reconstruction. The frozen Reader
+presentation/preferences slice now provides ISO dates, literal fallback captions,
+invalid-time dashes, language IDs and retained physical UI flip; see
+[READER_PRESENTATION.md](READER_PRESENTATION.md). The RTC remains explicit,
+unconverted wall time. UTC/local interpretation, legacy RTC variant and time-zone
+metadata are not changed by this slice. Changing any stored rendering
+configuration forces a full refresh.
 
 For differential timer updates the app rebuilds every old pixel, seeds both the
 panel and adapter MONO1 cache, then repaints the **same frame lease**. Releasing

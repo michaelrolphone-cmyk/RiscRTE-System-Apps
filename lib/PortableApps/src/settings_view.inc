@@ -6,7 +6,7 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE };
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -284,7 +284,7 @@ static void sv_switch(unsigned page) {
       || page==SV_SLEEP
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
-      || page==SV_DESK_FACE
+      || page==SV_DESK_FACE || page==SV_FLIP || page==SV_LANGUAGE
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
       || page==SV_ALERT

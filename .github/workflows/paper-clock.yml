@@ -60,6 +60,8 @@ jobs:
         run: python scripts/test_paper_clock.py
       - name: Paper QuickActions and independent Home/crown routing
         run: python scripts/test_paper_quick_actions.py
+      - name: Opt-in flipped paper QuickActions and Home
+        run: python scripts/test_reader_paper_flip.py
       - name: App-owned handoff guard and refusal retry
         run: python scripts/test_launch_guard.py
       - name: Adapter-owned copied power status
