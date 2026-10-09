@@ -98,9 +98,14 @@ static uint32_t calendar_seconds(const twatch_rtc_time_v1 *t) {
 static uint8_t calendar_weekday(const twatch_rtc_time_v1 *t) {
   return (uint8_t)((calendar_day_index(t) + 6) % 7); /* 2000-01-01 was Saturday. */
 }
+#ifdef PORTABLE_UNPADDED_HOURS
+#define SETTINGS_HOUR_SPEC "%u"
+#else
+#define SETTINGS_HOUR_SPEC "%02u"
+#endif
 static inline void format_wall_time(char *out, size_t capacity, const twatch_rtc_time_v1 *t) {
   if(settings_hour_24()) {
-    snprintf(out,capacity,"%02u:%02u:%02u",(unsigned)t->hour,(unsigned)t->minute,(unsigned)t->second);
+    snprintf(out,capacity,SETTINGS_HOUR_SPEC ":%02u:%02u",(unsigned)t->hour,(unsigned)t->minute,(unsigned)t->second);
     return;
   }
   unsigned hour = t->hour % 12;
@@ -137,7 +142,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   if(index==0) {
     out->type=T5_APP_SETTING_ACTION;twatch_rtc_time_v1 raw,local;
     if(rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&local)) {
-      if(settings_hour_24())snprintf(out->value,sizeof(out->value),"%02u:%02u",(unsigned)local.hour,(unsigned)local.minute);
+      if(settings_hour_24())snprintf(out->value,sizeof(out->value),SETTINGS_HOUR_SPEC ":%02u",(unsigned)local.hour,(unsigned)local.minute);
       else {
         unsigned h=local.hour%12;
         snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
