@@ -1,0 +1,36 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "driver.elf",
+  "id": "scene-host",
+  "provides": [
+    {
+      "api": 1,
+      "capability": "ui.scene"
+    }
+  ],
+  "requires": [
+    {
+      "api": 1,
+      "capability": "display.output"
+    },
+    {
+      "api": 1,
+      "capability": "input.touch.raw"
+    },
+    {
+      "api": 1,
+      "capability": "input.navigation"
+    },
+    {
+      "api": 1,
+      "capability": "platform.clock"
+    },
+    {
+      "api": 1,
+      "capability": "ui.presentation-profile"
+    }
+  ],
+  "type": "driver",
+  "version": "0.1.0"
+}

@@ -14,7 +14,7 @@ for name in json.loads((ROOT / 'tests/host-tests.json').read_text()):
     sources = [fixture] if '#include "../../Apps/' in fixture.read_text() else [ROOT / f'Apps/{name}.c', fixture]
     binary = out / name
     subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-Wall', '-Wextra', '-Werror',
-                    '-I' + str(ROOT / 'lib/NativeApps/include'), '-I' + str(ROOT / 'sdk/driver'),
+                    '-I' + str(ROOT / 'lib/NativeApps/include'), '-I' + str(ROOT / 'lib/PortableApps/include'), '-I' + str(ROOT / 'sdk/driver'),
                     *map(str, sources), '-o', str(binary)], check=True, timeout=60)
     subprocess.run([str(binary)], cwd=ROOT, check=True, timeout=30)
     print(name + ': host fixture passed', flush=True)
