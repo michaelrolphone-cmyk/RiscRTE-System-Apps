@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "bundle": "System.bundle",
+  "bundle_bytes": 2535,
+  "bundle_sha256": "aeb380c81218b0b43fbb8c4bd12d870803f70ef7c6e0bae401d565a6b6a4a512",
+  "prerequisite_commit": "e2b2b8b7d903acb6aec6b07ebee7d037de2babb1",
+  "bundle_ref": "HEAD",
+  "source_commit": "df1d7d1b248de13f773690139750ad2f963967f3",
+  "source_tree": "9250000672f989be18f2ef45d48c257980c18604",
+  "public_code_commit": "a290ca19c56e472989a54db0ddfe9580c9ff792c",
+  "public_code_tree": "106ffe4fe18b4c52027139c285378c2663fd04aa",
+  "public_code_parent": "6c76d72d2c670461d9cbfc3bd5a9e9664b4d41e8"
+}
