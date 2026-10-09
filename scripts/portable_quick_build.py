@@ -4,13 +4,17 @@ import shutil
 
 def options(parser):
     parser.add_argument('--home-app',help='Explicit physical Home root .elf; independent of local Back')
-    parser.add_argument('--quick-actions',action='store_true',help='Shared QuickActions, capability-selected Watch or static paper sheet; requires --alarm-client and namespace 1 read/write')
+    parser.add_argument('--quick-actions',action='store_true',help='Shared QuickActions, capability-selected Watch or paper sheet; requires --alarm-client and namespace 1 read/write')
+    parser.add_argument('--paper-transitions',action='store_true',help='Opt-in paper Quick Controls pull-down motion; independent of app crossfade')
     parser.add_argument('--quick-radios',action='store_true',help='Explicit Wi-Fi/Bluetooth quick-control selection; requires --quick-actions and exact radio grants')
 
 def configure(args,parser,root,output):
     if args.quick_radios and not args.quick_actions:parser.error('--quick-radios requires --quick-actions')
     if args.quick_actions and not args.alarm_client:parser.error('--quick-actions requires --alarm-client')
     flags=[]
+    if getattr(args,'paper_transitions',False):
+        if not args.quick_actions:parser.error('--paper-transitions requires --quick-actions')
+        flags.append('-DPORTABLE_PAPER_TRANSITIONS')
     if args.home_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.home_app):parser.error('Invalid Home filename')
         flags+=['-DPORTABLE_HOME_APP="'+args.home_app+'"']

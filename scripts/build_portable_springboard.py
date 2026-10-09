@@ -13,6 +13,7 @@ from pathlib import Path
 import portable_quick_build
 import portable_native_toolbar_build
 import portable_performance_build
+import portable_paper_build
 import shutil
 import subprocess
 
@@ -58,8 +59,10 @@ def build():
     portable_quick_build.options(parser)
     portable_native_toolbar_build.options(parser)
     portable_performance_build.options(parser)
+    portable_paper_build.options(parser)
     args=parser.parse_args()
     portable_native_toolbar_build.validate(args,parser)
+    portable_paper_build.validate(args,parser)
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.wall_time:flags.append("-DPORTABLE_RTC_WALL_TIME")
@@ -84,6 +87,7 @@ def build():
     for name in ["LICENSE-Orbitron.txt","LICENSE-Rajdhani.txt","SOURCES.json"]:
         shutil.copyfile(ROOT/"lib/PortableApps/paper_fonts"/name,paper_notices/name)
     includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'springboard');flags+=native_flags
+    includes,paper_flags,paper_transition=portable_paper_build.stage(args,parser,ROOT,out,includes);flags+=paper_flags
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'springboard.map'
@@ -115,6 +119,9 @@ def build():
         '-o',str(validator)],check=True,timeout=60)
     subprocess.run([str(validator),str(elf)],check=True,timeout=60)
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/springboard.json').read_text())['version']
+    if paper_transition or args.paper_transitions:
+        version=portable_paper_build.VERSIONS['springboard']
+        if native_receipt:native_receipt['version']=version
     manifest={'type':'application','id':'springboard','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'springboard.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'board.battery','api':1},
@@ -143,6 +150,9 @@ def build():
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    if paper_transition:record['paper_transition']=paper_transition
+    if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
+    if paper_transition or args.paper_transitions:record['build_defines']=flags
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
     if native_receipt:
         record['build_defines']=flags

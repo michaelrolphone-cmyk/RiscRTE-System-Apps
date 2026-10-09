@@ -218,6 +218,7 @@ void app_main(void){
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  home_pressed=home_painted=home_pending=HOME_NONE;home_refresh_pending=true;
 #endif
+ paper_transition_begin();
  uint32_t checked=app->millis();CLOCK_DRAW_OR_RETURN(&time,known,notice,true);
  for(;;){
  t5_app_input_t input={0};if(!app->poll(&input,20)){
@@ -282,6 +283,7 @@ break;}
   }
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   if(launch||quick_launch) {
+   if(paper_transition_active()){paper_transition_cancel();clock_dirty=true;}
    home_pending=quick_launch?HOME_TOP:points_launch?HOME_POINTS:HOME_DIAL;
    home_pressed=home_pending;launch=false;
   }
@@ -298,7 +300,7 @@ break;}
    {launch=true;points_launch=chosen==HOME_POINTS;}
   }
 #endif
-  if(launch){portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
+  if(launch){paper_transition_cancel();portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
    if(rt->request_launch(target))break;
@@ -323,7 +325,7 @@ break;}
  home_refresh_pending=true;
 #endif
  }}
- if(clock_dirty)CLOCK_DRAW_OR_RETURN(&time,known,notice,false);
+ if(clock_dirty||paper_transition_active())CLOCK_DRAW_OR_RETURN(&time,known,notice,false);
  }
  if(!paper_frame_drain())return;
  close_clock();app->set_back_exits_app(true);

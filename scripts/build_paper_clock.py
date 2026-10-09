@@ -5,6 +5,7 @@ from pathlib import Path
 import portable_quick_build
 import portable_alarm_build
 import portable_performance_build
+import portable_paper_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
@@ -20,8 +21,10 @@ def build():
  portable_quick_build.options(p)
  portable_alarm_build.options(p)
  portable_performance_build.options(p)
+ portable_paper_build.options(p)
  a=p.parse_args()
  portable_performance_build.validate(a,p)
+ portable_paper_build.validate(a,p)
  if portable_performance_build.selected(a) and not a.sparse_start:p.error('--performance-runtime-repo requires --sparse-start')
  if bool(a.local_sleep_source)!=bool(a.sleep_capability) or (a.local_sleep_source and (not a.navigation or not a.alarm_client or not a.sleep_sdk)):p.error('Local sleep requires source, capability, SDK, navigation and alarm client')
  if a.desk_clock and (not a.local_sleep_source or not a.retained_wake_sdk):p.error('Desk clock requires local sleep and retained-wake SDK')
@@ -56,10 +59,12 @@ def build():
  if performance_source:includes,performance=portable_performance_build.stage(ROOT,out,performance_source,includes,
   display=portable_performance_build.read_display(a,p),overrides={'RiscStorageVolumeV1.h':a.sleep_sdk/'RiscStorageVolumeV1.h'})
 
+ includes,paper_flags,paper_transition=portable_paper_build.stage(a,p,ROOT,out,includes)
  tagged_alarm=portable_alarm_build.stage(a,p,out,includes)
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports={'app_main','app_module_init','app_module_fini'};mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
+ flags+=paper_flags
  if a.navigation:flags+=['-DPORTABLE_INPUT_NAVIGATION']
  if a.navigation and not a.local_sleep_source:flags+=['-DPORTABLE_CROWN_SLEEP_UNAVAILABLE']
  if a.local_sleep_source:flags+=['-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_CROWN_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY','-I'+str(a.sleep_sdk)]
@@ -86,6 +91,7 @@ def build():
  if a.desk_clock:version='0.3.1'
  if a.sparse_start:version='0.3.6' if tagged_alarm else '0.3.3'
  if performance:version=portable_performance_build.VERSIONS['paper_clock']
+ if paper_transition or a.paper_transitions:version=portable_paper_build.VERSIONS['paper_clock']
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -101,6 +107,9 @@ def build():
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
+ if paper_transition:record['paper_transition']=paper_transition
+ if a.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
+ if paper_transition or a.paper_transitions:record['build_defines']=flags
  if performance:
   record['performance_trace']=performance
   record['build_defines']=flags

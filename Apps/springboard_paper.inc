@@ -1,4 +1,4 @@
-/* NOVA-7 E-Ink: fixed 3/2 rows, real catalog only, no animation or fades. */
+/* NOVA-7 E-Ink: fixed 3/2 rows and actual installed catalog. */
 #include "PaperPresentation.h"
 #include "PaperFrame.h"
 #include "PortablePerformance.h"
@@ -73,6 +73,7 @@ static bool paper_run(void) {
     bool launch_pending=false,feedback=false;
 #endif
     char status[64]={0};
+    paper_transition_begin();
     if(paper_draw(v,status,initial,known,hour,minute,battery,false))dirty=initial=false;
     t5_app_input_t in;
     while(api->poll(&in,20)) {
@@ -103,6 +104,7 @@ static bool paper_run(void) {
 #endif
         if(selected!=old){portable_perf_action(PORTABLE_PERF_SPRINGBOARD_PAGE,false);status[0]=0;dirty=true;}
         if(activate) {
+            paper_transition_cancel();
             t5_app_manifest_t app;
             if(api->installed_apps_get(selected,&app)&&app.compatible) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -121,7 +123,7 @@ static bool paper_run(void) {
             dirty|=valid!=known || (valid&&(h!=hour||m!=minute));known=valid;hour=h;minute=m;last_clock=now;
         }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-        if(dirty && paper_draw(v,status,initial,known,hour,minute,battery,launch_pending)) {
+        if((dirty||paper_transition_active()) && paper_draw(v,status,initial,known,hour,minute,battery,launch_pending)) {
             dirty=initial=false;feedback=launch_pending;
         }
         /* The active icon is a submitted state of this exact target. Surface
@@ -132,9 +134,10 @@ static bool paper_run(void) {
             launch_pending=feedback=false;strcpy(status,"UNABLE TO OPEN APP");dirty=true;
         }
 #else
-        if(dirty && paper_draw(v,status,initial,known,hour,minute,battery,false))dirty=initial=false;
+        if((dirty||paper_transition_active()) && paper_draw(v,status,initial,known,hour,minute,battery,false))dirty=initial=false;
 #endif
     }
+    paper_transition_cancel();
     (void)paper_frame_drain();
     return true;
 }

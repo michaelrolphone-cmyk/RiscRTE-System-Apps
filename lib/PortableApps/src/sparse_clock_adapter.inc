@@ -246,6 +246,9 @@ static void desk_finalize(void) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
  handoff_finish();
 #endif
+#ifdef PORTABLE_PAPER_CROSSFADE
+ paper_handoff_finish();
+#endif
  free(previous_pixels);previous_pixels=NULL;previous_valid=false;
  free(paper_previous);paper_previous=NULL;paper_previous_valid=false;
  gauge=NULL;display=NULL;desk_phase=DESK_FINALIZED;

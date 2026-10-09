@@ -691,6 +691,9 @@ bool portable_paper_frame_drain(void) {
   display_failure("PORTABLE_APP error=display-timeout");return false;
 }
 #endif
+#ifdef PORTABLE_PAPER_CROSSFADE
+#include "paper_transition.inc"
+#endif
 static void present(bool full) {
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(paper_orientation_dirty)full=true;
@@ -704,6 +707,9 @@ static void present(bool full) {
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,true);
   risc_display_present_token_v1 token = 0;
   risc_display_rect_v1 damage={0};size_t damage_count=0;
+#ifdef PORTABLE_PAPER_CROSSFADE
+  if(paper_handoff_blend())full=false;
+#endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active) {
     uint32_t now=millis_now();
@@ -883,6 +889,11 @@ static bool idle_sleep(void) {
 #endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_active || handoff_pending)return true;
+#endif
+#ifdef PORTABLE_PAPER_CROSSFADE
+  /* Sleep has its own scene and ownership transition. Do not blend that scene
+   * against an interrupted app handoff, or delay an explicit sleep request. */
+  portable_paper_transition_cancel();
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   /* A radio drain refusal is recoverable app UI, not a native sleep entry.
@@ -1594,6 +1605,9 @@ static int initialize(void) {
   native_custody_runtime=rt;
 #endif
   dg.struct_size = sizeof(dg);
+#ifdef PORTABLE_PAPER_CROSSFADE
+  paper_handoff_old=NULL;paper_handoff_clock=false;
+#endif
   bg.struct_size = sizeof(bg);
   failed = false;perf_initialize();
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -1741,6 +1755,9 @@ static void settings_native_finalize(void) {
 #endif
   free(previous_pixels);previous_pixels=NULL;previous_valid=false;
   free(paper_previous);paper_previous=NULL;paper_previous_valid=false;
+#ifdef PORTABLE_PAPER_CROSSFADE
+  paper_handoff_finish();
+#endif
   gauge=NULL;display=NULL;
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
   settings_started=false;settings_initialized=false;
@@ -1810,6 +1827,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   surface.frame = 0;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_finish();
+#endif
+#ifdef PORTABLE_PAPER_CROSSFADE
+  paper_handoff_finish();
 #endif
   np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
   free(paper_previous);paper_previous=NULL;paper_previous_valid=false;

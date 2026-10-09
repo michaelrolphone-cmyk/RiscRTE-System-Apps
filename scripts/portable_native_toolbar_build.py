@@ -137,16 +137,20 @@ def write_admission(root, out, manifest, record):
         return
     performance = record.get('performance_trace')
     includes = out/('performance-sdk/include' if performance else 'native-time-sdk/include')
+    paper = record.get('paper_transition')
+    if paper:includes=Path(paper['compiled_include_directory'])
     names = set((*SDK_HEADERS, *portable_alarm_build.HEADERS))
     if performance:
         names.update(performance['sdk_headers'])
         names.update(performance.get('display_metrics', {}).get('sha256', {}))
+    if paper:names.update(paper['sdk_sha256'])
     headers = {name: hashlib.sha256((includes/name).read_bytes()).hexdigest()
                for name in sorted(names)}
     expected = dict(record['native_time_sdk']['sha256'], **record['tagged_alarm_sdk']['sha256'])
     if performance:
         expected.update(performance['sdk_headers'])
         expected.update(performance.get('display_metrics', {}).get('sha256', {}))
+    if paper:expected.update(paper['sdk_sha256'])
     assert all(headers[name] == expected[name] for name in headers)
     receipt = {'schema': 1, 'app': manifest['id'], 'version': manifest['version'],
                'source_repo': 'michaelrolphone-cmyk/RiscRTE-System-Apps',
@@ -160,4 +164,6 @@ def write_admission(root, out, manifest, record):
                'working_tree_dirty': record['working_tree_dirty']}
     if performance:
         receipt['performance_trace'] = performance
+    if paper:receipt['paper_transition']=paper
+    if record.get('paper_motion'):receipt['paper_motion']=record['paper_motion']
     (out/'x4-native-app.json').write_text(json.dumps(receipt, indent=2) + '\n')
