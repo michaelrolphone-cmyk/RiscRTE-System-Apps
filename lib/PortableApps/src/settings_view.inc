@@ -6,7 +6,11 @@
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  ,SV_TIMEZONE_REGIONS,SV_TIMEZONE_CITIES
+#endif
+};
 static unsigned sv_page, sv_selected, sv_fold_choice;
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
@@ -258,6 +262,9 @@ static void sv_alert(void) {
 static void settings_view_redraw(void) {
   if(handoff_requested)return;
   if(failed || !sv_active)return;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES){stz_redraw();return;}
+#endif
   if(pp_enabled()){sp_redraw();return;}
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
@@ -286,6 +293,9 @@ static void sv_switch(unsigned page) {
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
       || page==SV_DESK_FACE || page==SV_FLIP || page==SV_LANGUAGE
 #endif
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+      || page==SV_TIMEZONE_REGIONS || page==SV_TIMEZONE_CITIES
+#endif
 #ifdef PORTABLE_ALARM_SETTINGS
       || page==SV_ALERT
 #endif
@@ -310,8 +320,14 @@ static void sv_slider(int x) {
   settings_view_redraw();
 }
 #include "settings_paper.inc"
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+#include "settings_timezone_view.inc"
+#endif
 static bool settings_view_poll(t5_app_input_t *out) {
   if(!sv_active)return false;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES)return stz_poll(out);
+#endif
   if(pp_enabled())return sp_poll(out);
   settings_navigation_poll(out);
   if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
