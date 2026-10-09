@@ -67,7 +67,7 @@ def build():
   flags=[flag for flag in flags if flag!='-I'+str(a.sleep_sdk)]
   flags+=['-DPORTABLE_DESK_CLOCK']
  if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
- if performance:flags.extend(portable_performance_build.defines(performance,getattr(a,'stage_logs',False)))
+ if performance:flags.extend(portable_performance_build.defines(performance,getattr(a,'stage_logs',False),out))
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
  if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags

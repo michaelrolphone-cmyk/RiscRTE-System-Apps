@@ -44,9 +44,11 @@ def read_display(args, parser):
         parser.error('Cannot read diagnostic display SDK (all three headers required): ' + str(error))
 
 
-def defines(receipt,plain=False):
+def defines(receipt,plain=False,out=None):
     if plain:
         receipt.update(enabled=False,mode='plain-stage-statements',build_define='-DPORTABLE_STAGE_LOGS')
+        if receipt.get('display_metrics'):receipt['display_metrics']['build_define']='-DPORTABLE_STAGE_DISPLAY_METRICS'
+        if out is not None:(out/'licenses/performance-runtime/SOURCES.json').write_text(json.dumps(receipt,indent=2)+'\n')
         return ['-DPORTABLE_STAGE_LOGS'] + (['-DPORTABLE_STAGE_DISPLAY_METRICS'] if receipt.get('display_metrics') else [])
     return [DEFINE] + ([DISPLAY_DEFINE] if receipt.get('display_metrics') else [])
 

@@ -100,7 +100,7 @@ def configure(args, parser, root, out, app):
              '-DALARM_SERVICE_TAGGED_V2']
     if performance:
         receipt['performance_trace'] = performance
-        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False)))
+        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False),out))
     return includes, flags, [root/p for p in SOURCES], receipt
 
 

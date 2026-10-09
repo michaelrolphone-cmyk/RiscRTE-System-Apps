@@ -121,7 +121,7 @@ def build(args,parser=None):
     if performance_source:
         includes,performance=portable_performance_build.stage(ROOT,out,performance_source,
             display=portable_performance_build.read_display(args,parser))
-        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False)))
+        flags.extend(portable_performance_build.defines(performance,getattr(args,'stage_logs',False),out))
     else:
         includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
     tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)
