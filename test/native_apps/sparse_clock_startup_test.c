@@ -136,10 +136,11 @@ static bool read_key(void*c,bool*down){(void)c;io();key_reads++;
 static bool bright(void*c,uint16_t level,uint16_t max){(void)c;io();assert(max==100&&(raw_brightness||level==0||level==40));raw_hardware_brightness=level;dark=level==0;return true;}
 static bool seed_previous(void*c,risc_display_frame_v1 f){(void)c;safe();assert(loaded_pixels&&frames&&f==1&&!subs&&!memcmp(pixels,physical,sizeof(pixels)));seeds++;
  if(which("seed-retained")){terminal=true;return false;}seeded_image=true;return true;}
-static bool frame_acquire(void*c,uint32_t f,risc_display_surface_v1*out){safe();seeded_image=false;return acquire_frame(c,f,out);}
+static bool frame_acquire(void*c,uint32_t f,risc_display_surface_v1*out){safe();seeded_image=false;if(which("cold-acquire")){terminal=true;return false;}return acquire_frame(c,f,out);}
 static void frame_release(void*c,risc_display_frame_v1 f){safe();seeded_image=false;release_frame(c,f);}
 static bool frame_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*out){(void)c;(void)r;(void)n;safe();assert(frames&&f==1);
  if(!promoted&&loaded_pixels&&value.payload[24])assert(seeds&&seeded_image&&o->intent==RISC_DISPLAY_PRESENT_QUALITY);
+ if(which("cold-submit")){terminal=true;return false;}
  if(raw_lifetime||raw_brightness){
   if(!presents)memcpy(raw_clock_pixels,pixels,sizeof(pixels));
   else if(!raw_dismiss_started){
@@ -156,7 +157,7 @@ static bool raw_present_status(void *c,risc_display_present_token_v1 token,risc_
  return true;
 }
 static bool raw_display_info(void *c,risc_display_info_v1 *out){get_info(c,out);if(raw_async)out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;if(raw_brightness)out->flags|=RISC_DISPLAY_INFO_BRIGHTNESS;return true;}
-static bool frame_wait(void*c,risc_display_present_token_v1 tkn,uint32_t timeout,risc_display_present_status_v1*out){(void)c;safe();assert(tkn==presents&&timeout);ms+=350;out->state=RISC_DISPLAY_PRESENT_COMPLETE;memcpy(physical,pixels,sizeof(pixels));if(raw_sheet_seen)raw_sheet_completed=true;return true;}
+static bool frame_wait(void*c,risc_display_present_token_v1 tkn,uint32_t timeout,risc_display_present_status_v1*out){(void)c;safe();assert(tkn==presents&&timeout);if(which("cold-wait")){terminal=true;return false;}if(presents==1&&getenv("PAPER_BOOT_FRAME")){FILE *capture=fopen(getenv("PAPER_BOOT_FRAME"),"wb");assert(capture);assert(fwrite(pixels,1,sizeof(pixels),capture)==sizeof(pixels));assert(!fclose(capture));}ms+=350;out->state=RISC_DISPLAY_PRESENT_COMPLETE;memcpy(physical,pixels,sizeof(pixels));if(raw_sheet_seen)raw_sheet_completed=true;return true;}
 static int32_t panel_prepare(void*c,uint32_t timeout){(void)c;io();assert(!panel_off&&!sd_off);assert(timeout&&!subs&&!frames&&dark&&!native_live);
  assert(promoted?touch_off:(!touch_off&&!sd_off));panel_off=true;
  if(which("panel-retained")){terminal=true;return RISC_DISPLAY_POWER_RETAINED;}
@@ -184,9 +185,9 @@ static int32_t status_alarm(void*c,alarm_status_v1*out){safe();int32_t result=al
 static int32_t prepare_alarm(void*c,alarm_sleep_v1*out){(void)c;safe();out->rtc_seconds=epoch+(ms-start_ms)/1000u;
  out->deadline=which("alarm-due")?out->rtc_seconds:0;return ALARM_OK;}
 static int32_t read_record(void*c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1*out,uint32_t*cause){(void)c;safe();assert(!starts&&!presents&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==1);
- *cause=which("gpio")?RISC_BOOT_DEEP_GPIO:RISC_BOOT_DEEP_TIMER;
+ *cause=!strncmp(test,"cold",4)?RISC_BOOT_POWER_ON:!strncmp(test,"reset",5)?RISC_BOOT_RESET:which("other-wake")?RISC_BOOT_DEEP_OTHER:which("gpio")?RISC_BOOT_DEEP_GPIO:RISC_BOOT_DEEP_TIMER;
  if(which("record-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
- if(raw_navigation||which("cold")||which("manual")||which("foreground")||which("alarm-output")||which("alarm-uncertain")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
+ if(raw_navigation||!strncmp(test,"cold",4)||!strncmp(test,"reset",5)||which("manual")||which("foreground")||which("alarm-output")||which("alarm-uncertain")||!strncmp(test,"promotion-",10))return RISC_RETAINED_WAKE_ABSENT;
  *out=value;if(which("invalid-record"))out->payload[0]=0;return RISC_RETAINED_WAKE_OK;}
 static int32_t stage_record(void*c,const risc_retained_wake_record_v1*in){(void)c;safe();assert(!subs&&!frames&&!native_live);value=*in;pending=true;ms+=17;
  if(which("stage-context")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
@@ -250,7 +251,7 @@ static const risc_realtime_control_api_v1 realtime={1,sizeof(realtime),&native_c
 static int32_t promote(void*c){safe();assert(c==&promotion_context);promotion_attempted=true;promotions++;
  if(which("promotion-retained")){terminal=true;return RISC_PROVIDER_PROMOTION_RETAINED;}
  if(which("promotion-failed")||which("refused-promotion-failed")||((which("promotion-partial")||which("refused-promotion-partial"))&&promotions==1))return RISC_PROVIDER_PROMOTION_FAILED;
- promoted=true;return which("promotion-ready")?RISC_PROVIDER_PROMOTION_ALREADY_READY:RISC_PROVIDER_PROMOTION_OK;}
+ promoted=true;return which("promotion-ready")||which("cold-reload")||which("reset-reload")?RISC_PROVIDER_PROMOTION_ALREADY_READY:RISC_PROVIDER_PROMOTION_OK;}
 static const risc_provider_promotion_api_v1 promotion={1,sizeof(promotion),&promotion_context,promote};
 static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promoted&&rtc_live);rtc_reads++;
  if(which("rtc-read-retained")){terminal=true;return false;}
@@ -324,7 +325,7 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
  if(!which("manual")){assert(!promoted&&!kv_reads&&!rtc_reads&&!battery_acquires&&!promotions);assert(high_water<=6);}
  else assert(promoted&&promotions==1&&battery_acquires==1&&high_water<=16);
  printf("Sparse terminal PASS (%u grants max, %u native reads)\n",high_water,native_reads);return 0;}
- app_main();if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
+ app_main();if(which("cold-acquire")||which("cold-submit")||which("cold-wait"))assert(!rtc_reads&&!native_reads&&!launches);if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
  assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
  if(!which("promotion-failed")&&!which("refused-promotion-failed")){assert(promoted&&battery_acquires==1&&launches==1);}

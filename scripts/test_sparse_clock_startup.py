@@ -11,23 +11,25 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 ROOT=Path(__file__).resolve().parents[1]
 BASE='d52a74bfb4acc01cc3f0a9dda2c95ba2ba679ee9'
-X4_REF='1cc18a9c998a3d041cf25364fb15c98449fe99d3'
+X4_REF='930712870d3469727cb9148bc3f418fc3eecb896'
 RUNTIME_REF='602ae9bd618e13407b5b94bcad86cdabc23c99ea'
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--runtime-sdk',type=Path,required=True)
 p.add_argument('--runtime-ref',default=RUNTIME_REF,help='Exact canonical Runtime Git object providing tested SDK')
 p.add_argument('--sdk',type=Path,required=True)
 p.add_argument('--x4',type=Path,required=True)
+p.add_argument('--x4-ref',default=X4_REF,help='Exact X4 object providing the private app hook')
 p.add_argument('--xtensa-cc',required=True)
 p.add_argument('--evidence',type=Path)
 a=p.parse_args()
+X4_REF=subprocess.check_output(['git','-C',a.x4,'rev-parse',a.x4_ref+'^{commit}'],text=True).strip()
 FLAGS=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90','-DPORTABLE_APP_OWNS_TOUCH_CHROME',
  '-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_ALARM_CLIENT','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_APP_SLEEP_LOCAL',
  '-DPORTABLE_CROWN_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY','-DPORTABLE_DESK_CLOCK','-DPORTABLE_DESK_CLOCK_SPARSE_START']
 NAMES=['adapter.c','desk_clock_faces.c','PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c']
 SOURCES=[ROOT/'Apps/paper_clock.c',*[ROOT/'lib/PortableApps/src'/n for n in NAMES],a.x4/'minimal/apps/portable_sleep.c']
 QUICK=[ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
-CASES='terminal cold gpio invalid-record unset absent-native invalid-native refused held cancel promotion-failed promotion-partial promotion-retained promotion-ready record-context native-context native-release native-acquire-retained rtc-acquire-retained rtc-read-retained panel-retained panel-refused retained resume-retained clear-retained release-retained key-retained stage-context stage-refused alarm-due slow-prepare cross-minute missing-zone missing-basis bad-zone bad-basis manual alarm-output alarm-uncertain refused-promotion-failed refused-promotion-partial init-nosuffix init-missing-barrier'.split()
+CASES='terminal cold reset cold-reload reset-reload cold-acquire cold-submit cold-wait other-wake gpio invalid-record unset absent-native invalid-native refused held cancel promotion-failed promotion-partial promotion-retained promotion-ready record-context native-context native-release native-acquire-retained rtc-acquire-retained rtc-read-retained panel-retained panel-refused retained resume-retained clear-retained release-retained key-retained stage-context stage-refused alarm-due slow-prepare cross-minute missing-zone missing-basis bad-zone bad-basis manual alarm-output alarm-uncertain refused-promotion-failed refused-promotion-partial init-nosuffix init-missing-barrier'.split()
 HEADERS=['RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h','RiscRetainedWakeV1.h']
 DRIVERS=['RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h','RiscStorageVolumeV1.h']
 def run(args,**kw):return subprocess.run(list(map(str,args)),check=True,**kw)
@@ -67,6 +69,12 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
     run([binary,name,path],env=dict(env,**extra),timeout=20,stdout=subprocess.DEVNULL)
     return path
    for name in CASES:case(name)
+   from boot_logo_oracle import expected_panel
+   expected=expected_panel(ROOT/'lib/PortableApps/boot_logo')
+   for name in ('cold','reset','cold-reload','reset-reload','gpio','other-wake','terminal','invalid-record','unset'):
+    capture=out/(name+'-boot.pixels')
+    case(name,PAPER_BOOT_FRAME=str(capture))
+    assert (capture.read_bytes()==expected)==(name in ('cold','reset')),name+' splash classification'
    case('terminal',CLOCK_MILLIS='4294967195')
    for name in ('fold','gap'):case(name,CLOCK_ZONE='America/Denver')
    # Corrupt policy and unchosen DST folds/gaps remain unavailable. Missing
@@ -110,7 +118,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
        '--local-sleep-source',a.x4/'minimal/apps/portable_sleep.c','--output-dir',target,
        *(['--quick-actions','--quick-radios'] if quick else [])],env=dict(os.environ,NATIVE_APP_CC=a.xtensa_cc))
   receipt=json.loads((target/'build-evidence.json').read_text());assert receipt['grant_count']==14
-  assert receipt['version']=='0.3.2' and receipt['sparse_start'] and receipt['invocation_retention']
+  assert receipt['version']=='0.3.3' and receipt['sparse_start'] and receipt['invocation_retention']
   targets.append(receipt)
  # Actual unchanged default artifacts against the exact public base. A trusted
  # local Git archive preserves original relative includes without a worktree.

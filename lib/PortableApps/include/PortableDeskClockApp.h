@@ -48,6 +48,8 @@ int portable_desk_clock_mode(void);
 bool portable_desk_adapter_foreground(void);
 
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+/* Pure cached classification from the existing boot_read; no extra native read. */
+bool portable_desk_clock_boot_is_cold(void);
 /* Selected deployment only: module init is software-only. Call start in
  * app_main after classifying the boot. TIMER keeps display and alarm.service
  * (including its required closure), never direct input/battery/RTC or radios. */

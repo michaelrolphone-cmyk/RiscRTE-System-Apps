@@ -10,6 +10,7 @@
 #include "PortableRealtimeClient.h"
 #include "PortableTimeZonePreference.h"
 #include "RiscProviderPromotionV1.h"
+#include "../lib/PortableApps/boot_logo/RiscRteLogo.h"
 #define DESK_PREPARATION_BUDGET_US UINT32_C(65000000)
 #define DESK_PROMOTION_ATTEMPTS 2u
 static portable_desk_record desk_boot_record;
@@ -17,7 +18,7 @@ static portable_desk_config desk_configuration;
 static portable_timezone_rule desk_rule;
 static portable_rtc_basis desk_basis;
 static bool desk_zone_known,desk_basis_known,desk_boot_timer,desk_returned,desk_retained;
-static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted;
+static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted,desk_first_promotion;
 static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
@@ -235,6 +236,8 @@ static int desk_promote(void) {
  if(!desk_trace("promotion",status))return -2;
  if(status!=RISC_PROVIDER_PROMOTION_OK && status!=RISC_PROVIDER_PROMOTION_ALREADY_READY)return 0;
  desk_promoted=true;
+ /* Demand activation changes once per Runtime boot, across app reloads. */
+ desk_first_promotion=status==RISC_PROVIDER_PROMOTION_OK;
  return portable_desk_adapter_timer_only()?portable_desk_adapter_upgrade(status):
         portable_desk_adapter_start(PORTABLE_DESK_START_FOREGROUND);
 }
@@ -244,6 +247,19 @@ static bool desk_bind(void) {
      app->millis && app->fill_rect && app->draw_icon && app->set_back_exits_app &&
      paper && paper->struct_size>=sizeof(*paper) && paper->begin && paper->text &&
      paper->measure && paper->contact;
+}
+static bool desk_logo_rect(void *context,int x,int y,int w,int h) {
+ (void)context;
+ if(!portable_desk_adapter_ready())return false;
+ app->fill_rect(x,y,w,h,true);return portable_desk_adapter_ready();
+}
+static bool desk_boot_logo(void) {
+ if(!desk_first_promotion || !portable_desk_clock_boot_is_cold())return true;
+ portable_desk_adapter_begin();
+ if(!portable_desk_adapter_ready() ||
+    !riscrte_logo_draw(NULL,desk_logo_rect,app->screen_width(),app->screen_height()) ||
+    !portable_desk_adapter_present(true)){desk_fence();return false;}
+ return true;
 }
 static bool sparse_boot(void) {
  rt=risc_runtime_get_api(1);
@@ -278,6 +294,7 @@ static bool sparse_boot(void) {
  if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
  format=desk_configuration.time_format;
  if(!portable_desk_adapter_flip(desk_configuration.flip_ui))return false;
+ if(!desk_boot_logo())return false;
  int recovered=desk_sample(true,&sample);
  if(desk_retained || !desk_trace("native-recovery",recovered))return false;
  app->set_back_exits_app(false);return portable_desk_adapter_foreground();

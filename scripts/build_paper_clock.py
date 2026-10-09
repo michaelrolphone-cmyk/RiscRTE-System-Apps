@@ -75,7 +75,7 @@ def build():
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
- if a.sparse_start:version='0.3.4' if tagged_alarm else '0.3.2'
+ if a.sparse_start:version='0.3.5' if tagged_alarm else '0.3.3'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -110,7 +110,7 @@ def build():
                  timer_preferences='retained-only',foreground_promotion=True,invocation_retention=True,
                  time_resolution='native microsecond snapshot before holds; bounded same-boot projection after holds; physical accuracy and entry latency unqualified')
    record['desk_sdk_headers'].update({name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h')})
-   paths=['Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/nova.inc','lib/PortableApps/src/quick_adapter.inc',
+   paths=['lib/PortableApps/boot_logo/RiscRteLogo.h','lib/PortableApps/boot_logo/logo.svg','lib/PortableApps/boot_logo/SOURCES.json','Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/nova.inc','lib/PortableApps/src/quick_adapter.inc',
           'lib/PortableApps/include/PortableRealtimeClient.h','lib/PortableApps/include/PortableTimeZone.h',
           'lib/PortableApps/include/PortableTimeZonePreference.h','lib/PortableApps/include/PortableRtcBasis.h']
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
@@ -120,5 +120,6 @@ def build():
   target=out/'licenses'/folder;target.mkdir(parents=True,exist_ok=True)
   for path in (ROOT/'lib/PortableApps'/folder).glob('LICENSE*'):shutil.copyfile(path,target/path.name)
   if folder=='desk_clock':shutil.copyfile(ROOT/'lib/PortableApps/desk_clock/SOURCES.json',target/'SOURCES.json')
+ if a.sparse_start:shutil.copytree(ROOT/'lib/PortableApps/boot_logo',out/'licenses/boot_logo',dirs_exist_ok=True)
  print('Paper default clock: target structural validation and imports/exports passed')
 if __name__=='__main__':build()
