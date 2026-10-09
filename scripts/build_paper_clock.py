@@ -75,7 +75,7 @@ def build():
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
- if a.sparse_start:version='0.3.3' if tagged_alarm else '0.3.2'
+ if a.sparse_start:version='0.3.4' if tagged_alarm else '0.3.2'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})

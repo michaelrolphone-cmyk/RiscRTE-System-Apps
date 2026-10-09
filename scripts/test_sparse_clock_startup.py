@@ -69,12 +69,14 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
    for name in CASES:case(name)
    case('terminal',CLOCK_MILLIS='4294967195')
    for name in ('fold','gap'):case(name,CLOCK_ZONE='America/Denver')
-   # Independent foreground-unavailable raster: missing/corrupt policy and
-   # unchosen DST folds/gaps remain visibly unavailable and never seed time.
+   # Corrupt policy and unchosen DST folds/gaps remain unavailable. Missing
+   # records use the documented Reader defaults and recover the RTC instead.
    images=[]
-   for name in ('missing-zone','missing-basis','bad-zone','bad-basis','fold','gap'):
+   for name in ('bad-zone','bad-basis','fold','gap'):
     capture=out/(name+'.pixels');case(name,PAPER_FRAME=str(capture),CLOCK_ZONE='America/Denver');images.append(capture.read_bytes())
    assert all(x==images[0] for x in images)
+   for name in ('missing-zone','missing-basis'):
+    capture=out/(name+'.pixels');case(name,PAPER_FRAME=str(capture),CLOCK_ZONE='America/Denver');assert capture.read_bytes()!=images[0]
    valid=out/'valid.pixels';case('foreground',PAPER_FRAME=str(valid),CLOCK_ZONE='America/Denver');assert valid.read_bytes()!=images[0]
    # Exact old-image pixels, all six faces, both orientations, refresh rollover,
    # retained language and poisoned live preference inputs on subsequent boots.

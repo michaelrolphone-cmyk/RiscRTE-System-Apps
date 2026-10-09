@@ -91,7 +91,8 @@ void portable_desk_clock_radios_off(void) {desk_radios_off=true;}
 static const char *desk_notice(void) {
  return desk_radios_off?"DESK CLOCK STOPPED; RADIOS OFF":"DESK CLOCK DID NOT SLEEP";
 }
-/* No storage repair, implicit timezone fallback, chip choice or RTC write. */
+/* Absent records use Reader defaults; invalid/unavailable records never do.
+ * No storage repair, chip choice or RTC write occurs here. */
 static bool desk_config(portable_desk_config *out,unsigned *mode) {
  if(!desk_promoted || desk_held || desk_retained)return false;
  portable_desk_config config={0};
@@ -107,9 +108,9 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  int zone=portable_timezone_preference_load(grant.api,config.time_zone);
  int basis=portable_rtc_basis_load(grant.api,&desk_basis);
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation){desk_fence();return false;}
- desk_zone_known=zone==PORTABLE_TIMEZONE_LOADED &&
+ desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;
- desk_basis_known=basis==PORTABLE_RTC_BASIS_LOADED;
+ desk_basis_known=basis==PORTABLE_RTC_BASIS_LOADED || basis==PORTABLE_RTC_BASIS_MISSING;
  if(!desk_zone_known)memset(config.time_zone,0,sizeof(config.time_zone));
  config.face=(uint8_t)face;config.time_format=(uint8_t)time_format;
  config.language=(uint8_t)language;config.flip_ui=(uint8_t)flip;

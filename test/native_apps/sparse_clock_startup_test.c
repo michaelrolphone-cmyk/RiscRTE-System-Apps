@@ -209,8 +209,8 @@ int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];sc
  assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
  if(!which("promotion-failed")&&!which("refused-promotion-failed")){assert(promoted&&battery_acquires==1&&launches==1);}
- if(which("unset"))assert(seed_calls==1&&rtc_reads==1);
- if(which("missing-zone")||which("missing-basis")||which("bad-zone")||which("bad-basis"))assert(!seed_calls&&!rtc_reads);
+ if(which("unset")||which("missing-zone")||which("missing-basis"))assert(seed_calls==1&&rtc_reads==1);
+ if(which("bad-zone")||which("bad-basis"))assert(!seed_calls&&!rtc_reads);
  if(which("fold")||which("gap"))assert(!seed_calls&&rtc_reads==1);
  if(which("refused"))assert(entries==1&&restores==1&&clears==1&&display_acquires==2);
  if(which("promotion-failed"))assert(!starts&&!battery_acquires&&!kv_reads&&!entries);
