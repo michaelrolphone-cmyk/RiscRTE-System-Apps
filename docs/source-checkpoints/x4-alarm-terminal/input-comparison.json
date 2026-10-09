@@ -1,0 +1,87 @@
+{
+  "schema": 1,
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "public_base": "16058588cd8e64021b8c89c4fbad3f2ecc736a5a",
+  "public_code": "ccd57a97d27316a15deb2ddd601f565c24bcdf96",
+  "public_code_tree": "3e2300d416c0ca54b4f22ea1dd03bec126c980c8",
+  "original_source": "b1d539df71c7e2c32bf3be6c4ed4228d13f45e0b",
+  "original_tree": "ed5afdc7fc1e069d8d1bc85e0884ad2174451661",
+  "whole_tree_equivalent": false,
+  "original_source_uploaded": false,
+  "runtime_header_pin": "3fcbba6a04626f8484a523e7da59fb44c82e6e49",
+  "utilities_header_pin": "25c386d8ca9cb41ad47b141c57c4fb8f904e547d",
+  "files": [
+    {
+      "path": "docs/ALARM_TERMINAL_RETENTION.md",
+      "equal_original": false,
+      "sha256": "bdb22a8836aa8436b5ec34fd8006237e3405ea6633c92e65a357d873d14f9865",
+      "original_sha256": "0345052515f13c652a8af2ee79bb6a455d714d50cb65672393071097d7b09fe1"
+    },
+    {
+      "path": "lib/PortableApps/include/PortableAlarmClient.h",
+      "equal_original": true,
+      "sha256": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1",
+      "original_sha256": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1"
+    },
+    {
+      "path": "lib/PortableApps/include/PortableAlarmTerminalClient.h",
+      "equal_original": true,
+      "sha256": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635",
+      "original_sha256": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635"
+    },
+    {
+      "path": "lib/PortableApps/include/PortableNativeCustody.h",
+      "equal_original": false,
+      "sha256": "88623aaae3af8187f5bb8a9ef7869120b9f498189a0e61c67811fd404ad51792",
+      "original_sha256": "9dc7d0fb89bbab8304d829fa63e5baed3c6c348fdf37cc4166f5e8117a2594b6"
+    },
+    {
+      "path": "lib/PortableApps/src/adapter.c",
+      "equal_original": false,
+      "sha256": "6844977bf3fb5378f150fc1f508e35a82f4e11236330239f01870a5b65723aa5",
+      "original_sha256": "d3e84e78226d0207af53d41a7d122476549fd54469c5646ba5ac7aba15d8aa0a"
+    },
+    {
+      "path": "lib/PortableApps/src/alarm.inc",
+      "equal_original": false,
+      "sha256": "d2420e9631ea3b37a82349a6f253bb5fd1b93a772a6d2f131b0e379270144259",
+      "original_sha256": "20d8c386bbe880aa836d286ab9e0601f4486c392ad67aec9b2a795350c9cba0c"
+    },
+    {
+      "path": "lib/PortableApps/src/native_custody_adapter.inc",
+      "equal_original": false,
+      "sha256": "b0d7b13a97be0da2017d63bd439e216e425eea69a506d2b0ba8689e9c5009369",
+      "original_sha256": "4a23cd04802e155a6f164b3dd4e4650adc6325f29ce5b76cf9c9ced102916ef1"
+    },
+    {
+      "path": "lib/PortableApps/src/quick_adapter.inc",
+      "equal_original": false,
+      "sha256": "733d7f3170deea5d7e72259bfd3820683d5950a5aad977de8c4a8ac0a1bf9a90",
+      "original_sha256": "438a8f7c3de244284c045e259deb5b5de6cc26a005c1c5eeda37bdbbfa0a5a19"
+    },
+    {
+      "path": "scripts/test_alarm_terminal_target.py",
+      "equal_original": true,
+      "sha256": "a200159df270579b17527aa3286a3e9cc06dcb9c01307c714a0bc32b76187286",
+      "original_sha256": "a200159df270579b17527aa3286a3e9cc06dcb9c01307c714a0bc32b76187286"
+    },
+    {
+      "path": "scripts/test_portable_alarm_terminal.py",
+      "equal_original": true,
+      "sha256": "b46b557a77e1c1c41b1dcc5db60027ab279412d49d6fb62d80bd99308a5f2e85",
+      "original_sha256": "b46b557a77e1c1c41b1dcc5db60027ab279412d49d6fb62d80bd99308a5f2e85"
+    },
+    {
+      "path": "test/native_apps/portable_alarm_v2_adapter_test.c",
+      "equal_original": true,
+      "sha256": "44beda8fe14c172ea14925e33f116222874751aee33e2121e647ee7db00d2da3",
+      "original_sha256": "44beda8fe14c172ea14925e33f116222874751aee33e2121e647ee7db00d2da3"
+    },
+    {
+      "path": "test/native_apps/portable_alarm_v2_test.c",
+      "equal_original": true,
+      "sha256": "4fcd95153829e29a8d73beb1f9f6f0cc54300867ced631b7f52fca218eefe712",
+      "original_sha256": "4fcd95153829e29a8d73beb1f9f6f0cc54300867ced631b7f52fca218eefe712"
+    }
+  ]
+}
