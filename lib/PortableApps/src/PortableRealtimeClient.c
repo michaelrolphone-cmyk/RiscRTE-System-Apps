@@ -162,7 +162,14 @@ int portable_realtime_recover_rtc(portable_realtime_client *c,
    twatch_rtc_time_v1 calendar={0};
    bool ok=rtc->read(rtc->context,&calendar);
    rc=safe(c);
-   if(!rc)rc=ok?interpretation(p,&calendar,out):PORTABLE_REALTIME_IO;
+   if(!ok) {
+    /* False cannot distinguish ordinary RTC IO from provider-local retained
+     * custody. Do not release either grant, even when the local guard is SAFE. */
+    out->reason=PORTABLE_REALTIME_IO;
+    if(!rc)rc=halt(c,PORTABLE_REALTIME_UNCERTAIN);
+    out->cleanup=rc;return rc;
+   }
+   if(!rc)rc=interpretation(p,&calendar,out);
   }
  }
  out->reason=rc;

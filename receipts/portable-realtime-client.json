@@ -3,30 +3,30 @@
   "runtime_commit": "341e6e38ce00b7c57d5daaf5f8c829c3575db931",
   "sdk_header_sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
   "source_sha256": {
-    "lib/PortableApps/src/PortableRealtimeClient.c": "9dcc9ce57fe720a12c3bcbb884918da02f5c9cf962eb65a00a5e6efb8e13b27f",
+    "lib/PortableApps/src/PortableRealtimeClient.c": "f640b2ee3970237b53d23993d9524119b650089650a00c4149863da2974eefa4",
     "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
     "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
-    "lib/PortableApps/include/PortableRealtimeClient.h": "bb245dd18a497ef3e93146e6432dbbd54ba21203ec2e7cdda39b70b6c2437513",
+    "lib/PortableApps/include/PortableRealtimeClient.h": "fb197dd4202ea6216290c9a57791c08a0ce61ed065731680316a2983a1a8687f",
     "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
     "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
     "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
-    "test/native_apps/portable_realtime_client_test.c": "d699b28bf57dfe1b3b53d18212b2f3014a71041161486ea18209143e5dcb786f",
+    "test/native_apps/portable_realtime_client_test.c": "07f355abf660c3c5f8bb7f9396e40892f1ecef713f126267784cb86484b23070",
     "test/native_apps/fixtures/portable_realtime_elf.c": "8398ce29f9ba603e64c5b9e2eeaca6d94aa3f1bc22dcae02d9331d8bdf83c5f8",
     "scripts/test_portable_realtime.py": "30686b936b1260e62f11f781f50375704dd83edafa4bd045f449877a69a1a898"
   },
-  "host_plain": "Portable realtime production client: 121 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
-  "host_asan_ubsan": "Portable realtime production client: 121 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
+  "host_plain": "Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
+  "host_asan_ubsan": "Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)",
   "xtensa": {
     "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
     "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
-    "elf_bytes": 36340,
-    "elf_sha256": "597cb0ab9c8cc2d164c4e3445051de2fe1a876888d49b6f76e1ecc1e7f9bb0f2",
+    "elf_bytes": 36396,
+    "elf_sha256": "cb6b4803b592f4e99350367213a316d13039b575bbb6cf708063cabcc6bc26d8",
     "imports": [
       "memcpy",
       "memset",
       "risc_runtime_get_api"
     ],
     "loader_validation": "PASS",
-    "dynamic_symbols": "\nSymbol table '.dynsym' contains 8 entries:\n   Num:    Value  Size Type    Bind   Vis      Ndx Name\n     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND risc_runtime_get_api\n     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy\n     3: 000086ec     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start\n     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset\n     5: 000086ec     0 NOTYPE  GLOBAL DEFAULT   11 _edata\n     6: 000086f0     0 NOTYPE  GLOBAL DEFAULT   12 _end\n     7: 00004098   190 FUNC    GLOBAL DEFAULT    6 app_main\n"
+    "dynamic_symbols": "\nSymbol table '.dynsym' contains 8 entries:\n   Num:    Value  Size Type    Bind   Vis      Ndx Name\n     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND risc_runtime_get_api\n     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy\n     3: 00008700     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start\n     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset\n     5: 00008700     0 NOTYPE  GLOBAL DEFAULT   11 _edata\n     6: 00008704     0 NOTYPE  GLOBAL DEFAULT   12 _end\n     7: 000040ac   190 FUNC    GLOBAL DEFAULT    6 app_main\n"
   }
 }

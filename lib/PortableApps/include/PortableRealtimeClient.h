@@ -71,6 +71,7 @@ int portable_realtime_read(portable_realtime_client *,risc_realtime_snapshot_v1 
 /* Explicit normal-start/control-only recovery. Valid native time returns OK
  * without RTC acquisition. UNSET timer/read-only clients return DENIED.
  * An unsuccessful RTC acquire is UNCERTAIN: bool cannot certify rollback.
+ * A false RTC read also halts as UNCERTAIN (reason IO), preserving both grants.
  * RTC is always safely released before checked native seed(whole_seconds,0).
  * A local-calendar gap/unchosen fold never silently falls back to UTC. */
 int portable_realtime_recover_rtc(portable_realtime_client *,

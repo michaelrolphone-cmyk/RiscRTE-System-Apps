@@ -48,7 +48,9 @@ static int32_t seed_native(void *context,int64_t epoch,uint32_t ns) {
 }
 static bool read_rtc(void *context,twatch_rtc_time_v1 *out) {
  assert(f.rtc_live && context==&f);++f.rtc_reads;event('C');
- *out=f.calendar;return f.rtc_read_ok;
+ *out=f.calendar;
+ if(!f.rtc_read_ok && f.retention_on_rtc_failure)f.hidden_retained=true;
+ return f.rtc_read_ok;
 }
 static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *g) {
  assert(g->struct_size==sizeof(*g) && !g->slot && !g->generation && !g->api);
@@ -245,7 +247,7 @@ static void recovery(void) {
   if(mode==0)rtc.api_version=1;
   if(mode==1)f.rtc_table=short_table;
   if(mode==2)rtc.read=0;
-  if(mode==3){f.rtc_read_ok=false;expected=PORTABLE_REALTIME_IO;}
+  if(mode==3){f.rtc_read_ok=false;expected=PORTABLE_REALTIME_UNCERTAIN;}
   if(mode==4)f.calendar.month=13;
   if(mode==5)f.calendar.second=60;
   if(mode==6)f.calendar.day=32;
@@ -257,8 +259,14 @@ static void recovery(void) {
   assert(open_client(&c,1,1)==0);portable_realtime_recovery_result r;
   int got=portable_realtime_recover_rtc(&c,&p,&r);
   if(got!=expected)fprintf(stderr,"RTC mode %d: got %d expected %d\n",mode,got,expected);
-  assert(got==expected && !f.seeds && f.rtc_releases==1);
-  assert(r.reason==expected && r.cleanup==0);assert(portable_realtime_close(&c)==0);
+  assert(got==expected && !f.seeds);
+  if(mode==3) {
+   assert(!f.rtc_releases && r.reason==PORTABLE_REALTIME_IO && r.cleanup==PORTABLE_REALTIME_UNCERTAIN);
+   assert_frozen(&c,PORTABLE_REALTIME_UNCERTAIN);
+  } else {
+   assert(f.rtc_releases==1 && r.reason==expected && r.cleanup==0);
+   assert(portable_realtime_close(&c)==0);
+  }
  }
  reset();unset();portable_realtime_client max={0};portable_realtime_recovery_policy p=policy("UTC0",true);
  f.calendar=(twatch_rtc_time_v1){2038,1,19,255,3,14,7};portable_realtime_recovery_result r;
@@ -323,6 +331,21 @@ static void recovery_failures(void) {
  assert(portable_realtime_recover_rtc(&c,&p,&r)==PORTABLE_REALTIME_IO && r.seeded && f.reads==2);
  assert(portable_realtime_close(&c)==0);
 }
+static void rtc_read_custody(void) {
+ for(int hidden=0;hidden<2;++hidden) {
+  reset();unset();portable_realtime_client c={0};portable_realtime_recovery_policy p=policy("UTC0",true);
+  portable_realtime_recovery_result r;f.rtc_read_ok=false;f.retention_on_rtc_failure=hidden!=0;
+  assert(open_client(&c,1,1)==0);
+  assert(portable_realtime_recover_rtc(&c,&p,&r)==PORTABLE_REALTIME_UNCERTAIN);
+  assert(r.reason==PORTABLE_REALTIME_IO && r.cleanup==PORTABLE_REALTIME_UNCERTAIN);
+  assert(!f.seeds && !f.releases && f.rtc_reads==1 && !strcmp(f.events,"ARTC"));
+  assert(f.hidden_retained==(hidden!=0) && f.phase==PORTABLE_REALTIME_GUARD_SAFE);
+  assert(c.rtc_grant.api && c.rtc_grant.generation && c.realtime_grant.api);
+  unsigned count=f.event_count;
+  assert(portable_realtime_recover_rtc(&c,&p,&r)==PORTABLE_REALTIME_UNCERTAIN);
+  assert_frozen(&c,PORTABLE_REALTIME_UNCERTAIN);assert(f.event_count==count);
+ }
+}
 static void guard_boundaries(void) {
  for(int retained=0;retained<2;++retained) {
   int reason=retained?PORTABLE_REALTIME_RETAINED:PORTABLE_REALTIME_CONTEXT;
@@ -372,7 +395,7 @@ static void projection(void) {
  assert(portable_realtime_project(&sample,0,0,0)==PORTABLE_REALTIME_INVALID);
 }
 int main(void) {
- basic();malformed_native();snapshots();recovery();recovery_failures();guard_boundaries();projection();
+ basic();malformed_native();snapshots();recovery();recovery_failures();rtc_read_custody();guard_boundaries();projection();
  printf("Portable realtime production client: %u scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)\n",cases);
  return 0;
 }
