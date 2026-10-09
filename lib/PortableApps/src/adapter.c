@@ -1,3 +1,9 @@
+#if defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#define PORTABLE_NATIVE_CUSTODY_FENCE
+#endif
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) && (!defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_SETTINGS_TIME_ZONE) || !defined(PORTABLE_SETTINGS_X4_DESK_CLOCK) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE))
+#error "Native time Settings requires explicit Settings, timezone, X4 paper and native custody profiles"
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
 #include "PortableFileBrowser.h"
 #endif
@@ -79,6 +85,20 @@ static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
 #endif
 static bool paper_rotated;
 static bool failed, list_mode;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#include "PortableNativeCustody.h"
+#ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
+#error "Native custody requires the complete canonical Runtime retention SDK"
+#endif
+static bool native_custody_retained;
+static const risc_runtime_api_v1 *native_custody_runtime;
+static volatile risc_display_surface_v1 native_custody_surface;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#include "RiscRealtimeV1.h"
+#include "RiscKeyValueV1.h"
+static int initialize_providers(void);
+#endif
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 #if !defined(PORTABLE_DESK_CLOCK) || !defined(PORTABLE_ALARM_CLIENT) || !defined(PORTABLE_APP_SLEEP_LOCAL)
 #error "Sparse startup requires the desk clock, alarm closure and local sleep hook"
@@ -94,8 +114,7 @@ static unsigned desk_phase;
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
 #error "Sparse Clock requires the canonical Runtime invocation-retention SDK"
 #endif
-static bool desk_touch_neutral,desk_native_fenced;
-static volatile risc_display_surface_v1 desk_retained_surface;
+static bool desk_touch_neutral;
 static const risc_runtime_api_v1 *desk_runtime;
 static risc_runtime_api_v1 desk_guarded_runtime;
 #ifdef PORTABLE_QUICK_RADIOS
@@ -143,6 +162,9 @@ static bool alarm_foreground(bool *consumed);
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 static bool alarm_failure(void);
+#endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#include "native_custody_adapter.inc"
 #endif
 static unsigned first_row, last_rows;
 #ifdef PORTABLE_SETTINGS_APP
@@ -210,13 +232,14 @@ static bool input_navigation_open(void) {
 }
 static inline void input_navigation_reset(void) {
  navigation_pending=0;navigation_neutral=false;
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
- if(navigation_ready && !navigation->reset(navigation->context))portable_desk_adapter_retain();
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return;
+ if(navigation_ready && !navigation->reset(navigation->context))portable_adapter_retain();
 #else
  if(navigation_ready && !navigation->reset(navigation->context))failed=true;
 #endif
 }
-#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
+#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME)
 static void input_navigation_close(void) {
  if(navigation_ready) {
   bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
@@ -233,6 +256,9 @@ static void input_navigation_close(void) {
 #endif
 #endif
 static void input_service(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(failed)return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(failed || desk_phase!=DESK_FOREGROUND || !touch.subscription)return;
 #endif
@@ -250,7 +276,7 @@ static void input_service(void) {
  paper_orient_input(&next);
 #endif
  input_sampled_at=millis_now();
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(failed)return;
 #endif
  if(next.home_pressed) {
@@ -299,7 +325,13 @@ static void input_service(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(navigation_ready) {
   risc_input_navigation_frame_v1 frame={0};
-  if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
+  if(!navigation->poll(navigation->context,&frame)) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    portable_adapter_retain();return;
+#else
+    navigation_neutral=false;
+#endif
+  }
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else {navigation_pending|=frame.pressed;
     if(frame.pressed&RISC_NAV_HOME){crown_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;}
@@ -355,7 +387,7 @@ static void native_point(int *x,int *y) {
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
 #endif
   if (!surface.frame || w <= 0 || h <= 0)
@@ -377,8 +409,8 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     }
 }
 static void display_failure(const char *detail) {
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-  (void)detail;portable_desk_adapter_retain();return;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  (void)detail;portable_adapter_retain();return;
 #endif
   if(!failed && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
      (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
@@ -873,23 +905,7 @@ bool portable_desk_adapter_ready(void) {
 }
 void portable_desk_adapter_retain(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
- /* App-local flags alone cannot keep the Runtime from freeing an invocation.
-  * This native owner fence does no provider I/O, polling or release, and also
-  * accepts an already Runtime-retained current invocation. */
- if(!desk_native_fenced) {
-  if(!desk_runtime || !desk_runtime->retain_invocation ||
-     !desk_runtime->retain_invocation()) {
-   /* Unsupported/foreign custody cannot safely return or yield. Valid startup
-    * admits the owner-only suffix, so this is an invariant-failure fail-stop. */
-   for(;;) {}
-  }
-  desk_native_fenced=true;
- }
- if(!native_sleep_retained) {
-  /* Pin the lease descriptor while making already-copied drawing callbacks
-   * inert. Never release or free this retained surface after uncertain I/O. */
-  desk_retained_surface=surface;surface=(risc_display_surface_v1){0};
- }
+ portable_adapter_retain();
 #endif
  native_sleep_retained=true;failed=true;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -986,9 +1002,18 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(quick_replay_delivery){quick_replay_delivery=false;goto replay_input;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return false;
+#endif
   rt->yield_ms(spent<wait?wait-spent:1);
   last_poll_at=millis_now();
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return false;
+#endif
   input_service();
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return false;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(!alarm_foreground(&consumed))return false;
   if(consumed){crown_pending=false;return true;}
@@ -1235,6 +1260,9 @@ bool portable_power_read(risc_battery_sample_v1 *out) {
 }
 #endif
 static bool read_battery(t5_battery_state_t *out) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase!=DESK_FOREGROUND)return false;
 #endif
@@ -1352,6 +1380,13 @@ static const t5_ui_api_v1 ui = {.api_version = 1,
                                 .previous_index = prev};
 static const t5_battery_api_v1 battery = {1, sizeof(battery), read_battery};
 const t5_app_api_v1 *t5_app_get_api(uint32_t v) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(v!=1 || !settings_initialized || native_custody_retained)return NULL;
+  if(!settings_started) {
+    settings_started=true;
+    if(initialize_providers()) {portable_adapter_retain();return NULL;}
+  }
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(!portable_desk_adapter_ready())return NULL;
 #endif
@@ -1390,8 +1425,9 @@ static int initialize(void) {
       !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch ||
       !rt->diagnostic)
     return -1;
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-  if(rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation)return -1;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(native_custody_retained || rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation)return -1;
+  native_custody_runtime=rt;
 #endif
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
@@ -1432,91 +1468,74 @@ static int initialize(void) {
   rt=&desk_guarded_runtime;desk_phase=DESK_INITIALIZED;
   return 0;
 #else
-  if (!rt->acquire("display.output", 1, 0, &dg))
-    return -1;
-  display = dg.api;
-  if (!display || display->api_version != 1 ||
-      display->struct_size < sizeof(*display) || !display->get_info ||
-      !display->acquire || !display->release || !display->submit ||
-      !display->present_status)
-    return -1;
-  if (!display->get_info(display->context, &info) || info.width < 160 ||
-      info.height < 160 || info.width > 1024 || info.height > 1024 ||
-      !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
-                                 RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
-    return -1;
-  surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
-    RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
-  paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
-    (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
-  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
-#ifdef PORTABLE_PAPER_PREFERENCES
-  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && pp_enabled()) {
-    paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};unsigned value=0;
-    if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant)) {
-      (void)portable_reader_preference_load(paper_preferences_grant.api,false,&value);
-      if(!rt->release(&paper_preferences_grant)) {
-        /* Preserve the actual grant and every resource on uncertain cleanup. */
-        paper_preferences_retained=failed=true;
-#ifdef PORTABLE_ALARM_CLIENT
-        native_sleep_retained=true;
-#endif
-        return -1;
-      }
-    }
-    paper_flip_ui=value!=0;
-  }
-#endif
-#ifdef PORTABLE_NOVA_UI
-  if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
-#endif
-#ifdef PORTABLE_ALARM_CLIENT
-  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
-  if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
-#endif
-  if (!portable_touch_open(&touch, rt))return -1;
-#ifndef PORTABLE_FORCE_FULL_FRAMES
-  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE))
-    paper_previous=malloc((size_t)((info.width+7)/8)*info.height); /* optional, 48 KB at 800x480 */
-  if(surface_format==RISC_DISPLAY_FORMAT_RGB565 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE) && info.width<=320 && info.height<=320)
-    previous_pixels=malloc((size_t)info.width*info.height*2); /* optional; full-frame fallback */
-#endif
-#if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
-  if(!input_navigation_open())return -1;
-#endif
-  if (rt->acquire("board.battery", 1, 0, &bg)) {
-    gauge = bg.api;
-    if (!gauge || gauge->api_version != 1 ||
-        gauge->struct_size < sizeof(*gauge) || !gauge->read)
-      return -1;
-  }
-#ifdef PORTABLE_SETTINGS_APP
-  if (!settings_open()) return -1;
-#endif
-#ifdef PORTABLE_APP_SLEEP_LOCAL
-  last_activity=millis_now();
-#endif
-#ifdef PORTABLE_QUICK_ACTIONS
-  quick.ui.paper=pp_enabled();
-  if(!pqa_session_load(&quick,rt))return -1;
-  quick_paper_capabilities();
-#ifdef PORTABLE_QUICK_RADIOS
-#ifdef PORTABLE_DESK_CLOCK
-  desk_radios_loaded=false;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  settings_runtime=*rt;settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+  settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
+  settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
+  rt=&settings_runtime;settings_initialized=true;return 0;
 #else
-  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
+#include "foreground_adapter_open.inc"
 #endif
-#endif
-#endif
-  return failed?-1:0;
 #endif
 }
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+static int initialize_providers(void) {
+#include "foreground_adapter_open.inc"
+}
+#endif
+
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 #include "sparse_clock_adapter.inc"
 #endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+static void settings_native_finalize(void) {
+  if(native_custody_retained || !rt || !settings_started)return;
+#ifdef PORTABLE_ALARM_CLIENT
+  if(alarms.api && !alarm_failed_cleaned) {
+    if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain) {portable_adapter_retain();return;}
+    if((failed || !display_settled || portable_alarm_owned(&alarms)) && !portable_alarm_failure_stop(&alarms)) {portable_adapter_retain();return;}
+  }
+  if(!portable_alarm_close(&alarms,rt))return;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_adapter_retain();return;}
+#endif
+  if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
+#ifdef PORTABLE_INPUT_NAVIGATION
+  if(navigation_ready) {
+    if(!navigation->foreground(navigation->context,NULL,0) || !navigation->reset(navigation->context)) {portable_adapter_retain();return;}
+    navigation_ready=false;
+  }
+  if(navigation_grant.api && !rt->release(&navigation_grant))return;
+  navigation=NULL;
+#endif
+  if(!portable_touch_close(&touch,rt)){portable_adapter_retain();return;}
+  if(settings_grant.api && !rt->release(&settings_grant))return;
+  settings_store=NULL;sv_active=false;
+  if(bg.api && !rt->release(&bg))return;
+  if(dg.api && !rt->release(&dg))return;
+#ifdef PORTABLE_ALARM_CLIENT
+  free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+  free(quick_background);quick_background=NULL;
+#endif
+  free(previous_pixels);previous_pixels=NULL;previous_valid=false;
+  free(paper_previous);paper_previous=NULL;paper_previous_valid=false;
+  gauge=NULL;display=NULL;settings_started=false;settings_initialized=false;
+}
+#endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(!settings_started)return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_finalize();
+#elif defined(PORTABLE_SETTINGS_NATIVE_TIME)
+  settings_native_finalize();
 #else
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(paper_preferences_retained)return;

@@ -22,8 +22,8 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-    portable_desk_adapter_retain();return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    portable_adapter_retain();return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend()) {
@@ -86,7 +86,7 @@ static bool alarm_audio_pump(void) {
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
         alarm_sessions_suspend();
 }
-#elif defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
 static bool alarm_audio_pump(void) {
     if(native_sleep_retained)return false;
     int32_t result=alarms.api->step(alarms.api->context);
@@ -251,7 +251,7 @@ static bool alarm_foreground(bool *consumed) {
             dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
         }
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
             int32_t result=alarms.api->refresh(alarms.api->context);
             if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
 #else
@@ -262,7 +262,7 @@ static bool alarm_foreground(bool *consumed) {
             if(alarms.status.occurrence.generation) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
                 int32_t result=alarms.api->acknowledge(alarms.api->context,&token);
                 if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
 #else

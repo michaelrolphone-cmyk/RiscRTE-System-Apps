@@ -151,6 +151,7 @@ static bool np_clock(uint8_t *hour,uint8_t *minute) {
   (void)hour;(void)minute;return false;
 #endif
 }
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static void np_close(void) {
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   if(np_rtc_grant.api && !rt->release(&np_rtc_grant))rt->diagnostic("PORTABLE_APP error=toolbar-clock-release");
@@ -158,6 +159,7 @@ static void np_close(void) {
 #endif
 }
 static void np_poll(t5_app_input_t *out);
+#endif
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
   if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;

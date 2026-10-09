@@ -2,6 +2,9 @@
 #include "RiscRuntimeV1.h"
 #include "RiscTouchV1.h"
 #include <string.h>
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#include "PortableNativeCustody.h"
+#endif
 #ifndef PORTABLE_TOUCH_ROTATION
 #define PORTABLE_TOUCH_ROTATION 0
 #endif
@@ -57,6 +60,9 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   memset(out, 0, sizeof(*out));
   if (!t->subscription) { out->cancelled = true; return; }
   bool ok = t->api->poll(t->api->context, 1);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(!ok){portable_adapter_retain();out->cancelled=true;return;}
+#endif
   unsigned drained = 0;
   bool saw_up = false, replaced = false, home_edge=false;
   bool home_down=t->home_down,home_neutral=t->home_neutral;
@@ -64,6 +70,9 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   for (; drained < RISC_TOUCH_QUEUE_LENGTH; ++drained) {
     risc_touch_event_v1 e={0};
     int n = t->api->next(t->api->context, t->subscription, &e);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(n<0){portable_adapter_retain();out->cancelled=true;return;}
+#endif
     if (n <= 0) { if (n < 0) ok = false; break; }
     if(e.id==0 && e.kind==RISC_TOUCH_EVENT_BUTTON_DOWN){
       home_edge|=home_neutral&&!home_down;home_down=true;
@@ -82,7 +91,14 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
   /* An exhausted budget cannot prove the event stream is current. */
   if (drained == RISC_TOUCH_QUEUE_LENGTH) ok = false;
   risc_touch_snapshot_v1 s = {0};
-  if (!t->api->snapshot(t->api->context, &s) || !ok || replaced || (saw_up && (s.contact_count || up_x>=s.width || up_y>=s.height)) || s.contact_count > 1 ||
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  bool snapshot_ok=t->api->snapshot(t->api->context, &s);
+  if(!snapshot_ok){portable_adapter_retain();out->cancelled=true;return;}
+  if (!snapshot_ok || !ok || replaced
+#else
+  if (!t->api->snapshot(t->api->context, &s) || !ok || replaced
+#endif
+      || (saw_up && (s.contact_count || up_x>=s.width || up_y>=s.height)) || s.contact_count > 1 ||
       (s.contact_count && (s.contacts[0].x >= s.width || s.contacts[0].y >= s.height))) {
     t->neutral = t->down = false;
     t->home_neutral=t->home_down=false;

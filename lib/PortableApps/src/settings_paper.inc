@@ -10,7 +10,14 @@ static unsigned sp_first,sp_field_first;
 #define SP_MORE_CAPTION (sp_first?"PREVIOUS":"MORE >")
 #define SP_MORE_NEXT (sp_first?0:sp_rows())
 #endif
-static unsigned sp_rows(void) {unsigned n=(unsigned)(height()-SP_TOP-144)/SP_ROW;return n?n:1;}
+static unsigned sp_rows(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  unsigned reserve=sv_page==SV_ROOT || sv_page==SV_FIELDS?252u:144u;
+  unsigned n=(unsigned)(height()-SP_TOP-(int)reserve)/SP_ROW;return n?n:1;
+#else
+  unsigned n=(unsigned)(height()-SP_TOP-144)/SP_ROW;return n?n:1;
+#endif
+}
 static void sp_text(int x,int y,int w,const char *s,bool heading,bool black){pp_text(x,y,w,s,heading?2:1,heading,black);}
 static void sp_header(const char *title) {sp_text(32,30,width()-64,title,true,true);fill(32,88,width()-64,3,0);}
 static void sp_button(int x,int y,int w,int h,const char *caption,bool selected) {
@@ -42,7 +49,24 @@ static unsigned sp_face_columns(void) {return height()>=720?1u:2u;}
 static int sp_face_step(void) {int step=(height()-280)/(int)(PORTABLE_DESK_FACE_COUNT/sp_face_columns());return step<84?step:84;}
 static int sp_face_width(void) {return sp_face_columns()==1?width()-64:(width()-80)/2;}
 #endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+static void sp_native_notice(bool fields) {
+  char line[96];int y=height()-234;
+  if(snt_result_available) {
+    snprintf(line,sizeof(line),"RTC: %s",snt_outcome(snt_last_result.rtc_outcome));sp_text(32,y,width()-64,line,false,true);
+    snprintf(line,sizeof(line),"Native: %s",snt_last_result.native.verified?"verified":snt_last_result.native.attempted?"unconfirmed":"not attempted");sp_text(32,y+34,width()-64,line,false,true);
+    snprintf(line,sizeof(line),"Basis: %s",snt_outcome(snt_last_result.metadata_outcome));sp_text(32,y+68,width()-64,line,false,true);
+  } else if(fields) {
+    snprintf(line,sizeof(line),"Zone: %s",snt_zone_id);sp_text(32,y,width()-64,line,false,true);
+    snprintf(line,sizeof(line),"RTC: %s",snt_basis_label());sp_text(32,y+34,width()-64,line,false,true);
+    sp_text(32,y+68,width()-64,editor_message,false,true);
+  } else sp_text(32,height()-142,width()-64,settings_message,false,true);
+}
+#endif
 static void sp_redraw(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return;
+#endif
   pp_begin();
   const char *title=sv_page==SV_ROOT?"SETTINGS":sv_page==SV_FIELDS?"TIME AND DATE":sv_page==SV_VALUE?editor_names[editor_field]:
 
@@ -55,16 +79,29 @@ static void sp_redraw(void) {
     unsigned rows=sp_rows();if(sp_first>=SETTINGS_ROW_COUNT)sp_first=0;
     for(unsigned i=0;i<rows&&sp_first+i<SETTINGS_ROW_COUNT;i++) {
       t5_app_setting_t item;unsigned index=sp_first+i;
-      if(settings_get(0,index,&item))sp_row(SP_TOP+(int)i*SP_ROW,item.label,item.value,sv_selected==index+1,item.type==T5_APP_SETTING_ACTION);
+      bool available=settings_get(0,index,&item);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+      if(failed)return;
+#endif
+      if(available)sp_row(SP_TOP+(int)i*SP_ROW,item.label,item.value,sv_selected==index+1,item.type==T5_APP_SETTING_ACTION);
     }
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+    sp_native_notice(false);
+#else
     sp_text(32,height()-142,width()-64,settings_message,false,true);
+#endif
     if(SETTINGS_ROW_COUNT>rows) {
       sp_button(32,height()-112,(width()-80)/2,88,"< BACK",false);
       sp_button(width()/2+8,height()-112,(width()-80)/2,88,SP_MORE_CAPTION,false);
     } else sp_footer(false);
   } else if(sv_page==SV_FIELDS) {
     for(unsigned at=0;at<sp_rows()&&sp_field_first+at<6;at++){unsigned i=sp_field_first+at;char value[24];editor_value_text(i,value,sizeof(value));sp_row(SP_TOP+(int)at*SP_ROW,editor_names[i],value,editor_field==i,true);}
-    sp_text(32,height()-142,width()-64,editor_message,false,true);sp_footer(true);
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+    sp_native_notice(true);
+#else
+    sp_text(32,height()-142,width()-64,editor_message,false,true);
+#endif
+    sp_footer(true);
   } else if(sv_page==SV_VALUE) {
     char value[32];editor_value_text(editor_field,value,sizeof(value));
     int w=pp_measure(value,true);sp_text((width()-w)/2,150,width()-64,value,true,true);
@@ -73,8 +110,20 @@ static void sp_redraw(void) {
     sp_text(32,520,width()-64,"DRAFT ONLY - USE SAVE",false,true);sp_footer(false);
   } else if(sv_page==SV_FOLD) {
     sp_text(32,120,width()-64,"THIS LOCAL HOUR OCCURS TWICE",false,true);
-    sp_button(32,192,width()-64,88,"SAVE FIRST MDT",sv_fold_choice==0);
-    sp_button(32,304,width()-64,88,"SAVE SECOND MST",sv_fold_choice==1);sp_footer(false);
+    sp_button(32,192,width()-64,88,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE EARLIER UTC"
+#else
+  "SAVE FIRST MDT"
+#endif
+,sv_fold_choice==0);
+    sp_button(32,304,width()-64,88,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE LATER UTC"
+#else
+  "SAVE SECOND MST"
+#endif
+,sv_fold_choice==1);sp_footer(false);
   } else if(sv_page==SV_TIME_FORMAT) {
     sp_button(32,144,width()-64,88,"12-HOUR AM / PM",time_format_choice==PORTABLE_TIME_FORMAT_12);
     sp_button(32,256,width()-64,88,"24-HOUR",time_format_choice==PORTABLE_TIME_FORMAT_24);

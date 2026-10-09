@@ -6,8 +6,10 @@
 #define PORTABLE_SETTINGS_VERSION "dev"
 #endif
 
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static risc_runtime_capability_v1 rtc_grant;
 static const twatch_rtc_api_v1 *rtc;
+#endif
 static const char *settings_message = "";
 static const char *editor_message = "";
 static unsigned editor_field;
@@ -110,18 +112,22 @@ static bool face_unconfirmed;
 #define SETTINGS_ROW_COUNT SETTINGS_NON_FACE_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static portable_time_candidate save_candidates[2];
 static unsigned save_candidate_count;
+#endif
 static const char *const editor_names[] = {"Year","Month","Day","Hour","Minute","Second"};
 static unsigned calendar_days(unsigned year, unsigned month) {
   static const uint8_t days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
   return month >= 1 && month <= 12 ? days[month - 1] + (month == 2 && year % 4 == 0) : 0;
 }
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static bool calendar_valid(const twatch_rtc_time_v1 *t) {
   return t && t->year >= 2000 && t->year <= 2099 && t->month >= 1 && t->month <= 12 &&
          t->day >= 1 && t->day <= calendar_days(t->year, t->month) && t->weekday <= 6 &&
          t->hour <= 23 && t->minute <= 59 && t->second <= 59;
 }
+#endif
 /* Bounded to 100 years. Unsigned seconds through 2099 fit in uint32_t. */
 static uint32_t calendar_day_index(const twatch_rtc_time_v1 *t) {
   uint32_t days = 0;
@@ -129,9 +135,11 @@ static uint32_t calendar_day_index(const twatch_rtc_time_v1 *t) {
   for (unsigned m = 1; m < t->month; ++m) days += calendar_days(t->year, m);
   return days + t->day - 1;
 }
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static uint32_t calendar_seconds(const twatch_rtc_time_v1 *t) {
   return ((calendar_day_index(t) * 24 + t->hour) * 60 + t->minute) * 60 + t->second;
 }
+#endif
 static uint8_t calendar_weekday(const twatch_rtc_time_v1 *t) {
   return (uint8_t)((calendar_day_index(t) + 6) % 7); /* 2000-01-01 was Saturday. */
 }
@@ -145,6 +153,9 @@ static inline void format_wall_time(char *out, size_t capacity, const twatch_rtc
            (unsigned)t->minute, (unsigned)t->second, t->hour < 12 ? "AM" : "PM");
 }
 
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#include "settings_native_time.inc"
+#endif
 static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 static uint32_t settings_categories(void) { return 1; }
 static bool settings_category(uint32_t category,char *out,size_t capacity) {
@@ -169,14 +180,27 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     };
   strcpy(out->label,names[index]);
   if(index==0) {
-    out->type=T5_APP_SETTING_ACTION;twatch_rtc_time_v1 raw,local;
+    out->type=T5_APP_SETTING_ACTION;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+    twatch_rtc_time_v1 local;
+    bool readable=snt_read_local(&local);if(native_custody_retained)return false;
+    if(readable) {
+#else
+    twatch_rtc_time_v1 raw,local;
     if(rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&local)) {
+#endif
       if(settings_hour_24())snprintf(out->value,sizeof(out->value),"%02u:%02u",(unsigned)local.hour,(unsigned)local.minute);
       else {
         unsigned h=local.hour%12;
         snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
       }
-    } else strcpy(out->value,"Unavailable");
+    } else {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+      strcpy(out->value,snt_snapshot_status==PORTABLE_REALTIME_UNSET?"Native unset":"Unavailable");
+#else
+      strcpy(out->value,"Unavailable");
+#endif
+    }
   } else if(index==1) {
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
     char id[PORTABLE_TIMEZONE_ID_BYTES];
@@ -193,7 +217,13 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Unavailable":settings_hour_24()?"24-hour":"12-hour");
   }
-  else if(index==3)strcpy(out->value,portable_time_basis());
+  else if(index==3) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+    snt_load_basis();if(native_custody_retained)return false;strcpy(out->value,snt_basis_label());
+#else
+    strcpy(out->value,portable_time_basis());
+#endif
+  }
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(index==4) {
     unsigned mode;int loaded=settings_sleep_load(&mode);
@@ -279,6 +309,9 @@ static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take
 #include "settings_view.inc"
 static void settings_render(uint32_t category,int32_t selected) {
   if(handoff_requested)return;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return;
+#endif
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
   sv_selected=selected<0?0:(unsigned)selected;list_mode=true;sv_active=true;
@@ -296,6 +329,7 @@ static void settings_render(uint32_t category,int32_t selected) {
 }
 /* Exactly one write per explicit Save/choice. Verification stays in raw RTC
  * coordinates and tolerates one ticking second/date boundary within250ms. */
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
   if(!calendar_valid(value)){editor_message="Invalid date or time";return false;}
   uint32_t start=millis_now();if(failed)return false;
@@ -311,6 +345,7 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
   }
   editor_message="Verify failed - check RTC";return false;
 }
+#endif
 static void editor_select_field(unsigned field) {
   editor_field=field;
   if(pp_enabled()&&field<6){unsigned rows=sp_rows();if(field<sp_field_first)sp_field_first=field;else if(field>=sp_field_first+rows)sp_field_first=field-rows+1;}
@@ -323,6 +358,20 @@ static void editor_select_field(unsigned field) {
   }
 }
 static bool editor_try_save(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(snt_basis_status!=PORTABLE_RTC_BASIS_LOADED && snt_basis_status!=PORTABLE_RTC_BASIS_MISSING) {
+    editor_message=snt_basis_label();sv_switch(SV_FIELDS);return false;
+  }
+  if(snt_zone_status!=PORTABLE_TIMEZONE_LOADED && snt_zone_status!=PORTABLE_TIMEZONE_MISSING) {
+    editor_message="Choose a valid Time Zone first";sv_switch(SV_FIELDS);return false;
+  }
+  portable_set_time_request request=snt_request(-1);portable_set_time_plan plan;
+  if(portable_set_time_prepare(&request,&plan)==PORTABLE_REALTIME_FOLD) {
+    sv_fold_choice=0;sv_switch(SV_FOLD);return false;
+  }
+  if(snt_save(-1))return true;
+  sv_switch(SV_FIELDS);return false;
+#else
   save_candidate_count=portable_time_inverse(&settings_draft,save_candidates);
   if(!save_candidate_count) {
     editor_message="DST gap or RTC range";sv_switch(SV_FIELDS);return false;
@@ -330,11 +379,15 @@ static bool editor_try_save(void) {
   if(save_candidate_count==2) {sv_fold_choice=0;sv_switch(SV_FOLD);return false;}
   if(editor_save_raw(&save_candidates[0].rtc))return true;
   sv_switch(SV_FIELDS);return false;
+#endif
 }
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
 #include "settings_timezone.inc"
 #endif
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return T5_APP_SETTING_ERROR;
+#endif
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(index==1)return stz_activate();
@@ -523,10 +576,21 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     while(poll(&input,20))if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
     sv_switch(SV_ROOT);return T5_APP_SETTING_NO_CHANGE;
   }
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  bool readable=snt_read_local(&settings_draft);if(native_custody_retained)return T5_APP_SETTING_ERROR;
+  snt_load_basis();if(native_custody_retained)return T5_APP_SETTING_ERROR;
+  snt_result_available=false;
+#else
   twatch_rtc_time_v1 raw;
   bool readable=rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&settings_draft);
+  #endif
   if(!readable)settings_draft=(twatch_rtc_time_v1){2000,1,1,6,0,0,0};
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  editor_message=readable?"Draft only - use Save":
+    snt_snapshot_status==PORTABLE_REALTIME_UNSET?"Native unset - edit then Save":"Native unavailable - edit draft";
+#else
   editor_message=readable?portable_time_zone():"Unset - edit then SAVE";
+#endif
   editor_field=0;sv_scroll[1]=0;sp_field_first=0;sv_switch(SV_FIELDS);
   uint8_t result=T5_APP_SETTING_NO_CHANGE;bool armed=false;t5_app_input_t input;
   while(poll(&input,20)) {
@@ -556,7 +620,12 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,100,184,32)){sv_fold_choice=0;choose=true;}
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,32)){sv_fold_choice=1;choose=true;}
       if(choose) {
-        if(editor_save_raw(&save_candidates[sv_fold_choice].rtc)){result=T5_APP_SETTING_UPDATED;break;}
+        #ifdef PORTABLE_SETTINGS_NATIVE_TIME
+        if(snt_save((int)sv_fold_choice)){result=
+#else
+        if(editor_save_raw(&save_candidates[sv_fold_choice].rtc)){result=
+#endif
+T5_APP_SETTING_UPDATED;break;}
         sv_switch(SV_FIELDS);
       } else settings_view_redraw();
       continue;
@@ -574,7 +643,11 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     }
     settings_view_redraw();
   }
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  settings_message=snt_result_available?snt_status_text:"";
+#else
   settings_message=result==T5_APP_SETTING_UPDATED?"Saved to RTC":"";
+#endif
   sv_switch(SV_ROOT);return result;
 }
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
@@ -592,7 +665,10 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
 }
 static bool settings_open(void) {
   if(width()<240 || height()<240)return false;
-  rtc_grant.struct_size=sizeof(rtc_grant);back_exits_app=true;settings_message="";
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+  rtc_grant.struct_size=sizeof(rtc_grant);
+#endif
+  back_exits_app=true;settings_message="";
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
@@ -617,14 +693,22 @@ static bool settings_open(void) {
   /* This profile is only qualified for the retaining monochrome paper UI. */
   if(!pp_enabled())return false;
 #endif
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
   if(!rt->acquire(TWATCH_RTC_CAPABILITY,TWATCH_RTC_API_V1,0,&rtc_grant))return false;
   rtc=rtc_grant.api;
   if(!rtc || rtc->api_version!=TWATCH_RTC_API_V1 || rtc->struct_size<sizeof(*rtc) || !rtc->read || !rtc->write)return false;
+#endif
 #ifdef PORTABLE_INPUT_NAVIGATION
-  if(!input_navigation_open())return false;
+  if(!input_navigation_open()) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    portable_adapter_retain();
+#endif
+    return false;
+  }
 #endif
   return true;
 }
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static void settings_close(void) {
   sv_active=false;
 #ifdef PORTABLE_ALARM_SETTINGS
@@ -635,6 +719,10 @@ static void settings_close(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_close();
 #endif
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
   if(rtc_grant.api && !rt->release(&rtc_grant))rt->diagnostic("PORTABLE_APP error=rtc-release");
   rtc=NULL;
+#endif
 }
+
+#endif

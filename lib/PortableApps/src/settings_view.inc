@@ -126,7 +126,11 @@ static void sv_root(void) {
   sv_text(3,20,104-offset,"TIME",0x0e8ea3,38);
   sv_text(3,20,258-offset,"SYSTEM",0x0e8ea3,38);
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i) {
-    t5_app_setting_t row; if(!settings_get(0,i,&row))continue;
+    t5_app_setting_t row;bool available=settings_get(0,i,&row);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(failed)return;
+#endif
+    if(!available)continue;
     int y=sv_row_y(i)-offset;
     sv_rect(20,y,2,SV_ROW_HEIGHT,sv_selected==i+1?SV_CYAN:SV_LINE);
     sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
@@ -203,8 +207,20 @@ static void sv_fold(void) {
   sv_heading("REPEATED LOCAL TIME");
   sv_center(2,56,"This hour occurs twice",SV_TEXT,0);
   sv_center(2,72,"Choose which time to save",SV_CAP,0);
-  sv_button(28,100,184,32,"SAVE FIRST  MDT",sv_fold_choice==0);
-  sv_button(28,142,184,32,"SAVE SECOND MST",sv_fold_choice==1);
+  sv_button(28,100,184,32,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE EARLIER UTC"
+#else
+  "SAVE FIRST  MDT"
+#endif
+,sv_fold_choice==0);
+  sv_button(28,142,184,32,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE LATER UTC"
+#else
+  "SAVE SECOND MST"
+#endif
+,sv_fold_choice==1);
   sv_back();
 }
 static void sv_about(void) {
@@ -260,6 +276,9 @@ static void sv_alert(void) {
 }
 #endif
 static void settings_view_redraw(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return;
+#endif
   if(handoff_requested)return;
   if(failed || !sv_active)return;
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
