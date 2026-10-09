@@ -1,5 +1,35 @@
 # Springboard
 
+## Compact Nova paging (development 1.7.12)
+
+The compact Nova honeycomb contains up to 19 apps per page. A fresh contact
+changes page on release when its horizontal displacement is at least 50 pixels,
+is more than twice its largest observed vertical excursion, and completes within
+350 ms. Swipe left for the next page or right for the previous page; both wrap.
+Each new page starts centered, including a partially filled last page. The bottom
+page caption still advances one page on a tap.
+
+Slower, shorter and diagonal drags continue to pan the honeycomb. With at most
+19 apps, every drag retains that panning behavior. Small tap jitter and the
+existing center/first-ring launch behavior remain available. A page swipe cannot
+also launch an app. Input must return to an observed neutral state after the
+changed page is presented. This also discards contacts queued while a display
+presentation is pending, so a rapid second tap cannot activate new-page data
+against the previous frame.
+
+Inherited held contacts are pan-only. Cancellation, multiple contacts, changed
+contact identity, invalid coordinates and raw-input failures clear the gesture;
+a new neutral-armed contact is required. An input gap cannot be hidden by the
+physics timestep cap to qualify as a fast swipe. A release without its completed
+endpoint preserves panning and does not commit a page change.
+
+`python scripts/test_springboard_nova.py` exercises the actual controller, raw
+adapter and RGB565 renderer across empty, one-page and partially filled two-page
+catalogs, both orientations, and ordinary/retained handoff entry. It also keeps
+the existing motion, tap, focus and caption suites. New paging frames are saved
+under `build/nova/pages-*`. These are development host/ELF checks; they do not
+establish physical Watch gesture or display qualification.
+
 ## Purpose and scope
 
 Springboard is the foundational RiscRTE installed-application launcher. The synchronized manifest identifies it as **Apps** (`springboard.elf`), version **1.3.1**, minimum firmware **1.3.39**, icon `solid:f00a`, categories `System` and `Launcher`.

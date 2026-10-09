@@ -3,16 +3,20 @@
 #include <limits.h>
 #define NOVA_PAGE_APPS 19u
 #define NOVA_FRAME_MS 40u
+#define NOVA_SWIPE_PX 50
+#define NOVA_SWIPE_MS 350u
 typedef struct { int16_t x, y; } nova_point;
 typedef struct {
     const springboard_presentation *view;
     nova_point points[NOVA_PAGE_APPS];
     unsigned n, first, focus, moved, frames;
     int pulse, pending, last_x, last_y,visible_x,visible_y;
+    int start_x, start_y, swipe_y;
+    unsigned contact_ms;
     unsigned launch_duration;
     float launch_x,launch_y;
     sb_motion motion;
-    bool down, tap, initial, dirty;
+    bool down, tap, initial, dirty, swipe, page_unshown, page_neutral;
     uint32_t last_frame, last_clock, last_input, last_motion;
     uint8_t hour, minute;
     bool time_known;
@@ -115,7 +119,7 @@ static void nova_render(nova_state *s) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
         s->view->caption(api->screen_height()-16,page,true,0x7d8c90);
     }
-    api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;
+    api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;s->page_unshown=false;
 }
 static int nova_hit(nova_state *s,int x,int y) {
     int best=-1, nearest=10000;
@@ -130,7 +134,7 @@ static int nova_hit(nova_state *s,int x,int y) {
     return best;
 }
 static void nova_cancel(nova_state *s) {
-    s->down=s->tap=s->initial=false;sb_motion_cancel(&s->motion);
+    s->down=s->tap=s->initial=s->swipe=false;sb_motion_cancel(&s->motion);
     s->pending=-1;s->pulse=0;s->dirty=true;
 }
 static void nova_prepare_launch(nova_state *s,unsigned hit,unsigned duration) {
@@ -141,27 +145,67 @@ static void nova_prepare_launch(nova_state *s,unsigned hit,unsigned duration) {
     s->motion.x=s->launch_x;s->motion.y=s->launch_y;
     s->motion.vx=s->motion.vy=0;sb_motion_target(&s->motion,hit);s->dirty=true;
 }
+static void nova_show_page(nova_state *s,unsigned first) {
+    s->first=first;nova_layout(s);
+    selected=s->first;s->status[0]=0;s->page_unshown=s->page_neutral=true;
+}
+static void nova_page(nova_state *s,int direction) {
+    unsigned pages=(count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS;
+    if(pages<2)return;
+    unsigned page=s->first/NOVA_PAGE_APPS;
+    page=direction>0?(page+1)%pages:page?page-1:pages-1;
+    nova_show_page(s,page*NOVA_PAGE_APPS);
+}
+static void nova_move_contact(nova_state *s,const springboard_contact *c,uint32_t elapsed) {
+    int dx=nova_limit(c->x-s->last_x,256),dy=nova_limit(c->y-s->last_y,256);
+    s->last_x=c->x;s->last_y=c->y;
+    unsigned travel=(unsigned)(abs(dx)+abs(dy));
+    s->moved=s->moved+travel>1024?1024:s->moved+travel;
+    /* Keep actual contact age, independent of the bounded physics timestep.
+     * A pause or input outage must never turn a slow pan into a quick swipe. */
+    s->contact_ms=s->contact_ms>NOVA_SWIPE_MS || elapsed>NOVA_SWIPE_MS-s->contact_ms?
+        NOVA_SWIPE_MS+1:s->contact_ms+elapsed;
+    int vertical=abs(c->y-s->start_y);
+    if(vertical>s->swipe_y)s->swipe_y=vertical;
+    /* UP supplies gesture travel, while panning retains its last live sample
+     * and inertia. A snapshot-only release may report the original position. */
+    if(!c->released)sb_motion_drag(&s->motion,(float)dx,(float)dy,elapsed);
+    s->dirty |= dx||dy;
+}
 static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32_t elapsed) {
     if (!c->valid || c->cancelled) { nova_cancel(s); return; }
+    /* Require observed neutral after the new page is presented. The adapter
+     * may queue DOWN/UP while present() waits; neither may activate new-page
+     * entries using a contact that began against the old or pending frame. */
+    if(s->page_unshown || s->page_neutral){
+        if(!s->page_unshown && !c->down)s->page_neutral=false;
+        return;
+    }
     if (c->down) {
         if (!s->down) {
             if ((!c->began || !c->tap_eligible) && !s->initial) return;
             s->down=true;s->tap=c->tap_eligible;s->initial=false;
             s->last_x=c->x;s->last_y=c->y;s->moved=0;
+            s->start_x=c->x;s->start_y=c->y;s->swipe_y=0;s->contact_ms=0;
+            s->swipe=c->began && c->tap_eligible;
             sb_motion_begin(&s->motion);s->pending=-1;s->pulse=0;
         } else {
-            int dx=nova_limit(c->x-s->last_x,256),dy=nova_limit(c->y-s->last_y,256);
-            s->last_x=c->x;s->last_y=c->y;
-            unsigned travel=(unsigned)(abs(dx)+abs(dy));
-            s->moved=s->moved+travel>1024?1024:s->moved+travel;
-            sb_motion_drag(&s->motion,(float)dx,(float)dy,elapsed);s->dirty |= dx||dy;
+            nova_move_contact(s,c,elapsed);
         }
     } else {
         s->initial=false;
         if (c->released) {
+            if(s->down)nova_move_contact(s,c,elapsed);
+            int dx=c->x-s->start_x;
+            /* Quick, predominantly horizontal releases page. All other drags
+             * keep the honeycomb pan. Initial inherited contacts are pan-only;
+             * movement may revoke tap eligibility without revoking this latch. */
+            bool page=s->down && s->swipe && count>NOVA_PAGE_APPS &&
+                s->contact_ms<=NOVA_SWIPE_MS && abs(dx)>=NOVA_SWIPE_PX && abs(dx)>2*s->swipe_y;
             bool tap=(!s->down || (s->tap && s->moved<6)) && c->tap_eligible;
-            s->down=false;sb_motion_release(&s->motion);
-            if (tap) {
+            s->down=s->swipe=false;sb_motion_release(&s->motion);
+            if(page)nova_page(s,dx<0?1:-1);
+            else if (tap) {
                 int hit=nova_hit(s,c->x,c->y);
                 if (hit>=0) {
                     unsigned center=0;int nearest=INT_MAX;
@@ -176,7 +220,7 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
                     s->status[0]=0;s->dirty=true;
                 }
                 else if (count>NOVA_PAGE_APPS && c->y>=api->screen_height()-24) {
-                    s->first=(s->first+NOVA_PAGE_APPS<count)?s->first+NOVA_PAGE_APPS:0;nova_layout(s);
+                    nova_page(s,1);
                 }
             }
             s->tap=false;
@@ -225,7 +269,7 @@ static bool nova_run(void) {
             else next=(next+1)%count;
             nova_cancel(&s);
             unsigned first=next/NOVA_PAGE_APPS*NOVA_PAGE_APPS;
-            if(first!=s.first){s.first=first;nova_layout(&s);}
+            if(first!=s.first)nova_show_page(&s,first);
             sb_motion_target(&s.motion,next-s.first);s.status[0]=0;
         }
         if(s.n && (pressed&T5_APP_BUTTON_CONFIRM)) nova_prepare_launch(&s,s.motion.snapping?s.motion.target:s.focus,320);
