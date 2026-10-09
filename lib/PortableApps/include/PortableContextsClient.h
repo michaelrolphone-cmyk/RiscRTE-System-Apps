@@ -16,7 +16,7 @@ static inline bool portable_contexts_open(portable_contexts_client *c,const risc
     memset(c,0,sizeof(*c));c->runtime=rt;c->grant.struct_size=sizeof(c->grant);
     if(!rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant))return false;
     const contexts_service_v1 *p=c->grant.api;
-    if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->step||!p->pause||!p->status||
+    if(!p||p->api_version!=1||p->struct_size<CONTEXTS_SERVICE_V1_SIZE||!p->step||!p->pause||!p->status||
        !p->request_export||!p->begin_export||!p->export_record||!p->finish_export||!p->label||
        !p->claim_preset||!p->preset_result||!p->capture_audio)return false;
     c->api=p;c->policy.struct_size=sizeof(c->policy);return true;
