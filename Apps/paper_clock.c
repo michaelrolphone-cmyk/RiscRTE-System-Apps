@@ -17,14 +17,16 @@
 static const t5_app_api_v1 *app;
 static const risc_runtime_api_v1 *rt;
 static const paper_presentation *paper;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 static unsigned format;
 static paper_battery battery_status;
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 #include "paper_sparse_clock.inc"
 #else
 static risc_runtime_capability_v1 rtc_grant,battery_grant;
 static const twatch_rtc_api_v1 *rtc;
 static const risc_battery_gauge_api_v1 *battery;
+static unsigned format;
+static paper_battery battery_status;
 static void retain(void){rt->diagnostic("PAPER_CLOCK cleanup-unconfirmed; invocation retained");for(;;)rt->yield_ms(50);}
 static void close_clock(void){
  if(battery_grant.api&&!rt->release(&battery_grant))retain();

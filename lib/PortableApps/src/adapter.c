@@ -91,7 +91,10 @@ static bool failed, list_mode;
 enum { DESK_COLD, DESK_INITIALIZED, DESK_STARTING, DESK_TIMER,
        DESK_FOREGROUND, DESK_FAILED, DESK_FINALIZED };
 static unsigned desk_phase;
-static bool desk_touch_neutral;
+#ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
+#error "Sparse Clock requires the canonical Runtime invocation-retention SDK"
+#endif
+static bool desk_touch_neutral,desk_native_fenced;
 static volatile risc_display_surface_v1 desk_retained_surface;
 static const risc_runtime_api_v1 *desk_runtime;
 static risc_runtime_api_v1 desk_guarded_runtime;
@@ -870,6 +873,18 @@ bool portable_desk_adapter_ready(void) {
 }
 void portable_desk_adapter_retain(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+ /* App-local flags alone cannot keep the Runtime from freeing an invocation.
+  * This native owner fence does no provider I/O, polling or release, and also
+  * accepts an already Runtime-retained current invocation. */
+ if(!desk_native_fenced) {
+  if(!desk_runtime || !desk_runtime->retain_invocation ||
+     !desk_runtime->retain_invocation()) {
+   /* Unsupported/foreign custody cannot safely return or yield. Valid startup
+    * admits the owner-only suffix, so this is an invariant-failure fail-stop. */
+   for(;;) {}
+  }
+  desk_native_fenced=true;
+ }
  if(!native_sleep_retained) {
   /* Pin the lease descriptor while making already-copied drawing callbacks
    * inert. Never release or free this retained surface after uncertain I/O. */
@@ -913,6 +928,11 @@ int portable_desk_adapter_seed(void) {
   for(unsigned y=0;y<info.height;y++)memcpy(paper_previous+(size_t)y*bytes,
     (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
   paper_previous_valid=true;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  /* Fresh timer reconstruction proves the retained orientation of the actual
+   * panel image; it is not a foreground preference-change full-refresh debt. */
+  if(desk_phase==DESK_TIMER)paper_orientation_dirty=false;
+#endif
   return 1;
 }
 bool portable_desk_adapter_present(bool full) {
@@ -1370,6 +1390,9 @@ static int initialize(void) {
       !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch ||
       !rt->diagnostic)
     return -1;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation)return -1;
+#endif
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;

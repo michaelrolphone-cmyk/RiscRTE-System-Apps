@@ -13,12 +13,18 @@ def build():
  p.add_argument("--sleep-capability",help="Explicit power capability granted only to this clock")
  p.add_argument("--sleep-sdk",type=Path,help="Canonical deployment SDK for local sleep hook")
  p.add_argument("--desk-clock",action="store_true",help="Opt-in retained six-face wall-time desk clock; requires local sleep and canonical SDKs")
+ p.add_argument("--sparse-start",action="store_true",help="Opt-in native-time demand Clock; requires desk clock and canonical invocation-retention Runtime SDK")
  p.add_argument("--retained-wake-sdk",type=Path,help="Canonical Runtime app SDK containing RiscRetainedWakeV1.h")
  portable_quick_build.options(p)
  a=p.parse_args()
  if bool(a.local_sleep_source)!=bool(a.sleep_capability) or (a.local_sleep_source and (not a.navigation or not a.alarm_client or not a.sleep_sdk)):p.error('Local sleep requires source, capability, SDK, navigation and alarm client')
  if a.desk_clock and (not a.local_sleep_source or not a.retained_wake_sdk):p.error('Desk clock requires local sleep and retained-wake SDK')
  if a.desk_clock and not (a.retained_wake_sdk/'RiscRetainedWakeV1.h').is_file():p.error('Missing canonical RiscRetainedWakeV1.h')
+ if a.sparse_start:
+  if not a.desk_clock:p.error('Sparse startup requires --desk-clock')
+  for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
+   if not (a.retained_wake_sdk/name).is_file():p.error('Missing canonical '+name)
+  if 'RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE' not in (a.retained_wake_sdk/'RiscRuntimeV1.h').read_text():p.error('Sparse startup requires the canonical invocation-retention Runtime suffix')
  if not a.launcher_app.endswith('.elf') or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.' for c in a.launcher_app):p.error('Invalid launcher filename')
  cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc') or str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
  out=a.output_dir;out.mkdir(parents=True,exist_ok=True)
@@ -34,6 +40,9 @@ def build():
    shutil.copyfile(a.sleep_sdk/name,includes/name)
   shutil.copyfile(a.retained_wake_sdk/'RiscRetainedWakeV1.h',includes/'RiscRetainedWakeV1.h')
   for name in ('RiscTimedSleepV1.h','RiscLightSleepV1.h','RiscDeepSleepV1.h'):shutil.copyfile(a.retained_wake_sdk.parent/'driver'/name,includes/name)
+  if a.sparse_start:
+   for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
+    shutil.copyfile(a.retained_wake_sdk/name,includes/name)
 
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports={'app_main','app_module_init','app_module_fini'};mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -44,10 +53,12 @@ def build():
  if a.desk_clock:
   flags=[flag for flag in flags if flag!='-I'+str(a.sleep_sdk)]
   flags+=['-DPORTABLE_DESK_CLOCK']
+ if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags
+ sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
- subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),'-lgcc','-o',str(elf)],check=True)
+ subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),'-lgcc','-o',str(elf)],check=True)
  symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
  imports={s.split()[-1] for s in symbols.splitlines() if ' U ' in ' '+s};actual={s.split()[-1] for s in symbols.splitlines() if len(s.split())>=3 and s.split()[-2] in ('T','D','B','R')}
  allowed={'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -58,6 +69,7 @@ def build():
  version=json.loads((ROOT/'Apps/paper_clock.json').read_text())['version']
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
+ if a.sparse_start:version='0.3.2'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -68,7 +80,8 @@ def build():
   for name in ('net.wifi','bluetooth.hci'):
    requirement={'capability':name,'api':1}
    if requirement not in needs:needs.append(requirement)
-  if len(needs)!=12:raise ValueError('Desk clock must fit exactly twelve distinct grants')
+  if a.sparse_start:needs.extend([{'capability':'runtime.realtime-control','api':1},{'capability':'runtime.provider-promotion','api':1}])
+  if len(needs)!=(14 if a.sparse_start else 12):raise ValueError('Desk clock grant count mismatch')
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
@@ -84,6 +97,16 @@ def build():
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'
   record['grant_count']=len(needs)
+  if a.sparse_start:
+   record.update(clock_policy='native-realtime-iana',sparse_start=True,provider_activation='demand',
+                 timer_preferences='retained-only',foreground_promotion=True,invocation_retention=True,
+                 time_resolution='native microsecond snapshot before holds; bounded same-boot projection after holds; physical accuracy and entry latency unqualified')
+   record['desk_sdk_headers'].update({name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h')})
+   paths=['Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc',
+          'lib/PortableApps/include/PortableRealtimeClient.h','lib/PortableApps/include/PortableTimeZone.h',
+          'lib/PortableApps/include/PortableTimeZonePreference.h','lib/PortableApps/include/PortableRtcBasis.h']
+   paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
+   record['desk_sources'].update({path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths})
  (out/'build-evidence.json').write_text(json.dumps(record,indent=2)+'\n')
  for folder in ['fonts','paper_fonts']+(['desk_clock'] if a.desk_clock else []):
   target=out/'licenses'/folder;target.mkdir(parents=True,exist_ok=True)

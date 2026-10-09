@@ -20,8 +20,20 @@ static bool desk_zone_known,desk_basis_known,desk_boot_timer,desk_returned,desk_
 static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted;
 static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
+static uint32_t desk_started_at;
 static int desk_fence(void) {
  desk_retained=true;portable_desk_adapter_retain();return -2;
+}
+/* Stage diagnostics use only this boot's monotonic milliseconds. They are
+ * never emitted with holds, uncertain custody, or a retained result. */
+static bool desk_trace(const char *stage,int status) {
+ if(desk_held || desk_retained || portable_app_sleep_retained())return false;
+ risc_runtime_health_v1 now={.struct_size=sizeof(now)};char line[112];
+ if(!rt->health(&now)){desk_fence();return false;}
+ snprintf(line,sizeof(line),"SPARSE_CLOCK stage=%s status=%d elapsed_ms=%lu",stage,status,
+          (unsigned long)(uint32_t)(now.uptime_ms-desk_started_at));
+ if(!rt->diagnostic(line)){desk_fence();return false;}
+ return true;
 }
 static int desk_phase_guard(void *unused) {
  (void)unused;
@@ -214,6 +226,7 @@ static int desk_promote(void) {
     (status!=RISC_PROVIDER_PROMOTION_OK && status!=RISC_PROVIDER_PROMOTION_ALREADY_READY &&
      status!=RISC_PROVIDER_PROMOTION_FAILED && status!=RISC_PROVIDER_PROMOTION_BUSY))return desk_fence();
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation)return desk_fence();
+ if(!desk_trace("promotion",status))return -2;
  if(status!=RISC_PROVIDER_PROMOTION_OK && status!=RISC_PROVIDER_PROMOTION_ALREADY_READY)return 0;
  desk_promoted=true;
  return portable_desk_adapter_timer_only()?portable_desk_adapter_upgrade(status):
@@ -230,16 +243,24 @@ static bool sparse_boot(void) {
  rt=risc_runtime_get_api(1);
  if(!rt || rt->api_version!=1 || rt->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE ||
     !rt->acquire || !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch || !rt->diagnostic)return false;
+ risc_runtime_health_v1 begun={.struct_size=sizeof(begun)};
+ if(!rt->health(&begun)){desk_fence();return false;}desk_started_at=begun.uptime_ms;
  /* This read is native authority; no provider acquisition has happened in init. */
  int boot=portable_desk_clock_boot_read(rt,&desk_boot_record);
  if(boot==-2){desk_fence();return false;}
+ if(!desk_trace("classification",boot))return false;
  portable_timezone_rule retained_rule;risc_realtime_snapshot_v1 sample;
  bool timer=boot==1 && portable_timezone_resolve(desk_boot_record.config.time_zone,
      sizeof(desk_boot_record.config.time_zone),&retained_rule)==PORTABLE_TIMEZONE_OK;
- if(timer)timer=desk_sample(false,&sample)==PORTABLE_REALTIME_OK;
+ if(timer) {
+  int sampled=desk_sample(false,&sample);
+  if(desk_retained || !desk_trace("native-sample",sampled))return false;
+  timer=sampled==PORTABLE_REALTIME_OK;
+ }
  if(desk_retained)return false;
  if(timer) {
   if(portable_desk_adapter_start(PORTABLE_DESK_START_TIMER)!=1 || !desk_bind())return false;
+  if(!desk_trace("timer-ready",1))return false;
   desk_boot_timer=true;
   if(!portable_desk_adapter_sleep())return false;
   desk_boot_timer=false;
@@ -251,7 +272,7 @@ static bool sparse_boot(void) {
  if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
  format=desk_configuration.time_format;
  if(!portable_desk_adapter_flip(desk_configuration.flip_ui))return false;
- (void)desk_sample(true,&sample);
- if(desk_retained)return false;
+ int recovered=desk_sample(true,&sample);
+ if(desk_retained || !desk_trace("native-recovery",recovered))return false;
  app->set_back_exits_app(false);return portable_desk_adapter_foreground();
 }
