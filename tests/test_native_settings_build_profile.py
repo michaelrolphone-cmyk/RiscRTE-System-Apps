@@ -116,6 +116,7 @@ class NativeSettingsBuildProfile(unittest.TestCase):
                 self.assertIn({'capability': 'rtc.clock', 'api': 2}, requirements)
                 self.assertIn({'capability': 'storage.key-value', 'api': 1}, requirements)
                 self.assertNotIn('runtime.provider-promotion', {r['capability'] for r in requirements})
+                self.assertEqual({'capability':'board.battery','api':1} in requirements,native)
                 self.assertEqual((out/'native-time-sdk').exists(), native)
                 self.assertEqual('invocation_retention' in record, native)
                 for name in builder.NATIVE_TIME_SOURCES:
@@ -136,6 +137,13 @@ class NativeSettingsBuildProfile(unittest.TestCase):
                 self.assertEqual(record['native_time_runtime_commit'], builder.NATIVE_TIME_RUNTIME_COMMIT)
                 self.assertEqual(record['native_time_control_instance'], 0)
                 self.assertEqual(record['rtc_access'], 'explicit-save-only')
+                self.assertEqual(record['grant_count'],len(requirements))
+                self.assertEqual(record['grant_count'],7)
+                self.assertEqual(record['required_grants'],[
+                    dict(requirement,instance_id=1 if requirement['capability']=='storage.key-value' else 0)
+                    for requirement in requirements])
+                self.assertTrue(record['mode_capabilities']['explicit_checked_set_time'])
+                self.assertFalse(record['mode_capabilities']['sleep_backend'])
                 self.assertEqual(record['preferences']['instance'], 1)
                 self.assertEqual(record['preferences']['time_zone_key'], 'time_zone')
                 self.assertEqual(record['preferences']['rtc_basis_key'], 'rtc_basis')

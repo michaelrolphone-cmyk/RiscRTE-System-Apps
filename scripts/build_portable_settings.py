@@ -138,7 +138,8 @@ def build(args,parser=None):
             {'capability':'rtc.clock','api':2}]}
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
-    if native_time: manifest['requires'].append({'capability':'runtime.realtime-control','api':1})
+    if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
+                                              {'capability':'board.battery','api':1}]
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     portable_quick_build.requirements(args,manifest['requires'])
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
@@ -194,7 +195,15 @@ def build(args,parser=None):
             native_time_runtime_commit=NATIVE_TIME_RUNTIME_COMMIT,
             native_time_sdk_headers={name:hashlib.sha256(sdk[name]).hexdigest() for name in NATIVE_TIME_SDK_HEADERS},
             native_time_runtime_license_sha256=hashlib.sha256(sdk['LICENSE']).hexdigest(),
-            native_time_control_instance=0,rtc_access='explicit-save-only')
+            native_time_control_instance=0,rtc_access='explicit-save-only',
+            grant_count=len(manifest['requires']),
+            required_grants=[dict(requirement,instance_id={'storage.key-value':1,'net.wifi':15,
+                'bluetooth.hci':16}.get(requirement['capability'],0)) for requirement in manifest['requires']],
+            mode_capabilities={'foreground_settings':True,'native_realtime_read':True,
+                'explicit_checked_set_time':True,'timezone_preference_only':True,
+                'sleep_preference_modes':['light','deep'],'sleep_backend':False,
+                'alarm_overlay':bool(args.alarm_client),'quick_actions':bool(args.quick_actions),
+                'quick_radios':bool(args.quick_radios)})
         record['preferences'].update(time_zone_key='time_zone',rtc_basis_key='rtc_basis',
             flip_ui_key='reader_flip_ui',language_key='reader_language')
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')

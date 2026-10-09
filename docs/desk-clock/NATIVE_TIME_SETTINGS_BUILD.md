@@ -68,3 +68,13 @@ custody. Their compiler calls are mocked explicitly; run the combined controller
 host tests and a real pinned Xtensa build before claiming integrated behavior.
 For regression, build the default, Watch and `x4-desk-clock` commands before and
 after changes and compare actual ELF/manifest bytes and recorded build flags.
+
+The native profile also declares `board.battery@1`: startup opens this provider,
+so failed acquisition cannot be treated as optional clean unavailability.
+`required_grants` records each capability/API and required `instance_id`: KV is 1,
+optional Wi-Fi 15 and Bluetooth 16; other instance 0 entries require the deployment's
+unique authorized provider/native capability. `grant_count` counts distinct
+manifest requirements. `mode_capabilities` records native read/explicit checked
+Save, preference-only timezone, Light/Deep preference choices, optional alarm and
+Quick controls, and explicitly says `sleep_backend=false`. Selecting this profile
+does not enable a Settings sleep backend or install boot grants.
