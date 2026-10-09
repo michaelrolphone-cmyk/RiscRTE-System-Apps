@@ -18,7 +18,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--sdk',type=Path,required=True)
 p.add_argument('--runtime-sdk',type=Path,required=True,help='Canonical Runtime app SDK with invocation-retention suffix')
 p.add_argument('--xtensa-cc',required=True)
-p.add_argument('--base',default='878fc45')
+p.add_argument('--base',default='d52a74bfb4acc01cc3f0a9dda2c95ba2ba679ee9')
 a=p.parse_args()
 FLAGS=['-DPORTABLE_DESK_CLOCK','-DPORTABLE_DESK_CLOCK_SPARSE_START','-DPORTABLE_ALARM_CLIENT',
  '-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_SLEEP_MANUAL_ONLY','-DPORTABLE_INPUT_NAVIGATION',
@@ -76,7 +76,7 @@ __attribute__((visibility("default"))) void app_main(void){}
  try:
   baseline.write_bytes(subprocess.check_output(['git','show',a.base+':lib/PortableApps/src/adapter.c'],cwd=ROOT))
   for name,flags in [('watch',['-DPORTABLE_NOVA_UI','-DPORTABLE_RTC_UTC8_DENVER','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS','-DPORTABLE_ALARM_CLIENT','-DPORTABLE_APP_SLEEP_LOCAL','-DPORTABLE_INPUT_NAVIGATION']),
-                     ('paper',[f for f in FLAGS if f!='-DPORTABLE_DESK_CLOCK_SPARSE_START'])]:
+                     ('paper',[f for f in FLAGS if f not in ('-DPORTABLE_DESK_CLOCK_SPARSE_START','-DPORTABLE_DESK_CLOCK')]+['-DPORTABLE_CROWN_SLEEP_LOCAL'])]:
    tokens=[];hashes=[]
    for source in (baseline,adapter):
     pre=subprocess.check_output([a.xtensa_cc,'-std=c11','-E','-P',*flags,*includes,str(source)])

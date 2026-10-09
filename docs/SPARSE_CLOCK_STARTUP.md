@@ -141,3 +141,32 @@ native sampling, timer readiness, promotion and recovery, using only same-boot
 elapsed milliseconds before holds. Pair them with the Runtime's actual provider
 start/ready logs on hardware to measure the seven-provider closure and startup
 latency. Host timings are not MCU latency or physical power measurements.
+
+### Verified local checkpoint (2026-10-07)
+
+`receipts/sparse-clock-startup.json` records the clean production checkpoint
+`002f88a61f9a717f3e2cfcf0250fc9a708d771cd` and exact canonical Runtime0.1.51
+public SDK/tree. The independent checked RTC-read hardening is included from
+`0e26b8972d47b1aabed1dea841471b1990f6826e`; a failed RTC read is sticky uncertain
+custody, never an ordinary IO error followed by release.
+
+- 2,180 fresh-process real controller/adapter/X4-client cases pass over both
+  normal/ASan+UBSan and Quick-enabled/disabled builds.
+- The separate sparse adapter suite passes60 normal and60 ASan/UBSan cases,
+  including native-clock Quick Actions and retained no-I/O outcomes, plus three
+  pinned target link harnesses and default token/ELF compatibility checks.
+- Real Runtime/Graph/CpuPort gate cases pass normally and with ASan/UBSan.
+- Existing default paper Clock passes98 normal/sanitized cases.
+- Sparse no-Quick target:167,848 bytes,
+  SHA-256`1bf2cab4f48f6b380dd2b1a6c5f6522c5d918d5794658bac500779056a442cea`.
+- Sparse Quick target:204,368 bytes,
+  SHA-256`242d049ac72e250e1b6b1c6579c862d74ca240a19730a79b081c3f8e8c37cbbd`.
+- Actual default paper Clock is byte-identical to publicd52a74b:
+  SHA-256`e75843904da745dc410b99a3fc5326b89efdb9f53ead2c8cc5c485052f6a7f4b`.
+- Actual default Watch Springboard is byte-identical to publicd52a74b:
+  SHA-256`7a6e8c44348eec67acb870c27341c3e3579c466c5144354916b6a00aa908934c`.
+
+ELFs are development validation artifacts. No provider implementations, product
+pins, bundle, BIN, GitHub branch or remote publication changed in this worktree.
+Physical startup/current/keepalive, RTC interpretation and display wake still
+require device measurements with the real selected providers.
