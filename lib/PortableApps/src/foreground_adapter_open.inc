@@ -50,12 +50,11 @@
   alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
   if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
 #endif
-  if (!portable_touch_open(&touch, rt)) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-    portable_adapter_retain();
+  if (!portable_touch_open(&touch, rt)) {portable_adapter_retain();return -1;}
+#else
+  if (!portable_touch_open(&touch, rt))return -1;
 #endif
-    return -1;
-  }
 #ifndef PORTABLE_FORCE_FULL_FRAMES
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE))
     paper_previous=malloc((size_t)((info.width+7)/8)*info.height); /* optional, 48 KB at 800x480 */

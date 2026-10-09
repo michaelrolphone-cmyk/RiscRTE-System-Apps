@@ -93,3 +93,11 @@ static bool snt_save(int fold) {
   snt_basis=plan.basis;snt_basis.reference_epoch=(uint32_t)snt_last_result.verified_utc_epoch;
   snt_basis_status=PORTABLE_RTC_BASIS_LOADED;return true;
 }
+
+#ifdef PORTABLE_QUICK_ACTIONS
+static bool settings_native_clock(uint8_t *hour,uint8_t *minute) {
+  twatch_rtc_time_v1 local;
+  if(!snt_read_local(&local))return false;
+  *hour=local.hour;*minute=local.minute;return true;
+}
+#endif

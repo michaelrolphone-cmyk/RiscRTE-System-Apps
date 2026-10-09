@@ -170,6 +170,9 @@ static unsigned first_row, last_rows;
 #ifdef PORTABLE_SETTINGS_APP
 #include "PortableRtcClock.h"
 static bool back_exits_app = true, settings_editing;
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) && defined(PORTABLE_QUICK_ACTIONS)
+static bool settings_native_clock(uint8_t *hour,uint8_t *minute);
+#endif
 static bool settings_view_poll(t5_app_input_t *out);
 #endif
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
@@ -325,13 +328,11 @@ static void input_service(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(navigation_ready) {
   risc_input_navigation_frame_v1 frame={0};
-  if(!navigation->poll(navigation->context,&frame)) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-    portable_adapter_retain();return;
+  if(!navigation->poll(navigation->context,&frame)) {portable_adapter_retain();return;}
 #else
-    navigation_neutral=false;
+  if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
 #endif
-  }
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else {navigation_pending|=frame.pressed;
     if(frame.pressed&RISC_NAV_HOME){crown_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;}

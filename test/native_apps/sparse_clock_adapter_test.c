@@ -188,7 +188,7 @@ int main(int argc,char **argv){
  if(scenario==18){fail_allocation=2;assert(portable_desk_adapter_start(1)==1);assert(!paper_previous);portable_desk_adapter_begin();assert(portable_desk_adapter_seed()==0);assert(portable_desk_adapter_present(true));app_module_fini();assert(!live);return 0;}
  if(scenario==19){
   assert(portable_desk_adapter_start(1)==1);portable_desk_adapter_begin();fail_case=7;
-  assert(portable_desk_adapter_seed()==-2);assert(frame_count&&desk_retained_surface.frame==9&&!surface.frame);
+  assert(portable_desk_adapter_seed()==-2);assert(frame_count&&native_custody_surface.frame==9&&!surface.frame);
   memcpy(saved_history,framebuffer,sizeof(framebuffer));np_pixel(1,1,0,255);fill(0,0,10,10,0);
   assert(!memcmp(saved_history,framebuffer,sizeof(framebuffer)));assert_fenced();return 0;
  }

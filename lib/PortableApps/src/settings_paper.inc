@@ -57,7 +57,7 @@ static void sp_native_notice(bool fields) {
     snprintf(line,sizeof(line),"Native: %s",snt_last_result.native.verified?"verified":snt_last_result.native.attempted?"unconfirmed":"not attempted");sp_text(32,y+34,width()-64,line,false,true);
     snprintf(line,sizeof(line),"Basis: %s",snt_outcome(snt_last_result.metadata_outcome));sp_text(32,y+68,width()-64,line,false,true);
   } else if(fields) {
-    snprintf(line,sizeof(line),"Zone: %s",snt_zone_id);sp_text(32,y,width()-64,line,false,true);
+    snprintf(line,sizeof(line),"Zone: %s",snt_zone_status==PORTABLE_TIMEZONE_MISSING?"UTC (default)":snt_zone_status==PORTABLE_TIMEZONE_LOADED?snt_zone_id:"Unavailable - choose zone");sp_text(32,y,width()-64,line,false,true);
     snprintf(line,sizeof(line),"RTC: %s",snt_basis_label());sp_text(32,y+34,width()-64,line,false,true);
     sp_text(32,y+68,width()-64,editor_message,false,true);
   } else sp_text(32,height()-142,width()-64,settings_message,false,true);

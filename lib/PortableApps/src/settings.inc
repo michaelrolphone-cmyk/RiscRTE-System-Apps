@@ -207,7 +207,12 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     int status=portable_timezone_preference_load(settings_store,id);
     out->type=T5_APP_SETTING_ACTION;
     strcpy(out->value,stz_unconfirmed?"Unconfirmed":status==PORTABLE_TIMEZONE_UNAVAILABLE?"Unavailable":
-        status==PORTABLE_TIMEZONE_INVALID_RECORD?"Invalid (UTC fallback)":
+        status==PORTABLE_TIMEZONE_INVALID_RECORD?
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+        "Invalid - choose zone":
+#else
+        "Invalid (UTC fallback)":
+#endif
         status==PORTABLE_TIMEZONE_MISSING?"UTC (default)":id);
 #else
     strcpy(out->value,portable_time_zone());
@@ -586,7 +591,8 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   #endif
   if(!readable)settings_draft=(twatch_rtc_time_v1){2000,1,1,6,0,0,0};
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
-  editor_message=readable?"Draft only - use Save":
+  editor_message=snt_zone_status==PORTABLE_TIMEZONE_INVALID_RECORD || snt_zone_status==PORTABLE_TIMEZONE_UNAVAILABLE?
+    "Choose a valid Time Zone first":readable?"Draft only - use Save":
     snt_snapshot_status==PORTABLE_REALTIME_UNSET?"Native unset - edit then Save":"Native unavailable - edit draft";
 #else
   editor_message=readable?portable_time_zone():"Unset - edit then SAVE";

@@ -32,15 +32,23 @@ static bool quick_apply(uint32_t actions) {
   if(!portable_wifi_suspend())return false;
  }
 #endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions)){portable_adapter_retain();return false;}
+#else
  if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions))return false;
 #endif
+#endif
  bool changed=false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(!pqa_session_apply(&quick,rt,display,actions,&changed)){portable_adapter_retain();return false;}
+#else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
+#endif
  const alarm_service_v1 *service=alarm_sleep_api();
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(changed && service) {
   int32_t status=service->refresh(service->context);
-  if(status!=ALARM_OK && status!=ALARM_PENDING){portable_desk_adapter_retain();return false;}
+  if(status!=ALARM_OK && status!=ALARM_PENDING){portable_adapter_retain();return false;}
  }
 #else
  if(changed && service)(void)service->refresh(service->context);
@@ -64,9 +72,14 @@ static bool quick_interrupt(void) {
 }
 static void quick_time(char out[6]) {
  memcpy(out,"--:--",6);
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#if defined(PORTABLE_DESK_CLOCK_SPARSE_START) || defined(PORTABLE_SETTINGS_NATIVE_TIME)
  uint8_t hour,minute;
- if(!failed && portable_desk_clock_time(&hour,&minute)) {
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+ if(!failed && settings_native_clock(&hour,&minute))
+#else
+ if(!failed && portable_desk_clock_time(&hour,&minute))
+#endif
+ {
   unsigned h=quick.hour_24?hour:hour%12;if(!quick.hour_24&&!h)h=12;
   out[0]=(char)('0'+h/10);out[1]=(char)('0'+h%10);out[3]=(char)('0'+minute/10);out[4]=(char)('0'+minute%10);
  }
@@ -125,7 +138,7 @@ static bool quick_foreground(bool *consumed) {
   if(pqa_visible(&quick.ui) || (!quick.ui.paper && painted)) {
    if((uint32_t)(now-telemetry_at)>=1000u) {
     quick_time(time);
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
     if(native_sleep_retained)return false;
 #endif
     battery_valid=gauge && gauge->read && gauge->read(gauge->context,&battery) && battery.percent<=100 && !(battery.flags&RISC_BATTERY_PROFILE_MISSING);telemetry_at=now;
@@ -148,7 +161,7 @@ static bool quick_foreground(bool *consumed) {
  if(painted && !failed) {
   if(!quick_copy_background())failed=true;else present(!quick.ui.paper);
  }
-#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(native_sleep_retained)return false; /* Keep the Runtime-owned allocation. */
 #endif
  quick_modal=false;free(quick_background);quick_background=NULL;
