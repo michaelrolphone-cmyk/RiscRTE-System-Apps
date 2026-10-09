@@ -1,0 +1,36 @@
+name: Publish verified scene source checkpoint
+on:
+  push:
+    branches: [feat/declarative-alarms]
+    paths: ['.scene-source.patch.gz.*']
+permissions:
+  contents: write
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/feat/declarative-alarms'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Verify and publish the tested source bytes
+        run: |
+          python - <<'PY'
+          import gzip, hashlib, pathlib, subprocess
+          parts=sorted(pathlib.Path('.').glob('.scene-source.patch.gz.*'))
+          assert [p.name for p in parts]==['.scene-source.patch.gz.000','.scene-source.patch.gz.001','.scene-source.patch.gz.002']
+          compressed=b''.join(p.read_bytes() for p in parts)
+          assert hashlib.sha256(compressed).hexdigest()=='02ee2572d90e2dae1496662468e37652ba1330866128cba388206ade277f4306'
+          patch=gzip.decompress(compressed)
+          allowed={'scripts/build_native_app.py','scripts/test_apps.py','Services/scene_host/glyphs.inc','Services/scene_host/host.c','Services/scene_host/manifest.json','Services/scene_profile/SceneProfileV1.h','Services/scene_profile/compact-color.json','Services/scene_profile/portrait-monochrome.json','Services/scene_profile/profile.c','docs/DECLARATIVE_SCENES.md','scripts/build_scene_services.py','scripts/scene_build.py','scripts/scene_sdk.py','scripts/test_scene_host.py','test/scene/host_test.c'}
+          rows=subprocess.check_output(['git','apply','--numstat'],input=patch).decode().splitlines()
+          assert {r.split('\t',2)[2] for r in rows}==allowed
+          subprocess.run(['git','apply','--check','-'],input=patch,check=True)
+          subprocess.run(['git','apply','--index','-'],input=patch,check=True)
+          subprocess.run(['git','rm',*map(str,parts)],check=True)
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'feat: add optional scene presenter and external color/monochrome profiles'
+          git push origin HEAD:refs/heads/feat/declarative-alarms
