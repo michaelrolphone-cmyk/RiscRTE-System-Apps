@@ -1,0 +1,59 @@
+name: Paper Space external default app
+on:
+  pull_request:
+    paths:
+      - 'Apps/paper_space/**'
+      - 'scripts/build_paper_space.py'
+      - 'scripts/test_paper_space.sh'
+      - 'test/paper_space/**'
+      - 'tests/test_paper_space.py'
+      - '.github/workflows/paper-space.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  entry:
+    name: Real default lifecycle and Xtensa GUI ELF
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a3d23da9cdc1b3a66c6429f29781856fa7fc8f75
+          path: build/minimal-runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check catalog bounds, versions and canonical source custody
+        run: python -m unittest discover -s tests -p test_paper_space.py -v
+      - name: Actual ELF plus actual Runtime, ProviderGraph and loader lifecycle
+        run: bash scripts/test_paper_space.sh build/minimal-runtime
+      - name: Install pinned public compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build all explicit input profiles and verify ELF/import/ABI boundaries
+        run: |
+          for profile in navigation touch both; do
+            python scripts/build_paper_space.py --input "$profile" --output-dir "dist/paper-space-$profile"
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paper-space-default-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            dist/paper-space-*/default.elf
+            dist/paper-space-*/paper-space.json
+            dist/paper-space-*/boot-selection.fragment.json
+            dist/paper-space-*/build-record.json
+            dist/paper-space-*/*LICENSE.txt
+            dist/paper-space-*/FONT-COPYRIGHT.txt
+            dist/paper-space-*/SOURCES.json
+            build/paper-space/previews/*.pgm
+          if-no-files-found: error
+          retention-days: 14
