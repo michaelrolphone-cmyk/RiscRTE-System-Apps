@@ -63,7 +63,9 @@ static bool quick_apply(uint32_t actions) {
  return true;
 }
 static bool quick_copy_background(void) {
- clear();if(failed)return false;
+ /* Every visible byte is overwritten below; clearing it first only repeats
+  * a full-frame paint. Keep ordinary surface acquisition and custody checks. */
+ if(!acquire_surface() || failed)return false;
  if(!quick_background)return false;
  size_t bytes=quick_row_bytes();
  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);

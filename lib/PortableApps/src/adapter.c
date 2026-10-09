@@ -435,12 +435,13 @@ static void display_failure(const char *detail) {
      (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE))rt->diagnostic(detail);
   failed=true;
 }
-static void clear_color(uint16_t color) {
+/* Acquire the same checked surface for either painting or complete image copy. */
+static bool acquire_surface(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-  if(desk_phase!=DESK_TIMER && desk_phase!=DESK_FOREGROUND)return;
+  if(desk_phase!=DESK_TIMER && desk_phase!=DESK_FOREGROUND)return false;
 #endif
   if (failed)
-    return;
+    return false;
   if (surface.frame) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
@@ -448,7 +449,7 @@ static void clear_color(uint16_t color) {
   if (!display->acquire(display->context, surface_format,
                         &surface)) {
     display_failure("PORTABLE_APP error=display-acquire");
-    return;
+    return false;
   }
   if (!surface.frame || !surface.pixels || surface.width != info.width ||
       surface.height != info.height ||
@@ -457,7 +458,7 @@ static void clear_color(uint16_t color) {
       surface.stride_bytes > UINT32_MAX / info.height ||
       surface.size_bytes < surface.stride_bytes * info.height) {
     display_failure("PORTABLE_APP error=display-surface");
-    return;
+    return false;
   }
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_pending) {
@@ -485,7 +486,10 @@ static void clear_color(uint16_t color) {
     }
   }
 #endif
-  fill(0, 0, width(), height(), color);
+  return true;
+}
+static void clear_color(uint16_t color) {
+  if(acquire_surface())fill(0, 0, width(), height(), color);
 }
 static void clear(void) { clear_color(0xffff); }
 static void rect(int32_t x, int32_t y, int32_t w, int32_t h, bool black) {
