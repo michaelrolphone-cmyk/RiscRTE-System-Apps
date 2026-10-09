@@ -4,6 +4,7 @@ import argparse,hashlib,json,os,shutil,subprocess
 from pathlib import Path
 import portable_quick_build
 import portable_alarm_build
+import portable_performance_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
@@ -18,7 +19,10 @@ def build():
  p.add_argument("--retained-wake-sdk",type=Path,help="Canonical Runtime app SDK containing RiscRetainedWakeV1.h")
  portable_quick_build.options(p)
  portable_alarm_build.options(p)
+ portable_performance_build.options(p)
  a=p.parse_args()
+ portable_performance_build.validate(a,p)
+ if portable_performance_build.selected(a) and not a.sparse_start:p.error('--performance-runtime-repo requires --sparse-start')
  if bool(a.local_sleep_source)!=bool(a.sleep_capability) or (a.local_sleep_source and (not a.navigation or not a.alarm_client or not a.sleep_sdk)):p.error('Local sleep requires source, capability, SDK, navigation and alarm client')
  if a.desk_clock and (not a.local_sleep_source or not a.retained_wake_sdk):p.error('Desk clock requires local sleep and retained-wake SDK')
  if a.desk_clock and not (a.retained_wake_sdk/'RiscRetainedWakeV1.h').is_file():p.error('Missing canonical RiscRetainedWakeV1.h')
@@ -30,6 +34,8 @@ def build():
    if not (a.retained_wake_sdk/name).is_file():p.error('Missing canonical '+name)
   if 'RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE' not in (a.retained_wake_sdk/'RiscRuntimeV1.h').read_text():p.error('Sparse startup requires the canonical invocation-retention Runtime suffix')
  if not a.launcher_app.endswith('.elf') or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.' for c in a.launcher_app):p.error('Invalid launcher filename')
+ performance_source=portable_performance_build.read(a,p) if portable_performance_build.selected(a) else None
+ performance=None
  cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc') or str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
  out=a.output_dir;out.mkdir(parents=True,exist_ok=True)
  includes=ROOT/'lib/PortableApps/include'
@@ -47,6 +53,8 @@ def build():
   if a.sparse_start:
    for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h'):
     shutil.copyfile(a.retained_wake_sdk/name,includes/name)
+ if performance_source:includes,performance=portable_performance_build.stage(ROOT,out,performance_source,includes,
+  display=portable_performance_build.read_display(a,p),overrides={'RiscStorageVolumeV1.h':a.sleep_sdk/'RiscStorageVolumeV1.h'})
 
  tagged_alarm=portable_alarm_build.stage(a,p,out,includes)
  catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
@@ -59,6 +67,7 @@ def build():
   flags=[flag for flag in flags if flag!='-I'+str(a.sleep_sdk)]
   flags+=['-DPORTABLE_DESK_CLOCK']
  if a.sparse_start:flags+=['-DPORTABLE_DESK_CLOCK_SPARSE_START']
+ if performance:flags.extend(portable_performance_build.defines(performance))
  if a.alarm_client:flags+=['-DPORTABLE_ALARM_CLIENT']
  if tagged_alarm:flags+=['-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_HOME_POINTS_NATIVE_UTC','-DALARM_NATIVE_UTC']
  quick_flags,quick_sources=portable_quick_build.configure(a,p,ROOT,out);flags+=quick_flags
@@ -76,6 +85,7 @@ def build():
  if a.local_sleep_source:version='0.2.2'
  if a.desk_clock:version='0.3.1'
  if a.sparse_start:version='0.3.6' if tagged_alarm else '0.3.3'
+ if performance:version=portable_performance_build.VERSIONS['paper_clock']
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -91,6 +101,10 @@ def build():
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
+ if performance:
+  record['performance_trace']=performance
+  record['build_defines']=flags
+  record['retained_wake_sdk_sha256']=performance['sdk_headers']['RiscRetainedWakeV1.h']
  if tagged_alarm:
   record['tagged_alarm_sdk']=tagged_alarm
   record['home_points']={'clock_policy':'native-utc','storage_instance':5,'foreground_only':True,'records':['points_utc_cfg','points_utc_meta'],'projection':'Utilities PointsUtcSchedule','model':'Watch nova_points_state','tap_app':'points_in_time.elf'}
@@ -102,7 +116,9 @@ def build():
    'lib/PortableApps/src/desk_clock_faces.c','lib/PortableApps/include/PortableDeskClockApp.h',
    'lib/PortableApps/include/PortableDeskClock.h','lib/PortableApps/include/PortableDeskClockSettings.h',
    'lib/PortableApps/include/PortableSleepPolicy.h','lib/PortableApps/include/PortableReaderPreferences.h','lib/PortableApps/src/paper.inc','scripts/build_paper_clock.py']
+  paths.extend(['lib/PortableApps/include/PortablePerformance.h','lib/PortableApps/src/performance.inc'])
   paths.extend(str(path.relative_to(ROOT)) for path in quick_sources)
+  if performance:paths.append('scripts/portable_performance_build.py')
   if tagged_alarm:paths.extend(['scripts/portable_alarm_build.py','Apps/paper_home_points.inc','Apps/PaperHomePoints.h','lib/PortableApps/include/PortablePointsState.h'])
   record['desk_sources']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths}
   record['time_resolution']='whole-second RTC, <=100ms observed edge bracket; monotonic deadline; native timer-arm latency unqualified'

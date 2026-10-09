@@ -9,6 +9,7 @@ import shutil
 import subprocess
 from pathlib import Path
 import portable_alarm_build
+import portable_performance_build
 
 RUNTIME_COMMIT = '30dcec5ce6ce33223f2b203a2399283e1f758567'
 SDK_HEADERS = ('RiscRuntimeV1.h', 'RiscRealtimeV1.h')
@@ -30,14 +31,18 @@ def selected(args):
 
 
 def validate(args, parser):
+    portable_performance_build.validate(args, parser)
     native = selected(args)
+    performance = portable_performance_build.selected(args)
+    if performance and not native:
+        parser.error('--performance-runtime-repo requires --time-profile x4-native-time')
     if args.display_rotation is None:
         args.display_rotation = 90 if native else 0
     if not native:
         if getattr(args, 'native_time_runtime_repo', None) or getattr(args, 'tagged_alarm_utilities', None):
             parser.error('Pinned native SDK options require --time-profile x4-native-time')
         return
-    if not args.native_time_runtime_repo or not args.tagged_alarm_utilities:
+    if (not args.native_time_runtime_repo and not performance) or not args.tagged_alarm_utilities:
         parser.error('x4-native-time requires --native-time-runtime-repo and --tagged-alarm-utilities')
     if not args.alarm_client:
         parser.error('x4-native-time requires --alarm-client (tagged API2)')
@@ -51,21 +56,34 @@ def validate(args, parser):
 def configure(args, parser, root, out, app):
     if not selected(args):
         return root/'lib/PortableApps/include', [], [], None
-    try:
-        sdk = {name: subprocess.check_output(['git', '-C', str(args.native_time_runtime_repo),
-               'show', RUNTIME_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else 'sdk/app/' + name)],
-               stderr=subprocess.PIPE) for name in (*SDK_HEADERS, 'LICENSE')}
-    except (OSError, subprocess.CalledProcessError) as error:
-        parser.error('Cannot read pinned native Runtime SDK: ' + str(error))
-    includes = out/'native-time-sdk/include'
-    shutil.copytree(root/'lib/PortableApps/include', includes, dirs_exist_ok=True)
-    shutil.copytree(root/'lib/PortableApps/time', includes.parent/'time', dirs_exist_ok=True)
-    for name in SDK_HEADERS:
-        (includes/name).write_bytes(sdk[name])
+    performance = None
+    commit = RUNTIME_COMMIT
+    if portable_performance_build.selected(args):
+        if app != 'springboard':
+            parser.error('Diagnostic native toolbar SDK selection is supported only for Springboard')
+        source = portable_performance_build.read(args, parser)
+        sdk = portable_performance_build.app_sdk(source)
+        includes, performance = portable_performance_build.stage(
+            root, out, source, display=portable_performance_build.read_display(args, parser))
+        commit = portable_performance_build.RUNTIME_COMMIT
+    else:
+        try:
+            sdk = {name: subprocess.check_output(['git', '-C', str(args.native_time_runtime_repo),
+                   'show', RUNTIME_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else 'sdk/app/' + name)],
+                   stderr=subprocess.PIPE) for name in (*SDK_HEADERS, 'LICENSE')}
+        except (OSError, subprocess.CalledProcessError) as error:
+            parser.error('Cannot read pinned native Runtime SDK: ' + str(error))
+        includes = out/'native-time-sdk/include'
+        shutil.copytree(root/'lib/PortableApps/include', includes, dirs_exist_ok=True)
+        shutil.copytree(root/'lib/PortableApps/time', includes.parent/'time', dirs_exist_ok=True)
+        for name in SDK_HEADERS:
+            (includes/name).write_bytes(sdk[name])
     tagged = portable_alarm_build.stage(args, parser, out, includes)
     profile_path = 'lib/PortableApps/profiles/x4-native-time-' + app + '.json'
     profile = json.loads((root/profile_path).read_text())
-    runtime = {'repository': 'michaelrolphone-cmyk/RiscRTE', 'commit': RUNTIME_COMMIT,
+    if performance:
+        profile['version'] = portable_performance_build.VERSIONS[app]
+    runtime = {'repository': 'michaelrolphone-cmyk/RiscRTE', 'commit': commit,
                'sha256': {name: hashlib.sha256(data).hexdigest() for name, data in sdk.items()}}
     notices = out/'licenses/native-time'; notices.mkdir(parents=True, exist_ok=True)
     (notices/'Runtime-LICENSE.txt').write_bytes(sdk['LICENSE'])
@@ -76,6 +94,9 @@ def configure(args, parser, root, out, app):
                    profile_source=profile_path)
     flags = ['-DPORTABLE_NATIVE_TIME_TOOLBAR', '-DPORTABLE_NATIVE_CUSTODY_FENCE',
              '-DALARM_SERVICE_TAGGED_V2']
+    if performance:
+        receipt['performance_trace'] = performance
+        flags.extend(portable_performance_build.defines(performance))
     return includes, flags, [root/p for p in SOURCES], receipt
 
 
@@ -114,19 +135,29 @@ def record(args, record, manifest, receipt):
 def write_admission(root, out, manifest, record):
     if record.get('time_profile') != 'x4-native-time':
         return
-    includes = out/'native-time-sdk/include'
+    performance = record.get('performance_trace')
+    includes = out/('performance-sdk/include' if performance else 'native-time-sdk/include')
+    names = set((*SDK_HEADERS, *portable_alarm_build.HEADERS))
+    if performance:
+        names.update(performance['sdk_headers'])
+        names.update(performance.get('display_metrics', {}).get('sha256', {}))
     headers = {name: hashlib.sha256((includes/name).read_bytes()).hexdigest()
-               for name in (*SDK_HEADERS, *portable_alarm_build.HEADERS)}
+               for name in sorted(names)}
     expected = dict(record['native_time_sdk']['sha256'], **record['tagged_alarm_sdk']['sha256'])
+    if performance:
+        expected.update(performance['sdk_headers'])
+        expected.update(performance.get('display_metrics', {}).get('sha256', {}))
     assert all(headers[name] == expected[name] for name in headers)
     receipt = {'schema': 1, 'app': manifest['id'], 'version': manifest['version'],
                'source_repo': 'michaelrolphone-cmyk/RiscRTE-System-Apps',
                'source_revision': record['repository_commit'],
                'system_source_revision': record['repository_commit'],
-               'runtime_source_revision': RUNTIME_COMMIT,
+               'runtime_source_revision': record['native_time_sdk']['commit'],
                'alarm_source_revision': portable_alarm_build.UTILITIES_COMMIT,
                'alarm_api': 2, 'time_policy': 'native-realtime-iana',
                'elf_sha256': record['sha256'], 'elf_bytes': record['size_bytes'],
                'requires': manifest['requires'], 'sdk_sha256': headers,
                'working_tree_dirty': record['working_tree_dirty']}
+    if performance:
+        receipt['performance_trace'] = performance
     (out/'x4-native-app.json').write_text(json.dumps(receipt, indent=2) + '\n')

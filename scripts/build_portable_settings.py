@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 import portable_quick_build
 import portable_alarm_build
+import portable_performance_build
 import shutil
 import subprocess
 
@@ -57,6 +58,7 @@ def stage_native_time_sdk(out, sdk):
 
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
+    portable_performance_build.validate(args,parser)
     cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:
         core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
@@ -64,6 +66,11 @@ def build(args,parser=None):
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
+    performance_source=None
+    performance=None
+    runtime_commit=NATIVE_TIME_RUNTIME_COMMIT
+    if portable_performance_build.selected(args) and not native_time:
+        parser.error('--performance-runtime-repo requires --settings-profile x4-native-time')
     desk_clock=profile in ('x4-desk-clock','x4-native-time')
     if args.display_rotation is None: args.display_rotation=90 if native_time else 0
     sdk=None
@@ -75,7 +82,12 @@ def build(args,parser=None):
         if args.denver or args.wall_time:
             parser.error('x4-native-time cannot use --denver or --wall-time RTC policies')
         args.navigation=True
-        sdk=native_time_sdk(args,parser)
+        if portable_performance_build.selected(args):
+            performance_source=portable_performance_build.read(args,parser)
+            sdk=portable_performance_build.app_sdk(performance_source)
+            runtime_commit=portable_performance_build.RUNTIME_COMMIT
+        else:
+            sdk=native_time_sdk(args,parser)
         missing=[p for p in (*NATIVE_TIME_SOURCES,*NATIVE_TIME_CONTROLLER) if not (ROOT/p).is_file()]
         if missing: parser.error('Missing native-time Settings implementation: '+', '.join(missing))
     elif getattr(args,'native_time_runtime_repo',None):
@@ -103,9 +115,15 @@ def build(args,parser=None):
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
+    if performance_source:version=portable_performance_build.VERSIONS['settings']
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
-    includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
+    if performance_source:
+        includes,performance=portable_performance_build.stage(ROOT,out,performance_source,
+            display=portable_performance_build.read_display(args,parser))
+        flags.extend(portable_performance_build.defines(performance))
+    else:
+        includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
     tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)
     if tagged_alarm:flags.append('-DALARM_SERVICE_TAGGED_V2')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
@@ -166,6 +184,7 @@ def build(args,parser=None):
     inputs += ['Apps/PaperPresentation.h','Apps/PaperFrame.h']
     if tagged_alarm:inputs.append('scripts/portable_alarm_build.py')
     inputs += ['scripts/build_portable_settings.py',version_path]
+    if performance: inputs.append('scripts/portable_performance_build.py')
     if native_time: inputs += ['LICENSE','Apps/settings_native_entry.c']
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
@@ -182,7 +201,7 @@ def build(args,parser=None):
         shutil.copyfile(ROOT/'lib/PortableApps/time/TIMEZONE_PROVENANCE.json',destination/'TIMEZONE-PROVENANCE.json')
         (destination/'Runtime-LICENSE.txt').write_bytes(sdk['LICENSE'])
         provenance={'repository':'michaelrolphone-cmyk/RiscRTE',
-            'commit':NATIVE_TIME_RUNTIME_COMMIT,
+            'commit':runtime_commit,
             'source_sha256':{'LICENSE' if name=='LICENSE' else 'sdk/app/'+name:
                 hashlib.sha256(data).hexdigest() for name,data in sdk.items()}}
         (destination/'native-time-SDK-SOURCES.json').write_text(json.dumps(provenance,indent=2)+'\n')
@@ -199,10 +218,12 @@ def build(args,parser=None):
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
+    if performance:record['performance_trace']=performance
     if native_time:
         record.update(time_policy='native-realtime-iana',invocation_retention=True,
-            native_time_runtime_commit=NATIVE_TIME_RUNTIME_COMMIT,
-            native_time_sdk_headers={name:hashlib.sha256(sdk[name]).hexdigest() for name in NATIVE_TIME_SDK_HEADERS},
+            native_time_runtime_commit=runtime_commit,
+            native_time_sdk_headers={name:hashlib.sha256(sdk[name]).hexdigest()
+                for name in (sorted(set(sdk)-{'LICENSE'}) if performance else NATIVE_TIME_SDK_HEADERS)},
             native_time_runtime_license_sha256=hashlib.sha256(sdk['LICENSE']).hexdigest(),
             native_time_control_instance=0,rtc_access='explicit-save-only',
             grant_count=len(manifest['requires']),
@@ -236,6 +257,7 @@ def argument_parser():
     parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
     portable_quick_build.options(parser)
     portable_alarm_build.options(parser)
+    portable_performance_build.options(parser)
     return parser
 
 

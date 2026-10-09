@@ -110,12 +110,19 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
  if(!grant.api || !grant.slot || !grant.generation){desk_fence();return false;}
  unsigned face,time_format,language,flip;
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  (void)portable_time_format_load(grant.api,&time_format);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  (void)portable_desk_face_load(grant.api,&face);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  (void)portable_reader_preference_load(grant.api,true,&language);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  (void)portable_reader_preference_load(grant.api,false,&flip);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  (void)portable_sleep_load_profile(grant.api,3u,PORTABLE_SLEEP_LIGHT,mode);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  int zone=portable_timezone_preference_load(grant.api,config.time_zone);
+ portable_perf_count(PORTABLE_PERF_KV_READS);
  int basis=portable_rtc_basis_load(grant.api,&desk_basis);
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation){desk_fence();return false;}
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
@@ -277,8 +284,10 @@ static bool sparse_boot(void) {
  risc_runtime_health_v1 begun={.struct_size=sizeof(begun)};
  if(!rt->health(&begun)){desk_fence();return false;}desk_started_at=begun.uptime_ms;
  /* This read is native authority; no provider acquisition has happened in init. */
+ portable_perf_span(PORTABLE_PERF_SPAN_CLASSIFICATION,true);
  int boot=portable_desk_clock_boot_read(rt,&desk_boot_record);
  if(boot==-2){desk_fence();return false;}
+ portable_perf_span(PORTABLE_PERF_SPAN_CLASSIFICATION,false);
  if(!desk_trace("classification",boot))return false;
  portable_timezone_rule retained_rule;risc_realtime_snapshot_v1 sample;
  bool timer=boot==1 && portable_timezone_resolve(desk_boot_record.config.time_zone,
@@ -299,12 +308,21 @@ static bool sparse_boot(void) {
  }
  /* Cold/GPIO/corrupt/UNSET and ordinary timer refusal all promote first. The
   * display, if already open, stays pinned across this one-way transition. */
+ portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,true);
  if(desk_promote()!=1 || !desk_bind())return false;
+ portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,false);
+ portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,true);
  if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
+ portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,false);
  format=desk_configuration.time_format;
  if(!portable_desk_adapter_flip(desk_configuration.flip_ui))return false;
+ portable_perf_span(PORTABLE_PERF_SPAN_LOGO,true);
  if(!desk_boot_logo())return false;
+ portable_perf_span(PORTABLE_PERF_SPAN_LOGO,false);
+ portable_perf_span(PORTABLE_PERF_SPAN_RECOVERY,true);
  int recovered=desk_sample(true,&sample);
+ if(desk_retained)return false;
+ portable_perf_span(PORTABLE_PERF_SPAN_RECOVERY,false);
  if(desk_retained || !desk_trace("native-recovery",recovered))return false;
  app->set_back_exits_app(false);return portable_desk_adapter_foreground();
 }

@@ -1,3 +1,4 @@
+#include "PortablePerformance.h"
 #include "PortableRealtimeClient.h"
 #include "PortableRtcClock.h"
 #include <string.h>
@@ -106,6 +107,7 @@ int portable_realtime_read(portable_realtime_client *c,risc_realtime_snapshot_v1
  if(!out)return PORTABLE_REALTIME_INVALID;
  int rc=live(c);if(rc)return rc;
  risc_realtime_snapshot_v1 s={.struct_size=sizeof(s)};
+ portable_perf_count(PORTABLE_PERF_NATIVE_READS);
  rc=native_status(c,c->native_read(c->native_context,&s));if(rc)return rc;
  rc=snapshot_status(&s);if(rc<0)return rc;
  *out=s;return rc;

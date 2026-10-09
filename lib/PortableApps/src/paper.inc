@@ -65,6 +65,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
   }
 }
 static bool pp_battery(uint8_t *percent,bool *charging) {
+  portable_perf_count(PORTABLE_PERF_BATTERY_READS);
   risc_battery_sample_v1 sample={0};
   if(!gauge || !gauge->read || !gauge->read(gauge->context,&sample) || sample.percent>100 ||
      (sample.flags&RISC_BATTERY_PROFILE_MISSING))return false;

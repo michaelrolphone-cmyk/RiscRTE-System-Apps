@@ -350,14 +350,18 @@ static risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),
  .yield_ms=wait_ms,.diagnostic=report,.request_launch=launch,.acquire=obtain,.release=drop,
  .retain_invocation=retain_invocation};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&runtime:NULL;}
-int main(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];scenario=0;raw_navigation=!strncmp(test,"raw-",4);raw_async=getenv("RAW_ASYNC")!=NULL;raw_lifetime=strstr(test,"inspect")!=NULL;raw_brightness=strstr(test,"brightness")!=NULL;if(raw_brightness)epoch-=epoch%60;
+#ifndef SPARSE_FIXTURE_MAIN
+#define SPARSE_FIXTURE_MAIN main
+#endif
+int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(argc==3);test=argv[1];state_path=argv[2];scenario=0;raw_navigation=!strncmp(test,"raw-",4);raw_async=getenv("RAW_ASYNC")!=NULL;raw_lifetime=strstr(test,"inspect")!=NULL;raw_brightness=strstr(test,"brightness")!=NULL;if(raw_brightness)epoch-=epoch%60;
  panel.history.base=d;panel.history.base.get_info=raw_display_info;if(raw_async)panel.history.base.present_status=raw_present_status;panel.history.base.struct_size=sizeof(panel);panel.history.base.acquire=frame_acquire;panel.history.base.release=frame_release;panel.history.base.submit=frame_submit;panel.history.base.wait_present=frame_wait;panel.history.base.set_brightness=bright;panel.history.extension_tag=RISC_DISPLAY_HISTORY_TAG;panel.history.extension_version=1;panel.history.seed_previous=seed_previous;panel.power_tag=RISC_DISPLAY_POWER_TAG;panel.power_version=1;panel.prepare=panel_prepare;panel.resume=panel_resume;
  touch_power.base=t;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  if(!strncmp(test,"home-",5))touch_power.base.snapshot=home_snapshot;
  if(which("home-retry"))scenario=9;
 #endif
- if(raw_navigation)touch_power.base.snapshot=raw_snapshot;touch_power.base.struct_size=sizeof(touch_power);touch_power.power_tag=RISC_TOUCH_POWER_TAG;touch_power.power_version=1;touch_power.prepare=touch_prepare;touch_power.resume=touch_resume;
+ if(raw_navigation)touch_power.base.snapshot=raw_snapshot;
+ touch_power.base.struct_size=sizeof(touch_power);touch_power.power_tag=RISC_TOUCH_POWER_TAG;touch_power.power_version=1;touch_power.prepare=touch_prepare;touch_power.resume=touch_resume;
  sd.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(sd)};sd.terminal.extension_tag=RISC_STORAGE_POWER_COMMIT_TAG;sd.terminal.extension_version=1;sd.terminal.commit_power_down=legacy_sd;sd.sleep_tag=RISC_STORAGE_SLEEP_TAG;sd.sleep_version=1;sd.prepare_sleep=prepare_sd;sd.commit_sleep=commit_sd;sd.resume_sleep=resume_sd;
  power=(x4_power_deep_v1){{1,sizeof(power),NULL,read_key,NULL},X4_POWER_DEEP_TAG,1,deep};
  portable_desk_record record={.config={.face=0,.time_format=1,.rtc_stores_utc=1},.displayed_minute=1791331140,.has_image=true};

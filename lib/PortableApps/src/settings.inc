@@ -394,6 +394,7 @@ static bool editor_try_save(void) {
 #include "settings_timezone.inc"
 #endif
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
+  portable_perf_action(PORTABLE_PERF_SETTINGS_ACTION,false);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return T5_APP_SETTING_ERROR;
 #endif

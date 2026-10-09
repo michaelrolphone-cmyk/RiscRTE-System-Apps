@@ -162,7 +162,10 @@ static void paint_fixture(void) {
 #endif
  v->begin();v->text(20,20,300,"INITIAL",1,false,true);present(false);
 }
-int main(int argc,char **argv) {
+#ifndef PAPER_FIXTURE_MAIN
+#define PAPER_FIXTURE_MAIN main
+#endif
+int PAPER_FIXTURE_MAIN(int argc,char **argv) {
  assert(argc==2);case_name=argv[1];async_enabled=!mode("sync");
  custom_display=fx_display;custom_display.get_info=custom_info;custom_display.acquire=custom_frame;
  custom_display.release=custom_release_frame;custom_display.submit=custom_submit;custom_display.present_status=custom_status;

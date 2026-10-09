@@ -23,9 +23,12 @@ static void stz_choose(unsigned row) {
   stz_visible();
 }
 static bool stz_page_step(bool forward) {
+  portable_perf_action(forward?PORTABLE_PERF_TIMEZONE_NEXT:PORTABLE_PERF_TIMEZONE_PREV,false);
+  portable_perf_span(PORTABLE_PERF_SPAN_SETTINGS_DISPATCH,true);
   unsigned rows=stz_rows(),count=stz_count(),before=stz_first;
   if(forward){if(stz_first+rows<count)stz_choose(stz_first+rows);}
   else if(stz_first)stz_choose(stz_first>=rows?stz_first-rows:0);
+  portable_perf_span(PORTABLE_PERF_SPAN_SETTINGS_DISPATCH,false);
   return stz_first!=before;
 }
 static void stz_name(unsigned row,char out[PORTABLE_TIMEZONE_ID_BYTES]) {
@@ -113,7 +116,7 @@ static bool stz_poll(t5_app_input_t *out) {
   if(!eligible)return true;
   if(sv_dragged||sample.moved) {
     int threshold=pp_enabled()?44:28;
-    if(sv_abs(dy)>=threshold && sv_abs(dy)>sv_abs(dx)*2) {if(stz_page_step(dy<0))settings_view_redraw();}
+    if(sv_abs(dy)>=threshold && sv_abs(dy)>sv_abs(dx)*2) {portable_perf_action(PORTABLE_PERF_TIMEZONE_SWIPE,false);if(stz_page_step(dy<0))settings_view_redraw();}
     else if(dx>=threshold && dx>sv_abs(dy)*2)out->buttons=T5_APP_BUTTON_BACK;
     return true;
   }

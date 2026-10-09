@@ -8,6 +8,7 @@
 #include "PortableAppSleep.h"
 #include "PaperPresentation.h"
 #include "PaperFrame.h"
+#include "PortablePerformance.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -225,13 +226,14 @@ break;}
    points_launch=false;
 #endif
   }
-  if(launch){if(!paper_frame_drain())return;close_clock();
+  if(launch){portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
    if(rt->request_launch(target))break;
 #else
    if(rt->request_launch(PAPER_CLOCK_LAUNCHER))break;
 #endif
+   portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);
    open_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    strcpy(notice,points_launch?"UNABLE TO OPEN POINTS. RETRY.":"UNABLE TO OPEN APPS. RETRY.");

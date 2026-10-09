@@ -12,6 +12,7 @@ import re
 from pathlib import Path
 import portable_quick_build
 import portable_native_toolbar_build
+import portable_performance_build
 import shutil
 import subprocess
 
@@ -56,6 +57,7 @@ def build():
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
     portable_quick_build.options(parser)
     portable_native_toolbar_build.options(parser)
+    portable_performance_build.options(parser)
     args=parser.parse_args()
     portable_native_toolbar_build.validate(args,parser)
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
@@ -146,6 +148,9 @@ def build():
         record['build_defines']=flags
         for p in ['scripts/build_portable_springboard.py','scripts/portable_native_toolbar_build.py','scripts/portable_alarm_build.py',native_receipt['profile_source']]:
             record['source_sha256'][p]=hashlib.sha256((ROOT/p).read_bytes()).hexdigest()
+        if portable_performance_build.selected(args):
+            path='scripts/portable_performance_build.py'
+            record['source_sha256'][path]=hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
     portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     (out/'springboard-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Springboard: target layout, ELF validator, import/export checks passed')

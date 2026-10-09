@@ -1,6 +1,7 @@
 /* NOVA-7 E-Ink: fixed 3/2 rows, real catalog only, no animation or fades. */
 #include "PaperPresentation.h"
 #include "PaperFrame.h"
+#include "PortablePerformance.h"
 #include "PaperBattery.h"
 __attribute__((weak)) const paper_presentation *paper_presentation_get(void) {return NULL;}
 #define PAPER_PAGE_APPS 15u
@@ -100,11 +101,12 @@ static bool paper_run(void) {
             launch_pending=feedback=false;dirty=true;
         }
 #endif
-        if(selected!=old){status[0]=0;dirty=true;}
+        if(selected!=old){portable_perf_action(PORTABLE_PERF_SPRINGBOARD_PAGE,false);status[0]=0;dirty=true;}
         if(activate) {
             t5_app_manifest_t app;
             if(api->installed_apps_get(selected,&app)&&app.compatible) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+                portable_perf_action(PORTABLE_PERF_LAUNCH,true);
                 launch_pending=true;feedback=false;status[0]=0;dirty=true;
 #else
                 if(api->request_app_launch(selected))return true;
@@ -126,6 +128,7 @@ static bool paper_run(void) {
          * readiness establishes completion before admission can unload us. */
         if(launch_pending && feedback && !c.down && paper_frame_ready()) {
             if(api->request_app_launch(selected))return true;
+            portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);
             launch_pending=feedback=false;strcpy(status,"UNABLE TO OPEN APP");dirty=true;
         }
 #else

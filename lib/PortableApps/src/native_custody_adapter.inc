@@ -28,6 +28,7 @@ static custody_kv_slot custody_kv_slots[16];
 static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
   custody_kv_slot *slot=context;
   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
+  portable_perf_count(PORTABLE_PERF_KV_READS);
   int32_t result=slot->source->get(slot->source->context,key,data,size,used);
   /* Canonical Runtime/NVS IO reports persistence failure, not lost custody.
    * The checked Set Time helper independently applies its stricter stop rule. */

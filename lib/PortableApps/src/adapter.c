@@ -17,6 +17,7 @@
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
+#include "PortablePerformance.h"
 #include "PortableTouch.h"
 #if defined(PORTABLE_DESK_CLOCK) || defined(PORTABLE_SETTINGS_X4_DESK_CLOCK)
 #ifndef PORTABLE_PAPER_PREFERENCES
@@ -33,6 +34,9 @@ static void paper_orient_input(portable_touch_sample *sample);
 #endif
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
+#ifdef PORTABLE_PERFORMANCE_DISPLAY_METRICS
+#include "RiscDisplayOutputMetricsV1.h"
+#endif
 #ifdef PORTABLE_DESK_CLOCK
 #include "PortableDeskClockApp.h"
 #include <RiscDisplayOutputPowerV1.h>
@@ -93,6 +97,7 @@ static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
 #endif
 static bool paper_rotated;
 static bool failed, list_mode;
+#include "performance.inc"
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 #include "PortableNativeCustody.h"
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
@@ -294,6 +299,7 @@ static void input_service(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(failed || desk_phase!=DESK_FOREGROUND || !touch.subscription)return;
 #endif
+ portable_perf_count(PORTABLE_PERF_INPUT_READS);
  portable_touch_sample next;portable_touch_read(&touch,&next);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  /* Discard replayed events and the complete initial held contact/Home cycle,
@@ -311,7 +317,9 @@ static void input_service(void) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(failed)return;
 #endif
+ if(next.valid && next.began && next.tap_eligible && !next.cancelled)perf_input_begin(1u);
  if(next.home_pressed) {
+  perf_input_begin(3u);
   home_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;
   next=(portable_touch_sample){.valid=true,.cancelled=true};touch.neutral=touch.down=false;
  }
@@ -363,7 +371,7 @@ static void input_service(void) {
   if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
 #endif
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
-  else {navigation_pending|=frame.pressed;
+  else {perf_navigation(frame.buttons,frame.pressed);navigation_pending|=frame.pressed;
     if(frame.pressed&RISC_NAV_HOME){crown_pending=true;navigation_pending|=T5_APP_BUTTON_BACK;}
   }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -461,11 +469,14 @@ static bool acquire_surface(void) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
   }
+  portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,true);
   if (!display->acquire(display->context, surface_format,
                         &surface)) {
     display_failure("PORTABLE_APP error=display-acquire");
     return false;
   }
+  portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,false);
+  perf_draw_begin();
   if (!surface.frame || !surface.pixels || surface.width != info.width ||
       surface.height != info.height ||
       surface.pixel_format != surface_format ||
@@ -644,6 +655,7 @@ static bool paper_present_progress(void) {
   }
   if(failed)return false;
   risc_display_present_status_v1 status={0};
+  portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
   if(!display->present_status(display->context,paper_token,&status)) {
     display_failure("PORTABLE_APP error=display-status");return false;
   }
@@ -652,6 +664,7 @@ static bool paper_present_progress(void) {
     display_failure("PORTABLE_APP error=display-failed");return false;
   }
   if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE)return true;
+  perf_metrics(paper_token);perf_complete(true);
   paper_token=0;
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_orientation_dirty=false;
@@ -687,6 +700,8 @@ static void present(bool full) {
 #endif
   if (failed || !surface.frame)
     return;
+  perf_draw_end();
+  portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,true);
   risc_display_present_token_v1 token = 0;
   risc_display_rect_v1 damage={0};size_t damage_count=0;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -725,6 +740,7 @@ static void present(bool full) {
 #ifdef PORTABLE_DESK_CLOCK
       desk_present_complete=true;
 #endif
+      portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();
       return;}
     if(paper_previous_valid && !full) {
       unsigned xa=info.damage_x_alignment?info.damage_x_alignment:1,ya=info.damage_y_alignment?info.damage_y_alignment:1;
@@ -747,11 +763,12 @@ static void present(bool full) {
         last=y+1;
       }
     }
-    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;return;}
+    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
     if(previous_valid){damage=(risc_display_rect_v1){0,(int32_t)first,info.width,last-first};damage_count=1;}
     for(unsigned y=0;y<info.height;y++)memcpy(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
     previous_valid=false;
   }
+  portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);
   const risc_display_present_options_v1 options = {
     full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
       surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_DEFAULT,
@@ -765,11 +782,13 @@ static void present(bool full) {
       (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
   }
 #endif
+  perf_submit();portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,true);
   if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
                        &token)) {
     display_failure("PORTABLE_APP error=display-submit");
     return;
   }
+  portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,false);
   surface.frame = 0;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   /* Modals and unmodified callers keep their synchronous presentation path. */
@@ -798,6 +817,7 @@ static void present(bool full) {
     bool waited=surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
       !(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && display->wait_present;
+    portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
     bool ok=waited?display->wait_present(display->context,token,10000-elapsed,&s):
       display->present_status(display->context,token,&s);
     if(!ok){display_failure(waited?"PORTABLE_APP error=display-wait":"PORTABLE_APP error=display-status");break;}
@@ -805,6 +825,7 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+      perf_metrics(token);perf_complete(true);
 #ifdef PORTABLE_PAPER_PREFERENCES
       paper_orientation_dirty=false;
 #endif
@@ -1269,6 +1290,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
+#ifdef PORTABLE_PERFORMANCE_TRACE
+  if(ok && (out->tapped || out->buttons))portable_perf_event(RISC_PERF_RECOGNIZED,PORTABLE_PERF_INPUT_DELIVERED);
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
 #endif
@@ -1325,6 +1349,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
       crown_pending=false;memset(out,0,sizeof(*out));return true;
     }
 #endif
+    portable_perf_action(PORTABLE_PERF_LAUNCH,true);
     if(!rt->request_launch(destination)) {
       rt->diagnostic("PORTABLE_APP error=return-request");
 #ifdef PORTABLE_APP_LAUNCH_GUARD
@@ -1379,6 +1404,7 @@ static bool launch(uint32_t i) {
   bool consumed=false;
   if(!alarm_foreground(&consumed) || consumed)return false;
 #endif
+  portable_perf_action(PORTABLE_PERF_LAUNCH,true);
   return !failed &&
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       !handoff_active &&
@@ -1403,6 +1429,7 @@ static bool read_battery(t5_battery_state_t *out) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase!=DESK_FOREGROUND)return false;
 #endif
+  portable_perf_count(PORTABLE_PERF_BATTERY_READS);
   risc_battery_sample_v1 b = {0};
   if (!gauge || !out || !gauge->read(gauge->context, &b))
     return false;
@@ -1568,7 +1595,7 @@ static int initialize(void) {
 #endif
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
-  failed = false;
+  failed = false;perf_initialize();
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   paper_async_frames=false;paper_token=0;paper_submitted_at=0;
 #endif
@@ -1601,7 +1628,13 @@ static int initialize(void) {
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
 #endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
-  desk_runtime=rt;desk_guarded_runtime=*rt;
+  desk_runtime=rt;
+#ifdef PORTABLE_PERFORMANCE_TRACE
+  memset(&desk_guarded_runtime,0,sizeof(desk_guarded_runtime));
+  memcpy(&desk_guarded_runtime,rt,rt->struct_size<sizeof(desk_guarded_runtime)?rt->struct_size:sizeof(desk_guarded_runtime));
+#else
+  desk_guarded_runtime=*rt;
+#endif
   desk_guarded_runtime.acquire=desk_acquire;desk_guarded_runtime.release=desk_release;
   desk_guarded_runtime.health=desk_guard_health;desk_guarded_runtime.yield_ms=desk_guard_yield;
   desk_guarded_runtime.diagnostic=desk_guard_diagnostic;desk_guarded_runtime.request_launch=desk_guard_launch;
@@ -1612,13 +1645,25 @@ static int initialize(void) {
   return 0;
 #else
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
-  settings_runtime=*rt;settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+#ifdef PORTABLE_PERFORMANCE_TRACE
+  memset(&settings_runtime,0,sizeof(settings_runtime));
+  memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
+#else
+  settings_runtime=*rt;
+#endif
+  settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;settings_initialized=true;return 0;
 #else
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
-  settings_runtime=*rt;settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+#ifdef PORTABLE_PERFORMANCE_TRACE
+  memset(&settings_runtime,0,sizeof(settings_runtime));
+  memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
+#else
+  settings_runtime=*rt;
+#endif
+  settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;
