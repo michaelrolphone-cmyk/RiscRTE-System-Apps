@@ -1522,6 +1522,24 @@ static void settings_native_finalize(void) {
 #else
   if(native_custody_retained || !rt)return;
 #endif
+  /* Foreground app-owned grants precede adapter teardown. Unconfirmed app
+   * cleanup pins the entire invocation before any provider release or free. */
+#ifdef PORTABLE_FILE_BROWSER_APP
+  if(!portable_file_browser_close()){portable_adapter_retain();return;}
+  if(native_custody_retained)return;
+#endif
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+  if(!portable_wifi_close()){portable_adapter_retain();return;}
+  if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+  if(!portable_radio_suspend()){portable_adapter_retain();return;}
+  if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_AUDIO_SESSION
+  if(!portable_audio_suspend()){portable_adapter_retain();return;}
+  if(native_custody_retained)return;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(alarms.api && !alarm_failed_cleaned) {
     if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain) {portable_adapter_retain();return;}
