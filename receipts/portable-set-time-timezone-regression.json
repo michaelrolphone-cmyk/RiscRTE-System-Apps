@@ -1,0 +1,19 @@
+{
+  "host_plain": "PASS",
+  "host_asan_ubsan": "PASS",
+  "watch_default_and_denver_plain_sanitized": "PASS",
+  "independent_oracle_vectors": 22653,
+  "xtensa": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
+    "elf_bytes": 34496,
+    "elf_sha256": "92e70828eb51d58a585b790196b9af16220d9bb7ecd305af4aaf598c2d43d143",
+    "imports": [
+      "memcpy",
+      "memset"
+    ],
+    "loader_validation": "PASS",
+    "dynamic_symbols": "\nSymbol table '.dynsym' contains 7 entries:\n   Num:    Value  Size Type    Bind   Vis      Ndx Name\n     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy\n     2: 00007474     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start\n     3: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset\n     4: 00007474     0 NOTYPE  GLOBAL DEFAULT   11 _edata\n     5: 00007478     0 NOTYPE  GLOBAL DEFAULT   12 _end\n     6: 00003c10   331 FUNC    GLOBAL DEFAULT    6 app_main\n"
+  },
+  "unchanged_watch_files": "PASS"
+}

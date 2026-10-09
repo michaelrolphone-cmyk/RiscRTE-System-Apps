@@ -51,3 +51,15 @@ jobs:
           path: build/timezone/realtime-client.json
           if-no-files-found: error
           retention-days: 14
+      - name: Explicit checked Set Time and pinned target ELF
+        run: >-
+          python scripts/test_portable_set_time.py
+          --runtime-repo .shared/runtime
+          --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc"
+          --evidence build/timezone/set-time-client.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: portable-set-time-proof-${{ github.sha }}
+          path: build/timezone/set-time-client.json
+          if-no-files-found: error
+          retention-days: 14

@@ -36,7 +36,7 @@ def run(args, **kwargs):
         raise
 
 
-def xtensa(cc, directory, native_exports):
+def xtensa(cc, directory, native_exports, fixture=None):
     version = subprocess.check_output([cc, '--version'], text=True).splitlines()[0]
     assert '8.4.0' in version and '2021r2-patch5' in version, version
     readelf, strip = cc.replace('gcc', 'readelf'), cc.replace('gcc', 'strip')
@@ -47,7 +47,7 @@ def xtensa(cc, directory, native_exports):
         run([*flags, '-c', source, '-o', directory / (source.stem + '.o')])
     elf = directory / 'portable-realtime.elf'
     run([*flags, '-nostdlib', '-nostartfiles', '-shared', *SOURCES,
-         ROOT / 'test/native_apps/fixtures/portable_realtime_elf.c',
+         fixture or ROOT / 'test/native_apps/fixtures/portable_realtime_elf.c',
          '-Wl,--hash-style=sysv', '-o', elf])
     run([strip, '--strip-unneeded', elf])
     symbols = subprocess.check_output([readelf, '--dyn-syms', '--wide', str(elf)], text=True)
