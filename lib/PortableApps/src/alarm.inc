@@ -4,7 +4,13 @@
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
 #if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
-static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
+static const alarm_service_v1 *alarm_sleep_api(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    return alarms.api?&alarms.guarded.base:NULL;
+#else
+    return alarms.api;
+#endif
+}
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
@@ -53,6 +59,9 @@ static bool alarm_failure(void) {
     if(alarm_failed_cleaned)return false;
     alarm_failed_cleaned=true;
     if(!portable_alarm_failure_stop(&alarms)) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+        if(portable_adapter_retained())return false;
+#endif
         rt->diagnostic("ALARM foreground-failed output-stop-unconfirmed; invocation retained");
         /* No normal I/O, grant release, graph handoff, or repeated cleanup. */
         for(;;)rt->yield_ms(50);
@@ -86,6 +95,9 @@ static bool alarm_sessions_suspend(void) {
     return true;
 }
 static bool alarm_audio_pump(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
     /* Check copied status before storage-backed reconciliation, then again
      * before a newly exposed occurrence can own output in the next phase. */
     if(!alarm_sessions_safe() || !portable_alarm_status(&alarms))return false;
@@ -153,6 +165,9 @@ static bool alarm_restore(const uint16_t *saved) {
  * editor so cleanup can be retried; normal reconciliation resumes afterward. */
 static bool alarm_wifi_pause(const uint16_t *saved) {
     if(!portable_alarm_failure_stop(&alarms)) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+        if(portable_adapter_retained())return false;
+#endif
         /* The bounded stop-only sequence is exhausted: never repeat it through
          * alarm_failure, release grants, or resume normal provider work. */
         alarm_modal=false;failed=true;alarm_failed_cleaned=true;
@@ -168,6 +183,9 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif
@@ -238,12 +256,21 @@ static bool alarm_foreground(bool *consumed) {
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=info.height-88 && sample.y<info.height-42);
 #endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
-            (void)alarms.api->refresh(alarms.api->context);alarm_cancel_input();redraw=true;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+            if(!portable_alarm_refresh(&alarms))return false;
+#else
+            (void)alarms.api->refresh(alarms.api->context);
+#endif
+            alarm_cancel_input();redraw=true;
         } else if(dismiss) {
             if(alarms.status.occurrence.generation) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+                if(!portable_alarm_acknowledge(&alarms,&token))return false;
+#else
                 (void)alarms.api->acknowledge(alarms.api->context,&token);
+#endif
                 alarm_cancel_input();redraw=true;
             } else if(alarms.status.state==ALARM_STATE_BLOCKED && !alarms.status.output_uncertain) {
                 alarm_error_seen=true;alarm_seen_error=alarms.status.error;alarm_seen_snapshot=alarms.status.snapshot;break;

@@ -35,6 +35,21 @@
 #include <limits.h>
 #include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#ifndef PORTABLE_ALARM_CLIENT
+#error Terminal alarm retention requires the foreground alarm client
+#endif
+#include "PortableNativeCustody.h"
+/* Runtime0.1.54 appended retain_invocation after confirm_boot. Read only the
+ * checked suffix, preserving the frozen SDK prefix and flag-off consumers. */
+static bool (*portable_runtime_retain(const risc_runtime_api_v1 *runtime))(void) {
+  bool (*retain)(void)=NULL;
+  const size_t offset=RISC_RUNTIME_CAPABILITIES_V1_SIZE+sizeof(bool (*)(void));
+  if(runtime && runtime->struct_size>=offset+sizeof(retain))
+    memcpy(&retain,(const unsigned char *)runtime+offset,sizeof(retain));
+  return retain;
+}
+#endif
 #include "PortableBackgroundServices.h"
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #include "PortableContextsClient.h"
@@ -43,8 +58,18 @@ static const risc_runtime_api_v1 *rt;
 #endif
 static portable_contexts_client contexts_client;
 const contexts_service_v1 *portable_contexts_service(void) {return contexts_client.api;}
-bool portable_contexts_stop(void) {return portable_contexts_pause(&contexts_client);}
-bool portable_contexts_enable(bool enabled) {return portable_contexts_set_enabled(&contexts_client,enabled);}
+bool portable_contexts_stop(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
+  return portable_contexts_pause(&contexts_client);
+}
+bool portable_contexts_enable(bool enabled) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
+  return portable_contexts_set_enabled(&contexts_client,enabled);
+}
 unsigned portable_contexts_face_count(void) {
 #ifdef PORTABLE_CONTEXT_FACE_COUNT
   return PORTABLE_CONTEXT_FACE_COUNT;
@@ -70,13 +95,27 @@ static uint32_t contexts_pixels;
 #include "PortableBroadcastClient.h"
 static portable_broadcast_client broadcast_client;
 bool portable_broadcast_status(telemetry_broadcast_status_v1 *out) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
   return broadcast_client.api && broadcast_client.api->status(broadcast_client.api->context,out);
 }
 bool portable_broadcast_enable(bool enabled) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
   return portable_broadcast_set_enabled(&broadcast_client,enabled);
 }
-bool portable_broadcast_stop(void) { return portable_broadcast_pause(&broadcast_client); }
+bool portable_broadcast_stop(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
+  return portable_broadcast_pause(&broadcast_client);
+}
 static bool broadcast_tick(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_safe())return portable_broadcast_pause(&broadcast_client);
 #endif
@@ -151,6 +190,16 @@ static bool alarm_foreground(bool *consumed);
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 static bool alarm_failure(void);
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+bool portable_adapter_retained(void) {return native_sleep_retained;}
+void portable_adapter_retain(void) {
+  if(native_sleep_retained)return;
+  /* Latch before promotion; no diagnostics, polling or provider cleanup. */
+  native_sleep_retained=true;failed=true;gauge=NULL;
+  bool (*retain)(void)=portable_runtime_retain(rt);
+  if(!retain || !retain())for(;;){} /* Preserve custody if promotion is refused. */
+}
+#endif
 #endif
 static unsigned first_row, last_rows;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -158,7 +207,11 @@ static bool contexts_capture_checkpoint(void) {
   if(failed||native_sleep_retained)return false;
   if(portable_contexts_capture(&contexts_client))return true;
   failed=true;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  portable_adapter_retain();return false;
+#else
   if(portable_contexts_retain(&contexts_client)){native_sleep_retained=true;return false;}
+#endif
   /* Older runtimes have no terminal fence. Keep this invocation's memory
    * alive without issuing another display, storage or service operation. */
   for(;;)rt->yield_ms(50);
@@ -179,6 +232,9 @@ static bool current_app_contact(t5_app_contact_t *out) {
 static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 #endif
 static uint32_t millis_now(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return 0;
+#endif
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
     failed = true;
@@ -249,6 +305,9 @@ static void input_navigation_close(void) {
 }
 #endif
 static void input_service(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+ if(portable_adapter_retained())return;
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(!contexts_capture_checkpoint())return;
 #endif
@@ -594,6 +653,9 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
@@ -635,6 +697,9 @@ static bool idle_sleep(void) {
   int status=portable_app_sleep(rt,display,gauge);
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
   if(status==-2){native_sleep_retained=true;failed=true;return false;}
 #endif
   if(status<0){failed=true;return false;}
@@ -672,6 +737,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 #endif
 }
 static bool contexts_tick(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return false;
+#endif
   if(!quick_storage_safe()||quick_modal||alarm_modal)return portable_contexts_pause(&contexts_client);
   bool audio_allowed=true,radio_allowed=true;
 #if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -689,6 +757,9 @@ static bool contexts_tick(void) {
     const alarm_service_v1 *service=alarm_sleep_api();
     if(service&&(applied&(PORTABLE_CONTEXT_VOLUME|PORTABLE_CONTEXT_DND|PORTABLE_CONTEXT_ALERT)))
       (void)service->refresh(service->context);
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
   }
 #else
   (void)contexts_face_save;
@@ -1073,12 +1144,18 @@ const t5_video_api_v1 *t5_video_get_api(uint32_t v) {
   return NULL;
 }
 static int initialize(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(portable_adapter_retained())return -1;
+#endif
   rt = risc_runtime_get_api(1);
   if (!rt || rt->api_version != 1 ||
       rt->struct_size < RISC_RUNTIME_CAPABILITIES_V1_SIZE || !rt->acquire ||
       !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch ||
       !rt->diagnostic)
     return -1;
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  if(!portable_runtime_retain(rt))return -1;
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   contexts_pixels=0;
   if(!portable_contexts_open(&contexts_client,rt)||!portable_contexts_pause(&contexts_client))return -1;
@@ -1223,17 +1300,34 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  bool alarm_cleanup=failed || !display_settled;
+  if(alarms.api && !alarm_failed_cleaned && !alarm_cleanup)
+    alarm_cleanup=!portable_alarm_status(&alarms) || portable_alarm_owned(&alarms);
+  if(portable_adapter_retained())return;
+  if(alarms.api && !alarm_failed_cleaned && alarm_cleanup) {
+#else
   if(alarms.api && !alarm_failed_cleaned &&
       (failed || !display_settled || !portable_alarm_status(&alarms) || portable_alarm_owned(&alarms))) {
+#endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
     while(!portable_background_stop())rt->yield_ms(50);
 #endif
     if(!portable_alarm_failure_stop(&alarms)) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+      if(portable_adapter_retained())return;
+#endif
       rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
       for(;;)rt->yield_ms(50);
     }
   }
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+  bool alarm_closed=portable_alarm_close(&alarms,rt);
+  if(portable_adapter_retained())return;
+  if(!alarm_closed)rt->diagnostic("ALARM error=release");
+#else
   if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
+#endif
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
