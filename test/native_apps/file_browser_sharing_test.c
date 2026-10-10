@@ -6,6 +6,10 @@
 #define PORTABLE_FILE_SHARING_EXPORT_INSTANCE 32
 #define PORTABLE_FILE_SHARING_TCP_INSTANCE 33
 #define PORTABLE_FILE_SHARING_ENTROPY_INSTANCE 34
+#ifdef FILE_SETUP_TEST
+#define PORTABLE_FILE_SETUP
+#define PORTABLE_FILE_SHARING_SETUP_INSTANCE 35
+#endif
 #ifdef FILE_BROWSER_PAPER_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
 #else
@@ -26,7 +30,11 @@ static int32_t kv_get(void*c,const char*k,void*b,uint32_t cap,uint32_t*n){
  if(!strcmp(k,PORTABLE_RADIO_KEY)){
   if(policy_context)return RISC_KEY_VALUE_CONTEXT;
   if(policy_busy)return RISC_KEY_VALUE_BUSY;
+#ifdef FILE_SETUP_TEST
+  if(!policy_off){const uint8_t flags[4]={0x51,1,3,0xa6};assert(cap>=4);memcpy(b,flags,4);*n=4;return 0;}
+#else
   if(!policy_off)return RISC_KEY_VALUE_NOT_FOUND;
+#endif
   const uint8_t off[4]={0x51,1,0,0xa5};assert(cap>=4);memcpy(b,off,4);*n=4;return 0;
  }
  for(unsigned i=0;i<store_count;i++)if(!strcmp(store[i].key,k)){*n=store[i].size;if(cap<*n)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(b,store[i].data,*n);return 0;}
@@ -53,16 +61,27 @@ static int32_t close_tcp(void*c,uint64_t t){(void)c;live_check();assert(t==7&&li
 static const risc_tcp_connection_v1 tcp={1,sizeof(tcp),(void*)1,listen_tcp,accept_tcp,read_tcp,write_tcp,close_tcp};
 static int32_t catalog(void*c,uint32_t i,risc_app_data_export_entry_v1*out){(void)c;(void)i;(void)out;assert(false);return 0;}
 static risc_app_data_export_v1 export_api;
+#ifdef FILE_SETUP_TEST
+#include "file_browser_setup_fixture.inc"
+#endif
 static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  live_check();if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
  else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==32&&!fb_grant.api);g->api=&export_api;}
  else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==33);g->api=&tcp;}
  else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==34);g->api=&entropy;}
+#ifdef FILE_SETUP_TEST
+ else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==35&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
+#endif
  else return test_acquire(n,v,id,g);
  test_grants++;return true;
 }
-static bool release_cap(risc_runtime_capability_v1*g){live_check();if(g->api==&wifi)assert(!owned&&!listeners);return test_release(g);}
+static bool release_cap(risc_runtime_capability_v1*g){
+#ifdef FILE_SETUP_TEST
+ if(g->api==&setup_api){assert(!setup_owned);setup_releases++;test_grants--;memset(g,0,sizeof(*g));g->struct_size=sizeof(*g);return true;}
+ assert(!setup_cleanup);
+#endif
+ live_check();if(g->api==&wifi)assert(!owned&&!listeners);return test_release(g);}
 static bool retain_owner(void){retains++;return true;}
 static risc_runtime_api_v1 runtime;
 static void capture_paper(const char *name){
@@ -79,8 +98,19 @@ static void init(void){
  test_volume=(risc_storage_volume_api_v1){1,sizeof(test_volume),NULL,test_ready,test_ready,test_label,test_stat,test_diropen,test_dirnext,test_dirclose,test_open,test_read,NULL,NULL,test_close,NULL,test_error_get};
  export_api.volume.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(export_api)};export_api.export_tag=RISC_APP_DATA_EXPORT_TAG;export_api.export_version=1;export_api.entry=catalog;
  if(!empty){const portable_wifi_credentials saved={"fixture","synthetic"};assert(portable_wifi_profile_save(&kv,0,&saved)==0);}
- memset(fb_pixels,0xa5,sizeof(fb_pixels));assert(app_module_init()==0&&fb_open());fb_draw();assert(fb_option_count()==7);fb_option(6);assert(fb_mode==FB_SHARING&&!fb_grant.api&&!portable_file_browser_sharing_active());fb_draw();capture_paper("sharing-choice");
+ memset(fb_pixels,0xa5,sizeof(fb_pixels));assert(app_module_init()==0&&fb_open());fb_draw();assert(fb_option_count()==7);
+ fb_mode=FB_OPTIONS;fb_choice=0;for(unsigned i=0;i<6;i++)fb_move(1);assert(fb_choice==6);fb_draw();
+#ifdef FILE_BROWSER_PAPER_PROFILE
+ (void)fbp_touch(100,145);
+#else
+ (void)fb_touch(100,140);assert(fb_choice==6&&fb_mode==FB_OPTIONS); /* Blank last row. */
+ (void)fb_touch(100,80);
+#endif
+ assert(fb_mode==FB_SHARING&&!fb_grant.api&&!portable_file_browser_sharing_active());fb_draw();capture_paper("sharing-choice");
 }
+#ifdef FILE_SETUP_TEST
+#include "file_browser_setup_scenes.inc"
+#endif
 int main(int argc,char**argv){
  assert(argc>=2);const char*mode=argv[1];test_directory=argc>2?argv[2]:NULL;
  borrowed=!strcmp(mode,"borrowed");empty=!strcmp(mode,"empty");policy_off=!strcmp(mode,"policy-off");policy_busy=!strcmp(mode,"policy-busy");policy_context=!strcmp(mode,"policy-context");
@@ -92,6 +122,9 @@ int main(int argc,char**argv){
  if(!strcmp(mode,"cancel-prepare")){assert(fsh_close()&&!begin_calls);goto clean;}
  if(policy_off||empty){for(unsigned i=0;i<20&&fsh_phase!=FSH_OFF;i++)step();assert(fsh_phase==FSH_OFF&&!listeners&&!begin_calls&&fsh_message[0]);fb_draw();goto clean;}
  until_ready();assert(!strcmp(fsh_url,"http://192.0.2.4:8080/"));fb_draw();capture_paper("sharing-ready");assert(begin_calls==!borrowed);
+#ifdef FILE_SETUP_TEST
+ if(!strncmp(mode,"ble-",4)){if(run_setup_scene(mode))return 0;goto clean;}
+#endif
  if(!strcmp(mode,"end-pending")){
   end_busy=true;unsigned before=listeners;step();assert(fsh_service_ending&&listeners==before);unsigned old_end=end_calls;assert(!fsh_close()&&!cancel_calls);assert(end_calls>old_end);end_busy=false;assert(!fsh_close());
  }

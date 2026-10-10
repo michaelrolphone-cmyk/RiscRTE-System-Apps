@@ -16,7 +16,12 @@ bool portable_file_browser_safe(void){return !retained;}
 bool portable_file_browser_sharing_active(void){return sharing_active;}
 #endif
 bool portable_wifi_async_owned(void){return operation_owned;}
-bool portable_wifi_stop_pending(void){return stop_requested&&operation_owned&&!retained;}
+bool portable_wifi_stop_pending(void){
+#ifdef TEST_FILE_SETUP_ADAPTER
+ if(portable_file_browser_cleanup_only())return !retained;
+#endif
+ return stop_requested&&operation_owned&&!retained;
+}
 bool portable_wifi_services_safe(void){
 #ifdef TEST_FILE_SHARING_ADAPTER
  if(retain_on_service_check){retain_on_service_check=false;portable_adapter_retain_silent();}
@@ -34,8 +39,14 @@ bool portable_wifi_services_begin(void){
  assert(!service_depth);service_depth=1;return true;
 }
 bool portable_wifi_services_end(void){assert(!retained&&service_depth==1);service_depth=0;++service_ends;return true;}
+#ifdef TEST_FILE_SETUP_ADAPTER
+static int fixture_setup_close_step(void);
+#endif
 static bool fixture_suspend(void){
  assert(!retained);++suspends;
+#ifdef TEST_FILE_SETUP_ADAPTER
+ int setup_closed=fixture_setup_close_step();if(setup_closed>=0)return setup_closed!=0;
+#endif
 #ifdef TEST_FILE_SHARING_ADAPTER
  if(retain_on_close){retain_on_close=false;portable_adapter_retain_silent();return false;}
 #endif
@@ -114,6 +125,7 @@ static void start_operation(void){assert(portable_broadcast_stop());operation_ow
 #endif
 }
 static void paint(void){clear();label(10,20,300,"Wi-Fi fixture");present(false);assert(portable_paper_frame_drain()&&alarm_pixels_valid);}
+#ifndef TEST_FILE_SETUP_ADAPTER
 int main(int argc,char **argv){
  assert(argc==2);const char *name=argv[1];scenario="valid";
  source_kv.get=checked_get;source_kv.put=checked_put;
@@ -240,3 +252,5 @@ int main(int argc,char **argv){
  assert(!retained&&!service_depth);app_module_fini();assert(!live&&!frames&&!subscriptions);
  printf("Wi-Fi shared adapter deferral %s PASS\n",name);return 0;
 }
+
+#endif
