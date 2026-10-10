@@ -160,6 +160,41 @@ static void report_order(void){
     /* Genuine neutral releases allow the next separate report immediately. */
     gesture(x,1,y,true);assert(tick(&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_CONTROLS_EVENT);
 }
+/* DOWN and UP arrive in separate provider reports. Polling the keyboard
+ * completion queue while it is empty must not erase ordinary header gestures. */
+static int split_header_tap(unsigned x,unsigned y,bool move_outside,risc_scene_event_v1 *e){
+    clear_events();add_event(RISC_TOUCH_EVENT_DOWN,x,y,0);held_input=true;
+    assert(tick(e)==RISC_SCENE_IDLE);
+    clear_events();for(unsigned i=0;i<3;i++)assert(tick(e)==RISC_SCENE_IDLE);
+    if(move_outside){add_event(RISC_TOUCH_EVENT_MOVE,lw()/2,lh()/2,0);assert(tick(e)==RISC_SCENE_IDLE);clear_events();}
+    add_event(RISC_TOUCH_EVENT_UP,x,y,0);held_input=false;return tick(e);
+}
+static void header_split(bool keyboard){
+    settle();configure(1);
+    if(keyboard){
+        doc=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(doc),.revision=2,.root=1,.route_count=1,.node_count=1};
+        doc.routes[0]=(risc_scene_route_v1){1,0,"Text"};
+        doc.nodes[0]=(risc_scene_node_v1){.id=1,.route=1,.kind=RISC_SCENE_KEYBOARD_NODE,.action=77,.maximum=3,.step=1,.label="Name"};
+        expected_intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
+    }else{++doc.revision;doc.routes[0].back_action=91;}
+    assert(api->update(NULL,session,&doc)==RISC_SCENE_OK);settle();
+    unsigned back_x=prof.padding+10,home_x=lw()-prof.padding-10;
+    unsigned y=(prof.font_scale*7+prof.padding*2+8)/2;
+    if(keyboard&&lw()==480){back_x=56;home_x=424;y=46;}
+    risc_scene_event_v1 e;
+    for(unsigned inflight=0;inflight<2;inflight++){
+        if(inflight){++doc.revision;assert(!api->update(NULL,session,&doc));allow_complete=false;begin_frame();}
+        unsigned frames=submits;
+        assert(split_header_tap(back_x,y,true,&e)==RISC_SCENE_IDLE);
+        assert(split_header_tap(back_x,y,false,&e)==RISC_SCENE_OK);
+        if(keyboard)assert(e.kind==RISC_SCENE_VALUE_EVENT&&e.action==77&&e.value==RISC_SCENE_KEY_CANCEL);
+        else assert(e.kind==RISC_SCENE_ACTION_EVENT&&e.action==91);
+        ++doc.revision;assert(!api->update(NULL,session,&doc));
+        assert(split_header_tap(home_x,y,false,&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_SUSPEND_EVENT);
+        if(inflight)assert(submits==frames&&presenting);
+        configure(1);allow_complete=true;settle();
+    }
+}
 static void keyboard_suppression(void){
     settle();configure(1);
     doc=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(doc),.revision=2,.root=1,.route_count=1,.node_count=1};
@@ -208,6 +243,8 @@ int main(int argc,char **argv){
         else if(!strcmp(mode,"lifecycle-cancellation"))cancellations();
         else if(!strcmp(mode,"lifecycle-report-order"))report_order();
         else if(!strcmp(mode,"lifecycle-keyboard"))keyboard_suppression();
+        else if(!strcmp(mode,"lifecycle-header-split"))header_split(false);
+        else if(!strcmp(mode,"lifecycle-keyboard-header-split"))header_split(true);
         else if(!strcmp(mode,"lifecycle-close"))close_reopen();
         else assert(0);
         finish();

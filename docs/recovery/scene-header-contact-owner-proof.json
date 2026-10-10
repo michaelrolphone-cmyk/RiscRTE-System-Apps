@@ -1,0 +1,105 @@
+{
+  "status": "focused header regression qualified; full identical-production 96-case cadence matrix still running",
+  "source_sha256": "5922080ddec668196c1ef46fbcfaa4615bd17e15bf51b605657a393da1c803f6",
+  "source_base": "31e11dde7a4f9ba5b9f772b981ac393453805101",
+  "local_source_commit": "4691edb075de646e7c2cba17ac52ecd829ff75a7",
+  "remote_checkpoint": "2803747904158f88d9fd02737b9fb01b05d5336b",
+  "runtime": "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+  "gt911_driver_sha256": "da287cbd675b6a59131b97278a48c6cf1734b90e30a9e2674e72b0063c9a86d1",
+  "production_fix": "Only return from finish_contacts when the keyboard queue is empty; preserve ordinary contact ownership.",
+  "negative_control": {
+    "path": "/workspace/shared/scene-header-split-proof/baseline-failure.log",
+    "exit_code": 134,
+    "assertion": "split_header_tap(back_x,y,false,&e)==RISC_SCENE_OK",
+    "source_sha256": "abb5025b9ca42d6b5b6c91bf005a03070139106e5d6b0361fbd007f0f3f22351"
+  },
+  "tests": {
+    "presenter-normal": {
+      "path": "/workspace/shared/scene-header-split-proof/presenter-normal.log",
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "case_count": 179
+    },
+    "presenter-sanitized": {
+      "path": "/workspace/shared/scene-header-split-proof/presenter-sanitized.log",
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "case_count": 179
+    },
+    "split-header-exact-gt911-normal-final": {
+      "path": "/workspace/shared/scene-header-split-proof/split-header-exact-gt911-normal-final.log",
+      "sha256": "fdd88daab8c768485269ed2cee8038d32390ff09b41c6687c7929dec181db5b4",
+      "case_count": 48
+    },
+    "split-header-exact-gt911-sanitized-final": {
+      "path": "/workspace/shared/scene-header-split-proof/split-header-exact-gt911-sanitized-final.log",
+      "sha256": "fdd88daab8c768485269ed2cee8038d32390ff09b41c6687c7929dec181db5b4",
+      "case_count": 48
+    },
+    "decoupling-normal": {
+      "path": "/workspace/shared/scene-header-split-proof/decoupling-normal.log",
+      "sha256": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55",
+      "case_count": 75
+    },
+    "decoupling-sanitized": {
+      "path": "/workspace/shared/scene-header-split-proof/decoupling-sanitized.log",
+      "sha256": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55",
+      "case_count": 75
+    }
+  },
+  "focused_matrix": {
+    "display_format": [
+      1,
+      5
+    ],
+    "panel_delay_ms": [
+      1,
+      17,
+      2300
+    ],
+    "pixel_cost_ns": [
+      0,
+      500
+    ],
+    "modes": [
+      "keyboard-back",
+      "keyboard-home",
+      "ordinary-scene-back",
+      "ordinary-scene-home"
+    ],
+    "contacts_per_case": 12,
+    "raw_controller_model": "Independent5ms scans, READY latched until ACK,10/15/20/25ms contacts split across polls. Actual GT911 and Runtime source."
+  },
+  "scanner": {
+    "owner_receipt": "/tmp/scanner-input-qualification-20261010/fixed-evidence/summary.json",
+    "normal": 24,
+    "sanitized": 24
+  },
+  "target": {
+    "path": "/workspace/shared/scene-header-split-proof/target/scene-host/driver.elf",
+    "sha256": "1526e1ca24b8c68cd562804e66fa0c8874282d7019f9cb50469cd403e7484066",
+    "imports": [
+      "memchr",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strlen"
+    ],
+    "export": "t5_driver_get"
+  },
+  "patches": {
+    "production-fix.patch": {
+      "path": "/workspace/shared/scene-header-split-proof/production-fix.patch",
+      "sha256": "d17631983fa854565866291001045037c8c9faa423f5928d5174d8a4f13f2254"
+    },
+    "fix-and-tests.patch": {
+      "path": "/workspace/shared/scene-header-split-proof/fix-and-tests.patch",
+      "sha256": "0295e1ac775ac5ad798ed05413cf9b3788387159dd333941cbfa7e6912d6e3f9"
+    }
+  },
+  "limitations": [
+    "No physical hardware exercised; modeled pixel/scan/transfer costs are explicit and unmeasured.",
+    "Fixture-only ordinary-scene document initially failed validation; corrected to an existing action88 and final focused runs passed. Production fix unchanged."
+  ]
+}

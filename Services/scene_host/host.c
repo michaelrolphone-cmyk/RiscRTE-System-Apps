@@ -327,6 +327,8 @@ static key_contact contacts[RISC_TOUCH_MAX_CONTACTS];
 static unsigned contacts_count;
 static void cancel_contacts(void){contacts_count=0;}
 static void finish_contacts(void){
+    /* An empty keyboard queue does not own an ordinary header/scene contact. */
+    if(!contacts_count)return;
     while(contacts_count&&contacts[0].ready&&!key_count&&!keyboard_waiting&&!have_event){
         key_contact first=contacts[0];
         for(unsigned i=1;i<contacts_count;i++)contacts[i-1]=contacts[i];
