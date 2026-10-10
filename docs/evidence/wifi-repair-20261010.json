@@ -1,0 +1,218 @@
+{
+  "status": "software-qualified-source-increment; coherent union and hardware pending",
+  "system": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "public_commit": "8d7216c307c10b79f7e57e4b7c5dc22978c7f0ee",
+    "qualified_local_commit": "e86492d87968c045536e0f7da04f1c9d894db678",
+    "tree": "509faef199cdf6161f505ca91f0d3dbe04e7a576",
+    "base": "3a0145adcab1e03629709f61daa1901324b25281"
+  },
+  "versions": {
+    "wifi_settings": "1.1.21",
+    "text-input-host": "0.1.3",
+    "wifi-provider": "0.2.1",
+    "runtime": "coordinated successor; no independent version stamp"
+  },
+  "native": {
+    "source_commit": "fc05d35827fc0d51be749c6797be4b3a4426ba23",
+    "production_commit": "114f8035ae19539cc05f4511c1d74b7d513da398",
+    "base": "96e8c1f",
+    "publication": "handed to Runtime0.2.2 owner"
+  },
+  "provider": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "public_commit": "a304597bf26491483bb0a567569f0ca0267cdf9c",
+    "pull_request": 61
+  },
+  "tests": {
+    "new_controller": {
+      "cases_per_mode": 56,
+      "modes": [
+        "normal",
+        "ASan+UBSan"
+      ],
+      "source": "e86492d"
+    },
+    "profile_codec": {
+      "simultaneous_profiles": 50,
+      "modes": [
+        "normal",
+        "ASan+UBSan"
+      ],
+      "faults": [
+        "partial/uncertain writes",
+        "count reservation",
+        "reusable empty slots",
+        "UINT32_MAX bounds",
+        "BUSY no-I/O deferral"
+      ]
+    },
+    "legacy_controller": {
+      "cases": 384,
+      "matrix": "48 x2 UI profiles x2 orientations x2 compiler modes",
+      "same_ordered_fixture_base_passes": true
+    },
+    "shared_adapter": {
+      "cases_per_mode": 17,
+      "modes": [
+        "normal",
+        "terminal ASan+UBSan"
+      ]
+    },
+    "existing_native_custody": {
+      "cases": 472,
+      "source_equivalence": "adapter production unchanged after2f6cc9b"
+    },
+    "text_runtime": {
+      "cases_per_mode": 132,
+      "modes": [
+        "normal",
+        "ASan+UBSan"
+      ],
+      "runtime": "async native source",
+      "scope": "actual Runtime/graph/unloadable app with masked and legacy sessions"
+    },
+    "text_host_client": {
+      "source": "e86492d",
+      "modes": [
+        "normal",
+        "ASan+UBSan"
+      ],
+      "coverage": "masked ABI negotiation, Home/Back, prefix refusal, copied result close/release, zeroed request/results"
+    },
+    "old_sync_latency": {
+      "cases_per_mode": 20,
+      "modes": [
+        "normal",
+        "ASan+UBSan"
+      ],
+      "injected_setup_ms": 12000,
+      "result": "verified completed display token accepted before elapsed timeout; failed/pending tokens remain fail-closed"
+    },
+    "native_core": {
+      "cases_per_mode": 56,
+      "modes": [
+        "ASan+UBSan",
+        "TSan",
+        "stage-logging-disabled"
+      ]
+    },
+    "actual_app_provider_native": {
+      "cases_per_mode": 58,
+      "modes": [
+        "normal",
+        "ASan+UBSan",
+        "TSan"
+      ],
+      "source": "e86492d + native114f803 + provider a304597b"
+    },
+    "native_target_profiles": 3,
+    "leak_sanitizer": "disabled due ptrace; failed launch preserved; no leak-sanitizer claim"
+  },
+  "targets": {
+    "wifi-target/wifi_settings.elf": {
+      "sha256": "5ed20a684479a5fe5f34d744ea2a7325866e0851c03b6c40e054fbbd10084215",
+      "bytes": 222056
+    },
+    "text-target/text-input-host/driver.elf": {
+      "sha256": "9cd41cc2e767dd0e318d1b84e3f1b9425a0bb1c565effd5a2a908a536ed86bdb",
+      "bytes": 11640
+    }
+  },
+  "build_inputs_note": "Native-time helper deliberately stages historical immutable30dcec5 headers; resident SDK and async ABI come from selected current source. Target receipts record staged hashes. No physical device is used.",
+  "limits": [
+    "Vendor SDK operation duration is not bounded by host tests; owner callbacks remain independent and pending cancellation waits for checked quiescence.",
+    "No physical scan/connect, hardware latency or over-air test.",
+    "Remembered credentials remain plaintext app-owned storage; Forget is logical deletion.",
+    "Collection bound is backend storage and uint32 index space; eight is page size only.",
+    "Public provider CI has three coordinated dependency/baseline packaging checks pending; accepted baselines were not changed.",
+    "No product image is built by this unit; final source union must include correct text grant/provider/native and rebuild changed compiled consumers."
+  ],
+  "source_file_sha256": {
+    "Apps/wifi_settings.json": "50402a1a7974e49a57be09d4163b4fdff36ed5ce1fa22c24ee8f4dc59845b08b",
+    "Apps/wifi_settings_portable.inc": "c6e7630fd185f19b9b79ce2d70c4b284068f6988ea4b4c79e4842978ea77e53f",
+    "Services/text_input/host.c": "e42f44df7291a17c4b1868d171bafd684209b5b71d8516270f1edb696cdb0f31",
+    "Services/text_input/manifest-usb.json": "4c95311fde4d3af0a802bc7d97934d44449f92e5e0974dfbd64971affaf3c363",
+    "Services/text_input/manifest.json": "a8de3adc0d08997ceaac2b88c362ce09c13a6b07e9893b5901d99083fffb998f",
+    "lib/PortableApps/include/PortableRadioPolicy.h": "560cf6d492bcf3453b2ee260e6e4dfa102afece7fb1d406a77f2fa32465d1ae3",
+    "lib/PortableApps/include/PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f",
+    "lib/PortableApps/include/PortableWifiCredentials.h": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
+    "lib/PortableApps/include/PortableWifiProfiles.h": "0ee07f7f692fb9988ab1d7a4200cc8f2ed1cfed49becb594c50f893c3d2a7610",
+    "lib/PortableApps/include/PortableWifiView.h": "7f7d2d3cf484fc5a903457057a195e43abed9e13eff12adbf343384efc2f2ce9",
+    "lib/PortableApps/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "lib/PortableApps/include/RiscRadioAsyncV1.h": "6e3991c00e3e299c6d4fe9cb1ee19532a8b25a39a83910476e344b4b4e2885c9",
+    "lib/PortableApps/include/RiscTextEntryV1.h": "bee01a5a912fe12a3a4fa8124967117cdf1a395c46e50ab2c77175da04d781a7",
+    "lib/PortableApps/include/WifiApi.h": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+    "lib/PortableApps/src/PortableNativeTimeSource.c": "a53ea9fd489493dfc459c7b18e739da388013849be6639a3e0f62fa353d5be10",
+    "lib/PortableApps/src/adapter.c": "479d8eee58f417de2abde7fdb25ebb885b3551210a0463ed61838552595c5ec1",
+    "lib/PortableApps/src/alarm.inc": "21444230818ef6fc07f3278ffa771ac5c990a5e7860486c241dcf773a8f2ddf8",
+    "lib/PortableApps/src/broadcast_adapter.inc": "c30950c930aede07d82e9d4527474e6c97eda8fa6981384c37bf8105f13a2bbf",
+    "lib/PortableApps/src/native_custody_adapter.inc": "e2c10d6a8a48b47613931b7fd40b60bd97063d0c2b527c2461f10507b65a9080",
+    "lib/PortableApps/src/quick_adapter.inc": "53d8fed86fa561725c277756078580d4ba8db44098b6e8d7fba7ce7df5c79662",
+    "lib/PortableApps/src/resident_adapter.inc": "ca0803c724777bb312996b3ca0181964df110bc5b4e86814dcd7b5717808abe2",
+    "scripts/build_portable_wifi.py": "a528eb725c3490b9b8b41a40a8b863a8efb5267478875f01b8b7c7090d6ad11b",
+    "scripts/portable_quick_build.py": "3c0fc2bcf9bdea8530418ce6fd1e8083b91be39fe5b214fa44bbbd8673f3769d",
+    "scripts/test_text_input_host.py": "a7f6a0380afb399a5decd9fef30a9a6735fb3e23a0a1bdf03559f715cf598c48",
+    "scripts/test_text_input_runtime.py": "5de5007bebe644a2651bed6bf6581c91ef33d18e7286b059eb6bae495bf86b8d",
+    "scripts/test_wifi_adapter_deferral.py": "9d9b00a346f1b28275bf539e2f7e0196b9f032bd79ea34763c8520869acf540b",
+    "scripts/test_wifi_scan_latency.py": "b308c6a3d143e3ab9e88435d5315c816d7b103d366dbfb6bcfa09d50eeab53a5",
+    "scripts/test_wifi_workflow.py": "89ae4d2e3b8ab59521f19aed8bd379927e47180ee1b05a05a3a26129c1efa9f8",
+    "sdk/app/RiscTextEntryV1.h": "bee01a5a912fe12a3a4fa8124967117cdf1a395c46e50ab2c77175da04d781a7",
+    "test/native_apps/portable_wifi_profiles_test.c": "bbacbef7f663005ae5422f7425ee28ea6561c016f6dab3d63716145cc16be0a6",
+    "test/native_apps/portable_wifi_test.c": "e985d4f57911233cc47cd369dbfd62867e066bd9d587d14787b4f51c160ef569",
+    "test/native_apps/wifi_adapter_deferral_test.c": "131bef252f1f647430a67a811f813f0e70a9e1ce59e7bcb9d676ee4e079bc37e",
+    "test/native_apps/wifi_alarm_failure_drain_test.c": "5b51273f24e3d625de4c450c92591371676a4fe874071dc66c5adf301e8f6ecf",
+    "test/native_apps/wifi_async_app_seam.c": "ff440d0a37b0d130529b0335b3b1f31738701b68375f5460012481e7794131ac",
+    "test/native_apps/wifi_workflow_test.c": "675f02b202b1321af1bdaf9339fb1a5e377a8890436179faacc9f85ae7215bf7",
+    "test/text_input/abi_coexistence.c": "a6dd16ef79e484cd8b651680eb8d56d63d099acdc8ebf98385176f2fcbbe0217",
+    "test/text_input/client_test.c": "efb28dd581ac862994fa7e3a42c34858ed1afb691b5e22b279aae59bf791d82d",
+    "test/text_input/host_test.c": "fb92b2d2a9b38b88ec3dbeb5a25e21c184ab9ce48e726b642da9531d02bba417",
+    "test/text_input/overflow_test.c": "1a22b861d1cd279556e302aad9fe323d5551794be573bdaab46b4c9b74f8bb7c",
+    "test/text_input/runtime_app.c": "1fff9b1eea9f41021a43694954b01a5d980f13614fd2112e9c0f35de75594d73",
+    "test/text_input/runtime_test.cpp": "b561fb1020cdd75d0bc6ad3565f46f6b99874960a9a1c2769c2a4319e7acd84f",
+    "test/wifi_scan_latency/README.md": "6a33ba5eb0fec5e2deb7ec1615933c92e7f5624c9fb3d5231a46451026e273a2",
+    "test/wifi_scan_latency/app-cross.c": "eb7c33a64f0a38b88eea3c50ff31dee8a76ed84f46664e6ca17cd4fac8ef9e2c",
+    "test/wifi_scan_latency/app-entry.c": "30ec342ca11d672bb8b0975c0261e8dda018ff324cb203b89db665d1da08c3d4",
+    "test/wifi_scan_latency/commands.json": "fda7cf5c8569ea38779130970cdd5ce508c88e39f0029a8f9c98288dbcbd5a0c",
+    "test/wifi_scan_latency/cross-host.cpp": "52f2f262b4ae1f9a7ebf36f6c6abdc15420b9e43b556c4229566d44845f1331f",
+    "test/wifi_scan_latency/native_wifi_sdk_fixture.inc": "b174fc530f03b0e3d481f20d800b4c7fe55e826dd77f0504004c59f022ba8393"
+  },
+  "evidence_file_sha256": {
+    "adapter/evidence.json": "98645cc042c05df5c24fb7370b5d82cf2a7e7d4a6d9df17d4624d3065f4457f5",
+    "adapter-san/evidence.json": "dc8af7edb4e91ef1c2d89839f2b3b3be84a71046ebc38e9692ac25a621eff773",
+    "adapter-san.log": "5f516ae5a49ddc704fabd1f5493f111bc0bff85fbb606a51331bb410a8268f32",
+    "adapter.log": "5f516ae5a49ddc704fabd1f5493f111bc0bff85fbb606a51331bb410a8268f32",
+    "continue-no-lsan.sh": "c02e2dc2b13740e7d57f9966e101426404411557aecefb856a0905cc8ef1f2d3",
+    "existing-native-custody.json": "fe46f72a25075262eb96709569f9cf3bef4ff77eb962c311473c4d1abb17f379",
+    "independent-review/README.md": "cc1e9337b35c1cef8278de602529bbd88fd01405f3eb34124d88ffa2cf35fb7b",
+    "independent-review/profile_boundaries.c": "83dd5f9039d6eba425dba1c9907121b57ac2443269272f1352e4fa2b6601e5c5",
+    "independent-review/queued_scan_selection.c": "d288f555c867f1d26dd9a6e52bd7684b4597c270300dceceaac28034420e5f7c",
+    "independent-review/queued_scan_selection_corrected.c": "3937676ec9268600cc68f452c5066d74c7b57feef8eb461f45110d6b6da0daa2",
+    "independent-review/unavailable_sync_fallback.c": "4ac01861216a68a4507f59576ff9c8af633e25e1268f00702b225a2676b8d351",
+    "independent-review/unavailable_sync_fallback_corrected.c": "a65c5b3086a5c962d4a00bfb8db0bc1a9f96abfa4f78f8b07771564fd877f0a1",
+    "legacy-final.log": "e4fc1800e84e388bbb9b54b0732400f99ab25ad6474d929ef791ebb2bd95ec50",
+    "legacy-ordered-baseline.log": "e4fc1800e84e388bbb9b54b0732400f99ab25ad6474d929ef791ebb2bd95ec50",
+    "native/app-seam-56.log": "0944e8c0fab2b9aa24ce6f16d1f7825943b1b8286a16f8ebfcbf2bb5b03022df",
+    "native/app-seam-58.log": "20da3ecd0c0219f2a27b24bdaebe8c4530e46edfea61357b9398aba35693def2",
+    "native/earlier-checkpoint-receipt.json": "2e520ea52a14c11a6e6811fe35d4c82777fe165589cc553ed0f816937d193b37",
+    "native/host-55.log": "0a23e894f93961c354603d7ad33501344550b74c09a771083ef568842790476d",
+    "native/host-56.log": "7cbac6d599de8caed569ad27c1a46db41ca73a89d6c7fb18b3a68a3615cf6488",
+    "native/legacy-resource-regressions.log": "0a92c759e74c6ad6ffa7fc65c1e8bf380b60d683104f09ed569532f2bca3a091",
+    "native/receipt.json": "b0fb2e75a97101dbe4f8121bd588ae66324e7c54233f70b189bb0992e41e5c6d",
+    "run.sh": "3106e594af819c22ab9e201dc3822144261a6ff731a9b789cd36579a7e24517d",
+    "scan-latency-sanitized.json": "2a0def5da9e4a643a9ac2c3bdd5877ab910ffd671a31c4b783aeb9423a5663b7",
+    "scan-timeout-fixed-sanitized.log": "e54f691e90d35e241c3ba2ce37b47a3a18c55b3722515ebd11832c70d7823a67",
+    "scan-timeout-fixed.log": "e54f691e90d35e241c3ba2ce37b47a3a18c55b3722515ebd11832c70d7823a67",
+    "text-host-san.log": "bd22eeae463591d62f066b4122ba669f7912cc4c14612984fc3d78ba47d0ebe3",
+    "text-host.log": "bd22eeae463591d62f066b4122ba669f7912cc4c14612984fc3d78ba47d0ebe3",
+    "text-runtime-async-san.log": "8c4e6a9912ae19258917f7a64a6a13a9ec41c41beb116f5f944796576a3d9b84",
+    "text-runtime-async.log": "8c4e6a9912ae19258917f7a64a6a13a9ec41c41beb116f5f944796576a3d9b84",
+    "text-target.log": "354e5e7f87518926225fb8cee12f266cbe1835d4fdb95a72c6f22d233f50f01c",
+    "wifi-target.log": "330d9f6e69a32fa35a64bb838cb46a2926b5a2097c25ed5b4faa64fa316d81ef",
+    "workflow/receipt.json": "acc4d288c59fa250022c39e459b5a8edcf9a572991103581cf17c5a168ea3bf7",
+    "workflow-san-no-lsan/receipt.json": "8a9a44e3b3bc33d28eae62886dd083977d415ff68f59962050dee28625462b4d",
+    "workflow-san-no-lsan.log": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f",
+    "workflow-san.log": "91454dad33c75a3c3e3224fd750f76947cd6faab6d7f149b3a695e920b6300f8",
+    "workflow.log": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f"
+  }
+}

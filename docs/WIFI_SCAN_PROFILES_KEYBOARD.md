@@ -1,7 +1,7 @@
 # Wi-Fi scan, saved profiles and shared keyboard repair
 
-Working source checkpoint on the published universal-UI source 3a0145a.
-This is not a release or a completed hardware fix.
+Software-qualified source increment on published universal-UI source 3a0145a.
+The coherent product union and physical-device verification remain separate.
 
 ## Implemented and locally tested in this checkpoint
 
@@ -24,19 +24,29 @@ This is not a release or a completed hardware fix.
   and checked close/release before committing a copied result. It supports saved
   network paging, explicit Save/Forget, scan selection, async start/poll/cancel,
   and keeps pending cleanup distinct from failure or confirmed quiescence.
-- Sixteen production-controller workflows and fifty-profile transactional/fault
-  tests pass normally and with ASan/UBSan. These use copied provider tables and
+- Fifty-six production-controller workflows per compiler mode and fifty-profile
+  transactional/fault tests pass normally and with ASan/UBSan. These use copied provider tables and
   synthetic inputs, not a physical radio or real credentials.
 - Current shared-text Home/Back/client fixtures were recovered from the separate
   text-0.1.2 source checkout rather than retaining stale prefix assumptions.
 
-## Remaining work
+## Qualification and remaining limits
 
-Native worker and actual-provider integration are still in progress. Shared SDK
-resource contention requires explicit temporary BUSY deferral in the app and
-adapter. This checkpoint is not the complete freeze fix. The earlier legacy fixture failures were traced to snapshot-only input and
-corrected below. Final combined target/runtime receipts accompany the source
-seal; no hardware causality or on-device latency claim is made.
+The production app, provider, CPU port and native worker pass 58 cross-layer
+cases in each of normal, ASan/UBSan and ThreadSanitizer builds. The native core
+passes 56 cases per sanitizer/stage-disabled mode and three target profiles.
+The final Wi-Fi 1.1.21 and text-input-host 0.1.3 target builds pass structural,
+import/export and manifest checks. See `evidence/wifi-repair-20261010.json`.
+
+The earlier legacy fixture failures were traced to snapshot-only input and
+corrected below. Independent review found and reproduced two defects: a queued
+Scan survived result selection, and unavailable async admission could fall
+back to synchronous setup. Both original reproducers now pass after the fixes.
+Native worker-start failure also preserves the advertised suffix and returns
+UNAVAILABLE without ownership or SDK work. No physical scan, connection, radio
+timing or hardware freeze-causality claim is made. A vendor call may still take
+time to return; copied owner callbacks remain responsive and cancellation waits
+for its checked cleanup rather than killing the worker or releasing live state.
 
 Credentials remain plaintext app-owned storage with explicit Save and logical
 Forget. No encryption, secure erase, real credentials or credential logging is
@@ -49,7 +59,8 @@ The copied async provider suffix now carries a same-owner-turn service lease.
 The app distinguishes KV BUSY (no I/O begun) from a failed or unconfirmed write,
 keeps lookup cursors and explicit actions while waiting, and accepts Back without
 unmapping a live radio operation. A successful lease is always paired before
-any yield. Native/shared-adapter union tests are still being completed.
+any yield. Shared-adapter normal/sanitized regressions pass; coherent product integration
+uses the same lease and cleanup contracts.
 
 The old legacy fixture changed snapshots without emitting touch edges. The
 current reducer correctly rejects that as lost-event corruption. Its fixture
@@ -57,7 +68,9 @@ now emits monotonic DOWN/MOVE/UP and button edges with matching snapshots; all
 48 assertions across both UI profiles, both orientations and both compiler
 modes pass on both the unchanged base and current code. Shared text has 132
 actual Runtime executions per normal/sanitized mode, including masked sessions.
-Secret copied text requests are explicitly wiped on every return path.
+Secret copied text requests and polled results are explicitly wiped on every
+return path. All direct consumers of the changed helper must be rebuilt in the
+coherent source union.
 
 ## Final integration contract
 
