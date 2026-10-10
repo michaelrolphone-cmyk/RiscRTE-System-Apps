@@ -97,7 +97,7 @@ static uint32_t resident_policy_flags(void) {
 #ifdef PORTABLE_USB_TRANSFER_APP
  blocked=true; /* This dedicated media owner stays awake until clean exit. */
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  blocked|=!portable_wifi_idle_ready();
 #endif
  if(blocked)flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
@@ -129,8 +129,8 @@ static int resident_checkpoint(uint32_t reason) {
 #ifdef PORTABLE_FILE_BROWSER_APP
  if(!portable_file_browser_safe())return RISC_RESIDENT_BUSY;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
- if(!portable_wifi_services_safe())return RISC_RESIDENT_BUSY;
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
+ if(!portable_wifi_services_safe())return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
  if(!portable_radio_services_safe())return RISC_RESIDENT_BUSY;
@@ -151,7 +151,7 @@ static int resident_checkpoint(uint32_t reason) {
   if(!policy)
 #endif
   if(!app_allows_launch("default.elf"))return RISC_RESIDENT_BUSY;
-#if defined(PORTABLE_RESIDENT_POLICY) && defined(PORTABLE_FILE_BROWSER_APP)
+#if defined(PORTABLE_RESIDENT_POLICY) && defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(policy && !portable_file_browser_close())return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -166,9 +166,9 @@ static int resident_checkpoint(uint32_t reason) {
 #ifdef PORTABLE_AUDIO_SESSION
   if(!portable_audio_suspend()){portable_adapter_retain();return RISC_RESIDENT_RETAINED;}
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_suspend()){
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
     if(portable_wifi_stop_pending())return RISC_RESIDENT_BUSY;
 #endif
     portable_adapter_retain();return RISC_RESIDENT_RETAINED;

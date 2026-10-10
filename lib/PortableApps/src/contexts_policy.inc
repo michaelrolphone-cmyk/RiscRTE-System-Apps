@@ -78,6 +78,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 #endif
 static bool contexts_tick(void) {
   if(failed||native_custody_retained)return false;
+#ifdef PORTABLE_FILE_SHARING
+  if(portable_file_browser_sharing_active())return true;
+#endif
 #if defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && defined(PORTABLE_RESIDENT_SHELL_HOST)
   /* The controller has not yet returned from the queued owner. Keep its
    * export active and the Home grant closed until the explicit return hook. */

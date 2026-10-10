@@ -34,6 +34,11 @@ const contexts_service_v1 *portable_contexts_service(void) {
 }
 bool portable_contexts_stop(void) {
   if(native_custody_retained)return false;
+#ifdef PORTABLE_FILE_SHARING
+  /* Sharing pauses this service before becoming active. Avoid unrelated
+   * provider traffic while its radio worker or explicit cleanup owns I/O. */
+  if(portable_file_browser_sharing_active())return true;
+#endif
   if(!portable_contexts_pause(&contexts_client)){portable_adapter_retain();return false;}
   return true;
 }
@@ -78,6 +83,9 @@ const char *portable_contexts_face_name(unsigned id) {
 }
 static bool contexts_capture_checkpoint(void) {
   if(failed||native_custody_retained)return false;
+#ifdef PORTABLE_FILE_SHARING
+  if(portable_file_browser_sharing_active())return true;
+#endif
   if(portable_contexts_capture(&contexts_client))return true;
   portable_adapter_retain();return false;
 }

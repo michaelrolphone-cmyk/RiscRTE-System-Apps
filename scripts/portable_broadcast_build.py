@@ -68,6 +68,9 @@ def record(args,root,record,manifest,defines):
     if getattr(args,'resident_shell_client',False):
         import portable_quick_build
         expected = portable_quick_build.version(args,manifest['id'],expected)
+    if manifest['id']=='file_browser' and getattr(args,'webdav_sharing',False):
+        from portable_file_sharing_build import VERSION
+        expected=VERSION
     if manifest['version']!=expected or manifest['requires'].count(CAPABILITY)!=1:
         raise ValueError('Telemetry manifest/version differs from selected builder')
     if not set(DEFINES)<=set(defines) or '-DPORTABLE_NATIVE_CUSTODY_FENCE' not in defines or '-DALARM_SERVICE_TAGGED_V2' not in defines:

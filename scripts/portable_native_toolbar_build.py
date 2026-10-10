@@ -125,7 +125,8 @@ def record(args, record, manifest, receipt):
     if manifest['id'] == 'file_browser':
         bindings[args.storage_capability] = [args.storage_instance]
         if args.secondary_storage_instance is not None:
-            bindings.setdefault('storage.volume', []).append(args.secondary_storage_instance)
+            secondary=getattr(args,'secondary_storage_capability','storage.volume')
+            bindings.setdefault(secondary, []).append(args.secondary_storage_instance)
     if args.quick_radios:
         bindings.setdefault('net.wifi', [15]); bindings['bluetooth.hci'] = [16]
     grants = [dict(item, instance_id=instance) for item in manifest['requires']
@@ -180,6 +181,10 @@ def write_admission(root, out, manifest, record):
     if record.get('paper_motion'):receipt['paper_motion']=record['paper_motion']
     if record.get('touch_scrolling'):receipt['touch_scrolling']=record['touch_scrolling']
     if manifest['id']=='file_browser':receipt['storage_selection']=record['storage_selection']
+    if record.get('file_sharing'):
+        receipt['file_sharing']=record['file_sharing']
+        receipt['required_grants']=record['required_grants']
+        receipt['grant_count']=record['grant_count']
     portable_broadcast_build.admission_fields(record,receipt)
     if idle:receipt['idle_policy']=idle
     if resident:receipt['resident_shell']=resident

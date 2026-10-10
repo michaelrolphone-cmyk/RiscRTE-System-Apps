@@ -136,6 +136,29 @@ static bool desk_radios_loaded;
 #error "Audio lifecycle integration requires the foreground alarm client"
 #endif
 #endif
+/* Lifecycle selection is independent of Wi-Fi Settings rendering and touch. */
+#if defined(PORTABLE_FILE_SHARING)
+#if !defined(PORTABLE_FILE_BROWSER_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+#error "File sharing requires Files and checked terminal native custody"
+#endif
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#error "File sharing owns its foreground network session"
+#endif
+#define PORTABLE_WIFI_SESSION_APP
+#define portable_wifi_suspend portable_file_browser_close
+#define portable_wifi_resume portable_file_browser_resume
+#define portable_wifi_close portable_file_browser_close
+#define portable_wifi_services_safe portable_file_browser_services_safe
+#define portable_wifi_idle_ready portable_file_browser_idle_ready
+#define portable_wifi_async_owned portable_file_browser_network_owned
+#define portable_wifi_stop_pending portable_file_browser_stop_pending
+#define portable_wifi_services_begin portable_file_browser_services_begin
+#define portable_wifi_services_end portable_file_browser_services_end
+#define wifi_session_interaction_active portable_file_browser_sharing_active
+#elif defined(PORTABLE_WIFI_SETTINGS_APP)
+#define PORTABLE_WIFI_SESSION_APP
+#define wifi_session_interaction_active portable_wifi_async_owned
+#endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 #include "PortableWifiView.h"
 #ifdef PORTABLE_UPDATE_APP
@@ -432,7 +455,7 @@ static bool resident_queue_launch(const char *path);
 #endif
 static uint32_t navigation_pending;
 static bool home_pending,crown_pending,handoff_requested;
-#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+#if defined(PORTABLE_WIFI_SESSION_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
 static const char *wifi_deferred_return;
 #endif
 #ifdef PORTABLE_DESK_LOCK_HOME
@@ -445,6 +468,9 @@ static int nu_start_x,nu_start_y;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 #include "PortableAppSleep.h"
 static uint32_t last_activity;
+#ifdef PORTABLE_WIFI_SESSION_APP
+static bool wifi_deferred_sleep;
+#endif
 static inline bool idle_capture_active(void) {
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
  if(portable_audio_capture_active())return true;
@@ -1354,8 +1380,18 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
   if(portable_adapter_retained())return false;
 #endif
+#ifdef PORTABLE_WIFI_SESSION_APP
+  /* An explicit sleep survives a cooperative network drain or busy display. */
+#ifdef PORTABLE_X4_IDLE_POLICY
+  if(!automatic_idle)
+#endif
+  wifi_deferred_sleep=true;
+#endif
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
  int status=resident_checkpoint(RISC_RESIDENT_CHECKPOINT_SLEEP);
+#ifdef PORTABLE_WIFI_SESSION_APP
+ if(status!=RISC_RESIDENT_BUSY)wifi_deferred_sleep=false;
+#endif
  return status==RISC_RESIDENT_OK || status==RISC_RESIDENT_BUSY || status==RISC_RESIDENT_EXIT;
 #else
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -1398,7 +1434,7 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(paper_token)return true;
 #endif
-#ifdef PORTABLE_FILE_BROWSER_APP
+#if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
 #endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -1409,10 +1445,21 @@ static bool idle_sleep(void) {
    * against an interrupted app handoff, or delay an explicit sleep request. */
   portable_paper_transition_cancel();
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
   /* A radio drain refusal is recoverable app UI, not a native sleep entry.
    * Keep touch/navigation live so the user can explicitly retry cleanup. */
-  if(!portable_wifi_suspend()){last_activity=millis_now();return !failed;}
+  if(!portable_wifi_suspend()){
+#ifdef PORTABLE_WIFI_SESSION_APP
+    if(!portable_wifi_stop_pending())wifi_deferred_sleep=false;
+#endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(native_custody_retained)return false;
+#endif
+    last_activity=millis_now();return !failed;
+  }
+#ifdef PORTABLE_WIFI_SESSION_APP
+  wifi_deferred_sleep=false;
+#endif
 #endif
 #ifdef PORTABLE_RADIO_SESSION
   if(!portable_radio_suspend()){failed=true;return false;}
@@ -1502,7 +1549,7 @@ static bool idle_sleep(void) {
 #endif
    return false;}
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
   portable_wifi_resume();
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
@@ -1857,6 +1904,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     }
 #endif
     if(reason==RISC_RESIDENT_CHECKPOINT_CONTROLS) {
+#ifdef PORTABLE_WIFI_SESSION_APP
+      if(status==RISC_RESIDENT_BUSY && portable_wifi_stop_pending())return true;
+#endif
       resident_controls_requested=false;return true;
     }
   }
@@ -1879,6 +1929,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
   if(!failed && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
      !idle_capture_active() &&
+#ifdef PORTABLE_WIFI_SESSION_APP
+     portable_wifi_idle_ready() &&
+#endif
 #ifdef PORTABLE_X4_IDLE_POLICY
      automatic_idle_ready() &&
 #endif
@@ -2040,6 +2093,12 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
 #endif
+#if defined(PORTABLE_WIFI_SESSION_APP) && defined(PORTABLE_APP_SLEEP_LOCAL)
+  if(ok && wifi_deferred_sleep) {
+    crown_pending=home_pending=false;navigation_pending=0;input_pending=false;
+    memset(out,0,sizeof(*out));return idle_sleep();
+  }
+#endif
 #ifdef PORTABLE_CROWN_SLEEP_LOCAL
 #ifdef PORTABLE_DESK_LOCK_HOME
   if(ok && crown_pending) {
@@ -2082,7 +2141,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(returning && !destination)destination=PORTABLE_RETURN_APP;
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
   if(!destination)destination=wifi_deferred_return;
 #endif
   home_pending=false;
@@ -2101,7 +2160,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_UPDATE_APP
     if(!portable_update_close()){home_pending=crown_pending=false;navigation_pending=0;input_pending=false;clear_contact_snapshots();memset(out,0,sizeof(*out));return true;}
 #endif
-#ifdef PORTABLE_FILE_BROWSER_APP
+#if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
     if(!portable_file_browser_close())return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
@@ -2110,7 +2169,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
     /* Wi-Fi owns checked cleanup and nested Back. Home is a direct root exit;
      * refusal leaves its controller available for an explicit cleanup retry. */
     if(!portable_wifi_close()) {
@@ -2123,7 +2182,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
       clear_contact_snapshots();memset(out,0,sizeof(*out));return !failed;
     }
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
     wifi_deferred_return=NULL;
 #endif
     portable_perf_action(PORTABLE_PERF_LAUNCH,true);
@@ -2434,7 +2493,7 @@ static int initialize(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
 #ifdef PORTABLE_LOW_BATTERY
   low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
   low_battery_transition_pending=false;
 #endif
 #endif
@@ -2444,7 +2503,7 @@ static int initialize(void) {
   desk_kv_reset();
 #endif
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
   quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
@@ -2462,8 +2521,11 @@ static int initialize(void) {
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+#if defined(PORTABLE_WIFI_SESSION_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
   wifi_deferred_return=NULL;
+#endif
+#if defined(PORTABLE_WIFI_SESSION_APP) && defined(PORTABLE_APP_SLEEP_LOCAL)
+  wifi_deferred_sleep=false;
 #endif
   list_mode = false;input_pending=home_pending=crown_pending=handoff_requested=false;navigation_pending=0;previous_valid=false;
 #ifdef PORTABLE_DESK_LOCK_HOME
@@ -2518,6 +2580,22 @@ static int initialize_providers(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 #include "sparse_clock_adapter.inc"
 #endif
+#ifdef PORTABLE_WIFI_SESSION_APP
+/* Fini cannot hand a live async operation back to Runtime. Pending cleanup is
+ * cooperative progress, not a reason to retain otherwise healthy custody. */
+static bool wifi_finalize_close(void) {
+  bool closed=portable_wifi_close();
+  while(!closed && portable_wifi_stop_pending()) {
+    rt->yield_ms(1);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(native_custody_retained)return false;
+#endif
+    if(!portable_wifi_services_safe())return false;
+    closed=portable_wifi_close();
+  }
+  return closed;
+}
+#endif
 #if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
 static void settings_native_finalize(void) {
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
@@ -2534,12 +2612,18 @@ static void settings_native_finalize(void) {
 #endif
   /* Foreground app-owned grants precede adapter teardown. Unconfirmed app
    * cleanup pins the entire invocation before any provider release or free. */
-#ifdef PORTABLE_FILE_BROWSER_APP
+#if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(!portable_file_browser_close()){portable_adapter_retain();return;}
   if(native_custody_retained)return;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
-  if(!portable_wifi_close()){portable_adapter_retain();return;}
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
+  if(!
+#ifdef PORTABLE_WIFI_SESSION_APP
+     wifi_finalize_close()
+#else
+     portable_wifi_close()
+#endif
+    ){if(!native_custody_retained)portable_adapter_retain();return;}
   if(native_custody_retained)return;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
@@ -2644,14 +2728,24 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_suspend())return;
 #endif
-#ifdef PORTABLE_FILE_BROWSER_APP
+#if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(!portable_file_browser_close()) {
     rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);
   }
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
-  if(!portable_wifi_close()) {
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
+  if(!
+#ifdef PORTABLE_WIFI_SESSION_APP
+     wifi_finalize_close()
+#else
+     portable_wifi_close()
+#endif
+    ) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(native_custody_retained)return;
+    portable_adapter_retain();return;
+#endif
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
     for(;;)rt->yield_ms(50);
   }

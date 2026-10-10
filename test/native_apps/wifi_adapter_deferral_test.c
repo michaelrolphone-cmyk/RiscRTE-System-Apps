@@ -9,24 +9,61 @@ static alarm_token_v1 acknowledged;
 static risc_battery_sample_v1 battery_sample={3900,70,0};
 static struct {char key[32];uint8_t bytes[64];uint32_t size;} records[16];
 static unsigned records_used;
+#ifdef TEST_FILE_SHARING_ADAPTER
+static bool sharing_active,retain_on_yield,retain_on_close,retain_on_service_check;
+static unsigned quiesce_after_yields,sleep_calls;
+bool portable_file_browser_safe(void){return !retained;}
+bool portable_file_browser_sharing_active(void){return sharing_active;}
+#endif
 bool portable_wifi_async_owned(void){return operation_owned;}
 bool portable_wifi_stop_pending(void){return stop_requested&&operation_owned&&!retained;}
-bool portable_wifi_services_safe(void){return !retained;}
-bool portable_wifi_idle_ready(void){return !operation_owned;}
+bool portable_wifi_services_safe(void){
+#ifdef TEST_FILE_SHARING_ADAPTER
+ if(retain_on_service_check){retain_on_service_check=false;portable_adapter_retain_silent();}
+#endif
+ return !retained;
+}
+bool portable_wifi_idle_ready(void){return !operation_owned
+#ifdef TEST_FILE_SHARING_ADAPTER
+ && !sharing_active
+#endif
+ ;}
 bool portable_wifi_services_begin(void){
  assert(!retained);++service_begins;
  if(worker_busy)return false;
  assert(!service_depth);service_depth=1;return true;
 }
 bool portable_wifi_services_end(void){assert(!retained&&service_depth==1);service_depth=0;++service_ends;return true;}
-bool portable_wifi_suspend(void){
+static bool fixture_suspend(void){
  assert(!retained);++suspends;
+#ifdef TEST_FILE_SHARING_ADAPTER
+ if(retain_on_close){retain_on_close=false;portable_adapter_retain_silent();return false;}
+#endif
  if(operation_owned){stop_requested=true;if(!can_quiesce)return false;operation_owned=worker_busy=stop_requested=false;}
+#ifdef TEST_FILE_SHARING_ADAPTER
+ sharing_active=false;
+#endif
  return true;
 }
-bool portable_wifi_close(void){++closes;return portable_wifi_suspend();}
+#ifndef TEST_FILE_SHARING_ADAPTER
+bool portable_wifi_suspend(void){return fixture_suspend();}
+#endif
+bool portable_wifi_close(void){++closes;return fixture_suspend();}
 void portable_wifi_resume(void){}
-static void checked_yield(uint32_t ms){assert(!service_depth);fx_yield(ms);if(quick_modal)pqa_close(&quick.ui);}
+static void checked_yield(uint32_t ms){
+ assert(!service_depth);fx_yield(ms);if(quick_modal)pqa_close(&quick.ui);
+#ifdef TEST_FILE_SHARING_ADAPTER
+ if(retain_on_yield){retain_on_yield=false;portable_adapter_retain_silent();return;}
+ if(quiesce_after_yields && !--quiesce_after_yields)can_quiesce=true;
+#endif
+}
+#ifdef TEST_FILE_SHARING_ADAPTER
+int portable_app_alarm_sleep(const risc_runtime_api_v1 *runtime,const risc_display_output_api_v1 *panel,
+ const risc_battery_gauge_api_v1 *battery,const alarm_service_v1 *service){
+ (void)runtime;(void)panel;(void)battery;(void)service;
+ io();assert(!operation_owned&&!sharing_active);++sleep_calls;return 1;
+}
+#endif
 static bool checked_nav(void *c,risc_input_navigation_frame_v1 *out){(void)c;io();*out=(risc_input_navigation_frame_v1){0};return true;}
 static const risc_input_navigation_api_v1 checked_navigation={1,sizeof(checked_navigation),NULL,checked_nav,app_foreground,app_reset};
 static int32_t checked_get(void *c,const char *key,void *out,uint32_t size,uint32_t *used){
@@ -71,13 +108,20 @@ static bool checked_acquire(const char *name,uint32_t version,uint64_t instance,
  return ok;
 }
 static bool checked_launch(const char *name){io();assert(!operation_owned);assert(!strcmp(name,"default.elf")||!strcmp(name,"wifi_settings.elf")||!strcmp(name,"parent.elf"));++launches;return true;}
-static void start_operation(void){assert(portable_broadcast_stop());operation_owned=worker_busy=true;can_quiesce=stop_requested=false;}
+static void start_operation(void){assert(portable_broadcast_stop());operation_owned=worker_busy=true;can_quiesce=stop_requested=false;
+#ifdef TEST_FILE_SHARING_ADAPTER
+ sharing_active=true;
+#endif
+}
 static void paint(void){clear();label(10,20,300,"Wi-Fi fixture");present(false);assert(portable_paper_frame_drain()&&alarm_pixels_valid);}
 int main(int argc,char **argv){
  assert(argc==2);const char *name=argv[1];scenario="valid";
  source_kv.get=checked_get;source_kv.put=checked_put;
  tagged.base.step=checked_alarm_step;tagged.base.status=checked_alarm_status;tagged.base.refresh=checked_alarm_refresh;tagged.base.acknowledge=checked_alarm_ack;
  fx_runtime.acquire=checked_acquire;fx_runtime.release=app_release;fx_runtime.request_launch=checked_launch;fx_runtime.yield_ms=checked_yield;
+#ifdef TEST_FILE_SHARING_ADAPTER
+ app_display=fx_display;app_display.submit=app_submit;
+#endif
  assert(app_module_init()==0);paint();
  if(!strcmp(name,"kv-busy")){
   start_operation();risc_runtime_capability_v1 g={.struct_size=sizeof(g)};assert(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&g));
@@ -99,7 +143,11 @@ int main(int argc,char **argv){
   start_operation();unsigned steps=fixture_broadcast_steps,pauses=fixture_broadcast_pauses,io_before=backend_calls;
   for(unsigned i=0;i<100;i++){assert(broadcast_tick());assert(portable_broadcast_stop());}
   assert(steps==fixture_broadcast_steps&&pauses==fixture_broadcast_pauses&&backend_calls==io_before&&!retained);
-  operation_owned=worker_busy=false;assert(broadcast_tick()&&fixture_broadcast_steps==steps+1);
+  operation_owned=worker_busy=false;
+#ifdef TEST_FILE_SHARING_ADAPTER
+  assert(broadcast_tick()&&fixture_broadcast_steps==steps);sharing_active=false;
+#endif
+  assert(broadcast_tick()&&fixture_broadcast_steps==steps+1);
  }else if(!strcmp(name,"alarm-busy")||!strcmp(name,"alarm-connected")||!strcmp(name,"alarm-retained")){
   start_operation();unsigned before=alarm_calls;
   alarms.status.state=ALARM_STATE_LOADING;
@@ -148,6 +196,45 @@ int main(int argc,char **argv){
   assert(policy_writes==writes+(high?0u:1u));
   if(high||rearm)assert(operation_owned&&!suspends);else assert(!operation_owned);
   assert(!service_depth);unsigned after=policy_writes;assert(low_battery_poll()&&policy_writes==after);
+#ifdef TEST_FILE_SHARING_ADAPTER
+ }else if(!strcmp(name,"sharing-idle")){
+  start_operation();unsigned before=sleep_calls;t5_app_input_t input;
+  ticks=last_activity+portable_idle_ms()+1;
+  for(unsigned i=0;i<10;i++)assert(poll(&input,1));
+  assert(sleep_calls==before&&operation_owned&&sharing_active&&!suspends&&!retained);
+ }else if(!strcmp(name,"sharing-borrowed-quick")){
+  sharing_active=true;assert(!portable_wifi_async_owned());
+  assert(pqa_session_load(&quick,rt));quick.ui.action_dnd=true;
+  assert(quick_apply(PQA_DND)&&!sharing_active&&closes&&!retained);
+ }else if(!strcmp(name,"sharing-sleep")){
+  start_operation();crown_pending=true;t5_app_input_t input;
+  assert(poll(&input,1)&&wifi_deferred_sleep&&!sleep_calls&&!retained);
+  for(unsigned i=0;i<10;i++)assert(poll(&input,1)&&wifi_deferred_sleep&&!sleep_calls&&!retained);
+  can_quiesce=true;assert(poll(&input,1)&&!wifi_deferred_sleep&&sleep_calls==1&&!retained);
+  assert(poll(&input,1)&&sleep_calls==1);
+ }else if(!strcmp(name,"sharing-sleep-retained")||!strcmp(name,"sharing-home-retained")||!strcmp(name,"sharing-quick-retained")){
+  start_operation();retain_on_close=true;t5_app_input_t input;
+  if(!strcmp(name,"sharing-sleep-retained")){crown_pending=true;assert(!poll(&input,1));}
+  else if(!strcmp(name,"sharing-home-retained")){home_pending=true;assert(!poll(&input,1));}
+  else assert(!quick_dispatch_destination("wifi_settings.elf"));
+  assert(retained&&operation_owned&&!launches&&!sleep_calls);
+  assert(calls==callback_calls&&free_calls==callback_frees&&presents==callback_presents);
+  app_module_fini();assert(calls==callback_calls);printf("Files shared adapter deferral %s PASS\n",name);return 0;
+ }else if(!strcmp(name,"sharing-battery-retained")){
+  start_operation();retain_on_service_check=true;assert(!low_battery_poll()&&retained);
+  assert(calls==callback_calls&&free_calls==callback_frees&&presents==callback_presents);
+  app_module_fini();assert(calls==callback_calls);printf("Files shared adapter deferral %s PASS\n",name);return 0;
+ }else if(!strcmp(name,"sharing-fini")||!strcmp(name,"sharing-fini-retained")){
+  start_operation();quiesce_after_yields=4;
+  retain_on_yield=!strcmp(name,"sharing-fini-retained");
+  app_module_fini();
+  if(retained){
+   assert(operation_owned&&live&&calls==callback_calls&&free_calls==callback_frees&&presents==callback_presents);
+   app_module_fini();assert(calls==callback_calls);printf("Files shared adapter deferral %s PASS\n",name);return 0;
+  }
+  assert(!operation_owned&&!sharing_active&&!live&&!frames&&!subscriptions&&closes>=4);
+  printf("Files shared adapter deferral %s PASS\n",name);return 0;
+#endif
  }else assert(!"unknown case");
  operation_owned=worker_busy=false;stop_requested=false;
  assert(!retained&&!service_depth);app_module_fini();assert(!live&&!frames&&!subscriptions);

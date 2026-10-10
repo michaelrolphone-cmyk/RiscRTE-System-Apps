@@ -6,7 +6,7 @@
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
 #include "quick_paper.inc"
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
 /* Copied explicit intent survives checked shutdown and policy/UI reloads. */
 static uint32_t quick_deferred_actions;
 static struct {
@@ -18,7 +18,7 @@ static struct {
 } quick_deferred_values;
 static const char *quick_deferred_destination;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) && defined(PORTABLE_LOW_BATTERY)
+#if defined(PORTABLE_WIFI_SESSION_APP) && defined(PORTABLE_LOW_BATTERY)
 static bool low_battery_transition_pending;
 static risc_battery_sample_v1 low_battery_pending_sample;
 #endif
@@ -34,14 +34,14 @@ static bool quick_storage_safe(void) {
 #ifdef PORTABLE_AUDIO_SESSION
  if(!portable_audio_services_safe())return false;
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_services_safe())return false;
 #endif
  return true;
 }
 #ifdef PORTABLE_X4_IDLE_POLICY
 static bool automatic_idle_interaction_ready(void) {
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_idle_ready())return false;
 #endif
  return !idle_capture_active() && !raster_lease_mutable() && !alarm_modal && !touch.down &&
@@ -60,10 +60,11 @@ static bool automatic_idle_ready(void) {
 static bool low_battery_poll_inner(void) {
  /* Battery policy is elapsed-time state. A submitted immutable image owns
   * no app raster lease and must not delay a threshold crossing. */
- if(raster_lease_mutable()||!quick_storage_safe())return true;
+ if(raster_lease_mutable())return true;
+ if(!quick_storage_safe())return !failed;
  uint32_t now=millis_now();
  risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
  if(low_battery_transition_pending)sample=low_battery_pending_sample;
  else
 #endif
@@ -72,9 +73,9 @@ static bool low_battery_poll_inner(void) {
   low_battery_sampled=true;low_battery_sampled_at=now;
   if(!gauge||!gauge->read||!gauge->read(gauge->context,&sample))return true;
  }
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
  if(!portable_low_battery_sample_valid(&sample))return true;
- if(portable_wifi_async_owned()) {
+ if(wifi_session_interaction_active()) {
   bool low=sample.percent<PORTABLE_LOW_BATTERY_THRESHOLD;
   if(low_battery.observed&&low_battery.low==low)return true;
   /* Entering Low changes radio policy, so preserve the triggering sample
@@ -91,7 +92,7 @@ static bool low_battery_poll_inner(void) {
  }
 #endif
  unsigned result=portable_low_battery_update(&low_battery,rt,&sample);
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
  if(native_sleep_retained || !portable_wifi_services_end())return false;
  low_battery_transition_pending=false;
 #endif
@@ -108,7 +109,7 @@ static bool low_battery_poll_inner(void) {
  /* Cancel stale preview/pending actions before reloading confirmed settings.
   * A later new gesture is a manual override and remains authoritative. */
  pqa_cancel(&quick.ui);(void)pqa_take_action(&quick.ui);
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_suspend())return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
@@ -138,8 +139,8 @@ static bool quick_apply(uint32_t actions) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
- if(actions && (quick_deferred_actions || portable_wifi_async_owned())) {
+#ifdef PORTABLE_WIFI_SESSION_APP
+ if(actions && (quick_deferred_actions || wifi_session_interaction_active())) {
   if(actions&(PQA_BRIGHTNESS_PREVIEW|PQA_BRIGHTNESS_COMMIT))quick_deferred_values.brightness=quick.ui.action_brightness;
   if(actions&(PQA_VOLUME_COMMIT|PQA_SILENT))quick_deferred_values.volume=quick.ui.action_volume;
   if(actions&PQA_TORCH){quick_deferred_values.torch=quick.ui.torch;quick_deferred_values.action_torch=quick.ui.action_torch;}
@@ -149,7 +150,7 @@ static bool quick_apply(uint32_t actions) {
 #endif
  }
  actions|=quick_deferred_actions;
- if(actions && portable_wifi_async_owned()) {
+ if(actions && wifi_session_interaction_active()) {
   quick_deferred_actions=actions;
   if(!portable_wifi_services_safe())return !failed;
   if(!portable_wifi_suspend())return portable_wifi_stop_pending();
@@ -172,7 +173,7 @@ static bool quick_apply(uint32_t actions) {
  if(!portable_background_stop())return false;
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(((actions&PQA_AIRPLANE)&&!quick.ui.airplane)||((actions&PQA_WIFI)&&quick.ui.wifi_enabled)) {
   if(!portable_wifi_suspend())return false;
  }
@@ -306,12 +307,12 @@ bool portable_paper_quick_open(void) {
 }
 #endif
 static bool quick_dispatch_destination(const char *quick_destination) {
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
  quick_deferred_destination=NULL;
 #endif
  bool wifi=quick_destination && !strcmp(quick_destination,"wifi_settings.elf");
  if(quick_destination && !failed && app_allows_launch(quick_destination)) {
-#ifdef PORTABLE_FILE_BROWSER_APP
+#if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(!portable_file_browser_close())return false;
 #endif
 #ifdef PORTABLE_AUDIO_SESSION
@@ -319,7 +320,7 @@ static bool quick_dispatch_destination(const char *quick_destination) {
 #endif
 #ifdef PORTABLE_UPDATE_APP
   if(!portable_update_close())return false;
-#elif defined(PORTABLE_WIFI_SETTINGS_APP)
+#elif defined(PORTABLE_WIFI_SESSION_APP)
   if(!portable_wifi_services_safe())return !failed;
   if(!portable_wifi_close()) {
    if(!portable_wifi_stop_pending())return false;
@@ -349,7 +350,7 @@ static bool quick_foreground(bool *consumed) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
  if(quick_deferred_destination) {
   *consumed=true;return quick_dispatch_destination(quick_deferred_destination);
  }
@@ -383,8 +384,8 @@ static bool quick_foreground(bool *consumed) {
 #endif
     )){*consumed=true;return true;}
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
-#ifdef PORTABLE_WIFI_SETTINGS_APP
- if(portable_wifi_async_owned()) {
+#ifdef PORTABLE_WIFI_SESSION_APP
+ if(wifi_session_interaction_active()) {
   /* The explicit gesture stays captured; no radio-policy/KV/HCI call occurs
    * before its asynchronous Wi-Fi shutdown has actually finished. */
   if(!portable_wifi_services_safe())return !failed;

@@ -26,10 +26,10 @@ static bool broadcast_release(void) {
   broadcast_client.api=NULL;return true;
 }
 bool portable_broadcast_stop(void) {
-#if defined(PORTABLE_WIFI_SETTINGS_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP)
   /* Wi-Fi admission pauses advertising before it owns the async operation.
    * HCI start/stop remains deferred through checked Wi-Fi quiescence. */
-  if(portable_wifi_async_owned())return !native_custody_retained && broadcast_pause_confirmed;
+  if(wifi_session_interaction_active())return !native_custody_retained && broadcast_pause_confirmed;
 #endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(desk_phase==DESK_TIMER)return !native_custody_retained;
@@ -59,10 +59,10 @@ bool portable_broadcast_enable(bool enabled) {
 }
 static bool broadcast_tick(void) {
   if(native_custody_retained)return false;
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
   /* Poll completion even while deferring the advertiser, so Cancel progresses. */
   if(!portable_wifi_services_safe())return !native_custody_retained;
-  if(portable_wifi_async_owned())return broadcast_pause_confirmed;
+  if(wifi_session_interaction_active())return broadcast_pause_confirmed;
 #endif
   bool allow=true;
 #ifdef PORTABLE_BLE_FOREGROUND
@@ -80,7 +80,7 @@ static bool broadcast_tick(void) {
 #ifdef PORTABLE_UPDATE_APP
   allow=allow && portable_update_broadcast_safe();
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
   allow=allow && portable_wifi_services_safe();
 #endif
   if(!broadcast_open())return false;

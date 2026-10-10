@@ -127,6 +127,9 @@ static void fbp_draw(void) {
 #endif
 }
 static bool fbp_touch(int x,int y) {
+#ifdef PORTABLE_FILE_SHARING
+ if(fb_mode==FB_SHARING)return fsh_touch(x,y);
+#endif
 #ifdef PORTABLE_TOUCH_SCROLL
  if(!fbs_hit_ready || fbs_hit_generation!=fbs_generation)return false;
  if(fbs_list_mode())return fbs_touch(x,y);
