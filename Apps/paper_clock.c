@@ -135,12 +135,54 @@ static const int16_t clock_ring[60][2]={
 #include "PortableRasterLayer.h"
 static portable_raster_layer *home_scene_layer;
 static bool clock_dirty,clock_clean;
-static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
- bool rebuild=clock_dirty||initial;clock_clean|=initial;
+/* Re-presenting Home after a child or a modal is not a content change.
+ * Compare the values actually painted, rather than the controller's dirty bit
+ * or the Points service's reconciliation generation. */
+typedef struct {
+ unsigned known,format,year,month,day,weekday,hour,minute;
+ unsigned battery_valid,battery_charging,battery_percent;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
- if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;rebuild=true;}
+ unsigned pressed,points_status,points_count,progress;
+ char point_time[3][48],duration[3][48],label[3][32];
 #endif
- clock_dirty|=rebuild;
+ char notice[48];
+} home_scene_key;
+static home_scene_key home_scene_saved;
+static bool home_scene_saved_valid;
+static home_scene_key home_scene_current(const twatch_rtc_time_v1 *time,bool known,const char *notice) {
+ home_scene_key key;memset(&key,0,sizeof(key));key.known=known;key.format=format;
+ if(known){key.year=time->year;key.month=time->month;key.day=time->day;
+  key.weekday=time->weekday;key.hour=time->hour;key.minute=time->minute;}
+ key.battery_valid=battery_status.valid;
+ if(battery_status.valid){key.battery_charging=battery_status.charging;key.battery_percent=battery_status.percent;}
+ if(notice)snprintf(key.notice,sizeof(key.notice),"%s",notice);
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ key.pressed=home_pressed;key.points_status=home_points.status;
+ if(home_points.status==NOVA_POINTS_READY) {
+  key.points_count=home_points.next_count<3?home_points.next_count:3;
+  for(unsigned i=0;i<key.points_count;i++) {
+   home_time(key.point_time[i],sizeof(key.point_time[i]),&home_points.next[i],false,format);
+   home_duration(key.duration[i],sizeof(key.duration[i]),home_points.next[i].at_rtc-home_points.now_rtc);
+   snprintf(key.label[i],sizeof(key.label[i]),"%s",home_reference_label(&home_points.next[i]));
+  }
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+  key.progress=paper_catalog_progress(&home_points,416);
+#else
+  key.progress=paper_points_progress(&home_points,416);
+#endif
+  if(home_points.previous_valid&&key.progress<24)key.progress=24;
+ }
+#endif
+ return key;
+}
+static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
+ clock_clean|=initial;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+ if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;}
+#endif
+ home_scene_key key=home_scene_current(time,known,notice);
+ bool rebuild=!home_scene_saved_valid||memcmp(&key,&home_scene_saved,sizeof(key));
+ clock_dirty=true; /* Preserve this paint request while a prior frame replays. */
  if(!paper_frame_ready()) {
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   return true;
@@ -185,7 +227,7 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #endif
  text(50,757,400,"UPDATES EVERY MINUTE",false);
 #endif
- if(capture)portable_raster_layer_end();
+ if(capture){portable_raster_layer_end();home_scene_saved=key;home_scene_saved_valid=true;}
 home_composite:
  if(portable_layer_valid(home_scene_layer))portable_raster_layer_blit(home_scene_layer,0,0,app->screen_width(),app->screen_height(),0,0);
  app->present(clock_clean);clock_dirty=clock_clean=false;
@@ -199,7 +241,7 @@ home_composite:
 #include "paper_desk_clock.inc"
 #endif
 static void home_main(void){
- portable_layer_release(&home_scene_layer);
+ portable_layer_release(&home_scene_layer);home_scene_saved_valid=false;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(!sparse_boot())return;
 #else
