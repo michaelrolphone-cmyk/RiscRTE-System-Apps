@@ -20,7 +20,7 @@ import shutil
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE_TIME_RUNTIME_COMMIT = '602ae9bd618e13407b5b94bcad86cdabc23c99ea'
+NATIVE_TIME_RUNTIME_COMMIT = '274bc66f193cbe29018d2a85c9400cb0dce8aacc'
 NATIVE_TIME_SDK_HEADERS = ('RiscRuntimeV1.h', 'RiscRealtimeV1.h')
 NATIVE_TIME_SOURCES = tuple('lib/PortableApps/src/'+name for name in (
     'PortableSetTime.c', 'PortableRealtimeClient.c', 'PortableTimeZone.c',

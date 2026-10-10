@@ -44,7 +44,9 @@ static unsigned status_reads;
 static bool pending_present;
 #endif
 static uint8_t pixels[60*800];static char launched[128];
-static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<120;}
+/* Report service can drain many times per logical poll. Leave enough elapsed
+ * time for the one-second clock check, including blocking display waits. */
+static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return ms<(TEST_DISPLAY_FAILURE==7?20000u:6000u);}
 static void yield_ms(uint32_t n){ms+=n;}
 static bool diagnostic(const char *s){diagnostics++;snprintf(last_diagnostic,sizeof(last_diagnostic),"%s",s);return true;}
 static bool launch_app(const char *s){launches++;if(scenario==9&&launches==1)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
@@ -99,10 +101,39 @@ static bool wait_present(void *c,risc_display_present_token_v1 t,uint32_t timeou
  s->state=TEST_DISPLAY_FAILURE==5?RISC_DISPLAY_PRESENT_FAILED:TEST_DISPLAY_FAILURE==6?RISC_DISPLAY_PRESENT_SUPERSEDED:RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
 #endif
-static uint64_t subscribe(void *c){(void)c;subs++;return 1;}
+/* The current reducer consumes raw ordered edges, not changing snapshots. */
+static bool script_snapshot(void *,risc_touch_snapshot_v1 *);
+static risc_touch_snapshot_v1 raw_state;
+static risc_touch_event_v1 raw_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned raw_head,raw_count;
+static int raw_find(const risc_touch_snapshot_v1 *s,unsigned id){
+ for(unsigned i=0;i<s->contact_count;i++)if(s->contacts[i].id==id)return (int)i;
+ return -1;
+}
+static void raw_emit(unsigned kind,risc_touch_contact_v1 point){
+ assert(raw_count<RISC_TOUCH_QUEUE_LENGTH);
+ raw_events[(raw_head+raw_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
+  .sequence=++raw_state.sequence,.timestamp_ms=ms,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static uint64_t subscribe(void *c){
+ (void)c;subs++;raw_head=raw_count=0;assert(script_snapshot(NULL,&raw_state));return 1;
+}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
-static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);polls++;return true;}
-static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){(void)c;(void)n;(void)e;return 0;}
+static bool poll_touch(void *c,size_t n){
+ (void)c;assert(n==1);polls++;risc_touch_snapshot_v1 next;assert(script_snapshot(NULL,&next));
+ for(unsigned i=0;i<raw_state.contact_count;i++)if(raw_find(&next,raw_state.contacts[i].id)<0)raw_emit(RISC_TOUCH_EVENT_UP,raw_state.contacts[i]);
+ for(unsigned i=0;i<next.contact_count;i++){
+  int old=raw_find(&raw_state,next.contacts[i].id);
+  if(old<0)raw_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[i]);
+  else if(raw_state.contacts[old].x!=next.contacts[i].x||raw_state.contacts[old].y!=next.contacts[i].y)raw_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[i]);
+ }
+ next.sequence=raw_state.sequence;next.timestamp_ms=ms;raw_state=next;return true;
+}
+static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){
+ (void)c;assert(n==1);if(!raw_count)return 0;
+ *e=raw_events[raw_head];raw_head=(raw_head+1)%RISC_TOUCH_QUEUE_LENGTH;--raw_count;return 1;
+}
+static bool snapshot(void *c,risc_touch_snapshot_v1 *s){(void)c;*s=raw_state;return true;}
 #ifdef PORTABLE_ALARM_CLIENT
 static unsigned alarm_acks,alarm_steps,alarm_stops;
 static bool alarm_fired;
@@ -119,17 +150,24 @@ static int32_t alarm_prepare(void *c,alarm_sleep_v1 *o){(void)c;(void)o;return A
 static int32_t alarm_stop(void *c){(void)c;alarm_stops++;return ALARM_OK;}
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
 #endif
-static bool snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;
+static bool script_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;
  unsigned step=polls;bool down=step>=2&&step<=4;int x=240,y=360;
  if(scenario==0||scenario>=10)down=false;
- if(scenario==13){down=step==7;x=240;y=650;}
+ if(scenario==13){
+  /* Dismiss after the alert is presented, independently of how often capture
+   * runs while rendering or waiting for a slow panel. */
+  static unsigned alert_visible_at;
+  if(presents>=2&&!alert_visible_at)alert_visible_at=ms+1;
+  down=alert_visible_at&&ms>=alert_visible_at+50&&ms<alert_visible_at+100;
+  x=240;y=650;
+ }
  if(scenario==1&&step>=3)x+=45;
  if(scenario==2&&step>=3)x-=45;
  if(scenario==3&&step>=3)y-=75;
  if(scenario==4&&step>=3)y+=75;
  if(scenario==6&&step>=3){x+=39;y+=66;}
  if(scenario==7){down=step<5;if(step>=2)x+=45;}
- if(scenario==8&&step==3){s->contact_count=2;return true;}
+ if(scenario==8&&step==3){s->contact_count=2;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=y};s->contacts[1]=(risc_touch_contact_v1){.id=2,.x=x+10,.y=y};return true;}
  if(scenario==8&&step>=4)x+=80;
  if(scenario==9){down=(step>=2&&step<=4)||(step>=7&&step<=9);if(step==3||step==4||step==8||step==9)x+=45;}
  if(down){s->contact_count=1;s->contacts[0].id=1;s->contacts[0].x=x;s->contacts[0].y=y;}

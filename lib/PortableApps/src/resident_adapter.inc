@@ -76,6 +76,9 @@ static void resident_input(portable_touch_sample *sample) {
 }
 #ifdef PORTABLE_RESIDENT_POLICY
 static bool resident_policy_pending;
+/* Private linked-app hook. A released contact may still have a visible snap
+ * animation; background storage/power policy must not interrupt that tail. */
+__attribute__((weak)) bool portable_app_ui_active(void) {return false;}
 static bool resident_capture_active(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
  /* The service owns capture. Its admitted policy is a conservative local
@@ -101,6 +104,7 @@ static uint32_t resident_policy_flags(void) {
  blocked|=!portable_wifi_idle_ready();
 #endif
  if(blocked)flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
+ if(portable_app_ui_active())flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
  if(touch.down || touch.home_down || home_pending || crown_pending || navigation_pending ||
     resident_top_pending || resident_controls_requested || handoff_requested ||
     (input_pending && (input_sample.down || input_sample.released || input_sample.cancelled)))

@@ -18,6 +18,8 @@ static bool mapped_icon(int32_t x,int32_t y,const char *name,uint8_t size,bool b
 }
 static const t5_app_api_v1 *fixture_api(uint32_t version){original=t5_app_get_api(version);mapped=*original;mapped.draw_icon=mapped_icon;mapped.installed_apps_count=mapped_count;mapped.installed_apps_get=mapped_get;mapped.request_app_launch=mapped_launch;return &mapped;}
 int fixture_offset(void){return sbs_pages_offset(&sbs_scroll);}
+int fixture_render_offset(void){return sbs_submitted.q8/256;}
+bool fixture_render_highlight(void){return sbs_submitted.highlight;}
 int fixture_velocity(void){return sbs_scroll.velocity_q8;}
 int fixture_limit(void){return sbs_scroll.limit;}
 bool fixture_pressed(void){return sbs_pressed;}

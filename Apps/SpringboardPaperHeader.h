@@ -6,7 +6,11 @@ static const sbh_glyph *sbh_lookup(const sbh_font *font,unsigned ch) {
  for(unsigned i=0;i<font->count;i++){if(font->glyphs[i].code==ch)return &font->glyphs[i];}
  return NULL;
 }
+__attribute__((weak)) bool portable_springboard_header_text(unsigned face,int x,int baseline,const char *text,int tracking,bool right) {
+ (void)face;(void)x;(void)baseline;(void)text;(void)tracking;(void)right;return false;
+}
 static void sbh_text(const sbh_font *font,int x,int baseline,const char *text,int tracking,bool right) {
+ if(portable_springboard_header_text(font==&SBH_900?0u:1u,x,baseline,text,tracking,right))return;
  int width=0;for(unsigned i=0;text[i];i++){const sbh_glyph *g=sbh_lookup(font,(unsigned char)text[i]);if(g)width+=(int)g->advance+(i?tracking*64:0);}
  int pen=x*64-(right?width:0);
  for(unsigned i=0;text[i];i++) {

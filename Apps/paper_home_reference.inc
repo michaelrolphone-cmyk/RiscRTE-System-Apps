@@ -13,6 +13,8 @@ static const char *home_launch_target(unsigned target) {
 }
 static void home_reference_icon(unsigned index,int x,int y) {
  const uint8_t *bits=home_ref_icons[index];
+ home_tick_draw draw={{x,y,80,80,bits},home_ink_snapshot(),app->screen_width(),app->screen_height()};
+ if(home_can_defer()&&portable_raster_record_draw(home_tick_rows,&draw,sizeof(draw),yscale(y),yscale(y+80)+1))return;
  for(unsigned row=0;row<80;row++)for(unsigned col=0;col<80;) {
   unsigned bit=row*80+col;
   if(!(bits[bit/8]&(128u>>(bit%8)))){col++;continue;}

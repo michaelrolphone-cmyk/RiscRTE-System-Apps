@@ -22,6 +22,7 @@ void portable_input_navigation_close(const risc_runtime_api_v1*r){(void)r;}
 static risc_touch_event_v1 probe_events[RISC_TOUCH_QUEUE_LENGTH];
 static risc_touch_snapshot_v1 probe_snapshot;
 static unsigned probe_head,probe_count,probe_scheduled,probe_begins,probe_taps;
+static bool probe_software_ahead;
 static unsigned probe_model,probe_drawn,probe_submissions[256],probe_submit_count,probe_max_lag;
 static void probe_push(unsigned kind,unsigned at) {
  assert(probe_count<RISC_TOUCH_QUEUE_LENGTH);
@@ -54,7 +55,7 @@ static void probe_case(unsigned format,unsigned latency) {
   (format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_INFO_RETAINS_IMAGE:0);
  probe_head=probe_count=probe_scheduled=probe_begins=probe_taps=probe_model=probe_submit_count=probe_max_lag=0;
  nav_edges=nav_presses=nav_releases=nav_last=0;
- probe_drawn=~0u;probe_snapshot=(risc_touch_snapshot_v1){.width=format==RISC_DISPLAY_FORMAT_MONO1?480:240,.height=format==RISC_DISPLAY_FORMAT_MONO1?800:240};
+ probe_software_ahead=false;probe_drawn=~0u;probe_snapshot=(risc_touch_snapshot_v1){.width=format==RISC_DISPLAY_FORMAT_MONO1?480:240,.height=format==RISC_DISPLAY_FORMAT_MONO1?800:240};
  assert(!app_module_init());
  risc_touch_api_v1 input=mock_touch;input.poll=probe_poll;input.next=probe_next;input.snapshot=probe_snap;touch.api=&input;
  risc_display_output_api_v1 output=mock_display;output.submit=probe_submit;display=&output;
@@ -66,6 +67,9 @@ static void probe_case(unsigned format,unsigned latency) {
    api->clear();api->fill_rect(0,0,240,240,!!(probe_model&1));probe_drawn=probe_model;api->present(true);
   }
   t5_app_input_t event;assert(api->poll(&event,20));
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(paper_token&&raster_ready_to_submit){assert(!surface.frame);probe_software_ahead=true;}
+#endif
   if(event.buttons&T5_APP_BUTTON_RIGHT){assert(nav_presses<60);nav_presses++;nav_last=mock_ms;}
   if(!event.buttons&&nav_presses>nav_releases)nav_releases++;
   springboard_contact contact;np_contact(&contact);
@@ -81,7 +85,15 @@ static void probe_case(unsigned format,unsigned latency) {
  assert(probe_begins==60&&probe_taps==60&&probe_model==60&&probe_drawn==60);
  assert(probe_submissions[0]==0&&probe_submissions[probe_submit_count-1]==60);
  assert(probe_max_lag<=8);
- if(latency==2300)assert(probe_submit_count==2);
+ if(latency==2300) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  /* One immutable software frame can complete ahead of the active panel;
+   * newest model state remains dirty for the next available producer slot. */
+  assert(probe_submit_count==3&&probe_software_ahead);
+#else
+  assert(probe_submit_count==2);
+#endif
+ }
  assert(nav_presses==60&&nav_releases==60&&nav_last<610);
  assert(api->frame_drain());
  printf("{\"format\":%u,\"latency_ms\":%u,\"tap_cycles\":%u,\"navigation_press_release_cycles\":%u,\"max_input_lag_ms\":%u,\"submissions\":%u,\"latest_model\":%u}\n",format,latency,probe_taps,nav_presses,probe_max_lag,probe_submit_count,probe_model);

@@ -6,6 +6,8 @@
 #include "PortableTimeFormat.h"
 extern void fixture_grid_geometry(void);
 extern int fixture_offset(void),fixture_limit(void),fixture_velocity(void);
+extern int fixture_render_offset(void);
+extern bool fixture_render_highlight(void);
 extern bool fixture_pressed(void),fixture_pending(void),fixture_highlight_completed(const char *name);
 #ifndef TEST_DEPLOYMENT_CATALOG
 #define ENTRY(n) {.display_name=n,.file_name=n ".elf",.icon="solid:f017",.compatible=true}
@@ -21,7 +23,7 @@ const unsigned portable_catalog_count=22;
 #endif
 static unsigned start_at=700,drag_frames,momentum_frames,pressed_frames,busy_samples,quick_frames;
 static int rendered_offset[64];static bool rendered_highlight[64];
-static int max_offset,release_offset;static bool changed,sent_up,saved_before_swipe;
+static int max_offset,release_offset;static bool changed,saved_before_swipe;
 static char launch_path[128];static unsigned home_launches;
 static bool swipe_case(void){return !strncmp(test_case,"swipe-",6)||is_case("gameboy");}
 unsigned fixture_count(void){
@@ -97,10 +99,34 @@ static bool scroll_touch(void *c,risc_touch_snapshot_v1 *out){
  if(is_case("swipe-new-id")&&at>=160)out->contacts[0].id=2;
  return true;
 }
-static int32_t scroll_next(void *c,uint64_t token,risc_touch_event_v1 *out){
- if(is_case("queued-up")&&!sent_up&&ticks>=start_at+260){sent_up=true;*out=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=240,.y=420};return 1;}
- if((is_case("swipe-queued-up")||is_case("swipe-queued-short"))&&!sent_up&&ticks>=start_at+260){sent_up=true;*out=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=is_case("swipe-queued-up")?250:350,.y=136};return 1;}
- return fx_touch_next(c,token,out);
+/* A provider reports ordered edges and a matching snapshot watermark. A
+ * changing snapshot with next(empty) is corrupt input, not a drag report. */
+static risc_touch_snapshot_v1 scroll_state={.width=480,.height=800};
+static risc_touch_event_v1 scroll_events[256];
+static unsigned scroll_head,scroll_count;
+static void scroll_emit(unsigned kind,risc_touch_contact_v1 point) {
+ assert(scroll_count<256);
+ if(kind==RISC_TOUCH_EVENT_UP && (is_case("swipe-queued-up")||is_case("swipe-queued-short")))point.x=is_case("swipe-queued-up")?250:350;
+ scroll_events[(scroll_head+scroll_count++)%256]=(risc_touch_event_v1){.sequence=++scroll_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static bool scroll_poll(void*c,size_t budget){
+ assert(fx_touch_poll(c,budget));risc_touch_snapshot_v1 now;assert(scroll_touch(c,&now));
+ for(unsigned i=0;i<scroll_state.contact_count;i++){
+  unsigned j=0;for(;j<now.contact_count;j++)if(now.contacts[j].id==scroll_state.contacts[i].id)break;
+  if(j==now.contact_count)scroll_emit(RISC_TOUCH_EVENT_UP,scroll_state.contacts[i]);
+ }
+ for(unsigned i=0;i<now.contact_count;i++){
+  unsigned j=0;for(;j<scroll_state.contact_count;j++)if(now.contacts[i].id==scroll_state.contacts[j].id)break;
+  if(j==scroll_state.contact_count)scroll_emit(RISC_TOUCH_EVENT_DOWN,now.contacts[i]);
+  else if(memcmp(&now.contacts[i],&scroll_state.contacts[j],sizeof(now.contacts[i])))scroll_emit(RISC_TOUCH_EVENT_MOVE,now.contacts[i]);
+ }
+ for(unsigned bit=0;bit<32;bit++)if((now.buttons^scroll_state.buttons)&(1u<<bit))scroll_emit(now.buttons&(1u<<bit)?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,(risc_touch_contact_v1){.id=(uint8_t)bit});
+ now.sequence=scroll_state.sequence;now.timestamp_ms=ticks;scroll_state=now;return true;
+}
+static bool scroll_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;*out=scroll_state;return true;}
+static int32_t scroll_next(void*c,uint64_t token,risc_touch_event_v1*out){
+ (void)c;assert(token==1);if(!scroll_count)return 0;
+ *out=scroll_events[scroll_head];scroll_head=(scroll_head+1)%256;--scroll_count;return 1;
 }
 static bool scroll_nav(void *c,risc_input_navigation_frame_v1 *out){
  (void)c;io();*out=(risc_input_navigation_frame_v1){0};unsigned at=elapsed();
@@ -111,7 +137,8 @@ static bool scroll_nav(void *c,risc_input_navigation_frame_v1 *out){
 static bool scroll_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,size_t n,
  const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
  assert(!raster_clip_active);
- rendered_offset[presents]=fixture_offset();rendered_highlight[presents]=fixture_pressed()||fixture_pending();
+ /* The logical controller can advance during replay of a sealed frame. */
+ rendered_offset[presents]=fixture_render_offset();rendered_highlight[presents]=fixture_render_highlight();
  if(ticks>=start_at){unsigned at=elapsed();if(at>=80&&at<260&&!quick_modal)drag_frames++;if(at>=260&&at<700&&!quick_modal)momentum_frames++;if(fixture_pressed())pressed_frames++;}
  if(quick_modal){quick_frames++;assert(!fixture_velocity()&&!fixture_pending());}
  return test_submit(c,frame,damage,n,options,token);
@@ -160,7 +187,7 @@ int main(int argc,char **argv){
  frame_latency=(is_case("busy-tap")||is_case("busy-hit")||is_case("new-contact")||is_case("quick-pending")||is_case("swipe-busy")||is_case("swipe-busy-reverse")||is_case("swipe-new-contact"))?240:20;
  if(is_case("busy-tap")||is_case("busy-hit"))start_at=1000;
  if(is_case("superseded")||is_case("superseded-feedback"))frame_latency=100;
- test_touch_api=fx_touch;test_touch_api.snapshot=scroll_touch;test_touch_api.next=scroll_next;
+ test_touch_api=fx_touch;test_touch_api.snapshot=scroll_snapshot;test_touch_api.poll=scroll_poll;test_touch_api.next=scroll_next;
  scroll_navigation=test_navigation;scroll_navigation.poll=scroll_nav;
  test_kv=fx_kv;test_kv.put=test_put;test_kv.get=scroll_get;
  test_alarm=fx_alarm;test_alarm.step=test_alarm_step;test_alarm.status=test_alarm_status;test_alarm.acknowledge=test_alarm_ack;

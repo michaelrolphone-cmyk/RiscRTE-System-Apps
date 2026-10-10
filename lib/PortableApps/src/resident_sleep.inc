@@ -29,7 +29,12 @@ static portable_idle_ui_result resident_sleep_wait(void) {
   if(now<last || now-began>=10000u)break;
   last=now;
   /* The final sample closes the sub-16 ms cancellation gap before sleep. */
-  if(status==RISC_DISPLAY_SETTLED_COMPLETE || now-input_sampled_at>=16u)input_service();
+  if(status==RISC_DISPLAY_SETTLED_COMPLETE || now-input_sampled_at>=16u) {
+   input_service();
+   /* Collection only services the provider after input/render decoupling.
+    * Reduce its ordered edge here so touch/Home can still cancel sleep. */
+   input_pending=false;input_dispatch();
+  }
   if(native_custody_retained || failed)return PORTABLE_IDLE_UI_RETAINED;
   cancelled=last_activity!=activity_before || home_pending || crown_pending || navigation_pending ||
       (input_pending && input_sample.valid && (input_sample.down || input_sample.began || input_sample.released));
@@ -88,6 +93,9 @@ static portable_idle_ui_result resident_sleep_begin(void *context) {
  fill(left+2,top+2,box_width-4,box_height-4,0xffff);
  pp_text((width()-pp_measure(label,true))/2,(height()-38)/2,box_width-24,label,1,true,true);
  present(true);
+ /* A submitted async token is still progressing normally. Complete that
+  * image before requesting its physical settle; it is not retained custody. */
+ if(!portable_paper_frame_drain())return PORTABLE_IDLE_UI_RETAINED;
  bool settled=!failed && !native_custody_retained && !surface.frame && !paper_token && display_settled;
  if(!settled) {
   if(!native_custody_retained)portable_adapter_retain_silent();
@@ -114,6 +122,7 @@ static portable_idle_ui_result resident_sleep_restore(void *context) {
   memcpy((uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,
          (const uint8_t *)alarm_pixels+(size_t)y*quick_row_bytes(),quick_row_bytes());
  present(true);
+ if(!portable_paper_frame_drain())return PORTABLE_IDLE_UI_RETAINED;
  resident_sleep_present=false;
  if(failed || native_custody_retained || surface.frame || paper_token || !display_settled) {
   if(!native_custody_retained)portable_adapter_retain_silent();

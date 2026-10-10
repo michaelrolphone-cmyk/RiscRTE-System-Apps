@@ -11,7 +11,7 @@ CASES=['child-home-closed','child-home-open','host-frontlight','child-frontlight
 CASES += ['host-usb-repeat','host-usb-repeat-audio','host-usb-cancel-then-open','child-usb-cancel-then-open','host-usb-old-row']
 TONE_CASES=['host-tone','child-tone','host-tone-audio','host-tone-absent','host-tone-unavailable','host-tone-failed-get','host-tone-failed-set','host-tone-failed-open-get','host-tone-failed-open-set']
 def main():
- p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--display-sdk',type=Path,required=True);p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'build/shared-quick-reference');p.add_argument('--normal-only',action='store_true');p.add_argument('--case',action='append',choices=CASES+TONE_CASES);p.add_argument('--tone-sdk',type=Path);p.add_argument('--stage-logs',action='store_true');a=p.parse_args()
+ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--display-sdk',type=Path,required=True);p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'build/shared-quick-reference');p.add_argument('--normal-only',action='store_true');p.add_argument('--case',action='append',choices=CASES+TONE_CASES);p.add_argument('--tone-sdk',type=Path);p.add_argument('--stage-logs',action='store_true');p.add_argument('--snapshot',action='store_true');a=p.parse_args()
  out=a.output_dir.resolve();inc=out/'include';shutil.copytree(ROOT/'lib/PortableApps/include',inc,dirs_exist_ok=True);shutil.copytree(ROOT/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
  for name in ['RiscRuntimeV1.h','RiscResidentShellV1.h','RiscRealtimeV1.h']:shutil.copyfile(a.runtime/'sdk/app'/name,inc/name)
  if (a.runtime/'sdk/app/RiscFailureEvidenceV1.h').is_file():shutil.copyfile(a.runtime/'sdk/app/RiscFailureEvidenceV1.h',inc/'RiscFailureEvidenceV1.h')
@@ -31,6 +31,7 @@ def main():
   base=['-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function','-Wno-unused-variable','-Wno-misleading-indentation',*sanitizers,'-I'+str(inc),'-I'+str(ROOT/'lib/NativeApps/include')]
   common=['-DREFERENCE_RUNTIME_FIXTURE','-DPORTABLE_PAPER_PREFERENCES','-DPORTABLE_ALARM_TERMINAL_RETENTION','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DPORTABLE_ALARM_CLIENT','-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_HOME_APP="default.elf"','-DPORTABLE_RESIDENT_POLICY']
   if a.stage_logs:common+=['-DPORTABLE_STAGE_LOGS']
+  if a.snapshot:common+=['-DPORTABLE_RASTER_SNAPSHOT']
   for name in ['host','client','usb_sd_transfer']:
    flags=list(common);sources=[ROOT/'test/native_apps/shared_quick_app.c',ROOT/'test/native_apps/shared_quick_adapter.c']
    if name=='host':
@@ -46,7 +47,7 @@ def main():
   subprocess.run(['cc','-std=c11',*base,'-fPIC','-shared',str(ROOT/'test/native_apps/resident_system_file_receiver.c'),'-o',str(build/'receiver.elf')],check=True)
   fixture=ROOT/'test/native_apps/shared_quick_reference_test.c'
   for index,(cap,version) in enumerate(CAPS,1):subprocess.run(['cc','-std=c11',*base,'-I'+str(a.runtime/'sdk/driver'),'-fPIC','-shared','-DPOLICY_PROVIDER='+str(index),'-DPOLICY_CAPABILITY="'+cap+'"','-DPOLICY_API='+str(version),str(fixture),'-o',str(build/('provider-'+str(index)+'.elf'))],check=True)
-  subprocess.run(['cc','-std=c11',*base,*(['-DTEST_STAGE_LOGS'] if a.stage_logs else []),*(['-DPORTABLE_FRONTLIGHT_TONE'] if a.tone_sdk else []),'-DPORTABLE_ALARM_CLIENT','-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_X4_IDLE_POLICY','-c',str(fixture),'-o',str(build/'fixture.o')],check=True)
+  subprocess.run(['cc','-std=c11',*base,*(['-DTEST_STAGE_LOGS'] if a.stage_logs else []),*(['-DPORTABLE_RASTER_SNAPSHOT'] if a.snapshot else []),*(['-DPORTABLE_FRONTLIGHT_TONE'] if a.tone_sdk else []),'-DPORTABLE_ALARM_CLIENT','-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_X4_IDLE_POLICY','-c',str(fixture),'-o',str(build/'fixture.o')],check=True)
   rsources=[a.runtime/s for s in ['src/bootstrap/Json.cpp','src/bootstrap/Board.cpp','src/bootstrap/Runtime.cpp','src/runtime/streams/AppStreamSessions.cpp','src/runtime/streams/ProviderQueueHost.cpp','src/runtime/drivers/ProviderGraphV2.cpp','src/runtime/drivers/ProviderModuleV2.cpp']]
   rincs=['-I'+str(a.runtime/s) for s in ['src','sdk/app','sdk/driver','sdk/hardware','lib/ArduinoJson/src','test/drivers/stubs']]
   binary=build/'reference-test'

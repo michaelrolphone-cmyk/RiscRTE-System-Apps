@@ -333,6 +333,9 @@ static bool desk_bind(void) {
      paper && paper->struct_size>=sizeof(*paper) && paper->begin && paper->text &&
      paper->measure && paper->contact;
 }
+#ifdef PORTABLE_BOOT_ANIMATION
+#include "paper_boot_animation.inc"
+#endif
 static bool desk_logo_rect(void *context,int x,int y,int w,int h) {
  (void)context;
  if(!portable_desk_adapter_ready())return false;
@@ -340,6 +343,9 @@ static bool desk_logo_rect(void *context,int x,int y,int w,int h) {
 }
 static bool desk_boot_logo(void) {
  if(!desk_first_promotion || !portable_desk_clock_boot_is_cold())return true;
+#ifdef PORTABLE_BOOT_ANIMATION
+ if(portable_raster_defer){desk_boot_animation_pending=true;return true;}
+#endif
  portable_desk_adapter_begin();
  if(!portable_desk_adapter_ready() ||
     !riscrte_logo_draw(NULL,desk_logo_rect,app->screen_width(),app->screen_height()) ||

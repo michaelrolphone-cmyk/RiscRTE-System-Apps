@@ -6,11 +6,14 @@
 #if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_DESK_CLOCK_SPARSE_START)
 bool portable_paper_frame_ready(void);
 bool portable_paper_frame_drain(void);
+extern bool portable_paper_frame_idle(void) __attribute__((weak));
 static inline bool paper_frame_ready(void) {return portable_paper_frame_ready();}
 static inline bool paper_frame_drain(void) {return portable_paper_frame_drain();}
+static inline bool paper_frame_idle(void) {bool (*idle)(void)=portable_paper_frame_idle;return idle?idle():paper_frame_ready();}
 #else
 static inline bool paper_frame_ready(void) {return true;}
 static inline bool paper_frame_drain(void) {return true;}
+static inline bool paper_frame_idle(void) {return true;}
 #endif
 #ifdef PORTABLE_PAPER_CROSSFADE
 void portable_paper_transition_begin(void);

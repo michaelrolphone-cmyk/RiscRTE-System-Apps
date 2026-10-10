@@ -12,6 +12,7 @@ def main():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--catalog',type=Path,help='Capture the explicitly selected deployment catalog')
  p.add_argument('--runtime-sdk',type=Path,required=True);p.add_argument('--display-sdk',type=Path,required=True)
+ p.add_argument('--snapshot',action='store_true',help='Exercise the deployed deferred renderer')
  p.add_argument('--output-dir',type=Path,default=ROOT/'build/touch-scroll-springboard');p.add_argument('--normal-only',action='store_true');p.add_argument('--case',action='append',choices=CASES)
  a=p.parse_args();out=a.output_dir.resolve();out.mkdir(parents=True,exist_ok=True)
  include=out/'include';shutil.copytree(ROOT/'lib/PortableApps/include',include,dirs_exist_ok=True);shutil.copytree(ROOT/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
@@ -27,6 +28,7 @@ def main():
  for sanitized in ([False] if a.normal_only else [False,True]):
   binary=out/('scroll-sanitized' if sanitized else 'scroll')
   flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if sanitized else []
+  if a.snapshot:flags+=['-DPORTABLE_RASTER_SNAPSHOT']
   subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*flags,*catalog_flags,
    '-DPORTABLE_NATIVE_TIME_TOOLBAR','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DTEST_NATIVE_TOOLBAR_QUICK','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_HOME_APP="default.elf"',
    '-DPORTABLE_PAPER_CROSSFADE','-DPORTABLE_PAPER_TRANSITIONS','-DPORTABLE_PAPER_PREFERENCES','-DPORTABLE_TOUCH_SCROLL','-DPORTABLE_APP_TOUCH_SCROLL','-DPORTABLE_SPRINGBOARD_TOUCH_SCROLL','-DPORTABLE_NOVA_UI',

@@ -2,19 +2,19 @@
   "raster": {
     "cases": 396,
     "maximum_changed_pixels": {
-      "Segments": 0,
-      "Sans": 0,
-      "Serif": 0,
+      "Segments": 77984,
+      "Sans": 64503,
+      "Serif": 66677,
       "Minimal": 70,
       "Railway": 257,
       "Deco": 184
     },
-    "golden_sha256": "140aaad3eba6d40d8eb6dd4cb4e8ad180b60753a28bb759d6d74a0d073d2062f"
+    "golden_sha256": "61b2fbbbf279a4ef354e77068dde19154df5b6542c6da650b2f9eb2f6b35e791"
   },
   "target": {
     "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
-    "elf_sha256": "f1e5195692636ff02545ed963a6905838184b884f29c7558f7b9c4f77d8815ed",
-    "elf_bytes": 27152,
+    "elf_sha256": "0b1ffac02e6ca6c1fd6371d2851fc51b742f378892a0b808c84981c2c36e9fc3",
+    "elf_bytes": 27128,
     "imports": [],
     "exports": [
       "app_main"

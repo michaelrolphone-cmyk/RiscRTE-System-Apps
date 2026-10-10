@@ -122,6 +122,7 @@ static void watch_allocation_fallback(unsigned kind) {
  risc_display_surface_v1 reference=surface;reference.pixels=expected;
  assert(pqa_render(&reference,&quick.ui,"23:59",true,63));
  assert(portable_paper_frame_ready());assert(quick_copy_background());
+ if(kind==2)raster_command_count=RASTER_COMMANDS_PER_BLOCK; /* Fail allocation of the next command block, after Quick state. */
  if(kind<3)custody_fail_allocation=custody_allocations+kind;
  else if(kind==3)raster_command_count=4096; /* Exercise the same real capacity branch. */
  assert(quick_render_watch("23:59",true,63));
@@ -160,9 +161,9 @@ static void bitmap_allocation_and_acquire_failure(void) {
  retained_background();quick.ui.paper=true;
  quick_display_api.acquire=refused_acquire;
  assert(portable_paper_frame_ready());
- /* Retain bitmap bytes, fail the command node, then fail prefix materialization.
-  * A consumed error is not proof that raster_tail points to a new command. */
- custody_fail_allocation=custody_allocations+2;
+ /* Borrow the immutable bitmap, fail the command slab and then prefix
+  * materialization. An error must not be mistaken for a new command. */
+ custody_fail_allocation=custody_allocations+1;
  assert(!quick_copy_background() && failed);
  assert(!surface.frame && !frame_count);
  app_module_fini();assert(!grants && !subscriptions && !frame_count);
@@ -240,10 +241,12 @@ static void terminal_fallback(unsigned kind) {
   custody_fail_offscreen=true;quick_runtime.health=terminal_prefix_health;
   assert(!raster_progress());assert(!custody_fail_offscreen);
  } else if(kind==1||kind==3) {
+  raster_command_count=RASTER_COMMANDS_PER_BLOCK; /* Exhaust current slab before injected allocation refusal. */
   custody_fail_allocation=custody_allocations+2;quick_runtime.health=terminal_prefix_health;
   assert(!quick_render_watch("12:34",true,63));
  } else {
-  custody_fail_allocation=custody_allocations+2;quick_display_api.acquire=terminal_refused_acquire;
+  /* Underlay is now borrowed: fail the command slab, not a removed pixel copy. */
+  custody_fail_allocation=custody_allocations+1;quick_display_api.acquire=terminal_refused_acquire;
   assert(!quick_copy_background());
  }
  assert(terminal_calls==1 && native_custody_retained && failed && !surface.frame && !surface.pixels);

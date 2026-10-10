@@ -6,8 +6,8 @@ static bool contexts_open(void) {
   if(native_custody_retained)return false;
   if(contexts_client.api)return true;
   contexts_unavailable=false;
-  bool save_failed=contexts_client.save_failed;
-  contexts_client=(portable_contexts_client){.runtime=rt,.save_failed=save_failed,
+  bool save_failed=contexts_client.save_failed,learning=contexts_client.foreground_learning;
+  contexts_client=(portable_contexts_client){.runtime=rt,.save_failed=save_failed,.foreground_learning=learning,
     .grant={.struct_size=sizeof(contexts_client.grant)}};
   bool acquired=rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&contexts_client.grant);
   if(native_custody_retained)return false;
@@ -27,7 +27,11 @@ static bool contexts_open(void) {
      !api->claim_preset||!api->preset_result||!api->capture_audio) {
     portable_adapter_retain();return false;
   }
-  contexts_client.api=api;contexts_client.policy.struct_size=sizeof(contexts_client.policy);return true;
+  contexts_client.api=api;contexts_client.policy.struct_size=sizeof(contexts_client.policy);
+  contexts_client.fingerprint_sources=PORTABLE_CONTEXTS_SOURCE_MASK;
+  const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(api);
+  if(fp){contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=PORTABLE_CONTEXTS_SOURCE_MASK};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)||!portable_fp_checkpoint(&contexts_client,true)||!portable_context_rules_load(&contexts_client)){portable_adapter_retain();return false;}}
+  return true;
 }
 const contexts_service_v1 *portable_contexts_service(void) {
   return contexts_open()?contexts_client.api:NULL;
@@ -41,13 +45,17 @@ bool portable_contexts_stop(void) {
  * session model and room-entry claim belong to the service, never the app. */
 static bool contexts_suspend(void) {
   if(!portable_contexts_stop())return false;
-  bool save_failed=contexts_client.save_failed;
+  bool save_failed=contexts_client.save_failed,learning=contexts_client.foreground_learning;
   if(!portable_contexts_close(&contexts_client)){portable_adapter_retain();return false;}
-  contexts_client.save_failed=save_failed;return true;
+  contexts_client.save_failed=save_failed;contexts_client.foreground_learning=learning;return true;
 }
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
 bool portable_contexts_close_for_handoff(void) {return contexts_suspend();}
 #endif
+bool portable_contexts_training(bool enabled) {
+ if(!contexts_open()||!portable_contexts_stop())return false;
+ contexts_client.foreground_learning=enabled;return true;
+}
 bool portable_contexts_enable(bool enabled) {
   if(!contexts_open())return false;
   contexts_policy_io=true;
@@ -84,3 +92,17 @@ static bool contexts_capture_checkpoint(void) {
 static bool contexts_before_storage(void) {
   return !native_custody_retained&&(contexts_policy_io||portable_contexts_stop());
 }
+/* Reading another service's settings still quiesces capture, but cannot
+ * change our policy. Invalidating here makes the two background clients
+ * invalidate each other and reread storage on every Home poll. Writes and
+ * explicit lifecycle stops keep their normal invalidation behavior. */
+static inline bool contexts_before_storage_read(void) {
+  bool loaded=contexts_client.loaded;
+  if(!contexts_before_storage())return false;
+  contexts_client.loaded=loaded;
+  return true;
+}
+
+bool portable_contexts_rules_read(cr_store*out){return contexts_open()&&portable_context_rules_read(&contexts_client,out);}
+bool portable_contexts_rules_save(const cr_store*s){if(!contexts_open())return false;contexts_policy_io=true;bool ok=portable_context_rules_save(&contexts_client,s);contexts_policy_io=false;return ok;}
+bool portable_contexts_models_save(void){if(!contexts_open())return false;contexts_policy_io=true;bool ok=portable_fp_checkpoint(&contexts_client,false)&&!contexts_client.fingerprint_error;contexts_policy_io=false;return ok;}

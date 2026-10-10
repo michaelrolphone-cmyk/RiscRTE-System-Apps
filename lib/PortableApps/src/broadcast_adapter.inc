@@ -102,4 +102,10 @@ static bool broadcast_before_storage(void) {
    * reacquiring/releasing the grant that owns that synchronous operation. */
   return broadcast_policy_io || portable_broadcast_stop();
 }
+static inline bool broadcast_before_storage_read(void) {
+  bool loaded=broadcast_client.loaded;
+  if(!broadcast_before_storage())return false;
+  broadcast_client.loaded=loaded;
+  return true;
+}
 #endif

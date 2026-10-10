@@ -10,7 +10,7 @@ static unsigned fbs_hit_generation,fbs_keyboard_page;
 static unsigned fbs_hit_row;
 static bool fbs_hit_has_row;
 static union {risc_storage_dirent_v1 row;t5_file_handler_t handler;} fbs_hit_item;
-static void fbs_visible(void) {if(paper_frame_ready())fbs_completed=fbs_submitted;}
+static void fbs_visible(void) {if(paper_frame_idle())fbs_completed=fbs_submitted;}
 static unsigned fbs_count(void) {
  return fbs_directory_mode()?(fb_loaded?fb_matched:0):fb_mode==FB_OPTIONS?fb_option_count():fb_mode==FB_ACTIONS?7:fb_mode==FB_HANDLERS?fb_handler_count:0;
 }

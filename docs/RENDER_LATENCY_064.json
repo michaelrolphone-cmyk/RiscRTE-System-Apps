@@ -1,0 +1,15 @@
+{
+  "runtime_clock": "native optional monotonic suffix; full health fallback for older tables",
+  "quick_reference": "preclip source rows in words, glyphs, icons and rounded tiles",
+  "render_budget": "original single-row 2ms budget retained; larger bands rejected by latency gate",
+  "yield": "1ms scheduler pause while software replay remains pending",
+  "display": "0.1.13 remains selected by X4, no driver change in System",
+  "host_checks": {
+    "quick_reference_comparisons": 64,
+    "quick_native_source_rows": "once per frame",
+    "renderer": "full raster/rotation/padding comparisons and simulated CPU latency, fast clock path rejects health calls",
+    "custody": "18 ASan/UBSan cases",
+    "gesture": "ordered touch edges, left/right/reversal/queued release/cancel/Quick; real raster intermediate frames",
+    "hardware": "not measured"
+  }
+}

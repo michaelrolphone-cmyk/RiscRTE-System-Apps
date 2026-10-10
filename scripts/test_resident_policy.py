@@ -12,6 +12,7 @@ p.add_argument('--runtime', type=Path, required=True)
 p.add_argument('--display-sdk', type=Path, required=True)
 p.add_argument('--alarm-sdk', type=Path, required=True)
 p.add_argument('--sanitize', action='store_true')
+p.add_argument('--async-display', action='store_true', help='Exercise the deployed sliced renderer and delayed display completion')
 p.add_argument('--modes', nargs='*')
 a = p.parse_args()
 out = ROOT / 'build/resident-policy'
@@ -31,6 +32,9 @@ base = ['-O1', '-g', '-Wall', '-Wextra', '-Werror', *san, '-I'+str(inc), '-I'+st
 common = ['-DPORTABLE_PAPER_PREFERENCES', '-DPORTABLE_ALARM_TERMINAL_RETENTION', '-DPORTABLE_NATIVE_CUSTODY_FENCE',
           '-DPORTABLE_ALARM_CLIENT', '-DALARM_SERVICE_TAGGED_V2', '-DPORTABLE_INPUT_NAVIGATION',
           '-DPORTABLE_APP_OWNS_TOUCH_CHROME', '-DPORTABLE_HOME_APP="default.elf"', '-DPORTABLE_RESIDENT_POLICY']
+if a.async_display:
+    common += ['-DPORTABLE_RASTER_SNAPSHOT']
+    base += ['-DPOLICY_ASYNC_DISPLAY']
 for role in ('host', 'client'):
     flags = [*common, '-DPORTABLE_RESIDENT_SHELL_'+role.upper(), '-DPORTABLE_APP_SLEEP_LOCAL', '-DPORTABLE_CROWN_SLEEP_LOCAL']
     sources = [ROOT/'test/native_apps/resident_policy_app.c', ROOT/'test/native_apps/resident_policy_adapter.c']
@@ -59,7 +63,7 @@ binary = out/'resident-policy-test'
 subprocess.run(['c++', '-std=c++17', '-g', '-Wall', '-Wextra', '-Werror', '-Wno-missing-field-initializers', *san,
                 *rincs, '-rdynamic', *(['-no-pie'] if a.sanitize else []), *map(str, rsources),
                 str(ROOT/'test/native_apps/resident_policy_runtime.cpp'), str(out/'fixture.o'), '-ldl', '-o', str(binary)], check=True)
-modes = a.modes or ['poll','busy','policy-busy','capture-pending','idle','activity','capture','low-battery','dirty-edit','refused','retained','explicit-sleep']
+modes = a.modes or ['poll','busy','policy-busy','capture-pending','animation','idle','activity','capture','low-battery','dirty-edit','refused','retained','explicit-sleep']
 for mode in modes:
     subprocess.run([str(binary), str(out), mode], check=True, timeout=30,
                    env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0'))

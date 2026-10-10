@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--sdk', type=Path, required=True, help='Verified Runtime/Realtime and tagged Alarm SDK directory')
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--normal-only', action='store_true')
+    parser.add_argument('--snapshot', action='store_true', help='Use the selected immutable raster pipeline')
     parser.add_argument('--controller', action='append', choices=['settings', 'wifi', 'files', 'springboard', 'springboard-legacy'])
     parser.add_argument('--case', action='append', choices=['root', 'fields', 'timezone', 'touch', 'confirm', 'drag', 'changed'])
     args = parser.parse_args()
@@ -39,6 +40,7 @@ def main():
         for controller in args.controller or ['settings', 'wifi', 'files', 'springboard', 'springboard-legacy']:
             for short in ([False, True] if controller in ('settings', 'wifi', 'files') else [False]):
                 flags = COMMON.copy()
+                if args.snapshot:flags += ['PORTABLE_RASTER_SNAPSHOT']
                 if controller == 'settings':
                     flags += ['PORTABLE_SETTINGS_LIST_SCROLL']
                     if short:

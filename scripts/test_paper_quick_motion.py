@@ -8,6 +8,7 @@ OUT=ROOT/'build/paper-quick-motion';OUT.mkdir(parents=True,exist_ok=True)
 for sanitized in (False,True):
  for landscape in (False,True):
   flags=['-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_ALARM_CLIENT','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_PAPER_TRANSITIONS']
+  if os.environ.get('RASTER_SNAPSHOT'):flags+=['-DPORTABLE_RASTER_SNAPSHOT']
   if landscape:flags+=['-DTEST_NATIVE_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90']
   if sanitized:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
   binary=OUT/f'motion-{sanitized}-{landscape}'

@@ -195,6 +195,9 @@ static bool quick_apply(uint32_t actions) {
 #else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
 #endif
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(actions&PQA_CONTEXTS)portable_contexts_settings_changed(&contexts_client,quick.ui.contexts_valid);
+#endif
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
  if(changed && !alarm_refresh())return false;
 #else
@@ -214,7 +217,9 @@ static bool quick_copy_background(void) {
  /* Every visible byte is overwritten below; clearing it first only repeats
   * a full-frame paint. Keep ordinary surface acquisition and custody checks. */
 #ifdef PORTABLE_RASTER_SNAPSHOT
- if(raster_begin_pixels(quick_background,(unsigned)quick_row_bytes()))return !failed;
+ /* The underlay is immutable for the modal lifetime, and the closing drain
+  * precedes its release. No copy/allocation is needed for each drag frame. */
+ if(raster_begin_pixels_owned(quick_background,(unsigned)quick_row_bytes(),true))return !failed;
 #endif
  if(!acquire_surface() || failed)return false;
  if(!quick_background)return false;
@@ -492,7 +497,11 @@ static bool quick_foreground(bool *consumed) {
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
   input_pending=false;
-  rt->yield_ms(input_progressed?1u:4u);
+  unsigned pause=input_progressed?1u:4u;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_ready_to_submit)pause=1u;
+#endif
+  rt->yield_ms(pause);
  }
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
@@ -503,6 +512,9 @@ static bool quick_foreground(bool *consumed) {
  }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(native_sleep_retained)return false; /* Keep the Runtime-owned allocation. */
+#endif
+ #if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS) && defined(PORTABLE_RESIDENT_SHELL_HOST)
+ portable_layer_release(&quick_sheet_layer);
 #endif
  quick_modal=false;free(quick_background);quick_background=NULL;
  portable_stage_log(rt,"action","name=quick-controls-close");

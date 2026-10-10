@@ -39,6 +39,14 @@ static void (*busy_hook)(bool);
 static uint8_t pixels[48000],completed[48000];
 static struct {char key[40];uint8_t bytes[128];uint32_t size;} values[16];
 static unsigned value_count;
+static bool reported_down[3],touch_queued[3];
+static risc_touch_event_v1 touch_event[3];
+#ifdef POLICY_ASYNC_DISPLAY
+static uint32_t frame_ready_at;
+#define POLICY_DISPLAY_FLAGS RISC_DISPLAY_INFO_ASYNC_PRESENT
+#else
+#define POLICY_DISPLAY_FLAGS 0
+#endif
 static unsigned role(void){unsigned current=policy_runtime_role();return current?current:lifecycle_role;}
 static bool is(const char *name){return !strcmp(mode,name);}
 static void live(void){if(terminal){++after_terminal;assert(!"Provider operation after retention");}++provider_calls;}
@@ -77,12 +85,23 @@ static int32_t kv_put(void*c,const char *key,const void *bytes,uint32_t size){
 int32_t policy_fixture_kv_get(uint32_t ns,const char *key,void *out,uint32_t cap,uint32_t *used){assert(ns==1);return kv_get(NULL,key,out,cap,used);}
 int32_t policy_fixture_kv_put(uint32_t ns,const char *key,const void *bytes,uint32_t size){assert(ns==1);return kv_put(NULL,key,bytes,size);}
 static const risc_key_value_v1 preferences={1,sizeof(preferences),NULL,kv_get,kv_put};
-static bool display_info(void*c,risc_display_info_v1*out){live();(void)c;*out=(risc_display_info_v1){.width=480,.height=800,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_BRIGHTNESS,.damage_x_alignment=8,.damage_width_alignment=8};return true;}
+static bool display_info(void*c,risc_display_info_v1*out){live();(void)c;*out=(risc_display_info_v1){.width=480,.height=800,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_BRIGHTNESS|POLICY_DISPLAY_FLAGS,.damage_x_alignment=8,.damage_width_alignment=8};return true;}
 static bool acquire_frame(void*c,uint32_t format,risc_display_surface_v1*out){live();(void)c;assert(!frame&&format==RISC_DISPLAY_FORMAT_MONO1);frame=role();memset(pixels,0xcd,sizeof(pixels));*out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=480,.height=800,.stride_bytes=60,.size_bytes=sizeof(pixels),.pixel_format=format};return true;}
 static void release_frame(void*c,risc_display_frame_v1 value){live();(void)c;assert(value==1&&frame==role());frame=0;}
-static bool submit_frame(void*c,risc_display_frame_v1 value,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*out){live();(void)c;(void)r;(void)n;(void)o;assert(value==1&&frame==role());frame=0;*out=++token;memcpy(completed,pixels,sizeof(pixels));return true;}
+static bool submit_frame(void*c,risc_display_frame_v1 value,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*out){live();(void)c;(void)r;(void)n;(void)o;assert(value==1&&frame==role());frame=0;*out=++token;
+#ifdef POLICY_ASYNC_DISPLAY
+frame_ready_at=ms+8;
+#else
+memcpy(completed,pixels,sizeof(pixels));
+#endif
+return true;}
 static bool brightness(void*c,uint16_t value,uint16_t maximum){live();(void)c;assert(!frame&&value<=100&&maximum==100);policy_boundary();return true;}
-static bool present_status(void*c,risc_display_present_token_v1 value,risc_display_present_status_v1*out){live();(void)c;assert(value==token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
+static bool present_status(void*c,risc_display_present_token_v1 value,risc_display_present_status_v1*out){live();(void)c;assert(value==token);
+#ifdef POLICY_ASYNC_DISPLAY
+if(ms<frame_ready_at){out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}
+memcpy(completed,pixels,sizeof(pixels));
+#endif
+out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static bool history(void*c,risc_display_frame_v1 value){(void)c;(void)value;return false;}
 static int32_t power(void*c,uint32_t budget){live();(void)c;(void)budget;return 0;}
 static bool metrics(void*c,risc_display_present_metrics_v1*out){(void)c;(void)out;return false;}
@@ -91,9 +110,14 @@ static const risc_display_output_api_v1_snapshot display={
  .metrics={.power={.history={.base={.api_version=1,.struct_size=sizeof(display),.get_info=display_info,.acquire=acquire_frame,.release=release_frame,.submit=submit_frame,.present_status=present_status,.set_brightness=brightness},.extension_tag=RISC_DISPLAY_HISTORY_TAG,.extension_version=1,.seed_previous=history},.power_tag=RISC_DISPLAY_POWER_TAG,.power_version=1,.prepare=power,.resume=power},.metrics_tag=RISC_DISPLAY_METRICS_TAG,.metrics_version=1,.snapshot=metrics},.snapshot_tag=RISC_DISPLAY_SNAPSHOT_TAG,.snapshot_version=1,.copy_completed=snapshot};
 static uint64_t subscribe(void*c){live();(void)c;unsigned r=role();assert(!subs[r]);subs[r]=1;++opens[r];if(child_started&&r==2)++policy_opens;return r;}
 static bool unsubscribe(void*c,uint64_t id){live();(void)c;assert(id==role()&&subs[id]);subs[id]=0;++closes[id];if(child_started&&id==2)++policy_closes;return true;}
-static bool poll_touch(void*c,size_t count){live();(void)c;assert(count==1);return true;}
-static int32_t next_touch(void*c,uint64_t id,risc_touch_event_v1*out){live();(void)c;(void)out;assert(id==role());return 0;}
-static bool touch_snapshot(void*c,risc_touch_snapshot_v1*out){live();(void)c;*out=(risc_touch_snapshot_v1){.width=480,.height=800};if(role()==2&&touch_down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=230,.y=330};}return true;}
+static bool poll_touch(void*c,size_t count){
+ live();(void)c;assert(count==1);unsigned r=role();bool down=r==2&&touch_down;
+ if(down!=reported_down[r]){assert(!touch_queued[r]);reported_down[r]=down;touch_queued[r]=true;
+  touch_event[r]=(risc_touch_event_v1){.kind=down?RISC_TOUCH_EVENT_DOWN:RISC_TOUCH_EVENT_UP,.id=1,.x=230,.y=330,.sequence=touch_event[r].sequence+1,.timestamp_ms=ms};}
+ return true;
+}
+static int32_t next_touch(void*c,uint64_t id,risc_touch_event_v1*out){live();(void)c;assert(id==role());if(!touch_queued[id])return 0;touch_queued[id]=false;*out=touch_event[id];return 1;}
+static bool touch_snapshot(void*c,risc_touch_snapshot_v1*out){live();(void)c;unsigned r=role();*out=(risc_touch_snapshot_v1){.width=480,.height=800,.sequence=touch_event[r].sequence,.timestamp_ms=touch_event[r].timestamp_ms};if(reported_down[r]){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=230,.y=330};}return true;}
 static const risc_touch_api_v1 touch={1,sizeof(touch),NULL,subscribe,unsubscribe,poll_touch,next_touch,touch_snapshot};
 static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){live();(void)c;assert(focus==role());*out=(risc_input_navigation_frame_v1){0};if(is("explicit-sleep")&&role()==2&&step==2)out->pressed=RISC_NAV_HOME;return true;}
 static bool nav_focus(void*c,const risc_input_foreground_v1*claims,size_t count){live();(void)c;assert(count<=1);if(count){assert(claims&&!strcmp(claims[0].capability,"input.touch.raw")&&(!focus||focus==role()));focus=role();}else{assert(!focus||focus==role());focus=0;}++focus_changes;return true;}
@@ -135,14 +159,16 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*rt,const risc_display_out
  (void)rt;(void)d;(void)g;(void)a;live();assert(child_returned&&unmaps[2]==1&&policy_runtime_reset_safe());++explicit_calls;return 1;
 }
 void policy_fixture_step(unsigned value){
+ static unsigned origin;
+ if(!value)origin=ms; /* Initial asynchronous frames have already advanced time. */
  step=value;
  if(is("activity")){
   static const unsigned times[]={0,4400,5500,6600,7700,8800,9900,11000,12100,13200,14300,15400};
-  ms=times[value];touch_down=value>=1&&value<=4;
+  ms=origin+times[value];touch_down=value>=1&&value<=4;
  }else if(is("capture")){
-  capture=value>=1&&value<=4;ms=value*2000;touch_down=false;
- }else if(is("poll")||is("busy")||is("explicit-sleep"))ms=value*40;
- else ms=value*1100;
+  capture=value>=1&&value<=4;ms=origin+value*2000;touch_down=false;
+ }else if(is("poll")||is("busy")||is("explicit-sleep"))ms=origin+value*40;
+ else ms=origin+value*1100;
  if(is("busy"))policy_fixture_busy(value<3);
  if(value==1){baseline_reads=battery_reads;baseline_focus=focus_changes;baseline_closes=closes[2];baseline_effects=policy_effects;}
  if(is("capture")&&value==1)last_focus=focus_changes;

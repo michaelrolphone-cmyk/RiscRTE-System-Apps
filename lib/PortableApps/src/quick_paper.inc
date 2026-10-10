@@ -64,7 +64,7 @@ static bool quick_paper_changed(const pqa_state *a,const pqa_state *b) {
 #endif
   a->brightness!=b->brightness || a->volume!=b->volume || a->torch!=b->torch ||
   a->brightness_valid!=b->brightness_valid || a->volume_valid!=b->volume_valid ||
-  a->dnd_valid!=b->dnd_valid || a->dnd_enabled!=b->dnd_enabled || a->radios_valid!=b->radios_valid ||
+  a->contexts_controls!=b->contexts_controls || a->contexts_valid!=b->contexts_valid || a->contexts_enabled!=b->contexts_enabled || a->dnd_valid!=b->dnd_valid || a->dnd_enabled!=b->dnd_enabled || a->radios_valid!=b->radios_valid ||
   a->wifi_enabled!=b->wifi_enabled || a->bluetooth_enabled!=b->bluetooth_enabled || a->airplane!=b->airplane || a->error_flags!=b->error_flags;
 }
 #ifdef PORTABLE_RESIDENT_SHELL_HOST

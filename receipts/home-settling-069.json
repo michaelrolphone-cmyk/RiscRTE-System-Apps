@@ -1,0 +1,138 @@
+{
+  "hardware_tested": false,
+  "runs": [
+    {
+      "legacy_read_dispatch": true,
+      "sanitized": false,
+      "result": "Home policy: 20 passes, 100 KV reads, 100 pauses"
+    },
+    {
+      "legacy_read_dispatch": false,
+      "sanitized": false,
+      "result": "Home policy: 20 passes, 5 KV reads, 5 pauses"
+    },
+    {
+      "legacy_read_dispatch": true,
+      "sanitized": true,
+      "result": "Home policy: 20 passes, 100 KV reads, 100 pauses"
+    },
+    {
+      "legacy_read_dispatch": false,
+      "sanitized": true,
+      "result": "Home policy: 20 passes, 5 KV reads, 5 pauses"
+    }
+  ],
+  "sources": {
+    "test/native_apps/home_background_policy_test.c": "c95c3ae72d7fef94722d7ff0af89bd500fbf6cc6af24467edd4e62f1df45c921",
+    "scripts/test_home_background_policy.py": "b36b076318274e4b3f6180da6ef4e399e4f983c09f24c64b1a5598d2f71a0df3",
+    "lib/PortableApps/src/adapter.c": "6db6f3dc7bd6138bf83fba44ddab30d8a646362714392ec0f1765d3fedc6db5c",
+    "lib/PortableApps/src/contexts_adapter.inc": "71ef5078d8cd565ea4cd87ca8239f46876624b2371044b074abe1899569959a0",
+    "lib/PortableApps/src/broadcast_adapter.inc": "92c3ce7ec4efdd6c6e86b038032e593786b9adcf99a6fae8d7c8e1b9ac2a6b16",
+    "lib/PortableApps/src/sparse_clock_adapter.inc": "38fa9b1ae54625faffeef795fa15d4d2389566292f5c66dc364676fb753c829e",
+    "lib/PortableApps/src/native_custody_adapter.inc": "8abf0c1afb71ebab4ff60cf697a23d33164a4d5385ebfabbff9737ade0d3be2f",
+    "lib/PortableApps/include/PortableContextsClient.h": "791163fe6f944f4b6d4a72611073c43c328dc93275a1bb7d68b09405be9dbe7c",
+    "lib/PortableApps/include/PortableBroadcastClient.h": "51ed76a5fac542fb2d5ae039797806fd8b1d31f69a072340c0ce91e628cbff2d"
+  },
+  "panel_overloaded_model": [
+    {
+      "app_wait_ms": 1,
+      "settle_work_ms": 25,
+      "settling": {
+        "elapsed_ms": 2725,
+        "bytes": 180000,
+        "repeats": 45,
+        "completed_repeats": 45,
+        "provider_polls": 102,
+        "max_slice_ms": 7,
+        "max_slice_bytes": 16384,
+        "budget_ms": [
+          8,
+          8
+        ],
+        "scheduler_waits": 102,
+        "scheduler_wait_ms": 102,
+        "max_requested_wait_ms": 1,
+        "controller_polls": 102,
+        "max_controller_gap_ms": 33,
+        "touch_samples": 102,
+        "max_touch_gap_ms": 33
+      }
+    },
+    {
+      "app_wait_ms": 8,
+      "settle_work_ms": 25,
+      "settling": {
+        "elapsed_ms": 2755,
+        "bytes": 180000,
+        "repeats": 46,
+        "completed_repeats": 46,
+        "provider_polls": 103,
+        "max_slice_ms": 7,
+        "max_slice_bytes": 16384,
+        "budget_ms": [
+          8,
+          8
+        ],
+        "scheduler_waits": 103,
+        "scheduler_wait_ms": 103,
+        "max_requested_wait_ms": 1,
+        "controller_polls": 103,
+        "max_controller_gap_ms": 33,
+        "touch_samples": 103,
+        "max_touch_gap_ms": 33
+      }
+    },
+    {
+      "app_wait_ms": 20,
+      "settle_work_ms": 25,
+      "settling": {
+        "elapsed_ms": 2711,
+        "bytes": 180000,
+        "repeats": 45,
+        "completed_repeats": 45,
+        "provider_polls": 101,
+        "max_slice_ms": 7,
+        "max_slice_bytes": 16384,
+        "budget_ms": [
+          8,
+          8
+        ],
+        "scheduler_waits": 101,
+        "scheduler_wait_ms": 101,
+        "max_requested_wait_ms": 1,
+        "controller_polls": 101,
+        "max_controller_gap_ms": 33,
+        "touch_samples": 101,
+        "max_touch_gap_ms": 33
+      }
+    },
+    {
+      "app_wait_ms": 50,
+      "settle_work_ms": 25,
+      "settling": {
+        "elapsed_ms": 2536,
+        "bytes": 180000,
+        "repeats": 70,
+        "completed_repeats": 70,
+        "provider_polls": 332,
+        "max_slice_ms": 7,
+        "max_slice_bytes": 16384,
+        "budget_ms": [
+          8,
+          8
+        ],
+        "scheduler_waits": 332,
+        "scheduler_wait_ms": 1191,
+        "max_requested_wait_ms": 4,
+        "controller_polls": 50,
+        "max_controller_gap_ms": 57,
+        "touch_samples": 382,
+        "max_touch_gap_ms": 25
+      }
+    }
+  ],
+  "legacy_context_fixture": {
+    "unchanged_baseline_failure": "context_client_test.c:93",
+    "current_failure": "context_client_test.c:93"
+  }
+}

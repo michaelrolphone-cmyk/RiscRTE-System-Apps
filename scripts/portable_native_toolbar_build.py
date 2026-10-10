@@ -12,7 +12,7 @@ import portable_broadcast_build
 import portable_alarm_build
 import portable_performance_build
 
-RUNTIME_COMMIT = '30dcec5ce6ce33223f2b203a2399283e1f758567'
+RUNTIME_COMMIT = '274bc66f193cbe29018d2a85c9400cb0dce8aacc'
 SDK_HEADERS = ('RiscRuntimeV1.h', 'RiscRealtimeV1.h')
 SOURCES = tuple('lib/PortableApps/src/' + name for name in (
     'PortableNativeTimeSource.c', 'PortableRealtimeClient.c', 'PortableTimeZone.c',

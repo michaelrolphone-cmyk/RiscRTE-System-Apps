@@ -2,6 +2,7 @@
  * SVG. Raster inputs are generated at each requested size and weight. */
 #include "../lib/PortableApps/home_fonts/text.inc"
 #include "../lib/PortableApps/home_fonts/dial.inc"
+#include "../lib/PortableApps/include/PortableRaster.h"
 #ifdef PORTABLE_DESK_POINTS_FACE
 #include "../lib/PortableApps/home_fonts/desk_time.inc"
 static bool home_desk_widget,home_desk_clock,home_desk_ok;
@@ -23,6 +24,79 @@ static void home_press_bounds(unsigned target,int *x,int *y,int *w,int *h) {
   {32,634,104,144},{136,634,104,144},{240,634,104,144},{344,634,104,144}};
  if(target>HOME_SETTINGS)target=HOME_NONE;
  *x=xscale(bounds[target][0]);*y=yscale(bounds[target][1]);*w=xscale(bounds[target][2]);*h=yscale(bounds[target][3]);
+}
+/* Capture the highlight with the glyph/shape. Touch may change Home's model
+ * before deferred replay; callbacks must never consult home_pressed. */
+typedef struct {int x,y,w,h;} home_ink_clip;
+static home_ink_clip home_ink_snapshot(void) {
+ home_ink_clip p={0};if(home_pressed)home_press_bounds(home_pressed,&p.x,&p.y,&p.w,&p.h);return p;
+}
+static void home_ink_span(home_ink_clip p,int x,int y,int w,int h,bool black) {
+ int left=x>p.x?x:p.x,top=y>p.y?y:p.y,right=x+w<p.x+p.w?x+w:p.x+p.w,bottom=y+h<p.y+p.h?y+h:p.y+p.h;
+ if(left>=right||top>=bottom){app->fill_rect(x,y,w,h,black);return;}
+ if(y<top)app->fill_rect(x,y,w,top-y,black);
+ if(bottom<y+h)app->fill_rect(x,bottom,w,y+h-bottom,black);
+ if(x<left)app->fill_rect(x,top,left-x,bottom-top,black);
+ if(right<x+w)app->fill_rect(right,top,x+w-right,bottom-top,black);
+ app->fill_rect(left,top,right-left,bottom-top,!black);
+}
+static bool home_can_defer(void) {
+#ifdef PORTABLE_DESK_POINTS_FACE
+ if(home_desk_widget||home_desk_clock)return false;
+#endif
+ return true;
+}
+typedef struct {const home_glyph *glyph;home_ink_clip press;int origin,baseline,pen,width,natural;bool black;} home_glyph_draw;
+static void home_glyph_rows(const void *payload,int first,int last) {
+ const home_glyph_draw *s=payload;const home_glyph *g=s->glyph;
+ int top=s->baseline+g->top,lo=first>top?first-top:0,hi=last-top;
+ if(hi>(int)g->height)hi=g->height;
+ for(int row=lo;row<hi;row++) {
+  unsigned col=0;
+  while(col<g->width) {
+   unsigned bit=(unsigned)row*g->width+col;
+   if(!(g->bits[bit/8]&(0x80u>>(bit%8)))){col++;continue;}
+   unsigned begin=col++;
+   while(col<g->width){bit=(unsigned)row*g->width+col;if(!(g->bits[bit/8]&(0x80u>>(bit%8))))break;col++;}
+   int left=((s->pen+((int)g->left+(int)begin)*64)*s->width+s->natural/2)/s->natural;
+   int right=((s->pen+((int)g->left+(int)col)*64)*s->width+s->natural/2)/s->natural;
+   if(right>left)home_ink_span(s->press,s->origin+left,top+row,right-left,1,s->black);
+  }
+ }
+}
+typedef struct {home_tick tick;home_ink_clip press;int sw,sh;} home_tick_draw;
+/* Conservative inverse bounds preserve the original integer scaling. */
+static void home_source_rows(int y,int sh,int first,int last,int *lo,int *hi) {
+ int a=first*800/sh-y-1,b=(last*800+sh-1)/sh-y+1;
+ if(a>*lo)*lo=a<*hi?a:*hi;
+ if(b<*hi)*hi=b>*lo?b:*lo;
+}
+static void home_tick_rows(const void *payload,int first,int last) {
+ const home_tick_draw *s=payload;const home_tick *t=&s->tick;int lo=0,hi=t->height;
+ home_source_rows(t->y,s->sh,first,last,&lo,&hi);
+ for(int row=lo;row<hi;row++) {
+  int y=(t->y+row)*s->sh/800,h=s->sh/800;
+  if(y<first){h-=first-y;y=first;}if(y+h>last)h=last-y;if(h<=0)continue;
+  unsigned col=0;
+  while(col<t->width) {
+   unsigned bit=(unsigned)row*t->width+col;
+   if(!(t->bits[bit/8]&(128u>>(bit%8)))){col++;continue;}
+   unsigned begin=col++;
+   while(col<t->width){bit=(unsigned)row*t->width+col;if(!(t->bits[bit/8]&(128u>>(bit%8))))break;col++;}
+   home_ink_span(s->press,(t->x+(int)begin)*s->sw/480,y,(int)(col-begin)*s->sw/480,h,true);
+  }
+ }
+}
+typedef struct {home_ink_clip press;int x,y,w,h,r,sw,sh;bool black;} home_round_draw;
+static void home_round_rows(const void *payload,int first,int last) {
+ const home_round_draw *s=payload;int lo=0,hi=s->h;home_source_rows(s->y,s->sh,first,last,&lo,&hi);
+ for(int row=lo;row<hi;row++) {
+  int y=(s->y+row)*s->sh/800,h=s->sh/800;
+  if(y<first){h-=first-y;y=first;}if(y+h>last)h=last-y;if(h<=0)continue;
+  int cy=row<s->r?2*s->r-2*row-1:row>=s->h-s->r?2*(row-(s->h-s->r))+1:0,inset=0;
+  if(cy)while(inset<s->r){int dx=2*s->r-2*inset-1;if(dx*dx+cy*cy<=4*s->r*s->r)break;inset++;}
+  home_ink_span(s->press,(s->x+inset)*s->sw/480,y,(s->w-2*inset)*s->sw/480,h,s->black);
+ }
 }
 static void home_fill(int x,int y,int w,int h,bool black) {
 #ifdef PORTABLE_DESK_POINTS_FACE
@@ -73,6 +147,10 @@ static void home_type_ink(const home_font *font,int x,int baseline,const char *v
  int origin=home_view_x(x)-(align==1?width:align==2?width/2:0),pen=0;unsigned previous=0;
  for(unsigned k=0;k<96&&value[k];k++) {unsigned c=home_char((unsigned char)value[k]);const home_glyph *g=&font->glyphs[c-32];
   if(previous)pen+=home_kerning(font,previous,c)+home_view_width(tracking)*64;
+  home_glyph_draw draw={g,home_ink_snapshot(),origin,home_view_y(baseline),pen,width,natural,black};
+  if(home_can_defer()&&portable_raster_record_draw(home_glyph_rows,&draw,sizeof(draw),draw.baseline+g->top,draw.baseline+g->top+g->height)) {
+   pen+=g->advance_q6;previous=c;continue;
+  }
   for(unsigned row=0;row<g->height;row++) {
    unsigned col=0;
    while(col<g->width) {
@@ -96,6 +174,8 @@ static void home_round(int x,int y,int width,int height,int radius,bool black) {
  if(width<=0||height<=0)return;
  if(radius>width/2)radius=width/2;
  if(radius>height/2)radius=height/2;
+ home_round_draw draw={home_ink_snapshot(),x,y,width,height,radius,app->screen_width(),app->screen_height(),black};
+ if(home_can_defer()&&portable_raster_record_draw(home_round_rows,&draw,sizeof(draw),yscale(y),yscale(y+height)+1))return;
  for(int row=0;row<height;row++) {
   int cy=row<radius?2*radius-2*row-1:row>=height-radius?2*(row-(height-radius))+1:0;
   int inset=0;
@@ -118,6 +198,8 @@ static inline void home_battery(void) {
 static inline void home_dial(bool known,unsigned minute) {
  for(unsigned i=0;i<60;i++) {
   const home_tick *t=&home_ticks[i*2+(known&&i<=minute?1:0)];
+  home_tick_draw draw={*t,home_ink_snapshot(),app->screen_width(),app->screen_height()};
+  if(home_can_defer()&&portable_raster_record_draw(home_tick_rows,&draw,sizeof(draw),yscale(t->y),yscale(t->y+t->height)+1))continue;
   for(unsigned row=0;row<t->height;row++) {
    unsigned col=0;
    while(col<t->width) {

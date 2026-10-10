@@ -48,7 +48,7 @@ def build(compiler: str, include: Path, output: Path, manifest: dict,
            if len(line.split())>=3 and line.split()[-2] in ('T','D','B','R')}
     if imports-IMPORTS or found != exports:
         raise ValueError(f'{elf.name}: invalid imports {imports-IMPORTS} or exports {found}')
-    json_write(output/('alarms.json' if application else 'manifest.json'),manifest)
+    json_write(output/(Path(manifest['file_name']).with_suffix('.json').name if application else 'manifest.json'),manifest)
     receipt={'id':manifest['id'],'version':manifest['version'],
              'file':elf.name,'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
              'imports':sorted(imports),'exports':sorted(found),
