@@ -25,6 +25,7 @@ static uint16_t np_rgb(uint32_t rgb) {
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_NP_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)a},NULL))return;
   if(raster_replaying&&(y<raster_band_top||y>=raster_band_bottom))return;
 #endif
   if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;

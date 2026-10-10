@@ -55,6 +55,9 @@ static int resident_failure_text(int y,const char *value) {
 static bool resident_failure_paint(const risc_resident_failure_v1 *record) {
  if(native_custody_retained || failed || surface.frame || paper_token || !display_settled || !pp_enabled())return false;
  paper_previous_valid=previous_valid=alarm_pixels_valid=false;
+ #ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_immediate())return false;
+#endif
  pp_begin();if(failed || native_custody_retained || !surface.frame)return false;
  const bool prior=record->kind==RISC_RESIDENT_FAILURE_PRIOR_RESET;
  pp_text(24,36,width()-48,prior?"PREVIOUS RESTART":"APPLICATION FAILURE",1,true,true);

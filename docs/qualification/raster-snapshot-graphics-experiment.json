@@ -1,0 +1,298 @@
+{
+  "prototype_only": true,
+  "hardware_verified": false,
+  "copies_only_original_read_bound": true,
+  "source_fonts": "existing compiled Paper, Springboard and Nova fonts",
+  "runs": {
+    "off": [
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 1.152,
+        "pixel_visits_before_model": 284154,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 26,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 554,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 555,
+        "nav_dispatch_ms": 555,
+        "host_cpu_draw_ms": 1.487,
+        "pixel_visits_before_model": 284154,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 556,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 1108,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 1109,
+        "nav_dispatch_ms": 1109,
+        "host_cpu_draw_ms": 1.334,
+        "pixel_visits_before_model": 284154,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 1110,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 4.076,
+        "pixel_visits_before_model": 1610278,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 26,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 3145,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 3146,
+        "nav_dispatch_ms": 3146,
+        "host_cpu_draw_ms": 4.575,
+        "pixel_visits_before_model": 1610278,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 3147,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 6290,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 6291,
+        "nav_dispatch_ms": 6291,
+        "host_cpu_draw_ms": 4.418,
+        "pixel_visits_before_model": 1610278,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 6292,
+        "raster_hash": 320015297
+      }
+    ],
+    "on": [
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 0.023,
+        "pixel_visits_before_model": 265270,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 32,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 23,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.008,
+        "pixel_visits_before_model": 8400,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 845,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 24,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.005,
+        "pixel_visits_before_model": 4320,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 1677,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 0.005,
+        "pixel_visits_before_model": 854880,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 90,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 23,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.005,
+        "pixel_visits_before_model": 8640,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 4767,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 24,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.005,
+        "pixel_visits_before_model": 4320,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 9489,
+        "raster_hash": 320015297
+      }
+    ],
+    "san": [
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 0.114,
+        "pixel_visits_before_model": 265270,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 32,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 23,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.058,
+        "pixel_visits_before_model": 8400,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 845,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 24,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.068,
+        "pixel_visits_before_model": 4320,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 1677,
+        "raster_hash": 2727126713
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 21,
+        "nav_dispatch_ms": 21,
+        "host_cpu_draw_ms": 0.19,
+        "pixel_visits_before_model": 854880,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 90,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 1,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 23,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.103,
+        "pixel_visits_before_model": 8640,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 4767,
+        "raster_hash": 320015297
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 2,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 24,
+        "model_dispatch_ms": 27,
+        "nav_dispatch_ms": 27,
+        "host_cpu_draw_ms": 0.069,
+        "pixel_visits_before_model": 4320,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 9489,
+        "raster_hash": 320015297
+      }
+    ]
+  },
+  "byte_equivalence": [
+    {
+      "case": "on/raster-1-0.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "on/raster-1-1.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "on/raster-1-2.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "on/raster-5-0.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "on/raster-5-1.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "on/raster-5-2.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "san/raster-1-0.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "san/raster-1-1.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "san/raster-1-2.bin",
+      "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+    },
+    {
+      "case": "san/raster-5-0.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "san/raster-5-1.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "san/raster-5-2.bin",
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    }
+  ]
+}

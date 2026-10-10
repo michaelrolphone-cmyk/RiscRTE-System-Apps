@@ -10,10 +10,10 @@ int main(int argc,char **argv) {
  if(test<38&&test!=26&&test!=27&&test!=34&&test!=37)return watch_main(argc,argv);
  start_fixture();assert(up&&width()==480&&height()==800);if(test==43||test==44){
   if(test==43){connect_fixture(false);fail_disconnect=1;}else {restart_pending=true;ust.state=SOFTWARE_UPDATE_ACTIVATION_UNKNOWN;}
-  render_update();event(poll_count+3,RISC_NAV_HOME,-1,0);
+  render_update();event(input_step()+3,RISC_NAV_HOME,-1,0);
   for(unsigned i=0;i<5;i++){t5_app_input_t input={0};assert(poll(&input,25));}
   assert(!launches&&opened);fail_disconnect=0;restart_pending=false;mock_update.state=SOFTWARE_UPDATE_LIST;
-  event(poll_count+3,RISC_NAV_HOME,-1,0);
+  event(input_step()+3,RISC_NAV_HOME,-1,0);
   for(unsigned i=0;i<5;i++){t5_app_input_t input={0};assert(poll(&input,25));}
   assert(launches==1&&!strcmp(last_launch,"default.elf")&&!opened&&!begins&&!activations);
   app_module_fini();assert(!grant_count&&!sub_count&&!frame_count);return 0;

@@ -51,6 +51,10 @@ static void sp_redraw(void);
 static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
+  if(raster_replaying&&(y+(height()-240)/2<raster_band_top||y+(height()-240)/2>=raster_band_bottom))return;
+#endif
   if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;
   if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
@@ -65,6 +69,9 @@ static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
   p[0] = (uint8_t)c; p[1] = (uint8_t)(c >> 8);
 }
 static void sv_rect(int x, int y, int w, int h, uint32_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_RECT,(int32_t[8]){x,y,w,h,(int32_t)color},NULL))return;
+#endif
   for (int j = y; j < y+h; ++j) for (int i = x; i < x+w; ++i) sv_pixel(i,j,color,255);
 }
 static int sv_measure(unsigned face, const char *s, int spacing) {
@@ -77,6 +84,9 @@ static int sv_measure(unsigned face, const char *s, int spacing) {
   return (length+15)/16;
 }
 static void sv_text(unsigned face, int x, int y, const char *s, uint32_t color, int spacing) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_TEXT,(int32_t[8]){(int32_t)face,x,y,(int32_t)color,spacing},s))return;
+#endif
   if (!s || face > 5) return;
   int pen=x*16;
   for (unsigned k=0;k<96 && s[k];++k) {
@@ -112,6 +122,9 @@ static void sv_geometry(int *x,int *y,int *w,int *h) {
 #define SV_FIELD_BOTTOM 176
 #endif
 static void sv_button(int x,int y,int w,int h,const char *caption,bool selected) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_BUTTON,(int32_t[8]){x,y,w,h,selected},caption))return;
+#endif
 #ifdef PORTABLE_NOVA_UI
   sv_geometry(&x,&y,&w,&h);
 #endif
@@ -126,6 +139,9 @@ static void sv_button(int x,int y,int w,int h,const char *caption,bool selected)
   sv_text(2,x+(w-sv_measure(2,caption,18))/2,y+(h-12)/2-2,caption,SV_CYAN,18);
 }
 static void sv_fade(int top,int bottom) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_FADE,(int32_t[8]){top,bottom},NULL))return;
+#endif
   for(int y=top;y<bottom;++y) {
     unsigned opacity=255;
     int a=y-top,b=bottom-1-y;

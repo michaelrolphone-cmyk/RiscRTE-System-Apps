@@ -55,3 +55,19 @@ Nothing is silently dropped; this compatibility fallback may delay dispatch.
 No new public API replaces an existing one. Existing nullable external frame
 copy hooks remain unchanged. Emulator/direct-display paths are outside this
 private adapter renderer and keep their established cadence and ownership.
+
+## Intermediate modal checkpoint
+
+The recorded primitive set now includes Nova, Settings, legacy Wi-Fi and paper
+Quick controls. Full graphics byte comparisons pass; 24 alarm and 36 applicable
+low-battery fixture cases pass, as does the repaired paper updater matrix.
+Review reproduced and repaired no-op settled-state loss, failed legacy fini
+cleanup, Quick interrupted-background replacement, clean-submit metadata, and
+sticky readiness before direct resident/desk frame access. Direct Watch Quick
+rendering uses an explicit materialization barrier.
+
+This intermediate checkpoint still holds a provider lease across replay bands.
+The original Quick brightness/storage assertions reject that when an action
+arrives during partial replay. This is an open adoption blocker, not a reason
+to weaken those assertions. The next isolated experiment moves replay pixels
+to app-owned memory and acquires the provider only for final copy/submission.

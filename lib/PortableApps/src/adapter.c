@@ -683,6 +683,13 @@ static bool raster_checkpoint(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
 #include "raster_snapshot_state.inc"
 #endif
+static inline bool raster_lease_mutable(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return surface.frame&&(!raster_sealed||raster_replaying);
+#else
+  return surface.frame!=0;
+#endif
+}
 static uint16_t *previous_pixels;
 static uint8_t *paper_previous;
 static bool paper_previous_valid;
@@ -790,6 +797,9 @@ static bool acquire_surface(void) {
 #endif
   if (failed)
     return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_replaying&&!portable_paper_frame_drain())return false;
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   /* Non-cooperative callers retain the old blocking acquisition contract. */
   if(!portable_paper_frame_drain())return false;
@@ -1003,6 +1013,9 @@ bool portable_paper_frame_ready(void) {
 /* Advance once per foreground poll. Status never gives the app a writable
  * lease; only completion promotes the submitted image into damage history. */
 static bool paper_present_progress(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_replaying)return raster_progress();
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_capture_checkpoint())return false;
 #endif
@@ -1061,16 +1074,33 @@ bool portable_paper_frame_drain(void) {
   }
   display_failure("PORTABLE_APP error=display-timeout");return false;
 }
-#ifdef PORTABLE_RASTER_SNAPSHOT
-#include "raster_snapshot_replay.inc"
-#endif
 #ifdef PORTABLE_PAPER_CROSSFADE
 #include "paper_transition.inc"
 #endif
-static void present(bool full) {
-#ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_recording){raster_recording=false;raster_sealed=true;raster_full=full;return;}
+static uint32_t present_intent(bool full) {return
+#ifdef PORTABLE_RESIDENT_LOADING
+    resident_loading_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
 #endif
+#if defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
+    resident_sleep_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+#endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+    (quick_clean_present || resident_failure_present) && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
+#endif
+#ifdef PORTABLE_DESK_LOCK_HOME
+    desk_quality_present?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
+#endif
+#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_LOCK_HOME)
+    /* Legacy desk-only owners explicitly select the normal waveform. */
+    surface_format==RISC_DISPLAY_FORMAT_MONO1?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
+#endif
+    /* Pixel coverage is independent of waveform. Interactive frames, including
+     * full-buffer page changes and resident clients without transition code,
+     * use the fast provider path. Only explicit desk/clean actions opt out. */
+    surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+    full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT;
+}
+static void present(bool full) {
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained)return;
 #endif
@@ -1083,8 +1113,28 @@ static void present(bool full) {
 #ifdef PORTABLE_DESK_CLOCK
   desk_present_complete=false;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_recording&&!failed){
+    raster_recording=false;raster_sealed=true;raster_full=full;raster_saved_intent=present_intent(full);
+#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
+    raster_saved_clean=quick_clean_present;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+    raster_saved_app_frame=!alarm_modal;display_settled=false;
+#else
+    raster_saved_app_frame=true;
+#endif
+    return;
+  }
+#endif
   if (failed || !surface.frame)
     return;
+#ifdef PORTABLE_ALARM_CLIENT
+  bool app_owned_frame=!alarm_modal;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_replaying)app_owned_frame=raster_saved_app_frame;
+#endif
+#endif
   portable_stage_log(rt,"draw-end","");
   perf_draw_end();
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,true);
@@ -1127,6 +1177,9 @@ static void present(bool full) {
       }
     }
     if(paper_previous_valid && !full && top==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_ALARM_CLIENT
+      display_settled=true;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
       desk_present_complete=true;
 #endif
@@ -1155,34 +1208,21 @@ static void present(bool full) {
         last=y+1;
       }
     }
-    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
+    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_ALARM_CLIENT
+      display_settled=true;
+#endif
+      portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
     if(previous_valid){damage=(risc_display_rect_v1){0,(int32_t)first,info.width,last-first};damage_count=1;}
     for(unsigned y=0;y<info.height;y++)memcpy(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
     previous_valid=false;
   }
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);
   const risc_display_present_options_v1 options = {
-#ifdef PORTABLE_RESIDENT_LOADING
-    resident_loading_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_saved_intent:
 #endif
-#if defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
-    resident_sleep_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
-#endif
-#ifdef PORTABLE_RESIDENT_SHELL_HOST
-    (quick_clean_present || resident_failure_present) && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
-#endif
-#ifdef PORTABLE_DESK_LOCK_HOME
-    desk_quality_present?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
-#endif
-#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_LOCK_HOME)
-    /* Legacy desk-only owners explicitly select the normal waveform. */
-    surface_format==RISC_DISPLAY_FORMAT_MONO1?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
-#endif
-    /* Pixel coverage is independent of waveform. Interactive frames, including
-     * full-buffer page changes and resident clients without transition code,
-     * use the fast provider path. Only explicit desk/clean actions opt out. */
-    surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_LOW_LATENCY:
-    full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT,
+    present_intent(full),
     RISC_DISPLAY_QUEUE_FIFO, 0};
 #ifdef PORTABLE_STAGE_LOGS
   char display_line[112];
@@ -1195,7 +1235,7 @@ static void present(bool full) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
-  if(!alarm_modal) {
+  if(app_owned_frame) {
     alarm_pixels_valid=false;
     unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)alarm_pixels+(size_t)y*bytes,
@@ -1258,7 +1298,7 @@ static void present(bool full) {
       desk_present_complete=true;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-      display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
+      display_settled=true;if(app_owned_frame)alarm_pixels_valid=true;
 #endif
       previous_valid=previous_pixels!=NULL;paper_previous_valid=paper_previous!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -1584,6 +1624,9 @@ void portable_desk_adapter_retain(void) {
 #endif
 }
 void portable_desk_adapter_invalidate(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(!portable_desk_adapter_ready())return;
 #endif
@@ -1591,6 +1634,9 @@ void portable_desk_adapter_invalidate(void) {
   paper_previous_valid=false;previous_valid=false;
 }
 void portable_desk_adapter_begin(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return;
+#endif
   list_mode=false;
   /* History is attached to this lease. Repaint it in place: releasing and
    * reacquiring here would invalidate the provider's one-shot seeded image. */
@@ -1598,6 +1644,9 @@ void portable_desk_adapter_begin(void) {
   else pp_begin();
 }
 int portable_desk_adapter_seed(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return -2;
+#endif
   const risc_display_output_api_v1_history *history=risc_display_output_history(display);
   if(failed || !surface.frame || surface_format!=RISC_DISPLAY_FORMAT_MONO1 ||
      !paper_previous || !history)return 0;
@@ -1712,7 +1761,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_BLE_BROADCAST
   /* Background model/service progression shares the owner task, not the
    * display completion clock. Mutable raster custody is still excluded. */
-  if(!surface.frame && !broadcast_tick())return false;
+  if(!raster_lease_mutable() && !broadcast_tick())return false;
 #endif
   /* A rejected paper top-edge gesture replays its original down followed
    * by the saved current sample before sampling another contact. */
@@ -1735,18 +1784,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
     if(!contexts_capture_checkpoint())return false;
 #endif
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    if(!raster_progress())return false;
-#endif
     if(!paper_present_progress())return false;
     input_pending=false;input_service();input_dispatch();
     uint32_t elapsed=(uint32_t)(millis_now()-now);
     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
   }
   if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
-#ifdef PORTABLE_RASTER_SNAPSHOT
-  if(!raster_progress())return false;
-#endif
   last_poll_at=millis_now();
   if(!paper_present_progress() || failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -1792,7 +1835,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!failure_archive_checkpoint())return false;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  if(!surface.frame&&!contexts_tick())return false;
+  if(!raster_lease_mutable()&&!contexts_tick())return false;
 #if defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
   if(contexts_clock_handoff){out->exit_requested=true;return true;}
 #endif
@@ -2218,6 +2261,9 @@ static int32_t prev(int32_t i, uint32_t n) {
 #ifdef PORTABLE_SETTINGS_APP
 #include "settings.inc"
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+#include "raster_snapshot_replay.inc"
+#endif
 static const t5_app_api_v1 app = {.abi_version = 1,
                                   .struct_size = sizeof(app),
                                   .screen_width = width,
@@ -2454,6 +2500,9 @@ static void settings_native_finalize(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
   if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_adapter_retain();return;}
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_discard();
+#endif
   if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   if(navigation_ready) {
@@ -2491,16 +2540,17 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
-#ifdef PORTABLE_RASTER_SNAPSHOT
-  if(!raster_drain())return;
-  raster_free_commands();raster_recording=raster_begin_allowed=false;
-#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;
   if(text_input_suspended){portable_text_adapter_retain();return;}
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  /* Failed legacy invocations still reach their original confirmed cleanup.
+   * Retained fences above and provider-owned tokens below remain authoritative. */
+  if(raster_sealed&&!failed&&!raster_drain())return;
 #endif
   if(paper_token && !portable_paper_frame_drain())return;
 #ifdef PORTABLE_USB_TRANSFER_APP
@@ -2571,6 +2621,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
   if(quick.ui.torch && !pqa_session_restore(&quick,display))rt->diagnostic("QUICK brightness-restore-failed");
   free(quick_background);quick_background=NULL;
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_discard();
 #endif
   if (surface.frame)
     display->release(display->context, surface.frame);

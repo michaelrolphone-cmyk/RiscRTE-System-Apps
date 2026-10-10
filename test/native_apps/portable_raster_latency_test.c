@@ -48,6 +48,31 @@ static void raster_case(unsigned format,unsigned cost) {
  api->draw_label(20,130,180,"LATEST MODEL");
  assert(api->draw_icon(30,170,"solid:f013",36,true));
  assert(!api->draw_icon(30,170,"does-not-exist",36,true));
+#ifdef RASTER_ALL_GRAPHICS
+ char *bounded=malloc(96);assert(bounded);memset(bounded,'A',96);
+ if(format==RISC_DISPLAY_FORMAT_MONO1){
+  const paper_presentation *p=&pp_view;
+  p->circle(120,310,48,true);p->circle(120,310,22,false);
+  p->text(16,350,460,bounded,1,false,true);
+  p->text(16,390,220,"Complete fit & mixed case",PAPER_TEXT_LITERAL|PAPER_TEXT_CLOCK,false,true);
+ } else {
+  const springboard_presentation *p=&np_view;
+  p->circle(50,55,40,0x39ffaa,173);assert(p->icon(100,55,48,"solid:f013",213));
+  p->caption(160,bounded,false,0xffaa39);
+ }
+ portable_nova_text(1,8,8,224,bounded,NOVA_WHITE);free(bounded);
+ portable_nova_fill(24,32,60,25,NOVA_DIM);portable_nova_round(100,32,110,46,12,NOVA_CAP);
+ portable_nova_button(8,90,110,44,"Keep actions",true);
+ portable_nova_row(8,136,224,54,"Label","Value",false);
+ assert(portable_nova_wrap(2,14,192,200,12,2,"A complete wrapped label",NOVA_CYAN));
+#endif
+#ifdef RASTER_SETTINGS_GRAPHICS
+ sv_begin();sv_heading("SETTINGS");sv_rect(14,60,212,118,0x061c29);
+ sv_button(24,80,192,44,"Retain selected",true);
+ char bounded_settings[96];memset(bounded_settings,'z',sizeof(bounded_settings));
+ sv_text(2,18,150,bounded_settings,SV_CYAN,18);memset(bounded_settings,'Q',96);
+ sv_fade(55,190);sv_back();
+#endif
  unsigned drawn_at=mock_ms;double host_draw_ms=1000.0*(clock()-start)/CLOCKS_PER_SEC;
  api->present(true);unsigned first_dispatch=0,nav_dispatch=0;
  for(unsigned i=0;i<100 && (probe_taps<1||nav_edges<2);i++) {
@@ -57,6 +82,7 @@ static void raster_case(unsigned format,unsigned cost) {
   if(c.began){probe_begins++;first_dispatch=mock_ms;}
   if(c.valid&&c.released&&c.tap_eligible&&!c.cancelled){probe_taps++;probe_model++;}
  }
+ if(probe_begins!=1||probe_taps!=1||probe_model!=1||nav_edges!=2)fprintf(stderr,"fmt=%u cost=%u begins=%u taps=%u model=%u nav=%u time=%u\n",format,cost,probe_begins,probe_taps,probe_model,nav_edges,mock_ms);
  assert(probe_begins==1&&probe_taps==1&&probe_model==1&&nav_edges==2);
  assert(captured_at<=20+cost*2+4);
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -74,4 +100,4 @@ static void raster_case(unsigned format,unsigned cost) {
  printf("{\"format\":%u,\"cost_ms_per_512_pixel_visits\":%u,\"draw_return_ms\":%u,\"touch_capture_ms\":%u,\"model_dispatch_ms\":%u,\"nav_dispatch_ms\":%u,\"host_cpu_draw_ms\":%.3f,\"pixel_visits_before_model\":%u,\"pixel_visits_total\":%u,\"completed_at_ms\":%u,\"raster_hash\":%u}\n",format,cost,drawn_at,captured_at,first_dispatch,nav_dispatch,host_draw_ms,dispatched_pixels,raster_pixels,mock_ms,hash);
  cpu_ms_per_batch=0;assert(api->frame_drain());end_test();
 }
-int main(void){for(unsigned f=0;f<2;f++)for(unsigned cost=0;cost<3;cost++)raster_case(f?RISC_DISPLAY_FORMAT_MONO1:RISC_DISPLAY_FORMAT_RGB565,cost);return 0;}
+int main(void){setvbuf(stdout,NULL,_IONBF,0);for(unsigned f=0;f<2;f++)for(unsigned cost=0;cost<3;cost++)raster_case(f?RISC_DISPLAY_FORMAT_MONO1:RISC_DISPLAY_FORMAT_RGB565,cost);return 0;}

@@ -44,6 +44,9 @@ static unsigned failure_evidence_content(const risc_failure_evidence_v1 *record,
 static bool failure_evidence_paint(const risc_failure_evidence_v1 *record,unsigned page,unsigned pages) {
  if(native_custody_retained || failed || surface.frame || paper_token || !display_settled || !pp_enabled())return false;
  paper_previous_valid=previous_valid=alarm_pixels_valid=false;
+ #ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_immediate())return false;
+#endif
  pp_begin();if(native_custody_retained || failed || !surface.frame)return false;
  pp_text(24,36,width()-48,"CRASH / RESTART",1,true,true);fill(24,72,width()-48,2,0);
  (void)failure_evidence_content(record,page,true);

@@ -133,7 +133,7 @@ static bool test_drop(risc_runtime_capability_v1 *grant){
 #endif
  return release(grant);
 }
-static const risc_runtime_api_v1 runtime={1,sizeof(runtime),test_health,test_yield,diagnostic,launch_app,test_obtain,test_drop};
+static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=test_obtain,.release=test_drop};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime:NULL;}
 int portable_desk_clock_boot_read(const risc_runtime_api_v1 *runtime_arg,portable_desk_record *out){
  assert(in_main&&runtime_arg==&runtime&&!presents);if(test==17)return -2;
