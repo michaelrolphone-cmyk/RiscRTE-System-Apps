@@ -1,0 +1,135 @@
+{
+  "source_system_remote": "501f0fb472a618cee7b0bcdc50a94310d9eca679",
+  "production_renderer_unchanged": true,
+  "hardware_verified": false,
+  "cost_model": "Inject 0/1/2 ms for each 512 actual primitive pixel visits through fixture Runtime health; no production timing hook or renderer change.",
+  "normal": [
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 0.355,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 470,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 471,
+      "nav_dispatch_ms": 471,
+      "host_cpu_draw_ms": 0.432,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 940,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 941,
+      "nav_dispatch_ms": 941,
+      "host_cpu_draw_ms": 0.394,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 4.326,
+      "pixel_visits": 1546401
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 3020,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 3021,
+      "nav_dispatch_ms": 3021,
+      "host_cpu_draw_ms": 12.326,
+      "pixel_visits": 1546401
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 6040,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 6041,
+      "nav_dispatch_ms": 6041,
+      "host_cpu_draw_ms": 3.58,
+      "pixel_visits": 1546401
+    }
+  ],
+  "asan_ubsan": [
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 1.309,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 470,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 471,
+      "nav_dispatch_ms": 471,
+      "host_cpu_draw_ms": 1.272,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 940,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 941,
+      "nav_dispatch_ms": 941,
+      "host_cpu_draw_ms": 1.401,
+      "pixel_visits": 240801
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 11.111,
+      "pixel_visits": 1546401
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 3020,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 3021,
+      "nav_dispatch_ms": 3021,
+      "host_cpu_draw_ms": 11.775,
+      "pixel_visits": 1546401
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 6040,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 6041,
+      "nav_dispatch_ms": 6041,
+      "host_cpu_draw_ms": 10.959,
+      "pixel_visits": 1546401
+    }
+  ],
+  "limitations": [
+    "Deliberately dense immediate-mode workload with one ordered touch cycle and one navigation cycle; no hardware latency claim.",
+    "Physical CPU timings are host measurements and not target-device measurements.",
+    "Input captured at the raster checkpoint remains queued until logical poll; no reentrant controller calls."
+  ]
+}

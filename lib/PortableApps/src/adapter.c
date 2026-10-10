@@ -680,6 +680,9 @@ static bool raster_checkpoint(void) {
  if((uint32_t)(millis_now()-input_sampled_at)>=2u)input_service();
  return !failed;
 }
+#ifdef PORTABLE_RASTER_SNAPSHOT
+#include "raster_snapshot_state.inc"
+#endif
 static uint16_t *previous_pixels;
 static uint8_t *paper_previous;
 static bool paper_previous_valid;
@@ -717,6 +720,9 @@ static void native_point(int *x,int *y) {
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_FILL,(int32_t[8]){x,y,w,h,color},NULL))return;
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
 #endif
@@ -730,6 +736,9 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     x1 = width();
   if (y1 > height())
     y1 = height();
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_replaying){if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+#endif
   for (int j = y0; j < y1; ++j)
     for (int i = x0; i < x1; ++i) {
       if(!(++raster_pixels&511u)&&!raster_checkpoint())return;
@@ -836,6 +845,9 @@ static bool acquire_surface(void) {
   return true;
 }
 static void clear_color(uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_begin(color))return;
+#endif
   if(acquire_surface())fill(0, 0, width(), height(), color);
 }
 static void clear(void) { clear_color(0xffff); }
@@ -844,6 +856,9 @@ static void rect(int32_t x, int32_t y, int32_t w, int32_t h, bool black) {
 }
 static void rounded(int32_t x, int32_t y, int32_t w, int32_t h, int32_t radius,
                     uint8_t tone) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_ROUNDED,(int32_t[8]){x,y,w,h,radius,tone},NULL))return;
+#endif
   static const uint16_t colors[] = {0xffff, 0xbdf7, 0x630c, 0};
   if (w <= 0 || h <= 0 || w > 2048 || h > 2048)
     return;
@@ -879,6 +894,9 @@ static const uint8_t glyphs[][5] = {
     {63, 64, 64, 64, 63},  {31, 32, 64, 32, 31},  {127, 32, 24, 32, 127},
     {99, 20, 8, 20, 99},   {3, 4, 120, 4, 3},     {97, 81, 73, 69, 67}};
 static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_TEXT,(int32_t[8]){x,y,limit,color},s))return;
+#endif
   if (!s)
     return;
   for (int k = 0; k < limit && k < 128 && s[k]; ++k) {
@@ -924,6 +942,17 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
 #include "nova_ui.inc"
 #endif
 static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_recording&&!raster_replaying) {
+    if(!name||size<1||size>96)return false;
+    bool known=false;for(unsigned k=0;k<sizeof(rpi_icons)/sizeof(rpi_icons[0]);k++)if(!strcmp(name,rpi_icons[k].name)){known=true;break;}
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+    if(!strcmp(name,rpi_springboard_gamepad.name))known=true;
+#endif
+    if(!known)return false;
+    if(raster_record(RS_ICON,(int32_t[8]){x,y,size,black},name))return true;
+  }
+#endif
   /* Preserve the existing call contract; genuine glyph raster, no handmade FA IDs. */
   if (black) {
     /* np_icon normally draws white; invert its bounded output on a white tile. */
@@ -961,6 +990,10 @@ const paper_presentation *paper_presentation_get(void) {
 #endif
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed)return false;
+  raster_begin_allowed=!paper_token;
+#endif
   paper_async_frames=(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT)!=0;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   paper_async_frames=paper_async_frames && desk_phase==DESK_FOREGROUND;
@@ -1010,6 +1043,9 @@ static bool paper_present_progress(void) {
 /* Ownership transitions deliberately settle the outstanding image. Input
  * remains sampled during this short boundary, with the old cancellation rule. */
 bool portable_paper_frame_drain(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_replaying && !raster_drain())return false;
+#endif
   if(!paper_token)return !failed;
   for(unsigned n=0;n<10000 && !failed;++n) {
     if(!paper_present_progress())return false;
@@ -1025,10 +1061,16 @@ bool portable_paper_frame_drain(void) {
   }
   display_failure("PORTABLE_APP error=display-timeout");return false;
 }
+#ifdef PORTABLE_RASTER_SNAPSHOT
+#include "raster_snapshot_replay.inc"
+#endif
 #ifdef PORTABLE_PAPER_CROSSFADE
 #include "paper_transition.inc"
 #endif
 static void present(bool full) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_recording){raster_recording=false;raster_sealed=true;raster_full=full;return;}
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained)return;
 #endif
@@ -1693,12 +1735,18 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
     if(!contexts_capture_checkpoint())return false;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    if(!raster_progress())return false;
+#endif
     if(!paper_present_progress())return false;
     input_pending=false;input_service();input_dispatch();
     uint32_t elapsed=(uint32_t)(millis_now()-now);
     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
   }
   if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_progress())return false;
+#endif
   last_poll_at=millis_now();
   if(!paper_present_progress() || failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -2443,6 +2491,10 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_drain())return;
+  raster_free_commands();raster_recording=raster_begin_allowed=false;
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;
   if(text_input_suspended){portable_text_adapter_retain();return;}

@@ -1,0 +1,561 @@
+{
+  "schema": 1,
+  "prototype_only": true,
+  "hardware_verified": false,
+  "source": "d6a86c46402b52eaaf42d86965046f97b6642b56",
+  "equivalence": [
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-on/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-equivalence-san/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-1/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-2/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-3/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-4/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-5/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-6/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-7/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-1-2.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-1-1.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-1-0.bin",
+      "sha256": "861e5afd9095a69558567c5f2d8490032c916d837b75844cafe733488eb0c2b5"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-5-2.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-5-1.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    },
+    {
+      "case": "/tmp/ui-phase3-raster-fault-8/raster-5-0.bin",
+      "sha256": "5a52471c5cc9f588462ffcf6b886edf27f88d0307a4ef46ed30a19726938486a"
+    }
+  ],
+  "normal": [
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 0.015,
+      "pixel_visits_before_model": 240801,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 26,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 23,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.002,
+      "pixel_visits_before_model": 8400,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 714,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 24,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.001,
+      "pixel_visits_before_model": 4320,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 1420,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 0.001,
+      "pixel_visits_before_model": 854880,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 49,
+      "raster_hash": 2026399148
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 23,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.002,
+      "pixel_visits_before_model": 8640,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 4547,
+      "raster_hash": 2026399148
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 24,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.002,
+      "pixel_visits_before_model": 4320,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 9078,
+      "raster_hash": 2026399148
+    }
+  ],
+  "asan_ubsan": [
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 0.038,
+      "pixel_visits_before_model": 240801,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 26,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 23,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.017,
+      "pixel_visits_before_model": 8400,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 714,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 5,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 24,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.021,
+      "pixel_visits_before_model": 4320,
+      "pixel_visits_total": 240801,
+      "completed_at_ms": 1420,
+      "raster_hash": 930182259
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 0,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 20,
+      "model_dispatch_ms": 21,
+      "nav_dispatch_ms": 21,
+      "host_cpu_draw_ms": 0.02,
+      "pixel_visits_before_model": 854880,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 49,
+      "raster_hash": 2026399148
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 1,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 23,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.028,
+      "pixel_visits_before_model": 8640,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 4547,
+      "raster_hash": 2026399148
+    },
+    {
+      "format": 1,
+      "cost_ms_per_512_pixel_visits": 2,
+      "draw_return_ms": 0,
+      "touch_capture_ms": 24,
+      "model_dispatch_ms": 27,
+      "nav_dispatch_ms": 27,
+      "host_cpu_draw_ms": 0.018,
+      "pixel_visits_before_model": 4320,
+      "pixel_visits_total": 1546401,
+      "completed_at_ms": 9078,
+      "raster_hash": 2026399148
+    }
+  ],
+  "rapid_normal": [
+    {
+      "format": 5,
+      "latency_ms": 0,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 2,
+      "submissions": 61,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 17,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 24,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 120,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 4,
+      "submissions": 6,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 2300,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 2,
+      "submissions": 2,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 0,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 26,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 17,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 4,
+      "submissions": 15,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 120,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 6,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 2300,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 2,
+      "latest_model": 60
+    }
+  ],
+  "rapid_asan_ubsan": [
+    {
+      "format": 5,
+      "latency_ms": 0,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 2,
+      "submissions": 61,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 17,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 24,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 120,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 4,
+      "submissions": 6,
+      "latest_model": 60
+    },
+    {
+      "format": 5,
+      "latency_ms": 2300,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 2,
+      "submissions": 2,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 0,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 26,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 17,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 4,
+      "submissions": 15,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 120,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 6,
+      "latest_model": 60
+    },
+    {
+      "format": 1,
+      "latency_ms": 2300,
+      "tap_cycles": 60,
+      "navigation_press_release_cycles": 60,
+      "max_input_lag_ms": 3,
+      "submissions": 2,
+      "latest_model": 60
+    }
+  ],
+  "limits": [
+    "Prototype not selected by any product build; incomplete full-path coverage is listed in PORTABLE_RASTER_SNAPSHOT_PROTOTYPE.md.",
+    "Allocation failure preserves all core output via synchronous fallback; bounded dispatch is not claimed under memory exhaustion.",
+    "Actual per-band device CPU time, memory peak and energy remain unmeasured."
+  ]
+}
