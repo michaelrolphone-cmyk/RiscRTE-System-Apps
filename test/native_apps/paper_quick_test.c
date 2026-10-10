@@ -34,7 +34,7 @@ static bool qa_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*
  return true;
 }
 static bool qa_snapshot_raw(void*c,risc_touch_snapshot_v1*s){
- (void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;unsigned step=polls;int x=200,y=20;bool down=false;
+ (void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;unsigned step=ms/25u;int x=200,y=20;bool down=false;
  if(qa_case>=20&&qa_case<28){
   if(qa_case==26||qa_case==27){
    if(step==2||step==3){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=200,.y=step==3?100:20};}
@@ -81,25 +81,48 @@ static bool qa_snapshot(void*c,risc_touch_snapshot_v1*s) {
  return ok;
 }
 static int32_t qa_alarm_step(void*c){
- if(qa_case==12&&!alarm_fired&&polls>=5){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
+ if(qa_case==12&&!alarm_fired&&ms/25u>=5){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
  return alarm_step(c);
 }
 static int32_t qa_refresh(void*c){(void)c;assert(!frames);refreshes++;return ALARM_OK;}
 static bool qa_nav_poll(void*c,risc_input_navigation_frame_v1*out){
  (void)c;*out=(risc_input_navigation_frame_v1){0};
- if((qa_case==14&&polls==6)||(qa_case==24&&polls==3))out->pressed=out->released=RISC_NAV_BACK;
- if((qa_case==25&&polls==3)||(qa_case==17&&polls==6)||(qa_case==27&&polls==6)||(qa_case==18&&polls==40))out->pressed=out->released=RISC_NAV_HOME;
+ static unsigned prior=~0u;unsigned step=ms/25u;if(step==prior)return true;prior=step;
+ if((qa_case==14&&ms/25u==6)||(qa_case==24&&ms/25u==3))out->pressed=out->released=RISC_NAV_BACK;
+ if((qa_case==25&&ms/25u==3)||(qa_case==17&&ms/25u==6)||(qa_case==27&&ms/25u==6)||(qa_case==18&&ms/25u==40))out->pressed=out->released=RISC_NAV_HOME;
  return true;
 }
 static bool qa_nav_foreground(void*c,const risc_input_foreground_v1*claims,size_t count){(void)c;(void)claims;(void)count;return true;}
 static bool qa_nav_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 qa_nav={1,sizeof(qa_nav),NULL,qa_nav_poll,qa_nav_foreground,qa_nav_reset};
-static bool qa_health(risc_runtime_health_v1*h){h->uptime_ms=ms;return polls<80;}
+static bool qa_health(risc_runtime_health_v1*h){h->uptime_ms=ms;return ms<2000;}
+/* Ordered reports use elapsed script time, independently of raster/poll count. */
+static bool (*qa_input_script)(void*,risc_touch_snapshot_v1*);
+static risc_touch_snapshot_v1 qa_input_state;
+static risc_touch_event_v1 qa_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned qa_event_head,qa_event_count;
+static void qa_emit(unsigned kind,risc_touch_contact_v1 point) {
+ assert(qa_event_count<RISC_TOUCH_QUEUE_LENGTH);
+ qa_events[(qa_event_head+qa_event_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){.sequence=++qa_input_state.sequence,.timestamp_ms=ms,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static bool qa_input_poll(void *c,size_t count) {
+ assert(poll_touch(c,count));risc_touch_snapshot_v1 next;assert(qa_input_script(c,&next));
+ bool before=qa_input_state.contact_count!=0,after=next.contact_count!=0;
+ bool same=before&&after&&qa_input_state.contacts[0].id==next.contacts[0].id;
+ if(before&&!same)qa_emit(RISC_TOUCH_EVENT_UP,qa_input_state.contacts[0]);
+ if(after){if(!same)qa_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);else if(memcmp(&qa_input_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))qa_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+ for(unsigned bit=0;bit<32;bit++)if((qa_input_state.buttons^next.buttons)&(1u<<bit))qa_emit(next.buttons&(1u<<bit)?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,(risc_touch_contact_v1){.id=(uint8_t)bit});
+ next.sequence=qa_input_state.sequence;next.timestamp_ms=ms;qa_input_state=next;return true;
+}
+static bool qa_input_snapshot(void*c,risc_touch_snapshot_v1 *out){(void)c;*out=qa_input_state;return true;}
+static int32_t qa_input_next(void*c,uint64_t subscription,risc_touch_event_v1 *out) {
+ (void)c;assert(subscription);if(!qa_event_count)return 0;*out=qa_events[qa_event_head];qa_event_head=(qa_event_head+1)%RISC_TOUCH_QUEUE_LENGTH;--qa_event_count;return 1;
+}
 static bool qa_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  if(!strcmp(name,"input.navigation")){g->api=&qa_nav;grants++;return true;}
  static risc_display_output_api_v1 display;static risc_touch_api_v1 touch;static alarm_service_v1 service;
  if(!strcmp(name,"storage.key-value")){assert(id==1);g->api=&qa_kv;grants++;return true;}
- if(!strcmp(name,"input.touch.raw")){touch=t;touch.snapshot=qa_snapshot;g->api=&touch;grants++;return true;}
+ if(!strcmp(name,"input.touch.raw")){touch=t;touch.snapshot=qa_input_snapshot;touch.poll=qa_input_poll;touch.next=qa_input_next;qa_input_script=qa_snapshot;assert(qa_input_script(NULL,&qa_input_state));qa_event_head=qa_event_count=0;g->api=&touch;grants++;return true;}
  if(!strcmp(name,"display.output")){display=d;display.get_info=qa_info;display.submit=qa_submit;display.set_brightness=qa_brightness;g->api=&display;grants++;return true;}
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){service=alarm_api;service.step=qa_alarm_step;service.refresh=qa_refresh;
   static alarm_service_outputs_v1 outputs;
@@ -137,7 +160,7 @@ int PAPER_QUICK_MAIN(int argc,char**argv){
  else if(qa_case==9)assert(writes==1&&preferences[0]==100&&brightness_calls>=1);
  else if(qa_case==33)assert(writes==3&&preferences[1]==100);
  else assert(!writes);
- if(qa_case==16)assert(brightness_calls==2&&presents==4&&!memcmp(background,pixels,sizeof(pixels)));
+ if(qa_case==16){assert(brightness_calls==2&&presents==4&&!memcmp(background,pixels,sizeof(pixels)));}
  else if(qa_case!=9)assert(!brightness_calls);
  if(qa_case==30||qa_case==31)assert(presents==3&&!writes&&!refreshes&&!memcmp(background,pixels,sizeof(pixels)));
  if(qa_case==18)assert(diagnostics>=1&&strstr(last_diagnostic,"sleep=unavailable")&&presents==4);

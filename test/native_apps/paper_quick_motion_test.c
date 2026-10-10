@@ -14,7 +14,7 @@ static bool motion_touch(void*c,risc_touch_snapshot_v1*out){
 }
 static bool motion_acquire(const char*name,uint32_t version,uint64_t id,risc_runtime_capability_v1*out){
  if(!qa_acquire(name,version,id,out))return false;
- if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=*(const risc_touch_api_v1*)out->api;input.snapshot=motion_touch;out->api=&input;}
+ if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=*(const risc_touch_api_v1*)out->api;qa_input_script=motion_touch;assert(qa_input_script(NULL,&qa_input_state));out->api=&input;}
  return true;
 }
 static const risc_runtime_api_v1 motion_runtime={.api_version=1,.struct_size=sizeof(motion_runtime),.health=motion_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=motion_acquire,.release=release};

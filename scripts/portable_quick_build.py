@@ -5,12 +5,12 @@ import re
 import shutil
 import portable_idle_build
 
-RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.23', 'settings': '1.3.24', 'file_browser': '1.5.17', 'wifi_settings': '1.1.21', 'ota_update': '1.2.10', 'app_store': '1.2.10', 'usb_sd_transfer': '0.1.7'}
+RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.24', 'settings': '1.3.25', 'file_browser': '1.5.18', 'wifi_settings': '1.1.21', 'ota_update': '1.2.11', 'app_store': '1.2.11', 'usb_sd_transfer': '0.1.7'}
 
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
-        if getattr(args,'crash_report_sd',False):return '0.3.28'
+        if getattr(args,'crash_report_sd',False):return '0.3.29'
         if getattr(args,'display_settled_sdk',None):return '0.3.26'
         if getattr(args,'frontlight_tone',False):return '0.3.25'
         if getattr(args,'resident_policy',False):return '0.3.25'

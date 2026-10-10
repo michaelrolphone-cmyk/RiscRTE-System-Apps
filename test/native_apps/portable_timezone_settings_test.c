@@ -17,7 +17,10 @@ static unsigned zone_reads,zone_writes,mode;
 static bool read_error,write_error,after_commit,verify_error,verify_missing,verify_mismatch;
 static uint32_t nav_script[2048];
 static contact tz_contacts[1024];static unsigned tz_contact_count;
-static unsigned next_at;
+static unsigned next_at,script_started_at;
+/* Script time is independent of raw captures performed during raster work. */
+static unsigned timezone_step(void){return (ticks-script_started_at)/20u;}
+static uint32_t timezone_buttons;
 static int32_t zone_get(void *c,const char *key,void *out,uint32_t cap,uint32_t *size) {
   if(strcmp(key,PORTABLE_TIMEZONE_KEY))return kv_get(c,key,out,cap,size);
   ++zone_reads;*size=zone_size;
@@ -35,23 +38,43 @@ static int32_t zone_put(void *c,const char *key,const void *in,uint32_t size) {
   return after_commit?RISC_KEY_VALUE_IO:RISC_KEY_VALUE_OK;
 }
 static risc_key_value_v1 timezone_kv={1,sizeof(timezone_kv),NULL,zone_get,zone_put};
-static bool timezone_health(risc_runtime_health_v1 *out) {out->uptime_ms=ticks;assert(polls<2000);return true;}
+static bool timezone_health(risc_runtime_health_v1 *out) {out->uptime_ms=ticks;assert(timezone_step()<2000);return true;}
 static bool timezone_nav(void *c,risc_input_navigation_frame_v1 *out) {
-  (void)c;*out=(risc_input_navigation_frame_v1){0};assert(polls<2048);
-  out->buttons=out->pressed=nav_script[polls];return true;
+  (void)c;*out=(risc_input_navigation_frame_v1){0};unsigned at=timezone_step();assert(at<2048);
+  out->buttons=nav_script[at];out->pressed=out->buttons&~timezone_buttons;
+  out->released=timezone_buttons&~out->buttons;timezone_buttons=out->buttons;return true;
 }
 static bool timezone_touch(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=width();out->height=height();
-  for(unsigned i=0;i<tz_contact_count;++i)if(tz_contacts[i].poll==polls) {
-    out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=polls==replace_at?2:1,.x=tz_contacts[i].x,.y=tz_contacts[i].y};
+  for(unsigned i=0;i<tz_contact_count;++i)if(tz_contacts[i].poll==timezone_step()) {
+    out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=timezone_step()==replace_at?2:1,.x=tz_contacts[i].x,.y=tz_contacts[i].y};
 #if PORTABLE_TOUCH_ROTATION == 180
     out->contacts[0].x=(uint16_t)(width()-1-out->contacts[0].x);
     out->contacts[0].y=(uint16_t)(height()-1-out->contacts[0].y);
 #endif
     break;
   }
-  if(mode==16&&polls==next_at)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;
+  if(mode==16&&timezone_step()==next_at)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;
   return true;
+}
+/* Raw events and the snapshot must describe the same captured sequence. */
+static bool timezone_poll(void *c,size_t n) {
+  assert(n==1);++polls;if(timezone_step()==fail_poll_at&&fail_poll_at)return false;
+  risc_touch_snapshot_v1 next;assert(timezone_touch(c,&next));
+  bool old_down=touch_state.contact_count!=0,new_down=next.contact_count!=0;
+  bool same=old_down&&new_down&&touch_state.contacts[0].id==next.contacts[0].id;
+  if(old_down&&!same)touch_emit(RISC_TOUCH_EVENT_UP,touch_state.contacts[0]);
+  if(new_down) {
+    if(!same)touch_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);
+    else if(memcmp(&touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))touch_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);
+  }
+  if(next.buttons!=touch_state.buttons)touch_emit(next.buttons?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,(risc_touch_contact_v1){0});
+  next.sequence=touch_state.sequence;next.timestamp_ms=ticks;touch_state=next;return true;
+}
+static int32_t timezone_next(void *c,uint64_t s,risc_touch_event_v1 *e) {
+  if(gap_at&&timezone_step()==gap_at){touch_head=touch_count=0;return -1;}
+  (void)c;assert(s==1);if(!touch_count)return 0;
+  *e=touch_events[touch_head];touch_head=(touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_count;return 1;
 }
 #ifdef TEST_TIMEZONE_SHORT
 static bool short_acquire(void *c,uint32_t f,risc_display_surface_v1 *out) {
@@ -87,12 +110,12 @@ static bool timezone_submit(void *c,risc_display_frame_v1 f,const risc_display_r
 }
 static void reset_script(void) {
   memset(nav_script,0,sizeof(nav_script));tz_contact_count=0;next_at=3;
-  polls=0;gap_at=fail_poll_at=replace_at=0;
+  polls=0;gap_at=fail_poll_at=replace_at=0;script_started_at=ticks;timezone_buttons=0;
 }
 static void setup(void) {
   scenario=300;reset_script();assert(app_module_init()==0);
   timezone_runtime=runtime_api;timezone_runtime.health=timezone_health;rt=&timezone_runtime;
-  timezone_input=touch_api;timezone_input.snapshot=timezone_touch;touch.api=&timezone_input;
+  timezone_input=touch_api;timezone_input.poll=timezone_poll;timezone_input.next=timezone_next;touch.api=&timezone_input;
   timezone_navigation=nav_api;timezone_navigation.poll=timezone_nav;navigation=&timezone_navigation;
   timezone_display=display_api;timezone_display.submit=timezone_submit;display=&timezone_display;
 #ifdef TEST_TIMEZONE_SHORT
@@ -169,7 +192,7 @@ int main(int argc,char **argv) {
     if(mode==5)nav(RISC_NAV_HOME);
     if(mode==6){touch_footer(0,true);touch_footer(0,false);}
     if(mode==7){ /* continuous held confirm at entry and across both levels */
-      reset_script();for(unsigned i=1;i<9;++i)nav_script[i]=RISC_NAV_CONFIRM;
+      reset_script();for(unsigned i=0;i<9;++i)nav_script[i]=RISC_NAV_CONFIRM;
       nav_script[12]=RISC_NAV_DOWN;for(unsigned i=15;i<24;++i)nav_script[i]=RISC_NAV_CONFIRM;
       next_at=27;nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);
     }

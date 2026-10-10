@@ -57,10 +57,11 @@ static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){
  (void)c;if(TEST_DISPLAY_FAILURE==3)return false;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);
-#ifdef PORTABLE_PAPER_TRANSITIONS
- assert(o->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
-#else
+#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_LOCK_HOME)
  assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+#else
+ /* Interactive selected paper clients retain the existing low-latency intent. */
+ assert(o->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
 #endif
 
 #ifdef PORTABLE_ALARM_CLIENT
