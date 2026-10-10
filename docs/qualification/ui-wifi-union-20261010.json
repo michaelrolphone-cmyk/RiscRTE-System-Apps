@@ -1,0 +1,760 @@
+{
+  "source_remote_commit": "7dced1b8e89387d7a42c1346c930c94e797bbbed",
+  "source_local_commit": "6721a26e0c4126e6731c67a52e6d76bb471021bd",
+  "source_tree": "9b4feb3487911ec13aa81aa078365acdefd6d493",
+  "renderer_experiment_selected": false,
+  "shared_reference_cases": 64,
+  "shared_busy_probes": [
+    {
+      "flavor": "normal",
+      "probe": "token",
+      "returncode": 0,
+      "result": "Pending provider-token pull: ordered move and 207 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=28 clean=0/0 restored=1 PASS\n"
+    },
+    {
+      "flavor": "normal",
+      "probe": "busy",
+      "returncode": 0,
+      "result": "Pending persistently-busy-token pull: ordered move and 128 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=28 clean=0/0 restored=1 PASS\n"
+    },
+    {
+      "flavor": "sanitized",
+      "probe": "token",
+      "returncode": 0,
+      "result": "Pending provider-token pull: ordered move and 207 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=28 clean=0/0 restored=1 PASS\n"
+    },
+    {
+      "flavor": "sanitized",
+      "probe": "busy",
+      "returncode": 0,
+      "result": "Pending persistently-busy-token pull: ordered move and 128 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=28 clean=0/0 restored=1 PASS\n"
+    }
+  ],
+  "prototype_completed_image_equivalence": {
+    "common_count": 72,
+    "mismatches": [],
+    "comparisons": [
+      {
+        "capture": "normal/captures/child-clean/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-clean-status-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-clean-superseded-live/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-frontlight/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-frontlight/frontlight-persisted.pbm",
+        "production_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "prototype_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-home-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-no-clean/drawer-open.pbm",
+        "production_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "prototype_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-tone/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-tone/tone-confirmed.pbm",
+        "production_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "prototype_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-usb/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/child-usb-cancel-then-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-clean/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-clean-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-clean-failed-live/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-clean-submit-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-clean-wait-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-frontlight/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-frontlight/frontlight-persisted.pbm",
+        "production_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "prototype_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-frontlight-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-frontlight-audio/frontlight-persisted.pbm",
+        "production_sha256": "38f3f9550880483c9a6beef574afe1da5f27f62896c93fb23e68e1ede9ac6d86",
+        "prototype_sha256": "38f3f9550880483c9a6beef574afe1da5f27f62896c93fb23e68e1ede9ac6d86",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-no-clean/drawer-open.pbm",
+        "production_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "prototype_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone/tone-confirmed.pbm",
+        "production_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "prototype_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone-absent/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone-audio/drawer-open.pbm",
+        "production_sha256": "c7e9996494a84a6e7c72bca1ea3a8b1253972134ab8b8715ac184d332a298698",
+        "prototype_sha256": "c7e9996494a84a6e7c72bca1ea3a8b1253972134ab8b8715ac184d332a298698",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone-audio/tone-confirmed.pbm",
+        "production_sha256": "cb1da5409182456cbc99e2108759345dd89fb3e95f6f7f5dbec8c82250cd8b0e",
+        "prototype_sha256": "cb1da5409182456cbc99e2108759345dd89fb3e95f6f7f5dbec8c82250cd8b0e",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone-failed-set/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-tone-unavailable/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb-cancel-then-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb-old-row/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb-repeat/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/host-usb-repeat-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/pending-busy/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "normal/captures/pending-token/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-clean/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-clean-status-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-clean-superseded-live/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-frontlight/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-frontlight/frontlight-persisted.pbm",
+        "production_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "prototype_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-home-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-no-clean/drawer-open.pbm",
+        "production_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "prototype_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-tone/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-tone/tone-confirmed.pbm",
+        "production_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "prototype_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-usb/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/child-usb-cancel-then-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-clean/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-clean-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-clean-failed-live/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-clean-submit-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-clean-wait-refused/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-frontlight/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-frontlight/frontlight-persisted.pbm",
+        "production_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "prototype_sha256": "0a6b4d3ecc63550f09c620a6250a4bc13204039614f6602148f07888d1f9b07a",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-frontlight-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-frontlight-audio/frontlight-persisted.pbm",
+        "production_sha256": "38f3f9550880483c9a6beef574afe1da5f27f62896c93fb23e68e1ede9ac6d86",
+        "prototype_sha256": "38f3f9550880483c9a6beef574afe1da5f27f62896c93fb23e68e1ede9ac6d86",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-no-clean/drawer-open.pbm",
+        "production_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "prototype_sha256": "1e28c1cf40b272a359f7db94335825668f955d5923e56868f281168166fde200",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone/tone-confirmed.pbm",
+        "production_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "prototype_sha256": "dc52e9c2878bc9cd008e45a5925e8e1d06d30dd737b02c5bb48508d22655ee44",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone-absent/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone-audio/drawer-open.pbm",
+        "production_sha256": "c7e9996494a84a6e7c72bca1ea3a8b1253972134ab8b8715ac184d332a298698",
+        "prototype_sha256": "c7e9996494a84a6e7c72bca1ea3a8b1253972134ab8b8715ac184d332a298698",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone-audio/tone-confirmed.pbm",
+        "production_sha256": "cb1da5409182456cbc99e2108759345dd89fb3e95f6f7f5dbec8c82250cd8b0e",
+        "prototype_sha256": "cb1da5409182456cbc99e2108759345dd89fb3e95f6f7f5dbec8c82250cd8b0e",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone-failed-set/drawer-open.pbm",
+        "production_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "prototype_sha256": "5858e9b7f9509b081e6e08c7b88367ee57052b431eb609456e25018bb3c11687",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-tone-unavailable/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb-cancel-then-open/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb-old-row/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb-repeat/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/host-usb-repeat-audio/drawer-open.pbm",
+        "production_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "prototype_sha256": "dffcabc279d11654978f821a803eba22acab76552f794c03dd026ec432e87815",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/pending-busy/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      },
+      {
+        "capture": "sanitized/captures/pending-token/drawer-open.pbm",
+        "production_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "prototype_sha256": "b8dbefc2712bbfc4ecff156e2064359a9bca736a1bd8090fefb5c198d1332fdc",
+        "equal": true
+      }
+    ]
+  },
+  "wifi_workflow_cases_per_mode": 56,
+  "wifi_adapter_cases_per_mode": 17,
+  "modes": [
+    "normal",
+    "ASan+UBSan, terminal custody where selected; LSan disabled under ptrace"
+  ],
+  "production_hashes": {
+    "Apps/file_browser.c": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+    "Apps/file_browser_operations.inc": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+    "Apps/file_browser_paper.inc": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+    "Apps/file_browser_portable.inc": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+    "Apps/file_browser_scroll_model.inc": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+    "Apps/file_browser_scroll_view.inc": "669fec54db3a878d297397a4739cfb8869264815e9b95b7060abee8ff32be082",
+    "Apps/paper_clock.c": "5a17eb1908c1582fb9b35e56a639be92816244030a24ca06178395c06aab5eb6",
+    "Apps/paper_desk_clock.inc": "4b22c4396728ab2fc8bedd41e16425419ad03eb5588f3819bb19860696d46fd7",
+    "Apps/paper_home_points.inc": "e1098780996f17b5c17f3b6ed1aa22405821f7e751266729dc8bc1a18817c274",
+    "Apps/paper_home_reference.inc": "8a01d6c193d7a7e41c2b7c70798f4f4c123e5cc62f41b66d0da5aa0b452a8765",
+    "Apps/paper_home_type.inc": "1cf0d7c72616289610e4eacb61e77e898c32d903a5bc181a692ab7e9df359658",
+    "Apps/paper_sparse_clock.inc": "18a4d55501efedd79d8aecab770a6dcaa3a27aaa4307b5f34b43649ff4f375ae",
+    "Apps/springboard_nova.inc": "c485e2aac8efcbc8607a402c22fe572b0d2b7b6d74b8a2bcabab85ca6d0a80f3",
+    "Apps/springboard_paper.inc": "481073d92288b8e35fe9a3767d048d09e54577becc6ca01f4500a632e487b12c",
+    "Apps/springboard_scroll.inc": "b235493b4ab4bb129db88b854e2a0e6a832e6a41e0317b7db6ed0007e7eeb404",
+    "Apps/springboard_video.inc": "08199cae0b9bb8aa25c9f1ab2d08f54caee3e23228f5f19b302ff966c2bc4b4c",
+    "Apps/update_paper.inc": "4f0b5aae766f6f5284756a069159d2f0271321146eb5c25bd086d95dd7f4bb46",
+    "Apps/update_portable.inc": "0db4f17ac98209c300987e2b56931a2a9930a422629ebb15d5cd5a385b52649d",
+    "Apps/update_scroll.inc": "eeb2f102a9d3e05b622bfb2166e778e9c5bc29ebb3d04e752a020173b268a736",
+    "Apps/usb_sd_transfer.c": "2fb8c9ae0cb276ba674143695235c6535b69d45de44515afccebed051b8dc34c",
+    "Apps/wifi_settings_portable.inc": "c6e7630fd185f19b9b79ce2d70c4b284068f6988ea4b4c79e4842978ea77e53f",
+    "lib/NativeApps/include/FileBrowserModel.h": "d74ddf4f071190dda1075b2e0873b85071de068fd249715b769e1991651c74ea",
+    "lib/NativeApps/include/T5AppApi.h": "23ec6910005343055e71d0a364458824734f52c91a28364e419a85e94aa4ff42",
+    "lib/NativeApps/include/T5AppFrame.h": "2a8fd35c485045294a2f9dceaf1b8474226e1475e63849080711601f6b60c8f9",
+    "lib/NativeApps/include/T5ButtonRemapApi.h": "2a1d8091221712c1cf7b7e500aad22e03f5db7d660a7f749684fca9d054a16ea",
+    "lib/NativeApps/include/T5CacheApi.h": "2fd5da1a4e034310be041726b77f5ff5a5069e3a272f902294c4d0887425aff4",
+    "lib/NativeApps/include/T5DriverManagerApi.h": "f03a43f5c1fdc0e13b33af5300c655ba3a856d0f28907a59aa874ce7db151478",
+    "lib/NativeApps/include/T5FileBrowserApi.h": "4af0cf7ee92b85b72eadbdfcb988d7b562fc1f24b744c58d01047ad4a2b6fca9",
+    "lib/NativeApps/include/T5FileOpenApi.h": "c1b873e364dba81ce39d8c8a62668db618735407a6291dca87b9795ce4accc30",
+    "lib/NativeApps/include/T5FontApi.h": "06f5de46f0e373e77fb331029940c3db505a8b91b9d0fd35bf4f5ae9f8554bab",
+    "lib/NativeApps/include/T5HardwareTakeover.h": "4e4bdfd0e923a41dde2fada074ed79365aafa48190140cd18153ad95ed922664",
+    "lib/NativeApps/include/T5ImageApi.h": "845638fc39cd391b5d043eeea9e39fb78f966d56b854f322542fc50d20695780",
+    "lib/NativeApps/include/T5LanguageApi.h": "cc6c343f52e0033b032cce5a6009d20a74a9464eea59019b3b128f7bc4fbbfff",
+    "lib/NativeApps/include/T5NetworkApi.h": "7aff710c9216c3e2af9e78c7312a5d31d9510d7326cf8dfafe847418ff2f7c33",
+    "lib/NativeApps/include/T5OtaApi.h": "2cd1cf9de3bf99bea9c67fa2bf80faffb8bce1b6dcc62ea223f98883329f64da",
+    "lib/NativeApps/include/T5PackageManagerApi.h": "0b468ff5d6a45a79a82c9003dc6270a4859c821850250693fbb60148d34bdf2c",
+    "lib/NativeApps/include/T5PackageVersion.h": "956106b2dd21c8e5a25cdb93814d20c4cf62ef758339ef23b79cc2b959d89f2a",
+    "lib/NativeApps/include/T5ProviderCapabilityApi.h": "f348bc6b64017607ada44f5370631693e240c0cbef45251cae52a7dbcbe9894c",
+    "lib/NativeApps/include/T5SdFirmwareApi.h": "8c6d467c2bc105256c22d5343778874358d82e8d1f49d4f81937f59da9647633",
+    "lib/NativeApps/include/T5StatusBarApi.h": "6a2011799bff49e29cbacf3214b86a4d6db9751f385c36a05d40860e527bf6ec",
+    "lib/NativeApps/include/T5StorageApi.h": "be0d63a89943a75a58723b703284992e8c6e95956c7cb39a9b3523af2c5d23ba",
+    "lib/NativeApps/include/T5SystemUiApi.h": "aea03c2fe4ea5944dbda4ad6cfc499baa69fc2711bb55167a1e10461d500c8d1",
+    "lib/NativeApps/include/T5TimeZoneApi.h": "e01ce2583308f89387d75bd1f5a697741d936f996dff8d10ce6d9e158b719021",
+    "lib/NativeApps/include/T5UiApi.h": "88dbfde2a45ab385c69ee0b8192e8025446c9872711e4810f799251479b1057a",
+    "lib/NativeApps/include/T5VideoApi.h": "af3f2318e53e20efb4e8e9e98d93abae11f1788fe14640c7b02392c22d08c6a4",
+    "lib/PortableApps/ALARM_PROVENANCE.json": "157665303e929210353e0c289927954eb3ad63f299b180eefeb8ba65a69e71ac",
+    "lib/PortableApps/BROADCAST_PROVENANCE.json": "87ef324c0e44b25dad6b4db0dfb7152f1512d881361c269ffad7a7346f87e5d9",
+    "lib/PortableApps/RTC_PROVENANCE.json": "48030b8c665ed4e9c61864605bc501290199ea4dea63c3fb810ffdd79dede07c",
+    "lib/PortableApps/SOURCES.json": "63d2cef7b4564c2df881822d531959f40cd24440d4b03aadf2ed7d9623f770cd",
+    "lib/PortableApps/additional-icons.json": "b180d197f9e0dcfa8cc3190e18bf97dd347761baa78c4ee1f4617e6df2338238",
+    "lib/PortableApps/boot_logo/LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640",
+    "lib/PortableApps/boot_logo/LICENSE-DejaVu.txt": "b8ce9d7b6c01274678913cf9fcb86b98bf3f33a500a90cc2e4b75efb9f447c72",
+    "lib/PortableApps/boot_logo/RiscRteLogo.h": "dc4cd411affdbe6a6f0bcc5961145111e900dff13da92a590cdba4d5a93bd481",
+    "lib/PortableApps/boot_logo/SOURCES.json": "3faf14c6bfb3121ce578c9757b3c6a3ac3f3edeb615dcdfb122f65934522c539",
+    "lib/PortableApps/boot_logo/logo.svg": "d798169a71ab910a3d0acf624a9a46791af2ed83c18b9641e2dcdaf8de07f508",
+    "lib/PortableApps/catalog-icons.json": "adbf43f9da6449623d78193f87630c9408d5814b1633fa32d3be830a13c72610",
+    "lib/PortableApps/desk_clock/.gitattributes": "dee754e80756ddce09d0e718b6d836a4a3da6a72d5d72ff06d7bdcdcfa01a735",
+    "lib/PortableApps/desk_clock/LICENSE-NotoSans.txt": "e51d69f5e43cacd83ab6e5f3f1a47005380ae08b6d108d444be49e786d127458",
+    "lib/PortableApps/desk_clock/LICENSE-NotoSerif.txt": "e51d69f5e43cacd83ab6e5f3f1a47005380ae08b6d108d444be49e786d127458",
+    "lib/PortableApps/desk_clock/SOURCES.json": "9e8a70f437a2cdddd4220a747e015d5498e8b3572eafb54ae632d9e80868e48d",
+    "lib/PortableApps/desk_clock/digits.inc": "a636cf8ee3f31e379e3624931ef88588a771cc81b43ed0a2696779ecdc09a700",
+    "lib/PortableApps/desk_clock/sine.inc": "8d1ec56b53a684dbf4c2020439499cf1d81470647caa24a092b443e236658560",
+    "lib/PortableApps/fonts/LICENSE-FontAwesome.txt": "b2a1cf9b4d876a266020de7ff41ce6f58e814f8efd07d4cdb7695a86e875c17c",
+    "lib/PortableApps/fonts/LICENSE-Orbitron.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "lib/PortableApps/fonts/LICENSE-Rajdhani.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/fonts/SOURCES.json": "75fac97a703606811a95588a42ac8c14c2593c718cb0ecf8ffc6a8f12dd8cd9c",
+    "lib/PortableApps/fonts/icons.inc": "fbfee54e9dd3fd331bdfc6babf60427ccffa93c4e8956ceb0129d2b6111d411d",
+    "lib/PortableApps/fonts/springboard_gamepad.inc": "c67ff7e31de55f08882a8fbcca03f41789fb8edd0a6b8dc723cf2ce8c3c6248f",
+    "lib/PortableApps/fonts/text.inc": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42",
+    "lib/PortableApps/home_fonts/DESK_TIME.json": "1457501802ab197629b3cfaba20001873c6d041376706aee9e94c77520bc3e07",
+    "lib/PortableApps/home_fonts/DIAL.json": "4b9c8f4b24d7ebba9247a2bf7ca198875c6ad2c6103c7bce136834200cb9f9bd",
+    "lib/PortableApps/home_fonts/LICENSE-Orbitron.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "lib/PortableApps/home_fonts/LICENSE-Rajdhani.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/home_fonts/Orbitron-reference-700.ttf": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd",
+    "lib/PortableApps/home_fonts/Orbitron-reference-900.ttf": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613",
+    "lib/PortableApps/home_fonts/Orbitron-wght.ttf": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+    "lib/PortableApps/home_fonts/REFERENCE.json": "f45f1a5aed6be6ad67078e441d304b3a3870316485ab83e287f9f55fa136f963",
+    "lib/PortableApps/home_fonts/Rajdhani-600.ttf": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da",
+    "lib/PortableApps/home_fonts/Rajdhani-700.ttf": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+    "lib/PortableApps/home_fonts/SOURCES.json": "a70efc1d86febdb812c0abfedde67149cebfe59c185c8274cb5b1688f20750ec",
+    "lib/PortableApps/home_fonts/desk_time.inc": "4990d6d4fe1592f71afa7fcf40fbf6553823a5fcde5daa1443778a0af354a247",
+    "lib/PortableApps/home_fonts/dial.inc": "bb0ec471a837d97574c3b7047a53d1962b0de1adf2f2476072719578c80ea4c6",
+    "lib/PortableApps/home_fonts/downloads.json": "f1f61dec14551b643af404ca75699cedf50e35bd501a7245429016a2502a455b",
+    "lib/PortableApps/home_fonts/reference-contexts.svg": "8be4ff7f9f668bb056f55373b439dddf31ef5fecb4814e462d5aafb9e8720336",
+    "lib/PortableApps/home_fonts/reference-files.svg": "c8635fb27feaad341abfd5358575fc43b6002123513b2caaca80fdd3e3427993",
+    "lib/PortableApps/home_fonts/reference-points.svg": "5192bd9d016d52a729422fac1c6a24381b1b7391f433943b9d2dfd56a0c53589",
+    "lib/PortableApps/home_fonts/reference-settings.svg": "46dca323c26ed418debcb738ea15b69fc20df0197e824a8b831afeaf0c3537d5",
+    "lib/PortableApps/home_fonts/reference.inc": "a345e3ece76cb4d117f27750248c20e97a62a45d2064b57d5cb4453d577cedf7",
+    "lib/PortableApps/home_fonts/text.inc": "c027811edd22a69ac963a4fc1e0cf7f9c95b0c819bdb1ec77c58974276539a1d",
+    "lib/PortableApps/include/AlarmServiceV1.h": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b",
+    "lib/PortableApps/include/ContextsServiceV1.h": "ade2f40d01c7c384c6a71b4ee2a3b077c140ac6af06d7cc69350f02f7be6643d",
+    "lib/PortableApps/include/CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+    "lib/PortableApps/include/CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+    "lib/PortableApps/include/FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+    "lib/PortableApps/include/PortableAlarmClient.h": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1",
+    "lib/PortableApps/include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "lib/PortableApps/include/PortableAlarmTerminalClient.h": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635",
+    "lib/PortableApps/include/PortableAppCustody.h": "a4188562f44d12bdf9ca0b616fcb24dc8f67fbcb2b334f16e55530393e035c24",
+    "lib/PortableApps/include/PortableAppLaunchGuard.h": "a7da58c80c62ef35cdf4e76aff0d2f66768b66963457c3a00f5e9890ca357558",
+    "lib/PortableApps/include/PortableAppSleep.h": "027f70965663bc86e7f3bbf2733002870e2254ec92d39037def5f42c52fedc62",
+    "lib/PortableApps/include/PortableApps.h": "d8fc1fae3669c439fda7af94568a93bc1d1f35ddc6fe05615eac1cb41ea4a78e",
+    "lib/PortableApps/include/PortableAudioSession.h": "2f3d9cdd59005d44201f52005c7c88c8a9b2d9e816853338e4254196fad36f47",
+    "lib/PortableApps/include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "lib/PortableApps/include/PortableBluetoothControl.h": "777f0c7f92092d05a428c04255b6df1b3e9510a36c7425fc95092b3321e67a2c",
+    "lib/PortableApps/include/PortableBroadcastAppData.h": "39623ec4ebb2a1c576398b60be8cceef084ff7d0809d4f8903aaa6b7873bd30d",
+    "lib/PortableApps/include/PortableBroadcastClient.h": "51ed76a5fac542fb2d5ae039797806fd8b1d31f69a072340c0ce91e628cbff2d",
+    "lib/PortableApps/include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "lib/PortableApps/include/PortableContextsClient.h": "be53a3639e2de93a939c575814bc8183bf37ac7d5663cd2cbc33c26d4054a9de",
+    "lib/PortableApps/include/PortableDeskClock.h": "603609b28ee7d891de2743d0f86417c3b00ca4201be28eb42ac257194e594bb4",
+    "lib/PortableApps/include/PortableDeskClockApp.h": "3ffdc1ae309e95bfaaf3ac67bd91d6a2c9eeb8b0c5ec22c3e40afa65e8e2b1ee",
+    "lib/PortableApps/include/PortableDeskClockFaces.h": "6864b07c69edcdc20e473d9716db2d9ce19edf2fbfafc379566c1990c78ac5a2",
+    "lib/PortableApps/include/PortableDeskClockSettings.h": "ca26111d67474f7664d9fac748708c25f0bc0454c0ffe647e6199d689059af0d",
+    "lib/PortableApps/include/PortableDeskPointsSnapshot.h": "7d3a6816c86d029b9900e7af56e878cea814ed94d637a031031cc8fe928157eb",
+    "lib/PortableApps/include/PortableFileBrowser.h": "0f0119b91d7c66818fe1d3f977dc37562edb1da5455096eb3a821c97ac49f006",
+    "lib/PortableApps/include/PortableHomePointsCatalog.h": "d3c46fef226e626c0732c190108d016caf7bfbdfa0ac15c120e3ce281ca9181b",
+    "lib/PortableApps/include/PortableLowBattery.h": "c83b663b1d5676c7eb7a8ec59157f0efc561802cfe2a3b6eb63937e28b0acca3",
+    "lib/PortableApps/include/PortableNativeCustody.h": "9dc7d0fb89bbab8304d829fa63e5baed3c6c348fdf37cc4166f5e8117a2594b6",
+    "lib/PortableApps/include/PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
+    "lib/PortableApps/include/PortableNavigation.h": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d",
+    "lib/PortableApps/include/PortableNovaKeyboard.h": "388cdc97e48b6e3378f1cf80b1b5dc3b0e116dd1e30a061697ae56bfb15ec0eb",
+    "lib/PortableApps/include/PortableNovaUi.h": "7301c01a0bdeee5888b518bfb19aefeec65403caf52c589b41eb4e1dfc628291",
+    "lib/PortableApps/include/PortablePaperScroll.h": "6575d6618628f5e195b06d9034acea20be9a5d84cee1210c1c248546c27d4347",
+    "lib/PortableApps/include/PortablePaperTransition.h": "2f1b60dddeeae8111287fc0aa13d0d15fcc37fcdaa5da3ae6fb96edb85847328",
+    "lib/PortableApps/include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "lib/PortableApps/include/PortablePointsCatalogView.h": "0350a2d42d1befc07b838ef4386458d876cabc0820a2b773d9eb1b383dd2bead",
+    "lib/PortableApps/include/PortablePointsState.h": "69dd5c45cea14991a06b397b800de7006aee8509d6ffa905a905f40d8a40baaa",
+    "lib/PortableApps/include/PortablePowerStatus.h": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4",
+    "lib/PortableApps/include/PortableQuickActions.h": "711699f55f25c5477fb588882c40d1589b490ffa2e316ff7c41e3ddbcf23a75b",
+    "lib/PortableApps/include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "lib/PortableApps/include/PortableQuickRadios.h": "676fbb46d0eae28fef515672a20c380088f69b3389a14ae44b5a67b9f014c44b",
+    "lib/PortableApps/include/PortableQuickRender.h": "b5c18019df08ccb3c866d7cd72ba6eeb139c1cf8c8b82708929357d5744ec5e4",
+    "lib/PortableApps/include/PortableQuickSession.h": "5229c4bb8730151d15042e6695d44643810c27b85205160cf7bdb0b73349de98",
+    "lib/PortableApps/include/PortableRadioPolicy.h": "560cf6d492bcf3453b2ee260e6e4dfa102afece7fb1d406a77f2fa32465d1ae3",
+    "lib/PortableApps/include/PortableRadioSession.h": "8b09b402a8235dbf48826b890a04dbcabe2f7ac6c600b90b42f71ac5997356b2",
+    "lib/PortableApps/include/PortableReaderPreferences.h": "3f0b7b12b1ddf6bf9c45c9598dab5488feadde0e9f5879b5e12c9f4eff8d4eda",
+    "lib/PortableApps/include/PortableRealtimeClient.h": "9a366511975762ab7124931e9124756319acfe586ba9f3881a9f710129290b0a",
+    "lib/PortableApps/include/PortableResidentShell.h": "1468438dedba1b80c9ccfddda5d4b0656aab2673ec75e01a6784d246f3449830",
+    "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+    "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "lib/PortableApps/include/PortableSetTime.h": "1b5b89512ca1c670adacb1ea759e22a8305bd3648b860f5bc898cfd1fbaeb5cc",
+    "lib/PortableApps/include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "lib/PortableApps/include/PortableSpringboardCatalog.h": "c5d0ef941090cb68a3d355989d6fedb27546a7d8b1fe16d30c702c326f3056ef",
+    "lib/PortableApps/include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "lib/PortableApps/include/PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f",
+    "lib/PortableApps/include/PortableTextInputHandoff.h": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+    "lib/PortableApps/include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "lib/PortableApps/include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "lib/PortableApps/include/PortableTimeZonePreference.h": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0",
+    "lib/PortableApps/include/PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004",
+    "lib/PortableApps/include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+    "lib/PortableApps/include/PortableTransition.h": "627e00b7c8143d946556f67a61803a56335f747dd8f6489bbfcabaef015542d2",
+    "lib/PortableApps/include/PortableUpdate.h": "344344762bfc0430285ecf8a781b64fb3789949cca7a517ad0b0684bf7fa6b76",
+    "lib/PortableApps/include/PortableUsbTransfer.h": "f1351bb4ca5d5af029f6427e814e77c2eca4baa410ca00e9be51a5bce794a2b3",
+    "lib/PortableApps/include/PortableWatchKeyboard.h": "f006ff13fe70236433ec6c37fb8cf5c4efe018d24393a9035c446e1f3554f4dd",
+    "lib/PortableApps/include/PortableWifiCredentials.h": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
+    "lib/PortableApps/include/PortableWifiProfiles.h": "0ee07f7f692fb9988ab1d7a4200cc8f2ed1cfed49becb594c50f893c3d2a7610",
+    "lib/PortableApps/include/PortableWifiSavedNetwork.h": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
+    "lib/PortableApps/include/PortableWifiView.h": "7f7d2d3cf484fc5a903457057a195e43abed9e13eff12adbf343384efc2f2ce9",
+    "lib/PortableApps/include/RiscBankStoreV1.h": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
+    "lib/PortableApps/include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "lib/PortableApps/include/RiscBluetoothTelemetryV1.h": "f98aaff4165ee3816846cfe9ba110e8bafce403342a870162eb1089a03d935a6",
+    "lib/PortableApps/include/RiscDiagnosticCheckpointV1.h": "2c41504823df54a43e383baafa07f45191869f6ea5de4adaaf2651c2d78af017",
+    "lib/PortableApps/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "lib/PortableApps/include/RiscHttpClientV1.h": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+    "lib/PortableApps/include/RiscInputNavigationV1.h": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+    "lib/PortableApps/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "lib/PortableApps/include/RiscPlatformClockV1.h": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+    "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "lib/PortableApps/include/RiscRadioAsyncV1.h": "6e3991c00e3e299c6d4fe9cb1ee19532a8b25a39a83910476e344b4b4e2885c9",
+    "lib/PortableApps/include/RiscRadioScanV1.h": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
+    "lib/PortableApps/include/RiscRuntimeV1.h": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
+    "lib/PortableApps/include/RiscStorageExportV1.h": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
+    "lib/PortableApps/include/RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1",
+    "lib/PortableApps/include/RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "lib/PortableApps/include/RiscTelemetryV1.h": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
+    "lib/PortableApps/include/RiscTextEntryV1.h": "bee01a5a912fe12a3a4fa8124967117cdf1a395c46e50ab2c77175da04d781a7",
+    "lib/PortableApps/include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "lib/PortableApps/include/SoftwareUpdateV1.h": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca",
+    "lib/PortableApps/include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "lib/PortableApps/include/TelemetryBroadcastV1.h": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5",
+    "lib/PortableApps/include/WifiApi.h": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+    "lib/PortableApps/paper_fonts/LICENSE-Orbitron.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/paper_fonts/SOURCES.json": "1dde2a1a887df1c067a125dfe76f0c185904dc059f66af583120109228b441c1",
+    "lib/PortableApps/paper_fonts/SPRINGBOARD_SOURCES.json": "a71442f11d99a506b0e06be5b6bf68406edf95622f6377e1c1a187090c25d538",
+    "lib/PortableApps/paper_fonts/springboard_header.inc": "f9101e2954009cc27a4e8a5eefaa57683ebf9875c4040c681cfc99bb1e4dfbec",
+    "lib/PortableApps/paper_fonts/text.inc": "9ee273df1c27df92d8ab2a985fb474d15b715770984894da4fee40b8cd9f2e4a",
+    "lib/PortableApps/profiles/x4-desk-clock-settings.json": "3d306fac7f9206e4b09ee5779295fdfddf3d5535e27b2b06e676c41581f364a1",
+    "lib/PortableApps/profiles/x4-native-time-app_store.json": "789c559f1a05c57f6d8d0fc61c9ab0ef99326fbde85ebbd79625aed7f183e00c",
+    "lib/PortableApps/profiles/x4-native-time-file-browser.json": "48be88f3a16f7cdac1163514329e0127023e4e5aa517801cd1fdb6d37d66b999",
+    "lib/PortableApps/profiles/x4-native-time-ota_update.json": "2143fc9a3686e5c14d6e119c65315a7e84afcc7ac17ea12531dade606d619d14",
+    "lib/PortableApps/profiles/x4-native-time-settings.json": "babfe1d5a09a68eaa74fd49d2e15dd3a8abea81e247f54081298d9e7c1c6b9e4",
+    "lib/PortableApps/profiles/x4-native-time-springboard.json": "820ae358f9b97adf13deea96fc3bd2dfd98b889d81ee4b6036c10658cb232cfc",
+    "lib/PortableApps/profiles/x4-native-time-wifi-settings.json": "c02702c5cdc186b19014069e9bc19c9ad494011e57507ea3d065069f2068d8b9",
+    "lib/PortableApps/quick_fonts/FAClassic-LICENSE.txt": "b2a1cf9b4d876a266020de7ff41ce6f58e814f8efd07d4cdb7695a86e875c17c",
+    "lib/PortableApps/quick_fonts/FAClassicSolid_18.cpfont": "7b2f820afb525f62c280292e63b01ef302e8392c1fe6fc707719588c41c8204c",
+    "lib/PortableApps/quick_fonts/FAClassicSolid_codepoints.csv": "106697ae65dbae1fe66380ba1e6825a2321d1fa287ca433a2bc5b5da23165031",
+    "lib/PortableApps/quick_fonts/Orbitron-700.ttf": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
+    "lib/PortableApps/quick_fonts/Orbitron-OFL.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "lib/PortableApps/quick_fonts/REFERENCE.json": "9cb232e8c4ad20873bc04edaf55eb1376473d5aa6ffb583853bd1593fc45e02f",
+    "lib/PortableApps/quick_fonts/Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144",
+    "lib/PortableApps/quick_fonts/Rajdhani-OFL.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/quick_fonts/SOURCES.json": "1701c1c3564f03d8038658904245a58bc5acc260aa0458444ea1f312a5292e61",
+    "lib/PortableApps/quick_fonts/bluetooth-b.svg": "f861bad525b3445f142f5f06cccedba0b337677d0b778baba095a34c59d90744",
+    "lib/PortableApps/quick_fonts/reference-airplane.svg": "c35e2953ccc719f9cba4717036680c678f994153514279e803369fbe81ae3dc1",
+    "lib/PortableApps/quick_fonts/reference-bluetooth.svg": "73c85871fc72dfa38b9cf55071b6b6a093a8ca91ec396d305a7d22b02eae5518",
+    "lib/PortableApps/quick_fonts/reference-clean.svg": "6347a41032181ed4d1a5149536a051ae57fa5671b6c1f9a22ca795021255dfcd",
+    "lib/PortableApps/quick_fonts/reference-dnd.svg": "0cac12f5f00c59498b9a87151811eceb3d0334ed4a4abb14973acc8082cd54ed",
+    "lib/PortableApps/quick_fonts/reference-frontlight.svg": "946f1a21eea5f4f71cac6f5d160302350bd382e5b6b9624fd52d4bf62cbae783",
+    "lib/PortableApps/quick_fonts/reference-silent.svg": "f60c96fe9d8c1de6c803aa86eeb9c5b280a9c8c3855e0158c63e37048ced1378",
+    "lib/PortableApps/quick_fonts/reference-sun.svg": "724f9592ceb062f0c54c3e9dafc181272e2f1c40d9564a4cf68bc7ed6af30d98",
+    "lib/PortableApps/quick_fonts/reference-volume.svg": "8d8bd1bdce4d5009bab4727e82589e2c2acbcd221d2cbdb9654bcc3f5c8b63ab",
+    "lib/PortableApps/quick_fonts/reference-wifi.svg": "043295e0a60f0afa2bdd4eb351f2145c2887cdbc14b91ed6a0ab9ef1445bb9dc",
+    "lib/PortableApps/quick_fonts/reference.inc": "9519bbcd9100f275488ef5cb142e648389f8bd1addf1bab7f3609fe464c87308",
+    "lib/PortableApps/settings_fonts/LICENSE-Orbitron.txt": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+    "lib/PortableApps/settings_fonts/LICENSE-Rajdhani.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/settings_fonts/SOURCES.json": "b436517cca24f5ccf79bc122da6ed254c7c560f176a22f88cc7c5d2d0fd7adad",
+    "lib/PortableApps/settings_fonts/text.inc": "8453a3f7c123799354a0ff4246dba420de2a612f421d6d9de9bf4c976073b449",
+    "lib/PortableApps/src/PortableNativeTimeSource.c": "a53ea9fd489493dfc459c7b18e739da388013849be6639a3e0f62fa353d5be10",
+    "lib/PortableApps/src/PortableRealtimeClient.c": "a8115817eb490bb51f3e338fde4dce2542cb82dceefe476beae21a91c14ceade",
+    "lib/PortableApps/src/PortableSetTime.c": "1e41241027983893133d692e07bdcf00f527e03c384ffc56e3accfcd6e71aeb8",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+    "lib/PortableApps/src/PortableTimeZonePreference.c": "b54e455d587ba2ecda8f59dd899b59b767214aee807b92d79d18c5e9d30b6bb7",
+    "lib/PortableApps/src/adapter.c": "dd9ccd9fa4826e3039c536703f9987e7897f507530f1c10a7bfdf2bbfaa1050c",
+    "lib/PortableApps/src/alarm.inc": "21444230818ef6fc07f3278ffa771ac5c990a5e7860486c241dcf773a8f2ddf8",
+    "lib/PortableApps/src/broadcast_adapter.inc": "c30950c930aede07d82e9d4527474e6c97eda8fa6981384c37bf8105f13a2bbf",
+    "lib/PortableApps/src/contexts_adapter.inc": "2ae3d1441e1b3bc60170b5a23bbb20dd1cd2b90bc1fb7c83cae9f0a088b7d358",
+    "lib/PortableApps/src/contexts_clock.inc": "efce91a9a252870e787dfd48fda908a239549a54648fd49afaaba047694b8df4",
+    "lib/PortableApps/src/contexts_policy.inc": "a5eb1fff03c2922c24e6eed1af60c375169d74fb957d9611fad4bb76815d92c0",
+    "lib/PortableApps/src/desk_clock_faces.c": "f76843e4e7d5607205328e491fdb5f0d21121728607b894d2a1c266630e19fc7",
+    "lib/PortableApps/src/failure_archive.inc": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+    "lib/PortableApps/src/failure_evidence.inc": "da00385aa6370285d95e9845b224db62d787049e79aa5f69d153a3ff1b51ca0e",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "6a5b4ac9060b694adf2217dc5508bd04d5a7fed1f94a9832e7a5f05f85c1d55a",
+    "lib/PortableApps/src/home_points_catalog_adapter.inc": "3da35f5e6651a5224fa96696ec152ce4084d2c78d16e1ba1bc4f5d916553ccf9",
+    "lib/PortableApps/src/native_custody_adapter.inc": "e2c10d6a8a48b47613931b7fd40b60bd97063d0c2b527c2461f10507b65a9080",
+    "lib/PortableApps/src/native_toolbar.inc": "0ecab2af95aab850734d9a13482a9e3177d4a6cddf5499435ae746fe7a21151f",
+    "lib/PortableApps/src/nova.inc": "7db5cdf0362c1b5beb7b69e9ebc03e7458cd2b1c6f47d3de9ce15e47b23df203",
+    "lib/PortableApps/src/nova_ui.inc": "0d91191e5e47c1b734d309e605c1bd7a85545475e219b48651dae63fef1830ef",
+    "lib/PortableApps/src/paper.inc": "cd3cf01c5cd454bedccc14e61ada2e75d4f4143959ece4912dbe6dd68335735c",
+    "lib/PortableApps/src/paper_transition.inc": "1dd29653b9effbf277591cebe6d634cb5dff816159962f6005c78605212ca4fc",
+    "lib/PortableApps/src/performance.inc": "547a1f1902f60b816b8dc25a28821fb0a4c84c21e219c460a6dbb760a8c71db9",
+    "lib/PortableApps/src/quick_actions.c": "1e9a6e684f6fa8bc7f6539e03ae1a227b0470b7d59d44feeae13e18202d1a09e",
+    "lib/PortableApps/src/quick_actions_assets.inc": "6e0eadad1387eee501f4524d3b21d86fac61e9051822c368070468b9c41d896c",
+    "lib/PortableApps/src/quick_adapter.inc": "53d8fed86fa561725c277756078580d4ba8db44098b6e8d7fba7ce7df5c79662",
+    "lib/PortableApps/src/quick_paper.inc": "c015544ab2fa422924c4ede614c06ca115c20db3c54854581fc18d7681da1df2",
+    "lib/PortableApps/src/quick_radios.c": "77285cd11aba58869274b3d0684d8a5969dcb0659cec82caac1e12ea078d053b",
+    "lib/PortableApps/src/quick_reference.inc": "7253677f96cff6a947598aea675c6b9b898e2864703833d7f107d30b9589a743",
+    "lib/PortableApps/src/quick_render.c": "70ff531a8b882d36919f647d15944eb7776f080a6075eb031711111eb1ea89cf",
+    "lib/PortableApps/src/quick_session.c": "8a381e032605d9a2af4e400bbfd4c53fe873f6a736607eb251ef4ebeed1b35eb",
+    "lib/PortableApps/src/resident_adapter.inc": "ca0803c724777bb312996b3ca0181964df110bc5b4e86814dcd7b5717808abe2",
+    "lib/PortableApps/src/resident_failure.inc": "b2b0f9cd238226a289dca6cf84c149e0c9ac173e04dfb9cb73564317ed8a1982",
+    "lib/PortableApps/src/resident_loading.inc": "e5b0ab53ebbd9c532681fc7f3bf810b6c38af5bcea924ae8288490df72396daf",
+    "lib/PortableApps/src/resident_policy.inc": "f3b9b7cc33ec243dd64c664589c96179940dc30dbaa0683025460ed00a15e319",
+    "lib/PortableApps/src/resident_shell.inc": "16d3f9db466aa871d6247cefafc1e8c80db8873bd6e9a8b434295889e0fce210",
+    "lib/PortableApps/src/resident_sleep.inc": "ef1e2346b90ad44316f2d078ce27dd525a6876f4a9dd540ee3fa77666fc8e529",
+    "lib/PortableApps/src/settings.inc": "ba71c8e9284dfc497b056d37b7fad10aaf1dcb9e26568175630b240e0285bc15",
+    "lib/PortableApps/src/settings_native_time.inc": "48605bace17783eaf22aadbc0d4ed998510d63f22a660fbfa2e80f29a15e6939",
+    "lib/PortableApps/src/settings_paper.inc": "a63617b0d66b4e749fb4af0986f82b96ed0abfd11aa0227eb5b1bc3297445f0f",
+    "lib/PortableApps/src/settings_paper_scroll.inc": "f7ece784fe993f166e92b49120b3517e192e65730f0d8e4c1b277228b14a3c15",
+    "lib/PortableApps/src/settings_timezone.inc": "bdc3aa37625e2647071a8de0d73383f8f9851c32c4b8d25e7aa37522e02d3aad",
+    "lib/PortableApps/src/settings_timezone_view.inc": "1960449ab6a51fd8ecb3ff9b064a2932bc57bc3429211eba32729a6c5085badd",
+    "lib/PortableApps/src/settings_view.inc": "ffa649e9a6d8c0f6971f613e302ddc23c7878590442f9d6a4d176fabdc28ca02",
+    "lib/PortableApps/src/sparse_clock_adapter.inc": "e43e22c954b3f953db4506fc00279576aca4095267f901bc5dd5322a925cf6aa",
+    "lib/PortableApps/src/text_input_handoff.inc": "0ef2e8afd0de6d2bbc4a0d6563be33699a1b0a65db224aad4a632f0df103a43d",
+    "lib/PortableApps/src/wifi_nova.inc": "689a868d8cfbd18835d907f9817784c2f3401d3a134580492ad7bf755a89a804",
+    "lib/PortableApps/src/wifi_paper.inc": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f",
+    "lib/PortableApps/src/wifi_scroll.inc": "afd681056c5aa0c8020117f96ce28a7630d61d7fad9463d77932ccac50fe7159",
+    "lib/PortableApps/src/wifi_view.inc": "8123b23a3db0759091ad6d372017cc6389c5d8d0e130dd699c937047849ab226",
+    "lib/PortableApps/time/SOURCES.json": "4e7f30ef9414cc625484bd693ff5cbf8a00adc7571f55feae36f9cdf0b2bc5b3",
+    "lib/PortableApps/time/TIMEZONE_PROVENANCE.json": "4dda9d416b6ca815155dbf3ecac6452789564ff1312bba2d28a6d5a9b7eaab1b",
+    "lib/PortableApps/time/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "lib/PortableApps/time/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "lib/PortableApps/time/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e"
+  },
+  "limits": [
+    "Target closure rebuild and exact-head CI fixture repair are in progress.",
+    "No hardware run, flashing, merge, release, or panel default switch.",
+    "Renderer experiment remains on a separate branch; compatibility synchronous paths remain."
+  ]
+}

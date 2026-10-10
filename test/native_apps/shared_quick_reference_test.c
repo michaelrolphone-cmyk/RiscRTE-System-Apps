@@ -37,6 +37,7 @@ static bool launch_sent,home_sent,closing,finished,observed_open;
 static uint8_t submitted_pixels[48000];
 static reference_ui submitted_ui,completed_ui;
 static bool captured_open,captured_frontlight;
+static unsigned completed_open_frames;
 static bool clean_live_failure;
 static unsigned live_failure_logs,live_retain_logs;
 extern bool reference_runtime_retained(void);
@@ -101,7 +102,16 @@ static bool ref_status(void*c,risc_display_present_token_v1 t,risc_display_prese
   completed_ui=submitted_ui;
   if(t==clean_token){++clean_completed;clean_token=0;}
   if(submitted_ui.modal&&submitted_ui.position==240u*256u){
-   if(!captured_open&&!action_since&&!submitted_ui.neutral){capture_completed("drawer-open");captured_open=true;}
+   if(!action_since&&!submitted_ui.neutral)++completed_open_frames;
+   /* submit() observes the live model; software replay may still submit an
+    * older animation frame. After one completed full-open observation, the
+    * next serialized frame is necessarily recorded with that open position.
+    * Immediate rendering has no such model-to-pixel lag. */
+   unsigned required_open_frames=1;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   required_open_frames=2;
+#endif
+   if(!captured_open&&!action_since&&!submitted_ui.neutral&&completed_open_frames>=required_open_frames){capture_completed("drawer-open");captured_open=true;}
 
   }
  }
