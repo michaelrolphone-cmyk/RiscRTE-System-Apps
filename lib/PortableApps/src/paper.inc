@@ -11,8 +11,12 @@ static void pp_circle(int x,int y,int radius,bool black) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(y,&row_first,&row_end);
 #endif
-  for(int j=row_first;j<row_end;j++)for(int i=-radius;i<=radius;i++)
-    if(i*i+j*j<=radius*radius)fill(x+i,y+j,1,1,black?0:0xffff);
+  /* One exact horizontal span replaces thousands of per-pixel calls in
+   * the Springboard rings. Coverage is the same integer circle equation. */
+  for(int j=row_first;j<row_end;j++) {
+    int span=radius;while(span*span+j*j>radius*radius)--span;
+    fill(x-span,y+j,span*2+1,1,black?0:0xffff);
+  }
 }
 static int pp_measure(const char *s,bool heading) {
   int n=0;if(!s)return 0;
@@ -65,18 +69,20 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
     raster_rows((int64_t)y+(int)g->top*zoom,&row_first,&row_end);
     row_first/=zoom;row_end=(row_end+zoom-1)/zoom;
 #endif
-    for(unsigned j=(unsigned)row_first;j<(unsigned)row_end;j++)for(unsigned i=0;i<g->width;i++) {
+    for(unsigned j=(unsigned)row_first;j<(unsigned)row_end;j++)for(unsigned i=0;i<g->width;) {
       unsigned n=j*g->width+i;
-      if(g->bits[n/8]&(0x80u>>(n%8))) {
+      if(!(g->bits[n/8]&(0x80u>>(n%8)))){i++;continue;}
+      unsigned first=i++;
+      while(i<g->width){n=j*g->width+i;if(!(g->bits[n/8]&(0x80u>>(n%8))))break;i++;}
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-        int offset=pen/16-x+((int)g->left+(int)i)*zoom;
-        int left=total?offset*fitted/total:offset;
-        int right=total?(offset+zoom)*fitted/total:offset+zoom;
-        if(right>left)fill(x+left,y+((int)g->top+(int)j)*zoom,right-left,zoom,black?0:0xffff);
+      int offset=pen/16-x+((int)g->left+(int)first)*zoom;
+      int end=pen/16-x+((int)g->left+(int)i)*zoom;
+      int left=total?offset*fitted/total:offset;
+      int right=total?end*fitted/total:end;
+      if(right>left)fill(x+left,y+((int)g->top+(int)j)*zoom,right-left,zoom,black?0:0xffff);
 #else
-        fill(pen/16+((int)g->left+(int)i)*zoom,y+((int)g->top+(int)j)*zoom,zoom,zoom,black?0:0xffff);
+      fill(pen/16+((int)g->left+(int)first)*zoom,y+((int)g->top+(int)j)*zoom,(int)(i-first)*zoom,zoom,black?0:0xffff);
 #endif
-      }
     }
     pen+=advance;
   }

@@ -244,6 +244,7 @@ static risc_display_present_token_v1 paper_token;
 static uint32_t paper_submitted_at;
 static bool paper_present_progress(void);
 bool portable_paper_frame_ready(void);
+static bool paper_token_progress(void);
 bool portable_paper_frame_drain(void);
 static bool paper_token_clean;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -754,7 +755,10 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
   if (y1 > height())
     y1 = height();
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_replaying){if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+  if(raster_replaying){
+    if(raster_band_columns){if(x0<raster_band_top)x0=raster_band_top;if(x1>raster_band_bottom)x1=raster_band_bottom;}
+    else {if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+  }
 #endif
   if(x0>=x1 || y0>=y1)return;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
@@ -1061,14 +1065,25 @@ const paper_presentation *paper_presentation_get(void) {
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_sealed)return false;
-  raster_begin_allowed=!paper_token;
+  if(raster_sealed||raster_recording||surface.frame)return false;
+  raster_begin_allowed=true;
 #endif
   paper_async_frames=(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT)!=0;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   paper_async_frames=paper_async_frames && desk_phase==DESK_FOREGROUND;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return true;
+#else
   return !paper_token;
+#endif
+}
+bool portable_paper_frame_idle(void) {
+ return !failed&&!paper_token&&!surface.frame
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   &&!raster_sealed&&!raster_recording
+#endif
+ ;
 }
 /* Advance once per foreground poll. Status never gives the app a writable
  * lease; only completion promotes the submitted image into damage history. */
@@ -1076,6 +1091,9 @@ static bool paper_present_progress(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_sealed&&!raster_replaying)return raster_progress();
 #endif
+  return paper_token_progress();
+}
+static bool paper_token_progress(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_capture_checkpoint())return false;
 #endif
@@ -1108,7 +1126,7 @@ static bool paper_present_progress(void) {
   desk_present_complete=true;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-  display_settled=true;alarm_pixels_valid=true;
+  display_settled=portable_paper_frame_idle();alarm_pixels_valid=true;
 #endif
   previous_valid=previous_pixels!=NULL;paper_previous_valid=paper_previous!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -1763,7 +1781,7 @@ bool portable_desk_adapter_foreground(void) {
 #include "contexts_policy.inc"
 #endif
 #ifdef PORTABLE_APP_TOUCH_SCROLL
-bool portable_paper_scroll_settled(void) {return !failed&&!paper_token;}
+bool portable_paper_scroll_settled(void) {return portable_paper_frame_idle();}
 bool portable_paper_scroll_available(void) {
  if(failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT

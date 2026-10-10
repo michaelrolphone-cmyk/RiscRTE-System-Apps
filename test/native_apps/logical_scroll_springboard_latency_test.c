@@ -56,7 +56,13 @@ int main(int argc,char **argv){
  source_kv.get=app_get;source_kv.put=fx_kv_put;fx_runtime.acquire=logic_acquire;fx_runtime.release=app_release;fx_runtime.request_launch=logic_launch;
  logical_raw_init(TEST_TOOLBAR_NATIVE_HEIGHT,TEST_TOOLBAR_NATIVE_WIDTH,logic_touch);
  assert(app_module_init()==0);app_main();assert(logical_requests==(drag?0u:1u)&&logical_at<1300&&!failed&&!retained&&!pending&&launches==1);
- if(latency==2300){if(by_touch||drag)assert(busy_inputs>0);assert(presents==1);}
+ if(latency==2300){if(by_touch||drag)assert(busy_inputs>0);
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ assert(presents==2); /* active panel plus exactly one prepared immutable image */
+#else
+ assert(presents==1);
+#endif
+}
  assert(logical_raw_head==logical_raw_tail);
  app_module_fini();assert(!live&&!frames&&!subscriptions&&!barriers);
  printf("{\"controller\":\"springboard\",\"input\":\"%s\",\"latency\":%u,\"logical_at\":%u,\"frames\":%u,\"busy_inputs\":%u}\n",argv[1],latency,logical_at,presents,busy_inputs);return 0;

@@ -1,5 +1,6 @@
 #define RASTER_LATENCY_NO_MAIN
 #include "portable_raster_latency_test.c"
+#include "paper_pixel_reference.inc"
 static void original(const sbh_font *font,int x,int baseline,const char *s,int tracking,bool right) {
  int width=0;for(unsigned i=0;s[i];i++){const sbh_glyph*g=raster_sbh_lookup(font,(unsigned char)s[i]);if(g)width+=(int)g->advance+(i?tracking*64:0);}
  int pen=x*64-(right?width:0);
@@ -33,6 +34,12 @@ int main(void) {
   for(unsigned r=0;r<6;r++)for(unsigned c=0;c<3;c++){
    memset(surface.pixels,0xa5,bytes);rectangle_reference(rectangles[r][0],rectangles[r][1],rectangles[r][2],rectangles[r][3],colors[c]);memcpy(expected,surface.pixels,bytes);
    memset(surface.pixels,0xa5,bytes);fill(rectangles[r][0],rectangles[r][1],rectangles[r][2],rectangles[r][3],colors[c]);assert(!memcmp(expected,surface.pixels,bytes));rect_checks++;
+   memset(surface.pixels,0xa5,bytes);raster_recording=true;
+   fill(rectangles[r][0],rectangles[r][1],rectangles[r][2],rectangles[r][3],colors[c]);
+   raster_recording=false;raster_replaying=true;raster_command_span(raster_commands);
+   while(raster_band_top<raster_band_limit){raster_band_bottom=raster_band_top+1;raster_execute(raster_commands);++raster_band_top;}
+   raster_replaying=false;raster_band_columns=false;raster_free_commands();
+   assert(!memcmp(expected,surface.pixels,bytes));
   }
  }
  /* Rotated replay must not poll expensive runtime health per physical pixel.
@@ -50,6 +57,26 @@ int main(void) {
  printf("Rotated full-screen replay health calls: %u (bounded per 512 pixels) PASS\n",health_calls);
  paper_rotated=false;paper_flip_ui=false;
  printf("Packed MONO1: %u original-pixel complete-buffer comparisons PASS\n",rect_checks);
+ unsigned circle_pixels=0,circle_spans=0;
+ for(unsigned rotation=0;rotation<4;rotation++) {
+  paper_rotated=rotation&1;paper_flip_ui=rotation>>1;
+  int radii[]={1,3,10,38,43,47,128};
+  for(unsigned r=0;r<sizeof(radii)/sizeof(*radii);r++)for(unsigned ink=0;ink<2;ink++) {
+   int radius=radii[r],x=rotation&1?20:100,y=75;
+   memset(surface.pixels,0xa5,bytes);
+   for(int j=-radius;j<=radius;j++)for(int i=-radius;i<=radius;i++)if(i*i+j*j<=radius*radius){fill(x+i,y+j,1,1,ink?0:0xffff);circle_pixels++;}
+   memcpy(expected,surface.pixels,bytes);memset(surface.pixels,0xa5,bytes);
+   pp_circle(x,y,radius,ink);circle_spans+=2*radius+1;assert(!memcmp(expected,surface.pixels,bytes));
+  }
+  const char *labels[]={"SPRINGBOARD", "BT BUTTONS", "12:45", "MiXeD & punctuation!?"};
+  for(unsigned t=0;t<4;t++)for(unsigned zoom=0;zoom<2;zoom++)for(unsigned head=0;head<2;head++) {
+   unsigned scale=1|(zoom?PAPER_TEXT_CLOCK:PAPER_TEXT_LITERAL);
+   memset(surface.pixels,0xa5,bytes);reference_paper_text(-3,64,470,labels[t],scale,head,true);memcpy(expected,surface.pixels,bytes);
+   memset(surface.pixels,0xa5,bytes);pp_text(-3,64,470,labels[t],scale,head,true);assert(!memcmp(expected,surface.pixels,bytes));
+  }
+ }
+ paper_rotated=false;paper_flip_ui=false;
+ printf("Paper circles: %u pixel calls replaced by %u spans; 56 circle and 64 label full-buffer comparisons PASS\n",circle_pixels,circle_spans);
  const char *times[]={"0:00","10:59","23:59","--:--","1:11","8:88"};
  unsigned original_commands=0,candidate_commands=0;
  for(unsigned t=0;t<6;t++){
