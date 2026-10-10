@@ -1,5 +1,5 @@
-/* Selected paper client only. Provider indices never identify an action by
- * themselves: completed pixels and the exact fresh release travel together. */
+/* Selected paper client only. Input uses current logical geometry and pins the
+ * exact release identity at DOWN. Display completion never admits an action. */
 #if !defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_APP_TOUCH_SCROLL) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 #error "Update touch scrolling requires explicit native paper scrolling"
 #endif
@@ -89,18 +89,17 @@ static bool ups_selected_current(void) {
  message="Release changed; choose and confirm again";dirty=true;return false;
 }
 static bool ups_confirm_ready(void) {
- ups_prepare();if(PORTABLE_APP_RETAINED())return false;ups_visible();
- unsigned choice=ups_mode==UPS_CONFIRM?confirm_choice:ups_mode==UPS_CATALOG?selected:0;
- portable_touch_scroll shown=ups_scroll;shown.position_q8=ups_completed.q8;
- int y=portable_scroll_row_y(&shown,(int)choice);
- if(ups_completed.generation!=ups_generation||ups_completed.mode!=ups_mode||ups_completed.selected!=choice||
-    y<shown.view.y||y+UPS_EXTENT>shown.view.y+shown.view.height){
-  portable_scroll_reveal(&ups_scroll,(int)choice);dirty=true;return false;
- }
- if(ups_mode==UPS_CONFIRM)return ups_same(&ups_completed.release,&selected_row)&&ups_selected_current();
+ unsigned generation=ups_generation,mode=ups_mode;
+ unsigned choice=mode==UPS_CONFIRM?confirm_choice:mode==UPS_CATALOG?selected:0;
+ ups_prepare();if(PORTABLE_APP_RETAINED())return false;
+ /* A catalog change during validation invalidates this action, even when the
+  * replacement has the same index. Selection and geometry are app state. */
+ if(generation!=ups_generation||mode!=ups_mode||
+    choice!=(ups_mode==UPS_CONFIRM?confirm_choice:ups_mode==UPS_CATALOG?selected:0))return false;
+ if(ups_mode==UPS_CONFIRM)return ups_selected_current();
  if(ups_mode==UPS_CATALOG&&choice){
-  unsigned at=choice-ups_completed.first;software_update_row_v1 current;
-  if(at>=ups_completed.count||!ups_completed.valid[at]||!ups_get(choice,&current)||!ups_same(&current,&ups_completed.rows[at])){
+  software_update_row_v1 current;
+  if(!ups_get(choice,&current)){
    message="Release changed; choose it again";dirty=true;return false;
   }
  }
@@ -157,11 +156,13 @@ static void ups_input(t5_app_input_t *input) {
  portable_touch_sample sample;uint32_t now;portable_paper_scroll_sample(&sample,&now);
  if(sample.began){
   ups_hit_footer=ups_footer(sample.x,sample.y);
-  ups_hit_generation=ups_completed.generation;ups_hit_mode=ups_completed.mode;ups_hit_selected=ups_completed.selected;
-  ups_hit_valid=ups_hit_generation==ups_generation&&ups_hit_mode==ups_mode;
-  portable_touch_scroll shown=ups_scroll;shown.position_q8=ups_completed.q8;ups_hit_row=portable_scroll_row(&shown,sample.x,sample.y);
-  if(ups_mode==UPS_CATALOG&&ups_hit_row>0){unsigned at=(unsigned)ups_hit_row-ups_completed.first;
-   if(at>=ups_completed.count||!ups_completed.valid[at])ups_hit_valid=false;else ups_hit_release=ups_completed.rows[at];}
+  ups_hit_generation=ups_generation;ups_hit_mode=ups_mode;
+  ups_hit_selected=ups_mode==UPS_CONFIRM?confirm_choice:ups_mode==UPS_CATALOG?selected:0;
+  ups_hit_valid=true;
+  ups_hit_row=portable_scroll_row(&ups_scroll,sample.x,sample.y);
+  if(ups_mode==UPS_CATALOG&&ups_hit_row>0)
+   ups_hit_valid=ups_get((unsigned)ups_hit_row,&ups_hit_release);
+  else if(ups_mode==UPS_CONFIRM)ups_hit_release=selected_row;
  }
  unsigned result=portable_scroll_touch(&ups_scroll,&sample,now);
  if(result&PORTABLE_SCROLL_CHANGED)dirty=true;
@@ -174,6 +175,7 @@ static void ups_input(t5_app_input_t *input) {
   if(footer==2&&(ups_mode==UPS_PROGRESS||(ups_mode==UPS_CONFIRM&&!confirm_choice))){input->buttons=T5_APP_BUTTON_CONFIRM;return;}
  }
  if(!ups_hit_valid||ups_hit_generation!=ups_generation||ups_hit_mode!=ups_mode)return;
+ if(ups_mode==UPS_CONFIRM&&!ups_same(&ups_hit_release,&selected_row))return;
  int w=ua->screen_width(),h=ua->screen_height(),bw=(w-88)/4,x=(int)sample.x-32;
  if(x>=0&&sample.y>=h-112&&sample.y<h-24){unsigned at=(unsigned)x/(unsigned)(bw+8);
   if(at<4&&x%(bw+8)<bw){static const unsigned keys[]={T5_APP_BUTTON_BACK,T5_APP_BUTTON_UP,T5_APP_BUTTON_CONFIRM,T5_APP_BUTTON_DOWN};
