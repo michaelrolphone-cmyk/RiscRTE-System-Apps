@@ -975,9 +975,7 @@ static bool paper_present_progress(void) {
 #endif
   if(failed)return false;
   if(!paper_token)return true;
-  if((uint32_t)(millis_now()-paper_submitted_at)>=10000) {
-    display_failure("PORTABLE_APP error=display-timeout");return false;
-  }
+  uint32_t elapsed=(uint32_t)(millis_now()-paper_submitted_at);
   if(failed)return false;
   risc_display_present_status_v1 status={0};
   portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
@@ -988,7 +986,12 @@ static bool paper_present_progress(void) {
   if(status.state==RISC_DISPLAY_PRESENT_FAILED || status.state==RISC_DISPLAY_PRESENT_SUPERSEDED) {
     display_failure("PORTABLE_APP error=display-failed");return false;
   }
-  if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE)return true;
+  if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE) {
+    /* A synchronous service call can delay this observer after the hardware
+     * has completed. Only a still-pending token can time out on observation. */
+    if(elapsed>=10000){display_failure("PORTABLE_APP error=display-timeout");return false;}
+    return true;
+  }
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
   paper_token=0;paper_token_clean=false;

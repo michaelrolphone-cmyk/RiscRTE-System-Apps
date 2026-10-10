@@ -105,11 +105,17 @@ static int32_t keyboard_step(void){
     }
     return RISC_TEXT_ENTRY_OK;
 }
+static void copy_display_text(void){
+    memset(document.nodes[0].text,0,sizeof(document.nodes[0].text));
+    if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)
+        memset(document.nodes[0].text,'*',strlen(state.text));
+    else memcpy(document.nodes[0].text,state.text,sizeof(state.text));
+}
 static int32_t update_scene(void){
     document.revision=state.revision;
     document.nodes[0].value=(int32_t)page;
     document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
-    memcpy(document.nodes[0].text,state.text,sizeof(state.text));
+    copy_display_text();
     int32_t r=scene->update(scene->context,scene_session,&document);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(r!=RISC_SCENE_OK)return retain();
@@ -136,7 +142,7 @@ static int32_t close_owned(void){
 static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,uint64_t *out){
     (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
-       (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
+       (request->reserved&~(RISC_TEXT_ENTRY_REQUEST_HOME_REASON|RISC_TEXT_ENTRY_REQUEST_MASKED))||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
        !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
     if(active)return RISC_TEXT_ENTRY_BUSY;
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
@@ -155,7 +161,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
         .nodes={{.id=1,.route=1,.kind=RISC_SCENE_KEYBOARD_NODE,.action=1,.minimum=0,.maximum=3,.step=1}}};
     memcpy(document.routes[0].title,request->label,sizeof(request->label));
     memcpy(document.nodes[0].label,request->label,sizeof(request->label));
-    memcpy(document.nodes[0].text,state.text,sizeof(state.text));
+    copy_display_text();
     document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
     document.nodes[0].target=capacity-1;
     int32_t r=scene->open(scene->context,&document,NULL,&scene_session);
@@ -197,9 +203,10 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
     *out=state;if(flags&RISC_SCENE_PRESENTING)out->flags|=RISC_TEXT_ENTRY_PRESENTING;return RISC_TEXT_ENTRY_OK;
 }
 static int32_t close_session(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
-static const risc_text_entry_api_v1_home_reason api={
-    {1,sizeof(api),NULL,open_session,poll_session,close_session},
-    RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION};
+static const risc_text_entry_api_v1_masked api={
+    {{1,sizeof(api),NULL,open_session,poll_session,close_session},
+     RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION},
+    RISC_TEXT_ENTRY_MASKED_TAG,RISC_TEXT_ENTRY_MASKED_VERSION};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||!deps||!count||count>2)return false;
     scene=NULL;keyboard=NULL;

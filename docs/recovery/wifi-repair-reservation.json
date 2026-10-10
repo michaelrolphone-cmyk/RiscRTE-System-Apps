@@ -1,0 +1,11 @@
+{
+  "checked_utc": "2026-10-10T13:48:40Z",
+  "base_commit": "3a0145adcab1e03629709f61daa1901324b25281",
+  "live_refs_sha256": "c599c825380ac8cafbcdf85ab9d82fbc3e8e070c081dee87df1d2b494e711830",
+  "live_ref_count": 100,
+  "versions": {
+    "wifi_settings": "1.1.21",
+    "text-input-host": "0.1.3"
+  },
+  "state": "working-source-checkpoint; not yet a qualified Wi-Fi application target"
+}

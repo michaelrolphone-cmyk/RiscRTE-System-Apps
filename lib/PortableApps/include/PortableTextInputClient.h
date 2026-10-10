@@ -37,8 +37,8 @@ static inline int portable_text_client_release(portable_text_client *c) {
     }
     c->closing=false;return RISC_TEXT_ENTRY_OK;
 }
-static inline int portable_text_client_begin(portable_text_client *c,const risc_runtime_api_v1 *runtime,
-                                            const char *label,const char *initial,uint32_t capacity) {
+static inline int portable_text_client_begin_mode(portable_text_client *c,const risc_runtime_api_v1 *runtime,
+                                            const char *label,const char *initial,uint32_t capacity,bool masked) {
     if(!c||!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
     if(c->active||c->acquired||c->suspended)return RISC_TEXT_ENTRY_BUSY;
     if(!runtime||!runtime->acquire||!runtime->release||!label||!initial||!capacity||capacity>RISC_TEXT_ENTRY_BYTES)return RISC_TEXT_ENTRY_INVALID;
@@ -56,8 +56,12 @@ static inline int portable_text_client_begin(portable_text_client *c,const risc_
     if(c->api->api_version!=1||c->api->struct_size<sizeof(*c->api)||!c->api->open||!c->api->poll||!c->api->close) {
         int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed;
     }
+    if(masked&&!risc_text_entry_masked(c->api)){
+        int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed;
+    }
     c->home_reason=risc_text_entry_home_reason(c->api);
     if(c->home_reason)request.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON;
+    if(masked)request.reserved|=RISC_TEXT_ENTRY_REQUEST_MASKED;
     int rc=portable_text_adapter_suspend();
     if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_retain(c);int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?rc:closed;}
     c->suspended=true;c->session=0;
@@ -67,6 +71,10 @@ static inline int portable_text_client_begin(portable_text_client *c,const risc_
     if(rc==RISC_TEXT_ENTRY_OK&&c->session){c->active=true;return RISC_TEXT_ENTRY_OK;}
     if(c->session||(rc!=RISC_TEXT_ENTRY_UNAVAILABLE&&rc!=RISC_TEXT_ENTRY_BUSY&&rc!=RISC_TEXT_ENTRY_INVALID))return portable_text_client_retain(c);
     int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?rc:closed;
+}
+static inline int portable_text_client_begin(portable_text_client *c,const risc_runtime_api_v1 *runtime,
+                                            const char *label,const char *initial,uint32_t capacity) {
+    return portable_text_client_begin_mode(c,runtime,label,initial,capacity,false);
 }
 static inline int portable_text_client_poll(portable_text_client *c,risc_text_entry_state_v1 *out) {
     if(!c||!out)return RISC_TEXT_ENTRY_INVALID;
