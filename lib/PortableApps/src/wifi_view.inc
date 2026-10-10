@@ -1,3 +1,5 @@
+#define portable_wifi_hit wifi_watch_hit
+#define portable_wifi_render wifi_watch_render
 #ifdef PORTABLE_NOVA_UI
 #include "wifi_nova.inc"
 #else
@@ -85,3 +87,14 @@ void portable_wifi_render(const portable_wifi_view *v) {
 }
 
 #endif
+
+#undef portable_wifi_hit
+#undef portable_wifi_render
+#include "wifi_paper.inc"
+int portable_wifi_hit(const portable_wifi_view *v,int x,int y) {
+  return pp_enabled()?wifi_paper_hit(v,x,y):wifi_watch_hit(v,x,y);
+}
+void portable_wifi_render(const portable_wifi_view *v) {
+  if(pp_enabled())wifi_paper_render(v);else wifi_watch_render(v);
+}
+bool portable_wifi_paper(void) {return pp_enabled();}

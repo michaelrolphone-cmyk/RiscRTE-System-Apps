@@ -1,11 +1,17 @@
 /* Client implementation of the shared compact presentation. No hardware pins,
  * register access, or runtime ABI. True FA glyphs are copied OFL font rasters. */
 #include "../../../Apps/SpringboardPresentation.h"
+#if defined(PORTABLE_RTC_UTC8_DENVER) && defined(PORTABLE_RTC_WALL_TIME)
+#error "Select exactly one explicit RTC policy"
+#endif
 #include "../fonts/icons.inc"
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+#include "../fonts/springboard_gamepad.inc"
+#endif
 #include "../fonts/text.inc"
 static bool nova_mode, nova_mask_pending;
 static springboard_contact nova_contact;
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
 #include "PortableTime.h"
 static risc_runtime_capability_v1 np_rtc_grant;
 static const twatch_rtc_api_v1 *np_rtc;
@@ -18,7 +24,20 @@ static uint16_t np_rgb(uint32_t rgb) {
   return (uint16_t)(((rgb>>19)&31)<<11|((rgb>>10)&63)<<5|((rgb>>3)&31));
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
+#if defined(PORTABLE_TOUCH_SCROLL) && (defined(PORTABLE_FILE_BROWSER_APP) || defined(PORTABLE_APP_TOUCH_SCROLL) || defined(PORTABLE_SETTINGS_LIST_SCROLL))
+  if(raster_clip_active&&!portable_scroll_inside(&raster_clip,x,y))return;
+#endif
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
+    native_point(&x,&y);
+    uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x/8;
+    uint8_t bit=(uint8_t)(0x80u>>(x&7));
+    unsigned old=(*p&bit)?0:255;
+    unsigned luminance=(((rgb>>16)&255)*299+((rgb>>8)&255)*587+(rgb&255)*114)/1000;
+    if(a>255)a=255;
+    if((old*(255-a)+luminance*a)/255<128)*p|=bit;else *p&=(uint8_t)~bit;
+    return;
+  }
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
   if(a>=255){uint16_t color=np_rgb(rgb);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);return;}
   uint16_t old=(uint16_t)(p[0]|p[1]<<8),color;
@@ -32,6 +51,9 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   const rpi_glyph *g=NULL;
   for(unsigned i=0;i<sizeof(rpi_icons)/sizeof(rpi_icons[0]);++i)
     if(!strcmp(rpi_icons[i].name,name)){g=&rpi_icons[i];break;}
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+  if(!g && !strcmp(name,rpi_springboard_gamepad.name))g=&rpi_springboard_gamepad;
+#endif
   if(!g)return false;
   int max=g->width>g->height?g->width:g->height;
   int w=g->width*size/max,h=g->height*size/max;
@@ -127,7 +149,13 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
 }
 static void np_contact(springboard_contact *out) { *out=nova_contact; }
 static bool np_clock(uint8_t *hour,uint8_t *minute) {
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  twatch_rtc_time_v1 local;
+  if(!hour || !minute || !native_toolbar_local(&local))return false;
+  *hour=local.hour;*minute=local.minute;return true;
+#elif defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+  return !failed && portable_desk_clock_time(hour,minute);
+#elif defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   twatch_rtc_time_v1 raw,local;
   if(!np_rtc || !np_rtc->read(np_rtc->context,&raw) || !portable_time_forward(&raw,&local))return false;
   *hour=local.hour;*minute=local.minute;return true;
@@ -136,19 +164,21 @@ static bool np_clock(uint8_t *hour,uint8_t *minute) {
   (void)hour;(void)minute;return false;
 #endif
 }
+#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 static void np_close(void) {
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   if(np_rtc_grant.api && !rt->release(&np_rtc_grant))rt->diagnostic("PORTABLE_APP error=toolbar-clock-release");
   np_rtc=NULL;
 #endif
 }
 static void np_poll(t5_app_input_t *out);
+#endif
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
-  if(width()>=400 && height()>=400)return NULL;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
-#ifdef PORTABLE_RTC_UTC8_DENVER
+#if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);
   if(!np_rtc_grant.api && rt->acquire("rtc.clock",TWATCH_RTC_API_V1,0,&np_rtc_grant)) {
     const twatch_rtc_api_v1 *clock=np_rtc_grant.api;
@@ -164,8 +194,26 @@ const springboard_presentation *springboard_presentation_get(void) {
   return &np_view;
 }
 static void np_poll(t5_app_input_t *out) {
+  (void)out;
   portable_touch_sample s;input_take(&s);
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(quick.ui.paper && quick_replay_pending && s.valid && s.down) {
+    input_sample=s;input_pending=true;quick_replay_delivery=true;
+    s.x=(uint16_t)(quick.ui.start_x*width()/480);s.y=(uint16_t)(quick.ui.start_y*height()/800);s.began=true;
+  }
+  quick_replay_pending=false;
+#endif
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_FILE_BROWSER_APP)
+  file_scroll_sample=s;file_scroll_sampled_at=input_sampled_at;
+  if(s.x>=width() || s.y>=height()){file_scroll_sample.valid=false;file_scroll_sample.cancelled=true;}
+#endif
+#ifdef PORTABLE_APP_TOUCH_SCROLL
+  paper_scroll_sample=s;paper_scroll_sampled_at=input_sampled_at;
+  if(s.x>=width()||s.y>=height()){paper_scroll_sample.valid=false;paper_scroll_sample.cancelled=true;}
+#endif
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
-  if(s.x>=info.width || s.y>=info.height){nova_contact.valid=false;nova_contact.cancelled=true;}
+  if(s.x>=width() || s.y>=height()){nova_contact.valid=false;nova_contact.cancelled=true;}
+#ifndef PORTABLE_HOME_POINTS_NATIVE_UTC
   if(s.released && s.tap_eligible && !s.moved && s.x<44 && s.y<40){out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;}
+#endif
 }

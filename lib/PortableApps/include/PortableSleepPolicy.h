@@ -1,7 +1,7 @@
-#ifndef PORTABLE_SLEEP_POLICY_H
-#define PORTABLE_SLEEP_POLICY_H
+#pragma once
 /* Shared ELF policy only. Runtime persists opaque bytes and knows no mode.
- * Missing, unknown, malformed or unreadable records always choose Hybrid.
+ * Legacy load/save wrappers choose Hybrid for missing, unknown, malformed
+ * or unreadable records. Explicit profiles below select their own fallback.
  * Namespace selection comes from the deployment's explicit app grant. */
 #include "RiscKeyValueV1.h"
 #include <stdbool.h>
@@ -14,7 +14,7 @@
 #define PORTABLE_SLEEP_KEY "sleep_mode"
 #define PORTABLE_SLEEP_STORE_INSTANCE 1u
 enum { PORTABLE_SLEEP_LOADED=0, PORTABLE_SLEEP_MISSING=1,
-       PORTABLE_SLEEP_INVALID=2, PORTABLE_SLEEP_UNAVAILABLE=3 };
+       PORTABLE_SLEEP_INVALID=2, PORTABLE_SLEEP_UNAVAILABLE=3, PORTABLE_SLEEP_UNSUPPORTED=4 };
 static inline bool portable_sleep_api_valid(const risc_key_value_v1 *kv) {
     return kv && kv->api_version==RISC_KEY_VALUE_API_V1 &&
         kv->struct_size>=sizeof(*kv) && kv->get && kv->put;
@@ -39,6 +39,30 @@ static inline bool portable_sleep_save(const risc_key_value_v1 *kv,unsigned mode
     const uint8_t data[]={0x53,1,(uint8_t)mode,(uint8_t)(mode^0xa5u)};
     if(kv->put(kv->context,PORTABLE_SLEEP_KEY,data,sizeof(data))!=RISC_KEY_VALUE_OK)return false;
     return portable_sleep_load(kv,&current)==PORTABLE_SLEEP_LOADED && current==mode;
+}
+
+/* Deployment-selected choices; no native power grant or Runtime policy.
+ * Legacy load/save retain their exact all-mode/Hybrid behavior. */
+#define PORTABLE_SLEEP_MASK_LIGHT (1u << PORTABLE_SLEEP_LIGHT)
+#define PORTABLE_SLEEP_MASK_DEEP (1u << PORTABLE_SLEEP_DEEP)
+#define PORTABLE_SLEEP_MASK_HYBRID (1u << PORTABLE_SLEEP_HYBRID)
+#define PORTABLE_SLEEP_MASK_ALL 7u
+static inline bool portable_sleep_supported(unsigned modes,unsigned mode) {
+    return mode<=PORTABLE_SLEEP_HYBRID && (modes&(1u<<mode))!=0;
+}
+static inline int portable_sleep_load_profile(const risc_key_value_v1 *kv,unsigned modes,
+                                              unsigned fallback,unsigned *mode) {
+    if(!mode || (modes&~PORTABLE_SLEEP_MASK_ALL) || !portable_sleep_supported(modes,fallback))
+        return PORTABLE_SLEEP_INVALID;
+    unsigned saved;int status=portable_sleep_load(kv,&saved);
+    *mode=fallback;
+    if(status!=PORTABLE_SLEEP_LOADED)return status;
+    if(!portable_sleep_supported(modes,saved))return PORTABLE_SLEEP_UNSUPPORTED;
+    *mode=saved;return status;
+}
+static inline bool portable_sleep_save_profile(const risc_key_value_v1 *kv,unsigned modes,unsigned mode) {
+    return !(modes&~PORTABLE_SLEEP_MASK_ALL) && portable_sleep_supported(modes,mode) &&
+        portable_sleep_save(kv,mode);
 }
 
 /* App-owned timer preferences share namespace 1 with Settings/Quick Controls.
@@ -71,5 +95,3 @@ static inline bool portable_sleep_timer_save(const risc_key_value_v1 *kv,bool de
     return (rc==RISC_KEY_VALUE_OK||rc==RISC_KEY_VALUE_IO)&&
         portable_sleep_timer_load(kv,deep,&current)==PORTABLE_SLEEP_LOADED&&current==milliseconds;
 }
-
-#endif /* PORTABLE_SLEEP_POLICY_H */

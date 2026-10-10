@@ -8,7 +8,12 @@
 typedef struct {
  pqa_state ui;
  unsigned brightness,volume,restore_volume;
+#ifdef PORTABLE_LOW_BATTERY
  uint32_t idle_ms,deep_ms;
+#endif
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ unsigned restore_brightness;
+#endif
  bool loaded,hour_24,dnd_enabled;
 } pqa_session;
 void pqa_session_init(pqa_session *s);
@@ -18,3 +23,7 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt);
  * confirmed volume or DND changes so the caller refreshes alarm.service. */
 bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *display,uint32_t actions,bool *alerts_changed);
 bool pqa_session_restore(const pqa_session *s,const risc_display_output_api_v1 *display);
+#ifdef PORTABLE_PAPER_TRANSITIONS
+/* Confirm the loaded paper preference with the provider before displaying it. */
+bool pqa_session_sync_brightness(pqa_session *s,const risc_display_output_api_v1 *display);
+#endif

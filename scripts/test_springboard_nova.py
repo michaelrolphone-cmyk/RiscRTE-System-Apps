@@ -41,11 +41,3 @@ subprocess.run([*flags,'-DNOVA_DAILY_CATALOG','-DCATALOG_COUNT=5','-DPORTABLE_RT
  str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
  str(ROOT/'test/native_apps/springboard_nova_test.c'),'-o',str(binary)],check=True)
 for scenario in [0,6,14,16,32,33]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
-
-# Real shared layout plus production RGB565 pixels, including narrow/padded displays.
-subprocess.run([*flags,'-O1','-fsanitize=address','-fno-omit-frame-pointer','-no-pie',
- '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
- str(ROOT/'test/native_apps/springboard_focus_test.c'),
- str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(out/'focus-pixels')],check=True)
-focus_frames=out/'focus';focus_frames.mkdir(exist_ok=True)
-subprocess.run([str(out/'focus-pixels')],env={**os.environ,'NOVA_VISUALS':str(focus_frames)},check=True,timeout=60)

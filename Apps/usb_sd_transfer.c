@@ -8,6 +8,7 @@
 #include "PortableAppLaunchGuard.h"
 #include "PortableUsbTransfer.h"
 #include "RiscRuntimeV1.h"
+#include "RiscDiagnosticCheckpointV1.h"
 #include <RiscUsbDeviceMscV1.h>
 #include <string.h>
 #include <stdio.h>
@@ -19,6 +20,10 @@ static risc_runtime_capability_v1 grant;
 static const risc_usb_device_msc_api_v1 *usb;
 static const risc_usb_device_msc_api_v1_prepare *preparation;
 static uint64_t token;
+static risc_diagnostic_checkpoint_client_v1 checkpoint_client;
+#ifdef RISC_USB_MSC_DIAGNOSTICS_V2
+static risc_usb_device_msc_diagnostics_v2 extended;
+#endif
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
 static const risc_usb_device_msc_api_v1_diagnostics *protocol_api;
 static risc_usb_device_msc_diagnostics_v1 protocol;
@@ -65,7 +70,13 @@ static const char *command_name(uint32_t opcode) {
 static void read_protocol(void) {
     if(!protocol_api || !token)return;
     risc_usb_device_msc_diagnostics_v1 next={.struct_size=sizeof(next)};
+#ifdef RISC_USB_MSC_DIAGNOSTICS_V2
+    risc_usb_device_msc_diagnostics_v2 full={.base={.struct_size=sizeof(full)}};
+    if(protocol_api->diagnostics(usb->context,token,&full.base)!=RISC_USB_MSC_OK)return;
+    next=full.base;extended=full;
+#else
     if(protocol_api->diagnostics(usb->context,token,&next)!=RISC_USB_MSC_OK)return;
+#endif
     protocol=next;
     char line[248];
     if(next.commands_started!=logged_started) {
@@ -93,11 +104,55 @@ static void read_protocol(void) {
 #else
 static void read_protocol(void) {}
 #endif
+/* Capture while the invocation is still authoritative. No provider pointer,
+ * file content or borrowed text is retained by this generic Runtime service. */
+static void checkpoint_summary(const char *outcome,int32_t result,uint32_t reason) {
+    if(!checkpoint_client.write)return;
+    char text[RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX+1];
+    int count;
+#ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
+#ifdef RISC_USB_MSC_DIAGNOSTICS_V2
+    const bool full=extended.base.struct_size>=sizeof(extended);
+    count=snprintf(text,sizeof(text),
+      "USB final outcome=%s result=%ld state=%lu reason=%lu flags=%lu extended=%u op=%02lx lba=%lu requested=%lu transferred=%lu residue=%lu csw=%lu commands=%llu/%llu elapsed_ms=%llu io_ms=%llu sense=%lu/%lu/%lu sense_op=%02lx sense_lba=%lu timeouts=%lu timeout_kind=%lu timeout_ms=%llu aborts=%lu abort_kind=%lu resets=%lu unconfigures=%lu suspend=%lu resume=%lu stop_flags=%lu eject=%lu/%lu data_op=%02lx data_lba=%lu data_requested=%lu data_transferred=%lu data_residue=%lu data_ms=%llu read_blocks=%llu write_blocks=%llu max_poll_ms=%llu",
+      outcome,(long)result,(unsigned long)state,(unsigned long)reason,(unsigned long)protocol.flags,(unsigned)full,
+      (unsigned long)protocol.current_opcode,(unsigned long)protocol.current_lba,(unsigned long)protocol.command_bytes,
+      (unsigned long)extended.transferred_bytes,(unsigned long)extended.residue,(unsigned long)protocol.last_csw_status,
+      (unsigned long long)protocol.commands_started,(unsigned long long)protocol.commands_completed,
+      (unsigned long long)protocol.last_command_elapsed_ms,(unsigned long long)protocol.last_io_elapsed_ms,
+      (unsigned long)extended.last_sense_key,(unsigned long)extended.last_sense_asc,(unsigned long)extended.last_sense_ascq,
+      (unsigned long)extended.sense_opcode,(unsigned long)extended.sense_lba,(unsigned long)extended.timeouts,
+      (unsigned long)extended.last_timeout,(unsigned long long)extended.timeout_ms,(unsigned long)extended.aborts,
+      (unsigned long)extended.last_abort,(unsigned long)extended.resets,(unsigned long)extended.unconfigures,
+      (unsigned long)extended.suspends,(unsigned long)extended.resumes,(unsigned long)extended.start_stop_flags,
+      (unsigned long)extended.eject_requested,(unsigned long)extended.eject_complete,(unsigned long)extended.data_opcode,
+      (unsigned long)extended.data_lba,(unsigned long)extended.data_requested,(unsigned long)extended.data_transferred,
+      (unsigned long)extended.data_residue,(unsigned long long)extended.data_elapsed_ms,
+      (unsigned long long)protocol.blocks_read,(unsigned long long)protocol.blocks_written,(unsigned long long)protocol.max_poll_gap_ms);
+#else
+    count=snprintf(text,sizeof(text),"USB final outcome=%s result=%ld state=%lu reason=%lu extended=0 op=%02lx lba=%lu requested=%lu commands=%llu/%llu elapsed_ms=%llu",
+      outcome,(long)result,(unsigned long)state,(unsigned long)reason,(unsigned long)protocol.current_opcode,
+      (unsigned long)protocol.current_lba,(unsigned long)protocol.command_bytes,(unsigned long long)protocol.commands_started,
+      (unsigned long long)protocol.commands_completed,(unsigned long long)protocol.last_command_elapsed_ms);
+#endif
+#else
+    count=snprintf(text,sizeof(text),"USB final outcome=%s result=%ld state=%lu reason=%lu extended=0",
+      outcome,(long)result,(unsigned long)state,(unsigned long)reason);
+#endif
+    /* snprintf reports the required length. The bounded checkpoint reads only
+     * the accessible 768-byte prefix and records explicit truncation. */
+    if(count>0)(void)checkpoint_client.write(checkpoint_client.invocation,text,(uint32_t)count);
+}
 static bool release_grant(void) {
     if(!grant.api)return true;
     if(!runtime->release(&grant)) {
         release_failed=true;state=RISC_USB_MSC_FAULT_RETAINED;
-        error_text("Provider release failed. Retry Stop.");return false;
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+        portable_adapter_retain_silent();
+#endif
+        /* A real Runtime release failure may revoke invocation authority.
+         * Do not call the provider again through the now-invalid grant. */
+        snprintf(detail,sizeof(detail),"Provider release failed. Retry Stop.");dirty=true;return false;
     }
     grant=(risc_runtime_capability_v1){0};usb=NULL;preparation=NULL;release_failed=false;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
@@ -110,12 +165,18 @@ static bool end_session(uint32_t reason, bool automatic) {
     if(!token)return release_grant();
     const bool cancelling=state==RISC_USB_MSC_PREPARING;
     log_result(cancelling?"cancel preparation requested":"stop requested",(int32_t)reason);
+    read_protocol();checkpoint_summary("end-pending",0,reason);
     int32_t result=usb->end(usb->context,token,reason);
     if(result==RISC_USB_MSC_OK) {
         token=0;confirm_removed=false;
         if(!terminal(state))state=RISC_USB_MSC_DISCONNECTED;
         if(state!=RISC_USB_MSC_MEDIA_UNAVAILABLE)detail[0]=0;
-        dirty=true;preparing_presented=preparation_blocked=false;log_result("stopped",result);return release_grant();
+        dirty=true;preparing_presented=preparation_blocked=false;log_result("stopped",result);
+        /* release() may synchronously retain/revoke the invocation. Preserve
+         * honest pre-release evidence; a healthy release replaces it below. */
+        checkpoint_summary("release-pending",result,reason);
+        if(!release_grant())return false;
+        checkpoint_summary("complete",result,reason);return true;
     }
     if(cancelling)preparation_blocked=true;
     if(automatic)auto_cleanup_failed=true;
@@ -123,6 +184,7 @@ static bool end_session(uint32_t reason, bool automatic) {
     if(result==RISC_USB_MSC_REFUSED && !automatic && !cancelling) {
         confirm_removed=true;action_gate=true;
     } else if(result!=RISC_USB_MSC_REFUSED)state=RISC_USB_MSC_FAULT_RETAINED;
+    read_protocol();checkpoint_summary("cleanup-incomplete",result,reason);
     log_result("cleanup incomplete",result);
     return false;
 }
@@ -179,6 +241,9 @@ static void start(void) {
     host_reads=host_writes=0;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
     protocol_api=NULL;protocol=(risc_usb_device_msc_diagnostics_v1){0};logged_started=logged_completed=0;
+#ifdef RISC_USB_MSC_DIAGNOSTICS_V2
+    extended=(risc_usb_device_msc_diagnostics_v2){0};
+#endif
 #endif
     grant=(risc_runtime_capability_v1){.struct_size=sizeof(grant)};
     if(!runtime->acquire(RISC_USB_DEVICE_MSC_CAPABILITY,1,0,&grant)) {
@@ -308,6 +373,10 @@ static bool hit(const t5_app_input_t *in,int y) {
 void app_main(void) {
     app=t5_app_get_api(1);paper=paper_presentation_get();runtime=risc_runtime_get_api(1);
     if(!app || !paper || !runtime || !runtime->acquire || !runtime->release || !runtime->request_launch)return;
+    checkpoint_client=(risc_diagnostic_checkpoint_client_v1){.struct_size=sizeof(checkpoint_client)};
+    if(!risc_runtime_diagnostic_checkpoint_client(runtime,&checkpoint_client) ||
+       checkpoint_client.api_version!=1 || checkpoint_client.struct_size<sizeof(checkpoint_client) ||
+       !checkpoint_client.invocation || !checkpoint_client.write)checkpoint_client=(risc_diagnostic_checkpoint_client_v1){0};
     grant=(risc_runtime_capability_v1){0};usb=NULL;preparation=NULL;token=0;state=RISC_USB_MSC_IDLE;prepare_steps=0;preparing_presented=preparation_blocked=false;
     host_reads=host_writes=0;unknown_custody=release_failed=confirm_removed=local_ready=auto_cleanup_failed=return_after_eject=false;action_gate=true;dirty=true;detail[0]=0;
     app->set_back_exits_app(false);
@@ -316,6 +385,9 @@ void app_main(void) {
         if(portable_adapter_retained())return;
 #endif
         portable_usb_transfer_service();
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+        if(portable_adapter_retained())return;
+#endif
         /* Service may run inside display/input waits; navigation belongs to
          * this outer loop only after checked session and provider cleanup. */
         if(return_after_eject) {

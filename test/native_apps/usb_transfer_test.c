@@ -9,6 +9,7 @@
 #include "PortableUsbTransfer.h"
 #include <RiscUsbDeviceMscV1.h>
 #include <setjmp.h>
+#include "RiscDiagnosticCheckpointV1.h"
 #define steps (polls>3?polls-3:0)
 static unsigned test_case,begins,usb_steps,ends,cancel_ends,confirmed_ends,usb_releases,last_service,queued_until;
 static unsigned seen_states,prepare_count,last_prepare_input,prepare_log_lines;
@@ -18,6 +19,19 @@ static bool session,configured,release_refused,begin_failed,retained_end;
 static const void *selected_api;
 static unsigned command_begins,command_ends,diagnostic_reads,media_confirmations;
 static jmp_buf retained_exit;
+static unsigned checkpoints,checkpoint_requested;static bool checkpoint_revoked;
+static char saved_checkpoint[RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX+1];
+static int32_t checkpoint_write(uint64_t invocation,const char* text,uint32_t length){
+ assert(invocation==987 && text && length);if(checkpoint_revoked)return -1;
+ ++checkpoints;checkpoint_requested=length;
+ const unsigned count=length>RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX?RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX:length;
+ memcpy(saved_checkpoint,text,count);saved_checkpoint[count]=0;
+ return length>RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX?1:0;
+}
+static bool checkpoint_get(risc_diagnostic_checkpoint_client_v1* out){
+ if(test_case<25 || test_case==28)return false;
+ assert(out && out->struct_size==sizeof(*out));*out=(risc_diagnostic_checkpoint_client_v1){1,sizeof(*out),987,checkpoint_write};return true;
+}
 static const char *capture;
 static int32_t usb_begin(void*c,uint64_t*out){
  (void)c;assert(!session&&!frames);begins++;last_service=ms;
@@ -66,7 +80,7 @@ static const risc_usb_device_msc_api_v1_prepare msc={
 static risc_usb_device_msc_api_v1_prepare selected_msc;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
 static int32_t usb_protocol(void*c,uint64_t key,risc_usb_device_msc_diagnostics_v1*out){
- (void)c;assert(session&&key==42&&out->struct_size==sizeof(*out));diagnostic_reads++;
+ (void)c;assert(session&&key==42&&out->struct_size>=sizeof(*out));const uint32_t capacity=out->struct_size;diagnostic_reads++;
  *out=(risc_usb_device_msc_diagnostics_v1){.struct_size=sizeof(*out)};
  if(configured){
   out->commands_started=test_case==23?3:1;out->current_opcode=0x28;out->current_tag=5;
@@ -76,6 +90,25 @@ static int32_t usb_protocol(void*c,uint64_t key,risc_usb_device_msc_diagnostics_
    out->completed_tag=5;out->last_csw_status=0;out->last_command_elapsed_ms=31;out->last_io_elapsed_ms=12;
    out->last_io_result=0;out->blocks_read=1;out->last_io_lba=7;out->last_io_count=1;}
  }
+#ifdef RISC_USB_MSC_DIAGNOSTICS_V2
+ if(test_case==26 || test_case==29 || test_case==30){
+  assert(capacity>=sizeof(risc_usb_device_msc_diagnostics_v2));
+  risc_usb_device_msc_diagnostics_v2 value={.base=*out,.transferred_bytes=512,.data_opcode=0x28,.data_lba=7,.data_requested=512,.data_transferred=512,.data_elapsed_ms=31};
+  if(test_case==29){
+   value.last_sense_key=value.last_sense_asc=value.last_sense_ascq=value.sense_opcode=value.sense_lba=UINT32_MAX;
+   value.timeouts=value.last_timeout=value.aborts=value.last_abort=value.resets=value.unconfigures=value.suspends=value.resumes=value.start_stop_flags=value.eject_requested=value.eject_complete=UINT32_MAX;
+   value.data_opcode=value.data_lba=value.data_requested=value.data_transferred=value.data_residue=UINT32_MAX;
+   value.timeout_ms=value.data_elapsed_ms=UINT64_MAX;
+   value.base.flags=value.transferred_bytes=value.residue=UINT32_MAX;
+   value.base.blocks_written=value.base.max_poll_gap_ms=UINT64_MAX;
+   if(configured)value.base.commands_started=UINT64_MAX;
+   if(configured && steps>=12)value.base.commands_completed=value.base.blocks_read=UINT64_MAX;
+  }
+  value.base.struct_size=sizeof(value);memcpy(out,&value,sizeof(value));
+ }
+#else
+ (void)capacity;
+#endif
  return RISC_USB_MSC_OK;
 }
 static risc_usb_device_msc_api_v1_diagnostics selected_protocol;
@@ -113,10 +146,11 @@ static bool usb_submit(void*c,risc_display_frame_v1 frame,const risc_display_rec
 }
 static bool usb_present(void*c,risc_display_present_token_v1 key,risc_display_present_status_v1*out){(void)c;(void)key;out->state=ms<queued_until?RISC_DISPLAY_PRESENT_QUEUED:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static bool usb_health(risc_runtime_health_v1*out){out->uptime_ms=ms;return steps<100;}
-static void usb_yield(uint32_t n){ms+=n;if(test_case==8 && steps>=80){assert(session&&!usb_releases&&!ends&&!launches);longjmp(retained_exit,1);}assert(ms<30000);}
+static void usb_yield(uint32_t n){ms+=n;if(checkpoint_revoked){assert(!session&&!usb_releases&&!launches);longjmp(retained_exit,2);}if(test_case==8 && steps>=80){assert(session&&!usb_releases&&!ends&&!launches);longjmp(retained_exit,1);}assert(ms<30000);}
 static bool usb_launch(const char*s){if(test_case==24)assert(steps<25);assert(!session&&!portable_usb_transfer_owned()&&usb_releases);return launch_app(s);}
 static bool usb_release(risc_runtime_capability_v1*g){
- if(g->api==selected_api){assert(!session);if(test_case==7&&!release_refused){release_refused=true;return false;}usb_releases++;}
+ if(g->api==selected_api){assert(!session);
+ if(test_case==30){assert(strstr(saved_checkpoint,"outcome=release-pending"));checkpoint_revoked=true;return false;}if(test_case==7&&!release_refused){release_refused=true;return false;}usb_releases++;}
  return release(g);
 }
 static bool usb_acquire(const char*name,uint32_t version,uint64_t id,risc_runtime_capability_v1*out){
@@ -137,10 +171,10 @@ static bool usb_diagnostic(const char*line){
  if(strstr(line,"host SD block access confirmed"))media_confirmations++;
  return diagnostic(line);
 }
-static const risc_runtime_api_v1 usb_runtime={1,sizeof(usb_runtime),usb_health,usb_yield,usb_diagnostic,usb_launch,usb_acquire,usb_release};
+static risc_runtime_api_v1 usb_runtime={.api_version=1,.struct_size=sizeof(usb_runtime),.health=usb_health,.yield_ms=usb_yield,.diagnostic=usb_diagnostic,.request_launch=usb_launch,.acquire=usb_acquire,.release=usb_release,.diagnostic_checkpoint_client=checkpoint_get};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&usb_runtime:NULL;}
 int main(int argc,char**argv){
- assert(argc>=2);test_case=(unsigned)atoi(argv[1]);capture=argc>2?argv[2]:NULL;selected_msc=msc;selected_api=&selected_msc;
+ assert(argc>=2);test_case=(unsigned)atoi(argv[1]);if(test_case==27)usb_runtime.struct_size=offsetof(risc_runtime_api_v1,diagnostic_checkpoint_client);capture=argc>2?argv[2]:NULL;selected_msc=msc;selected_api=&selected_msc;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
  if(test_case>=18){
   selected_protocol=(risc_usb_device_msc_api_v1_diagnostics){.base=msc,.diagnostics_tag=RISC_USB_MSC_DIAGNOSTICS_TAG,.diagnostics_version=1,.diagnostics=usb_protocol};
@@ -157,7 +191,10 @@ int main(int argc,char**argv){
  if(test_case==14)selected_msc.prepare_tag=0;
  if(test_case==15)selected_msc.prepare_version=2;
  if(test_case==16)selected_msc.prepare_step=NULL;
- if(setjmp(retained_exit)){puts("Retained tokenless begin: app and grant remain mapped, no navigation or cleanup");return 0;}
+ if(setjmp(retained_exit)){
+  if(test_case==30){assert(checkpoint_revoked && checkpoints==2 && strstr(saved_checkpoint,"outcome=release-pending"));puts("Pre-release checkpoint survives simulated Runtime authority revocation; no provider recallback or navigation");return 0;}
+  puts("Retained tokenless begin: app and grant remain mapped, no navigation or cleanup");return 0;
+ }
  assert(app_module_init()==0);app_main();app_module_fini();
  assert(!frames&&!grants&&!subs&&!session&&!portable_usb_transfer_owned());if(test_case<13||test_case>=17)assert(begins&&usb_steps);else assert(!begins&&!usb_steps&&!prepare_count&&usb_releases==1);
  assert(launches==1&&!strcmp(launched,"default.elf"));
@@ -177,10 +214,18 @@ int main(int argc,char**argv){
  assert(prepare_log_lines==prepare_count);
  if(test_case>=18){
   assert(ends==1&&!confirmed_ends&&media_confirmations==1);
-  if(test_case==18||test_case==23||test_case==24)assert(command_begins==1&&command_ends==1&&diagnostic_reads>2);
+  if(test_case==18||test_case==23||test_case>=24)assert(command_begins==1&&command_ends==1&&diagnostic_reads>2);
   else assert(!command_begins&&!command_ends&&!diagnostic_reads);
  }
  if(test_case==24)assert(steps<25);
+ if(test_case>=25){
+  if(test_case==27||test_case==28)assert(!checkpoints);
+  else {assert(checkpoints==3 && strstr(saved_checkpoint,"outcome=complete"));
+   if(test_case==25)assert(strstr(saved_checkpoint,"extended=0"));
+   if(test_case==26)assert(strstr(saved_checkpoint,"extended=1")&&strstr(saved_checkpoint,"data_lba=7")&&strstr(saved_checkpoint,"data_transferred=512"));
+   if(test_case==29)assert(checkpoint_requested>768 && strlen(saved_checkpoint)==768);
+  }
+ }
  printf("USB transfer case %u: %u owner polls, %u end calls, %u cable confirmations, clean Home\n",test_case,usb_steps,ends,confirmed_ends);
  return 0;
 }

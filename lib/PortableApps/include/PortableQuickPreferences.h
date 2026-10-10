@@ -7,6 +7,7 @@
 #include <stdint.h>
 #define PQA_STORE_INSTANCE 1u
 #define PQA_BRIGHTNESS_KEY "brightness"
+#define PQA_RESTORE_BRIGHTNESS_KEY "quick_bright"
 #define PQA_VOLUME_KEY "alarm_volume"
 #define PQA_RESTORE_VOLUME_KEY "quick_volume"
 #define PQA_DND_KEY "alert_dnd"

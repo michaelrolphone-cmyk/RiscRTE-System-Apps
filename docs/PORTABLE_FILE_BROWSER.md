@@ -1,68 +1,126 @@
-# NOVA-7 File Browser (portable 1.4.0)
+# NOVA-7 File Browser (portable 1.5.8)
 
-The existing `Apps/file_browser.c` now has an explicit portable build profile.
-The legacy Reader profile remains byte-for-byte identical to the pinned 1.3.2
-ELF. The portable controller reuses its natural name/folder ordering and path
-model, moved into `FileBrowserModel.h`, and the existing volume capability table.
-It calls no Reader firmware UI/filesystem bridge and never executes a browsed
-ELF. NOVA uses the same licensed Settings typography/palette and the exact
-32-key/three-page Points Watch keyboard.
+The portable profile of `Apps/file_browser.c` uses ordinary runtime capabilities.
+A retaining, monochrome portrait display selects the shared paper presentation;
+the Watch retains its existing two-row color presentation and read-only
+`storage.installed-files@1` authority. The legacy Reader profile and its published
+1.3.2 ELF remain byte-for-byte unchanged.
 
-## Behavior
+## Paper presentation
 
-- Two touch-sized rows per page, natural ordering, directories first and a stable
-  bytewise tiebreaker. Streaming page selection has constant RAM and no arbitrary
-  folder-inventory cutoff. Previous/Next, crown/button movement and vertical
-  scrolling are supported. Back navigates to the parent and finally Apps.
-- Options offer case-insensitive filename filtering, Refresh, hidden-file toggle
-  and root navigation. Keyboard Done applies; Back cancels the draft. Folder
-  navigation clears its local filter. Filters and cursor positions are session
-  state; no settings/NVS writes are made.
-- File details show exact byte size and the full name across two explicit name
-  pages if needed. Files have bounded ASCII-byte and hexadecimal previews. The
-  ASCII view maps control/non-ASCII bytes to visible safe placeholders/spaces;
-  it is a byte viewer, not a UTF-8 document editor. Every byte in each page is
-  represented; line breaks do not silently skip bytes. Previous/Next follow
-  explicit byte ranges. Empty files, changing files, short/failed reads,
-  unavailable/malformed volumes and failed close/release all have explicit UI.
-- Failed close retains its grant, blocks further storage work and sleeps, and
-  offers Back retry. A Runtime-reported native close failure remains latched and
-  explicitly says a restart is needed. Successful callbacks leave no open
-  file/directory across poll.
-  Alarm and quick-control foreground rendering preserves the app's local state.
-- No time values are displayed, so no independent 12/24-hour convention is added.
+- Logical 480×800 with six 88-pixel rows, a static white/black layout, genuine
+  licensed Font Awesome glyphs, and the shared NOVA typography.
+- Native X4 800×480 MONO1 output uses `--display-rotation 90`. Touch stays in the
+  provider's logical 480×800 space. No board-name checks select the UI.
+- Natural directory-first ordering uses bounded streaming pages, with no
+  arbitrary folder inventory cutoff. Stable natural ties preserve every item.
+  Previous/Next and completed vertical swipes navigate pages without animation.
+- Options provide case-insensitive filename filtering, refresh, hidden files and
+  root navigation. The paper keyboard exposes all 95 printable ASCII keys,
+  preserves literal case, applies on Done and discards on Cancel/Back.
+- Text/hex previews preserve explicit byte ranges and represent control/non-ASCII
+  bytes with safe placeholders. They are byte previews, not document decoders.
+- Each writable-volume row has its own ellipsis action target, including folders.
+  The file action menu pages through Open, Open with, Preview, Rename, Move, Copy,
+  and Delete. Watch's installed executable store does not expose these actions.
 
-## Installed storage authority and remaining management work
+## Reader operations on an admitted writable volume
 
-Watch deployment requires Runtime 0.1.28's explicitly granted
-`storage.installed-files@1`, instance 0. It reuses `RiscStorageVolumeV1` but exposes
-only admitted app/provider ELF+manifest paths. Private provisioning input,
-credentials, NVS and arbitrary root files are excluded. Installed storage is
-read-only; write/create/remove callbacks are absent and the app says so. No
-rename/delete/move option pretends to work against the executable store.
+The workflows are adapted from `T5S3-Reader` commit
+`34d8e694d89a1e72d8854403d8592c289fae3ddc`, `Apps/file_browser.c`.
+The portable copy of `RiscStorageVolumeV1.h` is exactly that commit's canonical
+SDK header. `risc_storage_volume_extension()` validates version and full extension
+size before rename or checked directory operations are accessed. The legacy
+Reader SDK snapshot is retained separately to preserve exact release bytes.
 
-The original broader file-management request still needs a separately admitted
-writable user volume with recoverable rename/move/trash semantics. Watch's
-current paired layout has no such user filesystem. This increment does not
-repartition, alter bank geometry, format storage or invent an NVS file quota.
-A future user volume can use the generic volume table through the build's
-explicit capability selector; recoverable management requires a separately
-specified supporting contract. Existing Reader rename/move/delete behavior and
-published ELF remain unchanged.
+- Rename edits a draft name. Empty names, `.`, `..`, path separators, controls,
+  overlong paths and existing destinations are rejected. Same-name Done is a no-op.
+- Move selects a destination folder on the same volume. A folder cannot move
+  into itself or its descendants. Provider rename rejects existing destinations.
+- Copy selects a destination folder, on the current volume or an explicitly
+  configured secondary volume. Directory copy is unsupported, matching Reader.
+  Files use exclusive creation, bounded 4096-byte buffers, partial read/write
+  loops, scheduler yields and exact byte counts. Failure aborts the new file;
+  existing destination files are never overwritten. A source-size recheck catches
+  growth/shrinkage, but does not promise snapshot consistency against same-size
+  concurrent edits.
+- Delete requires an explicit Cancel/Delete confirmation, with Cancel initially
+  selected. Folder deletion includes hidden descendants, uses bounded path memory
+  and closes directory handles before mutations. Failure stops immediately and
+  may leave a partially deleted tree; deletion is not a recoverable Trash action.
+- Failed file/directory close retains the owning grant and original commit/abort
+  intent, blocks further storage operations, and provides Back retry. A failed
+  source close aborts the destination. Failed grant releases are retried without
+  releasing already released grants again. Confirmed cleanup precedes return.
+  Destination Cancel also retries retained closes before restoring the source
+  volume. This shared controller correction changes portable profile bytes and
+  is versioned as 1.5.8; their existing authority selections remain explicit.
 
-## Build and validation
+## File handlers and native applications
 
-```
+`--file-handlers` enables the canonical Reader `T5FileOpenApi.h` table as
+`file.open@1`, acquired through `risc_runtime_get_api`. It does not introduce a
+new runtime import or storage ABI. The service receives bounded absolute Reader
+VFS paths such as `/sd/Books/document.txt`. Only its declared handlers are shown,
+with bounded six-row pages (Reader's 128-handler cap). Open dispatches a single
+handler directly; Open with always presents the choice. A successful
+`open_request(path, app_id, cookie)` is terminal: the browser cleans up and returns
+from `app_main` without issuing another launch. Matching return/failure results
+are consumed on startup. Folder/filter selection is invocation-local; a fresh
+launch starts at the volume root.
+
+A missing/ungranted/invalid broker and unsupported system-reader handler have
+explicit status screens. The app does not invent associations or claim a
+platform service is deployed. The X4 Runtime supplies the broker and file-argument
+handoff. The selected X4 bundle currently has no application declaring
+`supported_file_types`, so Open truthfully reports no declared handler. A receiver
+in the Runtime test fixture demonstrates handoff; it is not added to deployment.
+
+An SD `.elf` is not an installed boot-store application. Open tells the user to
+install/admit it first. The browser never strips `/` from an arbitrary SD path
+and passes it to `request_launch`. That runtime call resolves the immutable
+configured boot store, not the writable SD volume.
+
+## Volume selection and build profiles
+
+Watch defaults are unchanged: `storage.installed-files@1`, instance 0, returning
+to `springboard.elf`. The X4 SD profile uses `storage.volume@1`, returning to
+`springboard.elf`. The clock home occupies `default.elf`; the launcher alone
+returns there. Instance 0 requires a uniquely authorized provider. The selected
+native X4 deployment explicitly acquires `storage.volume@1` instance 9. Runtime's
+installed-files service exists only at instance 0; the builder rejects a nonzero
+installed-files selection before compilation.
+
+A secondary USB volume is optional and is not composed by this app. Only an
+explicit `--secondary-storage-instance` adds a selector. Two `storage.volume`
+providers require distinct nonzero primary/secondary instance IDs, both admitted
+by the boot profile. There is no registry-order fallback and no guessed hardware
+ID. Switch volume / destination VOL report absence or denied acquisition.
+
+```sh
 ASAN_OPTIONS=detect_leaks=0 python scripts/test_portable_file_browser.py
+ASAN_OPTIONS=detect_leaks=0 python scripts/test_file_browser_paper.py
+ASAN_OPTIONS=detect_leaks=0 python scripts/test_file_browser_operations.py
+
+# Existing Watch profile
 python scripts/build_portable_file_browser.py --alarm-client --navigation
+
+# X4 paper / SD profile
+python scripts/build_portable_file_browser.py --display-rotation 90 \
+  --storage-capability storage.volume --return-app springboard.elf \
+  --output-dir dist/portable/file-browser-paper
 ```
 
-Omit the ASAN override on ordinary hosts/CI, where LeakSanitizer is supported.
-The fixture runs the real controller and shared adapter/raster with fake storage,
-including 513-item paging, natural order, filter keyboard, empty and long names,
-preview byte boundaries, error/retry and release ownership. Frames use padded
-stride guards. The target build uses pinned GCC 8.4, the real structural ELF
-validator, exact import/export checks and per-source hashes. Hardware touch,
-flash-media, sleep-power and physical Watch qualification are not claimed.
+Use `--file-handlers` only when the deployment admits `file.open@1`. A configured
+secondary profile can add `--storage-instance <primary-id>` and
+`--secondary-storage-instance <secondary-id>`; IDs belong to the deployment.
 
-The real-adapter fixture runs both touch rotations in normal and sanitizer modes, with and without the Watch quick-controls/alarm/local-navigation profile. A queued adapter handoff from an open preview exits directly and keeps its destination; it is never treated as nested Back. Launcher tests cover the genuine File Browser, BLE Scanner and LoRa glyphs, with Springboard version 1.4.8.
+The builder validates its selectors, checks Xtensa ELF32 ET_DYN, runs the real
+structural loader validator, enforces exact imports/exports, records every
+implementation/header/font source hash and bundles the glyph/font licenses.
+CI builds Watch, X4 and a fake-instance integration-contract profile. The latter
+is compile evidence, not a deployable hardware configuration.
+
+See [paper file-browser evidence](nova/FILE_BROWSER_EVIDENCE.md) for fixture
+coverage and rendered screens. Hardware touch/media, USB-host enumeration and
+physical e-paper qualification remain unclaimed. No hardware has been flashed.

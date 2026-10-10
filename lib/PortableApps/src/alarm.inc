@@ -3,8 +3,14 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS)
+#if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
+#endif
+#if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
+static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&alarms); }
+#endif
+#if defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
+static bool alarm_refresh(void) { return portable_alarm_refresh(&alarms); }
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
@@ -22,10 +28,11 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
-#ifdef PORTABLE_BLE_BROADCAST
-    while(!portable_broadcast_pause(&broadcast_client)) {
-        rt->diagnostic("BROADCAST foreground-failed cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
-    }
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    if(!portable_background_stop())return false;
+#endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    portable_adapter_retain();return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend()) {
@@ -59,8 +66,15 @@ static bool alarm_failure(void) {
     }
     return false;
 }
-#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION)
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_CONTEXTS_CLIENT)
 static bool alarm_sessions_safe(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(native_custody_retained)return false;
+    if(contexts_client.api) {
+        contexts_status_v1 status={.struct_size=sizeof(status)};
+        if(!contexts_client.api->status(contexts_client.api->context,&status)||status.cleanup_pending)return false;
+    }
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_services_safe())return false;
 #endif
@@ -70,6 +84,9 @@ static bool alarm_sessions_safe(void) {
     return true;
 }
 static bool alarm_sessions_suspend(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!portable_contexts_stop())return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return false;
 #endif
@@ -79,6 +96,9 @@ static bool alarm_sessions_suspend(void) {
     return true;
 }
 static bool alarm_audio_pump(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
     /* Check copied status before storage-backed reconciliation, then again
      * before a newly exposed occurrence can own output in the next phase. */
     if(!alarm_sessions_safe() || !portable_alarm_status(&alarms))return false;
@@ -87,6 +107,21 @@ static bool alarm_audio_pump(void) {
     if(!portable_alarm_pump(&alarms))return false;
     return !(portable_alarm_owned(&alarms) || alarms.status.state==ALARM_STATE_BLOCKED) ||
         alarm_sessions_suspend();
+}
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+static bool alarm_audio_pump(void) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+    if(portable_adapter_retained())return false;
+#endif
+    if(native_sleep_retained)return false;
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+    if(!portable_alarm_pump(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+#else
+    int32_t result=alarms.api->step(alarms.api->context);
+    if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
+    if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+#endif
+    return true;
 }
 #else
 #define alarm_audio_pump() portable_alarm_pump(&alarms)
@@ -105,6 +140,22 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
+    if(pp_enabled()) {
+        pp_begin();
+        pp_text(32,40,width()-64,alarm_title(s,title),2,true,true);
+        fill(32,94,width()-64,3,0);
+        pp_text(32,140,width()-64,s->state==ALARM_STATE_BLOCKED?
+            (s->error==ALARM_RTC?"RTC ERROR":"SERVICE ERROR"):
+            s->state==ALARM_STATE_DISMISSING?"STOPPING / SAVING":"TIME IS UP",1,false,true);
+        pp_text(32,190,width()-64,s->output_uncertain?"OUTPUT STOP UNCONFIRMED":"",1,false,true);
+        fill(32,height()-188,width()-64,88,0);
+        pp_text(60,height()-162,width()-120,s->occurrence.generation?"DISMISS":"BACK",2,true,false);
+        if(s->state==ALARM_STATE_BLOCKED) {
+            fill(32,height()-92,width()-64,3,0);
+            pp_text(60,height()-64,width()-120,"RETRY",2,true,true);
+        }
+        present(false);return;
+    }
 #ifdef PORTABLE_NOVA_UI
     portable_nova_begin();
     portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
@@ -136,8 +187,9 @@ static bool alarm_save_frame(uint16_t **saved) {
 }
 static bool alarm_restore(const uint16_t *saved) {
     clear();if(failed)return false;
+    unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,
-        saved+(size_t)y*info.width,info.width*2);
+        (const uint8_t*)saved+(size_t)y*bytes,bytes);
     present(false);return !failed && display_settled;
 }
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -164,6 +216,11 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    /* The app can update while paper refreshes; alarm service/presentation
+     * takes ownership only after that submitted foreground image completes. */
+    if(!failed && paper_token)return true;
+#endif
     if(failed || !display_settled || surface.frame)return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
@@ -175,8 +232,8 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
-#ifdef PORTABLE_BLE_BROADCAST
-            if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+            if(!portable_background_stop())return false;
 #endif
             cue_seen=true;*consumed=true;
         }
@@ -198,8 +255,8 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
-#ifdef PORTABLE_BLE_BROADCAST
-    if(!portable_broadcast_pause(&broadcast_client))return alarm_failure();
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    if(!portable_background_stop())return false;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
     if(!quick_interrupt())return alarm_failure();
@@ -223,6 +280,7 @@ static bool alarm_foreground(bool *consumed) {
         portable_touch_sample sample;input_take(&sample);
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
+        bool paper=pp_enabled();
 #ifdef PORTABLE_NOVA_UI
         bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_nova_hit(sample.x,sample.y,24,192,192,44));
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_nova_hit(sample.x,sample.y,24,144,192,44));
@@ -230,13 +288,32 @@ static bool alarm_foreground(bool *consumed) {
         bool retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=info.height-42);
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=info.height-88 && sample.y<info.height-42);
 #endif
+        if(paper) {
+            retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=height()-92);
+            dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
+        }
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
-            (void)alarms.api->refresh(alarms.api->context);alarm_cancel_input();redraw=true;
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+            if(!portable_alarm_refresh(&alarms))return alarm_failure();
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+            int32_t result=alarms.api->refresh(alarms.api->context);
+            if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
+#else
+            (void)alarms.api->refresh(alarms.api->context);
+#endif
+            alarm_cancel_input();redraw=true;
         } else if(dismiss) {
             if(alarms.status.occurrence.generation) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+                if(!portable_alarm_acknowledge(&alarms,&token))return alarm_failure();
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+                int32_t result=alarms.api->acknowledge(alarms.api->context,&token);
+                if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
+#else
                 (void)alarms.api->acknowledge(alarms.api->context,&token);
+#endif
                 alarm_cancel_input();redraw=true;
             } else if(alarms.status.state==ALARM_STATE_BLOCKED && !alarms.status.output_uncertain) {
                 alarm_error_seen=true;alarm_seen_error=alarms.status.error;alarm_seen_snapshot=alarms.status.snapshot;break;

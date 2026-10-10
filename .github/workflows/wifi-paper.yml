@@ -1,0 +1,44 @@
+name: Wi-Fi paper and Watch validation
+on:
+  push:
+    branches: ['codex/nova7-paper-wifi']
+  pull_request:
+    paths:
+      - 'Apps/wifi_settings*'
+      - 'lib/PortableApps/**'
+      - 'scripts/*wifi*'
+      - 'test/native_apps/*wifi*'
+      - '.github/workflows/wifi-paper.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wifi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Production controller and views with fake providers, plain C and ASan/UBSan
+        run: |
+          python scripts/test_portable_wifi.py
+          python scripts/test_wifi_paper.py
+          python -m unittest discover -s tests -p 'test_portable_wifi_contract.py' -v
+      - name: Install pinned public target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build Wi-Fi target ELFs and exact source receipts
+        run: |
+          python scripts/build_portable_wifi.py --nova-ui --wifi-instance 15 --navigation --alarm-client --full-frames --return-app springboard.elf --output-dir dist/wifi-watch
+          python scripts/build_portable_wifi.py --nova-ui --wifi-instance 15 --display-rotation 90 --navigation --alarm-client --quick-actions --wall-time --home-app default.elf --return-app springboard.elf --output-dir dist/wifi-paper
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wifi-development-${{ github.sha }}
+          path: |
+            dist/wifi-paper/
+            dist/wifi-watch/
+            build/wifi-paper/frames-*/
+          retention-days: 14

@@ -60,5 +60,11 @@
     "commit": "52b085c2d8f00ceea287ba7a506eea6dc135a29d",
     "path": "sdk/driver/RiscRadioScanV1.h",
     "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
+  },
+  "RiscStorageVolumeV1.h": {
+    "repository": "michaelrolphone-cmyk/T5S3-Reader",
+    "path": "sdk/driver/RiscStorageVolumeV1.h",
+    "commit": "34d8e694d89a1e72d8854403d8592c289fae3ddc",
+    "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
   }
 }

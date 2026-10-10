@@ -6,7 +6,7 @@ import shutil
 import portable_idle_build
 
 RESIDENT_CLIENT_VERSIONS={'springboard':'1.7.22','settings':'1.3.23','file_browser':'1.5.16','wifi_settings':'1.1.19',
-    'ota_update':'1.2.9','app_store':'1.2.9','usb_sd_transfer':'0.1.5'}
+    'ota_update':'1.2.9','app_store':'1.2.9','usb_sd_transfer':'0.1.6'}
 
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
@@ -49,6 +49,8 @@ def configure(args,parser,root,output,includes=None):
         if not (sdk/'RiscRuntimeV1.h').is_file():parser.error('Missing resident SDK header: RiscRuntimeV1.h')
         if 'RISC_RUNTIME_FAILURE_EVIDENCE_V1_SIZE' in (sdk/'RiscRuntimeV1.h').read_text():
             sdk_names.append('RiscFailureEvidenceV1.h')
+        if 'RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE' in (sdk/'RiscRuntimeV1.h').read_text():
+            sdk_names.append('RiscDiagnosticCheckpointV1.h')
         for name in sdk_names:
             source=sdk/name
             if not source.is_file():parser.error('Missing resident SDK header: '+name)

@@ -1,0 +1,17 @@
+{
+  "description": "Actual native UTC Home Points panels in the refined foreground layout. Independent supplied-SVG comparisons live in test_home_reference.py.",
+  "logical_crop": [
+    24,
+    254,
+    456,
+    774
+  ],
+  "sha256": {
+    "home-ready": "7826e76eedc88690437f16aa96d5a709717cf1f4162b602198c6a55b0e60c325",
+    "home-custom": "4df1d4e8e3bc1d1aa181ee433bd7f2f1b1033ff0808be2f77d340add21fc0dbe",
+    "home-empty": "0010f5fffbc5a60cba833cd3a945f9008dbc165328f469ece871b51297f491d8",
+    "home-invalid": "10ceb799ff7c2768257275274dae9acf6df962350cbd92881e5a32b7586d8ad6",
+    "home-unavailable": "10ceb799ff7c2768257275274dae9acf6df962350cbd92881e5a32b7586d8ad6",
+    "home-default": "c9f37f644c36801c1645c8dc7a354f6672b536c8fe0d968162f3fdaef80c95e9"
+  }
+}

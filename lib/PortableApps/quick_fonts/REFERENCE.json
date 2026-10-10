@@ -1,0 +1,61 @@
+{
+  "generator": "scripts/generate_quick_reference_assets.py",
+  "license": "Fonts SIL OFL 1.1; vectors supplied in the user reference",
+  "reference_svg_sha256": "986e2432c7e05f6a26577e34f24fcf105764881811c7955af81dee1dcb57ff1b",
+  "fonts": [
+    {
+      "id": "TITLE",
+      "file": "../home_fonts/Orbitron-reference-900.ttf",
+      "size": 24,
+      "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+    },
+    {
+      "id": "TIME",
+      "file": "../home_fonts/Orbitron-reference-700.ttf",
+      "size": 26,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "id": "NUMBER",
+      "file": "../home_fonts/Orbitron-reference-700.ttf",
+      "size": 24,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "id": "LABEL",
+      "file": "../home_fonts/Rajdhani-700.ttf",
+      "size": 17,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "TILE",
+      "file": "../home_fonts/Rajdhani-700.ttf",
+      "size": 20,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "SMALL",
+      "file": "../home_fonts/Rajdhani-600.ttf",
+      "size": 16,
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da"
+    },
+    {
+      "id": "BATTERY",
+      "file": "../home_fonts/Rajdhani-700.ttf",
+      "size": 20,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    }
+  ],
+  "icons": {
+    "reference-silent.svg": "f60c96fe9d8c1de6c803aa86eeb9c5b280a9c8c3855e0158c63e37048ced1378",
+    "reference-dnd.svg": "0cac12f5f00c59498b9a87151811eceb3d0334ed4a4abb14973acc8082cd54ed",
+    "reference-airplane.svg": "c35e2953ccc719f9cba4717036680c678f994153514279e803369fbe81ae3dc1",
+    "reference-wifi.svg": "043295e0a60f0afa2bdd4eb351f2145c2887cdbc14b91ed6a0ab9ef1445bb9dc",
+    "reference-bluetooth.svg": "73c85871fc72dfa38b9cf55071b6b6a093a8ca91ec396d305a7d22b02eae5518",
+    "reference-frontlight.svg": "946f1a21eea5f4f71cac6f5d160302350bd382e5b6b9624fd52d4bf62cbae783",
+    "reference-sun.svg": "724f9592ceb062f0c54c3e9dafc181272e2f1c40d9564a4cf68bc7ed6af30d98",
+    "reference-volume.svg": "8d8bd1bdce4d5009bab4727e82589e2c2acbcd221d2cbdb9654bcc3f5c8b63ab",
+    "reference-clean.svg": "6347a41032181ed4d1a5149536a051ae57fa5671b6c1f9a22ca795021255dfcd"
+  },
+  "reference.inc_sha256": "58b9435a04b89a015b6e538e1a6b7f5ca7d87b0526e9b801973135e8e1408c3c"
+}

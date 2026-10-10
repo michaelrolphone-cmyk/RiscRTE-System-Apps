@@ -19,7 +19,9 @@ typedef enum {
     PQA_WIFI = 1u << 5,
     PQA_AIRPLANE = 1u << 6,
     PQA_BLUETOOTH = 1u << 7,
-    PQA_DND = 1u << 8
+    PQA_DND = 1u << 8,
+    PQA_USB_TRANSFER = 1u << 9,
+    PQA_CLEAN_REFRESH = 1u << 10
 } pqa_action;
 typedef enum { PQA_PASS, PQA_RESERVED, PQA_CONSUMED, PQA_REPLAY } pqa_route;
 typedef enum {
@@ -27,14 +29,24 @@ typedef enum {
     PQA_PANEL_DRAG, PQA_BRIGHTNESS_DRAG, PQA_VOLUME_DRAG, PQA_TORCH_TAP
 } pqa_gesture;
 enum { PQA_ERROR_BRIGHTNESS = 1u, PQA_ERROR_VOLUME = 2u,
-       PQA_ERROR_SAVE = 4u, PQA_ERROR_WIFI = 8u, PQA_ERROR_RADIO=16u, PQA_ERROR_DND=32u };
+       PQA_ERROR_SAVE = 4u, PQA_ERROR_WIFI = 8u, PQA_ERROR_RADIO=16u, PQA_ERROR_DND=32u, PQA_ERROR_USB=64u };
 
 typedef struct {
     /* Controller scratch/proposed values; adapter owns persisted preferences.
      * Levels are 0..100 percent, sliders choose ten-point steps. Brightness
      * user choices have a 10% floor. Unknown values never become fake states. */
     uint8_t brightness, volume, last_nonzero_volume;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+    uint8_t last_nonzero_brightness, applied_brightness;
+    bool applied_brightness_valid;
+#endif
     bool brightness_valid, volume_valid, torch;
+    /* Retaining paper selects a discrete 480x800 sheet and large 2-column controls. */
+    bool paper, torch_valid;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+    bool audio_controls; /* false omits controls for absent sound hardware */
+    bool clean_refresh_valid;
+#endif
     bool dnd_valid, dnd_enabled;
     bool radio_controls,radios_valid,wifi_enabled,bluetooth_enabled,airplane;
     uint8_t error_flags;
@@ -57,6 +69,9 @@ typedef struct {
 } pqa_state;
 
 void pqa_init(pqa_state *s);
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y);
+#endif
 /* Set externally confirmed levels when idle. It is also safe for an adapter to
  * restore rejected values directly after draining the matching action. */
 void pqa_set_levels(pqa_state *s, bool brightness_valid, unsigned brightness,
