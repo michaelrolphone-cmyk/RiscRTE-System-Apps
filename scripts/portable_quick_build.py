@@ -19,6 +19,7 @@ def version(args,app,current):
 
 def options(parser):
     portable_idle_build.options(parser)
+    parser.add_argument('--raster-snapshot',action='store_true',help='Opt-in immutable command recording and bounded app-local raster replay; direct/OOM compatibility remains available')
     group=parser.add_mutually_exclusive_group()
     group.add_argument('--resident-shell-host',action='store_true',help='Own shared X4 Quick Actions in the one resident default ELF')
     group.add_argument('--resident-shell-client',action='store_true',help='Use explicit resident checkpoints; never link Quick Actions UI')
@@ -97,6 +98,14 @@ def configure(args,parser,root,output,includes=None):
     if args.quick_radios and not args.quick_actions:parser.error('--quick-radios requires --quick-actions')
     if args.quick_actions and not args.alarm_client:parser.error('--quick-actions requires --alarm-client')
     flags=resident_flags
+    if getattr(args,'raster_snapshot',False):
+        paths=('lib/PortableApps/src/raster_snapshot_state.inc','lib/PortableApps/src/raster_snapshot_replay.inc')
+        if not all((root/name).is_file() for name in paths):
+            parser.error('--raster-snapshot requires the bounded raster implementation in selected System source')
+        flags.append('-DPORTABLE_RASTER_SNAPSHOT')
+        args.raster_snapshot_receipt={'selected':True,'model_reentrancy':False,'provider_lease_across_model':False,
+            'direct_frame_compatibility':True,'allocation_failure':'complete synchronous fallback',
+            'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in paths}}
     if crash:
         flags+=['-DPORTABLE_CRASH_REPORT_SD','-DPORTABLE_CRASH_REPORT_NAMESPACE='+str(args.crash_report_spool_namespace)]
         args.resident_shell_receipt['crash_report_sd']={'optional':True,'spool_namespace':args.crash_report_spool_namespace,
@@ -179,6 +188,8 @@ def exports(args, names):
 
 
 def record(args, value):
+    raster=getattr(args,'raster_snapshot_receipt',None)
+    if raster:value['raster_snapshot']=raster
     receipt=getattr(args,'resident_shell_receipt',None)
     if receipt:value['resident_shell']=receipt
     if getattr(args,'crash_report_sd',False):

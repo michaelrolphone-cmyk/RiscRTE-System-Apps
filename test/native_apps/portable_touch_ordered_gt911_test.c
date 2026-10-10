@@ -19,6 +19,13 @@ static bool tap(void) {return sample.valid && sample.released && sample.tap_elig
 static void report(unsigned contacts,unsigned x,unsigned y,bool home) {
   packet((uint8_t)contacts,(uint16_t)x,(uint16_t)y,home);assert(portable_touch_collect(&touch));
 }
+static void report_at(unsigned contacts,unsigned x,unsigned y,bool home,uint64_t when) {
+  assert(when>=time_ms);
+  packet((uint8_t)contacts,(uint16_t)x,(uint16_t)y,home);
+  /* The fixture normally advances one millisecond per report. A real
+   * monotonic_ms clock may return the same value for distinct reports. */
+  time_ms=when;assert(portable_touch_collect(&touch));
+}
 static void fresh_tap(void) {
   report(1,120,300,false);report(0,0,0,false);
   assert(step() && sample.began && sample.tap_eligible && sample.contact_id==1);
@@ -39,6 +46,34 @@ int main(int argc,char **argv) {
     unsigned taps=0,begins=0;uint64_t previous=0;
     while(step()){assert(!sample.cancelled && sample.timestamp_ms>previous);previous=sample.timestamp_ms;taps+=tap();begins+=sample.began;}
     assert(taps==8 && begins==8 && !touch_issues);
+  }else if(!strcmp(scenario,"same-tick-recontacts") || !strcmp(scenario,"same-tick-home")) {
+    bool home=!strcmp(scenario,"same-tick-home");
+    report(1,100,200,false);assert(step() && sample.began);
+    uint64_t when=time_ms+1u;
+    report_at(0,0,0,home,when);
+    risc_touch_snapshot_v1 up=snapshot();assert(!up.contact_count && up.timestamp_ms==when);
+    report_at(1,100,200,home,when);
+    risc_touch_snapshot_v1 held=snapshot();assert(held.contact_count==1 && held.timestamp_ms==when);
+    assert(held.sequence==up.sequence+1u && held.contacts[0].id==1);
+    assert(step() && tap() && sample.contact_id==1 && sample.timestamp_ms==when);
+    /* Same-owner navigation must retain the second tap and ordered Home. */
+    unsigned before=operations;
+    portable_touch_cancel_gesture(&touch);assert(operations==before);
+    assert(step() && sample.cancelled && operations==before);
+    if(home)assert(step() && sample.home_pressed && !sample.down);
+    assert(step() && sample.began && sample.tap_eligible && sample.contact_id==1 && sample.timestamp_ms==when);
+    assert(!step() && sample.down);
+    report_at(0,0,0,false,when+1u);assert(step() && tap());
+    if(home)assert(step() && !sample.home_pressed && touch.home_neutral);
+    assert(!step() && !touch_issues);fresh_tap();
+  }else if(!strcmp(scenario,"same-tick-burst")) {
+    uint64_t when=time_ms+1u;
+    for(unsigned i=0;i<RISC_TOUCH_QUEUE_LENGTH/2u;++i) {
+      report_at(1,100+i,200+i,false,when);report_at(0,0,0,false,when);
+    }
+    unsigned taps=0,begins=0;
+    while(step()){assert(!sample.cancelled && sample.timestamp_ms==when);taps+=tap();begins+=sample.began;}
+    assert(taps==RISC_TOUCH_QUEUE_LENGTH/2u && begins==taps && !touch_issues);
   }else if(!strcmp(scenario,"subscribers")) {
     portable_touch other={.api=api,.subscription=api->subscribe(NULL)};
     portable_touch_sample other_sample;assert(other.subscription);
@@ -69,12 +104,18 @@ int main(int argc,char **argv) {
     /* Keep hardware ID 4, including a reordered contact record; no new gesture. */
     packet(1,150,250,true);wire_point(0,4,150,250);assert(portable_touch_collect(&touch));
     assert(step() && !sample.began && !sample.released);assert(!step());neutral();fresh_tap();
-  }else if(!strcmp(scenario,"identity")) {
+  }else if(!strcmp(scenario,"identity") || !strcmp(scenario,"identity-home")) {
+    bool home=!strcmp(scenario,"identity-home");
     report(1,100,200,false);assert(step() && sample.began && sample.contact_id==1);
-    packet(1,110,220,false);wire_point(0,4,110,220);assert(portable_touch_collect(&touch));
+    packet(1,110,220,home);wire_point(0,4,110,220);assert(portable_touch_collect(&touch));
+    /* One selected-provider report removes old ID 1 and adds new ID 5.
+     * Ordered delivery preserves both gestures; there is no contact overlap. */
     assert(step() && tap() && sample.contact_id==1);uint64_t when=sample.timestamp_ms;
     assert(step() && sample.began && sample.contact_id==5 && sample.timestamp_ms==when);
-    report(0,0,0,false);assert(step() && tap() && sample.contact_id==5);assert(!step());
+    if(home)assert(step() && sample.home_pressed && sample.down);
+    report(0,0,0,false);assert(step() && tap() && sample.contact_id==5);
+    if(home)assert(step() && !sample.home_pressed && touch.home_neutral);
+    assert(!step());
   }else if(!strcmp(scenario,"move-return")) {
     report(1,100,200,false);report(1,140,250,false);report(1,100,200,false);report(0,0,0,false);
     assert(step() && sample.began && !sample.moved);assert(step() && sample.moved);
@@ -101,10 +142,27 @@ int main(int argc,char **argv) {
   }else if(!strcmp(scenario,"malformed-report")) {
     report(1,100,200,false);assert(step());packet(2,110,210,true); /* Duplicate wire ID 0. */
     assert(!portable_touch_collect(&touch));assert(step() && sample.cancelled && !retained_calls);drain();neutral();fresh_tap();
-  }else if(!strcmp(scenario,"terminal-next") || !strcmp(scenario,"terminal-snapshot") || !strcmp(scenario,"terminal-unlock")) {
+  }else if(!strcmp(scenario,"recontact-recovery")) {
+    report(1,100,200,false);assert(step() && sample.began);
+    uint64_t when=time_ms+1u;
+    report_at(0,0,0,false,when);report_at(1,100,200,false,when);
+    assert(step() && tap());assert(step() && sample.began && sample.tap_eligible);
+    packet(0,0,0,true);ack_ok=false;
+    assert(!portable_touch_collect(&touch));assert(step() && sample.cancelled && !tap() && !sample.home_pressed);
+    ack_ok=true;assert(portable_touch_collect(&touch));
+    while(step())assert(!tap() && !sample.home_pressed);
+    assert(!retained_calls);neutral();fresh_tap();
+  }else if(!strcmp(scenario,"terminal-next") || !strcmp(scenario,"terminal-snapshot") ||
+           !strcmp(scenario,"terminal-move-snapshot") || !strcmp(scenario,"terminal-unlock")) {
     risc_touch_api_v1 injected=*api;
     if(!strcmp(scenario,"terminal-next")){injected.next=fault_next;touch.api=&injected;}
-    else if(!strcmp(scenario,"terminal-snapshot")){injected.snapshot=fault_snapshot;touch.api=&injected;}
+    else if(!strcmp(scenario,"terminal-snapshot") || !strcmp(scenario,"terminal-move-snapshot")) {
+      if(!strcmp(scenario,"terminal-move-snapshot")) {
+        report(1,100,200,false);assert(step() && sample.began);
+        report(1,130,200,true); /* A Home edge remains queued after MOVE. */
+      }
+      injected.snapshot=fault_snapshot;touch.api=&injected;
+    }
     else {packet(1,100,200,true);unlock_ok=false;assert(!portable_touch_collect(&touch));}
     assert(!step() && sample.cancelled && touch.terminal && retained_calls==1);
     unsigned frozen=operations,frozen_takes=takes,frozen_transacts=transacts;
