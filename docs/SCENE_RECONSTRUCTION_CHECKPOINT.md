@@ -27,3 +27,26 @@ The unchanged .53 negative control reproduces loss under the same explicit 500 n
 Frozen production source: a0dddaeaefd10fdddfadd386da9cd7416d592779. All 173 presenter/profile, 100 actual native .100 Runtime text/scene, 75 logical cadence/latest-raster cases pass normally and with ASan/UBSan. A fresh clean Xtensa target and both existing profiles pass ELF/import validation. Full structured evidence is in receipts/scene-014-reconstruction-qualification.json; runners preserve exact commands, input hashes and failures. Product assembly and hardware validation remain separate.
 
 Recovery scope: no component-guide styling or animation policy changes were applied. The existing NOVA-7 styling and smooth UI policy are preserved. One additional qualification-driven refinement was made after recovery: nonkeyboard multi-contact ambiguity cancels its own timestamped report, rather than erasing a completed earlier report. This is covered by separate regression cases. Existing docs/receipts from the restored baseline remain historical and do not qualify new code.
+
+
+## Split header contact recovery correction
+
+Scanner integration exposed that an empty keyboard completion queue cleared an
+ordinary header contact between its DOWN and UP reports. The two-line guard in
+`finish_contacts` preserves that contact; source SHA-256 is now
+`5922080ddec668196c1ef46fbcfaa4615bd17e15bf51b605657a393da1c803f6`.
+The prior `abb5025b` host and its compiled target are superseded.
+
+The regression fails on the prior source and passes after the guard. Presenter
+cases pass179 normal and179 ASan/UBSan; exact GT911/Runtime passes96 cases per
+mode, with all original72 keyboard action/timestamp digests unchanged. A focused
+48-case matrix per mode covers split visible Back/Home, keyboard and ordinary
+scenes, MONO1/RGB565,1/17/2300ms presentation and explicit0/500ns modeled pixel
+cost. Cadence/raster75 cases per mode and Scanner24 per mode also pass.
+NOVA7 raster bytes remain unchanged. These are software fixtures, not measured
+hardware timing. The initially invalid ordinary-scene fixture document was
+corrected to a valid existing action before final qualification.
+
+See `receipts/scene-014-header-contact-qualification.json`. Fresh scene target
+SHA-256 is `1526e1ca24b8c68cd562804e66fa0c8874282d7019f9cb50469cd403e7484066`.
+The product build must compile the combined recovered sources afresh.
