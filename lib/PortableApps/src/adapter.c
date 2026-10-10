@@ -155,8 +155,8 @@ static bool desk_radios_loaded;
 #if !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_ALARM_CLIENT) || (!defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT))
 #error "X4 Contexts requires native custody, alarms and Quick Controls"
 #endif
-#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && (!defined(PORTABLE_CONTEXTS_EDITOR) || !defined(ALARM_SERVICE_TAGGED_V2))
-#error "Resident Contexts selects the editor and tagged alarm capability view"
+#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(ALARM_SERVICE_TAGGED_V2)
+#error "Resident Contexts requires the tagged alarm capability view"
 #endif
 #if !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY)
 #error "X4 Contexts requires the checked native storage runtime"
@@ -350,7 +350,7 @@ static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 #if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
@@ -405,6 +405,13 @@ static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 static uint32_t millis_now(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase<DESK_STARTING || desk_phase>=DESK_FAILED)return 0;
+#endif
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(rt->struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && rt->monotonic_ms) {
+    uint32_t now=0;
+    if(!rt->monotonic_ms(&now)){failed=true;return 0;}
+    return now;
+  }
 #endif
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
@@ -1811,6 +1818,10 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 #include "resident_adapter.inc"
 #include "resident_shell.inc"
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!contexts_message_foreground())return false;
+  if(context_launch_pending){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
+#endif
   memset(out, 0, sizeof(*out));
   clear_contact_snapshots();
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -1860,6 +1871,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_USB_TRANSFER_APP
     if(slice>2u)slice=2u;
     portable_usb_transfer_service();
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    if(raster_sealed&&!raster_ready_to_submit)slice=1u;
 #endif
     rt->yield_ms(paper_token?1u:slice);
 #ifdef PORTABLE_CONTEXTS_CLIENT

@@ -12,6 +12,23 @@ static int qr_kern(const quick_ref_font *font,unsigned first,unsigned second) {
  return lo<font->kern_count&&font->kern[lo].first==first&&font->kern[lo].second==second?font->kern[lo].adjust_q6:0;
 }
 static unsigned qr_char(unsigned c){return c>=32&&c<=126?c:'?';}
+/* Clip the source rows before scanning bitmaps or calculating rounded edges.
+ * The final fill guard still owns exact coverage at scaled/rotated sizes. */
+static void qr_rows(int origin,int *first,int *end) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_replaying)return;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ origin+=qp_offset;
+#endif
+ if(height()==800){raster_rows(origin,first,end);return;}
+ int top=raster_band_top*800/height()-origin-2;
+ int bottom=(raster_band_bottom+1)*800/height()-origin+2;
+ if(top>*first)*first=top<*end?top:*end;
+ if(bottom<*end)*end=bottom>*first?bottom:*first;
+#else
+ (void)origin;(void)first;(void)end;
+#endif
+}
 static void qr_text(const quick_ref_font *font,int x,int baseline,const char *text,int tracking_q6,int align,int target,bool black) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
  const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};
@@ -23,7 +40,8 @@ static void qr_text(const quick_ref_font *font,int x,int baseline,const char *te
  if(!align)for(unsigned i=0;i<sizeof(quick_ref_words)/sizeof(*quick_ref_words);i++) {
   const quick_ref_word *word=&quick_ref_words[i];
   if(word->font!=font||word->tracking!=tracking_q6||word->target!=target||strcmp(word->text,text))continue;
-  for(unsigned row=0;row<word->height;row++)for(unsigned col=0;col<word->width;) {
+  int row_first=0,row_end=(int)word->height;qr_rows(baseline+word->top,&row_first,&row_end);
+  for(int row=row_first;row<row_end;row++)for(unsigned col=0;col<word->width;) {
    unsigned bit=row*word->width+col;
    if(!(word->bits[bit/8]&(128u>>(bit%8)))){col++;continue;}
    unsigned first=col++;while(col<word->width){bit=row*word->width+col;if(!(word->bits[bit/8]&(128u>>(bit%8))))break;col++;}
@@ -39,7 +57,8 @@ static void qr_text(const quick_ref_font *font,int x,int baseline,const char *te
  int width=target?target:(natural+32)/64,origin=x-(align==1?width:align==2?width/2:0),pen=0;previous=0;
  for(unsigned i=0;i<64&&text[i];i++){unsigned c=qr_char((unsigned char)text[i]);const quick_ref_glyph *g=&font->glyphs[c-32];
   if(previous)pen+=qr_kern(font,previous,c)+tracking_q6;
-  for(unsigned row=0;row<g->height;row++)for(unsigned col=0;col<g->width;){
+  int row_first=0,row_end=(int)g->height;qr_rows(baseline+g->top,&row_first,&row_end);
+  for(int row=row_first;row<row_end;row++)for(unsigned col=0;col<g->width;){
    unsigned bit=row*g->width+col;if(!(g->bits[bit/8]&(128u>>(bit%8)))){col++;continue;}
    unsigned first=col++;while(col<g->width){bit=row*g->width+col;if(!(g->bits[bit/8]&(128u>>(bit%8))))break;col++;}
    int left=((pen+((int)g->left+(int)first)*64)*width+natural/2)/natural;
@@ -53,7 +72,8 @@ static void qr_round(int x,int y,int w,int h,int radius,bool black) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
  if(raster_record(RS_QR_ROUND,(int32_t[8]){x,y,w,h,radius,black},NULL))return;
 #endif
- for(int row=0;row<h;row++) {
+ int row_first=0,row_end=h;qr_rows(y,&row_first,&row_end);
+ for(int row=row_first;row<row_end;row++) {
   int cy=row<radius?2*radius-2*row-1:row>=h-radius?2*(row-(h-radius))+1:0,inset=0;
   if(cy)while(inset<radius){int dx=2*radius-2*inset-1;if(dx*dx+cy*cy<=4*radius*radius)break;inset++;}
   qp_rect(x+inset,y+row,w-2*inset,1,black);
@@ -64,7 +84,8 @@ static void qr_icon(unsigned icon,int x,int y,bool black) {
  if(raster_record(RS_QR_ICON,(int32_t[8]){(int32_t)icon,x,y,black},NULL))return;
 #endif
  const uint8_t *bits=quick_ref_icons[icon];
- for(unsigned row=0;row<40;row++)for(unsigned col=0;col<40;){
+ int row_first=0,row_end=40;qr_rows(y,&row_first,&row_end);
+ for(int row=row_first;row<row_end;row++)for(unsigned col=0;col<40;){
   unsigned bit=row*40+col;if(!(bits[bit/8]&(128u>>(bit%8)))){col++;continue;}
   unsigned first=col++;while(col<40){bit=row*40+col;if(!(bits[bit/8]&(128u>>(bit%8))))break;col++;}
   qp_rect(x+(int)first,y+(int)row,(int)(col-first),1,black);
@@ -105,12 +126,13 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
 #endif
  qp_rect(32,divider,416,3,true);
  static const char *const labels[]={"SILENT","DND","AIRPLANE","WI-FI","BLUETOOTH","FRONTLIGHT"};
- for(unsigned i=0;i<9;i++) {
+ for(unsigned i=0;i<10;i++) {
   int x,y;if(!pqa_paper_tile(&quick.ui,i,&x,&y))continue;
-  bool enabled=i==0?quick.ui.volume_valid:i==1?quick.ui.dnd_valid:i==5?light_known:i>=7?true:quick.ui.radios_valid;
-  bool on=enabled&&(i==0?!quick.ui.volume:i==1?quick.ui.dnd_enabled:i==2?quick.ui.airplane:i==3?quick.ui.wifi_enabled:i==4?quick.ui.bluetooth_enabled:i==5?light!=0:false);
+  bool enabled=i==0?quick.ui.volume_valid:i==1?quick.ui.dnd_valid:i==5?light_known:i==9?quick.ui.contexts_valid:i>=7?true:quick.ui.radios_valid;
+  bool on=enabled&&(i==0?!quick.ui.volume:i==1?quick.ui.dnd_enabled:i==2?quick.ui.airplane:i==3?quick.ui.wifi_enabled:i==4?quick.ui.bluetooth_enabled:i==5?light!=0:i==9?quick.ui.contexts_enabled:false);
   qr_round(x-2,y-2,208,96,20,true);if(!on)qr_round(x+2,y+2,200,88,16,false);
-  if(i==7){qr_text(&QUICK_REF_TILE,x+102,y+42,"USB",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+66,"TRANSFER",32,2,0,!on);}
+  if(i==9){qr_text(&QUICK_REF_TILE,x+102,y+32,"CONTEXT",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+55,"DETECTION",32,2,0,!on);qr_text(&QUICK_REF_SMALL,x+102,y+78,enabled?(on?"ON":"OFF"):"UNAVAILABLE",0,2,0,!on);}
+  else if(i==7){qr_text(&QUICK_REF_TILE,x+102,y+42,"USB",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+66,"TRANSFER",32,2,0,!on);}
   else {
    qr_icon(i==8?8:i,x+22,y+26,!on);
    if(i==8){qr_text(&QUICK_REF_TILE,x+78,y+44,"CLEAN",32,0,0,!on);qr_text(&QUICK_REF_TILE,x+78,y+68,"REFRESH",32,0,0,!on);}

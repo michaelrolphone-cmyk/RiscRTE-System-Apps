@@ -1,0 +1,76 @@
+{
+  "license": "SIL OFL-1.1",
+  "fonts": [
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 13,
+      "role": "title",
+      "density": 1,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 9,
+      "role": "section",
+      "density": 1,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Rajdhani-600.ttf",
+      "size": 14,
+      "role": "body",
+      "density": 1,
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da"
+    },
+    {
+      "font": "Rajdhani-600.ttf",
+      "size": 10,
+      "role": "small",
+      "density": 1,
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 22,
+      "role": "value",
+      "density": 1,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 26,
+      "role": "title",
+      "density": 2,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 18,
+      "role": "section",
+      "density": 2,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Rajdhani-700.ttf",
+      "size": 28,
+      "role": "body",
+      "density": 2,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "font": "Rajdhani-700.ttf",
+      "size": 20,
+      "role": "small",
+      "density": 2,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 44,
+      "role": "value",
+      "density": 2,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    }
+  ],
+  "threshold": 128
+}

@@ -81,7 +81,14 @@ def raster_compare(exe, write_evidence):
                 reader = subprocess.check_output(list(map(str, [*args, 1])), timeout=10)
                 a, b = rows(port, width, height), rows(reader, width, height)
                 changed = sum((x ^ y).bit_count() for x, y in zip(a, b))
-                if face < 3 or not valid:
+                # Short-hour typography changed intentionally in the recovered
+                # UI. Compare it exactly with independently composed frozen
+                # Reader glyphs; retain exact old comparison everywhere else.
+                shown_hour = (hour % 12 or 12) if fmt else hour
+                if face < 3 and valid and shown_hour < 10:
+                    current = subprocess.check_output(list(map(str, [*args, 2])), timeout=10)
+                    assert port == current, (key, 'current short-hour layout')
+                elif face < 3 or not valid:
                     assert port == reader, key
                 else:
                     assert changed <= 512, (key, changed)
