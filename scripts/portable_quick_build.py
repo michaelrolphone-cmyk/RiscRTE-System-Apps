@@ -11,7 +11,7 @@ RESIDENT_CLIENT_VERSIONS={'springboard':'1.7.22','settings':'1.3.23','file_brows
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
-        if getattr(args,'display_settled_sdk',None):return '0.4.0'
+        if getattr(args,'display_settled_sdk',None):return '0.4.1'
         if getattr(args,'frontlight_tone',False):return '0.3.25'
         if getattr(args,'resident_policy',False):return '0.3.25'
         return '0.3.21' if getattr(args,'resident_loading_catalog',None) else '0.3.20'

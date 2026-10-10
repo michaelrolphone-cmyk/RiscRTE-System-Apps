@@ -6,8 +6,8 @@ static bool contexts_open(void) {
   if(native_custody_retained)return false;
   if(contexts_client.api)return true;
   contexts_unavailable=false;
-  bool save_failed=contexts_client.save_failed;
-  contexts_client=(portable_contexts_client){.runtime=rt,.save_failed=save_failed,
+  bool save_failed=contexts_client.save_failed,learning=contexts_client.foreground_learning;
+  contexts_client=(portable_contexts_client){.runtime=rt,.save_failed=save_failed,.foreground_learning=learning,
     .grant={.struct_size=sizeof(contexts_client.grant)}};
   bool acquired=rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&contexts_client.grant);
   if(native_custody_retained)return false;
@@ -45,13 +45,17 @@ bool portable_contexts_stop(void) {
  * session model and room-entry claim belong to the service, never the app. */
 static bool contexts_suspend(void) {
   if(!portable_contexts_stop())return false;
-  bool save_failed=contexts_client.save_failed;
+  bool save_failed=contexts_client.save_failed,learning=contexts_client.foreground_learning;
   if(!portable_contexts_close(&contexts_client)){portable_adapter_retain();return false;}
-  contexts_client.save_failed=save_failed;return true;
+  contexts_client.save_failed=save_failed;contexts_client.foreground_learning=learning;return true;
 }
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
 bool portable_contexts_close_for_handoff(void) {return contexts_suspend();}
 #endif
+bool portable_contexts_training(bool enabled) {
+ if(!contexts_open()||!portable_contexts_stop())return false;
+ contexts_client.foreground_learning=enabled;return true;
+}
 bool portable_contexts_enable(bool enabled) {
   if(!contexts_open())return false;
   contexts_policy_io=true;

@@ -29,7 +29,7 @@ typedef struct {
     const risc_runtime_api_v1 *runtime;
     contexts_policy_v1 policy;
     uint32_t loaded_at,preset_checked_at;
-    bool loaded,settings_valid,low_battery,save_failed,preset_checked;
+    bool loaded,settings_valid,low_battery,save_failed,preset_checked,foreground_learning;
 } portable_contexts_client;
 #include "PortableContextFingerprints.h"
 #include "PortableContextRules.h"
@@ -49,6 +49,10 @@ static inline bool portable_contexts_pause(portable_contexts_client *c) {
     c->loaded=false;if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
     if(c->api&&!c->api->pause(c->api->context)){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
     return portable_fp_checkpoint(c,false);
+}
+/* A shared preference writer invalidates the cached background policy. */
+static inline void portable_contexts_settings_changed(portable_contexts_client *c,bool confirmed){
+    c->loaded=false;c->settings_valid=false;c->save_failed=!confirmed;c->policy.enabled=false;
 }
 static inline bool portable_contexts_capture(portable_contexts_client *c) {
     if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
@@ -109,7 +113,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
         c->loaded=true;c->loaded_at=health.uptime_ms;
     }
     contexts_policy_v1 policy=c->policy;policy.awake=true;
-    policy.enabled=policy.enabled&&c->settings_valid;
+    policy.enabled=(policy.enabled||c->foreground_learning)&&c->settings_valid;
     policy.audio_allowed=policy.audio_allowed&&audio_allowed;
     policy.radio_allowed=policy.radio_allowed&&radio_allowed;
     const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(c->api);
@@ -214,6 +218,8 @@ static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint
 const contexts_service_v1 *portable_contexts_service(void);
 bool portable_contexts_stop(void);
 bool portable_contexts_enable(bool enabled);
+/* Foreground training is temporary and never writes the background toggle. */
+bool portable_contexts_training(bool enabled);
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
 /* Clock controller releases its service before ordinary owner/app handoff. */
 bool portable_contexts_close_for_handoff(void);

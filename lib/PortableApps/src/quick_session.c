@@ -1,5 +1,6 @@
 #include "PortableQuickSession.h"
 #include "PortableTimeFormat.h"
+#include "PortableContextPreferences.h"
 #ifdef PORTABLE_FRONTLIGHT_TONE
 #include "RiscDisplayOutputFrontlightV1.h"
 #endif
@@ -7,6 +8,9 @@ void pqa_session_init(pqa_session *s) {
  *s=(pqa_session){0};pqa_init(&s->ui);pqa_cancel_input(&s->ui);
 #ifdef PORTABLE_LOW_BATTERY
  s->idle_ms=PORTABLE_SLEEP_IDLE_MS;s->deep_ms=PORTABLE_SLEEP_LIGHT_MS;
+#endif
+ #if defined(PORTABLE_CONTEXTS_CLIENT) || defined(WATCH_CONTEXTS_CLIENT)
+ s->ui.contexts_controls=true;
 #endif
  s->brightness=PQA_BRIGHTNESS_DEFAULT;s->volume=s->restore_volume=PQA_VOLUME_DEFAULT;
 #ifdef PORTABLE_FRONTLIGHT_TONE
@@ -42,6 +46,10 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  bool vv=pqa_preference_load(kv,PQA_VOLUME_KEY,PQA_VOLUME_DEFAULT,0,&v);
  (void)pqa_preference_load(kv,PQA_RESTORE_VOLUME_KEY,PQA_VOLUME_DEFAULT,1,&r);
  bool dnd=false,dnd_valid=pqa_dnd_load(kv,&dnd);
+ if(s->ui.contexts_controls){
+  bool enabled=false;s->ui.contexts_valid=portable_context_enabled_load(kv,&enabled);
+  s->ui.contexts_enabled=s->ui.contexts_valid&&enabled;
+ }
 #ifdef PORTABLE_FRONTLIGHT_TONE
  unsigned tone=s->tone;
  bool tone_valid=pqa_preference_load(kv,PQA_TONE_KEY,PQA_TONE_DEFAULT,0,&tone);
@@ -200,7 +208,7 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
 #ifdef PORTABLE_PAPER_TRANSITIONS
  if(s->ui.paper)storage_actions&=~PQA_BRIGHTNESS_COMMIT;
 #endif
- if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND)) {
+ if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND|PQA_CONTEXTS)) {
   risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
   if(storage_actions&PQA_BRIGHTNESS_COMMIT) {
    unsigned wanted=s->ui.action_brightness;
@@ -218,6 +226,12 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
     s->volume=wanted;if(wanted)s->restore_volume=wanted;
     s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*alerts_changed=true;
    } else {s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
+  }
+  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
+   if(portable_context_enabled_save(kv,s->ui.action_contexts)){
+    s->ui.contexts_enabled=s->ui.action_contexts;s->ui.contexts_valid=true;
+    s->ui.error_flags&=~(PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE);
+   }else{s->ui.contexts_valid=false;s->ui.error_flags|=PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE;}
   }
   if(actions&PQA_DND) {
    bool wanted=s->ui.action_dnd;

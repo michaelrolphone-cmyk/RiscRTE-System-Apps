@@ -92,12 +92,13 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
 #endif
  qp_rect(32,divider,416,3,true);
  static const char *const labels[]={"SILENT","DND","AIRPLANE","WI-FI","BLUETOOTH","FRONTLIGHT"};
- for(unsigned i=0;i<9;i++) {
+ for(unsigned i=0;i<10;i++) {
   int x,y;if(!pqa_paper_tile(&quick.ui,i,&x,&y))continue;
-  bool enabled=i==0?quick.ui.volume_valid:i==1?quick.ui.dnd_valid:i==5?light_known:i>=7?true:quick.ui.radios_valid;
-  bool on=enabled&&(i==0?!quick.ui.volume:i==1?quick.ui.dnd_enabled:i==2?quick.ui.airplane:i==3?quick.ui.wifi_enabled:i==4?quick.ui.bluetooth_enabled:i==5?light!=0:false);
+  bool enabled=i==0?quick.ui.volume_valid:i==1?quick.ui.dnd_valid:i==5?light_known:i==9?quick.ui.contexts_valid:i>=7?true:quick.ui.radios_valid;
+  bool on=enabled&&(i==0?!quick.ui.volume:i==1?quick.ui.dnd_enabled:i==2?quick.ui.airplane:i==3?quick.ui.wifi_enabled:i==4?quick.ui.bluetooth_enabled:i==5?light!=0:i==9?quick.ui.contexts_enabled:false);
   qr_round(x-2,y-2,208,96,20,true);if(!on)qr_round(x+2,y+2,200,88,16,false);
-  if(i==7){qr_text(&QUICK_REF_TILE,x+102,y+42,"USB",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+66,"TRANSFER",32,2,0,!on);}
+  if(i==9){qr_text(&QUICK_REF_TILE,x+102,y+32,"CONTEXT",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+55,"DETECTION",32,2,0,!on);qr_text(&QUICK_REF_SMALL,x+102,y+78,enabled?(on?"ON":"OFF"):"UNAVAILABLE",0,2,0,!on);}
+  else if(i==7){qr_text(&QUICK_REF_TILE,x+102,y+42,"USB",32,2,0,!on);qr_text(&QUICK_REF_TILE,x+102,y+66,"TRANSFER",32,2,0,!on);}
   else {
    qr_icon(i==8?8:i,x+22,y+26,!on);
    if(i==8){qr_text(&QUICK_REF_TILE,x+78,y+44,"CLEAN",32,0,0,!on);qr_text(&QUICK_REF_TILE,x+78,y+68,"REFRESH",32,0,0,!on);}
