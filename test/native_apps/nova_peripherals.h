@@ -16,6 +16,7 @@
 void app_main(void);int app_module_init(void);void app_module_fini(void);
 static unsigned ticks,polls,grants,frames,subs,presents;
 static unsigned stop_poll=120;
+static unsigned script_step(void){return ticks/25u;}
 static uint16_t pixels[240*244];
 static const char *directory;
 static struct {unsigned at;int x,y;} actions[256];static unsigned action_count;
@@ -26,21 +27,37 @@ static void save_frame(void) {
  for(unsigned y=0;y<240;y++){for(unsigned x=0;x<240;x++){uint16_t v=pixels[y*244+x];unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,f)==3);}for(unsigned x=240;x<244;x++)assert(pixels[y*244+x]==0xa5a5);}
  assert(!fclose(f));
 }
-static bool fake_health(risc_runtime_health_v1*h){h->uptime_ms=ticks;return polls<stop_poll;}
+static bool fake_health(risc_runtime_health_v1*h){h->uptime_ms=ticks;return script_step()<stop_poll;}
 static void fake_yield(uint32_t n){ticks+=n;}
 static bool fake_diag(const char*s){fprintf(stderr,"%s\n",s);return true;}
-static bool fake_launch(const char*s){printf("launch=%s\n",s);stop_poll=polls;return true;}
+static bool fake_launch(const char*s){printf("launch=%s\n",s);stop_poll=script_step();return true;}
 static bool fake_info(void*c,risc_display_info_v1*s){(void)c;*s=(risc_display_info_v1){.width=240,.height=240,.nominal_refresh_millihz=60000,.typical_present_latency_us=16000,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;}
 static bool fake_frame(void*c,uint32_t f,risc_display_surface_v1*s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,.stride_bytes=488,.size_bytes=sizeof(pixels),.pixel_format=f};return true;}
 static void fake_frame_release(void*c,risc_display_frame_v1 f){(void)c;assert(frames&&f==1);frames=0;}
 static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)r;(void)n;(void)o;assert(frames&&f==1);frames=0;*t=++presents;save_frame();return true;}
 static bool fake_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;assert(t);s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.get_info=fake_info,.acquire=fake_frame,.release=fake_frame_release,.submit=fake_submit,.present_status=fake_present};
-static uint64_t fake_sub(void*c){(void)c;subs++;return 1;}
+static risc_touch_snapshot_v1 fake_touch_state;
+static risc_touch_event_v1 fake_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned fake_event_head,fake_event_count;
+static bool fake_script(void*,risc_touch_snapshot_v1*);
+static uint64_t fake_sub(void*c){subs++;fake_event_head=fake_event_count=0;assert(fake_script(c,&fake_touch_state));return 1;}
 static bool fake_unsub(void*c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
-static bool fake_touch_poll(void*c,size_t n){(void)c;assert(n==1);polls++;return true;}
-static int32_t fake_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
-static bool fake_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240};for(unsigned i=0;i<action_count;i++)if(actions[i].at==polls){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=actions[i].x,.y=actions[i].y};}return true;}
+static bool fake_script(void*c,risc_touch_snapshot_v1*s){(void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240};for(unsigned i=0;i<action_count;i++)if(actions[i].at==script_step()){s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=actions[i].x,.y=actions[i].y};}return true;}
+/* Scripted contacts generate the same ordered report stream exposed by the
+ * snapshot; capture frequency during raster work does not advance the script. */
+static void fake_edge(unsigned kind,risc_touch_contact_v1 point){
+ assert(fake_event_count<RISC_TOUCH_QUEUE_LENGTH);fake_events[(fake_event_head+fake_event_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){.sequence=++fake_touch_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static bool fake_touch_poll(void*c,size_t n){
+ assert(n==1);polls++;risc_touch_snapshot_v1 next;assert(fake_script(c,&next));
+ bool before=fake_touch_state.contact_count!=0,after=next.contact_count!=0;
+ if(before&&!after)fake_edge(RISC_TOUCH_EVENT_UP,fake_touch_state.contacts[0]);
+ if(after){if(!before)fake_edge(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);else if(memcmp(&fake_touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))fake_edge(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+ next.sequence=fake_touch_state.sequence;next.timestamp_ms=ticks;fake_touch_state=next;return true;
+}
+static int32_t fake_next(void*c,uint64_t n,risc_touch_event_v1*out){(void)c;assert(n==1);if(!fake_event_count)return 0;*out=fake_events[fake_event_head];fake_event_head=(fake_event_head+1)%RISC_TOUCH_QUEUE_LENGTH;--fake_event_count;return 1;}
+static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;*out=fake_touch_state;return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,fake_sub,fake_unsub,fake_touch_poll,fake_next,fake_snapshot};
 static bool fake_battery(void*c,risc_battery_sample_v1*s){(void)c;*s=(risc_battery_sample_v1){.percent=73,.millivolts=3970,.flags=RISC_BATTERY_CHARGING};return true;}
 static const risc_battery_gauge_api_v1 battery_api={1,sizeof(battery_api),NULL,fake_battery};

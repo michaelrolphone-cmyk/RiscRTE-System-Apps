@@ -68,18 +68,38 @@ static bool mock_status(void *c,risc_display_present_token_v1 t,risc_display_pre
     out->state=mock_fail_status?RISC_DISPLAY_PRESENT_FAILED:
         mock_ms-mock_submit_ms<mock_latency?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
-static uint64_t mock_subscribe(void *c){(void)c;assert(!mock_subscriptions);mock_subscriptions=1;return 1;}
+static risc_touch_snapshot_v1 mock_touch_state;
+static risc_touch_event_v1 mock_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned mock_event_head,mock_event_count,mock_timestamp_clock;
+static uint64_t mock_timestamp_ms;
+static bool mock_script_snapshot(void*,risc_touch_snapshot_v1*);
+static uint64_t mock_subscribe(void *c){assert(!mock_subscriptions);mock_subscriptions=1;
+    mock_event_head=mock_event_count=0;mock_timestamp_clock=mock_ms;mock_timestamp_ms=mock_ms;
+    assert(mock_script_snapshot(c,&mock_touch_state));mock_touch_state.timestamp_ms=mock_timestamp_ms;return 1;}
+static void mock_emit(unsigned kind,risc_touch_contact_v1 point){
+    assert(mock_event_count<RISC_TOUCH_QUEUE_LENGTH);
+    mock_events[(mock_event_head+mock_event_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
+        .sequence=++mock_touch_state.sequence,.timestamp_ms=mock_timestamp_ms,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
 static bool mock_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && mock_subscriptions);mock_subscriptions=0;return true;}
 static bool mock_poll_touch(void *c,size_t n){
     (void)c;assert(n==1);mock_polls++;
     unsigned gap=mock_ms-mock_last_touch;if(mock_polls>1 && gap>mock_max_gap)mock_max_gap=gap;
-    mock_last_touch=mock_ms;return true;
+    mock_last_touch=mock_ms;
+    mock_timestamp_ms+=(uint32_t)(mock_ms-mock_timestamp_clock);mock_timestamp_clock=mock_ms;
+    risc_touch_snapshot_v1 next;assert(mock_script_snapshot(c,&next));
+    bool before=mock_touch_state.contact_count!=0,after=next.contact_count!=0;
+    if(before&&!after)mock_emit(RISC_TOUCH_EVENT_UP,mock_touch_state.contacts[0]);
+    if(after){if(!before)mock_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);
+        else if(memcmp(&mock_touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))mock_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+    next.sequence=mock_touch_state.sequence;next.timestamp_ms=mock_timestamp_ms;mock_touch_state=next;return true;
 }
-static int32_t mock_next(void *c,uint64_t s,risc_touch_event_v1 *e){(void)c;(void)e;assert(s==1);return 0;}
-static bool mock_snapshot(void *c,risc_touch_snapshot_v1 *s){
+static int32_t mock_next(void *c,uint64_t s,risc_touch_event_v1 *e){(void)c;assert(s==1);if(!mock_event_count)return 0;*e=mock_events[mock_event_head];mock_event_head=(mock_event_head+1)%RISC_TOUCH_QUEUE_LENGTH;--mock_event_count;return 1;}
+static bool mock_script_snapshot(void *c,risc_touch_snapshot_v1 *s){
     (void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240,.contact_count=mock_down?1:0};
     s->contacts[0].x=mock_x;s->contacts[0].y=mock_y;return true;
 }
+static bool mock_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;*out=mock_touch_state;return true;}
 static const risc_display_output_api_v1 mock_display={.api_version=1,.struct_size=sizeof(mock_display),
     .get_info=mock_info,.acquire=mock_acquire_frame,.release=mock_release_frame,.submit=mock_submit,.present_status=mock_status};
 static const risc_touch_api_v1 mock_touch={1,sizeof(mock_touch),NULL,mock_subscribe,mock_unsubscribe,mock_poll_touch,mock_next,mock_snapshot};
@@ -113,14 +133,22 @@ static void assert_fresh(void){for(unsigned y=0;y<240;y++)for(unsigned x=0;x<240
 static void assert_old(void){for(unsigned y=0;y<240;y++)assert(!memcmp(mock_pixels+y*243,mock_old+y*240,480));}
 static void lifecycle(void){
     begin_test();assert(app_module_init()==0);assert(!previous_pixels);
-    assert(springboard_presentation_get());assert(handoff_pending && mock_polls==1);
-    draw_fresh();assert(mock_live==2 && handoff_active);mock_ms=700;present(false);assert_old();
-    assert(handoff_started==700 && mock_presents==1 && !launch(0));
-    mock_ms=790;draw_fresh();present(false);assert(handoff_active && mock_live==2);
+    assert(springboard_presentation_get());assert(handoff_pending && touch.initialized && mock_subscriptions==1);
+    draw_fresh();assert(mock_live==2 && handoff_active);assert(!memcmp(handoff_old,mock_old,sizeof(mock_old)));mock_ms=0;present(false);assert_old();
+    assert(handoff_started==0 && mock_presents==1 && !launch(0));
+    mock_ms=90;draw_fresh();present(false);assert(handoff_active && mock_live==2);
     assert(memcmp(mock_pixels,mock_old,480));
-    mock_ms=880;draw_fresh();present(false);assert_fresh();
+    mock_ms=180;draw_fresh();present(false);assert_fresh();
     assert(!handoff_active && mock_live==0 && mock_presents==3 && launch(0));
-    mock_ms=920;draw_fresh();present(false);assert_fresh();assert(mock_presents==4);end_test();
+    mock_ms=220;draw_fresh();present(false);assert_fresh();assert(mock_presents==4);end_test();
+}
+static void delayed_first_present(void){
+    begin_test();assert(app_module_init()==0);assert(springboard_presentation_get());
+    draw_fresh();assert(handoff_started==0 && handoff_active);
+    assert(mock_live==2 && !memcmp(handoff_old,mock_old,sizeof(mock_old)));
+    /* Drawing/transfer delays do not restart an elapsed software transition. */
+    mock_ms=700;present(false);assert_fresh();
+    assert(!handoff_active && !mock_live && mock_presents==1 && launch(0));end_test();
 }
 static void allocation_fallback(void){
     for(unsigned fail=1;fail<=2;fail++){
@@ -153,7 +181,7 @@ static void unsupported_display(void){
     draw_fresh();present(false);assert_fresh();assert(!mock_allocations);end_test();
 }
 int main(void){
-    lifecycle();allocation_fallback();failed_and_interrupted();delayed_held_contact_and_wrap();unsupported_display();
+    lifecycle();delayed_first_present();allocation_fallback();failed_and_interrupted();delayed_held_contact_and_wrap();unsupported_display();
     puts("Retained handoff: exact first/final frame, held touch, delayed full-frame submit, rollover, allocation failures and interrupted cleanup passed");
     return 0;
 }
