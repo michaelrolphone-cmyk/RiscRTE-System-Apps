@@ -107,6 +107,61 @@ static void bursts(void) {
   portable_touch_read(&touch,&sample);assert(sample.began && provider.count==1);
   portable_touch_read(&touch,&sample);assert(tap() && !provider.count);
 }
+static void ordered_recontacts(void) {
+  /* Millisecond equality does not identify a report. In particular, the
+   * selected GT911 emits same-ID UP/DOWN only across distinct reports. Every
+   * ordered UP still completes its gesture even when the snapshot is ahead. */
+  for(unsigned different=0;different<2;++different)for(unsigned home=0;home<2;++home)
+  for(unsigned page=0;page<2;++page) {
+    unsigned id=different?2u:1u;
+    reset();event(RISC_TOUCH_EVENT_DOWN,1,100,200,40);assert(step() && sample.began);
+    uint64_t sequence=touch.sequence;
+    event(RISC_TOUCH_EVENT_UP,1,100,200,61);
+    event(RISC_TOUCH_EVENT_DOWN,id,100,200,61);
+    if(home)event(RISC_TOUCH_EVENT_BUTTON_DOWN,0,0,0,61);
+    assert(provider.state.contact_count==1 && provider.state.timestamp_ms==61);
+    unsigned snapshots=provider.snapshots;
+    assert(step() && tap() && sample.contact_id==1 && sample.timestamp_ms==61);
+    assert(touch.sequence==sequence+1u && provider.count==1u+home);
+    assert(provider.snapshots==snapshots); /* No speculative snapshot of UP. */
+    if(page) {
+      unsigned nexts=provider.nexts,polls=provider.polls,count=provider.count;
+      portable_touch_cancel_gesture(&touch);
+      assert(provider.nexts==nexts && provider.polls==polls && provider.snapshots==snapshots);
+      assert(step() && sample.cancelled && provider.count==count);
+    }
+    assert(step() && sample.began && sample.tap_eligible && sample.contact_id==id);
+    assert(touch.sequence==sequence+2u && sample.timestamp_ms==61);
+    if(home)assert(step() && sample.home_pressed && sample.down);
+    assert(!step() && sample.down && !sample.cancelled);
+    event(RISC_TOUCH_EVENT_UP,id,100,200,103);
+    if(home)event(RISC_TOUCH_EVENT_BUTTON_UP,0,0,0,103);
+    assert(step() && tap() && sample.contact_id==id);
+    if(home)assert(step() && !sample.home_pressed && touch.home_neutral);
+    assert(!step() && !issues && !retains);fresh_tap(3,104);
+  }
+  /* Even an entire intact queue at one millisecond must retain every tap. */
+  reset();for(unsigned i=0;i<RISC_TOUCH_QUEUE_LENGTH/2u;++i) {
+    unsigned id=1u+i%2u;
+    event(RISC_TOUCH_EVENT_DOWN,id,100,200,1);event(RISC_TOUCH_EVENT_UP,id,100,200,1);
+  }
+  unsigned taps=0,begins=0;
+  while(step()){assert(!sample.cancelled && sample.timestamp_ms==1);taps+=tap();begins+=sample.began;}
+  assert(taps==RISC_TOUCH_QUEUE_LENGTH/2u && begins==taps && !issues && !retains);
+}
+static void malformed_recontact(void) {
+  /* A repeated DOWN without a preceding UP remains malformed, independent
+   * of the timestamp. It cannot be reclassified as a valid rapid tap. */
+  reset();event(RISC_TOUCH_EVENT_DOWN,1,100,200,40);assert(step() && sample.began);
+  event(RISC_TOUCH_EVENT_MOVE,1,100,200,61);
+  provider.events[provider.head].kind=RISC_TOUCH_EVENT_DOWN;
+  event(RISC_TOUCH_EVENT_BUTTON_DOWN,0,0,0,61);
+  assert(step() && sample.cancelled && !tap() && !touch.neutral);
+  assert(step() && sample.cancelled && !sample.home_pressed);assert(!step());
+  event(RISC_TOUCH_EVENT_UP,1,100,200,103);event(RISC_TOUCH_EVENT_BUTTON_UP,0,0,0,103);
+  assert(step() && !sample.released && !tap());assert(step() && !sample.home_pressed);
+  assert(!step() && touch.neutral && touch.home_neutral && !retains);fresh_tap(2,104);
+}
 static void moves_and_identity(void) {
   reset();event(RISC_TOUCH_EVENT_DOWN,4,100,200,1);event(RISC_TOUCH_EVENT_MOVE,4,140,250,2);
   event(RISC_TOUCH_EVENT_MOVE,4,100,200,3);event(RISC_TOUCH_EVENT_UP,4,100,200,4);
@@ -211,9 +266,15 @@ static void recoverable_faults(void) {
   provider.state.width=480;assert(!step() && touch.neutral);fresh_tap(2,1);
 }
 static void terminal_faults(void) {
-  for(unsigned which=0;which<4;++which) {
+  for(unsigned which=0;which<5;++which) {
     reset();if(which==0)provider.next_error=-2;else if(which==1)provider.next_error=-17;
-    else provider.snapshot_ok=false;
+    else {
+      if(which==4) {
+        event(RISC_TOUCH_EVENT_DOWN,1,100,200,1);assert(step() && sample.began);
+        event(RISC_TOUCH_EVENT_MOVE,1,110,200,2);event(RISC_TOUCH_EVENT_DOWN,2,150,250,2);
+      }
+      provider.snapshot_ok=false;
+    }
     if(which==3)portable_touch_reset(&touch);else assert(!step() && sample.cancelled);
     assert(touch.terminal);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -225,7 +286,7 @@ static void terminal_faults(void) {
   }
 }
 int main(void) {
-  bursts();moves_and_identity();multiple_contacts();same_report_motion_cancel();home_and_inherited();boundaries();page_and_drag();recoverable_faults();terminal_faults();
+  bursts();ordered_recontacts();malformed_recontact();moves_and_identity();multiple_contacts();same_report_motion_cancel();home_and_inherited();boundaries();page_and_drag();recoverable_faults();terminal_faults();
   reset();assert(portable_touch_close(&touch,&runtime));assert(provider.unsubscribes==1 && provider.releases==1);
-  puts("Ordered touch: bursts, full queue, compatibility, identity/time, excursion, multi-contact, Home, inherited holds, reset watermark, snapshot race, fault recovery, and terminal freeze PASS");return 0;
+  puts("Ordered touch: bursts, equal-timestamp recontacts, full queue, compatibility, identity/time, excursion, multi-contact, Home, inherited holds, page/reset boundaries, snapshot race, malformed recontact recovery, and terminal snapshot freeze PASS");return 0;
 }
