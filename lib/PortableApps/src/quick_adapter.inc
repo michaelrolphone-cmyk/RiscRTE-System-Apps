@@ -53,7 +53,7 @@ static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
  if(!quick_storage_safe())return false;
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
- if((actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE)) && !portable_background_stop())return false;
+ if((actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE|PQA_CONTEXTS)) && !portable_background_stop())return false;
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
@@ -65,6 +65,9 @@ static bool quick_apply(uint32_t actions) {
 #endif
  bool changed=false;
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(actions&PQA_CONTEXTS)portable_contexts_settings_changed(&contexts_client,quick.ui.contexts_valid);
+#endif
  const alarm_service_v1 *service=alarm_sleep_api();
  if(changed && service)(void)service->refresh(service->context);
  return true;

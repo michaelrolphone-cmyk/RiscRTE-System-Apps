@@ -1,8 +1,12 @@
 #include "PortableQuickSession.h"
 #include "PortableTimeFormat.h"
+#include "PortableContextPreferences.h"
 void pqa_session_init(pqa_session *s) {
  *s=(pqa_session){0};pqa_init(&s->ui);pqa_cancel_input(&s->ui);
  s->idle_ms=PORTABLE_SLEEP_IDLE_MS;s->deep_ms=PORTABLE_SLEEP_LIGHT_MS;
+ #if defined(PORTABLE_CONTEXTS_CLIENT) || defined(WATCH_CONTEXTS_CLIENT)
+ s->ui.contexts_controls=true;
+#endif
  s->brightness=PQA_BRIGHTNESS_DEFAULT;s->volume=s->restore_volume=PQA_VOLUME_DEFAULT;
 }
 static bool acquire(const risc_runtime_api_v1 *rt,risc_runtime_capability_v1 *g,const risc_key_value_v1 **kv) {
@@ -17,6 +21,10 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  bool vv=pqa_preference_load(kv,PQA_VOLUME_KEY,PQA_VOLUME_DEFAULT,0,&v);
  (void)pqa_preference_load(kv,PQA_RESTORE_VOLUME_KEY,PQA_VOLUME_DEFAULT,1,&r);
  bool dnd=false,dnd_valid=pqa_dnd_load(kv,&dnd);
+ if(s->ui.contexts_controls){
+  bool enabled=false;s->ui.contexts_valid=portable_context_enabled_load(kv,&enabled);
+  s->ui.contexts_enabled=s->ui.contexts_valid&&enabled;
+ }
  unsigned mode=PORTABLE_TIME_FORMAT_12;(void)portable_time_format_load(kv,&mode);s->hour_24=mode==PORTABLE_TIME_FORMAT_24;
 #ifdef PORTABLE_LOW_BATTERY
  (void)portable_sleep_timer_load(kv,false,&s->idle_ms);
@@ -36,7 +44,7 @@ bool pqa_session_restore(const pqa_session *s,const risc_display_output_api_v1 *
 }
 bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *alerts_changed) {
  *alerts_changed=false;
- if(actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND)) {
+ if(actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND|PQA_CONTEXTS)) {
   risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
   if(actions&PQA_BRIGHTNESS_COMMIT) {
    unsigned wanted=s->ui.action_brightness;
@@ -54,6 +62,12 @@ bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_d
     s->volume=wanted;if(wanted)s->restore_volume=wanted;
     s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*alerts_changed=true;
    } else {s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
+  }
+  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
+   if(portable_context_enabled_save(kv,s->ui.action_contexts)){
+    s->ui.contexts_enabled=s->ui.action_contexts;s->ui.contexts_valid=true;
+    s->ui.error_flags&=~(PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE);
+   }else{s->ui.contexts_valid=false;s->ui.error_flags|=PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE;}
   }
   if(actions&PQA_DND) {
    bool wanted=s->ui.action_dnd;

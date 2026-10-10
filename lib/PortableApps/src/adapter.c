@@ -45,6 +45,7 @@ static portable_contexts_client contexts_client;
 const contexts_service_v1 *portable_contexts_service(void) {return contexts_client.api;}
 bool portable_contexts_stop(void) {return portable_contexts_pause(&contexts_client);}
 bool portable_contexts_enable(bool enabled) {return portable_contexts_set_enabled(&contexts_client,enabled);}
+bool portable_contexts_training(bool enabled){if(!portable_contexts_pause(&contexts_client))return false;contexts_client.foreground_learning=enabled;return true;}
 bool portable_contexts_rules_read(cr_store*out){return portable_context_rules_read(&contexts_client,out);}
 bool portable_contexts_rules_save(const cr_store*value){return portable_context_rules_save(&contexts_client,value);}
 bool portable_contexts_models_save(void){return portable_contexts_pause(&contexts_client)&&!contexts_client.fingerprint_error;}

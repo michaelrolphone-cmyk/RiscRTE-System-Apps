@@ -15,7 +15,7 @@ typedef struct {
     uint64_t rules_revision;
     bool rules_available;
     bool fingerprint_temporal_only;
-    bool loaded,settings_valid,low_battery,save_failed,preset_checked;
+    bool loaded,settings_valid,low_battery,save_failed,preset_checked,foreground_learning;
 } portable_contexts_client;
 #include "PortableContextFingerprints.h"
 #include "PortableContextRules.h"
@@ -36,6 +36,10 @@ static inline bool portable_contexts_pause(portable_contexts_client *c) {
     c->loaded=false;if(!c->api)return true;
     if(!c->api->pause(c->api->context))return false;
     return portable_fp_checkpoint(c,false);
+}
+/* A shared preference writer invalidates the cached background policy. */
+static inline void portable_contexts_settings_changed(portable_contexts_client *c,bool confirmed){
+    c->loaded=false;c->settings_valid=false;c->save_failed=!confirmed;c->policy.enabled=false;
 }
 static inline bool portable_contexts_capture(portable_contexts_client *c) {
     return !c->api||c->api->capture_audio(c->api->context);
@@ -89,7 +93,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
         c->loaded=true;c->loaded_at=health.uptime_ms;
     }
     contexts_policy_v1 policy=c->policy;policy.awake=true;
-    policy.enabled=policy.enabled&&c->settings_valid;
+    policy.enabled=(policy.enabled||c->foreground_learning)&&c->settings_valid;
     policy.audio_allowed=policy.audio_allowed&&audio_allowed;
     policy.radio_allowed=policy.radio_allowed&&radio_allowed;
     const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(c->api);
@@ -188,6 +192,8 @@ static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint
 const contexts_service_v1 *portable_contexts_service(void);
 bool portable_contexts_stop(void);
 bool portable_contexts_enable(bool enabled);
+/* Foreground training is temporary and never writes the background toggle. */
+bool portable_contexts_training(bool enabled);
 unsigned portable_contexts_face_count(void);
 const char *portable_contexts_face_name(unsigned id);
 

@@ -4,7 +4,7 @@
 #include "PortableFingerprintClock.h"
 /* Ordinary app-owned checkpoints, after capture quiescence. The service keeps
  * copied models only. Source namespaces are the existing Audio@2 and RF@3. */
-static uint8_t portable_fp_bytes[60000];
+static uint8_t portable_fp_bytes[72000];
 static inline bool portable_fp_record(portable_contexts_client*c,unsigned source,bool load){
     if(c->fingerprint_store.api)return false; /* terminal retained storage fence */
     const contexts_fingerprint_service_v1*api=contexts_fingerprint_api(c->api);

@@ -134,4 +134,14 @@ static void test_dnd(void) {
  }
  assert(changed>1000);
 }
-int main(void){test_dnd();test_routes();test_controls();test_cancel();test_animation();test_render();test_fuzz();puts("quick actions: all controller, animation, surface and fuzz tests passed");return 0;}
+static void contexts_control(void){
+ pqa_state s;pqa_init(&s);s.contexts_controls=s.contexts_valid=true;s.position_q8=s.target_q8=PQA_OPEN_Q8;
+ assert(pqa_input(&s,10,true,1,1,190,202,true));assert(pqa_input(&s,20,true,0,0,0,0,true));
+ assert(pqa_take_action(&s)==PQA_CONTEXTS&&s.action_contexts&&!s.contexts_enabled);
+ s.contexts_enabled=true;assert(pqa_input(&s,30,true,1,1,190,202,true));assert(pqa_input(&s,40,true,0,0,0,0,true));
+ assert(pqa_take_action(&s)==PQA_CONTEXTS&&!s.action_contexts);
+ assert(pqa_input(&s,50,true,1,1,190,202,true));assert(pqa_input(&s,60,true,1,1,190,140,true));assert(pqa_input(&s,70,true,0,0,0,0,true));assert(!pqa_take_action(&s));
+ s.position_q8=s.target_q8=PQA_OPEN_Q8;s.contexts_valid=false;
+ assert(pqa_input(&s,80,true,1,1,190,202,true));assert(pqa_input(&s,90,true,0,0,0,0,true));assert(!pqa_take_action(&s));
+}
+int main(void){contexts_control();test_dnd();test_routes();test_controls();test_cancel();test_animation();test_render();test_fuzz();puts("quick actions: all controller, animation, surface and fuzz tests passed");return 0;}
