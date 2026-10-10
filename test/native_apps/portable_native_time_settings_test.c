@@ -453,7 +453,10 @@ static int32_t alarm_status(void *ctx,alarm_status_v1 *out) {
   *out=alarm_state;return ALARM_OK;
 }
 static int32_t alarm_step(void *ctx) {
-  (void)ctx;io();assert(display_settled&&!surface.frame&&!frames);++alarm_steps;
+  (void)ctx;io();
+  /* Service progress is independent of immutable pending display images.
+   * A mutable provider lease still excludes all service callbacks. */
+  assert(!surface.frame&&!frames);++alarm_steps;
   if(which("alarm-step-retained")&&alarm_fault_ready()){hidden=true;return -9;}
   if(which("alarm-refresh-retained")&&alarm_fault_ready()) {
     alarm_state.state=ALARM_STATE_BLOCKED;alarm_state.error=ALARM_STORAGE;alarm_state.snapshot=2;

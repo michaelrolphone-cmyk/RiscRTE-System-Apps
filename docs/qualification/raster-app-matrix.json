@@ -1,0 +1,2605 @@
+{
+  "schema": 1,
+  "generated_utc": "2026-10-10T15:55:00Z",
+  "scope": "Host qualification only; no hardware, publication, merge or product selection",
+  "source_binding": {
+    "base_union_commit": "17a38095724757f00f8b60f7481353bd394b28ce",
+    "main_launch_fix": "0d7bde11a899321444ba2f26da091175c6b6ccf8",
+    "main_handoff_origin_fix": "3c622a09c6f13800fd70c244e32237434c3afbcc",
+    "fixture_commit": "2a0f6176c876cd00184c516460fe21510d85ebad",
+    "selected_fixture_commit": "2edf22bc1160cca6818ad5a1ab47caa1be9c632a",
+    "selected_production_commit": "b83424545e2af86a6566d40ab111cd7a03db3f9b",
+    "runtime_checkout_commit": "fc05d35827fc0d51be749c6797be4b3a4426ba23",
+    "selected_native_time_canonical_header_ref": "602ae9bd618e13407b5b94bcad86cdabc23c99ea",
+    "selected_target_sha256": "f3e44072db2d840bd42bffbaed2ce1057c7669fb4d6e552ff72f270a173d72d3",
+    "selected_version": "1.3.25",
+    "selected_source_hashes_verified": 247,
+    "selected_sdk_hashes": {
+      "RiscRuntimeV1.h": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
+      "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+      "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+      "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+      "RiscResidentShellV1.h": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
+      "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+      "RiscDiagnosticCheckpointV1.h": "2c41504823df54a43e383baafa07f45191869f6ea5de4adaaf2651c2d78af017"
+    },
+    "final_production_source_sha256": {
+      "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+      "Apps/settings_native_entry.c": "4b93dbd02e7a1623d27439f7db8288bfff05e3bc677e0420df66fd294ca59f03",
+      "lib/PortableApps/src/adapter.c": "8515a1ae7d5c6c19ea42b0e2950a91f37a02c6ee3fa83cbab52cbb7e4b106579",
+      "lib/PortableApps/src/raster_snapshot_state.inc": "a0c8766bdbd89fc591b03ff913e82f5fece8341ced041fab629dabc0fa4af04b",
+      "lib/PortableApps/src/raster_snapshot_replay.inc": "6a9fd58d3617e447cd1d7c0a138b0289dff88e6c42aa83d56a2c59a03fd94888",
+      "lib/PortableApps/src/nova.inc": "6b4905d8840537ff6e8e82196b090b104dae1149a22a449d350778de762da07d"
+    },
+    "stage_note": "Final app gates use isolated 17a3809 + fixture commit and approved launch/origin production hunks. Their adapter differs from main 3c622a0 only by its explanatory launch-drain comment. Origin fix was applied during the full gate; all affected NOVA/portable aggregates were rerun afterward under forced ASan+UBSan in both modes. Earlier auxiliary suites exercised original union code; later changes concern retained RGB565 launch/origin and do not exercise their paper-only paths. Selected Settings is source-bound to the clean b834 target.",
+    "sealed_selected_target": "/workspace/shared/ui-decoupling-final-057-target/apps/settings",
+    "sealed_receipt_sha256": "295f2d47dd15bbe2e7b601457dff70b45c332fa4b55f65bef6b2d430bb5d5e8e",
+    "sealed_selected_receipt_commit": "bd98b2e14c8d4ac20e4075c03396b12d8480e8f4",
+    "sealed_source_closure_verified_at_receipt_commit": 247,
+    "sealed_source_difference_from_test_target": "Only scripts/build_portable_settings.py metadata changed; all production C and ELF unchanged."
+  },
+  "matrix": [
+    {
+      "name": "Independent-build app host gate",
+      "status": "PASS",
+      "evidence": [
+        "final-snapshot/ci-summary.json"
+      ],
+      "mode": "snapshot",
+      "commands": 21,
+      "source_stage": "final_c",
+      "runs": [
+        {
+          "script": "scripts/test_apps.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 2.27,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_apps-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_apps.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 19.68,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_apps-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_wifi.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 10.85,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_wifi-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_file_browser.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 21.83,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_file_browser-snapshot.log"
+        },
+        {
+          "script": "scripts/test_file_browser_paper.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 2.62,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_file_browser_paper-snapshot.log"
+        },
+        {
+          "script": "scripts/test_file_browser_operations.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 4.83,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_file_browser_operations-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_update.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 25.29,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_update-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_alarm.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 3.33,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_alarm-snapshot.log"
+        },
+        {
+          "script": "scripts/test_nova_ui.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 10.24,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_nova_ui-snapshot.log"
+        },
+        {
+          "script": "scripts/test_nova_settings.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 40.14,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_nova_settings-snapshot.log"
+        },
+        {
+          "script": "scripts/test_quick_actions.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 41.02,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_quick_actions-snapshot.log"
+        },
+        {
+          "script": "scripts/test_quick_radios.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 9.75,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_quick_radios-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_audio.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 6.79,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_audio-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_radio.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 12.55,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_radio-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_alarm_settings.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 12.76,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_alarm_settings-snapshot.log"
+        },
+        {
+          "script": "scripts/test_springboard_nova.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 11.04,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_springboard_nova-snapshot.log"
+        },
+        {
+          "script": "scripts/test_springboard_paper.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 9.54,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_springboard_paper-snapshot.log"
+        },
+        {
+          "script": "scripts/test_settings_paper.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 2.02,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_settings_paper-snapshot.log"
+        },
+        {
+          "script": "scripts/test_nova_launcher.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 5.24,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_nova_launcher-snapshot.log"
+        },
+        {
+          "script": "scripts/test_portable_transition.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 11.36,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/test_portable_transition-snapshot.log"
+        },
+        {
+          "script": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
+          "mode": "snapshot",
+          "returncode": 0,
+          "seconds": 0.17,
+          "log": "/tmp/raster-union-app-qualification/final-snapshot/file_browser_oversize_usb_handle_runtime_test-snapshot.log"
+        }
+      ]
+    },
+    {
+      "name": "Post-origin-fix nova ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "final-origin-nova-asan-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "source_stage": "final_c",
+      "app_cases": 112,
+      "randomized_trajectories": 19000
+    },
+    {
+      "name": "Post-origin-fix portable ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "final-origin-portable-asan-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "source_stage": "final_c"
+    },
+    {
+      "name": "Independent-build app host gate",
+      "status": "PASS",
+      "evidence": [
+        "final-disabled/ci-summary.json"
+      ],
+      "mode": "disabled",
+      "commands": 21,
+      "source_stage": "final_c",
+      "runs": [
+        {
+          "script": "scripts/test_apps.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 2.08,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_apps-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_apps.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 17.95,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_apps-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_wifi.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 9.45,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_wifi-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_file_browser.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 18.22,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_file_browser-disabled.log"
+        },
+        {
+          "script": "scripts/test_file_browser_paper.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 2.32,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_file_browser_paper-disabled.log"
+        },
+        {
+          "script": "scripts/test_file_browser_operations.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 5.18,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_file_browser_operations-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_update.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 22.99,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_update-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_alarm.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 3.22,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_alarm-disabled.log"
+        },
+        {
+          "script": "scripts/test_nova_ui.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 8.52,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_nova_ui-disabled.log"
+        },
+        {
+          "script": "scripts/test_nova_settings.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 33.35,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_nova_settings-disabled.log"
+        },
+        {
+          "script": "scripts/test_quick_actions.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 48.12,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_quick_actions-disabled.log"
+        },
+        {
+          "script": "scripts/test_quick_radios.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 8.76,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_quick_radios-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_audio.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 7.46,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_audio-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_radio.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 12.52,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_radio-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_alarm_settings.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 10.49,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_alarm_settings-disabled.log"
+        },
+        {
+          "script": "scripts/test_springboard_nova.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 10.24,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_springboard_nova-disabled.log"
+        },
+        {
+          "script": "scripts/test_springboard_paper.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 7.05,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_springboard_paper-disabled.log"
+        },
+        {
+          "script": "scripts/test_settings_paper.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 2.22,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_settings_paper-disabled.log"
+        },
+        {
+          "script": "scripts/test_nova_launcher.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 4.33,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_nova_launcher-disabled.log"
+        },
+        {
+          "script": "scripts/test_portable_transition.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 11.0,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/test_portable_transition-disabled.log"
+        },
+        {
+          "script": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
+          "mode": "disabled",
+          "returncode": 0,
+          "seconds": 0.17,
+          "log": "/tmp/raster-union-app-qualification/final-disabled/file_browser_oversize_usb_handle_runtime_test-disabled.log"
+        }
+      ]
+    },
+    {
+      "name": "Post-origin-fix nova ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "final-origin-nova-asan-disabled.log"
+      ],
+      "mode": "disabled",
+      "source_stage": "final_c",
+      "app_cases": 112,
+      "randomized_trajectories": 19000
+    },
+    {
+      "name": "Post-origin-fix portable ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "final-origin-portable-asan-disabled.log"
+      ],
+      "mode": "disabled",
+      "source_stage": "final_c"
+    },
+    {
+      "name": "Python unit tests",
+      "status": "PASS",
+      "evidence": [
+        "aligned-unit.log"
+      ],
+      "mode": "snapshot",
+      "cases": 88,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Current logical scroll across Settings, Time Zone, Wi-Fi, Files, Springboard",
+      "status": "PASS",
+      "evidence": [
+        "logical-scroll/evidence.json",
+        "logical-scroll-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 162,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Current Apps/Firmware logical latency",
+      "status": "PASS",
+      "evidence": [
+        "updates-logical/evidence.json",
+        "updates-logical-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 160,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Portable frame delivery, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "frame-normal-snapshot.log",
+        "frame-san-snapshot.log",
+        "frame-normal/compile-command.json",
+        "frame-san/compile-command.json"
+      ],
+      "mode": "snapshot",
+      "cases": 16,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Ordered touch, normal / ASan / UBSan",
+      "status": "PASS",
+      "evidence": [
+        "ordered-touch-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 9,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Native app terminal custody, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "native-custody/evidence.json",
+        "native-custody-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 472,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Native-owned cleanup, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "native-cleanup/evidence.json"
+      ],
+      "mode": "snapshot",
+      "cases": 10,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Interactive paper intent, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "intent/evidence.json"
+      ],
+      "mode": "snapshot",
+      "cases": 4,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Paper Quick intermediate motion and exact restore",
+      "status": "PASS",
+      "evidence": [
+        "paper-motion-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 4,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Scene host, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "scene-host-snapshot.log",
+        "scene-host-san-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": 358,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Text host/client, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "text-host-snapshot.log",
+        "text-host-san-snapshot.log"
+      ],
+      "mode": "snapshot",
+      "cases": null,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Wi-Fi paper production scenarios, normal and ASan+UBSan",
+      "status": "PASS",
+      "evidence": [
+        "wifi-paper-snapshot.log",
+        "app-extension-summary.json"
+      ],
+      "mode": "snapshot",
+      "cases": 354,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "NOVA Calculator, Stopwatch, Battery, Alarms, Countdown",
+      "status": "PASS",
+      "evidence": [
+        "nova-utilities-snapshot.log",
+        "app-extension-summary.json"
+      ],
+      "mode": "snapshot",
+      "cases": 20,
+      "source_stage": "base_union_or_unaffected_final_c"
+    },
+    {
+      "name": "Home gesture semantic matrix with elapsed-time health guard",
+      "status": "PASS_DIAGNOSTIC",
+      "evidence": [
+        "home-clock-health/evidence.json",
+        "home-clock-health.log",
+        "home-clock-health.c",
+        "home-gestures-disabled/evidence.json"
+      ],
+      "cases_per_mode": 300,
+      "source_stage": "base_union_or_unaffected_final_c",
+      "note": "Snapshot diagnostic changes only the obsolete raw-poll-count health limit to a 20,000 ms elapsed-time limit. All original semantic assertions remain. Disabled original fixture passes. This diagnostic is not in either tests-only commit."
+    },
+    {
+      "name": "Exact selected Settings list matrix",
+      "status": "PASS",
+      "evidence": [
+        "settings-selected-final2/evidence.json",
+        "settings-selected-final2.log"
+      ],
+      "mode": "snapshot",
+      "cases": 312,
+      "normal_cases": 156,
+      "asan_ubsan_cases": 156,
+      "source_stage": "selected_b834",
+      "note": "Frozen target production source closure; 39 cases in each of 8 height/orientation/sanitizer profiles. Disabled compatibility uses identical target defines followed by -UPORTABLE_RASTER_SNAPSHOT."
+    },
+    {
+      "name": "Exact selected Settings list matrix",
+      "status": "PASS",
+      "evidence": [
+        "settings-selected-final2-disabled/evidence.json",
+        "settings-selected-final2-disabled.log"
+      ],
+      "mode": "disabled",
+      "cases": 312,
+      "normal_cases": 156,
+      "asan_ubsan_cases": 156,
+      "source_stage": "selected_b834",
+      "note": "Frozen target production source closure; 39 cases in each of 8 height/orientation/sanitizer profiles. Disabled compatibility uses identical target defines followed by -UPORTABLE_RASTER_SNAPSHOT."
+    }
+  ],
+  "legacy_and_initial_attempts": [
+    {
+      "name": "Legacy snapshot-only files scroll fixture",
+      "status": "OBSOLETE_PROVIDER_EXPECTATIONS",
+      "evidence": [
+        "files-all-snapshot-runs.json",
+        "files-all-disabled-runs.json"
+      ],
+      "modes": {
+        "snapshot": {
+          "pass": 52,
+          "fail": 76,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "drag"
+            },
+            {
+              "profile": "paper",
+              "case": "select"
+            },
+            {
+              "profile": "paper",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper",
+              "case": "bounds"
+            },
+            {
+              "profile": "paper",
+              "case": "horizontal"
+            },
+            {
+              "profile": "paper",
+              "case": "modal"
+            },
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper",
+              "case": "actions"
+            },
+            {
+              "profile": "paper",
+              "case": "destination"
+            },
+            {
+              "profile": "paper",
+              "case": "handlers"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "paper",
+              "case": "options"
+            },
+            {
+              "profile": "paper",
+              "case": "reentry"
+            },
+            {
+              "profile": "paper",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "drag"
+            },
+            {
+              "profile": "paper-san",
+              "case": "select"
+            },
+            {
+              "profile": "paper-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper-san",
+              "case": "bounds"
+            },
+            {
+              "profile": "paper-san",
+              "case": "horizontal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "modal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper-san",
+              "case": "actions"
+            },
+            {
+              "profile": "paper-san",
+              "case": "destination"
+            },
+            {
+              "profile": "paper-san",
+              "case": "handlers"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "paper-san",
+              "case": "options"
+            },
+            {
+              "profile": "paper-san",
+              "case": "reentry"
+            },
+            {
+              "profile": "paper-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper-san",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "drag"
+            },
+            {
+              "profile": "short",
+              "case": "select"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "bounds"
+            },
+            {
+              "profile": "short",
+              "case": "horizontal"
+            },
+            {
+              "profile": "short",
+              "case": "modal"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short",
+              "case": "actions"
+            },
+            {
+              "profile": "short",
+              "case": "destination"
+            },
+            {
+              "profile": "short",
+              "case": "handlers"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "short",
+              "case": "options"
+            },
+            {
+              "profile": "short",
+              "case": "reentry"
+            },
+            {
+              "profile": "short",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "drag"
+            },
+            {
+              "profile": "short-san",
+              "case": "select"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "bounds"
+            },
+            {
+              "profile": "short-san",
+              "case": "horizontal"
+            },
+            {
+              "profile": "short-san",
+              "case": "modal"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short-san",
+              "case": "actions"
+            },
+            {
+              "profile": "short-san",
+              "case": "destination"
+            },
+            {
+              "profile": "short-san",
+              "case": "handlers"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "short-san",
+              "case": "options"
+            },
+            {
+              "profile": "short-san",
+              "case": "reentry"
+            },
+            {
+              "profile": "short-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short-san",
+              "case": "rename-keyboard"
+            }
+          ]
+        },
+        "disabled": {
+          "pass": 52,
+          "fail": 76,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "drag"
+            },
+            {
+              "profile": "paper",
+              "case": "select"
+            },
+            {
+              "profile": "paper",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper",
+              "case": "bounds"
+            },
+            {
+              "profile": "paper",
+              "case": "horizontal"
+            },
+            {
+              "profile": "paper",
+              "case": "modal"
+            },
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper",
+              "case": "actions"
+            },
+            {
+              "profile": "paper",
+              "case": "destination"
+            },
+            {
+              "profile": "paper",
+              "case": "handlers"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "paper",
+              "case": "options"
+            },
+            {
+              "profile": "paper",
+              "case": "reentry"
+            },
+            {
+              "profile": "paper",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "drag"
+            },
+            {
+              "profile": "paper-san",
+              "case": "select"
+            },
+            {
+              "profile": "paper-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper-san",
+              "case": "bounds"
+            },
+            {
+              "profile": "paper-san",
+              "case": "horizontal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "modal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper-san",
+              "case": "actions"
+            },
+            {
+              "profile": "paper-san",
+              "case": "destination"
+            },
+            {
+              "profile": "paper-san",
+              "case": "handlers"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "paper-san",
+              "case": "options"
+            },
+            {
+              "profile": "paper-san",
+              "case": "reentry"
+            },
+            {
+              "profile": "paper-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper-san",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "drag"
+            },
+            {
+              "profile": "short",
+              "case": "select"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "bounds"
+            },
+            {
+              "profile": "short",
+              "case": "horizontal"
+            },
+            {
+              "profile": "short",
+              "case": "modal"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short",
+              "case": "actions"
+            },
+            {
+              "profile": "short",
+              "case": "destination"
+            },
+            {
+              "profile": "short",
+              "case": "handlers"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "short",
+              "case": "options"
+            },
+            {
+              "profile": "short",
+              "case": "reentry"
+            },
+            {
+              "profile": "short",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short",
+              "case": "rename-keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "drag"
+            },
+            {
+              "profile": "short-san",
+              "case": "select"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "bounds"
+            },
+            {
+              "profile": "short-san",
+              "case": "horizontal"
+            },
+            {
+              "profile": "short-san",
+              "case": "modal"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short-san",
+              "case": "actions"
+            },
+            {
+              "profile": "short-san",
+              "case": "destination"
+            },
+            {
+              "profile": "short-san",
+              "case": "handlers"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "cache-reverse"
+            },
+            {
+              "profile": "short-san",
+              "case": "options"
+            },
+            {
+              "profile": "short-san",
+              "case": "reentry"
+            },
+            {
+              "profile": "short-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short-san",
+              "case": "rename-keyboard"
+            }
+          ]
+        }
+      },
+      "note": "Provider does not supply the ordered contact stream required by current input contract; also contains completed-image hit-identity expectations. Identical failure sets with snapshot disabled. Not counted as a full pass."
+    },
+    {
+      "name": "Legacy snapshot-only wifi scroll fixture",
+      "status": "OBSOLETE_PROVIDER_EXPECTATIONS",
+      "evidence": [
+        "wifi-all-snapshot-runs.json",
+        "wifi-all-disabled-runs.json"
+      ],
+      "modes": {
+        "snapshot": {
+          "pass": 44,
+          "fail": 36,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "root"
+            },
+            {
+              "profile": "paper",
+              "case": "drag"
+            },
+            {
+              "profile": "paper",
+              "case": "select"
+            },
+            {
+              "profile": "paper",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper",
+              "case": "modal"
+            },
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "root"
+            },
+            {
+              "profile": "paper-san",
+              "case": "drag"
+            },
+            {
+              "profile": "paper-san",
+              "case": "select"
+            },
+            {
+              "profile": "paper-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper-san",
+              "case": "modal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "root"
+            },
+            {
+              "profile": "short",
+              "case": "drag"
+            },
+            {
+              "profile": "short",
+              "case": "select"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "modal"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "root"
+            },
+            {
+              "profile": "short-san",
+              "case": "drag"
+            },
+            {
+              "profile": "short-san",
+              "case": "select"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "modal"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            }
+          ]
+        },
+        "disabled": {
+          "pass": 44,
+          "fail": 36,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "root"
+            },
+            {
+              "profile": "paper",
+              "case": "drag"
+            },
+            {
+              "profile": "paper",
+              "case": "select"
+            },
+            {
+              "profile": "paper",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper",
+              "case": "modal"
+            },
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "root"
+            },
+            {
+              "profile": "paper-san",
+              "case": "drag"
+            },
+            {
+              "profile": "paper-san",
+              "case": "select"
+            },
+            {
+              "profile": "paper-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "paper-san",
+              "case": "modal"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "root"
+            },
+            {
+              "profile": "short",
+              "case": "drag"
+            },
+            {
+              "profile": "short",
+              "case": "select"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "modal"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "root"
+            },
+            {
+              "profile": "short-san",
+              "case": "drag"
+            },
+            {
+              "profile": "short-san",
+              "case": "select"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "modal"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "cleanup"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            }
+          ]
+        }
+      },
+      "note": "Provider does not supply the ordered contact stream required by current input contract; also contains completed-image hit-identity expectations. Identical failure sets with snapshot disabled. Not counted as a full pass."
+    },
+    {
+      "name": "Legacy snapshot-only updates scroll fixture",
+      "status": "OBSOLETE_PROVIDER_EXPECTATIONS",
+      "evidence": [
+        "updates-all-snapshot-runs.json",
+        "updates-all-disabled-runs.json"
+      ],
+      "modes": {
+        "snapshot": {
+          "pass": 60,
+          "fail": 60,
+          "failures": [
+            {
+              "profile": "apps",
+              "case": "drag"
+            },
+            {
+              "profile": "apps",
+              "case": "select"
+            },
+            {
+              "profile": "apps",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "apps",
+              "case": "modal"
+            },
+            {
+              "profile": "apps",
+              "case": "queued-up"
+            },
+            {
+              "profile": "apps",
+              "case": "replace"
+            },
+            {
+              "profile": "apps",
+              "case": "version"
+            },
+            {
+              "profile": "apps",
+              "case": "remove"
+            },
+            {
+              "profile": "apps",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "apps",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "apps",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "apps",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "apps",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "apps",
+              "case": "install"
+            },
+            {
+              "profile": "apps",
+              "case": "connect-version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "drag"
+            },
+            {
+              "profile": "apps-san",
+              "case": "select"
+            },
+            {
+              "profile": "apps-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "apps-san",
+              "case": "modal"
+            },
+            {
+              "profile": "apps-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "apps-san",
+              "case": "replace"
+            },
+            {
+              "profile": "apps-san",
+              "case": "version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "remove"
+            },
+            {
+              "profile": "apps-san",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "apps-san",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "apps-san",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "apps-san",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "apps-san",
+              "case": "install"
+            },
+            {
+              "profile": "apps-san",
+              "case": "connect-version"
+            },
+            {
+              "profile": "firmware",
+              "case": "drag"
+            },
+            {
+              "profile": "firmware",
+              "case": "select"
+            },
+            {
+              "profile": "firmware",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "firmware",
+              "case": "modal"
+            },
+            {
+              "profile": "firmware",
+              "case": "queued-up"
+            },
+            {
+              "profile": "firmware",
+              "case": "replace"
+            },
+            {
+              "profile": "firmware",
+              "case": "version"
+            },
+            {
+              "profile": "firmware",
+              "case": "remove"
+            },
+            {
+              "profile": "firmware",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "firmware",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "firmware",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "firmware",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "firmware",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "firmware",
+              "case": "install"
+            },
+            {
+              "profile": "firmware",
+              "case": "connect-version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "drag"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "select"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "modal"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "replace"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "remove"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "install"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "connect-version"
+            }
+          ]
+        },
+        "disabled": {
+          "pass": 60,
+          "fail": 60,
+          "failures": [
+            {
+              "profile": "apps",
+              "case": "drag"
+            },
+            {
+              "profile": "apps",
+              "case": "select"
+            },
+            {
+              "profile": "apps",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "apps",
+              "case": "modal"
+            },
+            {
+              "profile": "apps",
+              "case": "queued-up"
+            },
+            {
+              "profile": "apps",
+              "case": "replace"
+            },
+            {
+              "profile": "apps",
+              "case": "version"
+            },
+            {
+              "profile": "apps",
+              "case": "remove"
+            },
+            {
+              "profile": "apps",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "apps",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "apps",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "apps",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "apps",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "apps",
+              "case": "install"
+            },
+            {
+              "profile": "apps",
+              "case": "connect-version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "drag"
+            },
+            {
+              "profile": "apps-san",
+              "case": "select"
+            },
+            {
+              "profile": "apps-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "apps-san",
+              "case": "modal"
+            },
+            {
+              "profile": "apps-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "apps-san",
+              "case": "replace"
+            },
+            {
+              "profile": "apps-san",
+              "case": "version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "remove"
+            },
+            {
+              "profile": "apps-san",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "apps-san",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "apps-san",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "apps-san",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "apps-san",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "apps-san",
+              "case": "install"
+            },
+            {
+              "profile": "apps-san",
+              "case": "connect-version"
+            },
+            {
+              "profile": "firmware",
+              "case": "drag"
+            },
+            {
+              "profile": "firmware",
+              "case": "select"
+            },
+            {
+              "profile": "firmware",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "firmware",
+              "case": "modal"
+            },
+            {
+              "profile": "firmware",
+              "case": "queued-up"
+            },
+            {
+              "profile": "firmware",
+              "case": "replace"
+            },
+            {
+              "profile": "firmware",
+              "case": "version"
+            },
+            {
+              "profile": "firmware",
+              "case": "remove"
+            },
+            {
+              "profile": "firmware",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "firmware",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "firmware",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "firmware",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "firmware",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "firmware",
+              "case": "install"
+            },
+            {
+              "profile": "firmware",
+              "case": "connect-version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "drag"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "select"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "modal"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "replace"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "remove"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "confirm-version"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "confirm-remove"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "back-confirm"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "cancel-progress"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "touch-cancel-progress"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "install"
+            },
+            {
+              "profile": "firmware-san",
+              "case": "connect-version"
+            }
+          ]
+        }
+      },
+      "note": "Provider does not supply the ordered contact stream required by current input contract; also contains completed-image hit-identity expectations. Identical failure sets with snapshot disabled. Not counted as a full pass."
+    },
+    {
+      "name": "Ordered-provider files legacy diagnostic",
+      "status": "UNRESOLVED_BASELINE_FIXTURE_FAILURES",
+      "evidence": [
+        "ordered-files-snapshot-runs.json",
+        "ordered-files-disabled-runs.json",
+        "ordered-files.c"
+      ],
+      "modes": {
+        "snapshot": {
+          "pass": 114,
+          "fail": 14,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard-busy"
+            }
+          ]
+        },
+        "disabled": {
+          "pass": 114,
+          "fail": 14,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "paper-san",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short",
+              "case": "keyboard-busy"
+            },
+            {
+              "profile": "short-san",
+              "case": "busy-hit"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "inventory-change"
+            },
+            {
+              "profile": "short-san",
+              "case": "keyboard-busy"
+            }
+          ]
+        }
+      },
+      "note": "Exact same residual failures in both modes. No snapshot-specific regression demonstrated. These residual cases have not been qualified to passing and must not be counted as passing or dismissed solely because both modes fail. Current logical-list and production application suites provide separate coverage."
+    },
+    {
+      "name": "Ordered-provider wifi legacy diagnostic",
+      "status": "UNRESOLVED_BASELINE_FIXTURE_FAILURES",
+      "evidence": [
+        "ordered-wifi-snapshot-runs.json",
+        "ordered-wifi-disabled-runs.json",
+        "ordered-wifi.c"
+      ],
+      "modes": {
+        "snapshot": {
+          "pass": 72,
+          "fail": 8,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            }
+          ]
+        },
+        "disabled": {
+          "pass": 72,
+          "fail": 8,
+          "failures": [
+            {
+              "profile": "paper",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "paper-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "paper-san",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short",
+              "case": "confirm-hidden"
+            },
+            {
+              "profile": "short-san",
+              "case": "queued-up"
+            },
+            {
+              "profile": "short-san",
+              "case": "confirm-hidden"
+            }
+          ]
+        }
+      },
+      "note": "Exact same residual failures in both modes. No snapshot-specific regression demonstrated. These residual cases have not been qualified to passing and must not be counted as passing or dismissed solely because both modes fail. Current logical-list and production application suites provide separate coverage."
+    },
+    {
+      "name": "Legacy resident-shell runner",
+      "status": "OBSOLETE_INPUT_FIXTURE",
+      "evidence": [
+        "resident-shell-snapshot.log",
+        "resident-shell-san-snapshot.log",
+        "resident-shell-disabled.log"
+      ],
+      "note": "Snapshot-only touch timeline fails the ms<20000 health guard in enabled and disabled builds. This runner is not qualified; the parent owns separate actual RuntimeQuick qualification."
+    },
+    {
+      "name": "Legacy paper-transition runner",
+      "status": "OBSOLETE_PRESENT_INTENT_EXPECTATION",
+      "evidence": [
+        "paper-transition-all-snapshot.log",
+        "paper-transition-disabled.log"
+      ],
+      "note": "Requires QUALITY while production interactive frames deliberately use LOW_LATENCY. Same failure in both modes. Current interactive intent, Paper Quick motion, and full RGB565 transition gates pass."
+    },
+    {
+      "name": "Legacy Springboard scroll runner",
+      "status": "OBSOLETE_SERVICE_DISPLAY_COUPLING",
+      "evidence": [
+        "springboard-all-snapshot.log",
+        "springboard-scroll-disabled.log"
+      ],
+      "note": "Asserts no pending immutable display token during alarm service; phase-2 intentionally permits this. Same failure in both modes. Current logical Springboard and full NOVA/Paper app gates pass."
+    },
+    {
+      "name": "Historical paper-present/input runner",
+      "status": "BLOCKED_MISSING_HISTORICAL_OBJECT",
+      "evidence": [
+        "paper-present-snapshot.log"
+      ],
+      "note": "git archive cannot find c1ff014792c9ecbc195c402e9b4c3e2c3c9d34d3. No cases ran. Do not treat as pass."
+    },
+    {
+      "name": "Initial portable aggregate / NOVA / paper Settings attempts",
+      "status": "RESOLVED_BY_FINAL_RERUN",
+      "evidence": [
+        "ci-summary.json",
+        "final-extra-summary.json",
+        "final-snapshot/ci-summary.json",
+        "final-disabled/ci-summary.json"
+      ],
+      "note": "Superseded by final full app gates and forced ASan+UBSan runs. Fixture alignment separates logical present from provider submit, explicitly drains only completed-pixel/acquisition-fault checks, and asserts no active callback after observed submit failure. Real retained-handoff defects were fixed by main."
+    },
+    {
+      "name": "Initial selected Settings attempts",
+      "status": "RESOLVED_BY_FINAL_RERUN",
+      "evidence": [
+        "settings-selected-runs.json",
+        "settings-selected-aligned-runs.json",
+        "settings-selected-aligned-disabled-runs.json",
+        "settings-selected-final.log",
+        "settings-selected-final2/evidence.json",
+        "settings-selected-final2-disabled/evidence.json"
+      ],
+      "note": "Stale literal-version check, snapshot-only input, completed-image hit/return expectations, and alarm pending-token restriction aligned. Fresh contacts act on UP before display completion; readonly key-policy row selection is asserted exactly."
+    }
+  ],
+  "observed_defects": [
+    {
+      "status": "FIXED_BY_MAIN_AND_RETESTED",
+      "name": "Retained handoff valid tap launch refused while software frame remained pending",
+      "fix": "0d7bde11a899321444ba2f26da091175c6b6ccf8",
+      "evidence": [
+        "handoff-model.log",
+        "handoff-trace-snapshot.log",
+        "handoff-trace-disabled.log",
+        "final-origin-nova-asan-snapshot.log"
+      ]
+    },
+    {
+      "status": "FIXED_BY_MAIN_AND_RETESTED",
+      "name": "Retained transition origin delayed by raster replay",
+      "fix": "3c622a09c6f13800fd70c244e32237434c3afbcc",
+      "evidence": [
+        "final-origin-snapshot.log",
+        "final-origin-disabled.log"
+      ],
+      "timestamps": {
+        "logical_origin_both_ms": 0,
+        "snapshot_first_submit_ms": 20,
+        "snapshot_first_alpha": 28,
+        "snapshot_one_launch_ms": 207,
+        "disabled_one_launch_ms": 202
+      }
+    }
+  ],
+  "semantic_findings": {
+    "logical_cadence": "Assert >=40 ms at wrapped logical app->present. Provider submissions remain ordered and ownership-safe; final drain may legitimately compress provider submit intervals. No new artificial delay added.",
+    "paper_settings_completed_pixels": "Scenario 0: before explicit test-only drain displays=0/failed=0, afterward displays=1/failed=0. Scenario 15 malformed acquire: before 0/0, afterward 0/1.",
+    "failed_submit": "Permitted RTC write at29 ms precedes observed submit failure36 ms. Zero later writes; active provider callbacks assert failure has not been observed. Known-owned release/unsubscribe cleanup remains allowed.",
+    "retained_terminal": "472 native custody cases enforce callback/free exclusion after retention; selected Settings render-retained cases preserve strict io guard and no launch/write after retention.",
+    "api": "No provider SDK/API changes. Relative to stable c878ce7, PortableQuickRender.h adds only the private pqa_render_rows helper.",
+    "as_built_receipt_mismatch": "RESOLVED: sealed Settings receipt at /workspace/shared/ui-decoupling-final-057-target/apps/settings has completed_frame_hit_identity=false and logical_geometry_hit_identity=true; identical f3e44072 ELF verified.",
+    "sanitizers": "ASan and UBSan enabled wherever specified; detect_leaks=0 only avoids ptrace LSan incompatibility."
+  },
+  "unresolved": [
+    "Historical paper-present/input object unavailable; no execution.",
+    "Ordered Files/Wi-Fi legacy diagnostics retain the explicitly listed same-mode baseline failures; no full-pass claim for those runners."
+  ],
+  "artifacts": {
+    "aligned-unit.log": {
+      "sha256": "7a02e64476b399e2c1d4df6e1cffceb3e1b1e64243f4112a92c45333b64cb7db",
+      "bytes": 1776
+    },
+    "app-extension-summary.json": {
+      "sha256": "7c6bdd743cf008f15f916c1b4fb55f20094bad81fdad8a3c9f3d5dad4e75da7f",
+      "bytes": 160
+    },
+    "ci-summary.json": {
+      "sha256": "2ea799f14987feffda22e9d949a4e395f98b12321c997c82aba7a75679b185de",
+      "bytes": 4409
+    },
+    "files-all-disabled-runs.json": {
+      "sha256": "8ef2aaddae3ae08edc33788c9a9d9ce90cb80eda4dedaf1143907d56954d3882",
+      "bytes": 40389
+    },
+    "files-all-snapshot-runs.json": {
+      "sha256": "bcadae7ccde75ddab8d38bf51c0217cf8fe8f90117e0ebcba73d5b278ff26bfb",
+      "bytes": 40396
+    },
+    "final-disabled/ci-summary.json": {
+      "sha256": "0b645780bf350c84964f8d71fefda84fa3615d0224cb266db60dffcce4485ac5",
+      "bytes": 4724
+    },
+    "final-extra-summary.json": {
+      "sha256": "d0c611c25b99bd68df93f78801d4fde92d5591b27ed4e0161386dbae6ad105ef",
+      "bytes": 1737
+    },
+    "final-origin-nova-asan-disabled.log": {
+      "sha256": "58d5e602247284b5193877b0d6d76e5c5ef97d3a6ccc86d93342b7ff079420ec",
+      "bytes": 13603
+    },
+    "final-origin-nova-asan-snapshot.log": {
+      "sha256": "f607fbe3d2d7793da3a37fcbaa393ee2f6a303880a1be278a4703bd354c7666c",
+      "bytes": 13599
+    },
+    "final-origin-portable-asan-disabled.log": {
+      "sha256": "b825bec961382758d07c547e2514c6255bbf93c6765cacab2c138f150e5901e6",
+      "bytes": 8532
+    },
+    "final-origin-portable-asan-snapshot.log": {
+      "sha256": "b825bec961382758d07c547e2514c6255bbf93c6765cacab2c138f150e5901e6",
+      "bytes": 8532
+    },
+    "final-snapshot/ci-summary.json": {
+      "sha256": "93591a9dc54e29607e6460e835553c7164978d609cc112002b3e51fb37bdc234",
+      "bytes": 4727
+    },
+    "frame-normal-snapshot.log": {
+      "sha256": "9f13b9d4384d54e9f4d82c3f0824b46f161c5db2d34fc8015996088fe9349c5c",
+      "bytes": 1104
+    },
+    "frame-normal/compile-command.json": {
+      "sha256": "9699391c548186cfa328f87d3e4f5c8cefba4662ee41f12790d6700c050511a2",
+      "bytes": 634
+    },
+    "frame-san-snapshot.log": {
+      "sha256": "9f13b9d4384d54e9f4d82c3f0824b46f161c5db2d34fc8015996088fe9349c5c",
+      "bytes": 1104
+    },
+    "frame-san/compile-command.json": {
+      "sha256": "faa4973e3718b281be5eb67bbb12a582eec77230c9c0eda72bdcc464e845764f",
+      "bytes": 735
+    },
+    "home-clock-health.c": {
+      "sha256": "e11c0a652075e71839214c11cf653b3b6949529652742d855cd2cc2f11ba5fa1",
+      "bytes": 7696
+    },
+    "home-clock-health.log": {
+      "sha256": "32b707fd5cb29a55920dede422b98155400340322e4be3ce091ecd5da7cb38eb",
+      "bytes": 262
+    },
+    "home-clock-health/evidence.json": {
+      "sha256": "5483238cd393cc19bcfcf7848a27188c2f7b87ac44165620762570a79918e63e",
+      "bytes": 178103
+    },
+    "home-gestures-disabled/evidence.json": {
+      "sha256": "319399648aa0a0c68f6fb5f60efa6fccf5ad52d7f0f51a867185373fddbb593c",
+      "bytes": 178164
+    },
+    "intent/evidence.json": {
+      "sha256": "2c85ec6b3dd5e3753dd110f2e345928cdc5aa39a4fb00b02e1ef3f10a1442770",
+      "bytes": 769
+    },
+    "logical-scroll-snapshot.log": {
+      "sha256": "a1767305e8419f6268f8269221bdba371bf650c84518887b62ac8eba1a1ba813",
+      "bytes": 24987
+    },
+    "logical-scroll/evidence.json": {
+      "sha256": "9f32585440a47653ee6fd61ef12ecdedecf90b65553713e371eda967338fbb20",
+      "bytes": 37524
+    },
+    "native-cleanup/evidence.json": {
+      "sha256": "6d641af0def096840922a7019fac04477feb6901738370f2e94424c7cfcfcb98",
+      "bytes": 379
+    },
+    "native-custody-snapshot.log": {
+      "sha256": "205ab99a565c149dc4b4a466321346544d406c79f2f0b582fd427238da3c626b",
+      "bytes": 532
+    },
+    "native-custody/evidence.json": {
+      "sha256": "fe46f72a25075262eb96709569f9cf3bef4ff77eb962c311473c4d1abb17f379",
+      "bytes": 27386
+    },
+    "nova-utilities-snapshot.log": {
+      "sha256": "566798f451bbce3276fb32d3d1b201c8dba4f6c586ba533e129a90c95b7b9a46",
+      "bytes": 1802
+    },
+    "ordered-files-disabled-runs.json": {
+      "sha256": "cbbe0a77b62f1a1f0adcc3e49f84c6fe7bd81d1f641fcb339b5628b2d2e13a15",
+      "bytes": 52189
+    },
+    "ordered-files-snapshot-runs.json": {
+      "sha256": "e0750a7831836d76dcbcd4c57ce861b86506821bea4a7ad23a8bf972e90b3817",
+      "bytes": 52152
+    },
+    "ordered-files.c": {
+      "sha256": "13c08cf8c7f9c58fb03905e55ba03b57f10678bf9adcedea40cc07c9057e99c6",
+      "bytes": 18989
+    },
+    "ordered-touch-snapshot.log": {
+      "sha256": "b61ed9437c6cbd7908ba0507a7f1e936f4b2fafe1deb095a80fe2391c71432d1",
+      "bytes": 211
+    },
+    "ordered-wifi-disabled-runs.json": {
+      "sha256": "b7691292e22a6521ce16c4474c1852b412feea3809814482f681af4e52ee1fa5",
+      "bytes": 30445
+    },
+    "ordered-wifi-snapshot-runs.json": {
+      "sha256": "90e2a4f618b2089bc6806c20dc9bf0745cc9459f5d8e731275534a97d92ed385",
+      "bytes": 30444
+    },
+    "ordered-wifi.c": {
+      "sha256": "b3c5b92dc60edbde3d94f09c7089a21ebcfa4fbce451c16f39f4f7a448e45775",
+      "bytes": 12154
+    },
+    "paper-motion-snapshot.log": {
+      "sha256": "7cecc5c5c89953962c96f1f517aa302846d410459fe1e0b2863f8acd7226b9ab",
+      "bytes": 793
+    },
+    "paper-present-snapshot.log": {
+      "sha256": "f3e0682aef13f795afae582949716b28f10d10df11acfe223a64986c6eaec622",
+      "bytes": 1532
+    },
+    "paper-transition-all-snapshot.log": {
+      "sha256": "a3b9ff060843a78a897989e97d6cbf81c0bd807a33e1717db362b98b84aaba04",
+      "bytes": 1500
+    },
+    "paper-transition-disabled.log": {
+      "sha256": "bf231bbca5af4e2f650e76f58dc9236586de0701ebfe0e08153c06c13dca8d63",
+      "bytes": 683
+    },
+    "resident-shell-disabled.log": {
+      "sha256": "87cf62dd80f6518064a2f80432b1ca4cc9e7a1c5385cfeaf4a3764b44964462f",
+      "bytes": 1067
+    },
+    "resident-shell-san-snapshot.log": {
+      "sha256": "af97e7645deb9ff8c73d270feb23c6d1c4e5a874cc1edae98a48d5d4cd789c70",
+      "bytes": 1057
+    },
+    "resident-shell-snapshot.log": {
+      "sha256": "03401adcfa79fbeb69ec296923d2f019317133fcd485b934fc5bdc5b83daffa6",
+      "bytes": 1049
+    },
+    "scene-host-san-snapshot.log": {
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "bytes": 10733
+    },
+    "scene-host-snapshot.log": {
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "bytes": 10733
+    },
+    "settings-selected-aligned-disabled-runs.json": {
+      "sha256": "9ba908a27a06f026e5c01130f0455944ef3fcdb3c6208bd8c7a1548b8cb01dac",
+      "bytes": 174087
+    },
+    "settings-selected-aligned-runs.json": {
+      "sha256": "cb92ea2e01215c02b1dce1c328f9b6ef90c0f4b796edb57054c84ca03982ccf3",
+      "bytes": 152359
+    },
+    "settings-selected-final.log": {
+      "sha256": "b8325d910b147a855d407e1132e4f8e02c088c72d2cd17788427fedd8c203955",
+      "bytes": 10002
+    },
+    "settings-selected-final2-disabled.log": {
+      "sha256": "e6c28b4197742a989fa572d82e64a5d3244d345dbb52fbaf5338d08a90d4df76",
+      "bytes": 75844
+    },
+    "settings-selected-final2-disabled/evidence.json": {
+      "sha256": "72d52f37483e19f5537fb4f92d77ff64127527e4c315bdf716ff6a87d41de379",
+      "bytes": 107490
+    },
+    "settings-selected-final2.log": {
+      "sha256": "9d2f326043b19216bfc97e53fdd4a86b4927c26db9a7d1c228fd56da22fa658e",
+      "bytes": 75728
+    },
+    "settings-selected-final2/evidence.json": {
+      "sha256": "bd47542ce3f1e5734e0f08944ecd59d4c25d8f24c5758d45a8262fb340bffc03",
+      "bytes": 107374
+    },
+    "settings-selected-runs.json": {
+      "sha256": "c9d90b5ee5fd5209b9a0b4cb7ca146b93d854c05002e4786d230a882e90a655c",
+      "bytes": 82773
+    },
+    "springboard-all-snapshot.log": {
+      "sha256": "27b1dd1568aec2fdcbf4894caaf0ed59aaa3a0c0ba6e36b228cccc9866a92736",
+      "bytes": 1557
+    },
+    "springboard-scroll-disabled.log": {
+      "sha256": "10d48be8fa208703d17247cfcd357c2b796fa2e3b9079fd61efe6981e17718b5",
+      "bytes": 858
+    },
+    "text-host-san-snapshot.log": {
+      "sha256": "bd22eeae463591d62f066b4122ba669f7912cc4c14612984fc3d78ba47d0ebe3",
+      "bytes": 2549
+    },
+    "text-host-snapshot.log": {
+      "sha256": "bd22eeae463591d62f066b4122ba669f7912cc4c14612984fc3d78ba47d0ebe3",
+      "bytes": 2549
+    },
+    "updates-all-disabled-runs.json": {
+      "sha256": "806e3e3463cf3e75678d9c696ea36ef75757ce722dd5f2b096df9659e1d3bb6c",
+      "bytes": 39462
+    },
+    "updates-all-snapshot-runs.json": {
+      "sha256": "ebbe01535f33f7a003764de768cae57ac832bfd80471df2e240d3a8dec31853d",
+      "bytes": 39466
+    },
+    "updates-logical-snapshot.log": {
+      "sha256": "fd39ac9dbdbf7371750e3e0d2e64e5a854ff0709b02c192b3d9279602360c67d",
+      "bytes": 32394
+    },
+    "updates-logical/evidence.json": {
+      "sha256": "9f00d50767ddd9ebd6f894969632cf317585e2bd4231d9f16b8d4937dd74bd47",
+      "bytes": 55196
+    },
+    "wifi-all-disabled-runs.json": {
+      "sha256": "11e6c3f5c1819d31536232b2a757f29a837c704a25696a2f3bf63775593d5a73",
+      "bytes": 25864
+    },
+    "wifi-all-snapshot-runs.json": {
+      "sha256": "ade66420b10fc0f9bc76bcd4b65cb1072f04d0ee1ef5e70d96a668e53e39f5ed",
+      "bytes": 25856
+    },
+    "wifi-paper-snapshot.log": {
+      "sha256": "9613abf3657bb203b293396bf0aec350d6dbd7c1ac3ee585795db691394c51b4",
+      "bytes": 12120
+    }
+  }
+}

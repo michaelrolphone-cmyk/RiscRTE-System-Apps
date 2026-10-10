@@ -3,6 +3,7 @@
 #define main unused_native_settings_main
 #include "portable_native_time_settings_test.c"
 #undef main
+#include "logical_touch_queue_fixture.h"
 #ifndef PORTABLE_QUICK_ACTIONS
 #define quick_modal false
 #endif
@@ -12,7 +13,7 @@ static unsigned started,delay_ms,submitted,home_sent,back_sent,shown,drag_frames
 static int maximum_offset,minimum_offset=1000000,release_offset,expected_row=-1,chosen_row=-1,return_offset=-1;
 static unsigned submitted_page,visible_page=~0u,press_visible_changes,alarm_frames;
 static bool alarm_fired,static_seen;
-static bool held_selection,checked_reentry;
+static bool held_selection,checked_reentry,logical_returned;
 static int submitted_offset,visible_offset;
 static uint8_t submitted_pixels[sizeof(pixels)],background[sizeof(pixels)];
 static bool is(const char *s){return !strcmp(scenario,s);}
@@ -80,16 +81,15 @@ static bool scroll_nav(void *c,risc_input_navigation_frame_v1 *out){
     }
     if(!home_sent&&at>=(is("home")?180u:2600u)){b=RISC_NAV_HOME;++home_sent;}
   }
-  out->buttons=out->pressed=b;return true;
+  static unsigned previous;out->buttons=b;out->pressed=b&~previous;out->released=previous&~b;previous=b;return true;
 }
 static int32_t scroll_next(void *c,uint64_t token,risc_touch_event_v1 *out){
-  (void)c;(void)token;io();
-  if(is("queued-up")&&!queued_up&&started&&elapsed()>=release_at()){
-    int x=LOGICAL_WIDTH/2,y=SP_TOP+10;
-    if(flipped){x=LOGICAL_WIDTH-1-x;y=LOGICAL_HEIGHT-1-y;}
-    queued_up=true;*out=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=(uint16_t)x,.y=(uint16_t)y};return 1;
+  if(is("cancelled")&&started&&elapsed()>=180&&elapsed()<200){
+    io();logical_raw_head=logical_raw_tail;return -1;
   }
-  return is("cancelled")&&started&&elapsed()>=180&&elapsed()<200?-1:0;
+  int32_t result=logical_raw_next(c,token,out);
+  if(is("queued-up")&&result==1&&out->kind==RISC_TOUCH_EVENT_UP)queued_up=true;
+  return result;
 }
 static bool scroll_snapshot(void *c,risc_touch_snapshot_v1 *out){
   (void)c;io();*out=(risc_touch_snapshot_v1){.width=LOGICAL_WIDTH,.height=LOGICAL_HEIGHT};
@@ -121,10 +121,19 @@ static bool scroll_snapshot(void *c,risc_touch_snapshot_v1 *out){
   bool select=is("select")||is("busy-hit")||is("nested")||is("partial")||is("reentry");unsigned choose_at=is("busy-hit")?420:900;
   if(select&&at>=choose_at&&at<choose_at+(is("busy-hit")?300u:80u)){
     down=true;y=SP_TOP+(is("partial")?4:fields_case?150:190);
-    if(!first_tap){first_tap=true;assert(visible_page==(fields_case?SV_FIELDS:SV_ROOT));expected_row=(y-SP_TOP+visible_offset)/SP_ROW;}
+    if(!first_tap){first_tap=true;assert(list_page());expected_row=(y-SP_TOP+portable_scroll_offset(s))/SP_ROW;}
   }
-  if(is("reentry")&&at>=1640&&at<1720){down=true;y=SP_TOP+100;}
-  if(is("reentry")&&at>=1800&&at<2000){assert(list_page());checked_reentry=true;}
+  /* Back has completed logically. A fresh contact before the pending image
+   * settles must still select on UP, never replay or activate on DOWN. */
+  if(is("reentry")&&at>=1640&&at<1720){
+    down=true;y=SP_TOP+100;assert(list_page());
+    assert(back_sent&&offset==maximum_offset);logical_returned=true;
+  }
+  if(is("reentry")&&at>=1800&&at<2000){
+    if(fields_case){assert(sv_page==SV_VALUE&&editor_field==(unsigned)expected_row);}
+    else assert(list_page());
+    checked_reentry=true;
+  }
   held_selection=is("busy-hit")&&at>=choose_at&&at<choose_at+300;
   if(is("save")&&at>=900&&at<980){down=true;x=SAVE_X;y=FOOTER_Y;}
   if(is("cancel")&&at>=900&&at<980){down=true;x=80;y=FOOTER_Y;}
@@ -154,7 +163,7 @@ static bool scroll_acquire(const char *name,uint32_t version,uint64_t instance,r
   if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){static alarm_service_descriptor_v2 api;api=alarm_api;api.base.step=scroll_alarm_step;out->api=&api;}
   if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){static risc_key_value_v1 api;api=kv_api;api.get=scroll_get;out->api=&api;}
   if(!strcmp(name,"display.output")){static risc_display_output_api_v1 api;api=display_api;api.get_info=scroll_info;api.submit=scroll_submit;api.present_status=scroll_status;out->api=&api;}
-  if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 api;api=touch_api;api.snapshot=scroll_snapshot;api.next=scroll_next;out->api=&api;}
+  if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 api;api=touch_api;api.poll=logical_raw_poll;api.snapshot=logical_raw_snapshot;api.next=scroll_next;out->api=&api;}
   if(!strcmp(name,"input.navigation")){static risc_input_navigation_api_v1 api;api=navigation_api;api.poll=scroll_nav;out->api=&api;}
   return true;
 }
@@ -166,6 +175,7 @@ int main(int argc,char **argv){
   flipped=true;
 #endif
   configure_records();runtime.acquire=scroll_acquire;runtime.health=scroll_health;runtime.request_launch=scroll_launch;
+  logical_raw_init(LOGICAL_WIDTH,LOGICAL_HEIGHT,scroll_snapshot);
   assert(app_module_init()==0);in_main=true;app_main();
   if(is("render-retained")){
     assert(retained&&barriers==1&&!launches&&!zone_puts&&!raster_clip_active);app_module_fini();
@@ -176,7 +186,16 @@ int main(int argc,char **argv){
   if(fields_case&&is("save")){assert(rtc_writes==1&&seeds==1&&basis_puts==1);assert(!memcmp(&first_draft,&settings_draft,sizeof(first_draft)));}
   else assert(!rtc_reads&&!rtc_writes&&!seeds&&!basis_puts);
   assert(!zone_puts&&!other_puts);
-  if(is("select")||is("busy-hit")||is("nested")){assert(chosen&&chosen_row==expected_row);}
+  if(is("select")||is("busy-hit")||is("nested")){
+#ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
+    /* The current logical row under this busy touch is the read-only key
+     * policy, not the About row from an older completed image. */
+    if(!fields_case&&is("busy-hit")&&expected_row==4)
+      assert(!chosen&&list_page()&&sv_selected==(unsigned)expected_row+1);
+    else
+#endif
+      assert(chosen&&chosen_row==expected_row);
+  }
   if(is("nested")){assert(returned&&return_offset>0);}
   if(is("partial")){
     if(fields_case)assert(chosen&&chosen_row==expected_row&&returned&&return_offset==maximum_offset);
@@ -185,7 +204,7 @@ int main(int argc,char **argv){
   if(is("drag")){assert(drag_frames>=2&&momentum_frames>=1&&maximum_offset>release_offset);}
   if(is("bounds")){assert(maximum_offset==list_scroll()->limit&&minimum_offset==0);}
   if(is("busy-hit")){assert(busy_samples>5&&shown<12&&press_visible_changes>0);}
-  if(is("reentry")){assert(checked_reentry&&returned&&chosen_row==expected_row);}
+  if(is("reentry")){assert(checked_reentry&&logical_returned&&chosen_row==expected_row);}
   if(is("supersede")){assert(portable_scroll_offset(list_scroll())==0&&maximum_offset==list_scroll()->limit);}
   if(is("cancelled"))assert(!chosen); /* Queue loss cancels the gesture; negative custody errors retain. */
   if(is("stop-tap")){assert(!chosen);if(!fields_case)assert(!sv_selected);}

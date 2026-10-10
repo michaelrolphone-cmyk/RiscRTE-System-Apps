@@ -1,0 +1,108 @@
+{
+  "compared": 17,
+  "exact_matches": 0,
+  "differences": [
+    {
+      "path": "apps/default/default.elf",
+      "before": 445360,
+      "after": 445544,
+      "sha256": "7dcb94185d32bb8cfc34b412d84e014c1ea6b9e0d6ee0978ca2d258dfcd571bd"
+    },
+    {
+      "path": "apps/file_browser/file_browser.elf",
+      "before": 245644,
+      "after": 245780,
+      "sha256": "3f14ba11626865562cca9253d5d29f615924558566921bdd7b2de84de2e7af1c"
+    },
+    {
+      "path": "apps/settings/settings.elf",
+      "before": 218080,
+      "after": 218200,
+      "sha256": "29e29231f3fe3a1142d26d3eca2915ba2efd6eced80818cfc068f68d50e254ff"
+    },
+    {
+      "path": "apps/springboard/springboard.elf",
+      "before": 214948,
+      "after": 215068,
+      "sha256": "a66f9a410e82e586851578110acceee793361a45a47c16752f4346ff88bbbc1e"
+    },
+    {
+      "path": "apps/updates/app_store/app_store.elf",
+      "before": 197676,
+      "after": 197816,
+      "sha256": "4fb5ffc12b3e68d1645b4ab9bef328a0b26b88edaa8e21278d51c9906145ef21"
+    },
+    {
+      "path": "apps/updates/ota_update/ota_update.elf",
+      "before": 197684,
+      "after": 197820,
+      "sha256": "5b3c0886e32cc271a93ca7fe8691b47ac99342dea46bb27404743ec34bd9313c"
+    },
+    {
+      "path": "apps/usb_sd_transfer/usb_sd_transfer.elf",
+      "before": 107520,
+      "after": 107520,
+      "sha256": "70e7553e9431c36867d885c3db0d74ea65578f35f65e9b05864684cee1bfca49"
+    },
+    {
+      "path": "apps/utilities/alarms/alarms.elf",
+      "before": 206428,
+      "after": 206572,
+      "sha256": "0cdbdf4cf91f09968ba8149a4d3c62dbda28be9a18f5069bc700a8ef4e6649d8"
+    },
+    {
+      "path": "apps/utilities/battery/battery.elf",
+      "before": 199480,
+      "after": 199612,
+      "sha256": "c811ac4da05939f56f80bfc5e5829042bc234e1c56891a34225a7ee298c7b719"
+    },
+    {
+      "path": "apps/utilities/ble_buttons/ble_buttons.elf",
+      "before": 216524,
+      "after": 216644,
+      "sha256": "eda7fe7546e2e5f3409a2798bc235452983dc8a721bc1ab5e1b73e38a0bf56b2"
+    },
+    {
+      "path": "apps/utilities/ble_scanner/ble_scanner.elf",
+      "before": 218856,
+      "after": 218976,
+      "sha256": "13109ee5c65313dc65adf584ac75804bb2e04a8d9132ffe9d5a2c0b60e09c21f"
+    },
+    {
+      "path": "apps/utilities/ble_touchpad/ble_touchpad.elf",
+      "before": 216424,
+      "after": 216544,
+      "sha256": "f8899a3152fe45c26037f85bdae5c333e30cc0664b2126d25571cb544ad098a0"
+    },
+    {
+      "path": "apps/utilities/calculator/calculator.elf",
+      "before": 194532,
+      "after": 194664,
+      "sha256": "86292176dd786ed72aaa976c7e2104fd74515f187dab3bd7e039f6920cc7cb61"
+    },
+    {
+      "path": "apps/utilities/countdown/countdown.elf",
+      "before": 201112,
+      "after": 201256,
+      "sha256": "8eec1420157a936d60b8ffaaf4e68bb0a43bd3fa7021b339c3aea90e30029b9f"
+    },
+    {
+      "path": "apps/utilities/stopwatch/stopwatch.elf",
+      "before": 198984,
+      "after": 199104,
+      "sha256": "364e41c3a6688bb0922edfacb5f137890d2a7f33f185313988af9b4bc6bb5e4e"
+    },
+    {
+      "path": "apps/utilities/waterfall/waterfall.elf",
+      "before": 331304,
+      "after": 331440,
+      "sha256": "91fe582d4d0313847c17024ced27c2c6c4e9aa750bbdefb1efec0979d3bba513"
+    },
+    {
+      "path": "apps/wifi_settings/wifi_settings.elf",
+      "before": 222056,
+      "after": 222224,
+      "sha256": "bf6472dfe4006f8af27ecbe78cc2898d304c9ae3582f9a6969a4b4b20d9806d5"
+    }
+  ]
+}

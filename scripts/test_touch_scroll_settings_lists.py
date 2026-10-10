@@ -18,7 +18,8 @@ def main():
  a=p.parse_args();target=a.target_dir.resolve();out=a.output_dir.resolve();out.mkdir(parents=True,exist_ok=True)
  record=json.loads((target/'settings-build-record.json').read_text())
  resident=record.get('resident_shell',{}).get('role')=='foreground'
- assert record['version'] in ('1.3.18','1.3.23') and record['touch_scrolling']['version']==2
+ assert record['version']==json.loads((target/'settings.json').read_text())['version']
+ assert record['touch_scrolling']['version']==2
  include=Path(record['idle_policy']['compiled_include_directory']) if record.get('idle_policy') else target/('performance-sdk/include' if record.get('performance_trace') else 'native-time-sdk/include')
  for name,digest in record['source_sha256'].items():
   assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest, 'Rebuild target after editing '+name
