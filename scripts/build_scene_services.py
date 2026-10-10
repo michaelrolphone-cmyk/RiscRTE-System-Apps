@@ -28,7 +28,7 @@ def run(runtime: Path, output: Path) -> None:
         host=json.loads((ROOT/'Services/scene_host/manifest.json').read_text())
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'])]
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
-        for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json']:
+        for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:
             shutil.copyfile(ROOT/'Services/scene_host/fonts'/name,license_dir/name)
         for name,flags in PROFILE_FLAGS.items():
             identity='scene-profile-'+name
