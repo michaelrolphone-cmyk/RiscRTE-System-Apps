@@ -174,6 +174,7 @@ static bool contexts_clock_recovered,contexts_clock_handoff;
 static bool contexts_tick(void);
 static bool contexts_capture_checkpoint(void);
 static bool contexts_before_storage(void);
+static bool contexts_before_storage_read(void);
 static bool contexts_suspend(void);
 static uint32_t contexts_pixels;
 #endif
@@ -1874,6 +1875,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(failed)return false;
   const uint32_t idle_budget=spent<wait?wait-spent:0;
   uint32_t delay=idle_budget;
+  bool cooperated=false;
   while(delay && !input_progressed && !navigation_pending && !failed) {
     uint32_t slice=delay>4u?4u:delay;
 #ifdef PORTABLE_USB_TRANSFER_APP
@@ -1884,6 +1886,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     if(raster_sealed&&!raster_ready_to_submit)slice=1u;
 #endif
     rt->yield_ms(paper_token?1u:slice);
+    cooperated=true;
 #ifdef PORTABLE_CONTEXTS_CLIENT
     if(!contexts_capture_checkpoint())return false;
 #endif
@@ -1892,7 +1895,10 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     uint32_t elapsed=(uint32_t)(millis_now()-now);
     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
   }
-  if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
+  /* Yield also advances async providers. Foreground work consuming the wait
+   * budget must never suppress that work, including resident panel settling
+   * after its presentation token has already completed. */
+  if(!cooperated || input_progressed || navigation_pending || !wait)rt->yield_ms(1);
   last_poll_at=millis_now();
   if(!paper_present_progress() || failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT

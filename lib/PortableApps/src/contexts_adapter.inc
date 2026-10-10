@@ -92,6 +92,16 @@ static bool contexts_capture_checkpoint(void) {
 static bool contexts_before_storage(void) {
   return !native_custody_retained&&(contexts_policy_io||portable_contexts_stop());
 }
+/* Reading another service's settings still quiesces capture, but cannot
+ * change our policy. Invalidating here makes the two background clients
+ * invalidate each other and reread storage on every Home poll. Writes and
+ * explicit lifecycle stops keep their normal invalidation behavior. */
+static inline bool contexts_before_storage_read(void) {
+  bool loaded=contexts_client.loaded;
+  if(!contexts_before_storage())return false;
+  contexts_client.loaded=loaded;
+  return true;
+}
 
 bool portable_contexts_rules_read(cr_store*out){return contexts_open()&&portable_context_rules_read(&contexts_client,out);}
 bool portable_contexts_rules_save(const cr_store*s){if(!contexts_open())return false;contexts_policy_io=true;bool ok=portable_context_rules_save(&contexts_client,s);contexts_policy_io=false;return ok;}
