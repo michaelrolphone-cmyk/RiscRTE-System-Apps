@@ -1,0 +1,57 @@
+{
+  "runtime_commit": "341e6e38ce00b7c57d5daaf5f8c829c3575db931",
+  "sdk_header_sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+  "runtime_export_source_sha256": "65252bf5999c89b619e5c1264fed343cfced585688b30f04f714a59375105b3b",
+  "source_sha256": {
+    "lib/PortableApps/src/PortableRealtimeClient.c": "839493df99e4e850c6ff59dd784e834e176476d113ee4c2f71825c2a0b20e4f4",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+    "lib/PortableApps/include/PortableRealtimeClient.h": "197399c9821d37c7df4affbb1922c7102b8f863b4859c13d3751f3c1e5d07dad",
+    "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+    "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "test/native_apps/portable_realtime_client_test.c": "d699b28bf57dfe1b3b53d18212b2f3014a71041161486ea18209143e5dcb786f",
+    "test/native_apps/fixtures/portable_realtime_elf.c": "8398ce29f9ba603e64c5b9e2eeaca6d94aa3f1bc22dcae02d9331d8bdf83c5f8",
+    "scripts/test_portable_realtime.py": "84c3bdad09602b806c570e65aec66e73a6b52db5265ff79347fa7c5ae05b27a1",
+    "lib/PortableApps/src/PortableSetTime.c": "1e41241027983893133d692e07bdcf00f527e03c384ffc56e3accfcd6e71aeb8",
+    "lib/PortableApps/include/PortableSetTime.h": "1b5b89512ca1c670adacb1ea759e22a8305bd3648b860f5bc898cfd1fbaeb5cc",
+    "test/native_apps/portable_set_time_test.c": "db641c7fb07756a6ee1ff95a5ced73c19d53479ab676f3734c16dfc4822d0341",
+    "test/native_apps/fixtures/portable_set_time_elf.c": "1b2eac28d0be63eda04efda0868a02538b87e28c83213f18f8d26ba64cb8c8dc",
+    "scripts/test_portable_set_time.py": "bada8e192c579d981bcfe5af271e7e027c8da447534503c5ffd96b389ae70a54",
+    "scripts/test_portable_timezone.py": "8c52bb3c62265ca8fa725a59925445707f8af3cc35507e8718dc31c5bfcbdbfe"
+  },
+  "independent_catalog_vectors": 294840,
+  "vectors_sha256": "dcbd8ef5babcb3ebd3d5668bab8a56e94e242938e19e817242cf1d62a9a07bce",
+  "host_plain": "Portable Set Time production helpers: 227 scenarios + 294840 independent catalog transition vectors PASS",
+  "host_asan_ubsan": "Portable Set Time production helpers: 227 scenarios + 294840 independent catalog transition vectors PASS",
+  "xtensa": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
+    "elf_bytes": 42012,
+    "elf_sha256": "83115dd32dcf31caa958d04de9033388eef1b8bb4eaa60aa5ef54d363c60aa90",
+    "imports": [
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api"
+    ],
+    "loader_validation": "PASS",
+    "dynamic_symbols": "\nSymbol table '.dynsym' contains 8 entries:\n   Num:    Value  Size Type    Bind   Vis      Ndx Name\n     0: 00000000     0 NOTYPE  LOCAL  DEFAULT  UND \n     1: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND risc_runtime_get_api\n     2: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memcpy\n     3: 00008474     0 NOTYPE  GLOBAL DEFAULT   11 __bss_start\n     4: 00000000     0 NOTYPE  GLOBAL DEFAULT  UND memset\n     5: 00008474     0 NOTYPE  GLOBAL DEFAULT   11 _edata\n     6: 00008478     0 NOTYPE  GLOBAL DEFAULT   12 _end\n     7: 00004bd4   190 FUNC    GLOBAL DEFAULT    6 app_main\n"
+  },
+  "canonical_runtime_kv_contract": {
+    "commit": "602ae9bd618e13407b5b94bcad86cdabc23c99ea",
+    "tree": "fc660ad52df494befd87ba8b7599b77e8c00b82e",
+    "tests": {
+      "test/run_key_value_test.sh": "PASS",
+      "SANITIZE=1 test/run_key_value_test.sh": "PASS"
+    },
+    "source_sha256": {
+      "src/bootstrap/Runtime.cpp": "ec6d32b14fa8765f4701522fb6da7bf75619b61b9fc692bf603408bf079caccb",
+      "src/ports/esp32s3/NvsKeyValue.h": "fa35b97705b949df6a82c856b686f44bd647aafd55e123d22fff98d500ba54b8",
+      "sdk/app/RiscKeyValueV1.h": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56",
+      "test/fixtures/key_value_app.c": "c833ae6f17cadd48fc6b8647854e48d559e1e5152aec0bb0ef2b0f375ec86f2d",
+      "test/key_value_lifecycle_test.cpp": "da290e1ac28157b19b10590762cb04c39be7265078d6a68a2b556b94896b6c84",
+      "test/run_key_value_test.sh": "1d27e75d2aac687def44e5869f3759005a0c74128ab02e0a834af8bacf7884ef"
+    },
+    "semantics": "Documented typed KV persistence errors retain active app ownership and permit checked release; context/unknown and cleanup failures remain sticky."
+  }
+}

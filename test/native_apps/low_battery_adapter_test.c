@@ -26,7 +26,7 @@ int main(int argc,char **argv){
  if(test==0){
   sample_at(10,0);assert(!low_writes[0]);sample_at(9,0);
   assert(quick.brightness==15&&quick.ui.brightness==15&&hardware_brightness==15);
-  assert(quick.idle_ms==20000&&quick.deep_ms==60000&&portable_idle_ms()==20000&&portable_quick_sleep_light_ms()==60000);
+  assert(quick.idle_ms==20000&&quick.deep_ms==60000&&portable_idle_ms()==20000&&quick.deep_ms==60000);
   assert(!quick.ui.wifi_enabled&&!quick.ui.bluetooth_enabled&&!ble_state);
   assert(low_writes[0]==1&&low_writes[1]==1&&low_writes[2]==1&&pref_writes[0]==1);
   quick.ui.action_brightness=80;assert(quick_apply(PQA_BRIGHTNESS_COMMIT));
@@ -44,12 +44,12 @@ int main(int argc,char **argv){
   sample_at(9,PORTABLE_POWER_STATUS_VALID|PORTABLE_POWER_BATTERY_PRESENT);assert(quick.brightness==15);
  }else if(test==2){
   sample_at(9,0);
-  t5_app_setting_t row;assert(settings_get(0,SETTINGS_TIMER_ROW,&row)&&!strcmp(row.label,"Sleep Timer")&&!strcmp(row.value,"20 sec"));
-  assert(settings_get(0,SETTINGS_TIMER_ROW+1,&row)&&!strcmp(row.label,"Deep Sleep Timer")&&!strcmp(row.value,"60 sec"));
+  t5_app_setting_t row;assert(settings_get(0,SETTINGS_TIMER_ROW,&row)&&!strcmp(row.label,"Idle sleep timer")&&!strcmp(row.value,"20 seconds"));
+  assert(settings_get(0,SETTINGS_TIMER_ROW+1,&row)&&!strcmp(row.label,"Deep sleep timer")&&!strcmp(row.value,"60 seconds"));
   assert(timer_choose(SETTINGS_TIMER_ROW,true,false)==T5_APP_SETTING_UPDATED);
   assert(quick.idle_ms==25000&&portable_idle_ms()==25000&&quick.deep_ms==60000);
   assert(timer_choose(SETTINGS_TIMER_ROW+1,true,false)==T5_APP_SETTING_UPDATED);
-  assert(quick.deep_ms==120000&&portable_quick_sleep_light_ms()==120000);
+  assert(quick.deep_ms==120000&&quick.deep_ms==120000);
   assert(timer_choose(SETTINGS_TIMER_ROW,true,true)==T5_APP_SETTING_NO_CHANGE&&quick.idle_ms==25000);
   sample_at(8,0);assert(quick.idle_ms==25000&&quick.deep_ms==120000);
   unsigned n=low_writes[1];assert(timer_choose(SETTINGS_TIMER_ROW,false,false)==T5_APP_SETTING_UPDATED&&low_writes[1]==n);

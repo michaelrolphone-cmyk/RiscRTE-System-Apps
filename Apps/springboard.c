@@ -390,6 +390,7 @@ __attribute__((visibility("default"))) uint32_t app_hardware_takeover(void) {
 }
 
 #include "springboard_nova.inc"
+#include "springboard_paper.inc"
 
 __attribute__((visibility("default"))) void app_main(void) {
     api = t5_app_get_api(T5_APP_ABI_VERSION);
@@ -403,6 +404,7 @@ __attribute__((visibility("default"))) void app_main(void) {
     selection_visible = false;
     load_home_pins();
     layout();
+    if (paper_run()) return;
     if (nova_run()) return;
     sv_fatal=false;sv_video=NULL;
     (void)sv_open();

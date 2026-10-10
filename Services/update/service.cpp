@@ -69,6 +69,15 @@ bool cohortSupported() {
 template<size_t N> bool terminated(const char (&s)[N]) {
  for(size_t i=0;i<N;++i)if(!s[i])return true;return false;
 }
+bool installedProductMatches() {
+ if(!WatchUpdate::RequireProduct)return true;
+ if(!cohortSupported())return false;
+ risc_bank_cohort_status_v1 have={};have.struct_size=sizeof(have);
+ return bank->cohort_status(bank->context,&have)==RISC_BANK_OK&&
+  terminated(have.product)&&terminated(have.version)&&terminated(have.source_repo)&&terminated(have.source_revision)&&
+  !std::strcmp(have.product,WatchUpdate::Product)&&!std::strcmp(have.source_repo,WatchUpdate::Repository)&&
+  WatchUpdate::revision(have.source_revision)&&WatchUpdate::version(have.version);
+}
 #if UPDATE_SOURCE_ROUTES
 bool readSource(const risc_bank_status_v1& status,WatchUpdate::Routes::Source& out) {
  if(!cohortSupported()||!terminated(status.layout)||!terminated(status.runtime_version))return false;
@@ -127,6 +136,7 @@ bool classifyCohort(WatchUpdate::Row& r,const risc_bank_status_v1& current) {
 bool classify() {
  risc_bank_status_v1 current={};current.struct_size=sizeof(current);
  if(!bank->status(bank->context,&current)||!current.store_abi)return false;
+ if(!UPDATE_FIRMWARE&&!installedProductMatches())return false;
  if(UPDATE_FIRMWARE){
   for(uint32_t i=0;i<catalog->count;++i){auto& r=catalog->rows[i];
    if(r.pairedCohort){(void)classifyCohort(r,current);continue;}
@@ -157,7 +167,9 @@ bool classify() {
  std::memset(installed_manifest,0,sizeof(installed_manifest));return ok;
 }
 bool refresh(void*,uint64_t seconds) {
- if(!started||in_call||http_handle||bank_handle||seconds<1704067200ULL||seconds>4102444799ULL)return false;
+ if(!started||in_call||http_handle||bank_handle)return false;
+ if(!WatchUpdate::CatalogUrl[0]){catalog->count=0;view={};view.struct_size=sizeof(view);view.state=SOFTWARE_UPDATE_LIST;return true;}
+ if(seconds<1704067200ULL||seconds>4102444799ULL)return false;
  in_call=true;utc=seconds;json_size=0;catalog->count=0;view={};view.struct_size=sizeof(view);
  view.state=SOFTWARE_UPDATE_CATALOG;last_error=0;deadline=clock_api->monotonic_ms(clock_api->context)+300000;
  bool ok=open(WatchUpdate::CatalogUrl,WatchUpdate::CatalogMax);in_call=false;return ok;
@@ -172,7 +184,7 @@ bool get(void*,uint32_t i,software_update_row_v1 *out) {
 bool begin(void*,uint32_t i,uint64_t seconds) {
  if(!started||in_call||http_handle||bank_handle||seconds<1704067200ULL||seconds>4102444799ULL||i>=catalog->count||catalog->rows[i].view.availability!=SOFTWARE_UPDATE_AVAILABLE)return false;
  in_call=true;utc=seconds;selected=i;auto& r=catalog->rows[i];risc_bank_status_v1 current={};current.struct_size=sizeof(current);
- if(!bank->status(bank->context,&current)){in_call=false;return fail(RISC_BANK_UNAVAILABLE);}
+ if(!bank->status(bank->context,&current)||(!UPDATE_FIRMWARE&&!installedProductMatches())){in_call=false;return fail(RISC_BANK_UNAVAILABLE);}
  /* A catalog classification is not transaction authority. Re-read the live
   * layout/ABI/capacity before beginning; native admission still owns all bank
   * writes, image marker checks and the exact active-store digest. The v1 table

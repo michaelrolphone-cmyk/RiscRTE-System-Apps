@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "status": "recovered source; fresh target build pending",
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "historical_private_commit": "c5cda9f9a303fffdd0dd48d779e272fed9f6d246",
+  "historical_commit_recovered": false,
+  "base": "restored .53 System source, original tree c97d04836a5abbada97ca5161e26e138bba83f82",
+  "public_route_delta": "c12ee9cfac111cde2160132faa110c67e57f2fc7",
+  "public_exact_files": {
+    "Services/update/SourceRoutes.h": {
+      "git_blob": "e0d883fb6f75fa3c3eee8a61ab54215c714597b1",
+      "sha256": "76db8bd4ea0c3406729d69875f7bc096447c0d4ec3276d3da3852ebc241cee70"
+    },
+    "scripts/test_update_source_routes.py": {
+      "git_blob": "724991e327bc08f9112d442c6fc2c1f0b2804d53",
+      "sha256": "577a800f0e450bf751e22cbef49d6479ddeaaa103ccb6eb3854418961a1c11fd"
+    },
+    "test/native_apps/update_source_routes_test.cpp": {
+      "git_blob": "cdc47fe0b6a1151a4b9b773d86f5c731d3a665b1",
+      "sha256": "5462159d90533a51363113670d126a62457f4d3584555d4087094bd5152b0adc"
+    },
+    "docs/apps/update_source_routes.md": {
+      "git_blob": "ebb971f4061fc6dfd7c2f2e8208fb79732857c48",
+      "sha256": "2babf2699eac71b28181930d9f8ec27bd76ffccd363c9036f581dafdcbc094f2"
+    }
+  },
+  "service_merge": "Applied exact public route hunks to restored X4 service; sole add/add helper conflict resolved by retaining installedProductMatches followed by readSource/sourceMatches/parseFirmwareCatalog. Existing product/feed checks preserved.",
+  "builder_merge": "Adds existing public source-routes selection to restored builder, preserving X4 policy flags and other profiles.",
+  "target_compile_source_sha256": {
+    "Services/update/service.cpp": "77918dfe44a6180d3dc6549d0661a3e2e20ebe1b52b5f8deda9da6a5915815be",
+    "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "lib/PortableApps/include/RiscHttpClientV1.h": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+    "lib/PortableApps/include/RiscBankStoreV1.h": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
+    "lib/PortableApps/include/RiscPlatformClockV1.h": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+    "lib/PortableApps/include/SoftwareUpdateV1.h": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca",
+    "Services/update/Catalog.h": "f15e12a776354b8f39c265c0ca36e7b0c6e432ddec82160577c6a61dfa10f70f",
+    "Services/update/JsonCursor.h": "a600966574330e722a2d46117a2437a969e82b6e7a4a293cd649a51d3d2f8061",
+    "Services/update/Policy.h": "3ebe80b4345e73fac6858634b4e0d3ffdc3eba5bac74e0ed8893308372c4275d",
+    "lib/NativeApps/include/T5PackageVersion.h": "956106b2dd21c8e5a25cdb93814d20c4cf62ef758339ef23b79cc2b959d89f2a",
+    "Services/update/SourceRoutes.h": "76db8bd4ea0c3406729d69875f7bc096447c0d4ec3276d3da3852ebc241cee70",
+    "lib/NativeApps/src/UnsignedDivisionCompat.c": "cf49adc0be03fbf852a95018be1342dbebdf9953047a9f7e2600728d7f070fff"
+  },
+  "tests": {
+    "source_routes": {
+      "executions": 216,
+      "modes": [
+        "normal",
+        "ASan/UBSan"
+      ],
+      "profiles": [
+        "watch",
+        "x4-configured",
+        "x4-unconfigured"
+      ],
+      "result": "pass"
+    },
+    "flag_off_nonblank_preprocessed_parity": "pass: Watch/X4 x firmware/apps; only whitespace-only lines removed",
+    "builder_selection": "pass: only explicitly selected firmware changes to0.1.5; apps stays0.1.4",
+    "existing_provider_regressions": {
+      "executions": 212,
+      "modes": [
+        "normal",
+        "ASan/UBSan"
+      ],
+      "scope": "X4 disabled-feed/product policy, 46 X4 paired-cohort faults per mode, 29 ordinary service cases per kind per mode",
+      "result": "pass"
+    }
+  },
+  "target_built": false,
+  "hardware_tested": false,
+  "precompiled_product_inputs": false,
+  "build_command": "NATIVE_APP_CC=/path/to/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc python3 scripts/build_portable_updates.py --services-only --product x4 --source-routes --output-dir /fresh/output/outside/source/tree",
+  "deployment": "Integrator must bind newly published source commit, not the unavailable historical commit, and perform fresh full native/store admission after all source recovery is frozen."
+}

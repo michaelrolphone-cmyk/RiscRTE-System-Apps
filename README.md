@@ -15,7 +15,7 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 - [Settings](docs/apps/settings.md) — front end for the firmware-owned settings model and complex setting-action handoff.
 - [Remap Front Buttons](docs/apps/button_remap.md) — core front-button role mapping, duplicate-assignment prevention, reset-to-defaults, and provider-owned persistence.
 - [Clear Reading Cache](docs/apps/clear_cache.md) — confirmation and reporting workflow for firmware-owned EPUB/XTC reading-cache cleanup.
-- [Portable NOVA File Browser](docs/PORTABLE_FILE_BROWSER.md) — Watch installed-file navigation, name filter and text/hex preview.
+- [Portable NOVA File Browser](docs/PORTABLE_FILE_BROWSER.md) — capability-selected Watch/e-paper navigation, filtering/preview, and writable-volume file operations.
 - [File Browser](docs/apps/file_browser.md) — SD/removable-storage browsing, file-handler dispatch, native ELF launch, rename/move/delete actions, and SD↔USB file copy.
 - [Time Zone](docs/apps/time_zone.md) — firmware-owned region/city selection, list navigation, touch handling, and time-zone provider interaction.
 - [Wi-Fi Networks](docs/apps/wifi_settings.md) — Reader wireless-selector handoff, plus an explicit [portable Wi-Fi client](docs/PORTABLE_WIFI.md) with scan, credential entry, Save/Forget and safe session lifecycle.
@@ -109,6 +109,12 @@ This repository has an independent pinned-SDK compiler pipeline, 18 host fixture
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
+## USB SD transfer development
+
+The opt-in [dedicated USB SD Transfer](docs/USB_SD_TRANSFER.md) app and paper
+Quick Actions entry share the generic USB device capability without expanding
+Clock authority. Physical host/card validation remains separate.
+
 ## Portable update development
 
 The shared [portable Firmware Update and App Store prerequisites](docs/PORTABLE_UPDATES.md)
@@ -130,5 +136,3 @@ Published-byte comparison is tracked separately in [release parity](docs/release
 Current bounded refresh and verification limits: [all remaining Reader manifests](docs/PARITY_REFRESH_ALL_MANIFESTS_2026-10-02.md), [published manifest reconciliation](docs/PARITY_REFRESH_MANIFESTS_2026-10-02.md), [U1 package workflow apps](docs/PARITY_REFRESH_U1_PACKAGE_APPS_2026-10-02.md), [Status Bar Settings](docs/PARITY_REFRESH_2026-10-02.md); previous batch evidence: [2026-10-01 provenance](docs/PARITY_REFRESH_2026-10-01.md).
 
 Optional future packaging evidence: [pinned non-live U1 ZIP witness](docs/PROSPECTIVE_U1_ZIP_WITNESS.md).
-
-Watch deployments may opt into the [cooperative BLE broadcast client](docs/BLE_BROADCAST.md).

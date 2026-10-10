@@ -1,4 +1,5 @@
 #include "PortableQuickRadios.h"
+#include "PortableStageLog.h"
 static bool bind(const risc_runtime_api_v1*rt,risc_runtime_capability_v1*g,const char*name,unsigned instance) {
  *g=(risc_runtime_capability_v1){.struct_size=sizeof(*g)};return rt->acquire(name,1,instance,g);
 }
@@ -14,28 +15,48 @@ static void reflect(const pqa_radios*s,pqa_state*u) {
  u->radio_controls=true;u->radios_valid=s->valid&&s->available;
  u->wifi_enabled=!!(s->flags&PORTABLE_RADIO_WIFI);u->bluetooth_enabled=!!(s->flags&PORTABLE_RADIO_BLUETOOTH);u->airplane=!!(s->flags&PORTABLE_RADIO_AIRPLANE);
 }
-static bool set_hardware(const wifi_api_v1*w,const portable_bluetooth_control_v1*b,uint8_t flags,bool preserve) {
- if(!(flags&PORTABLE_RADIO_WIFI) && (!w->disconnect_checked(w->context)||w->status(w->context)!=WIFI_LINK_DOWN))return false;
+static bool set_hardware(const risc_runtime_api_v1*rt,const wifi_api_v1*w,const portable_bluetooth_control_v1*b,uint8_t flags) {
+ (void)rt;
+ portable_stage_log(rt,"radio-policy",flags&PORTABLE_RADIO_WIFI?"wifi=allowed auto-connect=not-requested":"wifi=off");
+ portable_stage_log(rt,"bluetooth-request",flags&PORTABLE_RADIO_BLUETOOTH?"enabled=yes":"enabled=no");
+ if(!(flags&PORTABLE_RADIO_WIFI) && (!w->disconnect_checked(w->context)||w->status(w->context)!=WIFI_LINK_DOWN)){
+  portable_stage_log(rt,"wifi-policy-result","result=failed off=unconfirmed");
+  return false;
+ }
+ if(!(flags&PORTABLE_RADIO_WIFI))portable_stage_log(rt,"wifi-policy-result","result=ok state=down");
  uint8_t actual=PORTABLE_BLUETOOTH_RETAINED;
- const uint8_t desired=(flags&PORTABLE_RADIO_BLUETOOTH)?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;
- /* Re-entering an ordinary app must not reset a healthy provider-owned BLE
-  * lease merely to reassert the same saved preference. Explicit changes still
-  * drain their owners before coming here. */
- if(preserve && b->status(b->context,&actual) && actual==desired)return true;
- return b->set_enabled(b->context,desired==PORTABLE_BLUETOOTH_ON) && b->status(b->context,&actual) && actual==desired;
+ bool ok=b->set_enabled(b->context,!!(flags&PORTABLE_RADIO_BLUETOOTH)) && b->status(b->context,&actual) && actual==((flags&PORTABLE_RADIO_BLUETOOTH)?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF);
+ if(ok)portable_stage_log(rt,"bluetooth-result",actual==PORTABLE_BLUETOOTH_ON?"state=on":"state=off");
+ else portable_stage_log(rt,"bluetooth-result","result=failed requested-state=unconfirmed");
+ return ok;
 }
 bool pqa_radios_load(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt) {
  *s=(pqa_radios){0};risc_runtime_capability_v1 kg,wg,bg;
- (void)bind(rt,&kg,RISC_KEY_VALUE_CAPABILITY,1);s->valid=portable_radio_load(kg.api,&s->flags);
+ (void)bind(rt,&kg,RISC_KEY_VALUE_CAPABILITY,1);unsigned loaded=portable_radio_load_result(kg.api,&s->flags);
+ s->valid=loaded<=PORTABLE_RADIO_DEFAULT;
+ portable_stage_log(rt,"radio-preferences",loaded==PORTABLE_RADIO_DEFAULT?"result=missing defaults=wifi-allowed,bluetooth-off":
+     loaded==PORTABLE_RADIO_PERSISTED?"result=persisted":loaded==PORTABLE_RADIO_INVALID?"result=corrupt forcing=off":"result=unavailable forcing=off");
  if(kg.api&&!rt->release(&kg))return false;
  (void)bind(rt,&wg,"net.wifi",15);(void)bind(rt,&bg,"bluetooth.hci",16);
  const wifi_api_v1*w=wifi(&wg);const portable_bluetooth_control_v1*b=ble(&bg);
  /* An unreadable/corrupt desired state must not leave a previously enabled
   * controller running behind disabled controls. Prove both radios Off without
   * overwriting the bad record; failed cleanup retains the invocation. */
- s->available=w&&b;bool ok=!s->available||set_hardware(w,b,s->valid?s->flags:0,true);
+ s->available=w&&b;bool ok=!s->available||set_hardware(rt,w,b,s->valid?s->flags:0);
+ if(!s->available)portable_stage_log(rt,"radio-policy-result","result=unavailable provider-missing-or-invalid");
+#ifdef PORTABLE_DESK_CLOCK
+ /* The new deferred foreground path treats unconfirmed radio cleanup as
+  * retained. Preserve these live grants for the adapter's retained stop. */
+ if(!ok){u->error_flags|=PQA_ERROR_RADIO;return false;}
+#endif
  if(!s->valid)u->error_flags|=PQA_ERROR_RADIO|PQA_ERROR_SAVE;
- if(bg.api&&!rt->release(&bg))ok=false;
+ if(bg.api&&!rt->release(&bg)){
+#ifdef PORTABLE_DESK_CLOCK
+  return false;
+#else
+  ok=false;
+#endif
+ }
  if(wg.api&&!rt->release(&wg))ok=false;
  reflect(s,u);if(!ok)u->error_flags|=PQA_ERROR_RADIO;
  return ok;
@@ -55,13 +76,14 @@ bool pqa_radios_apply(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt,uint
  risc_runtime_capability_v1 wg,bg,kg;
  (void)bind(rt,&wg,"net.wifi",15);(void)bind(rt,&bg,"bluetooth.hci",16);(void)bind(rt,&kg,RISC_KEY_VALUE_CAPABILITY,1);
  const wifi_api_v1*w=wifi(&wg);const portable_bluetooth_control_v1*b=ble(&bg);
- bool changed=w&&b&&set_hardware(w,b,next,false);bool ok=true;
- if(changed&&portable_radio_save(kg.api,next)){s->flags=next;u->error_flags&=~(PQA_ERROR_RADIO|PQA_ERROR_SAVE);}
+ bool changed=w&&b&&set_hardware(rt,w,b,next);bool ok=true;
+ if(changed&&portable_radio_save(kg.api,next)){s->flags=next;u->error_flags&=~(PQA_ERROR_RADIO|PQA_ERROR_SAVE);portable_stage_log(rt,"radio-save","result=confirmed");}
  else {
+  portable_stage_log(rt,"radio-save","result=failed restoring=previous-policy");
   /* An explicit operation failed. Prove restoration; otherwise retain the
    * invocation instead of claiming Off or proceeding into native sleep. */
   u->error_flags|=PQA_ERROR_RADIO|PQA_ERROR_SAVE;
-  ok=w&&b&&set_hardware(w,b,s->flags,false);
+  ok=w&&b&&set_hardware(rt,w,b,s->flags);
  }
  if(kg.api&&!rt->release(&kg))ok=false;
  if(bg.api&&!rt->release(&bg))ok=false;
@@ -69,9 +91,11 @@ bool pqa_radios_apply(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt,uint
  reflect(s,u);return ok;
 }
 bool pqa_radios_suspend(const risc_runtime_api_v1*rt) {
+ portable_stage_log(rt,"bluetooth-suspend","request=off");
  risc_runtime_capability_v1 g;if(!bind(rt,&g,"bluetooth.hci",16))return false;
  const portable_bluetooth_control_v1*b=ble(&g);uint8_t state=PORTABLE_BLUETOOTH_RETAINED;
  bool ok=b&&b->set_enabled(b->context,false)&&b->status(b->context,&state)&&state==PORTABLE_BLUETOOTH_OFF;
+ portable_stage_log(rt,"bluetooth-suspend",ok?"result=ok state=off":"result=failed off=unconfirmed");
  return rt->release(&g)&&ok;
 }
 bool pqa_radios_resume(pqa_radios*s,pqa_state*u,const risc_runtime_api_v1*rt) {return pqa_radios_load(s,u,rt);}

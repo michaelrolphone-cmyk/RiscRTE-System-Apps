@@ -1,0 +1,410 @@
+{
+  "schema": 1,
+  "pins": {
+    "system": "4a5ec61285e3bc8e30901301994f2bbfa0f0e052",
+    "runtime": "cbc0b40fc50b76e31a721fdd19af0b0e410cc0ca",
+    "utilities": "9bd572791a8304194ceb2b7542fc9cbd124e911b",
+    "productivity": "830e50c550ab187d88b83fd5a009414deb563a92",
+    "product": "2524c8fdccb94fefc13288a35f3bfbf41e597a44"
+  },
+  "baseline": {
+    "version": "0.1.43",
+    "product_source": "798724aed06ed56deafc3e0ac3338999e6c3a80b",
+    "runtime_version": "0.1.81",
+    "custody_sha256": "68b3338e24a34416750b659dcee9d82e93d30057fdc49d57a4827a4372583ad6",
+    "boot_sha256": "19eaa3050f81ad75cfeae23d51d7414a3772c48f0f7e2d64bb4434d580f662a7",
+    "application_count": 21
+  },
+  "catalog": "examples/x4-resident-cohort-catalog.json",
+  "inventory": [
+    {
+      "file_name": "alarms.elf",
+      "delivered_version": "0.2.11",
+      "manifest_sha256": "f5081596f1706eb5f46e6734a590fb926ba7f4075aebf0f39e6d5607565a6d4d",
+      "delivered_binary": {
+        "bytes": 167112,
+        "sha256": "4e7e4a249d85e4e0da880d7ce3ff49813c075d0c0d59e1d2e8a3e94cdcf6e555"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "app_store.elf",
+      "delivered_version": "1.2.4",
+      "manifest_sha256": "9323ab19e57453c148eab7fe6606d7df6b065425afde041cf342c1058bd4ef1d",
+      "delivered_binary": {
+        "bytes": 157616,
+        "sha256": "a08567ce09f2d2e793d1b34ab9383543203b09b0bf75ffc6942404f00de0d7e0"
+      },
+      "owner": "System",
+      "status": "existing resident builder; full-cohort build pending"
+    },
+    {
+      "file_name": "battery.elf",
+      "delivered_version": "1.1.9",
+      "manifest_sha256": "ac3987a9cec82243089e98e6e2ec1f5d2ce9d1b136a667cb8fcc329cb206f0a5",
+      "delivered_binary": {
+        "bytes": 162964,
+        "sha256": "3d350d4721486a49c9f99d44d76b254643cd95926e53bd9e11ca3dd412910d88"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "ble_buttons.elf",
+      "delivered_version": "0.1.14",
+      "manifest_sha256": "620898848c12c1ec5fe901d08d59477061f255a6e7fd916c18d17b750d9d83c3",
+      "delivered_binary": {
+        "bytes": 175980,
+        "sha256": "8c92f76ebb46fae82da9cc7697ca494267a34d84e7489aa1a1ef5e643b71d46f"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "ble_scanner.elf",
+      "delivered_version": "0.2.12",
+      "manifest_sha256": "d773928b413dda397c1a32807f4af48548e111dfbb0e76bff585e1367ab9e191",
+      "delivered_binary": {
+        "bytes": 176256,
+        "sha256": "51e2b69574488e44035cf25be9c567aa5ee66d1079aeeb5f97964d42d85a4786"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "ble_touchpad.elf",
+      "delivered_version": "0.1.14",
+      "manifest_sha256": "087f8b71efac27d74c88a31b4bae7662488228c0f97f21ea6b0cecdfa3e5dc5b",
+      "delivered_binary": {
+        "bytes": 176164,
+        "sha256": "f0361d7d747fe2df3e89ccde4d063e6f298a3131dbaa6a9fa20a24ed1fd76636"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "calculator.elf",
+      "delivered_version": "0.1.16",
+      "manifest_sha256": "9a568be8689d7ed01e9a05af0ad24949d810b79db2fd6db201a41a953b4248e0",
+      "delivered_binary": {
+        "bytes": 158960,
+        "sha256": "23e9ec8ae735a41ab3dbcf2e9910deea825eadc73dce649c071704649483a5f6"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "contexts.elf",
+      "delivered_version": "0.1.3",
+      "manifest_sha256": "47122c6899a807d1f996f98e282ee5353f6d9b2a2695a0915cd6eaf3b827c6f0",
+      "delivered_binary": {
+        "bytes": 173376,
+        "sha256": "ba8dedcf83fab89f6fc3f097afaf54c380257867ddc1ce5286b1dad0f854f6b5"
+      },
+      "owner": "Contexts selected Utilities lineage",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "countdown.elf",
+      "delivered_version": "0.1.15",
+      "manifest_sha256": "f0a43142ad2947e529e3c809a7a07dcfa7131b13f361dd898f34a37ee4aacb78",
+      "delivered_binary": {
+        "bytes": 163312,
+        "sha256": "5e39e5e65b4ead67c866040a5a214ea9953f14a45fa441527bec3cda0d54c3a9"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "default.elf",
+      "delivered_version": "0.3.16",
+      "manifest_sha256": "6026b4dbc8d7b73783525eba3e4a960bdc82cc3373bf78210db5fe9f0ca0b94a",
+      "delivered_binary": {
+        "bytes": 230720,
+        "sha256": "3526ba26ab6bf63c6e768b901010dfe86e1bd5b39b0d43fd16e0a283fb34b633"
+      },
+      "owner": "System",
+      "status": "initial-build"
+    },
+    {
+      "file_name": "file_browser.elf",
+      "delivered_version": "1.5.12",
+      "manifest_sha256": "96581575184b410468265dc7a0360aa76800ce67bb1ac2cfd80628ac3d6d967a",
+      "delivered_binary": {
+        "bytes": 191820,
+        "sha256": "83226bba5bb5f1c5f0e877984192ddb198b3e2c2e9ba189fdf7a60ee93688469"
+      },
+      "owner": "System",
+      "status": "existing resident builder; full-cohort build pending"
+    },
+    {
+      "file_name": "gameboy.elf",
+      "delivered_version": "1.3.20",
+      "manifest_sha256": "6cef2f1a570d5024462f814240a3ff5364d18005d0a7a62a7f54d1c77804d948",
+      "delivered_binary": {
+        "bytes": 159332,
+        "sha256": "84331cda53f399237d90602f40ab211c9abde8f679e9f751ee296a86b7f54008"
+      },
+      "owner": "accepted legacy",
+      "status": "accepted binary; legacy only; no rebuild"
+    },
+    {
+      "file_name": "ota_update.elf",
+      "delivered_version": "1.2.4",
+      "manifest_sha256": "022480dc0a0ed10cdf7da05659e132668f1a2735ef00c0e9fd71d8c499a08a49",
+      "delivered_binary": {
+        "bytes": 157616,
+        "sha256": "fee0cf77fdb486f7d23e5f68862cbd29ac5536c16dd6d1baf16d2f7a4effb095"
+      },
+      "owner": "System",
+      "status": "existing resident builder; full-cohort build pending"
+    },
+    {
+      "file_name": "points_in_time.elf",
+      "delivered_version": "0.6.7",
+      "manifest_sha256": "d2eb6ca956d77dec9197dacca0dc0a6c689d8f8cdd60702268291d03ddba7d73",
+      "delivered_binary": {
+        "bytes": 190928,
+        "sha256": "f82cdbfc2b56da348e2755cbdd6d1025a7b56989921bb6f18026a04541ab1adb"
+      },
+      "owner": "Productivity",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "settings.elf",
+      "delivered_version": "1.3.20",
+      "manifest_sha256": "2bb5ac9d4525faed614a979b7898de111d7ec4d4e84f8c868d2346bae0d01829",
+      "delivered_binary": {
+        "bytes": 175572,
+        "sha256": "3f996c6509b11085d3cf714cbf36a375f91fcca6b7aaacff85f20566285508ed"
+      },
+      "owner": "System",
+      "status": "initial-build"
+    },
+    {
+      "file_name": "springboard.elf",
+      "delivered_version": "1.7.19",
+      "manifest_sha256": "691bf816a0a59cec0f36a68de65e7a0c04da837046889310b01b4de6f4c88afc",
+      "delivered_binary": {
+        "bytes": 175360,
+        "sha256": "35150063bb14990844b33fb884a94701c051e94b5cf18510a29e623648914d0e"
+      },
+      "owner": "System",
+      "status": "initial-build"
+    },
+    {
+      "file_name": "stopwatch.elf",
+      "delivered_version": "0.1.16",
+      "manifest_sha256": "87d08be9ebf6debea88ea1d419ba94c63f817dd981bf3d3c449932507bc9002c",
+      "delivered_binary": {
+        "bytes": 162968,
+        "sha256": "a180b67026d3d44e3662c0adc2eefeac927c86c4bc4905e892e541e567e75def"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "timecard.elf",
+      "delivered_version": "0.2.7",
+      "manifest_sha256": "4485f7f1d81593439077292251a24de9b40f23819e4f84b29bff7a812dd08857",
+      "delivered_binary": {
+        "bytes": 183804,
+        "sha256": "d91d0abdf2eb7c08380d142d9b86edd3dbe862b9deaf8f76967aeb90a30ef889"
+      },
+      "owner": "Productivity",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "usb_sd_transfer.elf",
+      "delivered_version": "0.1.2",
+      "manifest_sha256": "22fcc2b8e105d3661e9511660ae4749c2c73918d3d5b24fbdfd06a2b4741df0c",
+      "delivered_binary": {
+        "bytes": 60488,
+        "sha256": "1e4009db597dc6e57ab349e329cf47c853e2b227939385385723d08875101280"
+      },
+      "owner": "System",
+      "status": "existing resident builder; full-cohort build pending"
+    },
+    {
+      "file_name": "waterfall.elf",
+      "delivered_version": "0.2.12",
+      "manifest_sha256": "c6d24bda5fd159169e0eca88763c8dd4033739be51ab8db6052322c87d189a59",
+      "delivered_binary": {
+        "bytes": 261528,
+        "sha256": "19244448f6b5fe24b554341bf3671c3bed6c5908f9929d26410b88305b2c6a40"
+      },
+      "owner": "Utilities",
+      "status": "resident builder/adapter integration pending"
+    },
+    {
+      "file_name": "wifi_settings.elf",
+      "delivered_version": "1.1.15",
+      "manifest_sha256": "63cbf25147bb28cad50c2c83babffba1ac237dcd7ed38ff74b75f90aa19d7393",
+      "delivered_binary": {
+        "bytes": 160004,
+        "sha256": "78d958444a20ad879b6af1fefdf419f659149849a58a67a2cd30527546e9349e"
+      },
+      "owner": "System",
+      "status": "existing resident builder; full-cohort build pending"
+    }
+  ],
+  "blockers": [
+    "Runtime .85 cannot launch an accepted legacy ELF while resident mode is enabled; no policy-only GameBoy exception exists. Keep delivered .43 legacy boot unchanged until a separately qualified handoff exists.",
+    "Only default, Springboard and Settings are built by this initial recipe; every other selected foreground must be rebuilt with the explicit descriptor and settled checkpoints before admission.",
+    "Utilities native builders still force Quick Actions sources and lack resident role/exports/SDK selection; Productivity native Points and Timecard builders have the same gap and frozen dependency pins. Convert their builders without changing authoritative models/storage.",
+    "The delivered Contexts editor belongs to Utilities source e25442fc1f0a2b452c1c671e7670f5af5ad4dae6, absent from the selected catalog-service checkout; preserve its draft/launch guards and RF-only provider path when integrating.",
+    "Delivered default has contexts.service authority; the current sparse resident host build does not declare it. Reconcile the Contexts foreground observation feature before product staging.",
+    "Resident clients reject the old per-app idle helper. Current POLL dispatch has no equivalent automatic idle/low-battery handoff while a child remains active; preserve that behavior in a separately tested host policy before full feature parity.",
+    "Development builder identities are not release reservations. Settings currently emits 1.3.18 versus delivered 1.3.20; preserve reservation ownership and reconcile all successor identities before packaging.",
+    "Product must rebuild native Runtime .85 with 17 app-policy rows, 512-byte retained payload, and large metadata capacity; qualify all native/provider ABI bindings, whole-store admission and hardware separately."
+  ],
+  "display_sdk_sha256": {
+    "GardenPlatformV1.h": "2e8e32f52554b706fafce1af27a5fbaf99187f67ecb55dc0cf333144b48ef9d2",
+    "RiscArchiveZipV1.h": "5909fdfe34a457895e4e4112b80bf0fbba98cc01a405fa62ee0171387b84ca05",
+    "RiscBankStoreV1.h": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
+    "RiscBatteryGaugeV1.h": "b756b190c40a24cc019d09f0dd8c37140b14770c8c7c2c65ef04118bac6fa6f8",
+    "RiscBoundKeyValueV1.h": "0d77dffef1e6513cbf9b3cf38266f7c9ebcc25d000605838821241ba742cd672",
+    "RiscBoundKeyValueV2.h": "f9c6589a346e6a79e784c37862228cc0c3ad3fe0c4cd8d6664800605f239b606",
+    "RiscBq25896ProfileV1.h": "04e33c1b5a3385c2bedf275b85aa62a5dbfbec8cb38c2f3879ebb413e70a0c98",
+    "RiscCameraCaptureV1.h": "7ad066a782e017361093f4a32780b7f2d7b720c72989ed1aa6babb2872170d88",
+    "RiscCameraEsp32s3ProfileV1.h": "4a47e72f77a5c44d77f83a1e00fa4f3528c4263147d8d1a539f504eb77cbdcbc",
+    "RiscCpuCacheV2.h": "dc575f444775e3b3523ed7b330e6f6c8a9d7a8c37e02921a4f78ae59008ee572",
+    "RiscCpuDmaV3.h": "99312ac098d645ccff4493cc169573e398015fd6dc34458a3d39d7c6e11acd50",
+    "RiscCpuWorkerV2.h": "96c76f4d26bfc148686d5d5ad1ef99542798ec6ae4f2afd8ea99a504de80d102",
+    "RiscDeepSleepV1.h": "0949cf9591ef0f07b61c1306897287ea2eb1533755b5e569bfe1cb2c9b236161",
+    "RiscDisplayOutputMetricsV1.h": "5be17adbae2ec26a855894e0d6443ac29572002c21efe53b2a913a5a0f0c642d",
+    "RiscDisplayOutputPowerV1.h": "e9c7d3bd3ddf9bce128503aafb5669734db09424149f45b3a6f735cd5a7c8667",
+    "RiscDisplayOutputSnapshotV1.h": "b835fd1a3600551d54efb2806cbe8dd3ecc512a538572dc853aaf11f4e2490b6",
+    "RiscDisplayOutputV1.h": "99b682ba34f07e7868dec8e78dfb816c067fdc184e647033bc6ed8d489b9c9a2",
+    "RiscDisplayPowerV1.h": "097c226f2e9f5a222115dd226b30b303231cd009a8401acf6d311a61a000d027",
+    "RiscFirmwareI2cCompatV1.h": "4abe4c6d4b83432bd76ca8fdbf9502dfbab25f5579ae0acd6de367cc133bb0ef",
+    "RiscFirmwareSpiCompatV1.h": "8556e7dea8d6f83dbc47c68a363cc785182ef78343589e3c9573ad2fd08f2942",
+    "RiscFrontlightV1.h": "86272e0189dc5329d1ace67dfd64e2ee71768f1685e004faac6b4252bf6ba3f6",
+    "RiscGpioBankV1.h": "58cb736872a689413f6ffcf24cc5cc1bce5187e7d7cfb6fcffe10ad854e7a35c",
+    "RiscGpioExpanderV1.h": "110f0b141842e7cdc6798519cc5cd61c371cfe0d3e0af59a3f19c12598242f55",
+    "RiscHardwareConfigV1.h": "47fa4cd7d4f09f571a5aedc87376d2f57520ad7873f5556af0a932011633e240",
+    "RiscHciControllerStatusV1.h": "235b388d91ed7e0becbb44dd476a29ef526fb2f7d9bf44b1072b86cbe5860e0e",
+    "RiscHttpClientV1.h": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+    "RiscI2cBusV1.h": "651d470d29618654dc59af98feae504ff135c37324a11e650c966cd79b151fb5",
+    "RiscInputNavigationV1.h": "022ab46c1a94372524c519d04db42d34e06e814171fa1b4bd17f85a8ee217ef2",
+    "RiscLightSleepV1.h": "43cbd671265959ec2db7904bf6185e97a87c4cde9d389cdccf6fbb7c916f3b94",
+    "RiscMspFetV1.h": "883879ee0ce2ac3ff5df42eb549a856557132a4da5a1dfe22edff8ad8c4e015b",
+    "RiscPackageResourcesV1.h": "8aff53415cf68a46e8e492dd02d12bde802ce2a1d69629dd4f3b0aad5794e459",
+    "RiscPlatformClockV1.h": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+    "RiscPlatformRealtimeV1.h": "ed642c0f37350f7f1402342c7710564019db9c4750f3572f153d2ef1e37eca98",
+    "RiscProgramMspV1.h": "fd1a7c6ebdfdaeb951c3b82abf2baca6f84f4a4e533841c12d2eb81ff2e0166f",
+    "RiscProviderSyncV1.h": "c0981bde804b20c1b963323f91c4e9804c144c56535160bfd467be7e93028f45",
+    "RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "RiscRadioIqResourceV1.h": "dd6a9684d5be6203846b5ee06f685ca3dae6835d1e3b95821c336a48b5fa3827",
+    "RiscRadioScanV1.h": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
+    "RiscReaderTypographyV1.h": "74505fcfb76664d076c1562ed91f0c63d503595f5ea86b6d19e9fda49d9ec6c4",
+    "RiscRtcCalendarV2.h": "4cc86a4faa64a268908c1a073caadeddd205c2eca28f4e2658fde9b8f2ea865f",
+    "RiscRtcClockV2.h": "7c5d0b540c681e70875abec1eefc4f412a47d020033cf54f3556a1abf5cd3af7",
+    "RiscSerialPortV1.h": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700",
+    "RiscSpiBusV1.h": "f6c972e5dedb44e55422754d6b43af9b15cad039caac64f7a59266cc9ce6913a",
+    "RiscStlinkV1.h": "1261bd3a8ed77646d03a686cb13b72461ca9ca040ef81d48329e92228461ed8d",
+    "RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "RiscStreamResultV1.h": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f",
+    "RiscStreamSessionProviderV1.h": "fe463661530c43ae7d1dd8b9c8227fdc6a7e4380bca3f5c8a13287cb0db9e873",
+    "RiscTextInputV1.h": "32f2a6cda3b7a4fef8487cc046ceb891261e483feafed32908cbd924112a1a77",
+    "RiscTimedSleepV1.h": "475ba9bfaf6c7497ace7baeb93f2bd9a6abe1e3a91f62eed24862a88d60dbf34",
+    "RiscTouchI2cV2.h": "78179bc7a8d2dbbb5fb738d1ffabe02b31312173e70c9573941d1c8a4fcad3cf",
+    "RiscTouchPowerV1.h": "82c6faed9b7e26788e3a226cd3532b1d2c3b59447c8abdc25b5e407ef0399dd0",
+    "RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "RiscUsbControllerV1.h": "226f083493085ecdcaa21a7c3bf1c269640b7d1ebaa099e7217fb64124f1dbed",
+    "RiscUsbDiscoveryDiagnosticsV1.h": "b0a2652e3724f5cb3003485397fae860a6f49a38092d5f30345573ec8931c4d7",
+    "RiscUsbGamepadDiagnosticsV1.h": "b58df5e7618f8a0e3e58ae023fd034c96ff9f7d04b6c35080a4b6661a064ae0a",
+    "RiscUsbHidV1.h": "5b5549c4cb718dec55f2aca8bc93f401b2d5a703d30aaa1a78d1bcdd26755b5c",
+    "RiscUsbInterruptV1.h": "bfdd4644feaf3f4dc5d06070f052104579d3fb902e27e707f27943d7bf22815e",
+    "RiscUsbProviderV1.h": "65bbde81bf4159918392d9525dc0dfd5a075bf028a693d9a4d9981b1cecf516e",
+    "RiscUsbVbusV1.h": "9936cde4d585e7ff6ae2d5441d746b47e14cf800806ce49c5a269d37eb84e110",
+    "RiscWakeSetV1.h": "0b5a4914ac67d37b420e1ea19b591a71440f6e4c20149ca4324e1049517ba375",
+    "T5DisplayProviderV1.h": "e16678232c244043656f00d152da2f5abd8dbf06a53d125edd0f7b090d7cb64f",
+    "T5DriverApi.h": "e0960f0b2e2579d7b7245734b593182841806c5eb7b7d67af4194ac8eb0c4b55",
+    "T5GnssProvider.h": "f093ed0f5707b1cbe12caa5086f248e884fb5f69c7fbcf1f6f6a3ce911747116",
+    "T5UsbClassDriver.h": "64a6a3a8081509ce9ab8e15c15095578174d9d7afb4343672576b89b4f65300d",
+    "TWatchHardwareV1.h": "ca48ca21a944565ae185f7c4e8cc0e73bcc18871d79b966f7e7da916e7ab2c99",
+    "TWatchPlatformV1.h": "88457c6cd36a8d2550c964ede1060b4006b72be5d290cff7cd108087bacc16dd"
+  },
+  "springboard_preservation_pin": "5e33fec83c08a3e6692d198bd229002daa1dc1e7",
+  "settings_preservation_pin": "87910376f678e8e47f8e8f026e2beeb5d65554ea",
+  "remaining_builder_work": [
+    {
+      "group": "System",
+      "apps": [
+        "file_browser",
+        "wifi_settings",
+        "ota_update",
+        "app_store",
+        "usb_sd_transfer"
+      ],
+      "entrypoints": [
+        "scripts/build_portable_file_browser.py",
+        "scripts/build_portable_wifi.py",
+        "scripts/build_portable_updates.py",
+        "scripts/build_portable_usb_transfer.py"
+      ],
+      "state": "explicit resident flags already exist; update exact .43 feature selection and run target/lifecycle qualification"
+    },
+    {
+      "group": "Utilities",
+      "apps": [
+        "calculator",
+        "stopwatch",
+        "battery",
+        "ble_scanner",
+        "ble_touchpad",
+        "ble_buttons",
+        "waterfall"
+      ],
+      "entrypoints": [
+        "scripts/build_native_broadcast.py",
+        "scripts/native_utility_build.py",
+        "scripts/native_idle_build.py"
+      ],
+      "state": "add explicit resident profile, current System adapter and Runtime SDK selection; remove forced Quick UI and independent idle implementation without losing each app model/flags"
+    },
+    {
+      "group": "Utilities alarm editors",
+      "apps": [
+        "alarms",
+        "countdown"
+      ],
+      "entrypoints": [
+        "scripts/build_native_utc_alarm_apps.py"
+      ],
+      "state": "preserve native editors and launch guards; add explicit resident descriptor/SDK, remove forced Quick sources and independent sleep source"
+    },
+    {
+      "group": "Productivity",
+      "apps": [
+        "points_in_time",
+        "timecard"
+      ],
+      "entrypoints": [
+        "scripts/build_points_native_utc.py",
+        "scripts/build_timecard_native_time.py",
+        "scripts/native_paper_transitions.py"
+      ],
+      "state": "reconcile frozen System/Runtime/header receipts and explicit resident flags while preserving selected catalog, symbols, storage and civil Timecard model"
+    },
+    {
+      "group": "Contexts",
+      "apps": [
+        "contexts"
+      ],
+      "delivered_source": "e25442fc1f0a2b452c1c671e7670f5af5ad4dae6",
+      "delivered_system": "45215c6c57ca8e48a424efd7e37e827205696a18",
+      "state": "bring forward separate selected editor lineage with draft/launch guards and RF-only contexts service; do not replace it with the catalog-service checkout"
+    },
+    {
+      "group": "Accepted legacy",
+      "apps": [
+        "gameboy"
+      ],
+      "state": "no source or binary work; keep legacy .43 route until separately qualified Runtime compatibility handoff"
+    }
+  ]
+}

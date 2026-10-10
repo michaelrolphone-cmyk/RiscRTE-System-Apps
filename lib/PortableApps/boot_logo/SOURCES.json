@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/michaelrolphone-cmyk/T5S3-Reader",
+  "commit": "aac8c06d3221139084acd0cfc64f7b0ba194a97a",
+  "sources": {
+    "docs/logo.svg": "d798169a71ab910a3d0acf624a9a46791af2ed83c18b9641e2dcdaf8de07f508",
+    "src/components/StartupScreen.cpp": "da88f61f129160033ab6d48beae3f43ebd19ba1090c61c7b458cc4a6076ae54f"
+  },
+  "adaptation": "Exact nine-block 2x geometry and full-coverage radius-4 raster; unchanged seven DejaVu wordmark glyph rows and widths. Black on white, centered 240x320 frame; no animation or timed hold.",
+  "wordmark_values_sha256": "3856c2eaa5a9ec03b6d496fb82f76212735cd50981b2a5fe7abefa4688249ea0"
+}

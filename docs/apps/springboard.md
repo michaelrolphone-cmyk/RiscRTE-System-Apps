@@ -115,3 +115,12 @@ Its real app catalog, Font Awesome provenance, continuous spring motion,
 held-contact drag-only handoff, cancellation rules, explicit time policy and
 verification limits are documented there. This external development delta does
 not change the paper layout or claim parity with an earlier published release.
+
+## Selected X4 horizontal pages
+
+The optional native X4 1.7.18 profile presents 20 apps per page in a standard
+four-column, five-row grid. Dots indicate the page; the clock uses the persisted
+12/24 preference with an unpadded hour and padded minutes. Horizontal drags move the icons with the finger, then snap
+to a bounded page on release. Ordinary application lists retain vertical
+scrolling. See [X4 Springboard pages](../SPRINGBOARD_TOUCH_SCROLL.md) for build
+selection, completed-frame launch ownership and rendered verification.
