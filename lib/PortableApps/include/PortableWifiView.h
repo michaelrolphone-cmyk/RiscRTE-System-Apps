@@ -37,6 +37,11 @@ bool portable_wifi_services_safe(void);
 bool portable_wifi_suspend(void);
 /* Healthy asynchronous cleanup is progress, not a retained failure. */
 bool portable_wifi_stop_pending(void);
+/* Bool HCI lifecycle calls cannot report temporary resource deferral. */
+bool portable_wifi_async_owned(void);
+/* Pair in one owner turn, without yielding. False begin is clean deferral. */
+bool portable_wifi_services_begin(void);
+bool portable_wifi_services_end(void);
 void portable_wifi_resume(void);
 bool portable_wifi_close(void);
 

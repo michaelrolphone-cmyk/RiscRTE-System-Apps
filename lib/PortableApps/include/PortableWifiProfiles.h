@@ -7,7 +7,7 @@
  * Callers serialize writes under namespace 6 and checked radio cleanup. */
 #include "PortableWifiCredentials.h"
 #define PORTABLE_WIFI_PROFILE_PAGE 8u
-#define PORTABLE_WIFI_PROFILE_AGAIN 7
+#define PORTABLE_WIFI_PROFILE_AGAIN PORTABLE_WIFI_CREDENTIALS_AGAIN
 #define PORTABLE_WIFI_PROFILE_COUNT_KEY "wifi.profiles"
 #define PORTABLE_WIFI_PROFILE_FULL 6
 
@@ -51,8 +51,7 @@ static inline int portable_wifi_profile_reserve(const risc_key_value_v1 *kv,uint
     uint8_t data[32]={0};memcpy(data,"WFN1",4);data[4]=1;
     portable_wifi_credentials_put_u32(data+8,count+1);
     portable_wifi_credentials_put_u32(data+28,portable_wifi_credentials_crc(data,28));
-    return portable_wifi_credentials_write_verify(kv,PORTABLE_WIFI_PROFILE_COUNT_KEY,data,sizeof(data))?
-        PORTABLE_WIFI_CREDENTIALS_LOADED:PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED;
+    return portable_wifi_credentials_write_status(kv,PORTABLE_WIFI_PROFILE_COUNT_KEY,data,sizeof(data));
 }
 static inline int32_t portable_wifi_profile_get(void *context,const char *key,void *data,uint32_t capacity,uint32_t *size) {
     portable_wifi_profile_context *c=context;char mapped[16];
@@ -92,7 +91,7 @@ static inline int portable_wifi_profile_forget(const risc_key_value_v1 *kv,unsig
 typedef struct {
     uint32_t count,next,empty,index;
     int fault,result;
-    bool done;
+    bool done,initialized;
     char ssid[33];
 } portable_wifi_profile_search;
 static inline int portable_wifi_profile_search_begin(const risc_key_value_v1 *kv,const char *ssid,portable_wifi_profile_search *search) {
@@ -101,17 +100,27 @@ static inline int portable_wifi_profile_search_begin(const risc_key_value_v1 *kv
     unsigned n=0;while(n<sizeof(search->ssid)&&ssid[n])++n;
     if(!n||n==sizeof(search->ssid))return PORTABLE_WIFI_CREDENTIALS_INVALID;
     memcpy(search->ssid,ssid,n);int rc=portable_wifi_profile_count(kv,&search->count);
+    if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return rc;
     if(rc){search->done=true;search->result=rc;return rc;}
+    search->initialized=true;
     return PORTABLE_WIFI_PROFILE_AGAIN;
 }
 static inline int portable_wifi_profile_search_step(const risc_key_value_v1 *kv,portable_wifi_profile_search *search) {
     if(!search)return PORTABLE_WIFI_CREDENTIALS_INVALID;
     if(search->done)return search->result;
+    if(!search->initialized){
+        int rc=portable_wifi_profile_count(kv,&search->count);
+        if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return rc;
+        if(rc){search->done=true;return search->result=rc;}
+        search->initialized=true;
+    }
     if(search->next<search->count){
-        uint32_t i=search->next++;portable_wifi_credentials value={{0},{0}};
+        uint32_t i=search->next;portable_wifi_credentials value={{0},{0}};
         int rc=portable_wifi_profile_load(kv,i,&value);
         bool same=rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!strcmp(value.ssid,search->ssid);
         portable_wifi_credentials_clear(&value);
+        if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return rc;
+        ++search->next;
         if(same){search->index=i;search->done=true;return search->result=PORTABLE_WIFI_CREDENTIALS_LOADED;}
         if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY&&search->empty==UINT32_MAX)search->empty=i;
         else if(rc!=PORTABLE_WIFI_CREDENTIALS_EMPTY&&rc!=PORTABLE_WIFI_CREDENTIALS_LOADED)search->fault=rc;

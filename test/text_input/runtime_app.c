@@ -33,6 +33,7 @@ __attribute__((visibility("default"))) void app_main(void){
  const risc_text_entry_api_v1*a=g.api;assert(a&&a->api_version==1&&a->struct_size>=sizeof(*a));
  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=16,.label="Name"};strcpy(q.text,invocation==1?"first":"fresh");
  if(!strncmp(mode,"fast",4)){q.capacity=72;q.text[0]=0;}
+ if(!strcmp(mode,"masked")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}
  bool home_reason=!strncmp(mode,"reason-",7);
  if(home_reason){assert(risc_text_entry_home_reason(a));q.reserved=strcmp(mode,"reason-legacy-home")?RISC_TEXT_ENTRY_REQUEST_HOME_REASON:0;}
  uint64_t s=0;int opened=a->open(a->context,&q,&s);

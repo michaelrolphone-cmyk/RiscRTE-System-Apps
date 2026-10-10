@@ -43,3 +43,19 @@ Credentials remain plaintext app-owned storage with explicit Save and logical
 Forget. No encryption, secure erase, real credentials or credential logging is
 introduced. Existing manual entry, scans, status, security selection, connection,
 cancellation, Back/Home, help, radio policy and scrolling must be retained.
+
+## Resource-deferral checkpoint
+
+The copied async provider suffix now carries a same-owner-turn service lease.
+The app distinguishes KV BUSY (no I/O begun) from a failed or unconfirmed write,
+keeps lookup cursors and explicit actions while waiting, and accepts Back without
+unmapping a live radio operation. A successful lease is always paired before
+any yield. Native/shared-adapter union tests are still being completed.
+
+The old legacy fixture changed snapshots without emitting touch edges. The
+current reducer correctly rejects that as lost-event corruption. Its fixture
+now emits monotonic DOWN/MOVE/UP and button edges with matching snapshots; all
+48 assertions across both UI profiles, both orientations and both compiler
+modes pass on both the unchanged base and current code. Shared text has 132
+actual Runtime executions per normal/sanitized mode, including masked sessions.
+Secret copied text requests are explicitly wiped on every return path.

@@ -46,5 +46,7 @@ typedef struct {
     int32_t (*begin)(void*,const risc_radio_request_v1*,uint32_t*);
     int32_t (*poll)(void*,uint32_t,risc_radio_progress_v1*);
     int32_t (*cancel)(void*,uint32_t);
+    int32_t (*service_begin)(void*,uint32_t*);
+    int32_t (*service_end)(void*,uint32_t);
 } wifi_async_v1;
 #define WIFI_ASYNC_V1_SIZE sizeof(wifi_async_v1)

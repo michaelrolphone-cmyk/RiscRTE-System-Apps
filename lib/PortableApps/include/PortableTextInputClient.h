@@ -37,40 +37,47 @@ static inline int portable_text_client_release(portable_text_client *c) {
     }
     c->closing=false;return RISC_TEXT_ENTRY_OK;
 }
+/* Clear the bounded copied request on every exit, including rejected suffixes
+ * and retained callbacks. This is local memory cleanup, never provider I/O. */
+static inline int portable_text_client_request_result(risc_text_entry_request_v1 *request,int result) {
+    volatile unsigned char *p=(volatile unsigned char*)request;
+    for(size_t i=0;i<sizeof(*request);++i)p[i]=0;
+    return result;
+}
 static inline int portable_text_client_begin_mode(portable_text_client *c,const risc_runtime_api_v1 *runtime,
                                             const char *label,const char *initial,uint32_t capacity,bool masked) {
     if(!c||!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
     if(c->active||c->acquired||c->suspended)return RISC_TEXT_ENTRY_BUSY;
     if(!runtime||!runtime->acquire||!runtime->release||!label||!initial||!capacity||capacity>RISC_TEXT_ENTRY_BYTES)return RISC_TEXT_ENTRY_INVALID;
     risc_text_entry_request_v1 request={.api_version=1,.struct_size=sizeof(request),.capacity=capacity};
-    unsigned n=0;for(;n<RISC_TEXT_ENTRY_LABEL&&label[n];n++){if((unsigned char)label[n]<32||(unsigned char)label[n]>126)return RISC_TEXT_ENTRY_INVALID;request.label[n]=label[n];}
-    if(n==RISC_TEXT_ENTRY_LABEL)return RISC_TEXT_ENTRY_INVALID;
-    for(n=0;n<capacity&&initial[n];n++){if((unsigned char)initial[n]<32||(unsigned char)initial[n]>126)return RISC_TEXT_ENTRY_INVALID;request.text[n]=initial[n];}
-    if(n==capacity)return RISC_TEXT_ENTRY_INVALID;
+    unsigned n=0;for(;n<RISC_TEXT_ENTRY_LABEL&&label[n];n++){if((unsigned char)label[n]<32||(unsigned char)label[n]>126)return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_INVALID);request.label[n]=label[n];}
+    if(n==RISC_TEXT_ENTRY_LABEL)return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_INVALID);
+    for(n=0;n<capacity&&initial[n];n++){if((unsigned char)initial[n]<32||(unsigned char)initial[n]>126)return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_INVALID);request.text[n]=initial[n];}
+    if(n==capacity)return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_INVALID);
     c->runtime=runtime;c->capacity=capacity;c->grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->grant)};
     bool acquired=runtime->acquire(RISC_TEXT_ENTRY_CAPABILITY,1,0,&c->grant);
-    if(!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
-    if(!acquired){if(c->grant.struct_size!=sizeof(c->grant)||c->grant.api||c->grant.slot||c->grant.generation)return portable_text_client_retain(c);return RISC_TEXT_ENTRY_UNAVAILABLE;}
-    if(c->grant.struct_size!=sizeof(c->grant)||!c->grant.api||!c->grant.slot||!c->grant.generation)return portable_text_client_retain(c);
+    if(!portable_text_client_live(c))return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_RETAINED);
+    if(!acquired){if(c->grant.struct_size!=sizeof(c->grant)||c->grant.api||c->grant.slot||c->grant.generation)return portable_text_client_request_result(&request,portable_text_client_retain(c));return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_UNAVAILABLE);}
+    if(c->grant.struct_size!=sizeof(c->grant)||!c->grant.api||!c->grant.slot||!c->grant.generation)return portable_text_client_request_result(&request,portable_text_client_retain(c));
     c->acquired=true;c->api=c->grant.api;
     if(c->api->api_version!=1||c->api->struct_size<sizeof(*c->api)||!c->api->open||!c->api->poll||!c->api->close) {
-        int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed;
+        int closed=portable_text_client_release(c);return portable_text_client_request_result(&request,closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed);
     }
     if(masked&&!risc_text_entry_masked(c->api)){
-        int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed;
+        int closed=portable_text_client_release(c);return portable_text_client_request_result(&request,closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed);
     }
     c->home_reason=risc_text_entry_home_reason(c->api);
     if(c->home_reason)request.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON;
     if(masked)request.reserved|=RISC_TEXT_ENTRY_REQUEST_MASKED;
     int rc=portable_text_adapter_suspend();
-    if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_retain(c);int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?rc:closed;}
+    if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_request_result(&request,portable_text_client_retain(c));int closed=portable_text_client_release(c);return portable_text_client_request_result(&request,closed==RISC_TEXT_ENTRY_OK?rc:closed);}
     c->suspended=true;c->session=0;
     rc=c->api->open(c->api->context,&request,&c->session);
-    if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_retain(c);
-    if(!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
-    if(rc==RISC_TEXT_ENTRY_OK&&c->session){c->active=true;return RISC_TEXT_ENTRY_OK;}
-    if(c->session||(rc!=RISC_TEXT_ENTRY_UNAVAILABLE&&rc!=RISC_TEXT_ENTRY_BUSY&&rc!=RISC_TEXT_ENTRY_INVALID))return portable_text_client_retain(c);
-    int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?rc:closed;
+    if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_request_result(&request,portable_text_client_retain(c));
+    if(!portable_text_client_live(c))return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_RETAINED);
+    if(rc==RISC_TEXT_ENTRY_OK&&c->session){c->active=true;return portable_text_client_request_result(&request,RISC_TEXT_ENTRY_OK);}
+    if(c->session||(rc!=RISC_TEXT_ENTRY_UNAVAILABLE&&rc!=RISC_TEXT_ENTRY_BUSY&&rc!=RISC_TEXT_ENTRY_INVALID))return portable_text_client_request_result(&request,portable_text_client_retain(c));
+    int closed=portable_text_client_release(c);return portable_text_client_request_result(&request,closed==RISC_TEXT_ENTRY_OK?rc:closed);
 }
 static inline int portable_text_client_begin(portable_text_client *c,const risc_runtime_api_v1 *runtime,
                                             const char *label,const char *initial,uint32_t capacity) {
