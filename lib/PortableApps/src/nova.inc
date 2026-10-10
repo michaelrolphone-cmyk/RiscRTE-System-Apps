@@ -5,6 +5,9 @@
 #error "Select exactly one explicit RTC policy"
 #endif
 #include "../fonts/icons.inc"
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+#include "../fonts/springboard_gamepad.inc"
+#endif
 #include "../fonts/text.inc"
 static bool nova_mode, nova_mask_pending;
 static springboard_contact nova_contact;
@@ -21,6 +24,9 @@ static uint16_t np_rgb(uint32_t rgb) {
   return (uint16_t)(((rgb>>19)&31)<<11|((rgb>>10)&63)<<5|((rgb>>3)&31));
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
+#if defined(PORTABLE_TOUCH_SCROLL) && (defined(PORTABLE_FILE_BROWSER_APP) || defined(PORTABLE_APP_TOUCH_SCROLL) || defined(PORTABLE_SETTINGS_LIST_SCROLL))
+  if(raster_clip_active&&!portable_scroll_inside(&raster_clip,x,y))return;
+#endif
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
     native_point(&x,&y);
@@ -45,6 +51,9 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   const rpi_glyph *g=NULL;
   for(unsigned i=0;i<sizeof(rpi_icons)/sizeof(rpi_icons[0]);++i)
     if(!strcmp(rpi_icons[i].name,name)){g=&rpi_icons[i];break;}
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+  if(!g && !strcmp(name,rpi_springboard_gamepad.name))g=&rpi_springboard_gamepad;
+#endif
   if(!g)return false;
   int max=g->width>g->height?g->width:g->height;
   int w=g->width*size/max,h=g->height*size/max;
@@ -193,6 +202,14 @@ static void np_poll(t5_app_input_t *out) {
     s.x=(uint16_t)(quick.ui.start_x*width()/480);s.y=(uint16_t)(quick.ui.start_y*height()/800);s.began=true;
   }
   quick_replay_pending=false;
+#endif
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_FILE_BROWSER_APP)
+  file_scroll_sample=s;file_scroll_sampled_at=input_sampled_at;
+  if(s.x>=width() || s.y>=height()){file_scroll_sample.valid=false;file_scroll_sample.cancelled=true;}
+#endif
+#ifdef PORTABLE_APP_TOUCH_SCROLL
+  paper_scroll_sample=s;paper_scroll_sampled_at=input_sampled_at;
+  if(s.x>=width()||s.y>=height()){paper_scroll_sample.valid=false;paper_scroll_sample.cancelled=true;}
 #endif
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
   if(s.x>=width() || s.y>=height()){nova_contact.valid=false;nova_contact.cancelled=true;}

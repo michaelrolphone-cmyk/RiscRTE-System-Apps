@@ -17,7 +17,7 @@ static bool fbx_swap(void) {
   uint64_t instance=fb_storage_index?PORTABLE_FILE_BROWSER_INSTANCE:PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
   const char *cap=fb_storage_index?PORTABLE_FILE_BROWSER_CAPABILITY:"storage.volume";
   if(!fb_runtime->acquire(cap,1,instance,&fb_other_grant)){fb_message("Other volume unavailable or not granted");return false;}
-  if(!fb_api_valid(fb_other_grant.api)){if(fb_runtime->release(&fb_other_grant))memset(&fb_other_grant,0,sizeof(fb_other_grant));fb_message("Other volume has an invalid interface");return false;}
+  if(!fb_api_valid(fb_other_grant.api)){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;if(fb_runtime->release(&fb_other_grant))memset(&fb_other_grant,0,sizeof(fb_other_grant));fb_message("Other volume has an invalid interface");return false;}
   fb_other_volume=fb_other_grant.api;
  }
  const risc_storage_volume_api_v1 *v=fb_volume;fb_volume=fb_other_volume;fb_other_volume=v;
@@ -47,6 +47,11 @@ static void fbx_rename(void){
  fbx_success("Renamed successfully");
 }
 static void fbx_cancel(void){
+ /* The paper destination's Cancel button reaches here directly. Retry retained
+  * closes before switching volumes, with their original commit/abort intent. */
+ if(!portable_file_browser_safe()&&!portable_file_browser_close()){
+  fb_error("Close failed. Cancel retries safely.");return;
+ }
  if(fb_storage_index!=fb_source_index&&!fbx_swap())return;
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_moving?"Move cancelled":"Copy cancelled");
 }
@@ -76,6 +81,7 @@ static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,c
  uint64_t latest=0;bool directory=false;
  if(!source->stat(source->context,from,&latest,&directory)||directory||latest!=size)okay=false;
  if(!fbx_close_file(source,input,true))okay=false;
+ if(PORTABLE_APP_RETAINED())return false;
  bool committed=okay&&copied==size;
  if(!fbx_close_file(target,output,committed))okay=false;
  if(!okay){fb_message(portable_file_browser_safe()?"Copy failed; incomplete destination aborted":"Close failed. Back retries safely.");return false;}
@@ -138,6 +144,7 @@ static bool fbx_handlers(void){
  if(fb_runtime->acquire("file.open",T5_FILE_OPEN_API_VERSION,0,&fb_handler_grant)){
   const t5_file_open_api_v1 *api=fb_handler_grant.api;
   if(api&&api->api_version==T5_FILE_OPEN_API_VERSION&&api->struct_size>=sizeof(*api)&&api->handler_count&&api->handler_get&&api->open_request){fb_handler_api=api;return true;}
+  PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;
   if(fb_runtime->release(&fb_handler_grant))memset(&fb_handler_grant,0,sizeof(fb_handler_grant));
  }
 #endif
@@ -168,7 +175,7 @@ static void fbx_dispatch(unsigned selected){
  if(handler.kind!=T5_FILE_HANDLER_APP){fbx_notice("System document reader unavailable");return;}
  if(!fb_handler_api->open_request(fb_handler_path,handler.app_id,UINT64_C(0x4642524f57534552))){fbx_notice("File handler launch failed");return;}
  /* Successful request is terminal even if capability release must be retried. */
- if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER handler cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
+ if(!portable_file_browser_close()){if(PORTABLE_APP_RETAINED())return;fb_runtime->diagnostic("FILE_BROWSER handler cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
  fb_terminal=true;
 }
 static void fbx_open(bool choose){

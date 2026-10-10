@@ -9,3 +9,6 @@
 #include "PortableRtcClock.h"
 #include "PortableNativeCustody.h"
 __attribute__((visibility("hidden"))) bool portable_app_native_local_time(twatch_rtc_time_v1 *out);
+
+/* Closed native UTC sample for HTTPS; does not load or apply a timezone. */
+__attribute__((visibility("hidden"))) bool portable_app_native_utc_time(int64_t *out);

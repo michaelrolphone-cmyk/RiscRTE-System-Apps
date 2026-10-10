@@ -1,4 +1,4 @@
-# NOVA-7 File Browser (portable 1.5.0)
+# NOVA-7 File Browser (portable 1.5.8)
 
 The portable profile of `Apps/file_browser.c` uses ordinary runtime capabilities.
 A retaining, monochrome portrait display selects the shared paper presentation;
@@ -52,6 +52,9 @@ Reader SDK snapshot is retained separately to preserve exact release bytes.
   intent, blocks further storage operations, and provides Back retry. A failed
   source close aborts the destination. Failed grant releases are retried without
   releasing already released grants again. Confirmed cleanup precedes return.
+  Destination Cancel also retries retained closes before restoring the source
+  volume. This shared controller correction changes portable profile bytes and
+  is versioned as 1.5.8; their existing authority selections remain explicit.
 
 ## File handlers and native applications
 
@@ -68,9 +71,10 @@ launch starts at the volume root.
 
 A missing/ungranted/invalid broker and unsupported system-reader handler have
 explicit status screens. The app does not invent associations or claim a
-platform service is deployed. The X4 service composition is a separate runtime
-integration. Its deployment must admit receiver applications and file argument
-handoff before this profile can launch them.
+platform service is deployed. The X4 Runtime supplies the broker and file-argument
+handoff. The selected X4 bundle currently has no application declaring
+`supported_file_types`, so Open truthfully reports no declared handler. A receiver
+in the Runtime test fixture demonstrates handoff; it is not added to deployment.
 
 An SD `.elf` is not an installed boot-store application. Open tells the user to
 install/admit it first. The browser never strips `/` from an arbitrary SD path
@@ -82,7 +86,10 @@ configured boot store, not the writable SD volume.
 Watch defaults are unchanged: `storage.installed-files@1`, instance 0, returning
 to `springboard.elf`. The X4 SD profile uses `storage.volume@1`, returning to
 `springboard.elf`. The clock home occupies `default.elf`; the launcher alone
-returns there. Instance 0 requires a uniquely authorized provider.
+returns there. Instance 0 requires a uniquely authorized provider. The selected
+native X4 deployment explicitly acquires `storage.volume@1` instance 9. Runtime's
+installed-files service exists only at instance 0; the builder rejects a nonzero
+installed-files selection before compilation.
 
 A secondary USB volume is optional and is not composed by this app. Only an
 explicit `--secondary-storage-instance` adds a selector. Two `storage.volume`

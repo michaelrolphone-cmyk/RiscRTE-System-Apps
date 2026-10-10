@@ -1,16 +1,17 @@
 {
+  "description": "Actual native UTC Home Points panels in the refined foreground layout. Independent supplied-SVG comparisons live in test_home_reference.py.",
   "logical_crop": [
     24,
-    484,
+    254,
     456,
-    744
+    774
   ],
   "sha256": {
-    "home-ready": "0f9fd3e4ddf4c00656ddf6408780a4a0aee8981668af55b9f49b3414135bcc02",
-    "home-custom": "cfea92967dcb2407ce34a22164702b27ef7f11b62ba532ef5d564907533c810b",
-    "home-empty": "5815987cae7e60b430915e80f330ba8dcd03b90320bbd1fd611a7fd7dcfb64af",
-    "home-invalid": "eb0e0a0b277a5390795ed36b41354457460220ea8b4ce404ebb9bb0ba3d217b5",
-    "home-unavailable": "eb0e0a0b277a5390795ed36b41354457460220ea8b4ce404ebb9bb0ba3d217b5",
-    "home-default": "add9f5356260fb1f0045809c065e3a0f2d713ce968c2894e6208e489ecab5f8d"
+    "home-ready": "7826e76eedc88690437f16aa96d5a709717cf1f4162b602198c6a55b0e60c325",
+    "home-custom": "4df1d4e8e3bc1d1aa181ee433bd7f2f1b1033ff0808be2f77d340add21fc0dbe",
+    "home-empty": "0010f5fffbc5a60cba833cd3a945f9008dbc165328f469ece871b51297f491d8",
+    "home-invalid": "10ceb799ff7c2768257275274dae9acf6df962350cbd92881e5a32b7586d8ad6",
+    "home-unavailable": "10ceb799ff7c2768257275274dae9acf6df962350cbd92881e5a32b7586d8ad6",
+    "home-default": "c9f37f644c36801c1645c8dc7a354f6672b536c8fe0d968162f3fdaef80c95e9"
   }
 }

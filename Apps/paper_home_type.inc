@@ -2,14 +2,35 @@
  * SVG. Raster inputs are generated at each requested size and weight. */
 #include "../lib/PortableApps/home_fonts/text.inc"
 #include "../lib/PortableApps/home_fonts/dial.inc"
-enum {HOME_NONE,HOME_TOP,HOME_DIAL,HOME_POINTS};
+#ifdef PORTABLE_DESK_POINTS_FACE
+#include "../lib/PortableApps/home_fonts/desk_time.inc"
+static bool home_desk_widget,home_desk_clock,home_desk_ok;
+static int home_view_width(int x){return home_desk_widget||home_desk_clock?x*app->screen_width()/800:xscale(x);}
+static int home_view_x(int x){return home_desk_widget?(x+328)*app->screen_width()/800:home_desk_clock?x*app->screen_width()/800:xscale(x);}
+static int home_view_y(int y){return home_desk_widget?(y-356)*app->screen_height()/480:home_desk_clock?y*app->screen_height()/480:yscale(y);}
+static int home_view_height(int y){return home_desk_widget||home_desk_clock?y*app->screen_height()/480:yscale(y);}
+#else
+#define home_view_width xscale
+#define home_view_x xscale
+#define home_view_y yscale
+#define home_view_height yscale
+#endif
+enum {HOME_NONE,HOME_TOP,HOME_DIAL,HOME_POINTS,HOME_FILES,HOME_DOCK_POINTS,HOME_CONTEXTS,HOME_SETTINGS};
 static unsigned home_pressed,home_painted,home_pending;
 static bool home_refresh_pending=true;
 static void home_press_bounds(unsigned target,int *x,int *y,int *w,int *h) {
- static const int bounds[][4]={{0,0,0,0},{0,0,480,72},{40,72,400,390},{24,484,432,226}};
+ static const int bounds[][4]={{0,0,0,0},{0,0,480,72},{24,72,432,174},{24,254,432,364},
+  {32,634,104,144},{136,634,104,144},{240,634,104,144},{344,634,104,144}};
+ if(target>HOME_SETTINGS)target=HOME_NONE;
  *x=xscale(bounds[target][0]);*y=yscale(bounds[target][1]);*w=xscale(bounds[target][2]);*h=yscale(bounds[target][3]);
 }
 static void home_fill(int x,int y,int w,int h,bool black) {
+#ifdef PORTABLE_DESK_POINTS_FACE
+ if(home_desk_widget||home_desk_clock) {
+  if(!home_desk_ok || ((desk_rectangles++&63u)==0 && desk_cancelled())){home_desk_ok=false;return;}
+  app->fill_rect(x,y,w,h,black);home_desk_ok=portable_desk_adapter_ready();return;
+ }
+#endif
  if(!home_pressed){app->fill_rect(x,y,w,h,black);return;}
  int px,py,pw,ph;home_press_bounds(home_pressed,&px,&py,&pw,&ph);
  int left=x>px?x:px,top=y>py?y:py,right=x+w<px+pw?x+w:px+pw,bottom=y+h<py+ph?y+h:py+ph;
@@ -30,10 +51,12 @@ static int home_kerning(const home_font *font,unsigned previous,unsigned current
   if(value<key)lo=mid+1;else hi=mid;}
  return lo<font->kern_count&&font->kern[lo].first==previous&&font->kern[lo].second==current?font->kern[lo].adjust_q6:0;
 }
+#ifndef PORTABLE_DESK_POINTS_SNAPSHOT
 static int home_svg_fit(const char *value,unsigned size,unsigned family_factor,unsigned tracking,unsigned maximum) {
  unsigned length=0;while(length<96&&value[length])length++;
  return length*(size*family_factor+tracking*100u)>maximum*100u?(int)maximum:0;
 }
+#endif
 static int home_text_width(const home_font *font,const char *value,int tracking) {
  int width=0;unsigned previous=0;
  for(unsigned i=0;i<96&&value[i];i++) {unsigned c=home_char((unsigned char)value[i]);
@@ -43,13 +66,13 @@ static int home_text_width(const home_font *font,const char *value,int tracking)
 }
 /* align: 0 left, 1 right, 2 centered. A positive target enforces the mockup's
  * textLength; a positive limit fits complete dynamic labels when required. */
-static void home_type(const home_font *font,int x,int baseline,const char *value,int tracking,int align,int limit,int target) {
- int natural=home_text_width(font,value,xscale(tracking));if(natural<=0)return;
- int width=target?xscale(target):(natural+32)/64;
- if(limit&&width>xscale(limit))width=xscale(limit);
- int origin=xscale(x)-(align==1?width:align==2?width/2:0),pen=0;unsigned previous=0;
+static void home_type_ink(const home_font *font,int x,int baseline,const char *value,int tracking,int align,int limit,int target,bool black) {
+ int natural=home_text_width(font,value,home_view_width(tracking));if(natural<=0)return;
+ int width=target?home_view_width(target):(natural+32)/64;
+ if(limit&&width>home_view_width(limit))width=home_view_width(limit);
+ int origin=home_view_x(x)-(align==1?width:align==2?width/2:0),pen=0;unsigned previous=0;
  for(unsigned k=0;k<96&&value[k];k++) {unsigned c=home_char((unsigned char)value[k]);const home_glyph *g=&font->glyphs[c-32];
-  if(previous)pen+=home_kerning(font,previous,c)+xscale(tracking)*64;
+  if(previous)pen+=home_kerning(font,previous,c)+home_view_width(tracking)*64;
   for(unsigned row=0;row<g->height;row++) {
    unsigned col=0;
    while(col<g->width) {
@@ -59,11 +82,14 @@ static void home_type(const home_font *font,int x,int baseline,const char *value
     while(col<g->width){bit=row*g->width+col;if(!(g->bits[bit/8]&(0x80u>>(bit%8))))break;col++;}
     int left=((pen+((int)g->left+(int)first)*64)*width+natural/2)/natural;
     int right=((pen+((int)g->left+(int)col)*64)*width+natural/2)/natural;
-    if(right>left)home_fill(origin+left,yscale(baseline)+g->top+(int)row,right-left,1,true);
+    if(right>left)home_fill(origin+left,home_view_y(baseline)+g->top+(int)row,right-left,1,black);
    }
   }
   pen+=g->advance_q6;previous=c;
  }
+}
+static void home_type(const home_font *font,int x,int baseline,const char *value,int tracking,int align,int limit,int target) {
+ home_type_ink(font,x,baseline,value,tracking,align,limit,target,true);
 }
 static void home_round(int x,int y,int width,int height,int radius,bool black) {
  /* Scanline raster of the source's rounded rectangle; no fake-gray edges. */
@@ -74,10 +100,10 @@ static void home_round(int x,int y,int width,int height,int radius,bool black) {
   int cy=row<radius?2*radius-2*row-1:row>=height-radius?2*(row-(height-radius))+1:0;
   int inset=0;
   if(cy)while(inset<radius) {int dx=2*radius-2*inset-1;if(dx*dx+cy*cy<=4*radius*radius)break;inset++;}
-  home_fill(xscale(x+inset),yscale(y+row),xscale(width-2*inset),yscale(1),black);
+  home_fill(home_view_x(x+inset),home_view_y(y+row),home_view_width(width-2*inset),home_view_height(1),black);
  }
 }
-static void home_battery(void) {
+static inline void home_battery(void) {
  char value[12];
  if(battery_status.valid)snprintf(value,sizeof(value),"%u%%%s",battery_status.percent,battery_status.charging?" +":"");
  else strcpy(value,"--%");
@@ -89,7 +115,7 @@ static void home_battery(void) {
  }
 }
 
-static void home_dial(bool known,unsigned minute) {
+static inline void home_dial(bool known,unsigned minute) {
  for(unsigned i=0;i<60;i++) {
   const home_tick *t=&home_ticks[i*2+(known&&i<=minute?1:0)];
   for(unsigned row=0;row<t->height;row++) {

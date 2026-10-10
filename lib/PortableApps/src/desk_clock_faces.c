@@ -130,22 +130,24 @@ bool portable_desk_draw_face(const portable_desk_canvas *canvas, unsigned face,
     rect(p, 0, 0, width, height, false);
     int hour = use12_hour ? (hour24 % 12 == 0 ? 12 : hour24 % 12) : hour24;
     if (face == PORTABLE_DESK_SEGMENTS || !valid) {
-        int unit = maximum(4, minimum((width - 96) / 29, (height - 200) / 10));
-        int left = (width - 29 * unit) / 2, top = (height - 10 * unit) / 2;
+        bool short_hour=valid && hour<10;
+        int columns=short_hour?22:29, shift=short_hour?7:0;
+        int unit = maximum(4, minimum((width - 96) / columns, (height - 200) / 10));
+        int left = (width - columns * unit) / 2, top = (height - 10 * unit) / 2;
         const int values[] = {hour / 10, hour % 10, minute / 10, minute % 10};
         const int positions[] = {0, 7, 16, 23};
         for (int i = 0; i < 4; ++i) {
-            if (i == 0 && valid && use12_hour && hour < 10) continue;
-            digit(p, valid ? values[i] : -1, left + positions[i] * unit, top, unit);
+            if (i == 0 && short_hour) continue;
+            digit(p, valid ? values[i] : -1, left + (positions[i]-shift) * unit, top, unit);
         }
-        rect(p, left + 14 * unit, top + 3 * unit, unit, unit, true);
-        rect(p, left + 14 * unit, top + 6 * unit, unit, unit, true);
+        rect(p, left + (14-shift) * unit, top + 3 * unit, unit, unit, true);
+        rect(p, left + (14-shift) * unit, top + 6 * unit, unit, unit, true);
         return p->ok;
     }
     if (face == PORTABLE_DESK_SANS || face == PORTABLE_DESK_SERIF) {
         bool serif = face == PORTABLE_DESK_SERIF;
         const int values[] = {hour / 10, hour % 10, 10, minute / 10, minute % 10};
-        int first = use12_hour && hour < 10 ? 1 : 0, natural_width = 0;
+        int first = hour < 10 ? 1 : 0, natural_width = 0;
         for (int i = first; i < 5; ++i) natural_width += numeral_width(values[i], 224, serif) + 12;
         natural_width -= 12;
         int size = minimum(224, minimum(height - 200, (width - 96) * 224 / natural_width));

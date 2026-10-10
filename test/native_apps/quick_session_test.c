@@ -6,8 +6,8 @@
 #include <string.h>
 
 typedef struct {uint8_t bytes[8];uint32_t size;bool present;} record;
-static record records[4];static bool time_format_24;
-static unsigned put_count[4],get_count[4],grants,releases,hardware,calls;
+static record records[5];static bool time_format_24;
+static unsigned put_count[5],get_count[5],grants,releases,hardware,calls;
 static bool unavailable,invalid_api,release_fail,hardware_fail;
 static int fail_get_key=-1,fail_after_put_key=-1,fail_put_key=-1,committed_io_key=-1,mismatch_key=-1;
 static char write_order[16];static unsigned order_count;
@@ -16,6 +16,7 @@ static int index_for(const char *key){
  if(!strcmp(key,PQA_VOLUME_KEY))return 1;
  if(!strcmp(key,PQA_RESTORE_VOLUME_KEY))return 2;
  if(!strcmp(key,PQA_DND_KEY))return 3;
+ if(!strcmp(key,PQA_RESTORE_BRIGHTNESS_KEY))return 4;
  assert(!strcmp(key,PORTABLE_TIME_FORMAT_KEY));return -1;
 }
 static int32_t get(void *c,const char *key,void *out,uint32_t capacity,uint32_t *size){

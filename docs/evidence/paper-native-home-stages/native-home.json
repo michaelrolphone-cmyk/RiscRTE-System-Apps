@@ -1,0 +1,175 @@
+{
+  "hardware": "not run",
+  "stage_logs": true,
+  "alarm_api": 2,
+  "cases": [
+    {
+      "case": "home-ready",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground home-ready PASS (7 grants max, 3 native reads)\nHome snapshot: copies=1 frames=5 prior=1 absent=0"
+    },
+    {
+      "case": "home-ready",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground home-ready PASS (7 grants max, 3 native reads)\nHome snapshot: copies=0 frames=2 prior=1 absent=1"
+    },
+    {
+      "case": "cold",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground cold PASS (7 grants max, 2 native reads)\nHome snapshot: copies=1 frames=3 prior=0 absent=0"
+    },
+    {
+      "case": "cold",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground cold PASS (7 grants max, 2 native reads)\nHome snapshot: copies=0 frames=3 prior=0 absent=1"
+    },
+    {
+      "case": "terminal",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse terminal PASS (6 grants max, 3 native reads)\nHome snapshot: copies=0 frames=1 prior=0 absent=0"
+    },
+    {
+      "case": "terminal",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse terminal PASS (6 grants max, 3 native reads)\nHome snapshot: copies=0 frames=1 prior=0 absent=1"
+    },
+    {
+      "case": "home-quick-top",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-top PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=1000 closed_ms=3312 restored_frame=10 frames=11 logs=107 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=11 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-top",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-top PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=580 closed_ms=2892 restored_frame=7 frames=8 logs=59 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=8 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-swipe",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-swipe PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=780 closed_ms=3312 restored_frame=9 frames=10 logs=96 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=10 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-swipe",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-swipe PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=360 closed_ms=2892 restored_frame=6 frames=7 logs=51 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=7 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-slow",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-slow PASS (7 grants max, 8 native reads)\nHome controls: opened_ms=1740 closed_ms=5452 restored_frame=9 frames=10 logs=99 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=10 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-slow",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-slow PASS (7 grants max, 7 native reads)\nHome controls: opened_ms=1020 closed_ms=4732 restored_frame=7 frames=8 logs=59 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=8 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-interrupt",
+      "extension": "present",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-interrupt PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=140 closed_ms=2752 restored_frame=7 frames=8 logs=80 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=8 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-interrupt",
+      "extension": "absent",
+      "sanitized": false,
+      "result": "Sparse foreground home-quick-interrupt PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=140 closed_ms=2752 restored_frame=6 frames=7 logs=51 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=7 prior=1 absent=1"
+    },
+    {
+      "case": "home-ready",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground home-ready PASS (7 grants max, 3 native reads)\nHome snapshot: copies=1 frames=5 prior=1 absent=0"
+    },
+    {
+      "case": "home-ready",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground home-ready PASS (7 grants max, 3 native reads)\nHome snapshot: copies=0 frames=2 prior=1 absent=1"
+    },
+    {
+      "case": "cold",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground cold PASS (7 grants max, 2 native reads)\nHome snapshot: copies=1 frames=3 prior=0 absent=0"
+    },
+    {
+      "case": "cold",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground cold PASS (7 grants max, 2 native reads)\nHome snapshot: copies=0 frames=3 prior=0 absent=1"
+    },
+    {
+      "case": "terminal",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse terminal PASS (6 grants max, 3 native reads)\nHome snapshot: copies=0 frames=1 prior=0 absent=0"
+    },
+    {
+      "case": "terminal",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse terminal PASS (6 grants max, 3 native reads)\nHome snapshot: copies=0 frames=1 prior=0 absent=1"
+    },
+    {
+      "case": "home-quick-top",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-top PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=1000 closed_ms=3312 restored_frame=10 frames=11 logs=107 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=11 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-top",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-top PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=580 closed_ms=2892 restored_frame=7 frames=8 logs=59 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=8 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-swipe",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-swipe PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=780 closed_ms=3312 restored_frame=9 frames=10 logs=96 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=10 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-swipe",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-swipe PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=360 closed_ms=2892 restored_frame=6 frames=7 logs=51 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=7 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-slow",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-slow PASS (7 grants max, 8 native reads)\nHome controls: opened_ms=1740 closed_ms=5452 restored_frame=9 frames=10 logs=99 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=10 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-slow",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-slow PASS (7 grants max, 7 native reads)\nHome controls: opened_ms=1020 closed_ms=4732 restored_frame=7 frames=8 logs=59 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=8 prior=1 absent=1"
+    },
+    {
+      "case": "home-quick-interrupt",
+      "extension": "present",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-interrupt PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=140 closed_ms=2752 restored_frame=7 frames=8 logs=80 exact_native_Home=1 writes=0\nHome snapshot: copies=1 frames=8 prior=1 absent=0"
+    },
+    {
+      "case": "home-quick-interrupt",
+      "extension": "absent",
+      "sanitized": true,
+      "result": "Sparse foreground home-quick-interrupt PASS (7 grants max, 6 native reads)\nHome controls: opened_ms=140 closed_ms=2752 restored_frame=6 frames=7 logs=51 exact_native_Home=1 writes=0\nHome snapshot: copies=0 frames=7 prior=1 absent=1"
+    }
+  ]
+}

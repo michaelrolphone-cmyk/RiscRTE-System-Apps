@@ -60,12 +60,26 @@ static void fbp_management(void) {
   for(unsigned i=0;i<4;i++)fbp_button(32+(int)i*(w+8),fbp_h()-112,w,88,labels[i],NULL,i==2);
  }else if(fb_mode==FB_DELETE){
   fbp_wrap(32,144,fbp_w()-64,4,fb_selected.is_directory?"Permanently delete this folder and all of its contents?":"Permanently delete this file?",true);
+#ifdef PORTABLE_TOUCH_SCROLL
+  fbp_wrap(32,fbp_h()<700?272:320,fbp_w()-64,fbp_h()<700?3:5,fb_selected.name,true);
+  fbp_wrap(32,fbp_h()-160,fbp_w()-64,1,"This cannot be undone.",true);
+#else
   fbp_wrap(32,320,fbp_w()-64,5,fb_selected.name,true);fbp_wrap(32,512,fbp_w()-64,3,"This cannot be undone.",true);
+#endif
   int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,fb_choice==0);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,"DELETE",NULL,fb_choice==1);
  }else {fbp_wrap(32,144,fbp_w()-64,12,fb_status,true);fbp_button(32,fbp_h()-112,fbp_w()-64,88,"BACK",NULL,false);}
 }
+#ifdef PORTABLE_TOUCH_SCROLL
+#include "file_browser_scroll_view.inc"
+#endif
 static void fbp_draw(void) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ fbs_prepare();fbs_visible();
+#endif
  if(!paper_frame_ready())return;
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(fbs_list_mode()){fbs_draw();return;}
+#endif
  fb_paper->begin();
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME)fbp_keyboard();
  else if(fb_mode>=FB_ACTIONS)fbp_management();
@@ -108,8 +122,15 @@ static void fbp_draw(void) {
   fbp_footer();
  }
  fb_app->present(fbp_clean||fbp_last_mode!=fb_mode);fbp_clean=false;fbp_last_mode=fb_mode;fb_dirty=false;
+#ifdef PORTABLE_TOUCH_SCROLL
+ fbs_record();
+#endif
 }
 static bool fbp_touch(int x,int y) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(!fbs_hit_ready || fbs_hit_generation!=fbs_generation)return false;
+ if(fbs_list_mode())return fbs_touch(x,y);
+#endif
  if(x<32||x>=fbp_w()-32||y<0||y>=fbp_h())return false;
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME) {
   if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;if(x<fbp_w()/2)return fb_back();fb_filter_key(PWK_DONE);return false;}
@@ -137,6 +158,9 @@ static bool fbp_touch(int x,int y) {
  return false;
 }
 static void fbp_input(t5_app_input_t *input) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ fbs_input(input);return;
+#endif
  springboard_contact c={0};fb_paper->contact(&c);
  if(!c.valid||c.cancelled){fbp_contact_down=false;return;}
  if(c.began){fbp_contact_down=true;fbp_start_x=fbp_last_x=c.x;fbp_start_y=fbp_last_y=c.y;}

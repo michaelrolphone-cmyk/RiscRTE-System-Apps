@@ -1,0 +1,70 @@
+{
+  "generator": "scripts/generate_home_reference_assets.py",
+  "license": "Fonts SIL OFL 1.1; dock vectors supplied in the user reference",
+  "fonts": [
+    {
+      "id": "TIME",
+      "file": "Orbitron-reference-900.ttf",
+      "size": 142,
+      "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+    },
+    {
+      "id": "TITLE",
+      "file": "Orbitron-reference-900.ttf",
+      "size": 56,
+      "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+    },
+    {
+      "id": "EVENT",
+      "file": "Orbitron-reference-700.ttf",
+      "size": 26,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "id": "BATTERY",
+      "file": "Orbitron-reference-700.ttf",
+      "size": 18,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "id": "NEXT",
+      "file": "Rajdhani-700.ttf",
+      "size": 20,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "THEN",
+      "file": "Rajdhani-700.ttf",
+      "size": 16,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "DOCK",
+      "file": "Rajdhani-700.ttf",
+      "size": 18,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "FOLLOW",
+      "file": "Rajdhani-700.ttf",
+      "size": 21,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+    },
+    {
+      "id": "DURATION",
+      "file": "Rajdhani-600.ttf",
+      "size": 19,
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da"
+    }
+  ],
+  "reference.inc_sha256": "a345e3ece76cb4d117f27750248c20e97a62a45d2064b57d5cb4453d577cedf7",
+  "source_html_sha256": "5f796971fc4914df2658a0241894d4c43c2dd8b2d0e0dd975b7b4f3f06ccad86",
+  "source": "refined-home-design-library-read.html / Home, 2026-10-09",
+  "icons": {
+    "reference-settings.svg": "46dca323c26ed418debcb738ea15b69fc20df0197e824a8b831afeaf0c3537d5",
+    "reference-files.svg": "c8635fb27feaad341abfd5358575fc43b6002123513b2caaca80fdd3e3427993",
+    "reference-contexts.svg": "8be4ff7f9f668bb056f55373b439dddf31ef5fecb4814e462d5aafb9e8720336",
+    "reference-points.svg": "5192bd9d016d52a729422fac1c6a24381b1b7391f433943b9d2dfd56a0c53589"
+  },
+  "reference_svg_sha256": "7302d644aa70061c68fe7225ad7d8c8e83ba17779e7b304fbd5c00292f8a2691"
+}

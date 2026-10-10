@@ -19,7 +19,8 @@
 #endif
 typedef enum {
     NOVA_POINTS_UNAVAILABLE=0, NOVA_POINTS_READY=1,
-    NOVA_POINTS_EMPTY=2, NOVA_POINTS_ERROR=3
+    NOVA_POINTS_EMPTY=2, NOVA_POINTS_ERROR=3,
+    NOVA_POINTS_PENDING=4 /* Foreground only; never a retained snapshot status. */
 } nova_points_status;
 typedef enum {
     NOVA_POINT_WORK_START=1, NOVA_POINT_WORK_END=2, NOVA_POINT_LUNCH=3,

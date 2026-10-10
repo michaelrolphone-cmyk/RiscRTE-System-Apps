@@ -50,7 +50,9 @@ def build(compiler: str, include: Path, output: Path, manifest: dict,
              'file':elf.name,'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
              'imports':sorted(imports),'exports':sorted(found),
              'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],
-             'defines':defines or [],'physical_testing':'not performed'}
+             'defines':defines or [],'physical_testing':'not performed',
+             'source_sha256':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(sources)|{q for source in sources for q in source.parent.glob('*.inc')})},
+             'sdk_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(include.glob('*.h'))}}
     json_write(output/'build.json',receipt)
     mapping.unlink()
     return receipt

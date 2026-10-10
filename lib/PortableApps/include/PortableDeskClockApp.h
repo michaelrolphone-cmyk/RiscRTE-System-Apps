@@ -50,6 +50,7 @@ bool portable_desk_adapter_foreground(void);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 /* Pure cached classification from the existing boot_read; no extra native read. */
 bool portable_desk_clock_boot_is_cold(void);
+bool portable_desk_clock_boot_is_interactive(void);
 /* Selected deployment only: module init is software-only. Call start in
  * app_main after classifying the boot. TIMER keeps display and alarm.service
  * (including its required closure), never direct input/battery/RTC or radios. */
@@ -68,4 +69,11 @@ bool portable_desk_adapter_timer_only(void);
 /* Foreground toolbar/Quick Actions use the Clock's native UTC/timezone client,
  * never a second direct RTC calendar path. No live grant escapes this call. */
 bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute);
+#endif
+
+#ifdef PORTABLE_DESK_LOCK_HOME
+/* Selected X4 Home policy only; no Runtime exports or new pin authority. */
+bool portable_desk_clock_request_lock(bool enabled);
+bool portable_desk_clock_lock_requested(void);
+bool portable_desk_adapter_landscape(bool landscape,unsigned direction);
 #endif

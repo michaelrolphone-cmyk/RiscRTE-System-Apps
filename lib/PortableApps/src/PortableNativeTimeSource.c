@@ -11,6 +11,9 @@
 #include "PortableRealtimeClient.h"
 #include "PortableTimeZonePreference.h"
 #include <string.h>
+#ifdef PORTABLE_BLE_BROADCAST
+#include "PortableBroadcastClient.h"
+#endif
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
 #error "Native toolbar source requires the complete canonical Runtime retention SDK"
 #endif
@@ -53,6 +56,9 @@ static int32_t zone_get(void *context,const char *key,void *out,uint32_t capacit
   }
 }
 static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule *rule) {
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return false;
+#endif
   zone_grant=(risc_runtime_capability_v1){.struct_size=sizeof(zone_grant)};
   bool ok=runtime->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,
     PORTABLE_TIMEZONE_STORE_INSTANCE,&zone_grant);
@@ -78,15 +84,16 @@ static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule 
   return (status==PORTABLE_TIMEZONE_LOADED || status==PORTABLE_TIMEZONE_MISSING) &&
     portable_timezone_resolve(id,sizeof(id),rule)==PORTABLE_TIMEZONE_OK;
 }
-bool portable_app_native_local_time(twatch_rtc_time_v1 *out) {
+bool portable_app_native_utc_time(int64_t *out) {
   if(!out || portable_adapter_retained())return false;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return false;
+#endif
   const risc_runtime_api_v1 *runtime=risc_runtime_get_api(RISC_RUNTIME_API_V1);
   if(portable_adapter_retained())return false;
   if(!runtime || runtime->api_version!=RISC_RUNTIME_API_V1 ||
      runtime->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE ||
      !runtime->acquire || !runtime->release || !runtime->retain_invocation)return false;
-  portable_timezone_rule rule;
-  if(!load_zone(runtime,&rule))return false;
   int status=portable_realtime_open(&reader,runtime,PORTABLE_REALTIME_READER,
     PORTABLE_REALTIME_TIMER_ONLY,foreground,NULL);
   if(halted(status) || status!=PORTABLE_REALTIME_OK)return false;
@@ -95,8 +102,20 @@ bool portable_app_native_local_time(twatch_rtc_time_v1 *out) {
   if(halted(status))return false;
   int closed=portable_realtime_close(&reader);
   if(halted(closed) || closed!=PORTABLE_REALTIME_OK || status!=PORTABLE_REALTIME_OK)return false;
+  *out=snapshot.epoch_seconds;return true;
+}
+bool portable_app_native_local_time(twatch_rtc_time_v1 *out) {
+  if(!out || portable_adapter_retained())return false;
+  const risc_runtime_api_v1 *runtime=risc_runtime_get_api(RISC_RUNTIME_API_V1);
+  if(!runtime || runtime->api_version!=RISC_RUNTIME_API_V1 ||
+     runtime->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE ||
+     !runtime->acquire || !runtime->release || !runtime->retain_invocation)return false;
+  portable_timezone_rule rule;
+  if(!load_zone(runtime,&rule))return false;
+  int64_t epoch;
+  if(!portable_app_native_utc_time(&epoch))return false;
   portable_timezone_civil civil;
-  if(portable_timezone_utc_to_local(&rule,snapshot.epoch_seconds,&civil,NULL)!=PORTABLE_TIMEZONE_OK)return false;
+  if(portable_timezone_utc_to_local(&rule,epoch,&civil,NULL)!=PORTABLE_TIMEZONE_OK)return false;
   *out=(twatch_rtc_time_v1){(uint16_t)civil.year,civil.month,civil.day,civil.weekday,
     civil.hour,civil.minute,civil.second};
   return true;

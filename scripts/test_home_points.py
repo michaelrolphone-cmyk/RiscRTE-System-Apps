@@ -60,12 +60,12 @@ for case in ('home-ready','home-custom','home-empty','home-invalid','home-unavai
  data=(out/(case+'.pixels')).read_bytes();assert len(data)==48000
  img=Image.frombytes('1',(800,480),data).point(lambda p:255-p).rotate(270,expand=True)
  img.save(out/(case+'.png'))
- assert img.crop((24,744,456,800)).getextrema()==(255,255),case+' instruction footer returned'
+ assert img.crop((24,634,456,774)).getextrema()==(0,255),case+' dock missing'
  assert hashlib.sha256(img.crop(tuple(golden['logical_crop'])).tobytes()).hexdigest()==golden['sha256'][case],case
-subprocess.run(['python3',ROOT/'scripts/compare_home_reference.py','--current',out/'home-ready.png','--output',out/'comparison'],check=True)
+# Refined SVG/font/layout comparison is qualified by test_home_reference.py.
 # A failed launch still surfaces a real, actionable error notice.
 retry=Image.frombytes('1',(800,480),(out/'home-retry.pixels').read_bytes()).point(lambda p:255-p).rotate(270,expand=True)
-assert retry.crop((24,744,456,800)).getextrema()==(0,255)
+assert retry.crop((24,210,456,244)).getextrema()==(0,255)
 # Pixel witnesses: source-backed populated panels differ from empty/unavailable,
 # custom metadata changes the label; empty and corrupt records never look populated.
 images={n:(out/(n+'.pixels')).read_bytes() for n in ('home-ready','home-custom','home-empty','home-invalid','home-unavailable')}

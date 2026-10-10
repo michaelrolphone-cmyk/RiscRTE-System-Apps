@@ -6,11 +6,14 @@
 #undef main
 #include "RiscInputNavigationV1.h"
 extern void app_main(void);
+
+#ifndef TEST_SCROLL_CATALOG
 const t5_app_manifest_t portable_catalog[3]={
  {.display_name="FILES",.file_name="files.elf",.icon="solid:f07c",.compatible=true},
  {.display_name="POINTS",.file_name="points.elf",.icon="solid:f017",.compatible=true},
  {.display_name="SETTINGS",.file_name="settings.elf",.icon="solid:f013",.compatible=true}};
 const unsigned portable_catalog_count=3;
+#endif
 static const char *test_case,*capture_directory;
 static bool is_case(const char *name){return !strcmp(test_case,name);}
 static bool quick_case(void){return !strncmp(test_case,"quick",5)||!strncmp(test_case,"brightness",10);}
@@ -19,6 +22,18 @@ static uint8_t completed_image[48000],queued_image[48000],padded_pixels[104*480]
 static unsigned pending,submitted,complete_count,copies,launch_count,launch_tick,input_reads,bright_value=40;
 static unsigned frame_coverage[64],frame_tick[64];
 static bool alarm_due,alarm_done,stop_seen,fail_allocation;
+#ifdef PORTABLE_STAGE_LOGS
+static unsigned log_statements,log_submitted,log_completed,log_opened,log_closed,log_touches;
+static bool test_diagnostic(const char *line){
+ assert(!strstr(line,"RTE_PERF")&&!strstr(line,"phase="));
+ if(!strncmp(line,"APP t_ms=",9)){
+  unsigned long long stamp;assert(sscanf(line,"APP t_ms=%llu",&stamp)==1&&stamp==ticks&&strlen(line)<224);
+  log_statements++;log_submitted+=strstr(line,"stage=display-submit-end")!=NULL;log_completed+=strstr(line,"stage=display-complete")!=NULL;
+  log_opened+=strstr(line,"name=quick-controls-open")!=NULL;log_closed+=strstr(line,"name=quick-controls-close")!=NULL;log_touches+=strstr(line,"stage=touch-picked-up")!=NULL;
+ }
+ return fx_diagnostic(line);
+}
+#endif
 static unsigned frame_latency=100,screen_stride=100;
 void *__real_malloc(size_t size);
 void *__wrap_malloc(size_t size){assert(!retained);if(fail_allocation){fail_allocation=false;return NULL;}return __real_malloc(size);}
@@ -42,7 +57,12 @@ static bool test_frame(void *c,uint32_t format,risc_display_surface_v1 *out){
 static void test_frame_release(void *c,risc_display_frame_v1 frame){assert(!pending);fx_frame_release(c,frame);}
 static bool test_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,size_t n,
  const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
- assert(!pending&&presents<64);assert(options->intent==RISC_DISPLAY_PRESENT_QUALITY);
+ assert(!pending&&presents<64);
+#ifdef TEST_SCROLL_CATALOG
+ assert(options->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
+#else
+ assert(options->intent==RISC_DISPLAY_PRESENT_QUALITY);
+#endif
  if(is_case("submit-false"))return false;
  if(n){assert(n==1&&damage);for(unsigned y=0;y<480;y++)for(unsigned x=0;x<100;x++)
   if(frame_pixels()[y*screen_stride+x]!=completed_image[y*100+x])
@@ -68,7 +88,13 @@ static bool test_snapshot(void *c,uint32_t format,void *out,size_t size,uint32_t
  for(unsigned y=0;y<480;y++)memcpy((uint8_t*)out+y*stride,completed_image+y*100,100);
  return true;
 }
-static bool test_metrics(void *c,risc_display_present_metrics_v1 *out){(void)c;(void)out;return false;}
+static bool test_metrics(void *c,risc_display_present_metrics_v1 *out){
+ (void)c;io();assert(out->api_version==1&&out->struct_size==sizeof(*out));
+ *out=(risc_display_present_metrics_v1){.api_version=1,.struct_size=sizeof(*out),.token=presents,
+  .state=pending?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE,.bytes_sent=48000,
+  .queued_ms=submitted,.transfer_start_ms=submitted,.transfer_end_ms=ticks,.busy_done_ms=ticks,
+  .effective_update={0,0,800,480}};return true;
+}
 static bool test_seed(void *c,risc_display_frame_v1 frame){(void)c;(void)frame;return false;}
 static int32_t test_power(void *c,uint32_t timeout){(void)c;(void)timeout;return RISC_DISPLAY_POWER_OK;}
 static risc_display_output_api_v1_snapshot test_display;
@@ -131,7 +157,11 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t instance,ris
 static bool test_release(risc_runtime_capability_v1 *grant){assert(!pending);return fx_release(grant);}
 static bool test_launch(const char *path){io();assert(!pending&&!frames);launch_count++;launch_tick=ticks;assert(!paper_handoff_old);assert(path&&*path);return true;}
 static void test_yield(uint32_t delay){immutable_frame();assert(ticks<12000);fx_yield(delay);if(is_case("dropped")&&ticks==120)ticks+=600;}
-int main(int argc,char **argv){
+
+#ifndef PAPER_TRANSITION_MAIN
+#define PAPER_TRANSITION_MAIN main
+#endif
+int PAPER_TRANSITION_MAIN(int argc,char **argv){
  assert(argc==4);test_case=argv[1];capture_directory=argv[3];
  FILE *source=fopen(argv[2],"rb");assert(source);assert(fread(completed_image,1,sizeof(completed_image),source)==sizeof(completed_image));assert(!fclose(source));save_image("outgoing",completed_image);
  test_display.metrics.power.history.base=fx_display;
@@ -151,6 +181,9 @@ int main(int argc,char **argv){
  test_kv=fx_kv;test_kv.put=test_put;test_kv.get=test_get;
  test_alarm=fx_alarm;test_alarm.step=test_alarm_step;test_alarm.status=test_alarm_status;test_alarm.acknowledge=test_alarm_ack;
  fx_runtime.acquire=test_acquire;fx_runtime.release=test_release;fx_runtime.request_launch=test_launch;fx_runtime.yield_ms=test_yield;
+ #ifdef PORTABLE_STAGE_LOGS
+ fx_runtime.diagnostic=test_diagnostic;
+#endif
  assert(!app_module_init());const paper_presentation *view=paper_presentation_get();assert(view);
  if(is_case("oom"))fail_allocation=true;
  if(is_case("repeat")){portable_paper_transition_begin();portable_paper_transition_begin();assert(copies==2&&paper_handoff_old);}
@@ -167,6 +200,10 @@ int main(int argc,char **argv){
  if(is_case("alarm"))assert(alarm_done);
  if(brightness_case()){fprintf(stderr,"brightness fixture writes=%u value=%u calls=%u frames=%u\n",kv_writes,bright_value,brightness_calls,presents);assert(kv_writes==2&&bright_value==50&&brightness_calls>=2);}
  if(is_case("submit-false")||is_case("status-false")||is_case("superseded")||is_case("timeout"))assert(retained&&!launch_count);
+ #ifdef PORTABLE_STAGE_LOGS
+ assert(log_statements&&log_submitted==presents&&log_completed==complete_count&&log_touches<=input_reads);
+ if(quick_case())assert(log_opened==log_closed&&log_opened==(is_case("quick-repeat")?2u:1u));
+#endif
  printf("{\"case\":\"%s\",\"frames\":%u,\"completed\":%u,\"snapshot_copies\":%u,\"input_reads\":%u,\"launch_ms\":%u,\"brightness\":%u,\"writes\":%u,\"retained\":%s}\n",test_case,presents,complete_count,copies,input_reads,launch_tick,bright_value,kv_writes,retained?"true":"false");
  return 0;
 }

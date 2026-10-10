@@ -1,3 +1,6 @@
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return -1;
+#endif
 /* Included at the legacy init point or explicit native Settings app_main start. */
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
@@ -12,6 +15,10 @@
       !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
                                  RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
+#ifdef PORTABLE_USB_TRANSFER_APP
+  /* A blocking panel wait would starve the owner-task USB service. */
+  if(!(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT))return -1;
+#endif
   surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
     RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
@@ -89,6 +96,16 @@
   quick.ui.paper=pp_enabled();
   if(!pqa_session_load(&quick,rt))return -1;
   quick_paper_capabilities();
+#ifdef PORTABLE_FRONTLIGHT_TONE
+  if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+   /* A refused provider operation may already own terminal custody. */
+   portable_adapter_retain_silent();
+#else
+   portable_adapter_retain();
+#endif
+   return -1;}
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
 #ifdef PORTABLE_DESK_CLOCK
   desk_radios_loaded=false;
@@ -96,5 +113,8 @@
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
 #endif
 #endif
+#endif
+#if defined(PORTABLE_CONTEXTS_CLIENT) && defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+  if(!contexts_controls_load())return -1;
 #endif
   return failed?-1:0;

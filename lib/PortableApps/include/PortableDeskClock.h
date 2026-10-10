@@ -8,17 +8,30 @@
 #include <stdint.h>
 #include <string.h>
 #define PORTABLE_DESK_CLOCK_RECORD_TYPE UINT32_C(0x44434c4b)
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+#include "PortableDeskPointsSnapshot.h"
+#include "PortableTimeZone.h"
+#define PORTABLE_DESK_CLOCK_RECORD_SCHEMA 3u
+#define PORTABLE_DESK_CLOCK_RECORD_BYTES 408u
+#else
 #define PORTABLE_DESK_CLOCK_RECORD_SCHEMA 1u
 #define PORTABLE_DESK_CLOCK_RECORD_BYTES 80u
+#endif
 #define PORTABLE_DESK_CLOCK_FULL_PERIOD 30u
 #define PORTABLE_DESK_CLOCK_MAX_PRESENTS 3u
 enum { PORTABLE_DESK_SEGMENTS, PORTABLE_DESK_SANS, PORTABLE_DESK_SERIF,
        PORTABLE_DESK_MINIMAL, PORTABLE_DESK_RAILWAY, PORTABLE_DESK_DECO,
+#ifdef PORTABLE_DESK_POINTS_FACE
+       PORTABLE_DESK_POINTS,
+#endif
        PORTABLE_DESK_FACE_COUNT };
 typedef struct {
     uint8_t face, time_format, language, flip_ui, rtc_stores_utc, rtc_variant;
     uint32_t rtc_reference_epoch;
     char time_zone[40];
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+    portable_desk_points_snapshot points;
+#endif
 } portable_desk_config;
 typedef struct {
     portable_desk_config config;
@@ -40,6 +53,9 @@ enum { PORTABLE_DESK_STOP=-1, PORTABLE_DESK_REPAINT=0, PORTABLE_DESK_READY=1 };
 static inline bool portable_desk_config_valid(const portable_desk_config *c) {
     if(!c || c->face>=PORTABLE_DESK_FACE_COUNT || c->time_format>1u ||
        c->language>=PORTABLE_READER_LANGUAGE_COUNT || c->flip_ui>1u || c->rtc_stores_utc>1u)return false;
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+    if(!portable_desk_points_valid(&c->points))return false;
+#endif
     bool ended=false;
     for(unsigned i=0;i<sizeof(c->time_zone);++i){
         unsigned char b=(unsigned char)c->time_zone[i];
@@ -53,7 +69,12 @@ static inline bool portable_desk_same_config(const portable_desk_config *a,const
     return a->face==b->face && a->time_format==b->time_format && a->language==b->language &&
         a->flip_ui==b->flip_ui && a->rtc_stores_utc==b->rtc_stores_utc &&
         a->rtc_variant==b->rtc_variant && a->rtc_reference_epoch==b->rtc_reference_epoch &&
-        !memcmp(a->time_zone,b->time_zone,sizeof(a->time_zone));
+        !memcmp(a->time_zone,b->time_zone,sizeof(a->time_zone))
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+        && a->points.status==b->points.status &&
+        (a->points.status!=PORTABLE_DESK_POINTS_READY || !memcmp(&a->points.view,&b->points.view,sizeof(a->points.view)))
+#endif
+        ;
 }
 /* 2^32 modulo 60 is 16. This fixed-width reduction avoids new 64-bit
  * compiler-helper imports in a freestanding Xtensa application. */
@@ -69,20 +90,31 @@ static inline bool portable_desk_record_valid(const portable_desk_record *r) {
 static inline bool portable_desk_encode(const portable_desk_record *r,uint8_t *out,size_t size) {
     if(!out || size!=PORTABLE_DESK_CLOCK_RECORD_BYTES || !portable_desk_record_valid(r))return false;
     uint8_t bytes[PORTABLE_DESK_CLOCK_RECORD_BYTES]={0};
-    memcpy(bytes,"DCLK",4);bytes[4]=1;bytes[5]=1;
+    memcpy(bytes,"DCLK",4);bytes[4]=PORTABLE_DESK_CLOCK_RECORD_SCHEMA;bytes[5]=1;
     bytes[6]=r->config.face;bytes[7]=r->config.time_format;bytes[8]=r->config.language;
     bytes[9]=r->config.flip_ui;bytes[10]=r->config.rtc_stores_utc;bytes[11]=r->config.rtc_variant;
     for(unsigned i=0;i<4;++i)bytes[12+i]=(uint8_t)(r->config.rtc_reference_epoch>>(8u*i));
     uint32_t low=(uint32_t)r->displayed_minute,high=(uint32_t)((uint64_t)r->displayed_minute>>32);
     for(unsigned i=0;i<4;++i){bytes[16+i]=(uint8_t)(low>>(8u*i));bytes[20+i]=(uint8_t)(high>>(8u*i));}
-    bytes[24]=r->refresh_modulo;memcpy(bytes+32,r->config.time_zone,40);
+    bytes[24]=r->refresh_modulo;
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+    bytes[25]=r->config.points.status;memcpy(bytes+32,r->config.time_zone,40);
+    if(!portable_desk_points_encode(&r->config.points,bytes+80))return false;
+#else
+    memcpy(bytes+32,r->config.time_zone,40);
+#endif
     memcpy(out,bytes,sizeof(bytes));return true;
 }
 static inline bool portable_desk_decode(const uint8_t *bytes,size_t size,portable_desk_record *out) {
     if(!bytes || !out || size!=PORTABLE_DESK_CLOCK_RECORD_BYTES || memcmp(bytes,"DCLK",4) ||
-       bytes[4]!=1 || bytes[5]!=1)return false;
+       bytes[4]!=PORTABLE_DESK_CLOCK_RECORD_SCHEMA || bytes[5]!=1)return false;
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+    for(unsigned i=26;i<32;i++)if(bytes[i])return false;
+    for(unsigned i=72;i<80;i++)if(bytes[i])return false;
+#else
     for(unsigned i=25;i<32;++i)if(bytes[i])return false;
     for(unsigned i=72;i<80;++i)if(bytes[i])return false;
+#endif
     portable_desk_record r={0};uint32_t low=0,high=0;
     r.config.face=bytes[6];r.config.time_format=bytes[7];r.config.language=bytes[8];
     r.config.flip_ui=bytes[9];r.config.rtc_stores_utc=bytes[10];r.config.rtc_variant=bytes[11];
@@ -91,7 +123,12 @@ static inline bool portable_desk_decode(const uint8_t *bytes,size_t size,portabl
     uint64_t epoch=((uint64_t)high<<32)|low;
     if(epoch>INT64_MAX)return false;
     r.displayed_minute=(int64_t)epoch;r.refresh_modulo=bytes[24];r.has_image=true;
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
     memcpy(r.config.time_zone,bytes+32,40);
+    if(!portable_desk_points_decode(bytes[25],bytes+80,&r.config.points))return false;
+#else
+    memcpy(r.config.time_zone,bytes+32,40);
+#endif
     if(!portable_desk_record_valid(&r))return false;
     *out=r;return true;
 }

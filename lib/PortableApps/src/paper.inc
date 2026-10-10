@@ -73,7 +73,13 @@ static bool pp_battery(uint8_t *percent,bool *charging) {
 }
 static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock,pp_battery};
 static bool pp_enabled(void) {
-  return width()>=400 && width()<=600 && height()>=600 && height()>width() &&
+  return ((width()>=400 && width()<=600 && height()>=600 && height()>width())
+#ifdef PORTABLE_DESK_LOCK_HOME
+    /* The selected desk scene rotates the same native X4 surface. It must
+     * remain eligible for its next minute and for restoring portrait Home. */
+    || (width()==800 && height()==480)
+#endif
+    ) &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
 }
@@ -92,3 +98,15 @@ const paper_presentation *paper_presentation_get(void) {
 #endif
   nova_mode=true;memset(&nova_contact,0,sizeof(nova_contact));return &pp_view;
 }
+
+#ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
+/* The selected foreground session already loaded and released app settings.
+ * Reading its confirmed value adds no grant, I/O, or renderer-side custody. */
+bool portable_springboard_hour_24(void) {
+#ifdef PORTABLE_QUICK_ACTIONS
+  return quick.loaded && quick.hour_24;
+#else
+  return false;
+#endif
+}
+#endif

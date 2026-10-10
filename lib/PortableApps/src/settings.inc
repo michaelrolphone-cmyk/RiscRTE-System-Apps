@@ -5,6 +5,11 @@
 #ifndef PORTABLE_SETTINGS_VERSION
 #define PORTABLE_SETTINGS_VERSION "dev"
 #endif
+#if defined(PORTABLE_SETTINGS_HOME_DESK_LOCK) && \
+    (!defined(PORTABLE_SETTINGS_NATIVE_TIME) || !defined(PORTABLE_SETTINGS_X4_DESK_CLOCK) || \
+     !defined(PORTABLE_SLEEP_SETTINGS) || (!defined(PORTABLE_PAPER_TRANSITIONS) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || !defined(PORTABLE_TOUCH_SCROLL))
+#error "Home desk-lock Settings requires the combined native paper scrolling profile"
+#endif
 
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
 static risc_runtime_capability_v1 rtc_grant;
@@ -23,6 +28,9 @@ static int stz_status;
 static const char *stz_message;
 static void stz_redraw(void);
 static bool stz_poll(t5_app_input_t *out);
+#ifdef PORTABLE_TOUCH_SCROLL
+static void stz_scroll_reset(unsigned page);
+#endif
 #endif
 static unsigned time_format_mode, time_format_choice;
 static int time_format_status;
@@ -105,7 +113,19 @@ static bool alert_unconfirmed;
 #define SETTINGS_FACE_ROW SETTINGS_NON_FACE_ROW_COUNT
 #define SETTINGS_FLIP_ROW (SETTINGS_NON_FACE_ROW_COUNT+1u)
 #define SETTINGS_LANGUAGE_ROW (SETTINGS_NON_FACE_ROW_COUNT+2u)
-#define SETTINGS_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+3u)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) && (defined(PORTABLE_PAPER_TRANSITIONS) || defined(PORTABLE_RESIDENT_SHELL_CLIENT))
+#define PORTABLE_SETTINGS_DESK_DIRECTION
+#define SETTINGS_DESK_DIRECTION_ROW (SETTINGS_NON_FACE_ROW_COUNT+3u)
+#define SETTINGS_CORE_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+4u)
+static unsigned desk_direction_choice;
+static const char *desk_direction_message;
+static bool desk_direction_unconfirmed;
+static const char *settings_desk_direction_name(unsigned direction) {
+  return direction?"Landscape right":"Landscape left";
+}
+#else
+#define SETTINGS_CORE_ROW_COUNT (SETTINGS_NON_FACE_ROW_COUNT+3u)
+#endif
 static unsigned reader_choice;
 static const char *reader_message;
 static bool reader_unconfirmed[2];
@@ -113,7 +133,21 @@ static unsigned face_choice;
 static const char *face_message;
 static bool face_unconfirmed;
 #else
-#define SETTINGS_ROW_COUNT SETTINGS_NON_FACE_ROW_COUNT
+#define SETTINGS_CORE_ROW_COUNT SETTINGS_NON_FACE_ROW_COUNT
+#endif
+#if defined(PORTABLE_LOW_BATTERY) || (defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_RESIDENT_POLICY))
+#define PORTABLE_SETTINGS_SLEEP_TIMER
+#define SETTINGS_TIMER_ROW SETTINGS_CORE_ROW_COUNT
+#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
+#else
+#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
+#endif
+static bool timer_deep;
+static uint32_t timer_choice;
+static const char *timer_message="";
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_CORE_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
@@ -147,9 +181,14 @@ static uint32_t calendar_seconds(const twatch_rtc_time_v1 *t) {
 static uint8_t calendar_weekday(const twatch_rtc_time_v1 *t) {
   return (uint8_t)((calendar_day_index(t) + 6) % 7); /* 2000-01-01 was Saturday. */
 }
+#ifdef PORTABLE_UNPADDED_HOURS
+#define SETTINGS_HOUR_SPEC "%u"
+#else
+#define SETTINGS_HOUR_SPEC "%02u"
+#endif
 static inline void format_wall_time(char *out, size_t capacity, const twatch_rtc_time_v1 *t) {
   if(settings_hour_24()) {
-    snprintf(out,capacity,"%02u:%02u:%02u",(unsigned)t->hour,(unsigned)t->minute,(unsigned)t->second);
+    snprintf(out,capacity,SETTINGS_HOUR_SPEC ":%02u:%02u",(unsigned)t->hour,(unsigned)t->minute,(unsigned)t->second);
     return;
   }
   unsigned hour = t->hour % 12;
@@ -172,7 +211,11 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
   static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
 #ifdef PORTABLE_SLEEP_SETTINGS
+#ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
+    "Top-right key",
+#else
     "Clock Sleep Mode",
+#endif
 #endif
     "About"
 #ifdef PORTABLE_ALARM_SETTINGS
@@ -180,9 +223,32 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
     ,"Clock face","Flip UI 180°","Language"
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+    ,"Desk orientation"
+#endif
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+    ,"Time to sleep"
+#else
+    ,"Idle sleep timer"
+#endif
+#if !defined(PORTABLE_X4_IDLE_POLICY) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+    ,"Deep sleep timer"
+#endif
 #endif
     };
   strcpy(out->label,names[index]);
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  if(index>=SETTINGS_TIMER_ROW) {
+    uint32_t milliseconds=0;
+    int loaded=portable_sleep_timer_load(settings_store,index==SETTINGS_TIMER_ROW+1u,&milliseconds);
+    out->type=T5_APP_SETTING_ACTION;
+    if(loaded==PORTABLE_SLEEP_INVALID || loaded==PORTABLE_SLEEP_UNAVAILABLE)strcpy(out->value,"Unconfirmed");
+    else snprintf(out->value,sizeof(out->value),"%lu seconds",(unsigned long)(milliseconds/1000u));
+    return true;
+  }
+#endif
   if(index==0) {
     out->type=T5_APP_SETTING_ACTION;
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
@@ -193,7 +259,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     twatch_rtc_time_v1 raw,local;
     if(rtc && rtc->read(rtc->context,&raw) && portable_time_forward(&raw,&local)) {
 #endif
-      if(settings_hour_24())snprintf(out->value,sizeof(out->value),"%02u:%02u",(unsigned)local.hour,(unsigned)local.minute);
+      if(settings_hour_24())snprintf(out->value,sizeof(out->value),SETTINGS_HOUR_SPEC ":%02u",(unsigned)local.hour,(unsigned)local.minute);
       else {
         unsigned h=local.hour%12;
         snprintf(out->value,sizeof(out->value),"%u:%02u %s",h?h:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
@@ -235,6 +301,11 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   }
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(index==4) {
+#ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
+    /* Home's top-right key has a fixed desk-lock policy. Keep the stored
+     * preference untouched for builds that still offer a sleep choice. */
+    strcpy(out->value,"Desk clock");
+#else
     unsigned mode;int loaded=settings_sleep_load(&mode);
     out->type=T5_APP_SETTING_ACTION;
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
@@ -245,6 +316,7 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
     if(loaded==PORTABLE_SLEEP_LOADED&&mode==PORTABLE_SLEEP_DEEP){strcpy(out->value,"Deep Desk Clock");return true;}
 #endif
     strcpy(out->value,loaded==PORTABLE_SLEEP_UNAVAILABLE?"Unavailable":mode==PORTABLE_SLEEP_DEEP?"Deep":mode==PORTABLE_SLEEP_LIGHT?"Light":"Light then Deep");
+#endif
   }
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
@@ -261,9 +333,10 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
   else if(index==SETTINGS_FACE_ROW) {
     unsigned face;int loaded=portable_desk_face_load(settings_store,&face);
     out->type=T5_APP_SETTING_ACTION;
-    strcpy(out->value,face_unconfirmed?"Unconfirmed":loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable":
-        loaded==PORTABLE_DESK_FACE_INVALID?"Segments (invalid saved)":
-        loaded==PORTABLE_DESK_FACE_MISSING?"Segments (default)":portable_desk_face_name(face));
+    if(face_unconfirmed || loaded==PORTABLE_DESK_FACE_UNAVAILABLE)
+      strcpy(out->value,face_unconfirmed?"Unconfirmed":"Unavailable");
+    else snprintf(out->value,sizeof(out->value),"%s%s",portable_desk_face_name(face),
+      loaded==PORTABLE_DESK_FACE_INVALID?" (invalid saved)":loaded==PORTABLE_DESK_FACE_MISSING?" (default)":"");
   }
   else if(index==SETTINGS_FLIP_ROW || index==SETTINGS_LANGUAGE_ROW) {
     bool language=index==SETTINGS_LANGUAGE_ROW;unsigned value;
@@ -274,6 +347,16 @@ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out)
       loaded==PORTABLE_READER_INVALID?"Invalid saved value":
       language?portable_reader_language_name(value):value?"On":"Off");
   }
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  else if(index==SETTINGS_DESK_DIRECTION_ROW) {
+    unsigned direction;int loaded=portable_desk_direction_load(settings_store,&direction);
+    out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,desk_direction_unconfirmed?"Unconfirmed":
+      loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable":
+      loaded==PORTABLE_DESK_FACE_INVALID?"Invalid saved value":
+      loaded==PORTABLE_DESK_FACE_MISSING?"Landscape left (default)":settings_desk_direction_name(direction));
+  }
+#endif
 #endif
   else {out->type=T5_APP_SETTING_ACTION;strcpy(out->value,PORTABLE_SETTINGS_VERSION);}
   return true;
@@ -324,11 +407,22 @@ static void settings_render(uint32_t category,int32_t selected) {
   (void)category;
   bool changed=sv_selected!=(unsigned)selected;
   sv_selected=selected<0?0:(unsigned)selected;list_mode=true;sv_active=true;
-  if(pp_enabled() && changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
+  if(pp_enabled() && changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+     && !sp_root_touch_selection
+#endif
+     ) {
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    sp_scroll_reveal(SV_ROOT,(unsigned)selected-1);
+#else
     unsigned row=(unsigned)selected-1,rows=sp_rows();
     if(row<sp_first)sp_first=row;
     else if(row>=sp_first+rows)sp_first=row-rows+1;
+#endif
   }
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  sp_root_touch_selection=false;
+#endif
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
@@ -357,7 +451,11 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
 #endif
 static void editor_select_field(unsigned field) {
   editor_field=field;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  if(pp_enabled()&&field<6)sp_scroll_reveal(SV_FIELDS,field);
+#else
   if(pp_enabled()&&field<6){unsigned rows=sp_rows();if(field<sp_field_first)sp_field_first=field;else if(field>=sp_field_first+rows)sp_field_first=field-rows+1;}
+#endif
   if(field<6) {
     int y=60+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
     if(y<60)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
@@ -400,8 +498,48 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(failed)return T5_APP_SETTING_ERROR;
 #endif
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
+#ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
+  if(index==4)return T5_APP_SETTING_NO_CHANGE;
+#endif
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(index==1)return stz_activate();
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  if(index>=SETTINGS_TIMER_ROW) {
+    timer_deep=index==SETTINGS_TIMER_ROW+1u;
+    int loaded=portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+    timer_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":loaded==PORTABLE_SLEEP_INVALID?"Invalid: default shown":"";
+    sv_switch(SV_TIMER);bool armed=false;t5_app_input_t input;uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons&&!input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=!!(input.buttons&T5_APP_BUTTON_CONFIRM);
+      bool down=!!(input.buttons&(T5_APP_BUTTON_LEFT|T5_APP_BUTTON_DOWN));
+      bool up=!!(input.buttons&(T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP));
+      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,20,88,64,44))down=true;
+      if(input.tapped&&sv_inside(input.touch_x,input.touch_y,156,88,64,44))up=true;
+      if(down||up) {
+        uint32_t step=timer_deep?60000u:5000u;
+        timer_choice=down?(timer_choice<=2u*step?step:timer_choice-step):
+            (timer_choice>=3600000u-step?3600000u:timer_choice+step);
+      }
+      if(save) {
+        if(portable_sleep_timer_save(settings_store,timer_deep,timer_choice)) {
+#ifdef PORTABLE_LOW_BATTERY
+          if(!pqa_session_load(&quick,rt)){failed=true;break;}
+#endif
+          result=T5_APP_SETTING_UPDATED;break;
+        }
+        (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+        timer_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Timer saved":"";
+    sv_switch(SV_ROOT);return result;
+  }
 #endif
   if(index==2) {
     settings_time_format_load();time_format_choice=time_format_mode;
@@ -522,6 +660,39 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   }
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  if(index==SETTINGS_DESK_DIRECTION_ROW) {
+    int loaded=portable_desk_direction_load(settings_store,&desk_direction_choice);
+    desk_direction_message=desk_direction_unconfirmed?"Save unconfirmed - retry":
+      loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Storage unavailable":
+      loaded==PORTABLE_DESK_FACE_INVALID?"Invalid saved - choose direction":
+      loaded==PORTABLE_DESK_FACE_MISSING?"Landscape left is the default":"";
+    sv_switch(SV_DESK_DIRECTION);bool armed=false;t5_app_input_t input;
+    uint8_t result=T5_APP_SETTING_NO_CHANGE;
+    while(poll(&input,20)) {
+      if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK))break;
+      if(!input.buttons && !input.tapped){armed=true;continue;}
+      if(!armed)continue;
+      armed=false;
+      bool save=(input.buttons&T5_APP_BUTTON_CONFIRM)!=0;
+      if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))desk_direction_choice^=1u;
+      else if(input.tapped) {
+        if(sv_inside(input.touch_x,input.touch_y,28,76,184,32))desk_direction_choice=0;
+        else if(sv_inside(input.touch_x,input.touch_y,28,124,184,32))desk_direction_choice=1;
+      }
+      if(save) {
+        if(portable_desk_direction_save(settings_store,desk_direction_choice)) {
+          desk_direction_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+        }
+        desk_direction_unconfirmed=true;desk_direction_message="Save unconfirmed - retry";
+      }
+      settings_view_redraw();
+    }
+    settings_message=result==T5_APP_SETTING_UPDATED?"Desk orientation saved":
+      desk_direction_unconfirmed?"Save unconfirmed - retry":"";
+    sv_switch(SV_ROOT);return result;
+  }
+#endif
   if(index==SETTINGS_FLIP_ROW || index==SETTINGS_LANGUAGE_ROW) {
     bool language=index==SETTINGS_LANGUAGE_ROW;unsigned count=language?PORTABLE_READER_LANGUAGE_COUNT:2u;
     int loaded=portable_reader_preference_load(settings_store,language,&reader_choice);
@@ -554,9 +725,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(index==SETTINGS_FACE_ROW) {
     int loaded=portable_desk_face_load(settings_store,&face_choice);
     face_message=face_unconfirmed?"Save unconfirmed - retry":
-        loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable: Segments default":
-        loaded==PORTABLE_DESK_FACE_INVALID?"Invalid: Segments default":
-        loaded==PORTABLE_DESK_FACE_MISSING?"Missing: Segments default":"";
+        loaded==PORTABLE_DESK_FACE_UNAVAILABLE?"Unavailable: default shown":
+        loaded==PORTABLE_DESK_FACE_INVALID?"Invalid saved value - default shown":
+        loaded==PORTABLE_DESK_FACE_MISSING?"Missing: default selected":"";
     sv_switch(SV_DESK_FACE);bool armed=false;t5_app_input_t input;
     uint8_t result=T5_APP_SETTING_NO_CHANGE;
     while(poll(&input,20)) {
@@ -602,6 +773,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     snt_snapshot_status==PORTABLE_REALTIME_UNSET?"Native unset - edit then Save":"Native unavailable - edit draft";
 #else
   editor_message=readable?portable_time_zone():"Unset - edit then SAVE";
+#endif
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  sp_scroll[1].position_q8=0;
 #endif
   editor_field=0;sv_scroll[1]=0;sp_field_first=0;sv_switch(SV_FIELDS);
   uint8_t result=T5_APP_SETTING_NO_CHANGE;bool armed=false;t5_app_input_t input;
@@ -664,8 +838,13 @@ T5_APP_SETTING_UPDATED;break;}
 }
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
   if(pp_enabled()) {
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    if(!category||!selected||sp_touch_row<0)return T5_APP_SETTING_NO_CHANGE;
+    unsigned row=(unsigned)sp_touch_row;sp_touch_row=-1;sp_root_touch_selection=true;
+#else
     if(!category||!selected||x<32||x>=width()-32||y<SP_TOP||y>=SP_TOP+(int)sp_rows()*SP_ROW)return T5_APP_SETTING_NO_CHANGE;
     unsigned row=sp_first+(unsigned)(y-SP_TOP)/SP_ROW;if(row>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_NO_CHANGE;
+#endif
     *category=0;*selected=(int32_t)row+1;return settings_activate(0,row);
   }
   if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
@@ -682,6 +861,10 @@ static bool settings_open(void) {
 #endif
   back_exits_app=true;settings_message="";
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;sp_first=sp_field_first=0;sp_clean=true;sp_dirty=false;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  memset(sp_scroll,0,sizeof(sp_scroll));sp_submitted_page=sp_completed_page=~0u;
+  sp_touch_row=-1;sp_hit_ready=sp_root_touch_selection=false;
+#endif
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {
@@ -690,6 +873,10 @@ static bool settings_open(void) {
   settings_time_format_load();
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   stz_choice=stz_region=stz_selected=stz_first=0;stz_unconfirmed=false;stz_message="";
+#ifdef PORTABLE_TOUCH_SCROLL
+  stz_scroll=(portable_touch_scroll){0};stz_submitted_page=stz_completed_page=~0u;
+  stz_touch_row=-1;raster_clip_active=false;
+#endif
 #endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   sleep_choice=SETTINGS_SLEEP_DEFAULT;sleep_message="";
@@ -700,8 +887,11 @@ static bool settings_open(void) {
   alert_store=settings_store;
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
-  face_choice=PORTABLE_DESK_SEGMENTS;face_message="";face_unconfirmed=sleep_unconfirmed=false;
+  face_choice=PORTABLE_DESK_FACE_DEFAULT;face_message="";face_unconfirmed=sleep_unconfirmed=false;
   reader_choice=0;reader_message="";reader_unconfirmed[0]=reader_unconfirmed[1]=false;
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  desk_direction_choice=0;desk_direction_message="";desk_direction_unconfirmed=false;
+#endif
   /* This profile is only qualified for the retaining monochrome paper UI. */
   if(!pp_enabled())return false;
 #endif

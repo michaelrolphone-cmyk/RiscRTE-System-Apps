@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "source_repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "source_commit": "3d95c712ed458d3e5092fc8725a16d495dca9e22",
+  "public_equivalent": "13f5fd4bed27d77d566fa7c34b89b62445b86798",
+  "source_headers_sha256": {
+    "PortableBroadcastClient.h": "caa6f6a246e3a7a2ac9983e4914ba4854712e0cd51300775bee131b2acfdef36",
+    "PortableBroadcastAppData.h": "424ccec049531135e01c45e08becf53a9d462e30db0f267f737b46eb8637096c",
+    "RiscBluetoothTelemetryV1.h": "f98aaff4165ee3816846cfe9ba110e8bafce403342a870162eb1089a03d935a6",
+    "RiscTelemetryV1.h": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
+    "TelemetryBroadcastV1.h": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5"
+  },
+  "adaptation": "Native guarded transient service grants; explicit default-off selection; AppData terminal fence. Accepted Watch default remains unchanged without the new selection.",
+  "hardware_verified": false
+}

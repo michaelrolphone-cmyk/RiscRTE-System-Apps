@@ -1,0 +1,42 @@
+{
+  "baseline_commit": "72af94bb9d0f0afc5e680175ed654ba7c8dedfa9",
+  "version": "1.7.11",
+  "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "target_sha256": "1da482983aabffefd6e5cb3a155ccfa391602235d9ac70f1eae8148e367cfe0d",
+  "target_size_bytes": 252112,
+  "catalog_sha256": "b42473a6cee6b455de8aa8c4b031783d5a38d2bf7506de5e43da212ea2825fa6",
+  "catalog_count": 16,
+  "capability_count": 12,
+  "capabilities_unchanged": true,
+  "production_controller_adapter_runs": 102,
+  "selected_catalog_runs": 18,
+  "repository_unit_tests": 82,
+  "hardware": "not run",
+  "published": false,
+  "flag_off": {
+    "default": {
+      "identical_elf": true,
+      "identical_manifest": true,
+      "sha256": "5838ea806729db15fe0869cc2c78839d24072e2cb078f935473b282b9ff4ec56",
+      "version": "1.7.1"
+    },
+    "nova": {
+      "identical_elf": true,
+      "identical_manifest": true,
+      "sha256": "afe1f3e00b3331df5cf0a4ba47241f59535e215bb6ffa15a65f2a02c8838e445",
+      "version": "1.7.1"
+    },
+    "paper": {
+      "identical_elf": true,
+      "identical_manifest": true,
+      "sha256": "e0ee79218cde63be7718d459e753d019babab072b6fe676c6319da1070586102",
+      "version": "1.7.1"
+    },
+    "native-x4": {
+      "identical_elf": true,
+      "identical_manifest": true,
+      "sha256": "466c041e8af904e7ccd285441299304bb8435263849f9f5341c5ef2bd9ce0a33",
+      "version": "1.7.9"
+    }
+  }
+}

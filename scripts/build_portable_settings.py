@@ -10,9 +10,12 @@ import json
 import os
 import re
 from pathlib import Path
+import portable_broadcast_build
 import portable_quick_build
+import portable_idle_build
 import portable_alarm_build
 import portable_performance_build
+import portable_paper_build
 import shutil
 import subprocess
 
@@ -66,6 +69,16 @@ def build(args,parser=None):
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
+    portable_broadcast_build.validate(args,parser,native_time)
+    scrolling=getattr(args,'touch_scrolling',False)
+    home_desk_lock=getattr(args,'home_desk_lock',False)
+    list_scrolling=getattr(args,'settings_list_scrolling',False)
+    if list_scrolling and not scrolling:
+        parser.error('--settings-list-scrolling requires --touch-scrolling')
+    if home_desk_lock and (not native_time or (not args.paper_transitions and not args.resident_shell_client) or not scrolling):
+        parser.error('--home-desk-lock requires --settings-profile x4-native-time, --paper-transitions and --touch-scrolling')
+    if scrolling and (not native_time or (not args.paper_transitions and not args.resident_shell_client)):
+        parser.error('--touch-scrolling requires --settings-profile x4-native-time and --paper-transitions')
     performance_source=None
     performance=None
     runtime_commit=NATIVE_TIME_RUNTIME_COMMIT
@@ -98,6 +111,8 @@ def build(args,parser=None):
             raise ValueError('Return app must be a plain .elf filename')
         flags.append('-DPORTABLE_RETURN_APP=\"'+args.return_app+'\"')
     if args.sleep_settings or desk_clock: flags.append('-DPORTABLE_SLEEP_SETTINGS')
+    if native_time and args.resident_shell_client:
+        flags.append('-DPORTABLE_DESK_POINTS_FACE')
     if desk_clock: flags.append('-DPORTABLE_SETTINGS_X4_DESK_CLOCK')
     if native_time:
         flags+=['-DPORTABLE_SETTINGS_NATIVE_TIME','-DPORTABLE_SETTINGS_TIME_ZONE',
@@ -108,6 +123,7 @@ def build(args,parser=None):
     if args.denver and args.wall_time:parser.error('Choose one explicit RTC policy')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.wall_time:flags.append('-DPORTABLE_RTC_WALL_TIME')
+    if getattr(args,'unpadded_hours',False):flags.append('-DPORTABLE_UNPADDED_HOURS')
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
@@ -116,6 +132,20 @@ def build(args,parser=None):
     version=json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
     if performance_source:version=portable_performance_build.version('settings',args)
+    if native_time and args.paper_transitions:version=portable_paper_build.CORE_MOTION_VERSIONS['settings']
+    if scrolling:
+        flags.append('-DPORTABLE_TOUCH_SCROLL')
+        version='1.3.13'
+    if home_desk_lock:
+        flags.append('-DPORTABLE_SETTINGS_HOME_DESK_LOCK')
+        version='1.3.14'
+    flags+=portable_broadcast_build.flags(args)
+    version=portable_broadcast_build.version(args,'settings',version)
+    version=portable_idle_build.version(args,'settings',version)
+    if list_scrolling:
+        flags.append('-DPORTABLE_SETTINGS_LIST_SCROLL')
+        version='1.3.18'
+    version=portable_quick_build.version(args,'settings',version)
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     out.mkdir(parents=True, exist_ok=True)
     if performance_source:
@@ -126,8 +156,8 @@ def build(args,parser=None):
         includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
     tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)
     if tagged_alarm:flags.append('-DALARM_SERVICE_TAGGED_V2')
-    quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out);flags+=quick_flags
-    exports = {'app_main', 'app_module_init', 'app_module_fini'}
+    quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
+    exports=portable_quick_build.exports(args,{'app_main', 'app_module_init', 'app_module_fini'})
     mapping = out/'settings.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     catalog = out/'catalog.c'
@@ -167,6 +197,7 @@ def build(args,parser=None):
                                               {'capability':'board.battery','api':1}]
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     portable_quick_build.requirements(args,manifest['requires'])
+    portable_broadcast_build.requirements(args,manifest['requires'])
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/settings.c','Apps/settings.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/settings.inc','lib/PortableApps/include/PortableRtcClock.h',
@@ -185,6 +216,7 @@ def build(args,parser=None):
     if tagged_alarm:inputs.append('scripts/portable_alarm_build.py')
     inputs += ['scripts/build_portable_settings.py',version_path]
     if performance: inputs.append('scripts/portable_performance_build.py')
+    if args.paper_transitions: inputs.append('scripts/portable_paper_build.py')
     if native_time: inputs += ['LICENSE','Apps/settings_native_entry.c']
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
@@ -219,6 +251,12 @@ def build(args,parser=None):
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
     if performance:record['performance_trace']=performance
+    if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
+    if scrolling:record['touch_scrolling']={'version':1,'lists':['timezone-regions','timezone-cities'],'momentum':True,'bounded_viewport':True,'coalesced_frames':True}
+    if list_scrolling:
+        record['touch_scrolling']['version']=2
+        record['touch_scrolling']['lists']+=['settings-root','time-date-fields']
+        record['touch_scrolling']['completed_frame_hit_identity']=True
     if native_time:
         record.update(time_policy='native-realtime-iana',invocation_retention=True,
             native_time_runtime_commit=runtime_commit,
@@ -236,7 +274,28 @@ def build(args,parser=None):
                 'quick_radios':bool(args.quick_radios)})
         record['preferences'].update(time_zone_key='time_zone',rtc_basis_key='rtc_basis',
             flip_ui_key='reader_flip_ui',language_key='reader_language')
+    if native_time and args.resident_shell_client:
+        record['desk_clock_faces'].append('Points in Time')
+        record['desk_clock_default']='Points in Time'
+        record['desk_orientation']={'choices':['Landscape left','Landscape right'],'default':'Landscape left'}
+        record['preferences']['desk_direction_key']='desk_direction'
+        if args.resident_policy:
+            record['preferences']['idle_timer_key']='sleep_idle'
+            record['time_to_sleep']={'editable':True,'default_seconds':60,'minimum_seconds':5,'maximum_seconds':3600,
+                'step_seconds':5,'owner':'resident host','independent_timer':False,'deep_timer':'preserved; not exposed'}
+        if list_scrolling:
+            record['touch_scrolling'].update(root_bottom_inset=32,root_back_button=False)
+    if home_desk_lock:
+        record.update(sleep_modes=[],sleep_fallback=None,
+            home_desk_lock={'enabled':True,'row':4,'label':'Top-right key','value':'Desk clock',
+                           'readonly':True,'activation':'no-change','sleep_preference':'preserved; not read or written by this row'})
+        record['mode_capabilities']['sleep_preference_modes']=[]
+        record['mode_capabilities']['sleep_preference_editable']=False
+    portable_broadcast_build.record(args,ROOT,record,manifest,flags)
+    portable_idle_build.record(args,record,flags)
+    portable_quick_build.record(args,record)
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
+    portable_broadcast_build.write_settings_admission(args,ROOT,out,includes,manifest,record)
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
 
 def argument_parser():
@@ -244,6 +303,9 @@ def argument_parser():
     parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
     parser.add_argument('--native-time-runtime-repo',type=Path,help='Local Runtime Git checkout containing canonical '+NATIVE_TIME_RUNTIME_COMMIT+' SDK; x4-native-time only')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None,help='Default: 90 for x4-native-time, otherwise 0')
+    parser.add_argument('--touch-scrolling',action='store_true',help='Select Settings 1.3.13 touch/momentum timezone lists; requires native paper motion')
+    parser.add_argument('--settings-list-scrolling',action='store_true',help='Select Settings 1.3.18 smooth root and Time/Date lists; requires --touch-scrolling')
+    parser.add_argument('--home-desk-lock',action='store_true',help='Select Settings 1.3.14 with readonly Top-right key / Desk clock row; requires native paper motion and touch scrolling')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
@@ -255,6 +317,8 @@ def argument_parser():
     parser.add_argument('--return-app',help='Explicit root Back destination as a plain .elf filename')
     parser.add_argument('--output-dir',type=Path)
     parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
+    parser.add_argument('--unpadded-hours',action='store_true',help='Select saved 12/24-hour text with unpadded hours')
+    portable_broadcast_build.options(parser)
     portable_quick_build.options(parser)
     portable_alarm_build.options(parser)
     portable_performance_build.options(parser)
