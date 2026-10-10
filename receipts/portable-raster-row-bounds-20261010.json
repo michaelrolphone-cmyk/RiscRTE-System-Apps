@@ -1,0 +1,1378 @@
+{
+  "baseline_commit": "61ad11348f7278578c555d7c8c6af3d80c5fb064",
+  "opt_in": "PORTABLE_RASTER_SNAPSHOT",
+  "target_hardware_timing_measured": false,
+  "cpu_repeats": {
+    "before-settings": [
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 25,
+          "nav_dispatch_ms": 25,
+          "host_cpu_draw_ms": 0.026,
+          "pixel_visits_before_model": 139324,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 93,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 5,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.032,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 39,
+          "maximum_poll_host_cpu_ms": 4.005,
+          "total_poll_host_cpu_ms": 81.214
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.007,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 309,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.101,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 144,
+          "maximum_poll_host_cpu_ms": 8.68,
+          "total_poll_host_cpu_ms": 284.246
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 25,
+          "nav_dispatch_ms": 25,
+          "host_cpu_draw_ms": 0.024,
+          "pixel_visits_before_model": 136780,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 132,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 5,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.074,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 59,
+          "maximum_poll_host_cpu_ms": 3.957,
+          "total_poll_host_cpu_ms": 120.186
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.01,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 427,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.108,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 207,
+          "maximum_poll_host_cpu_ms": 2.262,
+          "total_poll_host_cpu_ms": 402.616
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 25,
+          "nav_dispatch_ms": 25,
+          "host_cpu_draw_ms": 0.029,
+          "pixel_visits_before_model": 138264,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 97,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 5,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.294,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 41,
+          "maximum_poll_host_cpu_ms": 4.03,
+          "total_poll_host_cpu_ms": 85.497
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.007,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 288,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.068,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 134,
+          "maximum_poll_host_cpu_ms": 5.909,
+          "total_poll_host_cpu_ms": 263.254
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 25,
+          "nav_dispatch_ms": 25,
+          "host_cpu_draw_ms": 0.027,
+          "pixel_visits_before_model": 138900,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 98,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 5,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.058,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 42,
+          "maximum_poll_host_cpu_ms": 4.056,
+          "total_poll_host_cpu_ms": 86.394
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.008,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 283,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.071,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 136,
+          "maximum_poll_host_cpu_ms": 2.276,
+          "total_poll_host_cpu_ms": 258.929
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 25,
+          "nav_dispatch_ms": 25,
+          "host_cpu_draw_ms": 0.026,
+          "pixel_visits_before_model": 138688,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 96,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 5,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.037,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 41,
+          "maximum_poll_host_cpu_ms": 4.047,
+          "total_poll_host_cpu_ms": 84.605
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.01,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 281,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.064,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 134,
+          "maximum_poll_host_cpu_ms": 3.363,
+          "total_poll_host_cpu_ms": 255.355
+        }
+      ]
+    ],
+    "after-settings": [
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.029,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 26,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.031,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.566,
+          "total_poll_host_cpu_ms": 1.708
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 37,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.067,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 15,
+          "maximum_poll_host_cpu_ms": 0.503,
+          "total_poll_host_cpu_ms": 4.344
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.028,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 27,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.038,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.638,
+          "total_poll_host_cpu_ms": 1.944
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.006,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 37,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.064,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 15,
+          "maximum_poll_host_cpu_ms": 0.501,
+          "total_poll_host_cpu_ms": 4.388
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.024,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 26,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.031,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.565,
+          "total_poll_host_cpu_ms": 1.733
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 37,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.065,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 16,
+          "maximum_poll_host_cpu_ms": 0.509,
+          "total_poll_host_cpu_ms": 4.412
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.025,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 27,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.04,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.618,
+          "total_poll_host_cpu_ms": 1.822
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 22,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 41,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.069,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 15,
+          "maximum_poll_host_cpu_ms": 2.956,
+          "total_poll_host_cpu_ms": 9.181
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.023,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 27,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.035,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.668,
+          "total_poll_host_cpu_ms": 1.929
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 35,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.063,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 15,
+          "maximum_poll_host_cpu_ms": 0.571,
+          "total_poll_host_cpu_ms": 4.592
+        }
+      ]
+    ],
+    "before-all": [
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.131,
+          "pixel_visits_before_model": 246147,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 90,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.06,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 37,
+          "maximum_poll_host_cpu_ms": 4.747,
+          "total_poll_host_cpu_ms": 73.592
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 198,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.062,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 95,
+          "maximum_poll_host_cpu_ms": 3.373,
+          "total_poll_host_cpu_ms": 164.994
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.023,
+          "pixel_visits_before_model": 249570,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 79,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.034,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 31,
+          "maximum_poll_host_cpu_ms": 4.07,
+          "total_poll_host_cpu_ms": 62.862
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 158,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.066,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 78,
+          "maximum_poll_host_cpu_ms": 2.137,
+          "total_poll_host_cpu_ms": 127.644
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.022,
+          "pixel_visits_before_model": 249570,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 87,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.063,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 36,
+          "maximum_poll_host_cpu_ms": 4.062,
+          "total_poll_host_cpu_ms": 71.711
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 191,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.065,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 91,
+          "maximum_poll_host_cpu_ms": 3.238,
+          "total_poll_host_cpu_ms": 159.092
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 24,
+          "nav_dispatch_ms": 24,
+          "host_cpu_draw_ms": 0.021,
+          "pixel_visits_before_model": 249570,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 92,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 4,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.075,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 37,
+          "maximum_poll_host_cpu_ms": 3.998,
+          "total_poll_host_cpu_ms": 75.495
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.006,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 251,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.099,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 122,
+          "maximum_poll_host_cpu_ms": 3.414,
+          "total_poll_host_cpu_ms": 221.475
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.022,
+          "pixel_visits_before_model": 249570,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 79,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.033,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 31,
+          "maximum_poll_host_cpu_ms": 4.173,
+          "total_poll_host_cpu_ms": 62.679
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 152,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.063,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 74,
+          "maximum_poll_host_cpu_ms": 2.062,
+          "total_poll_host_cpu_ms": 120.678
+        }
+      ]
+    ],
+    "after-all": [
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.023,
+          "pixel_visits_before_model": 284154,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 27,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.048,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.505,
+          "total_poll_host_cpu_ms": 2.1
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.003,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 44,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.07,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 24,
+          "maximum_poll_host_cpu_ms": 0.465,
+          "total_poll_host_cpu_ms": 6.39
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.021,
+          "pixel_visits_before_model": 284154,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 27,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.039,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.586,
+          "total_poll_host_cpu_ms": 2.21
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.003,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 46,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.068,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 24,
+          "maximum_poll_host_cpu_ms": 0.628,
+          "total_poll_host_cpu_ms": 7.091
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.02,
+          "pixel_visits_before_model": 284154,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 27,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.038,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.552,
+          "total_poll_host_cpu_ms": 2.114
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 45,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.063,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 24,
+          "maximum_poll_host_cpu_ms": 0.426,
+          "total_poll_host_cpu_ms": 6.355
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.02,
+          "pixel_visits_before_model": 284154,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 26,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.036,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.766,
+          "total_poll_host_cpu_ms": 2.621
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 46,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.093,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 25,
+          "maximum_poll_host_cpu_ms": 0.612,
+          "total_poll_host_cpu_ms": 8.242
+        }
+      ],
+      [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.02,
+          "pixel_visits_before_model": 284154,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 26,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.04,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 7,
+          "maximum_poll_host_cpu_ms": 0.526,
+          "total_poll_host_cpu_ms": 2.373
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 21,
+          "model_dispatch_ms": 22,
+          "nav_dispatch_ms": 22,
+          "host_cpu_draw_ms": 0.003,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 46,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 2,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.078,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "poll_calls": 24,
+          "maximum_poll_host_cpu_ms": 0.626,
+          "total_poll_host_cpu_ms": 7.025
+        }
+      ]
+    ]
+  },
+  "full_byte_baselines": {
+    "ui-phase3-bounded-spans-baseline": {
+      "raster-1-0.bin": {
+        "bytes": 48000,
+        "sha256": "e811ad3ddcf0ec01f63020d5b5b1dd69b18851bc7375c4032fea9431b2b1d72b"
+      },
+      "raster-5-0.bin": {
+        "bytes": 115200,
+        "sha256": "62b499cdbb09aef83ddf342bb7f7456e1dbf6458e3527a2dfbd4b6f931f393c5"
+      }
+    },
+    "ui-phase3-bounded-spans-portrait-baseline": {
+      "raster-1-0.bin": {
+        "bytes": 48000,
+        "sha256": "9e04528c78cd1c20a701505e4858a64604120664c565e673bb373a9ae10d9327"
+      },
+      "raster-5-0.bin": {
+        "bytes": 115200,
+        "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+      }
+    }
+  },
+  "target_imports": {
+    "settings": [
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy"
+    ],
+    "springboard": [
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy",
+      "strlen"
+    ],
+    "file_browser": [
+      "free",
+      "malloc",
+      "memchr",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy",
+      "strlen",
+      "strncmp",
+      "strrchr"
+    ],
+    "default": [
+      "free",
+      "malloc",
+      "memchr",
+      "memcmp",
+      "memcpy",
+      "memmove",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy",
+      "strlen",
+      "strncmp"
+    ]
+  },
+  "verification": {
+    "row_comparisons_asan_ubsan": 2028,
+    "custody_cases_asan_ubsan": 28,
+    "quick_row_comparisons_asan_ubsan": 271,
+    "aggregate_blocker": "test_portable_apps.py stops before compilation: existing RiscRuntimeV1.h pinned provenance mismatch"
+  }
+}

@@ -46,7 +46,7 @@ static int32_t probe_next(void *c,uint64_t id,risc_touch_event_v1 *event) {
 static bool probe_snap(void *c,risc_touch_snapshot_v1 *out){(void)c;*out=probe_snapshot;return true;}
 static bool probe_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,
  const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token) {
- assert(probe_submit_count<256);probe_submissions[probe_submit_count++]=probe_model;
+ assert(probe_submit_count<256);probe_submissions[probe_submit_count++]=probe_drawn;
  return mock_submit(c,f,r,n,o,token);
 }
 static void probe_case(unsigned format,unsigned latency) {
@@ -77,6 +77,7 @@ static void probe_case(unsigned format,unsigned latency) {
    if(latency==2300)assert(mock_ms<latency);
   }
  }
+ if(probe_begins!=60||probe_taps!=60||probe_model!=60||probe_drawn!=60)fprintf(stderr,"format=%u time=%u begins=%u taps=%u model=%u drawn=%u frame=%llu token=%llu nav=%u\n",format,mock_ms,probe_begins,probe_taps,probe_model,probe_drawn,(unsigned long long)surface.frame,(unsigned long long)paper_token,nav_presses);
  assert(probe_begins==60&&probe_taps==60&&probe_model==60&&probe_drawn==60);
  assert(probe_submissions[0]==0&&probe_submissions[probe_submit_count-1]==60);
  assert(probe_max_lag<=8);
@@ -86,4 +87,7 @@ static void probe_case(unsigned format,unsigned latency) {
  printf("{\"format\":%u,\"latency_ms\":%u,\"tap_cycles\":%u,\"navigation_press_release_cycles\":%u,\"max_input_lag_ms\":%u,\"submissions\":%u,\"latest_model\":%u}\n",format,latency,probe_taps,nav_presses,probe_max_lag,probe_submit_count,probe_model);
  end_test();
 }
+#ifndef FRAME_DELIVERY_NO_MAIN
 int main(void){setvbuf(stdout,NULL,_IONBF,0);unsigned formats[]={RISC_DISPLAY_FORMAT_RGB565,RISC_DISPLAY_FORMAT_MONO1};unsigned latencies[]={0,17,120,2300};for(unsigned f=0;f<2;f++)for(unsigned l=0;l<4;l++)probe_case(formats[f],latencies[l]);return 0;}
+
+#endif

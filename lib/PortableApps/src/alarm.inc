@@ -242,11 +242,18 @@ static bool alarm_save_frame(uint16_t **saved) {
     *saved=NULL;
     /* App-owned immutable pixels may still be presenting. Modal logic is
      * independent; drawing and final restoration retain token custody. */
-    if(!alarm_pixels || (!alarm_pixels_valid && !paper_token))return false;
+    if(!alarm_pixels || (!alarm_pixels_valid && !paper_token
+#ifdef PORTABLE_RASTER_SNAPSHOT
+        &&!raster_sealed
+#endif
+    ))return false;
     *saved=alarm_pixels;alarm_modal=true;return true;
 }
 static bool alarm_restore(const uint16_t *saved) {
     if(!portable_paper_frame_drain())return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_begin_allowed=false; /* Direct restore owns an immediate pixel lease. */
+#endif
     clear();if(failed)return false;
     unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,
@@ -278,7 +285,11 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif
-    if(failed || surface.frame || (!display_settled && !paper_token))return alarm_failure();
+    if(failed || raster_lease_mutable() || (!display_settled && !paper_token
+#ifdef PORTABLE_RASTER_SNAPSHOT
+      &&!raster_sealed
+#endif
+    ))return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
@@ -396,7 +407,7 @@ static bool alarm_foreground(bool *consumed) {
                 alarm_error_seen=true;alarm_seen_error=alarms.status.error;alarm_seen_snapshot=alarms.status.snapshot;break;
             }
         }
-        if(failed || surface.frame || !paper_present_progress()){alarm_modal=false;return alarm_failure();}
+        if(failed || raster_lease_mutable() || !paper_present_progress()){alarm_modal=false;return alarm_failure();}
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif

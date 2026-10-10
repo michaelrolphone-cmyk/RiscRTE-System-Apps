@@ -131,7 +131,8 @@ static unsigned torch_edge(int v) {
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
-bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
+    if(first>240u || count>240u-first)return false;
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565 ||
        f->width!=240 || f->height!=240 || f->stride_bytes<480u)return false;
     uint64_t span=(uint64_t)239*f->stride_bytes+480u;
@@ -141,7 +142,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     int position=s->position_q8<0?0:s->position_q8>PQA_OPEN_Q8?PQA_OPEN_Q8:s->position_q8;
     pqa_row row;
     if(s->torch) {
-        for(int y=0;y<240;++y) {
+        for(int y=(int)first;y<(int)(first+count);++y) {
             row.y=y;
             for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);
             center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,210,RGB(106,90,48),256);
@@ -156,7 +157,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     }
     int offset=(position-PQA_OPEN_Q8)/256;
     unsigned face_alpha=(unsigned)(position>=190*256?0:256-position/190);
-    for(int y=0;y<240;++y) {
+    for(int y=(int)first;y<(int)(first+count);++y) {
         uint8_t *dst=(uint8_t*)f->pixels+(size_t)y*f->stride_bytes;
         int local=y-offset;
         bool in_panel=local>=0 && local<240;
@@ -169,6 +170,15 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     }
     return true;
 }
+
+bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+    return render_rows(f,s,time,bv,bp,0,240);
+}
+#ifdef PORTABLE_RASTER_SNAPSHOT
+bool pqa_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
+    return render_rows(f,s,time,bv,bp,first,count);
+}
+#endif
 
 void pqa_paper_icon(unsigned index,int x,int y,int size,bool black,
                     void (*draw)(int,int,uint32_t,unsigned)) {
