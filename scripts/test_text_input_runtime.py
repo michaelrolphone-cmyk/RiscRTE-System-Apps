@@ -4,13 +4,14 @@ import argparse,json,os,shutil,subprocess
 from pathlib import Path
 from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--skip-mode',action='append',default=[]);p.add_argument('--sanitize',action='store_true');p.add_argument('--scene-system',type=Path,help='Use this separately qualified scene provider without changing text source');p.add_argument('--paper',action='store_true');p.add_argument('--fast-only',action='store_true');a=p.parse_args();runtime=a.runtime.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
-scene_root=a.scene_system.resolve() if a.scene_system else ROOT
-inc=stage_sdk(runtime,ROOT,out/'sdk');shutil.copy(ROOT/'sdk/app/RiscTextEntryV1.h',inc)
+p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--provider-system',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--skip-mode',action='append',default=[]);p.add_argument('--sanitize',action='store_true');p.add_argument('--scene-system',type=Path,help='Use this separately qualified scene provider without changing text source');p.add_argument('--paper',action='store_true');p.add_argument('--fast-only',action='store_true');a=p.parse_args();runtime=a.runtime.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
+provider=a.provider_system.resolve() if a.provider_system else ROOT
+scene_root=a.scene_system.resolve() if a.scene_system else provider
+inc=stage_sdk(runtime,provider,out/'sdk');shutil.copy(provider/'sdk/app/RiscTextEntryV1.h',inc)
 flags=['-g','-O1','-Wall','-Wextra','-Werror'];san=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'] if a.sanitize else []
-incs=['-I'+str(inc),'-I'+str(ROOT/'Services/text_input')];cc=os.environ.get('CC','cc')
+incs=['-I'+str(inc),'-I'+str(provider/'Services/text_input')];cc=os.environ.get('CC','cc')
 def build(source,name,extra=()):subprocess.run([cc,'-std=c11',*flags,*san,'-fPIC','-fvisibility=hidden','-shared',*incs,*extra,str(source),'-o',str(out/name)],check=True)
-build(scene_root/'Services/scene_host/host.c','scene.elf');build(ROOT/'Services/text_input/host.c','text.elf');build(ROOT/'Services/scene_profile/profile.c','profile.elf',['-DSCENE_PROFILE_ID="profile"']+(['-DSCENE_PROFILE_PAPER=1','-DSCENE_DISPLAY_ROTATION=270'] if a.paper else []));build(ROOT/'test/text_input/runtime_app.c','default.elf');shutil.copy(out/'default.elf',out/'child.elf')
+build(scene_root/'Services/scene_host/host.c','scene.elf');build(provider/'Services/text_input/host.c','text.elf');build(provider/'Services/scene_profile/profile.c','profile.elf',['-DSCENE_PROFILE_ID="profile"']+(['-DSCENE_PROFILE_PAPER=1','-DSCENE_DISPLAY_ROTATION=270'] if a.paper else []));build(ROOT/'test/text_input/runtime_app.c','default.elf');shutil.copy(out/'default.elf',out/'child.elf')
 providers=[('display','display.output'),('touch','input.touch.raw'),('nav','input.navigation'),('keyboard','usb.hid.keyboard')]
 for name,cap in providers:build(ROOT/'test/text_input/runtime_provider.c',name+'.elf',[f'-DTEST_ID="{name}"',f'-DTEST_CAP="{cap}"'])
 def write(name,data):(out/name).write_text(json.dumps(data,indent=2)+'\n')

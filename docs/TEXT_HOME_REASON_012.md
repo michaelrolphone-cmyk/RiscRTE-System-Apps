@@ -8,8 +8,9 @@ Qualification completed:
 - Host/client normal and ASan/UBSan, including exact old-prefix allocation, malformed suffix, old client flags, pending close and invalid Home states
 - 512 real Runtime0.1.100 scenarios: X4 and Watch, normal and ASan/UBSan, four provider activation policies
 - 256 real Runtime0.1.106 X4 scenarios, normal and ASan/UBSan, against frozen recovered scene0.1.4 hostabb5025
+- 256 additional X4 scenarios and host/client normal/sanitized checks against the final common System3c3b2e03 and Runtime0.1.106
 - Clean Xtensa GCC8.4 target compilation and strict loader validation
 
 The old fast-keyboard test was updated to the approved scene0.1.4 semantics: owner-acknowledged logical layer changes accept input immediately while the display remains pending. The pending-close fixture now waits for an actual accepted frame rather than confusing queued paint with physical custody.
 
-No product binary is a build input. Rebuild with scripts/build_text_home_service.py after final source recovery. This isolated checkpoint does not replace the final reconciled System union: its portable-text attention change is owned by that union and requires a combined regression run. Hardware and full-product qualification remain separate.
+No product binary is a build input. Rebuild with scripts/build_text_home_service.py after final source recovery. The final common System union keeps unconditional portable-text attention and passed the combined regressions. Select that same clean System source with --system and Runtime0.1.106 with --runtime. Hardware and full-product qualification remain separate.
