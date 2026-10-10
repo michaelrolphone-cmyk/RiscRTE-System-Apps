@@ -138,7 +138,6 @@ static bool desk_scene(const portable_desk_config *config,int64_t minute) {
  portable_desk_adapter_caption(32,valid?date:portable_reader_clock_set_time(config->language));
  if(valid && config->time_format==PORTABLE_TIME_FORMAT_12)
   portable_desk_adapter_caption(canvas.height-78,time.hour<12?"AM":"PM");
- portable_desk_adapter_caption(canvas.height-44,portable_reader_clock_wake(config->language));
  return !desk_cancelled();
 }
 static int desk_restore(void) {

@@ -33,19 +33,3 @@ The selected X4 native idle helper already checks returned and copied service
 retention before cleanup. This patch guards its shared-adapter entry and result;
 it does not replace that board-local implementation. These tests do not qualify
 physical hardware or a deployed image.
-
-## Public compatibility source
-
-This focused public port is qualified on commit
-`16058588cd8e64021b8c89c4fbad3f2ecc736a5a`. The original selected X4 implementation
-is `b1d539df71c7e2c32bf3be6c4ed4228d13f45e0b`, whose newer base remains separate.
-The guarded client headers, tests and runners match that implementation exactly;
-the adapter changes are applied to the existing public files.
-
-This earlier public adapter already has a quiet ordinary retention helper, so
-the new silent helper delegates to it. The selected sleep guard calls that fence
-before returning. Both decisions preserve the public base's exact flag-off
-bytes. No later Home, touch-recovery, scrolling, or other adapter feature is
-copied into this port. The source comparison lists exact matching inputs and
-the five adapter files adapted to the public base; it makes no whole-tree
-equivalence claim or substitution for the original X4 build pin.

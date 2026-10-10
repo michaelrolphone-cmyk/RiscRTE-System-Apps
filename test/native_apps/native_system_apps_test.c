@@ -7,10 +7,13 @@
 #include "RiscStorageVolumeV1.h"
 #include "WifiApi.h"
 #include "T5FileOpenApi.h"
+#include "PortableRadioPolicy.h"
 extern void app_main(void);
 extern bool native_system_test_open(void);
 static unsigned quick_opens,nav_polls,launches,storage_live,wifi_live,credentials_live,dirs,disconnects;
 static bool refuse_launch,quick_case,refuse_finalize,apply_quick_action;
+static const char *radio_case;
+static unsigned radio_reads,radio_connects,radio_scans;
 static int32_t alarm_outcome;
 static int32_t tagged_status(void *c,alarm_status_v1 *out){(void)c;io();*out=(alarm_status_v1){.api_version=1,.struct_size=sizeof(*out),.state=ALARM_STATE_READY};return ALARM_OK;}
 static int32_t tagged_step(void *c){(void)c;io();return alarm_outcome;}
@@ -26,6 +29,15 @@ static bool app_foreground(void *c,const risc_input_foreground_v1 *claims,size_t
 static bool app_reset(void *c){(void)c;io();return true;}
 static const risc_input_navigation_api_v1 app_navigation={1,sizeof(app_navigation),NULL,app_nav,app_foreground,app_reset};
 static int32_t app_get(void *c,const char *key,void *out,uint32_t size,uint32_t *used){
+ if(!strcmp(key,PORTABLE_RADIO_KEY)){
+  io();++radio_reads;*used=0;
+  if(!radio_case || !strcmp(radio_case,"radio-missing"))return RISC_KEY_VALUE_NOT_FOUND;
+  if(!strcmp(radio_case,"radio-io"))return RISC_KEY_VALUE_IO;
+  assert(size==4);uint8_t flags=!strcmp(radio_case,"radio-airplane")?PORTABLE_RADIO_AIRPLANE:0;
+  uint8_t bytes[]={0x51,1,flags,(uint8_t)(flags^0xa5)};
+  if(!strcmp(radio_case,"radio-corrupt"))bytes[3]^=1;
+  memcpy(out,bytes,4);*used=4;return RISC_KEY_VALUE_OK;
+ }
  if(!strcmp(key,PORTABLE_TIMEZONE_KEY))return source_get(c,key,out,size,used);
  return fx_kv_get(c,key,out,size,used);
 }
@@ -42,13 +54,14 @@ static size_t volume_read(void *c,risc_storage_file_t h,void *out,size_t size){(
 static bool volume_file_close(void *c,risc_storage_file_t h,bool commit){(void)c;(void)h;(void)commit;io();return true;}
 static bool volume_error(void *c,char *out,size_t size){(void)c;io();assert(size);*out=0;return true;}
 static const risc_storage_volume_api_v1 volume={1,sizeof(volume),NULL,volume_ok,volume_ok,volume_label,volume_stat,volume_dir,volume_next,volume_close,volume_open,volume_read,NULL,NULL,volume_file_close,NULL,volume_error};
-static bool wifi_connect_fixture(void *c,const char *ssid,const char *password){(void)c;(void)ssid;(void)password;io();return true;}
+static bool wifi_connect_fixture(void *c,const char *ssid,const char *password){(void)c;(void)ssid;(void)password;io();++radio_connects;return true;}
+static bool wifi_scan_start_fixture(void *c){(void)c;io();++radio_scans;return true;}
 static wifi_link_t wifi_status_fixture(void *c){(void)c;io();return WIFI_LINK_DOWN;}
 static int8_t wifi_rssi_fixture(void *c){(void)c;io();return -30;}
 static bool wifi_addresses_fixture(void *c,wifi_ipv4_v1 *s,wifi_ipv4_v1 *a){(void)c;io();*s=(wifi_ipv4_v1){0};*a=(wifi_ipv4_v1){0};return true;}
 static bool wifi_scan_fixture(void *c,garden_radio_scan_result_v1 *out){(void)c;io();*out=(garden_radio_scan_result_v1){0};return true;}
 static bool wifi_disconnect_fixture(void *c){(void)c;io();++disconnects;if(refuse_finalize){pending_fence=true;return false;}return true;}
-static const wifi_api_v1 app_wifi={.api_version=1,.struct_size=sizeof(app_wifi),.connect=wifi_connect_fixture,.status=wifi_status_fixture,.rssi=wifi_rssi_fixture,.addresses=wifi_addresses_fixture,.scan_start=volume_ok,.scan_poll=wifi_scan_fixture,.scan_cancel=volume_ok,.disconnect_checked=wifi_disconnect_fixture};
+static const wifi_api_v1 app_wifi={.api_version=1,.struct_size=sizeof(app_wifi),.connect=wifi_connect_fixture,.status=wifi_status_fixture,.rssi=wifi_rssi_fixture,.addresses=wifi_addresses_fixture,.scan_start=wifi_scan_start_fixture,.scan_poll=wifi_scan_fixture,.scan_cancel=volume_ok,.disconnect_checked=wifi_disconnect_fixture};
 static uint32_t handler_count(const char *path){(void)path;io();return 0;}
 static bool handler_get(const char *path,uint32_t index,t5_file_handler_t *out){(void)path;(void)index;(void)out;io();return false;}
 static bool handler_open(const char *path,const char *handler,uint64_t cookie){(void)path;(void)handler;(void)cookie;io();return false;}
@@ -63,6 +76,27 @@ static bool app_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v
  return fx_submit(c,f,r,n,options,token);
 }
 #endif
+#ifdef PORTABLE_UPDATE_APP
+#include "SoftwareUpdateV1.h"
+static unsigned update_checks,update_live;
+#ifdef PORTABLE_BLE_BROADCAST
+static uint32_t update_fixture_state=SOFTWARE_UPDATE_LIST;
+#endif
+static bool update_refresh(void *c,uint64_t seconds){(void)c;io();assert(!seconds);++update_checks;
+#ifdef PORTABLE_BLE_BROADCAST
+assert(!fixture_broadcast_live);
+#endif
+return true;}
+static bool update_status(void *c,software_update_status_v1 *out){(void)c;io();*out=(software_update_status_v1){.struct_size=sizeof(*out),.state=SOFTWARE_UPDATE_LIST};
+#ifdef PORTABLE_BLE_BROADCAST
+out->state=update_fixture_state;
+#endif
+return true;}
+static bool update_get(void *c,uint32_t i,software_update_row_v1 *out){(void)c;(void)i;(void)out;assert(false);return false;}
+static bool update_begin(void *c,uint32_t i,uint64_t seconds){(void)c;(void)i;(void)seconds;assert(false);return false;}
+static bool update_cancel(void *c){(void)c;io();if(refuse_finalize){pending_fence=true;return false;}return true;}
+static const software_update_v1 update_service={1,sizeof(update_service),NULL,update_refresh,volume_ok,update_status,update_get,update_begin,update_cancel,volume_ok,volume_ok};
+#endif
 static bool app_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out){
  const void *api=NULL;
 #ifdef PORTABLE_FILE_BROWSER_APP
@@ -70,6 +104,10 @@ static bool app_acquire(const char *name,uint32_t version,uint64_t instance,risc
  else
 #endif
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){assert(version==2&&!instance);api=&tagged.base;}
+
+#ifdef PORTABLE_UPDATE_APP
+ else if(!strcmp(name,SOFTWARE_UPDATE_FIRMWARE_CAPABILITY)||!strcmp(name,SOFTWARE_UPDATE_APPS_CAPABILITY)){assert(version==1&&!instance);api=&update_service;++update_live;}
+#endif
  else if(!strcmp(name,"input.navigation")){assert(version==1&&!instance);api=&app_navigation;}
  else if(!strcmp(name,"storage.volume")){assert(version==1&&instance==9);api=&volume;++storage_live;}
  else if(!strcmp(name,"file.open")){assert(version==1&&!instance);api=&handlers;}
@@ -79,6 +117,9 @@ static bool app_acquire(const char *name,uint32_t version,uint64_t instance,risc
  io();++acquires;++live;*out=(risc_runtime_capability_v1){.struct_size=sizeof(*out),.slot=acquires,.generation=1,.api=api};return true;
 }
 static bool app_release(risc_runtime_capability_v1 *g){
+#ifdef PORTABLE_UPDATE_APP
+ if(g->api==&update_service){assert(update_live);--update_live;}
+#endif
  if(g->api==&volume){assert(storage_live&&!dirs);if(refuse_finalize){io();pending_fence=true;return false;}--storage_live;}
  if(g->api==&app_wifi){assert(wifi_live);--wifi_live;}
  if(g->api==&credential_kv){assert(credentials_live);--credentials_live;}
@@ -93,6 +134,8 @@ static void app_yield(uint32_t delay){
   else pqa_close(&quick.ui);
  }
 }
+
+#ifndef TEST_CORE_PAPER_MOTION
 int main(int argc,char **argv){
  assert(argc==2);const char *name=argv[1];scenario="valid";
  source_kv.get=app_get;source_kv.put=fx_kv_put;
@@ -107,6 +150,18 @@ int main(int argc,char **argv){
  app_display=fx_display;app_display.submit=app_submit;
 #endif
  assert(app_module_init()==0);
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+ if(!strncmp(name,"radio-",6)){
+  extern void native_system_test_wifi_request(bool);
+  radio_case=name;assert(native_system_test_open());
+  native_system_test_wifi_request(false);native_system_test_wifi_request(true);
+  assert(radio_reads==2);
+  bool allowed=!strcmp(name,"radio-missing");
+  assert(radio_connects==(unsigned)allowed && radio_scans==(unsigned)allowed);
+  app_module_fini();assert(!live&&!wifi_live&&!credentials_live&&!retained);
+  printf("{\"case\":\"%s\",\"connects\":%u,\"scans\":%u,\"policy_reads\":%u}\n",name,radio_connects,radio_scans,radio_reads);return 0;
+ }
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
  assert(paper_previous);
 #endif
@@ -137,3 +192,5 @@ int main(int argc,char **argv){
  printf("{\"case\":\"%s\",\"native_reads\":%u,\"launches\":%u,\"retained\":%s}\n",name,native_reads,launches,retained?"true":"false");
  return 0;
 }
+
+#endif

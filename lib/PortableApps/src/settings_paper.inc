@@ -18,6 +18,9 @@ static unsigned sp_rows(void) {
   unsigned n=(unsigned)(height()-SP_TOP-144)/SP_ROW;return n?n:1;
 #endif
 }
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+#include "settings_paper_scroll.inc"
+#endif
 static void sp_text(int x,int y,int w,const char *s,bool heading,bool black){pp_text(x,y,w,s,heading?2:1,heading,black);}
 static void sp_header(const char *title) {sp_text(32,30,width()-64,title,true,true);fill(32,88,width()-64,3,0);}
 static void sp_button(int x,int y,int w,int h,const char *caption,bool selected) {
@@ -45,8 +48,9 @@ static void sp_row(int y,const char *title,const char *value,bool selected,bool 
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
 static int sp_sleep_top(void) {return height()>=640?144:112;}
 static int sp_sleep_step(void) {int step=(height()-sp_sleep_top()-160)/(int)settings_sleep_count();return step<112?step:112;}
-static unsigned sp_face_columns(void) {return height()>=720?1u:2u;}
-static int sp_face_step(void) {int step=(height()-280)/(int)(PORTABLE_DESK_FACE_COUNT/sp_face_columns());return step<84?step:84;}
+static unsigned sp_face_columns(void) {return height()>=720 && PORTABLE_DESK_FACE_COUNT<=6?1u:2u;}
+static int sp_face_step(void) {unsigned columns=sp_face_columns(),rows=(PORTABLE_DESK_FACE_COUNT+columns-1u)/columns;
+  int step=(height()-280)/(int)rows,maximum=PORTABLE_DESK_FACE_COUNT<=6?84:112;return step<maximum?step:maximum;}
 static int sp_face_width(void) {return sp_face_columns()==1?width()-64:(width()-80)/2;}
 #endif
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
@@ -73,29 +77,75 @@ static void sp_redraw(void) {
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
     sv_page==SV_DESK_FACE?"CLOCK FACE":sv_page==SV_FLIP?"FLIP UI 180°":sv_page==SV_LANGUAGE?"LANGUAGE":
 #endif
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+    sv_page==SV_DESK_DIRECTION?"DESK ORIENTATION":
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+    sv_page==SV_TIMER?"TIME TO SLEEP":
+#else
+    sv_page==SV_TIMER?"IDLE SLEEP TIMER":
+#endif
+#endif
     sv_page==SV_TIME_FORMAT?"TIME FORMAT":sv_page==SV_FOLD?"REPEATED TIME":sv_page==SV_SLEEP?"SLEEP MODE":sv_page==SV_ALERT?"ALARM ALERTS":"ABOUT";
   sp_header(title);
   if(sv_page==SV_ROOT) {
     unsigned rows=sp_rows();if(sp_first>=SETTINGS_ROW_COUNT)sp_first=0;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    rows=sp_scroll_begin(SV_ROOT);sp_first=(unsigned)portable_scroll_offset(&sp_scroll[0])/SP_ROW;
+#endif
     for(unsigned i=0;i<rows&&sp_first+i<SETTINGS_ROW_COUNT;i++) {
       t5_app_setting_t item;unsigned index=sp_first+i;
       bool available=settings_get(0,index,&item);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-      if(failed)return;
+      if(failed){
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+        raster_clip_active=false;
 #endif
-      if(available)sp_row(SP_TOP+(int)i*SP_ROW,item.label,item.value,sv_selected==index+1,item.type==T5_APP_SETTING_ACTION);
+        return;
+      }
+#endif
+      if(available)sp_row(
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+          portable_scroll_row_y(&sp_scroll[0],(int)index),
+#else
+          SP_TOP+(int)i*SP_ROW,
+#endif
+          item.label,item.value,sv_selected==index+1,item.type==T5_APP_SETTING_ACTION);
     }
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    sp_scroll_end(SV_ROOT);
+#endif
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_SETTINGS_LIST_SCROLL)
+    sp_text(32,64,width()-64,settings_message,false,true);
+#else
     sp_native_notice(false);
+#endif
 #else
     sp_text(32,height()-142,width()-64,settings_message,false,true);
 #endif
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+#ifndef PORTABLE_RESIDENT_SHELL_CLIENT
+    sp_footer(false);
+#endif
+#else
     if(SETTINGS_ROW_COUNT>rows) {
       sp_button(32,height()-112,(width()-80)/2,88,"< BACK",false);
       sp_button(width()/2+8,height()-112,(width()-80)/2,88,SP_MORE_CAPTION,false);
     } else sp_footer(false);
+#endif
   } else if(sv_page==SV_FIELDS) {
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    unsigned rows=sp_scroll_begin(SV_FIELDS);sp_field_first=(unsigned)portable_scroll_offset(&sp_scroll[1])/SP_ROW;
+    for(unsigned at=0;at<rows&&sp_field_first+at<6;at++) {
+      unsigned i=sp_field_first+at;char value[24];editor_value_text(i,value,sizeof(value));
+      sp_row(portable_scroll_row_y(&sp_scroll[1],(int)i),editor_names[i],value,editor_field==i,true);
+    }
+    sp_scroll_end(SV_FIELDS);
+#else
     for(unsigned at=0;at<sp_rows()&&sp_field_first+at<6;at++){unsigned i=sp_field_first+at;char value[24];editor_value_text(i,value,sizeof(value));sp_row(SP_TOP+(int)at*SP_ROW,editor_names[i],value,editor_field==i,true);}
+#endif
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
     sp_native_notice(true);
 #else
@@ -124,6 +174,15 @@ static void sp_redraw(void) {
   "SAVE SECOND MST"
 #endif
 ,sv_fold_choice==1);sp_footer(false);
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  } else if(sv_page==SV_TIMER) {
+    char value[32];snprintf(value,sizeof(value),"%lu SECONDS",(unsigned long)(timer_choice/1000u));
+    sp_text(32,144,width()-64,value,true,true);
+    sp_button(32,238,112,112,"-",false);sp_button(width()-144,238,112,112,"+",false);
+    sp_text(32,388,width()-64,"LIGHT SLEEP",false,true);
+    sp_text(32,426,width()-64,"KEEPS THIS APP OPEN",false,true);
+    sp_text(32,height()-142,width()-64,timer_message[0]?timer_message:"DRAFT ONLY - USE SAVE",false,true);sp_footer(true);
+#endif
   } else if(sv_page==SV_TIME_FORMAT) {
     sp_button(32,144,width()-64,88,"12-HOUR AM / PM",time_format_choice==PORTABLE_TIME_FORMAT_12);
     sp_button(32,256,width()-64,88,"24-HOUR",time_format_choice==PORTABLE_TIME_FORMAT_24);
@@ -145,6 +204,13 @@ static void sp_redraw(void) {
     sp_text(32,height()-142,width()-64,sleep_message,false,true);sp_footer(true);
 #endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  } else if(sv_page==SV_DESK_DIRECTION) {
+    sp_button(32,144,width()-64,88,settings_desk_direction_name(0),desk_direction_choice==0);
+    sp_button(32,256,width()-64,88,settings_desk_direction_name(1),desk_direction_choice==1);
+    sp_text(32,388,width()-64,"APPLIES TO THE DESK CLOCK",false,true);
+    sp_text(32,height()-142,width()-64,desk_direction_message[0]?desk_direction_message:"DRAFT ONLY - USE SAVE",false,true);sp_footer(true);
+#endif
   } else if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
     bool language=sv_page==SV_LANGUAGE;char choice[64];
     if(language)snprintf(choice,sizeof(choice),"%s (%s)",portable_reader_language_name(reader_choice),portable_reader_language_code(reader_choice));
@@ -183,6 +249,11 @@ static void sp_redraw(void) {
     sp_text(32,340,width()-64,"REPORTED DEVICE CAPABILITIES",false,true);sp_footer(false);
   }
   present(sp_clean);sp_clean=false;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  sp_submitted_page=sv_page;
+  sp_submitted_q8=sv_page==SV_ROOT || sv_page==SV_FIELDS?sp_scroll[sv_page==SV_FIELDS].position_q8:0;
+  sp_scroll_visible();
+#endif
 }
 static void sp_emit_hit(t5_app_input_t *out,int x,int y,int w,int h) {
 #ifdef PORTABLE_NOVA_UI
@@ -192,8 +263,31 @@ static void sp_emit_hit(t5_app_input_t *out,int x,int y,int w,int h) {
 }
 static bool sp_poll(t5_app_input_t *out) {
   settings_navigation_poll(out);
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  sp_scroll_visible();sp_touch_row=-1;
+  if(out->buttons){settings_view_interrupt();if(out->buttons&T5_APP_BUTTON_BACK)sv_back_input(out);return true;}
+#else
   if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
+#endif
   portable_touch_sample s;input_take(&s);
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  bool list=sv_page==SV_ROOT || sv_page==SV_FIELDS;
+  if(list) {
+    sp_scroll_configure(sv_page);
+    portable_touch_scroll *scroll=&sp_scroll[sv_page==SV_FIELDS];
+    if(s.began) {
+      sp_hit_q8=sp_completed_q8;sp_hit_ready=sp_completed_page==sv_page;
+      sp_hit_x=s.x;sp_hit_y=s.y;
+    }
+    unsigned change=portable_scroll_touch(scroll,&s,input_sampled_at);
+    if(change&PORTABLE_SCROLL_CHANGED)sp_dirty=true;
+    if(change&PORTABLE_SCROLL_BACK){settings_view_interrupt();sv_back_input(out);return true;}
+    if(!(change&PORTABLE_SCROLL_TAP) || !sp_hit_ready)return true;
+    portable_touch_scroll visible=*scroll;visible.position_q8=sp_hit_q8;
+    sp_touch_row=portable_scroll_row(&visible,sp_hit_x,sp_hit_y);
+    s.x=sp_hit_x;s.y=sp_hit_y;
+  } else {
+#endif
   if(!s.valid||s.cancelled){sv_gesture=false;sv_need_neutral=true;return true;}
   if(sv_need_neutral){if(!s.down||(s.began&&s.tap_eligible))sv_need_neutral=false;else return true;}
   if(s.began){sv_gesture=true;sv_start_x=sv_last_x=s.x;sv_start_y=sv_last_y=s.y;}
@@ -208,30 +302,61 @@ static bool sp_poll(t5_app_input_t *out) {
     }
   }
   sv_gesture=false;if(!tap||s.x>=width()||s.y>=height())return true;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  }
+#endif
   int x=s.x,y=s.y;
-  bool editable=sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
+  bool editable=
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+    sv_page==SV_TIMER ||
+#endif
+    sv_page==SV_FIELDS||sv_page==SV_TIME_FORMAT||sv_page==SV_SLEEP||sv_page==SV_ALERT;
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   if(sv_page==SV_DESK_FACE || sv_page==SV_FLIP || sv_page==SV_LANGUAGE)editable=true;
+#endif
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  if(sv_page==SV_DESK_DIRECTION)editable=true;
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(sv_page==SV_ALERT&&settings_visual_alerts())editable=false;
 #endif
-  if(y>=height()-112&&y<height()-24) {
-    if((editable||(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()))&&x>=width()/2-8&&x<width()/2+8)return true;
+  if(y>=height()-112&&y<height()-24
+#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_SETTINGS_LIST_SCROLL)
+     && sv_page!=SV_ROOT
+#endif
+    ) {
+    if((editable
+#ifndef PORTABLE_SETTINGS_LIST_SCROLL
+        ||(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows())
+#endif
+       )&&x>=width()/2-8&&x<width()/2+8)return true;
     if(editable&&x>=width()/2){editor_field=6;out->buttons=T5_APP_BUTTON_CONFIRM;}
+#ifndef PORTABLE_SETTINGS_LIST_SCROLL
     else if(sv_page==SV_ROOT&&SETTINGS_ROW_COUNT>sp_rows()&&x>=width()/2){sp_first=SP_MORE_NEXT;settings_view_redraw();}
+#endif
     else sv_back_input(out);
     return true;
   }
   if(x<32||x>=width()-32)return true;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  if(sv_page==SV_ROOT){if(sp_touch_row>=0){out->tapped=true;out->touch_x=x;out->touch_y=y;}return true;}
+  if(sv_page==SV_FIELDS){if(sp_touch_row>=0){editor_field=(unsigned)sp_touch_row;out->buttons=T5_APP_BUTTON_CONFIRM;}return true;}
+#else
   if(sv_page==SV_ROOT){if(y>=SP_TOP&&y<SP_TOP+(int)sp_rows()*SP_ROW){out->tapped=true;out->touch_x=x;out->touch_y=y;}return true;}
   if(sv_page==SV_FIELDS&&y>=SP_TOP&&y<SP_TOP+(int)sp_rows()*SP_ROW&&sp_field_first+(unsigned)(y-SP_TOP)/SP_ROW<6){editor_field=sp_field_first+(unsigned)(y-SP_TOP)/SP_ROW;out->buttons=T5_APP_BUTTON_CONFIRM;return true;}
+#endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
     if(y>=260 && y<348) {
       if(x<width()/2-8)out->buttons=T5_APP_BUTTON_LEFT;
       else if(x>=width()/2+8)out->buttons=T5_APP_BUTTON_RIGHT;
     }
+    return true;
+  }
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  if(sv_page==SV_TIMER) {
+    if(y>=238 && y<350) {if(x<144)out->buttons=T5_APP_BUTTON_LEFT;else if(x>=width()-144)out->buttons=T5_APP_BUTTON_RIGHT;}
     return true;
   }
 #endif
@@ -244,6 +369,11 @@ static bool sp_poll(t5_app_input_t *out) {
   } else if(sv_page==SV_TIME_FORMAT) {
     if(y>=144&&y<232)sp_emit_hit(out,28,76,184,32);
     else if(y>=256&&y<344)sp_emit_hit(out,28,124,184,32);
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  } else if(sv_page==SV_DESK_DIRECTION) {
+    if(y>=144&&y<232)sp_emit_hit(out,28,76,184,32);
+    else if(y>=256&&y<344)sp_emit_hit(out,28,124,184,32);
+#endif
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   } else if(sv_page==SV_FLIP || sv_page==SV_LANGUAGE) {
     bool language=sv_page==SV_LANGUAGE;char choice[64];

@@ -1,4 +1,7 @@
-#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_QUICK_RADIOS) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+/* The X4 native app obeys namespace-1 radio policy even when this app does
+ * not expose radio toggles. Watch/default builds retain their opt-in. */
+#define PORTABLE_WIFI_CHECK_RADIO_POLICY
 #include "PortableRadioPolicy.h"
 #endif
 /* Explicit portable build only. Reader's firmware selector remains in the
@@ -7,7 +10,13 @@
 #include "PortableWifiView.h"
 #include "PaperFrame.h"
 #include "PortableWifiCredentials.h"
+#ifdef PORTABLE_BLE_BROADCAST
+#include "PortableBroadcastClient.h"
+#include "PortableNativeCustody.h"
+#endif
 #include "RiscRuntimeV1.h"
+#include "PortableAppCustody.h"
+#include "PortableStageLog.h"
 #include "WifiApi.h"
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +42,23 @@ static const risc_runtime_api_v1 *wr;
 static risc_runtime_capability_v1 wg, wk;
 static const wifi_api_v1 *wifi;
 static const risc_key_value_v1 *wifi_store;
+#if defined(PORTABLE_BLE_BROADCAST) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+static const risc_key_value_v1 *wifi_store_source;
+static risc_key_value_v1 wifi_store_checked;
+static int32_t wifi_store_result(int32_t result) {
+ if(result!=RISC_KEY_VALUE_OK && result!=RISC_KEY_VALUE_NOT_FOUND && result!=RISC_KEY_VALUE_IO &&
+    result!=RISC_KEY_VALUE_INVALID && result!=RISC_KEY_VALUE_BUFFER_SMALL)portable_adapter_retain();
+ return result;
+}
+static int32_t wifi_store_get(void*c,const char*k,void*b,uint32_t size,uint32_t*used) {
+ (void)c;if(portable_adapter_retained() || !portable_broadcast_stop())return RISC_KEY_VALUE_CONTEXT;
+ return wifi_store_result(wifi_store_source->get(wifi_store_source->context,k,b,size,used));
+}
+static int32_t wifi_store_put(void*c,const char*k,const void*b,uint32_t size) {
+ (void)c;if(portable_adapter_retained() || !portable_broadcast_stop())return RISC_KEY_VALUE_CONTEXT;
+ return wifi_store_result(wifi_store_source->put(wifi_store_source->context,k,b,size));
+}
+#endif
 static portable_wifi_credentials credentials;
 static garden_radio_scan_result_v1 scan_result;
 static portable_wifi_view view;
@@ -40,6 +66,14 @@ static char editor[64], masked[72], status_text[64], ip_text[48];
 static char scan_values[GARDEN_RADIO_SCAN_MAX][40];
 static const char *wifi_message;
 static unsigned page, choice, key_page;
+#if defined(PORTABLE_TOUCH_SCROLL)
+static unsigned wifi_view_identity;
+#define WIFI_NEW_VIEW() (++wifi_view_identity)
+#define WIFI_SCROLL_CANCEL() portable_wifi_scroll_interrupt()
+#else
+#define WIFI_NEW_VIEW() ((void)0)
+#define WIFI_SCROLL_CANCEL() ((void)0)
+#endif
 static bool opened, dirty, armed, open_network, scanning, scan_owned, joining, cleanup_pending, draft_dirty;
 static uint32_t operation_started,last_status;
 static wifi_link_t link_state;
@@ -54,39 +88,61 @@ static bool wifi_api_valid(const wifi_api_v1 *w) {
     w->scan_poll && w->scan_cancel && w->disconnect_checked;
 }
 static bool wifi_acquire(void) {
+ if(PORTABLE_APP_RETAINED())return false;
   if(wifi)return true;
   if(wg.api)return false; /* Invalid or uncertain grant must be released first. */
   wg=(risc_runtime_capability_v1){.struct_size=sizeof(wg)};
-  if(!wr->acquire("net.wifi",1,PORTABLE_WIFI_INSTANCE,&wg))return false;
+  if(!wr->acquire("net.wifi",1,PORTABLE_WIFI_INSTANCE,&wg)){portable_stage_log(wr,"wifi-provider","result=acquire-failed");return false;}
   if(!wifi_api_valid(wg.api)) {
+    PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;
+    portable_stage_log(wr,"wifi-provider","result=invalid-api");
     if(wr->release(&wg))memset(&wg,0,sizeof(wg));
     return false;
   }
-  wifi=wg.api;return true;
+  wifi=wg.api;portable_stage_log(wr,"wifi-provider","result=ready connect=not-requested");return true;
 }
 static bool wifi_disconnect(void) {
+ if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return false;
+#endif
   if(!wifi) {cleanup_pending=wg.api!=NULL;return !cleanup_pending;}
   if(!wifi->disconnect_checked(wifi->context)) {
+    PORTABLE_APP_RETAIN();
+    portable_stage_log(wr,"wifi-disconnect","result=failed cleanup=required");
     cleanup_pending=true;strcpy(status_text,"Cleanup required");ip_text[0]=0;wifi_message="Cleanup failed - retry Disconnect";dirty=true;return false;
   }
   scanning=scan_owned=joining=cleanup_pending=false;link_state=WIFI_LINK_DOWN;
+  portable_stage_log(wr,"wifi-disconnect","result=ok state=down");
   strcpy(status_text,"Disconnected");ip_text[0]=0;
   memset(&scan_result,0,sizeof(scan_result));dirty=true;return true;
 }
+#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
+bool portable_wifi_idle_ready(void) {
+ if(PORTABLE_APP_RETAINED())return false;
+ return !opened || (!scanning && !scan_owned && !joining && !cleanup_pending && link_state==WIFI_LINK_DOWN);
+}
+#endif
 bool portable_wifi_suspend(void) {
+ if(PORTABLE_APP_RETAINED())return false;
+  WIFI_SCROLL_CANCEL();
   if(!opened)return true;
+  portable_stage_log(wr,"wifi-suspend","begin disconnect=required");
   if(wifi && !wifi_disconnect())return false;
   if(wg.api && !wr->release(&wg)) {
+    portable_stage_log(wr,"wifi-suspend","result=release-failed");
     cleanup_pending=true;wifi_message="Release failed - retry Disconnect";dirty=true;return false;
   }
-  memset(&wg,0,sizeof(wg));wifi=NULL;cleanup_pending=false;return true;
+  memset(&wg,0,sizeof(wg));wifi=NULL;cleanup_pending=false;portable_stage_log(wr,"wifi-suspend","result=ok grant=released");return true;
 }
 void portable_wifi_resume(void) {
+ if(PORTABLE_APP_RETAINED())return;
   if(!opened)return;
   wifi_message=wifi_acquire()?"Woke - connect when ready":"Wi-Fi unavailable - retry Connect";
   link_state=WIFI_LINK_DOWN;last_status=wa->millis();armed=false;dirty=true;
 }
 bool portable_wifi_close(void) {
+ if(PORTABLE_APP_RETAINED())return false;
   if(!opened)return true;
   if(!portable_wifi_suspend())return false;
   if(wk.api && !wr->release(&wk))return false;
@@ -95,6 +151,7 @@ bool portable_wifi_close(void) {
   wifi_zero(&scan_result,sizeof(scan_result));memset(&view,0,sizeof(view));opened=false;return true;
 }
 static void wifi_page(unsigned next_page) {
+  WIFI_SCROLL_CANCEL();WIFI_NEW_VIEW();
   page=next_page;choice=0;armed=false;dirty=true;
 }
 static void wifi_edit(unsigned field) {
@@ -110,29 +167,58 @@ static bool wifi_draft_valid(void) {
   if(!portable_wifi_credentials_validate(&credentials)) {wifi_message="Password must be empty or 8-63 chars";return false;}
   return true;
 }
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+static bool wifi_policy_allows(const char *stage) {
+  (void)stage; /* Stage logging is optional in non-selected profiles. */
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  unsigned permission=portable_radio_wifi_permission(wr);
+  if(PORTABLE_APP_RETAINED())return false;
+  if(permission==PORTABLE_WIFI_POLICY_ALLOWED)return true;
+  bool off=permission==PORTABLE_WIFI_POLICY_OFF;
+  portable_stage_log(wr,stage,off?"result=blocked radio-policy=off":"result=blocked radio-policy=unreadable");
+  wifi_message=off?"Wi-Fi is off in Quick Controls":"Radio settings unavailable; retry";
+#else
+  if(portable_radio_wifi_allowed(wr))return true;
+  portable_stage_log(wr,stage,"result=blocked radio-policy=off-or-unreadable");
+  wifi_message="Wi-Fi is off in Quick Controls";
+#endif
+  dirty=true;return false;
+}
+#endif
 static void wifi_connect(void) {
-#ifdef PORTABLE_QUICK_RADIOS
- if(!portable_radio_wifi_allowed(wr)){wifi_message="Wi-Fi is off in Quick Controls";dirty=true;return;}
+ if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return ;
+#endif
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+ if(!wifi_policy_allows("wifi-connect"))return;
 #endif
   if(!wifi_draft_valid()){dirty=true;return;}
   if(!wifi_acquire()) {wifi_message="Wi-Fi unavailable - retry Connect";dirty=true;return;}
   if(!wifi_disconnect())return;
   if(!wifi->connect(wifi->context,credentials.ssid,credentials.password)) {
+    portable_stage_log(wr,"wifi-connect","result=failed cleanup=required");
     if(wifi_disconnect())wifi_message="Connect failed - retry";
     dirty=true;return;
   }
   joining=true;link_state=WIFI_LINK_JOINING;strcpy(status_text,"Connecting...");operation_started=wa->millis();
+  portable_stage_log(wr,"wifi-connect","result=accepted state=joining");
   wifi_message="Connecting - select Cancel to stop";dirty=true;
 }
 static void wifi_scan_start(void) {
-#ifdef PORTABLE_QUICK_RADIOS
- if(!portable_radio_wifi_allowed(wr)){wifi_message="Wi-Fi is off in Quick Controls";dirty=true;return;}
+ if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return ;
+#endif
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+ if(!wifi_policy_allows("wifi-scan"))return;
 #endif
   if(!wifi_acquire()){wifi_message="Wi-Fi unavailable - enter manually";dirty=true;return;}
   if(!wifi_disconnect())return;
-  if(!wifi->scan_start(wifi->context)){if(wifi_disconnect())wifi_message="Scan failed - retry or enter manually";dirty=true;return;}
+  if(!wifi->scan_start(wifi->context)){portable_stage_log(wr,"wifi-scan","result=start-failed");if(wifi_disconnect())wifi_message="Scan failed - retry or enter manually";dirty=true;return;}
   scan_result=(garden_radio_scan_result_v1){.struct_size=sizeof(scan_result)};
   scanning=scan_owned=true;operation_started=wa->millis();wifi_message="Scanning - Back cancels";wifi_page(WP_SCAN);
+  portable_stage_log(wr,"wifi-scan","result=accepted state=scanning");
 }
 static bool wifi_scan_valid(const garden_radio_scan_result_v1 *r) {
   if(r->struct_size<sizeof(*r) || r->count>GARDEN_RADIO_SCAN_MAX ||
@@ -142,12 +228,16 @@ static bool wifi_scan_valid(const garden_radio_scan_result_v1 *r) {
   return true;
 }
 static bool wifi_cancel_scan(void) {
+ if(PORTABLE_APP_RETAINED())return false;
   if(!wifi || !wifi->scan_cancel(wifi->context)) {
+    PORTABLE_APP_RETAIN();
+    portable_stage_log(wr,"wifi-scan-cancel","result=failed cleanup=required");
     cleanup_pending=true;wifi_message="Scan cleanup failed - retry Cancel";dirty=true;return false;
   }
-  scanning=scan_owned=false;cleanup_pending=false;return true;
+  scanning=scan_owned=false;cleanup_pending=false;portable_stage_log(wr,"wifi-scan-cancel","result=ok");return true;
 }
 static void wifi_tick(void) {
+ if(PORTABLE_APP_RETAINED())return;
   uint32_t now=wa->millis();
   if((uint32_t)(now-last_status)<250)return;
   last_status=now;
@@ -156,10 +246,13 @@ static void wifi_tick(void) {
     garden_radio_scan_result_v1 next_scan={.struct_size=sizeof(next_scan)};
     bool ok=wifi->scan_poll(wifi->context,&next_scan) && wifi_scan_valid(&next_scan);
     if(!ok || next_scan.state==GARDEN_RADIO_SCAN_FAILED || (scanning && (uint32_t)(now-operation_started)>=15000u)) {
+      portable_stage_log(wr,"wifi-scan",!ok?"result=invalid-status":next_scan.state==GARDEN_RADIO_SCAN_FAILED?"result=failed":"result=timeout");
       if(wifi_cancel_scan())wifi_message=ok?"Scan ended - retry or enter manually":"Scan unavailable - retry";
       dirty=true;
     } else if(next_scan.state==GARDEN_RADIO_SCAN_DONE) {
       bool changed=scanning || memcmp(&scan_result,&next_scan,sizeof(next_scan));
+      if(changed)portable_stage_log(wr,"wifi-scan",next_scan.count?"result=complete networks=found":"result=complete networks=none");
+      if(changed){WIFI_SCROLL_CANCEL();WIFI_NEW_VIEW();}
       scan_result=next_scan;scanning=false;wifi_message=scan_result.count?"Choose a network or scan again":"No networks - enter manually";
       dirty|=changed;
     }
@@ -169,6 +262,7 @@ static void wifi_tick(void) {
   wifi_link_t state=wifi->status(wifi->context);
   if(state>WIFI_LINK_UP) {if(wifi_disconnect())wifi_message="Invalid status - retry Connect";dirty=true;return;}
   if(state!=link_state) {
+    portable_stage_log(wr,"wifi-link",state==WIFI_LINK_UP?"state=up":state==WIFI_LINK_JOINING?"state=joining":"state=down");
     bool was_joining=joining;
     if(state==WIFI_LINK_DOWN && !wifi_disconnect())return;
     link_state=state;dirty=true;
@@ -176,6 +270,7 @@ static void wifi_tick(void) {
     else if(state==WIFI_LINK_DOWN && was_joining){joining=false;wifi_message="Connection failed - retry Connect";}
   }
   if(joining && (uint32_t)(now-operation_started)>=30000u) {
+    portable_stage_log(wr,"wifi-connect","result=timeout");
     if(wifi_disconnect())wifi_message="Connection timed out - retry";
     dirty=true;
   }
@@ -190,6 +285,7 @@ static void wifi_tick(void) {
   strcpy(status_text,status);strcpy(ip_text,address);
 }
 bool portable_wifi_services_safe(void) {
+ if(PORTABLE_APP_RETAINED())return false;
   if(!opened)return true;
   if(cleanup_pending)return false;
   /* Runtime yield may discover a failed native operation immediately before
@@ -197,7 +293,11 @@ bool portable_wifi_services_safe(void) {
   last_status=wa->millis()-250u;wifi_tick();
   return !cleanup_pending;
 }
+#ifdef PORTABLE_TOUCH_SCROLL
+static void wifi_make_view_data(void) {
+#else
 static void wifi_make_view(void) {
+#endif
   memset(&view,0,sizeof(view));view.selected=choice;view.message=wifi_message;view.detail=status_text;
   if(page==WP_SSID || page==WP_PASSWORD) {
     view.title=page==WP_SSID?"NETWORK NAME":"PASSWORD";view.keyboard=true;view.key_page=key_page;
@@ -245,12 +345,18 @@ static void wifi_make_view(void) {
   view.rows[8]="Connection status";view.values[8]=ip_text[0]?ip_text:PORTABLE_WIFI_VERSION;
   view.rows[9]="Session and privacy";view.values[9]="Back/sleep disconnect; plaintext Save";
 }
+#ifdef PORTABLE_TOUCH_SCROLL
+static void wifi_make_view(void) {
+  wifi_make_view_data();
+  view.identity=wifi_view_identity;portable_wifi_scroll_prepare(&view);
+}
+#endif
 static void wifi_key(unsigned key) {
   size_t n=wifi_length(editor,sizeof(editor));
   if(key<PORTABLE_WIFI_KEYS_PER_PAGE) {
     unsigned ch=portable_watch_key_character(key_page,key),limit=page==WP_SSID?32:63;
     if(ch && n<limit){editor[n]=(char)ch;editor[n+1]=0;}
-  } else if(key==PWK_PAGE){key_page=(key_page+1)%PWK_PAGES;choice=0;}
+  } else if(key==PWK_PAGE){WIFI_SCROLL_CANCEL();WIFI_NEW_VIEW();key_page=(key_page+1)%PWK_PAGES;choice=0;}
   else if(key==PWK_DELETE){if(n)editor[n-1]=0;}
   else if(key==PWK_DONE) {
     char *dst=page==WP_SSID?credentials.ssid:credentials.password;
@@ -266,6 +372,9 @@ static void wifi_forget(void) {
    * refused cleanup leaves the saved profile and editor available for retry. */
   if(!wifi_disconnect()){wifi_page(WP_ROOT);return;}
   int result=portable_wifi_credentials_forget(wifi_store);
+#ifdef PORTABLE_BLE_BROADCAST
+  if(portable_adapter_retained())return;
+#endif
   saved_state=result;draft_dirty=false;portable_wifi_credentials_clear(&credentials);wifi_zero(editor,sizeof(editor));wifi_zero(masked,sizeof(masked));open_network=false;
   wifi_message=result==PORTABLE_WIFI_CREDENTIALS_EMPTY?"Forgotten; storage is not a secure vault":
     result==PORTABLE_WIFI_CREDENTIALS_CLEANUP_REMANENCE?"Forgotten; old storage bytes may remain":"Forget unconfirmed - retry";
@@ -301,6 +410,10 @@ static void wifi_activate(unsigned selected) {
     if(!portable_wifi_services_safe()){wifi_message="Disconnect before retrying Save";dirty=true;break;}
     if(wifi_draft_valid()) {
       saved_state=portable_wifi_credentials_save(wifi_store,&credentials);
+      if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_BLE_BROADCAST
+      if(portable_adapter_retained())return;
+#endif
       if(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED)draft_dirty=false;
       wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved; storage is not a secure vault":"Save unconfirmed - retry";
     }
@@ -311,6 +424,7 @@ static void wifi_activate(unsigned selected) {
   }
 }
 static bool wifi_back(void) {
+  WIFI_SCROLL_CANCEL();
   if(page==WP_SCAN && (scan_owned || cleanup_pending) && !wifi_cancel_scan())return false;
   if(page!=WP_ROOT) {
     wifi_zero(editor,sizeof(editor));wifi_zero(masked,sizeof(masked));wifi_page(WP_ROOT);return false;
@@ -325,26 +439,47 @@ static bool wifi_back(void) {
   return true;
 }
 static bool wifi_open(void) {
-  wa=t5_app_get_api(1);wr=risc_runtime_get_api(1);
+ if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ if(opened)return true;
+#endif
+  wa=t5_app_get_api(1);wr=PORTABLE_APP_RUNTIME();
   if(!wa || !wa->poll || !wa->millis || !wa->screen_width || !wa->screen_height ||
      wa->screen_width()<240 || wa->screen_height()<240 || !wr || wr->api_version!=1 ||
      wr->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !wr->acquire || !wr->release || !wr->request_launch || !wr->diagnostic || !wr->yield_ms)return false;
   memset(&wg,0,sizeof(wg));memset(&wk,0,sizeof(wk));wifi=NULL;wifi_store=NULL;
   portable_wifi_credentials_clear(&credentials);wifi_zero(editor,sizeof(editor));wifi_zero(masked,sizeof(masked));
   memset(&scan_result,0,sizeof(scan_result));opened=true;scanning=scan_owned=joining=cleanup_pending=draft_dirty=false;
+#ifdef PORTABLE_TOUCH_SCROLL
+  wifi_view_identity=1;portable_wifi_scroll_reset();
+#endif
   dirty=true;armed=false;page=WP_ROOT;choice=key_page=0;link_state=WIFI_LINK_DOWN;
   strcpy(status_text,"Disconnected");ip_text[0]=0;last_status=wa->millis();
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return false;
+#endif
   wk.struct_size=sizeof(wk);
   if(wr->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_WIFI_STORAGE_INSTANCE,&wk)) {
     const risc_key_value_v1 *kv=wk.api;
     if(kv && kv->api_version==1 && kv->struct_size>=sizeof(*kv) && kv->get && kv->put)wifi_store=kv;
   }
-  saved_state=portable_wifi_credentials_load(wifi_store,&credentials);open_network=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED && !credentials.password[0];
+#if defined(PORTABLE_BLE_BROADCAST) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+  if(wifi_store){wifi_store_source=wifi_store;wifi_store_checked=*wifi_store;wifi_store_checked.get=wifi_store_get;wifi_store_checked.put=wifi_store_put;wifi_store=&wifi_store_checked;}
+#endif
+  if(!wifi_store){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
+  saved_state=portable_wifi_credentials_load(wifi_store,&credentials);
+  if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_BLE_BROADCAST
+  if(portable_adapter_retained())return false;
+#endif
+  open_network=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED && !credentials.password[0];
+  portable_stage_log(wr,"wifi-saved-profile",saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"result=loaded connect=explicit":
+      saved_state==PORTABLE_WIFI_CREDENTIALS_EMPTY?"result=empty connect=explicit":saved_state==PORTABLE_WIFI_CREDENTIALS_INVALID?"result=invalid":"result=unavailable");
   wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved draft loaded; Connect when ready":
       saved_state==PORTABLE_WIFI_CREDENTIALS_EMPTY?"Enter a network or scan":
       saved_state==PORTABLE_WIFI_CREDENTIALS_INVALID?"Saved data invalid; enter a network":"Storage unavailable; temporary connection";
   if(!wifi_acquire())wifi_message="Wi-Fi unavailable; retry Connect";
-  return true;
+  return !PORTABLE_APP_RETAINED();
 }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 static void wifi_controller_main(void) {
@@ -353,6 +488,7 @@ void app_main(void) {
 #endif
   if(!wifi_open())return;
   for(;;) {
+ if(PORTABLE_APP_RETAINED())return;
     if(dirty){
       wifi_make_view();
       if(!portable_wifi_paper() || paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
@@ -365,6 +501,7 @@ void app_main(void) {
       /* The Runtime exit barrier precedes fini. Standalone/non-alarm builds
        * must also drain healthy RF before returning after any ordinary error. */
       if(!portable_wifi_suspend()) {
+        if(PORTABLE_APP_RETAINED())return;
         wr->diagnostic("WIFI poll-failure cleanup-unconfirmed; invocation retained");
         for(;;)wr->yield_ms(50);
       }
@@ -374,6 +511,10 @@ void app_main(void) {
      * Never turn that terminal handoff into nested Back or redraw the old app. */
     if(input.exit_requested && !opened)return;
     wifi_tick();
+    if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_TOUCH_SCROLL
+    dirty|=portable_wifi_scroll_changed();
+#endif
     if(!input.buttons && !input.tapped && !input.exit_requested){armed=true;continue;}
     if(!armed)continue;
     armed=false;
@@ -409,7 +550,12 @@ void app_main(void) {
     if(!count)continue;
     if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))choice=choice?choice-1:count-1;
     else if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))choice=(choice+1)%count;
-    else if(input.buttons&T5_APP_BUTTON_CONFIRM)wifi_activate(choice);
+    else if(input.buttons&T5_APP_BUTTON_CONFIRM){
+#ifdef PORTABLE_TOUCH_SCROLL
+      if(!portable_wifi_scroll_confirm(&view)){dirty=true;continue;}
+#endif
+      wifi_activate(choice);
+    }
     dirty=true;
   }
 }

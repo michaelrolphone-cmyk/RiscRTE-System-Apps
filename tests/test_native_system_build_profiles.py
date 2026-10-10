@@ -8,6 +8,17 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 
 class NativeSystemBuildProfiles(unittest.TestCase):
+    def test_installed_files_nonzero_instance_fails_before_compilation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            out=Path(tmp)/'product'
+            result=subprocess.run(['python',str(ROOT/'scripts/build_portable_file_browser.py'),
+                                   '--storage-instance','9','--output-dir',str(out)],
+                                  capture_output=True,text=True,
+                                  env=dict(os.environ,NATIVE_APP_CC='/must-not-compile'))
+            self.assertEqual(result.returncode,2,result.stderr)
+            self.assertIn('storage.installed-files is a Runtime service at instance 0',result.stderr)
+            self.assertFalse(out.exists())
+
     def test_refuses_incomplete_or_conflicting_profile(self):
         native=['--time-profile','x4-native-time','--alarm-client',
                 '--native-time-runtime-repo','/unused-runtime','--tagged-alarm-utilities','/unused-utilities']

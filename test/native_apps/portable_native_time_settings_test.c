@@ -15,7 +15,9 @@
 #define PORTABLE_INPUT_NAVIGATION
 #define PORTABLE_DISPLAY_ROTATION 90
 #define PORTABLE_HOME_APP "default.elf"
+#ifndef PORTABLE_SETTINGS_VERSION
 #define PORTABLE_SETTINGS_VERSION "1.3.7"
+#endif
 #ifdef TEST_NATIVE_SETTINGS_QUICK
 #define TEST_NATIVE_SETTINGS_ALARMS
 #define PORTABLE_QUICK_ACTIONS
@@ -23,7 +25,9 @@
 #endif
 #ifdef TEST_NATIVE_SETTINGS_ALARMS
 #define PORTABLE_ALARM_CLIENT
+#ifndef PORTABLE_RESIDENT_SHELL_CLIENT
 #define PORTABLE_ALARM_SETTINGS
+#endif
 #endif
 #ifdef TEST_NATIVE_SETTINGS_SHORT
 #define NATIVE_WIDTH 600
@@ -141,7 +145,14 @@ static void capture(void) {
 static bool health(risc_runtime_health_v1 *out) {
   io();assert(polls<1900);out->uptime_ms=ticks;return true;
 }
-static void yielding(uint32_t ms){io();ticks+=ms;}
+#ifdef TEST_X4_IDLE_SETTINGS
+static void idle_settings_yield(void);
+#endif
+static void yielding(uint32_t ms){io();ticks+=ms;
+#ifdef TEST_X4_IDLE_SETTINGS
+ idle_settings_yield();
+#endif
+}
 static bool diagnostic(const char *s){io();assert(s);return true;}
 static bool request_launch(const char *path){io();assert(!strcmp(path,PORTABLE_HOME_APP));++launches;return true;}
 static bool retain(void) {
@@ -175,8 +186,14 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
   if(delayed_present_case()) {
     assert(!async_pending);
     if(!timezone_page_case()) {
-      if(presents==2)assert(sv_page==SV_VALUE&&options->intent==RISC_DISPLAY_PRESENT_CLEAN);
-      if(presents==3)assert(sv_page==SV_ROOT&&options->intent==RISC_DISPLAY_PRESENT_CLEAN);
+      unsigned expected_intent=
+#ifdef PORTABLE_PAPER_TRANSITIONS
+        RISC_DISPLAY_PRESENT_LOW_LATENCY;
+#else
+        RISC_DISPLAY_PRESENT_CLEAN;
+#endif
+      if(presents==2)assert(sv_page==SV_VALUE&&options->intent==expected_intent);
+      if(presents==3)assert(sv_page==SV_ROOT&&options->intent==expected_intent);
       if(sv_page==SV_VALUE) {
         assert(settings_draft.year==2029&&async_edits==5&&!nav_buttons[polls]);
         ++async_value_frames;
@@ -185,7 +202,7 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
     async_pending=true;async_submitted_at=ticks;
     memcpy(async_pixels,pixels,sizeof(pixels));
   }
-#if defined(ALARM_SERVICE_TAGGED_V2) && defined(TEST_NATIVE_SETTINGS_ALARMS)
+#if defined(ALARM_SERVICE_TAGGED_V2) && defined(PORTABLE_ALARM_SETTINGS)
   if(alarms.api)assert(settings_visual_alerts());
 #endif
   if(sv_page==SV_FIELDS&&!saw_fields){first_draft=settings_draft;saw_fields=true;snprintf(first_basis,sizeof(first_basis),"%s",snt_basis_label());}
@@ -196,7 +213,13 @@ static bool frame_show(void *ctx,risc_display_frame_v1 frame,const risc_display_
   if(timezone_page_case()&&sv_page==SV_TIMEZONE_REGIONS) {
     if(!timezone_started){timezone_started=true;timezone_start=ticks;timezone_seen_first=stz_first;}
     else {
-      assert(count==1&&options->intent==RISC_DISPLAY_PRESENT_QUALITY);
+      assert(count==1&&options->intent==
+#ifdef PORTABLE_PAPER_TRANSITIONS
+             RISC_DISPLAY_PRESENT_LOW_LATENCY
+#else
+             RISC_DISPLAY_PRESENT_QUALITY
+#endif
+             );
       timezone_damage=damage[0];
       assert(damage[0].x>=0&&damage[0].y>=0&&damage[0].width&&damage[0].height);
       assert(damage[0].x+(int)damage[0].width<=NATIVE_WIDTH&&damage[0].y+(int)damage[0].height<=NATIVE_HEIGHT);
@@ -341,17 +364,37 @@ static int32_t kv_get(void *ctx,const char *key,void *out,uint32_t capacity,uint
     data=zone_record;length=zone_size;
   } else if(!strcmp(key,PORTABLE_READER_FLIP_KEY)){data=flip_record;length=flip_size;}
   else if(!strcmp(key,PORTABLE_READER_LANGUAGE_KEY)||!strcmp(key,PORTABLE_TIME_FORMAT_KEY)||
-          !strcmp(key,PORTABLE_SLEEP_KEY)||!strcmp(key,PORTABLE_DESK_FACE_KEY))return RISC_KEY_VALUE_NOT_FOUND;
-#ifdef TEST_NATIVE_SETTINGS_ALARMS
+          !strcmp(key,PORTABLE_SLEEP_KEY)||!strcmp(key,PORTABLE_DESK_FACE_KEY)
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+          ||!strcmp(key,PORTABLE_DESK_DIRECTION_KEY)
+#endif
+          )return RISC_KEY_VALUE_NOT_FOUND;
+#ifdef PORTABLE_ALARM_SETTINGS
   else if(!strcmp(key,PORTABLE_ALERT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
 #ifdef TEST_NATIVE_SETTINGS_QUICK
   else if(!strcmp(key,PORTABLE_RADIO_KEY)){data=radio_record;length=4;}
   else if(!strcmp(key,PQA_DND_KEY)&&quick_puts){data=&dnd_value;length=1;}
   else if(!strcmp(key,PQA_BRIGHTNESS_KEY)||!strcmp(key,PQA_VOLUME_KEY)||
+#ifdef PORTABLE_PAPER_TRANSITIONS
+          !strcmp(key,PQA_RESTORE_BRIGHTNESS_KEY)||
+#endif
           !strcmp(key,PQA_RESTORE_VOLUME_KEY)||!strcmp(key,PQA_DND_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
-  else assert(!"unexpected preference read");
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+  else if(!strcmp(key,"quick_radio"))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+  else if(!strcmp(key,"ble_broadcast"))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  else if(!strcmp(key,PORTABLE_SLEEP_IDLE_KEY)||!strcmp(key,PORTABLE_SLEEP_DEEP_KEY)
+#ifdef PORTABLE_LOW_BATTERY
+    ||!strcmp(key,PORTABLE_LOW_BATTERY_KEY)
+#endif
+    )return RISC_KEY_VALUE_NOT_FOUND;
+#endif
+  else {fprintf(stderr,"unexpected preference read: %s\n",key);assert(!"unexpected preference read");}
   if(!length)return RISC_KEY_VALUE_NOT_FOUND;
   *size=length;if(capacity<length)return RISC_KEY_VALUE_BUFFER_SMALL;
   memcpy(out,data,length);
@@ -457,8 +500,13 @@ static bool ble_status(void *ctx,uint8_t *out) {
 static const wifi_api_v1 wifi_api={.api_version=1,.struct_size=sizeof(wifi_api),.status=wifi_status,.disconnect_checked=wifi_disconnect};
 static const portable_bluetooth_control_v1 ble_api={.api_version=1,.struct_size=sizeof(ble_api),.set_enabled=ble_set,.status=ble_status};
 #endif
+#include "broadcast_fixture.h"
 static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
-  io();assert(in_main&&grant->struct_size==sizeof(*grant));++acquires;
+  io();assert((in_main
+#ifdef PORTABLE_BLE_BROADCAST
+    || (in_fini&&!strcmp(name,TELEMETRY_BROADCAST_CAPABILITY))
+#endif
+    )&&grant->struct_size==sizeof(*grant));++acquires;
   if(getenv("NATIVE_SETTINGS_TRACE"))fprintf(stderr,"acquire %s\n",name);
   unsigned kind=0;const void *api=NULL;
   if(!strcmp(name,"display.output")){kind=K_DISPLAY;api=&display_api;}
@@ -474,6 +522,9 @@ static bool acquire(const char *name,uint32_t version,uint64_t instance,risc_run
 #ifdef TEST_NATIVE_SETTINGS_QUICK
   else if(!strcmp(name,"net.wifi")){kind=K_WIFI;api=&wifi_api;assert(instance==15);}
   else if(!strcmp(name,"bluetooth.hci")){kind=K_BLE;api=&ble_api;assert(instance==16);}
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+  else if(!strcmp(name,TELEMETRY_BROADCAST_CAPABILITY)){kind=12;api=&fixture_broadcast_api;}
 #endif
   else {assert(!strcmp(name,"board.battery"));kind=K_BATTERY;api=&battery_api;}
 #ifdef ALARM_SERVICE_TAGGED_V2
@@ -491,7 +542,7 @@ assert(kind==K_KV||kind==K_WIFI||kind==K_BLE||!instance);
   if(which("metadata-acquire-false")&&kind==K_KV&&seeds){hidden=true;return false;}
   unsigned slot=1;while(slot<32&&leases[slot].kind)++slot;assert(slot<32);
   leases[slot]=(lease){kind,++generation};*grant=(risc_runtime_capability_v1){sizeof(*grant),slot,generation,api};
-  ++live;if(live>high_water)high_water=live;return true;
+  assert(live<16);++live;if(live>high_water)high_water=live;return true;
 }
 static bool release(risc_runtime_capability_v1 *grant) {
   io();assert(grant->slot&&grant->slot<32&&grant->api&&live);
@@ -506,8 +557,24 @@ static bool release(risc_runtime_capability_v1 *grant) {
   }
   entry->kind=0;--live;*grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};return true;
 }
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+static unsigned resident_checks;
+static int32_t fixture_resident_checkpoint(uint64_t invocation,const risc_resident_request_v1 *request,risc_resident_reply_v1 *reply) {
+  io();assert(invocation==1 && !surface.frame && !paper_token && display_settled);
+  assert(request->reason==RISC_RESIDENT_CHECKPOINT_POLL);++resident_checks;
+  reply->flags=0;return RISC_RESIDENT_OK;
+}
+static bool fixture_resident_shell(risc_resident_client_v1 *out) {
+  io();*out=(risc_resident_client_v1){.api_version=1,.struct_size=sizeof(*out),.invocation=1,
+    .role=RISC_RESIDENT_ROLE_FOREGROUND,.checkpoint=fixture_resident_checkpoint};return true;
+}
+#endif
 static risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=health,.yield_ms=yielding,
- .diagnostic=diagnostic,.request_launch=request_launch,.acquire=acquire,.release=release,.retain_invocation=retain};
+ .diagnostic=diagnostic,.request_launch=request_launch,.acquire=acquire,.release=release,.retain_invocation=retain
+#ifdef PORTABLE_RESIDENT_SHELL_CLIENT
+ ,.resident_shell=fixture_resident_shell
+#endif
+};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime:NULL;}
 static void nav(unsigned button){assert(next_at<2000);nav_buttons[next_at]=button;last_at=next_at;next_at+=4;}
 static void point(unsigned at,unsigned x,unsigned y){assert(contact_count<256);contacts[contact_count++]=(scripted_contact){at,x,y,1};}

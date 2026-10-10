@@ -1,7 +1,11 @@
+#ifdef PORTABLE_BLE_BROADCAST
+#include "PortableBroadcastClient.h"
+#endif
 /* Portable NOVA-7 File Browser. Uses the existing volume ABI and shared model;
  * the provider owns its filesystem, authority and mutation semantics. */
 #include "T5AppApi.h"
 #include "RiscRuntimeV1.h"
+#include "PortableAppCustody.h"
 #include "RiscStorageVolumeV1.h"
 #include "FileBrowserModel.h"
 #include "PortableNovaUi.h"
@@ -20,7 +24,11 @@
 #ifndef PORTABLE_FILE_BROWSER_CAPABILITY
 #define PORTABLE_FILE_BROWSER_CAPABILITY "storage.installed-files"
 #endif
+#ifdef PORTABLE_TOUCH_SCROLL
+#define FB_MAX_PAGE_ROWS 16u
+#else
 #define FB_MAX_PAGE_ROWS 6u
+#endif
 #define FB_PREVIEW_BYTES 192u
 #ifndef PORTABLE_FILE_BROWSER_INSTANCE
 #define PORTABLE_FILE_BROWSER_INSTANCE 0u
@@ -42,17 +50,21 @@ static const risc_storage_volume_api_v1 *fb_other_volume;
 static const t5_file_open_api_v1 *fb_handler_api;
 static unsigned fb_storage_index,fb_source_index,fb_list_choice,fb_action_page,fb_handler_offset,fb_handler_count,fb_notice_return,fbp_key_page;
 static bool fb_manage,fb_moving,fb_terminal;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+static bool fb_opened;
+#endif
 static char fb_source_path[FB_PATH_CAP],fb_source_base[FB_PATH_CAP],fb_source_query[64],fb_handler_path[FB_PATH_CAP];
 static t5_file_handler_t fb_handlers[FB_MAX_PAGE_ROWS];
 static void fb_draw(void);
 static void fbx_rename(void);
 static void fbx_cancel(void);
 static bool fbx_close_owned(void) {
+ if(PORTABLE_APP_RETAINED())return false;
  bool ok=true;
  for(unsigned i=0;i<4;i++)if(fb_owned[i].handle){
   fb_owned_handle *h=&fb_owned[i];const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(h->api);
   bool closed=h->directory?ext&&ext->dir_close_checked&&ext->dir_close_checked(h->api->context,h->handle):h->api->file_close(h->api->context,h->handle,h->commit);
-  if(closed)memset(h,0,sizeof(*h));else ok=false;
+  if(closed)memset(h,0,sizeof(*h));else {PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;ok=false;}
  }
  return ok;
 }
@@ -62,11 +74,17 @@ static bool fbx_hold(const risc_storage_volume_api_v1 *api,uint32_t handle,bool 
  fb_runtime->diagnostic("FILE_BROWSER ownership capacity exceeded");for(;;)fb_runtime->yield_ms(50);
 }
 static bool fbx_close_file(const risc_storage_volume_api_v1 *api,uint32_t handle,bool commit) {
- return api->file_close(api->context,handle,commit)||fbx_hold(api,handle,false,commit);
+ if(PORTABLE_APP_RETAINED())return false;
+ if(api->file_close(api->context,handle,commit))return true;
+ PORTABLE_APP_RETAIN();return fbx_hold(api,handle,false,commit);
 }
 static bool fbx_close_dir(const risc_storage_volume_api_v1 *api,uint32_t handle) {
+ if(PORTABLE_APP_RETAINED())return false;
  const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(api);
- if(ext&&ext->dir_close_checked)return ext->dir_close_checked(api->context,handle)||fbx_hold(api,handle,true,false);
+ if(ext&&ext->dir_close_checked){
+  if(ext->dir_close_checked(api->context,handle))return true;
+  PORTABLE_APP_RETAIN();return fbx_hold(api,handle,true,false);
+ }
  api->dir_close(api->context,handle);return true;
 }
 static risc_storage_dirent_v1 fb_rows[FB_MAX_PAGE_ROWS],fb_selected;
@@ -85,6 +103,7 @@ static bool fb_api_valid(const risc_storage_volume_api_v1 *p) {
  return p && p->api_version==1 && p->struct_size>=sizeof(*p) && p->refresh && p->ready && p->label && p->stat && p->dir_open && p->dir_next && p->dir_close && p->file_open_read && p->file_read && p->file_close && p->last_error;
 }
 static bool fb_acquire(void) {
+ if(PORTABLE_APP_RETAINED())return false;
  if(fb_volume)return true;
  if(fb_grant.api){if(!fb_runtime->release(&fb_grant))return false;memset(&fb_grant,0,sizeof(fb_grant));}
  fb_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_grant)};
@@ -95,14 +114,18 @@ static bool fb_acquire(void) {
  const char *capability=PORTABLE_FILE_BROWSER_CAPABILITY;uint64_t instance=PORTABLE_FILE_BROWSER_INSTANCE;
 #endif
  if(!fb_runtime->acquire(capability,1,instance,&fb_grant))return false;
- if(!fb_api_valid(fb_grant.api))return false;
+ if(!fb_api_valid(fb_grant.api)){PORTABLE_APP_RETAIN();return false;}
  fb_volume=fb_grant.api;return true;
 }
-bool portable_file_browser_safe(void) {if(fb_retained_file)return false;for(unsigned i=0;i<4;i++)if(fb_owned[i].handle)return false;return true;}
+bool portable_file_browser_safe(void) {if(PORTABLE_APP_RETAINED())return false;if(fb_retained_file)return false;for(unsigned i=0;i<4;i++)if(fb_owned[i].handle)return false;return true;}
 bool portable_file_browser_close(void) {
+ if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_TOUCH_SCROLL
+ portable_file_browser_scroll_interrupt();
+#endif
  if(!fbx_close_owned())return false;
  if(fb_retained_file) {
-  if(!fb_volume || !fb_volume->file_close(fb_volume->context,fb_retained_file,true))return false;
+  if(!fb_volume || !fb_volume->file_close(fb_volume->context,fb_retained_file,true)){PORTABLE_APP_RETAIN();return false;}
   fb_retained_file=0;
  }
  if(fb_handler_grant.api && !fb_runtime->release(&fb_handler_grant))return false;
@@ -110,9 +133,14 @@ bool portable_file_browser_close(void) {
  if(fb_other_grant.api && !fb_runtime->release(&fb_other_grant))return false;
  memset(&fb_other_grant,0,sizeof(fb_other_grant));fb_other_volume=NULL;
  if(fb_grant.api && !fb_runtime->release(&fb_grant))return false;
- memset(&fb_grant,0,sizeof(fb_grant));fb_volume=NULL;return true;
+ memset(&fb_grant,0,sizeof(fb_grant));fb_volume=NULL;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ fb_opened=false;
+#endif
+ return true;
 }
 static void fb_error(const char *fallback) {
+ if(PORTABLE_APP_RETAINED())return;
  char message[sizeof(fb_status)]={0};
  if(fb_volume && fb_volume->last_error(fb_volume->context,message,sizeof(message)) && message[0] && memchr(message,0,sizeof(message)))fb_message(message);
  else fb_message(fallback);
@@ -132,7 +160,13 @@ static int fb_compare(const risc_storage_dirent_v1 *a,const risc_storage_dirent_
 }
 /* Streaming bounded-page selection uses constant RAM, without truncating the
  * folder inventory. Backward pages use the same ordering in reverse. */
+#ifdef PORTABLE_TOUCH_SCROLL
+#include "file_browser_scroll_model.inc"
+#endif
 static bool fb_load(int direction) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(fb_paper)return fbs_load(direction);
+#endif
  risc_storage_dirent_v1 cursor={0};bool bounded=direction && fb_count;
  if(bounded)cursor=fb_rows[direction>0?fb_count-1:0];
  fb_count=0;fb_matched=0;fb_more=false;fb_loaded=false;
@@ -225,6 +259,9 @@ static void fb_filter_key(unsigned key) {
  fb_dirty=true;
 }
 static bool fb_back(void) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ portable_file_browser_scroll_interrupt();
+#endif
  if(!portable_file_browser_safe()){if(!portable_file_browser_close()){fb_error("Close failed. Back retries safely.");return false;}fb_message("Storage closed. Refresh to retry.");}
  if(fb_mode==FB_NOTICE){fb_mode=fb_notice_return;fb_dirty=true;return false;}
  if(fb_mode==FB_DESTINATION){fbx_cancel();return false;}
@@ -306,6 +343,9 @@ static void fb_draw(void) {
  fb_app->present(false);fb_dirty=false;
 }
 static void fb_move(int direction) {
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(fb_paper && fbs_move(direction))return;
+#endif
  if(fb_mode>=FB_ACTIONS){fbx_move(direction);return;}
  if(fb_mode==FB_PREVIEW){fb_preview_page(direction);return;}
  if(fb_mode==FB_DETAIL){if(direction<0)fb_detail_offset=0;else if(strlen(fb_selected.name)>64)fb_detail_offset=64;fb_dirty=true;return;}
@@ -334,14 +374,28 @@ static bool fb_touch(int x,int y) {
  return false;
 }
 static bool fb_open(void) {
- fb_app=t5_app_get_api(1);fb_runtime=risc_runtime_get_api(1);
+ if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ if(fb_opened)return true;
+#endif
+ fb_app=t5_app_get_api(1);fb_runtime=PORTABLE_APP_RUNTIME();
  if(!fb_app || !fb_app->poll || !fb_app->millis || !fb_app->present || !fb_app->screen_width || !fb_app->screen_height || fb_app->screen_width()<240 || fb_app->screen_height()<240 || !fb_runtime || fb_runtime->api_version!=1 || fb_runtime->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !fb_runtime->acquire || !fb_runtime->release || !fb_runtime->request_launch || !fb_runtime->yield_ms || !fb_runtime->diagnostic)return false;
  fb_paper=paper_presentation_get();fb_page_rows=2;
  if(fb_paper){if(fb_paper->struct_size<sizeof(*fb_paper)||!fb_paper->begin||!fb_paper->text||!fb_paper->measure||!fb_paper->contact)return false;fb_page_rows=(unsigned)(fb_app->screen_height()-256)/88;if(fb_page_rows>FB_MAX_PAGE_ROWS)fb_page_rows=FB_MAX_PAGE_ROWS;if(!fb_page_rows)fb_page_rows=1;}
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(fb_paper){fb_page_rows=FB_MAX_PAGE_ROWS;fbs_reset();}
+#endif
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+ fb_opened=true;
+#endif
  fbp_key_page=0;fbp_clean=true;fbp_last_mode=0;fbp_contact_down=false;
  memset(&fb_grant,0,sizeof(fb_grant));memset(&fb_other_grant,0,sizeof(fb_other_grant));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_other_volume=NULL;fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
  if(fb_app->set_back_exits_app)fb_app->set_back_exits_app(false);
- (void)fb_load(0);fbx_resume_result();return true;
+#ifdef PORTABLE_BLE_BROADCAST
+ if(!portable_broadcast_stop())return false;
+#endif
+ (void)fb_load(0);if(PORTABLE_APP_RETAINED())return false;
+ fbx_resume_result();return !PORTABLE_APP_RETAINED();
 }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 static void file_browser_controller_main(void) {
@@ -350,6 +404,7 @@ void app_main(void) {
 #endif
  if(!fb_open())return;
  for(;;) {
+ if(PORTABLE_APP_RETAINED())return;
   if(fb_terminal)return;
   if(fb_dirty)fb_draw();
   t5_app_input_t input={0};
@@ -357,9 +412,12 @@ void app_main(void) {
 #ifdef PORTABLE_ALARM_CLIENT
    if(portable_app_sleep_retained())return;
 #endif
-   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
+   if(!portable_file_browser_close()){if(PORTABLE_APP_RETAINED())return;fb_runtime->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
    return;
   }
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_stop())return;
+#endif
   if(fb_paper)fbp_input(&input);
   if(!fb_paper&&fb_app->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(fb_app->touch_contact) && fb_app->touch_contact) {
    t5_app_contact_t contact={0};if(fb_app->touch_contact(&contact)) {
@@ -378,7 +436,7 @@ void app_main(void) {
   /* A queued adapter handoff is terminal even while a folder/editor/preview
    * is open. Never reinterpret it as nested Back or replace its destination. */
   if(input.exit_requested) {
-   if(!portable_file_browser_close()){fb_runtime->diagnostic("FILE_BROWSER handoff cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
+   if(!portable_file_browser_close()){if(PORTABLE_APP_RETAINED())return;fb_runtime->diagnostic("FILE_BROWSER handoff cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
    return;
   }
   if(!input.buttons && !input.tapped && !input.exit_requested){fb_armed=true;continue;}
@@ -389,7 +447,12 @@ void app_main(void) {
   if(input.tapped){if(fb_touch(input.touch_x-(fb_app->screen_width()-240)/2,input.touch_y-(fb_app->screen_height()-240)/2))return;continue;}
   if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))fb_move(-1);
   else if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))fb_move(1);
-  else if(input.buttons&T5_APP_BUTTON_CONFIRM)fb_activate();
+  else if(input.buttons&T5_APP_BUTTON_CONFIRM){
+#ifdef PORTABLE_TOUCH_SCROLL
+   if(fb_paper&&!fbs_confirm_ready())continue;
+#endif
+   fb_activate();
+  }
  }
 }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE

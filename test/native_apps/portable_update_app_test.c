@@ -154,6 +154,16 @@ static void start_fixture(void){
 static void connect_fixture(bool install){assert(connect_saved(install));assert(connecting&&native_active);fake_link=WIFI_LINK_UP;update_tick();assert(!connecting);}
 int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);start_fixture();
  switch(scenario){
+ case 40:
+  ust.state=SOFTWARE_UPDATE_IDLE;assert(portable_update_idle_ready());
+  connecting=true;assert(!portable_update_idle_ready());connecting=false;
+  radio_owned=true;assert(!portable_update_idle_ready());radio_owned=false;
+  confirming=true;assert(!portable_update_idle_ready());confirming=false;
+  restart_pending=true;assert(!portable_update_idle_ready());restart_pending=false;
+  install_after_connect=true;assert(!portable_update_idle_ready());install_after_connect=false;
+  cleanup_pending=true;assert(!portable_update_idle_ready());cleanup_pending=false;
+  ust.state=SOFTWARE_UPDATE_DOWNLOAD;assert(!portable_update_idle_ready());
+  ust.state=SOFTWARE_UPDATE_LIST;assert(portable_update_idle_ready());break;
  case 0:connect_fixture(false);assert(checks==1&&!begins);mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=1;update_tick();assert(!uwg.api&&!native_active);break;
  case 1:connect_fixture(false);fail_cancel=true;http_retained=true;unsigned before_disconnect=disconnects;assert(!portable_update_suspend()&&native_active&&uwg.api);assert(!portable_update_services_safe()&&disconnects==before_disconnect);fail_cancel=false;http_retained=false;assert(portable_update_suspend()&&!native_active);break;
  case 2:connect_fixture(false);fail_disconnect=1;assert(!portable_update_suspend()&&native_active&&cleanup_pending);unsigned before=service_calls;bool consumed=false;assert(alarm_foreground(&consumed)&&before==service_calls);fail_disconnect=0;assert(portable_update_suspend());break;

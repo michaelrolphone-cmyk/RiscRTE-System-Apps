@@ -8,6 +8,7 @@ import json
 import shutil
 import subprocess
 from pathlib import Path
+import portable_broadcast_build
 import portable_alarm_build
 import portable_performance_build
 
@@ -119,7 +120,7 @@ def record(args, record, manifest, receipt):
     if receipt is None:
         return
     bindings = {'storage.key-value': [1], 'runtime.realtime': [0]}
-    if manifest['id'] == 'wifi_settings':
+    if manifest['id'] in ('wifi_settings','ota_update','app_store'):
         bindings.update({'net.wifi': [args.wifi_instance], 'storage.key-value': [6, 1]})
     if manifest['id'] == 'file_browser':
         bindings[args.storage_capability] = [args.storage_instance]
@@ -143,11 +144,16 @@ def write_admission(root, out, manifest, record):
     includes = out/('performance-sdk/include' if performance else 'native-time-sdk/include')
     paper = record.get('paper_transition')
     if paper:includes=Path(paper['compiled_include_directory'])
+    idle=record.get('idle_policy')
+    if idle:includes=Path(idle['compiled_include_directory'])
     names = set((*SDK_HEADERS, *portable_alarm_build.HEADERS))
     if performance:
         names.update(performance['sdk_headers'])
         names.update(performance.get('display_metrics', {}).get('sha256', {}))
     if paper:names.update(paper['sdk_sha256'])
+    if idle:names.update(idle['sdk_sha256'])
+    resident=record.get('resident_shell')
+    if resident:names.update(resident['sdk_sha256'])
     headers = {name: hashlib.sha256((includes/name).read_bytes()).hexdigest()
                for name in sorted(names)}
     expected = dict(record['native_time_sdk']['sha256'], **record['tagged_alarm_sdk']['sha256'])
@@ -155,6 +161,8 @@ def write_admission(root, out, manifest, record):
         expected.update(performance['sdk_headers'])
         expected.update(performance.get('display_metrics', {}).get('sha256', {}))
     if paper:expected.update(paper['sdk_sha256'])
+    if idle:expected.update(idle['sdk_sha256'])
+    if resident:expected.update(resident['sdk_sha256'])
     assert all(headers[name] == expected[name] for name in headers)
     receipt = {'schema': 1, 'app': manifest['id'], 'version': manifest['version'],
                'source_repo': 'michaelrolphone-cmyk/RiscRTE-System-Apps',
@@ -170,4 +178,11 @@ def write_admission(root, out, manifest, record):
         receipt['performance_trace'] = performance
     if paper:receipt['paper_transition']=paper
     if record.get('paper_motion'):receipt['paper_motion']=record['paper_motion']
+    if record.get('touch_scrolling'):receipt['touch_scrolling']=record['touch_scrolling']
+    if manifest['id']=='file_browser':receipt['storage_selection']=record['storage_selection']
+    portable_broadcast_build.admission_fields(record,receipt)
+    if idle:receipt['idle_policy']=idle
+    if resident:receipt['resident_shell']=resident
+    if manifest['id'] in ('ota_update','app_store') and record.get('touch_scrolling'):
+        receipt['touch_scrolling']=record['touch_scrolling']
     (out/'x4-native-app.json').write_text(json.dumps(receipt, indent=2) + '\n')

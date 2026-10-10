@@ -14,12 +14,26 @@ static bool bstatus(void*c,uint8_t*out){(void)c;*out=bstate;return true;}
 static const portable_bluetooth_control_v1 b={.api_version=1,.struct_size=sizeof(b),.set_enabled=benable,.status=bstatus};
 static bool acquire(const char*cap,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){assert(v==1);grants++;if(!strcmp(cap,RISC_KEY_VALUE_CAPABILITY)){assert(id==1);g->api=&kv;}else if(!strcmp(cap,"net.wifi")){assert(id==15);g->api=&w;}else {assert(!strcmp(cap,"bluetooth.hci")&&id==16);g->api=&b;}return true;}
 static bool release(risc_runtime_capability_v1*g){assert(g->api);if(fail_release)return false;g->api=NULL;releases++;return true;}
-static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.acquire=acquire,.release=release};
-static void reset(void){memset(record,0,4);saved=rf_live=fail_read=fail_write=commit_io=fail_ble=fail_off=fail_release=false;bstate=0;gets=puts_=disconnects=opens=closes=grants=releases=0;}
+static char logs[16384];
+static bool health(risc_runtime_health_v1*out){out->uptime_ms=1234;return true;}
+static bool diagnostic(const char*line){assert(strlen(logs)+strlen(line)+2<sizeof(logs));strcat(logs,line);strcat(logs,"\n");return true;}
+static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.acquire=acquire,.release=release,.health=health,.diagnostic=diagnostic};
+static void reset(void){logs[0]=0;memset(record,0,4);saved=rf_live=fail_read=fail_write=commit_io=fail_ble=fail_off=fail_release=false;bstate=0;gets=puts_=disconnects=opens=closes=grants=releases=0;}
 int main(void){
  pqa_radios s;pqa_state u;reset();pqa_init(&u);assert(pqa_radios_load(&s,&u,&rt));assert(u.radios_valid&&u.wifi_enabled&&!u.bluetooth_enabled&&!u.airplane&&!puts_&&!opens);
+#ifdef PORTABLE_STAGE_LOGS
+ assert(strstr(logs,"APP t_ms=1234 stage=radio-preferences result=missing defaults=wifi-allowed,bluetooth-off"));
+#else
+ assert(!logs[0]);
+#endif
  assert(pqa_radios_apply(&s,&u,&rt,PQA_BLUETOOTH));assert(u.bluetooth_enabled&&opens==1&&saved);assert(pqa_radios_apply(&s,&u,&rt,PQA_AIRPLANE));assert(u.airplane&&!u.wifi_enabled&&!u.bluetooth_enabled&&bstate==0&&closes==1);
+#ifdef PORTABLE_STAGE_LOGS
+ assert(strstr(logs,"stage=radio-save result=confirmed")&&strstr(logs,"stage=bluetooth-result state=on"));
+#endif
  pqa_radios restored;pqa_state fresh;pqa_init(&fresh);assert(pqa_radios_load(&restored,&fresh,&rt));assert(fresh.airplane&&!fresh.wifi_enabled&&!fresh.bluetooth_enabled);
+#ifdef PORTABLE_STAGE_LOGS
+ assert(strstr(logs,"stage=radio-preferences result=persisted"));
+#endif
  assert(pqa_radios_apply(&restored,&fresh,&rt,PQA_AIRPLANE));assert(!fresh.airplane&&fresh.wifi_enabled&&fresh.bluetooth_enabled&&bstate==1);
  assert(pqa_radios_suspend(&rt)&&bstate==0);unsigned writes=puts_;assert(pqa_radios_resume(&restored,&fresh,&rt)&&bstate==1&&puts_==writes);
  assert(pqa_radios_apply(&restored,&fresh,&rt,PQA_AIRPLANE));assert(pqa_radios_apply(&restored,&fresh,&rt,PQA_WIFI));assert(!fresh.airplane&&fresh.wifi_enabled&&!fresh.bluetooth_enabled&&bstate==0);

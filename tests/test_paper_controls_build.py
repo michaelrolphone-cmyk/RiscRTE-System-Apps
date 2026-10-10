@@ -28,3 +28,10 @@ class PaperControlsBuild(unittest.TestCase):
  def test_helpers_do_not_write_defaults_or_grants(self):
   source=(ROOT/'scripts/portable_quick_build.py').read_text()
   self.assertNotIn('hardware.device',source);self.assertNotIn('create_grant',source)
+
+ def test_usb_launch_adds_no_provider_grants(self):
+  p,a=self.args('--alarm-client','--quick-actions','--quick-usb-transfer')
+  with tempfile.TemporaryDirectory() as d:
+   flags,sources=quick.configure(a,p,ROOT,Path(d));needs=[];quick.requirements(a,needs)
+   self.assertIn('-DPORTABLE_QUICK_USB_TRANSFER',flags)
+   self.assertNotIn('usb.device.msc',{item['capability'] for item in needs})
