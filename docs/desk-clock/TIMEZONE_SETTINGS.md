@@ -76,11 +76,46 @@ contacts, real swipes, all save failure phases and explicit later retry. Total:
 6,928 controller executions. Every execution checks that no RTC or unrelated
 preference was written and acquired providers clean up.
 
-The runner builds with pinned Xtensa GCC 8.4.0 esp-2021r2-patch5, checks the
-existing portable Settings import contract and the actual ELF structural
-validator, and compares feature-off Watch, paper and desk-profile ELF bytes
-against an isolated archive of the exact public base. No source worktree is
-changed for the comparison. `--pixels` requires Pillow and captures real
+The runner builds with pinned Xtensa GCC 8.4.0 esp-2021r2-patch5 and checks
+the portable Settings import contract, exact three entrypoint exports and the
+actual ELF structural validator for every current Watch, paper and desk-profile
+feature-off ELF, its erased counterpart, and the enabled development ELF.
+
+The current-source isolation witness copies `Apps/` and `lib/` into a temporary
+directory, physically erases the explicit timezone branches in `settings.inc`
+and `settings_view.inc` (retaining their ordinary `#else` branches), and replaces
+the two selector includes, three timezone C modules and two public headers with
+`#error` poison. With the feature flag **enabled in that erased copy**, both
+preprocessed Settings/adapter source and linked ELF bytes must exactly match
+the unmodified current source with the feature flag absent. Selector identifiers
+are independently forbidden in the off preprocessed source and ELF symbols.
+Before erasure, enabling each poisoned profile must fail on the poison marker;
+this positive control proves the feature gate actually reaches the files being
+excluded. The ordinary enabled build must retain selector and persistence
+symbols and pass target validation. Unit tests reject leaked selector names,
+unguarded poisoned includes, byte mismatches and unsupported erasure syntax.
+
+The original `timezone-settings-evidence/evidence.json` remains an unchanged
+historical receipt: it records exact equality with public base `3bcc9b3...`
+for the sources and compiler used at that integration. It is not an unconditional
+whole-binary invariant for future shared-adapter work. The current receipt
+includes its hash, explicitly states `replayed_this_run: false`, compares
+compiler and source hashes, and reports each current ELF's equality or inequality
+with its recorded historical hash without claiming a fresh base replay.
+The current-source proof needs no historical Git object or network fetch.
+
+For the 2026-10-10 decoupling source, the compiler executable still matches the
+historical SHA-256 `732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f`.
+`Apps/settings.c` and all three timezone core modules are unchanged; the adapter,
+Settings integration and selector includes have changed. Watch/paper retain
+manifest version 1.3.4, while the desk profile advanced from 1.3.5 to 1.3.6.
+In particular, the
+shared adapter now separates raw input capture from ordered logical reduction
+and cooperative presentation completion. These changes affect feature-off
+builds too, so their whole-binary hashes correctly differ. The receipt records
+the full repository-local compiler dependency closure and build definitions.
+
+No source worktree is changed for the comparison. `--pixels` requires Pillow and captures real
 production framebuffers with lossless PNG pixel-hash verification; selected
 frames are included in `timezone-settings-evidence/`.
 

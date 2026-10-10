@@ -13,7 +13,11 @@ void app_module_fini(void);
 const t5_app_manifest_t portable_catalog[] = {{.compatible=false}};
 const unsigned portable_catalog_count = 0;
 static unsigned scenario, ticks, polls, grants, subscriptions, frame_count, displays;
-static unsigned writes, reads_after_write, diagnostics;
+static unsigned writes, reads_after_write, diagnostics,writes_at_submit_failure;
+static bool submit_failed;
+/* Ordinary failed submission may release known-owned resources. It must not
+ * dispatch more input, service state, acquisition or drawing after observation. */
+static void active_provider(void){assert(!submit_failed);}
 #ifdef TEST_PAPER_SETTINGS
 static uint8_t framebuffer[100 * 480];
 #else
@@ -30,14 +34,14 @@ static void tap(unsigned at, uint16_t x, uint16_t y) {
   assert(input_count < sizeof(input_script)/sizeof(input_script[0]));
   input_script[input_count++] = (contact){at,x,y};
 }
-static bool test_health(risc_runtime_health_v1 *h) {
+static bool test_health(risc_runtime_health_v1 *h) {active_provider();
   h->uptime_ms = ticks;
   return polls < 120;
 }
-static void test_yield(uint32_t ms) { ticks += ms; }
-static bool test_diagnostic(const char *s) { assert(s); ++diagnostics; return true; }
+static void test_yield(uint32_t ms) {active_provider(); ticks += ms; }
+static bool test_diagnostic(const char *s) {active_provider(); assert(s); ++diagnostics; return true; }
 static unsigned return_launches;
-static bool test_launch(const char *path) {
+static bool test_launch(const char *path) {active_provider();
 #ifdef PORTABLE_HOME_APP
  if(!strcmp(path,PORTABLE_HOME_APP)){assert(sv_page!=SV_ROOT);return_launches++;return true;}
 #endif
@@ -47,7 +51,7 @@ static bool test_launch(const char *path) {
  (void)path; assert(!"Unexpected app launch"); return false;
 #endif
 }
-static bool display_info(void *c, risc_display_info_v1 *out) {
+static bool display_info(void *c, risc_display_info_v1 *out) {active_provider();
   (void)c;
 #ifdef TEST_PAPER_SETTINGS
   *out=(risc_display_info_v1){.width=800,.height=480,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.damage_x_alignment=8,.damage_width_alignment=8};
@@ -56,7 +60,7 @@ static bool display_info(void *c, risc_display_info_v1 *out) {
 #endif
   return true;
 }
-static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {
+static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {active_provider();
   (void)c; assert(!frame_count); frame_count=1;
 #ifdef TEST_PAPER_SETTINGS
   assert(f==RISC_DISPLAY_FORMAT_MONO1);
@@ -71,9 +75,9 @@ static void frame_release(void *c, risc_display_frame_v1 f) {
 }
 static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_rect_v1 *r,
                          size_t n, const risc_display_present_options_v1 *o,
-                         risc_display_present_token_v1 *token) {
+                         risc_display_present_token_v1 *token) {active_provider();
   (void)c;(void)r;(void)n;(void)o;assert(f==1 && frame_count);
-  if(scenario==10)return false;
+  if(scenario==10){submit_failed=true;writes_at_submit_failure=writes;return false;}
   frame_count=0;*token=++displays;
 #ifdef TEST_PAPER_SETTINGS
   const char *path=getenv("PAPER_SETTINGS_FRAME");if(path&&displays==1){FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P4\n800 480\n");assert(fwrite(framebuffer,1,sizeof(framebuffer),file)==sizeof(framebuffer));fclose(file);}
@@ -90,7 +94,7 @@ static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_re
 #endif
   return true;
 }
-static bool frame_status(void *c, risc_display_present_token_v1 token, risc_display_present_status_v1 *out) {
+static bool frame_status(void *c, risc_display_present_token_v1 token, risc_display_present_status_v1 *out) {active_provider();
   (void)c;assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
 /* Ordered raw ABI fixture; snapshots alone cannot represent queued taps. */
@@ -124,11 +128,11 @@ static void touch_emit(unsigned kind,risc_touch_contact_v1 point) {
   touch_events[(touch_head+touch_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
     .sequence=++touch_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
 }
-static uint64_t touch_subscribe(void *c){
+static uint64_t touch_subscribe(void *c){active_provider();
   (void)c;++subscriptions;touch_head=touch_count=0;touch_script_snapshot(NULL,&touch_state);return 1;
 }
 static bool touch_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
-static bool touch_poll(void *c,size_t n){
+static bool touch_poll(void *c,size_t n){active_provider();
   (void)c;assert(n==1);++polls;if(polls==fail_poll_at)return false;
   risc_touch_snapshot_v1 next;touch_script_snapshot(NULL,&next);
   bool old_down=touch_state.contact_count!=0,new_down=next.contact_count!=0;
@@ -141,13 +145,13 @@ static bool touch_poll(void *c,size_t n){
   if(next.buttons!=touch_state.buttons)touch_emit(next.buttons?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,(risc_touch_contact_v1){0});
   next.sequence=touch_state.sequence;next.timestamp_ms=ticks;touch_state=next;return true;
 }
-static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){
+static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){active_provider();
   (void)c;assert(s==1);if(polls==gap_at){touch_head=touch_count=0;return -1;}
   if(!touch_count)return 0;
   *e=touch_events[touch_head];touch_head=(touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_count;return 1;
 }
-static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){(void)c;*out=touch_state;return true;}
-static bool rtc_read(void *c,twatch_rtc_time_v1 *out){
+static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){active_provider();(void)c;*out=touch_state;return true;}
+static bool rtc_read(void *c,twatch_rtc_time_v1 *out){active_provider();
   (void)c;
   if(writes){++reads_after_write;if(scenario==4)return false;if(scenario==18)ticks+=300;}
   if(!writes && scenario==2)return false;
@@ -157,7 +161,7 @@ static bool rtc_read(void *c,twatch_rtc_time_v1 *out){
   if(writes && scenario==19)out->second=(out->second+2)%60;
   return true;
 }
-static bool rtc_write(void *c,const twatch_rtc_time_v1 *in){
+static bool rtc_write(void *c,const twatch_rtc_time_v1 *in){active_provider();
   (void)c;assert(calendar_valid(in));assert(in->weekday==calendar_weekday(in));
   ++writes;written=*in;
   if(scenario==3)return false;
@@ -171,7 +175,7 @@ static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,touch_subscri
 static twatch_rtc_api_v1 rtc_api={.api_version=2,.struct_size=sizeof(rtc_api),.read=rtc_read,.write=rtc_write};
 #ifdef PORTABLE_INPUT_NAVIGATION
 static unsigned navigation_polls;
-static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out){
+static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out){active_provider();
   (void)c;*out=(risc_input_navigation_frame_v1){0};unsigned button=0;unsigned nav_at=++navigation_polls;
   if(scenario==30){
     switch(nav_at){case 3:case 8:case 10:case 12:case 22:case 24:case 26:button=RISC_NAV_DOWN;break;
@@ -209,7 +213,7 @@ static bool format_read_error,format_write_error,format_committed_error,format_v
 #ifdef PORTABLE_SLEEP_SETTINGS
 static uint8_t kv_bytes[64];static uint32_t kv_size;static unsigned kv_writes;
 #endif
-static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {
+static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {active_provider();
   (void)c;*size=0;
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   if(!strcmp(key,PORTABLE_READER_FLIP_KEY)||!strcmp(key,PORTABLE_READER_LANGUAGE_KEY))return RISC_KEY_VALUE_NOT_FOUND;
@@ -233,7 +237,7 @@ static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *
   assert(!"Unexpected key");return RISC_KEY_VALUE_INVALID;
 #endif
 }
-static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
+static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {active_provider();
   (void)c;
   if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)) {
     assert(size==4);++format_writes;
@@ -252,7 +256,7 @@ static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
 #endif
 }
 static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,kv_get,kv_put};
-static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){
+static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){active_provider();
   if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
     assert(version==1 && id==PORTABLE_TIME_FORMAT_STORE_INSTANCE);
     if(scenario==43)return false;
@@ -400,7 +404,10 @@ int main(int argc,char **argv){
 #endif
   bool no_write=scenario==1 || scenario==8 || scenario==9 || scenario==10 || scenario==14 || scenario==15 ||
                 scenario==20 || scenario==23 || scenario==24 || (scenario>=25 && scenario<=29) || scenario==31 || scenario==34 || scenario==35;
-  if(no_write)assert(!writes);
+  if(scenario==10){
+    /* Retain logical actions accepted before asynchronous submit reports failure. */
+    assert(submit_failed&&writes==writes_at_submit_failure&&writes<=1);
+  }else if(no_write)assert(!writes);
   else {assert(writes==1);assert(reads_after_write>=1 || scenario==3);}
   if(scenario==0){assert(written.year==2025 && written.day==28);assert(!strcmp(settings_message,"Saved to RTC"));}
   if(scenario==2 || scenario==12){assert(written.year==2001 && written.month==1 && written.day==1);}

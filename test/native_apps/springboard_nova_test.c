@@ -28,6 +28,21 @@ static unsigned present_started,last_touch_ms,max_touch_gap,script_ms;
 static bool clock_gap;
 static unsigned ms,polls,subs,grants,frames,presents,scenario,launches,last_present,max_presents;
 static uint16_t pixels[240*240];static char launched[128];
+/* App frames are rate-limited at their logical present boundary. Deferred
+ * raster completion and an explicit ownership drain may submit closer together. */
+static unsigned logical_presents,last_logical_present,launch_ms;
+static void (*original_present)(bool);
+static void logical_present(bool full){
+ if(logical_presents && scenario!=22)assert(ms-last_logical_present>=40);
+ last_logical_present=ms;++logical_presents;original_present(full);
+}
+const t5_app_api_v1 *__real_t5_app_get_api(uint32_t version);
+const t5_app_api_v1 *__wrap_t5_app_get_api(uint32_t version){
+ const t5_app_api_v1 *source=__real_t5_app_get_api(version);
+ if(!source)return NULL;
+ static t5_app_api_v1 observed;observed=*source;
+ original_present=source->present;observed.present=logical_present;return &observed;
+}
 /* Physical reports advance with time, never with capture-only raster polls.
  * The explicit scheduler stall leaves the finger script held across the gap. */
 static unsigned script_step(void){return script_ms/20u;}
@@ -37,14 +52,14 @@ static void yield_ms(uint32_t n){
  if((scenario==19||scenario==30)&&!clock_gap&&script_step()>=6){ms+=1000;clock_gap=true;}
 }
 static bool diagnostic(const char *s){(void)s;return true;}
-static bool launch_app(const char *s){++launches;if(scenario==11)return false;strcpy(launched,s);return true;}
+static bool launch_app(const char *s){launch_ms=ms;++launches;if(scenario==11)return false;strcpy(launched,s);return true;}
 static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=o->height=240;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;o->typical_present_latency_us=16000;return true;}
 static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.size_bytes=sizeof(pixels),.width=240,.height=scenario==10?200:240,.stride_bytes=480,.pixel_format=f};return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static void save_frame(void){
  const char *dir=getenv("NOVA_FRAMES");if(!dir)return;char name[512];snprintf(name,sizeof(name),"%s/frame-%04u-%06u.rgb565",dir,presents,ms);FILE *f=fopen(name,"wb");assert(f);assert(fwrite(pixels,1,sizeof(pixels),f)==sizeof(pixels));fclose(f);
 }
-static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&script_step()>=6))return false;frames=0;if(presents && scenario!=22)assert(ms-last_present>=40);last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
+static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&script_step()>=6))return false;frames=0;if(presents)assert(ms>=last_present);last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
 static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=(scenario==36||scenario==37)&&presents>1&&ms-present_started<(scenario==36?120u:600u)?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static risc_touch_snapshot_v1 touch_state;
 static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
@@ -144,7 +159,7 @@ int main(int argc,char **argv){
  bool expect=CATALOG_COUNT>0&&(scenario==0||scenario==16||scenario==19||scenario==20||scenario==22||scenario==26||scenario==30||scenario==36||scenario==37);
  assert(!!launched[0]==expect);
  assert(launches==((expect||scenario==11)&&CATALOG_COUNT?1u:0u));
- max_presents=ms/40+1;assert(presents<=max_presents);
+ max_presents=ms/40+1;assert(presents<=max_presents);assert(logical_presents<=max_presents);
  #ifndef PORTABLE_RETAINED_RGB565_HANDOFF
  if(scenario==1||scenario==3||scenario==4||scenario==5||scenario==17||scenario==18||scenario==25)assert(presents<=2);
 #else
@@ -152,5 +167,5 @@ int main(int argc,char **argv){
 #endif
  if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24)assert(presents<100);
  if(scenario==36||scenario==37)assert(max_touch_gap<=32);
- printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u launch requests, clean teardown\n",scenario,portable_catalog_count,presents,launches);
+ printf("NOVA real app scenario %u, catalog %u: %u bounded frames, %u logical frames, %u launch requests at %u ms, clean teardown\n",scenario,portable_catalog_count,presents,logical_presents,launches,launch_ms);
 }

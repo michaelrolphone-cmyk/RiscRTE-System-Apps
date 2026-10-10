@@ -40,6 +40,9 @@ static inline void raster_rows(int64_t origin,int *first,int *end) {
 }
 static unsigned raster_command_count;
 static uint32_t raster_saved_intent;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+static uint32_t raster_handoff_origin;
+#endif
 static bool raster_saved_app_frame;
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
 static bool raster_saved_clean;

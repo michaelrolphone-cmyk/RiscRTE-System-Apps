@@ -858,6 +858,9 @@ static bool acquire_surface(void) {
          * identical alpha-zero frame before beginning the transition. */
         handoff_started=millis_now();handoff_first=false;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+        if(raster_replaying)handoff_started=raster_handoff_origin;
+#endif
       }
     }
   }
@@ -2192,7 +2195,10 @@ static bool launch(uint32_t i) {
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
   if(i<count())portable_stage_log(rt,"app-launch-request",portable_catalog[i].file_name);
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_RASTER_SNAPSHOT)
+  /* The final ownership boundary settles any sealed software frame before
+   * deciding whether its retained transition has finished. Ordinary model
+   * polling stays independent of raster and display completion. */
   if(!portable_paper_frame_drain())return false;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT

@@ -53,6 +53,11 @@ static bool raster_begin(uint16_t color) {
  if(raster_clip_active){if(!raster_immediate())return true;return false;}
 #endif
  if(raster_sealed&&!raster_drain())return true;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+ /* The outgoing image is already visible when logical drawing starts. Replay
+  * must advance that elapsed timeline, not restart it at the final copy. */
+ if(handoff_pending){raster_handoff_origin=millis_now();if(failed)return true;}
+#endif
  raster_free_commands();raster_recording=true;raster_band_top=0;
  raster_saved_rotation=paper_rotated;
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -65,6 +70,11 @@ static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
  if(raster_replaying||!raster_begin_allowed)return false;
  raster_begin_allowed=false;
  if(raster_sealed&&!raster_drain())return true;
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+ /* The outgoing image is already visible when logical drawing starts. Replay
+  * must advance that elapsed timeline, not restart it at the final copy. */
+ if(handoff_pending){raster_handoff_origin=millis_now();if(failed)return true;}
+#endif
  unsigned row_bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
  if(!pixels||stride<row_bytes)return false;
  void *copy=malloc((size_t)row_bytes*info.height);if(!copy)return false;

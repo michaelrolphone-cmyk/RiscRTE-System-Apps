@@ -11,7 +11,7 @@
 int main(int argc,char **argv) {
  assert(argc==2);unsigned test=(unsigned)atoi(argv[1]);scenario=200+test;
  assert(app_module_init()==0);assert(width()==480&&height()==800&&pp_enabled());settings_render(0,0);
- if(test==0){assert(displays==1);}
+ if(test==0){assert(portable_paper_frame_drain());assert(displays==1);}
  else if(test==1||test==2||test==3||test==8||test==9) {
   tap(3,200,300);tap(7,test==2?100:350,730);
   if(test==3){format_write_error=true;tap(11,100,730);}
@@ -43,7 +43,7 @@ int main(int argc,char **argv) {
   unsigned before=displays;t5_app_input_t terminal={0};assert(poll(&terminal,20)&&terminal.exit_requested);
   settings_render(0,0);assert(displays==before&&return_launches==1);
  }
- else if(test==15){assert(failed);}
+ else if(test==15){assert(!portable_paper_frame_drain());assert(failed);}
  else assert(!"Unknown paper scenario");
  app_module_fini();assert(!grants&&!subscriptions&&!frame_count);
  printf("Paper Settings scenario %u: explicit saves, draft cancellation and clean teardown pass\n",test);
