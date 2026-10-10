@@ -7,15 +7,18 @@
 typedef struct {
     risc_runtime_capability_v1 grant,storage,fingerprint_store;
     int32_t fingerprint_error;
-    uint32_t fingerprint_sources,fingerprint_checkpoint_at;
+    uint32_t fingerprint_sources,fingerprint_checkpoint_at,fingerprint_unread;
     const contexts_service_v1 *api;
     const risc_runtime_api_v1 *runtime;
     contexts_policy_v1 policy;
     uint32_t loaded_at,preset_checked_at;
+    uint64_t rules_revision;
+    bool rules_available;
     bool fingerprint_temporal_only;
     bool loaded,settings_valid,low_battery,save_failed,preset_checked;
 } portable_contexts_client;
 #include "PortableContextFingerprints.h"
+#include "PortableContextRules.h"
 static inline bool portable_contexts_open(portable_contexts_client *c,const risc_runtime_api_v1 *rt) {
     memset(c,0,sizeof(*c));c->fingerprint_sources=CONTEXTS_ALL;c->runtime=rt;c->grant.struct_size=sizeof(c->grant);
     if(!rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant))return false;
@@ -26,7 +29,7 @@ static inline bool portable_contexts_open(portable_contexts_client *c,const risc
     c->api=p;c->policy.struct_size=sizeof(c->policy);
     const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(p);
     if(fp){contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=CONTEXTS_ALL};
-        if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)||!portable_fp_checkpoint(c,true))return false;}
+        if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)||!portable_fp_checkpoint(c,true)||!portable_context_rules_load(c))return false;}
     return true;
 }
 static inline bool portable_contexts_pause(portable_contexts_client *c) {
@@ -58,7 +61,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
     }
     risc_runtime_health_v1 health={.struct_size=sizeof(health)};
     if(!c->runtime->health(&health))return portable_contexts_pause(c);
-    if(!c->save_failed&&(!c->loaded||(uint32_t)(health.uptime_ms-c->loaded_at)>=1000u)) {
+    if(!c->save_failed&&!c->loaded) {
         c->policy=(contexts_policy_v1){.struct_size=sizeof(c->policy),.sources=CONTEXTS_ALL};
         c->settings_valid=false;c->low_battery=true;
         c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};
@@ -187,3 +190,8 @@ bool portable_contexts_stop(void);
 bool portable_contexts_enable(bool enabled);
 unsigned portable_contexts_face_count(void);
 const char *portable_contexts_face_name(unsigned id);
+
+/* All returned data is copied; the adapter owns persistence and grants. */
+bool portable_contexts_rules_read(cr_store *out);
+bool portable_contexts_rules_save(const cr_store *value);
+bool portable_contexts_models_save(void);

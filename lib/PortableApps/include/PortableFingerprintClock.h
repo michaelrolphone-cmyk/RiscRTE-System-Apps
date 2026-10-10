@@ -1,5 +1,7 @@
 #pragma once
+#ifndef TWATCH_RTC_API_V1
 #include "PortableRtcClock.h"
+#endif
 /* A failed/missing RTC disables aging. Uptime is never persisted as a date. */
 static inline bool portable_fingerprint_clock(const risc_runtime_api_v1*runtime,uint64_t*out){
     *out=0;risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};

@@ -57,19 +57,19 @@ static inline int portable_sleep_timer_load(const risc_key_value_v1 *kv,bool dee
     if(rc==RISC_KEY_VALUE_BUFFER_SMALL)return PORTABLE_SLEEP_INVALID;
     if(rc!=RISC_KEY_VALUE_OK)return PORTABLE_SLEEP_UNAVAILABLE;
     unsigned seconds=(unsigned)data[2]|((unsigned)data[3]<<8);
-    if(size!=sizeof(data)||data[0]!=0x54||data[1]!=1||seconds<(deep?60u:5u)||seconds>3600||
+    if(size!=sizeof(data)||data[0]!=0x54||data[1]!=1||(seconds&&seconds<(deep?60u:5u))||seconds>14400||
        data[4]!=(uint8_t)(data[2]^data[3]^0xa5u))return PORTABLE_SLEEP_INVALID;
-    *milliseconds=seconds*1000u;return PORTABLE_SLEEP_LOADED;
+    *milliseconds=seconds?seconds*1000u:UINT32_MAX;return PORTABLE_SLEEP_LOADED;
 }
 static inline bool portable_sleep_timer_save(const risc_key_value_v1 *kv,bool deep,uint32_t milliseconds) {
-    if(!portable_sleep_api_valid(kv)||milliseconds<(deep?60000u:5000u)||milliseconds>3600000u||milliseconds%1000u)return false;
+    if(!portable_sleep_api_valid(kv)||(milliseconds&&milliseconds<(deep?60000u:5000u))||milliseconds>14400000u||milliseconds%1000u)return false;
     uint32_t current=0;
     if(portable_sleep_timer_load(kv,deep,&current)==PORTABLE_SLEEP_LOADED&&current==milliseconds)return true;
     unsigned seconds=milliseconds/1000u;
     const uint8_t data[]={0x54,1,(uint8_t)seconds,(uint8_t)(seconds>>8),(uint8_t)(seconds^(seconds>>8)^0xa5u)};
     int32_t rc=kv->put(kv->context,deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY,data,sizeof(data));
     return (rc==RISC_KEY_VALUE_OK||rc==RISC_KEY_VALUE_IO)&&
-        portable_sleep_timer_load(kv,deep,&current)==PORTABLE_SLEEP_LOADED&&current==milliseconds;
+        portable_sleep_timer_load(kv,deep,&current)==PORTABLE_SLEEP_LOADED&&current==(milliseconds?milliseconds:UINT32_MAX);
 }
 
 #endif /* PORTABLE_SLEEP_POLICY_H */

@@ -11,12 +11,13 @@ static inline bool portable_fp_record(portable_contexts_client*c,unsigned source
     if(!api)return true;
     contexts_fingerprint_status_v1 status={.struct_size=sizeof(status)};
     if(!api->fingerprint(api->base.context,CONTEXTS_FP_STATUS,&status))return false;
-    if(!(status.sources&source))return true;
+    if(load&&!(status.sources&source))return true;
     if(!load&&!(status.dirty_sources&source))return true;
+    if(!load&&(c->fingerprint_unread&source)){c->fingerprint_error=RISC_APP_DATA_INVALID;return true;}
     if(load&&(status.dirty_sources&source))return true;
     c->fingerprint_store=(risc_runtime_capability_v1){.struct_size=sizeof(c->fingerprint_store)};
-    if(!c->runtime->acquire(RISC_APP_DATA_CAPABILITY,1,source==CONTEXTS_AUDIO?2:3,&c->fingerprint_store)){
-        c->fingerprint_error=RISC_APP_DATA_UNAVAILABLE;return true;
+    if(!c->runtime->acquire(RISC_SHARED_DATA_CAPABILITY,1,source==CONTEXTS_AUDIO?2:3,&c->fingerprint_store)){
+        c->fingerprint_error=RISC_APP_DATA_UNAVAILABLE;if(load)c->fingerprint_unread|=source;return true;
     }
     const risc_app_data_v1*files=c->fingerprint_store.api;
     int32_t rc=RISC_APP_DATA_INVALID;uint32_t size=0;uint64_t revision=0;
@@ -37,6 +38,7 @@ static inline bool portable_fp_record(portable_contexts_client*c,unsigned source
             }else if(!rc)rc=RISC_APP_DATA_INVALID;
         }
     }
+    if(load){if(rc)c->fingerprint_unread|=source;else c->fingerprint_unread&=~source;}
     if(rc)c->fingerprint_error=rc;
     if(rc==RISC_APP_DATA_RETAINED)return false;
     if(!c->runtime->release(&c->fingerprint_store))return false;
