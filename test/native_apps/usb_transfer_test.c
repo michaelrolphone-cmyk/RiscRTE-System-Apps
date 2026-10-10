@@ -205,7 +205,10 @@ static bool usb_diagnostic(const char*line){
 }
 static risc_runtime_api_v1 usb_runtime={.api_version=1,.struct_size=sizeof(usb_runtime),.health=usb_health,.yield_ms=usb_yield,.diagnostic=usb_diagnostic,.request_launch=usb_launch,.acquire=usb_acquire,.release=usb_release,.diagnostic_checkpoint_client=checkpoint_get};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&usb_runtime:NULL;}
-int main(int argc,char**argv){
+#ifndef USB_TRANSFER_TEST_MAIN
+#define USB_TRANSFER_TEST_MAIN main
+#endif
+int USB_TRANSFER_TEST_MAIN(int argc,char**argv){
  assert(argc>=2);test_case=(unsigned)atoi(argv[1]);if(test_case==27)usb_runtime.struct_size=offsetof(risc_runtime_api_v1,diagnostic_checkpoint_client);capture=argc>2?argv[2]:NULL;selected_msc=msc;selected_api=&selected_msc;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
  if(test_case>=18){
