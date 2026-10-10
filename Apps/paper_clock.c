@@ -280,6 +280,9 @@ static void home_main(void){
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  home_pressed=home_pending=HOME_NONE;home_refresh_pending=true;
 #endif
+#ifdef PORTABLE_BOOT_ANIMATION
+ if(!desk_play_boot_animation())return;
+#endif
  paper_transition_begin();
  uint32_t checked=app->millis();CLOCK_DRAW_OR_RETURN(&time,known,notice,true);
  for(;;){

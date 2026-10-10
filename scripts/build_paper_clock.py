@@ -12,6 +12,8 @@ ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--display-rotation',type=int,choices=[0,90],default=90)
+ p.add_argument('--relocation-tools',type=Path,help='Canonical Reader scripts for Xtensa relocation normalization')
+ p.add_argument('--boot-animation',action='store_true',help='Recover the original Reader logo animation on cold/reset startup')
  p.add_argument('--navigation',action='store_true');p.add_argument('--alarm-client',action='store_true')
  p.add_argument('--launcher-app',default='springboard.elf');p.add_argument('--output-dir',type=Path,default=ROOT/'dist/paper-clock')
  p.add_argument('--resident-loading-catalog',type=Path,help='Existing deployment catalog used by the shared host loading screen')
@@ -31,6 +33,8 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.boot_animation and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation requires canonical --relocation-tools')
+ if a.boot_animation and not (a.sparse_start and a.raster_snapshot):p.error('--boot-animation requires --sparse-start and --raster-snapshot')
  if a.resident_loading_catalog and not a.resident_shell_host:p.error('--resident-loading-catalog requires the resident host')
  portable_performance_build.validate(a,p)
  portable_paper_build.validate(a,p)
@@ -85,6 +89,7 @@ def build():
  else:catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports=portable_quick_build.exports(a,{'app_main','app_module_init','app_module_fini'});mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
+ if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
  if a.ble_broadcast:flags += ["-DPORTABLE_BLE_BROADCAST","-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF"]
  if a.desk_points_face:flags+=['-DPORTABLE_DESK_POINTS_FACE','-DPORTABLE_DESK_POINTS_SNAPSHOT']
@@ -108,6 +113,8 @@ def build():
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
  subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),'-lgcc','-o',str(elf)],check=True)
+ if a.boot_animation:
+  for name in ('normalize_xtensa_relocations.py',):subprocess.run(['python3',str(a.relocation_tools/name),str(elf)],check=True)
  symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
  imports={s.split()[-1] for s in symbols.splitlines() if ' U ' in ' '+s};actual={s.split()[-1] for s in symbols.splitlines() if len(s.split())>=3 and s.split()[-2] in ('T','D','B','R')}
  allowed={'risc_runtime_get_api','memcpy','memmove','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -127,6 +134,7 @@ def build():
  version=portable_idle_build.version(a,'paper_clock',version)
  if a.desk_points_face:version='0.3.17'
  version=portable_quick_build.version(a,'paper_clock',version)
+ if a.boot_animation:version='0.4.7'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -209,8 +217,10 @@ def build():
    paths=['lib/PortableApps/boot_logo/RiscRteLogo.h','lib/PortableApps/boot_logo/logo.svg','lib/PortableApps/boot_logo/SOURCES.json','Apps/paper_sparse_clock.inc','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/home_points_catalog_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/nova.inc','lib/PortableApps/src/quick_adapter.inc',
           'lib/PortableApps/include/PortableRealtimeClient.h','lib/PortableApps/include/PortableTimeZone.h',
           'lib/PortableApps/include/PortableTimeZonePreference.h','lib/PortableApps/include/PortableRtcBasis.h']
+   if a.boot_animation:paths.extend(['Apps/paper_boot_animation.inc','lib/PortableApps/boot_logo/RiscRteBootAnimation.h','lib/PortableApps/boot_logo/StartupScreen.reference.cpp','lib/PortableApps/boot_logo/ANIMATION-SOURCES.json'])
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
    record['desk_sources'].update({path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths})
+ if a.boot_animation:record['boot_animation']={'source':'aac8c06d3221139084acd0cfc64f7b0ba194a97a','mode':'sliced-cold-boot-only','relocation_tools':{str((a.relocation_tools/n).resolve()):hashlib.sha256((a.relocation_tools/n).read_bytes()).hexdigest() for n in ('normalize_xtensa_relocations.py',)}}
  portable_idle_build.record(a,record,flags)
  if loading:record['app_loading']=loading;record['build_defines']=flags
  portable_quick_build.record(a,record)
