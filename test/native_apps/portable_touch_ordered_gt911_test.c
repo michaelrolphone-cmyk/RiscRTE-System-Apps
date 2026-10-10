@@ -64,7 +64,7 @@ int main(int argc,char **argv) {
   }else if(!strcmp(scenario,"multi-home")) {
     report(1,100,200,false);assert(step() && sample.began);
     packet(2,105,205,true);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
-    assert(step() && sample.down && sample.moved);assert(step() && sample.cancelled);
+    assert(step() && sample.cancelled && !sample.down); /* Same-report second contact cancels MOVE before any swipe. */assert(step() && sample.cancelled);
     assert(step() && sample.home_pressed && !sample.down);assert(!step());
     /* Keep hardware ID 4, including a reordered contact record; no new gesture. */
     packet(1,150,250,true);wire_point(0,4,150,250);assert(portable_touch_collect(&touch));
