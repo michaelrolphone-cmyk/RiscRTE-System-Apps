@@ -80,7 +80,7 @@ static int nc_row_height(const risc_scene_node_v1 *n){
     case RISC_COMPONENT_HEADER_ACTION:return 0;
     case RISC_COMPONENT_SECTION:return nc_size(28);
     case RISC_COMPONENT_PROGRESS:return nc_size(n->label[0]?72:34);
-    case RISC_COMPONENT_EMPTY:return nc_size(document.flags?56:96);
+    case RISC_COMPONENT_EMPTY:return nc_size(112);
     case RISC_COMPONENT_STEPPER:return nc_size(64);
     case RISC_COMPONENT_TIME_PICKER:return nc_size(nc_paper()?188:96);
     case RISC_COMPONENT_MARKERS:return nc_size(88);
@@ -126,8 +126,14 @@ static void nc_draw_node(unsigned index,int y){
         return;
     }
     if(n->kind==RISC_COMPONENT_EMPTY||n->kind==RISC_SCENE_TEXT_NODE){
-        int yy=y+(n->kind==RISC_COMPONENT_EMPTY?34:18)*s;
-        if(n->kind==RISC_COMPONENT_EMPTY)nc_icon(RISC_SYMBOL_CHECK,(int)width/2-10*s,y+6*s,16*s,accent);
+        int yy=y+(n->kind==RISC_COMPONENT_EMPTY?76:18)*s;
+        if(n->kind==RISC_COMPONENT_EMPTY){
+            /* Bible empty state: 44 logical px circle, 20 px check, dim ink.
+             * Paper uses a 2.5 logical px outline (5 physical pixels). */
+            int cx=(int)width/2,cy=y+36*s;
+            nc_box(cx-22*s,cy-22*s,44*s,44*s,22*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,nc_bg());
+            nc_icon(RISC_SYMBOL_CHECK,cx-12*s,cy-10*s,20*s,dim);
+        }
         nc_center(x,yy,w,n->label,1,fg);
         /* Wrap explanatory content on spaces, with body-size glyphs. */
         const char *p=n->text;while(*p&&yy<y+h-8*s){char line[72];unsigned count=0,space=0;while(p[count]&&count<70){line[count]=p[count];line[count+1]=0;if(nc_measure(3,line)>w-8*s)break;if(p[count]==' ')space=count;++count;}if(p[count]&&space)count=space;if(!count)break;memcpy(line,p,count);line[count]=0;yy+=14*s;nc_center(x,yy,w,line,3,dim);p+=count;while(*p==' ')++p;}return;

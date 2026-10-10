@@ -47,6 +47,42 @@ struct Canvas {
     }
 };
 
+/* The recovered UI intentionally omits a leading hour zero in both formats,
+ * and centers/resizes short segment times. Keep the frozen Reader untouched;
+ * compose its original glyphs into that layout as a separate pixel oracle. */
+static void current_digital_reference(Canvas &c, unsigned face, int hour24, int minute, bool format) {
+    const int hour = format ? (hour24 % 12 ? hour24 % 12 : 12) : hour24;
+    std::vector<int> tokens;
+    if (hour >= 10) tokens.push_back(hour / 10);
+    tokens.insert(tokens.end(), {hour % 10, 10, minute / 10, minute % 10});
+    const bool serif = face == PORTABLE_DESK_SERIF;
+    if (face == PORTABLE_DESK_SEGMENTS) {
+        int units = static_cast<int>(tokens.size()) - 1;
+        for (int token : tokens) units += token == 10 ? 1 : 6;
+        const int unit = std::max(4, std::min((c.width - 96) / units, (c.height - 200) / 10));
+        int x = (c.width - units * unit) / 2, y = (c.height - 10 * unit) / 2;
+        for (int token : tokens) {
+            if (token == 10) {
+                c.fillRect(x, y + 3 * unit, unit, unit);
+                c.fillRect(x, y + 6 * unit, unit, unit);
+            } else DeskClockFaces::digit(c, token, x, y, unit);
+            x += (token == 10 ? 2 : 7) * unit;
+        }
+    } else {
+        int natural = 12 * (static_cast<int>(tokens.size()) - 1);
+        for (int token : tokens) natural += DeskClockFaces::numeralWidth(token, 224, serif);
+        const int size = std::min({224, c.height - 200, (c.width - 96) * 224 / natural});
+        const int gap = 12 * size / 224;
+        int width = gap * (static_cast<int>(tokens.size()) - 1);
+        for (int token : tokens) width += DeskClockFaces::numeralWidth(token, size, serif);
+        int x = (c.width - width) / 2;
+        for (int token : tokens) {
+            DeskClockFaces::numeral(c, token, x, (c.height - size) / 2, size, serif);
+            x += DeskClockFaces::numeralWidth(token, size, serif) + gap;
+        }
+    }
+}
+
 static void invalid_inputs() {
     Canvas c(480, 800);
     portable_desk_canvas good = {&c, 480, 800, Canvas::fill};
@@ -130,7 +166,8 @@ int main(int argc, char **argv) {
         Canvas c(std::atoi(argv[3]), std::atoi(argv[4]));
         int hour = std::atoi(argv[5]), minute = std::atoi(argv[6]);
         bool format = std::atoi(argv[7]) != 0, valid = std::atoi(argv[8]) != 0;
-        if (std::atoi(argv[9])) DeskClockFaces::draw(c, static_cast<uint8_t>(face), hour, minute, format, valid);
+        if (std::atoi(argv[9]) == 2 && face < 3 && valid) current_digital_reference(c, face, hour, minute, format);
+        else if (std::atoi(argv[9])) DeskClockFaces::draw(c, static_cast<uint8_t>(face), hour, minute, format, valid);
         else assert(c.draw(face, hour, minute, format, valid));
         c.write(); return 0;
     }

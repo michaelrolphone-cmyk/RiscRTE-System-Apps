@@ -12,7 +12,7 @@ same ELF renders on Watch and X4. Further clients use the same component kinds.
 | Semantic component | Application supplies | Shared presenter supplies |
 | --- | --- | --- |
 | Header / header action | Title, subtitle, Back/action IDs, symbol | Typography, circular controls, sticky paper header |
-| Section / explanatory or empty state | Text and state | Spacing, wrapping, empty-state treatment |
+| Section / explanatory or empty state | Text and state | Spacing, wrapping, 44px circled check for empty/completed states |
 | Navigation row | Label, subtitle, marker/symbol, badge, intent | Row layout, divider, focus bar, touch target |
 | Checklist row | Checked value, toggle intent, separate detail intent | Separate checkbox/detail targets, strike-through |
 | Switch | Boolean value and intent | OFF/ON controls; caption is inert |
@@ -43,6 +43,8 @@ out-of-domain values before applying an intent.
 The original TEXT, ACTION and KEYBOARD kinds also work in component documents.
 Use the new SWITCH, STEPPER, TIME_PICKER and ROW kinds for the other controls.
 Old base documents continue to use the original navigation and rendering.
+Use TEXT for confirmation/alert copy; EMPTY is the circled-check state from the
+mockup (20px check, 44px circle, 1px color / 2.5px monochrome outline, logical units).
 
 `RiscSceneResidentV1.h` is an optional generic bridge to the resident host.
 It latches input activity and requests policy work only at safe checkpoints.
@@ -69,6 +71,9 @@ reported unavailable. Dates are civil days since 2000-01-01; they are not elapse
 durations. Foreground clients do not guess a device or timezone.
 
 ## Verification and builds
+
+The `NOVA scene components` workflow runs these tests and target builds against
+the public Runtime SDK at `a9587bec00015ad56c302192a8359b6d70cde01a`.
 
 ```sh
 python scripts/test_scene_host.py --runtime ../Runtime
