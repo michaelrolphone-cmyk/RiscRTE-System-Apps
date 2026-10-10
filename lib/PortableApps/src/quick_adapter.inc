@@ -44,7 +44,7 @@ static bool automatic_idle_interaction_ready(void) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_idle_ready())return false;
 #endif
- return !idle_capture_active() && !surface.frame && !alarm_modal && !touch.down &&
+ return !idle_capture_active() && !raster_lease_mutable() && !alarm_modal && !touch.down &&
      !quick_modal && !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui) &&
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
      !quick_open_requested &&
@@ -60,7 +60,7 @@ static bool automatic_idle_ready(void) {
 static bool low_battery_poll_inner(void) {
  /* Battery policy is elapsed-time state. A submitted immutable image owns
   * no app raster lease and must not delay a threshold crossing. */
- if(surface.frame||!quick_storage_safe())return true;
+ if(raster_lease_mutable()||!quick_storage_safe())return true;
  uint32_t now=millis_now();
  risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
 #ifdef PORTABLE_WIFI_SETTINGS_APP
@@ -213,11 +213,36 @@ static bool quick_apply(uint32_t actions) {
 static bool quick_copy_background(void) {
  /* Every visible byte is overwritten below; clearing it first only repeats
   * a full-frame paint. Keep ordinary surface acquisition and custody checks. */
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_begin_pixels(quick_background,(unsigned)quick_row_bytes()))return !failed;
+#endif
  if(!acquire_surface() || failed)return false;
  if(!quick_background)return false;
  size_t bytes=quick_row_bytes();
  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);
  return true;
+}
+static bool quick_render_watch(const char *time,bool battery_valid,uint8_t battery) {
+ if(failed)return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_recording){
+  /* Copy controller values and the bounded label, never retain a caller's
+   * stack or live Quick state while input continues to change it. */
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565||info.width!=240||info.height!=240)return false;
+  pqa_state *snapshot=malloc(sizeof(*snapshot));
+  if(!snapshot){if(!raster_immediate())return false;}
+  else {
+   *snapshot=quick.ui;
+   if(raster_record(RS_QA_RENDER,(int32_t[8]){battery_valid,battery},time)){
+    if(!failed&&raster_tail&&raster_tail->kind==RS_QA_RENDER){raster_tail->pixels=snapshot;return !failed;}
+    if(!raster_terminal())free(snapshot);
+    return false;
+   }
+   if(!raster_terminal())free(snapshot);
+  }
+ }
+#endif
+ return pqa_render(&surface,&quick.ui,time,battery_valid,battery);
 }
 static bool quick_interrupt(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
@@ -227,6 +252,9 @@ static bool quick_interrupt(void) {
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
  /* Alarm's saved restoration frame is the app, never the torch/controls. */
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_sealed)raster_saved_app_frame=false;
+#endif
  if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
  return !quick.ui.torch_valid || pqa_session_restore(&quick,display);
 }
@@ -349,7 +377,11 @@ static bool quick_foreground(bool *consumed) {
  }
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
- if(!failed && paper_token){*consumed=true;return true;}
+ if(!failed && (paper_token
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    ||raster_sealed
+#endif
+    )){*consumed=true;return true;}
  if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
 #ifdef PORTABLE_WIFI_SETTINGS_APP
  if(portable_wifi_async_owned()) {
@@ -442,7 +474,7 @@ static bool quick_foreground(bool *consumed) {
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
    if(dirty && portable_paper_frame_ready()) {
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
-    else if(!quick_copy_background() || !pqa_render(&surface,&quick.ui,time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
+    else if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
     /* Present can sample input while the panel is busy. Record only the state
      * rendered above; newer input must remain dirty for the next frame. */
     painted_state=quick.ui;

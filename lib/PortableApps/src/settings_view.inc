@@ -51,8 +51,12 @@ static void sp_redraw(void);
 static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
+  if(raster_replaying&&(y+(height()-240)/2<raster_band_top||y+(height()-240)/2>=raster_band_bottom))return;
+#endif
   if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;
-  if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
+  if (!raster_surface_writable() || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
   uint8_t *p = (uint8_t *)surface.pixels + (size_t)y * surface.stride_bytes + (size_t)x * 2;
@@ -65,7 +69,14 @@ static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
   p[0] = (uint8_t)c; p[1] = (uint8_t)(c >> 8);
 }
 static void sv_rect(int x, int y, int w, int h, uint32_t color) {
-  for (int j = y; j < y+h; ++j) for (int i = x; i < x+w; ++i) sv_pixel(i,j,color,255);
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_RECT,(int32_t[8]){x,y,w,h,(int32_t)color},NULL))return;
+#endif
+  int row_first=y,row_end=y+h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((height()-240)/2,&row_first,&row_end);
+#endif
+  for (int j = row_first; j < row_end; ++j) for (int i = x; i < x+w; ++i) sv_pixel(i,j,color,255);
 }
 static int sv_measure(unsigned face, const char *s, int spacing) {
   int length = 0;
@@ -77,12 +88,19 @@ static int sv_measure(unsigned face, const char *s, int spacing) {
   return (length+15)/16;
 }
 static void sv_text(unsigned face, int x, int y, const char *s, uint32_t color, int spacing) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_TEXT,(int32_t[8]){(int32_t)face,x,y,(int32_t)color,spacing},s))return;
+#endif
   if (!s || face > 5) return;
   int pen=x*16;
   for (unsigned k=0;k<96 && s[k];++k) {
     unsigned ch=(unsigned char)s[k]; if(ch<32 || ch>126) ch='?';
     const rps_glyph *g=&rps_text[face*95+ch-32];
-    for(unsigned j=0;j<g->height;++j)for(unsigned i=0;i<g->width;++i) {
+    int row_first=0,row_end=g->height;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_rows((int64_t)y+g->top+(height()-240)/2,&row_first,&row_end);
+#endif
+    for(unsigned j=(unsigned)row_first;j<(unsigned)row_end;++j)for(unsigned i=0;i<g->width;++i) {
       unsigned n=j*g->width+i,coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
       sv_pixel(pen/16+g->left+(int)i,y+g->top+(int)j,color,coverage*85);
     }
@@ -112,11 +130,18 @@ static void sv_geometry(int *x,int *y,int *w,int *h) {
 #define SV_FIELD_BOTTOM 176
 #endif
 static void sv_button(int x,int y,int w,int h,const char *caption,bool selected) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_BUTTON,(int32_t[8]){x,y,w,h,selected},caption))return;
+#endif
 #ifdef PORTABLE_NOVA_UI
   sv_geometry(&x,&y,&w,&h);
 #endif
   /* Rounded outline follows the mockup, with a usable complete hit rectangle. */
-  for(int j=0;j<h;++j)for(int i=0;i<w;++i) {
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;++j)for(int i=0;i<w;++i) {
     int dx=i<6?6-i:i>=w-6?i-(w-7):0;
     int dy=j<6?6-j:j>=h-6?j-(h-7):0;
     if(dx*dx+dy*dy>36)continue;
@@ -126,7 +151,14 @@ static void sv_button(int x,int y,int w,int h,const char *caption,bool selected)
   sv_text(2,x+(w-sv_measure(2,caption,18))/2,y+(h-12)/2-2,caption,SV_CYAN,18);
 }
 static void sv_fade(int top,int bottom) {
-  for(int y=top;y<bottom;++y) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_SV_FADE,(int32_t[8]){top,bottom},NULL))return;
+#endif
+  int row_first=top,row_end=bottom;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((height()-240)/2,&row_first,&row_end);
+#endif
+  for(int y=row_first;y<row_end;++y) {
     unsigned opacity=255;
     int a=y-top,b=bottom-1-y;
     int distance=a<b?a:b;

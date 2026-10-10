@@ -74,6 +74,9 @@ static portable_idle_ui_result resident_sleep_begin(void *context) {
 #ifdef PORTABLE_DISPLAY_SETTLED
  resident_sleep_token=0;
 #endif
+ #ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_immediate())return PORTABLE_IDLE_UI_RETAINED;
+#endif
  pp_begin();
  if(failed || native_custody_retained || !surface.frame)return PORTABLE_IDLE_UI_RETAINED;
  for(unsigned y=0;y<info.height;++y)
@@ -102,6 +105,9 @@ static portable_idle_ui_result resident_sleep_restore(void *context) {
  if(native_custody_retained || failed)return PORTABLE_IDLE_UI_RETAINED;
  if(!alarm_modal || !alarm_pixels_valid)return PORTABLE_IDLE_UI_RETAINED;
  resident_sleep_present=true;
+ #ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_immediate())return PORTABLE_IDLE_UI_RETAINED;
+#endif
  pp_begin();
  if(failed || native_custody_retained || !surface.frame)return PORTABLE_IDLE_UI_RETAINED;
  for(unsigned y=0;y<info.height;++y)
