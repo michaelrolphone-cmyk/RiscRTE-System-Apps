@@ -176,7 +176,7 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
             bool on=n->value==value;
             if(on)nc_round(xx,y+10*s,cw,22*s,9*s,accent);
             nc_center(xx,y+24*s,cw,choice,5,on?nc_bg():dim);
-            if(n->id==path.focus[path.depth-1]&&focus_part==i)fill(xx+8*s,y+29*s,cw-16*s,s,on?nc_bg():accent);
+            if(n->id==path.focus[path.depth-1]&&focus_part==i&&!on)fill(xx+8*s,y+29*s,cw-16*s,s,accent);
             nc_hit(xx,y+10*s,cw,22*s,HIT_VALUE,n,value,false);
         }return;
     }
@@ -234,8 +234,8 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     else if(d->marker<6){nc_marker(d->marker,x+4*s,y+h/2-5*s,10*s,false);left+=24*s;}
     if(d->badge[0]){
         int bw=nc_measure(5,d->badge)+12*s;right-=bw+14*s;
-        nc_box(right,y+5*s,bw,18*s,3*s,s,accent,nc_paper()&&d->tone==RISC_TONE_WARNING?fg:nc_bg());
-        nc_center(right,y+17*s,bw,d->badge,5,nc_paper()&&d->tone==RISC_TONE_WARNING?nc_bg():accent);
+        nc_box(right,y+5*s,bw,18*s,8*s,s,accent,d->tone==RISC_TONE_WARNING?accent:nc_bg());
+        nc_center(right,y+17*s,bw,d->badge,5,d->tone==RISC_TONE_WARNING?nc_bg():accent);
     }else right-=12*s;
     nc_text(left,y+(n->text[0]?18*s:h/2+4*s),right-left,n->label,2,fg);
     if(n->text[0])nc_text(left,y+33*s,right-left,n->text,3,dim);
@@ -345,6 +345,7 @@ static bool component_activate(const hit *h){
     if(h->kind==HIT_TOAST){if(model->toast_until&&document.toast_action)emit(RISC_SCENE_ACTION_EVENT,0,document.toast_action,0);return true;}
     int i=node_index(&document,h->node);if(i<0)return true;const risc_scene_node_v1 *n=&document.nodes[i];
     if(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))return true;
+    if(h->kind==HIT_VALUE&&n->kind==RISC_COMPONENT_SEGMENTS)focus_part=(unsigned)(h->value-n->minimum);
     if(h->kind==HIT_SECONDARY){path.focus[path.depth-1]=n->id;emit(RISC_SCENE_ACTION_EVENT,n->id,document.details[i].secondary_action,0);return true;}return false;
 }
 static void component_down(int x,int y){
