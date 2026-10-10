@@ -1,0 +1,26 @@
+display_submit ms=1000 token=1
+provider_edge seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+ready_changed seq=1 timestamp=1050 contacts=1 id1=(240,360)
+provider_edge seq=2 timestamp=1075 kind=1 id=2 x=320 y=440
+provider_edge seq=3 timestamp=1075 kind=2 id=1 x=285 y=360
+ready_changed seq=3 timestamp=1075 contacts=2 id1=(285,360) id2=(320,440)
+ready_unchanged seq=3 timestamp=1076 contacts=2 id1=(285,360) id2=(320,440)
+provider_edge seq=4 timestamp=1100 kind=3 id=2 x=320 y=440
+provider_edge seq=5 timestamp=1100 kind=2 id=1 x=320 y=360
+ready_changed seq=5 timestamp=1100 contacts=1 id1=(320,360)
+provider_edge seq=6 timestamp=1125 kind=3 id=1 x=320 y=360
+ready_changed seq=6 timestamp=1125 contacts=0
+display_complete ms=1200 token=1
+dispatch_edge ms=1200 seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+dispatch_edge ms=1201 seq=2 timestamp=1075 kind=1 id=2 x=320 y=440
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+dispatch_edge ms=1202 seq=3 timestamp=1075 kind=2 id=1 x=285 y=360
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+dispatch_edge ms=1203 seq=4 timestamp=1100 kind=3 id=2 x=320 y=440
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+dispatch_edge ms=1204 seq=5 timestamp=1100 kind=2 id=1 x=320 y=360
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+dispatch_edge ms=1205 seq=6 timestamp=1125 kind=3 id=1 x=320 y=360
+snapshot_at_dispatch seq=6 timestamp=1125 contacts=0
+Clock actual GT911 scenario=15 display=slow launches=0 diagnostics=0 clean lifecycle

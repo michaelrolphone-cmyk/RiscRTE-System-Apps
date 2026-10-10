@@ -1,0 +1,11 @@
+display_submit ms=1000 token=1
+provider_edge seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+ready_changed seq=1 timestamp=1050 contacts=1 id1=(240,360)
+provider_edge seq=2 timestamp=1052 kind=3 id=1 x=240 y=360
+ready_changed seq=2 timestamp=1052 contacts=0
+display_complete ms=1200 token=1
+dispatch_edge ms=1200 seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+snapshot_at_dispatch seq=2 timestamp=1052 contacts=0
+dispatch_edge ms=1201 seq=2 timestamp=1052 kind=3 id=1 x=240 y=360
+snapshot_at_dispatch seq=2 timestamp=1052 contacts=0
+Clock actual GT911 scenario=16 display=slow launches=0 diagnostics=0 clean lifecycle

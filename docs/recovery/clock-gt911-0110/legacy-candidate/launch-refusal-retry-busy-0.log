@@ -1,0 +1,15 @@
+display_submit ms=1000 token=1
+provider_edge seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+ready_changed seq=1 timestamp=1050 contacts=1 id1=(240,360)
+provider_edge seq=2 timestamp=1075 kind=2 id=1 x=285 y=360
+ready_changed seq=2 timestamp=1075 contacts=1 id1=(285,360)
+provider_edge seq=3 timestamp=1125 kind=3 id=1 x=285 y=360
+ready_changed seq=3 timestamp=1125 contacts=0
+provider_edge seq=4 timestamp=1175 kind=1 id=1 x=240 y=360
+ready_changed seq=4 timestamp=1175 contacts=1 id1=(240,360)
+provider_edge seq=5 timestamp=1200 kind=2 id=1 x=285 y=360
+ready_changed seq=5 timestamp=1200 contacts=1 id1=(285,360)
+provider_edge seq=6 timestamp=1250 kind=3 id=1 x=285 y=360
+ready_changed seq=6 timestamp=1250 contacts=0
+diagnostic ms=11000 PORTABLE_APP error=display-timeout
+Clock actual GT911 scenario=9 display=busy launches=0 diagnostics=1 clean lifecycle

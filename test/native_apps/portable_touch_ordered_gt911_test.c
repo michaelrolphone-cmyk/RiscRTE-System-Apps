@@ -99,11 +99,41 @@ int main(int argc,char **argv) {
   }else if(!strcmp(scenario,"multi-home")) {
     report(1,100,200,false);assert(step() && sample.began);
     packet(2,105,205,true);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
-    assert(step() && sample.cancelled && !sample.down); /* Same-report second contact cancels MOVE before any swipe. */assert(step() && sample.cancelled);
+    assert(step() && sample.cancelled && !sample.down); /* Same-report second contact cancels before any swipe. */
+#ifdef GT911_CONTACTS_FIRST
+    assert(step() && sample.valid && !sample.cancelled && !sample.down); /* Retained MOVE follows second DOWN. */
+#else
+    assert(step() && sample.cancelled);
+#endif
     assert(step() && sample.home_pressed && !sample.down);assert(!step());
     /* Keep hardware ID 4, including a reordered contact record; no new gesture. */
     packet(1,150,250,true);wire_point(0,4,150,250);assert(portable_touch_collect(&touch));
     assert(step() && !sample.began && !sample.released);assert(!step());neutral();fresh_tap();
+  }else if(!strcmp(scenario,"multi-repeat") || !strcmp(scenario,"multi-released-before-dispatch")) {
+    bool released=!strcmp(scenario,"multi-released-before-dispatch");
+    report(1,100,200,false);assert(step() && sample.began);
+    packet(2,300,205,false);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
+    uint64_t stamp=time_ms;
+    packet(2,300,205,false);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
+    assert(snapshot().timestamp_ms>stamp);
+    if(released)report(0,0,0,false);
+    assert(step() && sample.cancelled && !sample.down && sample.timestamp_ms==0);
+    assert(step() && sample.valid && !sample.down && !sample.began && !sample.released);
+    assert(sample.timestamp_ms==stamp);
+    if(released){assert(step() && !tap());assert(step() && !tap());assert(!step());}
+    else neutral();
+    fresh_tap();
+  }else if(!strcmp(scenario,"earlier-move") || !strcmp(scenario,"earlier-tap")) {
+    bool earlier_tap=!strcmp(scenario,"earlier-tap");
+    report(1,100,200,false);assert(step() && sample.began);
+    if(earlier_tap){report(0,0,0,false);report(1,110,210,false);}
+    else report(1,300,200,false);
+    packet(2,310,205,false);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
+    packet(2,310,205,false);wire_point(1,4,150,250);assert(portable_touch_collect(&touch));
+    if(earlier_tap){assert(step() && tap());assert(step() && sample.began);}
+    else assert(step() && sample.valid && sample.down && sample.moved && !sample.cancelled);
+    assert(step() && sample.cancelled);
+    assert(step() && !sample.down && !sample.released);neutral();fresh_tap();
   }else if(!strcmp(scenario,"identity") || !strcmp(scenario,"identity-home")) {
     bool home=!strcmp(scenario,"identity-home");
     report(1,100,200,false);assert(step() && sample.began && sample.contact_id==1);

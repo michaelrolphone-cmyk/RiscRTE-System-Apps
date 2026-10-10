@@ -1,0 +1,31 @@
+diagnostic ms=1000 SPARSE_CLOCK stage=classification status=0 elapsed_ms=0
+diagnostic ms=1000 SPARSE_CLOCK stage=promotion status=0 elapsed_ms=0
+diagnostic ms=1000 SPARSE_CLOCK stage=native-recovery status=0 elapsed_ms=0
+provider_edge seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+ready_changed seq=1 timestamp=1050 contacts=1 id1=(240,360)
+dispatch_edge ms=1053 seq=1 timestamp=1050 kind=1 id=1 x=240 y=360
+snapshot_at_dispatch seq=1 timestamp=1050 contacts=1 id1=(240,360)
+display_submit ms=1062 token=1
+provider_edge seq=2 timestamp=1075 kind=2 id=1 x=285 y=360
+ready_changed seq=2 timestamp=1075 contacts=1 id1=(285,360)
+dispatch_edge ms=1075 seq=2 timestamp=1075 kind=2 id=1 x=285 y=360
+snapshot_at_dispatch seq=2 timestamp=1075 contacts=1 id1=(285,360)
+provider_edge seq=3 timestamp=1125 kind=3 id=1 x=285 y=360
+ready_changed seq=3 timestamp=1125 contacts=0
+display_complete ms=1262 token=1
+clock_launch ms=1262 target=springboard.elf
+display_submit ms=1327 token=2
+provider_edge seq=4 timestamp=1412 kind=1 id=1 x=240 y=360
+ready_changed seq=4 timestamp=1412 contacts=1 id1=(240,360)
+dispatch_edge ms=1412 seq=4 timestamp=1412 kind=1 id=1 x=240 y=360
+snapshot_at_dispatch seq=4 timestamp=1412 contacts=1 id1=(240,360)
+provider_edge seq=5 timestamp=1437 kind=2 id=1 x=285 y=360
+ready_changed seq=5 timestamp=1437 contacts=1 id1=(285,360)
+dispatch_edge ms=1437 seq=5 timestamp=1437 kind=2 id=1 x=285 y=360
+snapshot_at_dispatch seq=5 timestamp=1437 contacts=1 id1=(285,360)
+provider_edge seq=6 timestamp=1487 kind=3 id=1 x=285 y=360
+ready_changed seq=6 timestamp=1487 contacts=0
+display_complete ms=1527 token=2
+clock_launch ms=1527 target=springboard.elf
+Sparse foreground foreground PASS (7 grants max, 3 native reads)
+Selected Home actual GT911 scenario=9 display=slow launches=2 retained=0 PASS

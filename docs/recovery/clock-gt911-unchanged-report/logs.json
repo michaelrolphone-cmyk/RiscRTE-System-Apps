@@ -1,0 +1,16 @@
+{
+  "README.md": "4de41f94f5a737947291fce9e5b35e1fde9219ea29789bb8ea62e631e1cd3bff",
+  "evidence.json": "564f00e3316e722c690be4f21b408fb916ed9f241952d3d01fa3f63138628b65",
+  "later-unchanged-report-0.log": "918636faaf445a57ce6755e220c2109f2485c9709f16d0b8418bd89e0fb05e2c",
+  "later-unchanged-report-1.log": "102c5417352709602b9d9a2acfc357e6087b158db17f65810552bad2e703642f",
+  "rapid-swipe-0.log": "74c7c6d3ce9c77691710cd1504ef0d85b062a81888adc4c4af60a443bbe97485",
+  "rapid-swipe-1.log": "74c7c6d3ce9c77691710cd1504ef0d85b062a81888adc4c4af60a443bbe97485",
+  "rapid-tap-0.log": "ff846565d1170f33c23fa07cf5c4ef540f2fd9a0acac05ee82ec64d011e8b409",
+  "rapid-tap-1.log": "ff846565d1170f33c23fa07cf5c4ef540f2fd9a0acac05ee82ec64d011e8b409",
+  "same-tick-burst-0.log": "3f9958939be2da8e408a89801b802aa119f4462d269a87f4e6acfe78dcd13578",
+  "same-tick-burst-1.log": "3f9958939be2da8e408a89801b802aa119f4462d269a87f4e6acfe78dcd13578",
+  "same-tick-recontacts-0.log": "615d451273974a3f8e36178fe9aa67e18365d2250ac6ea8485cb8bb941e804e8",
+  "same-tick-recontacts-1.log": "615d451273974a3f8e36178fe9aa67e18365d2250ac6ea8485cb8bb941e804e8",
+  "single-report-cancel-0.log": "a16c2ac568264edcd9e9be1bb58c6a2e2d779d5c85f3d1915f4ee94abb01cae8",
+  "single-report-cancel-1.log": "a16c2ac568264edcd9e9be1bb58c6a2e2d779d5c85f3d1915f4ee94abb01cae8"
+}

@@ -14,7 +14,8 @@ import subprocess
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-GT911_SHA256 = "da287cbd675b6a59131b97278a48c6cf1734b90e30a9e2674e72b0063c9a86d1"
+GT911_SHA256 = {"0.1.9": "da287cbd675b6a59131b97278a48c6cf1734b90e30a9e2674e72b0063c9a86d1",
+                "0.1.10": "ddb898395bcfb4ca126b284f01b288274da97f34efd2e2e63c9347dff8ed4cb5"}
 SCENARIOS = ["bursts", "same-tick-recontacts", "same-tick-home", "same-tick-burst",
              "subscribers", "inherited", "full-queue", "multi-home", "identity", "identity-home", "move-return",
              "reset", "overflow", "read-failure", "ack-failure", "partial-read",
@@ -44,14 +45,18 @@ def main():
     unit = ROOT / "test/native_apps/portable_touch_ordered_test.c"
     actual = ROOT / "test/native_apps/portable_touch_ordered_gt911_test.c"
     sources = [include / "PortableTouch.h", unit, actual, Path(__file__).resolve()]
-    driver = fixture = None
+    driver = fixture = version = None
+    scenarios = list(SCENARIOS)
     sdk = out / "sdk"
     if args.product:
         driver = args.product.resolve() / "minimal/drivers/x4pro_gt911/driver.c"
         fixture = args.product.resolve() / "minimal/test/gt911_test.c"
         manifest = driver.with_name("manifest.json")
-        assert json.loads(manifest.read_text())["version"] == "0.1.9"
-        assert digest(driver) == GT911_SHA256, "Expected exact selected production GT911 0.1.9 source"
+        version = json.loads(manifest.read_text())["version"]
+        assert version in GT911_SHA256
+        assert digest(driver) == GT911_SHA256[version], "Expected exact qualified GT911 source"
+        if version == "0.1.10":
+            scenarios += ["multi-repeat", "multi-released-before-dispatch", "earlier-move", "earlier-tap"]
         sdk.mkdir(exist_ok=True)
         # Canonical headers are staged once; the consumer and actual driver then
         # include the same ABI files, avoiding duplicate local SDK definitions.
@@ -83,15 +88,15 @@ def main():
             records.append(dict(layer="synthetic-provider", mode=mode, profile=profile))
         if driver:
             binary = dest / "gt911"
-            run([os.environ.get("CC", "cc"), *common, *san, *native, "-Wno-unused-function", "-Wno-missing-field-initializers",
+            run([os.environ.get("CC", "cc"), *common, *san, *native, *(["-DGT911_CONTACTS_FIRST"] if version == "0.1.10" else []), "-Wno-unused-function", "-Wno-missing-field-initializers",
                  "-DX4_GT911_FIXTURE=" + json.dumps(str(fixture)), "-I" + str(sdk), actual, driver, "-o", binary])
-            for scenario in SCENARIOS:
+            for scenario in scenarios:
                 with (dest / ("gt911-" + scenario + ".log")).open("w") as log:
                     run([binary, scenario], stdout=log, stderr=subprocess.STDOUT, env=env, timeout=20)
-                records.append(dict(layer="actual-gt911-0.1.9", mode=mode, scenario=scenario))
+                records.append(dict(layer="actual-gt911-" + version, mode=mode, scenario=scenario))
         print(mode + ": ordered consumer qualification passed", flush=True)
     receipt = {"schema": 1, "runs": records, "hardware_verified": False, "publication": "none",
-               "driver_version": "0.1.9" if driver else None,
+               "driver_version": version,
                "source_sha256": {str(p): digest(p) for p in sources}}
     (out / "evidence.json").write_text(json.dumps(receipt, indent=2) + "\n")
     print(f"{len(records)} runs passed; evidence: {out / 'evidence.json'}")
