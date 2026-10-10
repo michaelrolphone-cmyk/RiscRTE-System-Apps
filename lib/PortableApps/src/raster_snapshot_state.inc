@@ -21,6 +21,7 @@ typedef struct raster_command {
 } raster_command;
 static raster_command *raster_commands,*raster_tail,*raster_cursor;
 static bool raster_recording,raster_sealed,raster_replaying,raster_full,raster_begin_allowed;
+static void *raster_offscreen;
 static bool raster_saved_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES
 static bool raster_saved_flip;
@@ -39,4 +40,5 @@ static inline bool raster_begin_pixels(const void *pixels,unsigned stride);
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text);
 static void present(bool full);
 static bool raster_materialize(void);
+static void raster_discard(void);
 static inline bool raster_immediate(void);

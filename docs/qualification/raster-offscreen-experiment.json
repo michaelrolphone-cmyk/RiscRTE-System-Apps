@@ -1,0 +1,596 @@
+{
+  "purpose": "isolated-unselected-raster-prototype",
+  "production_checkpoint": "739e5055272ad7e589ec4b0c82224210005fc431",
+  "source_sha256": {
+    "lib/PortableApps/src/adapter.c": "bbeddabfe5936bff8d6cd169bb1a123370f9d1ce6d7c59130a0ecc32ef5b8a46",
+    "lib/PortableApps/src/nova.inc": "67aa7480e587c0ee092ddf367e3dbab52a5da91402006c3822c4247da68b52fc",
+    "lib/PortableApps/src/nova_ui.inc": "b5655105fb62370d451a8bea3d5a438f14b48992c66665763690cab7eb3a9d17",
+    "lib/PortableApps/src/raster_snapshot_replay.inc": "9746d8bd2c8bbbdbd322838de5f9737852ac97d6b5e7cb7d6d5dfda4276eca29",
+    "lib/PortableApps/src/raster_snapshot_state.inc": "ca547057706f1131ac88ecb16ad94714d78a7f2ca2b2dd90731ad430078f563d",
+    "lib/PortableApps/src/settings_view.inc": "fbaf7954f040aa197d949fa7da11ca655fc0741b7fa59415e2183ef4f336e7c4",
+    "lib/PortableApps/src/text_input_handoff.inc": "28c60c75741c8c09f17dfa5b032748a4198f8075b684d027c56607ea26ebe02f",
+    "lib/PortableApps/src/wifi_view.inc": "4914294432aeb7141f3d8ffaa911b17070cae78a91e2648a67c70b1b910389ed",
+    "scripts/test_portable_raster_custody.py": "21d96b613dc4ea05af9c0c7c1cd8d63cd1a98868e0a5a7b6c228c86e99b316f8",
+    "scripts/test_portable_raster_latency.py": "cbe8e21836d83f9fef0bdc5754a84c71c4a895251cfaec5e9260df6994c36dfb",
+    "test/native_apps/portable_raster_custody_test.c": "a02b15d10aa118263e027ed20193bdc8c59a48166cfa2f33b1896bf442099596",
+    "test/native_apps/portable_raster_latency_test.c": "fc4be2939a0aec7e0badd4ff2c86e24f7c51a2719e3b8b22d1bc1837852a46c1"
+  },
+  "measurements": [
+    {
+      "name": "all",
+      "measurements": [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.026,
+          "pixel_visits_before_model": 265270,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 32,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.066,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 10320,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 839,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.064,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 5280,
+          "pixel_visits_total": 284154,
+          "completed_at_ms": 1671,
+          "raster_hash": 2727126713
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 119200,
+          "incremental_peak_bytes": 119200,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.035,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.004,
+          "pixel_visits_before_model": 854880,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 90,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.066,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 10560,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 4761,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.063,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.005,
+          "pixel_visits_before_model": 5280,
+          "pixel_visits_total": 1610278,
+          "completed_at_ms": 9483,
+          "raster_hash": 1258135307
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 3,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 52200,
+          "incremental_peak_bytes": 52200,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.068,
+          "copy_cost_ms_per_4096_bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "selected",
+      "measurements": [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.147,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 26,
+          "raster_hash": 1668044173
+        },
+        {
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.057,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.082,
+          "pixel_visits_before_model": 10320,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 555,
+          "raster_hash": 1668044173
+        },
+        {
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.123,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.153,
+          "pixel_visits_before_model": 5280,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 1107,
+          "raster_hash": 1668044173
+        },
+        {
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.051,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 0.089,
+          "pixel_visits_before_model": 768539,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 47,
+          "raster_hash": 3324067904
+        },
+        {
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.15,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.102,
+          "pixel_visits_before_model": 10560,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 2658,
+          "raster_hash": 3324067904
+        },
+        {
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.103,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 23,
+          "nav_dispatch_ms": 23,
+          "host_cpu_draw_ms": 0.079,
+          "pixel_visits_before_model": 5280,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 5298,
+          "raster_hash": 3324067904
+        },
+        {
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.09,
+          "copy_cost_ms_per_4096_bytes": 0
+        }
+      ]
+    },
+    {
+      "name": "copy-injected",
+      "measurements": [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 44,
+          "model_dispatch_ms": 45,
+          "nav_dispatch_ms": 45,
+          "host_cpu_draw_ms": 0.025,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 46,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 17,
+          "edge_to_model_ms": 28,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.037,
+          "copy_cost_ms_per_4096_bytes": 1
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 583,
+          "model_dispatch_ms": 584,
+          "nav_dispatch_ms": 584,
+          "host_cpu_draw_ms": 0.009,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 585,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 556,
+          "edge_to_model_ms": 28,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.036,
+          "copy_cost_ms_per_4096_bytes": 1
+        },
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 1134,
+          "model_dispatch_ms": 1135,
+          "nav_dispatch_ms": 1135,
+          "host_cpu_draw_ms": 0.01,
+          "pixel_visits_before_model": 188525,
+          "pixel_visits_total": 188525,
+          "completed_at_ms": 1136,
+          "raster_hash": 1668044173
+        },
+        {
+          "edge_at_ms": 1107,
+          "edge_to_model_ms": 28,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 117000,
+          "incremental_peak_bytes": 117000,
+          "copy_bytes": 115200,
+          "copy_host_cpu_ms": 0.039,
+          "copy_cost_ms_per_4096_bytes": 1
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 79,
+          "model_dispatch_ms": 80,
+          "nav_dispatch_ms": 80,
+          "host_cpu_draw_ms": 0.009,
+          "pixel_visits_before_model": 901412,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 81,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 69,
+          "edge_to_model_ms": 11,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.051,
+          "copy_cost_ms_per_4096_bytes": 1
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 1,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 2689,
+          "model_dispatch_ms": 2690,
+          "nav_dispatch_ms": 2690,
+          "host_cpu_draw_ms": 0.008,
+          "pixel_visits_before_model": 901412,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 2691,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 2679,
+          "edge_to_model_ms": 11,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.125,
+          "copy_cost_ms_per_4096_bytes": 1
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 2,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 5329,
+          "model_dispatch_ms": 5330,
+          "nav_dispatch_ms": 5330,
+          "host_cpu_draw_ms": 0.007,
+          "pixel_visits_before_model": 901412,
+          "pixel_visits_total": 901412,
+          "completed_at_ms": 5331,
+          "raster_hash": 3324067904
+        },
+        {
+          "edge_at_ms": 5319,
+          "edge_to_model_ms": 11,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 49800,
+          "incremental_peak_bytes": 49800,
+          "copy_bytes": 48000,
+          "copy_host_cpu_ms": 0.07,
+          "copy_cost_ms_per_4096_bytes": 1
+        }
+      ]
+    },
+    {
+      "name": "capacity",
+      "measurements": [
+        {
+          "format": 5,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 20.09,
+          "pixel_visits_before_model": 244901,
+          "pixel_visits_total": 244901,
+          "completed_at_ms": 26,
+          "raster_hash": 766050455
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 5,
+          "width": 240,
+          "height": 240,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 819200,
+          "incremental_peak_bytes": 819200,
+          "copy_bytes": 0,
+          "copy_host_cpu_ms": 0.0,
+          "copy_cost_ms_per_4096_bytes": 0
+        },
+        {
+          "format": 1,
+          "cost_ms_per_512_pixel_visits": 0,
+          "draw_return_ms": 0,
+          "touch_capture_ms": 20,
+          "model_dispatch_ms": 21,
+          "nav_dispatch_ms": 21,
+          "host_cpu_draw_ms": 33.219,
+          "pixel_visits_before_model": 1550501,
+          "pixel_visits_total": 1550501,
+          "completed_at_ms": 26,
+          "raster_hash": 1448292961
+        },
+        {
+          "edge_at_ms": 20,
+          "edge_to_model_ms": 1,
+          "memory_format": 1,
+          "width": 800,
+          "height": 480,
+          "initial_live_bytes": 0,
+          "peak_live_bytes": 819200,
+          "incremental_peak_bytes": 819200,
+          "copy_bytes": 0,
+          "copy_host_cpu_ms": 0.0,
+          "copy_cost_ms_per_4096_bytes": 0
+        }
+      ]
+    }
+  ],
+  "exact_byte_comparisons": [
+    {
+      "case": "all",
+      "format": 1,
+      "bytes": 48000,
+      "sha256": "aac245d070a34de5a84fd4492e457134a12383e866378311b41b3654c0fb7b60"
+    },
+    {
+      "case": "all",
+      "format": 5,
+      "bytes": 115200,
+      "sha256": "e7ef09612b952a0d9b900c1661f79dc6d92e521e4ff3f50815d396306772b199"
+    },
+    {
+      "case": "selected",
+      "format": 1,
+      "bytes": 48000,
+      "sha256": "e811ad3ddcf0ec01f63020d5b5b1dd69b18851bc7375c4032fea9431b2b1d72b"
+    },
+    {
+      "case": "selected",
+      "format": 5,
+      "bytes": 115200,
+      "sha256": "62b499cdbb09aef83ddf342bb7f7456e1dbf6458e3527a2dfbd4b6f931f393c5"
+    },
+    {
+      "case": "capacity",
+      "format": 1,
+      "bytes": 48000,
+      "sha256": "18f2313854bcbe42bd13c9d0e01f34ed731018b85122ec7409579ea968a66dd1"
+    },
+    {
+      "case": "capacity",
+      "format": 5,
+      "bytes": 115200,
+      "sha256": "47ecc8628502ddbaa0ee638ab9f71bdbfd0593117e54b3e08d53e6500f696f7c"
+    }
+  ],
+  "target_command_bytes": {
+    "no_scroll": 184,
+    "scroll": 200
+  },
+  "limits": [
+    "Host modeled timing and host allocation accounting, not hardware performance or free-heap proof.",
+    "Final copy and explicit direct-frame barriers remain synchronous.",
+    "Allocation/capacity fallback preserves every draw but can delay model dispatch.",
+    "Current selected providers are async; legacy non-async compatibility is not converted by this prototype."
+  ]
+}

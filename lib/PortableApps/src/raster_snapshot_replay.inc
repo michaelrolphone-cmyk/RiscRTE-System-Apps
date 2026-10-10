@@ -3,6 +3,7 @@ static void raster_free_commands(void) {
  raster_tail=raster_cursor=NULL;raster_command_count=0;
 }
 static void raster_discard(void) {
+ free(raster_offscreen);raster_offscreen=NULL;
  raster_free_commands();raster_recording=raster_sealed=raster_begin_allowed=false;
 }
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text) {
@@ -43,6 +44,11 @@ static bool raster_record(unsigned kind,const int32_t args[8],const char *text) 
 static bool raster_begin(uint16_t color) {
  if(raster_replaying || (!raster_begin_allowed&&!raster_recording))return false;
  raster_begin_allowed=false;
+#ifdef PORTABLE_TOUCH_SCROLL
+ /* An initially clipped clear preserves unknown provider pixels outside the
+  * clip. Keep the original immediate lease for that partial-frame contract. */
+ if(raster_clip_active){if(!raster_immediate())return true;return false;}
+#endif
  if(raster_sealed&&!raster_drain())return true;
  raster_free_commands();raster_recording=true;raster_band_top=0;
  raster_saved_rotation=paper_rotated;
@@ -145,27 +151,59 @@ static bool raster_progress(void) {
 #ifdef PORTABLE_PAPER_PREFERENCES
  bool prior_flip=paper_flip_ui;paper_flip_ui=raster_saved_flip;
 #endif
+ const unsigned row_bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
+ const size_t bytes=(size_t)row_bytes*info.height;
  if(!raster_cursor){
-  if(!acquire_surface()){raster_replaying=false;return false;}
+  raster_offscreen=malloc(bytes);
+  if(raster_offscreen)memset(raster_offscreen,0,bytes);
+  if(!raster_offscreen){
+   /* Preserve the complete frame through the original immediate renderer when
+    * an owned replay buffer cannot be allocated. No command/service is lost. */
+   if(!raster_materialize())goto restore;
+   raster_replaying=true;
+   goto submit;
+  }
   raster_cursor=raster_commands;raster_band_top=0;
  }
+ /* Only app-owned pixels are exposed during a band. No provider frame lease
+  * crosses the return to application/service state. A real frame identifier is
+  * never fabricated, including when input capture installs a terminal fence. */
+ risc_display_surface_v1 prior_surface=surface;
+ surface=(risc_display_surface_v1){.pixels=raster_offscreen,.width=info.width,.height=info.height,
+   .stride_bytes=row_bytes,.size_bytes=(uint32_t)bytes,.pixel_format=surface_format};
  unsigned start=millis_now(),pixels=raster_pixels;
  for(unsigned steps=0;raster_cursor&&!failed&&steps<256;steps++) {
   raster_band_bottom=raster_band_top+1;raster_execute(raster_cursor);
   if(++raster_band_top>=(raster_cursor->kind==RS_BITMAP?(int)info.height:height())){raster_cursor=raster_cursor->next;raster_band_top=0;}
   if((unsigned)(millis_now()-start)>=2 || raster_pixels-pixels>=65536)break;
  }
- bool done=!raster_cursor;
- if(done){
-  raster_sealed=false;raster_free_commands();
-#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
-  bool prior_clean=quick_clean_present;quick_clean_present=raster_saved_clean;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(!native_custody_retained)
 #endif
-  present(raster_full);
-#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
-  quick_clean_present=prior_clean;
-#endif
+ surface=prior_surface;
+ if(failed || raster_cursor)goto restore;
+ if(!acquire_surface())goto restore;
+ for(unsigned y=0;y<info.height;y++) {
+  uint8_t *to=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes;
+  const uint8_t *from=(const uint8_t*)raster_offscreen+(size_t)y*row_bytes;
+  uint8_t padding=to[row_bytes-1];
+  memcpy(to,from,row_bytes);
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1&&(info.width&7u)&&raster_commands&&raster_commands->kind!=RS_BITMAP) {
+   uint8_t mask=(uint8_t)(0xffu<<(8u-(info.width&7u)));
+   to[row_bytes-1]=(to[row_bytes-1]&mask)|(padding&~mask);
+  }
  }
+ free(raster_offscreen);raster_offscreen=NULL;
+submit:
+ raster_sealed=false;raster_free_commands();
+#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
+ bool prior_clean=quick_clean_present;quick_clean_present=raster_saved_clean;
+#endif
+ present(raster_full);
+#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
+ quick_clean_present=prior_clean;
+#endif
+restore:
  paper_rotated=prior_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES
  paper_flip_ui=prior_flip;

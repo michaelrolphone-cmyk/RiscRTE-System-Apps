@@ -56,7 +56,7 @@ static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
   if(raster_replaying&&(y+(height()-240)/2<raster_band_top||y+(height()-240)/2>=raster_band_bottom))return;
 #endif
   if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;
-  if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
+  if (!raster_surface_writable() || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
   uint8_t *p = (uint8_t *)surface.pixels + (size_t)y * surface.stride_bytes + (size_t)x * 2;

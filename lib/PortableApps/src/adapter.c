@@ -683,6 +683,13 @@ static bool raster_checkpoint(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
 #include "raster_snapshot_state.inc"
 #endif
+static inline bool raster_surface_writable(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen);
+#else
+  return surface.frame!=0;
+#endif
+}
 static inline bool raster_lease_mutable(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   return surface.frame&&(!raster_sealed||raster_replaying);
@@ -733,7 +740,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
 #endif
-  if (!surface.frame || w <= 0 || h <= 0)
+  if (!raster_surface_writable() || w <= 0 || h <= 0)
     return;
 #ifdef PORTABLE_TOUCH_SCROLL
   if(raster_clip_active && !portable_scroll_clip(&raster_clip,&x,&y,&w,&h))return;

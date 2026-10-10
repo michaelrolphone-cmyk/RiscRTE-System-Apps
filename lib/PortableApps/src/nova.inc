@@ -32,7 +32,7 @@ static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
 #if defined(PORTABLE_TOUCH_SCROLL) && (defined(PORTABLE_FILE_BROWSER_APP) || defined(PORTABLE_APP_TOUCH_SCROLL) || defined(PORTABLE_SETTINGS_LIST_SCROLL))
   if(raster_clip_active&&!portable_scroll_inside(&raster_clip,x,y))return;
 #endif
-  if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
+  if(!raster_surface_writable() || x<0 || y<0 || x>=width() || y>=height() || !a)return;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
     native_point(&x,&y);
     uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x/8;
@@ -91,7 +91,7 @@ static void np_mask(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(nova_mask_pending&&raster_record(RS_NP_MASK,(int32_t[8]){0},NULL)){nova_mask_pending=false;return;}
 #endif
-  if(!nova_mask_pending || !surface.frame)return;
+  if(!nova_mask_pending || !raster_surface_writable())return;
   nova_mask_pending=false;
 
   for(int y=0;y<height();++y)for(int x=0;x<width();++x){

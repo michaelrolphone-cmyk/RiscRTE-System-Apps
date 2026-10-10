@@ -98,8 +98,13 @@ int portable_text_adapter_suspend(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
     if(quick_modal||pqa_visible(&quick.ui)||pqa_capture(&quick.ui))return RISC_TEXT_ENTRY_BUSY;
 #endif
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_NATIVE_CUSTODY_FENCE)||defined(PORTABLE_RASTER_SNAPSHOT)
     if(!portable_paper_frame_drain())return text_input_failure();
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    /* An unsubmitted app paint has the same abort semantics as a released
+     * mutable lease. Never let it survive the host scene ownership handoff. */
+    raster_discard();
 #endif
 #ifdef PORTABLE_PAPER_CROSSFADE
     portable_paper_transition_cancel();
