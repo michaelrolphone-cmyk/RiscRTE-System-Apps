@@ -60,6 +60,13 @@ static void nc_icon(unsigned symbol,int x,int y,int size,uint16_t c){
     case RISC_SYMBOL_CLOCK:case RISC_SYMBOL_TODAY:nc_box(x+a/2,y+a/2,size-a,size-a,m,st,c,nc_bg());nc_line(x+m,y+a,x+m,y+m,st,c);nc_line(x+m,y+m,x+b,y+m,st,c);break;
     case RISC_SYMBOL_EDIT:nc_line(x+a,y+b,x+b,y+a,3*st,c);break;
     case RISC_SYMBOL_DELETE:nc_box(x+a,y+a,size/2,size*2/3,st,st,c,nc_bg());nc_line(x+a/2,y+a,x+size-a/2,y+a,st,c);break;
+    case RISC_SYMBOL_PLACE:nc_line(x+a/2,y+m,x+m,y+a/2,st,c);nc_line(x+m,y+a/2,x+size-a/2,y+m,st,c);nc_line(x+a,y+m,x+a,y+size-a/2,st,c);nc_line(x+a,y+size-a/2,x+b,y+size-a/2,st,c);nc_line(x+b,y+size-a/2,x+b,y+m,st,c);break;
+    case RISC_SYMBOL_EVENT:for(int i=0;i<4;i++){int z=i==1||i==2?size/2:size/4;nc_line(x+a/2+i*size/4,y+m-z/2,x+a/2+i*size/4,y+m+z/2,st,c);}break;
+    case RISC_SYMBOL_TRIGGER:nc_box(x+a,y+a,size/2,size/2,m,st,c,nc_bg());nc_line(x+m,y,x+m,y+a/2,st,c);nc_line(x+m,y+b+a/2,x+m,y+size,st,c);nc_line(x,y+m,x+a/2,y+m,st,c);nc_line(x+b+a/2,y+m,x+size,y+m,st,c);break;
+    case RISC_SYMBOL_LIBRARY:for(int i=0;i<3;i++)nc_box(x+a/2+i*size/3,y+a/2,size/4,size-a,st,st,c,nc_bg());break;
+    case RISC_SYMBOL_SETTINGS:for(int i=0;i<3;i++){int yy=y+a+i*a;nc_line(x+a/2,yy,x+size-a/2,yy,st,c);nc_box(x+(i==1?b:a)-st,yy-st,3*st,3*st,st,st,c,nc_bg());}break;
+    case RISC_SYMBOL_WORKFLOW:nc_box(x+a/2,y+a/2,size-a,size-a,st,st,c,nc_bg());nc_line(x+a,y+m,x+b,y+m,st,c);nc_line(x+m,y+a,x+b,y+m,st,c);nc_line(x+b,y+m,x+m,y+b,st,c);break;
+    case RISC_SYMBOL_ACTIVITY:nc_line(x,y+m,x+a,y+m,st,c);nc_line(x+a,y+m,x+m,y+a,st,c);nc_line(x+m,y+a,x+b,y+b,st,c);nc_line(x+b,y+b,x+size,y+m,st,c);break;
     default:for(int i=0;i<3;i++){fill(x+a/2,y+a+i*a,st,st,c);fill(x+a,y+a+i*a,size-a,st,c);}break;
     }
 }
@@ -90,6 +97,8 @@ static int nc_row_height(const risc_scene_node_v1 *n){
     case RISC_COMPONENT_SEGMENTS:return nc_size(38);
     case RISC_COMPONENT_TIME_PICKER:return nc_size(nc_paper()?160:108);
     case RISC_COMPONENT_MARKERS:return nc_size(50);
+    case RISC_COMPONENT_CARD:return nc_size(72);
+    case RISC_COMPONENT_RING:return nc_size(nc_paper()?116:108);
     case RISC_SCENE_ACTION:return nc_size(50);
     case RISC_SCENE_TEXT_NODE:return nc_size(56);
     default:return nc_size(nc_paper()?42:40);
@@ -139,6 +148,30 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     uint16_t fg=nc_fg(),dim=nc_color(RISC_TONE_MUTED),accent=nc_color(d->tone?d->tone:RISC_TONE_ACCENT);
     if(n->flags&RISC_SCENE_DISABLED){fg=dim;accent=dim;}
     if(n->kind==RISC_COMPONENT_SECTION){nc_text(x,y+20*s,w,n->label,1,dim);return;}
+    if(n->kind==RISC_COMPONENT_CARD){
+        bool inverse=nc_paper()&&(n->flags&RISC_SCENE_PRIMARY);uint16_t cardfg=inverse?nc_bg():accent;
+        nc_box(x,y+8*s,w,h-16*s,12*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,inverse?fg:nc_bg());
+        nc_text(x+11*s,y+30*s,w-22*s,n->label,0,cardfg);nc_text(x+11*s,y+47*s,w-22*s,n->text,3,inverse?nc_bg():dim);
+        if(n->action)nc_hit(x,y+8*s,w,h-16*s,HIT_ACTION,n,0,false);
+        return;
+    }
+    if(n->kind==RISC_COMPONENT_RING){
+        int cx=(int)width/2,cy=y+h/2,r=44*s,stroke=(nc_paper()?9:7)*s;
+        /* Integer octants avoid a floating-point dependency in the presenter. */
+        for(int yy=-r;yy<=r;yy++)for(int xx=-r;xx<=r;xx++){
+            int rr=xx*xx+yy*yy;if(rr>r*r||rr<(r-stroke)*(r-stroke))continue;
+            int ax=paper_abs(xx),ay=paper_abs(yy),q=ax+ay?ax*25/(ax+ay):0;
+            int percent=yy<=0?(xx>=0?q:100-q):(xx>=0?50-q:50+q);
+            pixel(cx+xx,cy+yy,percent* n->maximum<=n->value*100?accent:nc_paper()?fg:0x1125);
+        }
+        nc_center(cx-35*s,cy+9*s,70*s,d->badge,4,fg);return;
+    }
+    if(n->kind==RISC_COMPONENT_STRENGTH){
+        nc_text(x+10*s,y+h/2+4*s,w-100*s,n->label,2,fg);
+        for(int i=0;i<3;i++)nc_box(x+w-(96-i*15)*s,y+h/2-3*s,12*s,6*s,3*s,s,accent,i<n->value?accent:nc_bg());
+        nc_text(x+w-45*s,y+h/2+4*s,45*s,n->text,3,accent);
+        fill(x,y,(nc_paper()?3:2)*s,h,nc_paper()?fg:0x1125);fill(x,y+h-s,w,s,nc_paper()?fg:0x1125);return;
+    }
     if(n->kind==RISC_COMPONENT_PROGRESS){
         if(n->label[0]){nc_box(x,y+8*s,w,h-16*s,12*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,nc_bg());nc_text(x+11*s,y+30*s,w-22*s,n->label,0,accent);nc_text(x+11*s,y+44*s,w-22*s,n->text,3,dim);}
         else nc_center(x,y+15*s,w,n->text,3,dim);
@@ -155,8 +188,10 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
             /* Bible empty state: 44 logical px circle, 20 px check, dim ink.
              * Paper uses a 2.5 logical px outline (5 physical pixels). */
             int cx=(int)width/2,cy=y+44*s;
-            nc_box(cx-22*s,cy-22*s,44*s,44*s,22*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,nc_bg());
-            nc_icon(RISC_SYMBOL_CHECK,cx-12*s,cy-10*s,20*s,dim);
+            if(!d->symbol||d->symbol==RISC_SYMBOL_CHECK){
+                nc_box(cx-22*s,cy-22*s,44*s,44*s,22*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,nc_bg());
+                nc_icon(RISC_SYMBOL_CHECK,cx-12*s,cy-10*s,20*s,dim);
+            }else nc_icon(d->symbol,cx-17*s,cy-17*s,34*s,accent);
         }
         nc_center(x,yy,w,n->label,1,fg);
         /* Wrap explanatory content on spaces, with body-size glyphs. */
@@ -233,7 +268,9 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         if(n->value)fg=dim;
     }else if(d->symbol){nc_icon(d->symbol,left,y+h/2-8*s,16*s,accent);left+=(16+7)*s;}
     else if(d->marker<6){nc_marker(d->marker,left+2*s,y+h/2-5*s,10*s,false);left+=(14+7)*s;}
-    if(d->badge[0]){
+    if(d->badge[0]&&n->kind==RISC_COMPONENT_STAT_ROW){
+        int bw=nc_measure(2,d->badge);right-=bw+12*s;nc_text(right,y+h/2+4*s,bw,d->badge,2,accent);right-=7*s;
+    }else if(d->badge[0]){
         int bw=nc_measure(5,d->badge)+12*s;right-=bw+14*s;
         nc_box(right,y+5*s,bw,18*s,8*s,s,accent,d->tone==RISC_TONE_WARNING?accent:nc_bg());
         nc_center(right,y+17*s,bw,d->badge,5,d->tone==RISC_TONE_WARNING?nc_bg():accent);
@@ -241,7 +278,7 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     nc_text(left,y+(n->text[0]?18*s:h/2+4*s),right-left,n->label,2,fg);
     if(n->text[0])nc_text(left,y+33*s,right-left,n->text,3,dim);
     if(checked&&n->value)fill(left,y+14*s,nc_measure(2,n->label)<right-left?nc_measure(2,n->label):right-left,s,dim);
-    nc_line(x+w-6*s,y+h/2-3*s,x+w-3*s,y+h/2,s,dim);nc_line(x+w-3*s,y+h/2,x+w-6*s,y+h/2+3*s,s,dim);
+    if(n->action){nc_line(x+w-6*s,y+h/2-3*s,x+w-3*s,y+h/2,s,dim);nc_line(x+w-3*s,y+h/2,x+w-6*s,y+h/2+3*s,s,dim);}
     fill(x,y+h-1,w,1,nc_paper()?fg:0x1125);
     fill(x,y,nc_paper()?3*s:2*s,h,nc_paper()?fg:0x1125);
     if(n->id==path.focus[path.depth-1])fill(x-6*s,y+5*s,2*s,h-10*s,accent);
@@ -388,10 +425,12 @@ static bool component_valid(const risc_components_document_v1 *d){
         const risc_scene_node_v1 *n=&d->nodes[i];const risc_component_detail_v1 *a=&d->details[i];
         if(d->flags){if(n->kind==RISC_SCENE_ACTION)modal_actions++;else if(n->kind==RISC_SCENE_TEXT_NODE)modal_texts++;else return false;}
         if(n->kind==RISC_SCENE_TIME_OF_DAY||n->kind==RISC_SCENE_INTEGER||n->kind==RISC_SCENE_BOOLEAN||n->kind==RISC_SCENE_LINK)return false;
-        if(a->symbol>RISC_SYMBOL_CHECK||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;
+        if(a->symbol>RISC_SYMBOL_ACTIVITY||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;
         if(n->kind==RISC_SCENE_ACTION&&n->action==d->cancel_action&&!(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_DESTRUCTIVE|RISC_SCENE_HIDDEN)))cancel=true;
         if(n->kind==RISC_COMPONENT_HEADER_ACTION&&++headers>2)return false;
-        if(n->kind>=RISC_COMPONENT_ROW&&n->kind!=RISC_COMPONENT_PROGRESS&&n->kind!=RISC_COMPONENT_EMPTY&&!n->action)return false;
+        if(n->kind>=RISC_COMPONENT_ROW&&n->kind!=RISC_COMPONENT_PROGRESS&&n->kind!=RISC_COMPONENT_EMPTY&&n->kind<RISC_COMPONENT_CARD&&!n->action)return false;
+        if(n->kind==RISC_COMPONENT_RING&&(n->maximum<1||n->maximum>100||n->value<0||n->value>n->maximum))return false;
+        if(n->kind==RISC_COMPONENT_STRENGTH&&(n->value<0||n->value>3))return false;
         if(n->kind==RISC_COMPONENT_CHECK_ROW||n->kind==RISC_COMPONENT_SWITCH){if(n->minimum||n->maximum!=1||n->step!=1||n->value<0||n->value>1)return false;}
         if(a->secondary_action&&n->kind!=RISC_COMPONENT_CHECK_ROW)return false;
         if(n->kind==RISC_COMPONENT_STEPPER||n->kind==RISC_COMPONENT_SEGMENTS||n->kind==RISC_COMPONENT_MARKERS||n->kind==RISC_COMPONENT_TIME_PICKER){
