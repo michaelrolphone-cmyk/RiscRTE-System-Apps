@@ -151,6 +151,64 @@ static bool raster_materialize(void) {
  for(raster_command*c=raster_commands;c&&!failed;c=c->next){raster_band_bottom=c->kind==RS_BITMAP?(int)info.height:height();raster_execute(c);}
  raster_replaying=false;if(!raster_terminal())raster_free_commands();return !failed;
 }
+/* Commands retain their complete ordering, but empty rows are not CPU work.
+ * Bounds are conservative; original primitives still do exact clipping. */
+#ifdef PORTABLE_QUICK_ACTIONS
+static int raster_paper_y(int64_t y) {
+ /* Only visible endpoints matter. Clamp before multiplication so the bounded
+  * span needs no 64-bit division/runtime helper on admitted Xtensa modules. */
+ if(y<-800)y=-800;
+ if(y>1600)y=1600;
+ return (int)y*height()/800;
+}
+#endif
+static void raster_command_span(const raster_command *c) {
+ const int32_t *a=c->args;int64_t top=0,bottom=height();
+ switch(c->kind) {
+  case RS_BITMAP:bottom=info.height;break;
+  case RS_FILL:case RS_ROUNDED:top=a[1];bottom=top+a[3];break;
+  case RS_TEXT:top=a[1];bottom=top+7;break;
+  case RS_ICON:top=a[1];bottom=top+a[2];break;
+  case RS_PP_CIRCLE:case RS_NP_CIRCLE:top=(int64_t)a[1]-a[2];bottom=(int64_t)a[1]+a[2]+1;break;
+  case RS_NP_ICON:top=(int64_t)a[1]-a[2]/2;bottom=(int64_t)a[1]+a[2]+1;break;
+  case RS_NP_PIXEL:top=a[1];bottom=top+1;break;
+  case RS_PP_TEXT:{
+   int lo=0,hi=8,zoom=(a[3]&PAPER_TEXT_CLOCK)?3:1;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   if(zoom==1&&(a[3]&PAPER_TEXT_LARGE))zoom=2;
+#endif
+   for(unsigned n=0;n<95;n++){const rpp_glyph*g=&rpp_text[(a[4]?0:95)+n];if(g->top<lo)lo=g->top;if(g->top+g->height>hi)hi=g->top+g->height;}
+   top=(int64_t)a[1]+lo*zoom;bottom=(int64_t)a[1]+hi*zoom;break;
+  }
+  case RS_NU_PIXEL:case RS_SV_PIXEL:case RS_WV_PIXEL:top=(int64_t)a[1]+(height()-240)/2;bottom=top+1;break;
+  case RS_NU_RECT:case RS_NU_ROUND:case RS_SV_RECT:case RS_WV_RECT:
+   top=(int64_t)a[1]+(height()-240)/2;bottom=top+a[3];break;
+#ifdef PORTABLE_QUICK_ACTIONS
+  case RS_QP_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=top+34*width()/480+1;break;
+  case RS_QR_ROUND:top=raster_paper_y((int64_t)a[1]+c->paper_offset);bottom=raster_paper_y((int64_t)a[1]+a[3]+c->paper_offset)+2;break;
+  case RS_QR_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=raster_paper_y((int64_t)a[2]+40+c->paper_offset)+2;break;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  case RS_QR_TEXT:{
+   const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};
+   const quick_ref_font *font=fonts[a[0]];int lo=0,hi=0;
+   for(unsigned n=0;n<95;n++){const quick_ref_glyph*g=&font->glyphs[n];if(g->top<lo)lo=g->top;if(g->top+g->height>hi)hi=g->top+g->height;}
+   for(unsigned n=0;n<sizeof(quick_ref_words)/sizeof(*quick_ref_words);n++){
+    const quick_ref_word*w=&quick_ref_words[n];if(w->font!=font)continue;
+    if(w->top<lo)lo=w->top;
+    if(w->top+(int)w->height>hi)hi=w->top+(int)w->height;
+   }
+   top=raster_paper_y((int64_t)a[2]+lo+c->paper_offset)-1;bottom=raster_paper_y((int64_t)a[2]+hi+c->paper_offset)+2;break;
+  }
+#endif
+#endif
+ }
+ int maximum=c->kind==RS_BITMAP?(int)info.height:height();
+ if(top<0)top=0;
+ if(top>maximum)top=maximum;
+ if(bottom<top)bottom=top;
+ if(bottom>maximum)bottom=maximum;
+ raster_band_top=(int)top;raster_band_limit=(int)bottom;
+}
 static bool raster_progress(void) {
  if(!raster_sealed || raster_replaying)return !failed;
  raster_replaying=true;
@@ -170,7 +228,7 @@ static bool raster_progress(void) {
    raster_replaying=true;
    goto submit;
   }
-  raster_cursor=raster_commands;raster_band_top=0;
+  raster_cursor=raster_commands;if(raster_cursor)raster_command_span(raster_cursor);
  }
  /* Only app-owned pixels are exposed during a band. No provider frame lease
   * crosses the return to application/service state. A real frame identifier is
@@ -180,9 +238,9 @@ static bool raster_progress(void) {
    .stride_bytes=row_bytes,.size_bytes=(uint32_t)bytes,.pixel_format=surface_format};
  unsigned start=millis_now(),pixels=raster_pixels;
  for(unsigned steps=0;raster_cursor&&!failed&&steps<256;steps++) {
-  raster_band_bottom=raster_band_top+1;raster_execute(raster_cursor);
+  if(raster_band_top<raster_band_limit){raster_band_bottom=raster_band_top+1;raster_execute(raster_cursor);}
   if(failed)break; /* Checkpoint retention forbids even a budget-clock read. */
-  if(++raster_band_top>=(raster_cursor->kind==RS_BITMAP?(int)info.height:height())){raster_cursor=raster_cursor->next;raster_band_top=0;}
+  if(++raster_band_top>=raster_band_limit){raster_cursor=raster_cursor->next;if(raster_cursor)raster_command_span(raster_cursor);}
   if((unsigned)(millis_now()-start)>=2 || raster_pixels-pixels>=65536)break;
  }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE

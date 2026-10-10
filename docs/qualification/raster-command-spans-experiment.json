@@ -1,0 +1,238 @@
+{
+  "status": "isolated-unselected-experiment",
+  "predecessor_remote_commit": "f27a8ddb2f024cbfb7d0c03db380b724d0534b70",
+  "production_sha256": {
+    "lib/PortableApps/src/adapter.c": "4499f425c02d167a2ee5f6ad8fbb77e80008a02d617c44e8d5e4a702dbeea026",
+    "lib/PortableApps/src/raster_snapshot_state.inc": "5263a71b25d2d9eb94968f0ccbf7da0d953397b0edf69c31ac1a2e3dfb6e73ec",
+    "lib/PortableApps/src/raster_snapshot_replay.inc": "2f1cf311ffa526299bd9ab2adcdc112b31b9f0413262cd2e61045bb26771c71c",
+    "test/native_apps/shared_quick_reference_test.c": "7babcb58b7ca1f5142cc896569ce7c11e7c2c651bb012029a0927daa4c5621fa",
+    "test/native_apps/portable_raster_latency_test.c": "d03bde84b3c948e8b575c565f0009e127178f55a70dcb710172dcd0b303c2d39"
+  },
+  "changes": [
+    "Conservative command spans avoid replaying guaranteed-empty rows. All original drawing and ordering semantics remain in original primitives.",
+    "Remember a recognized resident controls request across mutable/pending display custody; child input/model/services continue. User-declined handoff remains one-shot.",
+    "Migrate existing Paper/Home/shared Quick fixture providers to ordered per-owner raw events and coherent snapshot watermarks; preserve original feature assertions."
+  ],
+  "qualification": {
+    "complete_byte_comparisons": 12,
+    "formats": [
+      "Watch240x240RGB565",
+      "X4native800x480MONO1",
+      "X4portrait480x800MONO1"
+    ],
+    "dense_injected_cost_ms_per_512_pixel_visits": [
+      0,
+      1,
+      2
+    ],
+    "dense_edge_to_model_ms": "1-3",
+    "paper_modal_cases_normal_sanitized": 124,
+    "home_ordered_edge_assertions_each": 59,
+    "paper_motion_frames": 10,
+    "paper_motion_exact_background_restore": true,
+    "custody_sanitized": 28,
+    "shared_real_runtime_cases_normal_sanitized": 64,
+    "shared_pending_probes": [
+      {
+        "flavor": "normal",
+        "probe": "software",
+        "returncode": 0,
+        "result": "Pending software pull: ordered move and 9 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=7 clean=0/0 restored=1 PASS\n"
+      },
+      {
+        "flavor": "normal",
+        "probe": "token",
+        "returncode": 0,
+        "result": "Pending provider-token pull: ordered move and 207 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=6 clean=0/0 restored=1 PASS\n"
+      },
+      {
+        "flavor": "normal",
+        "probe": "busy",
+        "returncode": 0,
+        "result": "Pending persistently-busy-token pull: ordered move and 128 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=6 clean=0/0 restored=1 PASS\n"
+      },
+      {
+        "flavor": "sanitized",
+        "probe": "software",
+        "returncode": 0,
+        "result": "Pending software pull: ordered move and 9 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=7 clean=0/0 restored=1 PASS\n"
+      },
+      {
+        "flavor": "sanitized",
+        "probe": "token",
+        "returncode": 0,
+        "result": "Pending provider-token pull: ordered move and 207 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=6 clean=0/0 restored=1 PASS\n"
+      },
+      {
+        "flavor": "sanitized",
+        "probe": "busy",
+        "returncode": 0,
+        "result": "Pending persistently-busy-token pull: ordered move and 128 continuing logical polls PASS\nReal Paper Clock + Files/USB + Runtime/Graph child-home-open: host=1 files=1 usb=0 overlays=6 clean=0/0 restored=1 PASS\n"
+      }
+    ]
+  },
+  "host_cpu_clock_measurements": {
+    "spans-real-cpu": [
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 23,
+        "nav_dispatch_ms": 23,
+        "host_cpu_draw_ms": 0.021,
+        "pixel_visits_before_model": 249570,
+        "pixel_visits_total": 284154,
+        "completed_at_ms": 87,
+        "raster_hash": 2727126713
+      },
+      {
+        "edge_at_ms": 20,
+        "edge_to_model_ms": 3,
+        "memory_format": 5,
+        "width": 240,
+        "height": 240,
+        "initial_live_bytes": 0,
+        "peak_live_bytes": 119200,
+        "incremental_peak_bytes": 119200,
+        "copy_bytes": 115200,
+        "copy_host_cpu_ms": 0.114,
+        "copy_cost_ms_per_4096_bytes": 0
+      },
+      {
+        "poll_calls": 35,
+        "maximum_poll_host_cpu_ms": 4.206,
+        "total_poll_host_cpu_ms": 70.624
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 23,
+        "model_dispatch_ms": 25,
+        "nav_dispatch_ms": 25,
+        "host_cpu_draw_ms": 0.005,
+        "pixel_visits_before_model": 763200,
+        "pixel_visits_total": 1610278,
+        "completed_at_ms": 166,
+        "raster_hash": 1258135307
+      },
+      {
+        "edge_at_ms": 20,
+        "edge_to_model_ms": 5,
+        "memory_format": 1,
+        "width": 800,
+        "height": 480,
+        "initial_live_bytes": 0,
+        "peak_live_bytes": 52200,
+        "incremental_peak_bytes": 52200,
+        "copy_bytes": 48000,
+        "copy_host_cpu_ms": 0.065,
+        "copy_cost_ms_per_4096_bytes": 0
+      },
+      {
+        "poll_calls": 81,
+        "maximum_poll_host_cpu_ms": 2.669,
+        "total_poll_host_cpu_ms": 137.041
+      }
+    ],
+    "spans-real-cpu-settings": [
+      {
+        "format": 5,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 20,
+        "model_dispatch_ms": 25,
+        "nav_dispatch_ms": 25,
+        "host_cpu_draw_ms": 0.022,
+        "pixel_visits_before_model": 139112,
+        "pixel_visits_total": 188525,
+        "completed_at_ms": 96,
+        "raster_hash": 1668044173
+      },
+      {
+        "edge_at_ms": 20,
+        "edge_to_model_ms": 5,
+        "memory_format": 5,
+        "width": 240,
+        "height": 240,
+        "initial_live_bytes": 0,
+        "peak_live_bytes": 117000,
+        "incremental_peak_bytes": 117000,
+        "copy_bytes": 115200,
+        "copy_host_cpu_ms": 0.035,
+        "copy_cost_ms_per_4096_bytes": 0
+      },
+      {
+        "poll_calls": 41,
+        "maximum_poll_host_cpu_ms": 4.025,
+        "total_poll_host_cpu_ms": 84.475
+      },
+      {
+        "format": 1,
+        "cost_ms_per_512_pixel_visits": 0,
+        "draw_return_ms": 0,
+        "touch_capture_ms": 21,
+        "model_dispatch_ms": 23,
+        "nav_dispatch_ms": 23,
+        "host_cpu_draw_ms": 0.008,
+        "pixel_visits_before_model": 768539,
+        "pixel_visits_total": 901412,
+        "completed_at_ms": 275,
+        "raster_hash": 3324067904
+      },
+      {
+        "edge_at_ms": 20,
+        "edge_to_model_ms": 3,
+        "memory_format": 1,
+        "width": 800,
+        "height": 480,
+        "initial_live_bytes": 0,
+        "peak_live_bytes": 49800,
+        "incremental_peak_bytes": 49800,
+        "copy_bytes": 48000,
+        "copy_host_cpu_ms": 0.063,
+        "copy_cost_ms_per_4096_bytes": 0
+      },
+      {
+        "poll_calls": 131,
+        "maximum_poll_host_cpu_ms": 2.805,
+        "total_poll_host_cpu_ms": 249.358
+      }
+    ]
+  },
+  "target_artifacts": [
+    {
+      "path": "/tmp/ui-phase3-bounded-spans-target/apps/file_browser/file_browser.elf",
+      "bytes": 257412,
+      "sha256": "5f71857f10ce8d562cc7d93376e79246d7da86ea8e7da9ab8ab5d5423abdce4f",
+      "structural_and_import_validation": "pass"
+    },
+    {
+      "path": "/tmp/ui-phase3-bounded-spans-target/apps/settings/settings.elf",
+      "bytes": 225964,
+      "sha256": "965b0d8feb1fdf2033b04d6395618a5c94562d1f785c383b696d77f5efa5361c",
+      "structural_and_import_validation": "pass"
+    },
+    {
+      "path": "/tmp/ui-phase3-bounded-spans-target/apps/springboard/springboard.elf",
+      "bytes": 222652,
+      "sha256": "6178781280426f61b4d31db6019c98f5d4bfc9310d53034777db61068e7535b8",
+      "structural_and_import_validation": "pass"
+    },
+    {
+      "path": "/tmp/ui-phase3-bounded-spans-target/apps/default/default.elf",
+      "bytes": 454164,
+      "sha256": "9bfccb439b56df13e81d49279d001c02e2ea36d236edfc85435d5e355c721d0b",
+      "structural_and_import_validation": "pass"
+    }
+  ],
+  "limits": [
+    "No selected product enables this experiment; no hardware timing/run/flashing.",
+    "Actual selected Watch target build remains pending.",
+    "Final provider acquisition/copy and explicitly immediate direct-frame paths remain synchronous.",
+    "A1ms/4096B final-copy cost injection measured11ms X4 /28ms Watch model delay.",
+    "Command/offscreen allocation exhaustion preserves all drawing via synchronous compatibility fallback.",
+    "Legacy unselected non-ASYNC provider compatibility remains synchronous; selected X4fast.13 and Watchpanel.4.2 are already asynchronous."
+  ]
+}

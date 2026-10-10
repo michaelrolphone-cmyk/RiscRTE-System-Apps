@@ -1814,7 +1814,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     crown_pending=false;return true;}
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
-  if(resident_controls_requested || (!surface.frame && !paper_token && display_settled)) {
+  /* A recognized pull-down is model state. Keep it while an existing image
+   * still owns the display, and continue child input/services in the meantime.
+   * Once custody is clear, the ordinary checkpoint attempts it exactly once;
+   * a user-declined edit/launch guard must not turn into repeated prompts. */
+  bool resident_display_ready=!surface.frame && !paper_token && display_settled && !alarm_modal;
+  if(resident_display_ready) {
     uint32_t reason=resident_controls_requested?RISC_RESIDENT_CHECKPOINT_CONTROLS:RISC_RESIDENT_CHECKPOINT_POLL;
     int status=resident_checkpoint(reason);
     if(status==RISC_RESIDENT_RETAINED)return false;

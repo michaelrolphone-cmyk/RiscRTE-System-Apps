@@ -7,7 +7,8 @@ static unsigned cpu_ms_per_batch,charged_pixels,captured_at;
 static size_t copied_bytes,copy_remainder;
 static double copy_host_ms;
 static unsigned copy_cost_ms,edge_at;
-static bool edge_at_copy;
+static bool edge_at_copy,real_cpu_clock;
+static clock_t observed_cpu;static double cpu_fraction;
 static void *raster_test_memcpy(void *to,const void *from,size_t bytes) {
  bool copying=false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -21,6 +22,9 @@ static void *raster_test_memcpy(void *to,const void *from,size_t bytes) {
  return result;
 }
 static void raster_test_clock(void) {
+ if(real_cpu_clock){clock_t now=clock();cpu_fraction+=1000.0*(now-observed_cpu)/CLOCKS_PER_SEC;
+  unsigned elapsed=(unsigned)cpu_fraction;cpu_fraction-=elapsed;mock_ms+=elapsed;observed_cpu=now;}
+
  unsigned batches=(raster_pixels-charged_pixels)/512u;
  if(cpu_ms_per_batch && batches){mock_ms+=batches*cpu_ms_per_batch;charged_pixels+=batches*512u;}
 }
@@ -55,6 +59,7 @@ static void raster_case(unsigned format,unsigned cost) {
  const t5_app_api_v1 *api=t5_app_get_api(1);assert(api->frame_ready());
  t5_app_input_t neutral;assert(api->poll(&neutral,0));
  mock_ms=0;raster_pixels=charged_pixels=0;cpu_ms_per_batch=cost;
+ real_cpu_clock=getenv("RASTER_REAL_CPU_CLOCK")!=NULL;observed_cpu=clock();cpu_fraction=0;
  copied_bytes=copy_remainder=0;copy_host_ms=0;copy_cost_ms=getenv("RASTER_COPY_COST_MS")?(unsigned)atoi(getenv("RASTER_COPY_COST_MS")):0;
  mock_peak=mock_bytes;size_t initial_bytes=mock_bytes;
  edge_at_copy=getenv("RASTER_EDGE_AT_COPY")!=NULL;edge_at=edge_at_copy?UINT32_MAX:20;
@@ -96,8 +101,13 @@ static void raster_case(unsigned format,unsigned cost) {
  for(unsigned n=0;n<extra;n++)api->fill_rect((int)(n%(unsigned)width()),(int)((n/(unsigned)width())%(unsigned)height()),1,1,n&1u);
  unsigned drawn_at=mock_ms;double host_draw_ms=1000.0*(clock()-start)/CLOCKS_PER_SEC;
  api->present(true);unsigned first_dispatch=0,nav_dispatch=0;
+ double max_poll_cpu_ms=0,total_poll_cpu_ms=0;unsigned poll_calls=0;
  for(unsigned i=0;i<(edge_at_copy?25000u:100u) && (probe_taps<1||nav_edges<2);i++) {
+  clock_t poll_start=clock();
   t5_app_input_t e;assert(api->poll(&e,4));
+  double poll_cpu_ms=1000.0*(clock()-poll_start)/CLOCKS_PER_SEC;
+  if(poll_cpu_ms>max_poll_cpu_ms)max_poll_cpu_ms=poll_cpu_ms;
+  total_poll_cpu_ms+=poll_cpu_ms;poll_calls++;
   if(e.buttons&T5_APP_BUTTON_RIGHT)nav_dispatch=mock_ms;
   springboard_contact c;np_contact(&c);
   if(c.began){probe_begins++;first_dispatch=mock_ms;}
@@ -111,7 +121,16 @@ static void raster_case(unsigned format,unsigned cost) {
 #else
  if(cost)assert(first_dispatch>=drawn_at&&first_dispatch-captured_at>100);
 #endif
- unsigned dispatched_pixels=raster_pixels;assert(api->frame_drain());
+ unsigned dispatched_pixels=raster_pixels;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ while(raster_sealed){
+  clock_t poll_start=clock();t5_app_input_t e;assert(api->poll(&e,1));
+  double poll_cpu_ms=1000.0*(clock()-poll_start)/CLOCKS_PER_SEC;
+  if(poll_cpu_ms>max_poll_cpu_ms)max_poll_cpu_ms=poll_cpu_ms;
+  total_poll_cpu_ms+=poll_cpu_ms;poll_calls++;
+ }
+#endif
+ assert(api->frame_drain());
  uint32_t hash=2166136261u;unsigned bytes=format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
  char destination[512];snprintf(destination,sizeof(destination),"%s/raster-%u-%u.bin",getenv("RASTER_OUTPUT"),format,cost);
  FILE*f=fopen(destination,"wb");assert(f);
@@ -120,6 +139,7 @@ static void raster_case(unsigned format,unsigned cost) {
  for(unsigned y=0;y<info.height;y++)for(unsigned x=0;x<bytes;x++){hash^=((uint8_t*)mock_pixels)[y*surface.stride_bytes+x];hash*=16777619u;}
  printf("{\"format\":%u,\"cost_ms_per_512_pixel_visits\":%u,\"draw_return_ms\":%u,\"touch_capture_ms\":%u,\"model_dispatch_ms\":%u,\"nav_dispatch_ms\":%u,\"host_cpu_draw_ms\":%.3f,\"pixel_visits_before_model\":%u,\"pixel_visits_total\":%u,\"completed_at_ms\":%u,\"raster_hash\":%u}\n",format,cost,drawn_at,captured_at,first_dispatch,nav_dispatch,host_draw_ms,dispatched_pixels,raster_pixels,mock_ms,hash);
  printf("{\"edge_at_ms\":%u,\"edge_to_model_ms\":%u,\"memory_format\":%u,\"width\":%u,\"height\":%u,\"initial_live_bytes\":%zu,\"peak_live_bytes\":%zu,\"incremental_peak_bytes\":%zu,\"copy_bytes\":%zu,\"copy_host_cpu_ms\":%.6f,\"copy_cost_ms_per_4096_bytes\":%u}\n",edge_at,first_dispatch-edge_at,format,info.width,info.height,initial_bytes,mock_peak,mock_peak-initial_bytes,copied_bytes,copy_host_ms,copy_cost_ms);
- cpu_ms_per_batch=0;assert(api->frame_drain());end_test();assert(!mock_bytes);
+ printf("{\"poll_calls\":%u,\"maximum_poll_host_cpu_ms\":%.6f,\"total_poll_host_cpu_ms\":%.6f}\n",poll_calls,max_poll_cpu_ms,total_poll_cpu_ms);
+ cpu_ms_per_batch=0;real_cpu_clock=false;assert(api->frame_drain());end_test();assert(!mock_bytes);
 }
 int main(void){setvbuf(stdout,NULL,_IONBF,0);for(unsigned f=0;f<2;f++)for(unsigned cost=0;cost<(getenv("RASTER_ONLY_ZERO")?1u:3u);cost++)raster_case(f?RISC_DISPLAY_FORMAT_MONO1:RISC_DISPLAY_FORMAT_RGB565,cost);return 0;}

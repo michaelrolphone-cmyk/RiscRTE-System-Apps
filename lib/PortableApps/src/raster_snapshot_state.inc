@@ -26,7 +26,7 @@ static bool raster_saved_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES
 static bool raster_saved_flip;
 #endif
-static int raster_band_top,raster_band_bottom;
+static int raster_band_top,raster_band_bottom,raster_band_limit;
 static unsigned raster_command_count;
 static uint32_t raster_saved_intent;
 static bool raster_saved_app_frame;

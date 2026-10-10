@@ -3,11 +3,13 @@
 #ifdef POLICY_PROVIDER
 #include "resident_system_test.c"
 #else
+#define portable_app_idle_sleep_with_ui reference_base_idle_sleep_with_ui
 #define policy_fixture_log reference_base_log
 #define policy_fixture_api reference_base_api
 #define policy_fixture_setup reference_base_setup
 #define policy_fixture_verify reference_base_verify
 #include "resident_system_test.c"
+#undef portable_app_idle_sleep_with_ui
 #undef policy_fixture_log
 #undef policy_fixture_api
 #undef policy_fixture_setup
@@ -39,6 +41,10 @@ static bool clean_live_failure;
 static unsigned live_failure_logs,live_retain_logs;
 extern bool reference_runtime_retained(void);
 static unsigned reopen_since;
+/* Additive stress profiles leave every original case and trigger unchanged. */
+static unsigned pending_pull_mode,child_submissions,initial_child_token;
+static unsigned pending_pull_polls,pending_pull_host_opens;
+static bool pending_pull_move,pending_pull_release,pending_pull_up;
 static unsigned retained_returns[3],terminal_calls,terminal_focus_changes,free_calls,terminal_free_calls;
 void reference_free(void*p){assert(!terminal);++free_calls;free(p);}
 static void capture_completed(const char*name){
@@ -57,7 +63,7 @@ void reference_event(unsigned event,unsigned kind){
  if(event==14){if(clean_live_failure){assert(reference_runtime_retained());reference_terminal();}assert(terminal);++retained_returns[kind];return;}
  if(event==10){lifecycle_role=kind?2:1;if(kind)assert(!focus&&!subs[2]&&!frame&&!pending_present);++app_maps[kind];return;}
  if(event==11){++app_unmaps[kind];if(kind)lifecycle_role=1;return;}
- if(event==12){++app_entries[kind];if(kind){active_kind=kind;client_since=ms;if(kind==2)home_sent=false;}return;}
+ if(event==12){++app_entries[kind];if(kind){active_kind=kind;client_since=ms;if(kind==1)pending_pull_host_opens=opens[1];if(kind==2)home_sent=false;}return;}
  assert(event==13);++app_returns[kind];if(kind){assert(!frame&&!pending_present);active_kind=0;child_return_at=ms;}
  if(kind==2&&contains("repeat")&&app_returns[kind]<2){observed_open=false;action_since=0;open_since=0;reopen_since=ms;}
  return;
@@ -73,6 +79,7 @@ static bool ref_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1
  reference_ui state=ui();
  if(role()==1&&state.modal&&o->intent==RISC_DISPLAY_PRESENT_CLEAN&&contains("submit-refused")){live();assert(f==1&&frame==1&&!n);++clean_frames;reference_terminal();return false;}
  bool okay=submit_frame(c,f,r,n,o,out);memcpy(submitted_pixels,pixels,sizeof(pixels));submitted_ui=state;
+ if(role()==2&&active_kind==1){if(!child_submissions)initial_child_token=*out;++child_submissions;}
  if(role()==1&&state.modal){++overlay_frames;if(!observed_open){observed_open=true;open_since=ms;}
   if(o->intent==RISC_DISPLAY_PRESENT_CLEAN){assert(!n&&contains("clean")&&!contains("no-clean"));++clean_frames;clean_token=*out;}
   else assert(o->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
@@ -82,6 +89,9 @@ static bool ref_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1
 }
 static bool ref_status(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*out){
  assert(!memcmp(submitted_pixels,pixels,sizeof(pixels)));
+ if(t==initial_child_token&&((pending_pull_mode==2&&ms-client_since<320)||(pending_pull_mode==3&&!pending_pull_release))){
+  live();assert(pending_present==t);out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;
+ }
  if(t==clean_token&&contains("status-refused")){live();assert(pending_present==t);reference_terminal();return false;}
  if(t==clean_token&&(contains("failed-live")||contains("superseded-live"))){
   live();assert(pending_present==t);clean_live_failure=true;out->state=contains("failed-live")?RISC_DISPLAY_PRESENT_FAILED:RISC_DISPLAY_PRESENT_SUPERSEDED;return true;
@@ -121,7 +131,22 @@ static void ref_progress(void){
     (!contains("repeat")||app_returns[2]==2))finished=true;
  if(!child_mode()&&!contains("usb")&&closing&&!state.modal&&!pending_present)finished=true;
 }
+static bool ref_touch_sample(void*,risc_touch_snapshot_v1*);
+static bool ref_touch_validate;
 static bool ref_nav(void*c,risc_input_navigation_frame_v1*out){(void)c;live();assert(focus==role());*out=(risc_input_navigation_frame_v1){0};ref_progress();
+ if(pending_pull_mode&&role()==2&&active_kind==1&&pending_pull_move&&!observed_open){
+  if(pending_pull_mode==1&&!child_submissions&&!frame&&!pending_present)++pending_pull_polls;
+  if(pending_pull_mode>=2&&initial_child_token&&pending_present==initial_child_token){
+   assert(focus==2&&opens[1]==pending_pull_host_opens&&!ui().modal);
+   ++pending_pull_polls;
+   /* The provider never completes by time. Release it only after proving the
+    * owner keeps reducing input across a sustained, unchanged busy token. */
+   if(pending_pull_mode==3&&pending_pull_polls>=128)pending_pull_release=true;
+  }
+ }
+ /* Logical polling, not capture-only raster sampling, owns fixture storage
+  * assertions and completed-image checks. Keep those checks non-reentrant. */
+ if(!frame){risc_touch_snapshot_v1 ignored;ref_touch_validate=true;assert(ref_touch_sample(NULL,&ignored));ref_touch_validate=false;}
  if(role()==1&&!active_kind&&child_mode()&&!launch_sent&&ms>=80){out->pressed=RISC_NAV_CONFIRM;launch_sent=true;}
  if(role()==2&&active_kind==2&&!home_sent&&ms-client_since>=80){out->pressed=RISC_NAV_HOME;home_sent=true;}
  if(role()==2&&active_kind==1&&((closing&&!ui().modal&&++resume_polls>=2)||contains("home-closed"))&&!home_sent&&ms-client_since>=100){out->pressed=RISC_NAV_HOME;home_sent=true;}
@@ -133,10 +158,11 @@ static bool ref_nav(void*c,risc_input_navigation_frame_v1*out){(void)c;live();as
  return true;
 }
 static void contact(risc_touch_snapshot_v1*out,unsigned id,int x,int y){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=(uint8_t)id,.x=(uint16_t)x,.y=(uint16_t)y};}
-static bool ref_touch(void*c,risc_touch_snapshot_v1*out){(void)c;live();*out=(risc_touch_snapshot_v1){.width=480,.height=800};
+static bool ref_touch_sample(void*c,risc_touch_snapshot_v1*out){(void)c;live();*out=(risc_touch_snapshot_v1){.width=480,.height=800};
  reference_ui state=ui();unsigned since=ms-(child_mode()?client_since:reopen_since);
  bool opening=!contains("home-closed")&&(child_mode()?active_kind==1:true)&&!observed_open;
- if(opening&&since>=80){if(since<120)contact(out,3,240,20);else if(since<200)contact(out,3,240,160);}
+ unsigned down_at=pending_pull_mode==1?1:80,move_at=pending_pull_mode==1?2:120;
+ if(opening&&since>=down_at){if(since<move_at)contact(out,3,240,20);else if(since<200)contact(out,3,240,160);}
  if(role()!=1||!state.modal||!observed_open||ms-open_since<400||contains("home-open"))return true;
  if(!action_since)action_since=ms;
  unsigned at=ms-action_since;int x=0,y=0;
@@ -145,7 +171,7 @@ static bool ref_touch(void*c,risc_touch_snapshot_v1*out){(void)c;live();*out=(ri
   if(contains("absent")||contains("unavailable")){assert(!state.tone_controls&&!tone_writes);closing=true;return true;}
   assert(state.tone_controls&&state.tone_valid);
   unsigned stage=at/240;
-  if(stage>action_stage){unsigned saved=255;assert(pqa_preference_load(&preferences,PQA_TONE_KEY,50,0,&saved));
+  if(ref_touch_validate&&stage>action_stage){unsigned saved=255;assert(pqa_preference_load(&preferences,PQA_TONE_KEY,50,0,&saved));
    unsigned expected=stage<=2?100:stage<=6?0:50;
    assert(state.tone==expected&&current_tone==expected&&saved==expected);
    if(stage==2||stage==3)assert(state.brightness==0&&bright_level==0);
@@ -159,16 +185,16 @@ static bool ref_touch(void*c,risc_touch_snapshot_v1*out){(void)c;live();*out=(ri
    if(at%240<50)contact(out,20+stage,x,y);
    else if(stage==5&&at%240<100){contact(out,20+stage,x,y);out->contact_count=2;out->contacts[1]=out->contacts[0];out->contacts[1].id++;}
   }else {
-   if(!captured_tone){assert(!pending_present&&completed_ui.tone==50);capture_completed("tone-confirmed");captured_tone=true;}
+   if(!captured_tone&&ref_touch_validate){assert(!pending_present&&completed_ui.tone==50);capture_completed("tone-confirmed");captured_tone=true;}
    closing=true;
   }
  }else
 #endif
  if(contains("frontlight")){
   unsigned target=at/240;assert(state.modal);
-  if(target>action_stage&&target<=2){unsigned saved=101;assert(pqa_preference_load(&preferences,PQA_BRIGHTNESS_KEY,40,0,&saved));unsigned expected=target==1?0:40;assert(state.brightness==expected&&bright_level==expected&&saved==expected);action_stage=target;}
+  if(ref_touch_validate&&target>action_stage&&target<=2){unsigned saved=101;assert(pqa_preference_load(&preferences,PQA_BRIGHTNESS_KEY,40,0,&saved));unsigned expected=target==1?0:40;assert(state.brightness==expected&&bright_level==expected&&saved==expected);action_stage=target;}
   if(target<3){unsigned control=target<2?5:100;assert(point(control,&x,&y));if(at%240<50)contact(out,5+target,x,y);}
-  else {assert(state.brightness==100&&bright_level==100&&brightness_writes>=3);
+  else if(ref_touch_validate){assert(state.brightness==100&&bright_level==100&&brightness_writes>=3);
    unsigned saved=0;assert(pqa_preference_load(&preferences,PQA_BRIGHTNESS_KEY,40,0,&saved)&&saved==100);
    if(!captured_frontlight){assert(!pending_present&&completed_ui.modal&&completed_ui.position==240u*256u&&completed_ui.brightness==100);capture_completed("frontlight-persisted");captured_frontlight=true;}actions_open=3;closing=true;}
  }else if(contains("no-clean")){
@@ -194,6 +220,80 @@ static bool ref_touch(void*c,risc_touch_snapshot_v1*out){(void)c;live();*out=(ri
  }else if(at>100)closing=true;
  return true;
 }
+/* Each Runtime owner has its own ordered raw subscription. The level script
+ * supplies physical state; changing that state must also enqueue edges. A
+ * snapshot and its sequence describe the same report, including resets and
+ * inherited held contacts when the resident host takes over the drawer. */
+typedef struct {
+ risc_touch_snapshot_v1 snapshot;
+ risc_touch_event_v1 events[RISC_TOUCH_QUEUE_LENGTH];
+ unsigned head,count;
+ bool initialized;
+} reference_touch_stream;
+static reference_touch_stream ref_touch_streams[3];
+static int ref_touch_find(const risc_touch_snapshot_v1*s,uint8_t id){
+ for(unsigned i=0;i<s->contact_count;i++)if(s->contacts[i].id==id)return (int)i;
+ return -1;
+}
+static void ref_touch_edge(reference_touch_stream*s,unsigned kind,const risc_touch_contact_v1*p){
+ assert(s->count<RISC_TOUCH_QUEUE_LENGTH);
+ risc_touch_event_v1 event={.sequence=++s->snapshot.sequence,.timestamp_ms=ms,
+  .kind=kind,.id=p->id,.x=p->x,.y=p->y};
+ s->events[(s->head+s->count)%RISC_TOUCH_QUEUE_LENGTH]=event;++s->count;
+ if(pending_pull_mode&&s==&ref_touch_streams[2]&&p->id==3&&kind==RISC_TOUCH_EVENT_MOVE){
+  assert(!observed_open&&!frame);
+  if(pending_pull_mode==1)assert(!child_submissions&&!pending_present);
+  else assert(initial_child_token&&pending_present==initial_child_token);
+  pending_pull_move=true;
+ }
+}
+static bool ref_touch_update(void){
+ unsigned owner=role();assert(owner>0&&owner<3&&subs[owner]);
+ risc_touch_snapshot_v1 report={0};if(!ref_touch_sample(NULL,&report))return false;
+ /* A poll services the same physical report for every live subscription. */
+ for(unsigned id=1;id<3;++id){
+ if(!subs[id])continue;
+ reference_touch_stream*s=&ref_touch_streams[id];
+ risc_touch_snapshot_v1 next=report;
+ if(s->initialized){
+  for(unsigned i=0;i<s->snapshot.contact_count;i++)
+   if(ref_touch_find(&next,s->snapshot.contacts[i].id)<0)
+    ref_touch_edge(s,RISC_TOUCH_EVENT_UP,&s->snapshot.contacts[i]);
+  for(unsigned i=0;i<next.contact_count;i++){
+   int prior=ref_touch_find(&s->snapshot,next.contacts[i].id);
+   if(prior<0)ref_touch_edge(s,RISC_TOUCH_EVENT_DOWN,&next.contacts[i]);
+   else if(s->snapshot.contacts[prior].x!=next.contacts[i].x||s->snapshot.contacts[prior].y!=next.contacts[i].y)
+    ref_touch_edge(s,RISC_TOUCH_EVENT_MOVE,&next.contacts[i]);
+  }
+ }
+ next.sequence=s->snapshot.sequence;next.timestamp_ms=ms;s->snapshot=next;s->initialized=true;
+ }
+ return true;
+}
+static uint64_t ref_subscribe(void*c){
+ uint64_t id=subscribe(c);assert(id>0&&id<3);
+ ref_touch_streams[id].head=ref_touch_streams[id].count=0;ref_touch_streams[id].initialized=false;
+ return id;
+}
+static bool ref_unsubscribe(void*c,uint64_t id){
+ bool okay=unsubscribe(c,id);
+ if(okay){ref_touch_streams[id].head=ref_touch_streams[id].count=0;ref_touch_streams[id].initialized=false;}
+ return okay;
+}
+static bool ref_poll_touch(void*c,size_t count){return poll_touch(c,count)&&ref_touch_update();}
+static int32_t ref_next_touch(void*c,uint64_t id,risc_touch_event_v1*out){
+ (void)c;live();assert(id==role()&&id>0&&id<3&&subs[id]);
+ reference_touch_stream*s=&ref_touch_streams[id];if(!s->count)return 0;
+ *out=s->events[s->head];s->head=(s->head+1)%RISC_TOUCH_QUEUE_LENGTH;--s->count;
+ if(pending_pull_mode>=2&&id==2&&out->id==3&&out->kind==RISC_TOUCH_EVENT_UP){
+  assert(initial_child_token&&pending_present==initial_child_token);
+  assert(focus==2&&opens[1]==pending_pull_host_opens&&!ui().modal);pending_pull_up=true;
+ }
+ return 1;
+}
+static bool ref_touch(void*c,risc_touch_snapshot_v1*out){
+ (void)c;if(!ref_touch_update())return false;*out=ref_touch_streams[role()].snapshot;return true;
+}
 static int32_t ref_get(void*c,const char*k,void*out,uint32_t cap,uint32_t*used){return kv_get(c,k,out,cap,used);}
 static int32_t ref_put(void*c,const char*k,const void*data,uint32_t n){if(!strcmp(k,PQA_BRIGHTNESS_KEY)){assert(n==1);++brightness_writes;}return kv_put(c,k,data,n);}
 /* Runtime's namespace backend enters these shared test functions directly. */
@@ -206,13 +306,26 @@ const void *policy_fixture_api(unsigned index){
   }
 #endif
   return &table;}
- if(index==2){static risc_touch_api_v1 table;table=touch;table.snapshot=ref_touch;return &table;}
+ if(index==2){static risc_touch_api_v1 table;table=touch;table.subscribe=ref_subscribe;table.unsubscribe=ref_unsubscribe;table.poll=ref_poll_touch;table.next=ref_next_touch;table.snapshot=ref_touch;return &table;}
  if(index==6&&contains("audio")){static alarm_service_descriptor_v2 table;table=alarm;table.output_modes=ALARM_MODE_SOUND|ALARM_MODE_VISUAL;return &table;}
  if(index==3){static risc_input_navigation_api_v1 table;table=navigation;table.poll=ref_nav;return &table;}
  return reference_base_api(index);
 }
-void policy_fixture_setup(const char*name){mode=name;lifecycle_role=1;}
+void policy_fixture_setup(const char*name){
+ mode=name;lifecycle_role=1;
+ const char*probe=getenv("REFERENCE_PENDING_PULL");
+ if(probe){assert(!strcmp(name,"child-home-open"));
+  if(!strcmp(probe,"software"))pending_pull_mode=1;
+  else if(!strcmp(probe,"token"))pending_pull_mode=2;
+  else {assert(!strcmp(probe,"busy"));pending_pull_mode=3;}
+ }
+}
 void policy_fixture_verify(bool was_retained){
+ if(pending_pull_mode){assert(pending_pull_move&&pending_pull_polls>=2);
+  if(pending_pull_mode>=2)assert(pending_pull_up);
+  if(pending_pull_mode==3)assert(pending_pull_release&&pending_pull_polls>=128);
+  printf("Pending %s pull: ordered move and %u continuing logical polls PASS\n",pending_pull_mode==1?"software":pending_pull_mode==2?"provider-token":"persistently-busy-token",pending_pull_polls);
+ }
 #ifdef PORTABLE_FRONTLIGHT_TONE
  if(contains("tone-failed")){
   assert(was_retained&&terminal&&!after_terminal&&provider_calls==terminal_calls&&focus_changes==terminal_focus_changes&&free_calls==terminal_free_calls);
