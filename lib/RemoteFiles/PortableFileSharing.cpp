@@ -70,7 +70,7 @@ extern "C" void portable_file_sharing_tick(portable_file_sharing*p,uint64_t now)
   for(unsigned i=0;i<16;++i)p->password[i]=alphabet[p->random[i]&31];
   p->password[16]=0;
   char temporary[16];std::memcpy(temporary,p->password,sizeof(temporary));
-  bool authenticated=p->auth.begin("files",temporary,sizeof(temporary),"RiscRTE files",p->random+16,16,now,p->view.expires_ms);wipe(p->random,sizeof(p->random));
+  bool authenticated=p->auth.begin("files",temporary,sizeof(temporary),"RiscRTE files",p->random+16,16,now,p->view.expires_ms);wipe(temporary,sizeof(temporary));wipe(p->random,sizeof(p->random));
   SharingHooks hooks{p,[](void*context){return static_cast<portable_file_sharing*>(context)->owned();},p->hooks.allocate,p->hooks.deallocate};
   risc_tcp_connection_listen_v1 bind{sizeof(bind),{},p->config.port,0};std::memcpy(bind.address,p->config.address,sizeof(bind.address));
   if(!authenticated||!p->sharing.begin(p->files,p->tcp,&p->auth,hooks,bind,now,p->view.expires_ms)){if(p->step!=Step::Retained)p->stop(InvalidContract);return;}

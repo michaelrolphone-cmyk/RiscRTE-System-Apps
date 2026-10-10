@@ -7,6 +7,7 @@ import portable_quick_build
 import portable_idle_build
 import portable_native_toolbar_build
 import portable_paper_build
+import portable_file_sharing_build
 ROOT=Path(__file__).resolve().parents[1]
 def storage_options(args):
     """Pure bounded capability selection; never acquires a provider or builds code."""
@@ -34,6 +35,7 @@ def operation_options(args):
     return (['-DPORTABLE_FILE_BROWSER_READ_COPY_ONLY'] if getattr(args,'read_copy_only',False) else []) + (['-DPORTABLE_FILE_BROWSER_RGB_ONLY'] if getattr(args,'rgb_only',False) else [])
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
+    portable_file_sharing_build.validate(args,parser)
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     scrolling=getattr(args,'touch_scrolling',False)
@@ -69,17 +71,18 @@ def build(args,parser=None):
     # Native X4 paper must retain damage history, including Quick over Files.
     if native_receipt:flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
+    sharing_flags,sharing_sources,sharing_files=portable_file_sharing_build.configure(args,ROOT,out,includes,cc);flags+=sharing_flags
     exports=portable_quick_build.exports(args,{'app_main','app_module_init','app_module_fini'})
     mapping=out/'file_browser.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
     catalog=out/'catalog.c';catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     sources=[ROOT/'Apps/file_browser.c',ROOT/'lib/PortableApps/src/adapter.c',catalog]
-    sources+=quick_sources+native_sources
+    sources+=quick_sources+native_sources+sharing_sources
     elf=out/'file_browser.elf'
     subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-lgcc','-o',str(elf)],check=True)
     symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
     imports={x.split()[-1] for x in symbols.splitlines() if ' U ' in ' '+x}
     actual={x.split()[-1] for x in symbols.splitlines() if len(x.split())>=3 and x.split()[-2] in ('T','D','B','R')}
-    allowed={'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','strncmp','strrchr','snprintf','malloc','free','strcpy','memchr'}
+    allowed={'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','strncmp','strrchr','snprintf','malloc','free','strcpy','memchr','strchr','strstr'}
     if not imports<=allowed or actual!=exports:raise ValueError(f'Unexpected ELF ABI: {imports-allowed}, {actual}')
     data=elf.read_bytes()
     if data[:7]!=b'\x7fELF\x01\x01\x01' or data[16:20]!=b'\x03\x00\x5e\x00':raise ValueError('Expected Xtensa ELF32 ET_DYN')
@@ -96,11 +99,14 @@ def build(args,parser=None):
     portable_quick_build.requirements(args,manifest['requires'])
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     portable_broadcast_build.requirements(args,manifest['requires'])
+    portable_file_sharing_build.requirements(args,manifest['requires'])
     if native_receipt:manifest['version']=native_receipt['version']
     manifest['version']=portable_quick_build.version(args,'file_browser',portable_idle_build.version(args,'file_browser',manifest['version']))
+    if getattr(args,'webdav_sharing',False):manifest['version']=portable_file_sharing_build.VERSION
     if native_receipt:native_receipt['version']=manifest['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/file_browser_rgb_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
+    files+=sharing_files
     if scrolling:files += [ROOT/'Apps/file_browser_scroll_model.inc',ROOT/'Apps/file_browser_scroll_view.inc']
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     if args.paper_transitions:files.append(ROOT/'scripts/portable_paper_build.py')
@@ -116,6 +122,7 @@ def build(args,parser=None):
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
+    portable_file_sharing_build.record(args,ROOT,out,manifest,record)
     portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     portable_quick_build.record(args,record)
     (out/'file_browser-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
@@ -128,4 +135,4 @@ def build(args,parser=None):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);build(p.parse_args(),p)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);portable_file_sharing_build.options(p);build(p.parse_args(),p)
