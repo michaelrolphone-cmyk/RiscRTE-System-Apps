@@ -102,7 +102,7 @@ def build(args,parser=None):
     portable_file_sharing_build.requirements(args,manifest['requires'])
     if native_receipt:manifest['version']=native_receipt['version']
     manifest['version']=portable_quick_build.version(args,'file_browser',portable_idle_build.version(args,'file_browser',manifest['version']))
-    if getattr(args,'webdav_sharing',False):manifest['version']=portable_file_sharing_build.VERSION
+    if getattr(args,'webdav_sharing',False):manifest['version']=portable_file_sharing_build.selected_version(args)
     if native_receipt:native_receipt['version']=manifest['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/file_browser_rgb_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]

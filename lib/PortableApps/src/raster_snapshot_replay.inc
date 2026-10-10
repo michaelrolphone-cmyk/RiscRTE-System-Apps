@@ -7,6 +7,9 @@ static void raster_discard(void) {
  raster_free_commands();raster_recording=raster_sealed=raster_begin_allowed=false;
 }
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_io_allowed())return true;
+#endif
  if(failed)return true;
  if(!raster_recording || raster_replaying)return false;
  raster_command *c=raster_command_count<4096?malloc(sizeof(*c)):NULL;
@@ -44,6 +47,9 @@ static bool raster_record(unsigned kind,const int32_t args[8],const char *text) 
  raster_tail=c;++raster_command_count;return true;
 }
 static bool raster_begin(uint16_t color) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_io_allowed())return true;
+#endif
  if(failed)return true;
  if(raster_replaying || (!raster_begin_allowed&&!raster_recording))return false;
  raster_begin_allowed=false;
@@ -66,6 +72,9 @@ static bool raster_begin(uint16_t color) {
  return raster_record(RS_FILL,(int32_t[8]){0,0,width(),height(),color},NULL);
 }
 static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_io_allowed())return true;
+#endif
  if(failed)return true;
  if(raster_replaying||!raster_begin_allowed)return false;
  raster_begin_allowed=false;
@@ -220,6 +229,9 @@ static void raster_command_span(const raster_command *c) {
  raster_band_top=(int)top;raster_band_limit=(int)bottom;
 }
 static bool raster_progress(void) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_checkpoint())return false;
+#endif
  if(!raster_sealed || raster_replaying)return !failed;
  raster_replaying=true;
  bool prior_rotation=paper_rotated;paper_rotated=raster_saved_rotation;

@@ -159,6 +159,9 @@ static bool desk_radios_loaded;
 #define PORTABLE_WIFI_SESSION_APP
 #define wifi_session_interaction_active portable_wifi_async_owned
 #endif
+#if defined(PORTABLE_FILE_SETUP) && !defined(PORTABLE_FILE_SHARING)
+#error "Files BLE setup requires the checked Files sharing lifecycle"
+#endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 #include "PortableWifiView.h"
 #ifdef PORTABLE_UPDATE_APP
@@ -277,6 +280,11 @@ static bool paper_token_clean;
 static bool native_custody_retained;
 static const risc_runtime_api_v1 *native_custody_runtime;
 static volatile risc_display_surface_v1 native_custody_surface;
+#ifdef PORTABLE_FILE_SETUP
+static bool file_setup_callback_active,file_setup_present_pending;
+static bool file_setup_checkpoint(void);
+static bool file_setup_io_allowed(void) {return !portable_file_browser_cleanup_only();}
+#endif
 #if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
 #include "RiscRealtimeV1.h"
 #include "RiscKeyValueV1.h"
@@ -404,6 +412,25 @@ static bool contexts_alert_allowed(unsigned mode);
 #endif
 #endif
 static unsigned first_row, last_rows;
+#ifdef PORTABLE_FILE_SETUP
+/* Only this explicitly bounded app callback may run inside raster/display
+ * work. It does not open/close, dispatch input, draw, or progress HTTP. */
+static bool file_setup_checkpoint(void) {
+  if(failed || native_custody_retained || !file_setup_io_allowed())return false;
+  if(file_setup_callback_active){portable_adapter_retain_silent();return false;}
+  file_setup_callback_active=true;
+  bool ok=portable_file_browser_setup_service();
+  file_setup_callback_active=false;
+  if(!ok && !native_custody_retained)portable_adapter_retain_silent();
+  return ok && !failed && file_setup_io_allowed();
+}
+bool portable_file_browser_setup_service_supported(void) {
+  /* A short timeout can abort the legacy synchronous panel transfer. */
+  return !failed && display && !(surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
+    (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
+    !(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && display->wait_present);
+}
+#endif
 #ifdef PORTABLE_SETTINGS_APP
 #include "PortableRtcClock.h"
 static bool back_exits_app = true, settings_editing;
@@ -545,6 +572,9 @@ static void input_navigation_close(void) {
 #endif
 #endif
 static void input_service(void) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_checkpoint())return;
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
  if(text_input_suspended || text_input_retained)return;
 #endif
@@ -571,6 +601,9 @@ static void input_service(void) {
  * another edge can toggle the same control. */
 static void input_dispatch(void) {
  if(input_pending || failed)return;
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_io_allowed())return;
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
  if(text_input_suspended || text_input_retained)return;
 #endif
@@ -699,6 +732,9 @@ static void input_navigation_take(t5_app_input_t*out) {
 /* Raster work captures raw input without reentrant logical dispatch. */
 static unsigned raster_pixels;
 static bool raster_checkpoint(void) {
+#ifdef PORTABLE_FILE_SETUP
+ if(!file_setup_checkpoint())return false;
+#endif
  if(failed)return false;
 #ifdef PORTABLE_RESIDENT_LOADING
  if(resident_loading_present)return true;
@@ -713,6 +749,9 @@ static bool raster_checkpoint(void) {
 #include "raster_snapshot_state.inc"
 #endif
 static inline bool raster_surface_writable(void) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen);
 #else
@@ -763,6 +802,9 @@ static void native_point(int *x,int *y) {
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_FILL,(int32_t[8]){x,y,w,h,color},NULL))return;
 #endif
@@ -825,6 +867,9 @@ static void display_callback_failure(const char *detail) {
 }
 /* Acquire the same checked surface for either painting or complete image copy. */
 static bool acquire_surface(void) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return false;
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained)return false;
 #endif
@@ -894,6 +939,9 @@ static bool acquire_surface(void) {
   return true;
 }
 static void clear_color(uint16_t color) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_begin(color))return;
 #endif
@@ -947,6 +995,9 @@ static const uint8_t glyphs[][5] = {
     {63, 64, 64, 64, 63},  {31, 32, 64, 32, 31},  {127, 32, 24, 32, 127},
     {99, 20, 8, 20, 99},   {3, 4, 120, 4, 3},     {97, 81, 73, 69, 67}};
 static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_TEXT,(int32_t[8]){x,y,limit,color},s))return;
 #endif
@@ -1050,6 +1101,9 @@ const paper_presentation *paper_presentation_get(void) {
 }
 #endif
 bool portable_paper_frame_ready(void) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return false;
+#endif
   if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_sealed)return false;
@@ -1061,9 +1115,21 @@ bool portable_paper_frame_ready(void) {
 #endif
   return !paper_token;
 }
+#ifdef PORTABLE_FILE_SETUP
+bool portable_file_browser_setup_frame_ready(void) {
+  return !failed && !native_custody_retained && display && !surface.frame && !paper_token && !file_setup_present_pending
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    && !raster_sealed && !raster_recording && !raster_replaying
+#endif
+    ;
+}
+#endif
 /* Advance once per foreground poll. Status never gives the app a writable
  * lease; only completion promotes the submitted image into damage history. */
 static bool paper_present_progress(void) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return false;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_sealed&&!raster_replaying)return raster_progress();
 #endif
@@ -1110,6 +1176,9 @@ static bool paper_present_progress(void) {
 /* Ownership transitions deliberately settle the outstanding image. Input
  * remains sampled during this short boundary, with the old cancellation rule. */
 bool portable_paper_frame_drain(void) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return false;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(!raster_replaying && !raster_drain())return false;
 #endif
@@ -1155,6 +1224,9 @@ static uint32_t present_intent(bool full) {return
     full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT;
 }
 static void present(bool full) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return;
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained)return;
 #endif
@@ -1315,8 +1387,14 @@ static void present(bool full) {
 #endif
     return;
   }
+#ifdef PORTABLE_FILE_SETUP
+  file_setup_present_pending=true;
+#endif
   uint32_t start = millis_now();
   for (unsigned n = 0; n < 10000 && !failed; ++n) {
+#ifdef PORTABLE_FILE_SETUP
+    if(!file_setup_checkpoint())return;
+#endif
 #ifdef PORTABLE_USB_TRANSFER_APP
     portable_usb_transfer_service();
 #endif
@@ -1343,6 +1421,9 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+#ifdef PORTABLE_FILE_SETUP
+      file_setup_present_pending=false;
+#endif
       stage_display_complete(token);portable_stage_log(rt,"display-complete","result=complete");
       perf_metrics(token);perf_complete(true);
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -1454,6 +1535,9 @@ static bool idle_sleep(void) {
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
     if(native_custody_retained)return false;
+#endif
+#ifdef PORTABLE_FILE_SETUP
+    if(!file_setup_io_allowed())return !failed;
 #endif
     last_activity=millis_now();return !failed;
   }
@@ -1807,6 +1891,9 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   clear_contact_snapshots();
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_checkpoint())return false;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   /* TIMER has no foreground modal or subscriptions. The selected clock owns
    * alarm reconciliation and the promotion decision before normal polling. */
@@ -1913,6 +2000,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_LOW_BATTERY
   if(!low_battery_poll()){failed=true;return false;}
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return !failed;
+#endif
 #endif
 #ifdef PORTABLE_CRASH_REPORT_SD
   if(!failure_archive_checkpoint())return false;
@@ -2079,6 +2169,18 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_FILE_SETUP
+  /* Refused BLE close permits only this checked foreground retry. Its
+   * provider supplies a scheduler-only delay; Runtime yield polls unrelated
+   * providers. Preserve deferred Home/sleep until cleanup is proved. */
+  if(portable_file_browser_cleanup_only()) {
+    memset(out,0,sizeof(*out));clear_contact_snapshots();
+    if(native_custody_retained || failed)return false;
+    if(file_setup_callback_active){portable_adapter_retain_silent();return false;}
+    (void)portable_file_browser_setup_cleanup();
+    return !failed && !native_custody_retained;
+  }
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained){memset(out,0,sizeof(*out));return false;}
 #endif
@@ -2087,6 +2189,11 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed()) {
+    memset(out,0,sizeof(*out));clear_contact_snapshots();return !failed;
+  }
+#endif
 #ifdef PORTABLE_PERFORMANCE_TRACE
   if(ok && (out->tapped || out->buttons))portable_perf_event(RISC_PERF_RECOGNIZED,PORTABLE_PERF_INPUT_DELIVERED);
 #endif
@@ -2479,6 +2586,9 @@ static int initialize(void) {
 #endif
   bg.struct_size = sizeof(bg);
   failed = false;perf_initialize();
+#ifdef PORTABLE_FILE_SETUP
+  file_setup_callback_active=file_setup_present_pending=false;
+#endif
   paper_async_frames=false;paper_token=0;paper_token_clean=false;paper_submitted_at=0;
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_flip_ui=paper_orientation_dirty=false;
@@ -2586,6 +2696,12 @@ static int initialize_providers(void) {
 static bool wifi_finalize_close(void) {
   bool closed=portable_wifi_close();
   while(!closed && portable_wifi_stop_pending()) {
+#ifdef PORTABLE_FILE_SETUP
+    if(portable_file_browser_cleanup_only()) {
+      if(native_custody_retained)return false;
+      (void)portable_file_browser_setup_cleanup();continue;
+    }
+#endif
     rt->yield_ms(1);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
     if(native_custody_retained)return false;
@@ -2684,6 +2800,14 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_FILE_SETUP
+  /* Do not drain displays, read policy, reset input or yield before this
+   * fence. Keep all dependencies until the checked close finishes. */
+  while(portable_file_browser_cleanup_only()) {
+    if(native_custody_retained || failed)return;
+    (void)portable_file_browser_setup_cleanup();
+  }
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;
   if(text_input_suspended){portable_text_adapter_retain();return;}

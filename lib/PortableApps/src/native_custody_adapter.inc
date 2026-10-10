@@ -22,6 +22,11 @@ static void portable_adapter_retain_inner(bool log) {
 void portable_adapter_retain(void) {
 #endif
   if(!native_custody_retained) {
+#ifdef PORTABLE_FILE_SETUP
+    /* Refused setup cleanup excludes diagnostic timestamps as well as normal
+     * providers. The retention barrier itself remains the terminal action. */
+    if(!file_setup_io_allowed())log=false;
+#endif
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
     if(log)
 #endif
@@ -64,6 +69,9 @@ static custody_kv_slot custody_kv_slots[16];
 static bool broadcast_before_storage(void);
 #endif
 static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return RISC_KEY_VALUE_BUSY;
+#endif
   custody_kv_slot *slot=context;
   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -81,6 +89,9 @@ static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t 
   return result;
 }
 static int32_t custody_kv_put(void *context,const char *key,const void *data,uint32_t size) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return RISC_KEY_VALUE_BUSY;
+#endif
   custody_kv_slot *slot=context;
   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -125,12 +136,31 @@ static bool custody_ble_status(void *context,uint8_t *out) {
   return true;
 }
 #endif
+#ifdef PORTABLE_FILE_SETUP
+static bool custody_setup_unavailable(const char *name,uint32_t version,uint64_t instance,
+    const risc_runtime_capability_v1 *grant) {
+  return !strcmp(name,"bluetooth.session-setup") && version==1 &&
+    instance==PORTABLE_FILE_SHARING_SETUP_INSTANCE && grant &&
+    grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation;
+}
+#endif
 static bool custody_acquire_for(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant,bool shutdown_radio) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
   (void)shutdown_radio;
   if(native_custody_retained)return false;
   bool ok=native_custody_runtime->acquire(name,version,instance,grant);
   if(native_custody_retained)return false;
   if(!ok) {
+#ifdef PORTABLE_FILE_SETUP
+    if(custody_setup_unavailable(name,version,instance,grant)) {
+      /* Empty refusal is optional unavailability only while this invocation
+       * still owns the same native Runtime table. Never retry a dirty grant. */
+      if(risc_runtime_get_api(1)!=native_custody_runtime)portable_adapter_retain_silent();
+      return false;
+    }
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
     /* This optional app client can show a clean missing service. No token,
      * altered record or other provider refusal is covered by this exception. */
@@ -202,12 +232,25 @@ static bool custody_release(risc_runtime_capability_v1 *grant) {
   *grant=released;if(slot)slot->live=false;return true;
 }
 static bool custody_health(risc_runtime_health_v1 *out) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
   if(native_custody_retained)return false;
   if(!native_custody_runtime->health(out)){portable_adapter_retain();return false;}
   return true;
 }
-static void custody_yield(uint32_t delay) {if(!native_custody_retained)native_custody_runtime->yield_ms(delay);}
-static bool custody_diagnostic(const char *line) {return !native_custody_retained && native_custody_runtime->diagnostic(line);}
+static void custody_yield(uint32_t delay) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return;
+#endif
+  if(!native_custody_retained)native_custody_runtime->yield_ms(delay);
+}
+static bool custody_diagnostic(const char *line) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
+  return !native_custody_retained && native_custody_runtime->diagnostic(line);
+}
 static bool custody_launch(const char *path) {
   if(native_custody_retained || !portable_paper_frame_drain())return false;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -222,6 +265,9 @@ static bool custody_launch(const char *path) {
 static risc_runtime_api_v1 app_custody_runtime;
 static risc_runtime_capability_v1 app_custody_grants[8];
 static bool app_custody_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
+#ifdef PORTABLE_FILE_SETUP
+  if(!file_setup_io_allowed())return false;
+#endif
   if(native_custody_retained)return false;
   if(!grant || grant->struct_size<sizeof(*grant) || grant->api || grant->slot || grant->generation) {
     portable_adapter_retain();return false;
@@ -230,6 +276,9 @@ static bool app_custody_acquire(const char *name,uint32_t version,uint64_t insta
   for(unsigned i=0;i<8;++i)if(!app_custody_grants[i].api){owned=&app_custody_grants[i];break;}
   if(!owned){portable_adapter_retain();return false;}
   if(!custody_acquire_for(name,version,instance,grant,false)) {
+#ifdef PORTABLE_FILE_SETUP
+    if(!native_custody_retained && custody_setup_unavailable(name,version,instance,grant))return false;
+#endif
     if(!native_custody_retained)portable_adapter_retain();
     return false;
   }
