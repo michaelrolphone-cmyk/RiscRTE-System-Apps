@@ -308,7 +308,10 @@ static void component_draw(void){
     if(document.flags){nc_modal();return;}
     const risc_scene_node_v1 *keyboard=current_keyboard();
     if(keyboard){if(nc_paper())paper_keyboard(keyboard);else {
-        int s=nc_scale();nc_text(16*s,28*s,(int)width-32*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
+        int s=nc_scale();nc_text(54*s,28*s,(int)width-70*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
+        nc_box(16*s,10*s,28*s,28*s,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        nc_icon(RISC_SYMBOL_BACK,23*s,17*s,14*s,nc_color(RISC_TONE_ACCENT));
+        nc_hit(13*s,7*s,34*s,34*s,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
         nc_box(16*s,42*s,(int)width-32*s,32*s,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
         const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>(int)width-48*s)++tail;nc_text(24*s,63*s,(int)width-48*s,tail,2,nc_fg());
         for(unsigned i=0;;i++){keyboard_key k;if(!keyboard_bounds((unsigned)keyboard->value,i,&k))break;char ch[2];const char *label=keyboard_caption((unsigned)keyboard->value,k.key,ch);
