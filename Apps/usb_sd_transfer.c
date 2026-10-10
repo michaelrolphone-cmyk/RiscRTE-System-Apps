@@ -403,7 +403,10 @@ void app_main(void) {
         if(dirty)render();
         if(return_after_eject)continue;
         t5_app_input_t in={0};
-        if(!app->poll(&in,2)) {
+        /* A configured host can issue its next CBW just after a CSW.
+         * Keep the foreground wait to one millisecond while connected;
+         * preparation, waiting and suspended states retain their 2 ms wait. */
+        if(!app->poll(&in,state==RISC_USB_MSC_CONNECTED?1u:2u)) {
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
             if(portable_adapter_retained())return;
 #endif

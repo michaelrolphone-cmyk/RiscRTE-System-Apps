@@ -1,7 +1,7 @@
 {
   "type": "application",
   "id": "usb_sd_transfer",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "architecture": "xtensa-esp32s3",
   "file_name": "usb_sd_transfer.elf",
   "entry": "app_main",

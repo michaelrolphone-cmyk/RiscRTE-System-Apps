@@ -1,0 +1,11 @@
+{
+  "component": "usb_sd_transfer",
+  "version": "0.1.7",
+  "baseline_version": "0.1.6",
+  "baseline_system_commit": "e171fd693a9a98337aa627fad2381d1524a87727",
+  "live_refs_checked": 115,
+  "live_refs_sha256": "c08a0bd8cba1b9f6d40c6d580b4d2108d6c35f6fd9926ea125671557c1b0feb7",
+  "checked_utc": "2026-10-10T13:35:24Z",
+  "existing_usb_branch": "b9ff71a6bcaf2a120a73653a762744ee75bfd21d",
+  "hardware_tested": false
+}
