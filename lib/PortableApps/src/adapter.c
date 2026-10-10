@@ -756,6 +756,34 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_replaying){if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
 #endif
+  if(x0>=x1 || y0>=y1)return;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
+    /* Rotate/flip the clipped rectangle once, then write packed row spans.
+     * Preserve untouched edge bits and stride padding. No pixel allocation or
+     * per-pixel coordinate transform/luminance division is required. */
+    int left=x0,top=y0,right=x1-1,bottom=y1-1;
+    native_point(&left,&top);native_point(&right,&bottom);
+    if(left>right){int swap=left;left=right;right=swap;}
+    if(top>bottom){int swap=top;top=bottom;bottom=swap;}
+    unsigned luminance=((color>>11)&31)*299/31+((color>>5)&63)*587/63+(color&31)*114/31;
+    bool black=luminance<500;
+    unsigned first=(unsigned)left/8,last=(unsigned)right/8;
+    uint8_t first_mask=(uint8_t)(0xffu>>(left&7)),last_mask=(uint8_t)(0xffu<<(7-(right&7)));
+    for(int row=top;row<=bottom;row++) {
+      uint8_t *p=(uint8_t*)surface.pixels+(size_t)row*surface.stride_bytes;
+      if(first==last){uint8_t mask=first_mask&last_mask;if(black)p[first]|=mask;else p[first]&=(uint8_t)~mask;}
+      else {
+        if(black){p[first]|=first_mask;p[last]|=last_mask;}else{p[first]&=(uint8_t)~first_mask;p[last]&=(uint8_t)~last_mask;}
+        if(last>first+1)memset(p+first+1,black?0xff:0,last-first-1);
+      }
+      raster_pixels+=(unsigned)(right-left+1);
+      if(!raster_checkpoint())return;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+      contexts_pixels+=(unsigned)(right-left+1);if(!contexts_capture_checkpoint())return;
+#endif
+    }
+    return;
+  }
   for (int j = y0; j < y1; ++j)
     for (int i = x0; i < x1; ++i) {
       if(!(++raster_pixels&511u)&&!raster_checkpoint())return;
@@ -2310,6 +2338,9 @@ static int32_t prev(int32_t i, uint32_t n) {
 #include "settings.inc"
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT)&&(defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL)||defined(RASTER_SBH_TEST))
+#include "springboard_header_replay.inc"
+#endif
 #include "raster_snapshot_replay.inc"
 #endif
 static const t5_app_api_v1 app = {.abi_version = 1,

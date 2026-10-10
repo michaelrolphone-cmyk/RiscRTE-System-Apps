@@ -4,7 +4,7 @@ import json
 import subprocess
 from pathlib import Path
 
-UTILITIES_COMMIT = '637e13b0bce62ad49b756bec2468a6271d163fc7'
+UTILITIES_COMMIT = 'e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d'
 HEADERS = ('AlarmServiceV1.h', 'AlarmServiceV2.h')
 # Public recovered source: all eight headers and LICENSE are byte-identical
 # to historical private9bd57279; see the recovery source lock.

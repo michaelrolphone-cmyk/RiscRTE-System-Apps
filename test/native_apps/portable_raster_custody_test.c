@@ -122,6 +122,7 @@ static void watch_allocation_fallback(unsigned kind) {
  risc_display_surface_v1 reference=surface;reference.pixels=expected;
  assert(pqa_render(&reference,&quick.ui,"23:59",true,63));
  assert(portable_paper_frame_ready());assert(quick_copy_background());
+ if(kind==2)raster_command_count=RASTER_COMMANDS_PER_BLOCK; /* Fail allocation of the next command block, after Quick state. */
  if(kind<3)custody_fail_allocation=custody_allocations+kind;
  else if(kind==3)raster_command_count=4096; /* Exercise the same real capacity branch. */
  assert(quick_render_watch("23:59",true,63));
@@ -240,6 +241,7 @@ static void terminal_fallback(unsigned kind) {
   custody_fail_offscreen=true;quick_runtime.health=terminal_prefix_health;
   assert(!raster_progress());assert(!custody_fail_offscreen);
  } else if(kind==1||kind==3) {
+  raster_command_count=RASTER_COMMANDS_PER_BLOCK; /* Exhaust current slab before injected allocation refusal. */
   custody_fail_allocation=custody_allocations+2;quick_runtime.health=terminal_prefix_health;
   assert(!quick_render_watch("12:34",true,63));
  } else {

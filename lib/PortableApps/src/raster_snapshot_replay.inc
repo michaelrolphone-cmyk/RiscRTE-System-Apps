@@ -1,6 +1,7 @@
 static void raster_free_commands(void) {
- while(raster_commands){raster_command*n=raster_commands->next;free(raster_commands->pixels);free(raster_commands);raster_commands=n;}
- raster_tail=raster_cursor=NULL;raster_command_count=0;
+ while(raster_commands){raster_command*n=raster_commands->next;free(raster_commands->pixels);raster_commands=n;}
+ while(raster_blocks){raster_command_block*n=raster_blocks->next;free(raster_blocks);raster_blocks=n;}
+ raster_block_tail=NULL;raster_tail=raster_cursor=NULL;raster_command_count=0;
 }
 static void raster_discard(void) {
  free(raster_offscreen);raster_offscreen=NULL;
@@ -9,7 +10,17 @@ static void raster_discard(void) {
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text) {
  if(failed)return true;
  if(!raster_recording || raster_replaying)return false;
- raster_command *c=raster_command_count<4096?malloc(sizeof(*c)):NULL;
+ raster_command *c=NULL;
+ if(raster_command_count<4096) {
+  unsigned slot=raster_command_count%RASTER_COMMANDS_PER_BLOCK;
+  if(!slot) {
+   raster_command_block *block=malloc(sizeof(*block));
+   if(block){block->next=NULL;if(raster_block_tail)raster_block_tail->next=block;else raster_blocks=block;raster_block_tail=block;}
+   else goto allocation_failed;
+  }
+  c=&raster_block_tail->commands[slot];
+ }
+allocation_failed:
  if(!c){
   /* A public drawing API is void: preserving every command requires a
    * synchronous compatibility fallback if allocation cannot retain it.
@@ -103,6 +114,9 @@ static void raster_execute(const raster_command*c) {
     raster_pixels+=info.width;if(!raster_checkpoint())break;
    }
    break;
+  #if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL)||defined(RASTER_SBH_TEST)
+  case RS_SBH_TEXT:(void)portable_springboard_header_text((unsigned)a[0],a[1],a[2],s,a[3],a[4]);break;
+#endif
   case RS_FILL:fill(a[0],a[1],a[2],a[3],(uint16_t)a[4]);break;
   case RS_ROUNDED:rounded(a[0],a[1],a[2],a[3],a[4],(uint8_t)a[5]);break;
   case RS_TEXT:text_color(a[0],a[1],s,a[2],(uint16_t)a[3]);break;
@@ -175,6 +189,13 @@ static int raster_paper_y(int64_t y) {
 static void raster_command_span(const raster_command *c) {
  const int32_t *a=c->args;int64_t top=0,bottom=height();
  switch(c->kind) {
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL)||defined(RASTER_SBH_TEST)
+  case RS_SBH_TEXT:{
+   const sbh_font*font=a[0]?&SBH_700:&SBH_900;int lo=0,hi=0;
+   for(unsigned n=0;c->text[n];n++){const sbh_glyph*g=raster_sbh_lookup(font,(unsigned char)c->text[n]);if(!g)continue;if(g->top<lo)lo=g->top;if(g->top+g->height>hi)hi=g->top+g->height;}
+   top=(int64_t)a[2]+lo;bottom=(int64_t)a[2]+hi;break;
+  }
+#endif
   case RS_BITMAP:bottom=info.height;break;
   case RS_FILL:case RS_ROUNDED:top=a[1];bottom=top+a[3];break;
   case RS_TEXT:top=a[1];bottom=top+7;break;

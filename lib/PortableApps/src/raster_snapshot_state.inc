@@ -5,7 +5,7 @@ enum {RS_FILL,RS_ROUNDED,RS_TEXT,RS_ICON,RS_PP_TEXT,RS_PP_CIRCLE,
  RS_NU_PIXEL,RS_NU_RECT,RS_NU_TEXT,RS_NU_ROUND,RS_NU_BUTTON,
  RS_SV_PIXEL,RS_SV_RECT,RS_SV_TEXT,RS_SV_BUTTON,RS_SV_FADE,
  RS_WV_PIXEL,RS_WV_RECT,RS_WV_TEXT,RS_WV_BUTTON,
- RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER};
+ RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER};
 typedef struct raster_command {
  struct raster_command *next;
  unsigned kind;
@@ -19,6 +19,12 @@ typedef struct raster_command {
  portable_scroll_viewport clip;
 #endif
 } raster_command;
+#define RASTER_COMMANDS_PER_BLOCK 32u
+typedef struct raster_command_block {
+ struct raster_command_block *next;
+ raster_command commands[RASTER_COMMANDS_PER_BLOCK];
+} raster_command_block;
+static raster_command_block *raster_blocks,*raster_block_tail;
 static raster_command *raster_commands,*raster_tail,*raster_cursor;
 static bool raster_recording,raster_sealed,raster_replaying,raster_full,raster_begin_allowed;
 static void *raster_offscreen;
