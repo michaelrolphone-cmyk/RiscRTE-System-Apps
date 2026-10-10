@@ -45,6 +45,11 @@ static portable_contexts_client contexts_client;
 const contexts_service_v1 *portable_contexts_service(void) {return contexts_client.api;}
 bool portable_contexts_stop(void) {return portable_contexts_pause(&contexts_client);}
 bool portable_contexts_enable(bool enabled) {return portable_contexts_set_enabled(&contexts_client,enabled);}
+bool portable_contexts_training(bool enabled){if(!portable_contexts_pause(&contexts_client))return false;contexts_client.foreground_learning=enabled;return true;}
+bool portable_contexts_rules_read(cr_store*out){return portable_context_rules_read(&contexts_client,out);}
+bool portable_contexts_rules_save(const cr_store*value){return portable_context_rules_save(&contexts_client,value);}
+bool portable_contexts_models_save(void){return portable_contexts_pause(&contexts_client)&&!contexts_client.fingerprint_error;}
+
 unsigned portable_contexts_face_count(void) {
 #ifdef PORTABLE_CONTEXT_FACE_COUNT
   return PORTABLE_CONTEXT_FACE_COUNT;
@@ -671,6 +676,7 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
   (void)kv;(void)id;return false;
 #endif
 }
+#include "contexts_rules_adapter.inc"
 static bool contexts_tick(void) {
   if(!quick_storage_safe()||quick_modal||alarm_modal)return portable_contexts_pause(&contexts_client);
   bool audio_allowed=true,radio_allowed=true;
@@ -683,7 +689,8 @@ static bool contexts_tick(void) {
   if(!portable_contexts_step(&contexts_client,audio_allowed,radio_allowed))return false;
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
-  if(!portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save))return false;
+  if(contexts_client.rules_available){if(!contexts_rules_tick())return false;}
+  else if(!portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save))return false;
   if(applied) {
     if(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display))return false;
     const alarm_service_v1 *service=alarm_sleep_api();
@@ -691,13 +698,17 @@ static bool contexts_tick(void) {
       (void)service->refresh(service->context);
   }
 #else
-  (void)contexts_face_save;
+  (void)contexts_face_save;(void)contexts_rules_tick;
 #endif
   return true;
 }
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(context_launch_pending){out->exit_requested=true;return true;}
+  if(!contexts_message_foreground())return false;
+#endif
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   app_contact=(t5_app_contact_t){0};
 #endif
@@ -751,7 +762,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   portable_audio_capture_resume();
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-  if(!failed && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
+  if(!failed && portable_idle_ms() && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
 #ifdef PORTABLE_TAP_SETTINGS
      !settings_motion_active &&
 #endif

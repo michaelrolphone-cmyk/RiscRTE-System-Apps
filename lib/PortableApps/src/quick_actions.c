@@ -76,7 +76,9 @@ void pqa_cancel(pqa_state *s) {
     pqa_close(s);
     s->position_q8 = 0;
 }
-static int tile_at(int x, int y) {
+static int tile_at(const pqa_state *s,int x, int y) {
+    if(s->contexts_controls&&x>=20&&x<220&&y>=182&&y<222)return 9;
+    if(s->contexts_controls)y+=30;
     static const int xs[3] = {20, 91, 162};
     for (int row = 0; row != 2; ++row)
         for (int col = 0; col != 3; ++col)
@@ -155,6 +157,8 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 if (s->volume) { s->last_nonzero_volume = s->volume; s->volume = 0; }
                 else s->volume = s->last_nonzero_volume ? s->last_nonzero_volume : 50;
                 emit_volume(s, PQA_SILENT);
+            } else if(s->pressed_tile==9 && s->contexts_controls && s->contexts_valid) {
+                s->action_contexts=!s->contexts_enabled;s->pending|=PQA_CONTEXTS;
             } else if(s->pressed_tile==1 && s->dnd_valid) {
                 s->dnd_enabled=!s->dnd_enabled;
                 s->action_dnd=s->dnd_enabled;s->pending|=PQA_DND;
@@ -186,15 +190,15 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             /* Moving panels are draggable but never activate controls. */
             int local_y = y + (PQA_OPEN_Q8 - s->position_q8) / 256;
             bool settled = s->position_q8 == PQA_OPEN_Q8 && s->target_q8 == PQA_OPEN_Q8;
-            if (settled && x >= 16 && x < 224 && local_y >= 48 && local_y < 77 && s->brightness_valid)
+            if (settled && x >= 16 && x < 224 && local_y >= (s->contexts_controls?24:48) && local_y < (s->contexts_controls?53:77) && s->brightness_valid)
                 s->gesture = PQA_BRIGHTNESS_DRAG;
-            else if (settled && x >= 16 && x < 224 && local_y >= 78 && local_y < 107 && s->volume_valid)
+            else if (settled && x >= 16 && x < 224 && local_y >= (s->contexts_controls?54:78) && local_y < (s->contexts_controls?83:107) && s->volume_valid)
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
                 if (settled) {
-                    s->pressed_tile = (int8_t)tile_at(x, local_y);
-                    s->handle_pressed = x >= 76 && x < 164 && local_y >= 207 && local_y < 239;
+                    s->pressed_tile = (int8_t)tile_at(s,x, local_y);
+                    s->handle_pressed = x >= 76 && x < 164 && local_y >= (s->contexts_controls?222:207) && local_y < 239;
                 }
             }
         }

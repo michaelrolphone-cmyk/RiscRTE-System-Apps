@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "interface": "Contexts CFP1 optional ABI suffix",
+  "app_data_sdk": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "revision": "b70cb87bdead507b9bc826f445935c5ad2b08bad",
+    "path": "sdk/app/RiscAppDataV1.h",
+    "sha256": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201"
+  },
+  "persistence": {
+    "file": "context-fingerprints.cfp",
+    "audio_instance": 2,
+    "radio_instance": 3,
+    "requires_explicit_boot_grants": true,
+    "retained_io_terminal": true
+  },
+  "preferences": {
+    "context_sources": "one byte: Audio=1, RF=2; default3",
+    "context_timing": "one byte: full=0, timing-only=1; default0"
+  },
+  "clock": "rtc.clock@2, missing RTC disables age decay; PORTABLE_RTC_UTC8_DENVER converts stored UTC+8 to UTC"
+}

@@ -1,13 +1,14 @@
 /* Preference corruption/uncertain-write matrix for the production session. */
 #include "PortableQuickSession.h"
 #include "PortableTimeFormat.h"
+#include "PortableContextPreferences.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
 typedef struct {uint8_t bytes[8];uint32_t size;bool present;} record;
-static record records[4];static bool time_format_24;
-static unsigned put_count[4],gets[4],grants,releases,hardware,calls;
+static record records[5];static bool time_format_24;
+static unsigned put_count[5],gets[5],grants,releases,hardware,calls;
 static bool unavailable,invalid_api,release_fail,hardware_fail;
 static int fail_get_key=-1,fail_after_put_key=-1,fail_put_key=-1,committed_io_key=-1,mismatch_key=-1;
 static char write_order[16];static unsigned order_count;
@@ -16,6 +17,7 @@ static int index_for(const char *key){
  if(!strcmp(key,PQA_VOLUME_KEY))return 1;
  if(!strcmp(key,PQA_RESTORE_VOLUME_KEY))return 2;
  if(!strcmp(key,PQA_DND_KEY))return 3;
+ if(!strcmp(key,PORTABLE_CONTEXT_ENABLED_KEY))return 4;
  assert(!strcmp(key,PORTABLE_TIME_FORMAT_KEY));return -1;
 }
 static int32_t get(void *c,const char *key,void *out,uint32_t capacity,uint32_t *size){
@@ -167,4 +169,21 @@ static void dnd_matrix(void) {
   }
  }
 }
-int main(void){dnd_matrix();time_format();defaults();corruption();brightness_matrix();silent_matrix();transient_and_lifecycle();puts("quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed");return 0;}
+static void contexts_toggle(void){
+ pqa_session s=fresh();s.ui.contexts_controls=true;load(&s);
+ assert(s.ui.contexts_valid&&!s.ui.contexts_enabled&&!put_count[4]);
+ s.ui.action_contexts=true;assert(!apply(&s,PQA_CONTEXTS));assert(s.ui.contexts_enabled&&s.ui.contexts_valid);
+ pqa_session r;pqa_session_init(&r);r.ui.contexts_controls=true;load(&r);assert(r.ui.contexts_enabled);
+ r.ui.action_contexts=false;assert(!apply(&r,PQA_CONTEXTS));load(&r);assert(!r.ui.contexts_enabled);
+ for(unsigned mode=0;mode<5;mode++){
+  s=fresh();s.ui.contexts_controls=true;load(&s);s.ui.action_contexts=true;
+  if(mode==1)committed_io_key=4;
+  if(mode==2)fail_put_key=4;
+  if(mode==3)fail_after_put_key=4;
+  if(mode==4)mismatch_key=4;
+  assert(!apply(&s,PQA_CONTEXTS));assert(s.ui.contexts_valid==(mode<=1));
+  assert(!!(s.ui.error_flags&PQA_ERROR_CONTEXTS)==(mode>1));
+ }
+ s=fresh();s.ui.contexts_controls=true;saved(4,99,4);load(&s);assert(!s.ui.contexts_valid&&!put_count[4]);
+}
+int main(void){contexts_toggle();dnd_matrix();time_format();defaults();corruption();brightness_matrix();silent_matrix();transient_and_lifecycle();puts("quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed");return 0;}

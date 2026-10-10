@@ -11,6 +11,7 @@ int main(int argc,char **argv) {
     pqa_state s;pqa_init(&s);pqa_set_levels(&s,true,70,true,40);
     s.position_q8=s.target_q8=(argc>2?atoi(argv[2]):240)*256;
     if(argc>3)s.volume=0;
+    if(getenv("PQA_CONTEXTS")){s.contexts_controls=s.contexts_valid=true;s.contexts_enabled=atoi(getenv("PQA_CONTEXTS"))!=0;}
     if(argc>4)s.torch=true;
     risc_display_surface_v1 f={1,pixels,240,240,480,sizeof(pixels),RISC_DISPLAY_FORMAT_RGB565};
     if(!pqa_render(&f,&s,"10:42",true,84))return 3;
