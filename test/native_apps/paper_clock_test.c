@@ -155,7 +155,7 @@ static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capabil
  if(!strcmp(name,"storage.key-value")){assert(v==1&&id==1);g->api=&kv;grants++;return true;}
  assert(v==1&&!id&&g->struct_size==sizeof(*g));if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;grants++;return true;}
 static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);grants--;g->api=NULL;return true;}
-static const risc_runtime_api_v1 rt={1,sizeof(rt),health,yield_ms,diagnostic,launch_app,acquire,release};
+static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}
 int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);
 #ifdef PORTABLE_RTC_WALL_TIME

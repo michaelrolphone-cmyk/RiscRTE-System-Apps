@@ -3,6 +3,10 @@
 #include <cstdio>
 #include <fstream>
 #include <string>
+#include <cstring>
+#ifdef RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE
+#include "diagnostics/Checkpoint.h"
+#endif
 extern "C" {
 void policy_fixture_setup(const char*);
 void policy_fixture_verify(bool);
@@ -16,6 +20,14 @@ int32_t policy_fixture_kv_put(uint32_t,const char*,const void*,uint32_t);
 namespace {
 RiscBoot::Runtime* runtime=nullptr;
 RiscBoot::Runtime* volatile retainedRuntime=nullptr;
+struct RetainedCheckpointObserved {};
+void retained_delay(uint32_t){throw RetainedCheckpointObserved{};}
+#ifdef RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE
+RiscDiagnostics::Checkpoint checkpoint;
+int32_t capture_checkpoint(const char* application,uint64_t invocation,const char* text,uint32_t length){
+ return RiscDiagnostics::captureCheckpoint(checkpoint,1,1,application,invocation,text,length);
+}
+#endif
 bool owner(){return true;}
 int32_t get(void*,uint32_t ns,const char*key,void*out,uint32_t cap,uint32_t*used){return policy_fixture_kv_get(ns,key,out,cap,used);}
 int32_t put(void*,uint32_t ns,const char*key,const void*bytes,uint32_t size){return policy_fixture_kv_put(ns,key,bytes,size);}
@@ -57,9 +69,24 @@ extern "C" unsigned policy_runtime_role(){
 extern "C" bool policy_runtime_reset_safe(){return runtime&&runtime->residentResetSafe();}
 int main(int argc,char**argv){
  assert(argc==3);setup(argv[1]);policy_fixture_setup(argv[2]);
- runtime=new RiscBoot::Runtime({owner,policy_fixture_health,policy_fixture_delay,policy_fixture_log,nullptr,&backend,policy_fixture_safe});
+ RiscBoot::Port port{owner,policy_fixture_health,policy_fixture_delay,policy_fixture_log,nullptr,&backend,policy_fixture_safe};
+ port.retainedDelay=retained_delay;
+#ifdef RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE
+ port.diagnosticCheckpoint=capture_checkpoint;
+#endif
+ runtime=new RiscBoot::Runtime(port);
  if(!runtime->prepare(argv[1])){std::fprintf(stderr,"System integration admission: %s\n",runtime->error());return 1;}
- const bool ran=runtime->run();
+ bool ran=false;
+ try{ran=runtime->run();}catch(const RetainedCheckpointObserved&){assert(!std::strcmp(argv[2],"release-retained")&&runtime->retained());}
+#ifdef RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE
+ if(!std::strcmp(argv[2],"eject")||!std::strcmp(argv[2],"release-retained")){
+  const bool retained=!std::strcmp(argv[2],"release-retained");
+  assert(checkpoint.sequence==(retained?2u:3u));
+  assert(!std::strcmp(checkpoint.application,"client.elf"));
+  assert(std::strstr(checkpoint.text,retained?"outcome=release-pending":"outcome=complete"));
+  assert(!checkpoint.truncated&&checkpoint.invocation);
+ }
+#endif
  if(!ran&&!runtime->retained()){std::fprintf(stderr,"System integration execution: %s\n",runtime->error());return 2;}
  policy_fixture_verify(runtime->retained());
  if(runtime->retained())retainedRuntime=runtime;else delete runtime;

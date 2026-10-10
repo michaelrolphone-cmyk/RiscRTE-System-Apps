@@ -58,8 +58,6 @@ static void keyboard_touch(void){
         for(unsigned row=0;row<4;row++)for(unsigned column=0;rows[layer][row][column];column++){
             unsigned key=(unsigned char)rows[layer][row][column];key_tap(row,column);expect_key(key);
             if(key<127)reachable[key]=true;
-            /* A second tap cannot be queued against unacknowledged text. */
-            key_tap(row,column);risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
             acknowledge();
         }
     }
@@ -72,8 +70,7 @@ static void keyboard_touch(void){
 static void keyboard_navigation(void){
     settle();nav_pressed=RISC_NAV_CONFIRM;expect_key('Q');acknowledge();
     nav_pressed=RISC_NAV_RIGHT;risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
-    /* Do not execute confirm queued before its focus image becomes visible. */
-    nav_pressed=RISC_NAV_CONFIRM;assert(tick(&e)==RISC_SCENE_IDLE);settle();
+    /* Focus is logical state and confirm immediately uses it. */
     nav_pressed=RISC_NAV_CONFIRM;expect_key('W');acknowledge();
     nav_pressed=RISC_NAV_DOWN;assert(tick(&e)==RISC_SCENE_IDLE);settle();
     nav_pressed=RISC_NAV_CONFIRM;expect_key('A');acknowledge();
@@ -85,25 +82,14 @@ static void keyboard_navigation(void){
     doc.nodes[0].value=1;acknowledge();nav_pressed=RISC_NAV_CONFIRM;expect_key('1');
 }
 static void keyboard_pending(void){
-    allow_complete=false;risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);assert(submits==1);
-    key_tap(0,0);nav_pressed=RISC_NAV_CONFIRM;assert(tick(&e)==RISC_SCENE_IDLE);
-    assert(submits==1);
-    /* Even input first drained on completion predates the visible frame. */
-    key_tap(0,0);nav_pressed=RISC_NAV_CONFIRM;allow_complete=true;assert(tick(&e)==RISC_SCENE_IDLE);settle();
-    /* This tap remains in the physical provider until poll() on the tick
-     * that observes completion. A pre-poll snapshot cannot see it yet. */
-    allow_complete=false;++doc.revision;assert(api->update(NULL,session,&doc)==0);
-    assert(tick(&e)==RISC_SCENE_IDLE);
-    key_center(0,0,&delayed_x,&delayed_y);delayed_tap=true;allow_complete=true;
-    assert(tick(&e)==RISC_SCENE_IDLE&&!delayed_tap);settle();
-    key_tap(0,0);expect_key('Q');acknowledge();
-    allow_complete=false;doc.nodes[0].value=1;++doc.revision;assert(api->update(NULL,session,&doc)==0);
-    assert(tick(&e)==RISC_SCENE_IDLE);
-    doc.nodes[0].value=2;++doc.revision;assert(api->update(NULL,session,&doc)==0);
-    key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);allow_complete=true;
-    /* The stale layer 1 completion is never input-active. */
-    key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);settle();
-    key_tap(0,0);expect_key('q');
+    allow_complete=false;begin_frame();unsigned frames=submits;
+    key_tap(0,0);expect_key('Q');++doc.revision;assert(!api->update(NULL,session,&doc));
+    doc.nodes[0].value=1;++doc.revision;assert(!api->update(NULL,session,&doc));
+    key_tap(0,0);expect_key('1');++doc.revision;assert(!api->update(NULL,session,&doc));
+    doc.nodes[0].value=2;++doc.revision;assert(!api->update(NULL,session,&doc));
+    key_tap(0,0);expect_key('q');assert(submits==frames);
+    ++doc.revision;assert(!api->update(NULL,session,&doc));
+    allow_complete=true;settle();
 }
 static void keyboard_stale(void){
     settle();unsigned x,y;key_center(0,0,&x,&y);
@@ -151,6 +137,7 @@ static void assert_no_grid(void){
     for(unsigned x=prof.padding;x<logical_width()-prof.padding;x++)assert(pixel_level(x,y)==background_level());
 }
 #include "../../Services/scene_host/glyphs.inc"
+#include "../../Services/scene_host/fonts/text.inc"
 static void keyboard_raster(const char *output){
     settle();
     assert(!memcmp(glyphs[0],(uint8_t[5]){0},5));
@@ -161,6 +148,14 @@ static void keyboard_raster(const char *output){
     for(unsigned c=32;c<=126;c++){
         doc.nodes[0].text[0]=(char)c;doc.nodes[0].text[1]=0;acknowledge();
         unsigned x=prof.padding,y=prof.font_scale*7+prof.padding*2+8+prof.font_scale*8+4;
+        if(logical_height()!=240){
+            const pc_glyph *g=&PCF_O900_46.glyphs[c-32];
+            for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
+                unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
+                assert((pixel_level(48+g->left+col,208+g->top+row)!=background_level())==ink);
+            }
+            continue;
+        }
         for(unsigned col=0;col<5;col++)for(unsigned row=0;row<7;row++){
             bool ink=(glyphs[c-32][col]&(1u<<row))!=0;
             assert((pixel_level(x+col*prof.font_scale,y+row*prof.font_scale)!=background_level())==ink);
@@ -172,6 +167,15 @@ static void keyboard_raster(const char *output){
         FILE *f=fopen(output,"wb");assert(f);assert(fwrite(pixels+16,1,(w*bits+7)/8*h,f)==(w*bits+7)/8*h);fclose(f);
     }
 }
+static void keyboard_press(void){
+    poll_step=1;settle();unsigned x,y;key_center(0,0,&x,&y);event_at=0;event_count=1;held_input=true;
+    events[0]=(risc_touch_event_v1){++seq,ms,RISC_TOUCH_EVENT_DOWN,0,x,y};risc_scene_event_v1 e;
+    assert(tick(&e)==RISC_SCENE_IDLE);settle();
+    if(logical_height()!=240)assert(pixel_level(x,y-25)!=background_level());
+    held_input=false;event_at=0;event_count=1;events[0]=(risc_touch_event_v1){++seq,ms+20,RISC_TOUCH_EVENT_UP,0,x,y};
+    expect_key('Q');acknowledge();
+    if(logical_height()!=240)assert(pixel_level(x,y-25)==background_level());
+}
 static void keyboard_invalid(void){
     unsigned before=calls;uint64_t other=0;
     for(unsigned mode=0;mode<12;mode++){
@@ -180,7 +184,7 @@ static void keyboard_invalid(void){
         case 0:bad.nodes[0].value=-1;break;case 1:bad.nodes[0].value=4;break;
         case 2:bad.nodes[0].minimum=1;break;case 3:bad.nodes[0].maximum=4;break;
         case 4:bad.nodes[0].step=2;break;case 5:bad.nodes[0].action=0;break;
-        case 6:bad.nodes[0].target=1;break;case 7:bad.nodes[0].text[0]='\n';break;
+        case 6:bad.nodes[0].target=RISC_SCENE_TEXT;break;case 7:bad.nodes[0].text[0]='\n';break;
         case 8:bad.nodes[0].text[0]=(char)0x80;break;case 9:bad.nodes[0].kind=8;break;
         case 10:memset(bad.nodes[0].text,'a',sizeof(bad.nodes[0].text));break;
         case 11:bad.node_count=2;bad.nodes[1]=bad.nodes[0];bad.nodes[1].id=2;break;
@@ -211,11 +215,44 @@ static void keyboard_gesture(void){
     snapshot_contacts=0;settle();key_tap(0,0);expect_key('Q');
 }
 static void keyboard_superseded(void){
-    allow_complete=false;risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
-    supersede_frame=true;allow_complete=true;key_tap(0,0);
-    assert(tick(&e)==RISC_SCENE_IDLE&&submits==2);
-    key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);settle();
-    key_tap(0,0);expect_key('Q');
+    allow_complete=false;begin_frame();supersede_frame=true;allow_complete=true;
+    key_tap(0,0);expect_key('Q');++doc.revision;assert(!api->update(NULL,session,&doc));
+    settle();key_tap(0,0);expect_key('Q');
+}
+
+static void fast_ack(void){++doc.revision;assert(api->update(NULL,session,&doc)==0);}
+static void keyboard_fast(void){
+    settle();allow_complete=false;strcpy(doc.nodes[0].text,"Q");fast_ack();
+    risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);unsigned frames=submits;
+    /* Repeated and different keys in one physical-provider drain, then more
+     * taps while both the owner acknowledgement and panel remain outstanding. */
+    const unsigned columns[]={0,0,1,2,1,0};const char *expected="QQWEWQ";
+    event_at=event_count=0;
+    for(unsigned k=0;k<6;k++){unsigned x,y;key_center(0,columns[k],&x,&y);
+        events[event_count++]=(risc_touch_event_v1){++seq,ms+k*30,1,0,x,y};
+        events[event_count++]=(risc_touch_event_v1){++seq,ms+k*30+10,3,0,x,y};}
+    expect_key(expected[0]);key_tap(0,2);assert(tick(&e)==RISC_SCENE_IDLE);
+    for(unsigned k=1;k<6;k++){fast_ack();expect_key(expected[k]);assert(submits==frames);}
+    fast_ack();expect_key('E');fast_ack();
+    for(unsigned k=0;k<100;k++){key_tap(0,k%2);expect_key(k%2?'W':'Q');fast_ack();assert(submits==frames);}
+    /* A held contact survives a draft update and completion of the old frame. */
+    unsigned x,y;key_center(0,0,&x,&y);event_at=0;event_count=1;held_input=true;
+    events[0]=(risc_touch_event_v1){++seq,ms,1,0,x,y};assert(tick(&e)==RISC_SCENE_IDLE);
+    fast_ack();allow_complete=true;assert(tick(&e)==RISC_SCENE_IDLE);
+    held_input=false;event_at=0;event_count=1;events[0]=(risc_touch_event_v1){++seq,ms+20,3,0,x,y};expect_key('Q');fast_ack();settle();
+    /* A layer key waits for the logical owner only. Captured later taps
+     * are processed using the acknowledged layer, while paper remains busy. */
+    event_at=event_count=0;
+    const unsigned rows[]={0,2,0},cols[]={0,0,1};
+    for(unsigned k=0;k<3;k++){key_center(rows[k],cols[k],&x,&y);
+        events[event_count++]=(risc_touch_event_v1){++seq,ms+k*30,1,0,x,y};
+        events[event_count++]=(risc_touch_event_v1){++seq,ms+k*30+10,3,0,x,y};}
+    expect_key('Q');fast_ack();expect_key(RISC_SCENE_KEY_LAYER);
+    doc.nodes[0].value=1;fast_ack();allow_complete=false;expect_key('2');fast_ack();
+    key_tap(0,0);expect_key('1');fast_ack();
+    key_tap(3,3);expect_key(RISC_SCENE_KEY_DONE);key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);
+    allow_complete=true;
+
 }
 
 #ifdef TEST_PACKAGED_PROFILE
@@ -233,7 +270,13 @@ static void packaged_orientation(void){
     assert(prof.touch_rotation==0);
     strcpy(doc.nodes[0].text,"Fq");acknowledge();
     unsigned x=prof.padding,y=prof.font_scale*7+prof.padding*2+8+prof.font_scale*8+4;
-    for(unsigned c=0;c<2;c++)for(unsigned col=0;col<5;col++)for(unsigned row=0;row<7;row++){
+    if(w==800){
+        const pc_glyph *g=&PCF_O900_46.glyphs['F'-32];
+        for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
+            unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
+            assert((installed_pixel_level(48+g->left+col,208+g->top+row)!=background_level())==ink);
+        }
+    }else for(unsigned c=0;c<2;c++)for(unsigned col=0;col<5;col++)for(unsigned row=0;row<7;row++){
         bool ink=(glyphs[(unsigned char)doc.nodes[0].text[c]-32][col]&(1u<<row))!=0;
         assert((installed_pixel_level(x+(c*6+col)*prof.font_scale,y+row*prof.font_scale)!=background_level())==ink);
     }
@@ -251,6 +294,7 @@ static void packaged_orientation(void){
 }
 #endif
 
+#ifndef SCENE_EMBED_KEYBOARD_TEST
 int main(int argc,char **argv){
     assert(argc>=3);const char *mode=argv[1];
     if(!strcmp(argv[2],"paper")){w=800;h=480;format=1;prof=(risc_scene_profile_v1){1,sizeof(prof),1,3,88,20,0,65535,0,90,0,0};}
@@ -262,11 +306,19 @@ int main(int argc,char **argv){
 #endif
     if(!strcmp(mode,"keyboard-pending")){display_flags=RISC_DISPLAY_INFO_MAILBOX;expected_queue=RISC_DISPLAY_QUEUE_MAILBOX;}
     startup();keyboard_document();
+    if(!strcmp(mode,"keyboard-overflow")){
+        settle();key_tap(0,0);expect_key('Q');risc_scene_event_v1 e;
+        for(unsigned i=0;i<32;i++){key_tap(0,i%2);assert(tick(&e)==RISC_SCENE_IDLE);}
+        key_tap(0,0);assert(tick(&e)==RISC_SCENE_RETAINED);unsigned before=calls;
+        assert(tick(&e)==RISC_SCENE_RETAINED&&api->close(NULL,session)==RISC_SCENE_RETAINED);
+        assert(!driver->quiesce());driver->stop();assert(calls==before);
+        printf("scene host %s %s PASS (bounded queue retained without further I/O)\n",mode,argv[2]);return 0;
+    }
     if(!strncmp(mode,"keyboard-native-",16)){
         risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
         loss_callback=mode+16;
-        if(!strcmp(loss_callback,"snapshot"))loss_skip=1; /* First snapshot belongs to the pre-completion drain. */
-        assert(tick(&e)==RISC_SCENE_RETAINED&&!native_alive);
+        doc.nodes[0].flags=RISC_SCENE_DISABLED;++doc.revision;
+        assert(api->update(NULL,session,&doc)==RISC_SCENE_RETAINED&&!native_alive);
         unsigned before=calls;assert(tick(&e)==RISC_SCENE_RETAINED);
         assert(api->close(NULL,session)==RISC_SCENE_RETAINED&&!driver->quiesce());driver->stop();assert(calls==before);
         printf("scene host %s %s PASS (no I/O after completion callback retention)\n",mode,argv[2]);return 0;
@@ -275,16 +327,26 @@ int main(int argc,char **argv){
     if(!strcmp(mode,"profile-orientation"))packaged_orientation();
     else
 #endif
-    if(!strcmp(mode,"keyboard-touch"))keyboard_touch();
+    if(!strcmp(mode,"keyboard-preview")){
+        strcpy(doc.routes[0].title,"NEW TYPE");strcpy(doc.nodes[0].text,"POWER NAP");doc.nodes[0].target=31;
+        doc.nodes[0].value=argc>4?atoi(argv[4]):0;acknowledge();
+        assert(argc>3);FILE *f=fopen(argv[3],"wb");assert(f);unsigned bits=format==5?16:format==3?4:1;
+        assert(fwrite(pixels+16,1,(w*bits+7)/8*h,f)==(w*bits+7)/8*h);fclose(f);
+    }
+    else if(!strcmp(mode,"keyboard-fast"))keyboard_fast();
+    else if(!strcmp(mode,"keyboard-touch"))keyboard_touch();
     else if(!strcmp(mode,"keyboard-navigation"))keyboard_navigation();
     else if(!strcmp(mode,"keyboard-pending"))keyboard_pending();
     else if(!strcmp(mode,"keyboard-stale"))keyboard_stale();
     else if(!strcmp(mode,"keyboard-hardware"))keyboard_hardware();
+    else if(!strcmp(mode,"keyboard-press"))keyboard_press();
     else if(!strcmp(mode,"keyboard-invalid"))keyboard_invalid();
     else if(!strcmp(mode,"keyboard-gesture"))keyboard_gesture();
     else if(!strcmp(mode,"keyboard-superseded"))keyboard_superseded();
     else if(!strcmp(mode,"keyboard-raster"))keyboard_raster(argc>3?argv[3]:NULL);
     else assert(0);
-    finish();assert(!releases);
+    finish();
     printf("scene host %s %s PASS (frames=%u calls=%u)\n",mode,argv[2],submits,calls);return 0;
 }
+
+#endif

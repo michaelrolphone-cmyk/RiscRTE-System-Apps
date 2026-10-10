@@ -21,7 +21,7 @@ void app_main(void) {
   risc_failure_evidence_client_v1 client={.struct_size=sizeof(client)};assert(runtime->failure_evidence(&client));
   for(unsigned i=0;i<2;++i){risc_failure_evidence_v1 record={.struct_size=sizeof(record)};assert(client.read(client.invocation,&record)==RISC_FAILURE_EVIDENCE_OK && (record.flags&RISC_FAILURE_PENDING));}
   risc_resident_client_v1 shell={.struct_size=sizeof(shell)};assert(runtime->resident_shell(&shell));
-  const risc_resident_callbacks_v1 callbacks={1,sizeof(callbacks),NULL,dispatch,NULL};
+  const risc_resident_callbacks_v1 callbacks={.api_version=1,.struct_size=sizeof(callbacks),.dispatch=dispatch};
   assert(shell.register_shell(shell.invocation,&callbacks)==RISC_RESIDENT_OK);
   risc_resident_result_v1 outcome={.struct_size=sizeof(outcome)};
   assert(shell.run_foreground(shell.invocation,"client.elf",&outcome)==RISC_RESIDENT_HANDOFF);return;

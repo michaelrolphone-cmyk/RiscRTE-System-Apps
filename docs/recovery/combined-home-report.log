@@ -1,0 +1,2 @@
+normal Failure evidence report: exact body, missing/complete/limit/invalid/unsupported states, bounded history/frames/text, all-byte sanitization, sink failures and 2048 adversarial records PASS
+sanitized Failure evidence report: exact body, missing/complete/limit/invalid/unsupported states, bounded history/frames/text, all-byte sanitization, sink failures and 2048 adversarial records PASS

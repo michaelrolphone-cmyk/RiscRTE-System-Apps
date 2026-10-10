@@ -13,7 +13,7 @@ extern unsigned usb_fixture_prepare_calls(void);
 extern bool usb_fixture_phy_owned(void),usb_fixture_quiesce(void);
 extern void usb_fixture_recover(void);
 static const risc_usb_device_msc_api_v1 *real_usb;
-static risc_usb_device_msc_api_v1_prepare checked_usb;
+static risc_usb_device_msc_api_v1_diagnostics checked_usb;
 static unsigned mode,queued_until,last_prepare_input,prepare_frames,prepare_polls,prepare_before_frame;
 static uint64_t owner_token;
 static uint32_t latest_state;
@@ -68,11 +68,11 @@ static bool app_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capa
  if(!strcmp(name,"display.output")){static risc_display_output_api_v1 p;p=d;p.submit=display_submit;p.present_status=display_status;out->api=&p;}
  return true;
 }
-static const risc_runtime_api_v1 runtime={1,sizeof(runtime),app_health,yield_ms,diagnostic,app_launch,app_acquire,app_release};
+static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=app_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=app_launch,.acquire=app_acquire,.release=app_release};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&runtime:NULL;}
 int main(int argc,char**argv){
- assert(argc==2);mode=(unsigned)atoi(argv[1]);real_usb=usb_fixture_provider(mode);checked_usb=*risc_usb_device_msc_prepare(real_usb);
- checked_usb.base.begin=begin_usb;checked_usb.base.poll=poll_usb;checked_usb.base.end=end_usb;checked_usb.prepare_step=prepare_usb;
+ assert(argc==2);mode=(unsigned)atoi(argv[1]);real_usb=usb_fixture_provider(mode);checked_usb=*risc_usb_device_msc_diagnostics(real_usb);
+ checked_usb.base.base.begin=begin_usb;checked_usb.base.base.poll=poll_usb;checked_usb.base.base.end=end_usb;checked_usb.base.prepare_step=prepare_usb;
  assert(!app_module_init());app_main();app_module_fini();
  assert(!grants&&!subs&&!frames&&!owner_token&&usb_releases==1&&launches==1&&!strcmp(launched,"default.elf"));
  assert(prepare_frames&&prepare_polls&&!prepare_before_frame&&usb_fixture_prepare_calls());

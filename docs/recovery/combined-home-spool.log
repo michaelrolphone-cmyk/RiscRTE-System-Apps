@@ -1,0 +1,2 @@
+normal: Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, oldest-seven/newest overflow, saturation, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232
+sanitized: Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, oldest-seven/newest overflow, saturation, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232

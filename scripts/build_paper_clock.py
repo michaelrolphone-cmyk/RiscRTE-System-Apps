@@ -140,7 +140,7 @@ def build():
   if a.sparse_start:needs.extend([{'capability':'runtime.realtime-control','api':1},{'capability':'runtime.provider-promotion','api':1}])
   if a.ble_broadcast:needs.append({"capability":"telemetry.broadcast","api":1})
   if a.contexts_rf_only:needs.append({'capability':'contexts.service','api':1})
-  if len(needs)!=(((15 if a.ble_broadcast else 14)+int(a.contexts_rf_only)) if a.sparse_start else 12):raise ValueError('Desk clock grant count mismatch')
+  if len(needs)!=((((15 if a.ble_broadcast else 14)+int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)):raise ValueError('Desk clock grant count mismatch')
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
@@ -149,7 +149,7 @@ def build():
   record['contexts']={'profile':'rf-only','supported_sources':2,'owner':'waterfall.elf','service_api':1,
    'service_instance':0,'preferences_instance':1,'timer_only':False,'model_storage':'owner-export-only',
    'required_policy_rows':len(needs)+1,'required_capability_count':len(needs),
-   'runtime_live_grant_limit':16,'runtime_requirement_limit':16,
+   'runtime_live_grant_limit':16,'runtime_requirement_limit':17 if a.crash_report_sd else 16,
    'source_sha256':{path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in (
     'lib/PortableApps/include/ContextsServiceV1.h','lib/PortableApps/include/PortableContextsClient.h',
     'lib/PortableApps/include/PortableContextPreferences.h','lib/PortableApps/include/PortableBackgroundServices.h',

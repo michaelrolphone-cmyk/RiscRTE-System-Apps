@@ -25,13 +25,14 @@ CASES = {
     'wifi': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],
     'apps': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],
     'ota': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],
-    'usb': ['overlay', 'busy', 'cleanup', 'terminal', 'poll'],
+    'usb': ['overlay', 'busy', 'cleanup', 'terminal', 'poll', 'eject', 'release-retained'],
 }
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--runtime', type=Path, required=True)
+    p.add_argument('--app-runtime-sdk', type=Path, help='Compile new app headers separately from the selected Runtime implementation')
     p.add_argument('--display-sdk', type=Path, required=True)
     p.add_argument('--alarm-sdk', type=Path, required=True)
     p.add_argument('--msc-sdk', type=Path, required=True)
@@ -45,7 +46,7 @@ def main():
     shutil.copytree(ROOT/'lib/PortableApps/include', inc, dirs_exist_ok=True)
     shutil.copytree(ROOT/'lib/PortableApps/time', out/'time', dirs_exist_ok=True)
     for name in ('RiscRuntimeV1.h', 'RiscResidentShellV1.h', 'RiscRealtimeV1.h'):
-        shutil.copyfile(args.runtime/'sdk/app'/name, inc/name)
+        shutil.copyfile((args.app_runtime_sdk or args.runtime/'sdk/app')/name, inc/name)
     if (args.runtime/'sdk/app/RiscFailureEvidenceV1.h').is_file():
         shutil.copyfile(args.runtime/'sdk/app/RiscFailureEvidenceV1.h',inc/'RiscFailureEvidenceV1.h')
     for name in ('RiscDisplayOutputV1.h', 'RiscDisplayOutputPowerV1.h',

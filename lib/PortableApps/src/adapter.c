@@ -1738,6 +1738,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_LOW_BATTERY
   if(!low_battery_poll()){failed=true;return false;}
 #endif
+#ifdef PORTABLE_CRASH_REPORT_SD
+  if(!failure_archive_checkpoint())return false;
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(display_settled&&!surface.frame&&!paper_token&&!contexts_tick())return false;
 #if defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && !defined(PORTABLE_RESIDENT_SHELL_HOST)

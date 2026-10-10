@@ -15,7 +15,7 @@ static const risc_usb_keyboard_api_v1 *keyboard;
 static risc_scene_document_v1 document;
 static risc_text_entry_state_v1 state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
-static uint32_t capacity,page;
+static uint32_t capacity,page,request_flags;
 static bool started,active,closing,retained,connected,neutral,caps,changed,draining;
 
 static int32_t retain(void){retained=true;return RISC_TEXT_ENTRY_RETAINED;}
@@ -52,6 +52,7 @@ static void apply(unsigned key){
     if(key==RISC_SCENE_KEY_CANCEL){state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
     if(key==RISC_SCENE_KEY_LAYER){page=(page+1)%4;(void)changed_state();return;}
     size_t n=strlen(state.text);
+    if(key==RISC_SCENE_KEY_CLEAR){if(n){state.text[0]=0;(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_BACKSPACE){if(n){state.text[n-1]=0;(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_SPACE)key=' ';
     if(key>=32&&key<=126&&n+1<capacity){state.text[n]=(char)key;state.text[n+1]=0;(void)changed_state();}
@@ -135,13 +136,13 @@ static int32_t close_owned(void){
 static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,uint64_t *out){
     (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
-       request->reserved||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
+       (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
        !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
     if(active)return RISC_TEXT_ENTRY_BUSY;
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
     state=(risc_text_entry_state_v1){.struct_size=sizeof(state),.revision=1};
     memcpy(state.text,request->text,strlen(request->text)+1);
-    capacity=request->capacity;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
+    capacity=request->capacity;request_flags=request->reserved;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
     active=true;session=++serial;
     if(keyboard){
         subscription=keyboard->subscribe(keyboard->context,0);
@@ -156,6 +157,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     memcpy(document.nodes[0].label,request->label,sizeof(request->label));
     memcpy(document.nodes[0].text,state.text,sizeof(state.text));
     document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].target=capacity-1;
     int32_t r=scene->open(scene->context,&document,NULL,&scene_session);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(r==RISC_SCENE_RETAINED)return retain();
@@ -175,7 +177,10 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
         if(!live())return RISC_TEXT_ENTRY_RETAINED;
         if(r==RISC_SCENE_OK){
             if(event.document_revision==document.revision){
-                if(event.kind==RISC_SCENE_SUSPEND_EVENT||(event.kind==RISC_SCENE_ACTION_EVENT&&event.action==2))apply(RISC_SCENE_KEY_CANCEL);
+                if(event.kind==RISC_SCENE_SUSPEND_EVENT&&state.state==RISC_TEXT_ENTRY_EDITING){
+                    if(request_flags&RISC_TEXT_ENTRY_REQUEST_HOME_REASON)state.flags|=RISC_TEXT_ENTRY_HOME_CANCEL;
+                    apply(RISC_SCENE_KEY_CANCEL);
+                }else if(event.kind==RISC_SCENE_ACTION_EVENT&&event.action==2)apply(RISC_SCENE_KEY_CANCEL);
                 else if(event.kind==RISC_SCENE_VALUE_EVENT&&event.node==1&&event.action==1&&
                     (!connected||event.value==RISC_SCENE_KEY_DONE||event.value==RISC_SCENE_KEY_CANCEL)){
                     apply((unsigned)event.value);if(!changed&&!changed_state())return RISC_TEXT_ENTRY_RETAINED;
@@ -192,7 +197,9 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
     *out=state;if(flags&RISC_SCENE_PRESENTING)out->flags|=RISC_TEXT_ENTRY_PRESENTING;return RISC_TEXT_ENTRY_OK;
 }
 static int32_t close_session(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
-static const risc_text_entry_api_v1 api={1,sizeof(api),NULL,open_session,poll_session,close_session};
+static const risc_text_entry_api_v1_home_reason api={
+    {1,sizeof(api),NULL,open_session,poll_session,close_session},
+    RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||!deps||!count||count>2)return false;
     scene=NULL;keyboard=NULL;

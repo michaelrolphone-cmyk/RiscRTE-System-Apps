@@ -92,6 +92,9 @@ void app_main(void){
  p->begin();a->fill_rect(90,180,110,140,true);a->present(true);system_set_busy_hook(system_host_busy);
  int status=portable_resident_run_foreground("client.elf");system_event(1,(unsigned)(status+1));
 #else
+#ifdef PORTABLE_USB_TRANSFER_APP
+ if(mode("eject")||mode("release-retained")){system_controller_main();if(mode("release-retained")){assert(portable_adapter_retained());return;}assert(!portable_adapter_retained());system_event(3,1);return;}
+#endif
  prepare_model();
  const t5_app_api_v1 *saved_api=t5_app_get_api(1);const paper_presentation *saved_paper=paper_presentation_get();assert(saved_api&&saved_paper);
  if(mode("cleanup-terminal")) {

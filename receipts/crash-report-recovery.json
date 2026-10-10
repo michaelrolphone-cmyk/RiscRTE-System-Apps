@@ -1,0 +1,145 @@
+{
+  "status": "source recovery working copy; full fresh qualification pending",
+  "former_local_commit": "68e014e15e806174ffbb396de7d0ea40ec25d925",
+  "baseline_original_commit": "24b07f92eb8bab1943c1e7ef146960e5d896b37b",
+  "baseline_tree": "c97d04836a5abbada97ca5161e26e138bba83f82",
+  "old_test_results_reused": false,
+  "hardware_tested": false,
+  "native_first_preserving_update_qualified": false,
+  "fresh_host_runs": {
+    "spool": [
+      "normal PASS",
+      "ASan/UBSan PASS"
+    ],
+    "formatter": [
+      "normal PASS",
+      "ASan/UBSan PASS"
+    ],
+    "sd_exporter": [
+      "normal PASS",
+      "ASan/UBSan PASS"
+    ],
+    "existing_osd": [
+      "27 normal PASS",
+      "27 ASan/UBSan PASS"
+    ],
+    "archive_lifecycle": [
+      "15 normal PASS",
+      "15 ASan/UBSan PASS"
+    ]
+  },
+  "files": {
+    "RECOVERY_CRASH_REPORT_0327.md": {
+      "sha256": "d9d690c0309a473f4c50247815d87d1295ede867377a65ed91ce1552a90736de",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "lib/PortableApps/include/CrashReportSd.h": {
+      "sha256": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+      "prior_recorded_sha256": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/include/CrashReportSpool.h": {
+      "sha256": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+      "prior_recorded_sha256": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/include/FailureEvidenceReport.h": {
+      "sha256": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+      "prior_recorded_sha256": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/include/RiscStorageExportV1.h": {
+      "sha256": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "lib/PortableApps/include/RiscStorageVolumeStateV1.h": {
+      "sha256": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1",
+      "prior_recorded_sha256": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/include/RiscStorageVolumeV1.h": {
+      "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "lib/PortableApps/src/adapter.c": {
+      "sha256": "d8d6d0c7413d07422289a0337d326d3f7ecafac7e5208b8aa697ab0f88282459",
+      "prior_recorded_sha256": "d8d6d0c7413d07422289a0337d326d3f7ecafac7e5208b8aa697ab0f88282459",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/src/failure_archive.inc": {
+      "sha256": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+      "prior_recorded_sha256": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+      "matches_prior_recorded_sha256": true
+    },
+    "lib/PortableApps/src/failure_evidence.inc": {
+      "sha256": "da00385aa6370285d95e9845b224db62d787049e79aa5f69d153a3ff1b51ca0e",
+      "prior_recorded_sha256": "da00385aa6370285d95e9845b224db62d787049e79aa5f69d153a3ff1b51ca0e",
+      "matches_prior_recorded_sha256": true
+    },
+    "scripts/build_paper_clock.py": {
+      "sha256": "3287e679b68a42e9ace3c33b5287eb430e29730780ea0bab0f9f21588a3356f0",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/portable_quick_build.py": {
+      "sha256": "3473dec665c27355d7339155f878995b32d1dc84b594f5258131ea8cdf2497fb",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/test_crash_report_sd.py": {
+      "sha256": "8b235ed422c1a01ce86d5630c68945aff3cc2d97940f441f53b7a5de47c348cc",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/test_crash_report_spool.py": {
+      "sha256": "cd0b10eee03a3027bb4b0d90116f0b8194f065450a82b6c733aabe33e930fce3",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/test_failure_evidence_report.py": {
+      "sha256": "dc288911dbc96bc4910926cacadaf02c6d93b2fa0ecd50f8d5685c67b0d7e2c0",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/crash_report_sd_test.c": {
+      "sha256": "440ef09de5a01c9ccedc34f443a3b8c7b54f85061b1670c83c9aeab319035402",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/crash_report_spool_test.c": {
+      "sha256": "ef45a18cb53cb0e994953b50c4e6caa4cf927ffe63bb38dfd35b51048471a580",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/failure_evidence_app.c": {
+      "sha256": "9cdd68ae06632dce053ed0d7baad928ccfb87bce45f93544b6e36edd7a50869d",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/failure_evidence_report_test.c": {
+      "sha256": "cbe6e5c01f2c2e35184cb932bd514b2147e0ab87cbe6162827bc57ba1b9e51ce",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/failure_archive_lifecycle_test.c": {
+      "sha256": "cb16e1937591cc6e10609f89c0d460d3a026130609f3748f0a0acc44adb83483",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/test_failure_archive_lifecycle.py": {
+      "sha256": "aaa4dd10e907b7fba1dd4022798cba66c4c41cb03de5bc691796335baabdc534",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    }
+  },
+  "remote_checkpoint": "complete .53 baseline plus recovered crash source; final clean product build pending",
+  "remote_parent": "0b5aa15a57b7ba248840ca8ab9dee0be13267c19",
+  "lifecycle_test_provenance": {
+    "recovered_baseline_14_sha256": "f64591058e3f33a3343fcb220fb3ae5e48114f558e73554ad554954d052c985b",
+    "final_15_case_fixture": "fresh reconstruction of suffix observations and conservative acquire failure; no final pre-reset fixture parity claim"
+  },
+  "all_existing_product_binaries": "stale and invalid for next product build; no precompiled product input allowed"
+}

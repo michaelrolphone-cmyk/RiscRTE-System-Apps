@@ -17,9 +17,14 @@ MODES = ('behavior', 'inflight', 'stale-frame', 'gap', 'transient', 'held',
          'native-poll-nav_poll', 'native-poll-acquire', 'native-poll-submit',
          'native-poll-status', 'native-close-status', 'native-close-unsubscribe',
          'native-close-foreground', 'native-close-reset')
-KEYBOARD_MODES = ('keyboard-touch', 'keyboard-navigation', 'keyboard-pending',
+KEYBOARD_MODES = ('keyboard-fast', 'keyboard-overflow', 'keyboard-press', 'keyboard-touch', 'keyboard-navigation', 'keyboard-pending',
                   'keyboard-stale', 'keyboard-hardware', 'keyboard-invalid', 'keyboard-gesture',
                   'keyboard-raster', 'keyboard-superseded', 'keyboard-native-snapshot', 'keyboard-native-reset')
+
+LIFECYCLE_MODES = ('lifecycle-discovery', 'lifecycle-activity', 'lifecycle-busy',
+                   'lifecycle-controls', 'lifecycle-cancellation', 'lifecycle-report-order', 'lifecycle-keyboard',
+                   'lifecycle-close', 'lifecycle-native-before', 'lifecycle-native-snapshot',
+                   'lifecycle-native-snapshot-fail', 'lifecycle-native-reset')
 
 
 def run(runtime: Path, output: Path, sanitize: bool) -> int:
@@ -51,6 +56,13 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
             if mode == 'keyboard-raster':
                 command += [str(output/f'{profile}-keyboard.frame')]
             subprocess.run(command, env=env, check=True)
+    lifecycle_exe = output / 'scene-lifecycle-test'
+    subprocess.run([compiler, *flags, '-I'+str(include),
+                    str(ROOT/'Services/scene_host/host.c'),
+                    str(ROOT/'test/scene/lifecycle_test.c'), '-o', str(lifecycle_exe)], check=True)
+    for profile in ('watch', 'paper', 'gray'):
+        for mode in LIFECYCLE_MODES:
+            subprocess.run([str(lifecycle_exe), mode, profile], env=env, check=True)
     # Compile the actual independently packaged profiles with the exact target
     # builder flags, then assert against the installed panel/touch contract.
     for name, profile_flags in PROFILE_FLAGS.items():
@@ -74,7 +86,7 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
     rejected=subprocess.run([str(bad_exe),'profile-orientation','paper'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     assert rejected.returncode and 'installed_pixel_level' in rejected.stderr,rejected.stderr
     print('Old portrait90 rejected by independent installed physical raster assertion PASS')
-    return (len(MODES)+len(KEYBOARD_MODES))*3+len(PROFILE_FLAGS)
+    return (len(MODES)+len(KEYBOARD_MODES)+len(LIFECYCLE_MODES))*3+len(PROFILE_FLAGS)
 
 
 if __name__ == '__main__':

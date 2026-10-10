@@ -1,0 +1,2 @@
+normal crash_report_sd: PASS (max report 4096 bytes; happy path 72 calls; 212 safety boundaries)
+sanitized crash_report_sd: PASS (max report 4096 bytes; happy path 72 calls; 212 safety boundaries)

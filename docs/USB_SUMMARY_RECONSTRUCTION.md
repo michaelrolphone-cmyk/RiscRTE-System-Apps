@@ -1,0 +1,9 @@
+# USB return and RAM summary recovery
+
+This unit reconstructs USB app 0.1.5 safe-eject return and 0.1.6 bounded final diagnostics from the exact restored System09922405 source tree. It is not an assertion that the lost commits were recovered byte for byte. The paired native optional checkpoint API is Runtime0.1.106; provider v2 diagnostic fields are MSC0.1.5. The old Runtime0.1.100 table is independently compiled with its own original headers and must remain accepted without reading its absent suffix.
+
+A final summary contains only command/status counters, opcode, LBA, requested/transferred/residue, sense, abort/timeout and elapsed times. No credentials, file contents, SD writes or filesystem operations are introduced. It is copied into bounded ordinary RAM through an optional general Runtime API; the native diagnostics replay path emits it after CDC restoration. The pre-release checkpoint is written before release can revoke the invocation. A failed resident release immediately applies the existing silent adapter retention fence, preventing further rendering, provider calls, cleanup or navigation.
+
+Fresh source tests cover app/adapter lifecycle and summary cases normally and under ASan/UBSan, the actual Runtime/Graph with separately loaded host/client/provider ELFs, healthy eject and provider-release retention. The release-retention case first reproduced a real post-failure display acquire; the new fence prevents it while preserving the pre-release evidence. Test-only peripherals remain synthetic. Windows eject signaling, physical USB throughput and hardware are unverified.
+
+All earlier product targets are comparison evidence only during this recovery interval. The final product must be built clean after the entire source recovery set is complete. Publication is a working-source checkpoint, not a release or successful final product-build claim.

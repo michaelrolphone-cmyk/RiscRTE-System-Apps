@@ -58,7 +58,7 @@ int main(int argc,char**argv){
   r.capacity=8;r.reserved=1;assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);r.reserved=0;memset(r.label,'x',sizeof(r.label));assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);assert(!s&&!calls);driver->stop();
  }else if(!strcmp(mode,"plain")){
   open_text("old",8);scene_key('a');assert(!strcmp(tick().text,"olda"));scene_key(129);assert(!strcmp(tick().text,"old"));scene_key(128);tick();assert(doc.nodes[0].value==1);
-  scene_key('!');assert(!strcmp(tick().text,"old!"));scene_key(132);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);
+  scene_key('!');assert(!strcmp(tick().text,"old!"));scene_key(133);assert(!strcmp(tick().text,""));scene_key(133);assert(!strcmp(tick().text,""));scene_key(132);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);
   uint64_t stale=session;finish();assert(driver->start(deps,1));open_text("new",8);risc_text_entry_state_v1 s={.struct_size=sizeof(s)};assert(session!=stale&&api->poll(NULL,stale,&s)==RISC_TEXT_ENTRY_STALE);finish();
  }else if(!strcmp(mode,"pending")){
   open_text("",8);pending=true;assert(tick().flags&RISC_TEXT_ENTRY_PRESENTING);assert(api->close(NULL,session)==RISC_TEXT_ENTRY_AGAIN);assert(unsubs==1);unsigned before=calls;risc_text_entry_state_v1 s={.struct_size=sizeof(s)};assert(api->poll(NULL,session,&s)==RISC_TEXT_ENTRY_BUSY&&calls==before);pending=false;finish();assert(unsubs==1);

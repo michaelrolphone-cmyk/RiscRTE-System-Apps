@@ -4,8 +4,9 @@
 #include <RiscProviderV2.h>
 extern const void *policy_fixture_api(unsigned);
 extern void policy_fixture_provider_event(unsigned,unsigned);
+extern bool policy_fixture_quiesce(unsigned);
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){(void)deps;policy_fixture_provider_event(POLICY_PROVIDER,1);return count==1;}
-static bool quiesce(void){policy_fixture_provider_event(POLICY_PROVIDER,2);return true;}
+static bool quiesce(void){policy_fixture_provider_event(POLICY_PROVIDER,2);return policy_fixture_quiesce(POLICY_PROVIDER);}
 static void stop(void){policy_fixture_provider_event(POLICY_PROVIDER,3);}
 static risc_driver_v2 driver={2,sizeof(driver),POLICY_CAPABILITY,POLICY_CAPABILITY,POLICY_API,NULL,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t abi){driver.capability=policy_fixture_api(POLICY_PROVIDER);return abi==2?&driver:NULL;}
@@ -37,6 +38,7 @@ static unsigned maps[3],unmaps[3],entries[3],battery_reads,audio_pauses;
 static unsigned provider_calls,after_terminal,policy_opens,policy_closes,last_focus,capture_calls;
 static unsigned host_result,policy_effects,model_checks,overlay_copies,host_nav,child_nav;
 static bool home_requested;
+static unsigned eject_nav;
 static bool terminal,capture,touch_down,child_started,child_returned;
 static void (*busy_hook)(bool);
 static uint8_t pixels[48000],completed[48000];
@@ -94,6 +96,7 @@ static const risc_touch_api_v1 touch={1,sizeof(touch),NULL,subscribe,unsubscribe
 static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){
  live();(void)c;assert(focus==role());*out=(risc_input_navigation_frame_v1){0};
  if(child_started&&role()==1){++host_nav;if(host_nav%3==0)out->pressed=RISC_NAV_BACK;}
+ if((is("eject")||is("release-retained"))&&role()==2 && ++eject_nav==5)out->pressed=RISC_NAV_CONFIRM;
  if(home_requested&&role()==2){++child_nav;if(child_nav%3==0)out->pressed=RISC_NAV_HOME;}
  assert(ms<10000);return true;
 }
@@ -121,6 +124,7 @@ static bool wifi_stop(void*c){live();(void)c;policy_boundary();if(is("cleanup-te
 static bool ble_set(void*c,bool enabled){live();(void)c;assert(!enabled);policy_boundary();return true;}
 static bool ble_status(void*c,uint8_t*out){live();(void)c;*out=PORTABLE_BLUETOOTH_OFF;return true;}
 static const portable_bluetooth_control_v1 ble={.api_version=1,.struct_size=sizeof(ble),.set_enabled=ble_set,.status=ble_status};
+bool policy_fixture_quiesce(unsigned index){if(index==12 && is("release-retained")){terminal=true;return false;}return true;}
 void policy_fixture_provider_event(unsigned index,unsigned event){(void)index;(void)event;live();}
 bool portable_audio_services_safe(void){return true;}
 bool portable_audio_capture_active(void){return capture;}
@@ -156,7 +160,7 @@ static bool update_begin(void*c,uint32_t i,uint64_t now){(void)c;(void)i;(void)n
 static bool update_cancel(void*c){(void)c;live();if(is("cleanup-terminal")){terminal=true;return false;}return true;}
 static const software_update_v1 updates={1,sizeof(updates),NULL,update_refresh,yes,update_status,update_get,update_begin,update_cancel,yes,yes};
 static int32_t usb_begin(void*c,uint64_t*out){(void)c;live();assert(!usb_owned);usb_owned=1;++usb_begins;*out=42;return RISC_USB_MSC_OK;}
-static int32_t usb_poll(void*c,uint64_t key,risc_usb_device_msc_status_v1*out){(void)c;live();assert(usb_owned&&key==42);*out=(risc_usb_device_msc_status_v1){.struct_size=sizeof(*out),.state=RISC_USB_MSC_WAITING};return RISC_USB_MSC_OK;}
+static int32_t usb_poll(void*c,uint64_t key,risc_usb_device_msc_status_v1*out){(void)c;live();assert(usb_owned&&key==42);*out=(risc_usb_device_msc_status_v1){.struct_size=sizeof(*out),.state=(is("eject")||is("release-retained"))?RISC_USB_MSC_EJECTED:RISC_USB_MSC_WAITING};return RISC_USB_MSC_OK;}
 static int32_t usb_end(void*c,uint64_t key,uint32_t reason){(void)c;(void)reason;live();assert(usb_owned&&key==42);usb_owned=0;++usb_ends;return RISC_USB_MSC_OK;}
 static int32_t usb_prepare(void*c,uint64_t key){(void)c;(void)key;assert(!"No media preparation needed for stopped-owner gate");return RISC_USB_MSC_OK;}
 static const risc_usb_device_msc_api_v1_prepare usb={.base={1,sizeof(usb),NULL,usb_begin,usb_poll,usb_end,error_text},.prepare_tag=RISC_USB_MSC_PREPARE_TAG,.prepare_version=1,.prepare_step=usb_prepare};
@@ -181,13 +185,16 @@ void system_event(unsigned event,unsigned value){
 }
 void policy_fixture_setup(const char*name){mode=name;lifecycle_role=1;assert(portable_sleep_timer_save(&preferences,false,5000));}
 void policy_fixture_verify(bool was_retained){
- assert(was_retained==(is("terminal")||is("cleanup-terminal")));
- if(was_retained){assert(terminal&&!after_terminal&&!unmaps[1]&&!unmaps[2]&&host_result==0);}
+ assert(was_retained==(is("terminal")||is("cleanup-terminal")||is("release-retained")));
+ if(was_retained){assert(terminal&&!after_terminal&&!unmaps[1]&&!unmaps[2]&&host_result==0);if(is("release-retained"))assert(usb_begins==1&&usb_ends==1&&!usb_owned&&!child_nav&&!host_nav);}
  else{
   assert(!terminal&&!frame&&!pending_present&&!directory&&!usb_owned&&!subs[1]&&!subs[2]&&!focus);
   assert(maps[1]==1&&maps[2]==(is("file-open")?2u:1u)&&unmaps[1]==1&&unmaps[2]==maps[2]&&entries[1]==1&&entries[2]==maps[2]&&host_result==2&&child_returned);
-  assert(model_checks&&child_nav>=3&&opens[1]==closes[1]&&opens[2]==closes[2]);
-  if(is("poll")||is("capture")||is("policy-busy"))assert(!overlay_copies);
+  if(is("eject")){assert(!model_checks&&!child_nav&&usb_begins==1&&usb_ends==1);}
+  else assert(model_checks&&child_nav>=3);
+  assert(opens[1]==closes[1]&&opens[2]==closes[2]);
+  if(is("eject")){assert(!overlay_copies&&!host_nav);}
+  else if(is("poll")||is("capture")||is("policy-busy"))assert(!overlay_copies);
   else assert(overlay_copies==(is("file-open")?2u:1u)&&host_nav>=3);
   if(is("file-open"))assert(file_requests==1&&file_receives==1&&file_returns==1);
   assert(usb_begins==usb_ends);

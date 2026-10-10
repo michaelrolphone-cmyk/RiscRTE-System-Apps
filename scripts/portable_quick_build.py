@@ -6,11 +6,12 @@ import shutil
 import portable_idle_build
 
 RESIDENT_CLIENT_VERSIONS={'springboard':'1.7.22','settings':'1.3.23','file_browser':'1.5.16','wifi_settings':'1.1.19',
-    'ota_update':'1.2.9','app_store':'1.2.9','usb_sd_transfer':'0.1.4'}
+    'ota_update':'1.2.9','app_store':'1.2.9','usb_sd_transfer':'0.1.6'}
 
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
+        if getattr(args,'crash_report_sd',False):return '0.3.27'
         if getattr(args,'display_settled_sdk',None):return '0.3.26'
         if getattr(args,'frontlight_tone',False):return '0.3.25'
         if getattr(args,'resident_policy',False):return '0.3.25'
@@ -33,6 +34,8 @@ def options(parser):
     parser.add_argument('--quick-radios',action='store_true',help='Explicit Wi-Fi/Bluetooth quick-control selection; requires --quick-actions and exact radio grants')
     parser.add_argument('--frontlight-tone',action='store_true',help='Optional host-owned warm/cool slider through a size-checked display suffix; no new grants')
     parser.add_argument('--frontlight-tone-sdk',type=Path,help='SDK containing RiscDisplayOutputFrontlightV1.h')
+    parser.add_argument('--crash-report-sd',action='store_true',help='Back up the copied crash OSD report in dedicated AppData, then export to SD at safe Home checkpoints')
+    parser.add_argument('--crash-report-spool-namespace',type=int,default=62,help='Explicit dedicated Home AppData namespace; selected only with --crash-report-sd')
     parser.add_argument('--display-settled-sdk',type=Path,help='Optional token-bound display settling SDK for the sleep overlay')
 
 def configure(args,parser,root,output,includes=None):
@@ -46,6 +49,9 @@ def configure(args,parser,root,output,includes=None):
     resident_flags=[]
     legacy=getattr(args,'resident_legacy_handoff',False)
     policy=getattr(args,'resident_policy',False)
+    crash=getattr(args,'crash_report_sd',False)
+    if crash and not (host and policy):parser.error('--crash-report-sd requires a resident policy host')
+    if crash and not 1<=args.crash_report_spool_namespace<=2147483647:parser.error('Invalid crash-report AppData namespace')
     if policy and not (host or client):parser.error('--resident-policy requires a resident role')
     if policy and host and not portable_idle_build.selected(args):parser.error('Resident host policy requires the typed X4 idle helper')
     if getattr(args,'display_settled_sdk',None) and not (host and policy):parser.error('--display-settled-sdk requires a resident policy host')
@@ -61,6 +67,11 @@ def configure(args,parser,root,output,includes=None):
         if not (sdk/'RiscRuntimeV1.h').is_file():parser.error('Missing resident SDK header: RiscRuntimeV1.h')
         if 'RISC_RUNTIME_FAILURE_EVIDENCE_V1_SIZE' in (sdk/'RiscRuntimeV1.h').read_text():
             sdk_names.append('RiscFailureEvidenceV1.h')
+        if 'RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE' in (sdk/'RiscRuntimeV1.h').read_text():
+            sdk_names.append('RiscDiagnosticCheckpointV1.h')
+        if crash:
+            if 'RiscFailureEvidenceV1.h' not in sdk_names:parser.error('Crash report persistence requires copied failure-evidence SDK')
+            sdk_names.append('RiscAppDataV1.h')
         for name in sdk_names:
             source=sdk/name
             if not source.is_file():parser.error('Missing resident SDK header: '+name)
@@ -87,6 +98,21 @@ def configure(args,parser,root,output,includes=None):
     if args.quick_radios and not args.quick_actions:parser.error('--quick-radios requires --quick-actions')
     if args.quick_actions and not args.alarm_client:parser.error('--quick-actions requires --alarm-client')
     flags=resident_flags
+    if crash:
+        flags+=['-DPORTABLE_CRASH_REPORT_SD','-DPORTABLE_CRASH_REPORT_NAMESPACE='+str(args.crash_report_spool_namespace)]
+        args.resident_shell_receipt['crash_report_sd']={'optional':True,'spool_namespace':args.crash_report_spool_namespace,
+            'spool_owner':'paper_clock','spool_file':'crash-spool.bin','sd_directory':'/CrashReports',
+            'storage_volume_instance':9,'native_requirement_rows':17,'native_policy_rows':18,
+            'native_ack':'after completed presentation and verified committed internal copy',
+            'spool_removal':'after checked SD sync, close and exact final readback',
+            'panic_io':False,'hardware_verified':False,
+            'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in (
+                'lib/PortableApps/include/FailureEvidenceReport.h','lib/PortableApps/include/CrashReportSpool.h',
+                'lib/PortableApps/include/CrashReportSd.h','lib/PortableApps/src/failure_archive.inc',
+                'lib/PortableApps/src/failure_evidence.inc','lib/PortableApps/src/adapter.c')},
+            'sdk_sha256':{name:hashlib.sha256((includes/name).read_bytes()).hexdigest() for name in (
+                'RiscRuntimeV1.h','RiscFailureEvidenceV1.h','RiscAppDataV1.h','RiscStorageVolumeV1.h',
+                'RiscStorageExportV1.h','RiscStorageVolumeStateV1.h')}}
     if getattr(args,'display_settled_sdk',None):
         hashes={}
         for header in ('RiscDisplayOutputFrontlightV1.h','RiscDisplayOutputSettledV1.h'):
@@ -142,6 +168,9 @@ def requirements(args,needs):
             if item not in needs:needs.append(item)
     if args.quick_radios:
         needs.extend({'capability':name,'api':1} for name in ['net.wifi','bluetooth.hci'])
+    if getattr(args,'crash_report_sd',False):
+        item={'capability':'storage.app-data','api':1}
+        if item not in needs:needs.append(item)
 
 
 def exports(args, names):
@@ -153,3 +182,5 @@ def exports(args, names):
 def record(args, value):
     receipt=getattr(args,'resident_shell_receipt',None)
     if receipt:value['resident_shell']=receipt
+    if getattr(args,'crash_report_sd',False):
+        value.setdefault('grant_bindings',{})['storage.app-data']=[args.crash_report_spool_namespace]

@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "status": "Recovered source union; combined target qualification pending",
+  "base": "24b07f92eb8bab1943c1e7ef146960e5d896b37b exact .53 Home source",
+  "components": {
+    "universal_adapter": "f749bb7d7df2b92dfecb2a7a7df216ce855d178c",
+    "crash_home": "e6159933cd915a4ad9609e722370f7d3c9678cb9",
+    "scene": "a0dddaeaefd10fdddfadd386da9cd7416d592779",
+    "text_home": "4b3c51314457624b9ee835d6dcc0cef123036368",
+    "usb_app": "b9ff71a6bcaf2a120a73653a762744ee75bfd21d"
+  },
+  "merge_resolution": [
+    "Preserve unconditional portable text attention while adding negotiated Home reason",
+    "Preserve crash build selection and add optional Runtime diagnostic checkpoint SDK staging",
+    "Preserve Home settling fixes rather than reverting to the separate keyboard snapshot",
+    "Merge USB0.1.6 reservation only; all other app successor version reservations pending"
+  ],
+  "not_included": [
+    "Component guide refinements",
+    "Hardware or over-air validation",
+    "Existing ELF/BIN reuse"
+  ],
+  "external_home_sources": [
+    "portable_sleep.c SHA256228f4f58bd9a3eb9c93087305fd8a6facef769cc285ec5904f4c6e78cd2babd2",
+    "portable_idle_sleep.c SHA2568bef69d6 prefix, exact full hash recorded by product source owner"
+  ]
+}

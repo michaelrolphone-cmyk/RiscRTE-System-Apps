@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import subprocess
+import shutil
 from pathlib import Path
 import tempfile
 from scene_build import build, compiler_path, json_write
@@ -26,6 +27,9 @@ def run(runtime: Path, output: Path) -> None:
         include=stage_sdk(runtime,ROOT,Path(temporary))
         host=json.loads((ROOT/'Services/scene_host/manifest.json').read_text())
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'])]
+        license_dir=output/'scene-host/licenses';license_dir.mkdir()
+        for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json']:
+            shutil.copyfile(ROOT/'Services/scene_host/fonts'/name,license_dir/name)
         for name,flags in PROFILE_FLAGS.items():
             identity='scene-profile-'+name
             profile=json.loads((ROOT/'Services/scene_profile'/(name+'.json')).read_text())

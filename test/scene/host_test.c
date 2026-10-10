@@ -15,13 +15,15 @@
 static uint8_t pixels[800*480*2+32];
 static unsigned w=240,h=240,format=5,calls,submits,releases,polls,unsubscribes;
 static uint64_t ms,seq;
+static unsigned poll_step=10,presentation_delay;
+static uint64_t presentation_started;
 static bool held,presenting,subscribed,allow_complete=true,bad_status,bad_snapshot,bad_unsubscribe,bad_poll,queue_gap,driver_fault,held_input;
 static int busy_acquires;
 static bool supersede_frame;
 static unsigned snapshot_contacts,delayed_x,delayed_y;
 static bool delayed_tap;
 static risc_touch_event_v1 events[40];static unsigned event_count,event_at;
-static uint32_t nav_pressed,display_flags,expected_intent,expected_queue;
+static uint32_t nav_pressed,nav_buttons,nav_released,snapshot_buttons,display_flags,expected_intent,expected_queue;
 static bool native_alive=true;
 static const char *loss_callback;
 static unsigned loss_skip;
@@ -49,12 +51,12 @@ static void check_guards(void){
 }
 static void release(void *c,uint64_t frame){(void)c;io(__func__);assert(frame&&held&&!presenting);check_guards();held=false;++releases;}
 static bool submit(void *c,uint64_t f,const risc_display_rect_v1*d,size_t n,const risc_display_present_options_v1*o,uint64_t*t){
-    (void)c;(void)d;io(__func__);assert(held&&f&&n==0&&o->queue_policy==expected_queue&&o->intent==expected_intent);check_guards();held=false;presenting=true;*t=++submits;return true;
+    (void)c;(void)d;io(__func__);assert(held&&f&&n==0&&o->queue_policy==expected_queue&&o->intent==expected_intent);check_guards();held=false;presenting=true;presentation_started=ms;*t=++submits;return true;
 }
-static bool status(void *c,uint64_t t,risc_display_present_status_v1*out){(void)c;io(__func__);assert(!held&&presenting&&t==submits);if(bad_status)return false;out->state=allow_complete?(supersede_frame?RISC_DISPLAY_PRESENT_SUPERSEDED:RISC_DISPLAY_PRESENT_COMPLETE):RISC_DISPLAY_PRESENT_ACTIVE;if(allow_complete){presenting=false;supersede_frame=false;}return true;}
+static bool status(void *c,uint64_t t,risc_display_present_status_v1*out){(void)c;io(__func__);assert(!held&&presenting&&t==submits);if(bad_status)return false;bool done=allow_complete&&ms-presentation_started>=presentation_delay;out->state=done?(supersede_frame?RISC_DISPLAY_PRESENT_SUPERSEDED:RISC_DISPLAY_PRESENT_COMPLETE):RISC_DISPLAY_PRESENT_ACTIVE;if(done){presenting=false;supersede_frame=false;}return true;}
 static uint64_t subscribe(void*c){(void)c;io(__func__);assert(!subscribed);subscribed=true;return 42;}
 static bool unsubscribe(void*c,uint64_t s){(void)c;io(__func__);assert(subscribed&&s==42);++unsubscribes;if(bad_unsubscribe)return false;subscribed=false;return true;}
-static bool poll(void*c,size_t n){(void)c;io(__func__);assert(n<=2);++polls;ms+=10;
+static bool poll(void*c,size_t n){(void)c;io(__func__);assert(n<=2);++polls;ms+=poll_step;
     if(delayed_tap){
         delayed_tap=false;event_at=0;event_count=2;
         events[0]=(risc_touch_event_v1){++seq,ms,1,0,(uint16_t)delayed_x,(uint16_t)delayed_y};
@@ -64,11 +66,11 @@ static bool poll(void*c,size_t n){(void)c;io(__func__);assert(n<=2);++polls;ms+=
 }
 static int32_t next(void*c,uint64_t s,risc_touch_event_v1*out){(void)c;io(__func__);assert(s==42&&subscribed);if(driver_fault)return -2;if(queue_gap){queue_gap=false;return -1;}if(event_at==event_count)return 0;*out=events[event_at++];return 1;}
 static bool snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;io(__func__);if(bad_snapshot)return false;
-    *out=(risc_touch_snapshot_v1){.sequence=seq,.timestamp_ms=ms,.width=(uint16_t)(w==800?h:w),.height=(uint16_t)(w==800?w:h),.contact_count=held_input?1:(uint8_t)snapshot_contacts};
+    *out=(risc_touch_snapshot_v1){.sequence=seq,.timestamp_ms=ms,.width=(uint16_t)(w==800?h:w),.height=(uint16_t)(w==800?w:h),.contact_count=held_input?1:(uint8_t)snapshot_contacts,.buttons=snapshot_buttons};
     for(unsigned i=0;i<out->contact_count;i++)out->contacts[i].id=(uint8_t)i;
     return true;
 }
-static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;io(__func__);*out=(risc_input_navigation_frame_v1){.pressed=nav_pressed};nav_pressed=0;return true;}
+static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;io(__func__);*out=(risc_input_navigation_frame_v1){.buttons=nav_buttons,.pressed=nav_pressed,.released=nav_released};nav_pressed=nav_released=0;return true;}
 static bool foreground(void*c,const risc_input_foreground_v1*f,size_t n){(void)c;io(__func__);assert(n<=1);if(n)assert(!strcmp(f[0].capability,"input.touch.raw"));return true;}
 static bool reset(void*c){(void)c;io(__func__);nav_pressed=0;return true;}
 static uint64_t now(void*c){(void)c;io(__func__);return ms;}
@@ -83,7 +85,11 @@ static uint64_t session;
 static const risc_scene_api_v1 *api;
 static const risc_driver_v2 *driver;
 static int tick(risc_scene_event_v1*out){*out=(risc_scene_event_v1){.struct_size=sizeof(*out)};return api->next(NULL,session,out);}
-static void settle(void){risc_scene_event_v1 e;for(unsigned i=0;i<3;i++)assert(tick(&e)==RISC_SCENE_IDLE);}
+static void settle(void){risc_scene_event_v1 e;for(unsigned i=0;i<1000;i++){
+ assert(tick(&e)==RISC_SCENE_IDLE);
+ risc_scene_navigation_v1 n={.struct_size=sizeof(n)};uint32_t flags;
+ assert(!api->snapshot(NULL,session,&n,&flags));if(!(flags&RISC_SCENE_PRESENTING))return;
+ }assert(!"visual did not settle");}
 static void touch_tap(unsigned x,unsigned y){event_at=0;event_count=2;events[0]=(risc_touch_event_v1){++seq,ms,1,0,(uint16_t)x,(uint16_t)y};events[1]=(risc_touch_event_v1){++seq,ms+20,3,0,(uint16_t)x,(uint16_t)y};}
 static void make_document(void){
     doc=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(doc),.revision=1,.root=1,.route_count=2,.node_count=6};
@@ -101,7 +107,8 @@ static void startup(void){
     unsigned before=calls;assert(driver->start(deps,5));assert(calls==before);assert(driver->quiesce());
     make_document();assert(api->open(NULL,&doc,NULL,&session)==RISC_SCENE_OK);assert(session);
 }
-static void finish(void){assert(api->close(NULL,session)==RISC_SCENE_OK);assert(!held&&!presenting&&!subscribed&&driver->quiesce());driver->stop();}
+static void begin_frame(void){risc_scene_event_v1 e;for(unsigned i=0;i<1000&&!presenting;i++)assert(tick(&e)==RISC_SCENE_IDLE);assert(presenting);}
+static void finish(void){int r;unsigned n=0;while((r=api->close(NULL,session))==RISC_SCENE_AGAIN){ms+=10;assert(++n<1000);}assert(r==RISC_SCENE_OK);assert(!held&&!presenting&&!subscribed&&driver->quiesce());driver->stop();}
 static void checkpoint_test(void){
     risc_scene_navigation_v1 n={.api_version=1,.struct_size=sizeof(n),.depth=2,.routes={1,2},.focus={2,4}},out;
     uint8_t encoded[256],payload[3]={1,2,3},copy[3];size_t size=0,read=0;
@@ -140,7 +147,7 @@ static void behavior(const char*output){
     assert(driver->start(deps,5));assert(api->open(NULL,&doc,&saved,&session)==0&&session!=old);assert(api->update(NULL,old,&doc)==RISC_SCENE_STALE);settle();
     nav_pressed=RISC_NAV_BACK;assert(tick(&e)==RISC_SCENE_OK&&e.action==9); /* app decides discard vs preserve */
     nav_pressed=RISC_NAV_HOME;assert(tick(&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_SUSPEND_EVENT);
-    finish();assert(!releases);
+    finish();
 }
 static void native_retention(const char *mode){
     driver=t5_driver_get(2);assert(driver);api=driver->capability;
@@ -154,10 +161,10 @@ static void native_retention(const char *mode){
     }else{
         assert(api->open(NULL,&doc,NULL,&session)==RISC_SCENE_OK);
         risc_scene_event_v1 e;
-        if(!strcmp(callback,"status"))assert(tick(&e)==RISC_SCENE_IDLE);
+        if(!strcmp(callback,"status")){allow_complete=false;begin_frame();}
         loss_callback=callback;if(!strcmp(callback,"before"))native_alive=false;
         if(!strncmp(mode,"native-close-",13))assert(api->close(NULL,session)==RISC_SCENE_RETAINED);
-        else assert(tick(&e)==RISC_SCENE_RETAINED);
+        else {int r;unsigned n=0;while((r=tick(&e))==RISC_SCENE_IDLE){assert(++n<1000);}assert(r==RISC_SCENE_RETAINED);}
     }
     assert(!native_alive);unsigned before=calls;uint64_t other=0;uint32_t flags=0;
     risc_scene_event_v1 e={.struct_size=sizeof(e)};risc_scene_navigation_v1 path={.struct_size=sizeof(path)};
@@ -179,7 +186,7 @@ int main(int argc,char**argv){
     checkpoint_test();startup();validation();
     if(!strcmp(mode,"behavior")){behavior(argc>3?argv[3]:NULL);}
     else if(!strcmp(mode,"inflight")){
-        allow_complete=false;risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);assert(!held&&presenting&&submits==1);
+        allow_complete=false;risc_scene_event_v1 e;begin_frame();assert(!held&&presenting&&submits==1);
         unsigned before=polls;for(unsigned i=0;i<10;i++)assert(tick(&e)==RISC_SCENE_IDLE);assert(polls==before+10&&submits==1);
         assert(api->close(NULL,session)==RISC_SCENE_AGAIN&&!held&&presenting&&!driver->quiesce());
         assert(api->update(NULL,session,&doc)==RISC_SCENE_BUSY);allow_complete=true;finish();
@@ -188,7 +195,7 @@ int main(int argc,char**argv){
         risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
         unsigned tw=w==800?h:w,top=prof.font_scale*7+prof.padding*2+8;
         touch_tap(tw/2,top+prof.row_height+10);assert(tick(&e)==RISC_SCENE_IDLE);
-        risc_scene_navigation_v1 n={.struct_size=sizeof(n)};uint32_t flags;assert(api->snapshot(NULL,session,&n,&flags)==0&&n.depth==1);
+        risc_scene_navigation_v1 n={.struct_size=sizeof(n)};uint32_t flags;assert(api->snapshot(NULL,session,&n,&flags)==0&&n.depth==2&&n.routes[1]==1);
         allow_complete=true;settle();finish();
     }else if(!strcmp(mode,"gap")||!strcmp(mode,"transient")||!strcmp(mode,"held")){
         settle();unsigned tw=w==800?h:w,top=prof.font_scale*7+prof.padding*2+8;
@@ -199,10 +206,10 @@ int main(int argc,char**argv){
         held_input=false;bad_poll=false;settle();touch_tap(tw/2,top+prof.row_height+10);assert(tick(&e)==RISC_SCENE_IDLE);settle();
         assert(api->snapshot(NULL,session,&n,&flags)==0&&n.depth==2);finish();
     }else if(!strcmp(mode,"busy-acquire")){
-        busy_acquires=3;settle();assert(!held&&!submits);settle();assert(submits==1);finish();
+        busy_acquires=3;risc_scene_event_v1 e;for(unsigned i=0;i<3;i++)assert(tick(&e)==RISC_SCENE_IDLE);assert(!held&&!submits);settle();assert(submits==1);finish();
     }else {
         settle();risc_scene_event_v1 e;
-        if(!strcmp(mode,"status-fault")){doc.revision++;assert(api->update(NULL,session,&doc)==0);assert(tick(&e)==RISC_SCENE_IDLE);bad_status=true;assert(tick(&e)==RISC_SCENE_RETAINED);}
+        if(!strcmp(mode,"status-fault")){doc.revision++;assert(api->update(NULL,session,&doc)==0);allow_complete=false;begin_frame();bad_status=true;assert(tick(&e)==RISC_SCENE_RETAINED);}
         else if(!strcmp(mode,"snapshot-fault")){bad_snapshot=true;assert(tick(&e)==RISC_SCENE_RETAINED);}
         else if(!strcmp(mode,"provider-fault")){driver_fault=true;assert(tick(&e)==RISC_SCENE_RETAINED);}
         else if(!strcmp(mode,"close-fault")){bad_unsubscribe=true;assert(api->close(NULL,session)==RISC_SCENE_RETAINED);}

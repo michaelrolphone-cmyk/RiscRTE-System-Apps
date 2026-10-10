@@ -11,7 +11,7 @@ for san in (False,True):
  target=a.output_dir/f'usb-transfer-{int(san)}'
  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer',*(['-no-pie'] if sys.platform!='darwin' else [])] if san else []
  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*FLAGS,'-DTEST_NATIVE_LANDSCAPE',*flags,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(a.msc_sdk),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/usb_sd_transfer.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/usb_transfer_test.c'),'-o',str(target)],check=True)
- for case in range(24 if "RISC_USB_MSC_DIAGNOSTICS_TAG" in (a.msc_sdk/"RiscUsbDeviceMscV1.h").read_text() else 18):
+ for case in range(31 if "RISC_USB_MSC_DIAGNOSTICS_TAG" in (a.msc_sdk/"RiscUsbDeviceMscV1.h").read_text() else 18):
   frames=a.output_dir/f'frames-{int(san)}-{case}';frames.mkdir(exist_ok=True)
   subprocess.run([str(target),str(case),str(frames)],check=True,timeout=20,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
   if not san:
