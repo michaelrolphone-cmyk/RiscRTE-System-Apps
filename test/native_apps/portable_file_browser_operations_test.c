@@ -1,5 +1,9 @@
+#ifndef FILE_BROWSER_RGB_PROFILE
 #define FILE_BROWSER_PAPER_PROFILE
+#endif
+#ifndef FILE_BROWSER_RGB_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
+#endif
 #define PORTABLE_FILE_BROWSER_CAPABILITY "storage.volume"
 #define PORTABLE_FILE_BROWSER_INSTANCE 11
 #define PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE 22
@@ -55,6 +59,9 @@ static void deletion_cancel_script(int*x,int*y){
  if(test_polls==53){*x=100;*y=730;} /* Cancel */
  if(test_polls==59||test_polls==65){*x=75;*y=730;} /* Back and return */
 }
+#ifdef FILE_BROWSER_RGB_PROFILE
+#define main legacy_rgb_operation_fixture_main
+#endif
 int main(void){
  init_disk(&sd);init_disk(&usb);add(&sd,"/read.txt",false,5000);add(&sd,"/existing.txt",false,3);add(&sd,"/empty",false,0);
  test_volume=sd.api.base;test_volume.struct_size=sizeof(test_volume);

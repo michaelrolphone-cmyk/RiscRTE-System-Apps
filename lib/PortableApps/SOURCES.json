@@ -62,9 +62,21 @@
     "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
   },
   "RiscStorageVolumeV1.h": {
-    "repository": "michaelrolphone-cmyk/T5S3-Reader",
-    "path": "sdk/driver/RiscStorageVolumeV1.h",
-    "commit": "34d8e694d89a1e72d8854403d8592c289fae3ddc",
-    "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscStorageVolumeV1.h",
+    "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "commit": "a08d79529f5e4770178f0dd2ea676cb9c9cfc06f"
+  },
+  "RiscAppDataExportV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataExportV1.h",
+    "sha256": "7d9b6a119291f671a11397ad72941aaff4550126daf08e8580fc1cf29ae89fa5",
+    "commit": "3c479f536930bf8f89b0d9aae70ffdc0dfcc67a4"
+  },
+  "RiscAppDataV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataV1.h",
+    "sha256": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201",
+    "commit": "545cc8b98d264fe45f60e0aeabadd490ea450eb5"
   }
 }

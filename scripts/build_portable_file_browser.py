@@ -5,21 +5,41 @@ from pathlib import Path
 import portable_quick_build
 import portable_native_toolbar_build
 ROOT=Path(__file__).resolve().parents[1]
+def storage_options(args):
+    """Pure bounded capability selection; never acquires a provider or builds code."""
+    primary=args.storage_capability
+    secondary=getattr(args,'secondary_storage_capability','storage.volume')
+    for capability in (primary,secondary):
+        if not re.fullmatch(r'[a-z][a-z0-9.-]*',capability):raise ValueError('Invalid storage capability')
+    if not 0<=args.storage_instance<=0x7fffffff:raise ValueError('Storage instance is out of range')
+    flags=[f'-DPORTABLE_FILE_BROWSER_CAPABILITY=\"{primary}\"',f'-DPORTABLE_FILE_BROWSER_INSTANCE={args.storage_instance}u']
+    capabilities=[primary]
+    instance=args.secondary_storage_instance
+    if instance is None:
+        if secondary!='storage.volume':raise ValueError('Secondary capability requires an explicit instance selector')
+        return flags,capabilities
+    if not 0<=instance<=0x7fffffff or secondary=='storage.volume' and not instance:
+        raise ValueError('Secondary storage requires an explicit valid instance')
+    if primary==secondary and (not args.storage_instance or not instance or args.storage_instance==instance):
+        raise ValueError('Two providers of one capability require distinct explicit instances')
+    flags += [f'-DPORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY=\"{secondary}\"',f'-DPORTABLE_FILE_BROWSER_SECONDARY_INSTANCE={instance}u']
+    if secondary!=primary:capabilities.append(secondary)
+    return flags,capabilities
+def operation_options(args):
+    if getattr(args,'read_copy_only',False) and args.file_handlers:
+        raise ValueError('Read-copy-only cannot omit declared file handlers')
+    return (['-DPORTABLE_FILE_BROWSER_READ_COPY_ONLY'] if getattr(args,'read_copy_only',False) else []) + (['-DPORTABLE_FILE_BROWSER_RGB_ONLY'] if getattr(args,'rgb_only',False) else [])
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
     portable_native_toolbar_build.validate(args,parser)
-    if not re.fullmatch(r'[a-z][a-z0-9.-]*',args.storage_capability):raise ValueError('Invalid storage capability')
+    storage_flags,storage_capabilities=storage_options(args)
     if not re.fullmatch(r'[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.elf',args.return_app) or any(part in ('.','..') for part in args.return_app.split('/')):raise ValueError('Return app must be a normalized installed relative ELF path')
-    if not 0<=args.storage_instance<=0x7fffffff:raise ValueError('Storage instance is out of range')
-    if args.secondary_storage_instance is not None:
-        if not 0<args.secondary_storage_instance<=0x7fffffff:raise ValueError('Secondary storage requires an explicit valid instance')
-        if args.storage_capability=='storage.volume' and (not args.storage_instance or args.storage_instance==args.secondary_storage_instance):raise ValueError('Two storage.volume providers require distinct explicit instances')
     cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:
         cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out=args.output_dir or ROOT/'dist/portable/file-browser';out.mkdir(parents=True,exist_ok=True)
-    flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DPORTABLE_FILE_BROWSER_CAPABILITY=\"{args.storage_capability}\"',f'-DPORTABLE_FILE_BROWSER_INSTANCE={args.storage_instance}u',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
-    if args.secondary_storage_instance is not None:flags.append(f'-DPORTABLE_FILE_BROWSER_SECONDARY_INSTANCE={args.secondary_storage_instance}u')
+    flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
+    flags+=storage_flags+operation_options(args)
     if args.file_handlers:flags.append('-DPORTABLE_FILE_BROWSER_HANDLERS')
     if args.alarm_client:flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.navigation:flags.append('-DPORTABLE_INPUT_NAVIGATION')
@@ -52,7 +72,7 @@ def build(args,parser=None):
     manifest=json.loads((ROOT/'Apps/native/file_browser.json').read_text())
     for requirement in manifest['requires']:
         if requirement['capability']=='storage.installed-files':requirement['capability']=args.storage_capability
-    if args.secondary_storage_instance is not None and args.storage_capability!='storage.volume':manifest['requires'].append({'capability':'storage.volume','api':1})
+    for capability in storage_capabilities[1:]:manifest['requires'].append({'capability':capability,'api':1})
     if args.file_handlers:manifest['requires'].append({'capability':'file.open','api':1})
     if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -60,7 +80,7 @@ def build(args,parser=None):
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     if native_receipt:manifest['version']=native_receipt['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
+    files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/file_browser_rgb_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
@@ -78,4 +98,4 @@ def build(args,parser=None):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_native_toolbar_build.options(p);build(p.parse_args(),p)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_native_toolbar_build.options(p);build(p.parse_args(),p)

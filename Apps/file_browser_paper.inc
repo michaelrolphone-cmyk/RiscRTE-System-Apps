@@ -43,13 +43,13 @@ static void fbp_management(void) {
  fbp_text(32,28,fbp_w()-152,fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_DELETE?"DELETE ITEM":fb_mode==FB_HANDLERS?"OPEN WITH":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS",true,true,false);
  fbp_text(32,72,fbp_w()-64,fb_mode==FB_DESTINATION?fb_path:fb_selected.name,false,true,true);fb_app->fill_rect(32,106,fbp_w()-64,3,true);
  if(fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS){
-  unsigned start=fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0,total=fb_mode==FB_ACTIONS?7:fb_handler_count-fb_handler_offset;
+  unsigned start=fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0,total=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_handler_count-fb_handler_offset;
   for(unsigned row=0;row<fb_page_rows&&start+row<total;row++){unsigned at=start+row;int y=FBP_TOP+(int)row*FBP_ROW;bool chosen=at==fb_choice;
    if(chosen)fb_app->fill_rect(32,y,fbp_w()-64,FBP_ROW,true);
    fbp_text(48,y+22,fbp_w()-128,fb_mode==FB_ACTIONS?fbx_labels[at]:fb_handlers[at].display_name,false,!chosen,fb_mode==FB_HANDLERS);
    fbp_icon(fbp_w()-72,y+30,"solid:f054",24,!chosen);fb_app->fill_rect(32,y+FBP_ROW-3,fbp_w()-64,3,true);
   }
-  if(fb_mode==FB_ACTIONS){char label[64];unsigned end=start+fb_page_rows;if(end>7)end=7;snprintf(label,sizeof(label),"%u-%u OF 7 ACTIONS",start+1,end);fbp_text(32,fbp_h()-146,fbp_w()-64,label,false,true,false);}
+  if(fb_mode==FB_ACTIONS){char label[64];unsigned end=start+fb_page_rows;if(end>FBX_ACTION_COUNT)end=FBX_ACTION_COUNT;snprintf(label,sizeof(label),"%u-%u OF %u ACTIONS",start+1,end,FBX_ACTION_COUNT);fbp_text(32,fbp_h()-146,fbp_w()-64,label,false,true,false);}
   if(fb_mode==FB_HANDLERS){char label[64];snprintf(label,sizeof(label),"%u-%u OF %u HANDLERS",fb_handler_offset+1,fb_handler_offset+(total<fb_page_rows?total:fb_page_rows),fb_handler_count);fbp_text(32,fbp_h()-146,fbp_w()-64,label,false,true,false);}
   fbp_footer();
  }else if(fb_mode==FB_DESTINATION){
@@ -127,11 +127,11 @@ static bool fbp_touch(int x,int y) {
    if(at==0)fbx_cancel();else if(at==1){if(fb_parent(fb_path))(void)fb_load(0);}else if(at==2)fbx_commit_destination();else fb_page_next();return false;}
   if(y>=FBP_TOP&&y<FBP_TOP+(int)fb_count*FBP_ROW){fb_choice=(unsigned)(y-FBP_TOP)/FBP_ROW;fbx_activate();}return false;
  }
- if((fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS)&&y>=FBP_TOP&&y<FBP_TOP+(int)fb_page_rows*FBP_ROW){unsigned at=(unsigned)(y-FBP_TOP)/FBP_ROW+(fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0),count=fb_mode==FB_ACTIONS?7:fb_handler_count-fb_handler_offset;if(at<count){fb_choice=at;fbx_activate();fb_dirty=true;}return false;}
+ if((fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS)&&y>=FBP_TOP&&y<FBP_TOP+(int)fb_page_rows*FBP_ROW){unsigned at=(unsigned)(y-FBP_TOP)/FBP_ROW+(fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0),count=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_handler_count-fb_handler_offset;if(at<count){fb_choice=at;fbx_activate();fb_dirty=true;}return false;}
  if(fb_mode==FB_LIST&&x>=fbp_w()-120&&y>=8&&y<96){fb_list_choice=fb_choice;fb_mode=FB_OPTIONS;fb_choice=0;fb_dirty=true;return false;}
  if(y>=fbp_h()-112&&y<fbp_h()-24){int width=(fbp_w()-88)/4;unsigned at=(unsigned)(x-32)/(unsigned)(width+8);if(at>=4||(x-32)%(width+8)>=width)return false;
   if(at==0)return fb_back();
-  if(fb_mode==FB_ACTIONS&&(at==1||at==3)){if(at==1&&fb_action_page)fb_action_page--;if(at==3&&(fb_action_page+1)*fb_page_rows<7)fb_action_page++;fb_choice=fb_action_page*fb_page_rows;fb_dirty=true;return false;}
+  if(fb_mode==FB_ACTIONS&&(at==1||at==3)){if(at==1&&fb_action_page)fb_action_page--;if(at==3&&(fb_action_page+1)*fb_page_rows<FBX_ACTION_COUNT)fb_action_page++;fb_choice=fb_action_page*fb_page_rows;fb_dirty=true;return false;}
   if(at==1)fb_move(-1);else if(at==2)fb_activate();else fb_move(1);return false;}
  if((fb_mode==FB_LIST||fb_mode==FB_OPTIONS)&&y>=FBP_TOP&&y<FBP_TOP+(int)fb_page_rows*FBP_ROW){unsigned at=(unsigned)(y-FBP_TOP)/FBP_ROW;if(at<(fb_mode==FB_OPTIONS?fb_option_count():fb_count)){fb_choice=at;if(fb_mode==FB_LIST&&fb_manage&&x>=fbp_w()-96)fbx_actions();else fb_activate();}}
  return false;
