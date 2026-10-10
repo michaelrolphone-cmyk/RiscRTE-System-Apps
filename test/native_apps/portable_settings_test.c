@@ -275,7 +275,7 @@ static bool test_release(risc_runtime_capability_v1 *grant){
 #endif
   --grants;grant->api=NULL;return true;
 }
-static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),test_health,test_yield,test_diagnostic,test_launch,test_acquire,test_release};
+static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diagnostic,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime_api:NULL;}
 
 static void calendar_checks(void){

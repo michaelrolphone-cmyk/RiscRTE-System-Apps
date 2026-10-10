@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Production one-shot policy, shared controls, adapter and Settings regressions."""
 from pathlib import Path
-import os,subprocess
+import argparse,os,subprocess
+p=argparse.ArgumentParser();p.add_argument("--case",type=int,action="append");args=p.parse_args()
 ROOT=Path(__file__).resolve().parents[1]
 out=ROOT/'build/low-battery';out.mkdir(parents=True,exist_ok=True)
 for san,x4 in ((False,False),(True,False),(False,True),(True,True)):
@@ -19,4 +20,4 @@ for san in (False,True):
   exe=out/f'adapter-{rotation}-{int(san)}'
   sources=[ROOT/'Apps/settings.c',ROOT/'test/native_apps/low_battery_adapter_test.c',*[ROOT/'lib/PortableApps/src'/n for n in ('quick_actions.c','quick_session.c','quick_radios.c','quick_render.c')]]
   subprocess.run([os.environ.get('CC','cc'),*flags,*map(str,sources),'-o',str(exe)],check=True)
-  for case in [0,1,2,3,4,5,7,8,9]:subprocess.run([str(exe),str(case)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))
+  for case in args.case or [0,1,2,3,4,5,7,8,9,10]:subprocess.run([str(exe),str(case)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))

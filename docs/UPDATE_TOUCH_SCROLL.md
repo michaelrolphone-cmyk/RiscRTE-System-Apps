@@ -16,13 +16,14 @@ Hardware Previous/Next reveals the selected row. Finger movement tracks the
 shared bounded scroll controller, then decelerates. Ordinary motion uses damage
 frames; initial and changed views retain clean presentation.
 
-A submitted image is not treated as completed. A touch captures the release
-identity and offset from completed pixels at DOWN. A changed catalog stops the
-gesture and requires a fresh choice. A selection scrolled out of view is
-revealed before Open can act. Identity, version, installed version, availability,
-size and displayed reason are compared again before confirmation, before
-accepting Install, and after reconnect immediately before `begin`. Replacement,
-removal or a changed version cannot silently reuse a provider row index.
+Input uses current logical geometry independently of submitted/completed pixels.
+A touch pins the exact current release identity and offset at DOWN. A changed
+catalog stops the gesture and requires a fresh choice. Navigation reveals the
+current selection without waiting for a highlighted image. Identity, version,
+installed version, availability, size and displayed reason are revalidated
+before accepting Install and after reconnect immediately before `begin`.
+Replacement, removal or a changed version cannot silently reuse a provider row
+index. An explicit new confirmation remains required before installation.
 
 Back and Cancel remain immediate while the display is BUSY. Quick Controls
 owns its reserved gesture and suspends list momentum. Existing checked transport,
@@ -36,24 +37,25 @@ perform no network connection from Check.
 Use a staged native SDK containing the existing Runtime and tagged-alarm headers:
 
 ```
-python3 scripts/test_touch_scroll_updates.py --sdk /path/to/native/include
-python3 scripts/test_touch_scroll_updates.py --flip --sdk /path/to/native/include \
+python3 scripts/test_touch_scroll_updates.py --logical-latency --sdk /path/to/native/include
+python3 scripts/test_touch_scroll_updates.py --logical-latency --flip --sdk /path/to/native/include \
   --output-dir build/touch-scroll-updates-flip
 ASAN_OPTIONS=detect_leaks=0 python3 scripts/test_x4_updates.py --touch-scrolling \
   --ble-broadcast --target-dir build/update-touch-scroll/selected
 ASAN_OPTIONS=detect_leaks=0 python3 scripts/test_portable_update.py
 ```
 
-The scrolling fixture executes each OTA/App Store case normally and under
-ASan/UBSan, with rendered MONO1 frames, async 40/500 ms display custody, physical
-Home/Back, touch and queued UP, momentum bounds/reversal, catalog mutation while
-dragging and BUSY, exact completed-image selection, fresh release confirmation,
-mutation after reconnect, immediate progress cancellation and retained cleanup.
-The flipped run uses the same production reader-orientation transform. The
-X4 suite independently verifies disabled-feed, product boundaries, native UTC,
-BLE/Quick lifecycle, alarm and cohort faults. LeakSanitizer is disabled because
-this executor cannot support its process tracing; AddressSanitizer and
-UndefinedBehaviorSanitizer remain enabled.
+The ordered-stream latency fixture executes OTA/App Store cases normally and
+under ASan/UBSan at 0/17/2300 ms and never-completing display latency. It checks
+immutable MONO1 submission custody, rapid navigation/touch, continuous scrolling,
+exact logical selection, catalog mutations, explicit confirmation, cancellation,
+and retained cleanup. Stable latest-screen raster hashes match across finite
+latencies. The flipped run uses the production reader-orientation transform.
+Historical snapshot-only scrolling fixtures are retained but do not qualify the
+current ordered input reducer. See `UNIVERSAL_UI_PHASE2.md` and source-bound
+receipts for the current passing matrix. LeakSanitizer is disabled because this
+executor cannot support process tracing; AddressSanitizer and UndefinedBehaviorSanitizer
+remain enabled.
 
 `scripts/qualify_update_touch_scroll.py` rebuilds the immutable baseline and
 selected targets using the same GCC 8.4.0 and verified idle/Runtime/alarm SDK

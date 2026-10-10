@@ -1668,7 +1668,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     crown_pending=false;return true;}
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
-  if(display_settled && !surface.frame && !paper_token && !broadcast_tick())return false;
+  /* Background model/service progression shares the owner task, not the
+   * display completion clock. Mutable raster custody is still excluded. */
+  if(!surface.frame && !broadcast_tick())return false;
 #endif
   /* A rejected paper top-edge gesture replays its original down followed
    * by the saved current sample before sampling another contact. */
@@ -1742,7 +1744,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!failure_archive_checkpoint())return false;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  if(display_settled&&!surface.frame&&!paper_token&&!contexts_tick())return false;
+  if(!surface.frame&&!contexts_tick())return false;
 #if defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
   if(contexts_clock_handoff){out->exit_requested=true;return true;}
 #endif

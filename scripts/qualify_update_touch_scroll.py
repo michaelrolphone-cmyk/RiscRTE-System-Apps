@@ -178,9 +178,10 @@ def qualify_selected(selected, baseline_records):
               f'{app}: selected build/admission flags mismatch')
         scrolling = record.get('touch_scrolling', {})
         check(admission.get('touch_scrolling') == scrolling and
-              scrolling.get('version') == 1 and
+              scrolling.get('version') == 2 and
+              scrolling.get('completed_frame_identity') is False and
               all(scrolling.get(field) is True for field in
-                  ('bounded_viewport', 'momentum', 'completed_frame_identity',
+                  ('bounded_viewport', 'momentum', 'logical_frame_identity',
                    'confirmation_revalidated')),
               f'{app}: touch scrolling identity/momentum receipt mismatch')
         baseline = baseline_records[app]

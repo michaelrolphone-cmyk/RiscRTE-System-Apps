@@ -7,7 +7,7 @@ p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--sdk-include',type=Path,required=True,help='Existing canonical native Runtime/tagged alarm include directory')
 p.add_argument('--app-data-sdk',type=Path,required=True,help='Canonical Runtime app SDK with RiscAppDataV1.h')
 a=p.parse_args();out=r/'build/contexts-x4';out.mkdir(parents=True,exist_ok=True)
-cases='missing-empty dirty-refused missing-size empty-success invalid-api normal mask synchronous auto-sleep sleep sleep-retained capture-raster capture-input capture-present pause enable-pause pending-capture app-data app-data-refused storage release'.split()
+cases='missing-empty dirty-refused missing-size empty-success invalid-api normal busy-state mask synchronous auto-sleep sleep sleep-retained capture-raster capture-input capture-present pause enable-pause pending-capture app-data app-data-refused storage release'.split()
 with tempfile.TemporaryDirectory(prefix='contexts-x4-') as t:
  inc=Path(t)/'include';shutil.copytree(r/'lib/PortableApps/include',inc);shutil.copytree(r/'lib/PortableApps/time',inc.parent/'time')
  for name in ['RiscRuntimeV1.h','RiscRealtimeV1.h','AlarmServiceV1.h','AlarmServiceV2.h']:shutil.copyfile(a.sdk_include/name,inc/name)

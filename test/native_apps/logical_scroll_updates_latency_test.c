@@ -52,7 +52,11 @@ static bool logic_touch(void *c,risc_touch_snapshot_v1 *out){
  }
  if(tc("rapid-taps")&&ticks>=100&&ticks<1060){unsigned at=(ticks-100)%60,row=(ticks-100)/60%4;
   if(at<20){down=true;y=UPS_TOP+(int)row*UPS_EXTENT+20;}}
- if(down){if(pending)++busy_inputs;out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=(uint16_t)x,.y=(uint16_t)y};}
+ if(down){if(pending)++busy_inputs;out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=(uint16_t)x,.y=(uint16_t)y};
+#ifdef TEST_READER_FLIP
+  assert(paper_flip_ui);out->contacts[0].x=out->width-1-out->contacts[0].x;out->contacts[0].y=out->height-1-out->contacts[0].y;
+#endif
+ }
  return true;
 }
 static bool logic_acquire(const char *name,uint32_t v,uint64_t i,risc_runtime_capability_v1 *out){
@@ -72,5 +76,6 @@ int main(int argc,char **argv){
  assert(logical_raw_head==logical_raw_tail);
  if(never_complete){assert(retained&&barriers==1&&pending&&presents==1&&!launches);app_module_fini();}
  else {assert(!failed&&!retained&&!pending&&launches==1);app_module_fini();assert(!live&&!frames&&!subscriptions&&!barriers);}
- printf("{\"firmware\":%d,\"case\":\"%s\",\"latency\":\"%s\",\"verified_at\":%u,\"confirmed_at\":%u,\"frames\":%u,\"busy_inputs\":%u,\"begins\":%u,\"retained\":%s}\n",PORTABLE_UPDATE_FIRMWARE,test_case,argv[2],verified_at,confirmation_at,presents,busy_inputs,begins,retained?"true":"false");return 0;
+ uint32_t raster_hash=2166136261u;for(size_t i=0;i<sizeof(pending_pixels);++i)raster_hash=(raster_hash^pending_pixels[i])*16777619u;
+ printf("{\"firmware\":%d,\"case\":\"%s\",\"latency\":\"%s\",\"verified_at\":%u,\"confirmed_at\":%u,\"frames\":%u,\"busy_inputs\":%u,\"begins\":%u,\"retained\":%s,\"raster_hash\":%u}\n",PORTABLE_UPDATE_FIRMWARE,test_case,argv[2],verified_at,confirmation_at,presents,busy_inputs,begins,retained?"true":"false",raster_hash);return 0;
 }

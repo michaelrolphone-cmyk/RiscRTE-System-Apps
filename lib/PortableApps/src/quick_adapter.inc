@@ -24,22 +24,27 @@ static bool quick_storage_safe(void) {
  return true;
 }
 #ifdef PORTABLE_X4_IDLE_POLICY
-static bool automatic_idle_ready(void) {
+static bool automatic_idle_interaction_ready(void) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_idle_ready())return false;
 #endif
- return !idle_capture_active() && display_settled && !surface.frame && !paper_token && !alarm_modal && !touch.down &&
+ return !idle_capture_active() && !surface.frame && !alarm_modal && !touch.down &&
      !quick_modal && !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui) &&
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
      !quick_open_requested &&
 #endif
      !quick_launch_pending && !handoff_requested && quick_storage_safe();
 }
+static bool automatic_idle_ready(void) {
+ return display_settled&&!paper_token&&automatic_idle_interaction_ready();
+}
 
 #endif
 #ifdef PORTABLE_LOW_BATTERY
 static bool low_battery_poll_inner(void) {
- if(!display_settled||surface.frame||!quick_storage_safe())return true;
+ /* Battery policy is elapsed-time state. A submitted immutable image owns
+  * no app raster lease and must not delay a threshold crossing. */
+ if(surface.frame||!quick_storage_safe())return true;
  uint32_t now=millis_now();
  if(low_battery_sampled&&(uint32_t)(now-low_battery_sampled_at)<5000u)return true;
  low_battery_sampled=true;low_battery_sampled_at=now;
