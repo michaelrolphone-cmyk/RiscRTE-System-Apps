@@ -432,6 +432,9 @@ static bool resident_queue_launch(const char *path);
 #endif
 static uint32_t navigation_pending;
 static bool home_pending,crown_pending,handoff_requested;
+#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+static const char *wifi_deferred_return;
+#endif
 #ifdef PORTABLE_DESK_LOCK_HOME
 static bool desk_lock_armed,navigation_home_down,desk_quality_present;
 #endif
@@ -1961,6 +1964,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(returning && !destination)destination=PORTABLE_RETURN_APP;
 #endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  if(!destination)destination=wifi_deferred_return;
+#endif
   home_pending=false;
   if(ok && destination
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -1990,8 +1996,17 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     /* Wi-Fi owns checked cleanup and nested Back. Home is a direct root exit;
      * refusal leaves its controller available for an explicit cleanup retry. */
     if(!portable_wifi_close()) {
-      crown_pending=false;memset(out,0,sizeof(*out));return true;
+      /* A direct Home request survives ordinary asynchronous stop. The next
+       * owner poll retries this exact handoff after checked quiescence. */
+      bool pending=portable_wifi_stop_pending();
+      home_pending=direct_home && pending;
+      wifi_deferred_return=pending?destination:NULL;
+      crown_pending=false;navigation_pending=0;input_pending=false;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return !failed;
     }
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    wifi_deferred_return=NULL;
 #endif
     portable_perf_action(PORTABLE_PERF_LAUNCH,true);
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
@@ -2288,16 +2303,25 @@ static int initialize(void) {
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+  alarm_refresh_pending=alarm_ack_pending=alarm_service_deferred=false;
+#endif
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
 #ifdef PORTABLE_LOW_BATTERY
   low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  low_battery_transition_pending=false;
+#endif
 #endif
 #ifdef PORTABLE_X4_IDLE_POLICY
   automatic_idle=false;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_kv_reset();
 #endif
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
@@ -2313,6 +2337,9 @@ static int initialize(void) {
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
+#endif
+#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+  wifi_deferred_return=NULL;
 #endif
   list_mode = false;input_pending=home_pending=crown_pending=handoff_requested=false;navigation_pending=0;previous_valid=false;
 #ifdef PORTABLE_DESK_LOCK_HOME

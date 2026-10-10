@@ -83,6 +83,11 @@ static inline int portable_text_client_begin(portable_text_client *c,const risc_
                                             const char *label,const char *initial,uint32_t capacity) {
     return portable_text_client_begin_mode(c,runtime,label,initial,capacity,false);
 }
+static inline int portable_text_client_state_result(risc_text_entry_state_v1 *state,int result) {
+    volatile unsigned char *p=(volatile unsigned char*)state;
+    for(size_t i=0;i<sizeof(*state);++i)p[i]=0;
+    return result;
+}
 static inline int portable_text_client_poll(portable_text_client *c,risc_text_entry_state_v1 *out) {
     if(!c||!out)return RISC_TEXT_ENTRY_INVALID;
     if(!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
@@ -90,19 +95,19 @@ static inline int portable_text_client_poll(portable_text_client *c,risc_text_en
     if(c->closing)return RISC_TEXT_ENTRY_AGAIN;
     risc_text_entry_state_v1 state={.struct_size=sizeof(state)};
     int rc=c->api->poll(c->api->context,c->session,&state);
-    if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_retain(c);
-    if(!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
-    if(rc==RISC_TEXT_ENTRY_AGAIN)return rc;
+    if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_state_result(&state,portable_text_client_retain(c));
+    if(!portable_text_client_live(c))return portable_text_client_state_result(&state,RISC_TEXT_ENTRY_RETAINED);
+    if(rc==RISC_TEXT_ENTRY_AGAIN)return portable_text_client_state_result(&state,rc);
     if(rc!=RISC_TEXT_ENTRY_OK||state.struct_size<sizeof(state)||!state.revision||
        (state.flags&~(RISC_TEXT_ENTRY_HARDWARE|RISC_TEXT_ENTRY_PRESENTING|(c->home_reason?RISC_TEXT_ENTRY_HOME_CANCEL:0u)))||state.state>RISC_TEXT_ENTRY_CANCELLED||
        ((state.flags&RISC_TEXT_ENTRY_HOME_CANCEL)&&state.state!=RISC_TEXT_ENTRY_CANCELLED)||
-       !memchr(state.text,0,c->capacity))return portable_text_client_retain(c);
-    for(unsigned i=0;state.text[i];i++)if((unsigned char)state.text[i]<32||(unsigned char)state.text[i]>126)return portable_text_client_retain(c);
+       !memchr(state.text,0,c->capacity))return portable_text_client_state_result(&state,portable_text_client_retain(c));
+    for(unsigned i=0;state.text[i];i++)if((unsigned char)state.text[i]<32||(unsigned char)state.text[i]>126)return portable_text_client_state_result(&state,portable_text_client_retain(c));
     /* Logical attention is independent; close settles the owned frame. */
     int attention=portable_text_adapter_attention();
-    if(attention<0)return portable_text_client_retain(c);
+    if(attention<0)return portable_text_client_state_result(&state,portable_text_client_retain(c));
     if(attention)state.state=RISC_TEXT_ENTRY_CANCELLED;
-    *out=state;return RISC_TEXT_ENTRY_OK;
+    *out=state;return portable_text_client_state_result(&state,RISC_TEXT_ENTRY_OK);
 }
 static inline int portable_text_client_close(portable_text_client *c) {
     if(!c||!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;

@@ -17,10 +17,10 @@ static risc_text_entry_api_v1_masked texts={{{1,sizeof(texts),NULL,text_open,tex
 static const risc_text_entry_api_v1 *offered_text=&texts.base.base;
 static risc_radio_progress_v1 progress;
 static risc_radio_request_v1 copied_request;
-static unsigned async_starts,async_polls,async_cancels;
-static uint32_t async_serial;
-static int32_t async_begin(void*c,const risc_radio_request_v1*q,uint32_t*out){(void)c;assert(!native_active&&q->struct_size==sizeof(*q));copied_request=*q;native_active=true;++async_starts;*out=++async_serial;progress=(risc_radio_progress_v1){.struct_size=sizeof(progress),.operation_id=*out,.phase=RISC_RADIO_STARTING,.owned=1,.scan={.struct_size=sizeof(progress.scan)}};return RISC_RADIO_ACCEPTED;}
-static int32_t async_poll(void*c,uint32_t id,risc_radio_progress_v1*out){(void)c;assert(id==progress.operation_id);++async_polls;*out=progress;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
+static unsigned async_starts,async_polls,async_cancels,automatic_cleanup_at;
+static uint32_t async_serial;static unsigned begin_again;static bool begin_unavailable;
+static int32_t async_begin(void*c,const risc_radio_request_v1*q,uint32_t*out){(void)c;assert(!native_active&&q->struct_size==sizeof(*q));if(begin_again){--begin_again;*out=0;return RISC_RADIO_AGAIN;}if(begin_unavailable){*out=0;return RISC_RADIO_UNAVAILABLE;}copied_request=*q;native_active=true;++async_starts;*out=++async_serial;progress=(risc_radio_progress_v1){.struct_size=sizeof(progress),.operation_id=*out,.phase=RISC_RADIO_STARTING,.owned=1,.scan={.struct_size=sizeof(progress.scan)}};return RISC_RADIO_ACCEPTED;}
+static int32_t async_poll(void*c,uint32_t id,risc_radio_progress_v1*out){(void)c;assert(id==progress.operation_id);++async_polls;if(automatic_cleanup_at&&async_polls>=automatic_cleanup_at){progress.phase=RISC_RADIO_IDLE;progress.owned=0;progress.quiescent=1;native_active=false;}*out=progress;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
 static int32_t async_cancel(void*c,uint32_t id){(void)c;assert(id==progress.operation_id);++async_cancels;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
 static bool service_busy,service_live;static unsigned service_begins,service_ends;
 static int32_t service_begin(void*c,uint32_t*out){(void)c;assert(!service_live);*out=0;++service_begins;if(service_busy)return RISC_RADIO_BUSY;service_live=true;*out=31;return RISC_RADIO_ACCEPTED;}
@@ -39,6 +39,8 @@ static void stopped(void){progress.phase=RISC_RADIO_IDLE;progress.owned=0;progre
 static void search_done(void){unsigned n=0;while(profile_work){wifi_profiles_step();assert(++n<=256);}}
 static void seed(unsigned count){for(unsigned i=0;i<count;i++){portable_wifi_credentials v={{0},{0}};snprintf(v.ssid,sizeof(v.ssid),"Synthetic-%u",i);strcpy(v.password,"synthetic-pass");assert(portable_wifi_profile_save(wifi_store,i,&v)==0);}}
 static void text_done(unsigned state,const char*value,unsigned flags){text_result=(risc_text_entry_state_v1){.struct_size=sizeof(text_result),.revision=1,.state=state,.flags=flags};strcpy(text_result.text,value);wifi_text_step();}
+
+#ifndef WIFI_WORKFLOW_LIBRARY
 int main(int argc,char**argv){
  assert(argc==2);unsigned which=(unsigned)atoi(argv[1]);workflow_start((which>=10&&which<=15)||which>=21);draft();
  if(which==0){
@@ -68,6 +70,15 @@ int main(int argc,char**argv){
  else if(which==21){wifi_connect();assert(!wifi_back()&&wifi_back_return&&portable_wifi_stop_pending());stopped();assert(wifi_back()&&!opened);}
  else if(which==22){wifi_scan_start();assert(!wifi_back()&&wifi_scan_back);stopped();assert(!wifi_scan_back&&page==WP_ROOT);}
  else if(which==23){wifi_scan_start();service_busy=true;for(unsigned i=0;i<100;i++)assert(!portable_wifi_services_begin()&&!service_live&&!wifi_service_depth);assert(service_begins==100&&!service_ends);service_busy=false;assert(portable_wifi_services_begin()&&service_live&&wifi_service_depth==1);assert(portable_wifi_services_begin()&&wifi_service_depth==2&&service_begins==101);assert(portable_wifi_services_end()&&service_live&&wifi_service_depth==1);assert(portable_wifi_services_end()&&!service_live&&!wifi_service_depth&&service_ends==1);assert(!wifi_cancel_scan());stopped();}
+ else if(which==24){wifi_connect();automatic_cleanup_at=100;assert(wifi_failure_drain()&&!wifi_operation&&!wg.api&&!native_active&&async_polls==100&&async_cancels>=1);}
+#ifdef TEST_RADIO_POLICY
+ else if(which==25){temporary_store_busy=true;wifi_scan_start();assert(!wifi_operation&&!async_starts&&wifi_next_request.kind==RISC_RADIO_REQUEST_SCAN);for(unsigned i=0;i<100;i++){tick(250);assert(!async_starts&&!cleanup_pending&&wifi_next_request.kind);}temporary_store_busy=false;tick(250);assert(async_starts==1&&wifi_operation);assert(!wifi_cancel_scan());stopped();}
+ else if(which==26){wifi_connect();temporary_store_busy=true;wifi_scan_start();assert(wifi_next_request.kind==RISC_RADIO_REQUEST_SCAN&&wifi_stopping);stopped();assert(!wifi_operation&&wifi_next_request.kind&&async_starts==1);temporary_store_busy=false;tick(250);assert(async_starts==2&&scanning);assert(!wifi_cancel_scan());stopped();}
+#endif
+ else if(which==27){wifi_scan_start();progress.phase=RISC_RADIO_RESULTS;progress.scan.state=GARDEN_RADIO_SCAN_DONE;progress.scan.count=1;strcpy(progress.scan.entries[0].ssid,"Selected AP");progress.scan.entries[0].auth=GARDEN_RADIO_AUTH_OPEN;tick(250);wifi_scan_start();begin_again=1;stopped();assert(!wifi_operation&&wifi_next_request.kind&&async_starts==1&&page==WP_SCAN);wifi_activate(0);search_done();assert(!wifi_next_request.kind&&!wifi_operation&&!strcmp(credentials.ssid,"Selected AP"));tick(250);assert(async_starts==1&&page==WP_ROOT);}
+ else if(which==28){begin_unavailable=true;wifi_connect();assert(!wifi_operation&&!async_starts&&!connects&&wifi_async&&!cleanup_pending&&!wifi_next_request.kind);begin_unavailable=false;wifi_connect();assert(wifi_operation&&async_starts==1&&!connects);assert(!wifi_disconnect());stopped();}
  else assert(!"unknown workflow");
  assert(!wifi_operation&&!text_live);finish();printf("Wi-Fi shared keyboard/profiles/async workflow %u PASS\n",which);return 0;
 }
+
+#endif

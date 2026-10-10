@@ -291,20 +291,16 @@ static bool wifi_draft_valid(void) {
   return true;
 }
 #ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+static bool wifi_policy_busy;
 static bool wifi_policy_allows(const char *stage) {
-  (void)stage; /* Stage logging is optional in non-selected profiles. */
-#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+  (void)stage;wifi_policy_busy=false;
   unsigned permission=portable_radio_wifi_permission(wr);
   if(PORTABLE_APP_RETAINED())return false;
   if(permission==PORTABLE_WIFI_POLICY_ALLOWED)return true;
+  if(permission==PORTABLE_WIFI_POLICY_BUSY){wifi_policy_busy=true;wifi_message="Waiting for radio settings - Back cancels";dirty=true;return false;}
   bool off=permission==PORTABLE_WIFI_POLICY_OFF;
   portable_stage_log(wr,stage,off?"result=blocked radio-policy=off":"result=blocked radio-policy=unreadable");
   wifi_message=off?"Wi-Fi is off in Quick Controls":"Radio settings unavailable; retry";
-#else
-  if(portable_radio_wifi_allowed(wr))return true;
-  portable_stage_log(wr,stage,"result=blocked radio-policy=off-or-unreadable");
-  wifi_message="Wi-Fi is off in Quick Controls";
-#endif
   dirty=true;return false;
 }
 #endif
@@ -313,13 +309,13 @@ static void wifi_connect(void) {
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_stop())return ;
 #endif
-#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
- if(!wifi_policy_allows("wifi-connect"))return;
-#endif
   if(!wifi_draft_valid()){dirty=true;return;}
   if(!wifi_acquire()) {wifi_message="Wi-Fi unavailable - retry Connect";dirty=true;return;}
 #ifdef WIFI_ASYNC_V1_SIZE
   if(wifi_async_begin(RISC_RADIO_REQUEST_JOIN))return;
+#endif
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+ if(!wifi_policy_allows("wifi-connect"))return;
 #endif
   if(!wifi_disconnect())return;
   if(!wifi->connect(wifi->context,credentials.ssid,credentials.password)) {
@@ -336,12 +332,12 @@ static void wifi_scan_start(void) {
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_stop())return ;
 #endif
-#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
- if(!wifi_policy_allows("wifi-scan"))return;
-#endif
   if(!wifi_acquire()){wifi_message="Wi-Fi unavailable - enter manually";dirty=true;return;}
 #ifdef WIFI_ASYNC_V1_SIZE
   if(wifi_async_begin(RISC_RADIO_REQUEST_SCAN))return;
+#endif
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+ if(!wifi_policy_allows("wifi-scan"))return;
 #endif
   if(!wifi_disconnect())return;
   if(!wifi->scan_start(wifi->context)){portable_stage_log(wr,"wifi-scan","result=start-failed");if(wifi_disconnect())wifi_message="Scan failed - retry or enter manually";dirty=true;return;}
@@ -359,7 +355,8 @@ static bool wifi_scan_valid(const garden_radio_scan_result_v1 *r) {
 static bool wifi_cancel_scan(void) {
  if(PORTABLE_APP_RETAINED())return false;
 #ifdef WIFI_ASYNC_V1_SIZE
-  if(wifi_operation){wifi_zero(&wifi_next_request,sizeof(wifi_next_request));return wifi_async_stop();}
+  wifi_zero(&wifi_next_request,sizeof(wifi_next_request));
+  if(wifi_operation)return wifi_async_stop();
 #endif
   if(!wifi || !wifi->scan_cancel(wifi->context)) {
     PORTABLE_APP_RETAIN();
@@ -376,11 +373,16 @@ static void wifi_async_failed(void) {
 }
 static bool wifi_async_submit(void) {
   uint32_t kind=wifi_next_request.kind,id=0;
+#ifdef PORTABLE_WIFI_CHECK_RADIO_POLICY
+  if(!wifi_policy_allows(kind==RISC_RADIO_REQUEST_SCAN?"wifi-scan":"wifi-connect")) {
+    if(!wifi_policy_busy)wifi_zero(&wifi_next_request,sizeof(wifi_next_request));
+    return true;
+  }
+#endif
   int rc=wifi_async->begin(wifi->context,&wifi_next_request,&id);
   if(PORTABLE_APP_RETAINED())return true;
   if(rc==RISC_RADIO_AGAIN){wifi_message="Starting Wi-Fi - Back cancels";dirty=true;return true;}
   wifi_zero(&wifi_next_request,sizeof(wifi_next_request));
-  if(rc==RISC_RADIO_UNAVAILABLE&&!id){wifi_async=NULL;return false;}
   if(rc==RISC_RADIO_RETAINED||(rc==RISC_RADIO_ACCEPTED&&!id)||(rc!=RISC_RADIO_ACCEPTED&&id)){wifi_async_failed();return true;}
   if(rc!=RISC_RADIO_ACCEPTED){wifi_message="Wi-Fi start unavailable - retry";dirty=true;return true;}
   wifi_operation=id;wifi_operation_kind=kind;wifi_stopping=false;cleanup_pending=false;
@@ -887,6 +889,17 @@ static bool wifi_open(void) {
   if(!wifi_acquire())wifi_message="Wi-Fi unavailable; retry Connect";
   return !PORTABLE_APP_RETAINED();
 }
+/* A failed presenter cannot resume normal UI, but healthy worker cleanup is
+ * still cooperative progress. Poll it until quiescent before the exit barrier. */
+static bool wifi_failure_drain(void) {
+  bool done=portable_wifi_suspend();
+  while(!done&&portable_wifi_stop_pending()) {
+    wr->yield_ms(1);if(PORTABLE_APP_RETAINED())return false;
+    (void)portable_wifi_services_safe();if(PORTABLE_APP_RETAINED())return false;
+    done=portable_wifi_suspend();
+  }
+  return done;
+}
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 static void wifi_controller_main(void) {
 #else
@@ -925,7 +938,7 @@ void app_main(void) {
 #endif
       /* The Runtime exit barrier precedes fini. Standalone/non-alarm builds
        * must also drain healthy RF before returning after any ordinary error. */
-      if(!portable_wifi_suspend()) {
+      if(!wifi_failure_drain()) {
         if(PORTABLE_APP_RETAINED())return;
         wr->diagnostic("WIFI poll-failure cleanup-unconfirmed; invocation retained");
         for(;;)wr->yield_ms(50);

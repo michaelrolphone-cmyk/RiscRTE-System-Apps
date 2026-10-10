@@ -34,10 +34,9 @@ This is not a release or a completed hardware fix.
 
 Native worker and actual-provider integration are still in progress. Shared SDK
 resource contention requires explicit temporary BUSY deferral in the app and
-adapter. This checkpoint is not the complete freeze fix. The earlier legacy
-48-case fixture has three identical failures on the unchanged base (19,22,23);
-no claim of full legacy regression passage is made. Combined target/runtime
-qualification and source handoff follow the native integration.
+adapter. This checkpoint is not the complete freeze fix. The earlier legacy fixture failures were traced to snapshot-only input and
+corrected below. Final combined target/runtime receipts accompany the source
+seal; no hardware causality or on-device latency claim is made.
 
 Credentials remain plaintext app-owned storage with explicit Save and logical
 Forget. No encryption, secure erase, real credentials or credential logging is
@@ -59,3 +58,31 @@ now emits monotonic DOWN/MOVE/UP and button edges with matching snapshots; all
 modes pass on both the unchanged base and current code. Shared text has 132
 actual Runtime executions per normal/sanitized mode, including masked sessions.
 Secret copied text requests are explicitly wiped on every return path.
+
+## Final integration contract
+
+- Build Wi-Fi 1.1.21 and text-input-host 0.1.3 together with the published Wi-Fi
+  provider 0.2.1 and the coordinated async-native Runtime successor. The app
+  manifest newly needs ui.text-input@1; give it that existing host grant.
+- The legacy Wi-Fi prefix remains ABI-compatible. A genuinely prefix-only old provider can still use synchronous operations; it
+  cannot provide the new latency guarantee. A provider advertising async support
+  that returns UNAVAILABLE is rejected cleanly, never downgraded to synchronous
+  SDK setup after that admission failure.
+- Native setup/result/cleanup executes on a worker with copied request/results.
+  Cancellation is accepted promptly, but pending SDK work is not killed or
+  declared quiescent. Back/Home waits for confirmed cleanup before release.
+- BLE lifecycle and telemetry broadcast actions wait for Wi-Fi quiescence under
+  the existing boolean HCI ABI. Existing HCI packet traffic is unchanged.
+  Opening radio controls drains Wi-Fi first and preserves the requested action.
+- The profile collection grows until storage or the uint32 index space is full.
+  Eight names are a display page, not a network-count limit. Slot zero remains
+  the legacy default used by other network tools. Save/Forget are explicit.
+- Credentials remain plaintext app-owned records; masking only controls display.
+  No real credentials, device trace, network connection or hardware action was
+  used in qualification. Do not claim physical scan duration from host models.
+
+Native/provider prerequisites and their clean build recipes are maintained with
+those repositories. Run scripts/test_wifi_workflow.py, test_wifi_adapter_deferral.py,
+test_wifi_scan_latency.py, test_text_input_host.py and test_text_input_runtime.py
+with explicit source/SDK paths. All tests exercise production source; the SDK,
+clock, touch, display and storage boundaries are synthetic where documented.
