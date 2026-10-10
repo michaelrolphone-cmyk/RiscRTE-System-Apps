@@ -108,7 +108,7 @@ static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capabi
  else return false;
  test_grants++;return true;}
 static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_grants);if(g->api==&test_volume && test_fail_release)return false;g->api=NULL;test_grants--;return true;}
-static const risc_runtime_api_v1 test_runtime={1,sizeof(test_runtime),test_health,test_yield,test_diag,test_launch,test_acquire,test_release};
+static const risc_runtime_api_v1 test_runtime={.api_version=1,.struct_size=sizeof(test_runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diag,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 static const risc_runtime_api_v1 *test_runtime_override;
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){

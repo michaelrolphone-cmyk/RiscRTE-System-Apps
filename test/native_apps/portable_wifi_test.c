@@ -309,7 +309,7 @@ break;
   wifi_make_view();assert(portable_wifi_hit(&view,width()/2,height()-50)==-1);assert(portable_wifi_hit(&view,width()*3/4,height()-50)==-1);
   for(unsigned i=0;i<view.count;i++){choice=i;wifi_make_view();unsigned j=i%wpv_rows();assert(portable_wifi_hit(&view,60,WPV_TOP+j*WPV_ROW+20)==(int)i);render();}break;
  case 57: /* Completed drags do not type, connect, save, or follow a row. */
-  assert(portable_wifi_close());event(poll_count+3,0,100,180);event(poll_count+4,0,110,230);event(poll_count+8,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!writes&&!connects);break;
+  assert(portable_wifi_close());held_touch(poll_count+20,100,180);held_touch(poll_count+28,110,230);event(poll_count+60,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!writes&&!connects);break;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  case 58: /* Capability sheet has unavailable radios/brightness/torch. */

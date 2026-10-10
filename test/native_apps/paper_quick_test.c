@@ -108,7 +108,7 @@ static bool qa_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capab
  if(strstr(name,"wifi")||strstr(name,"bluetooth"))radio_acquires++;
  return acquire(name,v,id,g);
 }
-static const risc_runtime_api_v1 qa_runtime={1,sizeof(qa_runtime),qa_health,yield_ms,diagnostic,launch_app,qa_acquire,release};
+static const risc_runtime_api_v1 qa_runtime={.api_version=1,.struct_size=sizeof(qa_runtime),.health=qa_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=qa_acquire,.release=release};
 #ifndef PAPER_QUICK_RUNTIME
 #define PAPER_QUICK_RUNTIME risc_runtime_get_api
 #endif

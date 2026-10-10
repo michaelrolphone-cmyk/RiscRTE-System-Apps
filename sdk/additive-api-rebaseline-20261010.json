@@ -1,0 +1,77 @@
+{
+  "schema": 1,
+  "audit_date": "2026-10-10",
+  "scope": "Snapshot provenance and compatibility fixtures only; production headers are unchanged.",
+  "comparison": "Table declarations with C comments and whitespace removed. Every previous declaration, type and field order is retained as an exact prefix.",
+  "exports_changed": false,
+  "exports_sha256": "a88ca6059db7ab70ee41f5557f30e41158812de58eb6d898902a48b0a19c1649",
+  "headers": [
+    {
+      "path": "lib/NativeApps/include/T5AppApi.h",
+      "table": "t5_app_api_v1",
+      "previous_git_blob": "b5d5cc0162aa6c5caa055563b928c8ceaf3e5cfd",
+      "previous_sha256": "eb0acebe0b1a151916b9f05afd98025e8e516c251337b8fe48fd3961bd58a981",
+      "current_git_blob": "7a170d13ba64a1dab4a64f8b7bbb051fd0b05d4f",
+      "current_sha256": "23ec6910005343055e71d0a364458824734f52c91a28364e419a85e94aa4ff42",
+      "preserved_prefix_characters": 2330,
+      "preserved_prefix_sha256": "629aa5de771e6521ae12f51622672543e5818a1ef347449b32b6c477a067223c",
+      "appended_members": [
+        "frame_ready",
+        "frame_drain"
+      ]
+    },
+    {
+      "path": "lib/PortableApps/include/RiscRuntimeV1.h",
+      "table": "risc_runtime_api_v1",
+      "previous_git_blob": "cac4817bfa67f7e0e6b39f0c58010976a4938366",
+      "previous_sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b",
+      "current_git_blob": "8972c0af9e84b8cf553360deec1077b61f06e598",
+      "current_sha256": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
+      "preserved_prefix_characters": 345,
+      "preserved_prefix_sha256": "fa763c03bec2b29084643bbec08ce22a60206b95f636e7fc6ba386e2fde2006d",
+      "appended_members": [
+        "confirm_boot",
+        "retain_invocation",
+        "trace",
+        "stream_client",
+        "request_default",
+        "resident_shell",
+        "failure_evidence",
+        "diagnostic_checkpoint_client"
+      ]
+    }
+  ],
+  "runtime_comment_change": "yield_ms documentation now describes the already-present retained-owner scheduler-only delay; no existing field signature changed.",
+  "additional_headers": [
+    {
+      "path": "lib/PortableApps/include/RiscKeyValueV1.h",
+      "previous_git_blob": "f36af0678abc72b7bb88def5f72802f208f57dd2",
+      "previous_sha256": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56",
+      "current_git_blob": "a7577ea3e3853fb200e4c6187fffd8d8be63a7fd",
+      "current_sha256": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+      "preserved_source_sha256": "d697e9823ce2af11d949668fe7f723f31ac653ea7604135a8b45c02f11e4ad9d",
+      "added_section_start": "#defineRISC_KEY_VALUE_BUSY(-6)",
+      "added_section_end": "typedefstruct"
+    },
+    {
+      "path": "lib/PortableApps/include/WifiApi.h",
+      "previous_git_blob": "14dbb776b6c649bf4aab78fc42d8bd14ed09d5f0",
+      "previous_sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a",
+      "current_git_blob": "c2320f70d5b1633448739f7f97ad5c13e31d6ac9",
+      "current_sha256": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+      "preserved_source_sha256": "f51ab338b0991be0bf2e12577f4562a5bafa57b56211c8f33a5a2f42453b7257",
+      "added_section_start": "#include\"RiscRadioAsyncV1.h\"",
+      "added_section_end": null
+    },
+    {
+      "path": "lib/PortableApps/include/RiscStorageVolumeV1.h",
+      "previous_git_blob": "85566781bc6031c52ca52b2277f75ceecd0785c2",
+      "previous_sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517",
+      "current_git_blob": "800bc4c7feeb42595091627b707cc7fac745ff3d",
+      "current_sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+      "preserved_source_sha256": "ff54cb77e7b0cc87b2d45f750b1bbf13febd0f6e4c89ad414cd38c53f7c839ac",
+      "added_section_start": "#defineRISC_STORAGE_SLEEP_TAG",
+      "added_section_end": "staticinlineconstrisc_storage_volume_api_v1_power*"
+    }
+  ]
+}

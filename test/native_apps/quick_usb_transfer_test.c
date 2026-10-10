@@ -36,7 +36,7 @@ static bool usb_quick_acquire(const char*name,uint32_t v,uint64_t id,risc_runtim
  if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=*(const risc_touch_api_v1*)out->api;input.snapshot=usb_quick_touch;out->api=&input;}
  return true;
 }
-static const risc_runtime_api_v1 usb_quick_runtime={1,sizeof(usb_quick_runtime),usb_quick_health,yield_ms,diagnostic,launch_app,usb_quick_acquire,release};
+static const risc_runtime_api_v1 usb_quick_runtime={.api_version=1,.struct_size=sizeof(usb_quick_runtime),.health=usb_quick_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=usb_quick_acquire,.release=release};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&usb_quick_runtime:NULL;}
 int main(int argc,char**argv){
  assert(argc==3);usb_case=(unsigned)atoi(argv[1]);capture_dir=argv[2];qa_case=9;

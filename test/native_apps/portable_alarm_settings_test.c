@@ -145,7 +145,7 @@ static bool release(risc_runtime_capability_v1 *grant) {
   assert(grants && grant->api);if(grant->api==&kv_api)++kv_releases;
   --grants;grant->api=NULL;return true;
 }
-static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),health,yield_ms,diagnostic,request_launch,acquire,release};
+static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=request_launch,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version) {return version==1?&runtime_api:NULL;}
 static void helper_checks(void) {
   unsigned mode=9;

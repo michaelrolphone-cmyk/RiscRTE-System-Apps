@@ -13,8 +13,17 @@
     {
       "path": "lib/NativeApps/include/T5AppApi.h",
       "upstream_path": "lib/NativeApps/include/T5AppApi.h",
-      "git_blob": "b5d5cc0162aa6c5caa055563b928c8ceaf3e5cfd",
-      "sha256": "eb0acebe0b1a151916b9f05afd98025e8e516c251337b8fe48fd3961bd58a981"
+      "git_blob": "7a170d13ba64a1dab4a64f8b7bbb051fd0b05d4f",
+      "sha256": "23ec6910005343055e71d0a364458824734f52c91a28364e419a85e94aa4ff42",
+      "upstream_baseline": {
+        "source_repository": "michaelrolphone-cmyk/T5S3-Reader",
+        "source_commit": "524e2cb3ea27311b062f3d7f182668c6912829fc",
+        "git_blob": "b5d5cc0162aa6c5caa055563b928c8ceaf3e5cfd",
+        "sha256": "eb0acebe0b1a151916b9f05afd98025e8e516c251337b8fe48fd3961bd58a981"
+      },
+      "source_repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "source_commit": "a4042acdf0c293d47f3e5e09c443fd44ddff4b7a",
+      "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
     },
     {
       "path": "lib/NativeApps/include/T5ButtonRemapApi.h",
