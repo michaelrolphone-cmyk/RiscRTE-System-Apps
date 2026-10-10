@@ -54,7 +54,10 @@ static jmp_buf blocked;
 static bool block_expected,blocked_note;
 static int sleep_outcome=1;
 static struct {unsigned at;unsigned buttons;int x,y;} script[64];
-static struct {char name[16];uint8_t data[64];uint32_t size;} cells[8];
+#ifndef TEST_WIFI_CELL_COUNT
+#define TEST_WIFI_CELL_COUNT 8u
+#endif
+static struct {char name[16];uint8_t data[64];uint32_t size;} cells[TEST_WIFI_CELL_COUNT];
 static wifi_api_v1 radio_api;
 static risc_runtime_api_v1 runtime_api;
 static void observed(void){if(terminal_sleep)++late_calls;}
@@ -119,8 +122,8 @@ static bool fake_nav(void*c,risc_input_navigation_frame_v1*out){(void)c;observed
 static bool fake_foreground(void*c,const risc_input_foreground_v1*a,size_t n){(void)c;(void)a;(void)n;observed();return true;}
 static bool fake_reset(void*c){(void)c;observed();return true;}
 static const risc_input_navigation_api_v1 nav_api={1,sizeof(nav_api),NULL,fake_nav,fake_foreground,fake_reset};
-static int32_t fake_get(void*c,const char*key,void*buf,uint32_t cap,uint32_t*size){(void)c;observed();*size=0;if(fail_store)return RISC_KEY_VALUE_IO;for(unsigned i=0;i<8;++i)if(!strcmp(cells[i].name,key)){if(cap<cells[i].size){*size=cells[i].size;return RISC_KEY_VALUE_BUFFER_SMALL;}memcpy(buf,cells[i].data,cells[i].size);*size=cells[i].size;return 0;}return RISC_KEY_VALUE_NOT_FOUND;}
-static int32_t fake_put(void*c,const char*key,const void*buf,uint32_t n){(void)c;observed();++writes;if(fail_store)return RISC_KEY_VALUE_IO;assert(n<=64 && strlen(key)<=15);unsigned i=0;for(;i<8;++i)if(!cells[i].name[0] || !strcmp(cells[i].name,key))break;assert(i<8);strcpy(cells[i].name,key);memcpy(cells[i].data,buf,n);cells[i].size=n;return 0;}
+static int32_t fake_get(void*c,const char*key,void*buf,uint32_t cap,uint32_t*size){(void)c;observed();*size=0;if(fail_store)return RISC_KEY_VALUE_IO;for(unsigned i=0;i<TEST_WIFI_CELL_COUNT;++i)if(!strcmp(cells[i].name,key)){if(cap<cells[i].size){*size=cells[i].size;return RISC_KEY_VALUE_BUFFER_SMALL;}memcpy(buf,cells[i].data,cells[i].size);*size=cells[i].size;return 0;}return RISC_KEY_VALUE_NOT_FOUND;}
+static int32_t fake_put(void*c,const char*key,const void*buf,uint32_t n){(void)c;observed();++writes;if(fail_store)return RISC_KEY_VALUE_IO;assert(n<=64 && strlen(key)<=15);unsigned i=0;for(;i<TEST_WIFI_CELL_COUNT;++i)if(!cells[i].name[0] || !strcmp(cells[i].name,key))break;assert(i<TEST_WIFI_CELL_COUNT);strcpy(cells[i].name,key);memcpy(cells[i].data,buf,n);cells[i].size=n;return 0;}
 static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,fake_get,fake_put};
 static bool fake_connect(void*c,const char*s,const char*p){(void)c;observed();assert(!scan_active && !native_active);assert(s[0] && strlen(s)<=32 && (!p[0] || strlen(p)>=8));++connects;if(fail_connect){if(uncertain_start){native_active=true;fail_disconnect=1;}return false;}native_active=true;fake_link=WIFI_LINK_JOINING;return true;}
 static void fake_disconnect_legacy(void*c){(void)c;assert(!"Legacy unchecked disconnect must never be used");}
@@ -154,7 +157,7 @@ const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!native_active && !scan_active && !wg.api && !wifi && !sub_count && !surface.frame);++sleeps;if(sleep_outcome==-2)terminal_sleep=1;return sleep_outcome;}
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 static void start(void){
- runtime_api=(risc_runtime_api_v1){1,sizeof(runtime_api),fake_health,fake_yield,fake_diag,fake_launch,fake_acquire,fake_release};
+ runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=short_api?WIFI_PREFIX_V1_SIZE:sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  fake_scan=(garden_radio_scan_result_v1){.struct_size=sizeof(fake_scan),.state=GARDEN_RADIO_SCAN_RUNNING};
  visual_alarm=(alarm_service_outputs_v1){.service=alarm_api,.output_modes=ALARM_MODE_VISUAL};visual_alarm.service.struct_size=sizeof(visual_alarm);

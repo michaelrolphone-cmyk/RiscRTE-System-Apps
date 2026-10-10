@@ -35,6 +35,8 @@ int portable_wifi_hit(const portable_wifi_view *view,int x,int y);
 /* Reconcile radio health before bound services may read persistent storage. */
 bool portable_wifi_services_safe(void);
 bool portable_wifi_suspend(void);
+/* Healthy asynchronous cleanup is progress, not a retained failure. */
+bool portable_wifi_stop_pending(void);
 void portable_wifi_resume(void);
 bool portable_wifi_close(void);
 

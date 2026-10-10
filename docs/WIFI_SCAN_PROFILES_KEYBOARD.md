@@ -15,22 +15,29 @@ This is not a release or a completed hardware fix.
   their layout and semantics. Secret text never enters the scene document;
   only an equal-length asterisk string is rendered. The caller still receives
   its copied plaintext result. Older providers are refused for masked sessions.
-- A bounded eight-profile wrapper reuses the current atomic credential codec.
-  Slot zero retains the legacy keys/default used by network tools. Other slots
-  have independent selectors and never evict an existing network. Reads do not
-  migrate/write, uncertain slots are not overwritten, and explicit per-profile
-  forget retains the codec's existing tombstone/remanence guarantees.
+- A growing persisted profile index reuses the atomic credential codec. Slot
+  zero preserves the legacy default keys. Other slots have independent selectors.
+  There is no fixed network-count ceiling beyond backend storage and the uint32
+  index space. The UI pages eight names; lookup reads one profile per iteration.
+  New slots reserve a checked count before save, so interrupted saves are reusable.
+- The actual Wi-Fi controller now uses the shared keyboard, with masked passwords
+  and checked close/release before committing a copied result. It supports saved
+  network paging, explicit Save/Forget, scan selection, async start/poll/cancel,
+  and keeps pending cleanup distinct from failure or confirmed quiescence.
+- Sixteen production-controller workflows and fifty-profile transactional/fault
+  tests pass normally and with ASan/UBSan. These use copied provider tables and
+  synthetic inputs, not a physical radio or real credentials.
 - Current shared-text Home/Back/client fixtures were recovered from the separate
   text-0.1.2 source checkout rather than retaining stale prefix assumptions.
 
 ## Remaining work
 
-The Wi-Fi application has not yet been wired to the new profile wrapper or
-shared keyboard. Native SDK setup/cleanup is still synchronous and cannot be
-forcibly cancelled safely. A bounded async lifecycle is being designed; no
-pending operation will be treated as successfully cleaned up. The original
-physical freeze has not been attributed, and no device or network is accessed.
-Target builds, combined app tests and final source handoff follow integration.
+Native worker and actual-provider integration are still in progress. Shared SDK
+resource contention requires explicit temporary BUSY deferral in the app and
+adapter. This checkpoint is not the complete freeze fix. The earlier legacy
+48-case fixture has three identical failures on the unchanged base (19,22,23);
+no claim of full legacy regression passage is made. Combined target/runtime
+qualification and source handoff follow the native integration.
 
 Credentials remain plaintext app-owned storage with explicit Save and logical
 Forget. No encryption, secure erase, real credentials or credential logging is

@@ -1,11 +1,14 @@
 #pragma once
-/* Eight bounded networks reuse the existing per-profile atomic credential
- * codec. Slot zero uses the original five keys verbatim: existing saved-network
- * consumers keep their current default, with no implicit migration or writes.
- * Other slots have independent selectors; no catalog, eviction or recovery of
- * orphan chunks is needed. Callers own namespace 6 and checked radio cleanup. */
+/* Growing network collection using the existing per-profile atomic codec.
+ * Slot zero keeps the original five keys/default. Other slots have independent
+ * selectors. A checked count reserves each new slot before its credential save;
+ * an interrupted save leaves a reusable empty slot, never an orphan authority.
+ * Only actual storage failure or the 32-bit index space limits the collection.
+ * Callers serialize writes under namespace 6 and checked radio cleanup. */
 #include "PortableWifiCredentials.h"
-#define PORTABLE_WIFI_PROFILE_COUNT 8u
+#define PORTABLE_WIFI_PROFILE_PAGE 8u
+#define PORTABLE_WIFI_PROFILE_AGAIN 7
+#define PORTABLE_WIFI_PROFILE_COUNT_KEY "wifi.profiles"
 #define PORTABLE_WIFI_PROFILE_FULL 6
 
 typedef struct {
@@ -13,14 +16,43 @@ typedef struct {
     unsigned index;
 } portable_wifi_profile_context;
 
-static inline bool portable_wifi_profile_key(unsigned index,const char *key,char out[16]) {
-    if(index>=PORTABLE_WIFI_PROFILE_COUNT||!key)return false;
+static inline bool portable_wifi_profile_key(uint32_t index,const char *key,char out[16]) {
+    if(!key)return false;
     for(unsigned i=0;i<5;i++)if(key[i]!="wifi."[i])return false;
     size_t n=0;while(n<15&&key[n])++n;
     if(n==15)return false;
-    memcpy(out,key,n+1);
-    if(index){out[0]='w';out[1]='f';out[2]=(char)('0'+index);memcpy(out+3,key+4,n-3);}
+    if(!index){memcpy(out,key,n+1);return true;}
+    static const char hex[]="0123456789abcdef";
+    out[0]='w';for(unsigned i=0;i<8;i++)out[1+i]=hex[(index>>(28-4*i))&15u];
+    out[9]='.';
+    if(!strcmp(key+5,"commit")){out[10]='c';out[11]=0;}
+    else {if(n!=7)return false;out[10]=key[5];out[11]=key[6];out[12]=0;}
     return true;
+}
+/* Absent metadata is the exact legacy single-profile layout. Reads never
+ * migrate or write. A corrupt count is not a reason to invent an empty store. */
+static inline int portable_wifi_profile_count(const risc_key_value_v1 *kv,uint32_t *out) {
+    if(!out)return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    *out=0;
+    if(!portable_wifi_credentials_api_valid(kv))return PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
+    uint8_t data[32]={0};int rc=portable_wifi_credentials_read_blob(kv,PORTABLE_WIFI_PROFILE_COUNT_KEY,data,sizeof(data));
+    if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY){*out=1;return PORTABLE_WIFI_CREDENTIALS_LOADED;}
+    if(rc!=PORTABLE_WIFI_CREDENTIALS_LOADED)return rc;
+    if(memcmp(data,"WFN1",4)||data[4]!=1||data[5]||data[6]||data[7]||
+       !portable_wifi_credentials_u32(data+8)||portable_wifi_credentials_u32(data+28)!=portable_wifi_credentials_crc(data,28))return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    for(unsigned i=12;i<28;i++)if(data[i])return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    *out=portable_wifi_credentials_u32(data+8);return PORTABLE_WIFI_CREDENTIALS_LOADED;
+}
+static inline int portable_wifi_profile_reserve(const risc_key_value_v1 *kv,uint32_t index) {
+    uint32_t count=0;int rc=portable_wifi_profile_count(kv,&count);if(rc)return rc;
+    if(index<count)return PORTABLE_WIFI_CREDENTIALS_LOADED;
+    if(index!=count)return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    if(count==UINT32_MAX)return PORTABLE_WIFI_PROFILE_FULL;
+    uint8_t data[32]={0};memcpy(data,"WFN1",4);data[4]=1;
+    portable_wifi_credentials_put_u32(data+8,count+1);
+    portable_wifi_credentials_put_u32(data+28,portable_wifi_credentials_crc(data,28));
+    return portable_wifi_credentials_write_verify(kv,PORTABLE_WIFI_PROFILE_COUNT_KEY,data,sizeof(data))?
+        PORTABLE_WIFI_CREDENTIALS_LOADED:PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED;
 }
 static inline int32_t portable_wifi_profile_get(void *context,const char *key,void *data,uint32_t capacity,uint32_t *size) {
     portable_wifi_profile_context *c=context;char mapped[16];
@@ -38,39 +70,56 @@ static inline risc_key_value_v1 portable_wifi_profile_api(portable_wifi_profile_
 static inline int portable_wifi_profile_load(const risc_key_value_v1 *kv,unsigned index,portable_wifi_credentials *out) {
     if(!out)return PORTABLE_WIFI_CREDENTIALS_INVALID;
     portable_wifi_credentials_clear(out);
-    if(index>=PORTABLE_WIFI_PROFILE_COUNT)return PORTABLE_WIFI_CREDENTIALS_INVALID;
     if(!portable_wifi_credentials_api_valid(kv))return PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
     portable_wifi_profile_context c={kv,index};risc_key_value_v1 selected=portable_wifi_profile_api(&c);
     return portable_wifi_credentials_load(&selected,out);
 }
 static inline int portable_wifi_profile_save(const risc_key_value_v1 *kv,unsigned index,const portable_wifi_credentials *value) {
-    if(index>=PORTABLE_WIFI_PROFILE_COUNT)return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    if(!portable_wifi_credentials_validate(value))return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    int reserved=portable_wifi_profile_reserve(kv,index);if(reserved)return reserved;
     if(!portable_wifi_credentials_api_valid(kv))return PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
     portable_wifi_profile_context c={kv,index};risc_key_value_v1 selected=portable_wifi_profile_api(&c);
     return portable_wifi_credentials_save(&selected,value);
 }
 static inline int portable_wifi_profile_forget(const risc_key_value_v1 *kv,unsigned index) {
-    if(index>=PORTABLE_WIFI_PROFILE_COUNT)return PORTABLE_WIFI_CREDENTIALS_INVALID;
     if(!portable_wifi_credentials_api_valid(kv))return PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
     portable_wifi_profile_context c={kv,index};risc_key_value_v1 selected=portable_wifi_profile_api(&c);
     return portable_wifi_credentials_forget(&selected);
 }
-/* A save updates the matching SSID, otherwise takes the first proven-empty
- * slot. Any unreadable/invalid slot refuses insertion: never overwrite uncertain
- * credentials or create a hidden duplicate. No automatic eviction occurs. */
-static inline int portable_wifi_profile_find(const risc_key_value_v1 *kv,const char *ssid,unsigned *index) {
-    if(!ssid||!index)return PORTABLE_WIFI_CREDENTIALS_INVALID;
-    unsigned empty=PORTABLE_WIFI_PROFILE_COUNT;int fault=PORTABLE_WIFI_CREDENTIALS_LOADED;
-    for(unsigned i=0;i<PORTABLE_WIFI_PROFILE_COUNT;i++){
-        portable_wifi_credentials value={{0},{0}};
+/* Search performs at most one profile read per step. The application yields,
+ * accepts cancellation and presents progress between steps, even when storage
+ * contains many profiles. No credentials are kept in the search state. */
+typedef struct {
+    uint32_t count,next,empty,index;
+    int fault,result;
+    bool done;
+    char ssid[33];
+} portable_wifi_profile_search;
+static inline int portable_wifi_profile_search_begin(const risc_key_value_v1 *kv,const char *ssid,portable_wifi_profile_search *search) {
+    if(!ssid||!search)return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    memset(search,0,sizeof(*search));search->empty=UINT32_MAX;
+    unsigned n=0;while(n<sizeof(search->ssid)&&ssid[n])++n;
+    if(!n||n==sizeof(search->ssid))return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    memcpy(search->ssid,ssid,n);int rc=portable_wifi_profile_count(kv,&search->count);
+    if(rc){search->done=true;search->result=rc;return rc;}
+    return PORTABLE_WIFI_PROFILE_AGAIN;
+}
+static inline int portable_wifi_profile_search_step(const risc_key_value_v1 *kv,portable_wifi_profile_search *search) {
+    if(!search)return PORTABLE_WIFI_CREDENTIALS_INVALID;
+    if(search->done)return search->result;
+    if(search->next<search->count){
+        uint32_t i=search->next++;portable_wifi_credentials value={{0},{0}};
         int rc=portable_wifi_profile_load(kv,i,&value);
-        bool same=rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!strcmp(value.ssid,ssid);
+        bool same=rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!strcmp(value.ssid,search->ssid);
         portable_wifi_credentials_clear(&value);
-        if(same){*index=i;return PORTABLE_WIFI_CREDENTIALS_LOADED;}
-        if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY&&empty==PORTABLE_WIFI_PROFILE_COUNT)empty=i;
-        else if(rc!=PORTABLE_WIFI_CREDENTIALS_EMPTY&&rc!=PORTABLE_WIFI_CREDENTIALS_LOADED)fault=rc;
+        if(same){search->index=i;search->done=true;return search->result=PORTABLE_WIFI_CREDENTIALS_LOADED;}
+        if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY&&search->empty==UINT32_MAX)search->empty=i;
+        else if(rc!=PORTABLE_WIFI_CREDENTIALS_EMPTY&&rc!=PORTABLE_WIFI_CREDENTIALS_LOADED)search->fault=rc;
     }
-    if(fault!=PORTABLE_WIFI_CREDENTIALS_LOADED)return fault;
-    if(empty==PORTABLE_WIFI_PROFILE_COUNT)return PORTABLE_WIFI_PROFILE_FULL;
-    *index=empty;return PORTABLE_WIFI_CREDENTIALS_EMPTY;
+    if(search->next<search->count)return PORTABLE_WIFI_PROFILE_AGAIN;
+    search->done=true;
+    if(search->fault)return search->result=search->fault;
+    search->index=search->empty!=UINT32_MAX?search->empty:search->count;
+    if(search->index==UINT32_MAX)return search->result=PORTABLE_WIFI_PROFILE_FULL;
+    return search->result=PORTABLE_WIFI_CREDENTIALS_EMPTY;
 }
