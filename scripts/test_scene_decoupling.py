@@ -41,7 +41,7 @@ def run(runtime,baseline,out,sanitize):
    expected=None
    for delay in [0,16,120,2300]:
     output=command([str(executables['candidate']),'cadence',str(fmt),'270',str(period),str(count),str(delay)]).strip()
-    digest=output.split('digest=')[1].split()[0]
+    digest=(output.split('digest=')[1].split()[0],output.split('raster=')[1].split()[0])
     if expected is None:expected=digest
     assert expected==digest
     results.append({'kind':'logical-cadence','format':fmt,'period_ms':period,'count':count,'panel_ms':delay,'output':output})

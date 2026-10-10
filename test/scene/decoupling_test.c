@@ -55,7 +55,15 @@ static void cadence(unsigned period,unsigned count,unsigned duration){
         }
     }
     assert(received==count);allow_complete=true;drain_visual();
-    printf("cadence period=%u count=%u panel=%u digest=%016llx frames=%u\n",period,count,duration,(unsigned long long)result,submits);
+    unsigned bits=format==5?16:format==4?8:format==3?4:format==2?2:1;
+    size_t bytes=(w*bits+7)/8*h;uint8_t *latest=malloc(bytes);assert(latest);
+    memcpy(latest,pixels+16,bytes);
+    /* The last frame must already be the newest logical state. A forced
+     * repaint of that unchanged state must not reveal a stale queued frame. */
+    ack_only();drain_visual();assert(!memcmp(latest,pixels+16,bytes));
+    uint64_t raster=1469598103934665603ull;
+    for(size_t i=0;i<bytes;i++){raster^=latest[i];raster*=1099511628211ull;}free(latest);
+    printf("cadence period=%u count=%u panel=%u digest=%016llx raster=%016llx frames=%u\n",period,count,duration,(unsigned long long)result,(unsigned long long)raster,submits);
 }
 int main(int argc,char **argv){
     assert(argc>=4);profile_setup((unsigned)atoi(argv[2]),(unsigned)atoi(argv[3]));

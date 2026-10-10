@@ -119,6 +119,14 @@ static void cancellations(void){
     gesture(x,lh()/3,lh()/2,true);assert(tick(&e)==RISC_SCENE_IDLE);
     clear_events();add_event(1,x,1,0);add_event(1,x,1,1);add_event(2,x,y,0);add_event(3,x,y,0);
     assert(tick(&e)==RISC_SCENE_IDLE);settle();
+    /* The authoritative same-report snapshot includes a second finger even
+     * when its DOWN follows the first finger's threshold-crossing MOVE. */
+    clear_events();add_event(1,x,1,0);held_input=true;assert(tick(&e)==RISC_SCENE_IDLE);
+    clear_events();add_event(2,x,y,0);add_event(1,x,1,1);
+    events[1].timestamp_ms=events[0].timestamp_ms;held_input=false;snapshot_contacts=2;
+    assert(tick(&e)==RISC_SCENE_IDLE);assert(flags_now()&RISC_SCENE_INPUT_BUSY);
+    clear_events();add_event(3,x,y,0);add_event(3,x,1,1);snapshot_contacts=0;
+    assert(tick(&e)==RISC_SCENE_IDLE);settle();
     clear_events();add_event(1,x,1,0);held_input=true;assert(tick(&e)==RISC_SCENE_IDLE);
     queue_gap=true;clear_events();add_event(2,x,y,0);assert(tick(&e)==RISC_SCENE_IDLE);
     release_touch(x,y);assert(tick(&e)==RISC_SCENE_IDLE);settle();
