@@ -5,12 +5,14 @@ enum {RS_FILL,RS_ROUNDED,RS_TEXT,RS_ICON,RS_PP_TEXT,RS_PP_CIRCLE,
  RS_NU_PIXEL,RS_NU_RECT,RS_NU_TEXT,RS_NU_ROUND,RS_NU_BUTTON,
  RS_SV_PIXEL,RS_SV_RECT,RS_SV_TEXT,RS_SV_BUTTON,RS_SV_FADE,
  RS_WV_PIXEL,RS_WV_RECT,RS_WV_TEXT,RS_WV_BUTTON,
- RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER,RS_CUSTOM};
+ RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER,RS_CUSTOM,RS_LAYER_BEGIN,RS_LAYER_END,RS_LAYER_BLIT};
 typedef struct raster_command {
  struct raster_command *next;
  unsigned kind;
  int32_t args[8];
  void *pixels;
+ bool borrowed;
+ struct portable_raster_layer *layer;
  void (*custom)(const void *,int,int);
  bool text_present;
  int paper_offset;
@@ -30,6 +32,19 @@ static raster_command *raster_commands,*raster_tail,*raster_cursor;
 static bool raster_recording,raster_sealed,raster_replaying,raster_full,raster_begin_allowed;
 static bool raster_ready_to_submit,raster_band_columns;
 static void *raster_offscreen;
+static bool raster_started;
+#include "PortableRasterLayer.h"
+struct portable_raster_layer {
+ unsigned refs,width,height,stride,format;
+ bool rotated,flipped,complete;
+ uint8_t pixels[];
+};
+static portable_raster_layer *raster_layer_paint;
+static bool raster_layer_recording;
+static risc_display_surface_v1 raster_layer_parent;
+static void raster_layer_drop(portable_raster_layer *p);
+static void raster_layer_execute(const raster_command *c);
+
 static bool raster_saved_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES
 static bool raster_saved_flip;
@@ -59,6 +74,8 @@ static bool raster_progress(void);
 static bool raster_drain(void);
 static bool raster_begin(uint16_t color);
 static inline bool raster_begin_pixels(const void *pixels,unsigned stride);
+static bool raster_begin_pixels_owned(const void *pixels,unsigned stride,bool borrow);
+static void raster_free_commands(void);
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text);
 static void present(bool full);
 static bool raster_materialize(void);

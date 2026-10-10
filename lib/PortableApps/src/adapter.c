@@ -696,7 +696,8 @@ static bool raster_checkpoint(void) {
 #endif
 static inline bool raster_surface_writable(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen);
+  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen) ||
+    (raster_layer_paint&&surface.pixels==raster_layer_paint->pixels);
 #else
   return surface.frame!=0;
 #endif
@@ -1072,6 +1073,13 @@ const paper_presentation *paper_presentation_get(void) {
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
+  /* Latest-image mailbox: a completed software image which has not acquired
+   * a provider lease may be replaced while the panel is BUSY. Never replace
+   * an in-progress capture or an explicit clean/quality submission. */
+  if(raster_sealed&&raster_ready_to_submit&&paper_token&&
+     raster_saved_intent==RISC_DISPLAY_PRESENT_LOW_LATENCY) {
+   raster_free_commands();raster_sealed=raster_ready_to_submit=false;raster_started=false;
+  }
   if(raster_sealed||raster_recording||surface.frame)return false;
   raster_begin_allowed=true;
 #endif

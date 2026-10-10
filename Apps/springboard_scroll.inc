@@ -1,6 +1,7 @@
 /* Selected X4 paper grid: standard 3 by 4 geometry, 12 apps per horizontal page.
  * Input snapshots logical identities; presentation never gates interaction. */
 #include "PaperPresentation.h"
+#include "PortableRasterLayer.h"
 #include "PaperFrame.h"
 #include "PaperBattery.h"
 #include "PortablePerformance.h"
@@ -27,6 +28,17 @@ typedef struct {
     char names[SBS_CATALOG_BOUND][128];
 } sbs_image;
 static sbs_image sbs_submitted,sbs_completed;
+#define SBS_PAGE_BOUND ((SBS_CATALOG_BOUND+SBS_PAGE_APPS-1)/SBS_PAGE_APPS)
+static portable_raster_layer *sbs_layers[SBS_PAGE_BOUND],*sbs_header_layer,*sbs_selection_layer;
+static char sbs_cached_time[12];
+static unsigned sbs_cached_selected;
+static bool sbs_cached_highlight,sbs_warm_disabled;
+static uint32_t sbs_catalog_visual;
+static void sbs_layers_release(void) {
+ for(unsigned i=0;i<SBS_PAGE_BOUND;i++)portable_layer_release(&sbs_layers[i]);
+ portable_layer_release(&sbs_header_layer);portable_layer_release(&sbs_selection_layer);
+}
+
 static springboard_pages sbs_scroll;
 static char sbs_names[SBS_CATALOG_BOUND][128],sbs_hit_name[128],sbs_launch_name[128];
 static int sbs_hit_q8,sbs_hit_cell,sbs_dot_page;
@@ -54,16 +66,20 @@ static bool sbs_catalog(void) {
     char selection[128]={0};if(selected<count&&selected<SBS_CATALOG_BOUND)strcpy(selection,sbs_names[selected]);
     unsigned next=api->installed_apps_count();
     if(next>SBS_CATALOG_BOUND)next=0; /* Reject a broken explicit build contract. */
-    bool changed=count!=next;count=next;
+    bool changed=count!=next;count=next;uint32_t visual=2166136261u;
     for(unsigned i=0;i<SBS_CATALOG_BOUND;i++) {
         t5_app_manifest_t app={0};
         if(i<count&&!api->installed_apps_get(i,&app))app.file_name[0]=0;
         changed|=strcmp(sbs_names[i],app.file_name)!=0;
+        const char *fields[]={app.display_name,app.icon};
+        for(unsigned f=0;f<2;f++)for(unsigned n=0;fields[f][n];n++){visual^=(uint8_t)fields[f][n];visual*=16777619u;}
         memcpy(sbs_names[i],app.file_name,sizeof(sbs_names[i]));
     }
+    changed|=sbs_catalog_visual!=visual;sbs_catalog_visual=visual;
     int same=sbs_resolve(selection);if(same>=0)selected=(unsigned)same;
     else if(selected>=count)selected=0;
     if(sbs_pressed&&sbs_resolve(sbs_hit_name)<0)sbs_pressed=false;
+    if(changed){sbs_warm_disabled=false;for(unsigned i=0;i<SBS_PAGE_BOUND;i++)portable_layer_release(&sbs_layers[i]);portable_layer_release(&sbs_selection_layer);}
     sbs_configure();return changed;
 }
 static int sbs_hit(int q8,int x,int y) {
@@ -86,36 +102,88 @@ void portable_springboard_scroll_interrupt(void) {sbs_cancel();}
 static unsigned sbs_touch(const portable_touch_sample *sample,uint32_t now) {
     return sbs_pages_touch(&sbs_scroll,sample,now);
 }
+static void sbs_cell(const paper_presentation *v,const t5_app_manifest_t *app,int x,int y,bool selected_cell,bool highlight) {
+        bool active=selected_cell;v->circle(x,y,paper_x(active?47:38),true);
+        if(!active||!highlight)v->circle(x,y,paper_x(active?43:34),false);
+        if(active)v->circle(x,y,paper_x(36),true);
+        int size=paper_x(34);
+        if(!api->draw_icon(x-size/2,y-size/2,app->icon,(uint8_t)size,!active))
+            v->text(x-paper_x(10),y-paper_y(12),paper_x(24),"?",2,true,!active);
+        const char *name=app->display_name;
+        if(!strcmp(app->file_name,"file_browser.elf"))name="FILES";
+        else if(!strcmp(app->file_name,"serial_monitor.elf"))name="SERIAL";
+        else if(!strcmp(app->file_name,"ble_scanner.elf"))name="BLUETOOTH";
+        else if(!strcmp(app->file_name,"points_in_time.elf"))name="POINTS";
+        else if(!strcmp(app->file_name,"ble_touchpad.elf"))name="TOUCHPAD";
+        else if(!strcmp(app->file_name,"ble_buttons.elf"))name="BT BUTTONS";
+        else if(!strcmp(app->file_name,"waterfall.elf"))name="RF SPECTRUM";
+        else if(!strcmp(app->file_name,"contexts.elf"))name="CONTEXTS";
+        else if(!strcmp(app->file_name,"usb_sd_transfer.elf"))name="USB SD";
+        int limit=paper_x(112),measured=v->measure(name,false);
+        v->text(x-(measured<limit?measured:limit)/2,y+paper_y(43),limit,name,1,false,true);
+}
+static bool sbs_warm_pending(void) {
+ if(sbs_warm_disabled||!portable_raster_layer_begin||sbs_scroll.contact||sbs_scroll.animating)return false;
+ unsigned pages=(count+SBS_PAGE_APPS-1)/SBS_PAGE_APPS;
+ for(unsigned i=0;i<pages;i++)if(!portable_layer_valid(sbs_layers[i]))return true;
+ return false;
+}
 static bool sbs_draw(const paper_presentation *v,const char *status,bool initial,
                      bool known,uint8_t hour,uint8_t minute,paper_battery battery) {
     sbs_visible();if(!paper_frame_ready()||!portable_paper_scroll_available())return false;
     v->begin();(void)battery;
     char time[12];sbs_time_text(time,known,hour,minute);
-    springboard_paper_header(time);
+    bool header_capture=false;
+    if(!portable_layer_valid(sbs_header_layer)||strcmp(sbs_cached_time,time)) {
+        header_capture=portable_layer_begin(&sbs_header_layer);
+        springboard_paper_header(time);
+        if(header_capture){portable_raster_layer_end();strcpy(sbs_cached_time,time);}
+        else portable_layer_release(&sbs_header_layer);
+    }
+    if(portable_layer_valid(sbs_header_layer))
+        portable_raster_layer_blit(sbs_header_layer,0,0,api->screen_width(),paper_y(88),0,0);
     portable_paper_scroll_clip(&sbs_scroll.view);
     bool highlight=sbs_pressed||sbs_pending;
-    for(unsigned i=0;i<count;i++) {
-        t5_app_manifest_t app;if(!api->installed_apps_get(i,&app))continue;
-        int x,y;sbs_position(i,sbs_pages_offset(&sbs_scroll),&x,&y);
-        if(x+paper_x(62)<0||x-paper_x(62)>=api->screen_width())continue;
-        bool active=i==selected;v->circle(x,y,paper_x(active?47:38),true);
-        if(!active||!highlight)v->circle(x,y,paper_x(active?43:34),false);
-        if(active)v->circle(x,y,paper_x(36),true);
-        int size=paper_x(34);
-        if(!api->draw_icon(x-size/2,y-size/2,app.icon,(uint8_t)size,!active))
-            v->text(x-paper_x(10),y-paper_y(12),paper_x(24),"?",2,true,!active);
-        const char *name=app.display_name;
-        if(!strcmp(app.file_name,"file_browser.elf"))name="FILES";
-        else if(!strcmp(app.file_name,"serial_monitor.elf"))name="SERIAL";
-        else if(!strcmp(app.file_name,"ble_scanner.elf"))name="BLUETOOTH";
-        else if(!strcmp(app.file_name,"points_in_time.elf"))name="POINTS";
-        else if(!strcmp(app.file_name,"ble_touchpad.elf"))name="TOUCHPAD";
-        else if(!strcmp(app.file_name,"ble_buttons.elf"))name="BT BUTTONS";
-        else if(!strcmp(app.file_name,"waterfall.elf"))name="RF SPECTRUM";
-        else if(!strcmp(app.file_name,"contexts.elf"))name="CONTEXTS";
-        else if(!strcmp(app.file_name,"usb_sd_transfer.elf"))name="USB SD";
-        int limit=paper_x(112),measured=v->measure(name,false);
-        v->text(x-(measured<limit?measured:limit)/2,y+paper_y(43),limit,name,1,false,true);
+    unsigned pages=(count+SBS_PAGE_APPS-1)/SBS_PAGE_APPS;
+    bool warmed=false;
+    for(unsigned page=0;page<pages;page++) {
+        int dx=(int)page*api->screen_width()-sbs_pages_offset(&sbs_scroll);
+        bool visible=dx<api->screen_width()&&dx+api->screen_width()>0;
+        /* Prepare one adjacent page on an idle pass after the first image.
+         * Gesture frames never rerasterize an already cached page. */
+        bool warm=!initial&&!sbs_scroll.contact&&!sbs_scroll.animating&&!warmed;
+        if(!visible&&!warm)continue;
+        if(!portable_layer_valid(sbs_layers[page])) {
+            bool capture=portable_layer_begin(&sbs_layers[page]);
+            if(!capture)sbs_warm_disabled=true;
+            if(!visible&&!capture)continue;
+            for(unsigned i=page*SBS_PAGE_APPS;i<count&&i<(page+1)*SBS_PAGE_APPS;i++) {
+                t5_app_manifest_t app;if(!api->installed_apps_get(i,&app))continue;
+                int x,y;sbs_position(i,capture?(int)page*api->screen_width():sbs_pages_offset(&sbs_scroll),&x,&y);
+                sbs_cell(v,&app,x,y,!capture&&i==selected,highlight);
+            }
+            if(capture){portable_raster_layer_end();warmed=true;}
+        }
+        if(visible&&portable_layer_valid(sbs_layers[page]))
+            portable_raster_layer_blit(sbs_layers[page],0,paper_y(88),api->screen_width(),paper_y(640),dx,paper_y(88));
+    }
+    /* Selection is a small independently cached tile, so changing the selected
+     * app at snap completion does not invalidate all twelve icons and labels. */
+    if(selected<count && pages && portable_layer_valid(sbs_layers[selected/SBS_PAGE_APPS])) {
+        t5_app_manifest_t app;
+        int x,y;sbs_position(selected,(int)(selected/SBS_PAGE_APPS)*api->screen_width(),&x,&y);
+        bool capture=false;
+        if(!portable_layer_valid(sbs_selection_layer)||sbs_cached_selected!=selected||sbs_cached_highlight!=highlight) {
+            capture=portable_layer_begin(&sbs_selection_layer);
+            if(capture){
+                if(api->installed_apps_get(selected,&app))sbs_cell(v,&app,x,y,true,highlight);
+                portable_raster_layer_end();sbs_cached_selected=selected;sbs_cached_highlight=highlight;
+            } else portable_layer_release(&sbs_selection_layer);
+        }
+        int dx=(int)(selected/SBS_PAGE_APPS)*api->screen_width()-sbs_pages_offset(&sbs_scroll);
+        if(portable_layer_valid(sbs_selection_layer))
+            portable_raster_layer_blit(sbs_selection_layer,x-paper_x(62),y-paper_y(50),paper_x(124),paper_y(122),x-paper_x(62)+dx,y-paper_y(50));
+        else if(api->installed_apps_get(selected,&app))sbs_cell(v,&app,x+dx,y,true,highlight);
     }
     portable_paper_scroll_clip(NULL);
     if(!count)v->text(paper_x(60),paper_y(200),paper_x(360),"NO INSTALLED APPS",2,false,true);
@@ -138,7 +206,7 @@ static bool sbs_draw(const paper_presentation *v,const char *status,bool initial
 static bool paper_run(void) {
     const paper_presentation *v=paper_presentation_get();
     if(!v||v->struct_size<sizeof(*v)||!v->begin||!v->text||!v->measure||!v->circle||!v->clock)return false;
-    memset(&sbs_scroll,0,sizeof(sbs_scroll));memset(&sbs_submitted,0,sizeof(sbs_submitted));
+    sbs_layers_release();memset(&sbs_scroll,0,sizeof(sbs_scroll));memset(&sbs_submitted,0,sizeof(sbs_submitted));
     memset(&sbs_completed,0,sizeof(sbs_completed));memset(sbs_names,0,sizeof(sbs_names));sbs_cancel();sbs_catalog();
     uint8_t hour=0,minute=0;bool known=v->clock(&hour,&minute)&&hour<24&&minute<60;
     uint32_t last_clock=api->millis(),previous=0;bool armed=false,dirty=true,initial=true;
@@ -216,14 +284,14 @@ static bool paper_run(void) {
             paper_battery next=paper_battery_read(v);dirty|=paper_battery_changed(battery,next);battery=next;
             dirty|=valid!=known||(valid&&(h!=hour||m!=minute));known=valid;hour=h;minute=m;last_clock=now;
         }
-        if((dirty||paper_transition_active())&&sbs_draw(v,status,initial,known,hour,minute,battery))dirty=initial=false;
+        if((dirty||paper_transition_active()||sbs_warm_pending())&&sbs_draw(v,status,initial,known,hour,minute,battery))dirty=initial=false;
         /* Admission consumes current intent. The adapter owns any outstanding
          * display lease; a completed highlight is never an input prerequisite. */
         if(sbs_pending&&!sample.down) {
             t5_app_manifest_t app;int index=sbs_resolve(sbs_launch_name);
-            if(index>=0&&api->installed_apps_get((unsigned)index,&app)&&app.compatible&&!strcmp(app.file_name,sbs_launch_name)&&api->request_app_launch((unsigned)index))return true;
+            if(index>=0&&api->installed_apps_get((unsigned)index,&app)&&app.compatible&&!strcmp(app.file_name,sbs_launch_name)&&api->request_app_launch((unsigned)index)){sbs_layers_release();return true;}
             portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);sbs_cancel();strcpy(status,"UNABLE TO OPEN APP");dirty=true;
         }
     }
-    sbs_cancel();paper_transition_cancel();(void)paper_frame_drain();return true;
+    sbs_cancel();paper_transition_cancel();(void)paper_frame_drain();sbs_layers_release();return true;
 }

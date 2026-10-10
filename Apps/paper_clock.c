@@ -132,12 +132,15 @@ static const int16_t clock_ring[60][2]={
 #define CLOCK_DRAW_OR_RETURN(...) draw_clock(__VA_ARGS__)
 #define CLOCK_DRAW_RESULT void
 #endif
+#include "PortableRasterLayer.h"
+static portable_raster_layer *home_scene_layer;
 static bool clock_dirty,clock_clean;
 static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
- clock_dirty=true;clock_clean|=initial;
+ bool rebuild=clock_dirty||initial;clock_clean|=initial;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
- if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;}
+ if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;rebuild=true;}
 #endif
+ clock_dirty|=rebuild;
  if(!paper_frame_ready()) {
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   return true;
@@ -146,6 +149,10 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #endif
  }
  paper->begin();
+ bool capture=false;
+ if(!rebuild&&portable_layer_valid(home_scene_layer))goto home_composite;
+ capture=portable_layer_begin(&home_scene_layer);
+ if(!capture)portable_layer_release(&home_scene_layer);
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  home_press_begin();
 #endif
@@ -178,6 +185,9 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #endif
  text(50,757,400,"UPDATES EVERY MINUTE",false);
 #endif
+ if(capture)portable_raster_layer_end();
+home_composite:
+ if(portable_layer_valid(home_scene_layer))portable_raster_layer_blit(home_scene_layer,0,0,app->screen_width(),app->screen_height(),0,0);
  app->present(clock_clean);clock_dirty=clock_clean=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
 #endif
@@ -188,7 +198,8 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_CLOCK_SPARSE_START)
 #include "paper_desk_clock.inc"
 #endif
-void app_main(void){
+static void home_main(void){
+ portable_layer_release(&home_scene_layer);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(!sparse_boot())return;
 #else
@@ -404,5 +415,8 @@ break;}
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
  if(desk_retained||portable_app_sleep_retained())return;
 #endif
+ portable_layer_release(&home_scene_layer);
  app->set_back_exits_app(true);
 }
+
+void app_main(void){home_main();portable_layer_release(&home_scene_layer);}
