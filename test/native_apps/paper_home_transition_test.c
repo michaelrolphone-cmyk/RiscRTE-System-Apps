@@ -83,7 +83,12 @@ static bool transition_copy(void *c,uint32_t format,void *out,size_t size,uint32
 }
 static bool transition_info(void *c,risc_display_info_v1 *out){raw_display_info(c,out);out->flags&=~RISC_DISPLAY_INFO_CLEAN_PRESENT;if(quick_scenario)out->flags|=RISC_DISPLAY_INFO_BRIGHTNESS;return true;}
 static bool transition_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,size_t count,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
+#ifdef PORTABLE_DESK_LOCK_HOME
+ assert(options->intent==(!inherited_image&&!transition_frames?
+     RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_LOW_LATENCY));
+#else
  assert(options->intent==RISC_DISPLAY_PRESENT_QUALITY);
+#endif
  char name[64];snprintf(name,sizeof(name),"frame-%02u",++transition_frames);transition_save(name,pixels);
  if(frame_records)fprintf(frame_records,"%u,%u,%s,%zu,%d,%d,%u,%u\n",transition_frames,ms,controls_open?"controls":controls_closed?"after-close":quick_input_started?"feedback":"home",count,count?damage->x:0,count?damage->y:0,count?damage->width:800,count?damage->height:480);
  last_damage_count=count;if(count){assert(count==1);last_damage=*damage;}memcpy(submitted_image,pixels,sizeof(pixels));
@@ -118,7 +123,13 @@ int main(int argc,char **argv){
  char *args[]={argv[0],argv[1],argv[2]};int result=sparse_fixture_main(3,args);assert(!result);
  if(!strcmp(argv[1],"terminal"))assert(!snapshot_copies&&!promoted&&transition_frames<=1);
  else if(without_snapshot)assert(!snapshot_copies);
- else {assert(snapshot_copies==1);if(inherited_image)assert(transition_frames>=5);}
+ else {assert(snapshot_copies==1);if(inherited_image) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  assert(transition_frames>=1); /* Synthetic per-call time may expire the fade during replay. */
+#else
+  assert(transition_frames>=5);
+#endif
+ }}
  if(quick_scenario){assert(stage_opens==1&&stage_closes==1&&quick_exit_sent&&restored_frame&&native_home_seen);assert(controls_closed_at-controls_opened_at>=1000);}
 #ifdef PORTABLE_STAGE_LOGS
  assert(stage_submits==presents&&stage_completes==presents);

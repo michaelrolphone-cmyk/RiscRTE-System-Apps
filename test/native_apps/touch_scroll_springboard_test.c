@@ -6,6 +6,8 @@
 #include "PortableTimeFormat.h"
 extern void fixture_grid_geometry(void);
 extern int fixture_offset(void),fixture_limit(void),fixture_velocity(void);
+extern int fixture_render_offset(void);
+extern bool fixture_render_highlight(void);
 extern bool fixture_pressed(void),fixture_pending(void),fixture_highlight_completed(const char *name);
 #ifndef TEST_DEPLOYMENT_CATALOG
 #define ENTRY(n) {.display_name=n,.file_name=n ".elf",.icon="solid:f017",.compatible=true}
@@ -135,7 +137,8 @@ static bool scroll_nav(void *c,risc_input_navigation_frame_v1 *out){
 static bool scroll_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,size_t n,
  const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
  assert(!raster_clip_active);
- rendered_offset[presents]=fixture_offset();rendered_highlight[presents]=fixture_pressed()||fixture_pending();
+ /* The logical controller can advance during replay of a sealed frame. */
+ rendered_offset[presents]=fixture_render_offset();rendered_highlight[presents]=fixture_render_highlight();
  if(ticks>=start_at){unsigned at=elapsed();if(at>=80&&at<260&&!quick_modal)drag_frames++;if(at>=260&&at<700&&!quick_modal)momentum_frames++;if(fixture_pressed())pressed_frames++;}
  if(quick_modal){quick_frames++;assert(!fixture_velocity()&&!fixture_pending());}
  return test_submit(c,frame,damage,n,options,token);

@@ -31,6 +31,7 @@ static springboard_pages sbs_scroll;
 static char sbs_names[SBS_CATALOG_BOUND][128],sbs_hit_name[128],sbs_launch_name[128];
 static int sbs_hit_q8,sbs_hit_cell,sbs_dot_page;
 static bool sbs_pressed,sbs_pending;
+bool portable_app_ui_active(void) {return sbs_scroll.contact||sbs_scroll.animating||sbs_pending;}
 static void sbs_visible(void) {
     if(portable_paper_scroll_settled())sbs_completed=sbs_submitted;
 }
