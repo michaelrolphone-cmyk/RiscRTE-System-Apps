@@ -35,6 +35,19 @@ int main(void) {
    memset(surface.pixels,0xa5,bytes);fill(rectangles[r][0],rectangles[r][1],rectangles[r][2],rectangles[r][3],colors[c]);assert(!memcmp(expected,surface.pixels,bytes));rect_checks++;
   }
  }
+ /* Rotated replay must not poll expensive runtime health per physical pixel.
+  * This is a call-count contract, independent of a desktop's fast clock mock. */
+ paper_rotated=true;paper_flip_ui=false;
+ unsigned health_before=mock_health_calls;
+ raster_replaying=true;
+ for(int row=0;row<height();row++) {
+  raster_band_top=row;raster_band_bottom=row+1;
+  fill(0,0,width(),height(),0xffff);
+ }
+ raster_replaying=false;
+ unsigned health_calls=mock_health_calls-health_before;
+ assert(health_calls<=((unsigned)width()*height()+511u)/512u+2u);
+ printf("Rotated full-screen replay health calls: %u (bounded per 512 pixels) PASS\n",health_calls);
  paper_rotated=false;paper_flip_ui=false;
  printf("Packed MONO1: %u original-pixel complete-buffer comparisons PASS\n",rect_checks);
  const char *times[]={"0:00","10:59","23:59","--:--","1:11","8:88"};
