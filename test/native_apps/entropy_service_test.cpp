@@ -22,6 +22,7 @@ int main(int argc,char**argv){assert(argc==2);const std::string mode=argv[1];
  assert(driver.start(&dependency,1)&&!Fake::calls);Fake::copied=*static_cast<const risc_entropy_source_v1*>(driver.capability);
  assert(!driver.start(&dependency,1));unsigned char out[33];std::memset(out,0xaa,sizeof(out));Fake::caller=out;
  if(mode=="unavailable")Fake::result=RISC_ENTROPY_UNAVAILABLE;
+ if(mode=="busy")Fake::result=RISC_ENTROPY_BUSY;
  if(mode=="invalid-native")Fake::result=RISC_ENTROPY_INVALID;
  if(mode=="context")Fake::result=RISC_ENTROPY_CONTEXT;
  if(mode=="retained")Fake::result=RISC_ENTROPY_RETAINED;

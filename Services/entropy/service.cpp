@@ -21,7 +21,7 @@ int32_t fill(void *context,void *out,uint32_t size){
  if(result==RISC_ENTROPY_OK)std::memcpy(out,scratch,size);
  else if(result==RISC_ENTROPY_CONTEXT)terminal=RISC_ENTROPY_SOURCE_CONTEXT;
  else if(result==RISC_ENTROPY_RETAINED||
-         (result!=RISC_ENTROPY_INVALID&&result!=RISC_ENTROPY_UNAVAILABLE))
+         (result!=RISC_ENTROPY_INVALID&&result!=RISC_ENTROPY_UNAVAILABLE&&result!=RISC_ENTROPY_BUSY))
   result=terminal=RISC_ENTROPY_SOURCE_RETAINED;
  wipe();busy=false;return result;
 }
