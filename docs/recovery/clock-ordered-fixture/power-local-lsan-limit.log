@@ -1,0 +1,10 @@
+Power adapter: exact legacy layout, 256 copied flags/percent states, provider failure reset, inactive/failed guards PASS
+==110==LeakSanitizer has encountered a fatal error.
+==110==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
+==110==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)
+Traceback (most recent call last):
+  File "/workspace/shared/clock-gesture-fixtures-20261010/scripts/test_power_status.py", line 11, in <module>
+    subprocess.run([str(exe)],check=True)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/workspace/shared/clock-gesture-fixtures-20261010/build/power-status/test-1']' returned non-zero exit status 1.

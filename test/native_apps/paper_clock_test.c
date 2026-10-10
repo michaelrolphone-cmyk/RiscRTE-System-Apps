@@ -39,15 +39,38 @@ const unsigned portable_catalog_count=CATALOG_COUNT;
 #endif
 static unsigned scenario,ms,polls,grants,subs,frames,presents,launches,diagnostics,waits;
 static char last_diagnostic[96];
+#ifdef TEST_CLOCK_ORDERED_INPUT
+/* User activity advances with yielded elapsed time, independently of the
+ * number of capture polls. The blocking display fake advances wall time only;
+ * it does not invent user gestures while the fixture is waiting for a frame. */
+static unsigned script_ms;
+#endif
 #ifdef TEST_WAIT_PRESENT
 static unsigned status_reads;
 static bool pending_present;
 #endif
 static uint8_t pixels[60*800];static char launched[128];
-static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<120;}
-static void yield_ms(uint32_t n){ms+=n;}
+static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ return script_ms<2500;
+#else
+ return polls<120;
+#endif
+}
+static void yield_ms(uint32_t n){ms+=n;
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ script_ms+=n;
+#endif
+}
 static bool diagnostic(const char *s){diagnostics++;snprintf(last_diagnostic,sizeof(last_diagnostic),"%s",s);return true;}
-static bool launch_app(const char *s){launches++;if(scenario==9&&launches==1)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
+static bool launch_app(const char *s){
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ assert(!frames);
+#ifdef TEST_WAIT_PRESENT
+ assert(!pending_present); /* Handoff waits for the final submitted frame. */
+#endif
+#endif
+ launches++;if(scenario==9&&launches==1)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
 static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=PANEL_WIDTH;o->height=PANEL_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1);o->flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;o->damage_x_alignment=o->damage_width_alignment=8;
 #ifdef TEST_ASYNC_PRESENT
  o->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
@@ -102,14 +125,22 @@ static bool wait_present(void *c,risc_display_present_token_v1 t,uint32_t timeou
 static uint64_t subscribe(void *c){(void)c;subs++;return 1;}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
 static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);polls++;return true;}
+#ifndef TEST_CLOCK_ORDERED_INPUT
 static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){(void)c;(void)n;(void)e;return 0;}
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
 static unsigned alarm_acks,alarm_steps,alarm_stops;
 static bool alarm_fired;
 static alarm_status_v1 alarm_state={.api_version=1,.struct_size=sizeof(alarm_state),.state=ALARM_STATE_READY};
 static int32_t alarm_status(void *c,alarm_status_v1 *o){(void)c;*o=alarm_state;return ALARM_OK;}
 static int32_t alarm_step(void *c){(void)c;alarm_steps++;
- if(scenario==13 && !alarm_fired && polls>=4){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
+ if(scenario==13 && !alarm_fired &&
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ script_ms>=100
+#else
+ polls>=4
+#endif
+){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
  if(alarm_state.state==ALARM_STATE_DISMISSING){alarm_state.state=ALARM_STATE_READY;alarm_state.occurrence=(alarm_token_v1){0};}
  return ALARM_OK;
 }
@@ -120,7 +151,13 @@ static int32_t alarm_stop(void *c){(void)c;alarm_stops++;return ALARM_OK;}
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
 #endif
 static bool snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;
- unsigned step=polls;bool down=step>=2&&step<=4;int x=240,y=360;
+ unsigned step=
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ script_ms/25u;
+#else
+ polls;
+#endif
+ bool down=step>=2&&step<=4;int x=240,y=360;
  if(scenario==0||scenario>=10)down=false;
  if(scenario==13){down=step==7;x=240;y=650;}
  if(scenario==1&&step>=3)x+=45;
@@ -129,13 +166,31 @@ static bool snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;memset(s,0,sizeof(
  if(scenario==4&&step>=3)y+=75;
  if(scenario==6&&step>=3){x+=39;y+=66;}
  if(scenario==7){down=step<5;if(step>=2)x+=45;}
- if(scenario==8&&step==3){s->contact_count=2;return true;}
+ if((scenario==8||scenario==15||scenario==17)&&step==3){
+  s->contact_count=2;
+#ifdef TEST_CLOCK_ORDERED_INPUT
+  s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=scenario==8?240:285,.y=360};
+  s->contacts[1]=(risc_touch_contact_v1){.id=2,.x=320,.y=440};
+#endif
+  return true;
+ }
  if(scenario==8&&step>=4)x+=80;
  if(scenario==9){down=(step>=2&&step<=4)||(step>=7&&step<=9);if(step==3||step==4||step==8||step==9)x+=45;}
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ if(scenario==14||scenario==16){down=script_ms==50||script_ms==51;if(scenario==14&&script_ms==51)x+=45;}
+ if(scenario==15||scenario==17){down=(step>=2&&step<=4);if(step>=4)x+=80;}
+ if(scenario==17&&step>=7){down=step<=9;x=step>=8?285:240;}
+#endif
  if(down){s->contact_count=1;s->contacts[0].id=1;s->contacts[0].x=x;s->contacts[0].y=y;}
  return true;
 }
-static bool rtc_read(void*c,twatch_rtc_time_v1*out){(void)c;*out=(twatch_rtc_time_v1){2026,10,6,2,20,59,0};if(scenario==10&&polls>8){out->hour=21;out->minute=0;}return scenario!=11;}
+static bool rtc_read(void*c,twatch_rtc_time_v1*out){(void)c;*out=(twatch_rtc_time_v1){2026,10,6,2,20,59,0};if(scenario==10&&
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ script_ms>200
+#else
+ polls>8
+#endif
+ ){out->hour=21;out->minute=0;}return scenario!=11;}
 static const twatch_rtc_api_v1 rtc_api={.api_version=2,.struct_size=sizeof(rtc_api),.read=rtc_read};
 static bool battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_battery_sample_v1){.percent=84};return scenario!=12;}
 static const risc_battery_gauge_api_v1 battery_api={1,sizeof(battery_api),NULL,battery_read};
@@ -146,7 +201,12 @@ static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d)
  ,.wait_present=wait_present
 #endif
 };
+#ifdef TEST_CLOCK_ORDERED_INPUT
+#include "paper_clock_ordered_fixture.h"
+static const risc_touch_api_v1 t={1,sizeof(t),NULL,clock_input_subscribe,unsubscribe,clock_input_poll,clock_input_next,clock_input_snapshot};
+#else
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
+#endif
 static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){
 #ifdef PORTABLE_ALARM_CLIENT
  if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){assert(v==1&&!id);g->api=&alarm_api;grants++;return true;}
@@ -163,6 +223,10 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);a
  const paper_presentation*view=paper_presentation_get();uint8_t h=0,m=0;assert(view);if(scenario==11)assert(!view->clock(&h,&m));else assert(view->clock(&h,&m)&&h==20&&m==59);
 #endif
  app_main();app_module_fini();assert(!grants&&!subs&&!frames);
+#ifdef TEST_CLOCK_ORDERED_INPUT
+ /* A valid 2 ms tap must be delivered even though it cannot launch Clock. */
+ if(scenario==16)assert(clock_input_delivered[RISC_TOUCH_EVENT_DOWN]==1&&clock_input_delivered[RISC_TOUCH_EVENT_UP]==1);
+#endif
 #ifdef TEST_WAIT_PRESENT
  assert(pending_present==(TEST_DISPLAY_FAILURE==7));
 #ifdef TEST_ASYNC_PRESENT
@@ -176,7 +240,7 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);a
   assert(diagnostics==1&&strstr(last_diagnostic,errors[TEST_DISPLAY_FAILURE]));
   assert(!launches);assert(waits<=1);puts("Paper display failure: one diagnostic, no launch or retry");return 0;
  }
- if(scenario>=1&&scenario<=4)assert(launches==1&&!strcmp(launched,"springboard.elf"));
+ if((scenario>=1&&scenario<=4)||scenario==14||scenario==17)assert(launches==1&&!strcmp(launched,"springboard.elf"));
  else if(scenario==9)assert(launches==2&&!strcmp(launched,"springboard.elf"));
  else assert(!launches);
  if(scenario==13){

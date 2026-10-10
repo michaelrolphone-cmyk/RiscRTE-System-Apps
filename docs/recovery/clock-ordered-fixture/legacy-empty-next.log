@@ -1,0 +1,1 @@
+legacy-empty-next: /workspace/shared/clock-gesture-fixtures-20261010/test/native_apps/paper_clock_test.c:243: main: Assertion `launches==1&&!strcmp(launched,"springboard.elf")' failed.
