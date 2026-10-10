@@ -31,14 +31,14 @@ int main(int argc,char **argv){
     risc_provider_dependency_v1 dependency={RISC_SCENE_CAPABILITY,1,&fake_scene};
     assert(driver->start(&dependency,1));
     risc_text_entry_request_v1 request={.api_version=1,.struct_size=sizeof(request),.capacity=16,.label="Text"};
-    uint64_t token=0;assert(api.open(NULL,&request,&token)==RISC_TEXT_ENTRY_OK&&token);
+    uint64_t token=0;assert(api.base.open(NULL,&request,&token)==RISC_TEXT_ENTRY_OK&&token);
     state.revision=document.revision=UINT32_MAX;
     unsigned before=io_calls;risc_text_entry_state_v1 result={.struct_size=sizeof(result)};
-    assert(api.poll(NULL,token,&result)==RISC_TEXT_ENTRY_RETAINED);
+    assert(api.base.poll(NULL,token,&result)==RISC_TEXT_ENTRY_RETAINED);
     assert(retained&&io_calls==before+1&&!snapshots);
     before=io_calls;
-    assert(api.poll(NULL,token,&result)==RISC_TEXT_ENTRY_RETAINED);
-    assert(api.close(NULL,token)==RISC_TEXT_ENTRY_RETAINED&&!driver->quiesce());
+    assert(api.base.poll(NULL,token,&result)==RISC_TEXT_ENTRY_RETAINED);
+    assert(api.base.close(NULL,token)==RISC_TEXT_ENTRY_RETAINED&&!driver->quiesce());
     driver->stop();assert(io_calls==before);
     printf("text host revision overflow %s PASS (no I/O after retention)\n",argv[1]);return 0;
 }

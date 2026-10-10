@@ -11,7 +11,7 @@ typedef struct {
     risc_runtime_capability_v1 grant;
     uint64_t session;
     uint32_t capacity;
-    bool active, acquired, suspended, closing, retained;
+    bool active, acquired, suspended, closing, retained, home_reason;
 } portable_text_client;
 static inline int portable_text_client_retain(portable_text_client *c) {
     c->retained=true;portable_text_adapter_retain();return RISC_TEXT_ENTRY_RETAINED;
@@ -56,6 +56,8 @@ static inline int portable_text_client_begin(portable_text_client *c,const risc_
     if(c->api->api_version!=1||c->api->struct_size<sizeof(*c->api)||!c->api->open||!c->api->poll||!c->api->close) {
         int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?RISC_TEXT_ENTRY_UNAVAILABLE:closed;
     }
+    c->home_reason=risc_text_entry_home_reason(c->api);
+    if(c->home_reason)request.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON;
     int rc=portable_text_adapter_suspend();
     if(rc!=RISC_TEXT_ENTRY_OK){if(rc==RISC_TEXT_ENTRY_RETAINED)return portable_text_client_retain(c);int closed=portable_text_client_release(c);return closed==RISC_TEXT_ENTRY_OK?rc:closed;}
     c->suspended=true;c->session=0;
@@ -77,7 +79,8 @@ static inline int portable_text_client_poll(portable_text_client *c,risc_text_en
     if(!portable_text_client_live(c))return RISC_TEXT_ENTRY_RETAINED;
     if(rc==RISC_TEXT_ENTRY_AGAIN)return rc;
     if(rc!=RISC_TEXT_ENTRY_OK||state.struct_size<sizeof(state)||!state.revision||
-       (state.flags&~(RISC_TEXT_ENTRY_HARDWARE|RISC_TEXT_ENTRY_PRESENTING))||state.state>RISC_TEXT_ENTRY_CANCELLED||
+       (state.flags&~(RISC_TEXT_ENTRY_HARDWARE|RISC_TEXT_ENTRY_PRESENTING|(c->home_reason?RISC_TEXT_ENTRY_HOME_CANCEL:0u)))||state.state>RISC_TEXT_ENTRY_CANCELLED||
+       ((state.flags&RISC_TEXT_ENTRY_HOME_CANCEL)&&state.state!=RISC_TEXT_ENTRY_CANCELLED)||
        !memchr(state.text,0,c->capacity))return portable_text_client_retain(c);
     for(unsigned i=0;state.text[i];i++)if((unsigned char)state.text[i]<32||(unsigned char)state.text[i]>126)return portable_text_client_retain(c);
     if(!(state.flags&RISC_TEXT_ENTRY_PRESENTING)) {
