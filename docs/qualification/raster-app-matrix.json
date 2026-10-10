@@ -2027,7 +2027,7 @@
     },
     {
       "name": "Ordered-provider files legacy diagnostic",
-      "status": "UNRESOLVED_BASELINE_FIXTURE_FAILURES",
+      "status": "CLASSIFIED_LEGACY_FIXTURE_FAILURES",
       "evidence": [
         "ordered-files-snapshot-runs.json",
         "ordered-files-disabled-runs.json",
@@ -2159,11 +2159,11 @@
           ]
         }
       },
-      "note": "Exact same residual failures in both modes. No snapshot-specific regression demonstrated. These residual cases have not been qualified to passing and must not be counted as passing or dismissed solely because both modes fail. Current logical-list and production application suites provide separate coverage."
+      "note": "Original residual failures remain failed, with identical enabled/disabled sets. Source-bound traces and independent fixture-only corrected controls now classify the residual assumptions; see followon_classification. No new production input/identity defect demonstrated. Corrected diagnostics are not a full pass for this unmodified legacy runner."
     },
     {
       "name": "Ordered-provider wifi legacy diagnostic",
-      "status": "UNRESOLVED_BASELINE_FIXTURE_FAILURES",
+      "status": "CLASSIFIED_LEGACY_FIXTURE_FAILURES",
       "evidence": [
         "ordered-wifi-snapshot-runs.json",
         "ordered-wifi-disabled-runs.json",
@@ -2247,7 +2247,7 @@
           ]
         }
       },
-      "note": "Exact same residual failures in both modes. No snapshot-specific regression demonstrated. These residual cases have not been qualified to passing and must not be counted as passing or dismissed solely because both modes fail. Current logical-list and production application suites provide separate coverage."
+      "note": "Original residual failures remain failed, with identical enabled/disabled sets. Source-bound traces and independent fixture-only corrected controls now classify the residual assumptions; see followon_classification. No new production input/identity defect demonstrated. Corrected diagnostics are not a full pass for this unmodified legacy runner."
     },
     {
       "name": "Legacy resident-shell runner",
@@ -2345,12 +2345,12 @@
     "failed_submit": "Permitted RTC write at29 ms precedes observed submit failure36 ms. Zero later writes; active provider callbacks assert failure has not been observed. Known-owned release/unsubscribe cleanup remains allowed.",
     "retained_terminal": "472 native custody cases enforce callback/free exclusion after retention; selected Settings render-retained cases preserve strict io guard and no launch/write after retention.",
     "api": "No provider SDK/API changes. Relative to stable c878ce7, PortableQuickRender.h adds only the private pqa_render_rows helper.",
-    "as_built_receipt_mismatch": "RESOLVED: sealed Settings receipt at /workspace/shared/ui-decoupling-final-057-target/apps/settings has completed_frame_hit_identity=false and logical_geometry_hit_identity=true; identical f3e44072 ELF verified.",
+    "as_built_receipt_mismatch": "RESOLVED: sealed receipt has completed_frame_hit_identity=false and logical_geometry_hit_identity=true; its 247 source hashes verify at bd98b2e14c8d4ac20e4075c03396b12d8480e8f4 and the ELF is byte-identical to the tested f3e44072 target.",
     "sanitizers": "ASan and UBSan enabled wherever specified; detect_leaks=0 only avoids ptrace LSan incompatibility."
   },
   "unresolved": [
-    "Historical paper-present/input object unavailable; no execution.",
-    "Ordered Files/Wi-Fi legacy diagnostics retain the explicitly listed same-mode baseline failures; no full-pass claim for those runners."
+    "Historical paper-present/input object c1ff014792c9ecbc195c402e9b4c3e2c3c9d34d3 unavailable; no execution.",
+    "Legacy runners remain unchanged failures/obsolete checks as listed. Focused corrected diagnostic controls are separate evidence, not replacement green receipts for those scripts."
   ],
   "artifacts": {
     "aligned-unit.log": {
@@ -2600,6 +2600,158 @@
     "wifi-paper-snapshot.log": {
       "sha256": "9613abf3657bb203b293396bf0aec350d6dbd7c1ac3ee585795db691394c51b4",
       "bytes": 12120
+    },
+    "/tmp/raster-union-app-qualification/files-followon/classification.json": {
+      "sha256": "a58fd4df228e5e982a70d433514a151ddcd6073350d9652ab885c47aee5079a1",
+      "bytes": 6026
+    },
+    "/tmp/wifi-fixture-classification/report.md": {
+      "sha256": "8b5f51e1487007610c960347d11166c533c787f77f0d870623a25eaf91ec5f06",
+      "bytes": 6751
+    },
+    "/tmp/wifi-fixture-classification/summary.json": {
+      "sha256": "ed9495c63aef0412cb773b2667e22d9de849bf57c84411a179fb8fe21012909e",
+      "bytes": 1052
+    },
+    "/tmp/wifi-fixture-classification/source-sha256.json": {
+      "sha256": "6aafc765b32dd5c6dd453d7c0afc8401b8f3cf204384751128638be6df2b95db",
+      "bytes": 110486
     }
-  }
+  },
+  "followon_classification": {
+    "files": {
+      "source_root": "/tmp/system-raster-selected-settings-20261010",
+      "source_commit": "2edf22bc1160cca6818ad5a1ab47caa1be9c632a",
+      "production_edits": false,
+      "original_status": {
+        "snapshot": {
+          "pass": 114,
+          "fail": 14
+        },
+        "disabled": {
+          "pass": 114,
+          "fail": 14
+        }
+      },
+      "instrumented_residual_reproduction": {
+        "cases_per_mode": 16,
+        "fail_per_mode": 14,
+        "normal_and_asan_ubsan": true
+      },
+      "corrected_fixture_controls": {
+        "cases_per_mode": 16,
+        "pass_per_mode": 16,
+        "normal_and_asan_ubsan": true,
+        "status": "Diagnostic controls only; original runner remains failed"
+      },
+      "classifications": [
+        {
+          "case": "confirm-hidden",
+          "classification": "OBSOLETE_TWO_CONFIRM_EXPECTATION",
+          "trace": "At elapsed 1400 the first Confirm resolves logical selected row 0 despite scroll offset 1421; at1402 mode=5, selected name File 000.txt. Old fixture expects mode0 at1600 and a second Confirm.",
+          "control": "Set expected row0 at the first Confirm, assert mode5 and File000 before any second key; preserve selected identity, no writes and final cleanup."
+        },
+        {
+          "case": "short busy-hit",
+          "classification": "INVALID_STOP_TAP_TIMELINE",
+          "trace": "Second drag is clamped at y120 by elapsed496 and remains stationary until UP601; >80 ms idle correctly zeros velocity. DOWN626 sees offset630, velocity0, stop_tap0. UP700 opens correct logical row7, File007.txt. Later DOWN750 computes expected row1 from the newly opened actions page, causing its own oracle mismatch.",
+          "control": "Keep the short-profile drag moving at 1px/ms until UP; the intended stop tap then stops real inertia and the later selection resolves the correct pinned logical row."
+        },
+        {
+          "case": "keyboard-busy",
+          "classification": "OBSOLETE_BUSY_DISPLAY_INPUT_DROP_EXPECTATION",
+          "trace": "Independent UPs at elapsed1476,1825,2775 enter three characters. Paper editor !55 and short editor !&& are correct; original oracle expects only !5 / !&. Logical keyboard-page change is available before pending display completion.",
+          "control": "Require all three delivered characters, empty applied query, Back cancellation, no writes, immutable pending pixels and cleanup."
+        },
+        {
+          "case": "inventory-change",
+          "classification": "OBSOLETE_FINAL_RESET_AND_STATIC_FEEDBACK_EXPECTATIONS",
+          "trace": "Generation3\u21924 at elapsed354 (paper) or1225 (short), offset0, hit_ready0, message Folder changed. Choose the item again. New/current scripted drags after reset continue logical scrolling. Original final-offset0 assertion mistakes event-time reset for a permanent lock. Short outside-viewport mismatch x33/y460 is the legitimate feedback text at height\u2212146.",
+          "control": "Assert generation-change event has offset0 and invalidated hit identity; assert no selected item and closed directories. Permit dynamic pixels only in footer feedback strip height\u2212158\u2026height\u2212118, preserve all other outside-viewport comparisons."
+        }
+      ],
+      "evidence": {
+        "control-disabled-runs.json": "36d28550cc69a378139cc93ef6faf90502748b17298bdc31f44745e42a68fa76",
+        "control-snapshot-runs.json": "a61a3922d1e3e44bb119ae216e2e7b164101ccb578b20c72d2a9c32a71aa3325",
+        "control-disabled.log": "94779e93d8163cd8fc00efae55a188de9d4f7847522d48c256f5077cd6fcb836",
+        "control-snapshot.log": "d44a340b3ecdf9302b610f78983c242484007ac1cead3acabe233a34b73bdab2",
+        "control-source-map.json": "7edde9e6fc5a995c7363ebdecac3378cc66f507d7e69525871a7309a19f7f227",
+        "control-fixture.c": "fce337096dc5166a004238704cda7e52b21d92923b12055a8b4a3337f7648358",
+        "control-entry.c": "e7ea03b6dde23daa956ea1f4779d50fa96488f6b18a119877fbe2a9881e4ee14",
+        "short-inventory-change.trace": "a8e64267c0cefb15c12568096342629d47afe74aeb56acd122da76eeb83d28a3",
+        "paper-inventory-change.trace": "9ac25149681f3c7b3e2854bb2a7974113e42bb79f022141080edc36d333e9e1e",
+        "disabled-runs.json": "27429c972ca0b79a5164f3bb66e1469dadaa5a76b829a4f4fc676deb3b6987a8",
+        "snapshot-runs.json": "f38c1a77be05a638865ebc482f56c6a32783c11cfe809c29a3845e573b486b35",
+        "disabled2.log": "5cafc898ca1c34a27e4d7fceb5624cac63f0acf02ad39c934858e551fb7f970d",
+        "snapshot2.log": "d22a6c4821965708967ae19f8b366bef752807add15253f02d6fd3d22beba358",
+        "disabled.log": "45915248d0da6076d489828c4d9001b9cf84c509d3e82a3b7fd90a907ead6a43",
+        "snapshot.log": "68ff79c58b8c787a9b39d0753f4cc55dc5cca77663c5bcd0b442e43a2e54e018",
+        "source-map.json": "1f64fdc845d3ad54ced9e700c53f3edced206397a474fd17c5595b93f9159e78",
+        "entry.c": "0340ff004ec34eb7d470ecdae0a5f51d7b65b0869749847c2e2f8fa6ceb9a166",
+        "fixture.c": "4c9e589dda2658949bae6d4cd264a34a025d653459a7870751369b617d93f323"
+      },
+      "production_sha256": {
+        "Apps/file_browser.c": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+        "Apps/file_browser_scroll_view.inc": "669fec54db3a878d297397a4739cfb8869264815e9b95b7060abee8ff32be082",
+        "Apps/file_browser_scroll_model.inc": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+        "Apps/file_browser_portable.inc": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+        "Apps/file_browser_paper.inc": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+        "Apps/file_browser_operations.inc": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+        "lib/PortableApps/src/adapter.c": "8515a1ae7d5c6c19ea42b0e2950a91f37a02c6ee3fa83cbab52cbb7e4b106579",
+        "lib/PortableApps/src/raster_snapshot_state.inc": "a0c8766bdbd89fc591b03ff913e82f5fece8341ced041fab629dabc0fa4af04b",
+        "lib/PortableApps/src/raster_snapshot_replay.inc": "6a9fd58d3617e447cd1d7c0a138b0289dff88e6c42aa83d56a2c59a03fd94888",
+        "lib/PortableApps/include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+        "lib/PortableApps/include/PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004"
+      }
+    },
+    "wifi": {
+      "classification": {
+        "queued-up": "Invalid provider stream: out-of-order duplicate UP; production correctly cancels and resynchronizes.",
+        "confirm-hidden": "Obsolete reveal-then-confirm oracle: first confirm correctly activates the current logical selection."
+      },
+      "production_defect_demonstrated": false,
+      "production_edits": false,
+      "source_commit": "c5661fb987e583443baf652d5acabc2d49250c98",
+      "original_matrix": {
+        "snapshot": {
+          "processes": 80,
+          "pass": 72,
+          "fail": 8
+        },
+        "disabled": {
+          "processes": 80,
+          "pass": 72,
+          "fail": 8
+        }
+      },
+      "new_diagnostics": {
+        "original-oracle": {
+          "binaries": 8,
+          "compile_failures": 0,
+          "processes": 24,
+          "pass": 8,
+          "fail": 16
+        },
+        "control": {
+          "binaries": 8,
+          "compile_failures": 0,
+          "processes": 24,
+          "pass": 24,
+          "fail": 0
+        }
+      },
+      "sanitizer_errors": [],
+      "source_hashes": "source-sha256.json",
+      "runs": [
+        "instrumented-runs.json",
+        "control-and-sanitized-runs.json"
+      ]
+    },
+    "wifi_report": "/tmp/wifi-fixture-classification/report.md",
+    "production_defect_demonstrated": false,
+    "production_edits": false,
+    "original_failed_matrices_unchanged": true,
+    "corrected_controls_are_original_gate_passes": false
+  },
+  "updated_utc": "2026-10-10T16:02:44.334559+00:00"
 }

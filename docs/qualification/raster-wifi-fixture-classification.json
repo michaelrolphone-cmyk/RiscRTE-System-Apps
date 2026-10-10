@@ -1,0 +1,43 @@
+{
+  "classification": {
+    "queued-up": "Invalid provider stream: out-of-order duplicate UP; production correctly cancels and resynchronizes.",
+    "confirm-hidden": "Obsolete reveal-then-confirm oracle: first confirm correctly activates the current logical selection."
+  },
+  "production_defect_demonstrated": false,
+  "production_edits": false,
+  "source_commit": "c5661fb987e583443baf652d5acabc2d49250c98",
+  "original_matrix": {
+    "snapshot": {
+      "processes": 80,
+      "pass": 72,
+      "fail": 8
+    },
+    "disabled": {
+      "processes": 80,
+      "pass": 72,
+      "fail": 8
+    }
+  },
+  "new_diagnostics": {
+    "original-oracle": {
+      "binaries": 8,
+      "compile_failures": 0,
+      "processes": 24,
+      "pass": 8,
+      "fail": 16
+    },
+    "control": {
+      "binaries": 8,
+      "compile_failures": 0,
+      "processes": 24,
+      "pass": 24,
+      "fail": 0
+    }
+  },
+  "sanitizer_errors": [],
+  "source_hashes": "source-sha256.json",
+  "runs": [
+    "instrumented-runs.json",
+    "control-and-sanitized-runs.json"
+  ]
+}

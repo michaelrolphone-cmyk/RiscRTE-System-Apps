@@ -129,10 +129,16 @@ complete synchronous compatibility rendering rather than truncating features.
   selected Watch Files recipe also uses its own RGB presentation unit and a
   partly recovered legacy preparation bundle. No complete selected Watch Files
   rebuild or recipe adoption is claimed here.
-- Historical Files/Wi-Fi diagnostic suites still have identical failing
-  expectations in both modes. They are retained as explicit coverage gaps,
-  not counted as passes. The [consolidated app receipt](qualification/raster-app-matrix.json) separates those attempts
-  from current passing app, logical-input, custody and pixel gates.
+- Historical Files/Wi-Fi diagnostics retain identical failed receipts in both
+  modes. Every residual pattern is now traced to a fixture input or oracle:
+  held-touch inertia timing, three valid keyboard releases versus a two-character
+  expectation, immediate logical confirmation, catalog reset checked after later
+  dragging, and out-of-order injected input. Corrected diagnostic controls pass
+  normal and ASan/UBSan in both modes (Files 16/16 per mode, Wi-Fi 24/24 total).
+  No new production defect was demonstrated. Original failures are not recounted
+  as passes. See the [app receipt](qualification/raster-app-matrix.json),
+  [Files traces](qualification/raster-files-fixture-classification.json) and
+  [Wi-Fi traces](qualification/raster-wifi-fixture-classification.md).
 - Disabled target ELFs pass all build gates but are not claimed byte-identical
   to the pre-refactor binaries; internal helper factoring changes their layout.
   Versions and preserved behavior are qualified rather than hidden by a stale
