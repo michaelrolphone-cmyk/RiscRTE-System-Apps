@@ -147,9 +147,11 @@ level-only power API; held/newly observed power presses abort before entry.
   preparation rollover, catch-up exhaustion, stale timer authority after early
   refusal, and simultaneous power/touch refusal without replay.
 - X4's `run_desk_clock_sleep_test.sh` exercises the actual typed client failure
-  matrix. `run_desk_clock_typed_app_test.sh` links it with the real Clock/adapter
-  in both QuickActions/radio configurations and enforces the prepared-state
-  gates and same seeded frame lease.
+  matrix. System's `scripts/test_x4_desk_clock_typed_app.py --x4 /path/to/X4
+  --runtime /path/to/Runtime --sdk /path/to/Reader/sdk/driver` links that production
+  client with the current real Clock/adapter in both QuickActions/radio
+  configurations, normal and ASan/UBSan. It enforces the prepared-state gates and
+  same seeded frame lease. See [fixture provenance](X4_TYPED_FIXTURE.md).
 - `scripts/test_desk_clock_runtime_gate.py --runtime /path/to/Runtime` uses
   real Runtime/CpuPort/dlopen fixtures to prove the storage gate
   against actual GPIO holds and provider locks, rather than a permissive API

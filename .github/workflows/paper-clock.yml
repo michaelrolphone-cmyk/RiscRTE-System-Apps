@@ -41,15 +41,18 @@ jobs:
         run: python scripts/test_paper_desk_clock.py --sdk .desk-deps/reader/sdk/driver
       - name: Actual Runtime and CPU retained staging gate
         run: python scripts/test_desk_clock_runtime_gate.py --runtime .desk-deps/runtime
-      - name: Checked X4 client and real Clock integration under sanitizers
+      - name: Checked X4 typed sleep client under sanitizers
         env:
           RISCRTE_RUNTIME_ROOT: ${{ github.workspace }}/.desk-deps/runtime
           RISCRTE_APPS_ROOT: ${{ github.workspace }}
           RISCRTE_DESK_SDK_ROOT: ${{ github.workspace }}/.desk-deps/reader
           SANITIZE: '1'
-        run: |
-          bash .desk-deps/x4/minimal/test/run_desk_clock_sleep_test.sh
-          bash .desk-deps/x4/minimal/test/run_desk_clock_typed_app_test.sh
+        run: bash .desk-deps/x4/minimal/test/run_desk_clock_sleep_test.sh
+      - name: Pinned X4 client and current real Clock, normal and sanitizers
+        run: >-
+          python scripts/test_x4_desk_clock_typed_app.py
+          --x4 .desk-deps/x4 --runtime .desk-deps/runtime
+          --sdk .desk-deps/reader/sdk/driver
       - name: Bounded desk-clock checkpoint and minute policy
         run: python scripts/test_desk_clock_policy.py
       - name: Portable six-face rasters and frozen Reader comparison
