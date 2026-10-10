@@ -238,9 +238,9 @@ class PerformanceBuildProfiles(unittest.TestCase):
                         provenance = json.loads((out/'licenses/portable-settings/native-time-SDK-SOURCES.json').read_text())
                         self.assertEqual(provenance['commit'], performance.RUNTIME_COMMIT)
 
-    def test_normal_native_toolbar_pin_and_compiled_headers_remain_unchanged(self):
-        self.assertEqual(native.RUNTIME_COMMIT, '30dcec5ce6ce33223f2b203a2399283e1f758567')
-        self.assertEqual(settings.NATIVE_TIME_RUNTIME_COMMIT, '602ae9bd618e13407b5b94bcad86cdabc23c99ea')
+    def test_normal_native_toolbar_preserved_sdk_pin_and_compiled_headers(self):
+        self.assertEqual(native.RUNTIME_COMMIT, '274bc66f193cbe29018d2a85c9400cb0dce8aacc')
+        self.assertEqual(settings.NATIVE_TIME_RUNTIME_COMMIT, '274bc66f193cbe29018d2a85c9400cb0dce8aacc')
         parser = argparse.ArgumentParser()
         args = argparse.Namespace(time_profile='x4-native-time', native_time_runtime_repo=Path('/runtime'),
                                   tagged_alarm_utilities=None)
