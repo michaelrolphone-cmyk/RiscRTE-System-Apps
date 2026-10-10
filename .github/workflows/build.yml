@@ -28,6 +28,7 @@ jobs:
           python scripts/test_portable_file_browser.py
           python scripts/test_file_browser_paper.py
           python scripts/test_file_browser_operations.py
+          python scripts/test_file_browser_appdata_export.py
           python scripts/test_portable_update.py
           python scripts/test_portable_alarm.py
           python scripts/test_nova_ui.py
