@@ -169,3 +169,15 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     }
     return true;
 }
+
+void pqa_paper_icon(unsigned index,int x,int y,int size,bool black,
+                    void (*draw)(int,int,uint32_t,unsigned)) {
+    const pqa_icon *const icons[]={&pqa_icon_silent,&pqa_icon_dnd,&pqa_icon_airplane,
+      &pqa_icon_wifi,&pqa_icon_bluetooth,&pqa_icon_torch,&pqa_icon_sun,&pqa_icon_volume};
+    if(index>=sizeof(icons)/sizeof(icons[0]) || !draw || size<1 || size>64)return;
+    const pqa_icon *ic=icons[index];int largest=ic->width>ic->height?ic->width:ic->height;
+    int w=ic->width*size/largest,h=ic->height*size/largest;
+    for(int j=0;j<h;j++)for(int i=0;i<w;i++)
+      if(pqa_alpha[ic->offset+(unsigned)(j*ic->height/h)*ic->width+(unsigned)(i*ic->width/w)]>=128)
+        draw(x+(size-w)/2+i,y+(size-h)/2+j,black?0:0xffffff,255);
+}

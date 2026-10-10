@@ -13,6 +13,12 @@ static void emit_brightness(pqa_state *s, bool commit) {
         s->action_brightness = s->brightness;
     }
 }
+#ifdef PORTABLE_FRONTLIGHT_TONE
+static void emit_tone(pqa_state *s,bool commit) {
+    if(commit){s->pending&=~(uint32_t)PQA_TONE_PREVIEW;s->pending|=PQA_TONE_COMMIT;s->action_tone=s->tone;}
+    else if(!(s->pending&PQA_TONE_COMMIT)){s->pending|=PQA_TONE_PREVIEW;s->action_tone=s->tone;}
+}
+#endif
 static void emit_volume(pqa_state *s, uint32_t action) {
     s->action_volume = s->volume;
     s->pending |= action;
@@ -24,7 +30,17 @@ static void emit_torch(pqa_state *s) {
 void pqa_init(pqa_state *s) {
     if (!s) return;
     memset(s, 0, sizeof(*s));
+    s->torch_valid = true;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+    s->audio_controls = true;
+#endif
     s->brightness = 40;
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    s->tone=50;
+#endif
+#ifdef PORTABLE_PAPER_TRANSITIONS
+    s->last_nonzero_brightness = 40;
+#endif
     s->volume = 50;
     s->last_nonzero_volume = 50;
     s->pressed_tile = -1;
@@ -34,6 +50,9 @@ void pqa_set_levels(pqa_state *s, bool bv, unsigned b, bool vv, unsigned v) {
     s->brightness_valid = bv;
     s->volume_valid = vv;
     s->brightness = (uint8_t)(b > 100u ? 100u : b);
+#ifdef PORTABLE_PAPER_TRANSITIONS
+    if(s->brightness)s->last_nonzero_brightness=s->brightness;
+#endif
     s->volume = (uint8_t)(v > 100u ? 100u : v);
     if (s->volume) s->last_nonzero_volume = s->volume;
 }
@@ -58,6 +77,9 @@ void pqa_cancel_input(pqa_state *s) {
         s->volume = s->saved_volume;
         s->last_nonzero_volume = s->saved_last_nonzero_volume;
     }
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    if(s->gesture==PQA_TONE_DRAG && s->tone!=s->saved_tone){s->tone=s->saved_tone;emit_tone(s,false);}
+#endif
     s->gesture = PQA_IDLE;
     s->pressed_tile = -1;
     s->neutral_gate = true;
@@ -69,6 +91,9 @@ void pqa_close(pqa_state *s) {
     if (!s) return;
     pqa_cancel_input(s);
     s->target_q8 = 0;
+#ifndef PORTABLE_PAPER_TRANSITIONS
+    if(s->paper)s->position_q8=0;
+#endif
     if (s->torch) { s->torch = false; emit_torch(s); }
 }
 void pqa_cancel(pqa_state *s) {
@@ -76,7 +101,68 @@ void pqa_cancel(pqa_state *s) {
     pqa_close(s);
     s->position_q8 = 0;
 }
-static int tile_at(int x, int y) {
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+bool pqa_paper_compact_sliders(const pqa_state *s) {
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    return s && s->audio_controls && s->tone_controls;
+#else
+    (void)s;return false;
+#endif
+}
+int pqa_paper_slider_y(const pqa_state *s,unsigned slider) {
+    if(!s)return 0;
+    const bool compact=pqa_paper_compact_sliders(s);
+    if(slider==0)return compact?114:126;
+    if(slider==1)return s->audio_controls?(compact?180:220):0;
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    if(slider==2)return s->tone_controls?(compact?246:220):0;
+#endif
+    return 0;
+}
+static bool paper_slider_at(const pqa_state *s,unsigned slider,int x,int y) {
+    const int top=pqa_paper_slider_y(s,slider),height=pqa_paper_compact_sliders(s)?30:44;
+    return top && x>=32 && x<448 && y>=top-6 && y<top+height+10;
+}
+bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y) {
+    if(!s || tile==6 || tile>8 || (!s->audio_controls && tile==0))return false;
+#ifndef PORTABLE_QUICK_USB_TRANSFER
+    if(tile==7)return false;
+#endif
+    if(tile==8 && !s->clean_refresh_valid)return false;
+    unsigned slot=s->audio_controls?tile:tile-1;
+    if(tile>=7)--slot; /* Tile 6 is the legacy standalone frontlight switch. */
+#ifndef PORTABLE_QUICK_USB_TRANSFER
+    if(tile==8)--slot;
+#endif
+    int top=s->audio_controls?302:206;
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    if(s->tone_controls)top=s->audio_controls?306:302;
+#endif
+    *x=32+(int)(slot%2)*212;*y=top+(int)(slot/2)*104;
+    return true;
+}
+#endif
+static int tile_at(const pqa_state *s,int x, int y) {
+    if(s->paper) {
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+#ifndef PORTABLE_RESIDENT_SHELL_HOST
+        if(x>=32 && x<448 && y>=612 && y<676)return 7;
+#endif
+#endif
+#if defined(PORTABLE_PAPER_TRANSITIONS) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
+        if(x>=326 && x<448 && y>=84 && y<120)return 6;
+#endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+        for(unsigned tile=0;tile<9;tile++) {
+            int tx,ty;
+            if(pqa_paper_tile(s,tile,&tx,&ty) && x>=tx && x<tx+204 && y>=ty && y<ty+92)return (int)tile;
+        }
+#else
+        for(int row=0;row<3;row++)for(int col=0;col<2;col++)
+            if(x>=32+col*212 && x<236+col*212 && y>=302+row*104 && y<394+row*104)return row*2+col;
+#endif
+        return -1;
+    }
     static const int xs[3] = {20, 91, 162};
     for (int row = 0; row != 2; ++row)
         for (int col = 0; col != 3; ++col)
@@ -90,11 +176,18 @@ static unsigned slider_value(int x, unsigned minimum) {
     return (unsigned)clampi(value * 10, (int)minimum, 100);
 }
 static void slide(pqa_state *s, int x) {
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    if(s->gesture==PQA_TONE_DRAG){
+        unsigned tone=slider_value(44+(clampi(x,88,364)-88)/2,0);
+        if(tone!=s->tone){s->tone=(uint8_t)tone;emit_tone(s,false);}
+        return;
+    }
+#endif
     if (s->gesture == PQA_BRIGHTNESS_DRAG) {
-        unsigned b = slider_value(x, 10);
+        unsigned b = slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
         if (b != s->brightness) { s->brightness = (uint8_t)b; emit_brightness(s, false); }
     } else {
-        s->volume = (uint8_t)slider_value(x, 0);
+        s->volume = (uint8_t)slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0);
     }
 }
 static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y) {
@@ -108,6 +201,9 @@ static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y)
     s->handle_pressed = false;
     s->moved = false;
     s->saved_brightness = s->brightness;
+#ifdef PORTABLE_FRONTLIGHT_TONE
+    s->saved_tone=s->tone;
+#endif
     s->saved_volume = s->volume;
     s->saved_last_nonzero_volume = s->last_nonzero_volume;
 }
@@ -116,6 +212,16 @@ static bool route(pqa_state *s, pqa_route r) {
     return r == PQA_RESERVED || r == PQA_CONSUMED;
 }
 static void release_panel(pqa_state *s, uint32_t now) {
+    if(s->paper){
+#ifdef PORTABLE_PAPER_TRANSITIONS
+        const int distance=s->last_y-s->start_y;
+        const bool open=s->start_position_q8==0?distance>=32:distance>-64;
+        s->target_q8=open?PQA_OPEN_Q8:0;s->velocity_q8=0;
+#else
+        s->position_q8=s->target_q8;
+#endif
+        return;
+    }
     int velocity = (now - s->last_ms > 100u) ? 0 : s->release_velocity_q8;
     bool open = s->position_q8 > PQA_OPEN_Q8 / 2 ? velocity > -384 : velocity > 512;
     s->target_q8 = open ? PQA_OPEN_Q8 : 0;
@@ -144,6 +250,9 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             return route(s, pqa_visible(s) ? PQA_CONSUMED : PQA_PASS);
         if (previous == PQA_PANEL_DRAG) release_panel(s, now);
         else if (previous == PQA_BRIGHTNESS_DRAG) emit_brightness(s, true);
+#ifdef PORTABLE_FRONTLIGHT_TONE
+        else if(previous==PQA_TONE_DRAG)emit_tone(s,true);
+#endif
         else if (previous == PQA_VOLUME_DRAG) {
             if (s->volume) s->last_nonzero_volume = s->volume;
             emit_volume(s, PQA_VOLUME_COMMIT);
@@ -151,6 +260,17 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             if (!s->moved) { s->torch = false; emit_torch(s); }
         } else if (previous == PQA_PANEL_PENDING && !s->moved) {
             if (s->handle_pressed) s->target_q8 = 0;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+            else if(s->paper && s->pressed_tile==6 && s->brightness_valid) {
+                s->brightness=s->brightness?0:s->last_nonzero_brightness;
+                emit_brightness(s,true);
+            }
+#endif
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+            else if(s->paper && s->pressed_tile==7) {
+                s->pending|=PQA_USB_TRANSFER;s->target_q8=0;
+            }
+#endif
             else if (s->pressed_tile == 0 && s->volume_valid) {
                 if (s->volume) { s->last_nonzero_volume = s->volume; s->volume = 0; }
                 else s->volume = s->last_nonzero_volume ? s->last_nonzero_volume : 50;
@@ -164,9 +284,24 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 s->pending|=PQA_BLUETOOTH;
             } else if (s->pressed_tile == 3 && (!s->radio_controls || s->radios_valid)) {
                 s->pending |= PQA_WIFI;if(!s->radio_controls)s->target_q8=0;
-            } else if (s->pressed_tile == 5) {
+            }
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+            else if(s->pressed_tile==8 && s->clean_refresh_valid) {
+                s->pending|=PQA_CLEAN_REFRESH;
+            } else if(s->pressed_tile==5 && s->brightness_valid) {
+                s->brightness=s->brightness?0:
+#ifdef PORTABLE_PAPER_TRANSITIONS
+                    s->last_nonzero_brightness;
+#else
+                    40;
+#endif
+                emit_brightness(s,true);
+            }
+#else
+            else if (s->pressed_tile == 5 && s->torch_valid) {
                 s->torch = true; s->target_q8 = 0; emit_torch(s);
             }
+#endif
         }
         return route(s, PQA_CONSUMED);
     }
@@ -179,34 +314,69 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         begin_contact(s, now, id, x, y);
         if (s->torch) s->gesture = PQA_TORCH_TAP;
         else if (!pqa_visible(s)) {
-            if (allow_open && y >= 0 && y < PQA_TOP_EDGE && x >= 0 && x < 240)
+            if (allow_open && y >= 0 && y < (s->paper?72:PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:240))
                 s->gesture = PQA_TOP_PENDING;
             else s->gesture = PQA_PASS_THROUGH;
         } else {
             /* Moving panels are draggable but never activate controls. */
             int local_y = y + (PQA_OPEN_Q8 - s->position_q8) / 256;
             bool settled = s->position_q8 == PQA_OPEN_Q8 && s->target_q8 == PQA_OPEN_Q8;
-            if (settled && x >= 16 && x < 224 && local_y >= 48 && local_y < 77 && s->brightness_valid)
+            if (settled && s->brightness_valid && (s->paper ?
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+                paper_slider_at(s,0,x,y)
+#else
+                x>=32 && x<448 && y>=120 && y<180
+#endif
+                : x>=16 && x<224 && local_y>=48 && local_y<77))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
-            else if (settled && x >= 16 && x < 224 && local_y >= 78 && local_y < 107 && s->volume_valid)
+#ifdef PORTABLE_FRONTLIGHT_TONE
+            else if(settled && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
+                s->gesture=PQA_TONE_DRAG;
+#endif
+            else if (settled &&
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+                s->audio_controls &&
+#endif
+                s->volume_valid && (s->paper ?
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+                paper_slider_at(s,1,x,y)
+#else
+                x>=32 && x<448 && y>=214 && y<274
+#endif
+                : x>=16 && x<224 && local_y>=78 && local_y<107))
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
                 if (settled) {
-                    s->pressed_tile = (int8_t)tile_at(x, local_y);
-                    s->handle_pressed = x >= 76 && x < 164 && local_y >= 207 && local_y < 239;
+                    s->pressed_tile = (int8_t)tile_at(s,x, local_y);
+                    s->handle_pressed = s->paper ? x>=32 && x<448 &&
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+                        y>=714 && y<742
+#else
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+                        y>=684 && y<726
+#else
+                        y>=640 && y<714
+#endif
+#endif
+                        : x>=76 && x<164 && local_y>=207 && local_y<239;
                 }
             }
         }
-        if (s->gesture == PQA_BRIGHTNESS_DRAG || s->gesture == PQA_VOLUME_DRAG) slide(s, x);
+        if (s->gesture == PQA_BRIGHTNESS_DRAG || s->gesture == PQA_VOLUME_DRAG || s->gesture==PQA_TONE_DRAG) slide(s, x);
         return route(s, s->gesture == PQA_PASS_THROUGH ? PQA_PASS :
                        s->gesture == PQA_TOP_PENDING ? PQA_RESERVED : PQA_CONSUMED);
     }
     int dx = x - s->start_x, dy = y - s->start_y;
     if (absi(dx) > 6 || absi(dy) > 6) s->moved = true;
     if (s->gesture == PQA_TOP_PENDING) {
-        if (dy > 6 && dy > absi(dx)) s->gesture = PQA_PANEL_DRAG;
-        else if (absi(dx) > 6 || dy < -6) {
+        if (dy > (s->paper?24:6) && dy > absi(dx)) {
+            s->gesture = PQA_PANEL_DRAG;
+#ifndef PORTABLE_PAPER_TRANSITIONS
+            if(s->paper)s->position_q8=s->target_q8=PQA_OPEN_Q8;
+#endif
+        }
+        else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
             s->gesture = PQA_PASS_THROUGH;
             return route(s, PQA_REPLAY);
         } else return route(s, PQA_RESERVED);
@@ -214,15 +384,28 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         s->gesture = PQA_PANEL_DRAG;
     }
     if (s->gesture == PQA_PANEL_DRAG) {
+        if(s->paper) {
+#ifdef PORTABLE_PAPER_TRANSITIONS
+            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*PQA_OPEN_Q8/800,0,PQA_OPEN_Q8);
+            s->target_q8=s->position_q8;s->velocity_q8=0;
+#else
+            if(s->start_position_q8 && dy < -32)s->position_q8=s->target_q8=0;
+#endif
+            s->last_x=(int16_t)x;s->last_y=(int16_t)y;s->last_ms=now;
+            return route(s,PQA_CONSUMED);
+        }
         s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, PQA_OPEN_Q8);
         uint32_t elapsed = now - s->last_ms;
         if (elapsed) s->release_velocity_q8 = clampi((y - s->last_y) * 2048 / (int)(elapsed > 1000u ? 1000u : elapsed), -8192, 8192);
         s->velocity_q8 = 0;
         s->last_y = (int16_t)y; s->last_x = (int16_t)x; s->last_ms = now;
-    } else if (s->gesture == PQA_BRIGHTNESS_DRAG || s->gesture == PQA_VOLUME_DRAG) slide(s, x);
+    } else if (s->gesture == PQA_BRIGHTNESS_DRAG || s->gesture == PQA_VOLUME_DRAG || s->gesture==PQA_TONE_DRAG) slide(s, x);
     return route(s, PQA_CONSUMED);
 }
 bool pqa_animate(pqa_state *s, uint32_t now) {
+#ifndef PORTABLE_PAPER_TRANSITIONS
+    if(s && s->paper){bool changed=s->position_q8!=s->target_q8;s->position_q8=s->target_q8;s->velocity_q8=0;return changed;}
+#endif
     if (!s) return false;
     if (!s->clock_valid) { s->clock_valid = true; s->animation_ms = now; return false; }
     uint32_t elapsed = now - s->animation_ms;

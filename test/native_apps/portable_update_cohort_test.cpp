@@ -11,13 +11,13 @@ uint32_t abi=1,firmware_capacity=0x300000,store_capacity=0x4f0000,bank_state=RIS
 uint32_t payload_size=513+store_capacity,payload_firmware=513,received,offset;
 unsigned began,aborts,closes,activations,restarts,cohort_reads;
 uint8_t active_digest=42;
-const char *layout="riscrte-paired-16m-v1",*runtime="0.1.33",*product="twatch-s3",*product_version="1.1.0",*source=WatchUpdate::Repository;
+const char *layout="riscrte-paired-16m-v1",*runtime="0.1.33",*product=WatchUpdate::Product,*product_version="1.1.0",*source=WatchUpdate::Repository;
 bool payload,read_failure,short_download,write_failure,finish_failure,abort_failure,close_failure,unknown_activation,restart_failure,status_failure,cohort_failure,invalid_revision;
 std::string catalog_json;
 int32_t hOpen(void*,const risc_http_request_v1 *r,uint64_t *handle) {
  assert(!http_handle);assert(r->utc_seconds==1800000000ULL);offset=0;
  payload=strcmp(r->url,WatchUpdate::CatalogUrl)!=0;
- if(payload){assert(!strcmp(r->url,"https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/releases/download/firmware-v1.2.0/twatch-s3-cohort-1.2.0.bin"));assert(r->max_bytes==payload_size);}
+ if(payload){assert(std::string(r->url)==std::string("https://github.com/")+WatchUpdate::Repository+"/releases/download/firmware-v1.2.0/"+WatchUpdate::AssetPrefix+"-cohort-1.2.0.bin");assert(r->max_bytes==payload_size);}
  *handle=1;return RISC_HTTP_OK;
 }
 int32_t hRead(void*,uint64_t,void *out,uint32_t cap,uint32_t *size) {
@@ -36,7 +36,7 @@ bool bStatus(void*,risc_bank_status_v1 *out){if(status_failure)return false;out-
 int32_t bCohortStatus(void*,risc_bank_cohort_status_v1 *out){++cohort_reads;if(cohort_failure)return RISC_BANK_UNAVAILABLE;assert(out->struct_size==sizeof(*out));strcpy(out->product,product);strcpy(out->version,product_version);strcpy(out->source_repo,source);memset(out->source_revision,invalid_revision?'X':'e',40);out->source_revision[40]=0;return 0;}
 int32_t bCohort(void*,const risc_bank_cohort_v1 *target,uint64_t *handle){
  assert(target->struct_size==sizeof(*target)&&target->store_abi==abi&&target->firmware_size==payload_firmware&&target->store_size==store_capacity);
- assert(!strcmp(target->product,"twatch-s3")&&!strcmp(target->version,"1.2.0")&&!strcmp(target->runtime_version,"0.1.33")&&!strcmp(target->source_repo,WatchUpdate::Repository));
+ assert(!strcmp(target->product,WatchUpdate::Product)&&!strcmp(target->version,"1.2.0")&&!strcmp(target->runtime_version,"0.1.33")&&!strcmp(target->source_repo,WatchUpdate::Repository));
  assert(std::string(target->source_revision)==std::string(40,'c'));
  for(unsigned i=0;i<32;++i)assert(target->sha256[i]==0xaa&&target->firmware_sha256[i]==0xbb&&target->store_sha256[i]==0xdd&&target->active_store_sha256[i]==active_digest);
  ++began;*handle=2;bank_state=RISC_BANK_COPY_STORE;return 0;

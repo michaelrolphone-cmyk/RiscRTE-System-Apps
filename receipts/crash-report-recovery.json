@@ -22,11 +22,15 @@
     "existing_osd": [
       "27 normal PASS",
       "27 ASan/UBSan PASS"
+    ],
+    "archive_lifecycle": [
+      "15 normal PASS",
+      "15 ASan/UBSan PASS"
     ]
   },
   "files": {
     "RECOVERY_CRASH_REPORT_0327.md": {
-      "sha256": "c4443a7f6e27a96e2fad7bd94237532895c10f8e5a4224f75e6dcddf74419f36",
+      "sha256": "d9d690c0309a473f4c50247815d87d1295ede867377a65ed91ce1552a90736de",
       "prior_recorded_sha256": null,
       "matches_prior_recorded_sha256": null
     },
@@ -119,8 +123,23 @@
       "sha256": "cbe6e5c01f2c2e35184cb932bd514b2147e0ab87cbe6162827bc57ba1b9e51ce",
       "prior_recorded_sha256": null,
       "matches_prior_recorded_sha256": null
+    },
+    "test/native_apps/failure_archive_lifecycle_test.c": {
+      "sha256": "cb16e1937591cc6e10609f89c0d460d3a026130609f3748f0a0acc44adb83483",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
+    },
+    "scripts/test_failure_archive_lifecycle.py": {
+      "sha256": "aaa4dd10e907b7fba1dd4022798cba66c4c41cb03de5bc691796335baabdc534",
+      "prior_recorded_sha256": null,
+      "matches_prior_recorded_sha256": null
     }
   },
-  "remote_checkpoint": "partial crash delta atop main; full restored .53 baseline pending",
-  "remote_parent": "0b5aa15a57b7ba248840ca8ab9dee0be13267c19"
+  "remote_checkpoint": "complete .53 baseline plus recovered crash source; final clean product build pending",
+  "remote_parent": "0b5aa15a57b7ba248840ca8ab9dee0be13267c19",
+  "lifecycle_test_provenance": {
+    "recovered_baseline_14_sha256": "f64591058e3f33a3343fcb220fb3ae5e48114f558e73554ad554954d052c985b",
+    "final_15_case_fixture": "fresh reconstruction of suffix observations and conservative acquire failure; no final pre-reset fixture parity claim"
+  },
+  "all_existing_product_binaries": "stale and invalid for next product build; no precompiled product input allowed"
 }

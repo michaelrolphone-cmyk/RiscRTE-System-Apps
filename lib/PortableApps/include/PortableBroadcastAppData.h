@@ -4,10 +4,26 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+#include "PortableNativeCustody.h"
+#endif
 /* App-local lifecycle fence. Stop advertising BEFORE any app-data call that
  * can retain the invocation. After RETAINED there is no radio or storage I/O.
  * Original outcomes, expected revisions, bytes and authority are unchanged. */
+#include "PortableBackgroundServices.h"
+#if !defined(PORTABLE_CONTEXTS_CLIENT) && !defined(PORTABLE_BLE_BROADCAST)
+/* Preserve the original explicit fence API for consumers predating feature
+ * defines; the helper historically always required a broadcast stop hook. */
 bool portable_broadcast_stop(void);
+#endif
+static inline bool portable_broadcast_data_stop(void) {
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST)
+    return portable_background_stop();
+#else
+    return portable_broadcast_stop();
+#endif
+}
+
 typedef struct {
     risc_app_data_v1 api;
     const risc_app_data_v1 *source;
@@ -20,9 +36,15 @@ static inline int32_t portable_broadcast_data_result(portable_broadcast_app_data
 }
 static inline bool portable_broadcast_data_ready(portable_broadcast_app_data *s) {
     if(s->retained)return false;
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+    if(portable_adapter_retained()){s->retained=true;return false;}
+#endif
     /* Do not synthesize a backend RETAINED result: without the backend fence
      * Runtime could finalize. This invocation remains inside cleanup instead. */
-    while(!portable_broadcast_stop()) {
+    while(!portable_broadcast_data_stop()) {
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+        if(portable_adapter_retained()){s->retained=true;return false;}
+#endif
         /* Runtime 0.1.54 appends a terminal invocation fence after boot
          * confirmation. A clean size check keeps the frozen ABI prefix valid. */
         bool (*retain)(void)=NULL;

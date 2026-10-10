@@ -1,8 +1,8 @@
 # Home 0.3.27 crash-report recovery working copy
 
-PARTIAL REMOTE CHECKPOINT: the dedicated recovery branch initially contains this focused crash-report delta atop the verified public main commit `0b5aa15a57b7ba248840ca8ab9dee0be13267c19`. The restored full .53 baseline is being uploaded separately and is not yet represented by this initial remote tree. Do not build or deploy that partial tree. A subsequent checkpoint will install the exact full recovered source tree.
+COMPLETE RECOVERED SOURCE TREE: this checkpoint contains the restored full .53 System baseline plus the recovered crash-report production delta, fixtures and provenance at their intended paths. Earlier partial checkpoints remain in history. No existing product binary is an input to the final build. The final clean build must begin only after all selected product-source recovery and integration are complete.
 
-Fresh full qualification is pending. This is production source recovered after an executor reset, not a deployable product image or a continuation of the erased target qualification.
+Fresh full product qualification is pending. Exploratory builds and host checks recorded during recovery are comparison evidence only; the user has required a new clean build after source recovery is complete. This is production source recovered after an executor reset, not a deployable product image or a continuation of the erased target qualification.
 
 ## Provenance
 

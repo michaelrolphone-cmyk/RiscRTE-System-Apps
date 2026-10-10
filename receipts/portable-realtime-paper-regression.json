@@ -1,0 +1,7 @@
+{
+  "existing_paper_clock_cases": 98,
+  "plain_and_asan_ubsan": "PASS",
+  "fixture": "test/native_apps/paper_clock_test.c",
+  "test_matrix": "scripts/test_paper_clock.py; identical commands, one temporary binary, image capture omitted to conserve disk",
+  "ASAN_OPTIONS": "detect_leaks=0"
+}

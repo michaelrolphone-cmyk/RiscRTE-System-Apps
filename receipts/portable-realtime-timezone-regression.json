@@ -1,0 +1,8 @@
+{
+  "host_plain": "PASS",
+  "host_asan_ubsan": "PASS",
+  "watch_default_and_denver_plain_sanitized": "PASS",
+  "independent_oracle_vectors": 22653,
+  "xtensa": "NOT RUN (supply --xtensa-cc)",
+  "unchanged_watch_files": "PASS"
+}

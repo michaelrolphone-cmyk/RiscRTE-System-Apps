@@ -1,8 +1,8 @@
 {
   "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
-  "commit": "e6444bb4887d4254a6985eee8e6f9124f1fa7a02",
+  "commit": "23a4887f1eeb7b7ce867c0e243158b899e43f0f8",
   "path": "lib/Alarm/include/AlarmServiceV1.h",
-  "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+  "sha256": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b",
   "policy": "consumer-only byte-exact header; service remains sole scheduler",
-  "source_tree": "87e96695d4c5880c2932d1431eccb470e5ac5cdc"
+  "source_tree": "8ae276b96abe2a544d417a470dde0851b7a31b10"
 }
