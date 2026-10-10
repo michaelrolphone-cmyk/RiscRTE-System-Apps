@@ -54,6 +54,13 @@ def main():
     for same in [0,1,2]:
      expected=not a.baseline
      output=command([str(out/'test'),str(out),str(delay),str(cost),str(period),str(count),str(same),str(int(expected)),str(5 if a.rgb565 else 1)]).strip();print(output,flush=True);results.append(output)
+ if not a.baseline:
+  # Actual GT911 reports split header DOWN/UP across multiple scene polls;
+  # keyboard Back/Home and ordinary-scene Back/Home keep their own contacts.
+  for cost in [0,500]:
+   for delay in [1,17,2300]:
+    for mode in [3,4,5,6]:
+     output=command([str(out/'test'),str(out),str(delay),str(cost),'200','12',str(mode),'1',str(5 if a.rgb565 else 1)]).strip();print(output,flush=True);results.append(output)
  proof={'cases':results,'sanitized':a.sanitize,'baseline':a.baseline,'source_sha256':source_hashes,'limits':['Physical GT911 reports are simulated: 5ms controller scan; changed state latches READY until ACK; no physical device used.','Per-pixel virtual CPU cost and display transfer slices are explicit test loads, not measurements.','Real Runtime/Graph controls app/scene/profile lifetimes; thin touch fixture owns exact GT911 start/quiesce and its strict scoped GPIO/I2C/sync dependencies.']}
  assert source_hashes=={str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in source_files},'Source changed during qualification'
  (out/'qualification.json').write_text(json.dumps(proof,indent=2)+'\n')

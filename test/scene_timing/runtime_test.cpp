@@ -3,6 +3,7 @@
 #include "RiscTouchV1.h"
 #include "RiscInputNavigationV1.h"
 #include "RiscPlatformClockV1.h"
+#include "SceneKeyboardV1.h"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -28,7 +29,7 @@ extern "C" void scene_timing_touch_stop(void);
 static unsigned duration(unsigned index){return pattern==2?period_ms*1000+20000:10000+index%4*5000;}
 static void latch(){
  physical={};physical.width=480;physical.height=800;
- for(unsigned i=0;i<2;i++)if(fingers[i]){auto&c=physical.contacts[physical.contact_count++];c.id=(uint8_t)(i+1);c.x=finger_x[i];c.y=412;}
+ for(unsigned i=0;i<2;i++)if(fingers[i]){auto&c=physical.contacts[physical.contact_count++];c.id=(uint8_t)(i+1);c.x=finger_x[i];c.y=pattern>=5?34:pattern>=3?46:412;}
  if(!latched&&memcmp(&physical,&reported,sizeof(physical))){latched=true;report=physical;}
 }
 extern "C" uint64_t scene_timing_us(){return us;}
@@ -39,7 +40,7 @@ extern "C" void scene_timing_advance(unsigned n){
   uint64_t up=up_index<contacts?begin_us+(uint64_t)up_index*period_ms*1000+duration(up_index):UINT64_MAX;
   uint64_t next=down<up?down:up;if(next_scan<next)next=next_scan;if(next>until)break;us=next;
   if(up==next){fingers[pattern==2?up_index%2:0]=false;++up_index;}
-  if(down==next){unsigned id=pattern==2?down_index%2:0;fingers[id]=true;finger_x[id]=(same_key||down_index%2==0)?52:94;++down_index;}
+  if(down==next){unsigned id=pattern==2?down_index%2:0;fingers[id]=true;finger_x[id]=pattern>=3?(pattern%2?56:424):(same_key||down_index%2==0)?52:94;++down_index;}
   if(next_scan==next){latch();next_scan+=5000;}
  }
  us=until;
@@ -51,11 +52,12 @@ extern "C" bool scene_timing_report(risc_touch_snapshot_v1*out){
  *out=report;return true;
 }
 extern "C" void scene_timing_ack(){if(latched){reported=report;latched=false;}}
+extern "C" unsigned scene_timing_mode(){return pattern;}
 extern "C" void scene_timing_begin(){running=true;begin_us=us+10000;next_scan=begin_us+2500;finish_us=begin_us+(uint64_t)contacts*period_ms*1000+100000;}
 extern "C" bool scene_timing_finished(){return us>=finish_us;}
 static uint64_t hash(uint64_t h,uint64_t v){for(unsigned i=0;i<8;i++){h^=(uint8_t)v;h*=1099511628211ull;v>>=8;}return h;}
 extern "C" void scene_timing_action(unsigned key){
- if(expected){assert(key==(same_key||received%2==0?'Q':'W'));const unsigned release=duration(received);assert(us>=begin_us+(uint64_t)received*period_ms*1000+release);assert(us-begin_us-(uint64_t)received*period_ms*1000-release<20000);}
+ if(expected){unsigned wanted=pattern==3?RISC_SCENE_KEY_CANCEL:pattern==4||pattern==6?256:pattern==5?257:(same_key||received%2==0?'Q':'W');assert(key==wanted);const unsigned release=duration(received);assert(us>=begin_us+(uint64_t)received*period_ms*1000+release);assert(us-begin_us-(uint64_t)received*period_ms*1000-release<20000);}
  action_digest=hash(hash(action_digest,key),us-begin_us);++received;
 }
 extern "C" void scene_timing_complete(unsigned count){assert(count==received);if(expected)assert(count==contacts);else assert(count<contacts);complete=true;running=false;}
