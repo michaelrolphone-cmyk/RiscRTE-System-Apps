@@ -20,11 +20,23 @@ int main(int argc,char **argv) {
  puts("raster custody clipped-begin-equivalence PASS");return 0;
 }
 #else
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+static bool custody_terminal_issued;
+static unsigned custody_free_calls;
+void __real_free(void *pointer);
+void __wrap_free(void *pointer) {
+ assert(!custody_terminal_issued);++custody_free_calls;__real_free(pointer);
+}
+#endif
 static unsigned custody_allocations,custody_fail_allocation;
 static bool custody_fail_offscreen;
 static void *custody_malloc(size_t bytes) {
+#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+ assert(!custody_terminal_issued);
+#endif
  if(custody_fail_offscreen){custody_fail_offscreen=false;return NULL;}
  if(++custody_allocations==custody_fail_allocation)return NULL;
  return malloc(bytes);
@@ -91,6 +103,34 @@ static void direct_quick_overlay(void) {
  assert(portable_paper_frame_drain());assert(!memcmp(framebuffer,expected,sizeof(expected)));
  quick_modal=false;cleanup();
 }
+static void watch_immutable_snapshot(void) {
+ retained_background();quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;
+ quick.ui.error_flags=PQA_ERROR_SAVE|PQA_ERROR_BRIGHTNESS;quick.ui.brightness=73;
+ char label[8]={'2','3',':','5','9','A','B','C'};
+ uint16_t expected[240*240];memcpy(expected,expected_background,sizeof(expected));
+ risc_display_surface_v1 reference=surface;reference.pixels=expected;
+ assert(pqa_render(&reference,&quick.ui,label,true,63));
+ assert(portable_paper_frame_ready());assert(quick_copy_background());assert(quick_render_watch(label,true,63));
+ present(false);assert(raster_sealed);memset(label,'X',sizeof(label));quick.ui.torch=true;quick.ui.brightness=2;
+ assert(raster_progress());assert(raster_sealed&&!surface.frame&&!frame_count);
+ assert(portable_paper_frame_drain());assert(!memcmp(framebuffer,expected,sizeof(expected)));
+ quick.ui.torch=false;quick_modal=false;cleanup();
+}
+static void watch_allocation_fallback(unsigned kind) {
+ retained_background();quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;
+ uint16_t expected[240*240];memcpy(expected,expected_background,sizeof(expected));
+ risc_display_surface_v1 reference=surface;reference.pixels=expected;
+ assert(pqa_render(&reference,&quick.ui,"23:59",true,63));
+ assert(portable_paper_frame_ready());assert(quick_copy_background());
+ if(kind<3)custody_fail_allocation=custody_allocations+kind;
+ else if(kind==3)raster_command_count=4096; /* Exercise the same real capacity branch. */
+ assert(quick_render_watch("23:59",true,63));
+ if(kind<4)assert(!raster_recording && surface.frame);
+ present(false);
+ if(kind==4){custody_fail_offscreen=true;assert(raster_progress());assert(!custody_fail_offscreen);}
+ assert(portable_paper_frame_drain());assert(!memcmp(framebuffer,expected,sizeof(expected)));
+ quick_modal=false;cleanup();
+}
 static void interrupted_quick_snapshot(bool partial) {
  retained_background();quick.ui.paper=true;
  assert(portable_paper_frame_ready());assert(quick_copy_background());
@@ -145,26 +185,85 @@ static void offscreen_allocation_recovery(void) {
  assert(portable_paper_frame_drain());assert_image(0x2468);cleanup();
 }
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
-static unsigned terminal_calls;
-static bool retain_during_band(void) {assert(!terminal_calls);terminal_calls++;return true;}
+static unsigned terminal_calls,terminal_health_calls,terminal_health_limit;
+static bool retain_during_band(void) {assert(!terminal_calls);terminal_calls++;custody_terminal_issued=true;return true;}
 static bool terminal_band_health(risc_runtime_health_v1 *out) {
  assert(!terminal_calls && raster_replaying && raster_offscreen);
  assert(surface.pixels==raster_offscreen && !surface.frame);
- out->uptime_ms=ticks;portable_adapter_retain_silent();return false;
+ out->uptime_ms=ticks;
+ if(++terminal_health_calls<terminal_health_limit)return true;
+ portable_adapter_retain_silent();return false;
 }
-static void terminal_band_restore(void) {
+static void terminal_band_restore(bool watch_row) {
  quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;
- assert(portable_paper_frame_ready());clear();fill(0,0,240,240,0x1357);present(false);
+ if(watch_row) {
+  retained_background();quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;
+  assert(portable_paper_frame_ready());assert(quick_copy_background());
+  assert(quick_render_watch("12:34",true,63));present(false);
+  assert(raster_progress());
+  assert(raster_cursor && raster_cursor->kind==RS_QA_RENDER && raster_band_top>0 && raster_band_top<240);
+  /* The next pass reaches the Watch row's checkpoint after its start clock. */
+  terminal_health_limit=2;
+ } else {
+  assert(portable_paper_frame_ready());clear();fill(0,0,240,240,0x1357);present(false);
+  terminal_health_limit=1;
+ }
  unsigned live_grants=grants,live_subscriptions=subscriptions,submitted=displays;
  quick_runtime.health=terminal_band_health;
  assert(!raster_progress());
- assert(terminal_calls==1 && native_custody_retained && failed);
+ assert(terminal_calls==1 && terminal_health_calls==terminal_health_limit && native_custody_retained && failed);
  assert(!surface.frame && !surface.pixels && !frame_count);
  assert(native_custody_surface.frame==0 && native_custody_surface.pixels==raster_offscreen);
  assert(raster_offscreen && raster_commands && raster_sealed);
  app_module_fini();
  assert(terminal_calls==1 && grants==live_grants && subscriptions==live_subscriptions && displays==submitted);
  assert(raster_offscreen && raster_commands && !surface.pixels);
+}
+static bool terminal_prefix_health(risc_runtime_health_v1 *out) {
+ assert(!terminal_calls && raster_replaying && !raster_offscreen && surface.frame);
+ out->uptime_ms=ticks;portable_adapter_retain_silent();return false;
+}
+static bool terminal_refused_acquire(void *context,uint32_t format,risc_display_surface_v1 *out) {
+ (void)context;(void)format;(void)out;portable_adapter_retain_silent();return false;
+}
+static void terminal_fallback(unsigned kind) {
+ quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;
+ retained_background();quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;
+ assert(portable_paper_frame_ready());
+ if(kind!=2)assert(quick_copy_background());
+ if(kind==0||kind==3)assert(quick_render_watch("12:34",true,63));
+ if(kind==0)present(false);
+ raster_command *saved_commands=raster_commands;
+ void *saved_tail_pixels=raster_tail?raster_tail->pixels:NULL;
+ unsigned frees=custody_free_calls,live_grants=grants,live_subscriptions=subscriptions,submitted=displays;
+ if(kind==0) {
+  custody_fail_offscreen=true;quick_runtime.health=terminal_prefix_health;
+  assert(!raster_progress());assert(!custody_fail_offscreen);
+ } else if(kind==1||kind==3) {
+  custody_fail_allocation=custody_allocations+2;quick_runtime.health=terminal_prefix_health;
+  assert(!quick_render_watch("12:34",true,63));
+ } else {
+  custody_fail_allocation=custody_allocations+2;quick_display_api.acquire=terminal_refused_acquire;
+  assert(!quick_copy_background());
+ }
+ assert(terminal_calls==1 && native_custody_retained && failed && !surface.frame && !surface.pixels);
+ assert(frame_count==(kind==2?0u:1u) && !raster_offscreen && raster_commands==saved_commands);
+ if(kind==3)assert(raster_tail && raster_tail->pixels==saved_tail_pixels);
+ assert(custody_free_calls==frees);
+ app_module_fini();
+ assert(custody_free_calls==frees && grants==live_grants && subscriptions==live_subscriptions && displays==submitted);
+}
+static void terminal_recording_callbacks(void) {
+ quick_runtime.retain_invocation=retain_during_band;native_custody_runtime=&quick_runtime;
+ assert(portable_paper_frame_ready());clear();fill(0,0,240,240,0x1357);
+ raster_command *saved_commands=raster_commands;
+ unsigned allocations=custody_allocations,frees=custody_free_calls,live_grants=grants;
+ portable_adapter_retain_silent();
+ clear();fill(0,0,240,240,0x2468);text(20,20,"AFTER RETENTION");
+ assert(!quick_render_watch("12:34",true,63));assert(!quick_copy_background());
+ app_module_fini();
+ assert(custody_allocations==allocations && custody_free_calls==frees && grants==live_grants);
+ assert(raster_commands==saved_commands && !surface.pixels && !surface.frame);
 }
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
@@ -211,6 +310,11 @@ int main(int argc,char **argv) {
  else if(!strcmp(name,"non-cooperative-clear"))immediate_during_snapshot();
  else if(!strcmp(name,"sticky-direct-restore"))sticky_restore();
  else if(!strcmp(name,"quick-direct-overlay"))direct_quick_overlay();
+ else if(!strcmp(name,"quick-watch-immutable"))watch_immutable_snapshot();
+ else if(!strcmp(name,"quick-watch-state-oom"))watch_allocation_fallback(1);
+ else if(!strcmp(name,"quick-watch-node-oom"))watch_allocation_fallback(2);
+ else if(!strcmp(name,"quick-watch-capacity"))watch_allocation_fallback(3);
+ else if(!strcmp(name,"quick-watch-offscreen-oom"))watch_allocation_fallback(4);
  else if(!strcmp(name,"quick-interrupted"))interrupted_quick_snapshot(false);
  else if(!strcmp(name,"quick-interrupted-partial"))interrupted_quick_snapshot(true);
  else if(!strcmp(name,"quick-action-partial"))quick_action_during_snapshot();
@@ -219,7 +323,13 @@ int main(int argc,char **argv) {
  else if(!strcmp(name,"failed-partial-cleanup"))failed_snapshot_cleanup(true);
  else if(!strcmp(name,"offscreen-allocation-recovery"))offscreen_allocation_recovery();
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
- else if(!strcmp(name,"terminal-band-restore"))terminal_band_restore();
+ else if(!strcmp(name,"terminal-band-restore"))terminal_band_restore(false);
+ else if(!strcmp(name,"terminal-watch-row"))terminal_band_restore(true);
+ else if(!strcmp(name,"terminal-offscreen-fallback"))terminal_fallback(0);
+ else if(!strcmp(name,"terminal-quick-orphan"))terminal_fallback(1);
+ else if(!strcmp(name,"terminal-bitmap-orphan"))terminal_fallback(2);
+ else if(!strcmp(name,"terminal-repeated-quick-orphan"))terminal_fallback(3);
+ else if(!strcmp(name,"terminal-recording-callbacks"))terminal_recording_callbacks();
 #endif
  else assert(!"unknown raster custody case");
  printf("raster custody %s PASS\n",name);return 0;

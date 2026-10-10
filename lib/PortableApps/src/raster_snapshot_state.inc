@@ -5,7 +5,7 @@ enum {RS_FILL,RS_ROUNDED,RS_TEXT,RS_ICON,RS_PP_TEXT,RS_PP_CIRCLE,
  RS_NU_PIXEL,RS_NU_RECT,RS_NU_TEXT,RS_NU_ROUND,RS_NU_BUTTON,
  RS_SV_PIXEL,RS_SV_RECT,RS_SV_TEXT,RS_SV_BUTTON,RS_SV_FADE,
  RS_WV_PIXEL,RS_WV_RECT,RS_WV_TEXT,RS_WV_BUTTON,
- RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP};
+ RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER};
 typedef struct raster_command {
  struct raster_command *next;
  unsigned kind;
@@ -42,3 +42,16 @@ static void present(bool full);
 static bool raster_materialize(void);
 static void raster_discard(void);
 static inline bool raster_immediate(void);
+
+static inline bool raster_terminal(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return true;
+#endif
+#ifdef PORTABLE_TEXT_INPUT_CLIENT
+ if(text_input_retained)return true;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+ if(native_sleep_retained)return true;
+#endif
+ return false;
+}

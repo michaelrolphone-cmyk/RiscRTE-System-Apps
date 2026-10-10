@@ -1,0 +1,123 @@
+{
+  "purpose": "isolated-unselected-Watch-row-checkpoint",
+  "normal_oracle": {
+    "commands": [
+      [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/include",
+        "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src",
+        "-Dpqa_render=baseline_pqa_render",
+        "-Dpqa_paper_icon=baseline_pqa_paper_icon",
+        "-c",
+        "/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/ui-phase3-quick-rows-proof-normal/baseline.o"
+      ],
+      [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/include",
+        "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/src/quick_actions.c",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/src/quick_render.c",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/test/native_apps/quick_rows_test.c",
+        "/tmp/ui-phase3-quick-rows-proof-normal/baseline.o",
+        "-o",
+        "/tmp/ui-phase3-quick-rows-proof-normal/test"
+      ]
+    ],
+    "sanitized": false,
+    "result": "Quick row renderer: 271 complete-byte baseline/sliced cases passed; max one-row host CPU 0.082000 ms, max full host CPU 1.090000 ms\n",
+    "baseline_sha256": "70ff531a8b882d36919f647d15944eb7776f080a6075eb031711111eb1ea89cf",
+    "source_sha256": {
+      "lib/PortableApps/src/quick_render.c": "f2ead106ac7b0fe4a9ee38f9c0b04cea2c12af3fd846f5d42dcff8b4b122de0a",
+      "test/native_apps/quick_rows_test.c": "0ea5b91514efcdcac453912e0e3aeafd0fafc68277822a07614c8436769d5849"
+    }
+  },
+  "sanitized_oracle": {
+    "commands": [
+      [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/include",
+        "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-Dpqa_render=baseline_pqa_render",
+        "-Dpqa_paper_icon=baseline_pqa_paper_icon",
+        "-c",
+        "/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/ui-phase3-quick-rows-proof/baseline.o"
+      ],
+      [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/include",
+        "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/src",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/src/quick_actions.c",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/lib/PortableApps/src/quick_render.c",
+        "/workspace/shared/system-portable-raster-snapshot-20261010/test/native_apps/quick_rows_test.c",
+        "/tmp/ui-phase3-quick-rows-proof/baseline.o",
+        "-o",
+        "/tmp/ui-phase3-quick-rows-proof/test"
+      ]
+    ],
+    "sanitized": true,
+    "result": "Quick row renderer: 271 complete-byte baseline/sliced cases passed; max one-row host CPU 0.118000 ms, max full host CPU 2.854000 ms\n",
+    "baseline_sha256": "70ff531a8b882d36919f647d15944eb7776f080a6075eb031711111eb1ea89cf",
+    "source_sha256": {
+      "lib/PortableApps/src/quick_render.c": "f2ead106ac7b0fe4a9ee38f9c0b04cea2c12af3fd846f5d42dcff8b4b122de0a",
+      "test/native_apps/quick_rows_test.c": "0ea5b91514efcdcac453912e0e3aeafd0fafc68277822a07614c8436769d5849"
+    }
+  },
+  "native_terminal_normal": {
+    "cases": 7,
+    "failures": []
+  },
+  "native_terminal_sanitized": {
+    "cases": 7,
+    "failures": []
+  },
+  "allocation_custody_sanitized": {
+    "cases": 18,
+    "failures": []
+  },
+  "original_adapter_cases": {
+    "snapshot_enabled": 104,
+    "snapshot_disabled": 104
+  },
+  "limits": [
+    "Paper Quick and selected resident-host matrices remain open; stale snapshot-only test providers are being corrected without removing assertions.",
+    "No hardware target run or selected-product change."
+  ]
+}

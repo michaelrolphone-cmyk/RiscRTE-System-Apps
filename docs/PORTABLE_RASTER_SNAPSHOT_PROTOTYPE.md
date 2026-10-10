@@ -116,3 +116,30 @@ compile with the prototype enabled and pass existing ELF/import/relocation
 checks. This does not select the prototype for any product or change the fast
 panel default. Remaining direct Watch Quick rendering and explicit lifecycle
 scenes use compatibility barriers, so universal completion is not claimed.
+
+## Watch Quick row checkpoint
+
+Watch Quick controls now record a value-copy of the complete `pqa_state` plus
+its bounded eight-character time label. The existing full renderer calls the
+same row implementation used by sliced replay. The original public renderer
+API, layout, animation positions, battery labels, errors, controls and torch
+compositing remain intact. A 271-case byte oracle covers every integral sheet
+position plus fractional offsets, padded/unaligned buffers, subranges, torch,
+flags and invalid row bounds, in normal and sanitized builds. Both full and
+sliced outputs match the pre-change renderer, including guard bytes.
+
+All 104 existing real Watch adapter scenarios pass with snapshot replay, and
+also with it disabled. Their value-page pixel reference now explicitly waits
+for completed pixels, while the logical-page assertions remain before that
+wait; input scripts start relative to the completed setup. The 18 focused
+custody cases cover copied-state lifetime and state/node/capacity/offscreen
+allocation fallback. Seven native-terminal cases additionally verify no clock,
+allocation/free or provider activity after retention, including mid-Watch-row
+and OOM-prefix failure. Failed drawing callbacks become inert and retained
+orphan allocations are deliberately pinned.
+
+Host timings in the oracle reached 0.082 ms for one row (0.118 ms sanitized),
+versus 1.09/2.854 ms for a full render. They are not target performance claims.
+Paper Quick and selected resident-host matrices are being rerun after repairing
+old snapshot-only test providers to emit the required ordered touch reports.
+Those remaining matrices are not yet claimed passing.

@@ -1,0 +1,41 @@
+{
+  "source_local_commit": "53268b40f008d0b4a0c59d28e09f336d2fd3f153",
+  "source_remote_commit": "ea76bc3740f57bb05ffc682e1d940f1db71c39f0",
+  "source_tree": "2525d3b05b7f53122617dda7718af763ca165ba1",
+  "compiler": "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc",
+  "compiler_define": "PORTABLE_RASTER_SNAPSHOT",
+  "artifacts": [
+    {
+      "path": "/tmp/ui-phase3-offscreen-target-final/apps/file_browser/file_browser.elf",
+      "size_bytes": 256784,
+      "sha256": "54169ab1bffc8307f70c125286451d87b02e5231f016d468f4dc9cd53eb15b86"
+    },
+    {
+      "path": "/tmp/ui-phase3-offscreen-target-final/apps/springboard/springboard.elf",
+      "size_bytes": 222052,
+      "sha256": "9388abbfc83f6fd4574d800785fe3450c64b9dbedee1bc8b04e74dbe2ca35ae2"
+    },
+    {
+      "path": "/tmp/ui-phase3-offscreen-target-final/apps/default/default.elf",
+      "size_bytes": 452808,
+      "sha256": "479bccd3fd1f9170b2787c62cc081cd9e4f38ac196a12a46488e68b83975eef9"
+    },
+    {
+      "path": "/tmp/ui-phase3-offscreen-target-final/apps/settings/settings.elf",
+      "size_bytes": 225376,
+      "sha256": "26b6646e58317446b54e0f28715bf8d96861e2996e30983841c6d0507c00dd1d"
+    }
+  ],
+  "test_counts": {
+    "custody_normal_sanitized": 34,
+    "rapid_latest_frame_sanitized": 8,
+    "alarm_normal_sanitized": 24,
+    "low_battery_normal_sanitized": 36,
+    "resident_loading_normal_sanitized": 38
+  },
+  "limits": [
+    "Experimental branch remains unselected.",
+    "Explicit direct-frame scenes and final provider copy remain synchronous.",
+    "No physical target execution or flashing."
+  ]
+}

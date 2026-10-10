@@ -7,6 +7,7 @@ static void raster_discard(void) {
  raster_free_commands();raster_recording=raster_sealed=raster_begin_allowed=false;
 }
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text) {
+ if(failed)return true;
  if(!raster_recording || raster_replaying)return false;
  raster_command *c=raster_command_count<4096?malloc(sizeof(*c)):NULL;
  if(!c){
@@ -25,6 +26,7 @@ static bool raster_record(unsigned kind,const int32_t args[8],const char *text) 
   if(kind==RS_TEXT)limit=args[2]<=0?0u:args[2]<128?(unsigned)args[2]:128u;
   else if(kind==RS_NP_CAPTION)limit=95;
   else if(kind==RS_QR_TEXT)limit=64;
+  else if(kind==RS_QA_RENDER)limit=8;
   else if(kind==RS_PP_TEXT||kind==RS_NU_TEXT||kind==RS_NU_BUTTON||kind==RS_SV_TEXT||kind==RS_SV_BUTTON||kind==RS_WV_TEXT||kind==RS_WV_BUTTON)limit=96;
   unsigned n=0;while(n<limit && text[n]){c->text[n]=text[n];++n;}
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -42,6 +44,7 @@ static bool raster_record(unsigned kind,const int32_t args[8],const char *text) 
  raster_tail=c;++raster_command_count;return true;
 }
 static bool raster_begin(uint16_t color) {
+ if(failed)return true;
  if(raster_replaying || (!raster_begin_allowed&&!raster_recording))return false;
  raster_begin_allowed=false;
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -58,6 +61,7 @@ static bool raster_begin(uint16_t color) {
  return raster_record(RS_FILL,(int32_t[8]){0,0,width(),height(),color},NULL);
 }
 static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
+ if(failed)return true;
  if(raster_replaying||!raster_begin_allowed)return false;
  raster_begin_allowed=false;
  if(raster_sealed&&!raster_drain())return true;
@@ -69,8 +73,8 @@ static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
 #ifdef PORTABLE_PAPER_PREFERENCES
  raster_saved_flip=paper_flip_ui;
 #endif
- if(!raster_record(RS_BITMAP,(int32_t[8]){(int32_t)row_bytes},NULL)){free(copy);return false;}
- if(!raster_tail){free(copy);return true;}
+ if(!raster_record(RS_BITMAP,(int32_t[8]){(int32_t)row_bytes},NULL)){if(!raster_terminal())free(copy);return false;}
+ if(!raster_tail){if(!raster_terminal())free(copy);return true;}
  raster_tail->pixels=copy;return true;
 }
 static void raster_execute(const raster_command*c) {
@@ -112,6 +116,9 @@ static void raster_execute(const raster_command*c) {
   case RS_WV_BUTTON:wv_button(a[0],a[1],a[2],a[3],s,a[4]);break;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
+  case RS_QA_RENDER:
+   if(!pqa_render_rows(&surface,c->pixels,s,a[0],(uint8_t)a[1],(unsigned)raster_band_top,(unsigned)(raster_band_bottom-raster_band_top)))failed=true;
+   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;(void)raster_checkpoint();break;
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   case RS_QR_TEXT:{const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};qr_text(fonts[a[0]],a[1],a[2],s,a[3],a[4],a[5],a[6]);break;}
   case RS_QR_ROUND:qr_round(a[0],a[1],a[2],a[3],a[4],a[5]);break;
@@ -142,7 +149,7 @@ static bool raster_materialize(void) {
  if(!acquire_surface()){raster_replaying=false;return false;}
  raster_band_top=0;raster_band_bottom=height();
  for(raster_command*c=raster_commands;c&&!failed;c=c->next){raster_band_bottom=c->kind==RS_BITMAP?(int)info.height:height();raster_execute(c);}
- raster_replaying=false;raster_free_commands();return !failed;
+ raster_replaying=false;if(!raster_terminal())raster_free_commands();return !failed;
 }
 static bool raster_progress(void) {
  if(!raster_sealed || raster_replaying)return !failed;
@@ -174,6 +181,7 @@ static bool raster_progress(void) {
  unsigned start=millis_now(),pixels=raster_pixels;
  for(unsigned steps=0;raster_cursor&&!failed&&steps<256;steps++) {
   raster_band_bottom=raster_band_top+1;raster_execute(raster_cursor);
+  if(failed)break; /* Checkpoint retention forbids even a budget-clock read. */
   if(++raster_band_top>=(raster_cursor->kind==RS_BITMAP?(int)info.height:height())){raster_cursor=raster_cursor->next;raster_band_top=0;}
   if((unsigned)(millis_now()-start)>=2 || raster_pixels-pixels>=65536)break;
  }

@@ -30,7 +30,8 @@ else:
 if args.text_scene:
     command.append('-DPORTABLE_TEXT_INPUT_CLIENT')
 if args.native_terminal:
-    command += ['-DPORTABLE_NATIVE_CUSTODY_FENCE', '-DPORTABLE_ALARM_TERMINAL_RETENTION']
+    command += ['-DPORTABLE_NATIVE_CUSTODY_FENCE', '-DPORTABLE_ALARM_TERMINAL_RETENTION',
+                '-Wl,--wrap=free']
 if args.sanitize:
     command += ['-fsanitize=address,undefined', '-fno-sanitize-recover=all',
                 '-fno-omit-frame-pointer']
@@ -48,11 +49,15 @@ cases = ('no-op-settle', 'failed-cleanup', 'non-cooperative-clear',
          'sticky-direct-restore', 'quick-direct-overlay', 'quick-interrupted',
          'quick-interrupted-partial', 'quick-action-partial', 'quick-real-open-close',
          'bitmap-allocation-acquire-failure', 'aborted-recording-cleanup',
-         'failed-partial-cleanup', 'offscreen-allocation-recovery')
+         'failed-partial-cleanup', 'offscreen-allocation-recovery', 'quick-watch-immutable',
+         'quick-watch-state-oom', 'quick-watch-node-oom', 'quick-watch-capacity',
+         'quick-watch-offscreen-oom')
 if args.text_scene:
     cases = ('text-scene-pending', 'text-scene-unsubmitted')
 if args.native_terminal:
-    cases = ('terminal-band-restore',)
+    cases = ('terminal-band-restore', 'terminal-watch-row', 'terminal-offscreen-fallback',
+             'terminal-quick-orphan', 'terminal-bitmap-orphan', 'terminal-recording-callbacks',
+             'terminal-repeated-quick-orphan')
 if args.clipped_begin:
     cases = ('clipped-begin-equivalence',)
 failures = []

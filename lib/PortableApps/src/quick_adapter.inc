@@ -151,6 +151,28 @@ static bool quick_copy_background(void) {
  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);
  return true;
 }
+static bool quick_render_watch(const char *time,bool battery_valid,uint8_t battery) {
+ if(failed)return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_recording){
+  /* Copy controller values and the bounded label, never retain a caller's
+   * stack or live Quick state while input continues to change it. */
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565||info.width!=240||info.height!=240)return false;
+  pqa_state *snapshot=malloc(sizeof(*snapshot));
+  if(!snapshot){if(!raster_immediate())return false;}
+  else {
+   *snapshot=quick.ui;
+   if(raster_record(RS_QA_RENDER,(int32_t[8]){battery_valid,battery},time)){
+    if(!failed&&raster_tail&&raster_tail->kind==RS_QA_RENDER){raster_tail->pixels=snapshot;return !failed;}
+    if(!raster_terminal())free(snapshot);
+    return false;
+   }
+   if(!raster_terminal())free(snapshot);
+  }
+ }
+#endif
+ return pqa_render(&surface,&quick.ui,time,battery_valid,battery);
+}
 static bool quick_interrupt(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
@@ -322,11 +344,7 @@ static bool quick_foreground(bool *consumed) {
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
    if(dirty && portable_paper_frame_ready()) {
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
-    else if(!quick_copy_background() ||
-#ifdef PORTABLE_RASTER_SNAPSHOT
-      !raster_immediate() ||
-#endif
-      !pqa_render(&surface,&quick.ui,time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
+    else if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
     /* Present can sample input while the panel is busy. Record only the state
      * rendered above; newer input must remain dirty for the next frame. */
     painted_state=quick.ui;
