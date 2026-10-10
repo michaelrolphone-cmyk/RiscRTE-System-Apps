@@ -10,7 +10,9 @@
 #include <RiscUsbDeviceMscV1.h>
 #include <setjmp.h>
 #include "RiscDiagnosticCheckpointV1.h"
-#define steps (polls>3?polls-3:0)
+/* Wall-clock gestures remain stable when rendering captures extra reports. */
+#define steps (ms/100u)
+static unsigned nav_step=UINT32_MAX;
 static unsigned test_case,begins,usb_steps,ends,cancel_ends,confirmed_ends,usb_releases,last_service,queued_until;
 static unsigned seen_states,prepare_count,last_prepare_input,prepare_log_lines;
 static bool preparing,prepare_failed_clean,prepare_failed_retained;
@@ -116,6 +118,8 @@ static risc_usb_device_msc_api_v1_diagnostics selected_protocol;
 
 static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){
  (void)c;*out=(risc_input_navigation_frame_v1){0};
+ if(nav_step==steps)return true;
+ nav_step=steps;
  if(test_case!=6&&test_case!=11&&(test_case<13||test_case==17)&&(steps==8||steps==12))out->pressed=out->released=RISC_NAV_HOME;
  if(test_case!=6&&test_case!=11&&(test_case<13||test_case==17)&&steps==10)out->pressed=out->released=RISC_NAV_BACK;
  if((test_case==2||test_case==3||test_case==4)&&steps==21)out->pressed=out->released=RISC_NAV_CONFIRM;
@@ -125,10 +129,10 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){
 static bool nav_foreground(void*c,const risc_input_foreground_v1*x,size_t n){(void)c;(void)x;(void)n;return true;}
 static bool nav_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 nav={1,sizeof(nav),NULL,nav_poll,nav_foreground,nav_reset};
-static bool usb_touch(void*c,risc_touch_snapshot_v1*out){
+static bool usb_touch_desired(void*c,risc_touch_snapshot_v1*out){
  (void)c;*out=(risc_touch_snapshot_v1){.width=480,.height=800};
  bool down=steps==2;unsigned y=644;
- if(test_case==17&&steps==4)down=true;
+ /* Case17 injects its queued-frame Cancel in usb_touch_poll below. */
  if((test_case==0||test_case==10||test_case==11||test_case==12) && steps==20)down=true;
  if(test_case==6 && steps==20)down=true;
  if((test_case==6||test_case==7||test_case==11||test_case==12) && steps==40)down=true;
@@ -139,6 +143,34 @@ static bool usb_touch(void*c,risc_touch_snapshot_v1*out){
  if(down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=240,.y=y};}
  return true;
 }
+/* Raw fixture obeys the ordered event/snapshot contract. */
+static risc_touch_snapshot_v1 usb_touch_state={.width=480,.height=800};
+static risc_touch_event_v1 usb_touch_events[32];
+static unsigned usb_touch_head,usb_touch_tail,cancel_reports;
+static bool usb_touch_poll(void*c,size_t n) {
+ poll_touch(c,n);risc_touch_snapshot_v1 next={0};usb_touch_desired(c,&next);
+ /* DOWN before readiness, then UP at/before its completion boundary.
+  * The unchanged case17 assertion requires zero SD prepare calls. */
+ if(test_case==17 && preparing_frames && cancel_reports<2) {
+  assert(ms<=queued_until);next.contact_count=cancel_reports++==0;
+  next.contacts[0]=(risc_touch_contact_v1){.id=1,.x=240,.y=644};
+ }
+ bool was=usb_touch_state.contact_count!=0,down=next.contact_count!=0;
+ if(was!=down) {
+  assert(usb_touch_tail-usb_touch_head<32);
+  risc_touch_contact_v1 contact=down?next.contacts[0]:usb_touch_state.contacts[0];
+  risc_touch_event_v1 event={.sequence=usb_touch_state.sequence+1,.timestamp_ms=ms,
+   .kind=down?RISC_TOUCH_EVENT_DOWN:RISC_TOUCH_EVENT_UP,.id=contact.id,.x=contact.x,.y=contact.y};
+  usb_touch_events[usb_touch_tail++%32]=event;
+  next.sequence=event.sequence;
+ }else next.sequence=usb_touch_state.sequence;
+ next.timestamp_ms=ms;usb_touch_state=next;return true;
+}
+static int32_t usb_touch_next(void*c,uint64_t subscription,risc_touch_event_v1*out) {
+ (void)c;assert(subscription==1);if(usb_touch_head==usb_touch_tail)return 0;
+ *out=usb_touch_events[usb_touch_head++%32];return 1;
+}
+static bool usb_touch(void*c,risc_touch_snapshot_v1*out){(void)c;*out=usb_touch_state;return true;}
 static bool usb_submit(void*c,risc_display_frame_v1 frame,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*key){
  (void)c;(void)r;(void)n;(void)o;assert(frame==1&&frames);frames=0;if(session&&preparing)preparing_frames++;*key=++presents;queued_until=ms+24;
  if(capture){char name[512];snprintf(name,sizeof(name),"%s/frame-%02u.pbm",capture,presents);FILE*f=fopen(name,"wb");assert(f);fprintf(f,"P4\n%u %u\n",PANEL_WIDTH,PANEL_HEIGHT);assert(fwrite(pixels,1,sizeof(pixels),f)==sizeof(pixels));fclose(f);}
@@ -159,7 +191,7 @@ static bool usb_acquire(const char*name,uint32_t version,uint64_t id,risc_runtim
  if(!strcmp(name,"input.navigation")){out->api=&nav;grants++;return true;}
  if(!strcmp(name,"board.battery"))return false;
  if(!acquire(name,version,id,out))return false;
- if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=t;input.snapshot=usb_touch;out->api=&input;}
+ if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=t;input.poll=usb_touch_poll;input.next=usb_touch_next;input.snapshot=usb_touch;out->api=&input;}
  if(!strcmp(name,"display.output")){static risc_display_output_api_v1 disp;disp=d;disp.submit=usb_submit;disp.present_status=usb_present;out->api=&disp;}
  return true;
 }

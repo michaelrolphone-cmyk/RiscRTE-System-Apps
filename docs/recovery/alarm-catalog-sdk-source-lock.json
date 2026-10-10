@@ -1,0 +1,21 @@
+{
+  "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+  "capability": "alarm.service",
+  "api": 2,
+  "sha256": {
+    "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+    "AlarmRecords.h": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066",
+    "PointsRecords.h": "ee59148062a39b2973e70c9c4816c1109686df0440d0ffd0d56ef0bff8820332",
+    "PointsSchedule.h": "9e34d32dbf989ee28f287813744748ab2d3193857a71bcab66e1f9b41749306c",
+    "PointsUtcSchedule.h": "b1ff4460410ec793d2fe7711562412c0e735e80c7fc4b881d761dab4e973e188",
+    "PointsCatalogProjection.h": "df15444df2afdb7e202be1feee03154353523fd12ab781417ada4a3f0661bfea",
+    "PointsServiceProjection.h": "42710361e60a6f644377302d1492ef24bbfd392aebe72acac3b8c5414702977a",
+    "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+  },
+  "source": "Archived exact .53 Home tagged alarm SDK lock; all files equal the recovered Utilities lib/Alarm/include and LICENSE",
+  "historical_commit": "9bd572791a8304194ceb2b7542fc9cbd124e911b",
+  "public_source_commit": "e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d",
+  "original_git_object_recovered": false,
+  "public_source_files_byte_identical": true
+}

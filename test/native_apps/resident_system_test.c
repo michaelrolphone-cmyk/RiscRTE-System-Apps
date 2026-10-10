@@ -131,6 +131,12 @@ bool portable_audio_capture_active(void){return capture;}
 void portable_audio_capture_resume(void){}
 bool portable_audio_suspend(void){live();assert(!capture);++audio_pauses;return true;}
 int portable_app_idle_sleep(const risc_runtime_api_v1*rt,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*g,const alarm_service_v1*a){(void)rt;(void)d;(void)g;(void)a;assert(!"Short resident fixtures must not sleep");return -1;}
+/* Match the selected Home sleep helper ABI; these short routing fixtures
+ * must never enter either physical idle-sleep boundary. */
+int portable_app_idle_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_display_output_api_v1*d,
+ const risc_battery_gauge_api_v1*g,const alarm_service_v1*a,const portable_idle_sleep_ui*ui){
+ (void)ui;return portable_app_idle_sleep(rt,d,g,a);
+}
 int portable_app_sleep(const risc_runtime_api_v1*rt,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*g){(void)rt;(void)d;(void)g;assert(!"Short resident fixtures must not sleep");return -1;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1*rt,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*g,const alarm_service_v1*a){(void)rt;(void)d;(void)g;(void)a;assert(!"Short resident fixtures must not sleep");return -1;}
 #include "RiscStorageVolumeV1.h"

@@ -1,0 +1,512 @@
+{
+  "checked_at": "2026-10-10T12:37:36.670831+00:00",
+  "result": "No delivered shared-text caller delta exists for Files or Wi-Fi in this source snapshot. No patch required.",
+  "archive": {
+    "path": "/workspace/shared/points-source-recovery/051/source-validation/sources/system.tar.gz",
+    "sha256": "c3e5ec5b869d9901ac52b5cea03142d4f5b11c1b162c8ddde4d241a22bccf8e7",
+    "commit_receipt": "c336b776c869029ecd9f096aa5e6497759581440",
+    "expected_tree": "9090514d1d0f81949a82721d88831afc93a1ba20",
+    "recomputed_tree": "9090514d1d0f81949a82721d88831afc93a1ba20"
+  },
+  "union": {
+    "path": "/tmp/system-ui-state-decoupling-20261010",
+    "head": "b6da27eb856b7be8d04eeaf641d1a401a61584f6",
+    "porcelain": " M test/native_apps/usb_transfer_test.c\n"
+  },
+  "delivered_manifests": {
+    "file_browser": {
+      "version": "1.5.16",
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "storage.volume",
+          "api": 1
+        },
+        {
+          "capability": "file.open",
+          "api": 1
+        },
+        {
+          "capability": "input.navigation",
+          "api": 1
+        },
+        {
+          "capability": "alarm.service",
+          "api": 2
+        },
+        {
+          "capability": "runtime.realtime",
+          "api": 1
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1
+        },
+        {
+          "capability": "board.battery",
+          "api": 1
+        },
+        {
+          "capability": "telemetry.broadcast",
+          "api": 1
+        }
+      ],
+      "has_ui_text_input": false
+    },
+    "wifi_settings": {
+      "version": "1.1.19",
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "net.wifi",
+          "api": 1
+        },
+        {
+          "capability": "storage.key-value",
+          "api": 1
+        },
+        {
+          "capability": "input.navigation",
+          "api": 1
+        },
+        {
+          "capability": "alarm.service",
+          "api": 2
+        },
+        {
+          "capability": "runtime.realtime",
+          "api": 1
+        },
+        {
+          "capability": "board.battery",
+          "api": 1
+        },
+        {
+          "capability": "telemetry.broadcast",
+          "api": 1
+        }
+      ],
+      "has_ui_text_input": false
+    }
+  },
+  "checked_source_files": [
+    {
+      "path": "Apps/file_browser.c",
+      "archived_sha256": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+      "home_sha256": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+      "union_sha256": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser.json",
+      "archived_sha256": "34d23483d144a3455c3fe28dc6b94291071faff0503c86615230774c627532c7",
+      "home_sha256": "34d23483d144a3455c3fe28dc6b94291071faff0503c86615230774c627532c7",
+      "union_sha256": "34d23483d144a3455c3fe28dc6b94291071faff0503c86615230774c627532c7",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser_operations.inc",
+      "archived_sha256": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+      "home_sha256": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+      "union_sha256": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser_paper.inc",
+      "archived_sha256": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+      "home_sha256": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+      "union_sha256": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser_portable.inc",
+      "archived_sha256": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+      "home_sha256": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+      "union_sha256": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser_scroll_model.inc",
+      "archived_sha256": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+      "home_sha256": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+      "union_sha256": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/file_browser_scroll_view.inc",
+      "archived_sha256": "d0b905744fd4557c0b5e5556c8f26fd471f8eb2f12e8e63c53306d632a08686c",
+      "home_sha256": "d0b905744fd4557c0b5e5556c8f26fd471f8eb2f12e8e63c53306d632a08686c",
+      "union_sha256": "669fec54db3a878d297397a4739cfb8869264815e9b95b7060abee8ff32be082",
+      "archived_equals_home": true,
+      "union_differs_from_archive": true
+    },
+    {
+      "path": "Apps/native/file_browser.json",
+      "archived_sha256": "94c49db07018fdde35b10db7587fbdb3edf670f5bbe98fdd18f2f353cf450743",
+      "home_sha256": "94c49db07018fdde35b10db7587fbdb3edf670f5bbe98fdd18f2f353cf450743",
+      "union_sha256": "94c49db07018fdde35b10db7587fbdb3edf670f5bbe98fdd18f2f353cf450743",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/wifi_settings.c",
+      "archived_sha256": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205",
+      "home_sha256": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205",
+      "union_sha256": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/wifi_settings.json",
+      "archived_sha256": "281cd322b9fda8c4f98593b2bf4ff4c93f2668433f6ba246c250185997943e7d",
+      "home_sha256": "281cd322b9fda8c4f98593b2bf4ff4c93f2668433f6ba246c250185997943e7d",
+      "union_sha256": "281cd322b9fda8c4f98593b2bf4ff4c93f2668433f6ba246c250185997943e7d",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "Apps/wifi_settings_portable.inc",
+      "archived_sha256": "a146761e95dd39f1e9d0240f4a3320719dd949967cf6138ed9485825e3f76412",
+      "home_sha256": "a146761e95dd39f1e9d0240f4a3320719dd949967cf6138ed9485825e3f76412",
+      "union_sha256": "a146761e95dd39f1e9d0240f4a3320719dd949967cf6138ed9485825e3f76412",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/PortableFileBrowser.h",
+      "archived_sha256": "0f0119b91d7c66818fe1d3f977dc37562edb1da5455096eb3a821c97ac49f006",
+      "home_sha256": "0f0119b91d7c66818fe1d3f977dc37562edb1da5455096eb3a821c97ac49f006",
+      "union_sha256": "0f0119b91d7c66818fe1d3f977dc37562edb1da5455096eb3a821c97ac49f006",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/PortableTextInputClient.h",
+      "archived_sha256": "37f0f0e69a4d38b7af4299d8e3085e13f316b3262ffcf210f10af2cae4f4a814",
+      "home_sha256": "37f0f0e69a4d38b7af4299d8e3085e13f316b3262ffcf210f10af2cae4f4a814",
+      "union_sha256": "ec3db906ead1808c6e6807dccc20f3e8d9927fe4ad0581707a0361854abe680f",
+      "archived_equals_home": true,
+      "union_differs_from_archive": true
+    },
+    {
+      "path": "lib/PortableApps/include/PortableTextInputHandoff.h",
+      "archived_sha256": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+      "home_sha256": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+      "union_sha256": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/PortableWifiCredentials.h",
+      "archived_sha256": "87a85e23aaf2d7859dab07db8bd1e2439afe730be969f5e82553777879c3021c",
+      "home_sha256": "87a85e23aaf2d7859dab07db8bd1e2439afe730be969f5e82553777879c3021c",
+      "union_sha256": "87a85e23aaf2d7859dab07db8bd1e2439afe730be969f5e82553777879c3021c",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/PortableWifiSavedNetwork.h",
+      "archived_sha256": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
+      "home_sha256": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
+      "union_sha256": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/PortableWifiView.h",
+      "archived_sha256": "53e65deeabecb8a770cc3c3a3da8706222489d3972142d4701fa1fec9adcce4b",
+      "home_sha256": "53e65deeabecb8a770cc3c3a3da8706222489d3972142d4701fa1fec9adcce4b",
+      "union_sha256": "53e65deeabecb8a770cc3c3a3da8706222489d3972142d4701fa1fec9adcce4b",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/include/WifiApi.h",
+      "archived_sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a",
+      "home_sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a",
+      "union_sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/src/text_input_handoff.inc",
+      "archived_sha256": "0ef2e8afd0de6d2bbc4a0d6563be33699a1b0a65db224aad4a632f0df103a43d",
+      "home_sha256": "0ef2e8afd0de6d2bbc4a0d6563be33699a1b0a65db224aad4a632f0df103a43d",
+      "union_sha256": "0ef2e8afd0de6d2bbc4a0d6563be33699a1b0a65db224aad4a632f0df103a43d",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/src/wifi_nova.inc",
+      "archived_sha256": "689a868d8cfbd18835d907f9817784c2f3401d3a134580492ad7bf755a89a804",
+      "home_sha256": "689a868d8cfbd18835d907f9817784c2f3401d3a134580492ad7bf755a89a804",
+      "union_sha256": "689a868d8cfbd18835d907f9817784c2f3401d3a134580492ad7bf755a89a804",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/src/wifi_paper.inc",
+      "archived_sha256": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f",
+      "home_sha256": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f",
+      "union_sha256": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "lib/PortableApps/src/wifi_scroll.inc",
+      "archived_sha256": "96c77aaa676354e543ec9321f6b96b9b7306833f913b127d760c61277d8d138d",
+      "home_sha256": "96c77aaa676354e543ec9321f6b96b9b7306833f913b127d760c61277d8d138d",
+      "union_sha256": "afd681056c5aa0c8020117f96ce28a7630d61d7fad9463d77932ccac50fe7159",
+      "archived_equals_home": true,
+      "union_differs_from_archive": true
+    },
+    {
+      "path": "lib/PortableApps/src/wifi_view.inc",
+      "archived_sha256": "8123b23a3db0759091ad6d372017cc6389c5d8d0e130dd699c937047849ab226",
+      "home_sha256": "8123b23a3db0759091ad6d372017cc6389c5d8d0e130dd699c937047849ab226",
+      "union_sha256": "8123b23a3db0759091ad6d372017cc6389c5d8d0e130dd699c937047849ab226",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/build_portable_file_browser.py",
+      "archived_sha256": "19bbd62721324d2a0cac422b9d3af71c7c4bb079cc3d3c2cbd9661e4d2bd633d",
+      "home_sha256": "19bbd62721324d2a0cac422b9d3af71c7c4bb079cc3d3c2cbd9661e4d2bd633d",
+      "union_sha256": "19bbd62721324d2a0cac422b9d3af71c7c4bb079cc3d3c2cbd9661e4d2bd633d",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/build_portable_wifi.py",
+      "archived_sha256": "09dbd9cf60c0d2f6b3830375c500f1407d6d033ac1fa5ada436eecfca053ce50",
+      "home_sha256": "09dbd9cf60c0d2f6b3830375c500f1407d6d033ac1fa5ada436eecfca053ce50",
+      "union_sha256": "09dbd9cf60c0d2f6b3830375c500f1407d6d033ac1fa5ada436eecfca053ce50",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_file_browser_operations.py",
+      "archived_sha256": "ee2d65eb1bfd01f9aedf690283750baf84bb5c0e05c224e70ea5f2c7817dc1c4",
+      "home_sha256": "ee2d65eb1bfd01f9aedf690283750baf84bb5c0e05c224e70ea5f2c7817dc1c4",
+      "union_sha256": "ee2d65eb1bfd01f9aedf690283750baf84bb5c0e05c224e70ea5f2c7817dc1c4",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_file_browser_paper.py",
+      "archived_sha256": "d48ba2127edd247b6c9f7dd6fc0cf805f8280cca07af1b64fced3ce0aabbbfd2",
+      "home_sha256": "d48ba2127edd247b6c9f7dd6fc0cf805f8280cca07af1b64fced3ce0aabbbfd2",
+      "union_sha256": "d48ba2127edd247b6c9f7dd6fc0cf805f8280cca07af1b64fced3ce0aabbbfd2",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_file_browser_runtime.py",
+      "archived_sha256": "6dad1ff59626ebf95ca69fd75da84974bbfe579d2f5893dbc8a3953e4314a937",
+      "home_sha256": "6dad1ff59626ebf95ca69fd75da84974bbfe579d2f5893dbc8a3953e4314a937",
+      "union_sha256": "6dad1ff59626ebf95ca69fd75da84974bbfe579d2f5893dbc8a3953e4314a937",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_portable_file_browser.py",
+      "archived_sha256": "f93f3954198ac4aaadd75689694d8a72bf7c5558d0d66dae5214ac2f36ad2c04",
+      "home_sha256": "f93f3954198ac4aaadd75689694d8a72bf7c5558d0d66dae5214ac2f36ad2c04",
+      "union_sha256": "f93f3954198ac4aaadd75689694d8a72bf7c5558d0d66dae5214ac2f36ad2c04",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_portable_wifi.py",
+      "archived_sha256": "29b40d16835e18980ecc3658ed40a3a5cb1b3dbe826fe02ce34341a632b13e36",
+      "home_sha256": "29b40d16835e18980ecc3658ed40a3a5cb1b3dbe826fe02ce34341a632b13e36",
+      "union_sha256": "29b40d16835e18980ecc3658ed40a3a5cb1b3dbe826fe02ce34341a632b13e36",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_touch_scroll_files.py",
+      "archived_sha256": "5f57cddc04698f38bd6b369b903bf71fd21b017e5f5bb7e39d6cd359386d850e",
+      "home_sha256": "5f57cddc04698f38bd6b369b903bf71fd21b017e5f5bb7e39d6cd359386d850e",
+      "union_sha256": "5f57cddc04698f38bd6b369b903bf71fd21b017e5f5bb7e39d6cd359386d850e",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_touch_scroll_wifi.py",
+      "archived_sha256": "14539633794a489fb4bf871c628308ad4a077b6a40b1de56fee496fe4e0b5710",
+      "home_sha256": "14539633794a489fb4bf871c628308ad4a077b6a40b1de56fee496fe4e0b5710",
+      "union_sha256": "14539633794a489fb4bf871c628308ad4a077b6a40b1de56fee496fe4e0b5710",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_wifi_manifest.py",
+      "archived_sha256": "1087dadd68686cfb47fe7b7cb13334225f4b977e5cbfda2be2a7f319971f1adf",
+      "home_sha256": "1087dadd68686cfb47fe7b7cb13334225f4b977e5cbfda2be2a7f319971f1adf",
+      "union_sha256": "1087dadd68686cfb47fe7b7cb13334225f4b977e5cbfda2be2a7f319971f1adf",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "scripts/test_wifi_paper.py",
+      "archived_sha256": "2f4b9c76a57f290926265869e11e55cce76243f790b999ac936691d9e3a3b33e",
+      "home_sha256": "2f4b9c76a57f290926265869e11e55cce76243f790b999ac936691d9e3a3b33e",
+      "union_sha256": "2f4b9c76a57f290926265869e11e55cce76243f790b999ac936691d9e3a3b33e",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py",
+      "archived_sha256": "7a2d752e61cd64e60f2174d417fe41dca028b61f803eae3573f8185ee61dac24",
+      "home_sha256": "7a2d752e61cd64e60f2174d417fe41dca028b61f803eae3573f8185ee61dac24",
+      "union_sha256": "7a2d752e61cd64e60f2174d417fe41dca028b61f803eae3573f8185ee61dac24",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/file_browser_runtime_test.cpp",
+      "archived_sha256": "f2a9e599fef6143f337747e4599b925db6624147a84b0ac74a25a456845d9972",
+      "home_sha256": "f2a9e599fef6143f337747e4599b925db6624147a84b0ac74a25a456845d9972",
+      "union_sha256": "f2a9e599fef6143f337747e4599b925db6624147a84b0ac74a25a456845d9972",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/file_browser_test.c",
+      "archived_sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d",
+      "home_sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d",
+      "union_sha256": "742cff69b49ae61c053e08050e4fc015b8486123b19b1478c824ebbde958009d",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_file_browser_operations_test.c",
+      "archived_sha256": "ae9af9647a4f22d2c7f4df81f43d9fbe018de007b3e76750e905b53014cad7a8",
+      "home_sha256": "ae9af9647a4f22d2c7f4df81f43d9fbe018de007b3e76750e905b53014cad7a8",
+      "union_sha256": "ae9af9647a4f22d2c7f4df81f43d9fbe018de007b3e76750e905b53014cad7a8",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_file_browser_paper_test.c",
+      "archived_sha256": "6a6f7540397ab405c711e7926a8f1c93cb77f24cf6971a9434262d208d246658",
+      "home_sha256": "6a6f7540397ab405c711e7926a8f1c93cb77f24cf6971a9434262d208d246658",
+      "union_sha256": "6a6f7540397ab405c711e7926a8f1c93cb77f24cf6971a9434262d208d246658",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_file_browser_test.c",
+      "archived_sha256": "cb4446b59ec5efa9d1510b1a53430706ef39f4c7f859e73b965c5d60c878b841",
+      "home_sha256": "cb4446b59ec5efa9d1510b1a53430706ef39f4c7f859e73b965c5d60c878b841",
+      "union_sha256": "cb4446b59ec5efa9d1510b1a53430706ef39f4c7f859e73b965c5d60c878b841",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_wifi_credentials_test.c",
+      "archived_sha256": "49acc46bd0fb9af7685ca19c4e451f9f8972a55ec5ac06358b3efbfbc6e25bd0",
+      "home_sha256": "49acc46bd0fb9af7685ca19c4e451f9f8972a55ec5ac06358b3efbfbc6e25bd0",
+      "union_sha256": "49acc46bd0fb9af7685ca19c4e451f9f8972a55ec5ac06358b3efbfbc6e25bd0",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_wifi_saved_network_test.c",
+      "archived_sha256": "ec64cead49ba90d7060f85586ad4197aeed49527704876d52e4879e13e8b135b",
+      "home_sha256": "ec64cead49ba90d7060f85586ad4197aeed49527704876d52e4879e13e8b135b",
+      "union_sha256": "ec64cead49ba90d7060f85586ad4197aeed49527704876d52e4879e13e8b135b",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/portable_wifi_test.c",
+      "archived_sha256": "266e842ae40cdad4ac651bff6529b7d296f5fb3e5673b38a8671762a6ffe2c15",
+      "home_sha256": "266e842ae40cdad4ac651bff6529b7d296f5fb3e5673b38a8671762a6ffe2c15",
+      "union_sha256": "266e842ae40cdad4ac651bff6529b7d296f5fb3e5673b38a8671762a6ffe2c15",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/touch_scroll_files_entry.c",
+      "archived_sha256": "3a006ff595eaf190252198024b9c0c4a27f04cd55445688315f14cf7a8939079",
+      "home_sha256": "3a006ff595eaf190252198024b9c0c4a27f04cd55445688315f14cf7a8939079",
+      "union_sha256": "3a006ff595eaf190252198024b9c0c4a27f04cd55445688315f14cf7a8939079",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/touch_scroll_files_test.c",
+      "archived_sha256": "44eaa747c8b13cb07f8e3116e36642f7e1637c93d18a511f8078642273432a89",
+      "home_sha256": "44eaa747c8b13cb07f8e3116e36642f7e1637c93d18a511f8078642273432a89",
+      "union_sha256": "44eaa747c8b13cb07f8e3116e36642f7e1637c93d18a511f8078642273432a89",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/touch_scroll_wifi_entry.c",
+      "archived_sha256": "e74c9f0aa74da5dea6b8be092777768ddaaa9ca4e8625f5da7abd80ac4afb49f",
+      "home_sha256": "e74c9f0aa74da5dea6b8be092777768ddaaa9ca4e8625f5da7abd80ac4afb49f",
+      "union_sha256": "e74c9f0aa74da5dea6b8be092777768ddaaa9ca4e8625f5da7abd80ac4afb49f",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/touch_scroll_wifi_test.c",
+      "archived_sha256": "976e91a48eb73a350c1b2b05cea624b10cc9b25a28dd050d125c0743232cbf2e",
+      "home_sha256": "976e91a48eb73a350c1b2b05cea624b10cc9b25a28dd050d125c0743232cbf2e",
+      "union_sha256": "976e91a48eb73a350c1b2b05cea624b10cc9b25a28dd050d125c0743232cbf2e",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/wifi_manifest_admission.cpp",
+      "archived_sha256": "7bfaa0dc95092488f8fe0407c3c9b6cc3609d0cb5238d62ff2fc07a2a2aeaad7",
+      "home_sha256": "7bfaa0dc95092488f8fe0407c3c9b6cc3609d0cb5238d62ff2fc07a2a2aeaad7",
+      "union_sha256": "7bfaa0dc95092488f8fe0407c3c9b6cc3609d0cb5238d62ff2fc07a2a2aeaad7",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "test/native_apps/wifi_settings_test.c",
+      "archived_sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd",
+      "home_sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd",
+      "union_sha256": "d28518cb8a98016d023b68f161d3daea361397730105fb375640c2a464acd0cd",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    },
+    {
+      "path": "tests/test_portable_wifi_contract.py",
+      "archived_sha256": "8efc7b7d5065c0d3036affa1ee727c65109ef1c724ac4db9bbe84272f550c163",
+      "home_sha256": "8efc7b7d5065c0d3036affa1ee727c65109ef1c724ac4db9bbe84272f550c163",
+      "union_sha256": "8efc7b7d5065c0d3036affa1ee727c65109ef1c724ac4db9bbe84272f550c163",
+      "archived_equals_home": true,
+      "union_differs_from_archive": false
+    }
+  ],
+  "changed_caller_file_count": 0,
+  "patch": "none",
+  "union_edited": false,
+  "scope": "Read-only source preservation check. No builds or runtime tests required because no production edits were made."
+}

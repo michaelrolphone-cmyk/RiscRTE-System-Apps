@@ -6,7 +6,9 @@ from pathlib import Path
 
 UTILITIES_COMMIT = '637e13b0bce62ad49b756bec2468a6271d163fc7'
 HEADERS = ('AlarmServiceV1.h', 'AlarmServiceV2.h')
-CATALOG_COMMIT = '9bd572791a8304194ceb2b7542fc9cbd124e911b'
+# Public recovered source: all eight headers and LICENSE are byte-identical
+# to historical private9bd57279; see the recovery source lock.
+CATALOG_COMMIT = 'e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d'
 CATALOG_HEADERS = ('PointsCatalogProjection.h', 'PointsServiceProjection.h')
 POINTS_HEADERS = ('AlarmRecords.h', 'PointsRecords.h', 'PointsSchedule.h', 'PointsUtcSchedule.h')
 
