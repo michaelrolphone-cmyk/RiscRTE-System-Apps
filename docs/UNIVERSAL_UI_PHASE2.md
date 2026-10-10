@@ -49,3 +49,31 @@ Receipts are under `docs/qualification/`. Results use deterministic host I/O
 providers and are not hardware timing claims. The historical nested idle
 Settings fixture fails on the unchanged baseline as well as this candidate
 because it does not emit the ordered input stream; it is not counted as passing.
+
+## Final source qualification and remaining work
+
+All 17 selected target application ELFs compile and pass structural admission
+from the source trees recorded in `qualification/phase2-final-custody.json`.
+Fresh shared-text tests pass 92 host/client and 256 real Runtime cases, alongside
+150 scene raster/cadence cases, 24 foreground alarm cases and 36 applicable
+low-battery policy cases. The original low-battery timer-edit fixture also fails
+on the unchanged delivered baseline; its result is retained, not counted as a pass.
+
+Exact-head GitHub CI is terminal, with System 1/8 and Utilities 3/8 workflow runs
+passing. Failures include Runtime suffix positional initializers in old fixtures,
+SDK snapshot inventory drift, obsolete Scanner version/keyboard expectations,
+old dependency source pins, and the historical timezone fixture. The receipts
+retain exact run/job IDs and failure excerpts. This checkpoint is not merge-ready.
+
+Universal decoupling remains active work. The non-ASYNC retaining MONO1 fallback
+must still use the provider's full remaining operation deadline in wait_present.
+The non-ASYNC RGB fallback polls status in the foreground and captures input,
+but application dispatch waits until it returns. ASYNC RGB (including the
+selected Watch LCD) already follows the independent frame path. Driver
+conversion must preserve owner-task custody and explicit final-settle semantics.
+
+Portable immediate-mode raster captures raw touch at checkpoints, but app/model
+and navigation dispatch remain non-reentrant until the draw call returns. CPU-
+heavy draw calls can therefore delay logical actions independently of panel
+latency. A measured immutable-snapshot/resumable-raster solution is the next
+increment; no UI feature or synchronous provider mode is removed to hide this gap.

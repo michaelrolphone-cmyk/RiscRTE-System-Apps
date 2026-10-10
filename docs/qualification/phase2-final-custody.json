@@ -1,0 +1,2816 @@
+{
+  "schema": 1,
+  "hardware_verified": false,
+  "source": {
+    "system_remote": "3a0145adcab1e03629709f61daa1901324b25281",
+    "system_local": "397636876721cb724f3b0ac673d606ccc87fdbab",
+    "system_tree": "994bdf0b1a00d8fac43a9ae20c408bfa67137f6a",
+    "utilities_remote": "fa57bdfee1abdad21d34b5609d00a5377acb4294",
+    "utilities_local": "66ae4a84f42be3b3c123ad3b00889d46f67676e1",
+    "utilities_tree": "fadf5d87a038125959a29f8de33787980fbcd021",
+    "runtime": "274bc66f193cbe29018d2a85c9400cb0dce8aacc"
+  },
+  "target": {
+    "all_commands_exit_code": 0,
+    "artifacts": [
+      {
+        "path": "apps/default/default.elf",
+        "bytes": 445368,
+        "sha256": "db6b5616aacfd08871ef004e56460fd5156def47347fefab00377c3a5b092e2c"
+      },
+      {
+        "path": "apps/file_browser/file_browser.elf",
+        "bytes": 245276,
+        "sha256": "afe04c949d3bdc1ad2a0a38ce8baf82ab92e59a6ce078de0a8fcb44f43e6c156"
+      },
+      {
+        "path": "apps/settings/settings.elf",
+        "bytes": 218148,
+        "sha256": "0fbe5210add7679e19726d9ac17d7a24516963fc111f23a41bd0bd2957afdf83"
+      },
+      {
+        "path": "apps/springboard/springboard.elf",
+        "bytes": 214864,
+        "sha256": "e77e0f23057170fbc88eb7bd050143364725ac4328f890251dc806a7acae8cfa"
+      },
+      {
+        "path": "apps/updates/app_store/app_store.elf",
+        "bytes": 197364,
+        "sha256": "b229014fc3b174409db8155a4e518f225af6f99cf4968ff2e39a8c8834e35f2d"
+      },
+      {
+        "path": "apps/updates/ota_update/ota_update.elf",
+        "bytes": 197368,
+        "sha256": "2ab54f7ceb0c19d19569f3cfc0b2bbb2f6aa4fc43f7a0868973168110904abc3"
+      },
+      {
+        "path": "apps/usb_sd_transfer/usb_sd_transfer.elf",
+        "bytes": 107572,
+        "sha256": "92444557166977d7312dfe7e5dbbebd9bf5043208cc9461150d63b5c0a299db9"
+      },
+      {
+        "path": "apps/utilities/alarms/alarms.elf",
+        "bytes": 206432,
+        "sha256": "78ffb6a8acdac986935b182c1dc9c03984517dee72fe8539b74d70da4a1dfe94"
+      },
+      {
+        "path": "apps/utilities/battery/battery.elf",
+        "bytes": 199124,
+        "sha256": "2adc813cbff13ca80cc03d4917271596bf14568d1563a9ebf81f1ec1be97502c"
+      },
+      {
+        "path": "apps/utilities/ble_buttons/ble_buttons.elf",
+        "bytes": 216352,
+        "sha256": "5fc99859f2a00e4b90d63f34579248cf37b2fa10c951d6ffc194fe1347ee009c"
+      },
+      {
+        "path": "apps/utilities/ble_scanner/ble_scanner.elf",
+        "bytes": 218308,
+        "sha256": "ea0e3d816eec3d53f7c2c0f93d107cf6f6f83de3d62d659bfacbf21b8f4d836a"
+      },
+      {
+        "path": "apps/utilities/ble_touchpad/ble_touchpad.elf",
+        "bytes": 216252,
+        "sha256": "27bc122b3341b01f3ce77bf47c2f46f3945053b3fa38c7503a4624636ea82ab9"
+      },
+      {
+        "path": "apps/utilities/calculator/calculator.elf",
+        "bytes": 194232,
+        "sha256": "05b6ca5b0053b5f8f226f76ac7739162bcfcfd5ee870d9f21fafab314bcdaeef"
+      },
+      {
+        "path": "apps/utilities/countdown/countdown.elf",
+        "bytes": 201112,
+        "sha256": "ecea923e84252e05dc2a927096d5b830dd10e3cef6954a36ca0eb02f84ddc126"
+      },
+      {
+        "path": "apps/utilities/stopwatch/stopwatch.elf",
+        "bytes": 198840,
+        "sha256": "f2e3a3bbc2156c5a2d77ae69c9739078e0461fe8a00adea49fd4af3b548f2eef"
+      },
+      {
+        "path": "apps/utilities/waterfall/waterfall.elf",
+        "bytes": 330940,
+        "sha256": "e6cf1575782125c89570e203d9ef2c24ba7d754418e9b69fa3a24da8bba43334"
+      },
+      {
+        "path": "apps/wifi_settings/wifi_settings.elf",
+        "bytes": 200992,
+        "sha256": "47cd53d4f7214e69b4be58f7b7f0f54e0943c4d923be0ab589102b075e3132f4"
+      }
+    ],
+    "commands": {
+      "apps-default-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_paper_clock.py",
+        "--desk-clock",
+        "--sparse-start",
+        "--desk-lock-home",
+        "--desk-points-face",
+        "--navigation",
+        "--alarm-client",
+        "--wake-light-restore",
+        "--local-sleep-source",
+        "/workspace/shared/x4-bugfix-composition-053/minimal/apps/portable_sleep.c",
+        "--sleep-capability",
+        "x4.power",
+        "--sleep-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--retained-wake-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--paper-crossfade",
+        "--paper-display-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--paper-transitions",
+        "--quick-actions",
+        "--quick-radios",
+        "--quick-usb-transfer",
+        "--resident-shell-host",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--ble-broadcast",
+        "--x4-idle-source",
+        "/workspace/shared/x4-bugfix-composition-053/minimal/apps/portable_idle_sleep.c",
+        "--x4-idle-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--x4-idle-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/driver",
+        "--contexts-rf-only",
+        "--resident-legacy-handoff",
+        "--resident-policy",
+        "--resident-loading-catalog",
+        "/tmp/system-ui-state-decoupling-20261010/examples/x4-resident-cohort-catalog.json",
+        "--frontlight-tone",
+        "--frontlight-tone-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--display-settled-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--crash-report-sd",
+        "--crash-report-spool-namespace",
+        "62",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/default"
+      ],
+      "apps-file_browser-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_file_browser.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--alarm-client",
+        "--home-app",
+        "default.elf",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--native-time-runtime-repo",
+        "/workspace/shared/recovered-runtime-0106",
+        "--touch-scrolling",
+        "--ble-broadcast",
+        "--navigation",
+        "--time-profile",
+        "x4-native-time",
+        "--stage-logs",
+        "--storage-capability",
+        "storage.volume",
+        "--storage-instance",
+        "9",
+        "--file-handlers",
+        "--return-app",
+        "springboard.elf",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/file_browser"
+      ],
+      "apps-settings-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_settings.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--alarm-client",
+        "--home-app",
+        "default.elf",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--native-time-runtime-repo",
+        "/workspace/shared/recovered-runtime-0106",
+        "--touch-scrolling",
+        "--ble-broadcast",
+        "--settings-profile",
+        "x4-native-time",
+        "--settings-list-scrolling",
+        "--home-desk-lock",
+        "--unpadded-hours",
+        "--return-app",
+        "springboard.elf",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/settings"
+      ],
+      "apps-springboard-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_springboard.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--alarm-client",
+        "--home-app",
+        "default.elf",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--native-time-runtime-repo",
+        "/workspace/shared/recovered-runtime-0106",
+        "--touch-scrolling",
+        "--ble-broadcast",
+        "--time-profile",
+        "x4-native-time",
+        "--catalog",
+        "/tmp/system-ui-state-decoupling-20261010/examples/x4-resident-cohort-catalog.json",
+        "--return-app",
+        "default.elf",
+        "--paper-crossfade",
+        "--paper-display-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/springboard"
+      ],
+      "apps-updates-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_updates.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--alarm-client",
+        "--home-app",
+        "default.elf",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--native-time-runtime-repo",
+        "/workspace/shared/recovered-runtime-0106",
+        "--touch-scrolling",
+        "--ble-broadcast",
+        "--navigation",
+        "--time-profile",
+        "x4-native-time",
+        "--stage-logs",
+        "--product",
+        "x4",
+        "--wifi-instance",
+        "15",
+        "--apps-only",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/updates"
+      ],
+      "apps-usb_sd_transfer-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_usb_transfer.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--msc-sdk",
+        "/workspace/shared/usb-msc015-complete-source/sdk/driver",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/usb_sd_transfer"
+      ],
+      "apps-utilities-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/utilities-ui-state-decoupling-20261010/scripts/build_x4_resident_clients.py",
+        "--resident-shell-client",
+        "--system-apps",
+        "/tmp/system-ui-state-decoupling-20261010",
+        "--system-revision",
+        "397636876721cb724f3b0ac673d606ccc87fdbab",
+        "--runtime",
+        "/workspace/shared/recovered-runtime-0106",
+        "--runtime-revision",
+        "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+        "--display-sdk",
+        "/workspace/shared/x4-baseline-recovery/053/evidence/sleep/target-sdk",
+        "--output",
+        "/tmp/ui-phase2-target-final/apps/utilities"
+      ],
+      "apps-wifi_settings-command": [
+        "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python",
+        "/tmp/system-ui-state-decoupling-20261010/scripts/build_portable_wifi.py",
+        "--resident-shell-client",
+        "--resident-runtime-sdk",
+        "/workspace/shared/recovered-runtime-0106/sdk/app",
+        "--resident-policy",
+        "--alarm-client",
+        "--home-app",
+        "default.elf",
+        "--tagged-alarm-utilities",
+        "/tmp/utilities-ui-state-decoupling-20261010",
+        "--native-time-runtime-repo",
+        "/workspace/shared/recovered-runtime-0106",
+        "--touch-scrolling",
+        "--ble-broadcast",
+        "--navigation",
+        "--time-profile",
+        "x4-native-time",
+        "--stage-logs",
+        "--wifi-instance",
+        "15",
+        "--return-app",
+        "springboard.elf",
+        "--output-dir",
+        "/tmp/ui-phase2-target-final/apps/wifi_settings"
+      ]
+    },
+    "logs": {
+      "apps-default.log": "Native ELF structural validation tests passed\nPaper default clock: target structural validation and imports/exports passed\n",
+      "apps-file_browser.log": "Native ELF structural validation tests passed\nPortable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed\n",
+      "apps-settings.log": "Native ELF structural validation tests passed\nPortable Settings: target layout, ELF validator, import/export checks passed\n",
+      "apps-springboard.log": "Native ELF structural validation tests passed\nPortable Springboard: target layout, ELF validator, import/export checks passed\n",
+      "apps-updates.log": "Native ELF structural validation tests passed\nNative ELF structural validation tests passed\nPortable update target ELFs, bounded imports/exports and structural validator passed\n",
+      "apps-usb_sd_transfer.log": "Native ELF structural validation tests passed\nUSB SD Transfer: Xtensa ELF, loader validation and exact imports/exports passed\n",
+      "apps-utilities.log": "Native ELF structural validation tests passed\ncalculator 0.1.21: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nstopwatch 0.1.21: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nbattery 1.1.14: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nble_scanner 0.2.20: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nble_touchpad 0.1.19: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nble_buttons 0.1.20: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nwaterfall 0.2.19: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\nalarms 0.2.16: target, descriptor, zero shared renderers, ABI, loader PASS\nNative ELF structural validation tests passed\ncountdown 0.1.20: target, descriptor, zero shared renderers, ABI, loader PASS\n",
+      "apps-wifi_settings.log": "Native ELF structural validation tests passed\nPortable Wi-Fi: target layout, ELF validator, import/export checks passed\n"
+    }
+  },
+  "additional_host_tests": [
+    {
+      "suite": "Shared text host and clients",
+      "cases": 92,
+      "log_sha256": {
+        "/tmp/ui-phase2-text-current.log": "4de57b122634734f1e88809832126010456175242e6883fbc0cbb4cd615b4fc7",
+        "/tmp/ui-phase2-text-current-san.log": "4de57b122634734f1e88809832126010456175242e6883fbc0cbb4cd615b4fc7"
+      }
+    },
+    {
+      "suite": "Shared text real Runtime",
+      "cases": 256,
+      "log_sha256": {
+        "/tmp/ui-phase2-text-runtime-current.log": "b61bd896f27e789b0a636db2410041c71ba56ace9b4ffb3737f7efcdb22f6534",
+        "/tmp/ui-phase2-text-runtime-current-san.log": "b61bd896f27e789b0a636db2410041c71ba56ace9b4ffb3737f7efcdb22f6534"
+      }
+    },
+    {
+      "suite": "Scene raster and cadence",
+      "cases": 150,
+      "log_sha256": {
+        "/tmp/ui-phase2-scene.log": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55",
+        "/tmp/ui-phase2-scene-san.log": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55"
+      }
+    },
+    {
+      "suite": "Foreground alarm",
+      "cases": 24,
+      "log_sha256": {
+        "/tmp/ui-phase2-alarm.log": "6b6ba9ddab548dcaed5ee74e9961defcf31b25179d5986a7e842174f62100148"
+      }
+    },
+    {
+      "suite": "Low battery non-timer cases",
+      "cases": 36,
+      "log_sha256": {
+        "/tmp/ui-phase2-battery-nontimer.log": "41e1aa13e8019deb7897e2242613229c431304665561d48651d07f0f45de2597"
+      }
+    },
+    {
+      "suite": "GameBoy independent cadence and latest mailbox",
+      "cases": 14,
+      "log_sha256": {
+        "/tmp/ui-phase2-gameboy.log": "8d27f4c2eca036d4993d263cfa4d0a8d8d8afc525973dc8c5353d3ade84c23aa",
+        "/tmp/ui-phase2-gameboy-san.log": "8d27f4c2eca036d4993d263cfa4d0a8d8d8afc525973dc8c5353d3ade84c23aa"
+      }
+    }
+  ],
+  "ci": {
+    "system_source": "3a0145adcab1e03629709f61daa1901324b25281",
+    "utility_source": "fa57bdfee1abdad21d34b5609d00a5377acb4294",
+    "checked_at": "2026-10-10T13:48:00Z",
+    "runs": [
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883444,
+          "name": "Wi-Fi paper and Watch validation",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 22,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883444/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883444/logs",
+          "workflow_id": 377235238
+        },
+        "jobs": [
+          {
+            "id": 114227082464,
+            "name": "wifi",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883444,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Production controller and views with fake providers, plain C and ASan/UBSan",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 4
+              },
+              {
+                "name": "Install pinned public target compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 5
+              },
+              {
+                "name": "Build Wi-Fi target ELFs and exact source receipts",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 13
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:34.4354204Z /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/test/native_apps/portable_wifi_test.c:157:2: error: missing initializer for field \u2018confirm_boot\u2019 of \u2018risc_runtime_api_v1\u2019 [-Werror=missing-field-initializers]"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883378,
+          "name": "Nova7 paper clock",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 34,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883378/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883378/logs",
+          "workflow_id": 377089217
+        },
+        "jobs": [
+          {
+            "id": 114227082484,
+            "name": "clock",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883378,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Canonical typed desk-clock SDK",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Canonical retained Runtime source",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Isolated X4 typed Clock client",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Real retained Clock and adapter, normal and sanitizers",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 7
+              },
+              {
+                "name": "Actual Runtime and CPU retained staging gate",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Checked X4 client and real Clock integration under sanitizers",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Bounded desk-clock checkpoint and minute policy",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 10
+              },
+              {
+                "name": "Portable six-face rasters and frozen Reader comparison",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 11
+              },
+              {
+                "name": "Opt-in desk-clock Settings records and real paper controls",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 12
+              },
+              {
+                "name": "Native mono clock, gestures, wall time and retained alarm",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 13
+              },
+              {
+                "name": "Paper QuickActions and independent Home/crown routing",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 14
+              },
+              {
+                "name": "Opt-in flipped paper QuickActions and Home",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 15
+              },
+              {
+                "name": "App-owned handoff guard and refusal retry",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 16
+              },
+              {
+                "name": "Adapter-owned copied power status",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 17
+              },
+              {
+                "name": "Install pinned target compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 18
+              },
+              {
+                "name": "Validate no-import desk-clock renderer ELF",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 19
+              },
+              {
+                "name": "Build clock and launcher navigation pair",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 20
+              },
+              {
+                "name": "Build controls-first paper clients with explicit Home target",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 21
+              },
+              {
+                "name": "Build opt-in retained desk Clock and validate actual ELF loader",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 22
+              },
+              {
+                "name": "Build future opt-in desk-clock Settings without deployment",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 23
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 24
+              },
+              {
+                "name": "Post Isolated X4 typed Clock client",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 44
+              },
+              {
+                "name": "Post Canonical retained Runtime source",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 45
+              },
+              {
+                "name": "Post Canonical typed desk-clock SDK",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 46
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 47
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 48
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 49
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:37.6703661Z /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/test/native_apps/paper_desk_clock_test.c:136:1: error: missing initializer for field \u2018confirm_boot\u2019 of \u2018risc_runtime_api_v1\u2019 [-Werror=missing-field-initializers]"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883406,
+          "name": "Portable Firmware Update",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 134,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883406/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883406/logs",
+          "workflow_id": 374559023
+        },
+        "jobs": [
+          {
+            "id": 114227082473,
+            "name": "portable-firmware-update",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883406,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Verify portable services and controller fault paths",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 4
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 5
+              },
+              {
+                "name": "Build Firmware Update target and check unchanged legacy bytes",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 13
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:38.0051744Z /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/test/native_apps/portable_update_app_test.c:149:2: error: missing initializer for field \u2018confirm_boot\u2019 of \u2018risc_runtime_api_v1\u2019 [-Werror=missing-field-initializers]"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883399,
+          "name": "Portable App Store",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 130,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883399/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883399/logs",
+          "workflow_id": 374559411
+        },
+        "jobs": [
+          {
+            "id": 114227082350,
+            "name": "portable-app-store",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883399,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Verify portable services and controller fault paths",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 4
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 5
+              },
+              {
+                "name": "Build App Store target and check unchanged legacy bytes",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 13
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:36.2306317Z /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/test/native_apps/portable_update_app_test.c:149:2: error: missing initializer for field \u2018confirm_boot\u2019 of \u2018risc_runtime_api_v1\u2019 [-Werror=missing-field-initializers]"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883421,
+          "name": "Opt-in timezone Settings",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 11,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883421/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883421/logs",
+          "workflow_id": 377605699
+        },
+        "jobs": [
+          {
+            "id": 114227082449,
+            "name": "timezone-settings",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883421,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Actual Settings controller, all catalog choices and feature-off ELF bytes",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 5
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 11
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:44.4279973Z paper: /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/test/native_apps/portable_timezone_settings_test.c:38: timezone_health: Assertion `polls<2000' failed."
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883427,
+          "name": "Independent system app build",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 191,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883427/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883427/logs",
+          "workflow_id": 371688857
+        },
+        "jobs": [
+          {
+            "id": 114227082392,
+            "name": "build",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883427,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Test SDK baseline, manifests, integrity and drift classification",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 4
+              },
+              {
+                "name": "Run python -m pip install Pillow==11.3.0",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 5
+              },
+              {
+                "name": "Exercise app UI and provider interaction fixtures",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Build and structurally validate all application ELFs",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:36.2283592Z ERROR: test_sdk_snapshot_and_inventory (test_pipeline.PipelineTests.test_sdk_snapshot_and_inventory)",
+              "2026-10-10T13:44:36.2295345Z     raise ValueError('SDK snapshot changed without an audited rebaseline: ' + item['path'])",
+              "2026-10-10T13:44:36.2295970Z ValueError: SDK snapshot changed without an audited rebaseline: lib/NativeApps/include/T5AppApi.h",
+              "2026-10-10T13:44:36.2297190Z FAIL: test_declared_capacity_and_version_are_explicit (test_timecard_preparation.TimecardPreparation.test_declared_capacity_and_version_are_explicit)",
+              "2026-10-10T13:44:36.2300528Z AssertionError: 0 != 2",
+              "2026-10-10T13:44:36.2301388Z FAILED (failures=1, errors=1)"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883446,
+          "name": "Prospective U1 package witness (non-live)",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 182,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883446/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883446/logs",
+          "workflow_id": 371961771
+        },
+        "jobs": [
+          {
+            "id": 114227082595,
+            "name": "witness",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056883446,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Build representative external payload with existing independent builder",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 6
+              },
+              {
+                "name": "Validate isolated ZIP with pinned prospective upstream tools",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 14
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:56.3269430Z     raise ValueError('SDK snapshot changed without an audited rebaseline: ' + item['path'])",
+              "2026-10-10T13:44:56.3270144Z ValueError: SDK snapshot changed without an audited rebaseline: lib/NativeApps/include/T5AppApi.h"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-System-Apps",
+        "run": {
+          "id": 38056883417,
+          "name": "Isolated portable timezone core",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 15,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883417/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38056883417/logs",
+          "workflow_id": 377462177
+        },
+        "jobs": [
+          {
+            "id": 114227082597,
+            "name": "timezone",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056883417,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Pure policy, preference faults, sanitizers, independent oracle and real ELF validator",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Explicit RTC interpretation records",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Opt-in native realtime client and pinned target ELF",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Explicit checked Set Time and pinned target ELF",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 22
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 23
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 24
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 25
+              }
+            ],
+            "error_excerpt": []
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886355,
+          "name": "BLE HID Utilities",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 60,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886355/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886355/logs",
+          "workflow_id": 376287970
+        },
+        "jobs": [
+          {
+            "id": 114227090652,
+            "name": "hid-apps",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056886355,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Host and production Nova application tests",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 6
+              },
+              {
+                "name": "Install pinned target compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Build and structurally validate target ELFs",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Production Runtime package admission",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 10
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 20
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 21
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:38.9190885Z python -m unittest: error: X4 idle requires explicit helper, product SDK and Runtime SDK",
+              "2026-10-10T13:44:38.9446560Z test_watch_and_legacy_profiles_keep_original_pins (test_native_paper_motion.NativePaperMotion.test_watch_and_legacy_profiles_keep_original_pins) ... fatal: path 'Apps/native-utc-utilities.json' exists on disk, but not in '45cffd33f6d258017cf784ed6b4534654c221736'",
+              "2026-10-10T13:44:38.9645116Z ERROR: test_watch_and_legacy_profiles_keep_original_pins (test_native_paper_motion.NativePaperMotion.test_watch_and_legacy_profiles_keep_original_pins)",
+              "2026-10-10T13:44:38.9658010Z FAIL: test_reuse_keyboard_and_provider (test_ble_inventory.BleInventory.test_reuse_keyboard_and_provider)",
+              "2026-10-10T13:44:38.9723586Z AssertionError: 'PortableWatchKeyboard.h' not found in '#include \"T5AppApi.h\"\\n#include \"utility_frame.h\"\\n#include \"RiscRuntimeV1.h\"\\n#include \"RiscBluetoothSensorsV1.h\"\\n#include \"PortableTextInputClient.h\"\\n#include \"ble_sensor_names.h\"\\n#include \"PortableRadioSession.h\"\\n#include \"PortableRadioPolicy.h\"\\n#include \"PortableNovaUi.h\"\\n#include \"PortableAppSleep.h\"\\n#include \"ble_scan_model.h\"\\n#include \"PaperPresentation.h\"\\n#include \"PortableBluetoothControl.h\"\\n__attribute__((weak)) const paper_presentation *paper_presentation_get(void){return NULL;}\\nstatic const paper_presentation *paper;\\nstatic bool paper_enable_needed;\\n#include <stdio.h>\\n#ifndef PORTABLE_APP_OWNS_TOUCH_CHROME\\n#error \"BLE Scanner requires application-owned touch chrome\"\\n#endif\\n#ifndef PORTABLE_RETURN_APP\\n#error \"BLE Scanner requires an explicit launcher return destination\"\\n#end",
+              "2026-10-10T13:44:38.9783610Z FAIL: test_scanner_identity_and_capabilities (test_ble_inventory.BleInventory.test_scanner_identity_and_capabilities)",
+              "2026-10-10T13:44:38.9786298Z AssertionError: '0.2.19' != '0.2.4'",
+              "2026-10-10T13:44:38.9787767Z FAILED (failures=2, errors=1)"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886361,
+          "name": "BLE Scanner",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 89,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886361/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886361/logs",
+          "workflow_id": 375578056
+        },
+        "jobs": [
+          {
+            "id": 114227090450,
+            "name": "scanner",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056886361,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Host model, lifecycle and production Nova pixels",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 6
+              },
+              {
+                "name": "Install pinned target compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Build exact-pinned target scanner",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:39.1729020Z /home/runner/work/RiscRTE-Utilities/RiscRTE-Utilities/tests/../Apps/ble_scanner.c:5:10: fatal error: PortableTextInputClient.h: No such file or directory"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886397,
+          "name": "Native UTC visual alarm profile",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 4,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886397/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886397/logs",
+          "workflow_id": 377670161
+        },
+        "jobs": [
+          {
+            "id": 114227090651,
+            "name": "native-utc-alarm",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056886397,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Native UTC behavior and legacy regressions",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler in CI",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Target ELF, loader and exact flag-off byte gates",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:45.1422729Z     if subprocess.check_output(['git','rev-parse','HEAD'],cwd=system,text=True).strip()!=PIN['system_sha'] or subprocess.check_output(['git','status','--porcelain','--untracked-files=no'],cwd=system,text=True).strip():raise ValueError('Clean exact System 1d589d90 required')",
+              "2026-10-10T13:44:45.1426014Z ValueError: Clean exact System 1d589d90 required"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886370,
+          "name": "NOVA battery power screens",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 59,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886370/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886370/logs",
+          "workflow_id": 376240874
+        },
+        "jobs": [
+          {
+            "id": 114227090559,
+            "name": "battery-power",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886370,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Actual app and adapter, normal and ASan/UBSan",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Pinned target compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Target ELF and import/export verification",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ],
+            "error_excerpt": []
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886410,
+          "name": "Independent utility build",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 166,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886410/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886410/logs",
+          "workflow_id": 371790842
+        },
+        "jobs": [
+          {
+            "id": 114227090711,
+            "name": "build",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Test SDK baseline, manifests, integrity and drift classification",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 4
+              },
+              {
+                "name": "Exercise app UI and provider interaction fixtures",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 5
+              },
+              {
+                "name": "Exact shared portable client source",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Exact generic provider-storage source",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Exercise staged Alarm and Countdown production source",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Exact non-modal cue-aware client",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 9
+              },
+              {
+                "name": "Exercise actual Points cues against app-owned audio",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 10
+              },
+              {
+                "name": "Exercise shared Calculator and Stopwatch",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 11
+              },
+              {
+                "name": "Exact shared audio lifecycle adapter",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 12
+              },
+              {
+                "name": "Exact current audio Runtime source",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 13
+              },
+              {
+                "name": "Exercise shared Audio Tools and lifecycle",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 14
+              },
+              {
+                "name": "Exact Spectrum app-data Runtime source",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 15
+              },
+              {
+                "name": "Exercise Spectrum saves against the real Runtime backend",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 16
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 17
+              },
+              {
+                "name": "Build and structurally validate all application ELFs",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 18
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 19
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 37
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 38
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 39
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:44:36.6086658Z python -m unittest: error: X4 idle requires explicit helper, product SDK and Runtime SDK",
+              "2026-10-10T13:44:36.6371615Z test_watch_and_legacy_profiles_keep_original_pins (test_native_paper_motion.NativePaperMotion.test_watch_and_legacy_profiles_keep_original_pins) ... fatal: path 'Apps/native-utc-utilities.json' exists on disk, but not in '45cffd33f6d258017cf784ed6b4534654c221736'",
+              "2026-10-10T13:44:36.6999247Z ERROR: test_watch_and_legacy_profiles_keep_original_pins (test_native_paper_motion.NativePaperMotion.test_watch_and_legacy_profiles_keep_original_pins)",
+              "2026-10-10T13:44:36.7014318Z FAIL: test_reuse_keyboard_and_provider (test_ble_inventory.BleInventory.test_reuse_keyboard_and_provider)",
+              "2026-10-10T13:44:36.7095902Z AssertionError: 'PortableWatchKeyboard.h' not found in '#include \"T5AppApi.h\"\\n#include \"utility_frame.h\"\\n#include \"RiscRuntimeV1.h\"\\n#include \"RiscBluetoothSensorsV1.h\"\\n#include \"PortableTextInputClient.h\"\\n#include \"ble_sensor_names.h\"\\n#include \"PortableRadioSession.h\"\\n#include \"PortableRadioPolicy.h\"\\n#include \"PortableNovaUi.h\"\\n#include \"PortableAppSleep.h\"\\n#include \"ble_scan_model.h\"\\n#include \"PaperPresentation.h\"\\n#include \"PortableBluetoothControl.h\"\\n__attribute__((weak)) const paper_presentation *paper_presentation_get(void){return NULL;}\\nstatic const paper_presentation *paper;\\nstatic bool paper_enable_needed;\\n#include <stdio.h>\\n#ifndef PORTABLE_APP_OWNS_TOUCH_CHROME\\n#error \"BLE Scanner requires application-owned touch chrome\"\\n#endif\\n#ifndef PORTABLE_RETURN_APP\\n#error \"BLE Scanner requires an explicit launcher return destination\"\\n#end",
+              "2026-10-10T13:44:36.7178050Z FAIL: test_scanner_identity_and_capabilities (test_ble_inventory.BleInventory.test_scanner_identity_and_capabilities)",
+              "2026-10-10T13:44:36.7181693Z AssertionError: '0.2.19' != '0.2.4'",
+              "2026-10-10T13:44:36.7183673Z FAILED (failures=2, errors=1)"
+            ]
+          },
+          {
+            "id": 114227090786,
+            "name": "lora-messages",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Verify LoRa state, radio errors, keyboard and Nova frames",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Build and validate portable LoRa ELF",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          },
+          {
+            "id": 114227090796,
+            "name": "nova (alarms)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run python scripts/test_nova_utility.py --app alarms --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Exercise alarm volume controller",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/build_nova_utility.py --app alarms --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          },
+          {
+            "id": 114227090835,
+            "name": "nova (stopwatch)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run python scripts/test_nova_utility.py --app stopwatch --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Exercise alarm volume controller",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/build_nova_utility.py --app stopwatch --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          },
+          {
+            "id": 114227090885,
+            "name": "nova (battery)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run python scripts/test_nova_utility.py --app battery --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Exercise alarm volume controller",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/build_nova_utility.py --app battery --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          },
+          {
+            "id": 114227090890,
+            "name": "nova (countdown)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run python scripts/test_nova_utility.py --app countdown --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Exercise alarm volume controller",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/build_nova_utility.py --app countdown --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          },
+          {
+            "id": 114227090897,
+            "name": "nova (calculator)",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886410,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run python scripts/test_nova_utility.py --app calculator --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Exercise alarm volume controller",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Install pinned public compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/build_nova_utility.py --app calculator --system-apps .dependencies/nova-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              }
+            ],
+            "error_excerpt": []
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886384,
+          "name": "Alarm tagged ABI reconciliation",
+          "status": "completed",
+          "conclusion": "failure",
+          "run_number": 5,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886384/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886384/logs",
+          "workflow_id": 377699529
+        },
+        "jobs": [
+          {
+            "id": 114227090595,
+            "name": "alarm-abi",
+            "status": "completed",
+            "conclusion": "failure",
+            "run_id": 38056886384,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Production ABI and lifecycle normal ASan UBSan",
+                "status": "completed",
+                "conclusion": "failure",
+                "number": 5
+              },
+              {
+                "name": "Pinned GCC 8.4 target compiler",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 6
+              },
+              {
+                "name": "Target ABI loader and unchanged Watch gate",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 7
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "skipped",
+                "number": 8
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 16
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              }
+            ],
+            "error_excerpt": [
+              "2026-10-10T13:45:46.4644644Z FAIL: test_reuse_keyboard_and_provider (test_ble_inventory.BleInventory.test_reuse_keyboard_and_provider)",
+              "2026-10-10T13:45:46.4737842Z AssertionError: 'PortableWatchKeyboard.h' not found in '#include \"T5AppApi.h\"\\n#include \"utility_frame.h\"\\n#include \"RiscRuntimeV1.h\"\\n#include \"RiscBluetoothSensorsV1.h\"\\n#include \"PortableTextInputClient.h\"\\n#include \"ble_sensor_names.h\"\\n#include \"PortableRadioSession.h\"\\n#include \"PortableRadioPolicy.h\"\\n#include \"PortableNovaUi.h\"\\n#include \"PortableAppSleep.h\"\\n#include \"ble_scan_model.h\"\\n#include \"PaperPresentation.h\"\\n#include \"PortableBluetoothControl.h\"\\n__attribute__((weak)) const paper_presentation *paper_presentation_get(void){return NULL;}\\nstatic const paper_presentation *paper;\\nstatic bool paper_enable_needed;\\n#include <stdio.h>\\n#ifndef PORTABLE_APP_OWNS_TOUCH_CHROME\\n#error \"BLE Scanner requires application-owned touch chrome\"\\n#endif\\n#ifndef PORTABLE_RETURN_APP\\n#error \"BLE Scanner requires an explicit launcher return destination\"\\n#end",
+              "2026-10-10T13:45:46.4819353Z FAIL: test_scanner_identity_and_capabilities (test_ble_inventory.BleInventory.test_scanner_identity_and_capabilities)",
+              "2026-10-10T13:45:46.4822395Z AssertionError: '0.2.19' != '0.2.4'",
+              "2026-10-10T13:45:46.4823979Z FAILED (failures=2)"
+            ]
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886340,
+          "name": "Nova7 paper utilities",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 53,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886340/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886340/logs",
+          "workflow_id": 377215746
+        },
+        "jobs": [
+          {
+            "id": 114227090408,
+            "name": "paper",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886340,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Production Watch and paper scenarios with sanitizers",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Install pinned target compiler",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Target structural validation and licenses",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Canonical manifest admission through production Runtime",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 17
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 18
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 19
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 20
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 21
+              }
+            ],
+            "error_excerpt": []
+          }
+        ]
+      },
+      {
+        "repo": "RiscRTE-Utilities",
+        "run": {
+          "id": 38056886367,
+          "name": "SDR Waterfall",
+          "status": "completed",
+          "conclusion": "success",
+          "run_number": 61,
+          "jobs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886367/jobs",
+          "logs_url": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/runs/38056886367/logs",
+          "workflow_id": 376203385
+        },
+        "jobs": [
+          {
+            "id": 114227090561,
+            "name": "waterfall",
+            "status": "completed",
+            "conclusion": "success",
+            "run_id": 38056886367,
+            "logs_url": null,
+            "steps": [
+              {
+                "name": "Set up job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 1
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 2
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 3
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 4
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 5
+              },
+              {
+                "name": "Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 6
+              },
+              {
+                "name": "Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 7
+              },
+              {
+                "name": "Run python scripts/test_waterfall.py --system-apps .dependencies/waterfall-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 8
+              },
+              {
+                "name": "Run python scripts/test_rf_models.py",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 9
+              },
+              {
+                "name": "Exercise RF controller, Watch touch, paper display and real storage backend",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 10
+              },
+              {
+                "name": "Run python -m pip install platformio==6.1.19",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 11
+              },
+              {
+                "name": "Run pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 12
+              },
+              {
+                "name": "Run python scripts/build_waterfall.py --system-apps .dependencies/waterfall-system",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 13
+              },
+              {
+                "name": "Run python scripts/build_waterfall.py --system-apps .dependencies/paper-system --presentation paper --home-app default.elf --quick-actions",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 14
+              },
+              {
+                "name": "Run actions/upload-artifact@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 15
+              },
+              {
+                "name": "Post Run actions/setup-python@v5",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 25
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 26
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 27
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 28
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 29
+              },
+              {
+                "name": "Post Run actions/checkout@v4",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 30
+              },
+              {
+                "name": "Complete job",
+                "status": "completed",
+                "conclusion": "success",
+                "number": 31
+              }
+            ],
+            "error_excerpt": []
+          }
+        ]
+      }
+    ]
+  },
+  "limitations": [
+    "No hardware timing measurement, flashing, release, merge or provider-default change.",
+    "Non-ASYNC MONO1 foreground wait_present and non-ASYNC RGB foreground status polling still block application progression.",
+    "Portable immediate-mode app raster captures touch without reentrant model dispatch; costly drawing can still delay application actions. A measured resumable snapshot solution remains active work.",
+    "Historical idle/timezone/timer-edit fixtures need ordered-edge adaptation; baseline failures are not counted as passing.",
+    "The target cohort includes waterfall but excludes Audio Tools; Audio changes have host source qualification only.",
+    "CI remains failing; exact run failures are retained instead of disabling any gate."
+  ]
+}
