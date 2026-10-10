@@ -1,5 +1,11 @@
 # Portable six-face desk-clock renderer
 
+The current renderer preserves the reconstructed Home unpadded-hour feature.
+The original Reader oracle and `evidence/` captures below are historical and
+remain unchanged. Current validation uses the separately identified
+[unpadded layout evidence](evidence-unpadded/validation.json); see
+[current layout qualification](#current-unpadded-layout-qualification).
+
 Renderer/assets/tests only, based on System Apps
 `269c27a71e0ad606061f7a653a96b24c0ae4bc35` (PR #68). This does not wire sleep,
 change a shipped app, change settings or manifests, or alter the frozen X4
@@ -27,7 +33,8 @@ bounded by those dimensions; tests impose a conservative 65,536-call ceiling.
 Use validated local civil time from the caller's qualified clock/timezone policy.
 `hour24` is 0..23, `minute` is 0..59, `use12_hour` is a Boolean (persisted format
 0 means 12h; 1 means 24h). In 12h mode midnight/noon both display 12; a single-digit
-hour has no leading zero. Invalid or out-of-range time produces the same `--:--`
+hour has no leading zero in either format. Segments recenters and scales the
+three-digit layout. Invalid or out-of-range time produces the same `--:--`
 Segments placeholder for every face. Unknown face IDs select Segments, as Reader
 does. Analog hands include the minute's half-degree hour-hand motion.
 
@@ -71,9 +78,10 @@ The source is MIT. The derived Noto numeral assets retain SIL OFL 1.1 and origin
 2022 Noto Project Authors notices in `LICENSE-NotoSans.txt`/`LICENSE-NotoSerif.txt`.
 These notices should ship with any app package that incorporates these assets.
 
-## Pixel-level adaptation and evidence
+## Historical pixel-level adaptation and evidence
 
-Digital geometry/scaling/spacing and all numeral spans are unchanged. For analog
+At the original Reader adaptation checkpoint, digital geometry/scaling/spacing
+and all numeral spans were unchanged. For analog
 faces, on-device `sin`, `cos`, `sqrt`, `lround` and floats are replaced by an exact
 floor integer square root and a 181-entry Q20 quarter-sine table at half-degree
 intervals, using signed 32-bit products and round-to-nearest, ties away from zero.
@@ -110,10 +118,63 @@ six-face oracle and its font assets are not substituted for Reader's Noto spans.
 
 ## Validation
 
+### Current unpadded layout qualification
+
+The current production renderer already implements the numeric-hour behavior
+documented in [the Home reconstruction](../x4/home-0.3.17-reconstruction.md).
+Comparing its one-digit layout directly to the older Reader formatter is an
+invalid expectation: Reader pads 24-hour hours, and its one-digit 12-hour Segments
+face retains four-digit spacing. The current implementation omits the zero in
+both formats and centers/scales Segments to 22 columns instead of 29.
+The qualified System source `8a75862929e4e83c8f66b3d58cc1c36d44830c84`
+(local equivalent `bd98b2e14c8d4ac20e4075c03396b12d8480e8f4`) already contains
+the same renderer bytes, SHA-256
+`f76843e4e7d5607205328e491fdb5f0d21121728607b894d2a1c266630e19fc7`.
+The failing `480x800-segments-0000-24h` comparison differed from historical
+Reader by 20,992 pixels because it compared centered `0:00` to padded `00:00`;
+it is byte-identical to the explicit current-layout reference.
+
+`test/fixtures/desk_clock_reader/UnpaddedLayout.h` is an explicitly test-only
+reference that reuses the frozen Reader segment and numeral primitives with
+the documented single-digit layout. It is not represented as original Reader
+source. The frozen Reader headers, input provenance, original 396 raster
+records and original PNGs remain byte-identical. Production source and assets
+are unchanged by this fixture correction.
+
+Every normal and ASan/UBSan run now checks all 396 existing cases against both
+references. The 44 intentional layout cases must differ from historical Reader
+and match the unpadded reference byte-for-byte. All remaining 352 portable cases
+must still match their original historical golden; the new reference must also
+equal Reader there. Frozen Reader digital hashes remain checked for all cases.
+Segments, Sans, Serif and invalid-time output still require exact pixel identity;
+analog output retains the same bidirectional one-pixel/512-changed-pixel bound.
+All 396 current portable hashes are separately locked, including the 44 changed
+layouts. No face, orientation, format, time or invalid-time case is skipped.
+
+- [Current 396 raster hashes and historical differences](evidence-unpadded/rasters.json)
+- [Midnight / 24h, portrait](evidence-unpadded/comparison-midnight-480x800.png)
+- [One-digit / 24h, portrait](evidence-unpadded/comparison-one-digit-480x800.png)
+- [One-digit / 12h, landscape](evidence-unpadded/comparison-one-digit-12h-800x480.png)
+- [Source-bound normal/sanitized and target validation](evidence-unpadded/validation.json)
+- [Rejected historical-format mutation controls](evidence-unpadded/negative-controls.json)
+
+New contact sheets label the test-only reference separately. Native-size PNGs
+include portable, unpadded-reference and original Reader captures at midnight,
+9:05 in both formats, the original 10:08/23:59 examples, and invalid time.
+`--write-evidence` writes only `evidence-unpadded/`; it does not regenerate the
+historical `evidence/` directory.
+
 ```
 python scripts/test_desk_clock_faces.py
 python scripts/test_desk_clock_faces.py --target-cc /path/to/xtensa-esp32s3-elf-gcc
+python scripts/test_desk_clock_layout_controls.py
 ```
+
+The mutation controls compile temporary source copies with padded Segments,
+four-digit Segments spacing, and padded 24-hour Noto hours. The real raster gate
+must reject each at its exact first differing case; production source is never
+edited. These controls distinguish the correction from skipping historical
+differences or simply relaxing pixel tolerances.
 
 Normal and ASan/UBSan C11 builds run 17,280 full-day face/format rasters each, edge
 and invalid dimensions, INT_MIN/INT_MAX time, unknown IDs, missing callbacks,
@@ -122,7 +183,9 @@ the real 80-byte encode/decode/policy contract. The oracle harness alone is C++.
 The production renderer builds as strict freestanding C11. Target witness GCC
 8.4.0 compilation links with `--no-undefined`, no `-lgcc`/`-lm`, zero undefined
 symbols and only the test app's `app_main` export; the real ELF structural
-validator passes. The 27,152-byte witness is not a distributable app package.
+validator passes. The original historical witness was 27,152 bytes; the current
+witness size and hash are recorded separately in `evidence-unpadded/validation.json`.
+Neither witness is a distributable app package.
 
 Regenerate reviewed PNGs/checksums only intentionally (requires Pillow):
 

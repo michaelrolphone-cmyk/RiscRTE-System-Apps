@@ -1,6 +1,7 @@
 /* Host-only actual-pixel oracle. Production renderer is compiled separately as C11. */
 #include "PortableDeskClockFaces.h"
 #include "../fixtures/desk_clock_reader/DeskClockFaces.h"
+#include "../fixtures/desk_clock_reader/UnpaddedLayout.h"
 #include <cassert>
 #include <climits>
 #include <cstdio>
@@ -130,7 +131,8 @@ int main(int argc, char **argv) {
         Canvas c(std::atoi(argv[3]), std::atoi(argv[4]));
         int hour = std::atoi(argv[5]), minute = std::atoi(argv[6]);
         bool format = std::atoi(argv[7]) != 0, valid = std::atoi(argv[8]) != 0;
-        if (std::atoi(argv[9])) DeskClockFaces::draw(c, static_cast<uint8_t>(face), hour, minute, format, valid);
+        if (std::atoi(argv[9]) == 2) DeskClockUnpaddedLayout::draw(c, static_cast<uint8_t>(face), hour, minute, format, valid);
+        else if (std::atoi(argv[9]) == 1) DeskClockFaces::draw(c, static_cast<uint8_t>(face), hour, minute, format, valid);
         else assert(c.draw(face, hour, minute, format, valid));
         c.write(); return 0;
     }
