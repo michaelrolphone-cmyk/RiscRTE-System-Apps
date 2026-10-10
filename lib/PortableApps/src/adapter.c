@@ -776,10 +776,17 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
         if(black){p[first]|=first_mask;p[last]|=last_mask;}else{p[first]&=(uint8_t)~first_mask;p[last]&=(uint8_t)~last_mask;}
         if(last>first+1)memset(p+first+1,black?0xff:0,last-first-1);
       }
-      raster_pixels+=(unsigned)(right-left+1);
-      if(!raster_checkpoint())return;
+      /* A logical replay row becomes one-pixel-wide physical rows when
+       * rotated. Charge pixels, not physical rows: a health/input call per
+       * pixel makes an 800x480 clear perform 384,000 runtime queries. */
+      unsigned written=(unsigned)(right-left+1);
+      bool input_due=(raster_pixels&511u)+written>=512u;
+      raster_pixels+=written;
+      if(input_due&&!raster_checkpoint())return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
-      contexts_pixels+=(unsigned)(right-left+1);if(!contexts_capture_checkpoint())return;
+      bool capture_due=(contexts_pixels&511u)+written>=512u;
+      contexts_pixels+=written;
+      if(capture_due&&!contexts_capture_checkpoint())return;
 #endif
     }
     return;

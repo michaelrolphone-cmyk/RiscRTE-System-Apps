@@ -23,7 +23,7 @@ if a.native_paper:
  s=s.replace('mock_format==RISC_DISPLAY_FORMAT_MONO1?480:240','mock_format==RISC_DISPLAY_FORMAT_MONO1?800:240').replace('mock_format==RISC_DISPLAY_FORMAT_MONO1?800:240,.stride_bytes','mock_format==RISC_DISPLAY_FORMAT_MONO1?480:240,.stride_bytes')
  s=s.replace('.height=mock_format==RISC_DISPLAY_FORMAT_MONO1?800:240','.height=mock_format==RISC_DISPLAY_FORMAT_MONO1?480:240')
  s=s.replace('mock_format==RISC_DISPLAY_FORMAT_MONO1?63:','mock_format==RISC_DISPLAY_FORMAT_MONO1?103:')
-s=s.replace('static bool mock_health(risc_runtime_health_v1 *h){h->uptime_ms=mock_ms;', 'static void raster_test_clock(void);\nstatic bool mock_health(risc_runtime_health_v1 *h){raster_test_clock();h->uptime_ms=mock_ms;')
+s=s.replace('static bool mock_health(risc_runtime_health_v1 *h){h->uptime_ms=mock_ms;', 'static unsigned mock_health_calls;\nstatic void raster_test_clock(void);\nstatic bool mock_health(risc_runtime_health_v1 *h){mock_health_calls++;raster_test_clock();h->uptime_ms=mock_ms;')
 if a.settings_graphics:
  s=s.replace('static bool mock_acquire(const char *name', 'static bool graphics_rtc_read(void*c,twatch_rtc_time_v1*t){(void)c;*t=(twatch_rtc_time_v1){2026,10,10,6,12,0,0};return true;}\nstatic bool graphics_rtc_write(void*c,const twatch_rtc_time_v1*t){(void)c;(void)t;return false;}\nstatic const twatch_rtc_api_v1 graphics_rtc={.api_version=TWATCH_RTC_API_V1,.struct_size=sizeof(graphics_rtc),.read=graphics_rtc_read,.write=graphics_rtc_write};\nstatic bool mock_acquire(const char *name')
  s=s.replace('assert(version==1 && !instance);', 'if(instance){return false;}if(!strcmp(name,"rtc.clock")){assert(version==2);g->api=&graphics_rtc;mock_grants++;return true;}assert(version==1);')
