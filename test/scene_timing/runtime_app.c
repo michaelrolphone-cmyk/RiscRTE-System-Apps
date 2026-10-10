@@ -16,7 +16,7 @@ __attribute__((visibility("default"))) void app_main(void){
  d.routes[0]=(risc_scene_route_v1){1,0,"Typing"};
  d.nodes[0]=(risc_scene_node_v1){.id=1,.route=1,.kind=RISC_SCENE_KEYBOARD_NODE,.action=77,.maximum=3,.step=1,.label="Name"};
  unsigned mode=scene_timing_mode();
- if(mode>=5){d.routes[0].back_action=88;d.nodes[0].kind=RISC_SCENE_TEXT_NODE;}
+ if(mode>=5){d.routes[0].back_action=88;d.nodes[0].kind=RISC_SCENE_ACTION;d.nodes[0].action=88;}
  uint64_t s=0;assert(!a->open(a->context,&d,0,&s));scene_timing_begin();unsigned count=0;
  while(!scene_timing_finished()){
   risc_scene_event_v1 e={.struct_size=sizeof(e)};int rc=a->next(a->context,s,&e);assert(rc==0||rc==1);
