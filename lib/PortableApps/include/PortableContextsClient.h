@@ -71,14 +71,16 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
              * Airplane mode and the low-battery edge remain authoritative. */
             c->policy.radio_allowed=(flags&7u)==PORTABLE_RADIO_WIFI&&!low;
             c->policy.audio_allowed=!low;
-            uint8_t sources=CONTEXTS_ALL;uint32_t size=0;
-            int32_t source_result=kv->get(kv->context,"context_sources",&sources,1,&size);
-            if(source_result==RISC_KEY_VALUE_NOT_FOUND)sources=CONTEXTS_ALL;
-            else if(source_result!=RISC_KEY_VALUE_OK||size!=1||(sources&~CONTEXTS_ALL))sources=0;
-            c->policy.sources=c->fingerprint_sources=sources;
-            uint8_t timing=0;size=0;
-            int32_t timing_result=kv->get(kv->context,"context_timing",&timing,1,&size);
-            c->fingerprint_temporal_only=timing_result==RISC_KEY_VALUE_OK&&size==1&&timing==1;
+            if(contexts_fingerprint_api(c->api)){
+                uint8_t sources=CONTEXTS_ALL;uint32_t size=0;
+                int32_t source_result=kv->get(kv->context,"context_sources",&sources,1,&size);
+                if(source_result==RISC_KEY_VALUE_NOT_FOUND)sources=CONTEXTS_ALL;
+                else if(source_result!=RISC_KEY_VALUE_OK||size!=1||(sources&~CONTEXTS_ALL))sources=0;
+                c->policy.sources=c->fingerprint_sources=sources;
+                uint8_t timing=0;size=0;
+                int32_t timing_result=kv->get(kv->context,"context_timing",&timing,1,&size);
+                c->fingerprint_temporal_only=timing_result==RISC_KEY_VALUE_OK&&size==1&&timing==1;
+            }
             if(!portable_contexts_release_storage(c)){(void)portable_contexts_pause(c);return false;}
         }
         c->loaded=true;c->loaded_at=health.uptime_ms;
