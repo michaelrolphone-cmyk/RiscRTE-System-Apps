@@ -27,6 +27,17 @@ static bool raster_saved_rotation;
 static bool raster_saved_flip;
 #endif
 static int raster_band_top,raster_band_bottom,raster_band_limit;
+/* Restrict primitive loops to the logical replay band before their expensive
+ * per-pixel work. Keep original coordinates for coverage, clipping, rotation
+ * and blending; the existing pixel/fill guards remain the final authority.
+ * Widen only subtraction/comparison, never division (no new target helpers). */
+static inline void raster_rows(int64_t origin,int *first,int *end) {
+ if(!raster_replaying)return;
+ int64_t top=(int64_t)raster_band_top-origin;
+ int64_t bottom=(int64_t)raster_band_bottom-origin;
+ if(top>*first)*first=top<*end?(int)top:*end;
+ if(bottom<*end)*end=bottom>*first?(int)bottom:*first;
+}
 static unsigned raster_command_count;
 static uint32_t raster_saved_intent;
 static bool raster_saved_app_frame;

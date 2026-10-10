@@ -67,7 +67,11 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   int w=g->width*size/max,h=g->height*size/max;
   if(w<1)w=1;
   if(h<1)h=1;
-  for(int j=0;j<h;++j)for(int i=0;i<w;++i){
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((int64_t)y-h/2,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;++j)for(int i=0;i<w;++i){
     unsigned n=(unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
     unsigned coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
     np_pixel(x-w/2+i,y-h/2+j,0xffffff,coverage*opacity/3);
@@ -80,7 +84,11 @@ static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
   if(raster_record(RS_NP_CIRCLE,(int32_t[8]){x,y,radius,(int32_t)rgb,opacity},NULL))return;
 #endif
   if(radius<1 || radius>64)return;
-  for(int j=-radius;j<=radius;++j)for(int i=-radius;i<=radius;++i){
+  int row_first=-radius,row_end=radius+1;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;++j)for(int i=-radius;i<=radius;++i){
     int d=(int)np_root((unsigned)(i*i+j*j)*256u);
     int edge=radius*16-d;
     unsigned a=edge>=16?opacity:edge>0?(unsigned)edge*opacity/16:0;
@@ -94,10 +102,11 @@ static void np_mask(void) {
   if(!nova_mask_pending || !raster_surface_writable())return;
   nova_mask_pending=false;
 
-  for(int y=0;y<height();++y)for(int x=0;x<width();++x){
+  int row_first=0,row_end=height();
 #ifdef PORTABLE_RASTER_SNAPSHOT
-    if(raster_replaying&&(y<raster_band_top||y>=raster_band_bottom))continue;
+  raster_rows(0,&row_first,&row_end);
 #endif
+  for(int y=row_first;y<row_end;++y)for(int x=0;x<width();++x){
     if(!x && !(y&7) && !raster_checkpoint())return;
     int dx=x<width()-x?x:width()-x,dy=y<height()-y?y:height()-y;
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
@@ -117,7 +126,11 @@ static void np_mask(void) {
 static void np_caption_backing(int left,int top,int right,int bottom) {
   const int feather=6,range=feather*16;
   left-=2;top-=2;right+=2;bottom+=2;
-  for(int y=top-feather;y<=bottom+feather;++y)
+  int row_first=top-feather,row_end=bottom+feather+1;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(0,&row_first,&row_end);
+#endif
+  for(int y=row_first;y<row_end;++y)
     for(int x=left-feather;x<=right+feather;++x) {
       int dx=x<left?left-x:x>right?x-right:0;
       int dy=y<top?top-y:y>bottom?y-bottom:0;
@@ -161,7 +174,11 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
   for(int k=0;k<length;++k){
     unsigned c=(unsigned char)s[k];if(c>='a' && c<='z')c-=32;if(c<32 || c>126)c='?';
     const rpt_glyph *g=&rpt_text[(clock?0:95)+c-32];
-    for(unsigned j=0;j<g->height;++j)for(unsigned i=0;i<g->width;++i){
+    int row_first=0,row_end=g->height;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_rows((int64_t)y+g->top,&row_first,&row_end);
+#endif
+    for(unsigned j=(unsigned)row_first;j<(unsigned)row_end;++j)for(unsigned i=0;i<g->width;++i){
       unsigned n=j*g->width+i,coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
       np_pixel(x/16+g->left+(int)i,y+g->top+(int)j,rgb,coverage*85);
     }

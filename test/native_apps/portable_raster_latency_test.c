@@ -142,4 +142,6 @@ static void raster_case(unsigned format,unsigned cost) {
  printf("{\"poll_calls\":%u,\"maximum_poll_host_cpu_ms\":%.6f,\"total_poll_host_cpu_ms\":%.6f}\n",poll_calls,max_poll_cpu_ms,total_poll_cpu_ms);
  cpu_ms_per_batch=0;real_cpu_clock=false;assert(api->frame_drain());end_test();assert(!mock_bytes);
 }
+#ifndef RASTER_LATENCY_NO_MAIN
 int main(void){setvbuf(stdout,NULL,_IONBF,0);for(unsigned f=0;f<2;f++)for(unsigned cost=0;cost<(getenv("RASTER_ONLY_ZERO")?1u:3u);cost++)raster_case(f?RISC_DISPLAY_FORMAT_MONO1:RISC_DISPLAY_FORMAT_RGB565,cost);return 0;}
+#endif

@@ -26,7 +26,11 @@ static void nu_rect(int x,int y,int w,int h,uint32_t rgb) {
   if(raster_record(RS_NU_RECT,(int32_t[8]){x,y,w,h,(int32_t)rgb},NULL))return;
 #endif
   if(w<=0 || h<=0 || w>240 || h>240)return;
-  for(int j=0;j<h;j++)for(int i=0;i<w;i++)nu_pixel(x+i,y+j,rgb,255);
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++)nu_pixel(x+i,y+j,rgb,255);
 }
 int portable_nova_measure(unsigned face,const char *s) {
   int n=0;if(!s || face>NOVA_FACE_ORBITRON_10)return 0;
@@ -48,7 +52,11 @@ void portable_nova_text(unsigned face,int x,int y,int max_width,const char *s,ui
     int gw=(int)(g->width*scale/256u),gh=(int)(g->height*scale/256u);
     if(gw<1&&g->width)gw=1;
     if(gh<1&&g->height)gh=1;
-    for(int j=0;j<gh;j++)for(int i=0;i<gw;i++) {
+    int row_first=0,row_end=gh;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_rows((int64_t)y+((int)g->top*(int)scale/256)+(height()-240)/2,&row_first,&row_end);
+#endif
+    for(int j=row_first;j<row_end;j++)for(int i=0;i<gw;i++) {
       unsigned sx=(unsigned)i*256u/scale,sy=(unsigned)j*256u/scale;
       if(sx>=g->width||sy>=g->height)continue;
       unsigned n=sy*g->width+sx,a=(g->bits[n/4]>>(6-2*(n%4)))&3;
@@ -77,7 +85,11 @@ void portable_nova_round(int x,int y,int w,int h,int radius,uint32_t rgb) {
   if(radius<0)radius=0;
   if(radius>w/2)radius=w/2;
   if(radius>h/2)radius=h/2;
-  for(int j=0;j<h;j++)for(int i=0;i<w;i++) {
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++) {
     int dx=i<radius?radius-i:i>=w-radius?i-(w-radius-1):0,dy=j<radius?radius-j:j>=h-radius?j-(h-radius-1):0;
     if(!dx||!dy||dx*dx+dy*dy<=radius*radius)nu_pixel(x+i,y+j,rgb,255);
   }
@@ -89,7 +101,11 @@ void portable_nova_button(int x,int y,int w,int h,const char *s,bool selected) {
   if(raster_record(RS_NU_BUTTON,(int32_t[8]){x,y,w,h,selected},s))return;
 #endif
   if(w<1 || h<1 || w>240 || h>240)return;
-  for(int j=0;j<h;j++)for(int i=0;i<w;i++) {
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++) {
     int dx=i<6?6-i:i>=w-6?i-(w-7):0,dy=j<6?6-j:j>=h-6?j-(h-7):0;
     if(dx*dx+dy*dy>36)continue;
     bool edge=i==0 || i==w-1 || j==0 || j==h-1 || (dx && dy && dx*dx+dy*dy>22);

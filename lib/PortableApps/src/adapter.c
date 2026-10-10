@@ -885,7 +885,11 @@ static void rounded(int32_t x, int32_t y, int32_t w, int32_t h, int32_t radius,
     radius = w / 2;
   if (radius > h / 2)
     radius = h / 2;
-  for (int row = 0; row < h; ++row) {
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
+  for (int row = row_first; row < row_end; ++row) {
     int dy = row < radius ? radius - 1 - row
                           : (row >= h - radius ? row - (h - radius) : 0),
         inset = 0;
@@ -916,6 +920,10 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
 #endif
   if (!s)
     return;
+  int row_first=0,row_end=7;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
   for (int k = 0; k < limit && k < 128 && s[k]; ++k) {
     char c = s[k];
     if (c >= 'a' && c <= 'z')
@@ -932,7 +940,7 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
                             ? 36
                             : (c == '%' ? (col == 0 ? 99 : (col == 4 ? 99 : 8))
                                         : 0)));
-      for (int row = 0; row < 7; ++row)
+      for (int row = row_first; row < row_end; ++row)
         if (bits & (1u << row))
           fill(x + k * 6 + col, y + row, 1, 1, color);
     }
@@ -983,7 +991,11 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
     if (!g) return false;
     int max = g->width > g->height ? g->width : g->height;
     int w = g->width*size/max, h = g->height*size/max;
-    for (int j = 0; j < h; ++j) for (int i = 0; i < w; ++i) {
+    int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_rows((int64_t)y+(size-h)/2,&row_first,&row_end);
+#endif
+    for (int j = row_first; j < row_end; ++j) for (int i = 0; i < w; ++i) {
       unsigned n = (unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
       unsigned a = (g->bits[n/4] >> (6-2*(n%4))) & 3;
       np_pixel(x+(size-w)/2+i, y+(size-h)/2+j, 0, a*85);
