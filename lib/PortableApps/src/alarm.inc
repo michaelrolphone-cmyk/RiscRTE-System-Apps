@@ -3,14 +3,24 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
+#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
+#define PORTABLE_WIFI_SERVICE_LEASE
+static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
+static alarm_token_v1 alarm_ack_token;
+static bool alarm_commit_pending(void);
+#endif
 #if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
 #if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
 static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&alarms); }
 #endif
-#if defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
+#if (defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))) || defined(PORTABLE_WIFI_SERVICE_LEASE)
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+static bool alarm_refresh(void) { alarm_refresh_pending=true;return alarm_commit_pending(); }
+#else
 static bool alarm_refresh(void) { return portable_alarm_refresh(&alarms); }
+#endif
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
@@ -52,7 +62,19 @@ static bool alarm_failure(void) {
     /* Even healthy RF must drain before app_main returns: Runtime checks its
      * exit barrier before invoking fini, so deferring cleanup there deadlocks
      * an ordinary display/input failure behind our own live radio session. */
-    if(!portable_wifi_suspend()) {
+    bool wifi_stopped=portable_wifi_suspend();
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    /* A healthy pending stop is not a terminal cleanup failure. Keep the
+     * owner alive and poll copied completion between bounded cancel attempts;
+     * no service lease is held over this yield. Never release on a deadline. */
+    while(!wifi_stopped && portable_wifi_stop_pending()) {
+        rt->yield_ms(1);
+        if(native_sleep_retained)return false;
+        if(!portable_wifi_services_safe())break;
+        wifi_stopped=portable_wifi_suspend();
+    }
+#endif
+    if(!wifi_stopped) {
         rt->diagnostic("WIFI alarm-failure cleanup-unconfirmed; invocation retained");
         for(;;)rt->yield_ms(50);
     }
@@ -95,7 +117,7 @@ static bool alarm_sessions_suspend(void) {
 #endif
     return true;
 }
-static bool alarm_audio_pump(void) {
+static bool alarm_audio_pump_unleased(void) {
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
     if(portable_adapter_retained())return false;
 #endif
@@ -109,13 +131,19 @@ static bool alarm_audio_pump(void) {
         alarm_sessions_suspend();
 }
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
-static bool alarm_audio_pump(void) {
+static bool alarm_audio_pump_unleased(void) {
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
     if(portable_adapter_retained())return false;
 #endif
     if(native_sleep_retained)return false;
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
-    if(!portable_alarm_pump(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+    if(!portable_alarm_pump(&alarms) || alarms.status.output_uncertain) {
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+        return false; /* End the lease before the caller's failure handling. */
+#else
+        return alarm_failure();
+#endif
+    }
 #else
     int32_t result=alarms.api->step(alarms.api->context);
     if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
@@ -124,7 +152,39 @@ static bool alarm_audio_pump(void) {
     return true;
 }
 #else
-#define alarm_audio_pump() portable_alarm_pump(&alarms)
+#define alarm_audio_pump_unleased() portable_alarm_pump(&alarms)
+#endif
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+/* A real native resource lease covers the whole non-yielding service call.
+ * BUSY is not an alarm error; explicit refresh/ACK intents retain copied state.
+ * No lease or provider pointer is carried through the modal's yield. */
+static bool alarm_pending_unleased(void) {
+    if(alarm_refresh_pending) {
+        if(!portable_alarm_refresh(&alarms))return false;
+        alarm_refresh_pending=false;
+    }
+    if(alarm_ack_pending) {
+        if(!portable_alarm_acknowledge(&alarms,&alarm_ack_token))return false;
+        alarm_ack_pending=false;
+    }
+    return true;
+}
+static bool alarm_service_call(bool pump) {
+    alarm_service_deferred=false;
+    if(failed || native_sleep_retained)return false;
+    if(!portable_wifi_services_begin()) {
+        alarm_service_deferred=true;return !failed && !native_sleep_retained;
+    }
+    bool ok=alarm_pending_unleased();
+    if(ok && pump)ok=alarm_audio_pump_unleased();
+    if(native_sleep_retained)return false;
+    bool ended=portable_wifi_services_end();
+    return ok && ended;
+}
+static bool alarm_commit_pending(void) { return alarm_service_call(false); }
+static bool alarm_audio_pump(void) { return alarm_service_call(true); }
+#else
+#define alarm_audio_pump() alarm_audio_pump_unleased()
 #endif
 /* Service labels are copied status, never retained storage pointers. Accept
  * bounded printable titles; a malformed provider title keeps the old fallback. */
@@ -198,6 +258,7 @@ static bool alarm_restore(const uint16_t *saved) {
  * stop does not acknowledge or change the persisted occurrence. Restore the
  * editor so cleanup can be retried; normal reconciliation resumes afterward. */
 static bool alarm_wifi_pause(const uint16_t *saved) {
+    if(native_sleep_retained)return false;
     if(!portable_alarm_failure_stop(&alarms)) {
         /* The bounded stop-only sequence is exhausted: never repeat it through
          * alarm_failure, release grants, or resume normal provider work. */
@@ -222,6 +283,9 @@ static bool alarm_foreground(bool *consumed) {
     if(!portable_wifi_services_safe())return !failed;
 #endif
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+    if(alarm_service_deferred)return true;
+#endif
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
     bool cue_seen=false;
@@ -240,6 +304,9 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+        if(alarm_service_deferred)return true;
+#endif
         /* Drain one short cue with the original frame untouched. Finish once
          * its outputs and durable ACK are settled; subsequent simultaneous
          * cues reconcile on the next foreground call rather than exhausting
@@ -295,7 +362,11 @@ static bool alarm_foreground(bool *consumed) {
         }
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+            if(!alarm_refresh())return alarm_failure();
+#else
             if(!portable_alarm_refresh(&alarms))return alarm_failure();
+#endif
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
             int32_t result=alarms.api->refresh(alarms.api->context);
             if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();
@@ -308,7 +379,12 @@ static bool alarm_foreground(bool *consumed) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+                if(!alarm_ack_pending){alarm_ack_token=token;alarm_ack_pending=true;}
+                if(!alarm_commit_pending())return alarm_failure();
+#else
                 if(!portable_alarm_acknowledge(&alarms,&token))return alarm_failure();
+#endif
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
                 int32_t result=alarms.api->acknowledge(alarms.api->context,&token);
                 if(result!=ALARM_OK && result!=ALARM_PENDING)return alarm_failure();

@@ -19,10 +19,13 @@
 #endif
 
 /* Static invocation storage preserves unresolved grants after fencing. Clean
- * samples retain neither a provider pointer nor a snapshot/timezone cache. */
+ * samples retain no provider pointer. One copied, validated civil display
+ * sample survives a temporary KV BUSY; no UTC/default is invented. */
 static portable_realtime_client reader;
 static risc_runtime_capability_v1 zone_grant;
 static const risc_key_value_v1 *zone_source;
+static bool zone_busy,last_local_valid;
+static twatch_rtc_time_v1 last_local;
 
 static int foreground(void *context) {
   (void)context;
@@ -49,6 +52,7 @@ static int32_t zone_get(void *context,const char *key,void *out,uint32_t capacit
   if(portable_adapter_retained())return RISC_KEY_VALUE_CONTEXT;
   int32_t result=zone_source->get(zone_source->context,key,out,capacity,used);
   if(portable_adapter_retained())return RISC_KEY_VALUE_CONTEXT;
+  if(result==RISC_KEY_VALUE_BUSY){zone_busy=true;return result;}
   switch(result) {
     case RISC_KEY_VALUE_OK:case RISC_KEY_VALUE_NOT_FOUND:case RISC_KEY_VALUE_BUFFER_SMALL:
     case RISC_KEY_VALUE_INVALID:case RISC_KEY_VALUE_IO:return result;
@@ -56,6 +60,7 @@ static int32_t zone_get(void *context,const char *key,void *out,uint32_t capacit
   }
 }
 static bool load_zone(const risc_runtime_api_v1 *runtime,portable_timezone_rule *rule) {
+  zone_busy=false;
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_stop())return false;
 #endif
@@ -111,13 +116,18 @@ bool portable_app_native_local_time(twatch_rtc_time_v1 *out) {
      runtime->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE ||
      !runtime->acquire || !runtime->release || !runtime->retain_invocation)return false;
   portable_timezone_rule rule;
-  if(!load_zone(runtime,&rule))return false;
+  if(!load_zone(runtime,&rule)) {
+    if(zone_busy && last_local_valid && !portable_adapter_retained()){*out=last_local;return true;}
+    if(!zone_busy)last_local_valid=false;
+    return false;
+  }
   int64_t epoch;
-  if(!portable_app_native_utc_time(&epoch))return false;
+  if(!portable_app_native_utc_time(&epoch)){last_local_valid=false;return false;}
   portable_timezone_civil civil;
-  if(portable_timezone_utc_to_local(&rule,epoch,&civil,NULL)!=PORTABLE_TIMEZONE_OK)return false;
+  if(portable_timezone_utc_to_local(&rule,epoch,&civil,NULL)!=PORTABLE_TIMEZONE_OK){last_local_valid=false;return false;}
   *out=(twatch_rtc_time_v1){(uint16_t)civil.year,civil.month,civil.day,civil.weekday,
     civil.hour,civil.minute,civil.second};
+  last_local=*out;last_local_valid=true;
   return true;
 }
 #endif

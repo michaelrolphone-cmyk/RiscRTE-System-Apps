@@ -33,8 +33,9 @@ static risc_text_entry_state_v1 tick(void){risc_text_entry_state_v1 s={.struct_s
 static void key(unsigned usage,unsigned mods){keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,3,(uint8_t)usage,(uint8_t)mods,0};}
 static void flush(void){key_count=key_at=0;}
 static void scene_key(unsigned key){event=(risc_scene_event_v1){sizeof(event),RISC_SCENE_VALUE_EVENT,doc.revision,1,1,(int32_t)key,1};}
+static unsigned requested_flags;
 static void open_text(const char*text,unsigned cap){
- risc_text_entry_request_v1 r={.api_version=1,.struct_size=sizeof(r),.capacity=cap,.label="Name"};strcpy(r.text,text);
+ risc_text_entry_request_v1 r={.api_version=1,.struct_size=sizeof(r),.capacity=cap,.reserved=requested_flags,.label="Name"};strcpy(r.text,text);
  assert(api->open(NULL,&r,&session)==0&&session);memset(&r,0xa5,sizeof(r));
  assert(!driver->quiesce());assert(!strcmp(tick().text,text));
 }
@@ -55,7 +56,34 @@ int main(int argc,char**argv){
  }else if(!strcmp(mode,"invalid")){
   risc_text_entry_request_v1 r={.api_version=1,.struct_size=sizeof(r),.capacity=8};uint64_t s=0;
   r.text[0]='\n';assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);r.text[0]=0;r.capacity=73;assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);
-  r.capacity=8;r.reserved=1;assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);r.reserved=0;memset(r.label,'x',sizeof(r.label));assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);assert(!s&&!calls);driver->stop();
+  r.capacity=8;r.reserved=4;assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);r.reserved=0;memset(r.label,'x',sizeof(r.label));assert(api->open(NULL,&r,&s)==RISC_TEXT_ENTRY_INVALID);assert(!s&&!calls);driver->stop();
+ }else if(!strncmp(mode,"reason-",7)){
+  bool legacy=!strcmp(mode,"reason-legacy-home");
+  bool home=strstr(mode,"home")!=NULL;
+  bool busy=strstr(mode,"pending")!=NULL;
+  assert(risc_text_entry_home_reason(api));requested_flags=legacy?0:RISC_TEXT_ENTRY_REQUEST_HOME_REASON;
+  open_text("draft",16);pending=busy;
+  event=(risc_scene_event_v1){.struct_size=sizeof(event),.kind=home?RISC_SCENE_SUSPEND_EVENT:RISC_SCENE_ACTION_EVENT,.document_revision=doc.revision,.action=2,.sequence=1};
+  risc_text_entry_state_v1 result=tick();
+  assert(result.state==RISC_TEXT_ENTRY_CANCELLED&&!strcmp(result.text,"draft"));
+  assert(!!(result.flags&RISC_TEXT_ENTRY_HOME_CANCEL)==(home&&!legacy));
+  assert(!!(result.flags&RISC_TEXT_ENTRY_PRESENTING)==busy);
+  scene_key('X');risc_text_entry_state_v1 frozen=tick();
+  assert(!memcmp(&result,&frozen,sizeof(result)));
+  if(busy){assert(api->close(NULL,session)==RISC_TEXT_ENTRY_AGAIN&&unsubs==1);risc_text_entry_state_v1 blocked={.struct_size=sizeof(blocked)};assert(api->poll(NULL,session,&blocked)==RISC_TEXT_ENTRY_BUSY);pending=false;}
+  finish();assert(unsubs==1&&scene_closes==1);
+  assert(driver->start(deps,2));requested_flags=0;open_text("fresh",16);
+  assert(tick().flags==0);finish();assert(unsubs==2&&scene_closes==2);
+ }else if(!strcmp(mode,"masked")){
+  assert(risc_text_entry_masked(api));
+  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=64,.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED|RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Password",.text="fixture-secret"};
+  assert(api->open(NULL,&q,&session)==0);memset(&q,0xa5,sizeof(q));
+  assert(!strcmp(doc.nodes[0].text,"**************"));
+  assert(!strcmp(tick().text,"fixture-secret"));
+  scene_key('!');assert(!strcmp(tick().text,"fixture-secret!"));assert(!strcmp(doc.nodes[0].text,"***************"));
+  scene_key(RISC_SCENE_KEY_BACKSPACE);tick();assert(!strcmp(doc.nodes[0].text,"**************"));
+  scene_key(RISC_SCENE_KEY_DONE);assert(tick().state==RISC_TEXT_ENTRY_ACCEPTED);finish();
+  assert(driver->start(deps,1));open_text("visible",8);assert(!strcmp(doc.nodes[0].text,"visible"));finish();
  }else if(!strcmp(mode,"plain")){
   open_text("old",8);scene_key('a');assert(!strcmp(tick().text,"olda"));scene_key(129);assert(!strcmp(tick().text,"old"));scene_key(128);tick();assert(doc.nodes[0].value==1);
   scene_key('!');assert(!strcmp(tick().text,"old!"));scene_key(133);assert(!strcmp(tick().text,""));scene_key(133);assert(!strcmp(tick().text,""));scene_key(132);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);

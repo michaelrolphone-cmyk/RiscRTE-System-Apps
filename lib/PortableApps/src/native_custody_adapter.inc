@@ -77,7 +77,7 @@ static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t 
   /* Canonical Runtime/NVS IO reports persistence failure, not lost custody.
    * The checked Set Time helper independently applies its stricter stop rule. */
   if(result!=RISC_KEY_VALUE_OK && result!=RISC_KEY_VALUE_NOT_FOUND && result!=RISC_KEY_VALUE_BUFFER_SMALL &&
-     result!=RISC_KEY_VALUE_INVALID && result!=RISC_KEY_VALUE_IO)portable_adapter_retain();
+     result!=RISC_KEY_VALUE_INVALID && result!=RISC_KEY_VALUE_IO && result!=RISC_KEY_VALUE_BUSY)portable_adapter_retain();
   return result;
 }
 static int32_t custody_kv_put(void *context,const char *key,const void *data,uint32_t size) {
@@ -91,7 +91,7 @@ static int32_t custody_kv_put(void *context,const char *key,const void *data,uin
 #endif
   int32_t result=slot->source->put(slot->source->context,key,data,size);
   if(result!=RISC_KEY_VALUE_OK && result!=RISC_KEY_VALUE_IO && result!=RISC_KEY_VALUE_INVALID &&
-     result!=RISC_KEY_VALUE_NOT_FOUND && result!=RISC_KEY_VALUE_BUFFER_SMALL)portable_adapter_retain();
+     result!=RISC_KEY_VALUE_NOT_FOUND && result!=RISC_KEY_VALUE_BUFFER_SMALL && result!=RISC_KEY_VALUE_BUSY)portable_adapter_retain();
   return result;
 }
 #ifdef PORTABLE_QUICK_RADIOS
