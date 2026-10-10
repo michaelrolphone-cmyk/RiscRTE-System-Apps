@@ -5,10 +5,17 @@
     "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
   },
   "RiscRuntimeV1.h": {
-    "repository": "michaelrolphone-cmyk/RiscRTE",
-    "path": "sdk/app/RiscRuntimeV1.h",
-    "commit": "be6efce33a19d3a21ced4077a038fdcc7b9b94a3",
-    "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b"
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "path": "lib/PortableApps/include/RiscRuntimeV1.h",
+    "commit": "713597cab3335a9609d8024c8976756b8fb209b1",
+    "sha256": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
+    "upstream_baseline": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "path": "sdk/app/RiscRuntimeV1.h",
+      "commit": "be6efce33a19d3a21ced4077a038fdcc7b9b94a3",
+      "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b"
+    },
+    "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
   },
   "T5BatteryApi.h": {
     "repository": "RiscRTE-Utilities",
@@ -44,16 +51,30 @@
     "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
   },
   "RiscKeyValueV1.h": {
-    "repository": "michaelrolphone-cmyk/RiscRTE",
-    "commit": "bd73f918bd2392693e4ee7719f289da7531da4b1",
-    "path": "sdk/app/RiscKeyValueV1.h",
-    "sha256": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56"
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "commit": "6721a26e0c4126e6731c67a52e6d76bb471021bd",
+    "path": "lib/PortableApps/include/RiscKeyValueV1.h",
+    "sha256": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "upstream_baseline": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "commit": "bd73f918bd2392693e4ee7719f289da7531da4b1",
+      "path": "sdk/app/RiscKeyValueV1.h",
+      "sha256": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56"
+    },
+    "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
   },
   "WifiApi.h": {
-    "repository": "RiscRTE-T-Watch-S3",
-    "commit": "bc2e56c43541a0a235a5ea28bd1d77beaf5e3bf5",
-    "path": "drivers/twatch_wifi/WifiApi.h",
-    "sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a"
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "commit": "6721a26e0c4126e6731c67a52e6d76bb471021bd",
+    "path": "lib/PortableApps/include/WifiApi.h",
+    "sha256": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+    "upstream_baseline": {
+      "repository": "RiscRTE-T-Watch-S3",
+      "commit": "bc2e56c43541a0a235a5ea28bd1d77beaf5e3bf5",
+      "path": "drivers/twatch_wifi/WifiApi.h",
+      "sha256": "aca1437adcbe8a99bd6a76332a4543657b6440d98f622972c9f599fa21c5322a"
+    },
+    "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
   },
   "RiscRadioScanV1.h": {
     "repository": "RiscRTE",
@@ -62,9 +83,16 @@
     "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
   },
   "RiscStorageVolumeV1.h": {
-    "repository": "michaelrolphone-cmyk/T5S3-Reader",
-    "path": "sdk/driver/RiscStorageVolumeV1.h",
-    "commit": "34d8e694d89a1e72d8854403d8592c289fae3ddc",
-    "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "path": "lib/PortableApps/include/RiscStorageVolumeV1.h",
+    "commit": "713597cab3335a9609d8024c8976756b8fb209b1",
+    "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "upstream_baseline": {
+      "repository": "michaelrolphone-cmyk/T5S3-Reader",
+      "path": "sdk/driver/RiscStorageVolumeV1.h",
+      "commit": "34d8e694d89a1e72d8854403d8592c289fae3ddc",
+      "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
+    },
+    "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
   }
 }

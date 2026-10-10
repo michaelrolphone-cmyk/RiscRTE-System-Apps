@@ -3,8 +3,15 @@
 #include "../paper_fonts/text.inc"
 static void pp_begin(void) { list_mode=false;clear_color(0xffff); }
 static void pp_circle(int x,int y,int radius,bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_PP_CIRCLE,(int32_t[8]){x,y,radius,black},NULL))return;
+#endif
   if(radius<1 || radius>128)return;
-  for(int j=-radius;j<=radius;j++)for(int i=-radius;i<=radius;i++)
+  int row_first=-radius,row_end=radius+1;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
+  for(int j=row_first;j<row_end;j++)for(int i=-radius;i<=radius;i++)
     if(i*i+j*j<=radius*radius)fill(x+i,y+j,1,1,black?0:0xffff);
 }
 static int pp_measure(const char *s,bool heading) {
@@ -21,6 +28,9 @@ static int pp_measure(const char *s,bool heading) {
   return (n+15)/16;
 }
 static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool heading,bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_PP_TEXT,(int32_t[8]){x,y,max_width,(int32_t)scale,heading,black},s))return;
+#endif
   if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:(scale&PAPER_TEXT_LARGE)?2:1;
@@ -48,7 +58,14 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
 #else
     if((pen+advance+15)/16>x+max_width)break;
 #endif
-    for(unsigned j=0;j<g->height;j++)for(unsigned i=0;i<g->width;i++) {
+    int row_first=0,row_end=g->height;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    /* A zoomed source row may intersect several destination bands. */
+    row_end*=zoom;
+    raster_rows((int64_t)y+(int)g->top*zoom,&row_first,&row_end);
+    row_first/=zoom;row_end=(row_end+zoom-1)/zoom;
+#endif
+    for(unsigned j=(unsigned)row_first;j<(unsigned)row_end;j++)for(unsigned i=0;i<g->width;i++) {
       unsigned n=j*g->width+i;
       if(g->bits[n/8]&(0x80u>>(n%8))) {
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC

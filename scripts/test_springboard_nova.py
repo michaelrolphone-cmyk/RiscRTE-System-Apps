@@ -10,13 +10,13 @@ subprocess.run([*flags,str(ROOT/'test/native_apps/springboard_motion_test.c'),'-
 subprocess.run([str(out/'motion')],check=True)
 for count in [0,1,2,3]:
  binary=out/('launcher-'+str(count))
- subprocess.run([*flags,'-DCATALOG_COUNT='+str(count),'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-o',str(binary)],check=True)
- scenarios=list(range(35))+[36,37] if count==3 else [0,1,2,6,14,15,16]
+ subprocess.run([*flags,'-DCATALOG_COUNT='+str(count),'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
+ scenarios=list(range(35))+[36,37,38] if count==3 else [0,1,2,6,14,15,16]
  for scenario in scenarios:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
 
-for name,extra,scenarios in [('rotation180',['-DPORTABLE_TOUCH_ROTATION=180','-DTEST_ROTATION_180'],[0,1,2,6,12,16]),('denver',['-DPORTABLE_RTC_UTC8_DENVER'],[0,32,33]),('handoff',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES'],list(range(35))+[36,37])]:
+for name,extra,scenarios in [('rotation180',['-DPORTABLE_TOUCH_ROTATION=180','-DTEST_ROTATION_180'],[0,1,2,6,12,16]),('denver',['-DPORTABLE_RTC_UTC8_DENVER'],[0,32,33]),('handoff',['-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES'],list(range(35))+[36,37,38])]:
  binary=out/name
- subprocess.run([*flags,*extra,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-o',str(binary)],check=True)
+ subprocess.run([*flags,*extra,'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
  for scenario in scenarios:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)
 
 for test in ['bounds','timing']:
@@ -26,7 +26,7 @@ for test in ['bounds','timing']:
  (out/(test+'.txt')).write_text(result.stdout)
  print(result.stdout.splitlines()[-1])
 
-subprocess.run([*flags,'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/springboard_tap_layers_test.c'),'-o',str(out/'tap-layers')],check=True)
+subprocess.run([*flags,'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(ROOT/'lib/PortableApps/include'),str(ROOT/'test/native_apps/springboard_tap_layers_test.c'),'-o',str(out/'tap-layers')],check=True)
 subprocess.run([str(out/'tap-layers')],check=True)
 
 # Direct production caption pixels on bright backgrounds, with ASan/UBSan.
@@ -39,5 +39,5 @@ binary=out/'daily-catalog'
 subprocess.run([*flags,'-DNOVA_DAILY_CATALOG','-DCATALOG_COUNT=5','-DPORTABLE_RTC_UTC8_DENVER',
  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
  str(ROOT/'Apps/springboard.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),
- str(ROOT/'test/native_apps/springboard_nova_test.c'),'-o',str(binary)],check=True)
+ str(ROOT/'test/native_apps/springboard_nova_test.c'),'-Wl,--wrap=t5_app_get_api','-o',str(binary)],check=True)
 for scenario in [0,6,14,16,32,33]:subprocess.run([str(binary),str(scenario)],check=True,timeout=10)

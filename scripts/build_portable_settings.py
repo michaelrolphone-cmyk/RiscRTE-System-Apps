@@ -256,7 +256,8 @@ def build(args,parser=None):
     if list_scrolling:
         record['touch_scrolling']['version']=2
         record['touch_scrolling']['lists']+=['settings-root','time-date-fields']
-        record['touch_scrolling']['completed_frame_hit_identity']=True
+        record['touch_scrolling']['completed_frame_hit_identity']=False
+        record['touch_scrolling']['logical_geometry_hit_identity']=True
     if native_time:
         record.update(time_policy='native-realtime-iana',invocation_retention=True,
             native_time_runtime_commit=runtime_commit,

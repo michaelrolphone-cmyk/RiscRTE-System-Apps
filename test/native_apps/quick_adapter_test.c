@@ -233,13 +233,19 @@ int PORTABLE_QUICK_FIXTURE_MAIN(int argc,char **argv) {
   assert(quick.brightness==40 && hardware_brightness==40 && !pref_writes[0]);
  } else if(test==9 || test==10) {
   settings_render(0,0);editor_field=3;sv_switch(SV_VALUE);
+  /* The pixel oracle is a completed image, distinct from the logical page.
+   * A queued root frame may finish before the newest value-page redraw. */
+  assert(sv_active && settings_editing && sv_page==SV_VALUE && editor_field==3);
+  assert(portable_paper_frame_drain());if(sp_dirty)settings_view_redraw();
+  assert(portable_paper_frame_drain());
   memcpy(expected_background,framebuffer,sizeof(expected_background));capture_frame("adapter-settings-value");
   assert(sv_active && settings_editing && sv_page==SV_VALUE);
+  unsigned origin=polls; /* Scenario input starts after the completed pixel oracle. */
   if(test==9) {
-   opening(3);tap(80,120,222);drain_to(160);background_unchanged();
+   opening(origin+3);tap(origin+80,120,222);drain_to(origin+160);background_unchanged();
    assert(sv_active && settings_editing && sv_page==SV_VALUE && editor_field==3);
   } else {
-   tap(3,40,20);tap(4,110,20);t5_app_input_t input={0};
+   tap(origin+3,40,20);tap(origin+4,110,20);t5_app_input_t input={0};
    for(unsigned n=0;n<10 && !(input.buttons&T5_APP_BUTTON_BACK);n++)assert(poll(&input,8));
    assert(input.buttons&T5_APP_BUTTON_BACK);assert(!input.exit_requested && !return_launches);
    assert(sv_page==SV_VALUE && editor_field==3); /* Caller owns nested pop. */

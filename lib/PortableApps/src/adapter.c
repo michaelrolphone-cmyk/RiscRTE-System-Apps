@@ -432,6 +432,9 @@ static bool resident_queue_launch(const char *path);
 #endif
 static uint32_t navigation_pending;
 static bool home_pending,crown_pending,handoff_requested;
+#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+static const char *wifi_deferred_return;
+#endif
 #ifdef PORTABLE_DESK_LOCK_HOME
 static bool desk_lock_armed,navigation_home_down,desk_quality_present;
 #endif
@@ -680,6 +683,23 @@ static bool raster_checkpoint(void) {
  if((uint32_t)(millis_now()-input_sampled_at)>=2u)input_service();
  return !failed;
 }
+#ifdef PORTABLE_RASTER_SNAPSHOT
+#include "raster_snapshot_state.inc"
+#endif
+static inline bool raster_surface_writable(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen);
+#else
+  return surface.frame!=0;
+#endif
+}
+static inline bool raster_lease_mutable(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return surface.frame&&(!raster_sealed||raster_replaying);
+#else
+  return surface.frame!=0;
+#endif
+}
 static uint16_t *previous_pixels;
 static uint8_t *paper_previous;
 static bool paper_previous_valid;
@@ -717,10 +737,13 @@ static void native_point(int *x,int *y) {
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
 static void fill(int x, int y, int w, int h, uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_FILL,(int32_t[8]){x,y,w,h,color},NULL))return;
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
 #endif
-  if (!surface.frame || w <= 0 || h <= 0)
+  if (!raster_surface_writable() || w <= 0 || h <= 0)
     return;
 #ifdef PORTABLE_TOUCH_SCROLL
   if(raster_clip_active && !portable_scroll_clip(&raster_clip,&x,&y,&w,&h))return;
@@ -730,6 +753,9 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     x1 = width();
   if (y1 > height())
     y1 = height();
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_replaying){if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+#endif
   for (int j = y0; j < y1; ++j)
     for (int i = x0; i < x1; ++i) {
       if(!(++raster_pixels&511u)&&!raster_checkpoint())return;
@@ -781,6 +807,9 @@ static bool acquire_surface(void) {
 #endif
   if (failed)
     return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_replaying&&!portable_paper_frame_drain())return false;
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   /* Non-cooperative callers retain the old blocking acquisition contract. */
   if(!portable_paper_frame_drain())return false;
@@ -829,6 +858,9 @@ static bool acquire_surface(void) {
          * identical alpha-zero frame before beginning the transition. */
         handoff_started=millis_now();handoff_first=false;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+        if(raster_replaying)handoff_started=raster_handoff_origin;
+#endif
       }
     }
   }
@@ -836,6 +868,9 @@ static bool acquire_surface(void) {
   return true;
 }
 static void clear_color(uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_begin(color))return;
+#endif
   if(acquire_surface())fill(0, 0, width(), height(), color);
 }
 static void clear(void) { clear_color(0xffff); }
@@ -844,6 +879,9 @@ static void rect(int32_t x, int32_t y, int32_t w, int32_t h, bool black) {
 }
 static void rounded(int32_t x, int32_t y, int32_t w, int32_t h, int32_t radius,
                     uint8_t tone) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_ROUNDED,(int32_t[8]){x,y,w,h,radius,tone},NULL))return;
+#endif
   static const uint16_t colors[] = {0xffff, 0xbdf7, 0x630c, 0};
   if (w <= 0 || h <= 0 || w > 2048 || h > 2048)
     return;
@@ -853,7 +891,11 @@ static void rounded(int32_t x, int32_t y, int32_t w, int32_t h, int32_t radius,
     radius = w / 2;
   if (radius > h / 2)
     radius = h / 2;
-  for (int row = 0; row < h; ++row) {
+  int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
+  for (int row = row_first; row < row_end; ++row) {
     int dy = row < radius ? radius - 1 - row
                           : (row >= h - radius ? row - (h - radius) : 0),
         inset = 0;
@@ -879,8 +921,15 @@ static const uint8_t glyphs[][5] = {
     {63, 64, 64, 64, 63},  {31, 32, 64, 32, 31},  {127, 32, 24, 32, 127},
     {99, 20, 8, 20, 99},   {3, 4, 120, 4, 3},     {97, 81, 73, 69, 67}};
 static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_TEXT,(int32_t[8]){x,y,limit,color},s))return;
+#endif
   if (!s)
     return;
+  int row_first=0,row_end=7;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_rows(y,&row_first,&row_end);
+#endif
   for (int k = 0; k < limit && k < 128 && s[k]; ++k) {
     char c = s[k];
     if (c >= 'a' && c <= 'z')
@@ -897,7 +946,7 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
                             ? 36
                             : (c == '%' ? (col == 0 ? 99 : (col == 4 ? 99 : 8))
                                         : 0)));
-      for (int row = 0; row < 7; ++row)
+      for (int row = row_first; row < row_end; ++row)
         if (bits & (1u << row))
           fill(x + k * 6 + col, y + row, 1, 1, color);
     }
@@ -924,6 +973,17 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
 #include "nova_ui.inc"
 #endif
 static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_recording&&!raster_replaying) {
+    if(!name||size<1||size>96)return false;
+    bool known=false;for(unsigned k=0;k<sizeof(rpi_icons)/sizeof(rpi_icons[0]);k++)if(!strcmp(name,rpi_icons[k].name)){known=true;break;}
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+    if(!strcmp(name,rpi_springboard_gamepad.name))known=true;
+#endif
+    if(!known)return false;
+    if(raster_record(RS_ICON,(int32_t[8]){x,y,size,black},name))return true;
+  }
+#endif
   /* Preserve the existing call contract; genuine glyph raster, no handmade FA IDs. */
   if (black) {
     /* np_icon normally draws white; invert its bounded output on a white tile. */
@@ -937,7 +997,11 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
     if (!g) return false;
     int max = g->width > g->height ? g->width : g->height;
     int w = g->width*size/max, h = g->height*size/max;
-    for (int j = 0; j < h; ++j) for (int i = 0; i < w; ++i) {
+    int row_first=0,row_end=h;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_rows((int64_t)y+(size-h)/2,&row_first,&row_end);
+#endif
+    for (int j = row_first; j < row_end; ++j) for (int i = 0; i < w; ++i) {
       unsigned n = (unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
       unsigned a = (g->bits[n/4] >> (6-2*(n%4))) & 3;
       np_pixel(x+(size-w)/2+i, y+(size-h)/2+j, 0, a*85);
@@ -961,6 +1025,10 @@ const paper_presentation *paper_presentation_get(void) {
 #endif
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed)return false;
+  raster_begin_allowed=!paper_token;
+#endif
   paper_async_frames=(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT)!=0;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   paper_async_frames=paper_async_frames && desk_phase==DESK_FOREGROUND;
@@ -970,14 +1038,15 @@ bool portable_paper_frame_ready(void) {
 /* Advance once per foreground poll. Status never gives the app a writable
  * lease; only completion promotes the submitted image into damage history. */
 static bool paper_present_progress(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_replaying)return raster_progress();
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_capture_checkpoint())return false;
 #endif
   if(failed)return false;
   if(!paper_token)return true;
-  if((uint32_t)(millis_now()-paper_submitted_at)>=10000) {
-    display_failure("PORTABLE_APP error=display-timeout");return false;
-  }
+  uint32_t elapsed=(uint32_t)(millis_now()-paper_submitted_at);
   if(failed)return false;
   risc_display_present_status_v1 status={0};
   portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
@@ -988,7 +1057,12 @@ static bool paper_present_progress(void) {
   if(status.state==RISC_DISPLAY_PRESENT_FAILED || status.state==RISC_DISPLAY_PRESENT_SUPERSEDED) {
     display_failure("PORTABLE_APP error=display-failed");return false;
   }
-  if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE)return true;
+  if(status.state!=RISC_DISPLAY_PRESENT_COMPLETE) {
+    /* A synchronous service call can delay this observer after the hardware
+     * has completed. Only a still-pending token can time out on observation. */
+    if(elapsed>=10000){display_failure("PORTABLE_APP error=display-timeout");return false;}
+    return true;
+  }
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
   paper_token=0;paper_token_clean=false;
@@ -1010,6 +1084,9 @@ static bool paper_present_progress(void) {
 /* Ownership transitions deliberately settle the outstanding image. Input
  * remains sampled during this short boundary, with the old cancellation rule. */
 bool portable_paper_frame_drain(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_replaying && !raster_drain())return false;
+#endif
   if(!paper_token)return !failed;
   for(unsigned n=0;n<10000 && !failed;++n) {
     if(!paper_present_progress())return false;
@@ -1028,6 +1105,29 @@ bool portable_paper_frame_drain(void) {
 #ifdef PORTABLE_PAPER_CROSSFADE
 #include "paper_transition.inc"
 #endif
+static uint32_t present_intent(bool full) {return
+#ifdef PORTABLE_RESIDENT_LOADING
+    resident_loading_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+#endif
+#if defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
+    resident_sleep_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+#endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+    (quick_clean_present || resident_failure_present) && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
+#endif
+#ifdef PORTABLE_DESK_LOCK_HOME
+    desk_quality_present?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
+#endif
+#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_LOCK_HOME)
+    /* Legacy desk-only owners explicitly select the normal waveform. */
+    surface_format==RISC_DISPLAY_FORMAT_MONO1?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
+#endif
+    /* Pixel coverage is independent of waveform. Interactive frames, including
+     * full-buffer page changes and resident clients without transition code,
+     * use the fast provider path. Only explicit desk/clean actions opt out. */
+    surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+    full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT;
+}
 static void present(bool full) {
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained)return;
@@ -1041,8 +1141,28 @@ static void present(bool full) {
 #ifdef PORTABLE_DESK_CLOCK
   desk_present_complete=false;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_recording&&!failed){
+    raster_recording=false;raster_sealed=true;raster_full=full;raster_saved_intent=present_intent(full);
+#if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
+    raster_saved_clean=quick_clean_present;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+    raster_saved_app_frame=!alarm_modal;display_settled=false;
+#else
+    raster_saved_app_frame=true;
+#endif
+    return;
+  }
+#endif
   if (failed || !surface.frame)
     return;
+#ifdef PORTABLE_ALARM_CLIENT
+  bool app_owned_frame=!alarm_modal;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_replaying)app_owned_frame=raster_saved_app_frame;
+#endif
+#endif
   portable_stage_log(rt,"draw-end","");
   perf_draw_end();
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,true);
@@ -1085,6 +1205,9 @@ static void present(bool full) {
       }
     }
     if(paper_previous_valid && !full && top==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_ALARM_CLIENT
+      display_settled=true;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
       desk_present_complete=true;
 #endif
@@ -1113,34 +1236,21 @@ static void present(bool full) {
         last=y+1;
       }
     }
-    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
+    if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_ALARM_CLIENT
+      display_settled=true;
+#endif
+      portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
     if(previous_valid){damage=(risc_display_rect_v1){0,(int32_t)first,info.width,last-first};damage_count=1;}
     for(unsigned y=0;y<info.height;y++)memcpy(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
     previous_valid=false;
   }
   portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);
   const risc_display_present_options_v1 options = {
-#ifdef PORTABLE_RESIDENT_LOADING
-    resident_loading_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_saved_intent:
 #endif
-#if defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
-    resident_sleep_present?RISC_DISPLAY_PRESENT_LOW_LATENCY:
-#endif
-#ifdef PORTABLE_RESIDENT_SHELL_HOST
-    (quick_clean_present || resident_failure_present) && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:
-#endif
-#ifdef PORTABLE_DESK_LOCK_HOME
-    desk_quality_present?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
-#endif
-#if defined(PORTABLE_DESK_CLOCK) && !defined(PORTABLE_DESK_LOCK_HOME)
-    /* Legacy desk-only owners explicitly select the normal waveform. */
-    surface_format==RISC_DISPLAY_FORMAT_MONO1?(full?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_QUALITY):
-#endif
-    /* Pixel coverage is independent of waveform. Interactive frames, including
-     * full-buffer page changes and resident clients without transition code,
-     * use the fast provider path. Only explicit desk/clean actions opt out. */
-    surface_format==RISC_DISPLAY_FORMAT_MONO1?RISC_DISPLAY_PRESENT_LOW_LATENCY:
-    full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT,
+    present_intent(full),
     RISC_DISPLAY_QUEUE_FIFO, 0};
 #ifdef PORTABLE_STAGE_LOGS
   char display_line[112];
@@ -1153,7 +1263,7 @@ static void present(bool full) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
-  if(!alarm_modal) {
+  if(app_owned_frame) {
     alarm_pixels_valid=false;
     unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)alarm_pixels+(size_t)y*bytes,
@@ -1216,7 +1326,7 @@ static void present(bool full) {
       desk_present_complete=true;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-      display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
+      display_settled=true;if(app_owned_frame)alarm_pixels_valid=true;
 #endif
       previous_valid=previous_pixels!=NULL;paper_previous_valid=paper_previous!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -1542,6 +1652,9 @@ void portable_desk_adapter_retain(void) {
 #endif
 }
 void portable_desk_adapter_invalidate(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(!portable_desk_adapter_ready())return;
 #endif
@@ -1549,6 +1662,9 @@ void portable_desk_adapter_invalidate(void) {
   paper_previous_valid=false;previous_valid=false;
 }
 void portable_desk_adapter_begin(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return;
+#endif
   list_mode=false;
   /* History is attached to this lease. Repaint it in place: releasing and
    * reacquiring here would invalidate the provider's one-shot seeded image. */
@@ -1556,6 +1672,9 @@ void portable_desk_adapter_begin(void) {
   else pp_begin();
 }
 int portable_desk_adapter_seed(void) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(!raster_immediate())return -2;
+#endif
   const risc_display_output_api_v1_history *history=risc_display_output_history(display);
   if(failed || !surface.frame || surface_format!=RISC_DISPLAY_FORMAT_MONO1 ||
      !paper_previous || !history)return 0;
@@ -1668,7 +1787,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     crown_pending=false;return true;}
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
-  if(display_settled && !surface.frame && !paper_token && !broadcast_tick())return false;
+  /* Background model/service progression shares the owner task, not the
+   * display completion clock. Mutable raster custody is still excluded. */
+  if(!raster_lease_mutable() && !broadcast_tick())return false;
 #endif
   /* A rejected paper top-edge gesture replays its original down followed
    * by the saved current sample before sampling another contact. */
@@ -1714,7 +1835,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     crown_pending=false;return true;}
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
-  if(resident_controls_requested || (!surface.frame && !paper_token && display_settled)) {
+  /* A recognized pull-down is model state. Keep it while an existing image
+   * still owns the display, and continue child input/services in the meantime.
+   * Once custody is clear, the ordinary checkpoint attempts it exactly once;
+   * a user-declined edit/launch guard must not turn into repeated prompts. */
+  bool resident_display_ready=!surface.frame && !paper_token && display_settled && !alarm_modal;
+  if(resident_display_ready) {
     uint32_t reason=resident_controls_requested?RISC_RESIDENT_CHECKPOINT_CONTROLS:RISC_RESIDENT_CHECKPOINT_POLL;
     int status=resident_checkpoint(reason);
     if(status==RISC_RESIDENT_RETAINED)return false;
@@ -1742,7 +1868,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!failure_archive_checkpoint())return false;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  if(display_settled&&!surface.frame&&!paper_token&&!contexts_tick())return false;
+  if(!raster_lease_mutable()&&!contexts_tick())return false;
 #if defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
   if(contexts_clock_handoff){out->exit_requested=true;return true;}
 #endif
@@ -1956,6 +2082,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(returning && !destination)destination=PORTABLE_RETURN_APP;
 #endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  if(!destination)destination=wifi_deferred_return;
+#endif
   home_pending=false;
   if(ok && destination
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -1985,8 +2114,17 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     /* Wi-Fi owns checked cleanup and nested Back. Home is a direct root exit;
      * refusal leaves its controller available for an explicit cleanup retry. */
     if(!portable_wifi_close()) {
-      crown_pending=false;memset(out,0,sizeof(*out));return true;
+      /* A direct Home request survives ordinary asynchronous stop. The next
+       * owner poll retries this exact handoff after checked quiescence. */
+      bool pending=portable_wifi_stop_pending();
+      home_pending=direct_home && pending;
+      wifi_deferred_return=pending?destination:NULL;
+      crown_pending=false;navigation_pending=0;input_pending=false;
+      clear_contact_snapshots();memset(out,0,sizeof(*out));return !failed;
     }
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    wifi_deferred_return=NULL;
 #endif
     portable_perf_action(PORTABLE_PERF_LAUNCH,true);
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
@@ -2057,7 +2195,10 @@ static bool launch(uint32_t i) {
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
   if(i<count())portable_stage_log(rt,"app-launch-request",portable_catalog[i].file_name);
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_RASTER_SNAPSHOT)
+  /* The final ownership boundary settles any sealed software frame before
+   * deciding whether its retained transition has finished. Ordinary model
+   * polling stays independent of raster and display completion. */
   if(!portable_paper_frame_drain())return false;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
@@ -2167,6 +2308,9 @@ static int32_t prev(int32_t i, uint32_t n) {
 }
 #ifdef PORTABLE_SETTINGS_APP
 #include "settings.inc"
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+#include "raster_snapshot_replay.inc"
 #endif
 static const t5_app_api_v1 app = {.abi_version = 1,
                                   .struct_size = sizeof(app),
@@ -2283,16 +2427,25 @@ static int initialize(void) {
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
+#ifdef PORTABLE_WIFI_SERVICE_LEASE
+  alarm_refresh_pending=alarm_ack_pending=alarm_service_deferred=false;
+#endif
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
 #ifdef PORTABLE_LOW_BATTERY
   low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  low_battery_transition_pending=false;
+#endif
 #endif
 #ifdef PORTABLE_X4_IDLE_POLICY
   automatic_idle=false;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_kv_reset();
 #endif
+#endif
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
@@ -2308,6 +2461,9 @@ static int initialize(void) {
 #endif
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
+#endif
+#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
+  wifi_deferred_return=NULL;
 #endif
   list_mode = false;input_pending=home_pending=crown_pending=handoff_requested=false;navigation_pending=0;previous_valid=false;
 #ifdef PORTABLE_DESK_LOCK_HOME
@@ -2404,6 +2560,9 @@ static void settings_native_finalize(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
   if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_adapter_retain();return;}
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_discard();
+#endif
   if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   if(navigation_ready) {
@@ -2447,6 +2606,11 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  /* Failed legacy invocations still reach their original confirmed cleanup.
+   * Retained fences above and provider-owned tokens below remain authoritative. */
+  if(raster_sealed&&!failed&&!raster_drain())return;
 #endif
   if(paper_token && !portable_paper_frame_drain())return;
 #ifdef PORTABLE_USB_TRANSFER_APP
@@ -2517,6 +2681,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
   if(quick.ui.torch && !pqa_session_restore(&quick,display))rt->diagnostic("QUICK brightness-restore-failed");
   free(quick_background);quick_background=NULL;
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  raster_discard();
 #endif
   if (surface.frame)
     display->release(display->context, surface.frame);

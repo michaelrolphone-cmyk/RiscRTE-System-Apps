@@ -32,7 +32,7 @@ static int32_t combined_put(void *c,const char *key,const void *data,uint32_t si
   return kv_put(c,key,data,size);
 }
 static uint8_t choose(unsigned row,unsigned y,bool cancel,bool pick) {
-  contact_count=0;polls=0;
+  contact_count=0;polls=0;script_started_at=ticks;previous_buttons=0;
   if(pick)tap(3,100,y);
   tap(7,cancel?60:170,213);tap(8,cancel?60:170,213);
   /* Errors remain open until an explicit Cancel; a held Save never retries. */
@@ -85,7 +85,7 @@ int main(int argc,char **argv) {
   assert(bytes[0]==(cancelled?PORTABLE_ALERT_SOUND:PORTABLE_ALERT_BOTH));
   assert(!rtc_writes && !strcmp(zone,portable_time_zone()) && !strcmp(basis,portable_time_basis()));
   app_module_fini();assert(!grants && !subscriptions && !frames && kv_releases==1);
-  polls=0;kv_grants=kv_releases=0;scenario=0;
+  polls=0;script_started_at=ticks;previous_buttons=0;kv_grants=kv_releases=0;scenario=0;
   assert(app_module_init()==0 && kv_grants==1);
   assert(time_format_mode==(cancelled?PORTABLE_TIME_FORMAT_12:PORTABLE_TIME_FORMAT_24));
   check_row(cancelled?"Sound":"Both");

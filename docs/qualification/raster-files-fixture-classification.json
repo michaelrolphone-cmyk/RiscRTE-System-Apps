@@ -1,0 +1,85 @@
+{
+  "source_root": "/tmp/system-raster-selected-settings-20261010",
+  "source_commit": "2edf22bc1160cca6818ad5a1ab47caa1be9c632a",
+  "production_edits": false,
+  "original_status": {
+    "snapshot": {
+      "pass": 114,
+      "fail": 14
+    },
+    "disabled": {
+      "pass": 114,
+      "fail": 14
+    }
+  },
+  "instrumented_residual_reproduction": {
+    "cases_per_mode": 16,
+    "fail_per_mode": 14,
+    "normal_and_asan_ubsan": true
+  },
+  "corrected_fixture_controls": {
+    "cases_per_mode": 16,
+    "pass_per_mode": 16,
+    "normal_and_asan_ubsan": true,
+    "status": "Diagnostic controls only; original runner remains failed"
+  },
+  "classifications": [
+    {
+      "case": "confirm-hidden",
+      "classification": "OBSOLETE_TWO_CONFIRM_EXPECTATION",
+      "trace": "At elapsed 1400 the first Confirm resolves logical selected row 0 despite scroll offset 1421; at1402 mode=5, selected name File 000.txt. Old fixture expects mode0 at1600 and a second Confirm.",
+      "control": "Set expected row0 at the first Confirm, assert mode5 and File000 before any second key; preserve selected identity, no writes and final cleanup."
+    },
+    {
+      "case": "short busy-hit",
+      "classification": "INVALID_STOP_TAP_TIMELINE",
+      "trace": "Second drag is clamped at y120 by elapsed496 and remains stationary until UP601; >80 ms idle correctly zeros velocity. DOWN626 sees offset630, velocity0, stop_tap0. UP700 opens correct logical row7, File007.txt. Later DOWN750 computes expected row1 from the newly opened actions page, causing its own oracle mismatch.",
+      "control": "Keep the short-profile drag moving at 1px/ms until UP; the intended stop tap then stops real inertia and the later selection resolves the correct pinned logical row."
+    },
+    {
+      "case": "keyboard-busy",
+      "classification": "OBSOLETE_BUSY_DISPLAY_INPUT_DROP_EXPECTATION",
+      "trace": "Independent UPs at elapsed1476,1825,2775 enter three characters. Paper editor !55 and short editor !&& are correct; original oracle expects only !5 / !&. Logical keyboard-page change is available before pending display completion.",
+      "control": "Require all three delivered characters, empty applied query, Back cancellation, no writes, immutable pending pixels and cleanup."
+    },
+    {
+      "case": "inventory-change",
+      "classification": "OBSOLETE_FINAL_RESET_AND_STATIC_FEEDBACK_EXPECTATIONS",
+      "trace": "Generation3\u21924 at elapsed354 (paper) or1225 (short), offset0, hit_ready0, message Folder changed. Choose the item again. New/current scripted drags after reset continue logical scrolling. Original final-offset0 assertion mistakes event-time reset for a permanent lock. Short outside-viewport mismatch x33/y460 is the legitimate feedback text at height\u2212146.",
+      "control": "Assert generation-change event has offset0 and invalidated hit identity; assert no selected item and closed directories. Permit dynamic pixels only in footer feedback strip height\u2212158\u2026height\u2212118, preserve all other outside-viewport comparisons."
+    }
+  ],
+  "evidence": {
+    "control-disabled-runs.json": "36d28550cc69a378139cc93ef6faf90502748b17298bdc31f44745e42a68fa76",
+    "control-snapshot-runs.json": "a61a3922d1e3e44bb119ae216e2e7b164101ccb578b20c72d2a9c32a71aa3325",
+    "control-disabled.log": "94779e93d8163cd8fc00efae55a188de9d4f7847522d48c256f5077cd6fcb836",
+    "control-snapshot.log": "d44a340b3ecdf9302b610f78983c242484007ac1cead3acabe233a34b73bdab2",
+    "control-source-map.json": "7edde9e6fc5a995c7363ebdecac3378cc66f507d7e69525871a7309a19f7f227",
+    "control-fixture.c": "fce337096dc5166a004238704cda7e52b21d92923b12055a8b4a3337f7648358",
+    "control-entry.c": "e7ea03b6dde23daa956ea1f4779d50fa96488f6b18a119877fbe2a9881e4ee14",
+    "short-inventory-change.trace": "a8e64267c0cefb15c12568096342629d47afe74aeb56acd122da76eeb83d28a3",
+    "paper-inventory-change.trace": "9ac25149681f3c7b3e2854bb2a7974113e42bb79f022141080edc36d333e9e1e",
+    "disabled-runs.json": "27429c972ca0b79a5164f3bb66e1469dadaa5a76b829a4f4fc676deb3b6987a8",
+    "snapshot-runs.json": "f38c1a77be05a638865ebc482f56c6a32783c11cfe809c29a3845e573b486b35",
+    "disabled2.log": "5cafc898ca1c34a27e4d7fceb5624cac63f0acf02ad39c934858e551fb7f970d",
+    "snapshot2.log": "d22a6c4821965708967ae19f8b366bef752807add15253f02d6fd3d22beba358",
+    "disabled.log": "45915248d0da6076d489828c4d9001b9cf84c509d3e82a3b7fd90a907ead6a43",
+    "snapshot.log": "68ff79c58b8c787a9b39d0753f4cc55dc5cca77663c5bcd0b442e43a2e54e018",
+    "source-map.json": "1f64fdc845d3ad54ced9e700c53f3edced206397a474fd17c5595b93f9159e78",
+    "entry.c": "0340ff004ec34eb7d470ecdae0a5f51d7b65b0869749847c2e2f8fa6ceb9a166",
+    "fixture.c": "4c9e589dda2658949bae6d4cd264a34a025d653459a7870751369b617d93f323"
+  },
+  "production_sha256": {
+    "Apps/file_browser.c": "0258e23ecee005eaeb7e35ea61f27080fdd48baee35cfdf58a32db410e36f309",
+    "Apps/file_browser_scroll_view.inc": "669fec54db3a878d297397a4739cfb8869264815e9b95b7060abee8ff32be082",
+    "Apps/file_browser_scroll_model.inc": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+    "Apps/file_browser_portable.inc": "c048a55e7657336f69849a9decb6e3efe44eb4ae9570e7dae520876f67697e11",
+    "Apps/file_browser_paper.inc": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+    "Apps/file_browser_operations.inc": "e7f557889b849f2c9f939931c6fecdc813f2516e24a849d1a697ab4655ac7e5a",
+    "lib/PortableApps/src/adapter.c": "8515a1ae7d5c6c19ea42b0e2950a91f37a02c6ee3fa83cbab52cbb7e4b106579",
+    "lib/PortableApps/src/raster_snapshot_state.inc": "a0c8766bdbd89fc591b03ff913e82f5fece8341ced041fab629dabc0fa4af04b",
+    "lib/PortableApps/src/raster_snapshot_replay.inc": "6a9fd58d3617e447cd1d7c0a138b0289dff88e6c42aa83d56a2c59a03fd94888",
+    "lib/PortableApps/include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+    "lib/PortableApps/include/PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004"
+  }
+}

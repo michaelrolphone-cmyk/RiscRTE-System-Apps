@@ -11,7 +11,11 @@
 #define WV_LINE 0x12262bu
 #define WV_CAP 0x6b8288u
 static void wv_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
-  if(!surface.frame || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_WV_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
+  if(raster_replaying&&(y+(height()-240)/2<raster_band_top||y+(height()-240)/2>=raster_band_bottom))return;
+#endif
+  if(!raster_surface_writable() || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
   x+=(width()-240)/2;y+=(height()-240)/2;
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+(size_t)x*2;
   uint16_t old=(uint16_t)(p[0]|p[1]<<8);
@@ -22,9 +26,15 @@ static void wv_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
   p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);
 }
 static void wv_rect(int x,int y,int w,int h,uint32_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_WV_RECT,(int32_t[8]){x,y,w,h,(int32_t)color},NULL))return;
+#endif
   for(int j=y;j<y+h;++j)for(int i=x;i<x+w;++i)wv_pixel(i,j,color,255);
 }
 static void wv_text(unsigned face,int x,int y,int max_width,const char *s,uint32_t color) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_WV_TEXT,(int32_t[8]){(int32_t)face,x,y,max_width,(int32_t)color},s))return;
+#endif
   if(!s || face>5)return;
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];++k) {
@@ -39,6 +49,9 @@ static void wv_text(unsigned face,int x,int y,int max_width,const char *s,uint32
   }
 }
 static void wv_button(int x,int y,int w,int h,const char *s,bool selected) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_record(RS_WV_BUTTON,(int32_t[8]){x,y,w,h,selected},s))return;
+#endif
   wv_rect(x,y,w,h,selected?WV_DIM:WV_LINE);
   wv_rect(x,y,w,1,selected?WV_CYAN:WV_DIM);
   wv_text(2,x+5,y+7,w-10,s,WV_CYAN);

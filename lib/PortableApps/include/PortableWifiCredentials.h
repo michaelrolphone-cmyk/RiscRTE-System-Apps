@@ -40,6 +40,8 @@ enum {
      * but at least one slot overwrite could not be confirmed. Physical flash
      * remanence is possible even when all logical overwrites succeed. */
     PORTABLE_WIFI_CREDENTIALS_CLEANUP_REMANENCE = 5,
+    /* Temporary no-I/O deferral; keep caller-owned drafts and retry later. */
+    PORTABLE_WIFI_CREDENTIALS_AGAIN = 7,
     PORTABLE_WIFI_CREDENTIALS_SAVED = PORTABLE_WIFI_CREDENTIALS_LOADED,
     PORTABLE_WIFI_CREDENTIALS_FORGOTTEN = PORTABLE_WIFI_CREDENTIALS_EMPTY
 };
@@ -114,6 +116,7 @@ static inline int portable_wifi_credentials_read_blob(const risc_key_value_v1 *k
         const char *key, uint8_t *data, uint32_t expected) {
     uint32_t size = 0;
     int32_t rc = kv->get(kv->context, key, data, expected, &size);
+    if (rc == RISC_KEY_VALUE_BUSY) return PORTABLE_WIFI_CREDENTIALS_AGAIN;
     if (rc == RISC_KEY_VALUE_NOT_FOUND) return PORTABLE_WIFI_CREDENTIALS_EMPTY;
     if (rc == RISC_KEY_VALUE_BUFFER_SMALL) return PORTABLE_WIFI_CREDENTIALS_INVALID;
     if (rc != RISC_KEY_VALUE_OK) return PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
@@ -139,15 +142,20 @@ static inline void portable_wifi_credentials_make_selector(uint8_t *s, uint64_t 
     portable_wifi_credentials_put_u32(s + 28, portable_wifi_credentials_crc(s, 28));
 }
 
-static inline bool portable_wifi_credentials_write_verify(const risc_key_value_v1 *kv,
+static inline int portable_wifi_credentials_write_status(const risc_key_value_v1 *kv,
         const char *key, const uint8_t *data, uint32_t size) {
     uint8_t check[64] = {0};
     /* Never infer persistence from a failed return code, or trust OK alone. */
-    (void)kv->put(kv->context, key, data, size);
+    int rc=kv->put(kv->context, key, data, size);
+    if(rc==RISC_KEY_VALUE_BUSY)return PORTABLE_WIFI_CREDENTIALS_AGAIN;
     bool same = portable_wifi_credentials_read_blob(kv, key, check, size) ==
         PORTABLE_WIFI_CREDENTIALS_LOADED && !memcmp(check, data, size);
     portable_wifi_credentials_wipe(check, sizeof(check));
-    return same;
+    return same?PORTABLE_WIFI_CREDENTIALS_LOADED:PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED;
+}
+static inline bool portable_wifi_credentials_write_verify(const risc_key_value_v1 *kv,
+        const char *key,const uint8_t *data,uint32_t size) {
+    return portable_wifi_credentials_write_status(kv,key,data,size)==PORTABLE_WIFI_CREDENTIALS_LOADED;
 }
 
 /* EMPTY covers a missing selector or a valid forget tombstone. Missing or
@@ -188,6 +196,7 @@ static inline int portable_wifi_credentials_load(const risc_key_value_v1 *kv,
             (!ssid && !password && payload[i])) { result = PORTABLE_WIFI_CREDENTIALS_INVALID; goto finish; }
     }
     result = portable_wifi_credentials_read_blob(kv, PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY, check, 32);
+    if (result == PORTABLE_WIFI_CREDENTIALS_AGAIN) goto finish;
     if (result != PORTABLE_WIFI_CREDENTIALS_LOADED || memcmp(selector, check, 32)) {
         result = PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED; goto finish;
     }
@@ -221,7 +230,7 @@ static inline int portable_wifi_credentials_save(const risc_key_value_v1 *kv,
     while (password < 63 && draft->password[password]) ++password;
     memcpy(payload, draft->ssid, ssid); memcpy(payload + 32, draft->password, password);
     result = portable_wifi_credentials_read_blob(kv, PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY, selector, 32);
-    if (result == PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE) goto finish;
+    if (result == PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE || result == PORTABLE_WIFI_CREDENTIALS_AGAIN) goto finish;
     if (result == PORTABLE_WIFI_CREDENTIALS_LOADED && portable_wifi_credentials_selector_valid(selector)) {
         generation = portable_wifi_credentials_generation(selector) + 1;
         if (!generation) generation = 1;
@@ -234,8 +243,9 @@ static inline int portable_wifi_credentials_save(const risc_key_value_v1 *kv,
         portable_wifi_credentials_put_u32(chunk + 8, (uint32_t)(generation >> 32));
         memcpy(chunk + 12, payload + part * 48, 48);
         portable_wifi_credentials_put_u32(chunk + 60, portable_wifi_credentials_crc(chunk, 60));
-        if (!portable_wifi_credentials_write_verify(kv, portable_wifi_credentials_chunk_key(slot, part), chunk, 64)) {
-            result = PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED; goto finish;
+        int written=portable_wifi_credentials_write_status(kv, portable_wifi_credentials_chunk_key(slot, part), chunk, 64);
+        if (written != PORTABLE_WIFI_CREDENTIALS_LOADED) {
+            result = !part&&written==PORTABLE_WIFI_CREDENTIALS_AGAIN?written:PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED; goto finish;
         }
     }
     portable_wifi_credentials_make_selector(selector, generation, true, slot, ssid, password,
@@ -265,15 +275,15 @@ static inline int portable_wifi_credentials_forget(const risc_key_value_v1 *kv) 
     int result = PORTABLE_WIFI_CREDENTIALS_UNAVAILABLE;
     bool clean = true;
     if (!portable_wifi_credentials_api_valid(kv)) goto finish;
-    if (portable_wifi_credentials_read_blob(kv, PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY, check, 32) ==
-            PORTABLE_WIFI_CREDENTIALS_LOADED && portable_wifi_credentials_selector_valid(check)) {
+    result=portable_wifi_credentials_read_blob(kv, PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY, check, 32);
+    if(result==PORTABLE_WIFI_CREDENTIALS_AGAIN)goto finish;
+    if (result == PORTABLE_WIFI_CREDENTIALS_LOADED && portable_wifi_credentials_selector_valid(check)) {
         generation = portable_wifi_credentials_generation(check) + 1;
         if (!generation) generation = 1;
     }
     portable_wifi_credentials_make_selector(selector, generation, false, 0, 0, 0, 0);
-    if (!portable_wifi_credentials_write_verify(kv, PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY, selector, 32)) {
-        result = PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED; goto finish;
-    }
+    result=portable_wifi_credentials_write_status(kv,PORTABLE_WIFI_CREDENTIALS_SELECTOR_KEY,selector,32);
+    if(result!=PORTABLE_WIFI_CREDENTIALS_LOADED)goto finish;
     for (unsigned slot = 0; slot < 2; ++slot)
         for (unsigned part = 0; part < 2; ++part)
             if (!portable_wifi_credentials_write_verify(kv, portable_wifi_credentials_chunk_key(slot, part), zeros, 64))

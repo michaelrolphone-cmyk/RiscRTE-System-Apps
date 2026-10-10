@@ -4,7 +4,7 @@
 #error "Native broadcast integration requires the checked custody fence"
 #endif
 static portable_broadcast_client broadcast_client;
-static bool broadcast_policy_io;
+static bool broadcast_policy_io,broadcast_pause_confirmed;
 static bool broadcast_open(void) {
   if(native_custody_retained)return false;
   if(broadcast_client.api)return true;
@@ -26,12 +26,17 @@ static bool broadcast_release(void) {
   broadcast_client.api=NULL;return true;
 }
 bool portable_broadcast_stop(void) {
+#if defined(PORTABLE_WIFI_SETTINGS_APP)
+  /* Wi-Fi admission pauses advertising before it owns the async operation.
+   * HCI start/stop remains deferred through checked Wi-Fi quiescence. */
+  if(portable_wifi_async_owned())return !native_custody_retained && broadcast_pause_confirmed;
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(desk_phase==DESK_TIMER)return !native_custody_retained;
 #endif
   if(!broadcast_open())return false;
   if(!portable_broadcast_pause(&broadcast_client)){portable_adapter_retain();return false;}
-  return broadcast_release();
+  broadcast_pause_confirmed=true;return broadcast_release();
 }
 bool portable_broadcast_status(telemetry_broadcast_status_v1 *out) {
   if(!broadcast_open())return false;
@@ -54,6 +59,11 @@ bool portable_broadcast_enable(bool enabled) {
 }
 static bool broadcast_tick(void) {
   if(native_custody_retained)return false;
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+  /* Poll completion even while deferring the advertiser, so Cancel progresses. */
+  if(!portable_wifi_services_safe())return !native_custody_retained;
+  if(portable_wifi_async_owned())return broadcast_pause_confirmed;
+#endif
   bool allow=true;
 #ifdef PORTABLE_BLE_FOREGROUND
   allow=false;
@@ -75,6 +85,7 @@ static bool broadcast_tick(void) {
 #endif
   if(!broadcast_open())return false;
   broadcast_policy_io=true;
+  broadcast_pause_confirmed=false;
   bool ok=portable_broadcast_step(&broadcast_client,allow);
   broadcast_policy_io=false;
   if(!ok) {

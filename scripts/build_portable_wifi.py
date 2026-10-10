@@ -25,6 +25,7 @@ def build(args, parser=None):
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     scrolling=getattr(args,'touch_scrolling',False)
+    shared_text=getattr(args,'shared_text_input',False) or args.resident_shell_client
     if scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
         parser.error('--touch-scrolling requires --time-profile x4-native-time and --paper-transitions')
     cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
@@ -34,6 +35,7 @@ def build(args, parser=None):
     out = args.output_dir or ROOT/'dist/portable/wifi'
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
     if scrolling: flags.append('-DPORTABLE_TOUCH_SCROLL')
+    if shared_text: flags+=['-DPORTABLE_TEXT_INPUT_CLIENT','-DPORTABLE_WIFI_PROFILES']
     flags.append('-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation))
     if args.return_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf', args.return_app):
@@ -72,7 +74,7 @@ def build(args, parser=None):
     subprocess.run(compile_command, check=True, timeout=120)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
-    allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
+    allowed = {'risc_runtime_get_api','memcpy','memchr','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
     if not imports <= allowed: raise ValueError('Unexpected imports: '+str(imports-allowed))
     actual = {line.split()[-1] for line in symbols.splitlines() if len(line.split())>=3 and line.split()[-2] in ('T','D','B','R')}
     if actual != exports: raise ValueError('Unexpected exports: '+str(actual))
@@ -95,6 +97,7 @@ def build(args, parser=None):
         'file_name':'wifi_settings.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'net.wifi','api':1}]}
+    if shared_text: manifest['requires'].append({'capability':'ui.text-input','api':1})
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -132,7 +135,7 @@ def build(args, parser=None):
                           'other_providers':'selected by product integration owner; no grants applied'},
         'build_defines':flags,'wifi_instance':args.wifi_instance,'storage_instance':6,
         'home_app':args.home_app,'return_app':args.return_app,'display_rotation':args.display_rotation,
-        'touch_scrolling':scrolling,
+        'touch_scrolling':scrolling,'shared_text_input':shared_text,
         'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'wall_time':args.wall_time,
         'requested_capabilities':manifest['requires'],
         'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
@@ -152,6 +155,7 @@ def build(args, parser=None):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--shared-text-input',action='store_true',help='Use the separately loaded shared keyboard, required for resident X4 builds')
     parser.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None)
     parser.add_argument('--return-app',help='App-owned root Back target; nested Back stays local')

@@ -20,7 +20,11 @@ static void qp_text(int x,int y,int w,const char *s,bool heading,bool black) {
  pp_text(qp_x(x),qp_y(y),qp_x(w),s,heading?2:1,heading,black);
 }
 #define qp_tile qp_rect
-static void qp_icon(unsigned icon,int x,int y,bool black){pqa_paper_icon(icon,qp_x(x),qp_y(y),qp_x(34),black,np_pixel);}
+static void qp_icon(unsigned icon,int x,int y,bool black){
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_record(RS_QP_ICON,(int32_t[8]){(int32_t)icon,x,y,black},NULL))return;
+#endif
+ pqa_paper_icon(icon,qp_x(x),qp_y(y),qp_x(34),black,np_pixel);}
 #endif
 static void quick_paper_capabilities(void) {
  if(!quick.ui.paper)return;

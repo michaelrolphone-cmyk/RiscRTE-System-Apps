@@ -30,7 +30,13 @@ bool portable_audio_suspend(void){
 #endif
 static bool reset_after_ack(void*c){(void)c;return acks==0;}
 static int32_t service_status(void*c,alarm_status_v1*out){(void)c;*out=alarm_fake;return ALARM_OK;}
-static int32_t service_step(void*c){(void)c;assert(!surface.frame);service_steps++;if(failed)normal_after_failure++;
+static int32_t service_step(void*c){(void)c;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ assert(!raster_lease_mutable());
+#else
+ assert(!surface.frame);
+#endif
+service_steps++;if(failed)normal_after_failure++;
 #ifdef PORTABLE_AUDIO_SESSION
  if(alarm_fake.state==ALARM_STATE_ALERT||alarm_fake.state==ALARM_STATE_DISMISSING||alarm_fake.state==ALARM_STATE_CUE)assert(!application_audio);
 #endif

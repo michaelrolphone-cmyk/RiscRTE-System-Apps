@@ -29,6 +29,7 @@ static unsigned connects,disconnects,scan_starts,scan_polls,scan_cancels,writes,
 static unsigned fail_connect,fail_disconnect,fail_release,fail_scan,fail_scan_cancel,fail_poll,fail_store,fail_addresses;
 static unsigned acquire_denied,kv_denied,fail_display,short_api,late_calls,terminal_sleep,service_calls,alarm_stops,fail_alarm_stop;
 static bool uncertain_start,break_radio_on_yield;
+static bool temporary_store_busy;
 static unsigned script_count,limit_polls=500,scenario;
 static bool native_active,scan_active;
 static wifi_link_t fake_link;
@@ -54,7 +55,10 @@ static jmp_buf blocked;
 static bool block_expected,blocked_note;
 static int sleep_outcome=1;
 static struct {unsigned at;unsigned buttons;int x,y;} script[64];
-static struct {char name[16];uint8_t data[64];uint32_t size;} cells[8];
+#ifndef TEST_WIFI_CELL_COUNT
+#define TEST_WIFI_CELL_COUNT 8u
+#endif
+static struct {char name[16];uint8_t data[64];uint32_t size;} cells[TEST_WIFI_CELL_COUNT];
 static wifi_api_v1 radio_api;
 static risc_runtime_api_v1 runtime_api;
 static void observed(void){if(terminal_sleep)++late_calls;}
@@ -105,22 +109,38 @@ static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
 }
 static bool fake_present(void*c,risc_display_present_token_v1 token,risc_display_present_status_v1*out){(void)c;observed();assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.get_info=fake_info,.acquire=fake_frame,.release=fake_frame_release,.submit=fake_submit,.present_status=fake_present};
-static uint64_t fake_subscribe(void*c){(void)c;observed();++sub_count;return 1;}
-static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
-static bool fake_touch_poll(void*c,size_t n){(void)c;observed();assert(n==1);++poll_count;return true;}
-static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){(void)c;(void)id;(void)e;observed();return 0;}
-static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=width();out->height=height();if(home_at && poll_count>=home_at && poll_count<home_at+5)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
+/* The current touch contract delivers ordered edges. Snapshot-only changes
+ * are deliberately rejected by production as lost-event corruption. */
+static risc_touch_snapshot_v1 raw_state;
+static risc_touch_event_v1 raw_events[1024];
+static unsigned raw_written,raw_read;
+static uint64_t raw_sequence;
+static bool fake_script_snapshot(risc_touch_snapshot_v1*out){memset(out,0,sizeof(*out));out->width=width();out->height=height();if(home_at && poll_count>=home_at && poll_count<home_at+5)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
 #if PORTABLE_TOUCH_ROTATION == 180
  out->contacts[0].x=width()-1-out->contacts[0].x;out->contacts[0].y=height()-1-out->contacts[0].y;
 #endif
  }return true;}
+
+static void raw_push(unsigned kind,unsigned id,unsigned x,unsigned y){assert(raw_written<1024);raw_events[raw_written++]=(risc_touch_event_v1){.sequence=++raw_sequence,.timestamp_ms=ticks,.kind=kind,.id=id,.x=x,.y=y};}
+static uint64_t fake_subscribe(void*c){(void)c;observed();++sub_count;raw_read=raw_written;return 1;}
+static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
+static bool fake_touch_poll(void*c,size_t n){
+ (void)c;observed();assert(n==1);++poll_count;risc_touch_snapshot_v1 next;assert(fake_script_snapshot(&next));
+ if((raw_state.buttons^next.buttons)&1u)raw_push((next.buttons&1u)?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,0,0,0);
+ if(raw_state.contact_count&&!next.contact_count)raw_push(RISC_TOUCH_EVENT_UP,1,raw_state.contacts[0].x,raw_state.contacts[0].y);
+ if(!raw_state.contact_count&&next.contact_count)raw_push(RISC_TOUCH_EVENT_DOWN,1,next.contacts[0].x,next.contacts[0].y);
+ if(raw_state.contact_count&&next.contact_count&&(raw_state.contacts[0].x!=next.contacts[0].x||raw_state.contacts[0].y!=next.contacts[0].y))raw_push(RISC_TOUCH_EVENT_MOVE,1,next.contacts[0].x,next.contacts[0].y);
+ next.sequence=raw_sequence;next.timestamp_ms=ticks;raw_state=next;return true;
+}
+static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){(void)c;(void)id;observed();if(raw_read==raw_written)return 0;*e=raw_events[raw_read++];return 1;}
+static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();*out=raw_state;out->width=width();out->height=height();return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,fake_subscribe,fake_unsubscribe,fake_touch_poll,fake_next,fake_snapshot};
 static bool fake_nav(void*c,risc_input_navigation_frame_v1*out){(void)c;observed();*out=(risc_input_navigation_frame_v1){0};for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count)out->pressed=out->released=script[i].buttons;return true;}
 static bool fake_foreground(void*c,const risc_input_foreground_v1*a,size_t n){(void)c;(void)a;(void)n;observed();return true;}
 static bool fake_reset(void*c){(void)c;observed();return true;}
 static const risc_input_navigation_api_v1 nav_api={1,sizeof(nav_api),NULL,fake_nav,fake_foreground,fake_reset};
-static int32_t fake_get(void*c,const char*key,void*buf,uint32_t cap,uint32_t*size){(void)c;observed();*size=0;if(fail_store)return RISC_KEY_VALUE_IO;for(unsigned i=0;i<8;++i)if(!strcmp(cells[i].name,key)){if(cap<cells[i].size){*size=cells[i].size;return RISC_KEY_VALUE_BUFFER_SMALL;}memcpy(buf,cells[i].data,cells[i].size);*size=cells[i].size;return 0;}return RISC_KEY_VALUE_NOT_FOUND;}
-static int32_t fake_put(void*c,const char*key,const void*buf,uint32_t n){(void)c;observed();++writes;if(fail_store)return RISC_KEY_VALUE_IO;assert(n<=64 && strlen(key)<=15);unsigned i=0;for(;i<8;++i)if(!cells[i].name[0] || !strcmp(cells[i].name,key))break;assert(i<8);strcpy(cells[i].name,key);memcpy(cells[i].data,buf,n);cells[i].size=n;return 0;}
+static int32_t fake_get(void*c,const char*key,void*buf,uint32_t cap,uint32_t*size){(void)c;observed();*size=0;if(temporary_store_busy)return RISC_KEY_VALUE_BUSY;if(fail_store)return RISC_KEY_VALUE_IO;for(unsigned i=0;i<TEST_WIFI_CELL_COUNT;++i)if(!strcmp(cells[i].name,key)){if(cap<cells[i].size){*size=cells[i].size;return RISC_KEY_VALUE_BUFFER_SMALL;}memcpy(buf,cells[i].data,cells[i].size);*size=cells[i].size;return 0;}return RISC_KEY_VALUE_NOT_FOUND;}
+static int32_t fake_put(void*c,const char*key,const void*buf,uint32_t n){(void)c;observed();if(temporary_store_busy)return RISC_KEY_VALUE_BUSY;++writes;if(fail_store)return RISC_KEY_VALUE_IO;assert(n<=64 && strlen(key)<=15);unsigned i=0;for(;i<TEST_WIFI_CELL_COUNT;++i)if(!cells[i].name[0] || !strcmp(cells[i].name,key))break;assert(i<TEST_WIFI_CELL_COUNT);strcpy(cells[i].name,key);memcpy(cells[i].data,buf,n);cells[i].size=n;return 0;}
 static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,fake_get,fake_put};
 static bool fake_connect(void*c,const char*s,const char*p){(void)c;observed();assert(!scan_active && !native_active);assert(s[0] && strlen(s)<=32 && (!p[0] || strlen(p)>=8));++connects;if(fail_connect){if(uncertain_start){native_active=true;fail_disconnect=1;}return false;}native_active=true;fake_link=WIFI_LINK_JOINING;return true;}
 static void fake_disconnect_legacy(void*c){(void)c;assert(!"Legacy unchecked disconnect must never be used");}
@@ -153,8 +173,10 @@ static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api 
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime_api:NULL;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!native_active && !scan_active && !wg.api && !wifi && !sub_count && !surface.frame);++sleeps;if(sleep_outcome==-2)terminal_sleep=1;return sleep_outcome;}
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
+/* Eight raw samples span the adapter cadence, followed by an explicit neutral gap. */
+static void held_touch(unsigned at,int x,int y){for(unsigned i=0;i<8;i++)event(at+i,0,x,y);}
 static void start(void){
- runtime_api=(risc_runtime_api_v1){1,sizeof(runtime_api),fake_health,fake_yield,fake_diag,fake_launch,fake_acquire,fake_release};
+ runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=short_api?WIFI_PREFIX_V1_SIZE:sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  fake_scan=(garden_radio_scan_result_v1){.struct_size=sizeof(fake_scan),.state=GARDEN_RADIO_SCAN_RUNNING};
  visual_alarm=(alarm_service_outputs_v1){.service=alarm_api,.output_modes=ALARM_MODE_VISUAL};visual_alarm.service.struct_size=sizeof(visual_alarm);
@@ -197,24 +219,24 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  case 16:draft();wifi_connect();fail_release=1;assert(!portable_wifi_suspend() && wg.api && !native_active);fail_release=0;assert(portable_wifi_suspend() && !wg.api);break;
  case 17:draft();wifi_edit(WP_PASSWORD);render();sleep_outcome=-2;ticks+=60001;t5_app_input_t in;assert(!poll(&in,25) && native_sleep_retained && sleeps==1);unsigned retained_live=grant_count;app_module_fini();assert(!late_calls && grant_count==retained_live && wk.api && editor[0] && !wg.api);/* Simulated runtime resume only for test-process leak cleanup. */terminal_sleep=0;native_sleep_retained=false;failed=false;break;
  case 18:draft();wifi_connect();render();ticks+=60001;t5_app_input_t wake;assert(poll(&wake,25) && sleeps==1 && !wake.buttons && !wake.tapped && !joining && wg.api && connects==1);break;
- case 19:draft();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};event(poll_count+4,0,100,portable_wifi_paper()?height()-150:180);bool consumed=false;assert(alarm_foreground(&consumed) && consumed && alarm_acks==1);assert(page==WP_PASSWORD && !strcmp(editor,"testpass123") && !launches);break;
+ case 19:draft();wifi_edit(WP_PASSWORD);render();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};held_touch(poll_count+20,100,portable_wifi_paper()?height()-150:180);bool consumed=false;assert(alarm_foreground(&consumed) && consumed && alarm_acks==1);assert(page==WP_PASSWORD && !strcmp(editor,"testpass123") && !launches);break;
  case 20:draft();wifi_scan_start();fail_scan_cancel=1;assert(!wifi_back() && cleanup_pending && scan_active);fail_scan_cancel=0;assert(!wifi_back() && page==WP_ROOT && !scan_active);break;
  case 21:draft();wifi_connect();fail_disconnect=1;block_expected=true;if(!setjmp(blocked)){app_module_fini();assert(!"Unsafe fini must retain invocation");}block_expected=false;assert(opened && wg.api && wk.api && native_active);break;
- case 22:/* Real app_main touch nesting: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());
+ case 22:/* Ordered sampleable contacts: SSID, one lowercase key, Done, Back. */assert(portable_wifi_close());
 #ifdef TEST_WIFI_PAPER
- event(poll_count+3,0,60,170);event(poll_count+6,0,wpv_key(1).x+10,wpv_key(1).y+10);
- event(poll_count+9,0,wpv_key(PWK_DONE).x+10,wpv_key(PWK_DONE).y+10);event(poll_count+12,0,60,height()-60);
+ held_touch(poll_count+20,60,170);held_touch(poll_count+60,wpv_key(1).x+10,wpv_key(1).y+10);
+ held_touch(poll_count+100,wpv_key(PWK_DONE).x+10,wpv_key(PWK_DONE).y+10);held_touch(poll_count+140,60,height()-60);
 #else
- event(poll_count+3,0,60,72);event(poll_count+6,0,50,
+ held_touch(poll_count+20,60,72);held_touch(poll_count+60,50,
 #ifdef PORTABLE_NOVA_UI
  104
 #else
  80
 #endif
- );event(poll_count+9,0,190,190);event(poll_count+12,0,20,18);
+ );held_touch(poll_count+100,190,190);held_touch(poll_count+140,20,18);
 #endif
  app_main();assert(launches==1 && !opened && !connects && !writes);break;
- case 23:/* Navigation Back cancels draft before root Back queues launch. */assert(portable_wifi_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,T5_APP_BUTTON_BACK,-1,0);event(poll_count+9,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1 && !opened && !writes);break;
+ case 23:/* Navigation Back cancels draft before root Back queues launch. */assert(portable_wifi_close());event(poll_count+20,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+60,T5_APP_BUTTON_BACK,-1,0);event(poll_count+100,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1 && !opened && !writes);break;
  case 24:wifi_scan_start();fake_scan.state=GARDEN_RADIO_SCAN_DONE;fake_scan.count=1;memset(fake_scan.entries[0].ssid,'x',33);tick(250);assert(!scanning && !native_active);break;
  case 25:wifi_edit(WP_PASSWORD);assert(key_page==PWK_INITIAL_PAGE && PORTABLE_WIFI_KEY_COUNT==35 && PORTABLE_WIFI_KEYS_PER_PAGE==32);
  for(key_page=0;key_page<3;++key_page)for(unsigned k=0;k<32;++k){editor[0]=0;wifi_key(k);unsigned ch=32+key_page*32+k;if(ch<=126)assert((unsigned char)editor[0]==ch);else assert(!editor[0]);wifi_make_view();portable_watch_key_rect rect;assert(portable_watch_key_bounds(k,&rect));
@@ -287,7 +309,7 @@ break;
   wifi_make_view();assert(portable_wifi_hit(&view,width()/2,height()-50)==-1);assert(portable_wifi_hit(&view,width()*3/4,height()-50)==-1);
   for(unsigned i=0;i<view.count;i++){choice=i;wifi_make_view();unsigned j=i%wpv_rows();assert(portable_wifi_hit(&view,60,WPV_TOP+j*WPV_ROW+20)==(int)i);render();}break;
  case 57: /* Completed drags do not type, connect, save, or follow a row. */
-  assert(portable_wifi_close());event(poll_count+3,0,100,180);event(poll_count+4,0,110,230);event(poll_count+8,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!writes&&!connects);break;
+  assert(portable_wifi_close());held_touch(poll_count+20,100,180);held_touch(poll_count+28,110,230);event(poll_count+60,T5_APP_BUTTON_BACK,-1,0);app_main();assert(launches==1&&!writes&&!connects);break;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  case 58: /* Capability sheet has unavailable radios/brightness/torch. */

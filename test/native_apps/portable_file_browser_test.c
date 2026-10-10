@@ -23,13 +23,13 @@ static uint8_t fb_pixels[100*480];
 static uint16_t fb_pixels[240*244];
 #endif
 static unsigned test_grants,test_frames,test_subs,test_presents,test_ticks,test_entry,test_entries=8,test_offset,test_length=577,test_reads,test_closes;
-static unsigned test_polls,test_launches,test_script,test_seen_modes,test_wifi_launches;
+static unsigned test_polls,test_steps,test_launches,test_script,test_seen_modes,test_wifi_launches;
 static bool test_fail_acquire,test_fail_open,test_fail_read,test_fail_close,test_fail_release,test_fail_listing,test_invalid_name;
 static const char *test_directory;
 static char test_error[48];
 static risc_storage_volume_api_v1 test_volume;
 const t5_app_manifest_t portable_catalog[]={{.compatible=false}};const unsigned portable_catalog_count=0;
-static bool test_health(risc_runtime_health_v1*h){h->uptime_ms=test_ticks;return !test_script || test_polls<50;}
+static bool test_health(risc_runtime_health_v1*h){h->uptime_ms=test_ticks;return !test_script || test_steps<50;}
 static void test_yield(uint32_t n){test_ticks+=n;}
 static bool test_diag(const char*s){(void)s;return true;}
 static bool test_launch(const char*s){
@@ -59,24 +59,39 @@ static bool test_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
 return true;}
 static bool test_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present};
-static uint64_t test_sub(void*c){(void)c;test_subs++;return 1;}
+/* Script time advances once per app input pass, independently of hardware
+ * collection during raster work or idle waits. Snapshots never advance input;
+ * every changed report is also published as ordered raw edges. */
+static risc_touch_snapshot_v1 test_touch_state;
+static risc_touch_event_v1 test_touch_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned test_touch_head,test_touch_count,test_touch_step;
+static uint64_t test_sub(void*c){
+ (void)c;assert(!test_subs);test_subs++;test_steps=0;
+ test_touch_head=test_touch_count=0;test_touch_step=~0u;
+ test_touch_state=(risc_touch_snapshot_v1){.timestamp_ms=test_ticks,
+#ifdef FILE_BROWSER_PAPER_PROFILE
+  .width=480,.height=800
+#else
+  .width=240,.height=240
+#endif
+ };
+ return 1;
+}
 static bool test_unsub(void*c,uint64_t n){(void)c;assert(n==1 && test_subs);test_subs--;return true;}
-static bool test_poll(void*c,size_t n){(void)c;assert(n==1);test_polls++;return true;}
-static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
 static void (*test_touch_script)(int*,int*);
-static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
- (void)c;int x=-1,y=-1;
+static void test_report(risc_touch_snapshot_v1*s){
+ int x=-1,y=-1;
 #ifdef FILE_BROWSER_PAPER_PROFILE
  *s=(risc_touch_snapshot_v1){.width=480,.height=800};
- if(test_script==7){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;}
- if(test_script==4){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17||test_polls==23||test_polls==29){x=75;y=730;}}
- if(test_script==5){if(test_polls==5){x=100;y=600;}if(test_polls==6){x=100;y=160;}if(test_polls==13){x=75;y=730;}}
- if(test_script==6){if(test_polls==5){x=420;y=50;}if(test_polls==11){x=100;y=150;}if(test_polls==17){x=100;y=624;}if(test_polls==23){x=321;y=424;}if(test_polls==29){x=100;y=730;}if(test_polls==35){x=75;y=730;}}
+ if(test_script==7){if(test_steps==5){x=100;y=150;}if(test_steps==11){x=300;y=730;}if(test_steps==17)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;}
+ if(test_script==4){if(test_steps==5){x=100;y=150;}if(test_steps==11){x=300;y=730;}if(test_steps==17||test_steps==23||test_steps==29){x=75;y=730;}}
+ if(test_script==5){if(test_steps==5){x=100;y=600;}if(test_steps==6){x=100;y=160;}if(test_steps==13){x=75;y=730;}}
+ if(test_script==6){if(test_steps==5){x=420;y=50;}if(test_steps==11){x=100;y=150;}if(test_steps==17){x=100;y=624;}if(test_steps==23){x=321;y=424;}if(test_steps==29){x=100;y=730;}if(test_steps==35){x=75;y=730;}}
 #else
  *s=(risc_touch_snapshot_v1){.width=240,.height=240};
 #endif
- if(test_script==1 || test_script==3){if(test_polls==5){x=100;y=82;}if(test_polls==11){x=120;y=207;}if(test_polls==17||test_polls==23||test_polls==29){x=25;y=25;}}
- if(test_script==2){if(test_polls==5){x=100;y=154;}if(test_polls==6){x=100;y=82;}if(test_polls==13){x=25;y=25;}}
+ if(test_script==1 || test_script==3){if(test_steps==5){x=100;y=82;}if(test_steps==11){x=120;y=207;}if(test_steps==17||test_steps==23||test_steps==29){x=25;y=25;}}
+ if(test_script==2){if(test_steps==5){x=100;y=154;}if(test_steps==6){x=100;y=82;}if(test_steps==13){x=25;y=25;}}
  if(test_touch_script)test_touch_script(&x,&y);
  if(x>=0){
 #if PORTABLE_TOUCH_ROTATION == 180
@@ -84,8 +99,39 @@ static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
 #endif
   s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=y};
  }
- return true;
 }
+static void test_edge(uint8_t kind,uint8_t id,uint16_t x,uint16_t y){
+ assert(test_touch_count<RISC_TOUCH_QUEUE_LENGTH);
+ unsigned tail=(test_touch_head+test_touch_count++)%RISC_TOUCH_QUEUE_LENGTH;
+ test_touch_events[tail]=(risc_touch_event_v1){
+  .sequence=++test_touch_state.sequence,.timestamp_ms=test_ticks,
+  .kind=kind,.id=id,.x=x,.y=y
+ };
+}
+static bool test_poll(void*c,size_t n){
+ (void)c;assert(n==1 && test_subs);test_polls++;
+ if(test_touch_step==test_steps)return true;
+ test_touch_step=test_steps;
+ risc_touch_snapshot_v1 next;test_report(&next);
+ const risc_touch_contact_v1 *old=&test_touch_state.contacts[0],*now=&next.contacts[0];
+ if(test_touch_state.contact_count && !next.contact_count)
+  test_edge(RISC_TOUCH_EVENT_UP,old->id,old->x,old->y);
+ else if(!test_touch_state.contact_count && next.contact_count)
+  test_edge(RISC_TOUCH_EVENT_DOWN,now->id,now->x,now->y);
+ else if(next.contact_count && (old->x!=now->x || old->y!=now->y))
+  test_edge(RISC_TOUCH_EVENT_MOVE,now->id,now->x,now->y);
+ if(test_touch_state.buttons!=next.buttons)
+  test_edge(next.buttons?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,0,0,0);
+ next.sequence=test_touch_state.sequence;next.timestamp_ms=test_ticks;
+ test_touch_state=next;return true;
+}
+static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){
+ (void)c;assert(n==1 && test_subs);
+ if(!test_touch_count)return 0;
+ *e=test_touch_events[test_touch_head];
+ test_touch_head=(test_touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;test_touch_count--;return 1;
+}
+static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=test_touch_state;return true;}
 static const risc_touch_api_v1 test_touch={1,sizeof(test_touch),NULL,test_sub,test_unsub,test_poll,test_next,test_snapshot};
 #ifdef FILE_BROWSER_FULL_PROFILE
 static int32_t test_alarm_status(void*c,alarm_status_v1*out){(void)c;*out=(alarm_status_v1){.api_version=1,.struct_size=sizeof(*out),.state=ALARM_STATE_READY};return ALARM_OK;}
@@ -108,12 +154,13 @@ static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capabi
  else return false;
  test_grants++;return true;}
 static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_grants);if(g->api==&test_volume && test_fail_release)return false;g->api=NULL;test_grants--;return true;}
-static const risc_runtime_api_v1 test_runtime={1,sizeof(test_runtime),test_health,test_yield,test_diag,test_launch,test_acquire,test_release};
+static const risc_runtime_api_v1 test_runtime={.api_version=1,.struct_size=sizeof(test_runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diag,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 static const risc_runtime_api_v1 *test_runtime_override;
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){
+ test_steps++;
  bool ok=t5_app_get_api(1)->poll(out,wait);
- if(ok && test_script==3 && test_polls>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}
+ if(ok && test_script==3 && test_steps>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}
  return ok;
 }
 static const t5_app_api_v1 *test_browser_api(uint32_t v){

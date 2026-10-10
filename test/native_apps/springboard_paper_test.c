@@ -33,7 +33,8 @@ const t5_app_manifest_t portable_catalog[]={
 const unsigned portable_catalog_count=CATALOG_COUNT;
 static unsigned scenario,ms,polls,grants,subs,frames,presents,launches;
 static uint8_t pixels[60*800];static char launched[128];
-static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<120;}
+static unsigned script_step(void){return ms/25u;}
+static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return script_step()<120;}
 static void yield_ms(uint32_t n){ms+=n;}
 static bool diagnostic(const char *s){(void)s;return true;}
 static bool launch_app(const char *s){launches++;if(scenario==5)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
@@ -41,7 +42,7 @@ static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(
 static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==RISC_DISPLAY_FORMAT_MONO1);assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=scenario==7?PANEL_WIDTH/8-1:PANEL_WIDTH/8,.pixel_format=f};return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){
- (void)c;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+ (void)c;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);assert(o->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
  if(scenario==4)return false;
 #ifdef PORTABLE_ALARM_CLIENT
  if(!presents)memcpy(saved_pixels,pixels,sizeof(pixels));
@@ -51,17 +52,20 @@ static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r
  return true;
 }
 static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
-static uint64_t subscribe(void *c){(void)c;subs++;return 1;}
+static risc_touch_snapshot_v1 touch_state;
+static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned touch_head,touch_count;
+static bool script_snapshot(void*,risc_touch_snapshot_v1*);
+static uint64_t subscribe(void *c){(void)c;subs++;touch_head=touch_count=0;assert(script_snapshot(c,&touch_state));return 1;}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
-static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);polls++;return scenario!=9||polls!=3;}
-static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){(void)c;(void)n;(void)e;return 0;}
+
 #ifdef PORTABLE_ALARM_CLIENT
 static unsigned alarm_acks,alarm_steps,alarm_stops;
 static bool alarm_fired;
 static alarm_status_v1 alarm_state={.api_version=1,.struct_size=sizeof(alarm_state),.state=ALARM_STATE_READY};
 static int32_t alarm_status(void *c,alarm_status_v1 *o){(void)c;*o=alarm_state;return ALARM_OK;}
 static int32_t alarm_step(void *c){(void)c;alarm_steps++;
- if(scenario==10 && !alarm_fired && polls>=4){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
+ if(scenario==10 && !alarm_fired && script_step()>=4){alarm_fired=true;alarm_state.state=ALARM_STATE_ALERT;alarm_state.occurrence=(alarm_token_v1){1,1,1,1};}
  if(alarm_state.state==ALARM_STATE_DISMISSING){alarm_state.state=ALARM_STATE_READY;alarm_state.occurrence=(alarm_token_v1){0};}
  return ALARM_OK;
 }
@@ -71,15 +75,29 @@ static int32_t alarm_prepare(void *c,alarm_sleep_v1 *o){(void)c;(void)o;return A
 static int32_t alarm_stop(void *c){(void)c;alarm_stops++;return ALARM_OK;}
 static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,alarm_status,alarm_step,alarm_refresh,alarm_ack,alarm_prepare,alarm_stop};
 #endif
-static bool snapshot(void *c,risc_touch_snapshot_v1 *s){(void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;bool down=false;int x=110,y=136;
- if(scenario==1||scenario==5||scenario==9)down=polls==2;
- if(scenario==2)down=polls<=2;
- if(scenario==3){down=polls>=2&&polls<=4;if(polls>=3)x=240;}
- if(scenario==6){down=polls==2;x=240;y=768;}
- if(scenario==10){down=polls==7;x=240;y=650;}
+static bool script_snapshot(void *c,risc_touch_snapshot_v1 *s){(void)c;memset(s,0,sizeof(*s));s->width=480;s->height=800;bool down=false;int x=110,y=136;
+ if(scenario==1||scenario==5||scenario==9)down=script_step()==2;
+ if(scenario==2)down=script_step()<=2;
+ if(scenario==3){down=script_step()>=2&&script_step()<=4;if(script_step()>=3)x=240;}
+ if(scenario==6){down=script_step()==2;x=240;y=768;}
+ if(scenario==10){down=script_step()==7;x=240;y=650;}
  if(down){s->contact_count=1;s->contacts[0].x=x;s->contacts[0].y=y;}
  return true;
 }
+/* Ordered physical reports are independent of raster capture frequency. */
+static void touch_emit(unsigned kind,risc_touch_contact_v1 point){
+ assert(touch_count<RISC_TOUCH_QUEUE_LENGTH);touch_events[(touch_head+touch_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){.sequence=++touch_state.sequence,.timestamp_ms=ms,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static bool poll_touch(void *c,size_t n){
+ assert(n==1);++polls;if(scenario==9&&script_step()==3)return false;
+ risc_touch_snapshot_v1 next;assert(script_snapshot(c,&next));
+ bool before=touch_state.contact_count!=0,after=next.contact_count!=0;
+ if(before&&!after)touch_emit(RISC_TOUCH_EVENT_UP,touch_state.contacts[0]);
+ if(after){if(!before)touch_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);else if(memcmp(&touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))touch_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+ next.sequence=touch_state.sequence;next.timestamp_ms=ms;touch_state=next;return true;
+}
+static int32_t next_touch(void*c,uint64_t n,risc_touch_event_v1*out){(void)c;assert(n==1);if(!touch_count)return 0;*out=touch_events[touch_head];touch_head=(touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_count;return 1;}
+static bool snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;*out=touch_state;return true;}
 static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d),.get_info=get_info,.acquire=acquire_frame,.release=release_frame,.submit=submit,.present_status=present_status};
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
 static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){
@@ -88,7 +106,7 @@ static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capabil
 #endif
  assert(v==1&&!id&&g->struct_size==sizeof(*g));if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;grants++;return true;}
 static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);grants--;g->api=NULL;return true;}
-static const risc_runtime_api_v1 rt={1,sizeof(rt),health,yield_ms,diagnostic,launch_app,acquire,release};
+static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}
 int main(int argc,char **argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);assert(app_module_init()==0);assert(paper_presentation_get());
  if(scenario==12){

@@ -20,7 +20,7 @@ static bool plain_diagnostic(const char *line){
  }
  return true;
 }
-static const risc_runtime_api_v1 plain_runtime={1,sizeof(plain_runtime),qa_health,yield_ms,plain_diagnostic,launch_app,qa_acquire,release};
+static const risc_runtime_api_v1 plain_runtime={.api_version=1,.struct_size=sizeof(plain_runtime),.health=qa_health,.yield_ms=yield_ms,.diagnostic=plain_diagnostic,.request_launch=launch_app,.acquire=qa_acquire,.release=release};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){return version==1?&plain_runtime:NULL;}
 int main(void){
  qa_case=0;assert(app_module_init()==0);app_main();app_module_fini();

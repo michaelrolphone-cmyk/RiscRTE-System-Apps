@@ -17,8 +17,7 @@ static bool usb_quick_touch(void*c,risc_touch_snapshot_v1*out){
 }
 static bool usb_quick_submit(void*c,risc_display_frame_v1 frame,const risc_display_rect_v1*rect,size_t n,const risc_display_present_options_v1*options,risc_display_present_token_v1*token){
  assert(options->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
- risc_display_present_options_v1 checked=*options;checked.intent=presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN;
- return qa_submit(c,frame,rect,n,&checked,token);
+ return qa_submit(c,frame,rect,n,options,token);
 }
 static uint8_t saved_brightness=40;
 static int32_t usb_quick_get(void*c,const char*k,void*b,uint32_t n,uint32_t*used){
@@ -33,10 +32,10 @@ static bool usb_quick_acquire(const char*name,uint32_t v,uint64_t id,risc_runtim
  if(!qa_acquire(name,v,id,out))return false;
  if(!strcmp(name,"storage.key-value"))out->api=&usb_quick_kv;
  if(!strcmp(name,"display.output")){static risc_display_output_api_v1 output;output=*(const risc_display_output_api_v1*)out->api;output.submit=usb_quick_submit;out->api=&output;}
- if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=*(const risc_touch_api_v1*)out->api;input.snapshot=usb_quick_touch;out->api=&input;}
+ if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 input;input=*(const risc_touch_api_v1*)out->api;qa_input_script=usb_quick_touch;assert(qa_input_script(NULL,&qa_input_state));out->api=&input;}
  return true;
 }
-static const risc_runtime_api_v1 usb_quick_runtime={1,sizeof(usb_quick_runtime),usb_quick_health,yield_ms,diagnostic,launch_app,usb_quick_acquire,release};
+static const risc_runtime_api_v1 usb_quick_runtime={.api_version=1,.struct_size=sizeof(usb_quick_runtime),.health=usb_quick_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=usb_quick_acquire,.release=release};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&usb_quick_runtime:NULL;}
 int main(int argc,char**argv){
  assert(argc==3);usb_case=(unsigned)atoi(argv[1]);capture_dir=argv[2];qa_case=9;

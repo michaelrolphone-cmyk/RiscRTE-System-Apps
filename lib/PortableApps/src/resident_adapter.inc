@@ -167,7 +167,12 @@ static int resident_checkpoint(uint32_t reason) {
   if(!portable_audio_suspend()){portable_adapter_retain();return RISC_RESIDENT_RETAINED;}
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
-  if(!portable_wifi_suspend()){portable_adapter_retain();return RISC_RESIDENT_RETAINED;}
+  if(!portable_wifi_suspend()){
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+    if(portable_wifi_stop_pending())return RISC_RESIDENT_BUSY;
+#endif
+    portable_adapter_retain();return RISC_RESIDENT_RETAINED;
+  }
 #endif
   if(!resident_focus(false))return RISC_RESIDENT_RETAINED;
 #ifdef PORTABLE_RESIDENT_POLICY

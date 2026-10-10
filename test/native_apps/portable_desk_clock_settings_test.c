@@ -20,7 +20,7 @@
 static uint8_t reader_bytes[2][8];static uint32_t reader_size[2];static unsigned reader_writes[2];
 static uint8_t face_bytes[8];static uint32_t face_size;
 static unsigned face_writes,sleep_writes,late_io,release_failures,nav_step;
-static unsigned nav_buttons[128];
+static unsigned nav_buttons[128],nav_previous;
 static bool read_error,put_error,commit_error,verify_error,mismatch,retained,jumped;
 static unsigned retained_page;
 static int32_t preference_get(void *c,const char *key,void *out,uint32_t cap,uint32_t *size) {
@@ -65,7 +65,13 @@ static bool preference_release(risc_runtime_capability_v1 *grant) {
 static bool scripted_nav(void *c,risc_input_navigation_frame_v1 *out) {
   (void)c;if(retained)++late_io;
   *out=(risc_input_navigation_frame_v1){0};assert(nav_step<128);
-  out->buttons=out->pressed=nav_buttons[nav_step++];return true;
+  /* Each scripted slot is a physical button level. Emit its real press and
+   * release edges: neutral releases must reach the controller before the next
+   * press, rather than being coalesced as an idle frame. */
+  out->buttons=nav_buttons[nav_step++];
+  out->pressed=out->buttons&~nav_previous;
+  out->released=nav_previous&~out->buttons;nav_previous=out->buttons;
+  return true;
 }
 static bool guarded_nav_reset(void *c){if(retained)++late_io;return nav_reset(c);}
 static bool guarded_read(void *c,twatch_rtc_time_v1 *out){if(retained)++late_io;return rtc_read(c,out);}
@@ -131,6 +137,12 @@ int main(int argc,char **argv) {
   assert(width()==400&&height()==600&&pp_enabled()&&sp_face_columns()==2);
 #endif
   risc_touch_api_v1 input=touch_api;input.snapshot=desk_snapshot;touch.api=&input;
+#ifdef TEST_DESK_SHORT
+  /* The fixture changes display geometry after startup. Establish the matching
+   * provider snapshot boundary before scripting any physical contacts. */
+  portable_touch_reset(&touch);
+  assert(touch.width==400&&touch.height==600&&touch.neutral&&!touch.contact_count);
+#endif
   risc_key_value_v1 kv={1,sizeof(kv),NULL,preference_get,preference_put};settings_store=alert_store=&kv;
   risc_runtime_api_v1 runtime=runtime_api;runtime.release=preference_release;runtime.yield_ms=idle_yield;rt=&runtime;
   risc_input_navigation_api_v1 nav=nav_api;nav.poll=scripted_nav;nav.reset=guarded_nav_reset;navigation=&nav;rtc_api.read=guarded_read;
@@ -215,7 +227,11 @@ int main(int argc,char **argv) {
      * state cannot survive a toggle or a held contact after one. */
     uint8_t original[sizeof(framebuffer)];memcpy(original,framebuffer,sizeof(original));
     for(unsigned cycle=0;cycle<4;++cycle) {
-      input_pending=true;input_sample=(portable_touch_sample){.released=true,.tap_eligible=true};touch.neutral=touch.down=true;
+      /* A held physical contact must be visible to the reset snapshot, not
+       * fabricated by changing only the reducer's private down/neutral bits. */
+      tap(polls+1,40,40);tap(polls+2,40,40);
+      input_service();input_dispatch();
+      assert(input_pending&&input_sample.began&&input_sample.tap_eligible);
       assert(paper_apply_flip(!(cycle&1))&&!input_pending&&!touch.neutral&&!touch.down);
       settings_render(0,0);
       for(unsigned y=0;y<480;++y)for(unsigned x=0;x<800;++x) {
@@ -224,10 +240,16 @@ int main(int argc,char **argv) {
       }
       portable_touch_sample sample={.valid=true,.down=true,.x=11,.y=25};paper_orient_input(&sample);
       assert(sample.x==(cycle&1?11:468)&&sample.y==(cycle&1?25:774));
+      input_service();input_take(&sample);assert(sample.cancelled&&!sample.tap_eligible);
+      input_service();input_take(&sample);
+      assert(!sample.released&&!sample.tap_eligible&&touch.neutral&&!touch.down&&!touch.contact_count);
     }
     assert(paper_apply_flip(1));
-    tap(polls+1,40,40);portable_touch_sample sample;input_service();input_take(&sample);
-    assert(!sample.tap_eligible);
+    portable_touch_sample sample;input_take(&sample);assert(sample.cancelled);
+    /* Once the held contact has ended, an independent fresh tap is eligible. */
+    tap(polls+1,40,40);input_service();input_take(&sample);
+    assert(sample.began&&sample.tap_eligible);
+    input_service();input_take(&sample);assert(sample.released&&sample.tap_eligible);
     assert(!paper_apply_flip(2));failed=true;assert(!paper_apply_flip(0)&&paper_flip_ui);failed=false;
   }
   else if(test==99||test==100) {
@@ -240,7 +262,9 @@ int main(int argc,char **argv) {
     tap(polls+3,129,499);tap(polls+7,129,69);
     result=settings_activate(0,SETTINGS_FLIP_ROW);expected=1;
     assert(!paper_flip_ui&&reader_writes[0]==2&&reader_bytes[0][2]==0);
-    assert(!input_pending&&!touch.down&&!touch.neutral);
+    /* The completed save's UP proves a neutral boundary. No contact or
+     * queued edge remains; a later independent gesture must stay eligible. */
+    assert(!input_pending&&!touch.down&&touch.neutral&&!touch.contact_count&&!touch_count);
   }
   else if(test>=102&&test<=105) {
     bool language=test>=104;tap(3,350,300);

@@ -1,0 +1,35 @@
+{
+  "raster": {
+    "cases": 396,
+    "unpadded_layout_cases": 44,
+    "unchanged_historical_cases": 352,
+    "maximum_changed_pixels": {
+      "Segments": 0,
+      "Sans": 0,
+      "Serif": 0,
+      "Minimal": 70,
+      "Railway": 257,
+      "Deco": 184
+    },
+    "golden_sha256": "f65789feffa1729b1e73c5e4d1d0a442fe426588985882345eba36f4940d802a",
+    "historical_golden_sha256": "140aaad3eba6d40d8eb6dd4cb4e8ad180b60753a28bb759d6d74a0d073d2062f"
+  },
+  "normal_and_asan_ubsan": "pass",
+  "sources": {
+    "lib/PortableApps/src/desk_clock_faces.c": "f76843e4e7d5607205328e491fdb5f0d21121728607b894d2a1c266630e19fc7",
+    "test/fixtures/desk_clock_reader/DeskClockFaces.h": "cd0091305f2dd052e8793886895b9dee9b4498357acfa93d756cd0ef07a7466f",
+    "test/fixtures/desk_clock_reader/UnpaddedLayout.h": "6f8394d3c2543226b8241920c425094eb4ed830a39565ce3f6f68bab79b10630",
+    "test/native_apps/portable_desk_faces_test.cpp": "c058bb9337790a0737e5b890c19a6155b874f152e378afe0dcec99cf55ab42f4",
+    "scripts/test_desk_clock_faces.py": "3622a49ed7b8081729deffef60cd24dfa067b4d5c83328322624f619a9203cad"
+  },
+  "target": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "elf_sha256": "0b1ffac02e6ca6c1fd6371d2851fc51b742f378892a0b808c84981c2c36e9fc3",
+    "elf_bytes": 27128,
+    "imports": [],
+    "exports": [
+      "app_main"
+    ],
+    "structural_validation": "pass"
+  }
+}

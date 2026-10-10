@@ -345,6 +345,9 @@ static void desk_finalize(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
  if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_desk_adapter_retain();return;}
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ raster_discard();
+#endif
  if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(navigation_ready) {

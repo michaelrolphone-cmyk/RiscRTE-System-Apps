@@ -19,6 +19,10 @@ enum { RISC_TEXT_ENTRY_HARDWARE=1u, RISC_TEXT_ENTRY_PRESENTING=2u };
  * remain plain CANCELLED; Home keeps the copied draft text and this flag. */
 #define RISC_TEXT_ENTRY_HOME_CANCEL 4u
 #define RISC_TEXT_ENTRY_REQUEST_HOME_REASON 1u
+/* Negotiated display-only masking. Results still copy the caller's text. */
+#define RISC_TEXT_ENTRY_REQUEST_MASKED 2u
+#define RISC_TEXT_ENTRY_MASKED_TAG 0x544d534bu
+#define RISC_TEXT_ENTRY_MASKED_VERSION 1u
 #define RISC_TEXT_ENTRY_HOME_REASON_TAG 0x54484f4du
 #define RISC_TEXT_ENTRY_HOME_REASON_VERSION 1u
 typedef struct {
@@ -54,4 +58,18 @@ static inline int risc_text_entry_home_reason(const risc_text_entry_api_v1 *api)
     const risc_text_entry_api_v1_home_reason *ext=(const risc_text_entry_api_v1_home_reason *)api;
     return ext->home_reason_tag==RISC_TEXT_ENTRY_HOME_REASON_TAG &&
         ext->home_reason_version==RISC_TEXT_ENTRY_HOME_REASON_VERSION;
+}
+
+/* Masking follows the existing home-reason prefix. An older provider must
+ * never receive a secret request as unmasked plain text. */
+typedef struct {
+    risc_text_entry_api_v1_home_reason base;
+    uint32_t masked_tag, masked_version;
+} risc_text_entry_api_v1_masked;
+static inline int risc_text_entry_masked(const risc_text_entry_api_v1 *api) {
+    if(!risc_text_entry_home_reason(api) ||
+       api->struct_size<sizeof(risc_text_entry_api_v1_masked))return 0;
+    const risc_text_entry_api_v1_masked *ext=(const risc_text_entry_api_v1_masked *)api;
+    return ext->masked_tag==RISC_TEXT_ENTRY_MASKED_TAG &&
+        ext->masked_version==RISC_TEXT_ENTRY_MASKED_VERSION;
 }

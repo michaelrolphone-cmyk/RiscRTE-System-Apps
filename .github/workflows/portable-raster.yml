@@ -1,0 +1,52 @@
+name: Bounded portable raster
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitize: [false, true]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Explicit selection and unchanged disabled profile
+        run: python scripts/test_portable_raster_build.py
+      - name: Custody, modal services, allocation recovery and terminal fencing
+        env:
+          SANITIZE: ${{ matrix.sanitize }}
+        run: |
+          flags=()
+          if [ "$SANITIZE" = true ]; then flags+=(--sanitize); fi
+          python scripts/test_portable_raster_custody.py "${flags[@]}" --output build/raster/custody
+          python scripts/test_portable_raster_custody.py "${flags[@]}" --text-scene --output build/raster/text-scene
+          python scripts/test_portable_raster_custody.py "${flags[@]}" --native-terminal --output build/raster/terminal
+          python scripts/test_portable_raster_custody.py "${flags[@]}" --clipped-begin --output build/raster/clipped
+      - name: Complete pixels, row bounds and logical handoff time
+        env:
+          SANITIZE: ${{ matrix.sanitize }}
+        run: |
+          flags=()
+          if [ "$SANITIZE" = true ]; then flags+=(--sanitize); fi
+          python scripts/test_portable_raster_latency.py "${flags[@]}" --row-bounds --output build/raster/portrait-rows
+          python scripts/test_portable_raster_latency.py "${flags[@]}" --row-bounds --native-paper --output build/raster/native-rows
+          python scripts/test_portable_raster_latency.py "${flags[@]}" --snapshot --handoff-origin --output build/raster/handoff
+          python scripts/test_portable_raster_latency.py "${flags[@]}" --snapshot --all-graphics --settings-graphics --output build/raster/dispatch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bounded-raster-${{ matrix.sanitize }}-${{ github.sha }}
+          path: build/raster/
+          if-no-files-found: error
+          retention-days: 14

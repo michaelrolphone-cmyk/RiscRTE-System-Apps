@@ -1,0 +1,1049 @@
+{
+  "passed": true,
+  "scenarios": 112,
+  "frames": 224,
+  "host_only": true,
+  "hardware_tested": false,
+  "full_product_graph_tested": false,
+  "published": true,
+  "source_system_commit": "b83424545e2af86a6566d40ab111cd7a03db3f9b",
+  "source_system_tree": "0a7f60c9cf0d3c605cb677270d0962a2de310938",
+  "production_system_commit": "3c622a09c6f13800fd70c244e32237434c3afbcc",
+  "runtime_commit": "fc05d35827fc0d51be749c6797be4b3a4426ba23",
+  "x4_provider_commit": "cbf4bfd34372bf87ccf60429e062a6e96d043aca",
+  "reader_commit": "45cf61ac013fb618e8d7fed63217a35350484d52",
+  "fixture_commit": "804d64745f6ebfff63041087180ff3a779295ec1",
+  "fixture_tree": "9679698ebd11ed058df43ded9499ffb4adf4c990",
+  "test_changes": [
+    "minimal/test/RASTER_PROVIDER_QUALIFICATION.md",
+    "minimal/test/panel_cadence/adapter_bridge.c",
+    "minimal/test/panel_cadence/runtime_bridge.cpp",
+    "minimal/test/run_panel_cadence_test.py",
+    "minimal/test/run_raster_provider_qualification.py",
+    "minimal/test/run_uc8279_fast_cadence_test.py",
+    "minimal/test/uc8279_fast_cadence/panel_model.c"
+  ],
+  "tested_source_bytes_match_committed_files": true,
+  "source_inventories_unchanged_during_tests": true,
+  "qualification_receipt": "/workspace/shared/raster-runtime-panel-progress-20261010/final/qualification.json",
+  "qualification_sha256": "334c0fa00841f9df508d692bab1d5185db5679d580d9e99ac06ff9a1f82856bf",
+  "qualification_orchestrator_sha256": "eb6609921b330743df6dc2571c26abf93fe1f69799d7d85208af0b7f89857483",
+  "normal_and_sanitized_results_identical": true,
+  "provider_sources": {
+    "x4pro_panel": {
+      "sha256": "a3ed7d5c37ea7cdc4c283f3c1d0087066a6d63607c9fb4c71a930324aa3644ab",
+      "manifest": {
+        "type": "driver",
+        "id": "x4pro-panel",
+        "version": "0.1.23",
+        "driver_abi": 2,
+        "architecture": "xtensa-esp32s3",
+        "file_name": "driver.elf",
+        "requires": [
+          {
+            "capability": "hardware.device",
+            "api": 1
+          },
+          {
+            "capability": "platform.gpio",
+            "api": 1
+          },
+          {
+            "capability": "platform.clock",
+            "api": 1
+          },
+          {
+            "capability": "platform.sync",
+            "api": 1
+          },
+          {
+            "capability": "board.power.ready",
+            "api": 1
+          },
+          {
+            "capability": "display.frontlight",
+            "api": 1
+          }
+        ],
+        "provides": [
+          {
+            "capability": "display.output",
+            "api": 1
+          }
+        ],
+        "hardware_compatibility": [
+          {
+            "compatible": "solomon-systech,ssd1677",
+            "revisions": [
+              "unspecified"
+            ],
+            "config_type": "display.spi",
+            "config_version": 1
+          },
+          {
+            "compatible": "ultrachip,uc8279",
+            "revisions": [
+              "unspecified"
+            ],
+            "config_type": "display.spi",
+            "config_version": 1
+          }
+        ],
+        "physical_verification": "pending"
+      }
+    },
+    "x4pro_uc8279_fast": {
+      "sha256": "82ed04151d08364c5e893501af04f1ff5cb2f9a6492649cf08fd40631c71acb0",
+      "manifest": {
+        "type": "driver",
+        "id": "x4pro-uc8279-fast",
+        "version": "0.1.13",
+        "driver_abi": 2,
+        "architecture": "xtensa-esp32s3",
+        "file_name": "driver.elf",
+        "requires": [
+          {
+            "capability": "hardware.device",
+            "api": 1
+          },
+          {
+            "capability": "platform.gpio",
+            "api": 1
+          },
+          {
+            "capability": "platform.clock",
+            "api": 1
+          },
+          {
+            "capability": "platform.sync",
+            "api": 1
+          },
+          {
+            "capability": "board.power.ready",
+            "api": 1
+          },
+          {
+            "capability": "display.frontlight",
+            "api": 1
+          },
+          {
+            "capability": "spi.bus",
+            "api": 1
+          }
+        ],
+        "provides": [
+          {
+            "capability": "display.output",
+            "api": 1
+          }
+        ],
+        "hardware_compatibility": [
+          {
+            "compatible": "ultrachip,uc8279",
+            "revisions": [
+              "unspecified"
+            ],
+            "config_type": "display.spi",
+            "config_version": 1
+          }
+        ],
+        "physical_verification": "pending"
+      }
+    }
+  },
+  "runs": [
+    {
+      "name": "ssd-0-normal",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            188,
+            577
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            24,
+            577
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            10,
+            193
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            4,
+            96
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssd-17-normal",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            205,
+            594
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            26,
+            579
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            11,
+            193
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            4,
+            96
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssd-2300-normal",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            2488,
+            2877
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            311,
+            864
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            125,
+            308
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            50,
+            142
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-normal-17-normal",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            255,
+            741
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            32,
+            723
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            13,
+            242
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            5,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-fast13-default-normal",
+      "scenarios": 4,
+      "frames": 8,
+      "max_provider_slice_ms": 7,
+      "max_touch_gap_ms": 8,
+      "max_owner_loop_gap_ms": 54,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 8,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            21,
+            33
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 15,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            3,
+            9
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            2,
+            5
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 54,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            0,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-fast13-transitions-normal",
+      "scenarios": 4,
+      "frames": 8,
+      "max_provider_slice_ms": 7,
+      "max_touch_gap_ms": 8,
+      "max_owner_loop_gap_ms": 54,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 8,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            21,
+            33
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 15,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            3,
+            9
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            2,
+            5
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 54,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            0,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssd-0-asan-ubsan",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            188,
+            577
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            24,
+            577
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            10,
+            193
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            4,
+            96
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssd-17-asan-ubsan",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            205,
+            594
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            26,
+            579
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            11,
+            193
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            4,
+            96
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ssd-2300-asan-ubsan",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            2488,
+            2877
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            311,
+            864
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            125,
+            308
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            50,
+            142
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-normal-17-asan-ubsan",
+      "scenarios": 12,
+      "frames": 24,
+      "max_provider_slice_ms": 8,
+      "max_touch_gap_ms": 9,
+      "max_owner_loop_gap_ms": 56,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            255,
+            741
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 9,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            32,
+            723
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            13,
+            242
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 56,
+          "maximum_touch_gap_ms": 9,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            5,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-fast13-default-asan-ubsan",
+      "scenarios": 4,
+      "frames": 8,
+      "max_provider_slice_ms": 7,
+      "max_touch_gap_ms": 8,
+      "max_owner_loop_gap_ms": 54,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 8,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            21,
+            33
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 15,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            3,
+            9
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            2,
+            5
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 54,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            0,
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "name": "uc-fast13-transitions-asan-ubsan",
+      "scenarios": 4,
+      "frames": 8,
+      "max_provider_slice_ms": 7,
+      "max_touch_gap_ms": 8,
+      "max_owner_loop_gap_ms": 54,
+      "software_yield_range": [
+        3,
+        6
+      ],
+      "software_touch_range": [
+        6,
+        6
+      ],
+      "by_requested_interval": [
+        {
+          "requested_app_wait_ms": 1,
+          "maximum_owner_loop_gap_ms": 8,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            2,
+            3
+          ],
+          "provider_pending_model_return_range": [
+            21,
+            33
+          ]
+        },
+        {
+          "requested_app_wait_ms": 8,
+          "maximum_owner_loop_gap_ms": 15,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            1,
+            2
+          ],
+          "provider_pending_model_return_range": [
+            3,
+            9
+          ]
+        },
+        {
+          "requested_app_wait_ms": 20,
+          "maximum_owner_loop_gap_ms": 27,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            2,
+            5
+          ]
+        },
+        {
+          "requested_app_wait_ms": 50,
+          "maximum_owner_loop_gap_ms": 54,
+          "maximum_touch_gap_ms": 8,
+          "software_pending_model_return_range": [
+            0,
+            1
+          ],
+          "provider_pending_model_return_range": [
+            0,
+            2
+          ]
+        }
+      ]
+    }
+  ],
+  "immediate_ssd2300_control": {
+    "scenarios": 12,
+    "frames": 24,
+    "evidence": "/workspace/shared/raster-runtime-panel-progress-20261010/control-immediate-ssd2300/evidence.json",
+    "sha256": "6625412ed272e456fe1f0ea6126d1cb50590c6ca47dc8262605d8bf089b24599",
+    "identical_fields": [
+      "bytes",
+      "gpio_writes",
+      "payload_polls",
+      "wire_hash",
+      "transfer_ms",
+      "damage",
+      "partial"
+    ]
+  },
+  "initial_failure": {
+    "log": "/workspace/shared/raster-runtime-panel-progress-20261010/baseline-fast13.log",
+    "sha256": "fc128095a674d7befa727651758f9dce5c37272486db3c7df11faf5d87b5d0fd",
+    "cause": "New test incorrectly required a BUSY-pending owner-loop return even when the fast partial update completed inside one 50 ms requested wait. Removed this test-only assumption; kept Runtime/BUSY, touch and budget assertions."
+  },
+  "source_drift": {
+    "initial_system_commit": "0d7bde11a899321444ba2f26da091175c6b6ccf8",
+    "final_system_commit": "b83424545e2af86a6566d40ab111cd7a03db3f9b",
+    "reason": "Parent-authorized logical frame-origin fix, then test alignment; tested immutable final clone.",
+    "owners_at_report": {
+      "system": {
+        "root": "/workspace/shared/system-raster-union-qualification-20261010",
+        "current_commit": "b83424545e2af86a6566d40ab111cd7a03db3f9b",
+        "status": ""
+      },
+      "runtime": {
+        "root": "/workspace/shared/runtime-wifi-async-20261010",
+        "current_commit": "fc05d35827fc0d51be749c6797be4b3a4426ba23",
+        "status": ""
+      },
+      "x4": {
+        "root": "/workspace/shared/x4-ssd-bounded-poll-20261010",
+        "current_commit": "cbf4bfd34372bf87ccf60429e062a6e96d043aca",
+        "status": ""
+      }
+    }
+  },
+  "limits": [
+    "Deterministic GPIO/BUSY/native-SPI model time only. Raster CPU, allocator, SDK, interrupt and device wall time are unmeasured.",
+    "Owner-loop returns are opportunities for application work, not proof that every real application or service updates between raster bands.",
+    "At long requested waits software replay or fast partial BUSY may finish inside one call, yielding zero pending model returns; Runtime yields/touch samples still progress.",
+    "One paper text frame and one circle change per scenario; not exhaustive primitives, pages, live provider dependencies, or on-device product graph.",
+    "No allocation-fallback, retained-custody, cancellation or launch-boundary fault injection in this integration fixture.",
+    "Base-only display table cannot seed SSD history: its second changed frame still uses full SSD transfer. Native fast.13 is separately exercised and is not the ordinary UC provider.",
+    "ASan/UBSan passed with leak detection disabled by existing fixture; no target/hardware/physical display or complete memory-performance claim."
+  ],
+  "fixture_public_commit": "610e4ca3e25639e26812e0269c5d276ef443e525",
+  "fixture_public_branch": "codex/raster-provider-progress-20261010"
+}

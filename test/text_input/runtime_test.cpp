@@ -47,6 +47,7 @@ extern "C" const char*text_runtime_mode(){return mode.c_str();}
 extern "C" void text_runtime_check_token(uint64_t token){assert(token);if(activation=="eager"||activation=="demand-retained-armed")assert(token!=last_token);last_token=token;}
 extern "C" void text_runtime_app_event(unsigned n,const void*p){if(n==1){++loads;app_pointer=p;}else{assert(n==2);++unloads;}}
 static void push(unsigned kind,unsigned usage){queue[queued++]={++sequence,7,(uint8_t)kind,(uint8_t)usage,0,0};}
+extern "C" unsigned text_runtime_frames(void){return frames;}
 extern "C" void text_runtime_control(unsigned command){
  queued=at=0;touch_at=touch_count=0;
  if(command==1){attached=true;push(1,0);push(3,4);}
@@ -57,6 +58,7 @@ extern "C" void text_runtime_control(unsigned command){
  }
  else if(command==5)pending=false;
  else if(command==6)nav=RISC_NAV_BACK;
+ else if(command==7)nav=RISC_NAV_HOME;
  else if(command==9)bad_unsubscribe=true;
  else if(command==10){pending=true;tap(0,0);}
  else if(command==11){for(unsigned col:{0u,0u,1u,2u,1u,0u})tap(0,col);}
@@ -66,6 +68,7 @@ extern "C" void text_runtime_control(unsigned command){
  else if(command==15)tap(0,0);
  else if(command==16)tap(3,3);
  else if(command==19){assert(paper);touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,408,192};touches[touch_count++]={++touch_sequence,ms+10,RISC_TOUCH_EVENT_UP,0,408,192};}
+ else if(command==20||command==21){push(3,command==20?0x28:0x29);nav=RISC_NAV_HOME;}
  else if(command>=100&&command<110)tap(0,command-100);
  else assert(0);
 }

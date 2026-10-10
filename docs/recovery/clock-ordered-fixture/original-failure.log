@@ -1,0 +1,8 @@
+Paper clock scenario 0: 1 frames, 0 launches, all grants released
+clock: /workspace/shared/clock-gesture-fixtures-20261010/test/native_apps/paper_clock_test.c:179: main: Assertion `launches==1&&!strcmp(launched,"springboard.elf")' failed.
+Traceback (most recent call last):
+  File "/workspace/shared/clock-gesture-fixtures-20261010/scripts/test_paper_clock.py", line 17, in <module>
+    subprocess.run([str(exe),str(scene)],env=env,check=True,timeout=15)
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['/workspace/shared/clock-gesture-fixtures-20261010/build/paper-clock/immediate/0/clock', '1']' died with <Signals.SIGABRT: 6>.

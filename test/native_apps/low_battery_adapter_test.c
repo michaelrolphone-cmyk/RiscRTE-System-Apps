@@ -15,7 +15,7 @@ static bool sample_read(void *c,risc_battery_sample_v1 *out){(void)c;if(sample_e
 static const risc_battery_gauge_api_v1 low_gauge={1,sizeof(low_gauge),NULL,sample_read};
 static void sample_at(unsigned percent,unsigned flags){ticks+=5001;low_sample=(risc_battery_sample_v1){3600,(uint8_t)percent,(uint8_t)flags};assert(low_battery_poll());}
 static uint8_t timer_choose(unsigned row,bool add,bool cancel){
- input_count=0;polls=0;emitted_up_poll=0;
+ input_count=0;polls=0;
  if(add)tap(3,190,100);
  tap(7,cancel?60:170,210);tap(8,cancel?60:170,210);tap(12,60,210);
  settings_render(0,(int32_t)row+1);return settings_activate(0,row);
@@ -82,6 +82,12 @@ int main(int argc,char **argv){
   quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;quick.ui.torch=true;
   low_sample.percent=9;bool consumed=false;assert(quick_foreground(&consumed));
   assert(!quick.ui.torch&&!pqa_visible(&quick.ui)&&quick.brightness==15&&hardware_brightness==15&&low_writes[0]==1);
+ }else if(test==10){
+  /* No completion/readiness callback is allowed to drive this policy edge. */
+  display_settled=false;paper_token=42;assert(!surface.frame);
+  low_sample.percent=9;assert(low_battery_poll());
+  assert(paper_token==42&&!display_settled&&quick.brightness==15&&hardware_brightness==15&&low_writes[0]==1);
+  paper_token=0;display_settled=true;
  }else if(test==6){
   sample_at(9,0);settings_render(0,SETTINGS_TIMER_ROW+1);capture_frame("timer-settings");
   settings_render(0,SETTINGS_TIMER_ROW+2);capture_frame("deep-timer-settings");

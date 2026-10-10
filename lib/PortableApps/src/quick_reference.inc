@@ -13,6 +13,13 @@ static int qr_kern(const quick_ref_font *font,unsigned first,unsigned second) {
 }
 static unsigned qr_char(unsigned c){return c>=32&&c<=126?c:'?';}
 static void qr_text(const quick_ref_font *font,int x,int baseline,const char *text,int tracking_q6,int align,int target,bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};
+ for(unsigned f=0;f<sizeof(fonts)/sizeof(*fonts);f++)if(font==fonts[f]){
+  if(raster_record(RS_QR_TEXT,(int32_t[8]){(int32_t)f,x,baseline,tracking_q6,align,target,black},text))return;
+  break;
+ }
+#endif
  if(!align)for(unsigned i=0;i<sizeof(quick_ref_words)/sizeof(*quick_ref_words);i++) {
   const quick_ref_word *word=&quick_ref_words[i];
   if(word->font!=font||word->tracking!=tracking_q6||word->target!=target||strcmp(word->text,text))continue;
@@ -43,6 +50,9 @@ static void qr_text(const quick_ref_font *font,int x,int baseline,const char *te
  }
 }
 static void qr_round(int x,int y,int w,int h,int radius,bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_record(RS_QR_ROUND,(int32_t[8]){x,y,w,h,radius,black},NULL))return;
+#endif
  for(int row=0;row<h;row++) {
   int cy=row<radius?2*radius-2*row-1:row>=h-radius?2*(row-(h-radius))+1:0,inset=0;
   if(cy)while(inset<radius){int dx=2*radius-2*inset-1;if(dx*dx+cy*cy<=4*radius*radius)break;inset++;}
@@ -50,6 +60,9 @@ static void qr_round(int x,int y,int w,int h,int radius,bool black) {
  }
 }
 static void qr_icon(unsigned icon,int x,int y,bool black) {
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_record(RS_QR_ICON,(int32_t[8]){(int32_t)icon,x,y,black},NULL))return;
+#endif
  const uint8_t *bits=quick_ref_icons[icon];
  for(unsigned row=0;row<40;row++)for(unsigned col=0;col<40;){
   unsigned bit=row*40+col;if(!(bits[bit/8]&(128u>>(bit%8)))){col++;continue;}

@@ -15,9 +15,11 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 GT911_SHA256 = "da287cbd675b6a59131b97278a48c6cf1734b90e30a9e2674e72b0063c9a86d1"
-SCENARIOS = ["bursts", "subscribers", "inherited", "full-queue", "multi-home", "identity", "move-return",
+SCENARIOS = ["bursts", "same-tick-recontacts", "same-tick-home", "same-tick-burst",
+             "subscribers", "inherited", "full-queue", "multi-home", "identity", "identity-home", "move-return",
              "reset", "overflow", "read-failure", "ack-failure", "partial-read",
-             "malformed-report", "terminal-next", "terminal-snapshot", "terminal-unlock"]
+             "malformed-report", "recontact-recovery", "terminal-next", "terminal-snapshot",
+             "terminal-move-snapshot", "terminal-unlock"]
 
 
 def digest(path):

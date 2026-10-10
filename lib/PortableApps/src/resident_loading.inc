@@ -43,6 +43,9 @@ static int32_t resident_loading(void *context,const char *path) {
  const char *name=app?app->display_name:path;
  if(!app)for(unsigned i=0;i<193 && path[i];++i)if(path[i]=='/')name=path+i+1;
  paper_previous_valid=previous_valid=alarm_pixels_valid=false;
+ #ifdef PORTABLE_RASTER_SNAPSHOT
+ if(!raster_immediate())return RISC_RESIDENT_RETAINED;
+#endif
  pp_begin();
  if(failed || native_custody_retained || !surface.frame)return RISC_RESIDENT_RETAINED;
  int center=width()/2,top=height()/2-130;

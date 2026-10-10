@@ -4,12 +4,14 @@
 #undef main
 static unsigned test_case;
 #ifdef PORTABLE_INPUT_NAVIGATION
+/* Navigation edges use their own provider stream; raster capture can poll
+ * raw touch without dispatching navigation. */
 static bool format_navigation(void *c,risc_input_navigation_frame_v1 *out) {
- (void)c;static unsigned previous;*out=(risc_input_navigation_frame_v1){0};
- if(polls==3)out->pressed=RISC_NAV_DOWN;
- if(polls==7)out->pressed=test_case==14?RISC_NAV_BACK:RISC_NAV_CONFIRM;
+ (void)c;static unsigned previous,navigation_steps;unsigned event_step=++navigation_steps;*out=(risc_input_navigation_frame_v1){0};
+ if(event_step==3)out->pressed=RISC_NAV_DOWN;
+ if(event_step==7)out->pressed=test_case==14?RISC_NAV_BACK:RISC_NAV_CONFIRM;
  if(out->pressed)out->buttons=out->pressed;
- if(polls==8)out->buttons=RISC_NAV_CONFIRM; /* Held confirm is never a second save. */
+ if(event_step==8)out->buttons=RISC_NAV_CONFIRM; /* Held confirm is never a second save. */
  out->released=previous&~out->buttons;previous=out->buttons;
  return true;
 }

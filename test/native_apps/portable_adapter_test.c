@@ -171,8 +171,7 @@ static bool release(risc_runtime_capability_v1 *g) {
   g->api = NULL;
   return true;
 }
-static const risc_runtime_api_v1 rt = {1,        sizeof(rt), health,  yield,
-                                       log_line, launch,     acquire, release};
+static const risc_runtime_api_v1 rt = {.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield,.diagnostic=log_line,.request_launch=launch,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v) {
   return v == 1 ? &rt : NULL;
 }

@@ -1,0 +1,28 @@
+{
+  "purpose": "Historical-format mutations must fail the current raster gate; production is unchanged.",
+  "sources": {
+    "lib/PortableApps/src/desk_clock_faces.c": "f76843e4e7d5607205328e491fdb5f0d21121728607b894d2a1c266630e19fc7",
+    "scripts/test_desk_clock_faces.py": "3622a49ed7b8081729deffef60cd24dfa067b4d5c83328322624f619a9203cad",
+    "scripts/test_desk_clock_layout_controls.py": "71735fc2ae41985d673f31416175a730d86b2749604047981fc99e6b69fbaa6c",
+    "test/fixtures/desk_clock_reader/DeskClockFaces.h": "cd0091305f2dd052e8793886895b9dee9b4498357acfa93d756cd0ef07a7466f",
+    "test/fixtures/desk_clock_reader/UnpaddedLayout.h": "6f8394d3c2543226b8241920c425094eb4ed830a39565ce3f6f68bab79b10630",
+    "test/native_apps/portable_desk_faces_test.cpp": "c058bb9337790a0737e5b890c19a6155b874f152e378afe0dcec99cf55ab42f4"
+  },
+  "controls": [
+    {
+      "mutation": "restore-padded-segments-24h",
+      "rejected_at": "480x800-segments-0000-24h",
+      "mutated_source_sha256": "ccaa4af17e207d5fbb1b6b5b3909a8d26a0da99c7527e51fd01a69d03d02a2f3"
+    },
+    {
+      "mutation": "restore-four-digit-segments-spacing",
+      "rejected_at": "480x800-segments-0000-24h",
+      "mutated_source_sha256": "e811f766a6ae1f8c4053c041da3221225bb556b2aceeb067c6fb0f30c902918c"
+    },
+    {
+      "mutation": "restore-padded-noto-24h",
+      "rejected_at": "480x800-sans-0000-24h",
+      "mutated_source_sha256": "c263022febd1ce5d2e619ac494bd92316b3020cc426d7ae23014c35efd6de3f8"
+    }
+  ]
+}

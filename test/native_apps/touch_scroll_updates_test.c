@@ -142,6 +142,8 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t instance,ris
 }
 static bool test_release(risc_runtime_capability_v1 *g){if(g->api==test_service_grant)g->api=&update_service;if(g->api==test_radio_grant)g->api=&app_wifi;if(g->api==test_credentials_grant)g->api=&credential_kv;return app_release(g);}
 static bool test_launch(const char *name){io();assert(!strcmp(name,"default.elf")||!strcmp(name,"springboard.elf"));assert(!opened&&!wifi_live&&!credentials_live&&!update_live&&!radio_live);++launches;return true;}
+
+#ifndef UPDATE_SCROLL_NO_MAIN
 int main(int argc,char **argv){
  assert(argc==2||argc==3);test_case=argv[1];frame_directory=argc>2?argv[2]:NULL;scenario="valid";
  delay_ms=tc("busy-hit")?500:40;if(tc("fit"))catalog_count=2;if(tc("maximum"))catalog_count=SOFTWARE_UPDATE_ROWS_MAX;
@@ -168,3 +170,5 @@ int main(int argc,char **argv){
  app_module_fini();assert(!live&&!frames&&!subscriptions&&!barriers);
  printf("{\"case\":\"%s\",\"frames\":%u,\"drag_frames\":%u,\"momentum_frames\":%u,\"max_offset\":%d,\"release_offset\":%d,\"busy_samples\":%u,\"selected_row\":%d,\"begins\":%u}\n",test_case,shown,drag_frames,momentum_frames,maximum_offset,release_offset,busy_samples,expected_row,begins);return 0;
 }
+
+#endif

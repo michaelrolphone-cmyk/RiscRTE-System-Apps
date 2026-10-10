@@ -2,7 +2,7 @@
  * the editor may remove them, but neither the client nor UI enables them. */
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
 /* The editor needs confirmed applicability, not a copy of the host sheet.
- * Refresh this small read-only view only with capture paused and no frame. */
+ * Refresh this small read-only view only with capture paused. */
 static bool contexts_dnd_valid,contexts_brightness_valid,contexts_volume_valid;
 static bool contexts_controls_load(void) {
   if(failed||native_custody_retained)return false;
@@ -95,7 +95,7 @@ static bool contexts_tick(void) {
 #ifdef PORTABLE_PAPER_CROSSFADE
   if(portable_paper_transition_active())return portable_contexts_stop();
 #endif
-  if(!automatic_idle_ready() || home_pending || crown_pending || navigation_pending ||
+  if(!automatic_idle_interaction_ready() || home_pending || crown_pending || navigation_pending ||
      (input_pending && (input_sample.down || input_sample.released || input_sample.cancelled)))
     return portable_contexts_stop();
 #endif
@@ -121,7 +121,9 @@ static bool contexts_tick(void) {
   contexts_policy_io=false;
   if(!ok||native_custody_retained){portable_adapter_retain();return false;}
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
-  if(!contexts_clock_rendezvous())return false;
+  /* A model-owner launch changes display ownership. Only that boundary waits
+   * for the submitted image; collection, inference and policy still advance. */
+  if(display_settled&&!paper_token&&!contexts_clock_rendezvous())return false;
   if(contexts_clock_handoff || !contexts_client.api)return true;
 #endif
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)

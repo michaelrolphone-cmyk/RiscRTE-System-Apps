@@ -12,7 +12,7 @@ static contexts_policy_v1 observed_policy;
 static uint32_t preset_result_value;
 static contexts_status_v1 copied_status={.struct_size=sizeof(copied_status)};
 static bool ctx_pause(void *c){(void)c;io();++context_calls;++context_pauses;if(pause_refused)return false;observing=false;return true;}
-static bool ctx_step(void *c,const contexts_policy_v1 *p){(void)c;io();assert(!surface.frame&&!paper_token&&display_settled);++context_calls;++context_steps;observed_policy=*p;observing=p->enabled&&(p->audio_allowed||p->radio_allowed);return true;}
+static bool ctx_step(void *c,const contexts_policy_v1 *p){(void)c;io();assert(!surface.frame);++context_calls;++context_steps;observed_policy=*p;observing=p->enabled&&(p->audio_allowed||p->radio_allowed);return true;}
 static bool ctx_status(void *c,contexts_status_v1 *out){(void)c;io();++context_calls;*out=copied_status;return true;}
 static bool ctx_capture(void *c){(void)c;io();++context_calls;++capture_calls;unsigned gap=ticks-last_capture;if(gap>max_gap)max_gap=gap;last_capture=ticks;return !capture_refused;}
 static bool ctx_mask(void *c,uint32_t x){(void)c;(void)x;io();return true;}
@@ -34,6 +34,12 @@ static int32_t ctx_get(void *c,const char *key,void *out,uint32_t capacity,uint3
 static const risc_key_value_v1 ctx_kv={1,sizeof(ctx_kv),NULL,ctx_get,fx_kv_put};
 static alarm_service_descriptor_v2 ctx_alarm={.base={2,sizeof(ctx_alarm),NULL,fx_alarm_status,fx_alarm_step,fx_alarm_refresh,fx_alarm_ack,fx_alarm_prepare,fx_alarm_stop},.tag=ALARM_SERVICE_DESCRIPTOR_TAG,.descriptor_version=ALARM_SERVICE_DESCRIPTOR_VERSION,.output_modes=0};
 static bool ctx_info(void *c,risc_display_info_v1 *out){bool ok=fx_info(c,out);if(async_display)out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;return ok;}
+static unsigned busy_until;
+static uint8_t busy_pixels[sizeof(pixels)];
+static bool ctx_present(void *c,risc_display_present_token_v1 token,risc_display_present_status_v1 *out){
+ if(busy_until&&ticks<busy_until){io();assert(token&&!memcmp(busy_pixels,pixels,sizeof(pixels)));out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}
+ return fx_present(c,token,out);
+}
 static risc_display_output_api_v1 ctx_display;
 static bool ctx_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out){
  const void *api=NULL;
@@ -76,7 +82,7 @@ static void verify_retained(void){
 }
 int main(int argc,char **argv){
  assert(argc==2);const char *which=argv[1];
- ctx_display=fx_display;ctx_display.get_info=ctx_info;fx_runtime.acquire=ctx_acquire;fx_runtime.release=ctx_release;
+ ctx_display=fx_display;ctx_display.get_info=ctx_info;ctx_display.present_status=ctx_present;fx_runtime.acquire=ctx_acquire;fx_runtime.release=ctx_release;
  if(!strcmp(which,"missing-empty"))acquire_fault=1;
  assert(app_module_init()==0&&!retained);assert(width()==480&&height()==800&&paper_presentation_get());
  if(acquire_fault==1) {
@@ -102,6 +108,19 @@ int main(int argc,char **argv){
   unsigned before=capture_calls;clear_color(0xffff);assert(capture_calls>before+700);present(false);assert(!failed);
   quick.ui.action_dnd=true;assert(quick_apply(PQA_DND)&&!observing&&dnd_saved);
   assert(contexts_tick()&&observing);assert(custody_launch("default.elf")&&!observing&&!contexts_client.api);
+ }else if(!strcmp(which,"busy-state")){
+  assert(portable_paper_frame_ready());clear_color(0xffff);present(false);
+  memcpy(busy_pixels,pixels,sizeof(pixels));busy_until=ticks+2300;
+  unsigned before=context_steps;t5_app_input_t in;
+#ifdef PORTABLE_BLE_BROADCAST
+  unsigned before_broadcast=fixture_broadcast_steps;
+#endif
+  for(unsigned n=0;n<20;n++){assert(poll(&in,20));assert(paper_token&&!display_settled&&!automatic_idle_ready()&&automatic_idle_interaction_ready());}
+  assert(context_steps>=before+20&&observing&&capture_calls>0&&ticks<busy_until);
+#ifdef PORTABLE_BLE_BROADCAST
+  assert(fixture_broadcast_steps>=before_broadcast+20);
+#endif
+  assert(portable_paper_frame_drain()&&!paper_token&&display_settled);
  }else if(!strcmp(which,"mask")){
   copied_status.radio=(contexts_source_status_v1){.source=CONTEXTS_RADIO,.model_generation=1,.room_slot=0,.room_valid=true,.current=true,.room_entry=1};strcpy(copied_status.radio.room_name,"Study");room_ready=true;ticks+=1001;
   assert(contexts_tick()&&dnd_saved&&kv_writes==1&&preset_result_value==CONTEXTS_PRESET_PARTIAL);

@@ -9,7 +9,7 @@ OUT=ROOT/'build/wifi-paper';OUT.mkdir(parents=True,exist_ok=True)
 for san in (False,True):
  for geometry in (0,1,2):
   landscape=geometry==1
-  flags=['-DTEST_WIFI_PAPER','-DPORTABLE_NOVA_UI','-DTEST_WIFI_HOME','-DPORTABLE_HOME_APP="default.elf"','-DPORTABLE_QUICK_ACTIONS']
+  flags=['-DTEST_IDLE_ELIGIBILITY','-DTEST_WIFI_PAPER','-DPORTABLE_NOVA_UI','-DTEST_WIFI_HOME','-DPORTABLE_HOME_APP="default.elf"','-DPORTABLE_QUICK_ACTIONS']
   if geometry==2:flags+=['-DTEST_PAPER_WIDTH=400','-DTEST_PAPER_HEIGHT=600']
   if landscape:flags+=['-DTEST_WIFI_LANDSCAPE','-DPORTABLE_DISPLAY_ROTATION=90']
   if san:

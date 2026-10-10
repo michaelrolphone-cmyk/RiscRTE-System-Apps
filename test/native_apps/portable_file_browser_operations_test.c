@@ -43,26 +43,26 @@ static bool take_result(int32_t*error,uint64_t*cookie){if(!handler_result_pendin
 static t5_file_open_api_v1 handlers={.api_version=1,.struct_size=sizeof(handlers),.handler_count=count_handlers,.handler_get=get_handler,.open_request=request_handler,.open_take_result=take_result};
 static bool acquire(const char*n,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){assert(version==1);if(!strcmp(n,"storage.volume")){assert(instance==11||instance==22);g->api=instance==11?&sd.api:&usb.api;}else if(!strcmp(n,"file.open")){assert(!instance);if(handler_missing)return false;g->api=&handlers;}else return test_acquire(n,version,instance,g);test_grants++;return true;}
 static bool release(risc_runtime_capability_v1*g){disk*d=g->api==&sd.api?&sd:g->api==&usb.api?&usb:NULL;if(d){assert(!d->open_dirs);for(unsigned i=0;i<8;i++)assert(!d->handles[i].used);}if(release_fail||g->api==release_target)return false;return test_release(g);}
-static const risc_runtime_api_v1 runtime={1,sizeof(runtime),test_health,test_yield,test_diag,test_launch,acquire,release};
+static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diag,.request_launch=test_launch,.acquire=acquire,.release=release};
 static void select_item(const char*p){strcpy(fb_file_path,p);const char*n=strrchr(p,'/');strcpy(fb_selected.name,n+1);uint64_t size;bool dir;assert(fb_volume->stat(fb_volume->context,p,&size,&dir));fb_selected.size=size;fb_selected.is_directory=dir;strcpy(fb_path,p);assert(fb_parent(fb_path));fb_mode=FB_ACTIONS;fb_choice=fb_action_page=0;}
 static void frame(const char *name){fb_dirty=true;fb_draw();const char*dir=getenv("FILE_BROWSER_PAPER_FRAMES");if(!dir)return;char p[512];snprintf(p,sizeof(p),"%s/%s.pbm",dir,name);FILE*f=fopen(p,"wb");assert(f);fprintf(f,"P4\n800 480\n");assert(fwrite(fb_pixels,1,sizeof(fb_pixels),f)==sizeof(fb_pixels));fclose(f);}
 static void no_handles(void){for(unsigned i=0;i<8;i++)assert(!sd.handles[i].used&&!usb.handles[i].used);assert(!sd.open_dirs&&!usb.open_dirs&&portable_file_browser_safe());}
 static void deletion_cancel_script(int*x,int*y){
- assert(test_polls<80);
- if(test_polls==5){*x=420;*y=420;} /* read.txt row actions */
- if(test_polls>=11&&test_polls<=41&&(test_polls-11)%6==0){*x=400;*y=730;}
- if(test_polls==47){*x=100;*y=150;} /* Delete */
- if(test_polls==53){*x=100;*y=730;} /* Cancel */
- if(test_polls==59||test_polls==65){*x=75;*y=730;} /* Back and return */
+ assert(test_steps<80);
+ if(test_steps==5){*x=420;*y=420;} /* read.txt row actions */
+ if(test_steps>=11&&test_steps<=41&&(test_steps-11)%6==0){*x=400;*y=730;}
+ if(test_steps==47){*x=100;*y=150;} /* Delete */
+ if(test_steps==53){*x=100;*y=730;} /* Cancel */
+ if(test_steps==59||test_steps==65){*x=75;*y=730;} /* Back and return */
 }
-/* Feed contact snapshots through the production adapter and app_main. Checks
- * run between taps, after release, so state changes must come from the UI. */
+/* Feed ordered raw contact events through the production adapter and app_main.
+ * Checks run between taps, after release, so state changes must come from UI. */
 typedef struct { unsigned mode; int x,y; void (*check)(void); } controller_step;
 static const controller_step *controller_steps;
 static unsigned controller_step_count,controller_step_index;
 static void controller_touch(int *x,int *y){
- assert(test_polls<300);
- if(test_polls<5||(test_polls-5)%6)return;
+ assert(test_steps<300);
+ if(test_steps<5||(test_steps-5)%6)return;
  assert(controller_step_index<controller_step_count);
  const controller_step *step=&controller_steps[controller_step_index++];
  assert(fb_mode==step->mode);

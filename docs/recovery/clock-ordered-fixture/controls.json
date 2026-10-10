@@ -1,0 +1,38 @@
+{
+  "runs": [
+    {
+      "case": "legacy-empty-next",
+      "scene": 1,
+      "returncode": -6,
+      "expected_success": false
+    },
+    {
+      "case": "ordered",
+      "scene": 1,
+      "returncode": 0,
+      "expected_success": true
+    },
+    {
+      "case": "dropped-edges",
+      "scene": 1,
+      "returncode": -6,
+      "expected_success": false
+    },
+    {
+      "case": "threshold-mutation",
+      "scene": 1,
+      "returncode": -6,
+      "expected_success": false
+    }
+  ],
+  "source_sha256": {
+    "Apps/paper_clock.c": "5a17eb1908c1582fb9b35e56a639be92816244030a24ca06178395c06aab5eb6",
+    "lib/PortableApps/src/adapter.c": "8515a1ae7d5c6c19ea42b0e2950a91f37a02c6ee3fa83cbab52cbb7e4b106579",
+    "test/native_apps/paper_clock_test.c": "c562d399e452314a2ad892c49515b3ff53f0ba61ddc3837606e011130af35aae",
+    "test/native_apps/paper_clock_ordered_fixture.h": "04e70da81529a09671828a016b6238f622233f3e76b5fd764eba182679ff12b5",
+    "lib/PortableApps/include/PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004",
+    "scripts/test_paper_clock_fixture_controls.py": "4184a3b164016ea4ab26f404b60240663ae706fcb5a219c5bccf953d3b5af6bb"
+  },
+  "production_mutation": "temporary compiled copy only",
+  "hardware_tested": false
+}
