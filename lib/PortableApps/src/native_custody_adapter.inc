@@ -62,15 +62,16 @@ typedef struct {
 static custody_kv_slot custody_kv_slots[16];
 #ifdef PORTABLE_BLE_BROADCAST
 static bool broadcast_before_storage(void);
+static bool broadcast_before_storage_read(void);
 #endif
 static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
   custody_kv_slot *slot=context;
   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  if(!contexts_before_storage())return RISC_KEY_VALUE_CONTEXT;
+  if(!contexts_before_storage_read())return RISC_KEY_VALUE_CONTEXT;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
-  if(!broadcast_before_storage())return RISC_KEY_VALUE_CONTEXT;
+  if(!broadcast_before_storage_read())return RISC_KEY_VALUE_CONTEXT;
 #endif
   portable_perf_count(PORTABLE_PERF_KV_READS);
   int32_t result=slot->source->get(slot->source->context,key,data,size,used);

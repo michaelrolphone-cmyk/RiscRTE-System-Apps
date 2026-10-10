@@ -5,12 +5,12 @@ import re
 import shutil
 import portable_idle_build
 
-RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.29', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.24', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.10'}
+RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.30', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.24', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.10'}
 
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
-        if getattr(args,'crash_report_sd',False):return '0.4.3'
+        if getattr(args,'crash_report_sd',False):return '0.4.6'
         if getattr(args,'display_settled_sdk',None):return '0.3.26'
         if getattr(args,'frontlight_tone',False):return '0.3.25'
         if getattr(args,'resident_policy',False):return '0.3.25'
@@ -99,12 +99,12 @@ def configure(args,parser,root,output,includes=None):
     if args.quick_actions and not args.alarm_client:parser.error('--quick-actions requires --alarm-client')
     flags=resident_flags
     if getattr(args,'raster_snapshot',False):
-        paths=('lib/PortableApps/src/raster_snapshot_state.inc','lib/PortableApps/src/raster_snapshot_replay.inc')
+        paths=('lib/PortableApps/src/raster_snapshot_state.inc','lib/PortableApps/src/raster_snapshot_replay.inc','lib/PortableApps/src/raster_layers.inc','lib/PortableApps/include/PortableRasterLayer.h')
         if not all((root/name).is_file() for name in paths):
             parser.error('--raster-snapshot requires the bounded raster implementation in selected System source')
         flags.append('-DPORTABLE_RASTER_SNAPSHOT')
         args.raster_snapshot_receipt={'selected':True,'model_reentrancy':False,'provider_lease_across_model':False,
-            'direct_frame_compatibility':True,'allocation_failure':'complete synchronous fallback',
+            'direct_frame_compatibility':True,'persistent_working_framebuffer':True,'immutable_cached_layers':True,'latest_unsent_frame_replacement':True,'allocation_failure':'complete synchronous fallback',
             'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in paths}}
     if crash:
         flags+=['-DPORTABLE_CRASH_REPORT_SD','-DPORTABLE_CRASH_REPORT_NAMESPACE='+str(args.crash_report_spool_namespace)]

@@ -21,6 +21,10 @@ same ELF renders on Watch and X4. Further clients use the same component kinds.
 | Suggestion chips | Adjacent CHIP labels and action IDs | Content-sized pills, wrapping and shared focus/scroll layout |
 | Marker selector | One of six semantic marker values | One six-shape row; color on Watch and selected inversion on paper |
 | Progress card/bar | Completed count and total | Bounded bar, card and optional tap target |
+| Status card | Title, summary, active state | Outlined card; active paper inversion |
+| Circular progress | Bounded value/maximum and center label | Profile-sized progress ring |
+| Strength meter | Evidence count 0–3 and label | Three segment meter |
+| Statistic row | Label, subtitle, plain trailing value, optional intent | Shared row geometry without a tag outline |
 | Action button | Label, intent, primary/destructive/disabled state | Density-specific outline/inversion and focus |
 | Time picker | Minute of day and intent | Finger-follow/snap wheels on Watch, large +/- on paper |
 | Keyboard | Draft text, length limit, intent | Shared native keyboard and layer/key events |
@@ -101,3 +105,5 @@ produce the screenshots in Productivity's `docs/lists/` folder.
 These are target ELF builds and host tests. They do not certify physical display
 latency, power draw, or device memory headroom. Native capacity and final product
 cohort binding remain part of firmware packaging.
+
+Scene-host **0.3.0** appends CARD, RING, STRENGTH and STAT_ROW for the Contexts client. The struct and original table layout stay unchanged. Existing Lists and Alarms clients remain compatible. Empty states may select a semantic symbol; the default completion state retains the circled check. These kinds require the matching provider package; older component providers reject unsupported kinds.

@@ -99,14 +99,7 @@ static void qr_slider(int y,const char *label,unsigned icon,unsigned value,bool 
  char percent[8];if(valid)snprintf(percent,sizeof(percent),"%u%%",value);else strcpy(percent,"--%");
  qr_text(&QUICK_REF_NUMBER,448,y+(compact?26:33),percent,0,1,0,true);
 }
-static void quick_paper_render(const char *time,bool battery_valid,unsigned battery) {
-#ifdef PORTABLE_PAPER_TRANSITIONS
- qp_offset=(quick.ui.position_q8*800/PQA_OPEN_Q8)-800;
- if(!quick_copy_background()){failed=true;return;}
- fill(0,qp_y(0),width(),height(),0xffff);
-#else
- pp_begin();
-#endif
+static void quick_paper_paint(const char *time,bool battery_valid,unsigned battery) {
  qr_text(&QUICK_REF_TITLE,32,58,"QUICK ACTIONS",2*64,0,260,true);
  qr_text(&QUICK_REF_TIME,448,58,time,0,1,0,true);qp_rect(32,78,416,4,true);
 #ifdef PORTABLE_PAPER_TRANSITIONS
@@ -146,4 +139,49 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
   if(!battery_valid||i*10>=battery)qr_round(x+2,752,14,10,1,false);}
  char percent[8];if(battery_valid)snprintf(percent,sizeof(percent),"%u%%",battery);else strcpy(percent,"--%");
  qr_text(&QUICK_REF_NUMBER,448,764,percent,0,1,0,true);
+}
+
+#if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS)
+static portable_raster_layer *quick_sheet_layer;
+static pqa_state quick_sheet_state;
+static char quick_sheet_time[6];
+static bool quick_sheet_battery_valid;
+static unsigned quick_sheet_battery;
+static bool quick_sheet_changed(void) {
+ pqa_state prior=quick_sheet_state;
+ prior.position_q8=quick.ui.position_q8;prior.target_q8=quick.ui.target_q8;
+ return quick_paper_changed(&prior,&quick.ui) ||
+  prior.audio_controls!=quick.ui.audio_controls || prior.clean_refresh_valid!=quick.ui.clean_refresh_valid;
+}
+#endif
+static void quick_paper_render(const char *time,bool battery_valid,unsigned battery) {
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ qp_offset=(quick.ui.position_q8*800/PQA_OPEN_Q8)-800;
+ if(!quick_copy_background()){failed=true;return;}
+
+#else
+ pp_begin();
+#endif
+
+#if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS)
+ /* Exact reference geometry; other scaled profiles retain their rounding. */
+ if(width()==480&&height()==800&&raster_recording) {
+  bool changed=!portable_layer_valid(quick_sheet_layer)||quick_sheet_changed()||
+   strcmp(quick_sheet_time,time)||quick_sheet_battery_valid!=battery_valid||quick_sheet_battery!=battery;
+  if(changed) {
+   int offset=qp_offset;
+   if(portable_layer_begin(&quick_sheet_layer)) {
+    qp_offset=0;quick_paper_paint(time,battery_valid,battery);portable_raster_layer_end();qp_offset=offset;
+    quick_sheet_state=quick.ui;memcpy(quick_sheet_time,time,6);quick_sheet_battery_valid=battery_valid;quick_sheet_battery=battery;
+   } else portable_layer_release(&quick_sheet_layer);
+  }
+  if(portable_layer_valid(quick_sheet_layer)) {
+   portable_raster_layer_blit(quick_sheet_layer,0,0,width(),height(),0,qp_offset);return;
+  }
+ }
+#endif
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ fill(0,qp_y(0),width(),height(),0xffff);
+#endif
+ quick_paper_paint(time,battery_valid,battery);
 }

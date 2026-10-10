@@ -174,6 +174,7 @@ static bool contexts_clock_recovered,contexts_clock_handoff;
 static bool contexts_tick(void);
 static bool contexts_capture_checkpoint(void);
 static bool contexts_before_storage(void);
+static bool contexts_before_storage_read(void);
 static bool contexts_suspend(void);
 static uint32_t contexts_pixels;
 #endif
@@ -696,7 +697,8 @@ static bool raster_checkpoint(void) {
 #endif
 static inline bool raster_surface_writable(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen);
+  return surface.frame || (raster_replaying&&raster_offscreen&&surface.pixels==raster_offscreen) ||
+    (raster_layer_paint&&surface.pixels==raster_layer_paint->pixels);
 #else
   return surface.frame!=0;
 #endif
@@ -1072,6 +1074,13 @@ const paper_presentation *paper_presentation_get(void) {
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
+  /* Latest-image mailbox: a completed software image which has not acquired
+   * a provider lease may be replaced while the panel is BUSY. Never replace
+   * an in-progress capture or an explicit clean/quality submission. */
+  if(raster_sealed&&raster_ready_to_submit&&paper_token&&
+     raster_saved_intent==RISC_DISPLAY_PRESENT_LOW_LATENCY) {
+   raster_free_commands();raster_sealed=raster_ready_to_submit=false;raster_started=false;
+  }
   if(raster_sealed||raster_recording||surface.frame)return false;
   raster_begin_allowed=true;
 #endif
@@ -1866,6 +1875,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(failed)return false;
   const uint32_t idle_budget=spent<wait?wait-spent:0;
   uint32_t delay=idle_budget;
+  bool cooperated=false;
   while(delay && !input_progressed && !navigation_pending && !failed) {
     uint32_t slice=delay>4u?4u:delay;
 #ifdef PORTABLE_USB_TRANSFER_APP
@@ -1876,6 +1886,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     if(raster_sealed&&!raster_ready_to_submit)slice=1u;
 #endif
     rt->yield_ms(paper_token?1u:slice);
+    cooperated=true;
 #ifdef PORTABLE_CONTEXTS_CLIENT
     if(!contexts_capture_checkpoint())return false;
 #endif
@@ -1884,7 +1895,10 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     uint32_t elapsed=(uint32_t)(millis_now()-now);
     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
   }
-  if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
+  /* Yield also advances async providers. Foreground work consuming the wait
+   * budget must never suppress that work, including resident panel settling
+   * after its presentation token has already completed. */
+  if(!cooperated || input_progressed || navigation_pending || !wait)rt->yield_ms(1);
   last_poll_at=millis_now();
   if(!paper_present_progress() || failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT

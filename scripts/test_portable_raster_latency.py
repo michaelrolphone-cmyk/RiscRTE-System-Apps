@@ -3,7 +3,7 @@
 import argparse,json,os,subprocess,shutil
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser();p.add_argument('--runtime-sdk',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');p.add_argument('--snapshot',action='store_true');p.add_argument('--all-graphics',action='store_true');p.add_argument('--settings-graphics',action='store_true');p.add_argument('--native-paper',action='store_true');p.add_argument('--row-bounds',action='store_true');p.add_argument('--handoff-origin',action='store_true');a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
+p=argparse.ArgumentParser();p.add_argument('--runtime-sdk',type=Path);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');p.add_argument('--snapshot',action='store_true');p.add_argument('--all-graphics',action='store_true');p.add_argument('--settings-graphics',action='store_true');p.add_argument('--native-paper',action='store_true');p.add_argument('--row-bounds',action='store_true');p.add_argument('--layers',action='store_true');p.add_argument('--handoff-origin',action='store_true');a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 if a.row_bounds:a.snapshot=a.all_graphics=a.settings_graphics=True
 s=(ROOT/'test/native_apps/portable_handoff_test.c').read_text()
 s=s.replace('#include "../../lib/PortableApps/src/adapter.c"','#include '+json.dumps(str(ROOT/'lib/PortableApps/src/adapter.c')))
@@ -31,15 +31,18 @@ if a.runtime_sdk:
  s=s.replace('static void raster_test_clock(void);', 'static void raster_test_clock(void);\nstatic bool mock_monotonic(uint32_t*out){raster_test_clock();*out=mock_ms;return true;}')
  s=s.replace('raster_test_clock();h->uptime_ms=mock_ms;', 'assert(!"renderer called full health with cheap clock available");h->uptime_ms=mock_ms;')
  s=s.replace('.health=mock_health,', '.monotonic_ms=mock_monotonic,.health=mock_health,')
+if a.layers:
+ s=s.replace('assert(version==1 && !instance);','if(version!=1||instance){return false;}')
 if a.settings_graphics:
  s=s.replace('static bool mock_acquire(const char *name', 'static bool graphics_rtc_read(void*c,twatch_rtc_time_v1*t){(void)c;*t=(twatch_rtc_time_v1){2026,10,10,6,12,0,0};return true;}\nstatic bool graphics_rtc_write(void*c,const twatch_rtc_time_v1*t){(void)c;(void)t;return false;}\nstatic const twatch_rtc_api_v1 graphics_rtc={.api_version=TWATCH_RTC_API_V1,.struct_size=sizeof(graphics_rtc),.read=graphics_rtc_read,.write=graphics_rtc_write};\nstatic bool mock_acquire(const char *name')
  s=s.replace('assert(version==1 && !instance);', 'if(instance){return false;}if(!strcmp(name,"rtc.clock")){assert(version==2);g->api=&graphics_rtc;mock_grants++;return true;}assert(version==1);')
 f=out/'fixture.c';f.write_text(s)
-cmd=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function','-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES','-DFRAME_FIXTURE='+json.dumps(str(f)),'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps'/('portable_raster_handoff_test.c' if a.handoff_origin else 'portable_raster_row_bounds_test.c' if a.row_bounds else 'portable_raster_latency_test.c')),'-o',str(out/'test')]
+cmd=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function','-DPORTABLE_RETAINED_RGB565_HANDOFF','-DPORTABLE_FORCE_FULL_FRAMES','-DFRAME_FIXTURE='+json.dumps(str(f)),'-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps'/('portable_raster_layers_test.c' if a.layers else 'portable_raster_handoff_test.c' if a.handoff_origin else 'portable_raster_row_bounds_test.c' if a.row_bounds else 'portable_raster_latency_test.c')),'-o',str(out/'test')]
 if a.runtime_sdk:cmd[1:1]=['-I'+str(sdk)]
 if a.settings_graphics:cmd[1:1]=['-DPORTABLE_SETTINGS_APP','-DRASTER_SETTINGS_GRAPHICS']
 if a.all_graphics:cmd[1:1]=['-DPORTABLE_NOVA_UI','-DRASTER_ALL_GRAPHICS']
 if a.native_paper:cmd[1:1]=['-DPORTABLE_DISPLAY_ROTATION=90']
+if a.layers:cmd[1:1]=['-DPORTABLE_PAPER_PREFERENCES','-DPORTABLE_TOUCH_SCROLL']
 if a.snapshot:cmd[1:1]=['-DPORTABLE_RASTER_SNAPSHOT']
 if a.sanitize:cmd[1:1]=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
 (out/'compile-command.json').write_text(json.dumps(cmd,indent=2)+'\n');subprocess.run(cmd,check=True)
