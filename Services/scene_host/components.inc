@@ -222,7 +222,8 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         }fill(x,y,nc_paper()?3*s:2*s,h,nc_paper()?fg:0x1125);fill(x,y+h-s,w,s,nc_paper()?fg:0x1125);return;
     }
     bool checked=n->kind==RISC_COMPONENT_CHECK_ROW;
-    int left=x+8*s,right=x+w;
+    /* Row padding begins inside the profile's frame, as in the NOVA-7 rows. */
+    int left=x+(nc_paper()?3:2)*s+8*s,right=x+w;
     if(checked){
         accent=n->flags&RISC_SCENE_DISABLED?dim:nc_color(RISC_TONE_ACCENT);
         int bx=d->secondary_action?left:x+w-22*s,by=y+h/2-10*s;nc_box(bx,by,20*s,20*s,6*s,2*s,accent,n->value?accent:nc_bg());
@@ -230,8 +231,8 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         if(!d->secondary_action){nc_text(left,y+h/2+4*s,w-38*s,n->label,2,fg);nc_hit(x,y,w,h,HIT_VALUE,n,!n->value,false);fill(x,y,2*s,h,nc_paper()?fg:0x1125);fill(x,y+h-s,w,s,nc_paper()?fg:0x1125);return;}
         nc_hit(x,y,34*s,h,HIT_VALUE,n,!n->value,false);left+=34*s;
         if(n->value)fg=dim;
-    }else if(d->symbol){nc_icon(d->symbol,x+2*s,y+h/2-8*s,16*s,accent);left+=28*s;}
-    else if(d->marker<6){nc_marker(d->marker,x+4*s,y+h/2-5*s,10*s,false);left+=24*s;}
+    }else if(d->symbol){nc_icon(d->symbol,left,y+h/2-8*s,16*s,accent);left+=(16+7)*s;}
+    else if(d->marker<6){nc_marker(d->marker,left+2*s,y+h/2-5*s,10*s,false);left+=(14+7)*s;}
     if(d->badge[0]){
         int bw=nc_measure(5,d->badge)+12*s;right-=bw+14*s;
         nc_box(right,y+5*s,bw,18*s,8*s,s,accent,d->tone==RISC_TONE_WARNING?accent:nc_bg());
@@ -294,7 +295,6 @@ static void nc_modal(void){
         nc_box(xx,by,cw,28*s,14*s,nc_paper()?2*s:s,nc_paper()?fg:0x0a6b,selected?ink:nc_bg());
         nc_center(xx,by+17*s,cw,n->label,5,selected?nc_bg():fg);
         if(!path.focus[path.depth-1]&&n->action==document.cancel_action)path.focus[path.depth-1]=n->id;
-        if(n->id==path.focus[path.depth-1])fill(xx+8*s,by+24*s,cw-16*s,s,selected?nc_bg():fg);
         nc_hit(xx,by,cw,28*s,HIT_ACTION,n,0,true);++at;
     }
     /* Only the exterior cancels. Empty dialog interior is inert. */
