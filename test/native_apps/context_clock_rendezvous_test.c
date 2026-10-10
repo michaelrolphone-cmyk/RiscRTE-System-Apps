@@ -107,7 +107,14 @@ static bool resident_queue_launch(const char *path) {return queue(path);}
 int main(int argc,char **argv) {
  assert(argc==2);scenario=argv[1];
  state=(contexts_status_v1){.struct_size=sizeof(state),.radio={.source=CONTEXTS_RADIO}};
- assert(contexts_open());contexts_client.settings_valid=contexts_client.policy.enabled=true;
+ assert(contexts_open());
+ if(is("normal")){
+  assert(portable_contexts_training(true)&&contexts_client.foreground_learning);
+  assert(contexts_suspend()&&!service_live&&contexts_client.foreground_learning);
+  assert(contexts_open()&&contexts_client.foreground_learning);
+  assert(portable_contexts_training(false)&&!contexts_client.foreground_learning);
+ }
+ contexts_client.settings_valid=contexts_client.policy.enabled=true;
  /* Exercise these shared boundaries too, while no operation is outstanding. */
  assert(contexts_capture_checkpoint()&&contexts_before_storage());
  if(is("disabled"))contexts_client.policy.enabled=false;

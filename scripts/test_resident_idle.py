@@ -8,6 +8,7 @@ p.add_argument('--runtime',type=Path,required=True);p.add_argument('--product',t
 p.add_argument('--driver-sdk',type=Path,required=True);p.add_argument('--tone-sdk',type=Path);p.add_argument('--settled-sdk',type=Path)
 p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True)
 p.add_argument('--case',action='append',help='Run only named cases from this matrix')
+p.add_argument('--async-display',action='store_true',help='Use deployed sliced rendering and delayed frame completion')
 a=p.parse_args();out=a.output_dir.resolve();inc=out/'include';inc.mkdir(parents=True,exist_ok=True)
 shutil.copytree(r/'lib/PortableApps/include',inc,dirs_exist_ok=True)
 shutil.copytree(r/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
@@ -17,6 +18,7 @@ for directory in (a.runtime/'sdk/app',a.runtime/'sdk/driver',a.driver_sdk,a.prod
 for name in ('RiscRuntimeV1.h','RiscResidentShellV1.h','RiscFailureEvidenceV1.h'):
  shutil.copyfile(a.runtime/'sdk/app'/name,inc/name)
 flags=['-D'+n for n in ('PORTABLE_STAGE_LOGS','PORTABLE_PAPER_PREFERENCES','PORTABLE_ALARM_TERMINAL_RETENTION','PORTABLE_NATIVE_CUSTODY_FENCE','PORTABLE_ALARM_CLIENT','ALARM_SERVICE_TAGGED_V2','PORTABLE_INPUT_NAVIGATION','PORTABLE_APP_OWNS_TOUCH_CHROME','PORTABLE_RESIDENT_SHELL_HOST','PORTABLE_RESIDENT_POLICY','PORTABLE_APP_SLEEP_LOCAL','PORTABLE_QUICK_ACTIONS','PORTABLE_QUICK_RADIOS','PORTABLE_PAPER_TRANSITIONS','PORTABLE_X4_IDLE_POLICY','PORTABLE_LOW_BATTERY')]
+if a.async_display:flags+=['-DPORTABLE_RASTER_SNAPSHOT']
 if a.tone_sdk:
  shutil.copyfile(a.tone_sdk/'RiscDisplayOutputFrontlightV1.h',inc/'RiscDisplayOutputFrontlightV1.h');flags+=['-DPORTABLE_FRONTLIGHT_TONE']
 if a.settled_sdk:
@@ -39,7 +41,7 @@ runs=[]
 for sanitized in (False,True):
  build=out/('sanitized' if sanitized else 'normal');build.mkdir(exist_ok=True)
  san=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'] if sanitized else []
- base=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*san,'-I'+str(inc),'-I'+str(r/'lib/NativeApps/include')]
+ base=['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror',*san,*(['-DIDLE_ASYNC_DISPLAY'] if a.async_display else []),'-I'+str(inc),'-I'+str(r/'lib/NativeApps/include')]
  subprocess.run([*base,*flags,'-fPIC','-shared','-Wl,-Bsymbolic',*map(str,sources),'-o',str(build/'host.elf')],check=True)
  binary=build/'test';subprocess.run([*base,'-DPORTABLE_ALARM_CLIENT','-DALARM_SERVICE_TAGGED_V2','-DPORTABLE_X4_IDLE_POLICY',*(['-DPORTABLE_FRONTLIGHT_TONE'] if a.tone_sdk else []),*(['-DPORTABLE_DISPLAY_SETTLED'] if a.settled_sdk else []),'-rdynamic',*(['-no-pie'] if sanitized else []),str(r/'test/native_apps/resident_idle_test.c'),'-ldl','-o',str(binary)],check=True)
  for case in cases:

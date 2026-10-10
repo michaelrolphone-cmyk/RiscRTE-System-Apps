@@ -2,7 +2,7 @@
  * the editor may remove them, but neither the client nor UI enables them. */
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
 /* The editor needs confirmed applicability, not a copy of the host sheet.
- * Refresh this small read-only view only with capture paused. */
+ * Refresh this small read-only view only with capture paused and no frame. */
 static bool contexts_dnd_valid,contexts_brightness_valid,contexts_volume_valid;
 static bool contexts_controls_load(void) {
   if(failed||native_custody_retained)return false;
@@ -73,6 +73,7 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
   (void)kv;(void)id;return false;
 #endif
 }
+#include "contexts_rules_adapter.inc"
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
 #include "contexts_clock.inc"
 #endif
@@ -121,17 +122,17 @@ static bool contexts_tick(void) {
   contexts_policy_io=false;
   if(!ok||native_custody_retained){portable_adapter_retain();return false;}
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
-  /* A model-owner launch changes display ownership. Only that boundary waits
-   * for the submitted image; collection, inference and policy still advance. */
   if(display_settled&&!paper_token&&!contexts_clock_rendezvous())return false;
   if(contexts_clock_handoff || !contexts_client.api)return true;
 #endif
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
   contexts_policy_io=true;
-  ok=portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save);
+  ok=contexts_client.rules_available?contexts_rules_tick():portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save);
   contexts_policy_io=false;
   if(!ok||native_custody_retained){portable_adapter_retain();return false;}
+
+#ifndef PORTABLE_RESIDENT_SHELL_CLIENT
   if(applied) {
     if(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display)){portable_adapter_retain();return false;}
     quick_paper_capabilities();
@@ -145,8 +146,9 @@ static bool contexts_tick(void) {
 #endif
     }
   }
+#endif
 #else
-  (void)contexts_face_save;
+  (void)contexts_face_save;(void)contexts_rules_tick;
 #endif
   return !native_custody_retained;
 }

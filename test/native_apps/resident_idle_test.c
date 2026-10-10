@@ -31,11 +31,20 @@ static bool tone_case(void){return !strncmp(idle_case,"tone-",5);}
 #endif
 static risc_touch_power_api_v1 idle_touch;
 static bool is(const char *s){return !strcmp(idle_case,s);}
+static unsigned frontlight_level,frame_ready_at;
+static bool idle_display_info(void*c,risc_display_info_v1*out){
+ if(!display_info(c,out))return false;
+#ifdef IDLE_ASYNC_DISPLAY
+ out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
+#endif
+ return true;
+}
 #ifdef PORTABLE_DISPLAY_SETTLED
 #include "RiscDisplayOutputSettledV1.h"
 static risc_display_output_api_v1_settled idle_settled_display;
 static unsigned settle_calls,settle_ready,settle_started,settle_due,settle_input_reads;
 static bool settle_requested;
+static bool settle_touch_sent;
 static bool settled_case(void){return !strncmp(idle_case,"settled-",8);}
 #endif
 static void idle_safe(void);
@@ -63,6 +72,7 @@ static bool idle_health(risc_runtime_health_v1 *out){live();
 static bool idle_key(void*c,bool*down){(void)c;live();*down=(is("cancel-prepared")||is("settled-cancel-prepared"))&&panel_prepared;return true;}
 static int32_t idle_light(void*c,uint32_t n,risc_light_sleep_result_v1*out){
  (void)c;(void)out;live();assert(n&&touch_prepared&&panel_prepared&&storage_prepared&&overlay_visible);++sleep_calls;
+ assert(frontlight_level==0&&ms>=frame_ready_at);
  if(is("native-retained")){terminal=true;return RISC_LIGHT_SLEEP_RETAINED;}
  if(is("native-refused"))return RISC_LIGHT_SLEEP_BUSY;
 #ifdef PORTABLE_FRONTLIGHT_TONE
@@ -123,15 +133,22 @@ static bool idle_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
    FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P4\n480 800\n");assert(fwrite(pixels,1,sizeof(pixels),file)==sizeof(pixels));fclose(file);
   }else{assert(!memcmp(pixels,child_image,sizeof(pixels)));++restored_frames;overlay_visible=false;}
  }
- return submit_frame(c,f,r,n,o,t);
+ bool ok=submit_frame(c,f,r,n,o,t);
+#ifdef IDLE_ASYNC_DISPLAY
+ frame_ready_at=ms+8;
+#endif
+ return ok;
 }
 static bool idle_present_status(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*out){
+ if(ms<frame_ready_at){idle_safe();out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}
  idle_safe();if(idle_active&&is("slow")&&++status_calls%4){out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}if(idle_active&&(is("present-retained")||(is("restore-present-retained")&&restored_frames))){terminal=true;return false;}return status_frame(c,t,out);
 }
 static bool idle_snapshot(void*c,uint32_t f,void*p,size_t n,uint32_t stride){
  idle_safe();if(is("snapshot-refused"))return false;return snapshot_frame(c,f,p,n,stride);
 }
 static bool idle_brightness(void*c,uint16_t value,uint16_t scale){idle_safe();
+ frontlight_level=value;
+ if(idle_active&&value==0)assert(ms>=frame_ready_at);
 #ifdef PORTABLE_FRONTLIGHT_TONE
  if(tone_case()){assert(value==0);idle_level=value;}
 #endif
@@ -173,11 +190,19 @@ static bool idle_touch_snapshot(void*c,risc_touch_snapshot_v1*out){
  if(settled_case()&&overlay_visible&&subs){
   idle_safe();++settle_input_reads;
   if(is("settled-touch-retained")){terminal=true;return false;}
-  *out=(risc_touch_snapshot_v1){.width=480,.height=800};
+  *out=(risc_touch_snapshot_v1){.width=480,.height=800,.sequence=settle_touch_sent?1u:0u};
   if(((is("settled-cancel")&&ms-settle_started>=64)||(is("settled-late-touch")&&ms-settle_started>=70))){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=120,.y=200};}
   return true;
  }
  return snapshot_touch(c,out);
+}
+static int32_t idle_touch_next(void*c,uint64_t id,risc_touch_event_v1*out){
+ if(settled_case()&&overlay_visible&&subs&&!settle_touch_sent&&
+    ((is("settled-cancel")&&ms-settle_started>=64)||(is("settled-late-touch")&&ms-settle_started>=70))) {
+  idle_safe();settle_touch_sent=true;
+  *out=(risc_touch_event_v1){.sequence=1,.kind=RISC_TOUCH_EVENT_DOWN,.id=1,.x=120,.y=200};return 1;
+ }
+ return next_touch(c,id,out);
 }
 static bool idle_nav_poll(void*c,risc_input_navigation_frame_v1*out){
  if(settled_case()&&overlay_visible&&focus){
@@ -266,6 +291,7 @@ int main(int argc,char**argv){
  assert(argc==3);fixture_dir=argv[1];idle_case=argv[2];mode=100;
  idle_display=display;idle_display.copy_completed=idle_snapshot;
  risc_display_output_api_v1 *base=&idle_display.metrics.power.history.base;
+ base->get_info=idle_display_info;
  base->acquire=idle_frame;base->submit=idle_submit;base->present_status=idle_present_status;base->set_brightness=idle_brightness;
  idle_display.metrics.power.prepare=idle_panel_prepare;idle_display.metrics.power.resume=idle_panel_resume;
 #ifdef PORTABLE_FRONTLIGHT_TONE
@@ -283,6 +309,7 @@ int main(int argc,char**argv){
  idle_touch.base=touch;idle_touch.base.struct_size=sizeof(idle_touch);idle_touch.power_tag=RISC_TOUCH_POWER_TAG;idle_touch.power_version=1;idle_touch.prepare=idle_touch_prepare;idle_touch.resume=idle_touch_resume;
 #ifdef PORTABLE_DISPLAY_SETTLED
  idle_touch.base.snapshot=idle_touch_snapshot;
+ idle_touch.base.next=idle_touch_next;
 #endif
  idle_storage.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(idle_storage)};
  idle_storage.terminal.extension_tag=RISC_STORAGE_POWER_COMMIT_TAG;idle_storage.terminal.extension_version=1;idle_storage.terminal.commit_power_down=idle_sd_commit;

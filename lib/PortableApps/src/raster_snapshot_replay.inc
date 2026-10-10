@@ -1,15 +1,30 @@
 static void raster_free_commands(void) {
- while(raster_commands){raster_command*n=raster_commands->next;free(raster_commands->pixels);free(raster_commands);raster_commands=n;}
- raster_tail=raster_cursor=NULL;raster_command_count=0;
+ while(raster_commands){raster_command*n=raster_commands->next;if(!raster_commands->borrowed)free(raster_commands->pixels);raster_layer_drop(raster_commands->layer);raster_commands=n;}
+ raster_block_tail=NULL;raster_tail=raster_cursor=NULL;raster_command_count=0;
 }
 static void raster_discard(void) {
  free(raster_offscreen);raster_offscreen=NULL;
- raster_free_commands();raster_recording=raster_sealed=raster_begin_allowed=false;
+ raster_free_commands();
+ while(raster_blocks){raster_command_block*n=raster_blocks->next;free(raster_blocks);raster_blocks=n;}
+ raster_layer_paint=NULL;raster_layer_recording=false;raster_started=false;
+ raster_recording=raster_sealed=raster_begin_allowed=false;
+ raster_ready_to_submit=false;
 }
 static bool raster_record(unsigned kind,const int32_t args[8],const char *text) {
  if(failed)return true;
  if(!raster_recording || raster_replaying)return false;
- raster_command *c=raster_command_count<4096?malloc(sizeof(*c)):NULL;
+ raster_command *c=NULL;
+ if(raster_command_count<4096) {
+  unsigned slot=raster_command_count%RASTER_COMMANDS_PER_BLOCK;
+  if(!slot) {
+   raster_command_block *block=raster_block_tail?raster_block_tail->next:raster_blocks;
+   if(!block){block=malloc(sizeof(*block));if(block){block->next=NULL;if(raster_block_tail)raster_block_tail->next=block;else raster_blocks=block;}}
+   if(block){raster_block_tail=block;}
+   else goto allocation_failed;
+  }
+  c=&raster_block_tail->commands[slot];
+ }
+allocation_failed:
  if(!c){
   /* A public drawing API is void: preserving every command requires a
    * synchronous compatibility fallback if allocation cannot retain it.
@@ -43,6 +58,17 @@ static bool raster_record(unsigned kind,const int32_t args[8],const char *text) 
  if(raster_tail)raster_tail->next=c;else raster_commands=c;
  raster_tail=c;++raster_command_count;return true;
 }
+bool portable_raster_defer(void (*draw)(const void *,int,int),const void *payload,
+ size_t bytes,int top,int bottom) {
+ if(failed)return true;
+ if(!raster_recording||raster_replaying)return false;
+ if(!draw||!payload||bytes>sizeof(raster_tail->text))return false;
+ if(!raster_record(RS_CUSTOM,(int32_t[8]){top,bottom},NULL))return false;
+ if(!failed&&raster_tail&&raster_tail->kind==RS_CUSTOM) {
+  raster_tail->custom=draw;memcpy(raster_tail->text,payload,bytes);
+ }
+ return true;
+}
 static bool raster_begin(uint16_t color) {
  if(failed)return true;
  if(raster_replaying || (!raster_begin_allowed&&!raster_recording))return false;
@@ -58,14 +84,14 @@ static bool raster_begin(uint16_t color) {
   * must advance that elapsed timeline, not restart it at the final copy. */
  if(handoff_pending){raster_handoff_origin=millis_now();if(failed)return true;}
 #endif
- raster_free_commands();raster_recording=true;raster_band_top=0;
+ raster_free_commands();raster_recording=true;raster_ready_to_submit=false;raster_started=false;raster_band_top=0;
  raster_saved_rotation=paper_rotated;
 #ifdef PORTABLE_PAPER_PREFERENCES
  raster_saved_flip=paper_flip_ui;
 #endif
  return raster_record(RS_FILL,(int32_t[8]){0,0,width(),height(),color},NULL);
 }
-static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
+static bool raster_begin_pixels_owned(const void *pixels,unsigned stride,bool borrow) {
  if(failed)return true;
  if(raster_replaying||!raster_begin_allowed)return false;
  raster_begin_allowed=false;
@@ -77,16 +103,20 @@ static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
 #endif
  unsigned row_bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
  if(!pixels||stride<row_bytes)return false;
- void *copy=malloc((size_t)row_bytes*info.height);if(!copy)return false;
- for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)copy+(size_t)y*row_bytes,(const uint8_t*)pixels+(size_t)y*stride,row_bytes);
- raster_free_commands();raster_recording=true;raster_band_top=0;raster_saved_rotation=paper_rotated;
+ void *copy=borrow?(void*)pixels:malloc((size_t)row_bytes*info.height);if(!copy)return false;
+ if(!borrow)for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)copy+(size_t)y*row_bytes,(const uint8_t*)pixels+(size_t)y*stride,row_bytes);
+ raster_free_commands();raster_recording=true;raster_ready_to_submit=false;raster_started=false;raster_band_top=0;raster_saved_rotation=paper_rotated;
 #ifdef PORTABLE_PAPER_PREFERENCES
  raster_saved_flip=paper_flip_ui;
 #endif
- if(!raster_record(RS_BITMAP,(int32_t[8]){(int32_t)row_bytes},NULL)){if(!raster_terminal())free(copy);return false;}
- if(!raster_tail){if(!raster_terminal())free(copy);return true;}
- raster_tail->pixels=copy;return true;
+ if(!raster_record(RS_BITMAP,(int32_t[8]){(int32_t)row_bytes},NULL)){if(!borrow&&!raster_terminal())free(copy);return false;}
+ if(!raster_tail){if(!borrow&&!raster_terminal())free(copy);return true;}
+ raster_tail->pixels=copy;raster_tail->borrowed=borrow;return true;
 }
+static inline bool raster_begin_pixels(const void *pixels,unsigned stride) {
+ return raster_begin_pixels_owned(pixels,stride,false);
+}
+#include "raster_layers.inc"
 static void raster_execute(const raster_command*c) {
  const int32_t *a=c->args;const char*s=c->text_present?c->text:NULL;
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -97,12 +127,17 @@ static void raster_execute(const raster_command*c) {
  int prior_offset=qp_offset;qp_offset=c->paper_offset;
 #endif
  switch(c->kind){
+  case RS_LAYER_BEGIN:case RS_LAYER_END:case RS_LAYER_BLIT:raster_layer_execute(c);break;
+  case RS_CUSTOM:c->custom(c->text,raster_band_top,raster_band_bottom);break;
   case RS_BITMAP:
    for(int y=raster_band_top;y<raster_band_bottom&&(unsigned)y<info.height;y++) {
     memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(const uint8_t*)c->pixels+(size_t)y*(unsigned)a[0],(unsigned)a[0]);
     raster_pixels+=info.width;if(!raster_checkpoint())break;
    }
    break;
+  #if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL)||defined(RASTER_SBH_TEST)
+  case RS_SBH_TEXT:(void)portable_springboard_header_text((unsigned)a[0],a[1],a[2],s,a[3],a[4]);break;
+#endif
   case RS_FILL:fill(a[0],a[1],a[2],a[3],(uint16_t)a[4]);break;
   case RS_ROUNDED:rounded(a[0],a[1],a[2],a[3],a[4],(uint8_t)a[5]);break;
   case RS_TEXT:text_color(a[0],a[1],s,a[2],(uint16_t)a[3]);break;
@@ -157,8 +192,8 @@ static void raster_execute(const raster_command*c) {
 static bool raster_materialize(void) {
  raster_replaying=true;
  if(!acquire_surface()){raster_replaying=false;return false;}
- raster_band_top=0;raster_band_bottom=height();
- for(raster_command*c=raster_commands;c&&!failed;c=c->next){raster_band_bottom=c->kind==RS_BITMAP?(int)info.height:height();raster_execute(c);}
+ raster_band_columns=false;raster_band_top=0;raster_band_bottom=height();
+ for(raster_command*c=raster_commands;c&&!failed;c=c->next){raster_band_bottom=(c->kind==RS_BITMAP||c->kind==RS_LAYER_BLIT)?(int)info.height:height();raster_execute(c);}
  raster_replaying=false;if(!raster_terminal())raster_free_commands();return !failed;
 }
 /* Commands retain their complete ordering, but empty rows are not CPU work.
@@ -174,9 +209,23 @@ static int raster_paper_y(int64_t y) {
 #endif
 static void raster_command_span(const raster_command *c) {
  const int32_t *a=c->args;int64_t top=0,bottom=height();
+ /* A rotated one-row logical clear scatters 480 one-bit writes. Traverse
+  * plain fills in native row order instead: one packed span per step, with
+  * the same bounded input checkpoint and unchanged clipping/rotation. */
+ raster_band_columns=c->kind==RS_FILL&&paper_rotated;
  switch(c->kind) {
-  case RS_BITMAP:bottom=info.height;break;
-  case RS_FILL:case RS_ROUNDED:top=a[1];bottom=top+a[3];break;
+  case RS_CUSTOM:top=a[0];bottom=a[1];break;
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL)||defined(RASTER_SBH_TEST)
+  case RS_SBH_TEXT:{
+   const sbh_font*font=a[0]?&SBH_700:&SBH_900;int lo=0,hi=0;
+   for(unsigned n=0;c->text[n];n++){const sbh_glyph*g=raster_sbh_lookup(font,(unsigned char)c->text[n]);if(!g)continue;if(g->top<lo)lo=g->top;if(g->top+g->height>hi)hi=g->top+g->height;}
+   top=(int64_t)a[2]+lo;bottom=(int64_t)a[2]+hi;break;
+  }
+#endif
+  case RS_LAYER_BEGIN:case RS_LAYER_END:bottom=1;break;
+  case RS_LAYER_BLIT:case RS_BITMAP:bottom=info.height;break;
+  case RS_FILL:top=a[raster_band_columns?0:1];bottom=top+a[raster_band_columns?2:3];break;
+  case RS_ROUNDED:top=a[1];bottom=top+a[3];break;
   case RS_TEXT:top=a[1];bottom=top+7;break;
   case RS_ICON:top=a[1];bottom=top+a[2];break;
   case RS_PP_CIRCLE:case RS_NP_CIRCLE:top=(int64_t)a[1]-a[2];bottom=(int64_t)a[1]+a[2]+1;break;
@@ -212,7 +261,7 @@ static void raster_command_span(const raster_command *c) {
 #endif
 #endif
  }
- int maximum=c->kind==RS_BITMAP?(int)info.height:height();
+ int maximum=(c->kind==RS_BITMAP||c->kind==RS_LAYER_BLIT)?(int)info.height:raster_band_columns?width():height();
  if(top<0)top=0;
  if(top>maximum)top=maximum;
  if(bottom<top)bottom=top;
@@ -221,6 +270,7 @@ static void raster_command_span(const raster_command *c) {
 }
 static bool raster_progress(void) {
  if(!raster_sealed || raster_replaying)return !failed;
+ if(!paper_token_progress())return false;
  raster_replaying=true;
  bool prior_rotation=paper_rotated;paper_rotated=raster_saved_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -228,9 +278,9 @@ static bool raster_progress(void) {
 #endif
  const unsigned row_bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
  const size_t bytes=(size_t)row_bytes*info.height;
- if(!raster_cursor){
-  raster_offscreen=malloc(bytes);
-  if(raster_offscreen)memset(raster_offscreen,0,bytes);
+ if(raster_ready_to_submit)goto ready;
+ if(!raster_started){
+  if(!raster_offscreen)raster_offscreen=malloc(bytes);
   if(!raster_offscreen){
    /* Preserve the complete frame through the original immediate renderer when
     * an owned replay buffer cannot be allocated. No command/service is lost. */
@@ -238,19 +288,25 @@ static bool raster_progress(void) {
    raster_replaying=true;
    goto submit;
   }
-  raster_cursor=raster_commands;if(raster_cursor)raster_command_span(raster_cursor);
+  raster_started=true;raster_cursor=raster_commands;if(raster_cursor)raster_command_span(raster_cursor);
  }
  /* Only app-owned pixels are exposed during a band. No provider frame lease
   * crosses the return to application/service state. A real frame identifier is
   * never fabricated, including when input capture installs a terminal fence. */
  risc_display_surface_v1 prior_surface=surface;
- surface=(risc_display_surface_v1){.pixels=raster_offscreen,.width=info.width,.height=info.height,
+ surface=(risc_display_surface_v1){.pixels=raster_layer_paint?raster_layer_paint->pixels:raster_offscreen,.width=info.width,.height=info.height,
    .stride_bytes=row_bytes,.size_bytes=(uint32_t)bytes,.pixel_format=surface_format};
  unsigned start=millis_now(),pixels=raster_pixels;
  for(unsigned steps=0;raster_cursor&&!failed&&steps<256;steps++) {
-  if(raster_band_top<raster_band_limit){raster_band_bottom=raster_band_top+1;raster_execute(raster_cursor);}
+  if(raster_band_top<raster_band_limit){
+   /* Packed copies are cheap: amortize dispatch and clock calls across
+    * eight rows. Primitives still checkpoint input inside longer operations. */
+   int band=(raster_cursor->kind==RS_LAYER_BLIT||raster_cursor->kind==RS_BITMAP)?8:1;
+   raster_band_bottom=raster_band_top+band;if(raster_band_bottom>raster_band_limit)raster_band_bottom=raster_band_limit;
+   raster_execute(raster_cursor);raster_band_top=raster_band_bottom;
+  }
   if(failed)break; /* Checkpoint retention forbids even a budget-clock read. */
-  if(++raster_band_top>=raster_band_limit){raster_cursor=raster_cursor->next;if(raster_cursor)raster_command_span(raster_cursor);}
+  if(raster_band_top>=raster_band_limit){raster_cursor=raster_cursor->next;if(raster_cursor)raster_command_span(raster_cursor);}
   if((unsigned)(millis_now()-start)>=2 || raster_pixels-pixels>=65536)break;
  }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -258,6 +314,11 @@ static bool raster_progress(void) {
 #endif
  surface=prior_surface;
  if(failed || raster_cursor)goto restore;
+ raster_ready_to_submit=true;
+ready:
+ /* Software pixels can finish while the previously submitted frame is busy.
+  * Do not acquire or drain a provider lease until that token has completed. */
+ if(paper_token)goto restore;
  if(!acquire_surface())goto restore;
  for(unsigned y=0;y<info.height;y++) {
   uint8_t *to=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes;
@@ -268,10 +329,10 @@ static bool raster_progress(void) {
    uint8_t mask=(uint8_t)(0xffu<<(8u-(info.width&7u)));
    to[row_bytes-1]=(to[row_bytes-1]&mask)|(padding&~mask);
   }
+  if(!(y&7u)&&!raster_checkpoint())goto restore;
  }
- free(raster_offscreen);raster_offscreen=NULL;
 submit:
- raster_sealed=false;raster_free_commands();
+ raster_sealed=false;raster_ready_to_submit=false;raster_free_commands();
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
  bool prior_clean=quick_clean_present;quick_clean_present=raster_saved_clean;
 #endif

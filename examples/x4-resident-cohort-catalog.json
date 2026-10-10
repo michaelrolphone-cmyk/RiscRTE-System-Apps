@@ -94,6 +94,11 @@
       "display_name": "GameBoy",
       "file_name": "gameboy.elf",
       "icon": "solid:f11b"
+    },
+    {
+      "display_name": "Lists",
+      "file_name": "lists.elf",
+      "icon": "solid:f274"
     }
   ]
 }

@@ -95,10 +95,10 @@ static int32_t desk_kv_result(int32_t rc) {
 static int32_t desk_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
  desk_kv_slot *s=context;if(native_sleep_retained || !s->live)return RISC_KEY_VALUE_CONTEXT;
 #ifdef PORTABLE_CONTEXTS_CLIENT
- if(!contexts_before_storage())return RISC_KEY_VALUE_CONTEXT;
+ if(!contexts_before_storage_read())return RISC_KEY_VALUE_CONTEXT;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
- if(!broadcast_before_storage())return RISC_KEY_VALUE_CONTEXT;
+ if(!broadcast_before_storage_read())return RISC_KEY_VALUE_CONTEXT;
 #endif
  return desk_kv_result(s->source->get(s->source->context,key,data,size,used));
 }
