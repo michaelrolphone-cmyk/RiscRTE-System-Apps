@@ -53,12 +53,15 @@ static alarm_status_v1 fake_alarm={.api_version=1,.struct_size=sizeof(fake_alarm
 static jmp_buf blocked;
 static bool block_expected,blocked_note;
 static int sleep_outcome=1;
-static struct {unsigned at;unsigned buttons;int x,y;} script[64];
+static struct {unsigned at;unsigned buttons;int x,y;bool navigation_delivered;} script[64];
 static struct {char name[16];uint8_t data[64];uint32_t size;} cells[8];
 static wifi_api_v1 radio_api;
 static risc_runtime_api_v1 runtime_api;
+/* Script steps follow the controller's 25 ms cadence, independently of raw
+ * provider reads performed by wait slices or capture-only raster work. */
+static unsigned input_step(void){return ticks/25u;}
 static void observed(void){if(terminal_sleep)++late_calls;}
-static bool fake_health(risc_runtime_health_v1 *h){h->uptime_ms=ticks;return poll_count<limit_polls;}
+static bool fake_health(risc_runtime_health_v1 *h){h->uptime_ms=ticks;return (script_count?input_step():poll_count)<limit_polls;}
 static void fake_yield(uint32_t ms){ticks+=ms;if(scenario>=24&&scenario<=25&&connects&&fake_link==WIFI_LINK_JOINING)fake_link=WIFI_LINK_UP;if(break_radio_on_yield){break_radio_on_yield=false;fake_link=WIFI_LINK_DOWN;fail_disconnect=1;}if(block_expected && blocked_note)longjmp(blocked,1);}
 static bool fake_diag(const char *s){assert(!strstr(s,"testpass") && !strstr(s,"Fixture"));if(strstr(s,"retained"))blocked_note=true;return true;}
 static bool fake_launch(const char *s){
@@ -77,21 +80,53 @@ static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
 }
 static bool fake_present(void*c,risc_display_present_token_v1 token,risc_display_present_status_v1*out){(void)c;observed();assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size=sizeof(display_api),.get_info=fake_info,.acquire=fake_frame,.release=fake_frame_release,.submit=fake_submit,.present_status=fake_present};
-static uint64_t fake_subscribe(void*c){(void)c;observed();++sub_count;return 1;}
-static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
-static bool fake_touch_poll(void*c,size_t n){(void)c;observed();assert(n==1);++poll_count;return true;}
-static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){(void)c;(void)id;(void)e;observed();return 0;}
-static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();memset(out,0,sizeof(*out));out->width=UW;out->height=UH;
+/* Strict raw provider: capture queues each edge, and snapshot describes the
+ * same sequence. Snapshot-only mutations are not valid touch reports. */
+static risc_touch_snapshot_v1 fake_touch_state;
+static risc_touch_event_v1 fake_touch_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned fake_touch_head,fake_touch_count;
+static bool fake_script_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;memset(out,0,sizeof(*out));out->width=UW;out->height=UH;
 #ifdef TEST_PAPER_UPDATE
 out->width=480;out->height=800;
 #endif
-for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
+for(unsigned i=0;i<script_count;++i)if(script[i].at==input_step() && script[i].x>=0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=script[i].x,.y=script[i].y};
 #if PORTABLE_TOUCH_ROTATION == 180
  out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
 #endif
  }return true;}
+static void fake_touch_emit(unsigned kind,risc_touch_contact_v1 point){
+ assert(fake_touch_count<RISC_TOUCH_QUEUE_LENGTH);
+ fake_touch_events[(fake_touch_head+fake_touch_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
+  .sequence=++fake_touch_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static uint64_t fake_subscribe(void*c){observed();++sub_count;fake_touch_head=fake_touch_count=0;assert(fake_script_snapshot(c,&fake_touch_state));return 1;}
+static bool fake_unsubscribe(void*c,uint64_t id){(void)c;observed();assert(id==1 && sub_count);--sub_count;return true;}
+static bool fake_touch_poll(void*c,size_t n){
+ observed();assert(n==1);++poll_count;risc_touch_snapshot_v1 next;assert(fake_script_snapshot(c,&next));
+ bool old_down=fake_touch_state.contact_count!=0,new_down=next.contact_count!=0;
+ bool same=old_down&&new_down&&fake_touch_state.contacts[0].id==next.contacts[0].id;
+ if(old_down&&!same)fake_touch_emit(RISC_TOUCH_EVENT_UP,fake_touch_state.contacts[0]);
+ if(new_down){
+  if(!same)fake_touch_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);
+  else if(memcmp(&fake_touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))fake_touch_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);
+ }
+ next.sequence=fake_touch_state.sequence;next.timestamp_ms=ticks;fake_touch_state=next;return true;
+}
+static int32_t fake_next(void*c,uint64_t id,risc_touch_event_v1*e){
+ (void)c;observed();assert(id==1);if(!fake_touch_count)return 0;
+ *e=fake_touch_events[fake_touch_head];fake_touch_head=(fake_touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--fake_touch_count;return 1;
+}
+static bool fake_snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;observed();*out=fake_touch_state;return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,fake_subscribe,fake_unsubscribe,fake_touch_poll,fake_next,fake_snapshot};
-static bool fake_nav(void*c,risc_input_navigation_frame_v1*out){(void)c;observed();*out=(risc_input_navigation_frame_v1){0};for(unsigned i=0;i<script_count;++i)if(script[i].at==poll_count)out->pressed=out->released=script[i].buttons;return true;}
+static bool fake_nav(void*c,risc_input_navigation_frame_v1*out){
+ (void)c;observed();*out=(risc_input_navigation_frame_v1){0};
+ /* Raster capture can poll touch without reducing a navigation frame. Keep
+  * each scripted navigation edge pending until its provider is polled. */
+ for(unsigned i=0;i<script_count;++i)if(script[i].at<=input_step()&&script[i].buttons&&!script[i].navigation_delivered){
+  out->pressed=out->released=script[i].buttons;script[i].navigation_delivered=true;break;
+ }
+ return true;
+}
 static bool fake_foreground(void*c,const risc_input_foreground_v1*a,size_t n){(void)c;(void)a;(void)n;observed();return true;}
 static bool fake_reset(void*c){(void)c;observed();return true;}
 static const risc_input_navigation_api_v1 nav_api={1,sizeof(nav_api),NULL,fake_nav,fake_foreground,fake_reset};
@@ -119,7 +154,7 @@ static unsigned checks,begins,activations,restarts,service_cancels;
 static bool fail_cancel,fail_service_status,unknown_activation;
 static software_update_status_v1 mock_update={.struct_size=sizeof(mock_update),.state=SOFTWARE_UPDATE_IDLE};
 static bool update_refresh(void*c,uint64_t utc){(void)c;assert(utc>1704067200ULL);++checks;mock_update.state=SOFTWARE_UPDATE_CATALOG;mock_update.resources_open=true;return true;}
-static bool update_step(void*c){(void)c;if(scenario>=24&&scenario<=25){if(mock_update.state==SOFTWARE_UPDATE_PREPARING&&poll_count>=10)mock_update.state=SOFTWARE_UPDATE_VERIFYING;if(mock_update.state==SOFTWARE_UPDATE_VERIFYING&&poll_count>=12)mock_update.state=SOFTWARE_UPDATE_READY;}return true;}
+static bool update_step(void*c){(void)c;if(scenario>=24&&scenario<=25){if(mock_update.state==SOFTWARE_UPDATE_PREPARING&&input_step()>=10)mock_update.state=SOFTWARE_UPDATE_VERIFYING;if(mock_update.state==SOFTWARE_UPDATE_VERIFYING&&input_step()>=12)mock_update.state=SOFTWARE_UPDATE_READY;}return true;}
 static bool update_status(void*c,software_update_status_v1*out){(void)c;if(fail_service_status)return false;*out=mock_update;return true;}
 static bool update_get(void*c,uint32_t i,software_update_row_v1*out){(void)c;assert(i<mock_update.count);strcpy(out->id,"clock");strcpy(out->version,"1.1.0");strcpy(out->installed,"1.0.0");strcpy(out->reason,"Update available");out->availability=SOFTWARE_UPDATE_AVAILABLE;return true;}
 static bool update_begin(void*c,uint32_t i,uint64_t utc){(void)c;assert(i<mock_update.count&&utc>1704067200ULL);++begins;mock_update.state=SOFTWARE_UPDATE_PREPARING;mock_update.resources_open=true;return true;}
@@ -146,7 +181,7 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_outp
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 
 static void start_fixture(void){
- runtime_api=(risc_runtime_api_v1){1,sizeof(runtime_api),fake_health,fake_yield,fake_diag,fake_launch,fake_acquire,fake_release};
+ runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  assert(app_module_init()==0);assert(open_update());
  portable_wifi_credentials saved={0};strcpy(saved.ssid,"Fixture network");strcpy(saved.password,"testpass123");assert(portable_wifi_credentials_save(&kv_api,&saved)==PORTABLE_WIFI_CREDENTIALS_LOADED);portable_wifi_credentials_clear(&saved);writes=0;
@@ -174,7 +209,7 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
  case 7:connect_fixture(false);render_update();sleep_outcome=-2;ticks+=60001;t5_app_input_t input7;assert(!poll(&input7,25)&&native_sleep_retained);unsigned old=grant_count;app_module_fini();assert(!late_calls&&old==grant_count);terminal_sleep=0;native_sleep_retained=false;failed=false;break;
  case 8:connect_fixture(false);render_update();fail_display=1;render_update();t5_app_input_t input8;assert(!poll(&input8,25)&&!native_active&&!uwg.api);fail_display=0;break;
  case 9:fake_link=WIFI_LINK_UP;native_active=true;assert(!connect_saved(false));assert(!connects&&!disconnects&&native_active&&!uwg.api);native_active=false;fake_link=WIFI_LINK_DOWN;break;
- case 10:assert(portable_update_close());event(poll_count+3,T5_APP_BUTTON_CONFIRM,-1,0);event(poll_count+6,T5_APP_BUTTON_BACK,-1,0);app_main();assert(!opened&&launches==1&&!native_active&&!begins);break;
+ case 10:assert(portable_update_close());event(input_step()+3,T5_APP_BUTTON_CONFIRM,-1,0);event(input_step()+6,T5_APP_BUTTON_BACK,-1,0);app_main();assert(!opened&&launches==1&&!native_active&&!begins);break;
  case 11:mock_update.count=1;mock_update.state=SOFTWARE_UPDATE_LIST;selected=1;ust=mock_update;selected_row=(software_update_row_v1){.struct_size=sizeof(selected_row)};assert(update_get(NULL,0,&selected_row));confirming=true;confirm_choice=0;render_update();assert(!begins&&!activations);break;
  case 12:connect_fixture(false);fail_cancel=true;http_retained=true;block_expected=true;if(!setjmp(blocked)){app_module_fini();assert(!"Expected retained invocation");}block_expected=false;assert(native_active&&usg.api&&ukg.api);fail_cancel=false;http_retained=false;break;
  case 13:connect_fixture(false);render_update();fake_alarm.state=ALARM_STATE_ALERT;fake_alarm.occurrence=(alarm_token_v1){1,1,1,1};break_radio_on_yield=true;bool alarm=false;assert(alarm_foreground(&alarm)&&alarm&&cleanup_pending&&alarm_stops);fail_disconnect=0;assert(portable_update_suspend());fake_alarm.state=ALARM_STATE_READY;break;
