@@ -17,7 +17,11 @@ static const t5_app_api_v1 *test_browser_api(uint32_t);
 #undef t5_app_get_api
 #include <assert.h>
 #include <stdlib.h>
+#ifdef FILE_BROWSER_PAPER_PROFILE
+static uint8_t fb_pixels[100*480];
+#else
 static uint16_t fb_pixels[240*244];
+#endif
 static unsigned test_grants,test_frames,test_subs,test_presents,test_ticks,test_entry,test_entries=8,test_offset,test_length=577,test_reads,test_closes;
 static unsigned test_polls,test_launches,test_script,test_seen_modes,test_wifi_launches;
 static bool test_fail_acquire,test_fail_open,test_fail_read,test_fail_close,test_fail_release,test_fail_listing,test_invalid_name;
@@ -28,22 +32,52 @@ const t5_app_manifest_t portable_catalog[]={{.compatible=false}};const unsigned 
 static bool test_health(risc_runtime_health_v1*h){h->uptime_ms=test_ticks;return !test_script || test_polls<50;}
 static void test_yield(uint32_t n){test_ticks+=n;}
 static bool test_diag(const char*s){(void)s;return true;}
-static bool test_launch(const char*s){assert(!strcmp(s,FILE_BROWSER_RETURN_APP) || !strcmp(s,"wifi_settings.elf"));if(!strcmp(s,"wifi_settings.elf"))test_wifi_launches++;else assert(!fb_grant.api);test_launches++;return true;}
-static bool test_info(void*c,risc_display_info_v1*s){(void)c;*s=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;}
-static bool test_frame(void*c,uint32_t f,risc_display_surface_v1*s){(void)c;assert(!test_frames);test_frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=240,.height=240,.stride_bytes=488,.size_bytes=sizeof(fb_pixels),.pixel_format=f};return true;}
+static bool test_launch(const char*s){
+#ifdef PORTABLE_HOME_APP
+ if(!strcmp(s,PORTABLE_HOME_APP)){assert(!fb_grant.api&&!fb_retained_file&&fb_mode==FB_PREVIEW);test_launches++;return true;}
+#endif
+assert(!strcmp(s,FILE_BROWSER_RETURN_APP) || !strcmp(s,"wifi_settings.elf"));if(!strcmp(s,"wifi_settings.elf"))test_wifi_launches++;else assert(!fb_grant.api);test_launches++;return true;}
+static bool test_info(void*c,risc_display_info_v1*s){(void)c;
+#ifdef FILE_BROWSER_PAPER_PROFILE
+*s=(risc_display_info_v1){.width=800,.height=480,.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
+#else
+*s=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+#endif
+return true;}
+static bool test_frame(void*c,uint32_t f,risc_display_surface_v1*s){(void)c;assert(!test_frames);test_frames=1;
+#ifdef FILE_BROWSER_PAPER_PROFILE
+assert(f==RISC_DISPLAY_FORMAT_MONO1);*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=800,.height=480,.stride_bytes=100,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
+#else
+*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=240,.height=240,.stride_bytes=488,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
+#endif
+return true;}
 static void test_frame_release(void*c,risc_display_frame_v1 f){(void)c;assert(f==1 && test_frames);test_frames=0;}
 static bool test_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)r;(void)n;(void)o;assert(f==1 && test_frames);test_frames=0;*t=++test_presents;test_seen_modes|=1u<<fb_mode;
- if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n240 240\n255\n");for(unsigned y=0;y<240;y++)for(unsigned x=0;x<244;x++){unsigned v=fb_pixels[y*244+x];if(x<240){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}return true;}
+#ifndef FILE_BROWSER_PAPER_PROFILE
+ if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n240 240\n255\n");for(unsigned y=0;y<240;y++)for(unsigned x=0;x<244;x++){unsigned v=fb_pixels[y*244+x];if(x<240){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}
+#endif
+return true;}
 static bool test_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
 static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present};
 static uint64_t test_sub(void*c){(void)c;test_subs++;return 1;}
 static bool test_unsub(void*c,uint64_t n){(void)c;assert(n==1 && test_subs);test_subs--;return true;}
 static bool test_poll(void*c,size_t n){(void)c;assert(n==1);test_polls++;return true;}
 static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
+static void (*test_touch_script)(int*,int*);
 static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){
- (void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240};int x=-1,y=-1;
+ (void)c;int x=-1,y=-1;
+#ifdef FILE_BROWSER_PAPER_PROFILE
+ *s=(risc_touch_snapshot_v1){.width=480,.height=800};
+ if(test_script==7){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17)s->buttons=RISC_TOUCH_BUTTON_PRIMARY;}
+ if(test_script==4){if(test_polls==5){x=100;y=150;}if(test_polls==11){x=300;y=730;}if(test_polls==17||test_polls==23||test_polls==29){x=75;y=730;}}
+ if(test_script==5){if(test_polls==5){x=100;y=600;}if(test_polls==6){x=100;y=160;}if(test_polls==13){x=75;y=730;}}
+ if(test_script==6){if(test_polls==5){x=420;y=50;}if(test_polls==11){x=100;y=150;}if(test_polls==17){x=100;y=624;}if(test_polls==23){x=321;y=424;}if(test_polls==29){x=100;y=730;}if(test_polls==35){x=75;y=730;}}
+#else
+ *s=(risc_touch_snapshot_v1){.width=240,.height=240};
+#endif
  if(test_script==1 || test_script==3){if(test_polls==5){x=100;y=82;}if(test_polls==11){x=120;y=207;}if(test_polls==17||test_polls==23||test_polls==29){x=25;y=25;}}
  if(test_script==2){if(test_polls==5){x=100;y=154;}if(test_polls==6){x=100;y=82;}if(test_polls==13){x=25;y=25;}}
+ if(test_touch_script)test_touch_script(&x,&y);
  if(x>=0){
 #if PORTABLE_TOUCH_ROTATION == 180
   x=239-x;y=239-y;
@@ -75,7 +109,8 @@ static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capabi
  test_grants++;return true;}
 static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_grants);if(g->api==&test_volume && test_fail_release)return false;g->api=NULL;test_grants--;return true;}
 static const risc_runtime_api_v1 test_runtime={1,sizeof(test_runtime),test_health,test_yield,test_diag,test_launch,test_acquire,test_release};
-const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&test_runtime:NULL;}
+static const risc_runtime_api_v1 *test_runtime_override;
+const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){
  bool ok=t5_app_get_api(1)->poll(out,wait);
  if(ok && test_script==3 && test_polls>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}

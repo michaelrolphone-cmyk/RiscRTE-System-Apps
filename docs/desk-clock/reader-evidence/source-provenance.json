@@ -1,0 +1,175 @@
+{
+  "repository": "https://github.com/michaelrolphone-cmyk/T5S3-Reader",
+  "commit": "34d8e694d89a1e72d8854403d8592c289fae3ddc",
+  "language_ids": [
+    {
+      "id": 0,
+      "code": "EN",
+      "reader_name": "English",
+      "source": "lib/I18n/translations/english.yaml"
+    },
+    {
+      "id": 1,
+      "code": "ES",
+      "reader_name": "Español",
+      "source": "lib/I18n/translations/spanish.yaml"
+    },
+    {
+      "id": 2,
+      "code": "FR",
+      "reader_name": "Français",
+      "source": "lib/I18n/translations/french.yaml"
+    },
+    {
+      "id": 3,
+      "code": "DE",
+      "reader_name": "Deutsch",
+      "source": "lib/I18n/translations/german.yaml"
+    },
+    {
+      "id": 4,
+      "code": "CS",
+      "reader_name": "Čeština",
+      "source": "lib/I18n/translations/czech.yaml"
+    },
+    {
+      "id": 5,
+      "code": "PT",
+      "reader_name": "Português (Brasil)",
+      "source": "lib/I18n/translations/portuguese.yaml"
+    },
+    {
+      "id": 6,
+      "code": "RU",
+      "reader_name": "Русский",
+      "source": "lib/I18n/translations/russian.yaml"
+    },
+    {
+      "id": 7,
+      "code": "SV",
+      "reader_name": "Svenska",
+      "source": "lib/I18n/translations/swedish.yaml"
+    },
+    {
+      "id": 8,
+      "code": "RO",
+      "reader_name": "Română",
+      "source": "lib/I18n/translations/romanian.yaml"
+    },
+    {
+      "id": 9,
+      "code": "CA",
+      "reader_name": "Català",
+      "source": "lib/I18n/translations/catalan.yaml"
+    },
+    {
+      "id": 10,
+      "code": "UK",
+      "reader_name": "Українська",
+      "source": "lib/I18n/translations/ukrainian.yaml"
+    },
+    {
+      "id": 11,
+      "code": "BE",
+      "reader_name": "Беларуская",
+      "source": "lib/I18n/translations/belarusian.yaml"
+    },
+    {
+      "id": 12,
+      "code": "IT",
+      "reader_name": "Italiano",
+      "source": "lib/I18n/translations/italian.yaml"
+    },
+    {
+      "id": 13,
+      "code": "PL",
+      "reader_name": "Polski",
+      "source": "lib/I18n/translations/polish.yaml"
+    },
+    {
+      "id": 14,
+      "code": "FI",
+      "reader_name": "Suomi",
+      "source": "lib/I18n/translations/finnish.yaml"
+    },
+    {
+      "id": 15,
+      "code": "DA",
+      "reader_name": "Dansk",
+      "source": "lib/I18n/translations/danish.yaml"
+    },
+    {
+      "id": 16,
+      "code": "NL",
+      "reader_name": "Nederlands",
+      "source": "lib/I18n/translations/dutch.yaml"
+    },
+    {
+      "id": 17,
+      "code": "TR",
+      "reader_name": "Türkçe",
+      "source": "lib/I18n/translations/turkish.yaml"
+    },
+    {
+      "id": 18,
+      "code": "KK",
+      "reader_name": "Қазақша",
+      "source": "lib/I18n/translations/kazakh.yaml"
+    },
+    {
+      "id": 19,
+      "code": "HU",
+      "reader_name": "Magyar",
+      "source": "lib/I18n/translations/hungarian.yaml"
+    },
+    {
+      "id": 20,
+      "code": "LT",
+      "reader_name": "Lietuvių",
+      "source": "lib/I18n/translations/lithuanian.yaml"
+    },
+    {
+      "id": 21,
+      "code": "SI",
+      "reader_name": "Slovenščina",
+      "source": "lib/I18n/translations/slovenian.yaml"
+    }
+  ],
+  "source_sha256": {
+    "lib/I18n/translations/belarusian.yaml": "fdec5bd61b80ae08a0448527ab0f78b7cf82431ce26c74abaf20732012383ab7",
+    "lib/I18n/translations/catalan.yaml": "34a4628703b52232a87e78c6ed3fc9af7098c81af4784835e489855355d61d39",
+    "lib/I18n/translations/czech.yaml": "994d09a5bbe3c0f12a200fb7f78ef371ba7d4243c13b2616ab89eff20539e4d7",
+    "lib/I18n/translations/danish.yaml": "8701ede6ff10f36d1844d4cb93cbd0fa25834de1f62c561001f5f9a473f5c15c",
+    "lib/I18n/translations/dutch.yaml": "0cb0c5cb06d819661db1bf3a2131da1cbe6875f15eeb45c8be4e9a3c58ee2fcc",
+    "lib/I18n/translations/english.yaml": "11a3aae887ba56bb61c3f091928b5207b6cd8ff4eab7066fe1ac6fa38e1a10eb",
+    "lib/I18n/translations/finnish.yaml": "d13504476c83868ad816832dcf6b5be7b046a2241cd1e90622025870f2501b4e",
+    "lib/I18n/translations/french.yaml": "4e0b783f3d08dd2667b22f12172ab00dcfd2168b954627ac37e667791802514d",
+    "lib/I18n/translations/german.yaml": "714841bae61e690843fd2ae8a8d90ba894c46002a4d425d8075cf2d6b1f6f9e1",
+    "lib/I18n/translations/hungarian.yaml": "64ae047d2ec88a7236b29bf74af351e5a9a3dbd6d8bebb3bea6f7360cda3cff1",
+    "lib/I18n/translations/italian.yaml": "6669d27b7fee9fa6137f84fa29f7dabfef410ec652e1e0c28a3cea0d42151948",
+    "lib/I18n/translations/kazakh.yaml": "c7785ca6e2b78ef3ce101f8408a2339d99ae4111408b07349bae7e52d1c831b7",
+    "lib/I18n/translations/lithuanian.yaml": "a2c66a7ea272fcb72e387c46bce7471272902b4bd0a03208dd13f3821c8f1c36",
+    "lib/I18n/translations/polish.yaml": "4bd0e35d11a4851a2615c1e6e788b1457dc9521c2065b498c0eecf3c834f0af9",
+    "lib/I18n/translations/portuguese.yaml": "9bc2ef3a38e9ebe16d87c5cdaa4298a64078129a257a4c4b32638bb72dd97782",
+    "lib/I18n/translations/romanian.yaml": "823a31d1b784374f0b71fd86de664bd8081f4768dc4296751c20fa32b9734969",
+    "lib/I18n/translations/russian.yaml": "9dda2e07cf16920663c010165194c7e1f8c517a88e573de9358c1a2c95c59546",
+    "lib/I18n/translations/slovenian.yaml": "7a00fa69c8afa6dae15bea51d11b967ca363dc5680fb031659b58c3c08e4b4b4",
+    "lib/I18n/translations/spanish.yaml": "122822050a1826030b1b6429221bb1b9708a24f34263d1f2f14541c8f674201c",
+    "lib/I18n/translations/swedish.yaml": "1c7588483ae0b95c78b4aef70be3c2e0657969124ccacffa6a843f1c6a95dcbf",
+    "lib/I18n/translations/turkish.yaml": "5a11eb29c74875d2e9a391d4242e130f3819eac48609892a2af9e776b5913e9a",
+    "lib/I18n/translations/ukrainian.yaml": "7f76b657a7eb804c0a949a077abb1a7d4f636880260ebd0e5f935af7b15c1180",
+    "scripts/gen_i18n.py": "5b870d57e846e79000289d5046cf871c28c449e6258225d2529ed3f25d38f500",
+    "src/DeskClockSleep.cpp": "a278dda5aceecb9100531e41c55fcd2050e56ee2c87f542aadd843d44b715678",
+    "lib/I18n/I18n.cpp": "176d96b409ad39a9bb1798e4772feb2b08e633d703b27f91583f69e8953073dc",
+    "lib/hal/HalClock.cpp": "08f6097955362225b47b2b10c195ed3a4de8b603ec9ad2edc959775b07ef56c1"
+  },
+  "caption_fallback": {
+    "STR_CLOCK_SET_TIME": "Set the clock in Settings",
+    "STR_CLOCK_WAKE_BUTTON": "Press PWR to wake"
+  },
+  "valid_time_minimum_epoch": 1704067200,
+  "date_format": "YYYY-MM-DD",
+  "date_y": 32,
+  "period_y": "height - 78",
+  "wake_y": "height - 44"
+}

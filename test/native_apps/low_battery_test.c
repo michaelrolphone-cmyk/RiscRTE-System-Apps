@@ -5,13 +5,13 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
-static const char *keys[]={PORTABLE_LOW_BATTERY_KEY,PORTABLE_SLEEP_IDLE_KEY,PORTABLE_SLEEP_DEEP_KEY,PQA_BRIGHTNESS_KEY,PORTABLE_RADIO_KEY};
-static struct {bool exists;uint8_t data[8];uint32_t size;} records[5];
-static unsigned writes[5],reads,live,brightness,hardware_calls;
+static const char *keys[]={PORTABLE_LOW_BATTERY_KEY,PORTABLE_SLEEP_IDLE_KEY,PORTABLE_SLEEP_DEEP_KEY,PQA_BRIGHTNESS_KEY,PORTABLE_RADIO_KEY,PQA_RESTORE_BRIGHTNESS_KEY};
+static struct {bool exists;uint8_t data[8];uint32_t size;} records[6];
+static unsigned writes[6],reads,live,brightness,hardware_calls;
 static int fail_get=-1,fail_put=-1,commit_io=-1,unconfirmed=-1;
 static bool acquire_fail,release_fail,display_fail,wifi_fail,ble_fail,wifi_on;
 static uint8_t bluetooth;
-static int index_of(const char *key){for(unsigned i=0;i<5;i++)if(!strcmp(key,keys[i]))return (int)i;return -1;}
+static int index_of(const char *key){for(unsigned i=0;i<6;i++)if(!strcmp(key,keys[i]))return (int)i;return -1;}
 static int32_t get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size){
  (void)c;reads++;*size=0;int i=index_of(key);if(i<0)return RISC_KEY_VALUE_NOT_FOUND;
  if(i==fail_get||(i==unconfirmed&&writes[i]))return RISC_KEY_VALUE_IO;
@@ -129,4 +129,20 @@ static void timer_records(void){
   assert(portable_sleep_timer_load(&kv,false,&ms)==PORTABLE_SLEEP_INVALID&&ms==60000);records[1].data[i]=before;
  }
 }
-int main(void){crossings();invalid_samples();failures();timer_records();puts("Low battery: crossing/reboot/manual overrides/charging/unknown/error and shared settings parity passed");}
+#ifdef PORTABLE_X4_IDLE_POLICY
+static void paper_off(void) {
+ reset();assert(pqa_preference_save(&kv,PQA_BRIGHTNESS_KEY,0,0));
+ assert(pqa_preference_save(&kv,PQA_RESTORE_BRIGHTNESS_KEY,80,10));
+ portable_low_battery state={0};assert(observe(&state,9,0)==PORTABLE_LOW_BATTERY_ENTERED);
+ assert(writes[3]==1 && writes[5]==1); /* Crossing did not turn OFF on. */
+ pqa_session s;pqa_session_init(&s);s.ui.paper=true;assert(pqa_session_load(&s,&rt));
+ assert(s.brightness==0 && s.restore_brightness==80 && s.ui.last_nonzero_brightness==80);
+ assert(pqa_session_sync_brightness(&s,&display) && brightness==0 && s.ui.applied_brightness_valid && s.ui.applied_brightness==0);
+
+}
+#endif
+int main(void){
+#ifdef PORTABLE_X4_IDLE_POLICY
+ paper_off();
+#endif
+crossings();invalid_samples();failures();timer_records();puts("Low battery: crossing/reboot/manual overrides/charging/unknown/error and shared settings parity passed");}

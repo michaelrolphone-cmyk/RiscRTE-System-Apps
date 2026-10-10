@@ -1,0 +1,2 @@
+# Preserve upstream OFL notices byte-for-byte, including their trailing space.
+LICENSE-Noto*.txt whitespace=-blank-at-eol

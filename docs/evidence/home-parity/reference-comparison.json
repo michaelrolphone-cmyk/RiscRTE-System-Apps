@@ -1,0 +1,65 @@
+{
+  "metric": "black-pixel intersection / union after thresholding the SVG reference at 128",
+  "regions": {
+    "date": {
+      "crop": [
+        24,
+        16,
+        224,
+        50
+      ],
+      "before": 0.1516,
+      "after": 0.9069
+    },
+    "clock": {
+      "crop": [
+        108,
+        212,
+        372,
+        300
+      ],
+      "before": 0.4063,
+      "after": 0.9718
+    },
+    "next": {
+      "crop": [
+        24,
+        482,
+        456,
+        516
+      ],
+      "before": 0.1412,
+      "after": 0.8718
+    },
+    "title": {
+      "crop": [
+        24,
+        520,
+        456,
+        575
+      ],
+      "before": 0.3423,
+      "after": 0.9627
+    },
+    "countdown": {
+      "crop": [
+        24,
+        580,
+        456,
+        615
+      ],
+      "before": 0.1544,
+      "after": 0.8759
+    },
+    "upcoming": {
+      "crop": [
+        24,
+        662,
+        456,
+        742
+      ],
+      "before": 0.1789,
+      "after": 0.8442
+    }
+  }
+}

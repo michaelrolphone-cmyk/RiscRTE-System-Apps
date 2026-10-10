@@ -5,10 +5,12 @@
 static unsigned test_case;
 #ifdef PORTABLE_INPUT_NAVIGATION
 static bool format_navigation(void *c,risc_input_navigation_frame_v1 *out) {
- (void)c;*out=(risc_input_navigation_frame_v1){0};
+ (void)c;static unsigned previous;*out=(risc_input_navigation_frame_v1){0};
  if(polls==3)out->pressed=RISC_NAV_DOWN;
  if(polls==7)out->pressed=test_case==14?RISC_NAV_BACK:RISC_NAV_CONFIRM;
+ if(out->pressed)out->buttons=out->pressed;
  if(polls==8)out->buttons=RISC_NAV_CONFIRM; /* Held confirm is never a second save. */
+ out->released=previous&~out->buttons;previous=out->buttons;
  return true;
 }
 #endif
@@ -17,20 +19,44 @@ static void record(unsigned mode) {
 }
 static void boundary_labels(unsigned mode) {
  /* These are already-local civil hours. Format must not touch RTC/timezone. */
- const unsigned hours[]={0,12,23};
- const char *twelve[]={"12:00:00 AM","12:00:00 PM","11:59:00 PM"};
- const char *twentyfour[]={"00:00:00","12:00:00","23:59:00"};
+ const unsigned hours[]={0,1,9,10,12,23};
+ const char *twelve[]={"12:07:03 AM","1:07:03 AM","9:07:03 AM","10:07:03 AM","12:07:03 PM","11:07:03 PM"};
+ #ifdef PORTABLE_UNPADDED_HOURS
+ const char *twentyfour[]={"0:07:03","1:07:03","9:07:03","10:07:03","12:07:03","23:07:03"};
+#else
+ const char *twentyfour[]={"00:07:03","01:07:03","09:07:03","10:07:03","12:07:03","23:07:03"};
+#endif
  time_format_mode=mode;
- for(unsigned i=0;i<3;++i) {
-  twatch_rtc_time_v1 value={2026,10,4,0,(uint8_t)hours[i],i==2?59:0,0};
+ for(unsigned i=0;i<sizeof(hours)/sizeof(hours[0]);++i) {
+  twatch_rtc_time_v1 value={2026,10,4,0,(uint8_t)hours[i],7,3};
   twatch_rtc_time_v1 before=value;char label[24];
   format_wall_time(label,sizeof(label),&value);
   assert(!strcmp(label,mode==PORTABLE_TIME_FORMAT_24?twentyfour[i]:twelve[i]));
   assert(!memcmp(&before,&value,sizeof(value)));
   settings_draft=value;editor_value_text(3,label,sizeof(label));
   if(mode==PORTABLE_TIME_FORMAT_24) {char expected[8];snprintf(expected,sizeof(expected),"%u",hours[i]);assert(!strcmp(label,expected));}
-  else assert(strstr(label,i==0?"AM":"PM"));
+  else assert(strstr(label,hours[i]<12?"AM":"PM"));
  }
+}
+static void settings_row_hours(void) {
+ /* Exercise the actual row and timezone path for each raw RTC hour. */
+ twatch_rtc_time_v1 saved=stored;unsigned saved_mode=time_format_mode;
+ for(unsigned mode=0;mode<2;++mode)for(unsigned h=0;h<24;++h){
+  time_format_mode=mode;stored=(twatch_rtc_time_v1){2026,10,4,0,(uint8_t)h,7,3};
+  twatch_rtc_time_v1 before=stored,local;t5_app_setting_t row;
+  assert(portable_time_forward(&stored,&local)&&settings_get(0,0,&row));
+  unsigned hour=mode?local.hour:(local.hour%12?local.hour%12:12);
+  size_t width=hour<10?1:2;
+#ifndef PORTABLE_UNPADDED_HOURS
+  if(mode)width=2;
+#else
+  assert(row.value[0]!='0'||(hour==0&&row.value[1]==':'));
+#endif
+  assert(row.value[width]==':');
+  assert(row.value[width+1]=='0'+local.minute/10&&row.value[width+2]=='0'+local.minute%10);
+  assert(!memcmp(&before,&stored,sizeof(stored)));
+ }
+ stored=saved;time_format_mode=saved_mode;
 }
 static void record_contract(void) {
  unsigned mode=99;assert(portable_time_format_load(NULL,&mode)==PORTABLE_TIME_FORMAT_UNAVAILABLE && mode==0);
@@ -74,7 +100,7 @@ int main(int argc,char **argv) {
   else {tap(7,cancel?60:170,213);tap(8,cancel?60:170,213);} /* Held Save must not replay. */
  }
  if(test_case==2 || test_case==3 || test_case==15 || test_case==16 || (test_case>=6 && test_case<=9))tap(12,60,213);
- assert(app_module_init()==0);settings_render(0,0);polls=0;
+ assert(app_module_init()==0);settings_row_hours();settings_render(0,0);polls=0;
  if(test_case==15)format_read_error=true;
  unsigned old_mode=time_format_mode;const char *zone=portable_time_zone(),*basis=portable_time_basis();
  t5_app_setting_t row;assert(settings_get(0,2,&row) && row.type==T5_APP_SETTING_ACTION);
@@ -98,7 +124,7 @@ int main(int argc,char **argv) {
   boundary_labels(loaded);
   assert(settings_get(0,0,&row));twatch_rtc_time_v1 local;
   assert(portable_time_forward(&stored,&local));char expected[24];
-  if(loaded==PORTABLE_TIME_FORMAT_24)snprintf(expected,sizeof(expected),"%02u:%02u",(unsigned)local.hour,(unsigned)local.minute);
+  if(loaded==PORTABLE_TIME_FORMAT_24)snprintf(expected,sizeof(expected),SETTINGS_HOUR_SPEC ":%02u",(unsigned)local.hour,(unsigned)local.minute);
   else snprintf(expected,sizeof(expected),"%u:%02u %s",local.hour%12?local.hour%12:12,(unsigned)local.minute,local.hour<12?"AM":"PM");
   assert(!strcmp(row.value,expected));app_module_fini();assert(!grants && !subscriptions && !frame_count);
  }

@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "runs": [
+    {
+      "layer": "synthetic-provider",
+      "mode": "normal",
+      "profile": "portable"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "normal",
+      "profile": "native"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "normal",
+      "profile": "native-180"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "asan",
+      "profile": "portable"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "asan",
+      "profile": "native"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "asan",
+      "profile": "native-180"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "ubsan",
+      "profile": "portable"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "ubsan",
+      "profile": "native"
+    },
+    {
+      "layer": "synthetic-provider",
+      "mode": "ubsan",
+      "profile": "native-180"
+    }
+  ],
+  "hardware_verified": false,
+  "publication": "none",
+  "driver_version": null,
+  "source_sha256": {
+    "/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/include/PortableTouch.h": "ccd084328a0b90c90223badba686c8093ca723aab247e518910daf09dbf9bd48",
+    "/tmp/system-ui-state-decoupling-20261010/test/native_apps/portable_touch_ordered_test.c": "c6583e360f11ccd6a49d6379a1e520e0d991046cd8d77e9880f5b2fce3c99c19",
+    "/tmp/system-ui-state-decoupling-20261010/test/native_apps/portable_touch_ordered_gt911_test.c": "2142ee7f64b7b743d98e80a515f2bc429798b4ebf79fe46900d79e714a931271",
+    "/tmp/system-ui-state-decoupling-20261010/scripts/test_portable_touch_ordered.py": "4b887e844839032ed69186caabb80754d7b58ff32a11cb6f3df123cfe04ba339"
+  }
+}

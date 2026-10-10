@@ -48,7 +48,15 @@ static inline unsigned portable_low_battery_observe(portable_low_battery *state,
     bool ok=true;
     if(!portable_sleep_timer_save(kv,false,PORTABLE_LOW_BATTERY_IDLE_MS))ok=false;
     if(!portable_sleep_timer_save(kv,true,PORTABLE_LOW_BATTERY_DEEP_MS))ok=false;
+#ifdef PORTABLE_X4_IDLE_POLICY
+    /* OFF is an intentional paper preference, including its saved way back.
+     * Never turn it on during an unattended low-battery crossing. */
+    unsigned brightness=PQA_BRIGHTNESS_DEFAULT;
+    if(!pqa_preference_load(kv,PQA_BRIGHTNESS_KEY,PQA_BRIGHTNESS_DEFAULT,0,&brightness))ok=false;
+    else if(brightness && !pqa_preference_save(kv,PQA_BRIGHTNESS_KEY,PORTABLE_LOW_BATTERY_BRIGHTNESS,0))ok=false;
+#else
     if(!pqa_preference_save(kv,PQA_BRIGHTNESS_KEY,PORTABLE_LOW_BATTERY_BRIGHTNESS,10))ok=false;
+#endif
     uint8_t flags=0;
     if(!portable_radio_load(kv,&flags)||!portable_radio_save(kv,(uint8_t)(flags&~3u)))ok=false;
     return PORTABLE_LOW_BATTERY_ENTERED|(ok?0:PORTABLE_LOW_BATTERY_ERROR);

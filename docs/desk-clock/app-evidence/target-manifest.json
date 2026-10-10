@@ -1,0 +1,58 @@
+{
+  "type": "application",
+  "id": "paper_clock",
+  "version": "0.3.0",
+  "architecture": "xtensa-esp32s3",
+  "file_name": "default.elf",
+  "entry": "app_main",
+  "requires": [
+    {
+      "capability": "display.output",
+      "api": 1
+    },
+    {
+      "capability": "input.touch.raw",
+      "api": 1
+    },
+    {
+      "capability": "rtc.clock",
+      "api": 2
+    },
+    {
+      "capability": "board.battery",
+      "api": 1
+    },
+    {
+      "capability": "storage.key-value",
+      "api": 1
+    },
+    {
+      "capability": "input.navigation",
+      "api": 1
+    },
+    {
+      "capability": "x4.power",
+      "api": 1
+    },
+    {
+      "capability": "runtime.retained-wake",
+      "api": 1
+    },
+    {
+      "capability": "storage.volume",
+      "api": 1
+    },
+    {
+      "capability": "alarm.service",
+      "api": 1
+    },
+    {
+      "capability": "net.wifi",
+      "api": 1
+    },
+    {
+      "capability": "bluetooth.hci",
+      "api": 1
+    }
+  ]
+}

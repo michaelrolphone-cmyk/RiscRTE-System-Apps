@@ -83,47 +83,47 @@ static bool status(void *c, risc_display_present_token_v1 t,
   s->state = RISC_DISPLAY_PRESENT_COMPLETE;
   return true;
 }
-static uint64_t subscribe(void *c) {
-  (void)c;
-  subs++;
-  return 1;
+static risc_touch_snapshot_v1 touch_report;
+static risc_touch_event_v1 raw_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned raw_head,raw_count;
+static bool scripted_snapshot(void *,risc_touch_snapshot_v1 *);
+static uint64_t subscribe(void *c) {(void)c;subs++;raw_head=raw_count=0;scripted_snapshot(NULL,&touch_report);return 1;}
+static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);subs--;return true;}
+static void raw_emit(unsigned kind,risc_touch_contact_v1 point){
+ assert(raw_count<RISC_TOUCH_QUEUE_LENGTH);
+ raw_events[(raw_head+raw_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){.sequence=++touch_report.sequence,.timestamp_ms=ms,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
 }
-static bool unsubscribe(void *c, uint64_t n) {
-  (void)c;
-  assert(n == 1 && subs);
-  subs--;
-  return true;
+static bool poll_touch(void*c,size_t n){
+ (void)c;assert(n==1);polls++;risc_touch_snapshot_v1 next;scripted_snapshot(NULL,&next);
+ bool old_down=touch_report.contact_count!=0,new_down=next.contact_count!=0;
+ if(old_down&&!new_down)raw_emit(RISC_TOUCH_EVENT_UP,touch_report.contacts[0]);
+ if(new_down){if(!old_down)raw_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);else if(memcmp(&next.contacts[0],&touch_report.contacts[0],sizeof(next.contacts[0])))raw_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+ next.sequence=touch_report.sequence;next.timestamp_ms=ms;touch_report=next;return true;
 }
-static bool poll_touch(void *c, size_t n) {
-  (void)c;
-  assert(n == 1);
-  polls++;
-  return true;
+static int32_t next_touch(void*c,uint64_t n,risc_touch_event_v1*e){
+ (void)c;assert(n==1);if(scenario==3&&polls==3){raw_head=raw_count=0;return -1;}
+ if(!raw_count)return 0;
+ *e=raw_events[raw_head];raw_head=(raw_head+1)%RISC_TOUCH_QUEUE_LENGTH;--raw_count;return 1;
 }
-static int32_t next_touch(void *c, uint64_t n, risc_touch_event_v1 *e) {
-  (void)c;
-  (void)n;
-  (void)e;
-  return scenario == 3 && polls == 3 ? -1 : 0;
-}
-static bool snapshot(void *c, risc_touch_snapshot_v1 *s) {
+static bool snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=touch_report;return true;}
+static bool scripted_snapshot(void *c, risc_touch_snapshot_v1 *s) {
   (void)c;
   memset(s, 0, sizeof(*s));
   s->width = s->height = 240;
 #ifdef BATTERY_TEST
   if (polls == 2) {
     s->contact_count = 1;
-    s->contacts[0] = (risc_touch_contact_v1){.x = 220, .y = 18};
+    s->contacts[0] = (risc_touch_contact_v1){.id=1, .x = 220, .y = 18};
   }
   if (polls == 5) {
     s->contact_count = 1;
-    s->contacts[0] = (risc_touch_contact_v1){.x = 20, .y = 18};
+    s->contacts[0] = (risc_touch_contact_v1){.id=1, .x = 20, .y = 18};
   }
 #else
   if ((scenario == 1 && polls <= 2) || polls == 4 ||
       (scenario == 3 && polls == 7)) {
     s->contact_count = 1;
-    s->contacts[0] = (risc_touch_contact_v1){.x = 160, .y = 100};
+    s->contacts[0] = (risc_touch_contact_v1){.id=1, .x = 160, .y = 100};
   }
 #endif
   return true;

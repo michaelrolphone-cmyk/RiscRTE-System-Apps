@@ -14,7 +14,6 @@ static const char *capture_directory;
 static risc_display_output_api_v1 quick_display_api;
 static alarm_service_v1 quick_alarm_api;
 static risc_touch_api_v1 quick_touch_api;
-static unsigned emitted_up_poll;
 static risc_runtime_api_v1 quick_runtime;
 static int pref_index(const char *key) {
  if(!strcmp(key,PQA_BRIGHTNESS_KEY))return 0;
@@ -44,8 +43,9 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
  if(!strcmp(key,TELEMETRY_BROADCAST_KEY)){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
 #endif
  /* Settings row reads retain their existing read-only model contract. Quick
-  * control preferences still require a settled, unleased display. */
- if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(!surface.frame && display_settled);
+  * control preferences require no writable framebuffer lease. Hardware
+  * presentation is independent of internal KV ownership. */
+ if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(!surface.frame);
 #ifdef PORTABLE_LOW_BATTERY
  int low_index=low_key(key);
  if(low_index>=0){*size=low_sizes[low_index];if(!*size)return RISC_KEY_VALUE_NOT_FOUND;if(capacity<*size)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(data,low_records[low_index],*size);return RISC_KEY_VALUE_OK;}
@@ -60,7 +60,7 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
  *(uint8_t*)data=pref_value[index];return RISC_KEY_VALUE_OK;
 }
 static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size) {
- assert(!surface.frame && display_settled);
+ assert(!surface.frame);
 #ifdef PORTABLE_LOW_BATTERY
  int low_index=low_key(key);
  if(low_index>=0){assert(size<=5);low_writes[low_index]++;if(low_write_fail==low_index)return RISC_KEY_VALUE_IO;low_sizes[low_index]=size;memcpy(low_records[low_index],data,size);return RISC_KEY_VALUE_OK;}
@@ -75,7 +75,7 @@ static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size)
 }
 static const risc_key_value_v1 quick_kv_api={1,sizeof(quick_kv_api),NULL,quick_get,quick_put};
 static bool quick_brightness(void *c,uint16_t level,uint16_t maximum) {
- (void)c;assert(!surface.frame && display_settled);assert(maximum==100 && level<=100);
+ (void)c;assert(!surface.frame);assert(maximum==100 && level<=100);
  hardware_brightness=level;brightness_calls++;return true;
 }
 static int32_t quick_step(void *c) {
@@ -93,23 +93,6 @@ static bool quick_health(risc_runtime_health_v1 *out) {
 static bool quick_launch(const char *path) {
  if(!strcmp(path,"wifi_settings.elf")){wifi_launches++;return true;}
  return test_launch(path);
-}
-static int32_t quick_next(void *c,uint64_t subscription,risc_touch_event_v1 *event) {
- if(polls==gap_at)return touch_next(c,subscription,event);
- bool current=false;const contact *last=NULL;
- for(size_t i=0;i<input_count;i++) {
-  if(input_script[i].poll==polls)current=true;
-  if(input_script[i].poll+1==polls)last=input_script+i;
- }
- if(!current && last && emitted_up_poll!=polls) {
-  emitted_up_poll=polls;
-  *event=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=last->x,.y=last->y};
-#if PORTABLE_TOUCH_ROTATION == 180
-  event->x=239-event->x;event->y=239-event->y;
-#endif
-  return 1;
- }
- return 0;
 }
 static bool quick_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
 #ifdef PORTABLE_QUICK_RADIOS
@@ -144,7 +127,7 @@ static void setup(void) {
  scenario=100;alarm_scenario=0;
  quick_display_api=display_api;quick_display_api.set_brightness=quick_brightness;quick_display_api.submit=capture_submit;
  quick_alarm_api=service_api;quick_alarm_api.step=quick_step;
- quick_touch_api=touch_api;quick_touch_api.next=quick_next;
+ quick_touch_api=touch_api;quick_touch_api.next=touch_next;
  quick_runtime=runtime_api;quick_runtime.acquire=quick_acquire;quick_runtime.health=quick_health;quick_runtime.request_launch=quick_launch;
  rt=&quick_runtime;display_settled=true;failed=false;
  dg.struct_size=sizeof(dg);bg.struct_size=sizeof(bg);
@@ -269,7 +252,10 @@ int PORTABLE_QUICK_FIXTURE_MAIN(int argc,char **argv) {
  } else if(test==12) {
   opening(3);tap(80,182,62);tap(81,182,62);replace_at=81;tap(90,120,222);
   drain_to(170);background_unchanged();
-  assert(quick.brightness==40 && hardware_brightness==40 && !pref_writes[0]);
+  /* The ordered ABI reports replacement as UP(old), DOWN(new), rather than
+   * a changed snapshot under an unknown contact. Both completed gestures are
+   * delivered. Actual provider failure still cancels without saving (case8). */
+  assert(quick.brightness==100 && hardware_brightness==100 && pref_writes[0]==2);
  } else assert(!"unknown scenario");
  cleanup();printf("quick adapter scenario %u passed\n",test);return 0;
 }

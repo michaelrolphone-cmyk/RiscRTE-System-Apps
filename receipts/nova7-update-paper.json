@@ -1,0 +1,124 @@
+{
+  "base": "2aa0cf63346e507525af884bbfbf6b69313442c4",
+  "branch": "codex/nova7-ota-store-paper",
+  "scope": "System app clients, shared app adapter, build tooling, manifests, tests; no product or Runtime edits",
+  "build_command": "python3 scripts/build_portable_updates.py --nova-ui --navigation --alarm-client --quick-actions --home-app default.elf --rtc-utc-offset-seconds 28800 --display-rotation 90",
+  "target_elfs": {
+    "ota_update": {
+      "sha256": "7f255f1d8238b366e61f0abb9834fa34b58f3a3ccc38f17f40d3a0b9e0521c55",
+      "size_bytes": 163780,
+      "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "build_defines": [
+        "-std=c11",
+        "-DPORTABLE_UPDATE_APP",
+        "-DUPDATE_RETURN_APP=\"springboard.elf\"",
+        "-DPORTABLE_HOME_APP=\"default.elf\"",
+        "-DPORTABLE_QUICK_ACTIONS",
+        "-DPORTABLE_UPDATE_FIRMWARE=1",
+        "-DPORTABLE_WIFI_INSTANCE=0",
+        "-DPORTABLE_UPDATE_RTC_UTC_OFFSET_SECONDS=28800",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_ALARM_CLIENT",
+        "-DPORTABLE_INPUT_NAVIGATION",
+        "-DPORTABLE_TOUCH_ROTATION=0",
+        "-DPORTABLE_DISPLAY_ROTATION=90"
+      ]
+    },
+    "app_store": {
+      "sha256": "65088b7a1988264f2c9d6eadef74ee4a2c87b2f8068c3961bf45f51d6cc25d58",
+      "size_bytes": 163776,
+      "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "build_defines": [
+        "-std=c11",
+        "-DPORTABLE_UPDATE_APP",
+        "-DUPDATE_RETURN_APP=\"springboard.elf\"",
+        "-DPORTABLE_HOME_APP=\"default.elf\"",
+        "-DPORTABLE_QUICK_ACTIONS",
+        "-DPORTABLE_UPDATE_FIRMWARE=0",
+        "-DPORTABLE_WIFI_INSTANCE=0",
+        "-DPORTABLE_UPDATE_RTC_UTC_OFFSET_SECONDS=28800",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_ALARM_CLIENT",
+        "-DPORTABLE_INPUT_NAVIGATION",
+        "-DPORTABLE_TOUCH_ROTATION=0",
+        "-DPORTABLE_DISPLAY_ROTATION=90"
+      ]
+    }
+  },
+  "grants": {
+    "storage.key-value": {
+      "api": 1,
+      "namespaces": [
+        1,
+        6
+      ]
+    },
+    "display.output": 1,
+    "input.touch.raw": 1,
+    "input.navigation": 1,
+    "rtc.clock": 2,
+    "net.wifi": {
+      "api": 1,
+      "instance_id": 0
+    },
+    "board.battery": 1,
+    "alarm.service": 1,
+    "software.update.firmware": "OTA only, API 1, instance 0",
+    "software.update.apps": "Store only, API 1, instance 0"
+  },
+  "tests": [
+    "UPDATE_SANITIZERS=undefined python3 scripts/test_portable_update.py: normal and UBSan, 608 existing Watch/controller executions, 92 cohort and 116 service scenarios, catalog mutation checks",
+    "UPDATE_SANITIZERS=undefined python3 scripts/test_update_paper.py: 320 normal/UBSan executions across both apps and portrait/native landscape, plus 4 UBSan Quick Actions executions",
+    "UPDATE_SANITIZERS=undefined python3 scripts/test_paper_quick_actions.py: 124 paper modal/Home cases plus 2 Home input cases",
+    "UPDATE_SANITIZERS=undefined python3 scripts/test_quick_actions.py: core/session tests and 104 adapter cases",
+    "python3 -m unittest discover -s tests -p test_native_update_manifests.py: 3 tests",
+    "Target ELF structural validator and bounded import/export checks",
+    "Pixel equality for catalog, confirmation, uncertain activation and cleanup frames: portrait equals rotated native landscape, both apps"
+  ],
+  "runtime_prepare": {
+    "source_sha": "63d607b18c635533e97098235c30e845b249533d",
+    "command": "python3 scripts/test_update_runtime_prepare.py --runtime <read-only RiscRTE checkout> --artifacts dist/portable/updates",
+    "result": "Actual Runtime::prepare accepts both generated app manifests and explicit grants with fake provider metadata; no Runtime::run or backend execution"
+  },
+  "notes": [
+    "Inspected actual docs/nova/screens/epaper-settings.png pixels and rendered output. Reuses PaperPresentation typography and FontAwesome glyphs at 480x800 logical.",
+    "Global Home requests default.elf only after cleanup; local Back cancels nested confirmation before returning to springboard.elf. Quick modal navigation cannot install or start a check.",
+    "Paper radio controls are unavailable without --quick-radios; frontlight, sound, battery and torch reflect actual capability support. Do not infer hardware features from this UI.",
+    "UTC offset +28800 and Wi-Fi instance 0 are explicit development build selections, not an inferred Nova7 deployment configuration; owner must choose matching grants/time basis.",
+    "ASan binaries compile but hang at startup on this macOS host (also outside sandbox); probes were stopped. ASan is NOT claimed passing; UBSan passes.",
+    "Existing release service/controller semantics are reused. Nova7 firmware/app backend and provider graph are not newly implemented or hardware-qualified. No real update, network install, device action, merge or release performed.",
+    "Development ELFs remain in dist/portable/updates; screenshots remain in build/update-paper. App manifests contain canonical Runtime fields only; explanatory notes live here and in build records."
+  ]
+}

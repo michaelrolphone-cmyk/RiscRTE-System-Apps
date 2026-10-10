@@ -1,23 +1,60 @@
 /* Compact app-local presentation, following the supplied 240x240 Settings
  * reference. All functional values come from the shared Settings model. */
 #include "../settings_fonts/text.inc"
+#include "../../../Apps/PaperFrame.h"
 #define SV_CYAN 0x19e3ffu
 #define SV_DIM 0x0e4f5cu
 #define SV_LINE 0x12262bu
 #define SV_CAP 0x6b8288u
 #define SV_TEXT 0xcfe9eeu
-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_TAP, SV_TAP_INTRO, SV_TAP_CAL, SV_TIMER };
+enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  ,SV_TIMEZONE_REGIONS,SV_TIMEZONE_CITIES
+#endif
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  ,SV_DESK_DIRECTION
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  ,SV_TIMER
+#endif
+};
 static unsigned sv_page, sv_selected, sv_fold_choice;
+#ifdef PORTABLE_TOUCH_SCROLL
+static portable_touch_scroll stz_scroll;
+static unsigned stz_submitted_page,stz_completed_page;
+static int stz_submitted_q8,stz_completed_q8,stz_hit_q8,stz_touch_row;
+static bool stz_hit_ready;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+static portable_touch_scroll sp_scroll[2];
+static unsigned sp_submitted_page,sp_completed_page;
+static int sp_submitted_q8,sp_completed_q8,sp_hit_q8,sp_touch_row,sp_hit_x,sp_hit_y;
+static bool sp_hit_ready,sp_root_touch_selection;
+static void sp_scroll_visible(void);
+static void sp_scroll_configure(unsigned page);
+#endif
+static void settings_view_interrupt(void) {
+  portable_scroll_cancel(&stz_scroll);stz_hit_ready=false;stz_touch_row=-1;
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  portable_scroll_cancel(&sp_scroll[0]);portable_scroll_cancel(&sp_scroll[1]);
+  sp_hit_ready=false;sp_touch_row=-1;
+#endif
+}
+#endif
 static int sv_scroll[2];
 static bool sv_active, sv_need_neutral, sv_gesture, sv_eligible;
 static unsigned sv_axis; /* 1 vertical, 2 horizontal, 3 numeric slider */
 static int sv_start_x, sv_start_y, sv_last_x, sv_last_y, sv_start_scroll;
 static bool sv_dragged;
 static void settings_view_redraw(void);
+static bool sp_clean,sp_dirty;
+static void sp_redraw(void);
+static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
+  if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;
   if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
   uint8_t *p = (uint8_t *)surface.pixels + (size_t)y * surface.stride_bytes + (size_t)x * 2;
   uint16_t before = (uint16_t)(p[0] | p[1] << 8);
   if (alpha > 255) alpha = 255;
@@ -118,16 +155,15 @@ static void sv_root(void) {
   sv_text(3,20,104-offset,"TIME",0x0e8ea3,38);
   sv_text(3,20,258-offset,"SYSTEM",0x0e8ea3,38);
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i) {
-    t5_app_setting_t row; if(!settings_get(0,i,&row))continue;
+    t5_app_setting_t row;bool available=settings_get(0,i,&row);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(failed)return;
+#endif
+    if(!available)continue;
     int y=sv_row_y(i)-offset;
     sv_rect(20,y,2,SV_ROW_HEIGHT,sv_selected==i+1?SV_CYAN:SV_LINE);
     sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
-    unsigned label_face=1;
-#ifdef PORTABLE_LOW_BATTERY
-    int value_left=(row.type==T5_APP_SETTING_ACTION?204:216)-sv_measure(2,row.value,0);
-    if(32+sv_measure(1,row.label,4)+8>value_left)label_face=2;
-#endif
-    sv_text(label_face,32,y+10,row.label,0xffffff,label_face==1?4:0);
+    sv_text(1,32,y+10,row.label,0xffffff,4);
     sv_right(2,row.type==T5_APP_SETTING_ACTION?204:216,y+12,row.value,SV_CYAN,0);
     if(row.type==T5_APP_SETTING_ACTION)sv_text(1,211,y+9,">",SV_DIM,0);
   }
@@ -200,8 +236,20 @@ static void sv_fold(void) {
   sv_heading("REPEATED LOCAL TIME");
   sv_center(2,56,"This hour occurs twice",SV_TEXT,0);
   sv_center(2,72,"Choose which time to save",SV_CAP,0);
-  sv_button(28,100,184,32,"SAVE FIRST  MDT",sv_fold_choice==0);
-  sv_button(28,142,184,32,"SAVE SECOND MST",sv_fold_choice==1);
+  sv_button(28,100,184,32,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE EARLIER UTC"
+#else
+  "SAVE FIRST  MDT"
+#endif
+,sv_fold_choice==0);
+  sv_button(28,142,184,32,
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  "SAVE LATER UTC"
+#else
+  "SAVE SECOND MST"
+#endif
+,sv_fold_choice==1);
   sv_back();
 }
 static void sv_about(void) {
@@ -225,25 +273,38 @@ static void sv_time_format(void) {
 #ifdef PORTABLE_SLEEP_SETTINGS
 static void sv_sleep(void) {
   sv_heading("CLOCK SLEEP MODE");
-  sv_button(28,66,184,30,"LIGHT SLEEP",sleep_choice==PORTABLE_SLEEP_LIGHT);
-  sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
-#ifdef PORTABLE_LOW_BATTERY
-  sv_button(28,142,184,30,"LIGHT THEN DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
-  sv_center(3,172,sleep_message[0]?sleep_message:"Uses Deep Sleep Timer",SV_CAP,0);
-#else
-  sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
+  const char *options[]={"LIGHT SLEEP","DEEP SLEEP","LIGHT 5 MIN - DEEP"};
+  for(unsigned row=0;row<settings_sleep_count();++row){unsigned mode=settings_sleep_at(row);
+    sv_button(28,66+(int)row*38,184,30,options[mode],sleep_choice==mode);}
 #ifdef PORTABLE_NOVA_UI
   sv_center(3,172,sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
 #else
   sv_center(3,177,"Apps: Light 5 min then Deep",SV_CAP,0);
   sv_center(3,190,sleep_message,SV_CYAN,0);
 #endif
-#endif
   sv_button(24,200,86,26,"CANCEL",false);
   sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
-#ifdef PORTABLE_LOW_BATTERY
+#ifdef PORTABLE_ALARM_SETTINGS
+static void sv_alert(void) {
+  sv_heading("ALARM ALERTS");
+  if(settings_visual_alerts()) {
+    sv_center(1,86,"VISUAL ONLY",SV_CYAN,0);
+    sv_center(3,124,"No sound or vibration",SV_CAP,0);
+    sv_center(3,160,"Saved preference kept",SV_CAP,0);
+    sv_button(24,200,192,26,"BACK",false);return;
+  }
+  sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
+  sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
+  sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
+  sv_center(3,SV_MESSAGE_Y,alert_message[0]?alert_message:"Alarms and Countdown",
+            alert_message[0]?SV_CYAN:SV_CAP,0);
+  sv_button(24,200,86,26,"CANCEL",false);
+  sv_button(130,200,86,26,"SAVE",false);
+}
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
 static void sv_timer(void) {
   sv_heading(timer_deep?"DEEP SLEEP TIMER":"SLEEP TIMER");
   char value[24];snprintf(value,sizeof(value),"%lu SEC",(unsigned long)(timer_choice/1000u));
@@ -254,33 +315,30 @@ static void sv_timer(void) {
   sv_button(24,200,86,26,"CANCEL",false);sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
-#ifdef PORTABLE_ALARM_SETTINGS
-static void sv_alert(void) {
-  sv_heading("ALARM ALERTS");
-  sv_button(28,66,184,30,"VIBRATE",alert_choice==PORTABLE_ALERT_VIBRATE);
-  sv_button(28,104,184,30,"SOUND",alert_choice==PORTABLE_ALERT_SOUND);
-  sv_button(28,142,184,30,"BOTH",alert_choice==PORTABLE_ALERT_BOTH);
-  sv_center(3,SV_MESSAGE_Y,alert_message[0]?alert_message:"Alarms and Countdown",
-            alert_message[0]?SV_CYAN:SV_CAP,0);
-  sv_button(24,200,86,26,"CANCEL",false);
-  sv_button(130,200,86,26,"SAVE",false);
-}
-#endif
-#ifdef PORTABLE_TAP_SETTINGS
-#include "tap_settings_view.inc"
-#endif
 static void settings_view_redraw(void) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  if(failed)return;
+#endif
+  if(handoff_requested)return;
   if(failed || !sv_active)return;
+  sp_dirty=true;
+  if(!portable_paper_frame_ready())return;
+  sp_dirty=false;
+  if(pp_enabled()) {
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+    sp_scroll_visible();
+#endif
+  }
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES){stz_redraw();return;}
+#endif
+  if(pp_enabled()){sp_redraw();return;}
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
   else if(sv_page==SV_TIME_FORMAT)sv_time_format();
-#ifdef PORTABLE_TAP_SETTINGS
-  else if(sv_page==SV_TAP)sv_tap();
-  else if(sv_page==SV_TAP_INTRO || sv_page==SV_TAP_CAL)sv_tap_calibration();
-#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
   else if(sv_page==SV_SLEEP)sv_sleep();
-#ifdef PORTABLE_LOW_BATTERY
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
   else if(sv_page==SV_TIMER)sv_timer();
 #endif
 #endif
@@ -292,17 +350,36 @@ static void settings_view_redraw(void) {
 }
 static void sv_switch(unsigned page) {
   if(failed)return; /* Retained sleep must unwind without provider I/O. */
+  if(pp_enabled())sp_clean=true;
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
-  input_pending=false;touch.neutral=touch.down=false;
+#ifdef PORTABLE_TOUCH_SCROLL
+  settings_view_interrupt();
+  /* A page enum can be revisited while another page is still in flight. */
+  stz_submitted_page=stz_completed_page=~0u;
+  stz_scroll_reset(page);
+#ifdef PORTABLE_SETTINGS_LIST_SCROLL
+  sp_submitted_page=sp_completed_page=~0u;
+#endif
+#endif
+  input_pending=false;portable_touch_cancel_gesture(&touch);
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
-  settings_editing=page==SV_TAP || page==SV_TAP_INTRO || page==SV_TAP_CAL || page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
+  settings_editing=page==SV_FIELDS || page==SV_VALUE || page==SV_FOLD || page==SV_TIME_FORMAT
 #ifdef PORTABLE_SLEEP_SETTINGS
       || page==SV_SLEEP
-#ifdef PORTABLE_LOW_BATTERY
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
       || page==SV_TIMER
 #endif
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+      || page==SV_DESK_FACE || page==SV_FLIP || page==SV_LANGUAGE
+#endif
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+      || page==SV_DESK_DIRECTION
+#endif
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+      || page==SV_TIMEZONE_REGIONS || page==SV_TIMEZONE_CITIES
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
       || page==SV_ALERT
@@ -327,8 +404,28 @@ static void sv_slider(int x) {
   editor_set_value(lo+(unsigned)(x-64)*(hi-lo)/112);
   settings_view_redraw();
 }
+#include "settings_paper.inc"
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+#include "settings_timezone_view.inc"
+#endif
 static bool settings_view_poll(t5_app_input_t *out) {
   if(!sv_active)return false;
+  if(sp_dirty && !input_progressed && !pp_enabled())settings_view_redraw();
+  if(pp_enabled()) {
+    bool handled;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+    if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES)handled=stz_poll(out);
+    else
+#endif
+      handled=sp_poll(out);
+    /* The controller consumes emitted actions after poll returns. Its redraw
+     * will paint that new state; otherwise a neutral poll retries pending work. */
+    if(sp_dirty && !out->buttons && !out->tapped && !out->exit_requested)settings_view_redraw();
+    return handled;
+  }
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(sv_page==SV_TIMEZONE_REGIONS || sv_page==SV_TIMEZONE_CITIES)return stz_poll(out);
+#endif
   settings_navigation_poll(out);
   if(out->buttons&T5_APP_BUTTON_BACK){sv_back_input(out);return true;}
   portable_touch_sample sample;
@@ -380,12 +477,9 @@ static bool settings_view_poll(t5_app_input_t *out) {
     if(sv_dragged || sample.moved || sv_axis==3)return true;
     x=sv_start_x;y=sv_start_y;
     if(sv_page==SV_FIELDS || sv_page==SV_TIME_FORMAT
-#ifdef PORTABLE_TAP_SETTINGS
-       || sv_page==SV_TAP || sv_page==SV_TAP_INTRO || (sv_page==SV_TAP_CAL && tap_calibration.phase==TAP_CAL_READY)
-#endif
 #ifdef PORTABLE_SLEEP_SETTINGS
        || sv_page==SV_SLEEP
-#ifdef PORTABLE_LOW_BATTERY
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
        || sv_page==SV_TIMER
 #endif
 #endif

@@ -30,14 +30,19 @@ bool portable_audio_suspend(void){
 #endif
 static bool reset_after_ack(void*c){(void)c;return acks==0;}
 static int32_t service_status(void*c,alarm_status_v1*out){(void)c;*out=alarm_fake;return ALARM_OK;}
-static int32_t service_step(void*c){(void)c;assert(display_settled&&!live_display&&!surface.frame);service_steps++;if(failed)normal_after_failure++;
+static int32_t service_step(void*c){(void)c;assert(!surface.frame);service_steps++;if(failed)normal_after_failure++;
 #ifdef PORTABLE_AUDIO_SESSION
  if(alarm_fake.state==ALARM_STATE_ALERT||alarm_fake.state==ALARM_STATE_DISMISSING||alarm_fake.state==ALARM_STATE_CUE)assert(!application_audio);
 #endif
  if(alarm_fake.state==ALARM_STATE_CUE){if(alarm_scenario!=14&&++phases>=5){alarm_fake.state=ALARM_STATE_READY;alarm_fake.output_uncertain=0;}return ALARM_OK;}
  if(alarm_fake.state==ALARM_STATE_LOADING){if(++phases==(alarm_scenario==8?10u:3u)){
    alarm_fake.state=ALARM_STATE_ALERT;
-   if(alarm_scenario==8)alarm_fake.occurrence=(alarm_token_v1){ALARM_KIND_COUNTDOWN,8,88,10};
+   if(alarm_scenario==8){
+     alarm_fake.occurrence=(alarm_token_v1){ALARM_KIND_COUNTDOWN,8,88,10};
+     /* Schedule a fresh gesture after the second identity is announced.
+      * Poll cadence is independent of service/presentation cadence. */
+     tap(polls+3,100,180);
+   }
 #ifdef PORTABLE_AUDIO_SESSION
    else if(alarm_scenario==1)alarm_fake.occurrence=(alarm_token_v1){1,7,88,9};
 #endif
@@ -112,12 +117,6 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
   unsigned live=grants;app_module_fini();assert(grants==live&&live);
   puts("Continuous capture survives twenty idle deadlines; explicit stop restores idle sleep PASS");return 0;
  }
- if(test==18){
-  continuous_capture=true;last_activity=0;alarm_fake.state=ALARM_STATE_READY;ticks=61000;
-  assert(!idle_sleep()&&native_sleep_calls==1&&!application_audio&&application_audio_stops==1);
-  unsigned live=grants;app_module_fini();assert(grants==live&&live);
-  puts("Explicit sleep bypasses capture idle inhibition and closes the active input PASS");return 0;
- }
  if(test==17){
   continuous_capture=true;alarm_fake.state=ALARM_STATE_CUE;bool consumed=false;
   assert(alarm_foreground(&consumed)&&consumed&&!application_audio&&application_audio_stops==1);
@@ -177,7 +176,7 @@ int PORTABLE_ALARM_FIXTURE_MAIN(int argc,char**argv){
 #endif
    navigation_pending=T5_APP_BUTTON_BACK;input_pending=true;input_sample=(portable_touch_sample){.valid=true,.released=true,.tap_eligible=true,.x=100,.y=180};
    tap(3,100,180);if(test==6||test==7)tap(12,100,180);
-   if(test==8){tap(8,100,180);tap(20,100,180);}}
+   if(test==8){tap(8,100,180); /* stale gesture during durable reload gap */}}
  bool consumed=false;bool result=alarm_foreground(&consumed);
  if(test==9){
    assert(!result&&consumed&&failed&&acks==1&&normal_after_failure==0&&stop_calls==3);

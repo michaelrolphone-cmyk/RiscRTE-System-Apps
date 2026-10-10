@@ -207,6 +207,11 @@ typedef struct {
     // Non-consuming current contact, including movement, in oriented UI coords.
     // Returns false if unavailable; down=false means no eligible contact.
     bool (*touch_contact)(t5_app_contact_t *contact);
+    // Optional app-local suffix: only presentation is paced. False retains
+    // latest dirty state; continue input and logic. poll advances the token.
+    bool (*frame_ready)(void);
+    // Explicit owner transitions only; never a routine frame limiter.
+    bool (*frame_drain)(void);
 } t5_app_api_v1;
 
 // Native application entry point. Native ELFs are built with -fvisibility=hidden,
