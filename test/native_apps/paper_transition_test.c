@@ -141,8 +141,8 @@ static bool test_nav(void *c,risc_input_navigation_frame_v1 *out){
 static bool test_foreground(void *c,const risc_input_foreground_v1 *claims,size_t count){(void)c;(void)claims;(void)count;io();return true;}
 static bool test_reset(void *c){(void)c;io();return true;}
 static const risc_input_navigation_api_v1 test_navigation={1,sizeof(test_navigation),NULL,test_nav,test_foreground,test_reset};
-static int32_t test_alarm_step(void *c){assert(!pending);fx_alarm_step(c);if(is_case("alarm")&&ticks>=120&&!alarm_done)alarm_due=true;return ALARM_OK;}
-static int32_t test_alarm_status(void *c,alarm_status_v1 *out){assert(!pending);fx_alarm_status(c,out);if(alarm_due){out->state=ALARM_STATE_ALERT;out->occurrence=(alarm_token_v1){1,1,1,1};}return ALARM_OK;}
+static int32_t test_alarm_step(void *c){assert(!frames);fx_alarm_step(c);if(is_case("alarm")&&ticks>=120&&!alarm_done)alarm_due=true;return ALARM_OK;}
+static int32_t test_alarm_status(void *c,alarm_status_v1 *out){assert(!frames);fx_alarm_status(c,out);if(alarm_due){out->state=ALARM_STATE_ALERT;out->occurrence=(alarm_token_v1){1,1,1,1};}return ALARM_OK;}
 static int32_t test_alarm_ack(void *c,const alarm_token_v1 *token){assert(!pending&&alarm_due);fx_alarm_ack(c,token);alarm_due=false;alarm_done=true;return ALARM_OK;}
 static alarm_service_v1 test_alarm;
 static bool test_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out){

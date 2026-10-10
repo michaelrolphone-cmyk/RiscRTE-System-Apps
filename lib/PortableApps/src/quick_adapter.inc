@@ -195,6 +195,9 @@ static bool quick_apply(uint32_t actions) {
 #else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
 #endif
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(actions&PQA_CONTEXTS)portable_contexts_settings_changed(&contexts_client,quick.ui.contexts_valid);
+#endif
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
  if(changed && !alarm_refresh())return false;
 #else
@@ -492,7 +495,11 @@ static bool quick_foreground(bool *consumed) {
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
   input_pending=false;
-  rt->yield_ms(input_progressed?1u:4u);
+  unsigned pause=input_progressed?1u:4u;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  if(raster_sealed&&!raster_ready_to_submit)pause=1u;
+#endif
+  rt->yield_ms(pause);
  }
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */

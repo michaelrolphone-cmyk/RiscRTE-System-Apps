@@ -47,7 +47,7 @@ static bool contexts_clock_rendezvous(void) {
        contexts_client.api->context,unsupported,CONTEXTS_EXPORT_UNSUPPORTED) ||
        !contexts_clock_status(&status)){portable_adapter_retain();return false;}
   }
-  if(contexts_client.settings_valid && contexts_client.policy.enabled &&
+  if(!contexts_fingerprint_api(contexts_client.api) && contexts_client.settings_valid && contexts_client.policy.enabled &&
      !status.export_active && !status.export_pending &&
      status.radio.model_state==CONTEXTS_MODEL_EMPTY) {
     if(!portable_background_stop() || !contexts_client.api->request_export(

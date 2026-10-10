@@ -20,13 +20,19 @@
 #define PORTABLE_CONTEXTS_SOURCE_MASK CONTEXTS_ALL
 #endif
 typedef struct {
-    risc_runtime_capability_v1 grant,storage;
+    risc_runtime_capability_v1 grant,storage,fingerprint_store;
+    int32_t fingerprint_error;
+    uint32_t fingerprint_sources,fingerprint_checkpoint_at,fingerprint_unread;
+    uint64_t rules_revision;
+    bool rules_available,fingerprint_temporal_only;
     const contexts_service_v1 *api;
     const risc_runtime_api_v1 *runtime;
     contexts_policy_v1 policy;
     uint32_t loaded_at,preset_checked_at;
-    bool loaded,settings_valid,low_battery,save_failed,preset_checked;
+    bool loaded,settings_valid,low_battery,save_failed,preset_checked,foreground_learning;
 } portable_contexts_client;
+#include "PortableContextFingerprints.h"
+#include "PortableContextRules.h"
 static inline bool portable_contexts_open(portable_contexts_client *c,const risc_runtime_api_v1 *rt) {
     memset(c,0,sizeof(*c));c->runtime=rt;c->grant.struct_size=sizeof(c->grant);
     if(!rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant))return false;
@@ -34,12 +40,19 @@ static inline bool portable_contexts_open(portable_contexts_client *c,const risc
     if(!p||p->api_version!=1||p->struct_size<CONTEXTS_SERVICE_V1_SIZE||!p->step||!p->pause||!p->status||
        !p->request_export||!p->begin_export||!p->export_record||!p->finish_export||!p->label||
        !p->claim_preset||!p->preset_result||!p->capture_audio)return false;
-    c->api=p;c->policy.struct_size=sizeof(c->policy);return true;
+    c->api=p;c->policy.struct_size=sizeof(c->policy);c->fingerprint_sources=PORTABLE_CONTEXTS_SOURCE_MASK;
+    const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(p);
+    if(fp){contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=PORTABLE_CONTEXTS_SOURCE_MASK};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)||!portable_fp_checkpoint(c,true)||!portable_context_rules_load(c))return false;}
+    return true;
 }
 static inline bool portable_contexts_pause(portable_contexts_client *c) {
     c->loaded=false;if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
     if(c->api&&!c->api->pause(c->api->context)){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
-    return true;
+    return portable_fp_checkpoint(c,false);
+}
+/* A shared preference writer invalidates the cached background policy. */
+static inline void portable_contexts_settings_changed(portable_contexts_client *c,bool confirmed){
+    c->loaded=false;c->settings_valid=false;c->save_failed=!confirmed;c->policy.enabled=false;
 }
 static inline bool portable_contexts_capture(portable_contexts_client *c) {
     if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
@@ -68,7 +81,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
     }
     risc_runtime_health_v1 health={.struct_size=sizeof(health)};
     if(!c->runtime->health(&health))return portable_contexts_pause(c);
-    if(!c->save_failed&&(!c->loaded||(uint32_t)(health.uptime_ms-c->loaded_at)>=1000u)) {
+    if(!c->save_failed&&!c->loaded) {
         #ifdef PORTABLE_CONTEXTS_PAUSE_POLICY_READS
         if(!portable_contexts_pause(c))return false;
 #endif
@@ -84,15 +97,31 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
              * Airplane mode and the low-battery edge remain authoritative. */
             c->policy.radio_allowed=(flags&7u)==PORTABLE_RADIO_WIFI&&!low;
             c->policy.audio_allowed=!low;
+            if(contexts_fingerprint_api(c->api)){
+                uint8_t sources=CONTEXTS_ALL;uint32_t size=0;
+                int32_t source_result=kv->get(kv->context,"context_sources",&sources,1,&size);
+                if(source_result==RISC_KEY_VALUE_NOT_FOUND)sources=CONTEXTS_ALL;
+                else if(source_result!=RISC_KEY_VALUE_OK||size!=1||(sources&~CONTEXTS_ALL))sources=0;
+                c->policy.sources=c->fingerprint_sources=sources;
+                uint8_t timing=0;size=0;
+                int32_t timing_result=kv->get(kv->context,"context_timing",&timing,1,&size);
+                c->fingerprint_temporal_only=timing_result==RISC_KEY_VALUE_OK&&size==1&&timing==1;
+            }
             if(!portable_contexts_release_storage(c)){(void)portable_contexts_pause(c);return false;}
         }
         if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
         c->loaded=true;c->loaded_at=health.uptime_ms;
     }
     contexts_policy_v1 policy=c->policy;policy.awake=true;
-    policy.enabled=policy.enabled&&c->settings_valid;
+    policy.enabled=(policy.enabled||c->foreground_learning)&&c->settings_valid;
     policy.audio_allowed=policy.audio_allowed&&audio_allowed;
     policy.radio_allowed=policy.radio_allowed&&radio_allowed;
+    const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(c->api);
+    if(fp){
+        contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=c->fingerprint_sources&PORTABLE_CONTEXTS_SOURCE_MASK,.temporal_only=c->fingerprint_temporal_only};
+        if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg))return false;
+        if((uint32_t)(health.uptime_ms-c->fingerprint_checkpoint_at)>=60000u){if(!portable_fp_checkpoint(c,false))return false;c->fingerprint_checkpoint_at=health.uptime_ms;}
+    }
     return c->api->step(c->api->context,&policy);
 }
 static inline bool portable_contexts_set_enabled(portable_contexts_client *c,bool enabled) {
@@ -189,6 +218,8 @@ static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint
 const contexts_service_v1 *portable_contexts_service(void);
 bool portable_contexts_stop(void);
 bool portable_contexts_enable(bool enabled);
+/* Foreground training is temporary and never writes the background toggle. */
+bool portable_contexts_training(bool enabled);
 #ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
 /* Clock controller releases its service before ordinary owner/app handoff. */
 bool portable_contexts_close_for_handoff(void);
@@ -197,3 +228,8 @@ bool portable_contexts_close_for_handoff(void);
 uint16_t portable_contexts_action_mask(void);
 unsigned portable_contexts_face_count(void);
 const char *portable_contexts_face_name(unsigned id);
+
+
+bool portable_contexts_rules_read(cr_store*);
+bool portable_contexts_rules_save(const cr_store*);
+bool portable_contexts_models_save(void);

@@ -25,10 +25,12 @@ def stage(args, parser, out, includes):
     catalog = getattr(args, 'desk_points_face', False)
     pin = CATALOG_COMMIT if catalog else UTILITIES_COMMIT
     headers = (*HEADERS, *POINTS_HEADERS, *CATALOG_HEADERS) if catalog else ((*HEADERS, *POINTS_HEADERS) if getattr(args, 'sparse_start', False) else HEADERS)
+    if getattr(args, 'contexts_rf_only', False):
+        headers = tuple(dict.fromkeys((*headers, 'AlarmRecords.h', 'alarm_writer.h')))
     try:
         source = {name: subprocess.check_output(['git', '-C', str(repo), 'show',
             pin + ':' + ('LICENSE' if name == 'LICENSE' else
-            'lib/Alarm/include/' + name)], stderr=subprocess.PIPE)
+            ('Apps/' if name == 'alarm_writer.h' else 'lib/Alarm/include/') + name)], stderr=subprocess.PIPE)
             for name in (*headers, 'LICENSE')}
     except (OSError, subprocess.CalledProcessError) as error:
         parser.error('Cannot read pinned tagged alarm SDK: ' + str(error))

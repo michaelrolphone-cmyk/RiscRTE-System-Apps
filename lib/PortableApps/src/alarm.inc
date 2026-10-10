@@ -9,7 +9,7 @@ static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
 static alarm_token_v1 alarm_ack_token;
 static bool alarm_commit_pending(void);
 #endif
-#if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
 #if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)

@@ -124,16 +124,18 @@ static bool paper_slider_at(const pqa_state *s,unsigned slider,int x,int y) {
     return top && x>=32 && x<448 && y>=top-6 && y<top+height+10;
 }
 bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y) {
-    if(!s || tile==6 || tile>8 || (!s->audio_controls && tile==0))return false;
+    if(!s || tile==6 || tile>9 || (!s->audio_controls && tile==0))return false;
 #ifndef PORTABLE_QUICK_USB_TRANSFER
     if(tile==7)return false;
 #endif
     if(tile==8 && !s->clean_refresh_valid)return false;
+    if(tile==9 && !s->contexts_controls)return false;
     unsigned slot=s->audio_controls?tile:tile-1;
     if(tile>=7)--slot; /* Tile 6 is the legacy standalone frontlight switch. */
 #ifndef PORTABLE_QUICK_USB_TRANSFER
-    if(tile==8)--slot;
+    if(tile>=8)--slot;
 #endif
+    if(tile==9&&!s->clean_refresh_valid)--slot;
     int top=s->audio_controls?302:206;
 #ifdef PORTABLE_FRONTLIGHT_TONE
     if(s->tone_controls)top=s->audio_controls?306:302;
@@ -153,7 +155,7 @@ static int tile_at(const pqa_state *s,int x, int y) {
         if(x>=326 && x<448 && y>=84 && y<120)return 6;
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
-        for(unsigned tile=0;tile<9;tile++) {
+        for(unsigned tile=0;tile<10;tile++) {
             int tx,ty;
             if(pqa_paper_tile(s,tile,&tx,&ty) && x>=tx && x<tx+204 && y>=ty && y<ty+92)return (int)tile;
         }
@@ -163,6 +165,8 @@ static int tile_at(const pqa_state *s,int x, int y) {
 #endif
         return -1;
     }
+    if(s->contexts_controls&&x>=20&&x<220&&y>=182&&y<222)return 9;
+    if(s->contexts_controls)y+=30;
     static const int xs[3] = {20, 91, 162};
     for (int row = 0; row != 2; ++row)
         for (int col = 0; col != 3; ++col)
@@ -275,6 +279,8 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 if (s->volume) { s->last_nonzero_volume = s->volume; s->volume = 0; }
                 else s->volume = s->last_nonzero_volume ? s->last_nonzero_volume : 50;
                 emit_volume(s, PQA_SILENT);
+            } else if(s->pressed_tile==9 && s->contexts_controls && s->contexts_valid) {
+                s->action_contexts=!s->contexts_enabled;s->pending|=PQA_CONTEXTS;
             } else if(s->pressed_tile==1 && s->dnd_valid) {
                 s->dnd_enabled=!s->dnd_enabled;
                 s->action_dnd=s->dnd_enabled;s->pending|=PQA_DND;
@@ -327,7 +333,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
 #else
                 x>=32 && x<448 && y>=120 && y<180
 #endif
-                : x>=16 && x<224 && local_y>=48 && local_y<77))
+                : x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
 #ifdef PORTABLE_FRONTLIGHT_TONE
             else if(settled && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
@@ -343,7 +349,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
 #else
                 x>=32 && x<448 && y>=214 && y<274
 #endif
-                : x>=16 && x<224 && local_y>=78 && local_y<107))
+                : x>=16 && x<224 && local_y>=(s->contexts_controls?54:78) && local_y<(s->contexts_controls?83:107)))
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
@@ -359,7 +365,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                         y>=640 && y<714
 #endif
 #endif
-                        : x>=76 && x<164 && local_y>=207 && local_y<239;
+                        : x>=76 && x<164 && local_y>=(s->contexts_controls?222:207) && local_y<239;
                 }
             }
         }

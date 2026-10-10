@@ -155,8 +155,8 @@ static bool desk_radios_loaded;
 #if !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_ALARM_CLIENT) || (!defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT))
 #error "X4 Contexts requires native custody, alarms and Quick Controls"
 #endif
-#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && (!defined(PORTABLE_CONTEXTS_EDITOR) || !defined(ALARM_SERVICE_TAGGED_V2))
-#error "Resident Contexts selects the editor and tagged alarm capability view"
+#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(ALARM_SERVICE_TAGGED_V2)
+#error "Resident Contexts requires the tagged alarm capability view"
 #endif
 #if !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY)
 #error "X4 Contexts requires the checked native storage runtime"
@@ -244,6 +244,7 @@ static risc_display_present_token_v1 paper_token;
 static uint32_t paper_submitted_at;
 static bool paper_present_progress(void);
 bool portable_paper_frame_ready(void);
+static bool paper_token_progress(void);
 bool portable_paper_frame_drain(void);
 static bool paper_token_clean;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -349,7 +350,7 @@ static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
 #if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
@@ -404,6 +405,13 @@ static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 static uint32_t millis_now(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase<DESK_STARTING || desk_phase>=DESK_FAILED)return 0;
+#endif
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(rt->struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && rt->monotonic_ms) {
+    uint32_t now=0;
+    if(!rt->monotonic_ms(&now)){failed=true;return 0;}
+    return now;
+  }
 #endif
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
@@ -754,7 +762,10 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
   if (y1 > height())
     y1 = height();
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_replaying){if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+  if(raster_replaying){
+    if(raster_band_columns){if(x0<raster_band_top)x0=raster_band_top;if(x1>raster_band_bottom)x1=raster_band_bottom;}
+    else {if(y0<raster_band_top)y0=raster_band_top;if(y1>raster_band_bottom)y1=raster_band_bottom;}
+  }
 #endif
   if(x0>=x1 || y0>=y1)return;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1) {
@@ -1061,14 +1072,25 @@ const paper_presentation *paper_presentation_get(void) {
 bool portable_paper_frame_ready(void) {
   if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_sealed)return false;
-  raster_begin_allowed=!paper_token;
+  if(raster_sealed||raster_recording||surface.frame)return false;
+  raster_begin_allowed=true;
 #endif
   paper_async_frames=(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT)!=0;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   paper_async_frames=paper_async_frames && desk_phase==DESK_FOREGROUND;
 #endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+  return true;
+#else
   return !paper_token;
+#endif
+}
+bool portable_paper_frame_idle(void) {
+ return !failed&&!paper_token&&!surface.frame
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   &&!raster_sealed&&!raster_recording
+#endif
+ ;
 }
 /* Advance once per foreground poll. Status never gives the app a writable
  * lease; only completion promotes the submitted image into damage history. */
@@ -1076,6 +1098,9 @@ static bool paper_present_progress(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_sealed&&!raster_replaying)return raster_progress();
 #endif
+  return paper_token_progress();
+}
+static bool paper_token_progress(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_capture_checkpoint())return false;
 #endif
@@ -1108,7 +1133,7 @@ static bool paper_present_progress(void) {
   desk_present_complete=true;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-  display_settled=true;alarm_pixels_valid=true;
+  display_settled=portable_paper_frame_idle();alarm_pixels_valid=true;
 #endif
   previous_valid=previous_pixels!=NULL;paper_previous_valid=paper_previous!=NULL;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -1763,7 +1788,7 @@ bool portable_desk_adapter_foreground(void) {
 #include "contexts_policy.inc"
 #endif
 #ifdef PORTABLE_APP_TOUCH_SCROLL
-bool portable_paper_scroll_settled(void) {return !failed&&!paper_token;}
+bool portable_paper_scroll_settled(void) {return portable_paper_frame_idle();}
 bool portable_paper_scroll_available(void) {
  if(failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -1793,6 +1818,10 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 #include "resident_adapter.inc"
 #include "resident_shell.inc"
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!contexts_message_foreground())return false;
+  if(context_launch_pending){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
+#endif
   memset(out, 0, sizeof(*out));
   clear_contact_snapshots();
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -1842,6 +1871,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_USB_TRANSFER_APP
     if(slice>2u)slice=2u;
     portable_usb_transfer_service();
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    if(raster_sealed&&!raster_ready_to_submit)slice=1u;
 #endif
     rt->yield_ms(paper_token?1u:slice);
 #ifdef PORTABLE_CONTEXTS_CLIENT

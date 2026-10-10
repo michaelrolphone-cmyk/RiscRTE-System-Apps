@@ -1,16 +1,17 @@
-/* Experimental app-local immutable command snapshot. Never selected by a
- * product build until all renderer/custody equivalence gates pass. */
+/* App-local immutable commands and separately owned software pixels. One
+ * prepared frame may progress alongside one immutable provider submission. */
 enum {RS_FILL,RS_ROUNDED,RS_TEXT,RS_ICON,RS_PP_TEXT,RS_PP_CIRCLE,
  RS_NP_ICON,RS_NP_CIRCLE,RS_NP_CAPTION,RS_NP_MASK,RS_NP_PIXEL,
  RS_NU_PIXEL,RS_NU_RECT,RS_NU_TEXT,RS_NU_ROUND,RS_NU_BUTTON,
  RS_SV_PIXEL,RS_SV_RECT,RS_SV_TEXT,RS_SV_BUTTON,RS_SV_FADE,
  RS_WV_PIXEL,RS_WV_RECT,RS_WV_TEXT,RS_WV_BUTTON,
- RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER};
+ RS_SBH_TEXT,RS_QR_TEXT,RS_QR_ROUND,RS_QR_ICON,RS_QP_ICON,RS_BITMAP,RS_QA_RENDER,RS_CUSTOM};
 typedef struct raster_command {
  struct raster_command *next;
  unsigned kind;
  int32_t args[8];
  void *pixels;
+ void (*custom)(const void *,int,int);
  bool text_present;
  int paper_offset;
  char text[129];
@@ -27,6 +28,7 @@ typedef struct raster_command_block {
 static raster_command_block *raster_blocks,*raster_block_tail;
 static raster_command *raster_commands,*raster_tail,*raster_cursor;
 static bool raster_recording,raster_sealed,raster_replaying,raster_full,raster_begin_allowed;
+static bool raster_ready_to_submit,raster_band_columns;
 static void *raster_offscreen;
 static bool raster_saved_rotation;
 #ifdef PORTABLE_PAPER_PREFERENCES

@@ -16,6 +16,13 @@ static uint32_t tap(pqa_state *s,int x,int y) {
     return pqa_take_action(s);
 }
 int main(void) {
+    for(unsigned clean=0;clean<2;clean++){
+        pqa_state s=sheet(false);s.contexts_controls=s.contexts_valid=true;s.clean_refresh_valid=clean;
+        int x,y;assert(pqa_paper_tile(&s,9,&x,&y));assert(y+92<714);
+        assert(tap(&s,x+102,y+46)==PQA_CONTEXTS&&s.action_contexts&&!s.contexts_enabled);
+        s.contexts_enabled=true;assert(tap(&s,x+102,y+46)==PQA_CONTEXTS&&!s.action_contexts);
+        s.contexts_valid=false;assert(!tap(&s,x+102,y+46));
+    }
     for(unsigned audio=0;audio<2;audio++) {
         pqa_state s=sheet(audio!=0);
         int xs[9],ys[9];bool shown[9];unsigned count=0;
