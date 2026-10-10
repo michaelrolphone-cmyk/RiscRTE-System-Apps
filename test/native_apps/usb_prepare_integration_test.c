@@ -68,7 +68,7 @@ static bool app_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capa
  if(!strcmp(name,"display.output")){static risc_display_output_api_v1 p;p=d;p.submit=display_submit;p.present_status=display_status;out->api=&p;}
  return true;
 }
-static const risc_runtime_api_v1 runtime={1,sizeof(runtime),app_health,yield_ms,diagnostic,app_launch,app_acquire,app_release};
+static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=app_health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=app_launch,.acquire=app_acquire,.release=app_release};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&runtime:NULL;}
 int main(int argc,char**argv){
  assert(argc==2);mode=(unsigned)atoi(argv[1]);real_usb=usb_fixture_provider(mode);checked_usb=*risc_usb_device_msc_diagnostics(real_usb);
