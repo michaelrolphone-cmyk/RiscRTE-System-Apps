@@ -31,8 +31,15 @@
     },
     {
       "font": "Orbitron-reference-700.ttf",
-      "size": 22,
+      "size": 28,
       "role": "value",
+      "density": 1,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 8,
+      "role": "tab",
       "density": 1,
       "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
     },
@@ -66,8 +73,15 @@
     },
     {
       "font": "Orbitron-reference-700.ttf",
-      "size": 44,
+      "size": 56,
       "role": "value",
+      "density": 2,
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    {
+      "font": "Orbitron-reference-700.ttf",
+      "size": 16,
+      "role": "tab",
       "density": 2,
       "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
     }

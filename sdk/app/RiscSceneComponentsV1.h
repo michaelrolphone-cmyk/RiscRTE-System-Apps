@@ -12,7 +12,7 @@ enum {
     RISC_COMPONENT_SECTION=8, RISC_COMPONENT_ROW, RISC_COMPONENT_CHECK_ROW,
     RISC_COMPONENT_SWITCH, RISC_COMPONENT_STEPPER, RISC_COMPONENT_SEGMENTS,
     RISC_COMPONENT_PROGRESS, RISC_COMPONENT_EMPTY, RISC_COMPONENT_HEADER_ACTION,
-    RISC_COMPONENT_MARKERS, RISC_COMPONENT_TIME_PICKER
+    RISC_COMPONENT_MARKERS, RISC_COMPONENT_TIME_PICKER, RISC_COMPONENT_CHIP
 };
 enum { RISC_SYMBOL_NONE, RISC_SYMBOL_PLUS, RISC_SYMBOL_MORE, RISC_SYMBOL_TODAY,
        RISC_SYMBOL_LIST, RISC_SYMBOL_CLOCK, RISC_SYMBOL_EDIT, RISC_SYMBOL_DELETE,
@@ -26,7 +26,10 @@ typedef struct {
      * ROW: the whole row emits action. SWITCH/STEPPER: only controls do.
      * SEGMENTS/MARKERS: choices emit a VALUE in [minimum,maximum].
      * Choices are pipe-separated, at most six, with no empty entries.
-     * The checked state is value=1; text is secondary explanatory content. */
+     * Adjacent CHIP actions wrap into a group of content-sized pills.
+     * The checked state is value=1; text is secondary explanatory content.
+     * CHECK_ROW without secondary_action places its checkbox at the trailing
+     * edge and lets the entire row toggle it. */
     uint32_t secondary_action, symbol, marker, tone;
     char badge[16], choices[72];
 } risc_component_detail_v1;

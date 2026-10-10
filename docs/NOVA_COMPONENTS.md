@@ -15,15 +15,16 @@ same ELF renders on Watch and X4. Further clients use the same component kinds.
 | Section / explanatory or empty state | Text and state | Spacing, wrapping, 44px circled check for empty/completed states |
 | Navigation row | Label, subtitle, marker/symbol, badge, intent | Row layout, divider, focus bar, touch target |
 | Checklist row | Checked value, toggle intent, separate detail intent | Separate checkbox/detail targets, strike-through |
-| Switch | Boolean value and intent | OFF/ON controls; caption is inert |
-| Stepper | Bounded integer, selected text, intent | Independent minus/plus targets; caption is inert |
-| Segmented choices | Pipe-separated choices, selected index, intent | Selected inversion and independent targets |
-| Marker selector | One of six semantic marker values | Shape and color on Watch; shape on paper |
+| Switch | Boolean value and intent | One compact OFF/ON capsule; caption is inert |
+| Stepper | Bounded integer, selected text, intent | Inline caption, selected text and independent minus/plus targets |
+| Segmented tabs | Pipe-separated choices, selected index, intent | One rounded rail, inset selected segment, 8px labels and independent targets |
+| Suggestion chips | Adjacent CHIP labels and action IDs | Content-sized pills, wrapping and shared focus/scroll layout |
+| Marker selector | One of six semantic marker values | One six-shape row; color on Watch and selected inversion on paper |
 | Progress card/bar | Completed count and total | Bounded bar, card and optional tap target |
 | Action button | Label, intent, primary/destructive/disabled state | Density-specific outline/inversion and focus |
 | Time picker | Minute of day and intent | Finger-follow/snap wheels on Watch, large +/- on paper |
 | Keyboard | Draft text, length limit, intent | Shared native keyboard and layer/key events |
-| Confirmation / alert | Copied content and explicit cancel intent | Safe default focus, Back/outside cancellation, no stale toast overlay |
+| Confirmation / alert | Copied content and explicit cancel intent | Centered rounded dialog, horizontal actions, safe default focus and outside cancellation |
 | Toast | Message, new token, optional undo intent | Four-second lifetime; paper omits Undo |
 
 All components use the attached component bible's color/monochrome classes and
@@ -43,6 +44,10 @@ out-of-domain values before applying an intent.
 The original TEXT, ACTION and KEYBOARD kinds also work in component documents.
 Use the new SWITCH, STEPPER, TIME_PICKER and ROW kinds for the other controls.
 Old base documents continue to use the original navigation and rendering.
+CHIP is an appended kind; the document and service table layouts are unchanged.
+Consecutive visible chips wrap in source order; the same layout supplies focus
+and scroll bounds. Modal documents contain one text node and one to three action
+nodes, including a visible, enabled, non-destructive cancel action.
 Use TEXT for confirmation/alert copy; EMPTY is the circled-check state from the
 mockup (20px check, 44px circle, 1px color / 2.5px monochrome outline, logical units).
 
@@ -85,7 +90,10 @@ python scripts/build_civil_clock.py --runtime ../Runtime --output ../build/civil
 
 The old scene suite runs 179 presenter/profile cases. New component tests use
 60-row checklists on both profiles, test independent targets during a pending
-frame, caption inertness, malformed documents and suffix discovery. Calendar
+frame, caption inertness, three-way tabs with nonzero value bounds, disabled tabs,
+malformed documents and suffix discovery. The tab rail follows the attached
+mockup: 26px container, 12px radius, 2px inset, 3px gap, 22px segments,
+9px segment radius and 8px Orbitron labels (logical pixels). Calendar
 provider tests cover both real clock policies and terminal context loss. Lists'
 cross-repository tests exercise its real reducer through this renderer and
 produce the screenshots in Productivity's `docs/lists/` folder.

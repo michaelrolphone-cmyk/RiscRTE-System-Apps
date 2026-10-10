@@ -21,7 +21,18 @@ int main(int argc,char **argv){
  unsigned calls_before=calls;risc_components_document_v1 bad=rich;bad.revision++;
  bad.nodes[0].value=2;assert(components->update(NULL,session,&bad)==RISC_SCENE_INVALID);assert(calls==calls_before);
  /* Caption of a control row is inert, unlike its own controls. */
- rich.revision++;rich.screen_key++;rich.node_count=1;rich.nodes[0].kind=RISC_COMPONENT_SWITCH;rich.details[0].secondary_action=0;assert(!components->update(NULL,session,&rich));touch_tap(30*scale,70*scale);assert(tick(&e)==RISC_SCENE_IDLE);touch_tap(180*scale,70*scale);assert(tick(&e)==0&&e.action==10);
+ unsigned row_y=(paper?44+21:68+20)*scale;
+ rich.revision++;rich.screen_key++;rich.node_count=1;rich.nodes[0].kind=RISC_COMPONENT_SWITCH;rich.details[0].secondary_action=0;assert(!components->update(NULL,session,&rich));touch_tap(30*scale,row_y);assert(tick(&e)==RISC_SCENE_IDLE);touch_tap(180*scale,row_y);assert(tick(&e)==0&&e.action==10);
+ /* Shared segmented tabs: three choices, nonzero minimum, live hit maps
+  * during refresh, disabled state and the inset gap remain independent. */
+ rich.revision++;rich.screen_key++;rich.nodes[0].kind=RISC_COMPONENT_SEGMENTS;
+ rich.nodes[0].minimum=2;rich.nodes[0].maximum=4;rich.nodes[0].value=3;
+ strcpy(rich.details[0].choices,"PLACES|EVENTS|TRIGGERS");assert(!components->update(NULL,session,&rich));
+ allow_complete=false;begin_frame();
+ for(unsigned i=0;i<3;i++){touch_tap((45+i*70)*scale,row_y);assert(tick(&e)==0&&e.action==10&&e.value==(int)i+2);}
+ touch_tap(86*scale,row_y);assert(tick(&e)==RISC_SCENE_IDLE);
+ rich.revision++;rich.nodes[0].flags=RISC_SCENE_DISABLED;assert(!components->update(NULL,session,&rich));touch_tap(45*scale,row_y);assert(tick(&e)==RISC_SCENE_IDLE);
+ allow_complete=true;settle();
  /* Ordinary documents cannot masquerade as a component table or read suffix
   * fields on older providers. */
  risc_scene_api_v1 old=*api;old.struct_size=sizeof(old);assert(!risc_scene_components_get_v1(&old));
