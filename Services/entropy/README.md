@@ -2,10 +2,10 @@
 
 `crypto-entropy` is a development-only ordinary provider exposing
 `crypto.entropy@1`. Its sole dependency is `platform.entropy@1`, copied from
-Runtime source a3d0b24af7398ef6d004a7199d043b9779f4d829. It makes no native call
+Runtime source 67e0dbe1a5f519fd96d8f88797ff91b9e1a3096c. It makes no native call
 at activation. An explicit fill copies 1–32 hardware-backed bytes through its
 own scratch space. Failures leave the caller's output unchanged; scratch is
-wiped through volatile stores. An unavailable entropy source has no fallback.
+wiped through volatile stores. An unavailable entropy source has no fallback. Shared-resource BUSY is a transient refusal and does not poison the grant.
 
 The caller owns session/credential policy; this provider stores neither. It
 cannot enable Wi-Fi, alter RF ownership, create persistent keys or open sockets.
@@ -15,7 +15,7 @@ while filling are rejected. Native CONTEXT, RETAINED and unknown status latch a
 terminal fence, preventing further native I/O and successful unload.
 
 Run `bash scripts/test_entropy_service.sh`, optionally with `SANITIZE=1` and
-`ASAN_OPTIONS=detect_leaks=0` under ptrace. The nine actual-provider cases cover
+`ASAN_OPTIONS=detect_leaks=0` under ptrace. The ten actual-provider cases cover
 copied-output failure, reentry, prior activation, retained/context failures,
 unknown status, malformed dependency and counter exhaustion. Run
 `scripts/build_entropy_service.py` with `NATIVE_APP_CC` or `PLATFORMIO_CORE_DIR`

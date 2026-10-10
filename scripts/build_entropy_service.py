@@ -10,7 +10,7 @@ import struct
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE_SHA256 = "55a66865c678731dff733ee4a82866ada79ef4a989b5756c32a698886358b3ab"
+NATIVE_SHA256 = "08b4d52e71b1349a57d1713e54bcc7872ae63d55edf647ec17b0bbb2f509c0d1"
 
 
 def main():
@@ -85,7 +85,7 @@ def main():
                ROOT / "test/native_apps/entropy_service_test.cpp"]
     record = {
         "purpose": "development-only-not-activation-or-publication",
-        "runtime_contract_revision": "a3d0b24af7398ef6d004a7199d043b9779f4d829",
+        "runtime_contract_revision": "67e0dbe1a5f519fd96d8f88797ff91b9e1a3096c",
         "runtime_contract_sha256": NATIVE_SHA256,
         "sha256": hashlib.sha256(data).hexdigest(), "size_bytes": len(data),
         "compiler": subprocess.check_output([cxx, "--version"], text=True).splitlines()[0],
