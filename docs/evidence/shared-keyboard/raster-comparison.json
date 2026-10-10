@@ -1,0 +1,12 @@
+{
+  "reference": "prior Points keyboard-release-once.png",
+  "region": [
+    28,
+    370,
+    452,
+    732
+  ],
+  "different_pixels": 2,
+  "total_pixels": 153488,
+  "note": "Grid only; generic field intentionally excludes Points-specific symbol selection. Font raster uses the supplied static font assets and explicit 1-bit threshold."
+}

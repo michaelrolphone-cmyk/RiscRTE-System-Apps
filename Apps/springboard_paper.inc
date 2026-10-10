@@ -1,3 +1,6 @@
+#ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
+#include "springboard_scroll.inc"
+#else
 /* NOVA-7 E-Ink: fixed 3/2 rows and actual installed catalog. */
 #include "PaperPresentation.h"
 #include "PaperFrame.h"
@@ -7,6 +10,7 @@ __attribute__((weak)) const paper_presentation *paper_presentation_get(void) {re
 #define PAPER_PAGE_APPS 15u
 static int paper_x(int x){return x*api->screen_width()/480;}
 static int paper_y(int y){return y*api->screen_height()/800;}
+#include "SpringboardPaperHeader.h"
 static void paper_position(unsigned cell,int *x,int *y) {
     unsigned pair=cell/5,at=cell%5;
     *x=paper_x(at<3?110+(int)at*130:175+(int)(at-3)*130);
@@ -32,11 +36,9 @@ static void paper_name(const paper_presentation *v,int x,int y,const t5_app_mani
 static bool paper_draw(const paper_presentation *v,const char *status,bool initial,
                        bool known,uint8_t hour,uint8_t minute,paper_battery battery,bool loading) {
     if(!paper_frame_ready())return false;
-    v->begin();v->text(paper_x(32),paper_y(30),paper_x(270),"APPS",2,true,true);
-    char time[12];if(known)snprintf(time,sizeof(time),"%02u:%02u",hour,minute);else strcpy(time,"--:--");
-    v->text(paper_x(214),paper_y(30),paper_x(120),time,2,true,true);
-    paper_battery_draw(api,v,342,40,battery);
-    api->fill_rect(paper_x(32),paper_y(78),paper_x(416),3,true);
+    v->begin();(void)battery;
+    char time[12];if(known)snprintf(time,sizeof(time),"%u:%02u",hour,minute);else strcpy(time,"--:--");
+    springboard_paper_header(time);
     unsigned first=selected/PAPER_PAGE_APPS*PAPER_PAGE_APPS;
     for(unsigned cell=0;cell<PAPER_PAGE_APPS && first+cell<count;cell++) {
         t5_app_manifest_t app;if(!api->installed_apps_get(first+cell,&app))continue;
@@ -141,3 +143,5 @@ static bool paper_run(void) {
     (void)paper_frame_drain();
     return true;
 }
+
+#endif

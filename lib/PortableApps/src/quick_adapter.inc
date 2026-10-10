@@ -23,6 +23,68 @@ static bool quick_storage_safe(void) {
 #endif
  return true;
 }
+#ifdef PORTABLE_X4_IDLE_POLICY
+static bool automatic_idle_ready(void) {
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+ if(!portable_wifi_idle_ready())return false;
+#endif
+ return !idle_capture_active() && display_settled && !surface.frame && !paper_token && !alarm_modal && !touch.down &&
+     !quick_modal && !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui) &&
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+     !quick_open_requested &&
+#endif
+     !quick_launch_pending && !handoff_requested && quick_storage_safe();
+}
+
+#endif
+#ifdef PORTABLE_LOW_BATTERY
+static bool low_battery_poll_inner(void) {
+ if(!display_settled||surface.frame||!quick_storage_safe())return true;
+ uint32_t now=millis_now();
+ if(low_battery_sampled&&(uint32_t)(now-low_battery_sampled_at)<5000u)return true;
+ low_battery_sampled=true;low_battery_sampled_at=now;
+ risc_battery_sample_v1 sample={0,255,RISC_BATTERY_PROFILE_MISSING};
+ if(!gauge||!gauge->read||!gauge->read(gauge->context,&sample))return true;
+ unsigned result=portable_low_battery_update(&low_battery,rt,&sample);
+ if((result&PORTABLE_LOW_BATTERY_RETAINED)
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    || native_custody_retained
+#endif
+ )return false;
+ if(result&PORTABLE_LOW_BATTERY_ERROR)rt->diagnostic("LOW_BATTERY settings=unconfirmed");
+ if(!(result&PORTABLE_LOW_BATTERY_ENTERED))return true;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if(!portable_background_stop())return false;
+#endif
+ /* Cancel stale preview/pending actions before reloading confirmed settings.
+  * A later new gesture is a manual override and remains authoritative. */
+ pqa_cancel(&quick.ui);(void)pqa_take_action(&quick.ui);
+#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+ if(!portable_wifi_suspend())return false;
+#endif
+#ifdef PORTABLE_RADIO_SESSION
+ if(!portable_radio_suspend())return false;
+#endif
+ if(!pqa_session_load(&quick,rt)||!pqa_radios_load(&quick_radios,&quick.ui,rt) ||
+    !pqa_session_restore(&quick,display))return false;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ if(quick.ui.paper && !pqa_session_sync_brightness(&quick,display))return false;
+#endif
+ rt->diagnostic(result&PORTABLE_LOW_BATTERY_ERROR?"LOW_BATTERY crossing=partial-once":"LOW_BATTERY crossing=applied-once");return true;
+}
+static bool low_battery_poll(void) {
+ bool ok=low_battery_poll_inner();
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(!ok){
+#if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+  if(quick.retained)portable_adapter_retain_silent();else
+#endif
+  {portable_adapter_retain();}
+ }
+#endif
+ return ok;
+}
+#endif
 static bool quick_apply(uint32_t actions) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
@@ -30,6 +92,9 @@ static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
  portable_stage_log(rt,"quick-action","state=apply");
  if(!quick_storage_safe())return false;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if(!portable_background_stop())return false;
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
  if(((actions&PQA_AIRPLANE)&&!quick.ui.airplane)||((actions&PQA_WIFI)&&quick.ui.wifi_enabled)) {
@@ -44,7 +109,13 @@ static bool quick_apply(uint32_t actions) {
 #endif
  bool changed=false;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
- if(!pqa_session_apply(&quick,rt,display,actions,&changed)){portable_adapter_retain();return false;}
+ if(!pqa_session_apply(&quick,rt,display,actions,&changed)){
+#if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+  if(quick.retained)portable_adapter_retain_silent();else
+#endif
+  {portable_adapter_retain();}
+  return false;
+ }
 #else
  if(!pqa_session_apply(&quick,rt,display,actions,&changed))return false;
 #endif
@@ -99,7 +170,11 @@ static void quick_time(char out[6]) {
 #endif
  {
   unsigned h=quick.hour_24?hour:hour%12;if(!quick.hour_24&&!h)h=12;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  snprintf(out,6,"%u:%02u",h%24u,minute%60u);
+#else
   out[0]=(char)('0'+h/10);out[1]=(char)('0'+h%10);out[3]=(char)('0'+minute/10);out[4]=(char)('0'+minute%10);
+#endif
  }
 #else
  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};
@@ -108,7 +183,11 @@ static void quick_time(char out[6]) {
  if(clock && clock->api_version==2 && clock->struct_size>=sizeof(*clock) && clock->read &&
     clock->read(clock->context,&raw) && portable_time_forward(&raw,&local)) {
   unsigned h=quick.hour_24?local.hour:local.hour%12;if(!quick.hour_24&&!h)h=12;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  snprintf(out,6,"%u:%02u",h%24u,local.minute%60u);
+#else
   out[0]=(char)('0'+h/10);out[1]=(char)('0'+h%10);out[3]=(char)('0'+local.minute/10);out[4]=(char)('0'+local.minute%10);
+#endif
  }
  if(!rt->release(&g))failed=true;
 #endif
@@ -155,8 +234,22 @@ static bool quick_foreground(bool *consumed) {
  /* Drain before radio controls load/apply; a dismiss never resumes RF. */
  if(!portable_radio_suspend())return false;
 #endif
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+ if(!portable_background_stop())return false;
+#endif
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,display)) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_FRONTLIGHT_TONE) && defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+  if(quick.retained)portable_adapter_retain_silent();else
+#endif
+  {portable_adapter_retain();}
+#endif
+  return false;
+ }
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
@@ -164,21 +257,35 @@ static bool quick_foreground(bool *consumed) {
  if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
  memcpy(quick_background,alarm_pixels,quick_frame_bytes());quick_modal=true;
  portable_stage_log(rt,"action","name=quick-controls-open");
- bool painted=false,wifi=false;uint32_t began=millis_now(),telemetry_at=began-1000u;
+ bool painted=false,wifi=false;
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+ bool usb_transfer=false;
+#endif
+ uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
  pqa_state painted_state={0};uint8_t painted_battery=0;
  while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
   uint32_t now=millis_now();bool alarm_consumed=false;
   if(!alarm_foreground(&alarm_consumed)){failed=true;break;}
   if(alarm_consumed){*consumed=true;break;}
+#ifdef PORTABLE_LOW_BATTERY
+  if(!low_battery_poll()){failed=true;break;}
+#endif
   if(navigation_pending&T5_APP_BUTTON_BACK){navigation_pending=0;pqa_close(&quick.ui);}
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   /* Retaining paper controls stay available for inspection until dismissed.
    * Keep the existing idle policy for the animated Watch sheet. */
-  if(!quick.ui.paper && (uint32_t)(now-last_activity)>=60000u)pqa_cancel(&quick.ui);
+  if(!quick.ui.paper && (uint32_t)(now-last_activity)>=portable_idle_ms())pqa_cancel(&quick.ui);
 #endif
   uint32_t actions=pqa_take_action(&quick.ui);
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  bool clean_requested=quick.ui.clean_refresh_valid&&!!(actions&PQA_CLEAN_REFRESH);
+  actions&=~PQA_CLEAN_REFRESH;
+#endif
   if(!quick.ui.radio_controls && (actions&PQA_WIFI)){wifi=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+  if(actions&PQA_USB_TRANSFER){usb_transfer=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
+#endif
   if(!quick_apply(actions)){failed=true;break;}
   pqa_animate(&quick.ui,now);
   if(pqa_visible(&quick.ui) || (!quick.ui.paper && painted)) {
@@ -190,6 +297,9 @@ static bool quick_foreground(bool *consumed) {
     battery_valid=gauge && gauge->read && gauge->read(gauge->context,&battery) && battery.percent<=100 && !(battery.flags&RISC_BATTERY_PROFILE_MISSING);telemetry_at=now;
    }
    bool dirty=!quick.ui.paper || !painted || quick_paper_changed(&painted_state,&quick.ui) ||
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+       clean_requested ||
+#endif
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
    if(dirty) {
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
@@ -198,7 +308,15 @@ static bool quick_foreground(bool *consumed) {
      * rendered above; newer input must remain dirty for the next frame. */
     painted_state=quick.ui;
     memcpy(painted_time,time,sizeof(time));painted_battery_valid=battery_valid;painted_battery=battery.percent;
-    present(!quick.ui.paper);painted=true;*consumed=true;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+    quick_clean_present=clean_requested;
+    present(clean_requested||!quick.ui.paper);
+    if(native_custody_retained)return false;
+    quick_clean_present=false;
+#else
+    present(!quick.ui.paper);
+#endif
+    painted=true;*consumed=true;
    }
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
@@ -216,7 +334,11 @@ static bool quick_foreground(bool *consumed) {
  quick_modal=false;free(quick_background);quick_background=NULL;
  portable_stage_log(rt,"action","name=quick-controls-close");
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
- if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {
+ const char *quick_destination=wifi?"wifi_settings.elf":NULL;
+#ifdef PORTABLE_QUICK_USB_TRANSFER
+ if(usb_transfer)quick_destination="usb_sd_transfer.elf";
+#endif
+ if(quick_destination && !failed && app_allows_launch(quick_destination)) {
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close())return false;
 #endif
@@ -228,12 +350,19 @@ static bool quick_foreground(bool *consumed) {
 #elif defined(PORTABLE_WIFI_SETTINGS_APP)
   if(!portable_wifi_close())return false;
 #endif
-  if(!rt->request_launch("wifi_settings.elf")){quick.ui.error_flags|=PQA_ERROR_WIFI;rt->diagnostic("QUICK Wi-Fi launch-failed");}
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  if(!resident_queue_launch(quick_destination)){
+#else
+  if(!rt->request_launch(quick_destination)){
+#endif
+   quick.ui.error_flags|=wifi?PQA_ERROR_WIFI:PQA_ERROR_USB;rt->diagnostic("QUICK app launch-failed");}
   else {
 #ifdef PORTABLE_UPDATE_APP
    extern void portable_update_handoff(void);portable_update_handoff();
 #endif
+#ifndef PORTABLE_RESIDENT_SHELL_HOST
    quick_launch_pending=handoff_requested=true;
+#endif
   } /* caller exits via ordinary cleanup */
  }
  return !failed;

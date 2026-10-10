@@ -95,3 +95,26 @@ panel motion. Physical X4 timing, ghosting and waveform quality are unqualified.
 Reproduce the focused checks with `scripts/test_paper_transition.py`,
 `scripts/test_paper_home_transition.py`, and `scripts/test_paper_quick_motion.py`.
 Use their explicit SDK and source arguments; the scripts never publish an image.
+
+## Combined plain logging and native Home proof
+
+The `--stage-logs` fixture option combines direct stage statements, display
+metrics, paper pull-down and crossfade. All 50 transition cases pass, and 296
+captured PBM frames are byte-identical to their unlogged counterparts. The native
+Home suite additionally supports `--tagged-alarm` and passes 28 cases with the
+deployed API2 descriptor, 140/350 ms asynchronous provider fixtures, Home-top
+opening, swipe opening, sustained inspection, swipe dismissal and interruption
+of an unfinished app fade. The original 12-case unselected suite still passes.
+
+[Native Home pull-down](evidence/paper-native-home-stages/native-home-pull-down.png)
+and its adjacent GIF show the actual current fonts and Points UI beneath partial
+sheet positions. The modal preserves its completed background; on close, Home's
+existing dirty state clears pressed feedback and an interrupted fade reaches the
+exact current Home raster. Diagnostic reads do not change controller state.
+The fixture rejects preference writes, freezes pending pixels, and verifies
+matching submission/completion logs. No production source adjustment was needed.
+
+[Combined evidence](evidence/paper-native-home-stages/qualification.json) records
+the tests and target artifacts. GIF timing is illustrative. These host fixtures
+do not establish panel timing or ghosting. Target receipts were generated before
+the proof commit and need a clean rebuild before product composition.

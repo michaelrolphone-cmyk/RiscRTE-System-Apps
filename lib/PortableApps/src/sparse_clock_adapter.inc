@@ -1,4 +1,35 @@
 /* Opt-in app-local lifecycle. The default adapter never preprocesses this file. */
+#ifdef PORTABLE_DESK_POINTS_SNAPSHOT
+#include "home_points_catalog_adapter.inc"
+int portable_desk_points_catalog_refresh(portable_points_catalog_view *out) {
+ if(portable_adapter_retained())return -2;
+ if(!out || out->struct_size<sizeof(*out) || desk_phase!=DESK_TIMER || failed ||
+    surface.frame || paper_token || !display_settled || !alarms.api)return -1;
+ if(!portable_alarm_status(&alarms))return portable_adapter_retained()?-2:-1;
+ if(alarms.status.output_uncertain){alarms.retained=true;portable_adapter_retain_silent();return -2;}
+ if(portable_alarm_owned(&alarms) || alarms.status.error ||
+    alarms.status.state==ALARM_STATE_BLOCKED)return -1;
+ uint32_t before=alarms.status.snapshot;
+ if(!portable_alarm_refresh(&alarms))return portable_adapter_retained()?-2:-1;
+ /* Like the deployment's sleep preparation, bound cooperative phases. A
+  * copied projection may stay available during LOAD; only a new evaluated
+  * snapshot is fresh. Stop before subsequent output phases are advanced. */
+ for(unsigned i=0;i<64;i++) {
+  if(!portable_alarm_pump(&alarms))return portable_adapter_retained()?-2:-1;
+  if(alarms.status.output_uncertain){alarms.retained=true;portable_adapter_retain_silent();return -2;}
+  if(alarms.status.error || portable_alarm_owned(&alarms) ||
+     alarms.status.state==ALARM_STATE_BLOCKED)return -1;
+  if(alarms.status.state==ALARM_STATE_READY && alarms.status.snapshot!=before) {
+   int copied=portable_home_points_catalog(out);
+   if(copied==1 && out->snapshot!=alarms.status.snapshot)return -1;
+   return copied;
+  }
+  rt->yield_ms(1);
+  if(portable_adapter_retained())return -2;
+ }
+ return -1;
+}
+#endif
 static bool desk_guard_health(risc_runtime_health_v1 *out) {
  if(native_sleep_retained)return false;
  if(!desk_runtime->health(out)){portable_desk_adapter_retain();return false;}
@@ -11,7 +42,13 @@ static bool desk_guard_diagnostic(const char *line) {
  return !native_sleep_retained && desk_runtime->diagnostic(line);
 }
 static bool desk_guard_launch(const char *path) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(native_sleep_retained || !portable_paper_frame_drain())return false;
+ if(!contexts_suspend())return false;
+ return desk_runtime->request_launch(path);
+#else
  return !native_sleep_retained && portable_paper_frame_drain() && desk_runtime->request_launch(path);
+#endif
 }
 #ifdef PORTABLE_QUICK_RADIOS
 /* QuickActions can acquire several transient grants before applying policy.
@@ -44,14 +81,61 @@ static bool desk_ble_status(void *context,uint8_t *out) {
  return true;
 }
 #endif
+#ifdef PORTABLE_X4_IDLE_POLICY
+/* Transient settings clients must stop at a lost native KV context as well as
+ * at failed grant acquisition. Later callbacks observe the same fence. */
+typedef struct {bool live;const risc_key_value_v1 *source;risc_key_value_v1 api;} desk_kv_slot;
+static desk_kv_slot desk_kv_slots[16];
+static void desk_kv_reset(void){memset(desk_kv_slots,0,sizeof(desk_kv_slots));}
+static int32_t desk_kv_result(int32_t rc) {
+ if(rc!=RISC_KEY_VALUE_OK && rc!=RISC_KEY_VALUE_NOT_FOUND && rc!=RISC_KEY_VALUE_BUFFER_SMALL &&
+    rc!=RISC_KEY_VALUE_INVALID && rc!=RISC_KEY_VALUE_IO)portable_desk_adapter_retain();
+ return rc;
+}
+static int32_t desk_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
+ desk_kv_slot *s=context;if(native_sleep_retained || !s->live)return RISC_KEY_VALUE_CONTEXT;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(!contexts_before_storage())return RISC_KEY_VALUE_CONTEXT;
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+ if(!broadcast_before_storage())return RISC_KEY_VALUE_CONTEXT;
+#endif
+ return desk_kv_result(s->source->get(s->source->context,key,data,size,used));
+}
+static int32_t desk_kv_put(void *context,const char *key,const void *data,uint32_t size) {
+ desk_kv_slot *s=context;if(native_sleep_retained || !s->live)return RISC_KEY_VALUE_CONTEXT;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(!contexts_before_storage())return RISC_KEY_VALUE_CONTEXT;
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+ if(!broadcast_before_storage())return RISC_KEY_VALUE_CONTEXT;
+#endif
+ return desk_kv_result(s->source->put(s->source->context,key,data,size));
+}
+#endif
 static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
  if(!desk_runtime->acquire(name,version,instance,grant)) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!strcmp(name,CONTEXTS_SERVICE_CAPABILITY) && version==1 && instance==0 &&
+     grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation)return false;
+#endif
   /* False, including an empty output, does not prove failed-start rollback.
    * Do not release even an apparently valid partial grant after this fence. */
   portable_desk_adapter_retain();grant->api=NULL;return false;
  }
+#ifdef PORTABLE_X4_IDLE_POLICY
+ if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
+  const risc_key_value_v1 *kv=grant->api;
+  if(!portable_sleep_api_valid(kv)){portable_desk_adapter_retain();return false;}
+  desk_kv_slot *slot=NULL;
+  for(unsigned i=0;i<16;++i)if(!desk_kv_slots[i].live){slot=&desk_kv_slots[i];break;}
+  if(!slot){portable_desk_adapter_retain();return false;}
+  slot->source=kv;slot->live=true;slot->api=*kv;slot->api.context=slot;
+  slot->api.get=desk_kv_get;slot->api.put=desk_kv_put;grant->api=&slot->api;
+ }
+#endif
  return true;
 }
 #ifdef PORTABLE_QUICK_RADIOS
@@ -114,7 +198,19 @@ static bool desk_release(risc_runtime_capability_v1 *grant) {
  if(grant->api==&desk_wifi_control)grant->api=desk_wifi;
  if(grant->api==&desk_ble_control)grant->api=desk_ble;
 #endif
+#ifdef PORTABLE_X4_IDLE_POLICY
+ desk_kv_slot *slot=NULL;
+ for(unsigned i=0;i<16;++i)if(grant->api==&desk_kv_slots[i].api){slot=&desk_kv_slots[i];grant->api=slot->source;break;}
+#endif
  if(!desk_runtime->release(grant)){portable_desk_adapter_retain();return false;}
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(grant->struct_size!=sizeof(*grant) || grant->api || grant->slot || grant->generation) {
+  portable_desk_adapter_retain();return false;
+ }
+#endif
+#ifdef PORTABLE_X4_IDLE_POLICY
+ if(slot)slot->live=false;
+#endif
  return true;
 }
 bool portable_desk_adapter_timer_only(void) {
@@ -125,6 +221,9 @@ static int desk_start_error(void) {
  return native_sleep_retained?-2:0;
 }
 static int desk_open_foreground(void) {
+#ifdef PORTABLE_BLE_BROADCAST
+ if(!portable_broadcast_stop())return desk_start_error();
+#endif
  /* A failure after a subscription/claim may conceal retained native state.
   * No cleanup is attempted on these ambiguous outcomes. */
  if(!portable_touch_open(&touch,rt)){portable_desk_adapter_retain();return desk_start_error();}
@@ -138,7 +237,23 @@ static int desk_open_foreground(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
  quick.ui.paper=pp_enabled();
  if(!pqa_session_load(&quick,rt) || native_sleep_retained)return desk_start_error();
+#ifdef PORTABLE_DESK_WAKE_LIGHT
+ /* The selected deployment cached this native wake classification before
+  * opening providers. Restore the persisted on/off and exact saved level only
+  * for an interactive GPIO wake, never a minute timer or cold boot. */
+ if(portable_desk_clock_boot_is_interactive() &&
+    !pqa_session_sync_brightness(&quick,display)) {
+  portable_desk_adapter_retain();return desk_start_error();
+ }
+#endif
  quick_paper_capabilities();
+#ifdef PORTABLE_FRONTLIGHT_TONE
+ /* Configure tone without changing cold-boot/off brightness. Sparse timer
+  * execution never enters this foreground-only capability path. */
+ if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)) {
+  portable_desk_adapter_retain();return desk_start_error();
+ }
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!desk_radios_load(&quick_radios,&quick.ui,rt) || native_sleep_retained) {
   portable_desk_adapter_retain();return desk_start_error();
@@ -212,6 +327,12 @@ static void desk_finalize(void) {
  if(!rt || native_sleep_retained || desk_phase==DESK_COLD || desk_phase==DESK_FINALIZED)return;
  if(desk_phase==DESK_INITIALIZED){desk_phase=DESK_FINALIZED;return;}
  if(paper_token && !portable_paper_frame_drain())return;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(!contexts_suspend())return;
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+ if(broadcast_client.runtime && !portable_broadcast_stop())return;
+#endif
  if(alarms.api && !alarm_failed_cleaned) {
   bool stop=failed || !display_settled;
   if(!stop) {

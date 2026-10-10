@@ -10,6 +10,9 @@
 #include "PaperFrame.h"
 #include "PortablePerformance.h"
 #include "PortableStageLog.h"
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+#include "PortableResidentShell.h"
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -146,23 +149,18 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  home_press_begin();
 #endif
+#ifndef PORTABLE_HOME_POINTS_NATIVE_UTC
  char buf[64];
  static const char*const days[]={"SUN","MON","TUE","WED","THU","FRI","SAT"};
  static const char*const months[]={"JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"};
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
- if(known)snprintf(buf,sizeof(buf),"%s %02u %s",days[time->weekday%7],time->day,months[time->month-1]);else strcpy(buf,"TIME UNAVAILABLE");
- home_type(&HOME_R700_28,32,44,buf,3,0,190,0);home_battery();
- home_dial(known,known?time->minute:0);
- if(known)snprintf(buf,sizeof(buf),"%02u:%02u",format==PORTABLE_TIME_FORMAT_24?time->hour:time->hour%12?time->hour%12:12,time->minute);else strcpy(buf,"--:--");
- home_type(&HOME_O900_100,240,294,buf,0,2,0,250);
- home_type(&HOME_O600_18,240,340,"NOVA-7",10,2,0,0);
- if(known&&format==PORTABLE_TIME_FORMAT_12)home_type(&HOME_R700_22,240,390,time->hour<12?"AM":"PM",0,2,0,0);
- app->fill_rect(xscale(32),yscale(472),xscale(416),yscale(4),true);
+ home_reference_header(time,known);
 #else
  if(known)snprintf(buf,sizeof(buf),"%s %02u %s",days[time->weekday%7],time->day,months[time->month-1]);else strcpy(buf,"TIME UNAVAILABLE");text(32,24,300,buf,true);
  paper_battery_draw(app,paper,336,32,battery_status);
  for(unsigned i=0;i<60;i++){int inner=i%5?185:174;thick_line(xscale(240+clock_ring[i][0]*inner/1000),yscale(264+clock_ring[i][1]*inner/1000),xscale(240+clock_ring[i][0]*197/1000),yscale(264+clock_ring[i][1]*197/1000),xscale(i%5?4:7));}
- if(known)snprintf(buf,sizeof(buf),"%02u:%02u",format==PORTABLE_TIME_FORMAT_24?time->hour:time->hour%12?time->hour%12:12,time->minute);else strcpy(buf,"--:--");
+ if(known)snprintf(buf,sizeof(buf),"%u:%02u",format==PORTABLE_TIME_FORMAT_24?time->hour:time->hour%12?time->hour%12:12,time->minute);else strcpy(buf,"--:--");
  int width=paper->measure(buf,true)*3;paper->text((app->screen_width()-width)/2,yscale(210),app->screen_width()-xscale(64),buf,1|PAPER_TEXT_CLOCK,true,true);
  text(174,330,170,"N O V A - 7",false);
  if(known&&format==PORTABLE_TIME_FORMAT_12)text(224,370,60,time->hour<12?"AM":"PM",false);
@@ -206,6 +204,17 @@ void app_main(void){
  if(!portable_desk_adapter_foreground()){if(!portable_app_sleep_retained())close_clock();return;}
 #endif
 #endif
+#ifdef PORTABLE_RESIDENT_LEGACY_HANDOFF
+ /* Resume a saved resident/file-open caller before the first Home scene.
+  * Sparse TIMER exits within sparse_boot and never reaches this boundary. */
+ close_clock();
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+ if(desk_retained||portable_app_sleep_retained())return;
+#endif
+ int resumed=portable_resident_run_foreground(NULL);
+ if(resumed<0 || resumed==PORTABLE_RESIDENT_HANDOFF)return;
+ open_clock();
+#endif
  twatch_rtc_time_v1 time={0};bool known=read_clock(&time),down=false,neutral=false;int start_x=0,start_y=0;char notice[48]={0};
 #ifdef PORTABLE_DESK_CLOCK
  if(desk_returned){desk_returned=false;strcpy(notice,desk_notice());}
@@ -242,11 +251,27 @@ break;}
   if(input.buttons&PAPER_BUTTON_SLEEP_UNAVAILABLE){strcpy(notice,"SLEEP NOT AVAILABLE");clock_dirty=true;}
   springboard_contact c={0};paper->contact(&c);bool launch=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-  bool points_launch=false,quick_launch=false;unsigned previous_press=home_pressed;
+  const char *home_launch=NULL;unsigned tapped=HOME_NONE,previous_press=home_pressed;
+#ifdef PORTABLE_QUICK_ACTIONS
+  bool open_quick=false;
+#endif
 #endif
   if(!c.valid||c.cancelled){down=false;neutral=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    if(!home_pending)home_pressed=HOME_NONE;
+#endif
+  }
+  else if(down&&(c.down||c.released)&&
+      (abs(c.x-start_x)>=xscale(40)||abs(c.y-start_y)>=yscale(67))) {
+   /* A release can carry the final movement even when no intermediate move
+    * was delivered. Once a swipe wins, it cannot become a block tap. */
+   launch=true;down=neutral=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   home_pending=home_pressed=HOME_NONE;
+#ifdef PORTABLE_QUICK_ACTIONS
+   open_quick=c.y-start_y>abs(c.x-start_x);
+   launch=!open_quick;
+#endif
 #endif
   }
   else if(!c.down){
@@ -257,36 +282,41 @@ break;}
     down=true;start_x=c.x;start_y=c.y;
    }
    if(down&&c.released&&c.tap_eligible&&abs(c.x-start_x)<xscale(16)&&abs(c.y-start_y)<yscale(16)) {
-    if(home_points_hit(start_x,start_y)&&home_points_hit(c.x,c.y)){launch=true;points_launch=true;}
-    else if(home_dial_hit(start_x,start_y)&&home_dial_hit(c.x,c.y))launch=true;
-#ifdef PORTABLE_QUICK_ACTIONS
-    else if(home_top_hit(start_x,start_y)&&home_top_hit(c.x,c.y))quick_launch=true;
+    unsigned target=home_target(start_x,start_y);
+    if(target==home_target(c.x,c.y))tapped=target;
+#ifndef PORTABLE_QUICK_ACTIONS
+    if(tapped==HOME_TOP)tapped=HOME_NONE;
 #endif
    }
 #endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   if(!home_pending&&!launch&&!quick_launch)home_pressed=HOME_NONE;
+   if(!home_pending)home_pressed=HOME_NONE;
 #endif
    down=false;neutral=true;}
-  else if(neutral){if(!down){down=true;start_x=c.x;start_y=c.y;
-#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   if(!home_pending)home_pressed=home_target(c.x,c.y);
-#endif
-  }else if(abs(c.x-start_x)>=xscale(40)||abs(c.y-start_y)>=yscale(67)){launch=true;down=neutral=false;}
-#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   else if(!c.tap_eligible&&!home_pending)home_pressed=HOME_NONE;
-#endif
-  }
+  else if(neutral&&!down){down=true;start_x=c.x;start_y=c.y;}
   if(input.buttons&T5_APP_BUTTON_CONFIRM){launch=true;down=neutral=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   points_launch=false;
+   tapped=HOME_NONE;
+#ifdef PORTABLE_QUICK_ACTIONS
+   open_quick=false;
+#endif
 #endif
   }
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-  if(launch||quick_launch) {
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(open_quick) {
+   paper_transition_cancel();
+   clock_dirty|=previous_press!=home_pressed;
+   if(portable_paper_quick_open())continue;
+   strcpy(notice,"QUICK ACTIONS UNAVAILABLE");clock_dirty=true;
+  }
+#endif
+  /* Contact-down is ambiguous: a swipe often starts on a Home block. Only a
+   * completed, movement-eligible tap earns block feedback. Navigation keeps
+   * the sharp Home image and drains its existing frame before handoff. */
+  if(tapped) {
    if(paper_transition_active()){paper_transition_cancel();clock_dirty=true;}
-   home_pending=quick_launch?HOME_TOP:points_launch?HOME_POINTS:HOME_DIAL;
-   home_pressed=home_pending;launch=false;
+   home_pending=tapped;home_pressed=tapped;
   }
   if(previous_press!=home_pressed)clock_dirty=true;
   if(home_pending&&home_painted==home_pending&&!clock_dirty&&paper_frame_ready()) {
@@ -298,23 +328,58 @@ break;}
     strcpy(notice,"QUICK ACTIONS UNAVAILABLE");
    } else
 #endif
-   {launch=true;points_launch=chosen==HOME_POINTS;}
+   {launch=true;home_launch=home_launch_target(chosen);}
   }
 #endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+  const char *shell_target=portable_resident_take_launch();
+  if(shell_target)launch=true;
+#endif
   if(launch){paper_transition_cancel();portable_stage_log(rt,"action","name=clock-launch");portable_perf_action(PORTABLE_PERF_CLOCK_LAUNCH,true);if(!paper_frame_drain())return;close_clock();
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+   if(desk_retained||portable_app_sleep_retained())return;
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
-   const char *target=points_launch?PAPER_POINTS_APP:PAPER_CLOCK_LAUNCHER;
+   const char *target=home_launch?home_launch:PAPER_CLOCK_LAUNCHER;
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+   int shell_result=portable_resident_run_foreground(shell_target?shell_target:target);
+   if(shell_result<0 || shell_result==PORTABLE_RESIDENT_HANDOFF)return;
+#else
    if(rt->request_launch(target))break;
+#endif
+#else
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+   int shell_result=portable_resident_run_foreground(shell_target?shell_target:PAPER_CLOCK_LAUNCHER);
+   if(shell_result<0 || shell_result==PORTABLE_RESIDENT_HANDOFF)return;
 #else
    if(rt->request_launch(PAPER_CLOCK_LAUNCHER))break;
+#endif
+#endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+   if(shell_result==0)
 #endif
    portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);
    open_clock();
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
    home_pressed=HOME_NONE;
-   strcpy(notice,points_launch?"UNABLE TO OPEN POINTS. RETRY.":"UNABLE TO OPEN APPS. RETRY.");
+   strcpy(notice,"UNABLE TO OPEN APP. RETRY.");
 #else
    strcpy(notice,"UNABLE TO OPEN APPS. RETRY.");
+#endif
+#ifdef PORTABLE_RESIDENT_SHELL_HOST
+   if(shell_result>0)notice[0]=0;
+   down=neutral=false;known=read_clock(&time);
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+   if(desk_retained || portable_app_sleep_retained())return;
+#endif
+   checked=app->millis();
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+   home_refresh_pending=true;
+#endif
+   if(portable_resident_take_sleep()) {
+    if(!portable_desk_adapter_sleep())return;
+   }
+   clock_clean=true;
 #endif
    clock_dirty=true;}
   uint32_t now=app->millis();if((uint32_t)(now-checked)>=1000){twatch_rtc_time_v1 next={0};bool valid=read_clock(&next);
@@ -326,8 +391,17 @@ break;}
  home_refresh_pending=true;
 #endif
  }}
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) && defined(PORTABLE_DESK_POINTS_SNAPSHOT)
+ bool points_changed=false;
+ if(!home_points_poll(known,now,&points_changed))return;
+ clock_dirty|=points_changed;
+#endif
  if(clock_dirty||paper_transition_active())CLOCK_DRAW_OR_RETURN(&time,known,notice,false);
  }
  if(!paper_frame_drain())return;
- close_clock();app->set_back_exits_app(true);
+ close_clock();
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+ if(desk_retained||portable_app_sleep_retained())return;
+#endif
+ app->set_back_exits_app(true);
 }

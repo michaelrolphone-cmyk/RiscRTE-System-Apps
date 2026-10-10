@@ -1,0 +1,98 @@
+{
+  "schema": 1,
+  "component": "scene-host",
+  "version": "0.1.2",
+  "base_commit": "a8459b94597baba3021d0c8283836008c846ded2",
+  "runtime_commit": "c66f2591f35e0fe0e5590948cb44cf7c1a084484",
+  "source_sha256": {
+    "Services/scene_host/host.c": "2bc4478bc13693305ef98d2b85ad054d1a38be608f4af48876434d90b05f2301",
+    "Services/scene_host/manifest.json": "b78ea5c09814226b7b7d53a10782b817bcd17feb46235ab53c6757a6abae5713",
+    "sdk/app/RiscSceneV1.h": "11d99e7e2cb1b598c53fba42ca19681bf4a68cc90e223cc8a7fbe391ff7d3b24",
+    "sdk/app/RiscSceneStateV1.h": "aa52660271c49d9af396839a0404ba830974416259815a76e9904c4a222d607f",
+    "sdk/app/RiscSceneLifecycleV1.h": "df77c7efc4556c84f4016883b0f65ea0e64eec3d2b27a0204f989d576cfce92c",
+    "scripts/scene_build.py": "57afc0c704a7dad65f01f5ee1fb1838382c7312fd48d93c7799321de4ff60792",
+    "scripts/scene_sdk.py": "0bdec092f94482373e57e7bd3a58427fe01594d35349e32bb13868f7d55aa4fd",
+    "scripts/test_scene_host.py": "b8b7381f334044c635de64787aac17862b84f7a8fa05cef53f6e73488cff3ae4",
+    "test/scene/host_test.c": "bcd6aa8f4d03beb2d750c2746f2e38ec989af92b5bee9d06625eed0349a6a09e",
+    "test/scene/lifecycle_test.c": "04b78c23e766d319d83d837a64da18f7aa2bb9c41acd293de30a32dac924133d"
+  },
+  "normal_scene_executions": 161,
+  "asan_ubsan_scene_executions": 161,
+  "legacy_scene_executions_preserved": 128,
+  "lifecycle_scene_executions": 33,
+  "negative_orientation_witness": "old portrait90 rejected in both runs",
+  "abi_headers_byte_identical_to_base": [
+    "RiscSceneV1.h",
+    "RiscSceneStateV1.h"
+  ],
+  "target": {
+    "size_bytes": 33968,
+    "sha256": "55de021cd1af03accd559b1bfd3036986b28305286c2d21c7656e30f6ac5ca84",
+    "imports": [
+      "memchr",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strlen"
+    ],
+    "exports": [
+      "t5_driver_get"
+    ],
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0"
+  },
+  "target_build_environment": {
+    "clean_environment": true,
+    "PLATFORMIO_SETTING_ENABLE_TELEMETRY": "No"
+  },
+  "exact_exports_tests": [
+    {
+      "name": "legacy",
+      "exports": [
+        "app_main"
+      ],
+      "imports": []
+    },
+    {
+      "name": "resident",
+      "exports": [
+        "app_main",
+        "risc_resident_app_descriptor_v1"
+      ],
+      "imports": []
+    },
+    {
+      "name": "missing-export",
+      "rejected": true
+    },
+    {
+      "name": "empty",
+      "rejected": true
+    },
+    {
+      "name": "unsafe",
+      "rejected": true
+    }
+  ],
+  "logs_sha256": {
+    "normal.log": "05943a40c3521c80a8df8ccc3dca3906bd3864ac0a5add9bbcf55e7efa8b6029",
+    "sanitize.log": "05943a40c3521c80a8df8ccc3dca3906bd3864ac0a5add9bbcf55e7efa8b6029",
+    "target-final.log": "4853eeea67e5ca84878955ea09384fea851e1dc6fd75aa133b66496d852d8d48",
+    "unit.log": "1e0fafdebe094300d71b233558b2de4cb8fbafaa78868cecdaf9e96b58098d03",
+    "exports.json": "b2528877e5d053065ee87b554a5d851874947f634bfa522a3fbbf6991513a726"
+  },
+  "physical_testing": "not performed",
+  "publication_performed": false,
+  "runtime_edits": false,
+  "product_composition_edits": false,
+  "repository_unit_tests": {
+    "run": 87,
+    "passed": 86,
+    "failed": 1,
+    "failure": "test_timecard_preparation.TimecardPreparation.test_declared_capacity_and_version_are_explicit",
+    "assertion": "portable_catalog_count <= 18 appears 0 times, expected 2",
+    "baseline_verification": "test and both inputs byte-identical to exact base; base source assertion count is also 0",
+    "changed_as_part_of_this_work": false
+  }
+}

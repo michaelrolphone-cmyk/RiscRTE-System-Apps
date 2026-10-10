@@ -1,0 +1,20 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "driver.elf",
+  "id": "text-input-host",
+  "provides": [
+    {
+      "api": 1,
+      "capability": "ui.text-input"
+    }
+  ],
+  "requires": [
+    {
+      "api": 1,
+      "capability": "ui.scene"
+    }
+  ],
+  "type": "driver",
+  "version": "0.1.1"
+}

@@ -54,7 +54,7 @@ static void cadence(unsigned period,unsigned count,unsigned duration){
             snprintf(doc.nodes[0].text,sizeof(doc.nodes[0].text),"%u",received);ack_only();
         }
     }
-    assert(received==count);presentation_delay=0;allow_complete=true;drain_visual();
+    assert(received==count);allow_complete=true;drain_visual();
     printf("cadence period=%u count=%u panel=%u digest=%016llx frames=%u\n",period,count,duration,(unsigned long long)result,submits);
 }
 int main(int argc,char **argv){

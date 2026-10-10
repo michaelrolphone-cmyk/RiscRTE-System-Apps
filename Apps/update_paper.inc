@@ -40,6 +40,7 @@ static void up_draw(void) {
  }
  ua->present(true);
 }
+#ifndef PORTABLE_UPDATE_TOUCH_SCROLL
 static void up_input(t5_app_input_t *input) {
  springboard_contact c={0};up->contact(&c);
  input->tapped=c.valid&&!c.cancelled&&c.released&&c.tap_eligible;
@@ -49,3 +50,5 @@ static void up_input(t5_app_input_t *input) {
    if(at<4&&x%(bw+8)<bw){static const unsigned keys[]={T5_APP_BUTTON_BACK,T5_APP_BUTTON_UP,T5_APP_BUTTON_CONFIRM,T5_APP_BUTTON_DOWN};input->buttons|=keys[at];input->tapped=false;}}
  }
 }
+
+#endif

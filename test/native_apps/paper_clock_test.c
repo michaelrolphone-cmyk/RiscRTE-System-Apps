@@ -56,7 +56,12 @@ static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(
 static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==RISC_DISPLAY_FORMAT_MONO1);if(TEST_DISPLAY_FAILURE==1)return false;assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=PANEL_WIDTH/8,.pixel_format=f};if(TEST_DISPLAY_FAILURE==2)s->stride_bytes=0;return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){
- (void)c;if(TEST_DISPLAY_FAILURE==3)return false;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+ (void)c;if(TEST_DISPLAY_FAILURE==3)return false;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ assert(o->intent==RISC_DISPLAY_PRESENT_LOW_LATENCY);
+#else
+ assert(o->intent==(presents?RISC_DISPLAY_PRESENT_QUALITY:RISC_DISPLAY_PRESENT_CLEAN));
+#endif
 
 #ifdef PORTABLE_ALARM_CLIENT
  if(!presents)memcpy(saved_pixels,pixels,sizeof(pixels));

@@ -17,7 +17,7 @@ typedef struct {
     bool (*fill_rect)(void *context, int x, int y, int width, int height, bool black);
 } portable_desk_canvas;
 
-/* Clear to white, then draw one face. The caller adds date, AM/PM and wake text
+/* Clear to white, then draw one face. The caller adds date and AM/PM text
  * afterwards, and owns orientation, qualified local time and present completion.
  * Unknown face IDs use Segments, as in Reader. Invalid time (including an
  * out-of-range hour/minute) displays --:-- for every face. No implicit modulo

@@ -3,10 +3,10 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#if defined(PORTABLE_APP_SLEEP_LOCAL) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 #endif
-#if defined(PORTABLE_QUICK_ACTIONS) && defined(ALARM_SERVICE_TAGGED_V2)
+#if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
 static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&alarms); }
 #endif
 #if defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
@@ -28,6 +28,9 @@ static void alarm_cancel_input(void) {
 static bool alarm_failure(void) {
     failed=true;
     if(native_sleep_retained)return false;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    if(!portable_background_stop())return false;
+#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
     portable_adapter_retain();return false;
 #endif
@@ -63,8 +66,15 @@ static bool alarm_failure(void) {
     }
     return false;
 }
-#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION)
+#if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_CONTEXTS_CLIENT)
 static bool alarm_sessions_safe(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(native_custody_retained)return false;
+    if(contexts_client.api) {
+        contexts_status_v1 status={.struct_size=sizeof(status)};
+        if(!contexts_client.api->status(contexts_client.api->context,&status)||status.cleanup_pending)return false;
+    }
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_services_safe())return false;
 #endif
@@ -74,6 +84,9 @@ static bool alarm_sessions_safe(void) {
     return true;
 }
 static bool alarm_sessions_suspend(void) {
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(!portable_contexts_stop())return false;
+#endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return false;
 #endif
@@ -218,7 +231,12 @@ static bool alarm_foreground(bool *consumed) {
     bool cue_seen=false;
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
-        if(portable_alarm_cue(&alarms)){cue_seen=true;*consumed=true;}
+        if(portable_alarm_cue(&alarms)){
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+            if(!portable_background_stop())return false;
+#endif
+            cue_seen=true;*consumed=true;
+        }
         rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
@@ -237,6 +255,9 @@ static bool alarm_foreground(bool *consumed) {
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;
+#if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+    if(!portable_background_stop())return false;
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
     if(!quick_interrupt())return alarm_failure();
 #endif

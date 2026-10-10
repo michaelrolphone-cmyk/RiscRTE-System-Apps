@@ -15,8 +15,26 @@ static unsigned now,fail_acquire,fail_release,fail_case,acquire_per_kind[9],slee
 static bool uncertain,partial,held,home_held,replay,nav_held,async_display;
 static uint8_t framebuffer[800*480/8],saved_history[800*480/8];
 static unsigned present_checks,allocations,fail_allocation;
+#ifdef TEST_DESK_WAKE_LIGHT
+static bool wake_interactive,light_failure;
+static unsigned persisted_light=40,light_calls,light_value;
+bool portable_desk_clock_boot_is_interactive(void){return wake_interactive;}
+static void io(void);
+static bool fx_brightness(void *c,uint16_t level,uint16_t maximum){(void)c;io();assert(maximum==100);light_calls++;light_value=level;if(light_failure){uncertain=true;return false;}return true;}
+#endif
 static void *fixture_malloc(size_t n){return ++allocations==fail_allocation?NULL:malloc(n);}
 static void io(void){assert(!uncertain);++calls;}
+#ifdef TEST_SPARSE_BROADCAST_STORAGE
+static bool broadcast_live;
+static unsigned broadcast_pause_calls,kv_while_advertising;
+static bool fx_broadcast_step(void *c,bool allow,const telemetry_broadcast_policy_v1 *policy){(void)c;io();broadcast_live=allow&&policy->enabled&&policy->settings_valid&&policy->radios_allowed;return true;}
+static bool fx_broadcast_pause(void *c){(void)c;io();broadcast_pause_calls++;broadcast_live=false;return true;}
+static bool fx_broadcast_status(void *c,telemetry_broadcast_status_v1 *s){(void)c;(void)s;io();return true;}
+static int32_t fx_broadcast_enumerate(void *c,uint32_t n,risc_telemetry_field_v1 *v){(void)c;(void)n;(void)v;io();return 0;}
+static int32_t fx_broadcast_read(void *c,uint32_t n,int32_t *v){(void)c;(void)n;(void)v;io();return 0;}
+static const telemetry_broadcast_v1 fx_broadcast={1,sizeof(fx_broadcast),NULL,fx_broadcast_step,fx_broadcast_pause,fx_broadcast_status,fx_broadcast_enumerate,fx_broadcast_read};
+#endif
+
 static bool fx_health(risc_runtime_health_v1 *out){io();health_reads++;out->uptime_ms=now;if(fail_case==10){uncertain=true;return false;}return true;}
 static void fx_yield(uint32_t n){io();now+=n;}
 static bool fx_diagnostic(const char *line){io();(void)line;return true;}
@@ -75,8 +93,25 @@ static int32_t fx_alarm_step(void *c){io();(void)c;return ALARM_OK;}
 static int32_t fx_alarm_ack(void *c,const alarm_token_v1 *t){io();(void)c;(void)t;return ALARM_OK;}
 static int32_t fx_alarm_prepare(void *c,alarm_sleep_v1 *s){io();(void)c;(void)s;return ALARM_OK;}
 static int32_t fx_alarm_stop(void *c){io();(void)c;if(fail_case==6){uncertain=true;return ALARM_OUTPUT;}return ALARM_OK;}
+#ifdef ALARM_SERVICE_TAGGED_V2
+static int32_t fx_alarm_resume(void*c,const alarm_sleep_v1*s){(void)c;(void)s;return ALARM_OK;}
+static const alarm_service_descriptor_v2 fx_alarm_descriptor={
+ {2,sizeof(fx_alarm_descriptor),NULL,fx_alarm_status,fx_alarm_step,fx_alarm_step,fx_alarm_ack,fx_alarm_prepare,fx_alarm_stop},
+ ALARM_SERVICE_DESCRIPTOR_TAG,ALARM_SERVICE_DESCRIPTOR_VERSION,ALARM_MODE_VISUAL,ALARM_DESCRIPTOR_RESUME_SLEEP,fx_alarm_resume};
+#define fx_alarms fx_alarm_descriptor.base
+#else
 static const alarm_service_v1 fx_alarms={1,sizeof(fx_alarms),NULL,fx_alarm_status,fx_alarm_step,fx_alarm_step,fx_alarm_ack,fx_alarm_prepare,fx_alarm_stop};
-static int32_t fx_kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size){io();(void)c;(void)key;(void)data;(void)cap;kv_reads++;*size=0;if(fail_case==11&&!strcmp(key,PORTABLE_RADIO_KEY))return RISC_KEY_VALUE_IO;return RISC_KEY_VALUE_NOT_FOUND;}
+#endif
+static int32_t fx_kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size){io();(void)c;(void)key;(void)data;(void)cap;kv_reads++;
+#ifdef TEST_DESK_WAKE_LIGHT
+ if(!strcmp(key,PQA_BRIGHTNESS_KEY) || !strcmp(key,PQA_RESTORE_BRIGHTNESS_KEY)){
+  assert(cap>=1);*(uint8_t*)data=(uint8_t)(!strcmp(key,PQA_BRIGHTNESS_KEY)?persisted_light:73);*size=1;return RISC_KEY_VALUE_OK;
+ }
+#endif
+#ifdef TEST_SPARSE_BROADCAST_STORAGE
+ if(broadcast_live)kv_while_advertising++;
+#endif
+ *size=0;if(fail_case==11&&!strcmp(key,PORTABLE_RADIO_KEY))return RISC_KEY_VALUE_IO;return RISC_KEY_VALUE_NOT_FOUND;}
 static int32_t fx_kv_put(void *c,const char *key,const void *data,uint32_t size){io();(void)c;(void)key;(void)data;(void)size;return RISC_KEY_VALUE_OK;}
 static const risc_key_value_v1 fx_kv={1,sizeof(fx_kv),NULL,fx_kv_get,fx_kv_put};
 static wifi_link_t fx_wifi_status(void *c){io();(void)c;radio_calls++;if(fail_case==11){uncertain=true;return WIFI_LINK_UP;}return WIFI_LINK_DOWN;}
@@ -86,7 +121,17 @@ static bool fx_ble_enable(void *c,bool on){io();(void)c;(void)on;radio_calls++;r
 static bool fx_ble_status(void *c,uint8_t *out){io();(void)c;radio_calls++;*out=PORTABLE_BLUETOOTH_OFF;if(fail_case==12){uncertain=true;*out=PORTABLE_BLUETOOTH_ON;}return true;}
 static const portable_bluetooth_control_v1 fx_ble={.api_version=1,.struct_size=sizeof(fx_ble),.set_enabled=fx_ble_enable,.status=fx_ble_status};
 static bool fx_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *out){
- io();(void)id;assert(version==1&&out->struct_size==sizeof(*out));unsigned kind=9;
+ io();(void)id;
+#ifdef TEST_SPARSE_BROADCAST_STORAGE
+ if(!strcmp(name,TELEMETRY_BROADCAST_CAPABILITY)){out->api=&fx_broadcast;out->slot=++live;return true;}
+#endif
+ assert(version==
+#ifdef ALARM_SERVICE_TAGGED_V2
+  (!strcmp(name,"alarm.service")?2u:1u)
+#else
+  1u
+#endif
+  &&out->struct_size==sizeof(*out));unsigned kind=9;
  const char *names[]={"display.output","alarm.service","input.touch.raw","input.navigation","board.battery","storage.key-value","net.wifi","bluetooth.hci","rtc.clock"};
  const void *apis[]={&fx_display,&fx_alarms,&fx_touch,&fx_navigation,&fx_gauge,&fx_kv,&fx_wifi,&fx_ble,NULL};
  for(unsigned i=0;i<9;i++)if(!strcmp(name,names[i]))kind=i;
@@ -131,10 +176,25 @@ static void assert_fenced(void){
  assert(millis_now()==0);input_service();app_module_fini();app_module_fini();
  assert(calls==before);
 }
+#ifdef TEST_SPARSE_BROADCAST_STORAGE
+#define main original_sparse_main
+#endif
 int main(int argc,char **argv){
  assert(argc>=2);unsigned scenario=(unsigned)atoi(argv[1]);
  assert(!portable_desk_adapter_ready());assert(app_module_init()==0);assert(!calls&&!acquires&&!health_reads);
  assert(!portable_desk_adapter_ready()&&!t5_app_get_api(1));
+#ifdef TEST_DESK_WAKE_LIGHT
+ if(scenario>=29 && scenario<=34){
+  persisted_light=scenario==30?0:scenario==31?73:40;
+  wake_interactive=scenario!=32&&scenario!=33;light_failure=scenario==34;
+  fx_display.base.set_brightness=fx_brightness;
+  int rc=portable_desk_adapter_start(scenario==32?PORTABLE_DESK_START_TIMER:PORTABLE_DESK_START_FOREGROUND);
+  if(light_failure){assert(rc==-2&&light_calls==1);assert_fenced();return 0;}
+  assert(rc==1&&light_calls==(wake_interactive?1u:0u));
+  if(wake_interactive)assert(light_value==persisted_light&&quick.ui.applied_brightness_valid&&quick.ui.applied_brightness==persisted_light);
+  app_module_fini();assert(!live&&!frame_count&&!subscriptions);return 0;
+ }
+#endif
  if(scenario==0){app_module_fini();app_module_fini();assert(!calls);assert(!portable_desk_adapter_start(1));return 0;}
  if(scenario==1 || scenario==2){
   async_display=scenario==2;assert(portable_desk_adapter_start(1)==1);assert_minimal();
@@ -219,3 +279,17 @@ int main(int argc,char **argv){
  }
  assert(0);
 }
+
+#ifdef TEST_SPARSE_BROADCAST_STORAGE
+#undef main
+int portable_app_idle_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,const risc_battery_gauge_api_v1 *b,const alarm_service_v1 *a){(void)r;(void)d;(void)b;(void)a;return 0;}
+int main(void){
+ assert(app_module_init()==0);assert(portable_desk_adapter_start(2)==1);
+ broadcast_client.loaded=true;broadcast_client.loaded_at=now;
+ broadcast_client.policy=(telemetry_broadcast_policy_v1){.struct_size=sizeof(telemetry_broadcast_policy_v1),.enabled=true,.settings_valid=true,.radios_allowed=true};
+ assert(broadcast_tick()&&broadcast_live);unsigned before=broadcast_pause_calls;
+ assert(low_battery_poll());
+ assert(kv_while_advertising==0&&broadcast_pause_calls>before&&!broadcast_live);
+ printf("Sparse low-battery storage: zero live-advertiser KV calls, checked pause before read PASS\n");
+}
+#endif

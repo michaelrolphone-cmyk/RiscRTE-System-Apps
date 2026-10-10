@@ -17,5 +17,11 @@ def stage_sdk(runtime: Path, system: Path, output: Path) -> Path:
         if destination.exists() and destination.read_bytes() != source.read_bytes():
             raise ValueError(f"Conflicting presentation contract: {name}")
         shutil.copyfile(source, destination)
+    # Scene is an optional provider contract; older Runtime SDKs need the
+    # unchanged canonical header carried by System, not a Runtime change.
+    for name in ("RiscSceneV1.h", "RiscSceneStateV1.h", "RiscSceneLifecycleV1.h"):
+        if not (include / name).exists():
+            shutil.copyfile(system / "sdk/app" / name, include / name)
     shutil.copyfile(system / "Services/scene_profile/SceneProfileV1.h", include / "SceneProfileV1.h")
+    shutil.copyfile(system / "Services/text_input/SceneKeyboardV1.h", include / "SceneKeyboardV1.h")
     return include

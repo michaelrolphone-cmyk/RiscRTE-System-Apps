@@ -1,6 +1,6 @@
-/* Opt-in Settings-only timezone list. No changes to the shared paper renderer.
- * Each row wraps complete city names, including subordinate paths such as
- * Argentina/Buenos Aires. Page controls never silently wrap at either end. */
+/* Settings-only timezone selector. Selected paper lists use the shared bounded
+ * touch viewport; legacy/Watch page controls retain their original behavior.
+ * Both paths wrap complete names, including Argentina/Buenos Aires. */
 static unsigned stz_count(void) {
   return sv_page==SV_TIMEZONE_REGIONS?PORTABLE_TIMEZONE_REGION_COUNT:portable_timezone_region_count(stz_region);
 }
@@ -12,7 +12,29 @@ static unsigned stz_rows(void) {
   return pp_enabled()?(unsigned)(height()-stz_top()-208)/72u:3u;
 }
 static int stz_margin(void) {return pp_enabled()?32:12;}
-static void stz_visible(void) {stz_first=stz_selected/stz_rows()*stz_rows();}
+#ifdef PORTABLE_TOUCH_SCROLL
+static void stz_scroll_configure(void) {
+  portable_scroll_configure(&stz_scroll,(portable_scroll_viewport){stz_margin(),stz_top(),
+      stz_width()-2*stz_margin(),stz_height()-136-stz_top()},stz_step(),(int)stz_count());
+}
+static void stz_scroll_reset(unsigned page) {
+  if(!pp_enabled() || (page!=SV_TIMEZONE_REGIONS && page!=SV_TIMEZONE_CITIES))return;
+  stz_scroll.position_q8=0;stz_scroll_configure();portable_scroll_reveal(&stz_scroll,(int)stz_selected);
+  stz_first=(unsigned)portable_scroll_offset(&stz_scroll)/(unsigned)stz_step();stz_hit_ready=false;
+}
+static void stz_scroll_visible(void) {
+  if(!paper_token){stz_completed_page=stz_submitted_page;stz_completed_q8=stz_submitted_q8;}
+}
+#endif
+static void stz_visible(void) {
+#ifdef PORTABLE_TOUCH_SCROLL
+  if(pp_enabled()) {
+    stz_scroll_configure();portable_scroll_reveal(&stz_scroll,(int)stz_selected);
+    stz_first=(unsigned)portable_scroll_offset(&stz_scroll)/(unsigned)stz_step();return;
+  }
+#endif
+  stz_first=stz_selected/stz_rows()*stz_rows();
+}
 static void stz_choose(unsigned row) {
   if(row>=stz_count())return;
   stz_selected=row;
@@ -26,6 +48,15 @@ static bool stz_page_step(bool forward) {
   portable_perf_action(forward?PORTABLE_PERF_TIMEZONE_NEXT:PORTABLE_PERF_TIMEZONE_PREV,false);
   portable_stage_log(rt,"action",forward?"name=timezone-next-page":"name=timezone-previous-page");
   portable_perf_span(PORTABLE_PERF_SPAN_SETTINGS_DISPATCH,true);
+#ifdef PORTABLE_TOUCH_SCROLL
+  if(pp_enabled()) {
+    unsigned before=stz_selected,rows=(unsigned)stz_scroll.view.height/(unsigned)stz_step();
+    unsigned row=forward?stz_selected+rows:stz_selected>rows?stz_selected-rows:0;
+    if(row>=stz_count())row=stz_count()-1;
+    stz_choose(row);portable_perf_span(PORTABLE_PERF_SPAN_SETTINGS_DISPATCH,false);
+    return before!=stz_selected;
+  }
+#endif
   unsigned rows=stz_rows(),count=stz_count(),before=stz_first;
   if(forward){if(stz_first+rows<count)stz_choose(stz_first+rows);}
   else if(stz_first)stz_choose(stz_first>=rows?stz_first-rows:0);
@@ -77,8 +108,24 @@ static void stz_redraw(void) {
   stz_wrapped(margin,paper?104:48,inside,stz_message[0]?stz_message:
       cities?"Draft only - Save confirms":"Choose region - then city",true);
   unsigned count=stz_count();
+#ifdef PORTABLE_TOUCH_SCROLL
+  unsigned rows=stz_rows();
+  if(paper) {
+    stz_scroll_configure();stz_first=(unsigned)portable_scroll_offset(&stz_scroll)/(unsigned)stz_step();
+    rows=(unsigned)stz_scroll.view.height/(unsigned)stz_step()+2;
+    raster_clip=stz_scroll.view;raster_clip_active=true;
+  }
+#endif
+#ifdef PORTABLE_TOUCH_SCROLL
+  for(unsigned i=0;i<rows && stz_first+i<count;++i) {
+#else
   for(unsigned i=0;i<stz_rows() && stz_first+i<count;++i) {
-    unsigned row=stz_first+i;int y=stz_top()+(int)i*stz_step();char name[PORTABLE_TIMEZONE_ID_BYTES];stz_name(row,name);
+#endif
+    unsigned row=stz_first+i;int y=stz_top()+(int)i*stz_step();
+#ifdef PORTABLE_TOUCH_SCROLL
+    if(paper)y=portable_scroll_row_y(&stz_scroll,(int)row);
+#endif
+    char name[PORTABLE_TIMEZONE_ID_BYTES];stz_name(row,name);
     if(paper){
       if(row==stz_selected)fill(margin,y,inside,stz_step(),0);
       fill(margin,y+stz_step()-2,inside,2,0);
@@ -88,24 +135,57 @@ static void stz_redraw(void) {
     }
     stz_wrapped(margin+12,y+(paper?7:3),inside-24,name,!paper||row!=stz_selected);
   }
+#ifdef PORTABLE_TOUCH_SCROLL
+  if(paper) {
+    raster_clip_active=false;
+    if(stz_scroll.limit) {
+      int bar=stz_scroll.view.height*stz_scroll.view.height/(stz_scroll.count*stz_scroll.extent);
+      if(bar<24)bar=24;
+      int y=stz_scroll.view.y+(stz_scroll.view.height-bar)*portable_scroll_offset(&stz_scroll)/stz_scroll.limit;
+      fill(w-margin+8,y,4,bar,0);
+    }
+  } else
+#endif
+  {
   int page_y=paper?h-192:178,button_h=paper?56:24;
   int page_w=paper?112:60;char position[24];
   snprintf(position,sizeof(position),"%u / %u",stz_first/stz_rows()+1,(count+stz_rows()-1)/stz_rows());
   stz_button(margin,page_y,page_w,button_h,"PREV",false);
   stz_button(w-margin-page_w,page_y,page_w,button_h,"NEXT",false);
   stz_text((w-stz_measure(position))/2,page_y+(paper?14:5),inside,position,true);
+  }
   int foot_y=paper?h-112:210,foot_h=paper?88:28,gap=paper?12:6;
   int columns=cities?3:2,foot_w=(inside-(columns-1)*gap)/columns;
   if(cities)stz_button(margin,foot_y,foot_w,foot_h,"BACK",false);
   stz_button(margin+(cities?foot_w+gap:0),foot_y,foot_w,foot_h,"CANCEL",false);
   stz_button(margin+(columns-1)*(foot_w+gap),foot_y,foot_w,foot_h,cities?"SAVE":"OPEN",true);
   present(paper?sp_clean:false);sp_clean=false;
+#ifdef PORTABLE_TOUCH_SCROLL
+  if(paper){stz_submitted_page=sv_page;stz_submitted_q8=stz_scroll.position_q8;stz_scroll_visible();}
+#endif
 }
 /* Keep touch handling local: cancelled/lost samples destroy the entire gesture,
  * so an interrupted swipe cannot select a row or activate a footer on release. */
 static bool stz_poll(t5_app_input_t *out) {
   settings_navigation_poll(out);
   portable_touch_sample sample;input_take(&sample);
+#ifdef PORTABLE_TOUCH_SCROLL
+  if(pp_enabled()) {
+    stz_scroll_visible();stz_touch_row=-1;
+    if(out->buttons){settings_view_interrupt();return true;}
+    if(sample.began){stz_hit_q8=stz_completed_q8;stz_hit_ready=stz_completed_page==sv_page;}
+    unsigned change=portable_scroll_touch(&stz_scroll,&sample,input_sampled_at);
+    stz_first=(unsigned)portable_scroll_offset(&stz_scroll)/(unsigned)stz_step();
+    if(change&PORTABLE_SCROLL_BACK){out->buttons=T5_APP_BUTTON_BACK;settings_view_interrupt();return true;}
+    if((change&PORTABLE_SCROLL_TAP) && stz_hit_ready) {
+      portable_touch_scroll visible=stz_scroll;visible.position_q8=stz_hit_q8;
+      stz_touch_row=portable_scroll_row(&visible,sample.x,sample.y);
+      out->tapped=true;out->touch_x=(int16_t)sample.x;out->touch_y=(int16_t)sample.y;
+    }
+    if(change&PORTABLE_SCROLL_CHANGED)sp_dirty=true;
+    return true;
+  }
+#endif
   if(!sample.valid || sample.cancelled){sv_gesture=false;sv_need_neutral=true;return true;}
   int x=sample.x-(pp_enabled()?0:(width()-240)/2),y=sample.y-(pp_enabled()?0:(height()-240)/2);
   if(sv_need_neutral){if(!sample.down || (sample.began&&sample.tap_eligible))sv_need_neutral=false;else return true;}

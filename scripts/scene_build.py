@@ -23,10 +23,13 @@ def json_write(path: Path, value: object) -> None:
 
 
 def build(compiler: str, include: Path, output: Path, manifest: dict,
-          sources: list[Path], defines: list[str] | None = None) -> dict:
+          sources: list[Path], defines: list[str] | None = None,
+          exports: set[str] | None = None) -> dict:
     output.mkdir(parents=True, exist_ok=True)
     application = manifest['type'] == 'application'
-    exports = {'app_main'} if application else {'t5_driver_get'}
+    exports = ({'app_main'} if application else {'t5_driver_get'}) if exports is None else set(exports)
+    if not exports or any(not name.isidentifier() or not name.isascii() for name in exports):
+        raise ValueError('Exports must be a nonempty set of C symbol names')
     mapping = output/'exports.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     flags = ['-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
@@ -50,7 +53,9 @@ def build(compiler: str, include: Path, output: Path, manifest: dict,
              'file':elf.name,'size_bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),
              'imports':sorted(imports),'exports':sorted(found),
              'compiler':subprocess.check_output([compiler,'--version'],text=True).splitlines()[0],
-             'defines':defines or [],'physical_testing':'not performed'}
+             'defines':defines or [],'physical_testing':'not performed',
+             'source_sha256':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(sources)|{q for source in sources for q in source.parent.rglob('*.inc')})},
+             'sdk_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(include.glob('*.h'))}}
     json_write(output/'build.json',receipt)
     mapping.unlink()
     return receipt

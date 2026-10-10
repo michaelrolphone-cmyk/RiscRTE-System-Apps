@@ -13,8 +13,11 @@ Implemented so far:
 - hardware-keyboard attachment and session boundaries retain real input fences;
 - display custody still settles before provider unload.
 
-Observed checks on this reconstruction: warning-clean host compilation against exact native .100 SDK; 20 format/rotation and all four NOVA-7 layer rasters match the sealed .53 bytes; 48 logical cadence cases have identical action/timestamp hashes under 0, 16, 120, and 2300 ms presentation, including 600 inputs at 200 ms and faster 133/80/60 ms bursts. This cadence fixture supplies physical edges; it does not replace the required GT911 register-level proof.
+Fresh post-reset checks on this reconstruction:
+- 170 presenter/profile regression cases pass normally and with ASan/UBSan.
+- 100 actual Runtime/Graph/ELF text/scene cases pass normally and with ASan/UBSan against the exact installed native .100 source.
+- 75 source-bound cadence/raster cases pass normally. These include 20 format/rotation and four NOVA-7 layer rasters identical to the sealed .53 baseline, overlap/layer/gap/Home cases, and 48 logical cadence cases with identical action/timestamp hashes under 0, 16, 120, and 2300 ms presentation.
+- Cadence covers 600 inputs at 200 ms and faster 133/80/60 ms bursts with short 20 ms contacts. The fixture supplies physical edges; it does not replace the required GT911 register-level proof.
+- A fresh Xtensa S3 target compiles with exactly the existing generic imports; it is intermediate, not image-ready.
 
-Unfinished: regression fixture updates for intentionally changed visual-gating semantics; sanitizer reruns; actual Runtime integration; exact installed GT911 .1.9 source recovery and physical cadence tests; target ELF build and exact imports. Existing docs/receipts from the restored baseline remain historical and do not qualify this new code.
-
-Remote checkpoint status: this first commit contains changed source/test paths only, atop the older public declarative branch. The exact recovered .53 baseline is being published separately. This partial commit is not a standalone build/qualification pin.
+Unfinished: sanitizer cadence rerun, exact installed GT911 .1.9 source recovery/reconstruction and physical cadence tests, integration with the universal adapter/native scheduling work, and clean product rebuild. No measured hardware latency or universal end-to-end claim is made. Existing docs/receipts from the restored baseline remain historical and do not qualify this new code.

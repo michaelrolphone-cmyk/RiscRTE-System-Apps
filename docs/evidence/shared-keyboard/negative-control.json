@@ -1,0 +1,31 @@
+{
+  "baseline_system": "4c06bbd5c84c4da12432cb26a9af85f6d217aa52",
+  "runtime": "a086e7d7b49d03de762fc1018f41bfc2f884b595",
+  "mode": "fast",
+  "expected_rejection": "busy burst text differs from ordered QQWEWQ expectation",
+  "returncode": -6,
+  "stderr": "test: /workspace/shared/system-shared-keyboard-fast-input-20261010/test/text_input/runtime_app.c:48: app_main: Assertion `!strcmp(v.text,expected)' failed.\n",
+  "artifacts_sha256": {
+    "text.elf": "51eb68c8c941945974169d6853b8fca22ad905d1b86c8cb1dc3bfdf0c1c60595",
+    "scene.elf": "fffbc97bda45db6fb579cecaf216e7f7303bdf2f5961214ab2b7d02db0fab966",
+    "test": "1fc6c6424a73c5f1fd17c56feaacf9982bce37f1b42226c1283c9fd9fc47d16f",
+    "touch.elf": "d2b98ea1f7562f8e8c5e04784eb33a6dcdc04eac3b3ba4363790c2bb0453ed9d",
+    "profile.elf": "d8fda82b9f291b6411625f793c992a30bb8ca1082b3c9a333fc4b8c0c7e0756d",
+    "nav.elf": "bfc6aa1389b7801c44c6c83fb66393366bac36fad6b42882cfd4e737358fb7dd",
+    "keyboard.elf": "6e5b64db87bf2e68c9f69e9129473a19597b7f9fe33ae171ab8aa7f6d0248c04",
+    "display.elf": "dc36641c52aed0b95f0c3e22130de5d8b5640e49ed4ee387d09abd18e40d8b41",
+    "default.elf": "60672bcbfefa810f82fc95c4d22d6881818597022da905bd7453bd0c82e70d62",
+    "child.elf": "60672bcbfefa810f82fc95c4d22d6881818597022da905bd7453bd0c82e70d62",
+    "touch.json": "a04bcf1f5b86ea434552a405d04ef50092804cf2343e9093dd786dd47248c36a",
+    "text.json": "4d04ecab91e10ed0b8c2bb86b7bd158d7c51ac2f335c3a2c6570a09172d15ea0",
+    "scene.json": "efe464b146354f4e16acbfc963f0066eb81934226c9c43865b262965a5e8ca62",
+    "profile.json": "1932372f9683a674cb40c7651678d012329db840acf58794ab57669135114cbc",
+    "nav.json": "7810c29ad85e18b08ac2f045e7d2a1c05a65a12fb14e6565d3cc474b153c9fca",
+    "keyboard.json": "1e9b7c025a2bd8137acb1466acb658577c4d8c7ade1e7e3a2ea8c8323bf36451",
+    "display.json": "62641be72845e25574404c902212e14c1e96f3a12ff8dcedbed90f9e007f5b16",
+    "default.json": "1ea55d276aa378f4ac858e9983dbca69464dfdd3fbe52066940f0b41f6807a37",
+    "child.json": "0a72f835ebb4f70b193503ced642fe7d0d03b8db4c30acd4562e31b99d8209e6",
+    "boot.json": "12ad45f24295f14427199b30a90cf7f4b6b5e48b2e5f839f10248f8a85d03e8a",
+    "board.json": "f9b938e2147c94762cfc4f6900ef2eb7b46e8df455787b909773ec2a75009ecf"
+  }
+}

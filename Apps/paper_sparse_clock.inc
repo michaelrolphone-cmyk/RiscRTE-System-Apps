@@ -10,9 +10,17 @@
 #include "PortableRealtimeClient.h"
 #include "PortableTimeZonePreference.h"
 #include "RiscProviderPromotionV1.h"
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+#include "PortableContextsClient.h"
+#endif
 #include "../lib/PortableApps/boot_logo/RiscRteLogo.h"
 #define DESK_PREPARATION_BUDGET_US UINT32_C(65000000)
 #define DESK_PROMOTION_ATTEMPTS 2u
+#ifdef PORTABLE_DESK_POINTS_FACE
+static bool desk_points_scene(const portable_desk_config *,int64_t);
+static bool desk_points_capture(portable_desk_config *);
+static int desk_points_refresh_timer(portable_desk_config *,int64_t,bool);
+#endif
 static portable_desk_record desk_boot_record;
 static portable_desk_config desk_configuration;
 static portable_timezone_rule desk_rule;
@@ -22,6 +30,17 @@ static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted,des
 static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
+#ifdef PORTABLE_DESK_LOCK_HOME
+static bool desk_lock_requested,desk_direction_known;
+static unsigned desk_foreground_flip;
+bool portable_desk_clock_lock_requested(void){return desk_lock_requested;}
+bool portable_desk_clock_request_lock(bool enabled) {
+ if(desk_retained || desk_held)return false;
+ if(enabled && !desk_direction_known){desk_returned=true;return false;}
+ desk_lock_requested=enabled;
+ return enabled || portable_desk_adapter_landscape(false,desk_foreground_flip);
+}
+#endif
 static int desk_fence(void) {
  desk_retained=true;portable_desk_adapter_retain();return -2;
 }
@@ -94,7 +113,11 @@ bool portable_desk_clock_time(uint8_t *hour,uint8_t *minute) {
  if(!hour || !minute || !read_clock(&local))return false;
  *hour=local.hour;*minute=local.minute;return true;
 }
-static void close_clock(void) { /* No persistent clock/battery grants. */ }
+static void close_clock(void) { /* No persistent clock/battery grants. */
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+ if(!portable_contexts_close_for_handoff())desk_fence();
+#endif
+}
 static void open_clock(void) { /* Each read takes and closes one native grant. */ }
 void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;}
 void portable_desk_clock_radios_off(void) {desk_radios_off=true;}
@@ -105,6 +128,9 @@ static const char *desk_notice(void) {
  * No storage repair, chip choice or RTC write occurs here. */
 static bool desk_config(portable_desk_config *out,unsigned *mode) {
  if(!desk_promoted || desk_held || desk_retained)return false;
+#ifdef PORTABLE_CONTEXTS_CLOCK_RF_ONLY
+ if(!portable_contexts_stop()){desk_fence();return false;}
+#endif
  portable_desk_config config={0};
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
  if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
@@ -124,6 +150,10 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  int zone=portable_timezone_preference_load(grant.api,config.time_zone);
  portable_perf_count(PORTABLE_PERF_KV_READS);
  int basis=portable_rtc_basis_load(grant.api,&desk_basis);
+#ifdef PORTABLE_DESK_LOCK_HOME
+ unsigned direction=0;portable_perf_count(PORTABLE_PERF_KV_READS);
+ int direction_status=portable_desk_direction_load(grant.api,&direction);
+#endif
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation){desk_fence();return false;}
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;
@@ -131,6 +161,12 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  if(!desk_zone_known)memset(config.time_zone,0,sizeof(config.time_zone));
  config.face=(uint8_t)face;config.time_format=(uint8_t)time_format;
  config.language=(uint8_t)language;config.flip_ui=(uint8_t)flip;
+#ifdef PORTABLE_DESK_LOCK_HOME
+ desk_foreground_flip=flip;
+ desk_direction_known=direction_status==PORTABLE_DESK_FACE_LOADED || direction_status==PORTABLE_DESK_FACE_MISSING;
+ config.flip_ui=(uint8_t)direction;
+ if(desk_lock_requested)*mode=PORTABLE_SLEEP_DEEP;
+#endif
  if(desk_basis_known){config.rtc_stores_utc=desk_basis.stores_utc;config.rtc_reference_epoch=desk_basis.reference_epoch;}
  *out=config;return true;
 }
@@ -151,9 +187,16 @@ static bool desk_rect(void *unused,int x,int y,int w,int h,bool black) {
  app->fill_rect(x,y,w,h,black);return portable_desk_adapter_ready();
 }
 static bool desk_scene(const portable_desk_config *config,int64_t minute) {
+#ifdef PORTABLE_DESK_POINTS_FACE
+ if(config->face==PORTABLE_DESK_POINTS)return desk_points_scene(config,minute);
+#endif
  twatch_rtc_time_v1 time={0};
  bool valid=minute>=PORTABLE_TIMEZONE_VALID_EPOCH && desk_local(config,minute,&time);
+#ifdef PORTABLE_DESK_LOCK_HOME
+ if(!portable_desk_adapter_landscape(true,config->flip_ui))return false;
+#else
  if(!portable_desk_adapter_flip(config->flip_ui))return false;
+#endif
  portable_desk_adapter_begin();desk_rectangles=0;
  portable_desk_canvas canvas={NULL,app->screen_width(),app->screen_height(),desk_rect};
  if(!portable_desk_draw_face(&canvas,config->face,time.hour,time.minute,
@@ -162,7 +205,6 @@ static bool desk_scene(const portable_desk_config *config,int64_t minute) {
  portable_desk_adapter_caption(32,valid?date:portable_reader_clock_set_time(config->language));
  if(valid && config->time_format==PORTABLE_TIME_FORMAT_12)
   portable_desk_adapter_caption(canvas.height-78,time.hour<12?"AM":"PM");
- portable_desk_adapter_caption(canvas.height-44,portable_reader_clock_wake(config->language));
  return !desk_cancelled();
 }
 static int desk_restore(void) {
@@ -189,14 +231,41 @@ int portable_desk_clock_run(const risc_runtime_api_v1 *runtime,const portable_de
  if(portable_desk_adapter_timer_only() && desk_promotion_attempted)return 0;
  desk_ops=ops;desk_returned=true;desk_radios_off=false;
  portable_desk_config config=desk_boot_timer?desk_boot_record.config:desk_configuration;
+#ifdef PORTABLE_DESK_LOCK_HOME
+ if(!desk_boot_timer && !desk_direction_known)return 0;
+#endif
  if(!desk_boot_timer && (!desk_promoted || desk_sleep_mode!=PORTABLE_SLEEP_DEEP || !desk_zone_known))return 0;
+#ifdef PORTABLE_DESK_POINTS_FACE
+ if(!desk_boot_timer && !desk_points_capture(&config))return 0;
+#endif
  portable_desk_cycle cycle;
  if(!portable_desk_begin(&cycle,&config,&desk_boot_record,desk_boot_timer))return 0;
+#ifdef PORTABLE_DESK_POINTS_FACE
+ bool timer_points=desk_boot_timer;
+#endif
  desk_boot_timer=false;
  for(unsigned attempt=0;attempt<PORTABLE_DESK_CLOCK_MAX_PRESENTS;attempt++) {
   risc_realtime_snapshot_v1 sample;portable_desk_frame frame;
-  if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK ||
-     !portable_desk_plan_frame(&cycle,sample.epoch_seconds,&frame))break;
+  if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK)break;
+#ifdef PORTABLE_DESK_POINTS_FACE
+  if(timer_points) {
+   int refreshed=desk_points_refresh_timer(&config,sample.epoch_seconds,
+       cycle.current.has_image && sample.epoch_seconds<cycle.current.displayed_minute);
+   if(refreshed<0)return desk_fence();
+   if(refreshed) {
+    /* The old panel image belongs to the old copied window. Never seed it
+     * with newly projected labels/countdowns. Refresh before any sleep holds,
+     * then re-sample time in case projection crossed a minute boundary. */
+    if(desk_cancelled() || desk_sample(false,&sample)!=PORTABLE_REALTIME_OK)break;
+    if(config.points.status==PORTABLE_DESK_POINTS_READY &&
+       (sample.epoch_seconds<INT64_C(946684800)+config.points.view.seconds ||
+        sample.epoch_seconds>=INT64_C(946684800)+config.points.view.valid_until))
+     config.points=(portable_desk_points_snapshot){.status=PORTABLE_DESK_POINTS_ERROR};
+    cycle.current.config=config;cycle.full=true;
+   }
+  }
+#endif
+  if(!portable_desk_plan_frame(&cycle,sample.epoch_seconds,&frame))break;
   if(frame.has_previous) {
    if(!desk_scene(&cycle.current.config,frame.previous_minute))break;
    int seeded=portable_desk_adapter_seed();if(seeded<0)return desk_fence();
@@ -315,7 +384,11 @@ static bool sparse_boot(void) {
  if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,false);
  format=desk_configuration.time_format;
+#ifdef PORTABLE_DESK_LOCK_HOME
+ if(!portable_desk_adapter_landscape(false,desk_foreground_flip))return false;
+#else
  if(!portable_desk_adapter_flip(desk_configuration.flip_ui))return false;
+#endif
  portable_perf_span(PORTABLE_PERF_SPAN_LOGO,true);
  if(!desk_boot_logo())return false;
  portable_perf_span(PORTABLE_PERF_SPAN_LOGO,false);

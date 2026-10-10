@@ -4,11 +4,18 @@ import argparse
 import json
 import os
 import subprocess
+import shutil
 from pathlib import Path
 import tempfile
 from scene_build import build, compiler_path, json_write
 from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
+# Scene rotations use logical-to-surface coordinates. Installed X4 adapter90
+# corresponds to scene270: (x,y) -> (y,479-x). GT911 is already portrait.
+PROFILE_FLAGS = {
+    'compact-color': [],
+    'portrait-monochrome': ['-DSCENE_PROFILE_PAPER=1', '-DSCENE_DISPLAY_ROTATION=270'],
+}
 
 
 def run(runtime: Path, output: Path) -> None:
@@ -20,8 +27,10 @@ def run(runtime: Path, output: Path) -> None:
         include=stage_sdk(runtime,ROOT,Path(temporary))
         host=json.loads((ROOT/'Services/scene_host/manifest.json').read_text())
         rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'])]
-        for name,flags in (('compact-color',[]),('portrait-monochrome',
-                           ['-DSCENE_PROFILE_PAPER=1','-DSCENE_DISPLAY_ROTATION=90'])):
+        license_dir=output/'scene-host/licenses';license_dir.mkdir()
+        for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json']:
+            shutil.copyfile(ROOT/'Services/scene_host/fonts'/name,license_dir/name)
+        for name,flags in PROFILE_FLAGS.items():
             identity='scene-profile-'+name
             profile=json.loads((ROOT/'Services/scene_profile'/(name+'.json')).read_text())
             if profile['id']!=identity:raise ValueError('Presentation package identity mismatch')

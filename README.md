@@ -109,6 +109,12 @@ This repository has an independent pinned-SDK compiler pipeline, 18 host fixture
 
 Until the runtime is officially switched to this repository, relevant upstream application changes are synchronized here without modifying `T5S3-Reader`.
 
+## USB SD transfer development
+
+The opt-in [dedicated USB SD Transfer](docs/USB_SD_TRANSFER.md) app and paper
+Quick Actions entry share the generic USB device capability without expanding
+Clock authority. Physical host/card validation remains separate.
+
 ## Portable update development
 
 The shared [portable Firmware Update and App Store prerequisites](docs/PORTABLE_UPDATES.md)

@@ -1,0 +1,544 @@
+{
+  "checked_at": "2026-10-10T09:02:50.233814+00:00",
+  "refs": [
+    {
+      "ref": "refs/heads/checkpoint/watch19-system-integration",
+      "sha": "fbdfad1f8db4e332528387713b85cbcc15232be1",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/checkpoint/x4-usb-transfer-034-source",
+      "sha": "16058588cd8e64021b8c89c4fbad3f2ecc736a5a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/nova7-ota-store-paper",
+      "sha": "6d6590495bc654146496ea8fae95ef99bb5302ff",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/nova7-paper-wifi",
+      "sha": "7b7b7773a947aa96dde93c3d40d42dce27f2cce3",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/portable-launcher",
+      "sha": "6e71465168c611b9cb54433d791b2f9b68b4b48a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/sparse-clock-adapter",
+      "sha": "f0da2b3632746e50308db5191a8681f44ae5bed2",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/watch-contexts-client",
+      "sha": "851f389d72672f1ff33825940306b1a4e9931062",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/x4-clock-sleep-wake",
+      "sha": "2aa0cf63346e507525af884bbfbf6b69313442c4",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/codex/x4-portable-timezone-core",
+      "sha": "65a04ce1c71079037e7aa5918ea21c17a9e9b6f0",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/dot/t035-springboard-focus",
+      "sha": "3e2c192961e46ebe83e04fb5fc99a098669a93a9",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/alarm-foreground-integration",
+      "sha": "f204477b287263fa6c5a2d095829caf86b327506",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/app-owned-launch-guard",
+      "sha": "ffbac0fdb117de62e6fce19baa4dc090f5f44404",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/checked-set-time-client",
+      "sha": "9cb68ec3cc7a0d1077518b4b0c70bffd5196bca3",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/contexts-model-client",
+      "sha": "eae8924528f5c91254718afbc39c7d09eda7b78a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/declarative-alarms",
+      "sha": "63fa39755fadd1d38f1dc2a5e02a2dcb11e9ad5b",
+      "manifests": {
+        "Services/scene_host/manifest.json": {
+          "id": "scene-host",
+          "version": "0.1.0"
+        }
+      }
+    },
+    {
+      "ref": "refs/heads/feat/full-cohort-updates",
+      "sha": "2d16d9dfa7abc50ce916eebc11d81423adef0000",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/nova7-epaper-file-browser",
+      "sha": "454071590424ba8f07ae100597114551f2630ee7",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/nova7-epaper-layout",
+      "sha": "4b564e5cb67c1c918fc1a24298e923f816de484e",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/nova7-paper-clock",
+      "sha": "fdd7f63f87f82ee9f3b29e4f4cfe5ea178e997be",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/nova7-quick-controls",
+      "sha": "1b4f4f8c437c418576356ec8604a9b6253d8b1c6",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/paper-space-default-entry",
+      "sha": "bec4b68453dcaa687dc0ae8cc44d919fadf844cf",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/points-alert-labels",
+      "sha": "911be9e8042f1bcc46038fb70189eebe4ca106c5",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/points-nova7-fidelity",
+      "sha": "ad8860dfb997ced0c574315016be560484104e0b",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/points-nova7-fidelity-v2",
+      "sha": "7dde3720f1aa22aef8d8276eff279a7089219670",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-app-store",
+      "sha": "70e44bb7a66c3874be2e7a9907d6b995b796f690",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-audio-lifecycle",
+      "sha": "95783cb7071e025b90977dbc331b5d06cfe996f9",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-daily-apps",
+      "sha": "b28428505c9e067bb6ea8a84d12f13ec0bcc4992",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-deep-desk-clock",
+      "sha": "a78723d2eefa9f865049c0e492b62c276d61d1ee",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-desk-clock-faces",
+      "sha": "3702b9a594196bb5cb546732a5d4aa668c88ff91",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-desk-clock-policy",
+      "sha": "269c27a71e0ad606061f7a653a96b24c0ae4bc35",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-firmware-update",
+      "sha": "df9dfb0e078e6450e432d1a8d81ed6b26f0f15de",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-power-status",
+      "sha": "4cf36b1c46641b00d88535eb9a0e9b0797928aff",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-radio-session",
+      "sha": "c5c76883fa4db4de9c81345fdb225b38192231c1",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-update-services",
+      "sha": "c5ce39602917ba3505920db5f512c6157bd604b6",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/portable-wifi-settings",
+      "sha": "83167b245149b1114a0497ab09bf2b410cd715ff",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/settings-tap-calibration",
+      "sha": "70471268d9328486bc78f389c2156784f9a858b2",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/settings-time-format",
+      "sha": "bd1032ec02a6dc21a1ad21c67b37a4579307672a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/settings-time-format-alert-mode",
+      "sha": "71dd405da28f938175d23bc042af18c1bfeff50e",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/settings-timezone-opt-in",
+      "sha": "edded4e385c57cb6e210fec5edd920aa9b926352",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/source-bound-update-routes",
+      "sha": "c12ee9cfac111cde2160132faa110c67e57f2fc7",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/spectrum-live-idle",
+      "sha": "038e8614bf91fb5059f86359502b4fc81d796050",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/timecard-catalog",
+      "sha": "dbd358746bc8f1254619ca42073e1d44f6ad45df",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/watch-1.0.5-integration",
+      "sha": "1c82933488292be1064336aa592f7b2f7c378902",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/watch-broadcast-and-capture",
+      "sha": "13f5fd4bed27d77d566fa7c34b89b62445b86798",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/watch-file-browser",
+      "sha": "33bb5640219c2989fd004ef551c9534ace57c989",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/watch-low-battery-mode",
+      "sha": "f146d82d4c2bc4d4b6ac97f7be83b04035ad7d60",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/x4-completed-app-integration",
+      "sha": "aa31d5b5affe607781720a806c1009883a4d1674",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/x4-desk-clock-settings",
+      "sha": "386bab981a7a6fee9f5638046509a978d9603f8e",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/x4-paper-home-controls",
+      "sha": "2775b0b898c432825d9cb5685175c0647dd4dc30",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/x4-reader-clock-parity",
+      "sha": "1d589d90bf27c7ffb76420de46564088ddb3714f",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/feat/x4-visual-alert-settings",
+      "sha": "69f082872bd04942bb68743ec57ea32f1a74c406",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/alarm-countdown-icons",
+      "sha": "88dcb30495b355448022e34621fc4573cfbe3880",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/audio-tools-integration",
+      "sha": "23b5ebcc896d1f39719541579552e01ce650b547",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/current-watch-icon-pack",
+      "sha": "2db88aabc07aa97ca2a6160d6999eafb2b2ba46b",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/fini-background-cleanup",
+      "sha": "46545334b8065312f6cbcfd2ee2f5d1caa2dcfe6",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/nova-shared-ui",
+      "sha": "6b4ddfbdc863aa228893cf04d0e48a10fc993cc5",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/paper-present-wait",
+      "sha": "1e85168548e5e458a030353b63e3063eb15e4c56",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/sdr-springboard-catalog-limit",
+      "sha": "d5b6c0fa7c06bb36a776e7ce501028a9827221e2",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/settings-nova-ui",
+      "sha": "e7ff76f7080b39babb0b5a3491563b76f1fbee56",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/springboard-nova-icons",
+      "sha": "b9bf7ffaccc8176ced369961a17235070530d71a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/update-capability-api-pairs",
+      "sha": "fdc15395928a1fa8eee62a2823b3c8777dcf0fa0",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/watch-rf-quick-gesture",
+      "sha": "fcdb5b0a54a11a407bf68c6e35ac2548471cd9f1",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/wifi-nova-ui",
+      "sha": "5e31496046601746ecf3024a0d0b8f3234b18f3b",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/x4-paper-app-progress",
+      "sha": "efcc332c1ea838a60d87426dfd85e075eafd61b3",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/fix/x4-touch-report-recovery",
+      "sha": "68aa5a7a085b79191f5f04e4389bc7dda5c375ba",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/investigation/historical-elf-lineage",
+      "sha": "57099606de846cba9a484d65d67e8c185f805788",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/main",
+      "sha": "0b5aa15a57b7ba248840ca8ab9dee0be13267c19",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/migration/independent-system-app-build",
+      "sha": "a0396eed8c217ac864a1b5c5bbc18bbb1da0c251",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/migration/initial-system-app-parity",
+      "sha": "865bdc96d1164200dbb0fc6a07e78b2f782c59f9",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/migration/system-app-source-parity",
+      "sha": "f96368443b0af6e3e084b16bac7f77a7cef4b044",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/file-browser-1.2.0",
+      "sha": "7d24bc34f9d8a2f80d92a86687e2c2b5ef54610b",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/file-browser-1.2.0-v2",
+      "sha": "2a4717fe85ddaffa9a0f2325e261976d11e84e2d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/file-browser-1.2.0-v3",
+      "sha": "80d03db877868622cab69d20ed3a72e5ef4ce4dc",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/manifest-reconcile-reader-82caa",
+      "sha": "bcfac14747b5542b9af0d5831fbd2d8ec6261e1a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/provenance-reader-3722a3f-20261002",
+      "sha": "1b719263f25a1bced1bc3a9a5bd925c424ee9f7f",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/reader-1e0188c1-system-apps",
+      "sha": "12420aa2034c10136f256515439bca847035d90f",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/status-bar-held-confirm-ca66db29",
+      "sha": "d19686c5299a7dabc19282a0fe751c80d1a92236",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/sync-all-reader-manifests-82caa",
+      "sha": "83d78bc7b4155c0b5f1edf53b415710b9c0bfb18",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/system-apps-20260926-2301",
+      "sha": "353dcfcb4018a0414270fa80fa79e314d4abb143",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/system-apps-audit-20260927",
+      "sha": "353dcfcb4018a0414270fa80fa79e314d4abb143",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/system-apps-springboard-wifi-20260926",
+      "sha": "4ef410e5c1a2d8fab84299ce93c88d178b4f1597",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/system-apps-time-zone-1.0.0",
+      "sha": "64d0fbe439a5e4886d7c513433837351b99e1503",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/parity/u1-package-workflows-82caa",
+      "sha": "6cec2588dd8542551c71d115644580935b029ff1",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/publish/watch-alarm-terminal-retention",
+      "sha": "7a8a575108cb2e2230247803c677a2e02ac90e61",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/publish/x4-alarm-terminal-retention",
+      "sha": "103b648c1aff8e1b69769ab028947694ff2154ef",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/release/watch-1.0.1-component-tags",
+      "sha": "2ea21177ac678c857e1726f4e0ab554ce4c7cfb2",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/release/watch-1.0.1-tag-followthrough",
+      "sha": "110dea5d4f7b5c76bbe902b620848d2a6fb9d459",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/release/watch-1.0.12-source-snapshot",
+      "sha": "b93125d9bb928b1bb140dce1f4307bef6b94947e",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/release/watch-1.0.2-component-tags",
+      "sha": "855b969d08e085edc1923539eecb136a6ca27d4a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/heads/witness/pinned-u1-button-remap",
+      "sha": "8cda114349328dddd38524346a961994c5feeb6a",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-app_store-v1.1.1",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-app_store-v1.1.2",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-file_browser-v1.4.0",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-ota_update-v1.1.1",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-ota_update-v1.1.2",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-settings-v1.2.4",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-settings-v1.2.5",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-springboard-v1.4.6",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-springboard-v1.4.9",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-wifi_settings-v1.1.2",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/app-wifi_settings-v1.1.3",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/service-software-update-apps-v0.1.0",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/service-software-update-apps-v0.1.3",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/service-software-update-firmware-v0.1.0",
+      "sha": "13f32d3e5fee262a960f5fe0add63db835381893",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/service-software-update-firmware-v0.1.3",
+      "sha": "4be93c46afaba87b8aeec88d1787f0a3648e8a3d",
+      "manifests": {}
+    },
+    {
+      "ref": "refs/tags/watch-v1.0.12",
+      "sha": "13f5fd4bed27d77d566fa7c34b89b62445b86798",
+      "manifests": {}
+    }
+  ],
+  "reservation": {
+    "scene-host": "0.1.3",
+    "text-input-host": "0.1.1"
+  }
+}

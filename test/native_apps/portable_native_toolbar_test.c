@@ -28,7 +28,11 @@ static unsigned ticks,barriers,hook_calls,reader_opens,reader_closes,reader_live
 static unsigned rtc_acquires,rtc_reads,rtc_writes,battery_reads;
 static bool retained,hook_available=true,hook_retain,hook_retain_result;
 static unsigned callback_calls,callback_frees,callback_presents,callback_batteries;
-static uint8_t pixels[800*480/8],retained_pixels[800*480/8];
+#ifndef TEST_TOOLBAR_NATIVE_WIDTH
+#define TEST_TOOLBAR_NATIVE_WIDTH 800
+#define TEST_TOOLBAR_NATIVE_HEIGHT 480
+#endif
+static uint8_t pixels[TEST_TOOLBAR_NATIVE_WIDTH*TEST_TOOLBAR_NATIVE_HEIGHT/8],retained_pixels[TEST_TOOLBAR_NATIVE_WIDTH*TEST_TOOLBAR_NATIVE_HEIGHT/8];
 static twatch_rtc_time_v1 local_time={2026,10,7,3,13,42,56};
 #ifdef TEST_NATIVE_TOOLBAR_QUICK
 static bool close_quick_on_yield,dnd_saved,dnd_value,retain_refresh,retain_alarm_status,retain_alarm_stop;
@@ -52,14 +56,14 @@ static void checkpoint(void) {
 }
 static bool fx_retain(void){assert(!retained);checkpoint();retained=true;++barriers;return true;}
 static bool fx_info(void *context,risc_display_info_v1 *out) {
-  (void)context;io();*out=(risc_display_info_v1){.width=800,.height=480,
+  (void)context;io();*out=(risc_display_info_v1){.width=TEST_TOOLBAR_NATIVE_WIDTH,.height=TEST_TOOLBAR_NATIVE_HEIGHT,
     .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),
     .flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE};return true;
 }
 static bool fx_frame(void *context,uint32_t format,risc_display_surface_v1 *out) {
   (void)context;io();assert(!frames&&format==RISC_DISPLAY_FORMAT_MONO1);frames=1;
-  *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=800,.height=480,
-    .stride_bytes=100,.size_bytes=sizeof(pixels),.pixel_format=format};return true;
+  *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=TEST_TOOLBAR_NATIVE_WIDTH,.height=TEST_TOOLBAR_NATIVE_HEIGHT,
+    .stride_bytes=TEST_TOOLBAR_NATIVE_WIDTH/8,.size_bytes=sizeof(pixels),.pixel_format=format};return true;
 }
 static void fx_frame_release(void *context,risc_display_frame_v1 frame) {
   (void)context;io();assert(frames&&frame==1);frames=0;
@@ -97,6 +101,11 @@ static const twatch_rtc_api_v1 fx_rtc={.api_version=2,.struct_size=sizeof(fx_rtc
 #ifdef TEST_NATIVE_TOOLBAR_QUICK
 static int32_t fx_kv_get(void *context,const char *key,void *data,uint32_t capacity,uint32_t *size) {
   (void)context;io();*size=0;
+#ifdef TEST_READER_FLIP
+  if(!strcmp(key,PORTABLE_READER_FLIP_KEY)){
+    static const uint8_t record[]={0x52,1,1,0xa4};assert(capacity>=sizeof(record));memcpy(data,record,sizeof(record));*size=sizeof(record);return RISC_KEY_VALUE_OK;
+  }
+#endif
   if(!strcmp(key,PQA_DND_KEY)&&dnd_saved){assert(capacity>=1);*(uint8_t *)data=dnd_value;*size=1;return RISC_KEY_VALUE_OK;}
   return RISC_KEY_VALUE_NOT_FOUND;
 }
@@ -113,6 +122,7 @@ static int32_t fx_alarm_ack(void *context,const alarm_token_v1 *token){(void)con
 static int32_t fx_alarm_prepare(void *context,alarm_sleep_v1 *sleep){(void)context;(void)sleep;io();return ALARM_OK;}
 static const alarm_service_v1 fx_alarm={1,sizeof(fx_alarm),NULL,fx_alarm_status,fx_alarm_step,fx_alarm_refresh,fx_alarm_ack,fx_alarm_prepare,fx_alarm_stop};
 #endif
+#include "broadcast_fixture.h"
 static bool fx_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out) {
   (void)instance;io();const void *api=NULL;assert(out->struct_size==sizeof(*out));
   if(!strcmp(name,"rtc.clock")){assert(version==2);++rtc_acquires;api=&fx_rtc;}
@@ -125,9 +135,12 @@ static bool fx_acquire(const char *name,uint32_t version,uint64_t instance,risc_
     else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY))api=&fx_kv;
     else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))api=&fx_alarm;
 #endif
+#ifdef PORTABLE_BLE_BROADCAST
+    else if(!strcmp(name,TELEMETRY_BROADCAST_CAPABILITY)){assert(!instance);api=&fixture_broadcast_api;}
+#endif
     else assert(!"unexpected provider acquisition");
   }
-  ++acquires;++live;*out=(risc_runtime_capability_v1){.struct_size=sizeof(*out),.slot=acquires,.generation=1,.api=api};return true;
+  assert(live<16);++acquires;++live;*out=(risc_runtime_capability_v1){.struct_size=sizeof(*out),.slot=acquires,.generation=1,.api=api};return true;
 }
 static bool fx_release(risc_runtime_capability_v1 *grant) {
   io();assert(grant->api&&grant->slot&&live);++releases;--live;*grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};return true;

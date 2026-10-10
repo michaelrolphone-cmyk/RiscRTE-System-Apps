@@ -1,0 +1,17 @@
+{
+  "component": "scene-host",
+  "version": "0.1.2",
+  "status": "local development reservation; unpublished",
+  "checked_at_utc": "2026-10-10T08:35:25Z",
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "base_commit": "a8459b94597baba3021d0c8283836008c846ded2",
+  "checks": {
+    "tags": 16,
+    "branches": 90,
+    "pull_requests": 80
+  },
+  "result": "No visible scene-host0.1.2 tag, branch-name reservation or all-PR title/body/head mention. PR88 public host0.1.0; current local qualified a8459b9 host0.1.1. Unrelated App Store provider0.1.2 in PR48 does not conflict. Proposed scene-host0.1.2 available in checked scope; read check only, no server reservation created.",
+  "source_receipt_sha256": "bd1ead8a23e2a0c797828c4370bffc642f3d6befe725ce8e50d0eb7002a754ab",
+  "publication_performed": false,
+  "hardware_tested": false
+}

@@ -170,6 +170,14 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
  if(scenario==8)short_api=1;
  start();render();
  switch(scenario){
+ case 61:
+  assert(portable_wifi_idle_ready());
+  scanning=true;assert(!portable_wifi_idle_ready());scanning=false;
+  scan_owned=true;assert(!portable_wifi_idle_ready());scan_owned=false;
+  joining=true;assert(!portable_wifi_idle_ready());joining=false;
+  cleanup_pending=true;assert(!portable_wifi_idle_ready());cleanup_pending=false;
+  link_state=WIFI_LINK_UP;assert(!portable_wifi_idle_ready());link_state=WIFI_LINK_DOWN;
+  draft_dirty=true;assert(portable_wifi_idle_ready());draft_dirty=false;break;
  case 0:draft();wifi_connect();assert(joining && connects==1 && native_active);fake_link=WIFI_LINK_UP;tick(250);assert(!joining && link_state==WIFI_LINK_UP && strstr(ip_text,"192.0.2.10"));wifi_activate(6);assert(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED);assert(wifi_disconnect());assert(!native_active);break;
  case 1:draft();fail_connect=1;wifi_connect();assert(!joining && connects==1);fail_connect=0;wifi_connect();assert(joining && connects==2);wifi_activate(4);assert(!joining && !native_active);break;
  case 2:draft();wifi_connect();tick(30001);assert(!joining && !native_active && strstr(wifi_message,"timed out"));wifi_connect();fake_link=WIFI_LINK_DOWN;tick(250);assert(!joining && strstr(wifi_message,"failed"));break;

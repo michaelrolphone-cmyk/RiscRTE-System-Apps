@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Qualify actual native System Apps, selected SDKs and preserved legacy ELFs."""
+"""Qualify native apps and unchanged legacy profiles; version shared Files fixes."""
 import argparse
 import hashlib
 import io
@@ -12,7 +12,9 @@ import tempfile
 import portable_native_toolbar_build as native
 
 ROOT = Path(__file__).resolve().parents[1]
-BASE = 'd305e6b'
+# Delivered source baseline for this correction. Older d305e6b predates the
+# already-integrated radio/controls changes and cannot establish this delta.
+BASE = 'cd2a579370ed7700f4d1e043986f8304c04c6071'
 CASES = ['home', 'home-refused', 'utc', 'zone', 'missing-zone', 'native-unset',
          'quick', 'fini-owned', 'fini-refused', 'kv-context', 'native-release-false', 'alarm-retained']
 APPS = {'springboard': ('springboard', []),
@@ -37,17 +39,19 @@ def main():
     parser.add_argument('--xtensa-cc', type=Path, default=ROOT.parent/'watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     parser.add_argument('--output-dir', type=Path, default=ROOT/'build/native-system-apps')
     parser.add_argument('--skip-legacy', action='store_true')
+    parser.add_argument('--ble-broadcast', action='store_true')
     args = parser.parse_args();out=args.output_dir.resolve();out.mkdir(parents=True, exist_ok=True)
     env=dict(os.environ,NATIVE_APP_CC=str(args.xtensa_cc.resolve()),ASAN_OPTIONS='detect_leaks=0',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
     compiler=subprocess.check_output([args.xtensa_cc,'--version'],text=True).splitlines()[0]
     assert '8.4.0' in compiler and '2021r2-patch5' in compiler,compiler
     receipt={'compiler':compiler,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
              'base_commit':BASE,'native':{},'host':{},'legacy':{},'hardware':'not run','publication':'none'}
+    broadcast_flags=['--ble-broadcast'] if args.ble_broadcast else []
     for app,(builder,extra) in APPS.items():
         product=out/app
         run(['python',ROOT/'scripts'/('build_portable_'+builder+'.py'), '--time-profile','x4-native-time',
              '--native-time-runtime-repo',args.runtime.resolve(),'--tagged-alarm-utilities',args.utilities.resolve(),
-             '--alarm-client','--quick-actions','--home-app','default.elf','--output-dir',product,*extra],env=env)
+             '--alarm-client','--quick-actions','--home-app','default.elf','--output-dir',product,*extra,*broadcast_flags],env=env)
         manifest=json.loads((product/(app+'.json')).read_text());record=json.loads((product/(app+'-build-record.json')).read_text())
         admission=json.loads((product/'x4-native-app.json').read_text())
         if app=='file_browser':assert '-DPORTABLE_FORCE_FULL_FRAMES' not in record['defines']
@@ -75,13 +79,14 @@ def main():
         plain=out/(app+'-no-quick')
         run(['python',ROOT/'scripts'/('build_portable_'+builder+'.py'),'--time-profile','x4-native-time',
              '--native-time-runtime-repo',args.runtime.resolve(),'--tagged-alarm-utilities',args.utilities.resolve(),
-             '--alarm-client','--home-app','default.elf','--output-dir',plain,*extra],env=env)
+             '--alarm-client','--home-app','default.elf','--output-dir',plain,*extra,*broadcast_flags],env=env)
         plain_manifest=json.loads((plain/(app+'.json')).read_text())
         assert not any(item['capability'] in ('rtc.clock','runtime.realtime-control') for item in plain_manifest['requires'])
         receipt['native'][app+'-no-quick']={'version':plain_manifest['version'],'elf_sha256':sha(plain/(app+'.elf'))}
         flags=['-DPORTABLE_NATIVE_TIME_TOOLBAR','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DALARM_SERVICE_TAGGED_V2',
                '-DTEST_NATIVE_TOOLBAR_QUICK','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_ALARM_CLIENT',
                '-DPORTABLE_INPUT_NAVIGATION','-DPORTABLE_HOME_APP="default.elf"']
+        if args.ble_broadcast:flags+=['-DPORTABLE_BLE_BROADCAST','-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF','-DPORTABLE_PAPER_PREFERENCES']
         if app=='file_browser':flags+=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES','-DPORTABLE_FILE_BROWSER_CAPABILITY="storage.volume"','-DPORTABLE_FILE_BROWSER_INSTANCE=9u','-DPORTABLE_FILE_BROWSER_HANDLERS','-DFILE_BROWSER_RETURN_APP="springboard.elf"']
         if app=='wifi_settings':flags+=['-DPORTABLE_WIFI_SETTINGS_APP','-DPORTABLE_WIFI_INSTANCE=15u','-DPORTABLE_WIFI_STORAGE_INSTANCE=6','-DWIFI_RETURN_APP="springboard.elf"']
         if app=='file_browser':flags.remove('-DPORTABLE_FORCE_FULL_FRAMES')
@@ -118,8 +123,18 @@ def main():
                         product=out/('legacy-'+app+'-'+profile+'-'+label);products.append(product)
                         run(['python',repo/'scripts'/('build_portable_'+builder+'.py'),*opts,'--output-dir',product],env=env)
                     for extension in ['.elf','.json']:
-                        a,b=[p/(app+extension) for p in products];assert a.read_bytes()==b.read_bytes(),(app,profile,extension)
-                    receipt['legacy'][app+'-'+profile]=sha(products[1]/(app+'.elf'))
+                        a,b=[p/(app+extension) for p in products]
+                        if app=='file_browser':
+                            # The shared retained-close CANCEL fix is versioned
+                            # in every portable profile. Preserve its authority,
+                            # rather than claiming the changed ELF is identical.
+                            if extension=='.json':
+                                before=json.loads(a.read_text());after=json.loads(b.read_text())
+                                assert after['version']==json.loads((ROOT/'Apps/native/file_browser.json').read_text())['version']
+                                after['version']=before['version'];assert after==before
+                        else:assert a.read_bytes()==b.read_bytes(),(app,profile,extension)
+                    receipt['legacy'][app+'-'+profile]={'elf_sha256':sha(products[1]/(app+'.elf')),
+                        'authority_unchanged':True,'byte_identical':app!='file_browser'}
     receipt['source_sha256']={str(path.relative_to(ROOT)):sha(path) for path in
         [Path(__file__).resolve(),ROOT/'test/native_apps/native_system_apps_test.c',ROOT/'test/native_apps/native_system_app_entry.c',
          ROOT/'lib/PortableApps/src/adapter.c',ROOT/'scripts/portable_native_toolbar_build.py',*HELPERS]}

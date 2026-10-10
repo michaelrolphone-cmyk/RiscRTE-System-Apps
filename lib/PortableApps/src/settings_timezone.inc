@@ -40,6 +40,20 @@ static uint8_t stz_activate(void) {
       int foot_y=paper?h-112:210,foot_h=paper?88:28,gap=paper?12:6;
       int columns=cities?3:2,foot_w=(w-2*margin-(columns-1)*gap)/columns;
       if(x>=margin&&x<w-margin) {
+#ifdef PORTABLE_TOUCH_SCROLL
+        if(paper) {
+          if(portable_scroll_inside(&stz_scroll.view,x,y)) {
+            if(stz_touch_row>=0){stz_choose((unsigned)stz_touch_row);if(!cities)confirm=true;}
+          } else if(y>=foot_y&&y<foot_y+foot_h) {
+            int slot=(x-margin)/(foot_w+gap);
+            if((x-margin)%(foot_w+gap)<foot_w) {
+              if(slot==columns-1)confirm=true;
+              else if(cities&&slot==0)back=true;
+              else cancel=true;
+            }
+          }
+        } else
+#endif
         if(y>=stz_top()&&y<stz_top()+(int)stz_rows()*stz_step()) {
           unsigned row=stz_first+(unsigned)(y-stz_top())/(unsigned)stz_step();
           if(row<stz_count()){stz_choose(row);if(!cities)confirm=true;}

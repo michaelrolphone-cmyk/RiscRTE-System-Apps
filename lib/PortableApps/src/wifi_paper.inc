@@ -3,6 +3,9 @@
  * MONO1 drawing and licensed FontAwesome masks; no radio or storage policy. */
 #define WPV_TOP 156
 #define WPV_ROW 80
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+#include "wifi_scroll.inc"
+#endif
 static unsigned wpv_rows(void) {return (unsigned)(height()-WPV_TOP-176)/WPV_ROW;}
 static bool wpv_inside(int x,int y,int left,int top,int w,int h) {
   return x>=left && x<left+w && y>=top && y<top+h;
@@ -40,6 +43,11 @@ static portable_watch_key_rect wpv_key(unsigned key) {
   return (portable_watch_key_rect){32+(int)(key-PWK_PAGE)*action,184+4*kh+16,action-8,56};
 }
 static int wifi_paper_hit(const portable_wifi_view *v,int x,int y) {
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+  if(wpv_identity!=v->identity || !wpv_hit_ready)return -1;
+  if(wpv_inside(x,y,32,height()-88,width()-64,64))return WIFI_HIT_BACK;
+  if(!v->keyboard)return wpv_touch_row;
+#endif
   if(wpv_inside(x,y,32,height()-88,width()-64,64)) {
     if(v->keyboard || x<width()/2-8)return WIFI_HIT_BACK;
     if(x>=width()/2+8) {
@@ -79,19 +87,43 @@ static void wifi_paper_render(const portable_wifi_view *v) {
   } else {
     wpv_text(32,110,width()-64,v->detail,true);
     unsigned rows=wpv_rows(),first=v->selected/rows*rows;
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+    wpv_scroll_visible();
+    first=(unsigned)portable_scroll_offset(&wpv_scroll)/WPV_ROW;
+    rows=(unsigned)wpv_scroll.view.height/WPV_ROW+2;
+    raster_clip=wpv_scroll.view;raster_clip_active=true;
+#endif
     for(unsigned j=0;j<rows && first+j<v->count;j++) {
       unsigned i=first+j;int y=WPV_TOP+(int)j*WPV_ROW;bool selected=i==v->selected;
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+      y=portable_scroll_row_y(&wpv_scroll,(int)i);
+#endif
       if(selected)fill(32,y,width()-64,WPV_ROW,0);
       wpv_text(48,y+8,width()-96,v->rows[i],!selected);
       wpv_wrap(48,y+34,width()-96,v->values[i],1,!selected);
       fill(32,y+WPV_ROW-3,width()-64,3,0);
     }
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+    raster_clip_active=false;
+    if(wpv_scroll.limit) {
+      int bar=wpv_scroll.view.height*wpv_scroll.view.height/(wpv_scroll.count*WPV_ROW);
+      if(bar<24)bar=24;
+      int y=WPV_TOP+(wpv_scroll.view.height-bar)*portable_scroll_offset(&wpv_scroll)/wpv_scroll.limit;
+      fill(width()-24,y,4,bar,0);
+    }
+    wpv_wrap(32,height()-156,width()-64,v->message,2,true);
+    wpv_button(32,height()-88,width()-64,64,"BACK",NULL,false);
+#else
     wpv_wrap(32,height()-172,width()-64,v->message,2,true);
     char position[32];snprintf(position,sizeof(position),"%u / %u",v->selected+1,v->count);
     wpv_text(32,height()-116,width()-64,position,true);
     wpv_button(32,height()-88,width()/2-40,64,"BACK",NULL,false);
     wpv_button(width()/2+8,height()-88,width()/4-12,64,"","solid:f053",false);
     wpv_button(width()*3/4+4,height()-88,width()/4-36,64,"","solid:f054",false);
+#endif
   }
   present(false);
+#if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
+  wpv_submitted_identity=v->identity;wpv_submitted_selected=v->selected;wpv_submitted_q8=wpv_scroll.position_q8;wpv_scroll_visible();
+#endif
 }

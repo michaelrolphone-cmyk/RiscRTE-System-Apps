@@ -6,6 +6,8 @@ from pathlib import Path
 
 UTILITIES_COMMIT = '637e13b0bce62ad49b756bec2468a6271d163fc7'
 HEADERS = ('AlarmServiceV1.h', 'AlarmServiceV2.h')
+CATALOG_COMMIT = '9bd572791a8304194ceb2b7542fc9cbd124e911b'
+CATALOG_HEADERS = ('PointsCatalogProjection.h', 'PointsServiceProjection.h')
 POINTS_HEADERS = ('AlarmRecords.h', 'PointsRecords.h', 'PointsSchedule.h', 'PointsUtcSchedule.h')
 
 def options(parser):
@@ -18,10 +20,12 @@ def stage(args, parser, out, includes):
         return None
     if not args.alarm_client:
         parser.error('--tagged-alarm-utilities requires --alarm-client')
-    headers = (*HEADERS, *POINTS_HEADERS) if getattr(args, 'sparse_start', False) else HEADERS
+    catalog = getattr(args, 'desk_points_face', False)
+    pin = CATALOG_COMMIT if catalog else UTILITIES_COMMIT
+    headers = (*HEADERS, *POINTS_HEADERS, *CATALOG_HEADERS) if catalog else ((*HEADERS, *POINTS_HEADERS) if getattr(args, 'sparse_start', False) else HEADERS)
     try:
         source = {name: subprocess.check_output(['git', '-C', str(repo), 'show',
-            UTILITIES_COMMIT + ':' + ('LICENSE' if name == 'LICENSE' else
+            pin + ':' + ('LICENSE' if name == 'LICENSE' else
             'lib/Alarm/include/' + name)], stderr=subprocess.PIPE)
             for name in (*headers, 'LICENSE')}
     except (OSError, subprocess.CalledProcessError) as error:
@@ -29,7 +33,7 @@ def stage(args, parser, out, includes):
     for name in headers:
         (includes / name).write_bytes(source[name])
     receipt = {'repository': 'michaelrolphone-cmyk/RiscRTE-Utilities',
-               'commit': UTILITIES_COMMIT, 'capability': 'alarm.service', 'api': 2,
+               'commit': pin, 'capability': 'alarm.service', 'api': 2,
                'sha256': {name: hashlib.sha256(data).hexdigest()
                           for name, data in source.items()}}
     notices = out / 'licenses' / 'tagged-alarm'

@@ -29,7 +29,7 @@ args.output.parent.mkdir(parents=True, exist_ok=True)
 # must not be used as a blanket linker dependency for native applications.
 flags = [cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
          '-fvisibility=hidden', '-nostdlib', '-nostartfiles', '-shared',
-         '-I' + str(repo / 'lib/NativeApps/include'), '-I' + str(repo / 'lib/PortableApps/include'),
+         '-I' + str(repo / 'lib/NativeApps/include'),
          '-I' + str(repo / 'sdk/driver'), '-Wl,--hash-style=sysv']
 readelf = cc.replace('gcc', 'readelf')
 strip = cc.replace('gcc', 'strip')
