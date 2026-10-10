@@ -7,7 +7,7 @@ import shutil
 import subprocess
 
 IMPORTS = {'risc_runtime_get_api', 'memcpy', 'memset', 'memcmp', 'memchr', 'strcmp',
-           'strncmp', 'strlen', 'strnlen', 'strchr', 'strcpy', 'snprintf'}
+           'strncmp', 'strlen', 'strnlen', 'strchr', 'strcpy', 'snprintf', 'malloc', 'free'}
 
 
 def compiler_path() -> str:

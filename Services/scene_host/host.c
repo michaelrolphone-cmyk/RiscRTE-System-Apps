@@ -1,5 +1,6 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneComponentsV1.h"
+#include "RiscScenePageV1.h"
+#include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
 #include "RiscDisplayOutputV1.h"
@@ -33,12 +34,17 @@ typedef struct {
     unsigned page_index,focus_index;
     bool finger,dragged;
     int x0,y0;
-    bool components;
+    bool components,page_view;
+    risc_scene_page_document_v1 page_document;
     int scroll,scroll_limit,drag_scroll;
     int wheel_node,wheel_part,wheel_value,wheel_offset;
     uint64_t toast_until;
 } scene_model;
 static scene_model logical_model,frame_model;
+static uint8_t *page_live,*page_frozen;
+static size_t page_capacity;
+static risc_components_document_v1 page_document_scratch;
+static int32_t update_document(void *,uint64_t,const risc_components_document_v1 *);
 static scene_model *model=&logical_model;
 #define document (model->doc)
 #define path (model->navigation_path)
@@ -52,6 +58,7 @@ static bool rasterizing,layout_only;
 static unsigned raster_row,clip_top,clip_bottom;
 static risc_touch_snapshot_v1 touch_state;
 static void rebuild_hits(void);
+static int paper_abs(int);
 static void cancel_contacts(void);
 static bool component_activate(const hit *h);
 static bool component_move(int x,int y,bool release);
@@ -266,6 +273,7 @@ static int32_t changed_value(const risc_scene_node_v1 *n,int direction,int step)
     return (int32_t)v;
 }
 static void turn_page(int direction){
+    if(model->page_view){emit(RISC_SCENE_ACTION_EVENT,direction<0?1:3,direction<0?model->page_document.previous_action:model->page_document.next_action,0);return;}
     if(model->components){model->scroll+=direction*(int)height/2;dirty=true;rebuild_hits();return;}
     unsigned list[RISC_COMPONENTS_MAX_NODES],starts[RISC_COMPONENTS_MAX_NODES+1],count;
     unsigned pages=build_pages(list,starts,&count);
@@ -444,7 +452,7 @@ static void process_touch_event(const risc_touch_event_v1 *e){
             if(down_x>=h->x&&down_y>=h->y&&down_x<h->x+h->w&&down_y<h->y+h->h&&
                !(x>=h->x&&y>=h->y&&x<h->x+h->w&&y<h->y+h->h))moved=true;
         }
-        if(model->components&&!current_keyboard())(void)component_move(x,y,false);
+        if(model->components&&!model->page_view&&!current_keyboard())(void)component_move(x,y,false);
         if(moved&&keyboard_contact_key())dirty=true;
     }else if(e->kind==RISC_TOUCH_EVENT_UP&&contact&&e->id==contact_id){
         if(model->components&&!current_keyboard()){
@@ -464,7 +472,10 @@ static void process_touch_event(const risc_touch_event_v1 *e){
             }
             accepted=first&&first==last;
         }
-        if(model->components&&moved&&!current_keyboard()){
+        if(model->page_view&&moved){
+            int dx=x-down_x,dy=y-down_y;
+            if(down_revision==document.revision&&down_epoch==epoch&&paper_abs(dx)>(int)width/5&&paper_abs(dx)>2*paper_abs(dy))turn_page(dx<0?1:-1);
+        }else if(model->components&&moved&&!current_keyboard()){
             if(x-down_x>(int)width/4 && x-down_x>2*(y>down_y?y-down_y:down_y-y))back();
             else (void)component_move(x,y,true);
         }else if(accepted)tap(x,y);
@@ -581,6 +592,7 @@ static int32_t poll_navigation(void){
         }
         return RISC_SCENE_OK;
     }
+    if(model->page_view&&(f.pressed&(RISC_NAV_LEFT|RISC_NAV_RIGHT))){turn_page(f.pressed&RISC_NAV_LEFT?-1:1);return RISC_SCENE_OK;}
     if(f.pressed&RISC_NAV_BACK)back();
     else if(f.pressed&RISC_NAV_UP)move_focus(-1);
     else if(f.pressed&RISC_NAV_DOWN)move_focus(1);
@@ -748,8 +760,10 @@ static bool valid_surface(void){
 }
 
 #include "components.inc"
+#include "page.inc"
 
 static void draw_scene(void){
+    if(model->page_view){page_draw();return;}
     if(model->components){component_draw();return;}
     fill(0,0,(int)width,(int)height,(uint16_t)profile->background_rgb565);
     upload=(hit_map){.revision=document.revision,.route=current_route(),.epoch=epoch,.keyboard=current_keyboard()!=NULL};
@@ -794,7 +808,7 @@ static int32_t paint(void){
         if(!alive())return RISC_SCENE_RETAINED;
         if(!ok)return RISC_SCENE_AGAIN;
         if(!valid_surface()||surface.pixel_format!=format)return fail_retained();
-        frame_model=logical_model;raster_row=0;rasterizing=true;dirty=false;
+        frame_model=logical_model;if(frame_model.page_view)memcpy(page_frozen,page_live,page_capacity);raster_row=0;rasterizing=true;dirty=false;
     }
     /* A bounded logical-row slice works for every pixel format and rotation.
      * No provider callbacks or reentrant dispatch occur with the frozen model
@@ -845,6 +859,7 @@ static int32_t close_owned(void){
         ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();
         nav_claimed=false;
     }
+    free(page_live);free(page_frozen);page_live=page_frozen=NULL;page_capacity=0;model->page_view=false;
     active=false;closing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
     memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));return RISC_SCENE_OK;
 }
@@ -1011,15 +1026,15 @@ static int32_t components_open(void *c,const risc_components_document_v1 *d,cons
     if(!alive())return RISC_SCENE_RETAINED;
     if(!valid_document(d,true)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
     if(active)return RISC_SCENE_BUSY;
-    model->components=true;return open_document(c,d,p,out);
+    model->components=true;model->page_view=false;return open_document(c,d,p,out);
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
     if(!model->components)return RISC_SCENE_INVALID;
-    return update_document(c,s,d);
+    int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_components_api_v1 api={
+static const risc_scene_page_api_v1 api={ {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
-    RISC_COMPONENTS_TAG,1,components_open,components_update};
+    RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;
