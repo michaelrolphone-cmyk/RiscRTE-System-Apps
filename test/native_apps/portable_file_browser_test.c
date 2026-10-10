@@ -39,7 +39,11 @@ static bool test_launch(const char*s){
 assert(!strcmp(s,FILE_BROWSER_RETURN_APP) || !strcmp(s,"wifi_settings.elf"));if(!strcmp(s,"wifi_settings.elf"))test_wifi_launches++;else assert(!fb_grant.api);test_launches++;return true;}
 static bool test_info(void*c,risc_display_info_v1*s){(void)c;
 #ifdef FILE_BROWSER_PAPER_PROFILE
-*s=(risc_display_info_v1){.width=800,.height=480,.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
+*s=(risc_display_info_v1){.width=800,.height=480,.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT
+#ifdef FILE_SETUP_TEST
+|RISC_DISPLAY_INFO_ASYNC_PRESENT
+#endif
+,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
 #else
 *s=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
 #endif
