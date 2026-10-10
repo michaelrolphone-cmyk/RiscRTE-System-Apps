@@ -94,5 +94,17 @@
       "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
     },
     "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
+  },
+  "RiscAppDataExportV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataExportV1.h",
+    "sha256": "7d9b6a119291f671a11397ad72941aaff4550126daf08e8580fc1cf29ae89fa5",
+    "commit": "3c479f536930bf8f89b0d9aae70ffdc0dfcc67a4"
+  },
+  "RiscAppDataV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataV1.h",
+    "sha256": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201",
+    "commit": "545cc8b98d264fe45f60e0aeabadd490ea450eb5"
   }
 }

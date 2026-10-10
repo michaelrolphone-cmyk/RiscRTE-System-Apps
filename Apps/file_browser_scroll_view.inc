@@ -12,7 +12,7 @@ static bool fbs_hit_has_row;
 static union {risc_storage_dirent_v1 row;t5_file_handler_t handler;} fbs_hit_item;
 static void fbs_visible(void) {if(paper_frame_ready())fbs_completed=fbs_submitted;}
 static unsigned fbs_count(void) {
- return fbs_directory_mode()?(fb_loaded?fb_matched:0):fb_mode==FB_OPTIONS?fb_option_count():fb_mode==FB_ACTIONS?7:fb_mode==FB_HANDLERS?fb_handler_count:0;
+ return fbs_directory_mode()?(fb_loaded?fb_matched:0):fb_mode==FB_OPTIONS?fb_option_count():fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_mode==FB_HANDLERS?fb_handler_count:0;
 }
 /* Rebase a finite pixel coordinate window without imposing a folder-size
  * limit. Absolute row identity remains unsigned and travels with each image. */
@@ -69,6 +69,9 @@ static void fbs_record(void) {
  fbs_visible();
 }
 static bool fbs_handlers_for(unsigned first) {
+#ifdef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
+ (void)first;return false;
+#else
  unsigned needed=(unsigned)fbs_scroll.view.height/FBS_ROW+2;
  unsigned end=first+needed;if(end>fb_handler_count)end=fb_handler_count;
  if(first>=fb_handler_offset&&end<=fb_handler_offset+FB_MAX_PAGE_ROWS)return true;
@@ -76,6 +79,7 @@ static bool fbs_handlers_for(unsigned first) {
  if(!fbx_handler_page())return false;
  fb_choice=fbs_selected>=first&&fbs_selected<first+FB_MAX_PAGE_ROWS?fbs_selected-first:0;
  return true;
+#endif
 }
 static void fbs_draw(void) {
  unsigned first=fbs_origin+(unsigned)portable_scroll_offset(&fbs_scroll)/FBS_ROW;
@@ -176,11 +180,14 @@ static bool fbs_touch(int x,int y) {
    fb_message("Item changed. Choose it again.");return false;
   }
   if(strcmp(current->name,fbs_hit_item.row.name)||current->is_directory!=fbs_hit_item.row.is_directory||current->size!=fbs_hit_item.row.size){fb_message("Folder changed. Choose the item again.");return false;}
- }else if(fb_mode==FB_HANDLERS){
+ }
+#ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
+ else if(fb_mode==FB_HANDLERS){
   t5_file_handler_t current={0};
   if(!portable_file_browser_safe()||!fb_handler_api->handler_get(fb_handler_path,row,&current)||
      memcmp(&current,&fbs_hit_item.handler,sizeof(current))){fb_message("Handlers changed. Choose again.");return false;}
  }
+#endif
  if(fb_mode==FB_LIST&&fb_manage&&x>=fbp_w()-96)fbx_actions();else fb_activate();
  fb_dirty=true;return false;
 }
