@@ -14,7 +14,7 @@ Implemented so far:
 - display custody still settles before provider unload.
 
 Fresh post-reset checks on this reconstruction:
-- 170 presenter/profile regression cases pass normally and with ASan/UBSan.
+- 173 presenter/profile regression cases pass normally and with ASan/UBSan.
 - 100 actual Runtime/Graph/ELF text/scene cases pass normally and with ASan/UBSan against the exact installed native .100 source.
 - 75 source-bound cadence/raster cases pass normally and with ASan/UBSan. These include 20 format/rotation and four NOVA-7 layer rasters identical to the sealed .53 baseline, overlap/layer/gap/Home cases, and 48 logical cadence cases with identical action/timestamp hashes under 0, 16, 120, and 2300 ms presentation.
 - Cadence covers 600 inputs at 200 ms and faster 133/80/60 ms bursts with short 20 ms contacts. The fixture supplies physical edges; it does not replace the required GT911 register-level proof.
@@ -23,3 +23,5 @@ Fresh post-reset checks on this reconstruction:
 Exact installed GT911 .1.9 source is now recovered at b87bcf9cc4c35f273e67eb10aca588ab821da1d1 (driver SHA-256 da287cbd675b6a59131b97278a48c6cf1734b90e30a9e2674e72b0063c9a86d1). An additional actual Runtime/Graph test links that unchanged provider with its original strict scoped transport fixture. A changed-state controller report latches until STATUS ACK, independently of app/display progress. Per-pixel CPU cost and transfer slices are explicit modeled loads. Initial36 cases pass; expanded sustained60wpm/90+wpm, 10–25ms contacts, 1/17/2300ms display matrix is running. The exact .53 baseline reproduces dropped contacts under the same cost model.
 
 Unfinished: expanded physical-register-model matrix and sanitizer rerun, integration with the universal adapter/native scheduling work, and clean product rebuild. No measured hardware latency or universal end-to-end claim is made. Existing docs/receipts from the restored baseline remain historical and do not qualify this new code.
+
+Recovery scope: no component-guide styling or animation policy changes were applied. The existing NOVA-7 styling and smooth UI policy are preserved. One additional qualification-driven refinement was made after recovery: nonkeyboard multi-contact ambiguity cancels its own timestamped report, rather than erasing a completed earlier report. This is covered by separate regression cases. Production source is frozen while final qualifications run.

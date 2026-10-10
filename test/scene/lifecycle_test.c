@@ -143,6 +143,23 @@ static void cancellations(void){
     gesture(x,1,y,true);assert(tick(&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_CONTROLS_EVENT);
 
 }
+static void report_order(void){
+    settle();configure(1);settle();risc_scene_event_v1 e;
+    unsigned x=lw()/2,y=lh()*24/800+2;
+    /* A complete older Home tap survives a later ambiguous report. */
+    clear_events();add_event(1,lw()-prof.padding-10,10,0);add_event(3,lw()-prof.padding-10,10,0);
+    add_event(1,x,1,0);add_event(1,x,1,1);snapshot_contacts=2;
+    assert(tick(&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_SUSPEND_EVENT);
+    snapshot_contacts=0;clear_events();configure(1);settle();
+    /* An entire ambiguous report may already have lifted by snapshot time.
+     * MOVE cannot escape before the second DOWN from its own report. */
+    clear_events();add_event(1,x,1,0);add_event(2,x,y,0);add_event(1,x,1,1);
+    events[2].timestamp_ms=events[1].timestamp_ms;
+    add_event(3,x,y,0);add_event(3,x,1,1);
+    assert(tick(&e)==RISC_SCENE_IDLE);
+    /* Genuine neutral releases allow the next separate report immediately. */
+    gesture(x,1,y,true);assert(tick(&e)==RISC_SCENE_OK&&e.kind==RISC_SCENE_CONTROLS_EVENT);
+}
 static void keyboard_suppression(void){
     settle();configure(1);
     doc=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(doc),.revision=2,.root=1,.route_count=1,.node_count=1};
@@ -189,6 +206,7 @@ int main(int argc,char **argv){
         else if(!strcmp(mode,"lifecycle-busy"))input_busy();
         else if(!strcmp(mode,"lifecycle-controls"))controls();
         else if(!strcmp(mode,"lifecycle-cancellation"))cancellations();
+        else if(!strcmp(mode,"lifecycle-report-order"))report_order();
         else if(!strcmp(mode,"lifecycle-keyboard"))keyboard_suppression();
         else if(!strcmp(mode,"lifecycle-close"))close_reopen();
         else assert(0);

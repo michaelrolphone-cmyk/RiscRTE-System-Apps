@@ -54,6 +54,8 @@ static risc_touch_event_v1 raw_queue[RAW_QUEUE_SIZE];
 static unsigned raw_head,raw_count;
 static uint64_t capture_sequence;
 static bool captured_contacts[256];
+static bool dispatched_contacts[256];
+static unsigned dispatched_count;
 static hit_map visible,upload;
 static risc_scene_event_v1 queued;
 #define KEY_QUEUE_SIZE 32u
@@ -291,6 +293,7 @@ static bool synchronize_touch(void){
     touch_state=s;last_sequence=capture_sequence=s.sequence;raw_head=raw_count=0;
     memset(captured_contacts,0,sizeof(captured_contacts));
     for(unsigned i=0;i<s.contact_count;i++)captured_contacts[s.contacts[i].id]=true;
+    memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=s.contact_count;
     cancel_contacts();contact=false;top_pending=false;
     neutral=!s.contact_count&&!s.buttons;return true;
 }
@@ -366,10 +369,30 @@ static bool key_contact_event(const risc_touch_event_v1 *e,int x,int y){
     }
     return true;
 }
+static void track_contact(bool *ids,unsigned *count,const risc_touch_event_v1 *e){
+    if(e->kind==RISC_TOUCH_EVENT_DOWN&&!ids[e->id]){ids[e->id]=true;++*count;}
+    else if(e->kind==RISC_TOUCH_EVENT_UP&&ids[e->id]){ids[e->id]=false;--*count;}
+}
+static bool ambiguous_report(const risc_touch_event_v1 *first){
+    /* GT911 emits existing-contact MOVE before a new finger's DOWN. Inspect
+     * that report before exposing an action, without erasing completed older
+     * reports or consuming another edge. Millisecond ties are conservative. */
+    bool ids[256];memcpy(ids,dispatched_contacts,sizeof(ids));unsigned count=dispatched_count;
+    bool ambiguous=count>1;track_contact(ids,&count,first);ambiguous|=count>1;
+    for(unsigned i=0;i<raw_count;i++){
+        const risc_touch_event_v1 *e=&raw_queue[(raw_head+i)%RAW_QUEUE_SIZE];
+        if(e->timestamp_ms!=first->timestamp_ms)break;
+        track_contact(ids,&count,e);ambiguous|=count>1;
+    }
+    return ambiguous;
+}
 static void process_touch_event(const risc_touch_event_v1 *e){
     if(e->sequence<=last_sequence)return;
     last_sequence=e->sequence;
     if(lifecycle_enabled)activity_pending=true;
+    bool ambiguous=!current_keyboard()&&ambiguous_report(e);
+    track_contact(dispatched_contacts,&dispatched_count,e);
+    if(ambiguous){contact=false;top_pending=false;neutral=false;return;}
     int x=0,y=0;
     if(e->kind>=RISC_TOUCH_EVENT_DOWN&&e->kind<=RISC_TOUCH_EVENT_UP&&!touch_point(e->x,e->y,&x,&y)){
         if(keyboard_contact_key())dirty=true;
@@ -443,8 +466,7 @@ static int32_t capture_touch(void){
     risc_touch_snapshot_v1 snapshot={0};
     bool ok=touch->snapshot(touch->context,&snapshot);
     if(!alive()||!ok||!valid_snapshot(&snapshot))return fail_retained();
-    if(snapshot.width!=touch_state.width||snapshot.height!=touch_state.height||snapshot.buttons||
-       (snapshot.contact_count>1&&!current_keyboard()))resync=true;
+    if(snapshot.width!=touch_state.width||snapshot.height!=touch_state.height||snapshot.buttons)resync=true;
     for(unsigned i=0;i<snapshot.contact_count;i++)if(!captured_contacts[snapshot.contacts[i].id])resync=true;
     if(drained==RAW_QUEUE_SIZE&&snapshot.sequence>capture_sequence)return fail_retained();
     if(lifecycle_enabled){
@@ -458,6 +480,7 @@ static int32_t capture_touch(void){
         last_sequence=capture_sequence=snapshot.sequence;
         memset(captured_contacts,0,sizeof(captured_contacts));
         for(unsigned i=0;i<snapshot.contact_count;i++)captured_contacts[snapshot.contacts[i].id]=true;
+        memcpy(dispatched_contacts,captured_contacts,sizeof(dispatched_contacts));dispatched_count=snapshot.contact_count;
     }else if(!raw_count&&!contacts_count&&!contact&&!snapshot.contact_count&&!snapshot.buttons)neutral=true;
     return RISC_SCENE_OK;
 }
@@ -468,6 +491,7 @@ static int32_t poll_touch(void){
         risc_touch_event_v1 event=raw_queue[raw_head];
         raw_head=(raw_head+1)%RAW_QUEUE_SIZE;--raw_count;
         process_touch_event(&event);if(retained)return RISC_SCENE_RETAINED;
+        if(event.kind==RISC_TOUCH_EVENT_UP&&!dispatched_count&&!contact&&!handoff_waiting)neutral=true;
     }
     if(!raw_count&&!contacts_count&&!contact&&!touch_state.contact_count&&!touch_state.buttons)neutral=true;
     return RISC_SCENE_OK;

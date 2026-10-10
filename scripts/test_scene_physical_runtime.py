@@ -12,6 +12,9 @@ def main():
  for key in ['runtime','gt911','reader','output']:p.add_argument('--'+key,type=Path,required=True)
  p.add_argument('--rgb565',action='store_true');p.add_argument('--scene',type=Path,default=ROOT);p.add_argument('--sanitize',action='store_true');p.add_argument('--baseline',action='store_true');a=p.parse_args()
  runtime=a.runtime.resolve();gt=a.gt911.resolve();out=a.output.resolve();scene=a.scene.resolve();out.mkdir(parents=True,exist_ok=True)
+ source_files=[scene/'Services/scene_host/host.c',scene/'Services/scene_host/keyboard_paper.inc',gt/'minimal/drivers/x4pro_gt911/driver.c',gt/'minimal/test/gt911_test.c',runtime/'src/bootstrap/Runtime.cpp',runtime/'src/runtime/drivers/ProviderGraphV2.cpp',*[ROOT/'test/scene_timing'/name for name in ['runtime_test.cpp','gt911_backend.c','runtime_app.c','provider.c']],Path(__file__).resolve()]
+ source_hashes={str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in source_files}
+ (out/'compiled-source-hashes.json').write_text(json.dumps(source_hashes,indent=2)+'\n')
  inc=stage_sdk(runtime,ROOT,out/'sdk')
  for folder,names in [(a.reader/'sdk/driver',['RiscI2cBusV1.h','RiscTouchPowerV1.h'])]:
   for src in [folder/name for name in names]:
@@ -48,9 +51,10 @@ def main():
  for cost in ([500] if a.baseline else [0,500]):
   for delay in [1,17,2300]:
    for period,count in cases:
-    for same in [0,1]:
+    for same in [0,1,2]:
      expected=not a.baseline
      output=command([str(out/'test'),str(out),str(delay),str(cost),str(period),str(count),str(same),str(int(expected)),str(5 if a.rgb565 else 1)]).strip();print(output,flush=True);results.append(output)
- proof={'cases':results,'sanitized':a.sanitize,'baseline':a.baseline,'source_sha256':{str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in [scene/'Services/scene_host/host.c',gt/'minimal/drivers/x4pro_gt911/driver.c',ROOT/'test/scene_timing/runtime_test.cpp',ROOT/'test/scene_timing/gt911_backend.c']},'limits':['Physical GT911 reports are simulated: changed state latches READY until ACK; no physical device used.','Per-pixel virtual CPU cost and display transfer slices are explicit test loads, not measurements.','Real Runtime/Graph controls app/scene/profile lifetimes; thin touch fixture owns exact GT911 start/quiesce and its strict scoped GPIO/I2C/sync dependencies.']}
+ proof={'cases':results,'sanitized':a.sanitize,'baseline':a.baseline,'source_sha256':source_hashes,'limits':['Physical GT911 reports are simulated: 5ms controller scan; changed state latches READY until ACK; no physical device used.','Per-pixel virtual CPU cost and display transfer slices are explicit test loads, not measurements.','Real Runtime/Graph controls app/scene/profile lifetimes; thin touch fixture owns exact GT911 start/quiesce and its strict scoped GPIO/I2C/sync dependencies.']}
+ assert source_hashes=={str(x):hashlib.sha256(x.read_bytes()).hexdigest() for x in source_files},'Source changed during qualification'
  (out/'qualification.json').write_text(json.dumps(proof,indent=2)+'\n')
 if __name__=='__main__':main()

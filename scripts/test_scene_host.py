@@ -22,7 +22,7 @@ KEYBOARD_MODES = ('keyboard-fast', 'keyboard-overflow', 'keyboard-press', 'keybo
                   'keyboard-raster', 'keyboard-superseded', 'keyboard-native-snapshot', 'keyboard-native-reset')
 
 LIFECYCLE_MODES = ('lifecycle-discovery', 'lifecycle-activity', 'lifecycle-busy',
-                   'lifecycle-controls', 'lifecycle-cancellation', 'lifecycle-keyboard',
+                   'lifecycle-controls', 'lifecycle-cancellation', 'lifecycle-report-order', 'lifecycle-keyboard',
                    'lifecycle-close', 'lifecycle-native-before', 'lifecycle-native-snapshot',
                    'lifecycle-native-snapshot-fail', 'lifecycle-native-reset')
 

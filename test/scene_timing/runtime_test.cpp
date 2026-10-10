@@ -9,11 +9,13 @@
 #include <cstring>
 #include <memory>
 #include <vector>
-static uint64_t us,begin_us,finish_us,next_edge,last_capture,max_capture_gap,action_digest=1469598103934665603ull;
+static uint64_t us,begin_us,finish_us,next_scan,last_capture,max_capture_gap,action_digest=1469598103934665603ull;
 static unsigned format=1;
-static unsigned panel_ms,pixel_ns,period_ms,contacts,edge,received,expected,frames,provider_polls,starts,stops;
-static bool running,complete,latched,physical_down,reported_down,report_down,held,pending,same_key;
-static uint16_t physical_x,report_x,reported_x;
+static unsigned panel_ms,pixel_ns,period_ms,contacts,down_index,up_index,pattern,received,expected,frames,provider_polls,starts,stops;
+static bool running,complete,latched,held,pending,same_key;
+static bool fingers[2];
+static uint16_t finger_x[2];
+static risc_touch_snapshot_v1 physical,reported,report;
 static uint64_t present_us;
 static unsigned transfer_slices;
 static unsigned long long nanos;
@@ -23,27 +25,37 @@ extern "C" const risc_touch_api_v1*scene_timing_touch_start(void);
 extern "C" const risc_touch_api_v1*scene_timing_touch_api(void);
 extern "C" bool scene_timing_touch_quiesce(void);
 extern "C" void scene_timing_touch_stop(void);
-static void latch(){if(!latched&&(physical_down!=reported_down||(physical_down&&physical_x!=reported_x))){latched=true;report_down=physical_down;report_x=physical_x;}}
+static unsigned duration(unsigned index){return pattern==2?period_ms*1000+20000:10000+index%4*5000;}
+static void latch(){
+ physical={};physical.width=480;physical.height=800;
+ for(unsigned i=0;i<2;i++)if(fingers[i]){auto&c=physical.contacts[physical.contact_count++];c.id=(uint8_t)(i+1);c.x=finger_x[i];c.y=412;}
+ if(!latched&&memcmp(&physical,&reported,sizeof(physical))){latched=true;report=physical;}
+}
 extern "C" uint64_t scene_timing_us(){return us;}
 extern "C" void scene_timing_advance(unsigned n){
  const uint64_t until=us+n;
- while(running&&edge<contacts*2&&next_edge<=until){
-  us=next_edge;physical_down=(edge%2)==0;physical_x=(same_key||((edge/2)%2)==0)?52:94;latch();++edge;
-  next_edge=begin_us+(edge/2)*(uint64_t)period_ms*1000+(edge%2?(10000+(edge/2)%4*5000):0);
+ while(running){
+  uint64_t down=down_index<contacts?begin_us+(uint64_t)down_index*period_ms*1000:UINT64_MAX;
+  uint64_t up=up_index<contacts?begin_us+(uint64_t)up_index*period_ms*1000+duration(up_index):UINT64_MAX;
+  uint64_t next=down<up?down:up;if(next_scan<next)next=next_scan;if(next>until)break;us=next;
+  if(up==next){fingers[pattern==2?up_index%2:0]=false;++up_index;}
+  if(down==next){unsigned id=pattern==2?down_index%2:0;fingers[id]=true;finger_x[id]=(same_key||down_index%2==0)?52:94;++down_index;}
+  if(next_scan==next){latch();next_scan+=5000;}
  }
  us=until;
 }
 extern "C" void scene_timing_cpu_pixel(){nanos+=pixel_ns;unsigned n=(unsigned)(nanos/1000);nanos%=1000;if(n)scene_timing_advance(n);}
-extern "C" bool scene_timing_report(uint8_t*n,uint16_t*x,uint16_t*y){
+extern "C" bool scene_timing_report(risc_touch_snapshot_v1*out){
  if(running){if(last_capture&&us-last_capture>max_capture_gap)max_capture_gap=us-last_capture;last_capture=us;}
- latch();if(!latched)return false;*n=report_down?1:0;*x=report_x;*y=412;return true;
+ if(!latched)return false;
+ *out=report;return true;
 }
-extern "C" void scene_timing_ack(){if(latched){reported_down=report_down;reported_x=report_x;latched=false;}latch();}
-extern "C" void scene_timing_begin(){running=true;begin_us=us+10000;next_edge=begin_us;finish_us=begin_us+(uint64_t)contacts*period_ms*1000+100000;}
+extern "C" void scene_timing_ack(){if(latched){reported=report;latched=false;}}
+extern "C" void scene_timing_begin(){running=true;begin_us=us+10000;next_scan=begin_us+2500;finish_us=begin_us+(uint64_t)contacts*period_ms*1000+100000;}
 extern "C" bool scene_timing_finished(){return us>=finish_us;}
 static uint64_t hash(uint64_t h,uint64_t v){for(unsigned i=0;i<8;i++){h^=(uint8_t)v;h*=1099511628211ull;v>>=8;}return h;}
 extern "C" void scene_timing_action(unsigned key){
- if(expected){assert(key==(same_key||received%2==0?'Q':'W'));const unsigned duration=10000+received%4*5000;assert(us>=begin_us+(uint64_t)received*period_ms*1000+duration);assert(us-begin_us-(uint64_t)received*period_ms*1000-duration<20000);}
+ if(expected){assert(key==(same_key||received%2==0?'Q':'W'));const unsigned release=duration(received);assert(us>=begin_us+(uint64_t)received*period_ms*1000+release);assert(us-begin_us-(uint64_t)received*period_ms*1000-release<20000);}
  action_digest=hash(hash(action_digest,key),us-begin_us);++received;
 }
 extern "C" void scene_timing_complete(unsigned count){assert(count==received);if(expected)assert(count==contacts);else assert(count<contacts);complete=true;running=false;}
@@ -63,9 +75,9 @@ static const risc_platform_clock_api_v1 clock_api={1,sizeof(clock_api),nullptr,n
 extern "C" const void*scene_timing_provider(const char*name){if(!strcmp(name,"display.output"))return &display;if(!strcmp(name,"input.navigation"))return &navigation;if(!strcmp(name,"input.touch.raw")){return scene_timing_touch_api();}assert(0);return nullptr;}
 extern "C" bool scene_timing_provider_event(const char*name,unsigned event){if(event==1){++starts;if(!strcmp(name,"input.touch.raw"))touch=scene_timing_touch_start();}else if(event==2){++stops;if(!strcmp(name,"input.touch.raw"))scene_timing_touch_stop();}else if(event==3){if(!strcmp(name,"input.touch.raw"))return scene_timing_touch_quiesce();if(!strcmp(name,"display.output"))return !held&&!pending;}return true;}
 extern "C" void scene_timing_provider_poll(const char*name,uint32_t budget){++provider_polls;if(!strcmp(name,"display.output")&&pending&&transfer_slices){assert(budget>=2);scene_timing_advance(2000);--transfer_slices;}}
-int main(int argc,char**argv){assert(argc==9);format=atoi(argv[8]);assert(format==1||format==5);panel_ms=atoi(argv[2]);pixel_ns=atoi(argv[3]);period_ms=atoi(argv[4]);contacts=atoi(argv[5]);same_key=atoi(argv[6]);expected=atoi(argv[7]);
+int main(int argc,char**argv){assert(argc==9);format=atoi(argv[8]);assert(format==1||format==5);panel_ms=atoi(argv[2]);pixel_ns=atoi(argv[3]);period_ms=atoi(argv[4]);contacts=atoi(argv[5]);pattern=atoi(argv[6]);same_key=pattern==1;expected=atoi(argv[7]);
  RiscBoot::Port port{[](){return true;},[](risc_runtime_health_v1*h){h->uptime_ms=(uint32_t)(us/1000);return true;},[](uint32_t n){scene_timing_advance(n*1000);},[](const char*){return true;}};
  port.bindPlatforms=[](RiscBoot::Runtime&r){return r.registerPlatform("platform.clock",1,RiscBoot::Runtime::Scope::Global,0,&clock_api);};
  auto runtime=std::make_unique<RiscBoot::Runtime>(port);assert(runtime->prepare(argv[1]));bool ok=runtime->run();if(!ok)fprintf(stderr,"Runtime: %s\n",runtime->error());assert(ok&&complete&&!held&&!pending);runtime.reset();assert(starts==stops);
- printf("physical-runtime format=%u panel=%u pixel-ns=%u period=%u contacts=%u same=%u received=%u max-poll-us=%llu frames=%u provider-polls=%u digest=%016llx\n",format,panel_ms,pixel_ns,period_ms,contacts,same_key,received,(unsigned long long)max_capture_gap,frames,provider_polls,(unsigned long long)action_digest);
+ printf("physical-runtime format=%u panel=%u pixel-ns=%u period=%u contacts=%u pattern=%u received=%u max-poll-us=%llu frames=%u provider-polls=%u digest=%016llx\n",format,panel_ms,pixel_ns,period_ms,contacts,pattern,received,(unsigned long long)max_capture_gap,frames,provider_polls,(unsigned long long)action_digest);
 }
