@@ -2,6 +2,10 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef PORTABLE_INSTALLED_AUTHORITY_STYLES
+const t5_app_manifest_t portable_catalog_legacy_styles[]={ {.display_name="Legacy appearance",.file_name="Apps/new/",.icon="solid:f02d"}, {.display_name="Not installed",.file_name="Apps/absent/",.icon="solid:f02d"} };
+const unsigned portable_catalog_legacy_style_count=2;
+#endif
 static unsigned volume_acquires,releases,cancels,steps;static bool pending=true,refuse_release;
 static int refresh(void*p){(void)p;return 0;}
 static uint32_t generation(void*p){(void)p;return 7;}
@@ -18,6 +22,9 @@ int main(void){
  portable_installed_catalog c={0};
  assert(portable_installed_refresh(&c,&runtime,base,1)==0);
  assert(volume_acquires==0&&steps==0&&c.count==2);
+#ifdef PORTABLE_INSTALLED_AUTHORITY_STYLES
+ assert(!strcmp(c.rows[1].display_name,"Legacy appearance")&&!strcmp(c.rows[1].icon,"solid:f02d"));
+#endif
  assert(!strcmp(c.rows[0].icon,"solid:f02d")&&!strcmp(c.rows[1].file_name,"Apps/new/new.elf"));
  for(unsigned i=0;i<1000;++i)assert(portable_installed_step(&c,&runtime,42,base,1)==1);
  assert(volume_acquires==1&&steps==1000&&releases==0);
