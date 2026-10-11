@@ -1,0 +1,17 @@
+{
+  "firmware_sha256": "920651d6b9b0d062aeeb34316e46895051a08e77d4816c8bd5ec312ef378a2c4",
+  "firmware_size": 1478784,
+  "layout": "riscrte-paired-appdata-v2",
+  "product": "xteink-x4-pro",
+  "runtime_version": "0.2.14",
+  "source_repo": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+  "source_revision": "7394ea165deb5fbb568b6993fb7cf6fab766ef24",
+  "store_abi": 2,
+  "version": "0.1.83",
+  "kind": "paired-cohort",
+  "asset": "xteink-x4-pro-cohort-0.1.83.bin",
+  "size": 6787200,
+  "sha256": "50058f32f579d1edc3be8bc9562cd42cd6b02b3ae97cb561b734e629b4a66fd1",
+  "store_size": 5308416,
+  "store_sha256": "03f0d0327182a276b3376709893532138e249150f46d30a1b271d1fa3e306ee5"
+}
