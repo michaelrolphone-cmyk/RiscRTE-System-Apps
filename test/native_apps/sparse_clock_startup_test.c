@@ -43,7 +43,7 @@ static unsigned entries,seeds,restores,clears,promotions,starts,kv_reads,rtc_rea
 static unsigned battery_acquires,display_acquires,native_live,seed_calls,key_reads,high_water;
 static uint32_t epoch=1791331197u,start_ms;static int native_context,promotion_context;
 static uint8_t physical[sizeof(pixels)];
-#ifdef TEST_SHARED_QUICK_REFERENCE
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
 /* Selected Desk Points records use the canonical tagged extended wake tail. */
 static struct {uint32_t struct_size,type,schema_version,size;uint8_t payload[RISC_RETAINED_WAKE_EXTENDED_MAX];} value;
 #else
@@ -282,7 +282,7 @@ static int32_t stage_record(void*c,const risc_retained_wake_record_v1*in){(void)
 static int32_t clear_record(void*c){(void)c;safe();clears++;
  if(which("clear-retained")){terminal=true;return RISC_RETAINED_WAKE_CONTEXT;}
  pending=false;return RISC_RETAINED_WAKE_OK;}
-#ifdef TEST_SHARED_QUICK_REFERENCE
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
 static int32_t read_record_bytes(void*c,uint32_t type,uint32_t schema,void*out,uint32_t capacity,uint32_t*size,uint32_t*cause){
  risc_retained_wake_record_v1 legacy;int status=read_record(c,type,schema,&legacy,cause);
  if(status!=RISC_RETAINED_WAKE_OK)return status;
@@ -293,7 +293,7 @@ static int32_t stage_record_bytes(void*c,uint32_t type,uint32_t schema,const voi
  (void)c;safe();assert(!subs&&!frames&&!native_live&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==PORTABLE_DESK_CLOCK_RECORD_SCHEMA&&size==PORTABLE_DESK_CLOCK_RECORD_BYTES&&size<=sizeof(value.payload));
  value.type=type;value.schema_version=schema;value.size=size;memcpy(value.payload,in,size);pending=true;ms+=17;return RISC_RETAINED_WAKE_OK;
 }
-static const risc_retained_wake_api_v1_extended wake={{1,sizeof(wake),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,RISC_RETAINED_WAKE_EXTENDED_MAX,0,read_record_bytes,stage_record_bytes};
+static risc_retained_wake_api_v1_extended wake={{1,sizeof(wake),NULL,read_record,stage_record,clear_record},RISC_RETAINED_WAKE_EXTENDED_TAG,1,RISC_RETAINED_WAKE_EXTENDED_MAX,0,read_record_bytes,stage_record_bytes};
 #else
 static const risc_retained_wake_api_v1 wake={1,sizeof(wake),NULL,read_record,stage_record,clear_record};
 #endif
@@ -554,6 +554,9 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
   assert(app_module_init()==-1);app_module_fini();assert(!grants&&!starts&&!native_reads&&!barriers);return 0;
  }
  if(getenv("CLOCK_MILLIS"))ms=(uint32_t)strtoul(getenv("CLOCK_MILLIS"),NULL,10);
+#if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
+ if(getenv("NATIVE_WAKE_CAPACITY"))wake.max_payload_bytes=(uint32_t)atoi(getenv("NATIVE_WAKE_CAPACITY"));
+#endif
  assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;
  if(setjmp(entry)){assert(terminal&&entries&&grants&&!subs&&!frames&&!native_live);
 #ifndef PORTABLE_SLEEP_MANUAL_ONLY
@@ -580,6 +583,7 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  app_main();if(which("cold-acquire")||which("cold-submit")||which("cold-wait"))assert(!rtc_reads&&!native_reads&&!launches);if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
 #ifdef TEST_HOME_DESK_LOCK
  if(which("manual")) {
+  if(getenv("NATIVE_WAKE_CAPACITY")){assert(!entries&&!pending);puts("Manual lock refused before deep entry: native payload capacity too small");}
   if(getenv("LOCK_REFUSE"))assert(entries==1&&restores==1&&clears==1);
   else assert(!entries);
   if(lock_attempted)assert(lock_restored_frames);
