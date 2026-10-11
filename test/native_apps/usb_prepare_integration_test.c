@@ -49,6 +49,18 @@ static bool input(void*c,risc_touch_snapshot_v1*out){
  bool down=polls==5 || ((mode==0||mode==1||mode==3)&&polls==30) || (mode==3&&polls==60);
  if(down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=240,.y=644};}return true;
 }
+/* Feed the same scenario into both ordered events and snapshots. The base
+ * paper-clock fixture otherwise supplies unrelated events despite our snapshot. */
+static bool prepare_touch_poll(void*c,size_t n){
+ (void)c;assert(n==1);polls++;risc_touch_snapshot_v1 next;assert(input(NULL,&next));
+ for(unsigned i=0;i<raw_state.contact_count;i++)if(raw_find(&next,raw_state.contacts[i].id)<0)raw_emit(RISC_TOUCH_EVENT_UP,raw_state.contacts[i]);
+ for(unsigned i=0;i<next.contact_count;i++){
+  int old=raw_find(&raw_state,next.contacts[i].id);
+  if(old<0)raw_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[i]);
+  else if(raw_state.contacts[old].x!=next.contacts[i].x||raw_state.contacts[old].y!=next.contacts[i].y)raw_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[i]);
+ }
+ next.sequence=raw_state.sequence;next.timestamp_ms=ms;raw_state=next;return true;
+}
 static bool display_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*tkn){
  (void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);frames=0;*tkn=++presents;queued_until=ms+24;
  if(latest_state==RISC_USB_MSC_PREPARING){prepare_frames++;if(prepare_frames==1)prepare_before_frame=usb_fixture_prepare_calls();}
@@ -64,7 +76,7 @@ static bool app_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capa
  if(!strcmp(name,"input.navigation")){out->api=&nav;grants++;return true;}
  if(!strcmp(name,"board.battery"))return false;
  if(!acquire(name,v,id,out))return false;
- if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 p;p=t;p.snapshot=input;out->api=&p;}
+ if(!strcmp(name,"input.touch.raw")){static risc_touch_api_v1 p;p=t;p.poll=prepare_touch_poll;out->api=&p;}
  if(!strcmp(name,"display.output")){static risc_display_output_api_v1 p;p=d;p.submit=display_submit;p.present_status=display_status;out->api=&p;}
  return true;
 }
