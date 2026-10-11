@@ -40,7 +40,7 @@ struct PeerControllerFixture {
  ~PeerControllerFixture(){if(peer)stop();active=nullptr;}
 };
 PeerControllerFixture*PeerControllerFixture::active=nullptr;
-static void controllerTests(){
+[[maybe_unused]] static void controllerTests(){
  {PeerControllerFixture p;p.noPeers=true;p.until(PEER_DISCOVERING);
   assert(p.entropyCalls==1&&p.token&&p.acquiredBle&&!p.joins);
   for(unsigned i=0;i<100;++i)p.tick();

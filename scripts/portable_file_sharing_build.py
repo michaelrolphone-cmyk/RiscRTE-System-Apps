@@ -55,8 +55,9 @@ def requirements(args,needs):
         item={'capability':name,'api':1}
         if item not in needs:needs.append(item)
     if getattr(args,'sharing_setup_instance',None) is not None:
-        item={'capability':'bluetooth.session-setup','api':1}
-        if item not in needs:needs.append(item)
+        for name in ('bluetooth.session-setup','bluetooth.hci'):
+            item={'capability':name,'api':1}
+            if item not in needs:needs.append(item)
 
 def record(args,root,out,manifest,record):
     if not getattr(args,'webdav_sharing',False):return
@@ -67,6 +68,7 @@ def record(args,root,out,manifest,record):
     if setup is not None:
         instances['setup']=setup
         expected['bluetooth.session-setup']=[setup]
+        expected['bluetooth.hci']=[16]
     for name,values in expected.items():
         existing=bindings.get(name,[])
         # Root selection is deliberate. A browser-selected export must be the
