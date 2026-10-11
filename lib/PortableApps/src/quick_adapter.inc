@@ -228,6 +228,35 @@ static bool quick_copy_background(void) {
  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);
  return true;
 }
+/* Finish a logical close through the ordinary nonblocking frame mailbox.
+ * The foreground is already live. Its later paint may replace this underlay
+ * once prepared, while raw input continues to reduce in normal app polls. */
+static bool quick_restore_step(void) {
+ if(!quick_restore_pending)return !failed;
+ if(failed)return false;
+ quick_restoring=true;
+ bool ready=portable_paper_frame_ready();
+ quick_restoring=false;
+ if(!ready)return !failed;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_begin_pixels_owned(quick_background,(unsigned)quick_row_bytes(),true)) {
+  if(failed)return false;
+  if(!raster_recording||!raster_tail||raster_tail->kind!=RS_BITMAP||
+     raster_tail->pixels!=quick_background) {
+   display_failure("QUICK restore capture-invalid");return false;
+  }
+  /* Transfer the existing allocation, rather than copying another full image.
+   * The command owner releases it after replay, replacement or teardown. */
+  raster_tail->borrowed=false;quick_background=NULL;
+ } else
+#endif
+ if(!quick_copy_background())return false;
+ quick_restore_pending=false;
+ present(!quick.ui.paper);
+ if(failed)return false;
+ free(quick_background);quick_background=NULL;
+ return true;
+}
 static bool quick_render_watch(const char *time,bool battery_valid,uint8_t battery) {
  if(failed)return false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -352,6 +381,7 @@ static bool quick_dispatch_destination(const char *quick_destination) {
 }
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
+ if(!quick_restore_step())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
@@ -507,8 +537,22 @@ static bool quick_foreground(bool *consumed) {
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
+ /* The modal's release has already been reduced. Cancel only a still-held
+  * logical gesture; never adopt a newer physical snapshot watermark here. */
+ if(*consumed) {
+  input_pending=false;input_sample=(portable_touch_sample){0};
+  if(touch.down)portable_touch_cancel_gesture(&touch);
+ }
  if(painted && !failed) {
-  if(!portable_paper_frame_drain() || !quick_copy_background())failed=true;
+  if(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) {
+   /* Alarm restoration follows logical ownership, not a stale overlay image. */
+   if(quick_background&&alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   if(raster_sealed)raster_saved_app_frame=false;
+#endif
+   quick_restore_pending=true;
+  }
+  else if(!portable_paper_frame_drain() || !quick_copy_background())failed=true;
   else {present(!quick.ui.paper);if(!portable_paper_frame_drain())failed=true;}
  }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -517,9 +561,10 @@ static bool quick_foreground(bool *consumed) {
  #if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS) && defined(PORTABLE_RESIDENT_SHELL_HOST)
  portable_layer_release(&quick_sheet_layer);
 #endif
- quick_modal=false;free(quick_background);quick_background=NULL;
+ quick_modal=false;
+ if(!quick_restore_pending){free(quick_background);quick_background=NULL;}
  portable_stage_log(rt,"action","name=quick-controls-close");
- if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};input_reset();}
+ if(!failed&&!quick_restore_step())return false;
  const char *quick_destination=wifi?"wifi_settings.elf":NULL;
 #ifdef PORTABLE_QUICK_USB_TRANSFER
  if(usb_transfer)quick_destination="usb_sd_transfer.elf";

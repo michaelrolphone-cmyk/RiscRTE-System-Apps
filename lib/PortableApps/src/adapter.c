@@ -353,6 +353,8 @@ static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v
 #endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
+static bool quick_restore_pending,quick_restoring;
+static bool quick_restore_step(void);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 static bool quick_clean_present,resident_failure_present;
 #ifdef PORTABLE_RESIDENT_POLICY
@@ -1166,6 +1168,11 @@ bool portable_paper_frame_ready(void) {
   if(!file_setup_checkpoint())return false;
 #endif
   if(failed)return false;
+#ifdef PORTABLE_QUICK_ACTIONS
+  /* Queue the retained underlay before a later app paint, without delaying
+   * input/state until the provider finishes its previous submission. */
+  if(quick_restore_pending&&!quick_restoring&&!quick_restore_step())return false;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   /* Latest-image mailbox: a completed software image which has not acquired
    * a provider lease may be replaced while the panel is BUSY. Never replace
@@ -2780,6 +2787,7 @@ static int initialize(void) {
   quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
+  quick_restore_pending=quick_restoring=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   quick_open_requested=false;
 #endif
