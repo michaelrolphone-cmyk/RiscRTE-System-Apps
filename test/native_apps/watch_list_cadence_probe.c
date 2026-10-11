@@ -5,6 +5,13 @@
 #undef main
 static unsigned latency, submitted_at, done_at, raw_samples, busy_raw_samples;
 static unsigned logical_polls, changes, longest_poll, max_scroll;
+static unsigned raster_yield_ms,longest_raster_yield_ms,longest_poll_without_raster_yield_ms;
+static void timed_yield(uint32_t ms){
+#ifdef PORTABLE_ASYNC_RGB565
+ if(canvas_async && surface.frame==CANVAS_DRAWING_FRAME)raster_yield_ms+=ms;
+#endif
+ yield_ms(ms);
+}
 static unsigned drag_start=100,drag_end=500;
 static bool probing,release_sent;
 static bool probe_retain(void){assert(!"Healthy cadence must not retain");return true;}
@@ -39,16 +46,19 @@ int main(int argc,char**argv){
 #endif
  risc_display_output_api_v1 timed_display=display_api;timed_display.submit=timed_submit;timed_display.present_status=timed_status;
  risc_touch_api_v1 timed_touch=touch_api;timed_touch.snapshot=timed_snapshot;timed_touch.next=timed_next;
- risc_runtime_api_v1 timed_runtime=runtime_api;timed_runtime.health=timed_health;timed_runtime.retain_invocation=probe_retain;
+ risc_runtime_api_v1 timed_runtime=runtime_api;timed_runtime.health=timed_health;timed_runtime.yield_ms=timed_yield;timed_runtime.retain_invocation=probe_retain;
  display=&timed_display;touch.api=&timed_touch;rt=&timed_runtime;probing=true;
  const t5_app_api_v1*api=t5_app_get_api(1);api->settings_render(0,0);
  while(ticks<latency+900){
-  unsigned before=ticks;int old=sv_scroll[0];t5_app_input_t event={0};assert(api->poll(&event,20));++logical_polls;
-  unsigned elapsed=ticks-before;if(elapsed>longest_poll)longest_poll=elapsed;
+  unsigned before=ticks,before_raster=raster_yield_ms;int old=sv_scroll[0];t5_app_input_t event={0};assert(api->poll(&event,20));++logical_polls;
+  unsigned elapsed=ticks-before,paint_yields=raster_yield_ms-before_raster;assert(elapsed>=paint_yields);
+  if(elapsed>longest_poll)longest_poll=elapsed;
+  if(paint_yields>longest_raster_yield_ms)longest_raster_yield_ms=paint_yields;
+  if(elapsed-paint_yields>longest_poll_without_raster_yield_ms)longest_poll_without_raster_yield_ms=elapsed-paint_yields;
   if(sv_scroll[0]!=old)++changes;
   if((unsigned)sv_scroll[0]>max_scroll)max_scroll=(unsigned)sv_scroll[0];
  }
  app_module_fini();assert(!grants&&!subscriptions&&!frames&&!kv_writes&&!rtc_writes);
- printf("{\"display_latency_ms\":%u,\"drag_duration_ms\":%u,\"physical_samples\":%u,\"samples_while_present_busy\":%u,\"logical_polls\":%u,\"scroll_state_changes\":%u,\"longest_logical_poll_ms\":%u,\"max_scroll_pixels\":%u,\"presentations\":%u}\n",latency,drag_end-drag_start,raw_samples,busy_raw_samples,logical_polls,changes,longest_poll,max_scroll,presents);
+ printf("{\"display_latency_ms\":%u,\"drag_duration_ms\":%u,\"physical_samples\":%u,\"samples_while_present_busy\":%u,\"logical_polls\":%u,\"scroll_state_changes\":%u,\"longest_logical_poll_ms\":%u,\"max_raster_yield_per_poll_ms\":%u,\"longest_poll_without_raster_yield_ms\":%u,\"max_scroll_pixels\":%u,\"presentations\":%u}\n",latency,drag_end-drag_start,raw_samples,busy_raw_samples,logical_polls,changes,longest_poll,longest_raster_yield_ms,longest_poll_without_raster_yield_ms,max_scroll,presents);
  return 0;
 }

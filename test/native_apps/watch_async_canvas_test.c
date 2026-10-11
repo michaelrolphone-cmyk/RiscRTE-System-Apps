@@ -30,14 +30,17 @@ const unsigned portable_catalog_count=1;
 static uint16_t provider_pixels[240*243],owned_snapshot[240*243],outgoing[240*240];
 static unsigned now_ms,flags=RISC_DISPLAY_INFO_ASYNC_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;
 static unsigned grants,subscriptions,leases,acquires,releases,submits,statuses,inputs,launches,retains;
+static unsigned yields,health_reads,clock_reads;
+static bool clock_failed;
 static unsigned latency=40,submitted_at,status_error,damage_count;
 static risc_display_rect_v1 last_damage;
 static bool provider_busy,finish_now,reject_submit,zero_token,bad_surface,exit_pending,fail_after_yield;
 static bool retain_ok=true,retention_seen;
 static void immutable(void) {if(provider_busy)assert(!memcmp(provider_pixels,owned_snapshot,sizeof(provider_pixels)));}
 static void normal_io(void) {no_call_after_refusal();assert(!retention_seen);immutable();}
-static bool health(risc_runtime_health_v1 *h){no_call_after_refusal();h->uptime_ms=now_ms;return true;}
-static void yield_ms(uint32_t ms){no_call_after_refusal();immutable();now_ms+=ms;if(fail_after_yield)status_error=RISC_DISPLAY_PRESENT_FAILED;}
+static bool health(risc_runtime_health_v1 *h){no_call_after_refusal();assert(!retention_seen);++health_reads;h->uptime_ms=now_ms;return true;}
+static bool monotonic(uint32_t*out){no_call_after_refusal();assert(!retention_seen);++clock_reads;*out=now_ms;return !clock_failed;}
+static void yield_ms(uint32_t ms){no_call_after_refusal();immutable();++yields;now_ms+=ms;if(fail_after_yield)status_error=RISC_DISPLAY_PRESENT_FAILED;}
 static bool diagnostic(const char *s){no_call_after_refusal();assert(s);return true;}
 static bool native_exit(void){no_call_after_refusal();return exit_pending;}
 static bool retain(void){
@@ -101,12 +104,30 @@ int main(int argc,char**argv){
  if(!strcmp(test,"fallback-retains-image"))flags|=RISC_DISPLAY_INFO_RETAINS_IMAGE;
  if(!strcmp(test,"fallback-no-retain"))runtime.retain_invocation=NULL;
  if(!strcmp(test,"fallback-short-runtime")){runtime.struct_size=RISC_RUNTIME_CAPABILITIES_V1_SIZE;short_runtime=malloc(runtime.struct_size);assert(short_runtime);memcpy(short_runtime,&runtime,runtime.struct_size);runtime_source=short_runtime;}
+ if(!strncmp(test,"clock-",6))runtime.monotonic_ms=monotonic;
+ if(!strcmp(test,"clock-missing"))runtime.monotonic_ms=NULL;
+ if(!strcmp(test,"clock-truncated")){
+  runtime.struct_size=RISC_RUNTIME_MONOTONIC_V1_SIZE-1;
+  short_runtime=malloc(runtime.struct_size);assert(short_runtime);
+  memcpy(short_runtime,&runtime,runtime.struct_size);runtime_source=short_runtime;
+ }
  if(!strcmp(test,"canvas-allocation-failure")){
   fail_allocation=1;assert(app_module_init()!=0);assert(allocation_attempts==1&&!allocations&&!frees&&!grants&&!subscriptions&&!leases&&!acquires&&!submits&&!canvas_pixels);
   puts("Async canvas: canvas-allocation-failure PASS");return 0;
  }
  init();
- if(!strncmp(test,"fallback-",9)){assert(!canvas_async&&!canvas_pixels);paint(0x1234);assert(!provider_busy&&submits==1&&now_ms>=latency);finish();}
+ if(!strncmp(test,"clock-",6)){
+  assert(canvas_async);health_reads=clock_reads=0;
+  paint(0x1111);
+  if(!strcmp(test,"clock-failure")){
+   clock_failed=true;assert(!canvas_progress());assert(clock_reads&&!health_reads);check_retained();
+  }else{
+   now_ms+=CANVAS_PUMP_INTERVAL_MS;draw(0x2222);present(false);finish();
+   if(!strcmp(test,"clock-monotonic"))assert(clock_reads&&!health_reads);
+   else assert(health_reads&&!clock_reads);
+  }
+ }
+ else if(!strncmp(test,"fallback-",9)){assert(!canvas_async&&!canvas_pixels);paint(0x1234);assert(!provider_busy&&submits==1&&now_ms>=latency);finish();}
  else if(!strcmp(test,"mailbox")){
   assert(canvas_async&&canvas_pixels&&previous_pixels);paint(0x1111);assert(submits==1&&provider_busy&&!leases&&!surface.frame);
   paint(0x2222);paint(0x3333);assert(submits==1&&canvas_sealed);check_color(0x1111);
@@ -117,6 +138,22 @@ int main(int argc,char**argv){
   unsigned before=submits;assert(canvas_progress());assert(!provider_busy&&submits==before&&!leases);check_color(0x1111);
   input_service();assert(submits==before&&surface.frame==CANVAS_DRAWING_FRAME);
   fill(0,120,240,120,0x4444);present(false);assert(submits==before+1);check_color(0x4444);finish();
+ }else if(!strcmp(test,"raster-pump")||!strcmp(test,"raster-pump-complete")||!strcmp(test,"raster-pump-failure")){
+  paint(0x1111);unsigned before=yields;
+  now_ms+=CANVAS_PUMP_INTERVAL_MS-1;clear_color(0x2222);assert(yields==before);
+  now_ms+=1;
+  if(!strcmp(test,"raster-pump-complete"))latency=CANVAS_PUMP_INTERVAL_MS+1;
+  if(!strcmp(test,"raster-pump-failure"))fail_after_yield=true;
+  fill(0,0,240,240,0x3333);assert(yields==before+1&&submits==1);
+  if(fail_after_yield)check_retained();
+  else {
+   assert(surface.frame==CANVAS_DRAWING_FRAME&&!canvas_sealed);
+   check_color(0x1111); /* Mid-raster pumping never copies partial output. */
+   if(latency==CANVAS_PUMP_INTERVAL_MS+1)assert(!canvas_token&&!provider_busy);
+   else assert(canvas_token&&provider_busy);
+   fill(0,0,240,240,0x4444);assert(yields==before+1);
+   present(false);finish();assert(submits==2);check_color(0x4444);
+  }
  }else if(!strcmp(test,"damage")){
   paint(0x1234);finish_now=true;assert(canvas_progress());draw(0x1234);fill(0,10,240,3,0x5678);present(false);
   assert(submits==2&&damage_count==1&&last_damage.x==0&&last_damage.y==10&&last_damage.width==240&&last_damage.height==3);finish();
