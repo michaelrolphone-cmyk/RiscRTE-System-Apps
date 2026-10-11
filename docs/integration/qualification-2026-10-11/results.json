@@ -1,0 +1,86 @@
+[
+  {
+    "name": "setup-client",
+    "command": [
+      "bash",
+      "system/scripts/test_portable_file_setup.sh"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "files-export",
+    "command": [
+      "python3",
+      "system/scripts/test_file_browser_appdata_export.py"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "files-operations",
+    "command": [
+      "python3",
+      "system/scripts/test_file_browser_operations.py"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "files-base",
+    "command": [
+      "python3",
+      "system/scripts/test_portable_file_browser.py"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "webdav-core",
+    "command": [
+      "bash",
+      "system/scripts/test_webdav_core.sh"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "webdav-properties",
+    "command": [
+      "python3",
+      "system/scripts/test_webdav_properties.py"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "webdav-digest",
+    "command": [
+      "python3",
+      "system/scripts/test_webdav_digest.py"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "webdav-sharing",
+    "command": [
+      "bash",
+      "system/scripts/test_webdav_sharing.sh"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "files-adapter",
+    "command": [
+      "python3",
+      "system/scripts/test_file_setup_adapter.py",
+      "--sdk-include",
+      "build/test-sdk",
+      "--output",
+      "evidence/setup-adapter"
+    ],
+    "exit": 0
+  },
+  {
+    "name": "installed-client",
+    "command": [
+      "bash",
+      "system/scripts/test_installed_catalog_client.sh"
+    ],
+    "exit": 0
+  }
+]

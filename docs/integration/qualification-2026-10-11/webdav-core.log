@@ -1,0 +1,2 @@
+WebDAV actual core: parsing, scope, preconditions, snapshots, retention and cleanup PASS
+WebDAV actual session: fragmentation, partial writes, admission, timeout, cancellation and terminal retention PASS

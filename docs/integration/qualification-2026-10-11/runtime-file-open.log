@@ -1,0 +1,3 @@
+File-open: declared immutable handlers, strict SD paths, explicit grants, copied handoff, fresh child-caller-default, repeated success/failure and automatic grant cleanup PASS
+File-open: malformed/oversized/duplicate metadata and wrong global version/instance fail closed PASS
+File-open: failed caller/receiver retention blocks all relaunch and discards handoff authority PASS

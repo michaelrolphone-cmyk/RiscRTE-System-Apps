@@ -1,0 +1,9 @@
+App-data export strict maps, exact owner, no aliases and no implicit namespace authority PASS
+App-data export pinned Watch25 owner IDs/namespaces and exact persisted-file projection admission PASS
+App-data export cohort preserves owner/grants/maps and consumes exact native-only initial delegation PASS
+App-data export actual ELF normal: acquisition, revisions, revocation and retention PASS
+App-data export actual ELF retain: acquisition, revisions, revocation and retention PASS
+App-data export actual ELF admission-retain: acquisition, revisions, revocation and retention PASS
+App-data export actual ELF unavailable: acquisition, revisions, revocation and retention PASS
+App-data export actual ELF resident: acquisition, revisions, revocation and retention PASS
+App-data export actual ELF resident-retain: acquisition, revisions, revocation and retention PASS

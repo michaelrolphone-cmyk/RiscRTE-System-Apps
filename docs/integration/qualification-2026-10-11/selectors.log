@@ -1,0 +1,47 @@
+.usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: Sharing instances require --webdav-sharing
+usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: Software BLE setup requires explicit instance0
+usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: Software BLE setup requires explicit instance0
+..usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: --webdav-sharing requires explicit instance0 for native export and software TCP/entropy capabilities
+usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: Sharing instances require --webdav-sharing
+usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: --webdav-sharing requires explicit instance0 for native export and software TCP/entropy capabilities
+usage: python3 -m unittest [-h] [--webdav-sharing]
+                           [--sharing-export-instance SHARING_EXPORT_INSTANCE]
+                           [--sharing-tcp-instance SHARING_TCP_INSTANCE]
+                           [--sharing-entropy-instance SHARING_ENTROPY_INSTANCE]
+                           [--sharing-setup-instance SHARING_SETUP_INSTANCE]
+python3 -m unittest: error: --webdav-sharing requires explicit instance0 for native export and software TCP/entropy capabilities
+.
+----------------------------------------------------------------------
+Ran 4 tests in 0.002s
+
+OK
