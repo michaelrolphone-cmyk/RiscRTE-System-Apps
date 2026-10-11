@@ -5,9 +5,11 @@
 #include <cstdint>
 
 namespace RiscWebDav {
+class VolumeTransaction;
 constexpr size_t HeaderMax=4096, PropertyBodyMax=4096, CatalogMax=16;
 struct Request {
- char method[16]{},path[RISC_APP_DATA_EXPORT_PATH_MAX+1]{},host[128]{};
+ char method[16]{},path[RISC_STORAGE_VOLUME_PATH_MAX+1]{},host[128]{};
+ char destination[RISC_STORAGE_VOLUME_PATH_MAX+1]{};bool overwrite=true;
  char authorization[1537]{},ifMatch[96]{},ifNoneMatch[96]{};
  char requestTarget[769]{};
  uint32_t contentLength=0;
@@ -20,7 +22,7 @@ struct Request {
  * Returns zero on success, otherwise the HTTP status to send before closing. */
 unsigned parseRequest(const char*,size_t,Request&);
 
-enum class AuthPhase { Headers, Complete };
+enum class AuthPhase { Headers, Complete, BodyHash };
 struct Hooks {
  void* context=nullptr;
  bool (*owner)(void*)=nullptr;
@@ -41,18 +43,26 @@ class Transaction final {
  Transaction()=default;
  Transaction(const Transaction&)=delete;
  Transaction& operator=(const Transaction&)=delete;
+ bool begin(const risc_storage_volume_api_v1*,const Hooks&,const Request&,const void*,size_t);
+ bool nextBody();
+ bool beginUpload(const risc_storage_volume_api_v1*,const Hooks&,const Request&);
+ bool uploadReady()const;
+ bool feedUpload(const void*,size_t);
+ bool endUpload();
+ bool bodyComplete()const;
  bool begin(const risc_app_data_export_v1*,const Hooks&,const Request&,const void*,size_t);
  State step();
- State state()const{return state_;}
- unsigned status()const{return status_;}
- const char* header()const{return state_==State::Ready?header_:nullptr;}
- size_t headerSize()const{return state_==State::Ready?headerSize_:0;}
- const void* body()const{return state_==State::Ready?output_:nullptr;}
- size_t bodySize()const{return state_==State::Ready&&!head_?outputSize_:0;}
+ State state()const;
+ unsigned status()const;
+ const char* header()const;
+ size_t headerSize()const;
+ const void* body()const;
+ size_t bodySize()const;
  /* Releases only owned memory after a clean request. False means retained;
   * caller must keep the grant and all associated transport custody. */
  bool finish();
  private:
+ VolumeTransaction* volume_=nullptr;
  const risc_app_data_export_v1* files_=nullptr;
  Hooks hooks_{};Request request_{};
  const void* input_=nullptr;size_t inputSize_=0;

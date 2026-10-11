@@ -3,9 +3,9 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-VERSION = '1.5.23'
+VERSION = '1.5.24'
 def selected_version(args):return VERSION
-MODULES = ('WebDavCore','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
+MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
 def options(parser):
     parser.add_argument('--webdav-sharing',action='store_true',help='Explicit finite authenticated HTTP sharing of configured AppData exports')
@@ -25,7 +25,7 @@ def validate(args,parser):
 
 def configure(args,root,out,includes,cc):
     if not getattr(args,'webdav_sharing',False):return [],[],[]
-    flags=['-DPORTABLE_FILE_SHARING','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DPORTABLE_ALARM_TERMINAL_RETENTION']
+    flags=['-DPORTABLE_FILE_SHARING','-DPORTABLE_FILE_SHARING_SELECTED_VOLUME','-DPORTABLE_NATIVE_CUSTODY_FENCE','-DPORTABLE_ALARM_TERMINAL_RETENTION']
     flags += [f'-DPORTABLE_FILE_SHARING_{name.upper()}_INSTANCE={getattr(args,"sharing_"+name+"_instance")}u' for name in ('export','tcp','entropy')]
     setup=getattr(args,'sharing_setup_instance',None)
     if setup is not None:flags += ['-DPORTABLE_FILE_SETUP',f'-DPORTABLE_FILE_SHARING_SETUP_INSTANCE={setup}u']

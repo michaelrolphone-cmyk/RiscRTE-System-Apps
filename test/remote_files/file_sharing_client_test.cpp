@@ -54,7 +54,7 @@ int main(int argc,char**argv){
  auto*p=portable_file_sharing_create(&runtime,&hooks);
  if(mode=="oom"){assert(!p&&!calls&&memory.empty());std::puts("file-sharing client OOM PASS");return 0;}
  assert(p&&!calls&&memory.size()==1);const size_t workspace=memory.begin()->second;
- portable_file_sharing_config config{10,11,12,{192,0,2,1},8080,100000,true};
+ portable_file_sharing_config config{10,11,12,{192,0,2,1},8080,100000,true,false};
  if(mode=="transport-choice"){config.authenticated_http=false;assert(!portable_file_sharing_start(p,&config,0));assert(!calls&&status(p).state==PORTABLE_FILE_SHARING_ERROR);assert(portable_file_sharing_destroy(&p)&&memory.empty());return 0;}
  assert(portable_file_sharing_start(p,&config,0)&&!calls&&status(p).active_work&&!status(p).password[0]);
  if(mode=="missing")failAcquire=1;

@@ -3,7 +3,7 @@
 import argparse,hashlib,json,pathlib,subprocess
 p=argparse.ArgumentParser();p.add_argument('--toolchain',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,required=True);a=p.parse_args()
 root=pathlib.Path(__file__).resolve().parents[1];out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);commands=[]
-modules=['WebDavCore','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing']
+modules=['WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing']
 sha=out/'sha2.o'
 cmd=[str(a.toolchain/'xtensa-esp32s3-elf-gcc'),'-std=c11','-Os','-mlongcalls','-fPIC','-Wall','-Wextra','-Werror','-c','lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c','-o',str(sha)]
 subprocess.run(cmd,cwd=root,check=True);commands.append(cmd)

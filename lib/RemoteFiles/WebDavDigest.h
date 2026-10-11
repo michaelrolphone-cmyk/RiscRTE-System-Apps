@@ -13,7 +13,7 @@ constexpr size_t DigestReplaySlots = 8;
 constexpr size_t DigestBodyMax = 65536;
 constexpr size_t DigestChallengeCapacity = 256;
 
-enum class DigestPhase { HeaderPrecheck, Final };
+enum class DigestPhase { HeaderPrecheck, Final, FinalBodyHash };
 enum class DigestResult {
     Authorized, BodyRequired, Unauthorized, Malformed, Expired,
     Replay, ReplayCapacity, Inactive
@@ -61,6 +61,8 @@ public:
      * Replay slots never evict a live cnonce; exhaustion requires a fresh
      * explicitly initialized session. Failed verification changes no counts.
      */
+    /* FinalBodyHash takes exactly 32 SHA-256 entity bytes from the trusted
+     * streaming request parser; it is not a client-supplied digest. */
     DigestResult verify(const char* method, const char* requestTarget,
                         const char* authorization, const void* body,
                         size_t bodySize, uint64_t now, DigestPhase phase);

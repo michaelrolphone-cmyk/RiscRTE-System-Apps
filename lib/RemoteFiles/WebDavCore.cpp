@@ -1,4 +1,6 @@
 #include "WebDavCore.h"
+#include "WebDavVolume.h"
+#include <new>
 #include <cstring>
 #include "WebDavBounds.h"
 #include <cstdio>
@@ -9,11 +11,11 @@ namespace {
 bool same(const char*a,const char*b){while(*a&&*b){if(detail::asciiLower((unsigned char)*a++)!=detail::asciiLower((unsigned char)*b++))return false;}return !*a&&!*b;}
 bool copy(char*out,size_t cap,const char*first,size_t size){if(size>=cap)return false;std::memcpy(out,first,size);out[size]=0;return true;}
 int hex(char c){if(c>='0'&&c<='9')return c-'0';if(c>='A'&&c<='F')return c-'A'+10;if(c>='a'&&c<='f')return c-'a'+10;return -1;}
-bool path(const char*first,size_t size,char*out){
+bool path(const char*first,size_t size,char*out,size_t capacity=RISC_STORAGE_VOLUME_PATH_MAX+1){
  if(!size||*first!='/')return false;
  size_t n=0;
  for(size_t i=0;i<size;++i){unsigned char c=first[i];if(c=='%'){if(i+2>=size||hex(first[i+1])<0||hex(first[i+2])<0)return false;c=(hex(first[i+1])<<4)|hex(first[i+2]);i+=2;}
-  if(c<32||c>=127||c=='\\'||c=='?'||c=='#'||n>=RISC_APP_DATA_EXPORT_PATH_MAX)return false;
+  if(c<32||c==127||c=='\\'||c=='?'||c=='#'||n+1>=capacity)return false;
   out[n++]=c;}
  out[n]=0;if(n>1&&out[n-1]=='/'){if(out[n-2]=='/')return false;out[--n]=0;}
  for(const char*p=out+1;*p;){const char*end=std::strchr(p,'/');size_t k=end?size_t(end-p):std::strlen(p);
@@ -57,8 +59,8 @@ unsigned parseRequest(const char*data,size_t size,Request&out){
  if(!token(work)||!copy(out.method,sizeof(out.method),work,std::strlen(work))||std::strcmp(b,"HTTP/1.1"))return 400;
  if(!copy(out.requestTarget,sizeof(out.requestTarget),a,std::strlen(a)))return 414;
  if(!std::strcmp(a,"*")&&!std::strcmp(work,"OPTIONS"))std::strcpy(out.path,"/");
- else if(!path(a,std::strlen(a),out.path))return std::strlen(a)>3*RISC_APP_DATA_EXPORT_PATH_MAX?414:400;
- unsigned seen=0;char*p=line+2;
+ else if(!path(a,std::strlen(a),out.path))return std::strlen(a)>3*RISC_STORAGE_VOLUME_PATH_MAX?414:400;
+ unsigned seen=0;char destination[769]{};char*p=line+2;
  while(*p){char*end=std::strstr(p,"\r\n");if(!end)return 400;*end=0;if(!*p)break;if(*p==' '||*p=='\t')return 400;
   char*colon=std::strchr(p,':');if(!colon)return 400;*colon++=0;if(!token(p))return 400;while(*colon==' '||*colon=='\t')++colon;
   char*tail=colon+std::strlen(colon);while(tail>colon&&(tail[-1]==' '||tail[-1]=='\t'))*--tail=0;
@@ -71,14 +73,21 @@ unsigned parseRequest(const char*data,size_t size,Request&out){
   else if(same(p,"If-None-Match")){bit=16;ok=copy(out.ifNoneMatch,sizeof(out.ifNoneMatch),colon,std::strlen(colon));}
   else if(same(p,"Content-Type")){bit=128;ok=copy(out.contentType,sizeof(out.contentType),colon,std::strlen(colon));}
   else if(same(p,"Depth")){bit=32;if(!std::strcmp(colon,"0"))out.depth=0;else if(!std::strcmp(colon,"1"))out.depth=1;else if(std::strcmp(colon,"infinity"))ok=false;}
+  else if(same(p,"Destination")){bit=256;ok=copy(destination,sizeof(destination),colon,std::strlen(colon));}
+  else if(same(p,"Overwrite")){bit=512;if(!std::strcmp(colon,"T"))out.overwrite=true;else if(!std::strcmp(colon,"F"))out.overwrite=false;else ok=false;}
   else if(same(p,"Transfer-Encoding"))return 415;
   else if(same(p,"Expect")){bit=64;if(!same(colon,"100-continue"))return 417;out.expectContinue=true;}
   if(!ok||(bit&&(seen&bit)))return 400;
   seen|=bit;p=end+2;
  }
  if(!(seen&1))return 400;
+ if(destination[0]){
+  const char*value=destination;
+  if(!std::strncmp(value,"http://",7)){value+=7;const char*slash=std::strchr(value,'/');if(!slash||size_t(slash-value)!=std::strlen(out.host)||std::memcmp(value,out.host,slash-value))return 403;value=slash;}
+  if(!path(value,std::strlen(value),out.destination))return 400;
+ }
  if((out.ifMatch[0]&&!tagList(out.ifMatch))||(out.ifNoneMatch[0]&&!tagList(out.ifNoneMatch)))return 400;
- if(out.contentLength>RISC_APP_DATA_FILE_MAX)return 413;
+ if(out.contentLength>64u*1024u*1024u)return 413;
  if(!std::strcmp(out.method,"PUT")&&!(seen&2))return 400;
  if(!std::strcmp(out.method,"PROPFIND")&&out.contentLength>PropertyBodyMax)return 413;
  if(std::strcmp(out.method,"PUT")&&std::strcmp(out.method,"PROPFIND")&&out.contentLength)return 400;
@@ -201,12 +210,13 @@ bool Transaction::propertyRow(const Row&row,uint32_t size,uint64_t revision){
  return append("</D:response>");
 }
 State Transaction::step(){
+ if(volume_)return volume_->step();
  if(state_==State::Idle||state_==State::Done||state_==State::Retained)return state_;
  if(!valid())return state_;
  void*context=files_->volume.terminal.power.volume.base.context;
  if(state_==State::Catalog){risc_app_data_export_entry_v1 value{};int32_t rc=files_->entry(context,count_,&value);if(!valid())return state_;
   if(rc==RISC_APP_DATA_NOT_FOUND){state_=State::Prepare;return state_;}if(!backend(rc))return state_;
-  char checked[sizeof(value.path)];if(count_==CatalogMax||!std::memchr(value.path,0,sizeof(value.path))||!path(value.path,std::strlen(value.path),checked)||std::strcmp(value.path,checked)||value.writable>1){state_=State::Retained;return state_;}
+  char checked[sizeof(value.path)];if(count_==CatalogMax||!std::memchr(value.path,0,sizeof(value.path))||!path(value.path,std::strlen(value.path),checked,sizeof(checked))||std::strcmp(value.path,checked)||value.writable>1){state_=State::Retained;return state_;}
   for(unsigned i=0;i<count_;++i)if(!std::strcmp(value.path,catalog_[i].path)){state_=State::Retained;return state_;}
   catalog_[count_++]=value;return state_;
  }
@@ -254,9 +264,36 @@ State Transaction::step(){
  return state_;
 }
 bool Transaction::finish(){
+ if(volume_){if(!volume_->finish())return false;volume_->~VolumeTransaction();hooks_.deallocate(volume_);volume_=nullptr;state_=State::Done;return true;}
  if(state_==State::Idle||state_==State::Done)return true;
  if(!valid())return false;
  if(output_){auto* released=output_;output_=nullptr;hooks_.deallocate(released);if(!valid())return false;}
  outputSize_=outputCapacity_=0;files_=nullptr;input_=nullptr;state_=State::Done;return true;
 }
+State Transaction::state()const{return volume_?volume_->state():state_;}
+unsigned Transaction::status()const{return volume_?volume_->status():status_;}
+const char* Transaction::header()const{return volume_?volume_->header():state_==State::Ready?header_:nullptr;}
+size_t Transaction::headerSize()const{return volume_?volume_->headerSize():state_==State::Ready?headerSize_:0;}
+const void* Transaction::body()const{return volume_?volume_->body():state_==State::Ready?output_:nullptr;}
+size_t Transaction::bodySize()const{return volume_?volume_->bodySize():state_==State::Ready&&!head_?outputSize_:0;}
+bool Transaction::bodyComplete()const{return !volume_||volume_->bodyComplete();}
+bool Transaction::nextBody(){return volume_&&volume_->nextBody();}
+bool Transaction::begin(const risc_storage_volume_api_v1*api,const Hooks&hooks,const Request&q,const void*body,size_t n){
+ if(auto*saved=risc_app_data_export_catalog(api))return begin(saved,hooks,q,body,n);
+ if(volume_||(state_!=State::Idle&&state_!=State::Done)||!hooks.allocate||!hooks.deallocate||!hooks.owner||!hooks.owner(hooks.context))return false;
+ auto*memory=hooks.allocate(sizeof(VolumeTransaction));if(!memory)return false;
+ hooks_=hooks;volume_=new(memory) VolumeTransaction;
+ if(!volume_->begin(api,hooks,q,body,n)){if(volume_->state()==State::Retained)return false;volume_->~VolumeTransaction();hooks.deallocate(volume_);volume_=nullptr;return false;}return true;
+}
+
+bool Transaction::beginUpload(const risc_storage_volume_api_v1*api,const Hooks&hooks,const Request&q){
+ if(volume_||(state_!=State::Idle&&state_!=State::Done)||!hooks.allocate||!hooks.deallocate||!hooks.owner||!hooks.owner(hooks.context))return false;
+ auto*memory=hooks.allocate(sizeof(VolumeTransaction));if(!memory)return false;
+ hooks_=hooks;volume_=new(memory) VolumeTransaction;
+ if(!volume_->begin(api,hooks,q,nullptr,0,true)){if(volume_->state()==State::Retained)return false;volume_->~VolumeTransaction();hooks.deallocate(volume_);volume_=nullptr;return false;}return true;
+}
+bool Transaction::uploadReady()const{return volume_&&volume_->uploadReady();}
+bool Transaction::feedUpload(const void*p,size_t n){return volume_&&volume_->feedUpload(p,n);}
+bool Transaction::endUpload(){return volume_&&volume_->endUpload();}
+
 }

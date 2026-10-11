@@ -17,7 +17,7 @@ void parser(){
  {"GET / HTTP/1.1\r\nHost: a\r\n Content-Length: 0\r\n\r\n",400},
  {"PUT /a HTTP/1.1\r\nHost: a\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n",400},
  {"PUT /a HTTP/1.1\r\nHost: a\r\nContent-Length: 99999999999999\r\n\r\n",400},
- {"PUT /a HTTP/1.1\r\nHost: a\r\nContent-Length: 65537\r\n\r\n",413},
+ {"PUT /a HTTP/1.1\r\nHost: a\r\nContent-Length: 67108865\r\n\r\n",413},
  {"PUT /a HTTP/1.1\r\nHost: a\r\n\r\n",400},
  {"GET / HTTP/1.1\r\nHost: a\r\nTransfer-Encoding: chunked\r\n\r\n",415},
  {"GET / HTTP/1.1\r\nHost: a\r\nIf-Match: bad\r\n\r\n",400},

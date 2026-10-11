@@ -1,4 +1,5 @@
 #include "WebDavSession.h"
+#include <RiscStorageVolumeStateV1.h>
 #include <cstring>
 #include "WebDavBounds.h"
 #include <cstdio>
@@ -13,18 +14,19 @@ constexpr char ContinueReply[]="HTTP/1.1 100 Continue\r\n\r\n";
 bool Session::valid(){
  if(state_==SessionState::Retained)return false;
  if(!hooks_.owner||!hooks_.owner(hooks_.context)){state_=SessionState::Retained;return false;}
+ if(files_){const auto*observed=risc_storage_volume_state(files_);if(observed&&observed->observe(files_->context)==RISC_STORAGE_STATE_RETAINED){state_=SessionState::Retained;return false;}}
  return true;
 }
-bool Session::begin(const risc_app_data_export_v1* files,const Hooks& hooks,const Connection& connection,uint64_t now,uint64_t deadline){
+bool Session::begin(const risc_storage_volume_api_v1* files,const Hooks& hooks,const Connection& connection,uint64_t now,uint64_t deadline){
  if(state_!=SessionState::Idle&&state_!=SessionState::Done)return false;
- if(!files||!risc_app_data_export_catalog(&files->volume.terminal.power.volume.base)||!hooks.owner||!hooks.authorize||!hooks.authenticationChallenge||!hooks.allocate||!hooks.deallocate||!connection.handle||!connection.read||!connection.write||!connection.close||deadline<=now)return false;
+ if(!files||(!risc_app_data_export_catalog(files)&&!risc_storage_volume_state(files))||!hooks.owner||!hooks.authorize||!hooks.authenticationChallenge||!hooks.allocate||!hooks.deallocate||!connection.handle||!connection.read||!connection.write||!connection.close||deadline<=now)return false;
  const size_t n=detail::boundedLength(hooks.authenticationChallenge,256);
  if(!n||n==256)return false;
  for(size_t i=0;i<n;++i)if((unsigned char)hooks.authenticationChallenge[i]<32||(unsigned char)hooks.authenticationChallenge[i]>=127)return false;
  std::memcpy(challenge_,hooks.authenticationChallenge,n+1);
  files_=files;hooks_=hooks;hooks_.authenticationChallenge=challenge_;connection_=connection;deadline_=deadline;
  headerSize_=bodySize_=sent_=replySize_=0;body_=nullptr;status_=0;transactionStarted_=false;
- request_={};state_=SessionState::Header;
+ request_={};upload_=false;uploadReceived_=0;state_=SessionState::Header;
  return valid();
 }
 bool Session::received(int32_t rc,uint32_t count,uint32_t capacity,bool reading){
@@ -45,10 +47,10 @@ void Session::error(unsigned status,const char* reason){
 }
 void Session::startTransaction(){
  if(!valid())return;
- transactionStarted_=transaction_.begin(files_,hooks_,request_,body_,bodySize_);
+ transactionStarted_=upload_?transaction_.beginUpload(files_,hooks_,request_):transaction_.begin(files_,hooks_,request_,body_,bodySize_);
  if(transaction_.state()==State::Retained){state_=SessionState::Retained;return;}
  if(!transactionStarted_){error(500,"Internal Server Error");return;}
- state_=SessionState::Compute;
+ state_=upload_?SessionState::Upload:SessionState::Compute;
 }
 SessionState Session::tick(uint64_t now){
  if(state_==SessionState::Idle||state_==SessionState::Done||state_==SessionState::Retained)return state_;
@@ -69,13 +71,16 @@ SessionState Session::tick(uint64_t now){
   if(!valid())return state_;
   const size_t extra=headerSize_-end;
   if(extra>request_.contentLength){error(400,"Bad Request");return state_;}
-  if(request_.contentLength){
-   body_=static_cast<unsigned char*>(hooks_.allocate(request_.contentLength));
+  upload_=!risc_app_data_export_catalog(files_)&&!std::strcmp(request_.method,"PUT");
+  if(!upload_&&request_.contentLength>RISC_APP_DATA_FILE_MAX){error(413,"Content Too Large");return state_;}
+  if(request_.contentLength||upload_){
+   body_=static_cast<unsigned char*>(hooks_.allocate(upload_?RISC_STORAGE_VOLUME_IO_MAX:request_.contentLength));
    if(!valid())return state_;
    if(!body_){error(503,"Service Unavailable");return state_;}
    if(extra)std::memcpy(body_,header_+end,extra);
   }
-  bodySize_=extra;
+  bodySize_=extra;uploadReceived_=extra;
+  if(upload_){if(request_.expectContinue&&extra<request_.contentLength){sent_=0;state_=SessionState::Continue;}else startTransaction();return state_;}
   if(bodySize_==request_.contentLength){startTransaction();return state_;}
   if(request_.expectContinue){sent_=0;state_=SessionState::Continue;}else state_=SessionState::Body;
   return state_;
@@ -84,7 +89,18 @@ SessionState Session::tick(uint64_t now){
   const uint32_t capacity=sizeof(ContinueReply)-1-sent_;uint32_t n=0;
   const int rc=connection_.write(connection_.context,connection_.handle,ContinueReply+sent_,capacity,&n);
   if(!received(rc,n,capacity,false))return state_;
-  sent_+=n;if(sent_==sizeof(ContinueReply)-1){sent_=0;state_=SessionState::Body;}return state_;
+  sent_+=n;if(sent_==sizeof(ContinueReply)-1){sent_=0;if(upload_)startTransaction();else state_=SessionState::Body;}return state_;
+ }
+ if(state_==SessionState::Upload){
+  if(transaction_.uploadReady()){
+   if(bodySize_){transaction_.feedUpload(body_,bodySize_);bodySize_=0;}
+   else if(uploadReceived_==request_.contentLength){transaction_.endUpload();state_=SessionState::Compute;}
+   else {uint32_t n=0,capacity=std::min<uint32_t>(RISC_STORAGE_VOLUME_IO_MAX,request_.contentLength-uploadReceived_);
+    const int rc=connection_.read(connection_.context,connection_.handle,body_,capacity,&n);if(!received(rc,n,capacity,true))return state_;bodySize_=n;uploadReceived_+=n;}
+  }else transaction_.step();
+  if(transaction_.state()==State::Retained)state_=SessionState::Retained;
+  else if(transaction_.state()==State::Ready){status_=transaction_.status();sent_=0;state_=SessionState::ResponseHeader;}
+  return state_;
  }
  if(state_==SessionState::Body){
   const uint32_t capacity=std::min<size_t>(IoMax,request_.contentLength-bodySize_);uint32_t n=0;
@@ -100,7 +116,14 @@ SessionState Session::tick(uint64_t now){
   const bool head=state_==SessionState::ResponseHeader;
   const void* bytes=head?(transactionStarted_?transaction_.header():reply_):transaction_.body();
   const size_t size=head?(transactionStarted_?transaction_.headerSize():replySize_):transaction_.bodySize();
-  if(sent_==size){sent_=0;state_=head&&transactionStarted_&&transaction_.bodySize()?SessionState::ResponseBody:SessionState::Closing;return state_;}
+  if(sent_==size){
+   sent_=0;
+   if(!head&&transactionStarted_&&!transaction_.bodyComplete()){
+    if(!transaction_.nextBody())state_=transaction_.state()==State::Retained?SessionState::Retained:SessionState::Closing;
+    return state_;
+   }
+   state_=head&&transactionStarted_&&(transaction_.bodySize()||!transaction_.bodyComplete())?SessionState::ResponseBody:SessionState::Closing;return state_;
+  }
   if(!bytes||sent_>size){state_=SessionState::Retained;return state_;}
   const uint32_t capacity=std::min<size_t>(IoMax,size-sent_);uint32_t n=0;
   const int rc=connection_.write(connection_.context,connection_.handle,static_cast<const unsigned char*>(bytes)+sent_,capacity,&n);

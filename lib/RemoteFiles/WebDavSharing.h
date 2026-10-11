@@ -24,7 +24,8 @@ struct SharingStatus {
  * active only after the caller explicitly starts this controller. */
 class Sharing final {
  public:
- bool begin(const risc_app_data_export_v1*,const risc_tcp_connection_v1*,DigestSession*,
+ bool begin(const risc_app_data_export_v1*f,const risc_tcp_connection_v1*t,DigestSession*a,const SharingHooks&h,const risc_tcp_connection_listen_v1&b,uint64_t n,uint64_t e){return begin(f?&f->volume.terminal.power.volume.base:nullptr,t,a,h,b,n,e);}
+ bool begin(const risc_storage_volume_api_v1*,const risc_tcp_connection_v1*,DigestSession*,
             const SharingHooks&,const risc_tcp_connection_listen_v1&,uint64_t now,uint64_t expiry);
  SharingState tick(uint64_t now);
  void requestStop();
@@ -34,7 +35,7 @@ class Sharing final {
   * before manual sleep, radio changes, launch or grant release. */
  bool activeWork()const{return status_.state!=SharingState::Off&&status_.state!=SharingState::Error;}
  private:
- const risc_app_data_export_v1* files_=nullptr;
+ const risc_storage_volume_api_v1* files_=nullptr;
  risc_tcp_connection_v1 tcp_{};
  DigestSession* authentication_=nullptr;
  SharingHooks hooks_{};

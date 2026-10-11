@@ -24,6 +24,7 @@ typedef struct {
  uint16_t port;
  uint32_t lifetime_ms; /* 1..3600000; session begins at explicit start. */
  bool authenticated_http; /* User selected authenticated, unencrypted HTTP. */
+ bool storage_volume; /* Explicit selection: false mapped AppData, true storage.volume. */
 } portable_file_sharing_config;
 enum {
  PORTABLE_FILE_SHARING_OFF,PORTABLE_FILE_SHARING_PREPARING,

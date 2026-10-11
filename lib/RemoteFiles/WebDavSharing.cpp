@@ -1,16 +1,18 @@
 #include "WebDavSharing.h"
+#include <RiscStorageVolumeStateV1.h>
 namespace RiscWebDav {
 bool Sharing::valid(){
  if(status_.state==SharingState::Retained)return false;
  if(!hooks_.owner||!hooks_.owner(hooks_.context)){retained(RISC_TCP_CONNECTION_CONTEXT);return false;}
+ if(files_){const auto*state=risc_storage_volume_state(files_);if(state&&state->observe(files_->context)==RISC_STORAGE_STATE_RETAINED){retained(RISC_TCP_CONNECTION_RETAINED);return false;}}
  return true;
 }
 void Sharing::retained(int32_t error){status_.state=SharingState::Retained;status_.error=error;status_.transportOpen=true;}
 void Sharing::fail(int32_t error){status_.error=error;status_.state=SharingState::Stopping;}
-bool Sharing::begin(const risc_app_data_export_v1* files,const risc_tcp_connection_v1* tcp,DigestSession* authentication,
+bool Sharing::begin(const risc_storage_volume_api_v1* files,const risc_tcp_connection_v1* tcp,DigestSession* authentication,
  const SharingHooks&hooks,const risc_tcp_connection_listen_v1&bind,uint64_t now,uint64_t expiry){
  if(status_.state!=SharingState::Off&&status_.state!=SharingState::Error)return false;
- if(listener_||client_||!files||!risc_app_data_export_catalog(&files->volume.terminal.power.volume.base)||!tcp||tcp->api_version!=1||tcp->struct_size<sizeof(*tcp)||!tcp->context||!tcp->listen||!tcp->accept||!tcp->read||!tcp->write||!tcp->close||!authentication||!authentication->active()||!hooks.owner||!hooks.allocate||!hooks.deallocate||bind.struct_size!=sizeof(bind)||!bind.port||bind.reserved||bind.address[0]>=224||expiry<=now||expiry==UINT64_MAX)return false;
+ if(listener_||client_||!files||(!risc_app_data_export_catalog(files)&&!risc_storage_volume_state(files))||!tcp||tcp->api_version!=1||tcp->struct_size<sizeof(*tcp)||!tcp->context||!tcp->listen||!tcp->accept||!tcp->read||!tcp->write||!tcp->close||!authentication||!authentication->active()||!hooks.owner||!hooks.allocate||!hooks.deallocate||bind.struct_size!=sizeof(bind)||!bind.port||bind.reserved||bind.address[0]>=224||expiry<=now||expiry==UINT64_MAX)return false;
  hooks_=hooks;status_={};status_.state=SharingState::Starting;
  if(!valid())return false;
  if(!authentication->challenge(challenge_,sizeof(challenge_),now)){status_.state=SharingState::Error;return false;}
@@ -18,7 +20,7 @@ bool Sharing::begin(const risc_app_data_export_v1* files,const risc_tcp_connecti
 }
 bool Sharing::authorized(const Request&q,AuthPhase phase,const void*body,size_t size){
  if(!valid())return false;
- auto result=authentication_->verify(q.method,q.requestTarget,q.authorization,body,size,now_,phase==AuthPhase::Headers?DigestPhase::HeaderPrecheck:DigestPhase::Final);
+ auto result=authentication_->verify(q.method,q.requestTarget,q.authorization,body,size,now_,phase==AuthPhase::Headers?DigestPhase::HeaderPrecheck:phase==AuthPhase::BodyHash?DigestPhase::FinalBodyHash:DigestPhase::Final);
  return result==DigestResult::Authorized||(phase==AuthPhase::Headers&&result==DigestResult::BodyRequired);
 }
 void Sharing::requestStop(){

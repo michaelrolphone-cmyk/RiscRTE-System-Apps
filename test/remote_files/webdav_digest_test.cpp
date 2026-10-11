@@ -56,6 +56,13 @@ void independentVectors() {
               (v.integrity ? DigestResult::BodyRequired : DigestResult::Authorized));
         CHECK(verify(session, v, DigestPhase::HeaderPrecheck) ==
               (v.integrity ? DigestResult::BodyRequired : DigestResult::Authorized));
+        DigestSession streamed;begin(streamed,v);
+        auto entity=unhex(v.bodyHex);unsigned char digest[32];dtls_sha256_ctx hash;
+        dtls_sha256_init(&hash);for(size_t offset=0;offset<entity.size();offset+=7)dtls_sha256_update(&hash,entity.data()+offset,std::min<size_t>(7,entity.size()-offset));dtls_sha256_final(digest,&hash);
+        CHECK(streamed.verify(v.method,v.uri,v.authorization,digest,31,20,DigestPhase::FinalBodyHash)==DigestResult::Malformed);
+        if(v.integrity){digest[0]^=1;CHECK(streamed.verify(v.method,v.uri,v.authorization,digest,32,20,DigestPhase::FinalBodyHash)==DigestResult::Unauthorized);digest[0]^=1;}
+        CHECK(streamed.verify(v.method,v.uri,v.authorization,digest,32,20,DigestPhase::FinalBodyHash)==DigestResult::Authorized);
+        CHECK(streamed.verify(v.method,v.uri,v.authorization,digest,32,20,DigestPhase::FinalBodyHash)==DigestResult::Replay);
         CHECK(verify(session, v, DigestPhase::Final) == DigestResult::Authorized);
         CHECK(verify(session, v, DigestPhase::Final) == DigestResult::Replay);
         CHECK(verify(session, v, DigestPhase::HeaderPrecheck) == DigestResult::Replay);

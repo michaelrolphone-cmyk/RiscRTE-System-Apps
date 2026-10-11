@@ -189,7 +189,7 @@ DigestResult DigestSession::verify(const char* method, const char* requestTarget
     if (!active_) return DigestResult::Inactive;
     if (!live(now)) return DigestResult::Expired;
     size_t methodSize = 0, targetSize = 0;
-    if ((phase != DigestPhase::HeaderPrecheck && phase != DigestPhase::Final) ||
+    if ((phase != DigestPhase::HeaderPrecheck && phase != DigestPhase::Final && phase != DigestPhase::FinalBodyHash) ||
         !boundedText(method, 15, methodSize) ||
         !boundedText(requestTarget, DigestTargetMax, targetSize) ||
         bodySize > DigestBodyMax || (!body && bodySize)) return DigestResult::Malformed;
@@ -229,6 +229,7 @@ DigestResult DigestSession::verify(const char* method, const char* requestTarget
     if (slot != DigestReplaySlots && nc <= replay_[slot].count) return DigestResult::Replay;
     if (slot == DigestReplaySlots) slot = empty;
     if (slot == DigestReplaySlots) return DigestResult::ReplayCapacity;
+    if (phase == DigestPhase::FinalBodyHash && (bodySize != 32 || !body)) return DigestResult::Malformed;
     const bool integrity = !std::strcmp(fields.qop, "auth-int");
     if (integrity && phase == DigestPhase::HeaderPrecheck) return DigestResult::BodyRequired;
 
@@ -238,7 +239,9 @@ DigestResult DigestSession::verify(const char* method, const char* requestTarget
     WipeGuard a2Guard{a2hex, sizeof(a2hex)}, bodyGuard{bodyhex, sizeof(bodyhex)};
     Hash a2; a2.add(method, methodSize); a2.text(":"); a2.add(requestTarget, targetSize);
     if (integrity) {
-        Hash entity; entity.add(body, bodySize); entity.final(value); hex(value, bodyhex);
+        if(phase==DigestPhase::FinalBodyHash)std::memcpy(value,body,32);
+        else {Hash entity; entity.add(body, bodySize); entity.final(value);}
+        hex(value, bodyhex);
         a2.text(":"); a2.text(bodyhex);
     }
     a2.final(value); hex(value, a2hex); hex(ha1_, a1hex);
@@ -247,7 +250,7 @@ DigestResult DigestSession::verify(const char* method, const char* requestTarget
     response.text(fields.nc); response.text(":"); response.text(fields.cnonce); response.text(":");
     response.text(fields.qop); response.text(":"); response.text(a2hex); response.final(value);
     if (!equalDigest(value, supplied)) return DigestResult::Unauthorized;
-    if (phase == DigestPhase::Final) {
+    if (phase == DigestPhase::Final || phase == DigestPhase::FinalBodyHash) {
         std::memcpy(replay_[slot].cnonce, fields.cnonce, std::strlen(fields.cnonce) + 1);
         replay_[slot].count = nc;
     }

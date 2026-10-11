@@ -8,6 +8,8 @@ from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__)
 for n in ('baseline','files','tcp','entropy','ble','exports','runtime','output'):p.add_argument('--'+n,type=Path,required=True)
 p.add_argument('--baseline-commit',required=True)
+p.add_argument('--provider-capacity',type=int,default=29)
+p.add_argument('--app-capacity',type=int,default=64)
 a=p.parse_args();root=a.baseline.resolve();out=a.output.resolve()
 if out.exists():raise ValueError('Output must be new; never replace an existing composition')
 def read(p):return json.loads(p.read_text())
@@ -58,7 +60,7 @@ assert all(digest(store/n)==sha for n,sha in preserved.items())
 # Compile the current source limits directly, with discovery enabled. This does
 # not silently select or change any firmware capacity setting.
 probe=out/'limits.cpp';probe.write_text('#include "runtime/RuntimeLimits.h"\n#include <cstdio>\nint main(){std::printf("%zu %zu %zu",RiscLimits::Apps,RiscLimits::Providers,RiscLimits::Grants);}\n')
-exe=out/'limits';subprocess.run(['c++','-DRISC_INSTALLED_APP_CAPACITY=40','-I'+str(a.runtime.resolve()/'src'),str(probe),'-o',str(exe)],check=True)
+exe=out/'limits';subprocess.run(['c++','-DRISC_INSTALLED_APP_CAPACITY='+str(a.app_capacity),'-DRISC_PROVIDER_CAPACITY='+str(a.provider_capacity),'-I'+str(a.runtime.resolve()/'src'),str(probe),'-o',str(exe)],check=True)
 apps,providers_limit,grants_limit=map(int,subprocess.check_output([str(exe)],text=True).split())
 count=len(boot['drivers']);needs=len(manifest['requires']);policy=len(row['grants'])
 report={'status':'NOT_ADMITTED_NO_FIRMWARE','baseline_commit':a.baseline_commit,'baseline_boot_sha256':digest(root/'boot.json'),'files_sha256':record['sha256'],'runtime_commit':subprocess.check_output(['git','-C',str(a.runtime),'rev-parse','HEAD'],text=True).strip(),'apps_preserved':len(before['app_capabilities']),'providers_before':len(before['drivers']),'providers_required':count,'compiled_current_limits':{'apps':apps,'providers':providers_limit,'graph_grants':grants_limit},'files_policy_rows':policy,'files_requirement_rows':needs,'required_build_selections':{'RISC_APP_POLICY_ROWS':24 if policy>18 else 18 if policy>17 else 17 if policy>16 else 16,'RISC_APP_REQUIREMENT_ROWS':24 if needs>17 else 17 if needs>16 else 16},'preserved_files':preserved,'new_provider_inputs':{name:digest(src/'driver.elf') for name,src,_ in providers},'blockers':(['Current provider capacity is too small; focused capacity qualification required'] if count>providers_limit else [])+['Full native graph/import admission of all original plus new target ELFs','Peak active grants/RAM with Contexts, telemetry, Wi-Fi and BLE cleanup','Reconcile latest dynamic namespace/SD transaction source before final assembly','Physical WebDAV client / BLE interoperability and lifecycle qualification'],'network_export_scope':'explicit AppData map only; SD WebDAV mutation is not implemented','full_firmware_created':False}
