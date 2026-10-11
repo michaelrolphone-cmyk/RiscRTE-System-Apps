@@ -34,3 +34,18 @@ Still required before new product composition:
 
 No peer firmware, hardware interoperability or live heap qualification is claimed.
 Do not substitute the source-only connector checkpoint for those remaining steps.
+
+## Listener compatibility follow-up
+
+Shared server consumers check/copy the original listener prefix rather than the
+new complete connector table. This preserves server use with existing ordinary
+TCP providers. The portable sharing controller test explicitly supplies the old
+reported size. The Files UI, sharing-controller and real Digest/WebDAV/facade
+regression suites all pass normally and under UBSan; these are existing server
+controller tests, not a claim that the remote WebDAV client exists.
+
+Watch and X4 Files component ELFs rebuild and pass their real ELF validator.
+Imports, exports, grants and feature defines match the qualified server builds;
+Watch include paths differ only to use the isolated exact 0898683 source checkout.
+Receipts and logs are in `tcp-connector-evidence`. Existing delivered BIN and SD
+bytes were not rebuilt or changed. No new full firmware or product was composed.

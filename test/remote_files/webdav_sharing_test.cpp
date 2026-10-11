@@ -21,7 +21,7 @@ const risc_tcp_listener_v1 native{1,sizeof(native),reinterpret_cast<void*>(1),
  [](void*,uint64_t h,uint64_t*out)->int32_t{++nativeCalls;assert(h==10);*out=0;if(accepted)return 1;accepted=true;*out=20;return 0;},
  [](void*,uint64_t h,void*b,uint32_t cap,uint32_t*n)->int32_t{++nativeCalls;assert(h==20);*n=std::min<size_t>({cap,13,input.size()-offset});if(!*n)return 1;std::memcpy(b,input.data()+offset,*n);offset+=*n;return 0;},
  [](void*,uint64_t h,const void*b,uint32_t cap,uint32_t*n)->int32_t{++nativeCalls;assert(h==20);*n=std::min<uint32_t>(cap,19);output.append(static_cast<const char*>(b),*n);return 0;},
- [](void*,uint64_t h)->int32_t{++nativeCalls;closed.push_back(h);return closeFailure?-6:0;}};
+ [](void*,uint64_t h)->int32_t{++nativeCalls;closed.push_back(h);return closeFailure?-6:0;},0,nullptr,nullptr};
 void tick(Sharing&sharing,Fixture&f,uint64_t now=1){unsigned before=nativeCalls+f.calls;sharing.tick(now);assert(nativeCalls+f.calls-before<=1);}
 }
 int main(int argc,char**argv){assert(argc==2);const std::string mode=argv[1];Fixture files;DigestSession auth;

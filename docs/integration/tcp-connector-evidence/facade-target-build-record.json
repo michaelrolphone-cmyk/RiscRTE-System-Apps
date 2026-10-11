@@ -60,7 +60,7 @@
     "Services/tcp_listener/native/RiscTcpListenerV1.h": "63ed934c4cb1a505de539d06ad04c1551ec23f64d56b6ea07129698dde0ba886",
     "Services/tcp_listener/manifest.json": "ae19d6877303dfb714bab6c8df4edb85bfc5f76d2e954ded6819402ca6610c2a",
     "scripts/build_tcp_listener_service.py": "ebfb7ea45af7e1cff05ed05c587a5eda3fc638abb659b79fc1983e9811d079ce",
-    "lib/PortableApps/include/RiscTcpConnectionV1.h": "432145261411b005fcf1c50aad66eb6ea2bec98c52bf36bcd35bc8bb305a7490",
+    "lib/PortableApps/include/RiscTcpConnectionV1.h": "484ca863b82b44b7a26c4915a240be95b12a92817eb497def3c0d99eb68179c3",
     "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
     "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
     "scripts/test_tcp_listener_service.sh": "20c8c9f1cfbb192d4f324067b0a00e9628a5e99c90d645943f0aef0d1ea85545",

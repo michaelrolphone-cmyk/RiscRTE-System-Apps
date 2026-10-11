@@ -1,0 +1,15 @@
+file-sharing client OOM PASS
+file-sharing client cancel-prepare PASS (workspace 24656 bytes)
+file-sharing client expiry-prepare PASS (workspace 24656 bytes)
+file-sharing client missing PASS (workspace 24656 bytes)
+file-sharing client busy PASS (workspace 24656 bytes)
+file-sharing client unavailable PASS (workspace 24656 bytes)
+file-sharing client release-fault terminal PASS
+file-sharing client owner-loss terminal PASS
+file-sharing client entropy-terminal terminal PASS
+file-sharing client read PASS (workspace 24656 bytes)
+file-sharing client cancel-client PASS (workspace 24656 bytes)
+file-sharing client close-fault terminal PASS
+file-sharing client expiry PASS (workspace 24656 bytes)
+file-sharing client clock-back PASS (workspace 24656 bytes)
+file-sharing client restart PASS (workspace 24656 bytes)

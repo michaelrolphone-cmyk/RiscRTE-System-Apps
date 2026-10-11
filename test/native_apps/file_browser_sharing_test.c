@@ -58,7 +58,7 @@ static int32_t accept_tcp(void*c,uint64_t t,uint64_t*out){(void)c;live_check();a
 static int32_t read_tcp(void*c,uint64_t t,void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
 static int32_t write_tcp(void*c,uint64_t t,const void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
 static int32_t close_tcp(void*c,uint64_t t){(void)c;live_check();assert(t==7&&listeners==1);if(tcp_fault)return RISC_TCP_CONNECTION_RETAINED;listeners--;closed_listeners++;return 0;}
-static const risc_tcp_connection_v1 tcp={1,sizeof(tcp),(void*)1,listen_tcp,accept_tcp,read_tcp,write_tcp,close_tcp};
+static const risc_tcp_connection_v1 tcp={1,sizeof(tcp),(void*)1,listen_tcp,accept_tcp,read_tcp,write_tcp,close_tcp,0,NULL,NULL};
 static int32_t catalog(void*c,uint32_t i,risc_app_data_export_entry_v1*out){(void)c;(void)i;(void)out;assert(false);return 0;}
 static risc_app_data_export_v1 export_api;
 #ifdef FILE_SETUP_TEST

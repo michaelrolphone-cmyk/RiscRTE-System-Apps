@@ -1,0 +1,10 @@
+WebDAV actual Digest + sharing + TCP facade: read PASS
+WebDAV actual Digest + sharing + TCP facade: write PASS
+WebDAV actual Digest + sharing + TCP facade: unauthorized PASS
+WebDAV actual Digest + sharing + TCP facade: tamper PASS
+WebDAV actual Digest + sharing + TCP facade: cancel PASS
+WebDAV actual Digest + sharing + TCP facade: expire PASS
+WebDAV actual Digest + sharing + TCP facade: auth-expire PASS
+WebDAV actual Digest + sharing + TCP facade: auth-cleared PASS
+WebDAV actual Digest + sharing + TCP facade: close-fault terminal fence PASS
+WebDAV actual Digest + sharing + TCP facade: storage-retained terminal fence PASS

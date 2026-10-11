@@ -3,6 +3,7 @@
  * provider owns the native transport dependency. No app-data grants, filesystem
  * authority, credentials, radio control or network startup cross this ABI. */
 #include <stdint.h>
+#include <stddef.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,6 +56,7 @@ typedef struct {
     int32_t (*connect)(void *, const risc_tcp_connection_listen_v1 *, uint64_t *);
     int32_t (*connected)(void *, uint64_t);
 } risc_tcp_connection_v1;
+#define RISC_TCP_CONNECTION_LISTENER_SIZE offsetof(risc_tcp_connection_v1, connect_tag)
 #define RISC_TCP_CONNECTION_CONNECT_TAG UINT32_C(0x54435031)
 #ifdef __cplusplus
 }
