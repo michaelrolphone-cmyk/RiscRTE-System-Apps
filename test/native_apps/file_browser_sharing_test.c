@@ -1,3 +1,7 @@
+#ifdef FILE_PEER_FIXTURE
+#define PORTABLE_FILE_PEER
+#define PORTABLE_FILE_BROWSER_HANDLERS
+#endif
 /* Actual Files controller + adapter + saved-profile helper + HTTP client.
  * Synthetic capability backends model explicit resources; no network I/O. */
 #define PORTABLE_FILE_SHARING
@@ -58,7 +62,7 @@ static int32_t accept_tcp(void*c,uint64_t t,uint64_t*out){(void)c;live_check();a
 static int32_t read_tcp(void*c,uint64_t t,void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
 static int32_t write_tcp(void*c,uint64_t t,const void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
 static int32_t close_tcp(void*c,uint64_t t){(void)c;live_check();assert(t==7&&listeners==1);if(tcp_fault)return RISC_TCP_CONNECTION_RETAINED;listeners--;closed_listeners++;return 0;}
-static const risc_tcp_connection_v1 tcp={1,sizeof(tcp),(void*)1,listen_tcp,accept_tcp,read_tcp,write_tcp,close_tcp};
+static const risc_tcp_connection_v1 tcp={1,sizeof(tcp),(void*)1,listen_tcp,accept_tcp,read_tcp,write_tcp,close_tcp,0,NULL,NULL};
 static int32_t catalog(void*c,uint32_t i,risc_app_data_export_entry_v1*out){(void)c;(void)i;(void)out;assert(false);return 0;}
 static risc_app_data_export_v1 export_api;
 #ifdef FILE_SETUP_TEST
@@ -68,8 +72,15 @@ static risc_app_data_export_v1 export_api;
 static bool checked_battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_battery_sample_v1){3900,70,0};return true;}
 static const risc_battery_gauge_api_v1 checked_battery={1,sizeof(checked_battery),NULL,checked_battery_read};
 #endif
+#ifdef FILE_PEER_FIXTURE
+extern const void* peer_fixture_capability(const char*);
+#endif
 static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
- live_check();if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
+ live_check();
+#ifdef FILE_PEER_FIXTURE
+ const void*peer_api=peer_fixture_capability(n);if(peer_api){assert(id==0);g->api=peer_api;test_grants++;return true;}
+#endif
+ if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
  else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==0&&!fb_grant.api);g->api=&export_api;}
  else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==0);g->api=&tcp;}
@@ -118,6 +129,7 @@ static void init(void){
 #ifdef FILE_SETUP_TEST
 #include "file_browser_setup_scenes.inc"
 #endif
+#ifndef FILE_PEER_FIXTURE
 int main(int argc,char**argv){
  assert(argc>=2);const char*mode=argv[1];test_directory=argc>2?argv[2]:NULL;
  borrowed=!strcmp(mode,"borrowed");empty=!strcmp(mode,"empty");policy_off=!strcmp(mode,"policy-off");policy_busy=!strcmp(mode,"policy-busy");policy_context=!strcmp(mode,"policy-context");
@@ -145,3 +157,5 @@ clean:
  assert(portable_file_browser_close());app_module_fini();assert(!test_grants&&!test_frames&&!test_subs&&!retains&&!owned&&!listeners);
  printf("Files sharing %s: actual controller/adapter/network/HTTP client PASS\n",mode);return 0;
 }
+
+#endif

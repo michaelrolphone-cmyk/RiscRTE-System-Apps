@@ -1,4 +1,5 @@
 #include "WebDavSharing.h"
+#include <cstring>
 #include <RiscStorageVolumeStateV1.h>
 namespace RiscWebDav {
 bool Sharing::valid(){
@@ -12,11 +13,11 @@ void Sharing::fail(int32_t error){status_.error=error;status_.state=SharingState
 bool Sharing::begin(const risc_storage_volume_api_v1* files,const risc_tcp_connection_v1* tcp,DigestSession* authentication,
  const SharingHooks&hooks,const risc_tcp_connection_listen_v1&bind,uint64_t now,uint64_t expiry){
  if(status_.state!=SharingState::Off&&status_.state!=SharingState::Error)return false;
- if(listener_||client_||!files||(!risc_app_data_export_catalog(files)&&!risc_storage_volume_state(files))||!tcp||tcp->api_version!=1||tcp->struct_size<sizeof(*tcp)||!tcp->context||!tcp->listen||!tcp->accept||!tcp->read||!tcp->write||!tcp->close||!authentication||!authentication->active()||!hooks.owner||!hooks.allocate||!hooks.deallocate||bind.struct_size!=sizeof(bind)||!bind.port||bind.reserved||bind.address[0]>=224||expiry<=now||expiry==UINT64_MAX)return false;
+ if(listener_||client_||!files||(!risc_app_data_export_catalog(files)&&!risc_storage_volume_state(files))||!tcp||tcp->api_version!=1||tcp->struct_size<RISC_TCP_CONNECTION_LISTENER_SIZE||!tcp->context||!tcp->listen||!tcp->accept||!tcp->read||!tcp->write||!tcp->close||!authentication||!authentication->active()||!hooks.owner||!hooks.allocate||!hooks.deallocate||bind.struct_size!=sizeof(bind)||!bind.port||bind.reserved||bind.address[0]>=224||expiry<=now||expiry==UINT64_MAX)return false;
  hooks_=hooks;status_={};status_.state=SharingState::Starting;
  if(!valid())return false;
  if(!authentication->challenge(challenge_,sizeof(challenge_),now)){status_.state=SharingState::Error;return false;}
- files_=files;tcp_=*tcp;authentication_=authentication;bind_=bind;now_=now;expiry_=expiry;sessionStarted_=false;return true;
+ files_=files;tcp_={};std::memcpy(&tcp_,tcp,RISC_TCP_CONNECTION_LISTENER_SIZE);authentication_=authentication;bind_=bind;now_=now;expiry_=expiry;sessionStarted_=false;return true;
 }
 bool Sharing::authorized(const Request&q,AuthPhase phase,const void*body,size_t size){
  if(!valid())return false;

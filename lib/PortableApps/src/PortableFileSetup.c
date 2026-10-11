@@ -139,12 +139,13 @@ static portable_file_setup_result acquire_provider(portable_file_setup *s) {
     }
     if (!valid_grant(&s->grant)) return retain(s, PORTABLE_FILE_SETUP_CONTRACT);
     const risc_bluetooth_session_setup_v1 *api = s->grant.api;
-    if (api->api_version != RISC_BLUETOOTH_SESSION_SETUP_API_V1 || api->struct_size < sizeof(*api) ||
+    if (api->api_version != RISC_BLUETOOTH_SESSION_SETUP_API_V1 || api->struct_size < offsetof(risc_bluetooth_session_setup_v1, peer_tag) ||
         !api->open || !api->poll || !api->status || !api->confirm_pairing || !api->close) {
         s->unavailable_after_close = true;
         return ending(s, PORTABLE_FILE_SETUP_CONTRACT, false);
     }
-    s->api = *api;
+    memset(&s->api,0,sizeof(s->api));
+    memcpy(&s->api,api,offsetof(risc_bluetooth_session_setup_v1,peer_tag));
     s->phase = PHASE_OPEN;
     return PORTABLE_FILE_SETUP_PENDING;
 }

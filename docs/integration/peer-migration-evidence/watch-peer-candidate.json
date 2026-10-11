@@ -1,0 +1,17 @@
+{
+  "firmware_sha256": "00b023dff642e66968cc56f67673aac0aca857ac4d3e53f07e5eb478e312a62c",
+  "firmware_size": 1438368,
+  "layout": "riscrte-paired-appdata-v2",
+  "product": "twatch-s3",
+  "runtime_version": "0.2.14",
+  "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+  "source_revision": "e3c24a2ae3c2df5d440eebf2efab375f036841a6",
+  "store_abi": 2,
+  "version": "1.1.4",
+  "kind": "paired-cohort",
+  "asset": "twatch-s3-cohort-1.1.4.bin",
+  "size": 6746784,
+  "sha256": "4228e53c3b21e131df3df5b6b8dff22a8b2df8d255d664070647c140c6a9d921",
+  "store_size": 5308416,
+  "store_sha256": "c0598ed811b02300f4cb281b2b73fe34640b16e41176a20419e28184f668e39d"
+}

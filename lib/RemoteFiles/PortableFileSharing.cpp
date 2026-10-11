@@ -54,7 +54,7 @@ extern "C" void portable_file_sharing_tick(portable_file_sharing*p,uint64_t now)
   if(!ok){if(grant.api)p->retain(InvalidContract);else p->stop(MissingCapability);return;}
   if(!grant.api){p->retain(InvalidContract);return;}
   if(!index){p->files=static_cast<const risc_storage_volume_api_v1*>(grant.api);if(p->config.storage_volume?!risc_storage_volume_state(p->files):!risc_app_data_export_catalog(p->files)){p->stop(InvalidContract);return;}p->step=Step::Tcp;}
-  else if(index==1){p->tcp=static_cast<const risc_tcp_connection_v1*>(grant.api);auto*t=p->tcp;if(t->api_version!=1||t->struct_size<sizeof(*t)||!t->context||!t->listen||!t->accept||!t->read||!t->write||!t->close){p->stop(InvalidContract);return;}p->step=Step::Entropy;}
+  else if(index==1){p->tcp=static_cast<const risc_tcp_connection_v1*>(grant.api);auto*t=p->tcp;if(t->api_version!=1||t->struct_size<RISC_TCP_CONNECTION_LISTENER_SIZE||!t->context||!t->listen||!t->accept||!t->read||!t->write||!t->close){p->stop(InvalidContract);return;}p->step=Step::Entropy;}
   else {p->entropy=static_cast<const risc_entropy_source_v1*>(grant.api);auto*e=p->entropy;if(e->api_version!=1||e->struct_size<sizeof(*e)||!e->context||!e->fill){p->stop(InvalidContract);return;}p->step=Step::Random;}
   return;
  }

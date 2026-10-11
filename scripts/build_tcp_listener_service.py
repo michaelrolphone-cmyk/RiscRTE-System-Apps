@@ -10,7 +10,7 @@ import struct
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-NATIVE_SHA256 = "b748d83d6d6e3f143a36b26993b6b9495ddd11e14eeb083325c1e0ff4563fcc5"
+NATIVE_SHA256 = "63ed934c4cb1a505de539d06ad04c1551ec23f64d56b6ea07129698dde0ba886"
 
 
 def main():

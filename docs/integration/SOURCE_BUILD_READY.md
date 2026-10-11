@@ -1,5 +1,7 @@
 # Shared Files source-build readiness — 2026-10-11
 
+**Superseding result:** [FULL_LINK_TEST_BUNDLES.md](FULL_LINK_TEST_BUNDLES.md) records completed full native links, memory bounds and independently verified complete test bundles. The source-only limits below describe the earlier checkpoint.
+
 The complete current X4 and Watch compositions now qualify as inputs to native firmware assembly. This supersedes the unfinished/capacity/SD blockers in the initial integration plan. It does not assert a linked firmware image, on-device heap margin, or physical WebDAV/BLE interoperability.
 
 ## Exact source inputs

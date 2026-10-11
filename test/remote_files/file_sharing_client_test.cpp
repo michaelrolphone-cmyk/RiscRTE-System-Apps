@@ -29,12 +29,12 @@ const risc_entropy_source_v1 entropy{1,sizeof(entropy),reinterpret_cast<void*>(1
  for(unsigned i=0;i<size;++i)static_cast<unsigned char*>(out)[i]=i+cycle;
  return 0;
 }};
-const risc_tcp_connection_v1 tcp{1,sizeof(tcp),reinterpret_cast<void*>(2),
+const risc_tcp_connection_v1 tcp{1,RISC_TCP_CONNECTION_LISTENER_SIZE,reinterpret_cast<void*>(2),
  [](void*,const risc_tcp_connection_listen_v1*bind,uint64_t*out)->int32_t{++calls;assert(grants.count(0)&&grants.count(1)&&!grants.count(2));assert(bind->port==8080);*out=10;return 0;},
  [](void*,uint64_t h,uint64_t*out)->int32_t{++calls;assert(h==10);*out=0;if(!acceptNext)return 1;acceptNext=false;*out=20;return 0;},
  [](void*,uint64_t h,void*out,uint32_t cap,uint32_t*size)->int32_t{++calls;assert(h==20);*size=std::min<size_t>({cap,37,input.size()-inputOffset});if(!*size)return 1;std::memcpy(out,input.data()+inputOffset,*size);inputOffset+=*size;return 0;},
  [](void*,uint64_t h,const void*in,uint32_t cap,uint32_t*size)->int32_t{++calls;assert(h==20);*size=std::min<uint32_t>(cap,43);output.append(static_cast<const char*>(in),*size);return 0;},
- [](void*,uint64_t h)->int32_t{++calls;closeOrder.push_back(h);return closeFault?RISC_TCP_CONNECTION_RETAINED:0;}};
+ [](void*,uint64_t h)->int32_t{++calls;closeOrder.push_back(h);return closeFault?RISC_TCP_CONNECTION_RETAINED:0;},0,nullptr,nullptr};
 const risc_runtime_api_v1 runtime=[] {risc_runtime_api_v1 result{};result.api_version=1;result.struct_size=sizeof(result);result.acquire=
  [](const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*out)->bool{
   ++calls;assert(version==1);unsigned slot=std::strcmp(name,RISC_APP_DATA_EXPORT_CAPABILITY)==0?0:std::strcmp(name,RISC_TCP_CONNECTION_CAPABILITY)==0?1:2;

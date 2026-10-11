@@ -22,6 +22,12 @@ static void fsh_setup_fence(void);
 #ifndef PORTABLE_FILE_SHARING_ENTROPY_INSTANCE
 #error Sharing requires an explicit entropy provider selection
 #endif
+#ifdef PORTABLE_FILE_PEER
+#include "PortablePeerFiles.h"
+static portable_peer_files *fpeer;
+static bool fpeer_close(void),fpeer_touch(int,int);
+static void fpeer_tick(uint64_t),fpeer_draw(void),fsh_start(void);
+#endif
 #define FB_SHARE_LIFETIME_MS 300000u
 enum { FSH_OFF,FSH_POLICY,FSH_STORE,FSH_WIFI,FSH_CONNECT,FSH_ACTIVE,FSH_STOPPING };
 static unsigned fsh_phase;
@@ -39,6 +45,9 @@ static bool fsh_owner(void *unused){(void)unused;return !fb_terminal&&!portable_
 static void fsh_error(const char *message){snprintf(fsh_message,sizeof(fsh_message),"%s",message);fb_dirty=true;}
 static void fsh_retain(void){
  fb_terminal=true;
+#ifdef PORTABLE_FILE_PEER
+ portable_peer_tick(fpeer,fsh_now); /* Owner is false: pure credential wipe/fence. */
+#endif
 #ifdef PORTABLE_FILE_SETUP
  fsh_setup_fence();
 #endif
@@ -102,9 +111,14 @@ bool portable_file_browser_services_end(void){
  return true; /* A pending lease end is drained before any later service work. */
 }
 static bool fsh_close(void){
- if(!fsh_owner(NULL))return false;
+ /* Successful handoff marks the browser terminal after all sharing resources
+  * closed. Fini may recheck this pure completed state without reacquiring. */
  if(fsh_phase==FSH_OFF)return true;
+ if(!fsh_owner(NULL))return false;
  fsh_phase=FSH_STOPPING;
+#ifdef PORTABLE_FILE_PEER
+ if(!fpeer_close())return false;
+#endif
  portable_file_sharing_stop(fsh_client);
  memset(&fsh_status,0,sizeof(fsh_status));
 #ifdef PORTABLE_FILE_SETUP
@@ -171,7 +185,13 @@ static bool fsh_acquire(const char *name,uint64_t instance,risc_runtime_capabili
 #ifdef PORTABLE_FILE_SETUP
 #include "file_browser_setup.inc"
 #endif
+#ifdef PORTABLE_FILE_PEER
+#include "file_browser_peer.inc"
+#endif
 static void fsh_tick(void){
+#ifdef PORTABLE_FILE_PEER
+ fpeer_after_close();
+#endif
  if(fsh_phase==FSH_OFF||!fsh_owner(NULL))return;
 #ifdef PORTABLE_FILE_SETUP
  if(portable_file_browser_cleanup_only()){(void)fsh_setup_close();return;}
@@ -210,6 +230,9 @@ static void fsh_tick(void){
  if(connected==PORTABLE_NETWORK_RETAINED){fsh_retain();return;}
  if(connected<0){fsh_error(connected==PORTABLE_NETWORK_EMPTY?"Save a default network in Wi-Fi Settings":"Wi-Fi connection ended");fsh_phase=FSH_STOPPING;return;}
  if(connected!=PORTABLE_NETWORK_READY)return;
+ #ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode){fpeer_tick(now);return;}
+#endif
  if(fsh_phase==FSH_CONNECT){
   const portable_file_sharing_hooks hooks={NULL,fsh_owner,malloc,free};
   fsh_client=portable_file_sharing_create(fb_runtime,&hooks);
@@ -238,9 +261,16 @@ static void fsh_tick(void){
 }
 static bool fsh_back(void){fsh_back_pending=true;if(fsh_close()){fsh_back_pending=false;fb_mode=FB_LIST;fb_loaded=false;(void)fb_load(0);}return false;}
 static void fsh_action(void){if(fsh_phase==FSH_OFF)fsh_start();else {fsh_error("Stopping sharing...");(void)fsh_close();}fb_dirty=true;}
-static void fsh_open(void){if(!portable_file_browser_close())return;fb_mode=FB_SHARING;fb_choice=0;fsh_back_pending=false;fsh_message[0]=0;fb_dirty=true;}
+static void fsh_open(void){if(!portable_file_browser_close())return;
+#ifdef PORTABLE_FILE_PEER
+ fpeer_mode=false;
+#endif
+fb_mode=FB_SHARING;fb_choice=0;fsh_back_pending=false;fsh_message[0]=0;fb_dirty=true;}
 static const char *fsh_title(void){return fsh_phase==FSH_OFF?"SHARE FILES":fsh_phase==FSH_STOPPING?"STOPPING":fsh_status.state==PORTABLE_FILE_SHARING_LISTENING||fsh_status.state==PORTABLE_FILE_SHARING_SERVING?"SHARING FILES":"CONNECTING";}
 static void fsh_draw(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode){fpeer_draw();return;}
+#endif
 #ifdef PORTABLE_FILE_SETUP
  if(portable_file_browser_cleanup_only())return;
  if(fsh_setup_screen){fsh_setup_draw();return;}
@@ -280,6 +310,9 @@ static void fsh_draw(void){
  fb_app->present(false);fb_dirty=false;
 }
 static bool fsh_touch(int x,int y){
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode)return fpeer_touch(x,y);
+#endif
 #ifdef PORTABLE_FILE_SETUP
  if(fsh_setup_screen)return fsh_setup_touch(x,y);
  if(fsh_phase==FSH_ACTIVE){

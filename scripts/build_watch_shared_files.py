@@ -10,6 +10,7 @@ import portable_file_sharing_build as sharing
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 for n in ('watch','utilities','runtime','baseline','output'):p.add_argument('--'+n,type=Path,required=True)
+p.add_argument("--peer-files",action="store_true")
 a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 watch=a.watch.resolve();utilities=a.utilities.resolve();runtime=a.runtime.resolve()
 sys.path.insert(0,str(watch/'scripts'))
@@ -23,7 +24,7 @@ old=next(x for x in boot['app_capabilities'] if x['manifest']=='file_browser.jso
 # Keep every Watch feature and exact existing grant, including Contexts shared
 # namespaces, motion wake, telemetry, local Quick Actions and local sleep.
 assert subprocess.check_output(['git','-C',str(watch),'rev-parse','HEAD'],text=True).strip()=='089868395268b696c05651c33816345bfe0425df','Watch dependency changed; requalify'
-flags=definitions('file_browser',sharing.VERSION,watch)
+flags=definitions('file_browser',sharing.selected_version(a),watch)
 flags+=['-DPORTABLE_CHECKED_STORAGE_RUNTIME']
 # Watch v1's appended sleep callback is not X4's output-mode descriptor. Use
 # the exact Watch header and preserve its existing both-output semantics.
@@ -35,7 +36,7 @@ repos={'system-apps':ROOT,'utilities':utilities,'runtime':runtime}
 sources,includes,allowed=application_inputs('file_browser',ROOT/'Apps/file_browser.c',repos,watch,out,'runtime-features')
 includes += [utilities/'lib/Contexts/include',runtime/'sdk/app']
 (out/'empty_catalog.c').write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
-args=SimpleNamespace(webdav_sharing=True,sharing_export_instance=0,sharing_tcp_instance=0,sharing_entropy_instance=0,sharing_setup_instance=0)
+args=SimpleNamespace(peer_files=a.peer_files,webdav_sharing=True,sharing_export_instance=0,sharing_tcp_instance=0,sharing_entropy_instance=0,sharing_setup_instance=0)
 sf,ss,proof=sharing.configure(args,ROOT,out,includes[0],cc);flags+=sf;sources+=ss
 mapping=out/'exports.map';mapping.write_text('{global:app_main;app_module_init;app_module_fini;local:*;};\n')
 elf=out/'file_browser.elf'
@@ -50,8 +51,8 @@ validator=out/'validate-elf'
 subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
 subprocess.run([str(validator),str(elf)],check=True)
 sharing.requirements(args,manifest['requires'])
-manifest['requires'].append({'capability':'file.open','api':1})
-manifest['version']=sharing.VERSION
+if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
+manifest['version']=sharing.selected_version(a)
 grants=old['grants'].copy()
 for cap,api,instance in [('storage.app-data.export',1,0),('network.tcp.listener',1,0),('crypto.entropy',1,0),('bluetooth.session-setup',1,0),('storage.key-value',1,6),('file.open',1,0)]:
  g=dict(capability=cap,api=api,instance_id=instance)
