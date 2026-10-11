@@ -210,7 +210,7 @@ class PerformanceBuildProfiles(unittest.TestCase):
                             self.assertEqual((out/'performance-sdk/include'/name).read_bytes(), content)
                             self.assertEqual(trace['display_metrics']['sha256'][name], hashlib.sha256(content).hexdigest())
                             self.assertEqual(trace['sdk_headers'][name], hashlib.sha256(content).hexdigest())
-                    self.assertIn('-I'+str(out/'performance-sdk/include'), command)
+                    self.assertIn((out/'performance-sdk/include').resolve(), [Path(x[2:]).resolve() for x in command if x.startswith('-I')])
                     self.assertNotIn('-I'+str(root/'lib/PortableApps/include'), command)
                     for path, data in source.items():
                         self.assertEqual(trace['source_sha256'][path], hashlib.sha256(data).hexdigest())
