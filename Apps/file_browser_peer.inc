@@ -233,7 +233,7 @@ static void fpeer_draw(void){
 bool pairing=frame.state==PEER_PAIRING;
 char title[64],label[160],detail[96];
  snprintf(title,sizeof(title),pairing?"COMPARE %06u":"NEARBY FILES",frame.pairing_number);
- snprintf(detail,sizeof(detail),"%.*s",(int)sizeof(detail)-1,pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?"Select the device sharing its files":frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
+ snprintf(detail,sizeof(detail),"%.*s",(int)sizeof(detail)-1,pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?(frame.count?"Select the device sharing its files":"Waiting for nearby Files; Back cancels"):frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
  unsigned count=fpeer_count();
 if(fpeer_choice>=count)fpeer_choice=0;
 unsigned first=fpeer_choice/2*2;
