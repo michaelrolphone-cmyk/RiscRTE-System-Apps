@@ -34,6 +34,7 @@ def build(args, parser=None):
         cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable/wifi'
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
+    if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')
     if scrolling: flags.append('-DPORTABLE_TOUCH_SCROLL')
     if shared_text: flags+=['-DPORTABLE_TEXT_INPUT_CLIENT','-DPORTABLE_WIFI_PROFILES']
     flags.append('-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation))

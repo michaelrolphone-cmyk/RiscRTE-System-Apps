@@ -5,7 +5,7 @@ import re
 import shutil
 import portable_idle_build
 
-RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.27', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.25', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.10'}
+RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.27', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.26', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.10'}
 
 def version(args,app,current):
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.

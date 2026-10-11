@@ -101,6 +101,10 @@ static int saved_state;
 static portable_wifi_profile_search profile_search;
 static portable_wifi_credentials profile_draft;
 static unsigned profile_work;
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+static portable_wifi_credentials joined_profile;
+static bool remember_join,remember_pending;
+#endif
 enum { WIFI_PROFILE_SAVE=1, WIFI_PROFILE_SCAN, WIFI_PROFILE_FORGET };
 static uint32_t saved_base,saved_count,forget_index;
 static unsigned saved_loading,saved_rows;
@@ -113,6 +117,7 @@ static void wifi_saved_select(uint32_t slot);
 static void wifi_profiles_step(void);
 static void wifi_saved_open(uint32_t base);
 static void wifi_profile_start(unsigned work);
+static void wifi_profile_start_value(unsigned work,const portable_wifi_credentials *value);
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 static portable_text_client wifi_text;
@@ -167,6 +172,9 @@ static bool wifi_disconnect(void) {
     portable_stage_log(wr,"wifi-disconnect","result=failed cleanup=required");
     cleanup_pending=true;strcpy(status_text,"Cleanup required");ip_text[0]=0;wifi_message="Cleanup failed - retry Disconnect";dirty=true;return false;
   }
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(remember_join){remember_join=false;portable_wifi_credentials_clear(&joined_profile);}
+#endif
   scanning=scan_owned=joining=cleanup_pending=false;link_state=WIFI_LINK_DOWN;
   portable_stage_log(wr,"wifi-disconnect","result=ok state=down");
   strcpy(status_text,"Disconnected");ip_text[0]=0;
@@ -176,6 +184,9 @@ static bool wifi_disconnect(void) {
 bool portable_wifi_idle_ready(void) {
  if(PORTABLE_APP_RETAINED())return false;
  return !opened || (!scanning && !scan_owned && !joining && !cleanup_pending && link_state==WIFI_LINK_DOWN
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+ && !remember_pending && profile_work!=WIFI_PROFILE_SAVE
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
  && !wifi_text_active && !wifi_home_return
 #endif
@@ -218,6 +229,9 @@ bool portable_wifi_services_end(void) {
   return true;
 }
 bool portable_wifi_stop_pending(void) {
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+ if(!cleanup_pending&&!PORTABLE_APP_RETAINED()&&(remember_pending||profile_work==WIFI_PROFILE_SAVE))return true;
+#endif
 #ifdef WIFI_ASYNC_V1_SIZE
  return wifi_stopping&&wifi_operation&&!cleanup_pending&&!PORTABLE_APP_RETAINED();
 #else
@@ -228,6 +242,12 @@ bool portable_wifi_suspend(void) {
  if(PORTABLE_APP_RETAINED())return false;
   WIFI_SCROLL_CANCEL();
   if(!opened)return true;
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(remember_pending||profile_work==WIFI_PROFILE_SAVE) {
+    wifi_profiles_step();
+    if(remember_pending||profile_work==WIFI_PROFILE_SAVE)return false;
+  }
+#endif
   if(!portable_wifi_stop_pending())portable_stage_log(wr,"wifi-suspend","begin disconnect=required");
   if(wifi && !wifi_disconnect())return false;
   if(wg.api && !wr->release(&wg)) {
@@ -258,6 +278,9 @@ bool portable_wifi_close(void) {
   portable_wifi_credentials_clear(&credentials);wifi_zero(editor,sizeof(editor));wifi_zero(masked,sizeof(masked));
 #ifdef PORTABLE_WIFI_PROFILES
   profile_work=0;saved_loading_active=forget_index_valid=saved_open_pending=saved_select_pending=forget_pending=false;portable_wifi_credentials_clear(&profile_draft);wifi_zero(&profile_search,sizeof(profile_search));wifi_zero(saved_names,sizeof(saved_names));
+#endif
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  remember_join=remember_pending=false;portable_wifi_credentials_clear(&joined_profile);
 #endif
   wifi_zero(&scan_result,sizeof(scan_result));memset(&view,0,sizeof(view));opened=false;return true;
 }
@@ -323,6 +346,9 @@ static void wifi_connect(void) {
     if(wifi_disconnect())wifi_message="Connect failed - retry";
     dirty=true;return;
   }
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  joined_profile=credentials;remember_join=true;
+#endif
   joining=true;link_state=WIFI_LINK_JOINING;strcpy(status_text,"Connecting...");operation_started=wa->millis();
   portable_stage_log(wr,"wifi-connect","result=accepted state=joining");
   wifi_message="Connecting - select Cancel to stop";dirty=true;
@@ -382,6 +408,14 @@ static bool wifi_async_submit(void) {
   int rc=wifi_async->begin(wifi->context,&wifi_next_request,&id);
   if(PORTABLE_APP_RETAINED())return true;
   if(rc==RISC_RADIO_AGAIN){wifi_message="Starting Wi-Fi - Back cancels";dirty=true;return true;}
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(rc==RISC_RADIO_ACCEPTED && id && kind==RISC_RADIO_REQUEST_JOIN) {
+    portable_wifi_credentials_clear(&joined_profile);
+    memcpy(joined_profile.ssid,wifi_next_request.ssid,sizeof(joined_profile.ssid));
+    memcpy(joined_profile.password,wifi_next_request.password,sizeof(joined_profile.password));
+    remember_join=true;
+  }
+#endif
   wifi_zero(&wifi_next_request,sizeof(wifi_next_request));
   if(rc==RISC_RADIO_RETAINED||(rc==RISC_RADIO_ACCEPTED&&!id)||(rc!=RISC_RADIO_ACCEPTED&&id)){wifi_async_failed();return true;}
   if(rc!=RISC_RADIO_ACCEPTED){wifi_message="Wi-Fi start unavailable - retry";dirty=true;return true;}
@@ -430,6 +464,9 @@ static void wifi_async_tick(void) {
       (progress.phase==RISC_RADIO_CONNECTED&&wifi_operation_kind!=RISC_RADIO_REQUEST_JOIN)||!wifi_scan_valid(&progress.scan)) {wifi_async_failed();return;}
   if(progress.quiescent){
     bool cancelled=wifi_stopping;wifi_operation=0;wifi_stopping=scanning=scan_owned=joining=cleanup_pending=false;link_state=WIFI_LINK_DOWN;
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+    if(remember_join){remember_join=false;portable_wifi_credentials_clear(&joined_profile);}
+#endif
     strcpy(status_text,"Disconnected");ip_text[0]=0;
     if(wifi_scan_back){wifi_scan_back=false;wifi_page(WP_ROOT);}
     wifi_message=progress.failure&&progress.failure!=RISC_RADIO_FAILURE_CANCELLED?"Wi-Fi operation failed - retry":cancelled?"Wi-Fi stopped":"Disconnected";dirty=true;
@@ -451,7 +488,13 @@ static void wifi_async_tick(void) {
     char state[64],ip[48];snprintf(state,sizeof(state),"Connected  %d dBm",(int)progress.rssi);
     snprintf(ip,sizeof(ip),"IPv4 %u.%u.%u.%u",progress.station[0],progress.station[1],progress.station[2],progress.station[3]);
     if(link_state!=WIFI_LINK_UP||strcmp(state,status_text)||strcmp(ip,ip_text))dirty=true;
-    link_state=WIFI_LINK_UP;joining=false;strcpy(status_text,state);strcpy(ip_text,ip);wifi_message="Connected; Save stores this network";
+    if(link_state!=WIFI_LINK_UP) {
+      wifi_message="Connected; Save stores this network";
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+      if(remember_join){remember_join=false;remember_pending=true;wifi_message="Connected; saving network";}
+#endif
+    }
+    link_state=WIFI_LINK_UP;joining=false;strcpy(status_text,state);strcpy(ip_text,ip);
   }
 }
 #endif
@@ -488,7 +531,11 @@ static void wifi_tick(void) {
     bool was_joining=joining;
     if(state==WIFI_LINK_DOWN && !wifi_disconnect())return;
     link_state=state;dirty=true;
-    if(state==WIFI_LINK_UP){joining=false;wifi_message="Connected; Save stores this network";}
+    if(state==WIFI_LINK_UP){joining=false;wifi_message="Connected; Save stores this network";
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+      if(remember_join){remember_join=false;remember_pending=true;wifi_message="Connected; saving network";}
+#endif
+    }
     else if(state==WIFI_LINK_DOWN && was_joining){joining=false;wifi_message="Connection failed - retry Connect";}
   }
   if(joining && (uint32_t)(now-operation_started)>=30000u) {
@@ -534,14 +581,15 @@ static void wifi_text_step(void) {
 }
 #endif
 #ifdef PORTABLE_WIFI_PROFILES
-static void wifi_profile_start(unsigned work) {
+static void wifi_profile_start_value(unsigned work,const portable_wifi_credentials *value) {
   if(profile_work)return;
-  portable_wifi_credentials_clear(&profile_draft);profile_draft=credentials;
-  int rc=portable_wifi_profile_search_begin(wifi_store,credentials.ssid,&profile_search);
+  portable_wifi_credentials_clear(&profile_draft);profile_draft=*value;
+  int rc=portable_wifi_profile_search_begin(wifi_store,value->ssid,&profile_search);
   if(PORTABLE_APP_RETAINED())return;
-  if(rc!=PORTABLE_WIFI_PROFILE_AGAIN){wifi_message="Saved networks unavailable - retry";dirty=true;portable_wifi_credentials_clear(&profile_draft);return;}
+  if(rc!=PORTABLE_WIFI_PROFILE_AGAIN){if(work==WIFI_PROFILE_SAVE)saved_state=rc;wifi_message="Saved networks unavailable - retry";dirty=true;portable_wifi_credentials_clear(&profile_draft);return;}
   profile_work=work;wifi_message="Checking saved networks - Back cancels";dirty=true;
 }
+static void wifi_profile_start(unsigned work) {wifi_profile_start_value(work,&credentials);}
 static void wifi_saved_open(uint32_t base) {
   uint32_t count=0;int rc=portable_wifi_profile_count(wifi_store,&count);
   if(PORTABLE_APP_RETAINED())return;
@@ -553,7 +601,13 @@ static void wifi_saved_open(uint32_t base) {
   memset(saved_names,0,sizeof(saved_names));memset(saved_results,0,sizeof(saved_results));
   saved_loading=0;saved_loading_active=true;wifi_message="Loading saved networks - Back cancels";
 }
-static void wifi_profiles_step(void) {
+static void wifi_profiles_step_owned(void) {
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(remember_pending && !profile_work) {
+    wifi_profile_start_value(WIFI_PROFILE_SAVE,&joined_profile);
+    remember_pending=false;portable_wifi_credentials_clear(&joined_profile);
+  }
+#endif
   if(forget_pending){wifi_forget();return;}
   if(saved_open_pending){wifi_saved_open(saved_pending_base);return;}
   if(saved_select_pending){wifi_saved_select(saved_pending_slot);return;}
@@ -565,7 +619,7 @@ static void wifi_profiles_step(void) {
       if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED||rc==PORTABLE_WIFI_CREDENTIALS_EMPTY)rc=portable_wifi_profile_save(wifi_store,slot,&profile_draft);
       if(PORTABLE_APP_RETAINED())return;
       if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return;
-      saved_state=rc;if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED)draft_dirty=false;
+      saved_state=rc;if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!memcmp(&credentials,&profile_draft,sizeof(credentials)))draft_dirty=false;
       wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_LOADED?"Network saved; storage is not a secure vault":rc==PORTABLE_WIFI_PROFILE_FULL?"Storage index exhausted; forget an unused network":"Save unconfirmed - retry";
     }else if(work==WIFI_PROFILE_FORGET){
       if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED){forget_index=slot;forget_index_valid=true;wifi_page(WP_FORGET);}
@@ -593,6 +647,22 @@ static void wifi_profiles_step(void) {
     if(saved_loading==saved_rows){saved_loading_active=false;wifi_message="Choose a saved network; Back returns";}
     dirty=true;
   }
+}
+static void wifi_profiles_step(void) {
+  if(!profile_work&&!forget_pending&&!saved_open_pending&&!saved_select_pending&&!saved_loading_active
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+     &&!remember_pending
+#endif
+  )return;
+  /* Keep save/search work within one owner-turn lease. Other actions may
+   * hand off to the keyboard and must not carry a lease into that handoff. */
+  bool saving=profile_work==WIFI_PROFILE_SAVE;
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  saving|=!profile_work&&remember_pending;
+#endif
+  if(saving&&!portable_wifi_services_begin())return;
+  wifi_profiles_step_owned();
+  if(saving)(void)portable_wifi_services_end();
 }
 #endif
 bool portable_wifi_services_safe(void) {
@@ -711,7 +781,11 @@ static void wifi_forget(void) {
   if(!forget_index_valid){forget_pending=false;wifi_message="Choose a saved network first";wifi_page(WP_ROOT);return;}
   int result=portable_wifi_profile_forget(wifi_store,forget_index);
   if(result==PORTABLE_WIFI_CREDENTIALS_AGAIN){forget_pending=true;wifi_message="Storage busy - Back cancels Forget";dirty=true;return;}
-  forget_index_valid=forget_pending=false;
+  forget_pending=false;
+  if(result!=PORTABLE_WIFI_CREDENTIALS_EMPTY&&result!=PORTABLE_WIFI_CREDENTIALS_CLEANUP_REMANENCE) {
+    wifi_message="Forget unconfirmed - retry or Back";dirty=true;return;
+  }
+  forget_index_valid=false;
 #else
   int result=portable_wifi_credentials_forget(wifi_store);
 #endif
@@ -746,6 +820,9 @@ static void wifi_saved_select(uint32_t slot) {
 #endif
 static void wifi_activate(unsigned selected) {
 #ifdef PORTABLE_WIFI_PROFILES
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(remember_pending){wifi_message="Saving network - wait or Back cancels";dirty=true;return;}
+#endif
   if(profile_work||saved_open_pending||saved_select_pending||forget_pending){wifi_message="Checking saved networks - Back cancels";dirty=true;return;}
   if(page==WP_SAVED){
     if(selected==saved_rows){if(saved_base)wifi_saved_open(saved_base>=PORTABLE_WIFI_PROFILE_PAGE?saved_base-PORTABLE_WIFI_PROFILE_PAGE:0);return;}
@@ -821,6 +898,9 @@ static bool wifi_back(void) {
   bool storage_pending=saved_open_pending||saved_select_pending||forget_pending;
   saved_loading_active=saved_open_pending=saved_select_pending=forget_pending=false;
   if(storage_pending){wifi_message="Saved-network action cancelled";dirty=true;return false;}
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  if(remember_pending){remember_pending=false;portable_wifi_credentials_clear(&joined_profile);wifi_message="Network save cancelled; use Save to retry";dirty=true;return false;}
+#endif
   if(profile_work){profile_work=0;portable_wifi_credentials_clear(&profile_draft);wifi_zero(&profile_search,sizeof(profile_search));wifi_message="Saved-network action cancelled";dirty=true;return false;}
 #endif
   if(page==WP_SCAN && (scan_owned || cleanup_pending) && !wifi_cancel_scan()){wifi_scan_back=portable_wifi_stop_pending();return false;}
@@ -840,6 +920,9 @@ static bool wifi_open(void) {
  if(PORTABLE_APP_RETAINED())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(opened)return true;
+#endif
+#ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
+  remember_join=remember_pending=false;portable_wifi_credentials_clear(&joined_profile);
 #endif
   wifi_back_return=wifi_scan_back=false;wifi_service_lease=wifi_service_depth=0;
   wa=t5_app_get_api(1);wr=PORTABLE_APP_RUNTIME();
