@@ -26,6 +26,7 @@ void setup(){
   if(cap<*size){free(data);return RISC_KEY_VALUE_BUFFER_SMALL;}memcpy(p,data,*size);free(data);return 0;
  };
  n.settings_ack=[](void*,uint32_t slot,uint64_t g){assert(staged_fixture::opened.empty());uint32_t ns=slotNamespace(slot);return SharedValues::acknowledge(banks[ns].values,backend,ns,g);};
+ staged_fixture::packageVolume.base.begin=[](void*,uint64_t*t){return staged_fixture::exported?RISC_STORAGE_ASYNC_BUSY:risc_storage_async_begin(&fixture::bridge,t);};
  fixture::begin();loaded=true;requested=false;currentCount=1;current[0]={};strcpy(current[0].view.id,"app");current[0].namespaceSlot=1;current[0].settingsNeeded=true;
 }
 void worker(){fixture::executing=true;fixture::worker.workerStep();fixture::cacheWorker.workerStep();fixture::executing=false;}
@@ -57,6 +58,12 @@ int main(){using namespace shared_fixture;using State=RiscPackages::InstalledSet
  assert(!SharedValues::put(banks[6].values,backend,6,"late","retained",8));journal=banks[6].deltas;
  fixture::present=false;int rc;do{rc=staged_fixture::tick();}while(rc==INSTALLED_APPS_WORKING);assert(rc==INSTALLED_APPS_UNAVAILABLE&&banks[6].deltas==journal&&staged_fixture::opened.empty());
  assert(api.cancel(nullptr)==INSTALLED_APPS_OK);fixture::present=true;cold();drive();value(6,"late","retained");assert(banks[6].deltas.empty());
+ // A corrupt shared namespace reports failure, then the next pass advances.
+ auto goodIndex=disk.at("/RTECFG/00000001/settings.index");disk["/RTECFG/00000001/settings.index"]="corrupt";cold();settingsCursor=0;
+ do{rc=staged_fixture::tick();}while(rc==INSTALLED_APPS_WORKING);assert(rc==INSTALLED_APPS_UNAVAILABLE);
+ for(unsigned tries=0;banks[6].values.status!=SharedValues::Clean||banks[3000].values.status!=SharedValues::Clean;++tries){assert(tries<1000);assert(staged_fixture::tick()==INSTALLED_APPS_WORKING);}
+ value(6,"opaque","namespace-six");value(3000,"opaque","private");
+ disk["/RTECFG/00000001/settings.index"]=goodIndex;drive();
  // A new-header consumer sees an old provider prefix without touching the suffix.
  cold();fixture::installation.struct_size=RISC_INSTALLATION_SETTINGS_FORMAT_SIZE;restored.clear();drive();
  assert((restored==std::vector<uint32_t>{3000}));assert(banks[1].values.status==SharedValues::Cold&&banks[6].values.status==SharedValues::Cold);

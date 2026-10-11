@@ -174,7 +174,7 @@ def build():
     'lib/PortableApps/src/contexts_adapter.inc',
     'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/contexts_clock.inc')}}
   record['build_defines']=flags
- if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
+ if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
  if a.ble_broadcast:
   record['ble_broadcast']['source_sha256']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in (
    'lib/PortableApps/include/PortableBroadcastClient.h','lib/PortableApps/include/PortableBroadcastAppData.h',

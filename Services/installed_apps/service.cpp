@@ -412,6 +412,7 @@ int32_t cancel(void*){
  volume=nullptr;requested=validationPending=false;return INSTALLED_APPS_OK;
 }
 int32_t refresh(void*){if(!started||retained||inCall)return INSTALLED_APPS_UNAVAILABLE;
+ if(!settingsCheckpoint)settingsCursor=0;
  if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  if(installPhase!=InstallPhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
@@ -451,7 +452,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
  }
  if(packageHttp&&(packageHttp->api_version!=1||packageHttp->struct_size<sizeof(*packageHttp)||!packageHttp->open||!packageHttp->read||!packageHttp->info||!packageHttp->close))return false;
  if(!native||native->struct_size<RISC_INSTALLATION_APP_PREFIX_SIZE||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
- settingsCheckpoint=nullptr;
+ settingsCheckpoint=nullptr;settingsCursor=0;
  providerCount=0;provisionJson[0]=0;provisionResume=providerSavePending=false;provisionPhase=ProvisionPhase::Idle;downloader=nullptr;
  installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;

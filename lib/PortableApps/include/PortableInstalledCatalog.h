@@ -10,6 +10,8 @@ typedef struct {
  t5_app_manifest_t rows[INSTALLED_APPS_MAX];
  unsigned count;uint32_t generation;
  bool requested,closing,retained,wanted,resume_requested;
+ bool maintenance_backoff,maintenance_clock;
+ uint32_t maintenance_retry_at;unsigned maintenance_retry_polls;
 } portable_installed_catalog;
 int portable_installed_refresh(portable_installed_catalog*,const risc_runtime_api_v1*,const t5_app_manifest_t*,unsigned);
 int portable_installed_step(portable_installed_catalog*,const risc_runtime_api_v1*,uint64_t,const t5_app_manifest_t*,unsigned);

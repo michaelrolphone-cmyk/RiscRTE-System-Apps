@@ -4,6 +4,22 @@
 extern const t5_app_manifest_t portable_catalog_legacy_styles[];
 extern const unsigned portable_catalog_legacy_style_count;
 #endif
+/* Retry unavailable/exported media at most every two monotonic seconds.
+ * Minimal test/legacy runtimes without health use a bounded 128-poll cooldown. */
+static void maintenance_delay(portable_installed_catalog*c,const risc_runtime_api_v1*r){
+ risc_runtime_health_v1 h={.struct_size=sizeof(h)};
+ c->maintenance_backoff=true;c->maintenance_retry_polls=128;
+ c->maintenance_clock=r->health&&r->health(&h);
+ if(c->maintenance_clock)c->maintenance_retry_at=h.uptime_ms+2000u;
+}
+static bool maintenance_wait(portable_installed_catalog*c,const risc_runtime_api_v1*r){
+ if(!c->maintenance_backoff)return false;
+ if(c->maintenance_clock&&r->health){risc_runtime_health_v1 h={.struct_size=sizeof(h)};
+  if(r->health(&h)){if((int32_t)(h.uptime_ms-c->maintenance_retry_at)<0)return true;c->maintenance_backoff=false;return false;}
+ }
+ if(c->maintenance_retry_polls){--c->maintenance_retry_polls;return true;}
+ c->maintenance_backoff=false;return false;
+}
 static int release_volume(portable_installed_catalog*c,const risc_runtime_api_v1*r){
  if(c->volume_grant.api&&!r->release(&c->volume_grant)){c->retained=true;return INSTALLED_APPS_RETAINED;}
  return INSTALLED_APPS_OK;
@@ -41,6 +57,7 @@ static void snapshot(portable_installed_catalog*c,const t5_app_manifest_t*base,u
 int portable_installed_refresh(portable_installed_catalog*c,const risc_runtime_api_v1*r,const t5_app_manifest_t*base,unsigned n){
  if(c->retained)return INSTALLED_APPS_RETAINED;
  if(c->closing)return INSTALLED_APPS_WORKING;
+ c->maintenance_backoff=false;c->maintenance_retry_polls=0;
  snapshot(c,base,n);
  if(!c->service){
   c->service_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->service_grant)};
@@ -78,13 +95,14 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  }
  if(!c->service)return INSTALLED_APPS_OK;
  if(!c->requested){
+  if(maintenance_wait(c,r))return INSTALLED_APPS_OK;
   /* Poll only the append-only RAM query. Old providers remain scan-only. */
   if(c->service->struct_size<INSTALLED_APPS_SETTINGS_PREFIX_SIZE||!c->service->settings_pending||!c->service->settings_pending(c->service->context))return INSTALLED_APPS_OK;
   c->requested=true;
  }
  if(!c->volume_grant.api){
   c->volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->volume_grant)};
-  if(!r->acquire("storage.volume",1,instance,&c->volume_grant)){c->requested=false;return INSTALLED_APPS_UNAVAILABLE;}
+  if(!r->acquire("storage.volume",1,instance,&c->volume_grant)){c->requested=false;maintenance_delay(c,r);return INSTALLED_APPS_UNAVAILABLE;}
  }
  int rc=c->service->step(c->service->context,c->volume_grant.api);
  snapshot(c,base,n);
@@ -94,7 +112,7 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  int ended=c->service->cancel(c->service->context);
  if(ended==INSTALLED_APPS_WORKING)return ended;
  if(ended!=INSTALLED_APPS_OK){c->retained=true;return INSTALLED_APPS_RETAINED;}
- if(rc==INSTALLED_APPS_OK)c->wanted=false;
+ if(rc==INSTALLED_APPS_OK){c->wanted=false;c->maintenance_backoff=false;}else maintenance_delay(c,r);
  c->requested=false;if(release_volume(c,r)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  return rc;
 }

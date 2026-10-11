@@ -8,18 +8,24 @@ jobs:
   shared-settings:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: source
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: source
+          persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: cf05de32288f0a911092819881653f5444e2a5f7
-          path: .runtime-shared-settings
+          ref: 86c37168ef960ac3af9cbdd98be53c663a0ef4d1
+          path: runtime
+          persist-credentials: false
       - name: Shared checkpoint, ABI and cancellation fixtures
         env:
-          RUNTIME_REPO: ${{ github.workspace }}/.runtime-shared-settings
+          RUNTIME_REPO: ${{ github.workspace }}/runtime
         run: |
           bash scripts/test_shared_settings.sh
           SANITIZE=1 bash scripts/test_shared_settings.sh
@@ -38,10 +44,10 @@ jobs:
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
       - name: Build provider and record composition evidence
-        run: python scripts/build_installed_apps.py --runtime-repo .runtime-shared-settings --output-dir build/shared-settings-provider
+        run: python scripts/build_installed_apps.py --runtime-repo ../runtime --output-dir build/shared-settings-provider
       - uses: actions/upload-artifact@v4
         with:
           name: shared-settings-source-validation-${{ github.sha }}
-          path: build/shared-settings-provider
+          path: source/build/shared-settings-provider
           if-no-files-found: error
           retention-days: 7

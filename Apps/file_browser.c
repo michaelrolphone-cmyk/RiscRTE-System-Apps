@@ -751,6 +751,40 @@ static bool path_same_or_child(const char *candidate, const char *parent) {
     return candidate[n] == 0 || candidate[n] == '/';
 }
 
+/* A folder rename/delete must not move or remove a reserved descendant.
+ * Legacy app directories have one iterator, so close before descending. */
+static bool legacy_tree_allowed(const char *root) {
+    if (!root || risc_protected_settings_path(root) || strlen(root) >= PATH_CAP) return false;
+    char path[PATH_CAP]; copy_text(path, sizeof(path), root);
+    unsigned position[32] = {0}, depth = 0;
+    for (;;) {
+        char vfs[PATH_CAP + 4]; make_sd_vfs_dir(path, vfs, sizeof(vfs));
+        if (!app->dir_open(vfs)) return false;
+        t5_app_dirent_t item = {0}; unsigned index = 0; bool got = false, invalid = false;
+        while ((got = app->dir_next(&item))) {
+            if (!memchr(item.name, 0, sizeof(item.name)) || !item.name[0] ||
+                strchr(item.name, '/') || strchr(item.name, '\\') ||
+                !strcmp(item.name, ".") || !strcmp(item.name, "..") ||
+                risc_protected_settings_path(item.name)) { invalid = true; break; }
+            if (index++ >= position[depth]) break;
+        }
+        app->dir_close();
+        if (invalid) return false;
+        if (got) {
+            position[depth] = index;
+            if (item.is_directory) {
+                if (depth == 31 || strlen(path) + strlen(item.name) + 2 >= sizeof(path)) return false;
+                char next[PATH_CAP]; join_relative_path(path, item.name, next, sizeof(next));
+                copy_text(path, sizeof(path), next); position[++depth] = 0;
+            }
+        } else {
+            if (!depth) return true;
+            --depth; char *slash = strrchr(path, '/'); if (!slash) return false;
+            if (slash == path) path[1] = 0; else *slash = 0;
+        }
+    }
+}
+
 static bool request_rename(void) {
     if (!entry_count || selected_index < 0 || selected_index >= (int32_t)entry_count ||
         using_usb() || entries[selected_index].usb_root || !storage_rename_available() ||
@@ -792,7 +826,8 @@ static bool move_selected(void) {
     char destination_vfs[PATH_CAP + 4];
     make_sd_vfs_dir(source_relative, source_vfs, sizeof(source_vfs));
     make_sd_vfs_dir(destination_relative, destination_vfs, sizeof(destination_vfs));
-    if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs)) return false;
+    if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs) ||
+        (entries[selected_index].is_directory && !legacy_tree_allowed(source_relative))) return false;
     if (storage->exists(destination_vfs)) {
         copy_text(status_text, sizeof(status_text), "Destination already exists");
         return false;
@@ -819,7 +854,8 @@ static bool request_delete(void) {
     }
     if (pending_delete_usb) make_usb_path(entries[selected_index].name, pending_delete_path, sizeof(pending_delete_path));
     else make_storage_path(entries[selected_index].name, pending_delete_path, sizeof(pending_delete_path));
-    if (risc_protected_settings_path(pending_delete_path)) { pending_delete_path[0] = 0; return false; }
+    if (risc_protected_settings_path(pending_delete_path) ||
+        (!pending_delete_usb && entries[selected_index].is_directory && !legacy_tree_allowed(pending_delete_path))) { pending_delete_path[0] = 0; return false; }
     save_session();
     if (browser->confirm_delete_request(entries[selected_index].name, HANDOFF_COOKIE)) return true;
     clear_session();
@@ -920,7 +956,8 @@ static void consume_handoff_results(void) {
                 join_relative_path(base_path, renamed, destination_relative, sizeof(destination_relative));
                 make_sd_vfs_dir(source_relative, source_vfs, sizeof(source_vfs));
                 make_sd_vfs_dir(destination_relative, destination_vfs, sizeof(destination_vfs));
-                if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs)) {
+                if (risc_protected_settings_path(source_vfs) || risc_protected_settings_path(destination_vfs) ||
+                    (selected_index >= 0 && selected_index < (int32_t)entry_count && entries[selected_index].is_directory && !legacy_tree_allowed(source_relative))) {
                     copy_text(status_text, sizeof(status_text), "Protected system settings");
                 } else if (storage->exists(destination_vfs)) {
                     copy_text(status_text, sizeof(status_text), "That name already exists");
@@ -942,7 +979,8 @@ static void consume_handoff_results(void) {
                 deleted = refresh_usb() && usb_volume->remove(usb_volume->context, pending_delete_path);
                 if (!deleted) usb_error("Failed to delete USB file");
             } else {
-                deleted = browser->delete_document(pending_delete_path);
+                bool directory = selected_index >= 0 && selected_index < (int32_t)entry_count && entries[selected_index].is_directory;
+                deleted = (!directory || legacy_tree_allowed(pending_delete_path)) && browser->delete_document(pending_delete_path);
                 if (!deleted) copy_text(status_text, sizeof(status_text), "Failed to delete file");
             }
             if (deleted) status_text[0] = 0;
