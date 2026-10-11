@@ -34,9 +34,37 @@ int32_t checkProvisionGraph(bool check){
  for(unsigned i=0;i<nextProviderCount;++i)rows[i]={nextProviders[i].manifest,nextProviders[i].path,nextProviders[i].instance};
  return native->providers(native->context,rows,nextProviderCount,check);
 }
+bool selectCatalogProviders(JsonDocument&doc){
+ auto pool=doc["provider_catalog"];
+ if(pool.isNull())return true;
+ if(!providerApi()||!pool.is<JsonArrayConst>()||pool.size()>ProviderMax||!doc["providers"].isNull())return false;
+ bool selected[ProviderMax]{};unsigned selectedCount=0;
+ auto require=[&](JsonVariantConst needs,uint64_t instance)->bool{
+  if(!needs.is<JsonArrayConst>())return false;
+  for(JsonObjectConst need:needs.as<JsonArrayConst>()){
+   if(!need["capability"].is<const char*>()||!need["api"].is<uint32_t>())return false;
+   const char*cap=need["capability"];uint32_t api=need["api"];
+   if(!std::strcmp(cap,"storage.key-value")||!std::strcmp(cap,"storage.app-data"))continue;
+   if(native->available(native->context,cap,api,!std::strcmp(cap,"hardware.device")?instance:0))continue;
+   unsigned found=ProviderMax;
+   for(unsigned i=0;i<pool.size();++i)for(JsonObjectConst offer:pool[i]["manifest"]["provides"].as<JsonArrayConst>())
+    if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}
+   if(found==ProviderMax)return false;
+   if(!selected[found]){selected[found]=true;++selectedCount;}
+  }
+  return true;
+ };
+ if(!require(doc["manifest"]["requires"],0))return false;
+ unsigned before=0;
+ do{before=selectedCount;for(unsigned i=0;i<pool.size();++i)if(selected[i]){
+   if(!pool[i]["instance"].is<uint32_t>()||!require(pool[i]["manifest"]["requires"],pool[i]["instance"].as<uint32_t>()))return false;
+  }}while(before!=selectedCount);
+ auto output=doc["providers"].to<JsonArray>();for(unsigned i=0;i<pool.size();++i)if(selected[i])output.add(pool[i]);
+ doc.remove("provider_catalog");return true;
+}
 bool prepareProvision(const char*json,bool resume){
  if(downloader)return false;
- JsonDocument doc;if(deserializeJson(doc,json))return false;
+ JsonDocument doc;if(deserializeJson(doc,json)||!selectCatalogProviders(doc))return false;
  auto rows=doc["providers"];
  if(rows.isNull()||(rows.is<JsonArrayConst>()&&!rows.size())){provisionJson[0]=0;provisionPhase=ProvisionPhase::Done;provisionResume=false;return true;}
  if(!providerApi()||!rows.is<JsonArrayConst>()||rows.size()>ProviderMax||std::strlen(json)>ManifestMax)return false;
@@ -52,7 +80,8 @@ bool prepareProvision(const char*json,bool resume){
  // Admission is repeated at publication to account for an intervening live
  // consumer. BUSY never grants permission to replace an active provider.
  int rc=checkProvisionGraph(true);if(rc!=RISC_INSTALL_OK&&rc!=RISC_INSTALL_BUSY)return false;
- std::memmove(provisionJson,json,std::strlen(json)+1);provisionCount=rows.size();provisionIndex=0;
+ if(measureJson(doc)>ManifestMax)return false;
+ serializeJson(doc,provisionJson,sizeof(provisionJson));provisionCount=rows.size();provisionIndex=0;
  provisionResume=resume;provisionPhase=resume?ProvisionPhase::Download:ProvisionPhase::Journal;return true;
 }
 void saveProvision(JsonDocument&doc){

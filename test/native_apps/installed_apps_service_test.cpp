@@ -34,7 +34,7 @@ risc_installation_v1 installation={1,sizeof(installation),nullptr,nullptr,
  },[](void*,const risc_install_candidate_v1*items,uint32_t n,risc_install_result_v1*out,bool)->int32_t{
   for(unsigned i=0;i<n;++i){out[i]={};out[i].status=RISC_INSTALL_OK;assert(strstr(items[i].manifest_json,"application"));}
   return RISC_INSTALL_OK;
- },128,nullptr,nullptr,nullptr,0};
+ },128,nullptr,nullptr,nullptr,0,0,nullptr,nullptr,nullptr,nullptr};
 void begin(){
  const auto*d=t5_driver_get(2);risc_provider_dependency_v1 dependencies[]={{RISC_INSTALLATION_CAPABILITY,1,&installation},{RISC_BOUND_APP_DATA_CAPABILITY,1,&data}};
  assert(d->start(dependencies,2));

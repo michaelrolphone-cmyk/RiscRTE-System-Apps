@@ -7,6 +7,7 @@
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include "runtime/packages/StagedAppInstall.h"
 #include "runtime/packages/SdPackageDownload.h"
+#include "runtime/packages/InstalledSettingsCheckpoint.h"
 #include "runtime/update/Version.h"
 #include <ArduinoJson.h>
 #include <cstring>
@@ -14,7 +15,7 @@
 #include <new>
 namespace {
 constexpr unsigned Max=INSTALLED_APPS_MAX,ManifestMax=4096,CacheMax=65537;
-struct Package {char path[193],json[ManifestMax+1];installed_app_v1 view;uint32_t namespaceSlot;};
+struct Package {char path[193],json[ManifestMax+1];installed_app_v1 view;uint32_t namespaceSlot;bool settingsNeeded;};
 constexpr unsigned NamespaceMax=128;
 char namespaceIds[NamespaceMax][96];bool namespaceDurable[NamespaceMax];
 uint32_t namespaceSlots[Max];
@@ -42,7 +43,7 @@ const risc_installation_v1*native;
 constexpr unsigned ProviderMax=8;
 struct CachedProvider {char manifest[ManifestMax+1],path[193];uint64_t instance;};
 CachedProvider providers[ProviderMax];unsigned providerCount;
-bool providerApi(){return native&&native->struct_size>=sizeof(*native)&&native->providers&&native->available&&native->provider_capacity;}
+bool providerApi(){return native&&native->struct_size>=RISC_INSTALLATION_PROVIDER_PREFIX_SIZE&&native->providers&&native->available&&native->provider_capacity;}
 int32_t loadProviders(JsonVariantConst);
 bool saveProviders(JsonDocument&);
 bool loadProvision(JsonVariantConst);
@@ -88,6 +89,7 @@ bool parse(Package&out,const char*path,const char*json){
  out={};if(!copy(out.view.id,sizeof(out.view.id),doc["id"])||!copy(out.view.version,sizeof(out.view.version),doc["version"]))return false;
  if(!copy(out.view.name,sizeof(out.view.name),doc["display_name"],true)||!copy(out.view.icon,sizeof(out.view.icon),doc["icon"],true))return false;
  for(const char*p=out.view.id;*p;++p)if(!((*p>='a'&&*p<='z')||(*p>='A'&&*p<='Z')||(*p>='0'&&*p<='9')||*p=='-'||*p=='_'||*p=='.'))return false;
+ for(JsonObjectConst need:doc["requires"].as<JsonArrayConst>())if(need["capability"]=="storage.key-value")out.settingsNeeded=true;
  if(!out.view.name[0])std::strcpy(out.view.name,out.view.id);
  if(!out.view.icon[0])std::strcpy(out.view.icon,"solid:f15b");
  std::strcpy(out.path,path);std::strcpy(out.json,json);return true;
@@ -379,8 +381,10 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
 #include "providers.inc"
 #include "install.inc"
 #include "provision.inc"
+#include "settings.inc"
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
+ int settingsResult=settingsCancel();if(settingsResult!=INSTALLED_APPS_OK)return settingsResult;
  if(installer||installSession||installId[0]||installIntent){int32_t rc=installCancel();if(rc!=INSTALLED_APPS_OK)return rc;}
  if(removePhase!=RemovePhase::Idle){
   // Drain already-owned work. An offline cleanup keeps its durable intent but
@@ -414,10 +418,12 @@ int32_t refresh(void*){if(!started||retained||inCall)return INSTALLED_APPS_UNAVA
 int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(!started||retained||inCall)return retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
  inCall=true;struct Guard{~Guard(){inCall=false;}}guard;
+ if(settingsCheckpoint)return settingsStep(v);
  if(savePending)return finishSave();
- if(commitPending)return publish(commitReplace);
+ if(commitPending){int rc=publish(commitReplace);if(rc==INSTALLED_APPS_OK&&settingsWanted()){requested=true;return INSTALLED_APPS_WORKING;}return rc;}
  if(validationPending)return validateAndSave();
  if(installId[0]||installIntent||installer)return installStep(v);
+ if(requested&&!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
  if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
@@ -445,6 +451,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
  }
  if(packageHttp&&(packageHttp->api_version!=1||packageHttp->struct_size<sizeof(*packageHttp)||!packageHttp->open||!packageHttp->read||!packageHttp->info||!packageHttp->close))return false;
  if(!native||native->struct_size<RISC_INSTALLATION_APP_PREFIX_SIZE||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ settingsCheckpoint=nullptr;
  providerCount=0;provisionJson[0]=0;provisionResume=providerSavePending=false;provisionPhase=ProvisionPhase::Idle;downloader=nullptr;
  installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;
@@ -456,7 +463,7 @@ bool quiesce(){return cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}
 const installed_apps_v1 api={1,sizeof(api),nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
- [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&catalog.sd_ready;return true;},step,cancel,
+ [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&catalog.sd_ready&&settingsReady(current[i]);return true;},step,cancel,
  [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||installId[0]||installIntent||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;},
  [](void*)->uint32_t{return stagedCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=stagedCount)return false;*out=staged[i].view;out->available=catalog.sd_ready;return true;},

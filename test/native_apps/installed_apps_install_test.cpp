@@ -4,14 +4,30 @@
 #include "installed_apps_service_test.cpp"
 #undef main
 #include <map>
+#include "runtime/storage/SdFirstKeyValue.h"
 namespace staged_fixture {
 using namespace fixture;
 std::map<std::string,std::string> disk;
 std::string opened;size_t position;bool writing,validImage=true;
 unsigned validations;
+using Kv=RiscStorage::SdFirstKeyValue;Kv::State kvState;Kv::Workspace kvWorkspace;std::vector<uint8_t> kvJournal;
+bool exported;
+const Kv::Journal kvBackend={nullptr,
+ [](void*,uint32_t ns,void*out,uint32_t capacity,uint32_t*n)->int32_t{assert(!executing&&ns==3000);if(kvJournal.empty())return RISC_KEY_VALUE_NOT_FOUND;assert(capacity>=kvJournal.size());*n=kvJournal.size();memcpy(out,kvJournal.data(),*n);return 0;},
+ [](void*,uint32_t ns,const void*data,uint32_t n)->int32_t{assert(!executing&&ns==3000);kvJournal.assign(static_cast<const uint8_t*>(data),static_cast<const uint8_t*>(data)+n);return 0;},nullptr};
+
+
 risc_storage_worker_admission_v2 nativeWorkerV2{};auto&nativeWorker=nativeWorkerV2.base;
 risc_storage_volume_api_v1_download downloadVolume{};auto&packageVolume=downloadVolume.base;
 const risc_storage_volume_api_v1*volume;
+void settingsApiSetup(){
+ installation.settings_capacity=128;
+ installation.settings_status=[](void*,uint32_t slot)->uint32_t{assert(slot==1);return kvState.status;};
+ installation.settings_restore=[](void*,uint32_t slot,const char*owner,const void*data,uint32_t size,bool missing)->int32_t{assert(slot==1);return Kv::restore(kvState,kvWorkspace,kvBackend,3000,owner,data,size,missing);};
+ installation.settings_snapshot=[](void*,uint32_t slot,void*out,uint32_t capacity,uint32_t*size,uint64_t*generation)->int32_t{assert(slot==1);return Kv::snapshot(kvState,3000,out,capacity,size,generation);};
+ installation.settings_ack=[](void*,uint32_t slot,uint64_t generation)->int32_t{assert(slot==1&&opened.empty());return Kv::acknowledge(kvState,kvWorkspace,kvBackend,3000,generation);};
+ packageVolume.base.begin=[](void*,uint64_t*t){return exported?RISC_STORAGE_ASYNC_BUSY:risc_storage_async_begin(&bridge,t);};
+}
 std::string digest(64,'0');unsigned httpOffset,httpOpens,httpCloses;bool httpOpen;
 const risc_http_client_v1 http={1,sizeof(http),nullptr,
  [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{assert(!httpOpen&&q->utc_seconds==1800000000&&strstr(q->url,"late-provider"));httpOpen=true;httpOffset=0;++httpOpens;*h=1;return RISC_HTTP_OK;},
@@ -107,7 +123,7 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  // Install a missing dependency from a selected native descriptor. Neither
  // worker image I/O nor provider graph publication may precede durable intent.
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
- installation.provider_capacity=8;installation.available=[](void*,const char*,uint32_t,uint64_t){return graphAvailable;};
+ installation.provider_capacity=8;installation.available=[](void*,const char*cap,uint32_t api,uint64_t){return graphAvailable&&!strcmp(cap,"test.late")&&api==1;};
  installation.providers=[](void*,const risc_install_provider_v1*rows,uint32_t count,bool check)->int32_t{
   assert(count==1&&strstr(rows[0].manifest_json,"late-provider"));
   if(!check){JsonDocument durable;assert(!deserializeJson(durable,saved));assert(durable["providers"].size()==1);graphAvailable=true;++graphCalls;}
@@ -115,11 +131,22 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  };
  graphBegin();assert(api.refresh(nullptr)==0);
  digest.assign(64,'4');JsonDocument selection;assert(!deserializeJson(selection,envelope("1.3.0")));
- auto dependency=selection["providers"].to<JsonArray>().add<JsonObject>();
+ auto dependency=selection["provider_catalog"].to<JsonArray>().add<JsonObject>();
+ auto missingNeed=selection["manifest"]["requires"].add<JsonObject>();missingNeed["capability"]="test.late";missingNeed["api"]=1;
  dependency["instance"]=uint64_t(0);dependency["size"]=6;dependency["sha256"]=std::string(64,'a');dependency["url"]="https://example.invalid/late-provider.elf";
  auto provider=dependency["manifest"].to<JsonObject>();provider["type"]="driver";provider["id"]="late-provider";provider["version"]="1.0.0";provider["driver_abi"]=2;
  provider["architecture"]="xtensa-esp32s3";provider["file_name"]="image-"+std::string(64,'a')+".elf";
  provider["requires"].to<JsonArray>();auto offered=provider["provides"].to<JsonArray>().add<JsonObject>();offered["capability"]="test.late";offered["api"]=1;
+ // The catalog selects only missing providers and rejects ambiguous offers.
+ JsonDocument resolved;resolved.set(selection);assert(selectCatalogProviders(resolved));
+ assert(resolved["providers"].size()==1&&resolved["provider_catalog"].isNull());
+ graphAvailable=true;resolved.set(selection);assert(selectCatalogProviders(resolved)&&resolved["providers"].size()==0);graphAvailable=false;
+ resolved.set(selection);resolved["provider_catalog"].as<JsonArray>().add(dependency);
+ assert(!selectCatalogProviders(resolved));
+ resolved.set(selection);resolved["provider_catalog"].to<JsonArray>();assert(!selectCatalogProviders(resolved));
+ resolved.set(selection);auto unused=resolved["provider_catalog"].as<JsonArray>().add<JsonObject>();
+ unused["manifest"]["provides"][0]["capability"]="test.unneeded";unused["manifest"]["provides"][0]["api"]=1;
+ assert(selectCatalogProviders(resolved)&&resolved["providers"].size()==1);
  disk[descriptorPath].clear();serializeJson(selection,disk[descriptorPath]);disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
  assert(drive()==0&&api.staged_count(nullptr)==1);assert(api.install(nullptr,"new-after-build","1.3.0")==0);
  n=0;while(!cacheOperation){assert(tick(false)==INSTALLED_APPS_WORKING);assert(++n<100);}
@@ -156,8 +183,9 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
   disk[descriptorPath].clear();serializeJson(selection,disk[descriptorPath]);disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
   assert(drive()==0&&api.install(nullptr,"new-after-build","1.4.0")==0);
   for(unsigned at=0;at<cut;++at){int rc=tick();if(rc==INSTALLED_APPS_NEEDS_NETWORK){assert(api.network_ready(nullptr,1800000000)==0);continue;}assert(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_OK);if(rc==INSTALLED_APPS_OK)break;}
+  const auto interruptedDisk=disk;const auto interruptedCache=saved;const auto interruptedKv=kvJournal;(void)interruptedKv;
   for(unsigned drain=0;;++drain){int rc=api.cancel(nullptr);assert(drain<100);if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}
-  assert(!httpOpen&&opened.empty());assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();graphBegin();assert(api.refresh(nullptr)==0);
+  assert(!httpOpen&&opened.empty());assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();disk=interruptedDisk;saved=interruptedCache;++revision;registered.clear();graphBegin();assert(api.refresh(nullptr)==0);
   if(!installId[0]&&(!api.get(nullptr,0,&row)||strcmp(row.version,"1.4.0"))){assert(drive()==0&&api.install(nullptr,"new-after-build","1.4.0")==0);}
   for(unsigned at=0;;++at){assert(at<500);int rc=tick();if(rc==INSTALLED_APPS_NEEDS_NETWORK){assert(api.network_ready(nullptr,1800000000)==0);continue;}if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);}
   assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.4.0")&&!httpOpen&&opened.empty());
@@ -173,6 +201,40 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  // Recovery accepts only the selected app's predecessor, so preserve that here.
  assert(!deserializeJson(old,envelope("1.1.0")));disk[manifestPath].clear();serializeJson(old["manifest"],disk[manifestPath]);
  assert(drive()==0&&!httpOpen);assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // The catalog warms private settings via the same copied worker, before
+ // launch availability. Native journal values disappear only after readback.
+ saved.clear();revision=0;disk.clear();registered.clear();graphAvailable=false;kvState={};kvJournal.clear();settingsApiSetup();
+ digest.assign(64,'6');JsonDocument settingsApp;assert(!deserializeJson(settingsApp,envelope("2.0.0")));
+ auto need=settingsApp["manifest"]["requires"].add<JsonObject>();need["capability"]="storage.key-value";need["api"]=1;
+ serializeJson(settingsApp["manifest"],disk[manifestPath]);disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
+ graphBegin();assert(api.refresh(nullptr)==0);assert(drive()==0&&api.get(nullptr,0,&row)&&row.available&&kvState.status==Kv::Clean);
+ const char*settingsPath="/AppData/new-after-build/settings.kv";assert(disk.count(settingsPath)&&kvJournal.size()==Kv::Header);
+ assert(Kv::put(kvState,kvWorkspace,kvBackend,3000,"mode","saved",5)==0);
+ assert(api.refresh(nullptr)==0&&drive()==0&&kvState.status==Kv::Clean&&kvJournal.size()==Kv::Header);
+ const auto settingsCache=saved;const auto settingsDisk=disk;
+ assert(Kv::put(kvState,kvWorkspace,kvBackend,3000,"mode","next",4)==0);const auto pendingSettings=kvJournal;
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ for(unsigned cut=0;cut<65;++cut){
+  saved=settingsCache;++revision;disk=settingsDisk;kvJournal=pendingSettings;kvState={};graphBegin();assert(api.refresh(nullptr)==0);
+  assert(api.get(nullptr,0,&row)&&!row.available);
+  for(unsigned at=0;at<cut;++at){int rc=tick();assert(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_OK);if(rc==0)break;}
+  const auto interruptedDisk=disk;const auto interruptedCache=saved;const auto interruptedKv=kvJournal;(void)interruptedKv;
+  for(unsigned drain=0;;++drain){int rc=api.cancel(nullptr);assert(drain<100);if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}
+  assert(opened.empty());assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();disk=interruptedDisk;saved=interruptedCache;++revision;kvJournal=interruptedKv;registered.clear();kvState={};graphBegin();assert(api.refresh(nullptr)==0&&drive()==0);
+  char out[64]{};uint32_t bytes=0;assert(Kv::get(kvState,kvWorkspace,kvBackend,3000,"mode",out,sizeof(out),&bytes)==0&&bytes==4&&!memcmp(out,"next",4));
+  assert(api.get(nullptr,0,&row)&&row.available&&kvJournal.size()==Kv::Header);
+  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ }
+ // Export owns the volume: no copied SD session starts and pending settings
+ // remain durable. Retrying after export closes completes the checkpoint.
+ saved=settingsCache;++revision;disk=settingsDisk;kvJournal=pendingSettings;kvState={};graphBegin();assert(api.refresh(nullptr)==0);exported=true;before=io;
+ assert(drive()==INSTALLED_APPS_UNAVAILABLE&&io==before&&kvJournal==pendingSettings);assert(api.cancel(nullptr)==0);
+ exported=false;assert(api.refresh(nullptr)==0&&drive()==0&&kvState.status==Kv::Clean);
+ assert(Kv::put(kvState,kvWorkspace,kvBackend,3000,"mode","last",4)==0);const auto removedPending=kvJournal;
+ present=false;assert(api.refresh(nullptr)==0&&drive()==INSTALLED_APPS_UNAVAILABLE&&kvJournal==removedPending);
+ assert(api.cancel(nullptr)==0);present=true;assert(api.refresh(nullptr)==0&&drive()==0&&kvState.status==Kv::Clean);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ puts("SD settings catalog/worker: warm-before-available, 65 interruption/restart points, exact checkpoint before journal cleanup, export exclusion and removed-media retry PASS");
  puts("Provider provisioning: 110 interrupted owner ticks, checked cancellation, restart/resume and unavailable-media retry PASS");
 
  puts("Provider provisioning: durable intent before I/O, missing image HTTPS, whole graph publication, zero-SD restart and offline journal recovery PASS");
