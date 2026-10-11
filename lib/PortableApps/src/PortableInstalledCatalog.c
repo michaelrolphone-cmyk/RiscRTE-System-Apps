@@ -1,5 +1,9 @@
 #include "PortableInstalledCatalog.h"
 #include <string.h>
+#ifdef PORTABLE_INSTALLED_AUTHORITY_STYLES
+extern const t5_app_manifest_t portable_catalog_legacy_styles[];
+extern const unsigned portable_catalog_legacy_style_count;
+#endif
 static int release_volume(portable_installed_catalog*c,const risc_runtime_api_v1*r){
  if(c->volume_grant.api&&!r->release(&c->volume_grant)){c->retained=true;return INSTALLED_APPS_RETAINED;}
  return INSTALLED_APPS_OK;
@@ -19,6 +23,16 @@ static void snapshot(portable_installed_catalog*c,const t5_app_manifest_t*base,u
   if(at==INSTALLED_APPS_MAX)continue;
   if(at==c->count){++c->count;c->rows[at]=(t5_app_manifest_t){0};
    strcpy(c->rows[at].file_name,row.launch_path);strcpy(c->rows[at].display_name,row.name);strcpy(c->rows[at].icon,row.icon);}
+#ifdef PORTABLE_INSTALLED_AUTHORITY_STYLES
+  /* Compatibility presentation only: these rows never create installed apps.
+   * A versioned SD image keeps the old directory's label and licensed icon. */
+  for(unsigned j=0;j<portable_catalog_legacy_style_count;++j){
+   const t5_app_manifest_t*style=&portable_catalog_legacy_styles[j];
+   if(!strncmp(row.launch_path,style->file_name,strlen(style->file_name))){
+    strcpy(c->rows[at].display_name,style->display_name);strcpy(c->rows[at].icon,style->icon);break;
+   }
+  }
+#endif
   /* Deployment icon identities survive rehydration of an existing app. */
   c->rows[at].compatible=row.available;
  }

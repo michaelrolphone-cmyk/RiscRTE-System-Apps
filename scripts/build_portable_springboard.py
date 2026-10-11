@@ -21,13 +21,26 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
-def catalog_source(path,limit=18):
+def catalog_source(path,limit=18,authority_boot=None):
     if path is None:
         return '#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n',None
     raw=path.read_bytes()
     if len(raw)>32768:raise ValueError('Catalog exceeds 32 KiB')
     data=json.loads(raw)
     if not isinstance(data,dict) or set(data)!={'apps'} or not isinstance(data['apps'],list) or len(data['apps'])>limit:raise ValueError('Catalog must contain at most '+str(limit)+' apps')
+    excluded=[];styles=[]
+    if authority_boot:
+        boot=json.loads(authority_boot.read_text())
+        for policy in boot['app_capabilities']:
+            if 'image_source' not in policy:continue
+            manifest=json.loads((authority_boot.parent/policy['manifest']).read_text())
+            excluded.append(manifest['file_name'])
+            old=next((a for a in data['apps'] if a.get('file_name')==manifest['file_name']),None)
+            if old:
+                style=dict(old);style['file_name']=str(Path(policy['image_source']['path']).parent)+'/'
+                if not re.fullmatch(r'Apps/[A-Za-z0-9_.-]+/',style['file_name']) or len(style['file_name'])>=128:raise ValueError('Invalid legacy style directory')
+                styles.append(style)
+        data['apps']=[a for a in data['apps'] if a.get('file_name') not in excluded]
     font_sources=json.loads((ROOT/'lib/PortableApps/fonts/SOURCES.json').read_text())
     glyphs=list(font_sources['icons'])
     if limit==40:glyphs+=list(font_sources.get('selected_springboard_icons',{}))
@@ -43,12 +56,15 @@ def catalog_source(path,limit=18):
         seen.add(filename.lower())
         rows.append('{'+','.join('.'+key+'='+json.dumps(app[key]) for key in ['display_name','file_name','icon'])+',.compatible=true}')
     source='#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={'+(','.join(rows) if rows else '{.compatible=false}')+'};\nconst unsigned portable_catalog_count='+str(len(rows))+';\n'
-    return source,{'sha256':hashlib.sha256(raw).hexdigest(),'count':len(rows),'apps':data['apps']}
+    if authority_boot:
+        source+='const t5_app_manifest_t portable_catalog_legacy_styles[]={'+(','.join('{'+','.join('.'+key+'='+json.dumps(a[key]) for key in ['display_name','file_name','icon'])+'}' for a in styles) if styles else '{0}')+'};\nconst unsigned portable_catalog_legacy_style_count='+str(len(styles))+';\n'
+    return source,{'sha256':hashlib.sha256(raw).hexdigest(),'count':len(rows),'apps':data['apps'],'sd_authority_files':excluded,'authority_boot_sha256':hashlib.sha256(authority_boot.read_bytes()).hexdigest() if authority_boot else None}
 
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--touch-scrolling",action="store_true",help="Explicit native X4 horizontal paged paper app grid")
     parser.add_argument("--installed-catalog-volume-instance",type=int,help="Opt in to cached installed-app discovery on this async storage volume")
+    parser.add_argument("--installed-authority-boot",type=Path,help="Exclude removable bootstrap identities from the compiled installed list; preserve them only as SD authority reservations")
     parser.add_argument("--catalog",type=Path,help="Explicit bounded installed/admitted deployment catalog JSON")
     parser.add_argument("--display-rotation",type=int,choices=[0,90],default=None,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
     parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
@@ -73,6 +89,7 @@ def build():
     portable_paper_build.validate(args,parser)
     if args.touch_scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
         parser.error("--touch-scrolling requires --time-profile x4-native-time and --paper-transitions")
+    if args.installed_authority_boot and args.installed_catalog_volume_instance is None:parser.error("Authority migration requires installed catalog")
     if args.installed_catalog_volume_instance is not None:
         if args.installed_catalog_volume_instance<1 or not args.touch_scrolling or not args.resident_shell_client:
             parser.error('Installed catalog requires a positive volume instance and resident touch-scrolling Springboard')
@@ -111,10 +128,11 @@ def build():
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     catalog = out/'springboard-catalog.c'
-    catalog_text,catalog_record=catalog_source(args.catalog,40 if args.touch_scrolling else 18)
+    catalog_text,catalog_record=catalog_source(args.catalog,40 if args.touch_scrolling else 18,args.installed_authority_boot)
     catalog_bound=40 if args.installed_catalog_volume_instance is not None else max(1,catalog_record['count'] if catalog_record else 0)
     if args.touch_scrolling:flags.append('-DPORTABLE_SPRINGBOARD_CATALOG_BOUND='+str(catalog_bound))
     catalog.write_text(catalog_text)
+    if args.installed_authority_boot:flags.append('-DPORTABLE_INSTALLED_AUTHORITY_STYLES')
     elf = out/'springboard.elf'
     sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources+native_sources
     if args.installed_catalog_volume_instance is not None:sources.append(ROOT/'lib/PortableApps/src/PortableInstalledCatalog.c')
@@ -126,6 +144,7 @@ def build():
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','memchr','strcmp','strlen','snprintf','strcpy','malloc','free'}
+    if args.installed_authority_boot:allowed.add('strncmp')
     if not imports <= allowed: raise ValueError('Unexpected imports: '+str(imports-allowed))
     actual = {line.split()[-1] for line in symbols.splitlines() if len(line.split())>=3 and line.split()[-2] in ('T','D','B','R')}
     if actual != exports: raise ValueError('Unexpected exports: '+str(actual))

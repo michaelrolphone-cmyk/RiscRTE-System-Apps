@@ -118,8 +118,8 @@ def build(args,parser=None):
    manifest['version']=native_receipt['version']
   if name=='app_store' and getattr(args,'installed_catalog',False):
    flags+=['-DPORTABLE_APP_STORE_CATALOG','-DPORTABLE_APP_STORE_ACTIONS']
-   manifest['version']='1.3.1'
-   if native_receipt:native_receipt['version']='1.3.1'
+   manifest['version']='1.4.0'
+   if native_receipt:native_receipt['version']='1.4.0'
    manifest['requires'].extend([{'capability':'software.installed-apps','api':1},{'capability':'storage.volume','api':1}])
   flags+=portable_broadcast_build.flags(args)
   portable_quick_build.requirements(args,manifest['requires'])

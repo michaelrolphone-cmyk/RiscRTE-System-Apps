@@ -269,7 +269,12 @@ static void stage_display_complete(risc_display_present_token_v1 token) {
 static bool paper_async_frames;
 static risc_display_present_token_v1 paper_token;
 #ifdef PORTABLE_INSTALLED_CATALOG
+#include "PortableInstalledCatalog.h"
+int portable_installed_prepare_launch(void);
 static bool installed_first_frame_submitted;
+#if defined(PORTABLE_INSTALLED_CATALOG_HOST) && defined(PORTABLE_APP_SLEEP_LOCAL)
+static bool installed_deferred_sleep;
+#endif
 #endif
 static uint32_t paper_submitted_at;
 static bool paper_present_progress(void);
@@ -1538,7 +1543,11 @@ static void present(bool full) {
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
 #ifdef PORTABLE_INSTALLED_CATALOG
-  if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK)return !native_custody_retained;
+  int installed_close=portable_installed_prepare_launch();
+#ifdef PORTABLE_INSTALLED_CATALOG_HOST
+  installed_deferred_sleep=installed_close==INSTALLED_APPS_WORKING;
+#endif
+  if(installed_close!=INSTALLED_APPS_OK)return !native_custody_retained;
 #endif
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
   if(portable_adapter_retained())return false;
@@ -2278,6 +2287,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_INSTALLED_CATALOG
   if(installed_first_frame_submitted)installed_progress();
+#if defined(PORTABLE_INSTALLED_CATALOG_HOST) && defined(PORTABLE_APP_SLEEP_LOCAL)
+  if(installed_deferred_sleep){memset(out,0,sizeof(*out));return idle_sleep();}
+#endif
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained){memset(out,0,sizeof(*out));return false;}
@@ -2726,6 +2738,12 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_INSTALLED_CATALOG
   installed_first_frame_submitted=false;
+#ifdef PORTABLE_INSTALLED_CATALOG_HOST
+  installed_home_started=false;
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+  installed_deferred_sleep=false;
+#endif
+#endif
 #endif
   paper_async_frames=false;paper_token=0;paper_token_clean=false;paper_submitted_at=0;
 #ifdef PORTABLE_PAPER_PREFERENCES

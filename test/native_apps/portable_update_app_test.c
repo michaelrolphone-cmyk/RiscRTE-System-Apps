@@ -172,15 +172,18 @@ static unsigned ui_inventory_count(void*c){(void)c;return 2;}
 static bool ui_inventory_get(void*c,uint32_t i,installed_app_v1*out){(void)c;if(i>=2)return false;*out=(installed_app_v1){.available=i==0};strcpy(out->name,i?"Offline App":"New SD App");strcpy(out->version,"1.0.0");return true;}
 static int ui_inventory_cancel(void*c){(void)c;return INSTALLED_APPS_OK;}
 #ifdef PORTABLE_APP_STORE_ACTIONS
-static unsigned ui_removals,ui_remove_pending;
+static unsigned ui_removals,ui_installs,ui_remove_pending;
 static uint32_t ui_inventory_generation(void*c){(void)c;return 1;}
 static int ui_inventory_remove(void*c,const char*id){(void)c;(void)id;++ui_removals;ui_remove_pending=2;return INSTALLED_APPS_OK;}
 static int ui_inventory_step(void*c,const risc_storage_volume_api_v1*v){(void)c;assert(v);if(ui_remove_pending){--ui_remove_pending;return INSTALLED_APPS_WORKING;}return INSTALLED_APPS_OK;}
+static uint32_t ui_staged_count(void*c){(void)c;return 1;}
+static bool ui_staged_get(void*c,uint32_t i,installed_app_v1*out){(void)c;if(i)return false;*out=(installed_app_v1){.available=true};strcpy(out->id,"staged-app");strcpy(out->name,"New staged app");strcpy(out->version,"1.2.0");strcpy(out->launch_path,"Apps/staged-app/install.json");return true;}
+static int ui_staged_install(void*c,const char*id,const char*version){(void)c;assert(!strcmp(id,"staged-app")&&!strcmp(version,"1.2.0"));++ui_installs;ui_remove_pending=2;return INSTALLED_APPS_OK;}
 static const risc_storage_volume_api_v1 ui_volume={.api_version=1,.struct_size=sizeof(ui_volume)};
 #endif
 static const installed_apps_v1 ui_inventory={.api_version=1,.struct_size=sizeof(ui_inventory),.refresh=ui_inventory_refresh,.count=ui_inventory_count,.get=ui_inventory_get,.cancel=ui_inventory_cancel
 #ifdef PORTABLE_APP_STORE_ACTIONS
- ,.generation=ui_inventory_generation,.remove=ui_inventory_remove,.step=ui_inventory_step
+ ,.generation=ui_inventory_generation,.remove=ui_inventory_remove,.step=ui_inventory_step,.staged_count=ui_staged_count,.staged_get=ui_staged_get,.install=ui_staged_install
 #endif
 };
 #else
@@ -218,6 +221,12 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
  switch(scenario){
 #ifdef PORTABLE_APP_STORE_CATALOG
 #ifdef PORTABLE_APP_STORE_ACTIONS
+ case 52:
+  mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=0;assert(portable_update_services_safe());assert(portable_update_close());
+  event(2,T5_APP_BUTTON_DOWN,-1,0);event(4,T5_APP_BUTTON_DOWN,-1,0);event(6,T5_APP_BUTTON_DOWN,-1,0);
+  event(8,T5_APP_BUTTON_CONFIRM,-1,0);event(10,T5_APP_BUTTON_DOWN,-1,0);event(12,T5_APP_BUTTON_CONFIRM,-1,0);
+  event(22,T5_APP_BUTTON_BACK,-1,0);app_main();
+  assert(ui_installs==1&&!ui_removals&&!begins&&!activations&&!connects&&!opened&&!inventory_volume_grant.api&&launches==1);break;
  case 51:
   mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=0;assert(portable_update_services_safe());
   assert(portable_update_close());
