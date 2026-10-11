@@ -1,0 +1,32 @@
+{
+  "bridge_store_changes": [
+    "cohort.json"
+  ],
+  "transitions": [
+    {
+      "case": "delivered-to-bridge",
+      "result": {
+        "prepared": true,
+        "cohort_validated": true,
+        "error": "",
+        "hardware_calls": 0,
+        "storage_calls": 0,
+        "elf_count": 54,
+        "cooperative_yields": 170
+      }
+    },
+    {
+      "case": "bridge-to-peer",
+      "result": {
+        "prepared": true,
+        "cohort_validated": true,
+        "error": "",
+        "hardware_calls": 0,
+        "storage_calls": 0,
+        "elf_count": 54,
+        "cooperative_yields": 170
+      }
+    }
+  ],
+  "source_boot_sha256": "7780f59f615b0e1fab7ea06b893cb30195dbcffa7d13206f0706c2d458bb13cf"
+}

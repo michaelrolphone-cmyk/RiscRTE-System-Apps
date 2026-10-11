@@ -1,3 +1,5 @@
+> Superseded delivery status: see [DELIVERED_PEER_IMAGES.md](DELIVERED_PEER_IMAGES.md) for completed migration, full images and preserving paths from the actual delivered baselines.
+
 # Qualified peer Files preserving test increments
 
 The native migration implementation is published in Runtime 66a5651, combined with provisioning 498e642. The built Runtime is 209274b (0.2.14). X4 source7394ea1 includes provisioning70bd67a. Watch peer sourcee3c24a2 retains the full25-app canvas; shared Files1.5.25 remains from56fdeabe and BLE setup0.1.2 fromb2419513. Native capacities remain64 apps,32 providers,24 policy/requirement rows and48 graph grants. Runtime software services remain instance0.
