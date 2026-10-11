@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /Users/micahelbyrns/.platformio/penv/bin/python "$@"

@@ -1,5 +1,9 @@
+#ifndef FILE_BROWSER_RGB_PROFILE
 #define FILE_BROWSER_PAPER_PROFILE
+#endif
+#ifndef FILE_BROWSER_RGB_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
+#endif
 #define PORTABLE_FILE_BROWSER_CAPABILITY "storage.volume"
 #define PORTABLE_FILE_BROWSER_INSTANCE 11
 #define PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE 22
@@ -65,6 +69,7 @@ static void controller_touch(int *x,int *y){
  if(test_steps<5||(test_steps-5)%6)return;
  assert(controller_step_index<controller_step_count);
  const controller_step *step=&controller_steps[controller_step_index++];
+ if(fb_mode!=step->mode)fprintf(stderr,"controller step %u: expected mode %u, got %u\n",controller_step_index,step->mode,fb_mode);
  assert(fb_mode==step->mode);
  if(step->check)step->check();
  *x=step->x;*y=step->y;
@@ -264,6 +269,9 @@ static void check_controller_failures(void){
  puts("Production app_main/raw touch: SD absence/removal/reinsert, listing/preview errors, rename/move/delete failures, copy read/write/removal/open failures and retained file/directory cleanup passed");
 }
 
+#ifdef FILE_BROWSER_RGB_PROFILE
+#define main legacy_rgb_operation_fixture_main
+#endif
 int main(void){
  init_disk(&sd);init_disk(&usb);add(&sd,"/read.txt",false,5000);add(&sd,"/existing.txt",false,3);add(&sd,"/empty",false,0);
  test_volume=sd.api.base;test_volume.struct_size=sizeof(test_volume);

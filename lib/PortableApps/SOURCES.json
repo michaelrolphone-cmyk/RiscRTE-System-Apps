@@ -94,5 +94,23 @@
       "sha256": "969d1283b622fe3109cd52ab48749012f9dd0cb7396f80d7a7a085ec7b8aa517"
     },
     "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
+  },
+  "RiscAppDataExportV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataExportV1.h",
+    "sha256": "56f9afd075f0fe3d8e7e8cdbec2d34813018dfe6cb3de3f18b326c4de948cddd",
+    "commit": "73f07a6bf333fad881b3b15ef0f282b244e11fa4"
+  },
+  "RiscAppDataV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscAppDataV1.h",
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e",
+    "commit": "73f07a6bf333fad881b3b15ef0f282b244e11fa4"
+  },
+  "RiscBluetoothSessionSetupV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+    "path": "sdk/driver/RiscBluetoothSessionSetupV1.h",
+    "commit": "09b56e84e723368d10c4f14cec494e4da0bbead0",
+    "sha256": "406d94c7f9c83de9b97ff36e4d8e1a0c79ef859777a8c03809d4760e7f194795"
   }
 }

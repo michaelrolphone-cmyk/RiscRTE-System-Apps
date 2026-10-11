@@ -1,0 +1,58 @@
+{
+  "purpose": "development-only-not-activation-or-publication",
+  "runtime_contract_revision": "67e0dbe1a5f519fd96d8f88797ff91b9e1a3096c",
+  "runtime_contract_sha256": "08b4d52e71b1349a57d1713e54bcc7872ae63d55edf647ec17b0bbb2f509c0d1",
+  "sha256": "b51575d470052e9906ff874f5552eb66b67aa51219fa6ddb04d753af9601704c",
+  "size_bytes": 4124,
+  "compiler": "xtensa-esp32s3-elf-g++ (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "imports": [
+    "memcpy",
+    "memset",
+    "strcmp"
+  ],
+  "exports": [
+    "t5_driver_get"
+  ],
+  "section_sizes": {
+    "": 0,
+    ".hash": 40,
+    ".dynsym": 80,
+    ".dynstr": 36,
+    ".rela.dyn": 216,
+    ".rela.plt": 36,
+    ".text": 544,
+    ".rodata": 47,
+    ".got.loc": 40,
+    ".data.rel.ro": 36,
+    ".dynamic": 160,
+    ".got": 4,
+    ".data": 16,
+    ".bss": 60,
+    ".comment": 44,
+    ".xtensa.info": 56,
+    ".xt.lit": 40,
+    ".xt.prop": 456,
+    ".symtab": 656,
+    ".strtab": 457,
+    ".shstrtab": 169
+  },
+  "stack_frames": {
+    "service.cpp:32:6:bool {anonymous}::start(const risc_provider_dependency_v1*, size_t)": 32,
+    "service.cpp:14:9:int32_t {anonymous}::fill(void*, void*, uint32_t)": 32,
+    "service.cpp:28:6:bool {anonymous}::quiesce()": 32,
+    "service.cpp:41:6:void {anonymous}::stop()": 32,
+    "service.cpp:45:73:const risc_driver_v2* t5_driver_get(uint32_t)": 32
+  },
+  "source_sha256": {
+    "Services/entropy/service.cpp": "d88303081525ffaf7da65483e37a086ffa05a64517baf449fbd9025b4ab2a692",
+    "Services/entropy/native/RiscEntropyV1.h": "08b4d52e71b1349a57d1713e54bcc7872ae63d55edf647ec17b0bbb2f509c0d1",
+    "Services/entropy/manifest.json": "5722645878ca8af8782b7a5e587c6a251bc9d13f551a5968e803cd5ec3268a54",
+    "scripts/build_entropy_service.py": "bfefe2863724f9bc3da23bc89dbb30c5f3927bea804f6a61207f8445578a159f",
+    "lib/PortableApps/include/RiscEntropySourceV1.h": "042b367b5c766b4a79d887c3bc573fdd2c90b6b231510bd8b20d0b5c3d7796a7",
+    "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "scripts/test_entropy_service.sh": "59d77f774c5606f6a7c6cddbe6084831e19d38fe7a91dcce232b9782f7ca8772",
+    "test/native_apps/entropy_service_test.cpp": "fd7d59af66a861ad9c37f7f98bebdfcf8238e27b1f0ae67f0ff0b307ced0b533"
+  },
+  "qualification_scope": "Host fake-native lifecycle and target ELF structure; no device/network test"
+}

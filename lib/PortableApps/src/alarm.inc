@@ -3,7 +3,7 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
-#if defined(PORTABLE_WIFI_SETTINGS_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
+#if defined(PORTABLE_WIFI_SESSION_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
 #define PORTABLE_WIFI_SERVICE_LEASE
 static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
 static alarm_token_v1 alarm_ack_token;
@@ -58,12 +58,12 @@ static bool alarm_failure(void) {
         for(;;)rt->yield_ms(50);
     }
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
     /* Even healthy RF must drain before app_main returns: Runtime checks its
      * exit barrier before invoking fini, so deferring cleanup there deadlocks
      * an ordinary display/input failure behind our own live radio session. */
     bool wifi_stopped=portable_wifi_suspend();
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
     /* A healthy pending stop is not a terminal cleanup failure. Keep the
      * owner alive and poll copied completion between bounded cancel attempts;
      * no service lease is held over this yield. Never release on a deadline. */
@@ -260,7 +260,7 @@ static bool alarm_restore(const uint16_t *saved) {
         (const uint8_t*)saved+(size_t)y*bytes,bytes);
     present(false);return portable_paper_frame_drain() && !failed && display_settled;
 }
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
 /* A failed radio cleanup forbids storage-backed service calls. Output-only
  * stop does not acknowledge or change the persisted occurrence. Restore the
  * editor so cleanup can be retried; normal reconciliation resumes afterward. */
@@ -290,7 +290,7 @@ static bool alarm_foreground(bool *consumed) {
       &&!raster_sealed
 #endif
     ))return alarm_failure();
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
@@ -311,7 +311,7 @@ static bool alarm_foreground(bool *consumed) {
         input_service();
         if(!paper_present_progress())return alarm_failure();
         rt->yield_ms(portable_alarm_cue(&alarms)?4:1);
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
         if(!alarm_audio_pump()){failed=true;return alarm_failure();}
@@ -353,7 +353,7 @@ static bool alarm_foreground(bool *consumed) {
             input_pending=false;rt->yield_ms(1);input_service();input_dispatch();
         }
         if(failed){alarm_modal=false;return alarm_failure();}
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
@@ -408,7 +408,7 @@ static bool alarm_foreground(bool *consumed) {
             }
         }
         if(failed || raster_lease_mutable() || !paper_present_progress()){alarm_modal=false;return alarm_failure();}
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         uint32_t old_state=alarms.status.state;int32_t old_error=alarms.status.error;

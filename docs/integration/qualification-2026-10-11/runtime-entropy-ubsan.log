@@ -1,0 +1,3 @@
+candidate: 
+Assertion failed: (admitted&&calls==0), function main, file entropy_runtime_test.cpp, line 112.
+/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/runtime/test/run_entropy_runtime_test.sh: line 20: 70620 Abort trap: 6           "$build/runtime" "$build/store"

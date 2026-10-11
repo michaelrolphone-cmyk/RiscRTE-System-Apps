@@ -1,0 +1,12 @@
+{
+  "label": "Saved files",
+  "files": [
+    {
+      "owner": "timecard",
+      "namespace": 1,
+      "name": "timecard.json",
+      "path": "/timecard/timecard.json",
+      "access": "read-write"
+    }
+  ]
+}
