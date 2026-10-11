@@ -39,6 +39,7 @@ jobs:
           SANITIZE=1 bash scripts/test_installed_apps_install.sh
           SANITIZE=1 bash scripts/test_installed_catalog_client.sh
       - name: Files and WebDAV reserved-path regression
+        if: always() && !cancelled()
         run: |
           SANITIZE=1 bash scripts/test_protected_settings.sh
           python scripts/test_file_browser_operations.py
@@ -46,6 +47,7 @@ jobs:
           SANITIZE=1 bash scripts/test_webdav_core.sh
           SANITIZE=1 bash scripts/test_webdav_peer.sh
       - name: Shared preference BUSY hydration
+        if: always() && !cancelled()
         env:
           RUNTIME_REPO: ${{ github.workspace }}/runtime
           X4_REPO: ${{ github.workspace }}/x4

@@ -14,6 +14,7 @@ harness = r'''
 #include "T5AppApi.h"
 #include "T5StorageApi.h"
 #include "RiscStorageVolumeV1.h"
+#include "RiscProtectedSettingsPath.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -60,6 +61,8 @@ static const t5_app_api_v1 *app = &application;
 harness += function + r'''
 static void reset(void) { closes = opens = commits = reads = 0; status_text[0] = 0; }
 int main(void) {
+    reset(); assert(!copy_usb_to_sd("/RtEcFg./secret", "destination"));
+    assert(!copy_usb_to_sd("source", "/RTECFG /secret") && !closes && !opens);
     /* Failed open must not close a nonexistent input or create the destination. */
     input_valid = false; reported_size = 0; reset();
     assert(!copy_usb_to_sd("source", "destination")); assert(closes == 0 && opens == 0);
@@ -89,5 +92,5 @@ with tempfile.TemporaryDirectory() as directory:
     (path / "test.c").write_text(harness)
     subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-Wall", "-Wextra", "-Werror",
                     "-fsanitize=address,undefined", "-I" + str(repo / "lib/NativeApps/include"),
-                    "-I" + str(repo / "sdk/driver"), str(path / "test.c"), "-o", str(path / "test")], check=True)
+                    "-I" + str(repo / "sdk/driver"), "-I" + str(repo / "lib/PortableApps/include"), str(path / "test.c"), "-o", str(path / "test")], check=True)
     subprocess.run([str(path / "test")], check=True, timeout=10)

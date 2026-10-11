@@ -141,6 +141,7 @@ def build(args, parser=None):
         'requested_capabilities':manifest['requires'],
         'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    record['shared_settings']={'busy_reload':'draft-safe-250ms','save_acknowledges':'native-journal','sd_checkpoint_confirmed':False,'hardware_qualified':False}
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
     if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
     if native_receipt:
