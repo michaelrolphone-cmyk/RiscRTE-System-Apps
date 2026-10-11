@@ -78,7 +78,8 @@ static int32_t entropy_fill(void*c,void*out,uint32_t n){(void)c;live_check();ass
 #ifdef FILE_DIRECT_FIXTURE
  assert(direct_ble_on);++direct_entropy_calls;if(direct_entropy_busy)return RISC_ENTROPY_SOURCE_BUSY;
 #endif
- for(unsigned i=0;i<n;i++)((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);return 0;}
+ for(unsigned i=0;i<n;i++){((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);}
+ return 0;}
 static const risc_entropy_source_v1 entropy={1,sizeof(entropy),(void*)1,entropy_fill};
 static int32_t listen_tcp(void*c,const risc_tcp_connection_listen_v1*b,uint64_t*t){(void)c;live_check();assert(b->port==8080&&(b->address[3]==4||private_test())&&!listeners&&!fb_grant.api);*t=7;listeners++;return 0;}
 static int32_t accept_tcp(void*c,uint64_t t,uint64_t*out){(void)c;live_check();assert(t==7&&listeners==1);*out=0;return RISC_TCP_CONNECTION_WOULD_BLOCK;}
