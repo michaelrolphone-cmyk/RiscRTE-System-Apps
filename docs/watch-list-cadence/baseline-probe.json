@@ -1,0 +1,72 @@
+{
+  "source": "6ea07eb27488c2736b398fde1fb2915a392cfa68",
+  "scope": "Real Settings/controller/adapter; synthetic wall-clock input and display latency; no target hardware measurements",
+  "observations": [
+    {
+      "display_latency_ms": 0,
+      "drag_duration_ms": 400,
+      "physical_samples": 45,
+      "samples_while_present_busy": 0,
+      "logical_polls": 45,
+      "scroll_state_changes": 19,
+      "longest_logical_poll_ms": 20,
+      "max_scroll_pixels": 114,
+      "presentations": 20
+    },
+    {
+      "display_latency_ms": 16,
+      "drag_duration_ms": 400,
+      "physical_samples": 46,
+      "samples_while_present_busy": 0,
+      "logical_polls": 46,
+      "scroll_state_changes": 19,
+      "longest_logical_poll_ms": 36,
+      "max_scroll_pixels": 114,
+      "presentations": 20
+    },
+    {
+      "display_latency_ms": 40,
+      "drag_duration_ms": 400,
+      "physical_samples": 58,
+      "samples_while_present_busy": 22,
+      "logical_polls": 36,
+      "scroll_state_changes": 10,
+      "longest_logical_poll_ms": 60,
+      "max_scroll_pixels": 117,
+      "presentations": 11
+    },
+    {
+      "display_latency_ms": 80,
+      "drag_duration_ms": 400,
+      "physical_samples": 55,
+      "samples_while_present_busy": 24,
+      "logical_polls": 31,
+      "scroll_state_changes": 5,
+      "longest_logical_poll_ms": 100,
+      "max_scroll_pixels": 103,
+      "presentations": 6
+    },
+    {
+      "display_latency_ms": 240,
+      "drag_duration_ms": 400,
+      "physical_samples": 66,
+      "samples_while_present_busy": 42,
+      "logical_polls": 24,
+      "scroll_state_changes": 2,
+      "longest_logical_poll_ms": 260,
+      "max_scroll_pixels": 78,
+      "presentations": 3
+    },
+    {
+      "display_latency_ms": 240,
+      "drag_duration_ms": 80,
+      "physical_samples": 63,
+      "samples_while_present_busy": 28,
+      "logical_polls": 35,
+      "scroll_state_changes": 1,
+      "longest_logical_poll_ms": 260,
+      "max_scroll_pixels": 30,
+      "presentations": 2
+    }
+  ]
+}
