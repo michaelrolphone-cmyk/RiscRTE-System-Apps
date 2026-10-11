@@ -1,0 +1,21 @@
+{
+  "objects": [
+    {
+      "name": "native_probe.o",
+      "bytes": 103768,
+      "sha256": "90b81ff0dd3eac6608a8530b6d7137f5174a9738e88814d1a4c270d68fde29f0"
+    },
+    {
+      "name": "Runtime.o",
+      "bytes": 3982692,
+      "sha256": "2a7577e0fc439f8721ec9efb2d21faf18505a2ff1dd3af5074c8bec3baeddb23"
+    },
+    {
+      "name": "CpuPort.o",
+      "bytes": 1150244,
+      "sha256": "c8c2778ef92a14b4674d13f3896e4980d61dfdc2d0eedc73ee3cf91ad7edc500"
+    }
+  ],
+  "kind": "individual compile checks; not a linked firmware",
+  "profile": "32 providers, 64 installed apps, 24 app policies and requirements"
+}

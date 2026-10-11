@@ -8,7 +8,7 @@ if [[ "${SANITIZE:-0}" == 1 ]]; then
     flags+=(-fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie)
 fi
 "${CXX:-c++}" "${flags[@]}" test/native_apps/tcp_listener_service_test.cpp -o "$output/tcp-listener-service-test"
-for scenario in lifecycle validation recoverable overflow \
+for scenario in connector legacy-connect connect-unknown connect-close-retained lifecycle validation recoverable overflow \
     listen-retained listen-context listen-error-handle listen-zero accept-retained accept-zero duplicate-native \
     close-retained close-io close-context quiesce-client quiesce-listener \
     read-context read-retained zero-success oversize-success wouldblock-bytes write-eof unknown-status; do

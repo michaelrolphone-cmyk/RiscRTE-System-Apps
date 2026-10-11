@@ -5,6 +5,7 @@
 #include "RiscTcpConnectionV1.h"
 #include "native/RiscTcpListenerV1.h"
 #include <cstring>
+#include <cstddef>
 
 namespace {
 static_assert(RISC_TCP_CONNECTION_BYTES_MAX == RISC_TCP_BYTES_MAX, "transfer bound");
@@ -95,6 +96,33 @@ int32_t accept(void *context, uint64_t handle, uint64_t *out) {
     result = backend.accept(backend.context, listener.native, &native);
     return opened(*slot, result, native, out, true);
 }
+int32_t connect(void *context, const risc_tcp_connection_listen_v1 *request, uint64_t *out) {
+    if (out) *out = 0;
+    int32_t result = gate(context); if (result) return result;
+    if (!backend.connect || !request || !out || request->struct_size != sizeof(*request) ||
+        !request->port || request->reserved || !request->address[0] || request->address[0] >= 224)
+        return RISC_TCP_CONNECTION_INVALID;
+    Session *slot = nullptr;
+    for (auto &client : clients) if (!client.handle) { slot = &client; break; }
+    if (!slot || session_generation == UINT64_MAX) return RISC_TCP_CONNECTION_LIMIT;
+    risc_tcp_listen_v1 copied{}; copied.struct_size = sizeof(copied);
+    std::memcpy(copied.address, request->address, sizeof(copied.address)); copied.port = request->port;
+    Operation operation; uint64_t native = 0;
+    result = backend.connect(backend.context, &copied, &native);
+    return opened(*slot, result, native, out, false);
+}
+int32_t connected(void *context, uint64_t handle) {
+    int32_t result = gate(context); if (result) return result;
+    Session *client = find_client(handle);
+    if (!client) return RISC_TCP_CONNECTION_CONTEXT;
+    if (!backend.connected) return RISC_TCP_CONNECTION_INVALID;
+    Operation operation;
+    result = backend.connected(backend.context, client->native);
+    if (result == RISC_TCP_CONTEXT || result == RISC_TCP_RETAINED) return fence(result);
+    if (result != RISC_TCP_OK && result != RISC_TCP_WOULD_BLOCK && !known_error(result))
+        return fence(RISC_TCP_RETAINED);
+    return result;
+}
 int32_t transfer(void *context, uint64_t handle, void *output, const void *input,
                  uint32_t size, uint32_t *count) {
     if (count) *count = 0;
@@ -166,17 +194,25 @@ bool start(const risc_provider_dependency_v1 *dependencies, size_t count) {
     if (!dependency.capability_id || std::strcmp(dependency.capability_id, RISC_TCP_LISTENER_CAPABILITY) ||
         dependency.api_version != RISC_TCP_LISTENER_API_V1 || !dependency.api) return false;
     const auto *candidate = static_cast<const risc_tcp_listener_v1 *>(dependency.api);
-    if (candidate->api_version != RISC_TCP_LISTENER_API_V1 || candidate->struct_size < sizeof(*candidate) ||
+    if (candidate->api_version != RISC_TCP_LISTENER_API_V1 || candidate->struct_size < offsetof(risc_tcp_listener_v1, connect_tag) ||
         !candidate->context || !candidate->listen || !candidate->accept || !candidate->read ||
         !candidate->write || !candidate->close) return false;
-    backend = *candidate;
+    backend = risc_tcp_listener_v1{};
+    std::memcpy(&backend, candidate, offsetof(risc_tcp_listener_v1, connect_tag));
+    api.connect_tag = 0; api.connect = nullptr; api.connected = nullptr;
+    if (candidate->struct_size >= sizeof(*candidate) && candidate->connect_tag == RISC_TCP_CONNECT_TAG &&
+        candidate->connect && candidate->connected) {
+        backend.connect_tag = candidate->connect_tag;
+        backend.connect = candidate->connect; backend.connected = candidate->connected;
+        api.connect_tag = RISC_TCP_CONNECTION_CONNECT_TAG; api.connect = connect; api.connected = connected;
+    }
     api.context = reinterpret_cast<void *>(++activation_generation);
     stopping = false;
     started = true;
     return true;
 }
 void stop() { (void)quiesce(); }
-risc_tcp_connection_v1 api{RISC_TCP_CONNECTION_API_V1, sizeof(api), nullptr, listen, accept, read, write, close};
+risc_tcp_connection_v1 api{RISC_TCP_CONNECTION_API_V1, sizeof(api), nullptr, listen, accept, read, write, close, 0, nullptr, nullptr};
 const risc_driver_v2 driver{RISC_PROVIDER_DRIVER_ABI_V2, sizeof(driver), "network-tcp-listener",
     RISC_TCP_CONNECTION_CAPABILITY, RISC_TCP_CONNECTION_API_V1, &api, start, stop, quiesce};
 }

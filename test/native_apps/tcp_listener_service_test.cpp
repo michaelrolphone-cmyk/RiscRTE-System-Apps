@@ -61,7 +61,7 @@ int32_t close(void *value, uint64_t handle) {
     entered(value); ++close_calls; closed.push_back(handle);
     return close_calls == fail_close_at ? close_result : RISC_TCP_OK;
 }
-risc_tcp_listener_v1 native_table{1, sizeof(native_table), context, listen, accept, read, write, close};
+risc_tcp_listener_v1 native_table{1, sizeof(native_table), context, listen, accept, read, write, close, 0, nullptr, nullptr};
 risc_provider_dependency_v1 dependency{RISC_TCP_LISTENER_CAPABILITY, 1, &native_table};
 void start() {
     fake_driver = t5_driver_get(2);
@@ -100,12 +100,47 @@ void no_more_io(uint64_t listener, uint64_t client, int32_t expected) {
     count = 99;
     assert(connection.write(connection.context, client, bytes, sizeof(bytes), &count) == expected && !count);
     assert(connection.close(connection.context, client) == expected);
+    if(connection.connect){assert(connection.connect(connection.context,&request,&out)==expected&&!out);assert(connection.connected(connection.context,client)==expected);}
     assert(!fake_driver->quiesce()); fake_driver->stop();
     assert(!fake_driver->quiesce() && !fake_driver->start(&dependency, 1));
     assert(calls == before);
 }
 }
 
+static int32_t fake_connected(void *value, uint64_t handle) { Fake::entered(value); assert(handle>=1001); return Fake::transfer_result; }
+static void connector(const std::string& test) {
+    using namespace Fake;
+    if(test=="legacy-connect") {
+        native_table.struct_size=offsetof(risc_tcp_listener_v1, connect_tag);
+        Fake::start(); assert(!connection.connect_tag&&!connection.connect&&!connection.connected);
+        assert(fake_driver->quiesce());return;
+    }
+    native_table.connect_tag=RISC_TCP_CONNECT_TAG;native_table.connect=Fake::listen;native_table.connected=fake_connected;
+    Fake::start(); assert(connection.connect_tag==RISC_TCP_CONNECTION_CONNECT_TAG&&connection.connect&&connection.connected);
+    risc_tcp_connection_listen_v1 r{sizeof(r),{192,168,7,6},8080,0};uint64_t c=99;caller_request=&r;
+    assert(connection.connect(connection.context,&r,&c)==0&&c);
+    assert(request_copy.port==r.port&&!memcmp(request_copy.address,r.address,4));
+    transfer_result=RISC_TCP_WOULD_BLOCK;assert(connection.connected(connection.context,c)==RISC_TCP_CONNECTION_WOULD_BLOCK);
+    transfer_result=0;assert(connection.connected(connection.context,c)==0);
+    if(test=="connect-unknown") {
+        transfer_result=99;assert(connection.connected(connection.context,c)==RISC_TCP_CONNECTION_RETAINED);
+        no_more_io(0,c,RISC_TCP_CONNECTION_RETAINED);return;
+    }
+    if(test=="connect-close-retained") {
+        close_result=RISC_TCP_RETAINED;assert(connection.close(connection.context,c)==RISC_TCP_CONNECTION_RETAINED);
+        no_more_io(0,c,RISC_TCP_CONNECTION_RETAINED);return;
+    }
+    transfer_result=RISC_TCP_IO;assert(connection.connected(connection.context,c)==RISC_TCP_CONNECTION_IO);
+    assert(connection.close(connection.context,c)==0);
+    unsigned before=calls;assert(connection.connected(connection.context,c)==RISC_TCP_CONNECTION_CONTEXT&&calls==before);
+    r.address[0]=0;assert(connection.connect(connection.context,&r,&c)==RISC_TCP_CONNECTION_INVALID&&c==0&&calls==before);
+    r.address[0]=192;assert(connection.connect(connection.context,&r,&c)==0);
+    auto old=connection;assert(fake_driver->quiesce());
+    assert(old.connected(old.context,c)==RISC_TCP_CONNECTION_CONTEXT);
+    assert(fake_driver->start(&dependency,1));connection=*static_cast<const risc_tcp_connection_v1*>(fake_driver->capability);
+    before=calls;assert(old.connect(old.context,&r,&c)==RISC_TCP_CONNECTION_CONTEXT&&c==0&&calls==before);
+    assert(fake_driver->quiesce());
+}
 static void lifecycle() {
     using namespace Fake;
     Fake::start(); auto l = Fake::listen();
@@ -165,7 +200,7 @@ static void validation() {
     assert(!fake_driver->start(&bad, 1)); bad = dependency; bad.api_version = 2;
     assert(!fake_driver->start(&bad, 1)); bad = dependency; bad.api = nullptr;
     assert(!fake_driver->start(&bad, 1));
-    auto saved = native_table; native_table.struct_size = sizeof(native_table) - 1;
+    auto saved = native_table; native_table.struct_size = offsetof(risc_tcp_listener_v1, connect_tag) - 1;
     assert(!fake_driver->start(&dependency, 1)); native_table = saved; native_table.api_version = 2;
     assert(!fake_driver->start(&dependency, 1)); native_table = saved; native_table.context = nullptr;
     assert(!fake_driver->start(&dependency, 1)); native_table = saved; native_table.close = nullptr;
@@ -281,7 +316,8 @@ static void overflow() {
 }
 int main(int argc, char **argv) {
     assert(argc == 2); const std::string test = argv[1];
-    if (test == "lifecycle") lifecycle();
+    if (test == "connector" || test == "legacy-connect" || test == "connect-unknown" || test == "connect-close-retained") connector(test);
+    else if (test == "lifecycle") lifecycle();
     else if (test == "validation") validation();
     else if (test == "recoverable") recoverable();
     else if (test == "overflow") overflow();

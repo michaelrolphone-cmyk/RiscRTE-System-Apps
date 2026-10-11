@@ -47,7 +47,15 @@ typedef struct {
      * calling the native dependency. Retained resources require native recovery.
      * Copies of this table/callbacks are valid only while their grant is live. */
     int32_t (*close)(void *, uint64_t);
+    /* Optional append-only connector; check struct_size and tag before use.
+     * OK returns an owned handle, possibly pending. Poll connected on later
+     * cooperative ticks; close on cancellation, deadline or error. Literal
+     * unicast IPv4 only. No DNS or connection retry is performed here. */
+    uint32_t connect_tag;
+    int32_t (*connect)(void *, const risc_tcp_connection_listen_v1 *, uint64_t *);
+    int32_t (*connected)(void *, uint64_t);
 } risc_tcp_connection_v1;
+#define RISC_TCP_CONNECTION_CONNECT_TAG UINT32_C(0x54435031)
 #ifdef __cplusplus
 }
 #endif
