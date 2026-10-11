@@ -32,7 +32,12 @@ for asynchronous in (False, True):
             row = json.loads(subprocess.check_output([str(binary), str(latency), str(duration)], text=True,
                                                      env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0'), timeout=20))
             if asynchronous:
-                assert row['longest_logical_poll_ms'] <= 20, row
+                # This fixture charges zero raster CPU time. Its active-token
+                # paint can admit one explicit 1 ms cooperative-provider yield.
+                # Keep total elapsed time visible and bound both contributions.
+                assert row['max_raster_yield_per_poll_ms'] <= 1, row
+                assert row['longest_poll_without_raster_yield_ms'] <= 20, row
+                assert row['longest_logical_poll_ms'] <= 21, row
                 assert row['max_scroll_pixels'] >= 119, row
                 assert row['scroll_state_changes'] >= (19 if duration == 400 else 4), row
             rows.append(row)
