@@ -71,6 +71,8 @@ def record(args,root,record,manifest,defines):
     if manifest['id']=='file_browser' and getattr(args,'webdav_sharing',False):
         from portable_file_sharing_build import selected_version
         expected=selected_version(args)
+    if manifest['id']=='app_store' and getattr(args,'installed_catalog',False):
+        expected='1.5.0'
     if manifest['version']!=expected or manifest['requires'].count(CAPABILITY)!=1:
         raise ValueError('Telemetry manifest/version differs from selected builder')
     if not set(DEFINES)<=set(defines) or '-DPORTABLE_NATIVE_CUSTODY_FENCE' not in defines or '-DALARM_SERVICE_TAGGED_V2' not in defines:
