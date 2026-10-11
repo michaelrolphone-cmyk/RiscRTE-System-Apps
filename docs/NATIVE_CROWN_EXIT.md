@@ -1,7 +1,7 @@
 # Native crown exit consumer checkpoint
 
 Requires Runtime host-control suffix and board-selected native recovery, source
-8ad225cc465925cee0267225b38f06ba7be24985 (plus emergency parent 84ac1c4).
+97b780888663be667582e21039dd1345b9eda6e8 (plus emergency parent 84ac1c4).
 The portable adapter tests persistent native exit before modal, keyboard and
 app navigation branches, requesting normal cleanup. The scene host prioritizes
 suspend over queued touch, keyboard and rendering work. Neither consumer can
