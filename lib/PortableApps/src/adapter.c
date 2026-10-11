@@ -2940,9 +2940,16 @@ static void settings_native_finalize(void) {
   navigation=NULL;
 #endif
   if(!portable_touch_close(&touch,rt)){portable_adapter_retain();return;}
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#ifdef PORTABLE_SETTINGS_APP
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+  if(rtc_grant.api && !rt->release(&rtc_grant))return;
+  rtc=NULL;
+#endif
   if(settings_grant.api && !rt->release(&settings_grant))return;
   settings_store=NULL;sv_active=false;
+#ifdef PORTABLE_ALARM_SETTINGS
+  alert_store=NULL;
+#endif
 #endif
   if(bg.api && !rt->release(&bg))return;
   if(dg.api && !rt->release(&dg))return;

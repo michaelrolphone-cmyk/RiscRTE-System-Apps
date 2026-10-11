@@ -1,0 +1,23 @@
+name: Watch crown profile cleanup
+on:
+  pull_request:
+  push:
+    branches: [fix/native-crown-exit, integrate/watch-x4-recovery-20261011]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  checked-cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 674f480b9a07d108ae9de151b3bf2ec82dfa3491
+          path: .deps/runtime
+      - name: Watch checked RTC/store cleanup and local sleep eligibility
+        run: python3 scripts/test_watch_checked_settings.py --runtime .deps/runtime

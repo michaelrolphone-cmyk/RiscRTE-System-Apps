@@ -910,7 +910,7 @@ static bool settings_open(void) {
 #endif
   return true;
 }
-#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
 static void settings_close(void) {
   sv_active=false;
 #ifdef PORTABLE_ALARM_SETTINGS

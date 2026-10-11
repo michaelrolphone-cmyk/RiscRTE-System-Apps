@@ -180,7 +180,7 @@ static bool wifi_disconnect(void) {
   strcpy(status_text,"Disconnected");ip_text[0]=0;
   memset(&scan_result,0,sizeof(scan_result));dirty=true;return true;
 }
-#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
 bool portable_wifi_idle_ready(void) {
  if(PORTABLE_APP_RETAINED())return false;
  return !opened || (!scanning && !scan_owned && !joining && !cleanup_pending && link_state==WIFI_LINK_DOWN
