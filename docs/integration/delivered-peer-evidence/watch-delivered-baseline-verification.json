@@ -1,0 +1,8 @@
+{
+  "full_image_sha256": "b19673297eca3f9323f97004203aaedbe9eb3c146d4b738ef1a2c6096b380ede",
+  "full_image_size": 16777216,
+  "store_identical_to_qualified_peer_payload": true,
+  "native_identical_to_qualified_peer_payload": true,
+  "initial_image_replaces_internal_data": true,
+  "hardware_tested": false
+}

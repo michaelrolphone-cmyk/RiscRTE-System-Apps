@@ -1,0 +1,2 @@
+SD request allocator peak: 405928 bytes; Session object: 22728 bytes; transfer chunk: 4096 bytes
+WebDAV volume: streamed 2 MiB GET/COPY, 513 rows, property selection, PUT/MOVE/DELETE/MKCOL, conditions, absent/exported/removal and retained close PASS

@@ -1,0 +1,5 @@
+App Store cached inventory: installed rows, offline state, unchanged release authority, 1000 memory-only lookups and checked release PASS
+App Store cached inventory: installed rows, offline state, unchanged release authority, 1000 memory-only lookups and checked release PASS
+Portable update UI scenario 50 passed
+Portable update UI scenario 51 passed
+App Store installed inventory: 38 existing controller cases plus cached installed-list interaction PASS (UBSan)

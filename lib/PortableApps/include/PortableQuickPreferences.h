@@ -7,11 +7,17 @@
 #include <stdint.h>
 #define PQA_STORE_INSTANCE 1u
 #define PQA_BRIGHTNESS_KEY "brightness"
+#define PQA_RESTORE_BRIGHTNESS_KEY "quick_bright"
 #define PQA_VOLUME_KEY "alarm_volume"
 #define PQA_RESTORE_VOLUME_KEY "quick_volume"
 #define PQA_DND_KEY "alert_dnd"
 #define PQA_BRIGHTNESS_DEFAULT 40u
 #define PQA_VOLUME_DEFAULT 50u
+#ifdef PORTABLE_FRONTLIGHT_TONE
+/* Dimensionless cool-to-warm ratio, independent of brightness and OFF. */
+#define PQA_TONE_KEY "frontlight_tone"
+#define PQA_TONE_DEFAULT 50u
+#endif
 static inline bool pqa_preferences_valid(const risc_key_value_v1 *kv) {
  return kv && kv->api_version==1 && kv->struct_size>=sizeof(*kv) && kv->get && kv->put;
 }

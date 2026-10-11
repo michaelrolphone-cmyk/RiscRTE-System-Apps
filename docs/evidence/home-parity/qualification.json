@@ -1,0 +1,225 @@
+{
+  "controller_process_cases": 160,
+  "projection_cases": "native UTC, custom/end/empty/range/DST",
+  "actual_pixel_states": [
+    "home-ready",
+    "home-custom",
+    "home-empty",
+    "home-invalid",
+    "home-unavailable"
+  ],
+  "target": {
+    "purpose": "development-artifact-no-hardware-qualification",
+    "desk_clock": true,
+    "retained_wake_sdk_sha256": "36066ff656dbdfbd6546b8ee92b62f7a74c3ba501bda34602e39811035fa7296",
+    "version": "0.3.6",
+    "clock_policy": "native-realtime-iana",
+    "display_rotation": 90,
+    "launcher_app": "springboard.elf",
+    "navigation": true,
+    "sleep_capability": "x4.power",
+    "local_sleep_source_sha256": "a1da82bea1456cedb861eeb6742c9541a8d2b45fe858960802536d127d287993",
+    "alarm_client": true,
+    "quick_actions": true,
+    "quick_radios": true,
+    "home_app": null,
+    "sha256": "9d6f78f0082179152053c626553974b76a203a28f49cd1354d8e8a2eed2db5ef",
+    "size_bytes": 295944,
+    "imports": [
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy"
+    ],
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "repository_commit": "186b63526b2633a68b02679caae80585cc2b9da5",
+    "working_tree_dirty": true,
+    "tagged_alarm_sdk": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "637e13b0bce62ad49b756bec2468a6271d163fc7",
+      "capability": "alarm.service",
+      "api": 2,
+      "sha256": {
+        "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+        "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+        "AlarmRecords.h": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066",
+        "PointsRecords.h": "ee59148062a39b2973e70c9c4816c1109686df0440d0ffd0d56ef0bff8820332",
+        "PointsSchedule.h": "9e34d32dbf989ee28f287813744748ab2d3193857a71bcab66e1f9b41749306c",
+        "PointsUtcSchedule.h": "b1ff4460410ec793d2fe7711562412c0e735e80c7fc4b881d761dab4e973e188",
+        "LICENSE": "7212963b5b1b5ee34ca158163356beb1e6945dd2cc5d320f1fe7573c424ea640"
+      }
+    },
+    "home_points": {
+      "clock_policy": "native-utc",
+      "storage_instance": 5,
+      "foreground_only": true,
+      "records": [
+        "points_utc_cfg",
+        "points_utc_meta"
+      ],
+      "projection": "Utilities PointsUtcSchedule",
+      "model": "Watch nova_points_state",
+      "tap_app": "points_in_time.elf"
+    },
+    "desk_sdk_headers": {
+      "RiscDisplayOutputV1.h": "99b682ba34f07e7868dec8e78dfb816c067fdc184e647033bc6ed8d489b9c9a2",
+      "RiscDisplayOutputPowerV1.h": "e9c7d3bd3ddf9bce128503aafb5669734db09424149f45b3a6f735cd5a7c8667",
+      "RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+      "RiscTouchPowerV1.h": "82c6faed9b7e26788e3a226cd3532b1d2c3b59447c8abdc25b5e407ef0399dd0",
+      "RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+      "RiscRetainedWakeV1.h": "36066ff656dbdfbd6546b8ee92b62f7a74c3ba501bda34602e39811035fa7296",
+      "RiscTimedSleepV1.h": "475ba9bfaf6c7497ace7baeb93f2bd9a6abe1e3a91f62eed24862a88d60dbf34",
+      "RiscLightSleepV1.h": "43cbd671265959ec2db7904bf6185e97a87c4cde9d389cdccf6fbb7c916f3b94",
+      "RiscDeepSleepV1.h": "0949cf9591ef0f07b61c1306897287ea2eb1533755b5e569bfe1cb2c9b236161",
+      "RiscRuntimeV1.h": "2f1b785d65729c0866691570bb920299a8c5187765f3eac204df3cb427ce9c84",
+      "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+      "RiscProviderPromotionV1.h": "b7765248e6c9d959df648417344e134b55a87a11702ba0c78dde19e7bc332295"
+    },
+    "desk_sources": {
+      "Apps/paper_clock.c": "d2d7a354777a02b365399ef7b55913504bcf7e7883c965fbc7ccfff142975fe0",
+      "Apps/PaperFrame.h": "ce2d4a7221cf4056ed131b27117e143cd2e39b7b86f0de4ab841275674977b24",
+      "Apps/paper_desk_clock.inc": "a32c86315c065eb0307774196e3c9fc561173ac5aa26ab2bf6450f0b0299dbe5",
+      "lib/PortableApps/src/adapter.c": "b70c43c779e438e55f2d62c51a109b09cb4d27ef827146525a612128cb8b1172",
+      "lib/PortableApps/src/desk_clock_faces.c": "daa53d3b432f6f5b0d4ca37532d9a06cb8b862864184ebb9e0af564d5e6b591b",
+      "lib/PortableApps/include/PortableDeskClockApp.h": "56c1a27df570504ed0173e41a865af1ec244fde35c700049670b0ca9214d4c53",
+      "lib/PortableApps/include/PortableDeskClock.h": "d557b6e38fa9d80a39e818a3c13a45566144f744f066985ebb85cb5536b0ce54",
+      "lib/PortableApps/include/PortableDeskClockSettings.h": "4ebc9811749e5958fe0e1520a3fc617c7411827d278d379e1070075f017c8b7e",
+      "lib/PortableApps/include/PortableSleepPolicy.h": "0b458a9180e29ca35973bdfe53b9d7c6ce4396c0762c067dfd60b8553bb1f3b3",
+      "lib/PortableApps/include/PortableReaderPreferences.h": "3f0b7b12b1ddf6bf9c45c9598dab5488feadde0e9f5879b5e12c9f4eff8d4eda",
+      "lib/PortableApps/src/paper.inc": "6b61e05c9dbaa2f891c51e6ae720f57831e8b652b22f75bb61d0a95478da7930",
+      "scripts/build_paper_clock.py": "1e7a9ada06a9143724a1228b358e18636fe56cf82153c84dd8da1a0835bb0a72",
+      "lib/PortableApps/src/quick_actions.c": "1858158201a1053616029caf65642ba787f5f53859a858f3b5f201c729046bfb",
+      "lib/PortableApps/src/quick_render.c": "70ff531a8b882d36919f647d15944eb7776f080a6075eb031711111eb1ea89cf",
+      "lib/PortableApps/src/quick_session.c": "f09f4b59e26c4111465a531af3b23cc0ef4e5fea2829c32e36aa56f5bd19c3c5",
+      "lib/PortableApps/src/quick_radios.c": "8f53de1e5ba9c8a16309368ef8f29db1b383b78c7acff89ad9a81b624d1b7142",
+      "scripts/portable_alarm_build.py": "e9e8239b9c1edf08b845e7aaecd87f561ca73412cf6f5801845b5bbde7809f9d",
+      "Apps/paper_home_points.inc": "6bc238ce73513105a4380d431da01694867c18d6b87bbb031d4cf7b5858a6369",
+      "Apps/PaperHomePoints.h": "f664b14fd391ff73fceedc2d7322803842abacb38896cc6cfcaa65b7c28e9124",
+      "Apps/PaperQuickIntent.h": "3cad9e4a2d9e7a8301a61f1f43fa00a470223b77053000d09b1d538c52501bc0",
+      "Apps/paper_home_type.inc": "6b761ff06584296f1f8c8e59e4c83c0e392ee7b0cf29c875998936bc6274f558",
+      "lib/PortableApps/home_fonts/text.inc": "c027811edd22a69ac963a4fc1e0cf7f9c95b0c819bdb1ec77c58974276539a1d",
+      "lib/PortableApps/home_fonts/dial.inc": "bb0ec471a837d97574c3b7047a53d1962b0de1adf2f2476072719578c80ea4c6",
+      "lib/PortableApps/home_fonts/SOURCES.json": "a70efc1d86febdb812c0abfedde67149cebfe59c185c8274cb5b1688f20750ec",
+      "lib/PortableApps/home_fonts/DIAL.json": "4b9c8f4b24d7ebba9247a2bf7ca198875c6ad2c6103c7bce136834200cb9f9bd",
+      "lib/PortableApps/include/PortablePointsState.h": "a0c2867af9950cd345539047c9a9cf38a240ca723559626bb4f65dedac499be2",
+      "lib/PortableApps/boot_logo/RiscRteLogo.h": "dc4cd411affdbe6a6f0bcc5961145111e900dff13da92a590cdba4d5a93bd481",
+      "lib/PortableApps/boot_logo/logo.svg": "d798169a71ab910a3d0acf624a9a46791af2ed83c18b9641e2dcdaf8de07f508",
+      "lib/PortableApps/boot_logo/SOURCES.json": "3faf14c6bfb3121ce578c9757b3c6a3ac3f3edeb615dcdfb122f65934522c539",
+      "Apps/paper_sparse_clock.inc": "70c8a94e59615bf8484a530953d2780e79cba3b8f19f2287d6fe7493a6f3037c",
+      "lib/PortableApps/src/sparse_clock_adapter.inc": "2ed6a2300ed90d53a643877fd824bb21f4ce6c79237bf3536c96944513acd92b",
+      "lib/PortableApps/src/alarm.inc": "77ee1551198bfcfb10ed07b6949d96a553019144db97710945de500e076139c9",
+      "lib/PortableApps/src/nova.inc": "6addc693408fd1fc4df0f410d4fa13107a88a369cc1db5594261a329b3d07ac8",
+      "lib/PortableApps/src/quick_adapter.inc": "85dbddc315cdd88338bb52e35d82f413f21ed8d039a70fbf94405fc62d28da43",
+      "lib/PortableApps/include/PortableRealtimeClient.h": "9a366511975762ab7124931e9124756319acfe586ba9f3881a9f710129290b0a",
+      "lib/PortableApps/include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+      "lib/PortableApps/include/PortableTimeZonePreference.h": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0",
+      "lib/PortableApps/include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+      "lib/PortableApps/src/PortableRealtimeClient.c": "bb20f4f0e17a5517eef2dc55202fb23099363183d0f6c093280aca41f5bdb00f",
+      "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+      "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+      "lib/PortableApps/src/PortableTimeZonePreference.c": "b54e455d587ba2ecda8f59dd899b59b767214aee807b92d79d18c5e9d30b6bb7"
+    },
+    "time_resolution": "native microsecond snapshot before holds; bounded same-boot projection after holds; physical accuracy and entry latency unqualified",
+    "grant_count": 14,
+    "sparse_start": true,
+    "provider_activation": "demand",
+    "timer_preferences": "retained-only",
+    "foreground_promotion": true,
+    "invocation_retention": true
+  },
+  "hardware_validation": "not run",
+  "base": "c1ff014792c9ecbc195c402e9b4c3e2c3c9d34d3",
+  "dependencies": [
+    "947ec90b51a69c5ad7064e290cd6ccfea4c7c62b",
+    "4b72a54e18c114e23774d8579675efd6048de41e"
+  ],
+  "reference_comparison": {
+    "metric": "black-pixel intersection / union after thresholding the SVG reference at 128",
+    "regions": {
+      "date": {
+        "crop": [
+          24,
+          16,
+          224,
+          50
+        ],
+        "before": 0.1516,
+        "after": 0.9069
+      },
+      "clock": {
+        "crop": [
+          108,
+          212,
+          372,
+          300
+        ],
+        "before": 0.4063,
+        "after": 0.9718
+      },
+      "next": {
+        "crop": [
+          24,
+          482,
+          456,
+          516
+        ],
+        "before": 0.1412,
+        "after": 0.8718
+      },
+      "title": {
+        "crop": [
+          24,
+          520,
+          456,
+          575
+        ],
+        "before": 0.3423,
+        "after": 0.9627
+      },
+      "countdown": {
+        "crop": [
+          24,
+          580,
+          456,
+          615
+        ],
+        "before": 0.1544,
+        "after": 0.8759
+      },
+      "upcoming": {
+        "crop": [
+          24,
+          662,
+          456,
+          742
+        ],
+        "before": 0.1789,
+        "after": 0.8442
+      }
+    }
+  },
+  "preservation": {
+    "base": "4b72a54e18c114e23774d8579675efd6048de41e",
+    "identical_elf_sha256": {
+      "clock": "36b75629a980835c32fa615c4012d5ab36e9cdd73428936b97cfe4f7fc1ac66c",
+      "watch": "1f56a690ad809443663ab42356d618121b2c5d1e0016b0bd1ac45cc466ffd04a"
+    }
+  },
+  "home_source_sha256": {
+    "Apps/paper_clock.c": "d2d7a354777a02b365399ef7b55913504bcf7e7883c965fbc7ccfff142975fe0",
+    "Apps/paper_home_points.inc": "6bc238ce73513105a4380d431da01694867c18d6b87bbb031d4cf7b5858a6369",
+    "Apps/paper_home_type.inc": "6b761ff06584296f1f8c8e59e4c83c0e392ee7b0cf29c875998936bc6274f558",
+    "Apps/PaperQuickIntent.h": "3cad9e4a2d9e7a8301a61f1f43fa00a470223b77053000d09b1d538c52501bc0",
+    "lib/PortableApps/src/nova.inc": "6addc693408fd1fc4df0f410d4fa13107a88a369cc1db5594261a329b3d07ac8",
+    "lib/PortableApps/home_fonts/text.inc": "c027811edd22a69ac963a4fc1e0cf7f9c95b0c819bdb1ec77c58974276539a1d",
+    "lib/PortableApps/home_fonts/dial.inc": "bb0ec471a837d97574c3b7047a53d1962b0de1adf2f2476072719578c80ea4c6",
+    "scripts/test_home_points.py": "c54a41ddf5d90ad07b51075fb3ea81efb6461099980667670776650231e6741c",
+    "scripts/compare_home_reference.py": "abced2f9bacb083c5a9d5bf61b6045e544b9dcbea363e3b1d4e3bd367d3913f3",
+    "test/native_apps/sparse_clock_startup_test.c": "87e88fb082953a987e42a1662f0ba5c251e8a6ef61166afa8bcb045e050ac76e"
+  }
+}

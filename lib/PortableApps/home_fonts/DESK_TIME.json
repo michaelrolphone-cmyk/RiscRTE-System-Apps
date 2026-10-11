@@ -1,0 +1,11 @@
+{
+  "font": "Orbitron-wght.ttf",
+  "weight": 900,
+  "size": 80,
+  "threshold": 128,
+  "anchor": "left-baseline",
+  "license": "SIL OFL1.1",
+  "source_sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+  "desk_time.inc_sha256": "4990d6d4fe1592f71afa7fcf40fbf6553823a5fcde5daa1443778a0af354a247",
+  "generator": "scripts/generate_home_desk_time.py"
+}

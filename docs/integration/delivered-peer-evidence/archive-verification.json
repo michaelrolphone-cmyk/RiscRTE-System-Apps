@@ -1,0 +1,34 @@
+[
+  {
+    "target": "x4",
+    "kind": "FULL-AND-PRESERVING-TEST",
+    "path": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/delivered-peer/X4-0.1.83-FULL-AND-PRESERVING-TEST.zip",
+    "bytes": 13585509,
+    "sha256": "842d74c9426d4c356367c3ea1f995be0e34e2ec953ba684dc685942650413cef",
+    "zip_round_trip_verified": true
+  },
+  {
+    "target": "x4",
+    "kind": "NATIVE-SYMBOLS",
+    "path": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/delivered-peer/X4-0.1.83-NATIVE-SYMBOLS.zip",
+    "bytes": 9630922,
+    "sha256": "f7d3889b2c6fe2743fcb65de8e3951d1c4cb468165f1e3879411347f19fb150b",
+    "zip_round_trip_verified": true
+  },
+  {
+    "target": "watch",
+    "kind": "FULL-AND-PRESERVING-TEST",
+    "path": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/delivered-peer/WATCH-1.1.4-FULL-AND-PRESERVING-TEST.zip",
+    "bytes": 10393845,
+    "sha256": "4c360c04e8960a043a3f75c711c59d541e2aaab8e59ec431228422d576758967",
+    "zip_round_trip_verified": true
+  },
+  {
+    "target": "watch",
+    "kind": "NATIVE-SYMBOLS",
+    "path": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/delivered-peer/WATCH-1.1.4-NATIVE-SYMBOLS.zip",
+    "bytes": 9375686,
+    "sha256": "7eb85907b618e4686b083f895558747b7502c787ca18c10d0b779551d521e5f6",
+    "zip_round_trip_verified": true
+  }
+]

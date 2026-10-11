@@ -59,3 +59,11 @@ Unconfirmed native cleanup retains the invocation. Healthy persistent Bluetooth
 survives app navigation; explicit Light/Deep preparation closes it and wake reloads
 the desired mode. Tests cover actual adapter taps, both touch rotations, shared
 Wi-Fi/update guards and the controller cleanup/storage fault matrix.
+
+## Retaining paper clients
+
+The same explicit build selection now supports a static, capability-selected
+Nova7 paper sheet with native-format background retention. See
+[PAPER_CONTROLS.md](PAPER_CONTROLS.md) for Home/crown distinctions, exact grants,
+unsupported-control handling, build flags, and real-adapter coverage. The Watch
+RGB565 panel retains its existing animation and geometry.

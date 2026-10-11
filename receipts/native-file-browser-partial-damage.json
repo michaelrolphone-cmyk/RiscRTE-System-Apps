@@ -1,0 +1,45 @@
+{
+  "baseline": "91d106e447bf9de513a4b780a3bea7c202ccce6d",
+  "profiles": {
+    "watch": {
+      "elf_sha256": "44ed4ae64f36b47fa6285306d40420e8402eec232b91aa5e451cb9c9f9a4563e",
+      "bytes": 202132,
+      "elf_and_manifest_byte_identical": true
+    },
+    "raw-paper": {
+      "elf_sha256": "adefbe11bb9b39ba25d4e10ecee15dd30ee36c2516cab156c0bd925b81a75e14",
+      "bytes": 197784,
+      "elf_and_manifest_byte_identical": true
+    }
+  },
+  "native_profile": "x4-native-time",
+  "version": "1.5.5",
+  "storage_instance": 9,
+  "file_handlers": true,
+  "force_full_frames": false,
+  "native_elf_bytes": 243932,
+  "native_elf_sha256": "6c7552aca787496ed2d203ac1bb4d275f1fc9983230b5b289f74456325411e11",
+  "native_defines": [
+    "-DPORTABLE_FILE_BROWSER_APP",
+    "-DPORTABLE_NOVA_UI",
+    "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+    "-DPORTABLE_TOUCH_ROTATION=0",
+    "-DPORTABLE_DISPLAY_ROTATION=90",
+    "-DPORTABLE_FILE_BROWSER_CAPABILITY=\"storage.volume\"",
+    "-DPORTABLE_FILE_BROWSER_INSTANCE=9u",
+    "-DFILE_BROWSER_RETURN_APP=\"springboard.elf\"",
+    "-DPORTABLE_FILE_BROWSER_HANDLERS",
+    "-DPORTABLE_ALARM_CLIENT",
+    "-DPORTABLE_INPUT_NAVIGATION",
+    "-DPORTABLE_NATIVE_TIME_TOOLBAR",
+    "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+    "-DALARM_SERVICE_TAGGED_V2",
+    "-DPORTABLE_HOME_APP=\"default.elf\"",
+    "-DPORTABLE_QUICK_ACTIONS"
+  ],
+  "native_system_host_cases": 72,
+  "native_system_target_builds": 6,
+  "damage_submissions_observed": true,
+  "hardware": "not run",
+  "publication": "none"
+}

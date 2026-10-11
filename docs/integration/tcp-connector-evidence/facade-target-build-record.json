@@ -1,0 +1,70 @@
+{
+  "purpose": "development-only-not-activation-or-publication",
+  "runtime_contract_revision": "96e8c1f4e76ba3accfdff33d81b06233ecc5e7f5",
+  "runtime_contract_sha256": "63ed934c4cb1a505de539d06ad04c1551ec23f64d56b6ea07129698dde0ba886",
+  "sha256": "49e256b42d1a8fcf46ffff4d9e2b05edd12c6dda96ed840d66c7a1c4e8468ed4",
+  "size_bytes": 9308,
+  "compiler": "xtensa-esp32s3-elf-g++ (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "imports": [
+    "memcpy",
+    "memset",
+    "strcmp"
+  ],
+  "exports": [
+    "t5_driver_get"
+  ],
+  "section_sizes": {
+    "": 0,
+    ".hash": 40,
+    ".dynsym": 80,
+    ".dynstr": 36,
+    ".rela.dyn": 336,
+    ".rela.plt": 36,
+    ".text": 2052,
+    ".rodata": 64,
+    ".got.loc": 72,
+    ".data.rel.ro": 36,
+    ".dynamic": 160,
+    ".got": 4,
+    ".data": 44,
+    ".bss": 2196,
+    ".comment": 44,
+    ".xtensa.info": 56,
+    ".xt.lit": 72,
+    ".xt.prop": 1800,
+    ".symtab": 912,
+    ".strtab": 1075,
+    ".shstrtab": 169
+  },
+  "stack_frames": {
+    "service.cpp:38:6:bool {anonymous}::has_clients()": 32,
+    "service.cpp:32:9:int32_t {anonymous}::gate(void*)": 32,
+    "service.cpp:42:10:{anonymous}::Session* {anonymous}::find_client(uint64_t)": 32,
+    "service.cpp:55:9:int32_t {anonymous}::opened({anonymous}::Session&, int32_t, uint64_t, uint64_t*, bool)": 32,
+    "service.cpp:86:9:int32_t {anonymous}::accept(void*, uint64_t, uint64_t*)": 48,
+    "service.cpp:114:9:int32_t {anonymous}::connected(void*, uint64_t)": 32,
+    "service.cpp:157:9:int32_t {anonymous}::close_session({anonymous}::Session&)": 32,
+    "service.cpp:165:9:int32_t {anonymous}::close(void*, uint64_t)": 32,
+    "service.cpp:176:6:bool {anonymous}::quiesce()": 32,
+    "service.cpp:214:6:void {anonymous}::stop()": 32,
+    "service.cpp:190:6:bool {anonymous}::start(const risc_provider_dependency_v1*, size_t)": 32,
+    "service.cpp:99:9:int32_t {anonymous}::connect(void*, const risc_tcp_connection_listen_v1*, uint64_t*)": 64,
+    "service.cpp:126:9:int32_t {anonymous}::transfer(void*, uint64_t, void*, const void*, uint32_t, uint32_t*)": 80,
+    "service.cpp:154:9:int32_t {anonymous}::write(void*, uint64_t, const void*, uint32_t, uint32_t*)": 32,
+    "service.cpp:68:9:int32_t {anonymous}::listen(void*, const risc_tcp_connection_listen_v1*, uint64_t*)": 64,
+    "service.cpp:151:9:int32_t {anonymous}::read(void*, uint64_t, void*, uint32_t, uint32_t*)": 32,
+    "service.cpp:219:73:const risc_driver_v2* t5_driver_get(uint32_t)": 32
+  },
+  "source_sha256": {
+    "Services/tcp_listener/service.cpp": "58e17e346be105dd50c770896f2c0f424f70c178675ec6605d2d7b8d0624a547",
+    "Services/tcp_listener/native/RiscTcpListenerV1.h": "63ed934c4cb1a505de539d06ad04c1551ec23f64d56b6ea07129698dde0ba886",
+    "Services/tcp_listener/manifest.json": "ae19d6877303dfb714bab6c8df4edb85bfc5f76d2e954ded6819402ca6610c2a",
+    "scripts/build_tcp_listener_service.py": "ebfb7ea45af7e1cff05ed05c587a5eda3fc638abb659b79fc1983e9811d079ce",
+    "lib/PortableApps/include/RiscTcpConnectionV1.h": "484ca863b82b44b7a26c4915a240be95b12a92817eb497def3c0d99eb68179c3",
+    "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "scripts/test_tcp_listener_service.sh": "20c8c9f1cfbb192d4f324067b0a00e9628a5e99c90d645943f0aef0d1ea85545",
+    "test/native_apps/tcp_listener_service_test.cpp": "c1c25b54941acede1b8129c3bb62de3e74f1d679fad8dd518f69a370ec6cdb4c"
+  },
+  "qualification_scope": "Host fake-native lifecycle and target ELF structure; no device/network test"
+}

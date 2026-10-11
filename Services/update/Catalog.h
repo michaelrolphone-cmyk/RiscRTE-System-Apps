@@ -1,13 +1,12 @@
 #pragma once
 #include "JsonCursor.h"
+#include "Policy.h"
 #include "SoftwareUpdateV1.h"
 #include "RiscBankStoreV1.h"
 #include "T5PackageVersion.h"
 #include <cstdio>
 namespace WatchUpdate {
 constexpr size_t CatalogMax=512u*1024u, ManifestMax=4096u;
-constexpr const char *Repository="michaelrolphone-cmyk/RiscRTE-T-Watch-S3";
-constexpr const char *CatalogUrl="https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/release-index/release-index.json";
 struct Slice { const char *data=nullptr;size_t size=0; };
 struct Requirement {char name[96]{};uint32_t api=0;};
 struct Manifest {char id[65]{},version[32]{},file[80]{},entry[64]{};Requirement requirements[32]{};unsigned count=0;};
@@ -61,7 +60,7 @@ inline bool manifest(Slice s,const char *id,Manifest& out,WorkBudget& b) {
  !str(s,"version",out.version,sizeof(out.version),b)||!version(out.version)||
  !str(s,"file_name",out.file,sizeof(out.file),b)||!str(s,"entry",out.entry,sizeof(out.entry),b))return false;
  std::snprintf(out.id,sizeof(out.id),"%s",id);Slice optional;if(field(s,"id",optional,b)&&!equals(s,"id",id,b))return false;
- const char *fileId=!std::strcmp(id,"twatch-clock")?"default":!std::strcmp(id,"twatch-clock-return")?"clock":id;
+ const char *fileId=(!std::strcmp(id,"twatch-clock")|| (RequireProduct&&!std::strcmp(id,"paper_clock")))?"default":!std::strcmp(id,"twatch-clock-return")?"clock":id;
  char file[80];std::snprintf(file,sizeof(file),"%s.elf",fileId);if(std::strcmp(file,out.file)||std::strcmp(out.entry,"app_main"))return false;
  Slice req;if(!field(s,"requires",req,b))return false;Cursor c(req.data,req.size,b);if(!c.take('['))return false;if(c.take(']'))return c.end();
  for(;;){Slice row;if(out.count==32||!c.slice(row.data,row.size))return false;Requirement& r=out.requirements[out.count];
@@ -80,7 +79,7 @@ inline bool appRecord(Slice s,Row& out,Manifest& scratch,WorkBudget& b) {
  Slice kind;if(field(s,"kind",kind,b)&&!equals(s,"kind","app",b))return false;
  if(!equals(s,"tag",tag,b)||!payload(s,tag,asset,out,b)||out.view.size>2097152u||!field(s,"manifest",out.manifest,b))return false;
  if(!str(out.manifest,"id",out.native_id,sizeof(out.native_id),b)||!safeId(out.native_id))return false;
- bool identity=!std::strcmp(out.native_id,out.view.id)||(!std::strcmp(out.view.id,"default")&&!std::strcmp(out.native_id,"twatch-clock"))||(!std::strcmp(out.view.id,"clock")&&!std::strcmp(out.native_id,"twatch-clock-return"));
+ bool identity=!std::strcmp(out.native_id,out.view.id)||(!std::strcmp(out.view.id,"default")&&(!std::strcmp(out.native_id,"twatch-clock")||(RequireProduct&&!std::strcmp(out.native_id,"paper_clock"))))||(!std::strcmp(out.view.id,"clock")&&!std::strcmp(out.native_id,"twatch-clock-return"));
  if(!identity)return false;
  if(!manifest(out.manifest,out.native_id,scratch,b)||std::strcmp(scratch.version,out.view.version))return false;
  std::snprintf(out.view.reason,sizeof(out.view.reason),"Not an installed authorized application");return true;
@@ -88,14 +87,14 @@ inline bool appRecord(Slice s,Row& out,Manifest& scratch,WorkBudget& b) {
 inline bool firmwareRecord(Slice s,Row& out,risc_bank_cohort_v1& cohort,WorkBudget& b) {
  out=Row{};out.view.struct_size=sizeof(out.view);std::strcpy(out.view.id,"Runtime");
  if(!str(s,"version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version))return false;
- char tag[96],asset[128];std::snprintf(tag,sizeof(tag),"firmware-v%s",out.view.version);std::snprintf(asset,sizeof(asset),"twatch-s3-launcher-%s.bin",out.view.version);
+ char tag[96],asset[128];std::snprintf(tag,sizeof(tag),"firmware-v%s",out.view.version);std::snprintf(asset,sizeof(asset),"%s-launcher-%s.bin",AssetPrefix,out.view.version);
  Slice kind;if(field(s,"kind",kind,b)&&!equals(s,"kind","firmware",b))return false;
  if(!equals(s,"tag",tag,b)||!payload(s,tag,asset,out,b))return false;
  Slice ota;if(!field(s,"ota",ota,b)){out.view.availability=SOFTWARE_UPDATE_USB_ONLY;out.url[0]=0;std::strcpy(out.view.reason,"USB install only; merged image is not OTA");return true;}
  if(!str(ota,"layout",out.layout,sizeof(out.layout),b)||!number(ota,"store_abi",out.storeAbi,b))return false;
  if(equals(ota,"kind","paired-cohort",b)){
   cohort={};cohort.struct_size=sizeof(cohort);cohort.store_abi=out.storeAbi;
-  if(!out.storeAbi||!str(ota,"product",cohort.product,sizeof(cohort.product),b)||std::strcmp(cohort.product,"twatch-s3")||
+  if(!out.storeAbi||!str(ota,"product",cohort.product,sizeof(cohort.product),b)||std::strcmp(cohort.product,Product)||
      !str(ota,"version",cohort.version,sizeof(cohort.version),b)||std::strcmp(cohort.version,out.view.version)||
      !str(ota,"runtime_version",cohort.runtime_version,sizeof(cohort.runtime_version),b)||!version(cohort.runtime_version)||
      !str(ota,"source_repo",cohort.source_repo,sizeof(cohort.source_repo),b)||std::strcmp(cohort.source_repo,Repository)||
@@ -104,12 +103,12 @@ inline bool firmwareRecord(Slice s,Row& out,risc_bank_cohort_v1& cohort,WorkBudg
      !number(ota,"store_size",cohort.store_size,b)||!cohort.store_size||
      cohort.firmware_size>8u*1024u*1024u||cohort.store_size>8u*1024u*1024u||
      !sha(ota,"firmware_sha256",cohort.firmware_sha256,b)||!sha(ota,"store_sha256",cohort.store_sha256,b))return false;
-  std::snprintf(asset,sizeof(asset),"twatch-s3-cohort-%s.bin",out.view.version);
+  std::snprintf(asset,sizeof(asset),"%s-cohort-%s.bin",AssetPrefix,out.view.version);
   if(!payload(ota,tag,asset,out,b)||out.view.size>8u*1024u*1024u||out.view.size!=cohort.firmware_size+cohort.store_size)return false;
-  std::memcpy(cohort.sha256,out.digest,sizeof(cohort.sha256));out.pairedCohort=true;std::strcpy(out.view.id,"twatch-s3");
+  std::memcpy(cohort.sha256,out.digest,sizeof(cohort.sha256));out.pairedCohort=true;std::strcpy(out.view.id,Product);
   std::strcpy(out.view.reason,"Paired cohort compatibility not established");
  }else{
-  if(!equals(ota,"kind","runtime-image",b)||!str(ota,"runtime_version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version))return false;
+  if(!AllowRuntimeOnly||!equals(ota,"kind","runtime-image",b)||!str(ota,"runtime_version",out.view.version,sizeof(out.view.version),b)||!version(out.view.version))return false;
   std::snprintf(asset,sizeof(asset),"riscrte-runtime-%s.bin",out.view.version);
   if(!payload(ota,tag,asset,out,b)||out.view.size>8u*1024u*1024u)return false;
   std::strcpy(out.view.reason,"Runtime compatibility not established");
@@ -119,6 +118,7 @@ inline bool firmwareRecord(Slice s,Row& out,risc_bank_cohort_v1& cohort,WorkBudg
 inline bool parseImpl(Slice json,bool firmware,Catalog& out,bool (*yield)(void*),void *ctx) {
  out.count=0;out.cohort={};if(!json.data||json.size<2||json.size>CatalogMax)return false;WorkBudget b(yield,ctx);Cursor valid(json.data,json.size,b);
  if(!b.poll(true)||!valid.objectOnly())return false;uint32_t schema=0;if(!number(json,"schema",schema,b)||schema!=1)return false;
+ if(RequireProduct&&(!equals(json,"product",Product,b)||!equals(json,"source_repo",Repository,b)))return false;
  Slice section;if(!field(json,firmware?"firmware":"apps",section,b))return false;Cursor c(section.data,section.size,b);
  if(firmware){if(c.nullValue()&&c.end())return true;if(!firmwareRecord(section,out.rows[0],out.cohort,b))return false;out.count=1;return b.poll(true);}
  if(!c.take('['))return false;if(c.take(']'))return c.end();

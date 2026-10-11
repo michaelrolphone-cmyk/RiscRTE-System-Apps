@@ -1,0 +1,146 @@
+{
+  "purpose": "selected touch/momentum Settings increment; local source and simulated provider qualification",
+  "base_commit": "35c6499f8aebcc808c6713b2760e6a690b22de9a",
+  "selection": "--settings-profile x4-native-time --paper-transitions --touch-scrolling",
+  "target": {
+    "version": "1.3.13",
+    "sha256": "22261bcb4f91843d90c09169090bcff2876ab7fe168aa796029471303b100317",
+    "size_bytes": 250180,
+    "imports": [
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy"
+    ],
+    "exports": [
+      "app_main",
+      "app_module_fini",
+      "app_module_init"
+    ],
+    "required_grants": [
+      {
+        "capability": "display.output",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "input.touch.raw",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "rtc.clock",
+        "api": 2,
+        "instance_id": 0
+      },
+      {
+        "capability": "alarm.service",
+        "api": 2,
+        "instance_id": 0
+      },
+      {
+        "capability": "storage.key-value",
+        "api": 1,
+        "instance_id": 1
+      },
+      {
+        "capability": "runtime.realtime-control",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "board.battery",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "input.navigation",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "net.wifi",
+        "api": 1,
+        "instance_id": 15
+      },
+      {
+        "capability": "bluetooth.hci",
+        "api": 1,
+        "instance_id": 16
+      }
+    ],
+    "touch_scrolling": {
+      "version": 1,
+      "lists": [
+        "timezone-regions",
+        "timezone-cities"
+      ],
+      "momentum": true,
+      "bounded_viewport": true,
+      "coalesced_frames": true
+    }
+  },
+  "feature_off": {
+    "native_motion": {
+      "version": "1.3.12",
+      "sha256": "2d957cb381a03ed491c3dc14e7df641fb2b00245aa63bc093c52cd6fd78622d6",
+      "exact_previous_elf": true
+    },
+    "watch": {
+      "version": "1.3.4",
+      "sha256": "bc22699c943bac1854c03768b0f7388fd07566fc8752d4a32a552d9184d32fde",
+      "exact_previous_elf": true
+    }
+  },
+  "verification": {
+    "scrolling_tagged_alarm_production_cases": 68,
+    "scrolling_legacy_alarm_production_cases": 68,
+    "controller_asan_ubsan": "PASS",
+    "timezone_compatibility_executions": 6928,
+    "native_settings_compatibility_executions": 316,
+    "legacy_paper_settings_cases": 18,
+    "repository_python_tests": 73,
+    "target_elf_import_export_validation": "PASS",
+    "grants_unchanged": true,
+    "hardware": "not run",
+    "publication": "none"
+  },
+  "source_sha256": {
+    "lib/PortableApps/include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+    "lib/PortableApps/include/PortableTouch.h": "9f69a4b4070861cd499f4145b4637f6421a2e80688c9f5a2b43afc95aa3bb440",
+    "lib/PortableApps/src/adapter.c": "eac890ff9fbb01cba2bce41d7533d933386a50d46e78a460a5618af5db8dd524",
+    "lib/PortableApps/src/settings_timezone.inc": "bdc3aa37625e2647071a8de0d73383f8f9851c32c4b8d25e7aa37522e02d3aad",
+    "lib/PortableApps/src/settings.inc": "ed72eec4c6fdc6d6d78926e8ae7758ee898a1c81f5bf319f4c689b619fa24e1e",
+    "lib/PortableApps/src/settings_paper.inc": "2c4771b7f7a6dd8f026d0929bb228113d7b3a358dfada2dc6e90db95238d5138",
+    "lib/PortableApps/src/settings_timezone_view.inc": "7990927998e0183e069c0ee105b722958961477f380974bb4ea73d2eb0b3fb4c",
+    "lib/PortableApps/src/settings_native_time.inc": "48605bace17783eaf22aadbc0d4ed998510d63f22a660fbfa2e80f29a15e6939",
+    "lib/PortableApps/src/settings_view.inc": "ed468bea8fb4952c840048aedff5edafa31700e76d46596c1e9e99cd65622111",
+    "test/native_apps/touch_scroll_settings_test.c": "ace7e2210dd179a4b18bcc875fefa2952174dcf3e7b73bca94c9a556d69b8d4d",
+    "test/native_apps/portable_touch_scroll_test.c": "249b7690d014121c108da1513462e5b546258ac9b816a1bfa06ac4380cb64920",
+    "scripts/build_portable_settings.py": "3aef470512c9afa729fc1fa758b52500601a517e0cf353c927ebf0b270ebf874",
+    "scripts/test_touch_scroll_settings.py": "50282cbf0b9f3491ae85d71eda0c068a6d0c8a347e178259ca88cccbdd2621dd"
+  },
+  "rendered_frames": {
+    "build/touch-scroll-settings/paper-busy-hit.png": "d38dc404ed9756890230815a5f2596c6054f5314199470bdb19a53b93c3f31f7",
+    "build/touch-scroll-settings/paper-drag.png": "cf9f88d3ff96f1a6ac736466e04d6e3d6280de11a66f07f3c3501e44d35e9cad",
+    "build/touch-scroll-settings/paper-reentry.png": "d2cc0b48ff38093a7e66b9f26be30f1ffc2dffa0367420d0e31bd6f4b173a9dd",
+    "build/touch-scroll-settings/paper-select.png": "3e136e19a0d5534545799330bb38dcd0c55ea89e8b29203360a6d1686f88b456",
+    "build/touch-scroll-settings/paper-selected.png": "3e136e19a0d5534545799330bb38dcd0c55ea89e8b29203360a6d1686f88b456",
+    "build/touch-scroll-settings/scroll-contact-sheet.png": "4f1133f7e6bc4a062f9dd48113c3b56369a496eacaa3557318c8d63d9012afda",
+    "build/touch-scroll-settings/short-busy-hit.png": "60d621a111941e2c85037155b2c89b8213c0f3206251e20a1463ac58d7f64dc1",
+    "build/touch-scroll-settings/short-drag.png": "0a274701f0ffdea7f0672e30b7afbeeecbfe6dd00ca78b757d64d4fea81b8181",
+    "build/touch-scroll-settings/short-reentry.png": "0dc797c16d2445cd9b141f27fd59f5364fb9d8a350930b35a9bd876e8535f6b9",
+    "build/touch-scroll-settings/short-select.png": "0e730ed6c6c0ac06dd6bf8a303183624ae2ea12701176de9d497d42cc91acd42",
+    "build/touch-scroll-settings/short-selected.png": "0e730ed6c6c0ac06dd6bf8a303183624ae2ea12701176de9d497d42cc91acd42"
+  },
+  "review_fixes": [
+    "Preserve queued UP coordinates while snapshot-only release uses last observed contact",
+    "Invalidate completed page identity across pending page re-entry"
+  ],
+  "remaining_list_inventory": "docs/TOUCH_SCROLLING.md"
+}

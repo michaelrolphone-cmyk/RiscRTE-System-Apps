@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "base": "6721a26e0c4126e6731c67a52e6d76bb471021bd",
+  "head": "9decf18d53fbc72bff17b4134e676fe1b3364464",
+  "scope": "Test fixtures, test/build include paths, SDK provenance, and inventory alignment. No production application, service or API-header edits.",
+  "commits": [
+    "c9b01c620b6e4476fb6d94cffb39abaecf2ec1ce Align SDK snapshots and fixtures with preserved additive APIs",
+    "ba5f4a383cd8b317c2afead41014dc03cd1b522d Align timezone Settings fixture with ordered input capture",
+    "8723a802ae3b670468decf73ce399dac011f7916 Refresh ordered controller fixtures and legacy build includes",
+    "12e8c0ce5d142ef8bf40ae6ee60fb3667a63da0d Align remaining renderer and handoff compatibility fixtures",
+    "f05a93e22ce55809454d840528b4ee8b077cb004 Exercise NOVA input as ordered provider reports",
+    "9decf18d53fbc72bff17b4134e676fe1b3364464 Separate valid rapid taps from malformed duplicate contacts"
+  ],
+  "passed": {
+    "python_unittest": 88,
+    "legacy_host_fixtures": 18,
+    "native_xtensa_elves": 18,
+    "timezone_controller_executions": 6928,
+    "paper_quick_cases": 124,
+    "home_ordered_checks": 59,
+    "quick_usb_cases": 8,
+    "alarm_settings_cases": 152,
+    "combined_settings_cases": 36,
+    "rgb565_transition_frames": 12125,
+    "published_byte_parity": "Gate passed; 14/18 exact, four newer development versions",
+    "nova_launch_cases": 112,
+    "nova_randomized_trajectories": 19000,
+    "independent_build_host_fixture_gates": "All 21 commands individually passed"
+  },
+  "remaining": "Timezone Xtensa archived feature-off witness not run locally because baseline3bcc9b3 is absent. No remaining host fixture failure; production header unchanged. Provider audit distinguishes valid ordered equal-timestamp UP/DOWN from malformed duplicate DOWN.",
+  "logs": {
+    "unit": "/tmp/system-sdk-fixtures-tests-final.log",
+    "host": "/tmp/system-sdk-fixtures-apps.log",
+    "portable": "/tmp/system-sdk-fixtures-portable.log",
+    "targets": "/tmp/system-sdk-fixtures-target-all.log",
+    "release_parity": "/tmp/system-sdk-fixtures-release-parity.log",
+    "timezone": "/tmp/system-sdk-fixtures-timezone.log",
+    "transition": "/tmp/system-sdk-fixtures-transition-final.log",
+    "nova": "/tmp/system-sdk-fixtures-nova-final.log"
+  },
+  "local_sanitizer_note": "ASAN_OPTIONS=detect_leaks=0 because local LeakSanitizer is unsupported; AddressSanitizer and UndefinedBehaviorSanitizer remained enabled."
+}

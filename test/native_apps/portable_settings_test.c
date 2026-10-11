@@ -4,15 +4,25 @@
 #include <stdlib.h>
 #define PORTABLE_SETTINGS_APP
 #include "../../lib/PortableApps/src/adapter.c"
+#ifndef TEST_PAPER_SETTINGS
 #include "nova_settings_coordinates.h"
+#endif
 
 int app_module_init(void);
 void app_module_fini(void);
 const t5_app_manifest_t portable_catalog[] = {{.compatible=false}};
 const unsigned portable_catalog_count = 0;
 static unsigned scenario, ticks, polls, grants, subscriptions, frame_count, displays;
-static unsigned writes, reads_after_write, diagnostics;
+static unsigned writes, reads_after_write, diagnostics,writes_at_submit_failure;
+static bool submit_failed;
+/* Ordinary failed submission may release known-owned resources. It must not
+ * dispatch more input, service state, acquisition or drawing after observation. */
+static void active_provider(void){assert(!submit_failed);}
+#ifdef TEST_PAPER_SETTINGS
+static uint8_t framebuffer[100 * 480];
+#else
 static uint16_t framebuffer[240 * 240];
+#endif
 static twatch_rtc_time_v1 stored = {2024, 2, 29, 4, 23, 59, 59};
 static twatch_rtc_time_v1 written;
 typedef struct { unsigned poll; uint16_t x, y; } contact;
@@ -24,38 +34,54 @@ static void tap(unsigned at, uint16_t x, uint16_t y) {
   assert(input_count < sizeof(input_script)/sizeof(input_script[0]));
   input_script[input_count++] = (contact){at,x,y};
 }
-static bool test_health(risc_runtime_health_v1 *h) {
+static bool test_health(risc_runtime_health_v1 *h) {active_provider();
   h->uptime_ms = ticks;
   return polls < 120;
 }
-static void test_yield(uint32_t ms) { ticks += ms; }
-static bool test_diagnostic(const char *s) { assert(s); ++diagnostics; return true; }
+static void test_yield(uint32_t ms) {active_provider(); ticks += ms; }
+static bool test_diagnostic(const char *s) {active_provider(); assert(s); ++diagnostics; return true; }
 static unsigned return_launches;
-static bool test_launch(const char *path) {
+static bool test_launch(const char *path) {active_provider();
+#ifdef PORTABLE_HOME_APP
+ if(!strcmp(path,PORTABLE_HOME_APP)){assert(sv_page!=SV_ROOT);return_launches++;return true;}
+#endif
 #ifdef PORTABLE_RETURN_APP
  assert(!strcmp(path,PORTABLE_RETURN_APP));assert(sv_page==SV_ROOT);return_launches++;return true;
 #else
  (void)path; assert(!"Unexpected app launch"); return false;
 #endif
 }
-static bool display_info(void *c, risc_display_info_v1 *out) {
-  (void)c; *out = (risc_display_info_v1){.width=240,.height=240,
-    .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)}; return true;
+static bool display_info(void *c, risc_display_info_v1 *out) {active_provider();
+  (void)c;
+#ifdef TEST_PAPER_SETTINGS
+  *out=(risc_display_info_v1){.width=800,.height=480,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT,.damage_x_alignment=8,.damage_width_alignment=8};
+#else
+  *out = (risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+#endif
+  return true;
 }
-static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {
+static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {active_provider();
   (void)c; assert(!frame_count); frame_count=1;
-  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=240,.height=240,
-    .stride_bytes=480,.size_bytes=sizeof(framebuffer),.pixel_format=f};return true;
+#ifdef TEST_PAPER_SETTINGS
+  assert(f==RISC_DISPLAY_FORMAT_MONO1);
+  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=800,.height=480,.stride_bytes=scenario==215?99:100,.size_bytes=sizeof(framebuffer),.pixel_format=f};
+#else
+  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(framebuffer),.pixel_format=f};
+#endif
+  return true;
 }
 static void frame_release(void *c, risc_display_frame_v1 f) {
   (void)c;assert(f==1 && frame_count);frame_count=0;
 }
 static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_rect_v1 *r,
                          size_t n, const risc_display_present_options_v1 *o,
-                         risc_display_present_token_v1 *token) {
+                         risc_display_present_token_v1 *token) {active_provider();
   (void)c;(void)r;(void)n;(void)o;assert(f==1 && frame_count);
-  if(scenario==10)return false;
+  if(scenario==10){submit_failed=true;writes_at_submit_failure=writes;return false;}
   frame_count=0;*token=++displays;
+#ifdef TEST_PAPER_SETTINGS
+  const char *path=getenv("PAPER_SETTINGS_FRAME");if(path&&displays==1){FILE *file=fopen(path,"wb");assert(file);fprintf(file,"P4\n800 480\n");assert(fwrite(framebuffer,1,sizeof(framebuffer),file)==sizeof(framebuffer));fclose(file);}
+#else
   const char *directory=getenv("PORTABLE_SETTINGS_FRAME_DIR");
   if(directory && displays<=12 && (scenario==0 || scenario==21 || scenario==34 || scenario>=40)){
     char path[512];snprintf(path,sizeof(path),"%s/scenario-%u-frame-%u.ppm",directory,scenario,displays);
@@ -65,20 +91,29 @@ static bool frame_submit(void *c, risc_display_frame_v1 f, const risc_display_re
       assert(fwrite(rgb,1,3,file)==3);
     }fclose(file);
   }
+#endif
   return true;
 }
-static bool frame_status(void *c, risc_display_present_token_v1 token, risc_display_present_status_v1 *out) {
+static bool frame_status(void *c, risc_display_present_token_v1 token, risc_display_present_status_v1 *out) {active_provider();
   (void)c;assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
-static uint64_t touch_subscribe(void *c){(void)c;++subscriptions;return 1;}
-static bool touch_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
-static bool touch_poll(void *c,size_t n){(void)c;assert(n==1);++polls;return polls!=fail_poll_at;}
-static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){(void)c;(void)s;(void)e;return polls==gap_at?-1:0;}
-static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
-  (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
+/* Ordered raw ABI fixture; snapshots alone cannot represent queued taps. */
+static risc_touch_snapshot_v1 touch_state;
+static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned touch_head,touch_count;
+static bool touch_script_snapshot(void *c,risc_touch_snapshot_v1 *out){
+  (void)c;memset(out,0,sizeof(*out));
+#ifdef TEST_PAPER_SETTINGS
+  out->width=480;out->height=800;
+  if(scenario==218&&polls==9)out->buttons=RISC_TOUCH_BUTTON_PRIMARY;
+#else
+  out->width=out->height=240;
+#endif
+  /* Held-entry case starts before subscription; later DOWN is a new gesture. */
+  if(scenario==9 && polls==0){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=80,.y=140};}
   for(size_t i=0;i<input_count;++i)if(input_script[i].poll==polls){
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=polls==replace_at?2:1,.x=input_script[i].x,.y=input_script[i].y};
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NOVA_UI) && !defined(TEST_PAPER_SETTINGS)
     nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
 #endif
 #if PORTABLE_TOUCH_ROTATION == 180
@@ -87,7 +122,36 @@ static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
     break;
   }return true;
 }
-static bool rtc_read(void *c,twatch_rtc_time_v1 *out){
+
+static void touch_emit(unsigned kind,risc_touch_contact_v1 point) {
+  assert(touch_count<RISC_TOUCH_QUEUE_LENGTH);
+  touch_events[(touch_head+touch_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
+    .sequence=++touch_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static uint64_t touch_subscribe(void *c){active_provider();
+  (void)c;++subscriptions;touch_head=touch_count=0;touch_script_snapshot(NULL,&touch_state);return 1;
+}
+static bool touch_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
+static bool touch_poll(void *c,size_t n){active_provider();
+  (void)c;assert(n==1);++polls;if(polls==fail_poll_at)return false;
+  risc_touch_snapshot_v1 next;touch_script_snapshot(NULL,&next);
+  bool old_down=touch_state.contact_count!=0,new_down=next.contact_count!=0;
+  bool same=old_down&&new_down&&touch_state.contacts[0].id==next.contacts[0].id;
+  if(old_down&&!same)touch_emit(RISC_TOUCH_EVENT_UP,touch_state.contacts[0]);
+  if(new_down) {
+    if(!same)touch_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);
+    else if(memcmp(&touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))touch_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);
+  }
+  if(next.buttons!=touch_state.buttons)touch_emit(next.buttons?RISC_TOUCH_EVENT_BUTTON_DOWN:RISC_TOUCH_EVENT_BUTTON_UP,(risc_touch_contact_v1){0});
+  next.sequence=touch_state.sequence;next.timestamp_ms=ticks;touch_state=next;return true;
+}
+static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){active_provider();
+  (void)c;assert(s==1);if(polls==gap_at){touch_head=touch_count=0;return -1;}
+  if(!touch_count)return 0;
+  *e=touch_events[touch_head];touch_head=(touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_count;return 1;
+}
+static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){active_provider();(void)c;*out=touch_state;return true;}
+static bool rtc_read(void *c,twatch_rtc_time_v1 *out){active_provider();
   (void)c;
   if(writes){++reads_after_write;if(scenario==4)return false;if(scenario==18)ticks+=300;}
   if(!writes && scenario==2)return false;
@@ -97,7 +161,7 @@ static bool rtc_read(void *c,twatch_rtc_time_v1 *out){
   if(writes && scenario==19)out->second=(out->second+2)%60;
   return true;
 }
-static bool rtc_write(void *c,const twatch_rtc_time_v1 *in){
+static bool rtc_write(void *c,const twatch_rtc_time_v1 *in){active_provider();
   (void)c;assert(calendar_valid(in));assert(in->weekday==calendar_weekday(in));
   ++writes;written=*in;
   if(scenario==3)return false;
@@ -110,15 +174,18 @@ static const risc_display_output_api_v1 display_api={.api_version=1,.struct_size
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,touch_subscribe,touch_unsubscribe,touch_poll,touch_next,touch_snapshot};
 static twatch_rtc_api_v1 rtc_api={.api_version=2,.struct_size=sizeof(rtc_api),.read=rtc_read,.write=rtc_write};
 #ifdef PORTABLE_INPUT_NAVIGATION
-static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out){
-  (void)c;*out=(risc_input_navigation_frame_v1){0};unsigned button=0;
+static unsigned navigation_polls;
+static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out){active_provider();
+  (void)c;*out=(risc_input_navigation_frame_v1){0};unsigned button=0;unsigned nav_at=++navigation_polls;
   if(scenario==30){
-    switch(polls){case 3:case 8:case 10:case 12:case 22:case 24:case 26:button=RISC_NAV_DOWN;break;
+    switch(nav_at){case 3:case 8:case 10:case 12:case 22:case 24:case 26:button=RISC_NAV_DOWN;break;
     case 5:case 14:case 19:case 28:button=RISC_NAV_CONFIRM;break;
     case 17:button=RISC_NAV_UP;break;case 32:button=RISC_NAV_BACK;break;}
     out->buttons=out->pressed=button;
-    if(polls==18)out->buttons=RISC_NAV_UP; /* Held input must not repeat. */
+    if(nav_at==18)out->buttons=RISC_NAV_UP; /* Held input must not repeat. */
   }else if(scenario==31 && polls<=5)out->buttons=out->pressed=RISC_NAV_CONFIRM;
+  static uint32_t prior_buttons;out->released=prior_buttons&~out->buttons;prior_buttons=out->buttons;
+  if(scenario==219&&polls==9)out->pressed=out->released=RISC_NAV_HOME;
   return true;
 }
 static unsigned nav_resets,nav_foregrounds;
@@ -146,8 +213,11 @@ static bool format_read_error,format_write_error,format_committed_error,format_v
 #ifdef PORTABLE_SLEEP_SETTINGS
 static uint8_t kv_bytes[64];static uint32_t kv_size;static unsigned kv_writes;
 #endif
-static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {
+static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *size) {active_provider();
   (void)c;*size=0;
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(!strcmp(key,PORTABLE_READER_FLIP_KEY)||!strcmp(key,PORTABLE_READER_LANGUAGE_KEY))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(!strcmp(key,PORTABLE_ALERT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
@@ -167,7 +237,7 @@ static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *
   assert(!"Unexpected key");return RISC_KEY_VALUE_INVALID;
 #endif
 }
-static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
+static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {active_provider();
   (void)c;
   if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)) {
     assert(size==4);++format_writes;
@@ -186,7 +256,7 @@ static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
 #endif
 }
 static const risc_key_value_v1 kv_api={1,sizeof(kv_api),NULL,kv_get,kv_put};
-static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){
+static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *grant){active_provider();
   if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
     assert(version==1 && id==PORTABLE_TIME_FORMAT_STORE_INSTANCE);
     if(scenario==43)return false;
@@ -202,8 +272,14 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runt
   else {assert(!strcmp(name,"board.battery"));return false;}
   ++grants;return true;
 }
-static bool test_release(risc_runtime_capability_v1 *grant){assert(grants && grant->api);--grants;grant->api=NULL;return true;}
-static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),test_health,test_yield,test_diagnostic,test_launch,test_acquire,test_release};
+static bool test_release(risc_runtime_capability_v1 *grant){
+  assert(grants && grant->api);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(scenario==301 && grant==&paper_preferences_grant)return false;
+#endif
+  --grants;grant->api=NULL;return true;
+}
+static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diagnostic,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&runtime_api:NULL;}
 
 static void calendar_checks(void){
@@ -286,7 +362,11 @@ int main(int argc,char **argv){
     if(scenario==9){tap(1,80,140);tap(2,80,140);}
     if(scenario==8)gap_at=4;
     if(scenario==14)fail_poll_at=4;
-    if(scenario==15){tap(4,80,140);replace_at=4;}
+    if(scenario==15){tap(4,80,140);replace_at=4;
+      /* Ordered replacement completes the old gesture and begins a new one;
+       * dismiss each logical page reached without persisting a draft. */
+      tap(12,60,213);tap(16,120,205);
+    }
     if(scenario==8 || scenario==9 || scenario==14 || scenario==15)tap(8,120,205);
     else if(scenario==26){tap(7,40,145);tap(8,110,146);tap(13,120,205);}
     else if(scenario==29){tap(7,170,213);tap(8,20,180);tap(13,60,213);tap(17,120,205);}
@@ -324,7 +404,10 @@ int main(int argc,char **argv){
 #endif
   bool no_write=scenario==1 || scenario==8 || scenario==9 || scenario==10 || scenario==14 || scenario==15 ||
                 scenario==20 || scenario==23 || scenario==24 || (scenario>=25 && scenario<=29) || scenario==31 || scenario==34 || scenario==35;
-  if(no_write)assert(!writes);
+  if(scenario==10){
+    /* Retain logical actions accepted before asynchronous submit reports failure. */
+    assert(submit_failed&&writes==writes_at_submit_failure&&writes<=1);
+  }else if(no_write)assert(!writes);
   else {assert(writes==1);assert(reads_after_write>=1 || scenario==3);}
   if(scenario==0){assert(written.year==2025 && written.day==28);assert(!strcmp(settings_message,"Saved to RTC"));}
   if(scenario==2 || scenario==12){assert(written.year==2001 && written.month==1 && written.day==1);}

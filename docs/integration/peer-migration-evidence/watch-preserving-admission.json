@@ -1,0 +1,44 @@
+[
+  {
+    "case": "native-bridge",
+    "source": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/watch-1.1.2-bundle/store",
+    "target": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/peer-increment-watch/bridge-package/store",
+    "result": {
+      "prepared": true,
+      "cohort_validated": true,
+      "error": "",
+      "hardware_calls": 0,
+      "storage_calls": 0,
+      "elf_count": 54,
+      "cooperative_yields": 170
+    }
+  },
+  {
+    "case": "migration",
+    "source": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/peer-increment-watch/bridge-package/store",
+    "target": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/peer-increment-watch/peer-package/store",
+    "result": {
+      "prepared": true,
+      "cohort_validated": true,
+      "error": "",
+      "hardware_calls": 0,
+      "storage_calls": 0,
+      "elf_count": 54,
+      "cooperative_yields": 170
+    }
+  },
+  {
+    "case": "confirmed-unchanged",
+    "source": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/peer-increment-watch/peer-package/store",
+    "target": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/peer-increment-watch/peer-package/store",
+    "result": {
+      "prepared": true,
+      "cohort_validated": true,
+      "error": "",
+      "hardware_calls": 0,
+      "storage_calls": 0,
+      "elf_count": 54,
+      "cooperative_yields": 170
+    }
+  }
+]

@@ -1,0 +1,362 @@
+{
+  "schema": 1,
+  "driver_version": "0.1.8",
+  "driver_sha256": "1bcf7360a473fd20aef62bc974ec0bc87e78303015512098902e89826b64d322",
+  "runs": [
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "close-refused"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "provider-fault"
+    },
+    {
+      "layer": "consumer",
+      "variant": "normal",
+      "scenario": "snapshot-failed"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "adapter-close-refused"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "normal",
+      "scenario": "hid-close-refused"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "adapter-close-refused"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "normal",
+      "scenario": "hid-close-refused"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "close-refused"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "provider-fault"
+    },
+    {
+      "layer": "consumer",
+      "variant": "sanitized",
+      "scenario": "snapshot-failed"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "adapter-close-refused"
+    },
+    {
+      "layer": "ble_touchpad",
+      "variant": "sanitized",
+      "scenario": "hid-close-refused"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "two-contact"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "out-of-range"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "queue-gap"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "transient-read"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "ambiguous-ack"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "unlock-retained"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "adapter-close-refused"
+    },
+    {
+      "layer": "ble_buttons",
+      "variant": "sanitized",
+      "scenario": "hid-close-refused"
+    }
+  ],
+  "hardware_verified": false,
+  "publication": "none",
+  "system_baseline": "7b175418e3063d9f4c571acf06c366144831b2af",
+  "utilities_fixture_revision": "2268c32f4a3d85d00ac73a744fd578599fa0a752",
+  "utilities_application_revision": "849581973a48daf07770446712a1c1fd4dfbc77c",
+  "sources": {
+    "Product/minimal/drivers/x4pro_gt911/driver.c": "1bcf7360a473fd20aef62bc974ec0bc87e78303015512098902e89826b64d322",
+    "Product/minimal/test/gt911_test.c": "4377ebf0bd1c43daa206f94cb2cdb29167165e80aa69c154640aad104e178883",
+    "System/lib/PortableApps/include/PortableTouch.h": "b1fdc4c6a7dd54fb7d7a74617a2946a863d04ffa0868437192eeeed88f4e4341",
+    "System/lib/PortableApps/src/native_custody_adapter.inc": "62987d88c0184e26ff64dc8913e457d0c7392f96d4a05827aa8324b501f3d881",
+    "System/lib/PortableApps/src/adapter.c": "e2796f08ac1fa85c7a02c2a3c6479d0e190124e6fdeac6f65970b64d7bb17eb1",
+    "Utilities/Apps/ble_hid_app.inc": "f34a76dc861a450061fa7d2dff56059cd6384dcfcc682331234452658e041d57",
+    "Utilities/test/native_apps/hid_renderer_test.c": "0036117bbed1384ff23836466245ff169da8e4edf804e251255a2270b3ba6a93",
+    "Utilities/test/native_apps/native_utility_peripherals.h": "6d443ff1439c317403d94fe443096ecc621726bbf98301c345e3f7b4d0faa2f8",
+    "System/test/native_apps/x4_touch_recovery_test.c": "0509fff375b6b0e436ac97e326c4617940241c6c5e06b28d028276930faaf9c8",
+    "System/test/native_apps/x4_hid_gt911_backend.c": "806cb188d6e7c115ff743e5f091a4f4f6847b44ac892147e19e85fcf9fc23e86",
+    "System/scripts/test_x4_touch_recovery.py": "0dd9453f96c5478ea8e94c11d00617024115e180131d60bc7597c4befcdde583",
+    "Runtime/sdk/app/RiscRuntimeV1.h": "77242d8b3fe0faf524380febba4be693b9e56271dd79d04696a534c2695c4e3e"
+  },
+  "target": {
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "modules": [
+      {
+        "app": "ble_touchpad",
+        "bytes": 234744,
+        "sha256": "3be196531cf2087274ea0f7e59b2f811005e8baa451e503d6d6a3cac0e824b09",
+        "imports": [
+          "free",
+          "malloc",
+          "memcmp",
+          "memcpy",
+          "memset",
+          "risc_runtime_get_api",
+          "snprintf",
+          "strcmp",
+          "strcpy"
+        ],
+        "defines": [
+          "-DPORTABLE_NOVA_UI",
+          "-DPORTABLE_ALARM_CLIENT",
+          "-DPORTABLE_DISPLAY_ROTATION=90",
+          "-DPORTABLE_INPUT_NAVIGATION",
+          "-DPORTABLE_HOME_APP=\"default.elf\"",
+          "-DPORTABLE_QUICK_ACTIONS",
+          "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+          "-DPORTABLE_RADIO_SESSION",
+          "-DPORTABLE_RETURN_APP=\"springboard.elf\"",
+          "-DPORTABLE_PAPER_HID",
+          "-DPORTABLE_STAGE_LOGS",
+          "-DALARM_SERVICE_TAGGED_V2",
+          "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+          "-DPORTABLE_NATIVE_TIME_TOOLBAR"
+        ]
+      },
+      {
+        "app": "ble_buttons",
+        "bytes": 235104,
+        "sha256": "d7cc965341ad070d391c0ffc57af2ed8e48d1b8cbe0e5f7091a0af7154040029",
+        "imports": [
+          "free",
+          "malloc",
+          "memcmp",
+          "memcpy",
+          "memset",
+          "risc_runtime_get_api",
+          "snprintf",
+          "strcmp",
+          "strcpy"
+        ],
+        "defines": [
+          "-DPORTABLE_NOVA_UI",
+          "-DPORTABLE_ALARM_CLIENT",
+          "-DPORTABLE_DISPLAY_ROTATION=90",
+          "-DPORTABLE_INPUT_NAVIGATION",
+          "-DPORTABLE_HOME_APP=\"default.elf\"",
+          "-DPORTABLE_QUICK_ACTIONS",
+          "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+          "-DPORTABLE_RADIO_SESSION",
+          "-DPORTABLE_RETURN_APP=\"springboard.elf\"",
+          "-DPORTABLE_PAPER_HID",
+          "-DPORTABLE_STAGE_LOGS",
+          "-DALARM_SERVICE_TAGGED_V2",
+          "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+          "-DPORTABLE_NATIVE_TIME_TOOLBAR"
+        ]
+      }
+    ],
+    "validation": "Xtensa ABI, imports/exports, structural loader validation passed",
+    "release_versions": "allocated by central integration; these are development ELFs"
+  },
+  "runtime_revision": "317b74e363877cb6e5a90198211f897744e4a6d3",
+  "regressions": {
+    "native_app_custody": {
+      "cases": 472,
+      "result": "passed"
+    },
+    "plain_stage_logs": {
+      "profiles": 4,
+      "result": "passed"
+    },
+    "touch_dispatch_cost": {
+      "before_after_scenarios": 36,
+      "result": "identical pixels, provider calls and event outcomes"
+    }
+  }
+}

@@ -19,11 +19,13 @@ static bool exists;
 static uint16_t framebuffer[240*240];
 typedef struct {unsigned poll;uint16_t x,y;} contact;
 static contact contacts[20];
-static unsigned contact_count;
+static unsigned contact_count,script_started_at;
+static unsigned script_step(void){return (ticks-script_started_at)/20u;}
+static uint32_t previous_buttons;
 static void tap(unsigned at,unsigned x,unsigned y) {
   assert(contact_count<20);contacts[contact_count++]=(contact){at,(uint16_t)x,(uint16_t)y};
 }
-static bool health(risc_runtime_health_v1 *out) {out->uptime_ms=ticks;return polls<100;}
+static bool health(risc_runtime_health_v1 *out) {out->uptime_ms=ticks;return script_step()<100;}
 static void yield_ms(uint32_t ms) {ticks+=ms;}
 static bool diagnostic(const char *message) {(void)message;++diagnostics;return true;}
 static bool request_launch(const char *path) {(void)path;assert(!"No launch is authorized");return false;}
@@ -60,13 +62,15 @@ static bool frame_submit(void *c,risc_display_frame_v1 frame,const risc_display_
 static bool frame_status(void *c,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
   (void)c;assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
-static uint64_t touch_subscribe(void *c) {(void)c;++subscriptions;return 1;}
+static risc_touch_snapshot_v1 touch_state;
+static risc_touch_event_v1 touch_events[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned touch_head,touch_count;
+static bool script_snapshot(void*,risc_touch_snapshot_v1*);
+static uint64_t touch_subscribe(void *c) {(void)c;++subscriptions;touch_head=touch_count=0;assert(script_snapshot(c,&touch_state));return 1;}
 static bool touch_unsubscribe(void *c,uint64_t s) {(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
-static bool touch_poll(void *c,size_t n) {(void)c;assert(n==1);++polls;return true;}
-static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {(void)c;(void)s;(void)out;return 0;}
-static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
+static bool script_snapshot(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
-  for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==polls) {
+  for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==script_step()) {
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};
 #ifdef PORTABLE_NOVA_UI
     nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
@@ -78,6 +82,26 @@ static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
   }
   return true;
 }
+/* Every scripted physical transition is queued once, independently of raw
+ * capture frequency. Snapshots return the same sequence as those events. */
+static void touch_emit(unsigned kind,risc_touch_contact_v1 point) {
+  assert(touch_count<RISC_TOUCH_QUEUE_LENGTH);
+  touch_events[(touch_head+touch_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){
+    .sequence=++touch_state.sequence,.timestamp_ms=ticks,.kind=kind,.id=point.id,.x=point.x,.y=point.y};
+}
+static bool touch_poll(void *c,size_t n) {
+  assert(n==1);++polls;risc_touch_snapshot_v1 next;assert(script_snapshot(c,&next));
+  bool before=touch_state.contact_count!=0,after=next.contact_count!=0;
+  if(before&&!after)touch_emit(RISC_TOUCH_EVENT_UP,touch_state.contacts[0]);
+  if(after){if(!before)touch_emit(RISC_TOUCH_EVENT_DOWN,next.contacts[0]);
+    else if(memcmp(&touch_state.contacts[0],&next.contacts[0],sizeof(next.contacts[0])))touch_emit(RISC_TOUCH_EVENT_MOVE,next.contacts[0]);}
+  next.sequence=touch_state.sequence;next.timestamp_ms=ticks;touch_state=next;return true;
+}
+static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {
+  (void)c;assert(s==1);if(!touch_count)return 0;
+  *out=touch_events[touch_head];touch_head=(touch_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_count;return 1;
+}
+static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){(void)c;*out=touch_state;return true;}
 static bool rtc_read(void *c,twatch_rtc_time_v1 *out) {(void)c;*out=(twatch_rtc_time_v1){2026,10,4,0,12,0,0};return true;}
 static bool rtc_write(void *c,const twatch_rtc_time_v1 *value) {(void)c;(void)value;++rtc_writes;assert(!"Alert settings cannot write RTC");return false;}
 static int32_t kv_get(void *c,const char *key,void *data,uint32_t capacity,uint32_t *size) {
@@ -108,14 +132,14 @@ static int32_t kv_put(void *c,const char *key,const void *data,uint32_t size) {
 static bool nav_poll(void *c,risc_input_navigation_frame_v1 *out) {
   (void)c;*out=(risc_input_navigation_frame_v1){0};unsigned button=0;
   if(scenario==28) {
-    if(polls==3 || polls==5 || polls==7)button=RISC_NAV_DOWN;
-    if(polls==9)button=RISC_NAV_CONFIRM;
+    if(script_step()==3 || script_step()==5 || script_step()==7)button=RISC_NAV_DOWN;
+    if(script_step()==9)button=RISC_NAV_CONFIRM;
   }
   if(scenario==30) {
-    if(polls==3)button=RISC_NAV_UP;
-    if(polls==5)button=RISC_NAV_CONFIRM;
+    if(script_step()==3)button=RISC_NAV_UP;
+    if(script_step()==5)button=RISC_NAV_CONFIRM;
   }
-  out->buttons=out->pressed=button;return true;
+  out->buttons=button;out->pressed=button&~previous_buttons;out->released=previous_buttons&~button;previous_buttons=button;return true;
 }
 static bool nav_reset(void *c) {(void)c;return true;}
 static bool nav_foreground(void *c,const risc_input_foreground_v1 *f,size_t n) {(void)c;assert((n==1 && f) || (!n && !f));return true;}
@@ -145,7 +169,7 @@ static bool release(risc_runtime_capability_v1 *grant) {
   assert(grants && grant->api);if(grant->api==&kv_api)++kv_releases;
   --grants;grant->api=NULL;return true;
 }
-static const risc_runtime_api_v1 runtime_api={1,sizeof(runtime_api),health,yield_ms,diagnostic,request_launch,acquire,release};
+static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=request_launch,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version) {return version==1?&runtime_api:NULL;}
 static void helper_checks(void) {
   unsigned mode=9;
@@ -189,7 +213,7 @@ int main(int argc,char **argv) {
   bool unavailable=scenario==12 || scenario==13 || scenario==14 || (scenario>=25 && scenario<=27);
   bool invalid=(scenario>=8 && scenario<=11) || scenario==21 || scenario==29;
   check_row(unavailable?"Unavailable":invalid?"Invalid":scenario==36?"Sound":scenario==37?"Both":"Vibrate");
-  settings_render(0,scenario==31?(int32_t)SETTINGS_ALERT_ROW+1:0);polls=0;
+  settings_render(0,scenario==31?(int32_t)SETTINGS_ALERT_ROW+1:0);polls=0;script_started_at=ticks;previous_buttons=0;
   bool cancel=scenario==0 || scenario==3 || scenario==36 || scenario==37 || (scenario>=8 && scenario<=14) || (scenario>=25 && scenario<=27);
   if(scenario==28 || scenario==30) { /* Actual navigation provider drives controller. */ }
   else if(scenario==29) {tap(3,170,213);tap(7,60,213);}
@@ -211,7 +235,7 @@ int main(int argc,char **argv) {
   assert((result==T5_APP_SETTING_UPDATED)==saved);
   assert((strcmp(settings_message,"Alert mode saved")==0)==saved);
   assert(sv_page==SV_ROOT && !settings_editing && alert_frames);
-  assert(!rtc_writes && polls<100);
+  assert(!rtc_writes && script_step()<100);
   if(saved) {
     unsigned expected=scenario==2 || scenario==21 || scenario==30?3:scenario==22 || scenario==28?1:2;
     assert(exists && blob_size==1 && bytes[0]==expected && !alert_unconfirmed);
@@ -228,7 +252,7 @@ int main(int argc,char **argv) {
   if(scenario==29)assert(!strcmp(alert_message,"Choose an alert mode"));
   if(scenario==17) {
     /* Cancelling an uncertain save retains the draft for a later explicit retry. */
-    contact_count=0;polls=0;tap(3,170,213);
+    contact_count=0;polls=0;script_started_at=ticks;previous_buttons=0;tap(3,170,213);
     assert(settings_activate(0,SETTINGS_ALERT_ROW)==T5_APP_SETTING_UPDATED);
     assert(kv_writes==2 && bytes[0]==PORTABLE_ALERT_SOUND && !alert_unconfirmed);
     check_row("Sound");
@@ -237,7 +261,7 @@ int main(int argc,char **argv) {
   assert(!grants && !subscriptions && !frames && !diagnostics);
   assert(kv_releases==(scenario==13?0u:1u));
   if(scenario==37) {
-    polls=0;kv_grants=kv_releases=0;assert(app_module_init()==0);check_row("Both");
+    polls=0;script_started_at=ticks;previous_buttons=0;kv_grants=kv_releases=0;assert(app_module_init()==0);check_row("Both");
     assert(kv_grants==1);app_module_fini();assert(!grants && kv_releases==1);
   }
   printf("portable alarm Settings scenario %u passed\n",scenario);return 0;

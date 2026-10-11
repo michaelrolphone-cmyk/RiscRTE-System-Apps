@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+import os,sys
+args=[a for a in sys.argv[1:] if a not in ('-no-pie','-fno-pie')]
+if '-shared' in args:args += ['-Wl,-undefined,dynamic_lookup']
+if '-lcrypto' in args:args += ['-I/opt/homebrew/opt/openssl/include','-L/opt/homebrew/opt/openssl/lib']
+args=[a.replace('-fsanitize=address,undefined','-fsanitize=undefined') for a in args]
+args += ['-Wno-unused-function','-Wno-unused-private-field','-Wno-unused-but-set-variable','-Wno-missing-braces']
+os.execv('/usr/bin/clang',['/usr/bin/clang',*args])

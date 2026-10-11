@@ -1,0 +1,29 @@
+{
+  "after": {
+    "firmware_sha256": "935e6f1e157e40c0727c101d5b6101e342b859e9c52fab757ce453e00e8fb982",
+    "firmware_size": 1382448,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "twatch-s3",
+    "runtime_version": "0.2.8",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "source_revision": "089868395268b696c05651c33816345bfe0425df",
+    "store_abi": 2,
+    "version": "1.1.1"
+  },
+  "before": {
+    "firmware_sha256": "9de7c08d7b21b32e9fc9ee6ae8c37e79348642d615456ab1d47565a816e523c7",
+    "firmware_size": 1332720,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "twatch-s3",
+    "runtime_version": "0.2.4",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "source_revision": "f5cdc5c3f59afdaa473e1146be23b243e5a4beb6",
+    "store_abi": 2,
+    "version": "1.1.0"
+  },
+  "scope": "Development shared Files test composition; version label is not a release identity. Exact source and hashes identify this bundle."
+}

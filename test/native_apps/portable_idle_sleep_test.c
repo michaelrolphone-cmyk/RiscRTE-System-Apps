@@ -61,6 +61,7 @@ int portable_app_sleep(const risc_runtime_api_v1 *runtime,const risc_display_out
   assert(sv_page==expected_page);assert_draft();assert(sleep_choice==expected_choice);
   /* Wake over a real actionable control and hold it through two polls. The
    * reopened touch stream must require release/neutral before accepting it. */
+  tap(polls,test_case==5?196:100,test_case==5?80:116);
   tap(polls+1,test_case==5?196:100,test_case==5?80:116);
   tap(polls+2,test_case==5?196:100,test_case==5?80:116);
   wake_key=true; /* Post-wake navigation reset must discard this completed key. */
@@ -109,11 +110,15 @@ static void repeated_or_refused(void){
  finish();
 }
 static void held_contact(void){
- begin();for(unsigned p=1;p<=8;p++)tap(p,100,110);
+ begin();
+ /* A controller hold spans capture polls, not one report per application pass. */
  for(unsigned p=1;p<=8;p++){
-  ticks+=61000;quiet_step();assert(!sleeps && touch.down && last_activity==ticks);
+  input_count=0;for(unsigned n=1;n<=8;n++)tap(polls+n,100,110);
+  ticks+=61000;quiet_step();assert(!sleeps && touch.down && (uint32_t)(ticks-last_activity)<=4);
  }
- quiet_step();assert(!sleeps && !touch.down);unsigned released=last_activity;
+ input_count=0;t5_app_input_t released_input=step();
+ assert(!released_input.exit_requested && !released_input.buttons);
+ assert(!sleeps && !touch.down);unsigned released=last_activity;
  ticks=released+60000;quiet_step();assert(sleeps==1);finish();
 }
 static void pending_frame(void){

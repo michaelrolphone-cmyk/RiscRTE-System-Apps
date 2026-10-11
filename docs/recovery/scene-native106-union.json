@@ -1,0 +1,22 @@
+{
+  "status": "pass",
+  "system_commit": "3c3b2e031a8f21928aa8b53f29a580b4efa58a93",
+  "native_commit": "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+  "native_source": "/workspace/shared/recovered-runtime-0106",
+  "system_source": "/tmp/system-ui-state-decoupling-20261010",
+  "normal_cases": 72,
+  "asan_ubsan_cases": 72,
+  "source_hash_guard_passed": true,
+  "exactly_matches_native100_action_timestamp_digests": true,
+  "outputs": {
+    "union-native106-normal": {
+      "qualification_sha256": "7c8d5a7d3d291eadd759de9ebb9a2d7f4ef980ba67d14a5135d8e97b83681c04",
+      "log_sha256": "26d15843c67616839492efdf839bb2b35e51ce83ee370976fec185628d41d960"
+    },
+    "union-native106-sanitized": {
+      "qualification_sha256": "5a25620708be4e456f5161af2a5299d325a58dafd54eabbd712a9f486a09301c",
+      "log_sha256": "26d15843c67616839492efdf839bb2b35e51ce83ee370976fec185628d41d960"
+    }
+  },
+  "limits": "Same explicit physical register/controller scan, pixel cost and panel timing model as the unit proof; no device timing measured."
+}

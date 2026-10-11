@@ -78,6 +78,7 @@ static uint32_t nova_color(nova_point p) {
     return palette[color<0?color+7:color];
 }
 static void nova_render(nova_state *s) {
+    if(!t5_app_frame_ready(api))return;
     s->view->begin();
     int cx = api->screen_width()/2, cy = api->screen_height()/2;
     bool unavailable_icon=false;
@@ -86,10 +87,6 @@ static void nova_render(nova_state *s) {
         if (!api->installed_apps_get(s->first+i,&app)) continue;
         int dx=s->points[i].x+(int)(s->motion.x*16), dy=s->points[i].y+(int)(s->motion.y*16);
         int edge=abs(dx)>abs(dy)?abs(dx):abs(dy), scale=nova_scale(edge);
-        /* Make the nearest/labelled app visibly focused without moving the
-         * lattice or enlarging hit targets. Keep the existing launch pulse
-         * unchanged rather than stacking another enlargement onto it. */
-        if (i == s->focus && s->pending < 0) scale += scale/8;
         if ((int)i == s->pending && s->pulse) {
             int triangle=s->pulse <= 160 ? s->pulse : 320-s->pulse;
             scale += scale*triangle*22/(160*100);
@@ -121,7 +118,7 @@ static int nova_hit(nova_state *s,int x,int y) {
     int best=-1, nearest=10000;
     x-=api->screen_width()/2;y-=api->screen_height()/2;
     for (unsigned i=0;i<s->n;++i) {
-        int dx=s->points[i].x+s->visible_x,dy=s->points[i].y+s->visible_y;
+        int dx=s->points[i].x+(int)(s->motion.x*16),dy=s->points[i].y+(int)(s->motion.y*16);
         int scale=nova_scale(abs(dx)>abs(dy)?abs(dx):abs(dy));
         int d=nova_distance(x-dx/16,y-dy/16);
         if (nova_alpha(api->screen_width()/2+dx/16,api->screen_height()/2+dy/16)<32) continue;
@@ -136,7 +133,7 @@ static void nova_cancel(nova_state *s) {
 static void nova_prepare_launch(nova_state *s,unsigned hit,unsigned duration) {
     /* Follow the position the user actually tapped. A spring would still be
      * halfway to a neighboring icon when the short launch pulse completes. */
-    s->launch_x=(float)s->visible_x/16.0f;s->launch_y=(float)s->visible_y/16.0f;
+    s->launch_x=s->motion.x;s->launch_y=s->motion.y;
     s->launch_duration=duration;s->pending=(int)hit;s->pulse=(int)duration;
     s->motion.x=s->launch_x;s->motion.y=s->launch_y;
     s->motion.vx=s->motion.vy=0;sb_motion_target(&s->motion,hit);s->dirty=true;
@@ -166,7 +163,7 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
                 if (hit>=0) {
                     unsigned center=0;int nearest=INT_MAX;
                     for(unsigned i=0;i<s->n;i++) {
-                        int x=s->points[i].x+s->visible_x,y=s->points[i].y+s->visible_y,d=x*x+y*y;
+                        int x=s->points[i].x+(int)(s->motion.x*16),y=s->points[i].y+(int)(s->motion.y*16),d=x*x+y*y;
                         if(d<nearest){nearest=d;center=i;}
                     }
                     int dx=s->points[hit].x-s->points[center].x,dy=s->points[hit].y-s->points[center].y;
@@ -193,7 +190,7 @@ static void nova_tick(nova_state *s,uint32_t elapsed) {
         s->motion.x=s->launch_x+(target.x-s->launch_x)*ease;
         s->motion.y=s->launch_y+(target.y-s->launch_y)*ease;
         s->motion.vx=s->motion.vy=0;s->motion.settled=!s->pulse;s->dirty=true;
-    } else sb_motion_step(&s->motion,elapsed);
+    } else sb_motion_step(&s->motion,elapsed>250?250:elapsed);
     s->dirty |= oldx!=(int)(s->motion.x*16)||oldy!=(int)(s->motion.y*16);
     if(s->n){unsigned n=nova_nearest(s);s->dirty|=n!=s->focus;s->focus=n;selected=s->first+n;}
 }
@@ -215,7 +212,6 @@ static bool nova_run(void) {
         uint32_t now=api->millis(),elapsed=now-s.last_motion;
         /* A slow valid display frame is not an input cancellation. Keep a
          * deliberate pending launch, while bounding only physics integration. */
-        if(elapsed>250)elapsed=250;
         springboard_contact c={0};v->contact(&c);nova_contact_input(&s,&c,now-s.last_input);s.last_input=now;
         if(!in.buttons) buttons_armed=true;
         uint32_t pressed=buttons_armed?(in.buttons&~previous):0;previous=in.buttons;
@@ -235,10 +231,11 @@ static bool nova_run(void) {
             s.dirty|=known!=s.time_known||(known&&(hour!=s.hour||minute!=s.minute));
             s.hour=hour;s.minute=minute;s.time_known=known;s.last_clock=now;
         }
-        if((uint32_t)(now-s.last_frame)<NOVA_FRAME_MS) continue;
-        s.last_frame=now;
-        if(s.dirty || springboard_transition_active()) nova_render(&s);
-        if(s.pending>=0 && !s.pulse && !springboard_transition_active()) {
+        if((uint32_t)(now-s.last_frame)>=NOVA_FRAME_MS) {
+            s.last_frame=now;
+            if(s.dirty || springboard_transition_active())nova_render(&s);
+        }
+        if(s.pending>=0 && !s.pulse) {
             selected=s.first+(unsigned)s.pending;
             t5_app_manifest_t app;
             if(api->installed_apps_get(selected,&app) && app.compatible && api->request_app_launch(selected)) break;

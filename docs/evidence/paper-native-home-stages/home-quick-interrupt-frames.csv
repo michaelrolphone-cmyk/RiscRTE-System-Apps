@@ -1,0 +1,9 @@
+frame,submitted_ms,phase,damage_count,x,y,width,height
+1,0,home,1,24,32,760,417
+2,140,controls,1,16,32,168,416
+3,288,controls,1,0,32,480,416
+4,436,controls,1,0,32,784,417
+5,2464,controls,1,0,32,784,417
+6,2612,controls,1,0,32,608,416
+7,2752,after-close,1,24,30,760,420
+8,2893,after-close,1,72,40,392,400

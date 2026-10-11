@@ -1,0 +1,1429 @@
+{
+  "hardware": "not run",
+  "runs": {
+    "paper": [
+      {
+        "case": "drag",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "select",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "busy-hit",
+        "frames": 3,
+        "drag_frames": 1,
+        "momentum_frames": 1,
+        "max_offset": 898,
+        "release_offset": 848,
+        "busy_samples": 23,
+        "selected_row": 1,
+        "directory_opens": 3
+      },
+      {
+        "case": "stop-tap",
+        "frames": 11,
+        "drag_frames": 10,
+        "momentum_frames": 0,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "reverse",
+        "frames": 25,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 987,
+        "release_offset": 798,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "bounds",
+        "frames": 9,
+        "drag_frames": 3,
+        "momentum_frames": 3,
+        "max_offset": 184,
+        "release_offset": 184,
+        "busy_samples": 7,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "back",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "home",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "horizontal",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "replaced",
+        "frames": 19,
+        "drag_frames": 7,
+        "momentum_frames": 7,
+        "max_offset": 1110,
+        "release_offset": 550,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "cancelled",
+        "retained": true
+      },
+      {
+        "case": "footer-drag",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "modal",
+        "frames": 15,
+        "drag_frames": 10,
+        "momentum_frames": 4,
+        "max_offset": 1137,
+        "release_offset": 798,
+        "busy_samples": 20,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "queued-up",
+        "frames": 20,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1223,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "cleanup",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "actions",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 96,
+        "release_offset": 96,
+        "busy_samples": 2,
+        "selected_row": 6,
+        "directory_opens": 1
+      },
+      {
+        "case": "destination",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 50
+      },
+      {
+        "case": "handlers",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 1
+      },
+      {
+        "case": "directory-change",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "handler-change",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 1
+      },
+      {
+        "case": "confirm-hidden",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 0,
+        "directory_opens": 3
+      },
+      {
+        "case": "cache-reverse",
+        "frames": 35,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 12,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "options",
+        "frames": 2,
+        "drag_frames": 1,
+        "momentum_frames": 0,
+        "max_offset": 8,
+        "release_offset": 8,
+        "busy_samples": 1,
+        "selected_row": 5,
+        "directory_opens": 1
+      },
+      {
+        "case": "reentry",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "empty",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "read-error",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "coordinates",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "inventory-change",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "keyboard-busy",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "rename-keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      }
+    ],
+    "paper-san": [
+      {
+        "case": "drag",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "select",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "busy-hit",
+        "frames": 3,
+        "drag_frames": 1,
+        "momentum_frames": 1,
+        "max_offset": 898,
+        "release_offset": 848,
+        "busy_samples": 23,
+        "selected_row": 1,
+        "directory_opens": 3
+      },
+      {
+        "case": "stop-tap",
+        "frames": 11,
+        "drag_frames": 10,
+        "momentum_frames": 0,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "reverse",
+        "frames": 25,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 987,
+        "release_offset": 798,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "bounds",
+        "frames": 9,
+        "drag_frames": 3,
+        "momentum_frames": 3,
+        "max_offset": 184,
+        "release_offset": 184,
+        "busy_samples": 7,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "back",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "home",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "horizontal",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "replaced",
+        "frames": 19,
+        "drag_frames": 7,
+        "momentum_frames": 7,
+        "max_offset": 1110,
+        "release_offset": 550,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "cancelled",
+        "retained": true
+      },
+      {
+        "case": "footer-drag",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "modal",
+        "frames": 15,
+        "drag_frames": 10,
+        "momentum_frames": 4,
+        "max_offset": 1137,
+        "release_offset": 798,
+        "busy_samples": 20,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "queued-up",
+        "frames": 20,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1223,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "cleanup",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "actions",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 96,
+        "release_offset": 96,
+        "busy_samples": 2,
+        "selected_row": 6,
+        "directory_opens": 1
+      },
+      {
+        "case": "destination",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 50
+      },
+      {
+        "case": "handlers",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 1
+      },
+      {
+        "case": "directory-change",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "handler-change",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1408,
+        "release_offset": 848,
+        "busy_samples": 9,
+        "selected_row": 17,
+        "directory_opens": 1
+      },
+      {
+        "case": "confirm-hidden",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 0,
+        "directory_opens": 3
+      },
+      {
+        "case": "cache-reverse",
+        "frames": 35,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 12,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "options",
+        "frames": 2,
+        "drag_frames": 1,
+        "momentum_frames": 0,
+        "max_offset": 8,
+        "release_offset": 8,
+        "busy_samples": 1,
+        "selected_row": 5,
+        "directory_opens": 1
+      },
+      {
+        "case": "reentry",
+        "frames": 23,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": 16,
+        "directory_opens": 2
+      },
+      {
+        "case": "empty",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "read-error",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "coordinates",
+        "frames": 22,
+        "drag_frames": 10,
+        "momentum_frames": 7,
+        "max_offset": 1358,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "inventory-change",
+        "frames": 12,
+        "drag_frames": 10,
+        "momentum_frames": 1,
+        "max_offset": 848,
+        "release_offset": 798,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "keyboard-busy",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "rename-keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      }
+    ],
+    "short": [
+      {
+        "case": "drag",
+        "frames": 25,
+        "drag_frames": 8,
+        "momentum_frames": 7,
+        "max_offset": 1333,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "select",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "busy-hit",
+        "frames": 3,
+        "drag_frames": 1,
+        "momentum_frames": 1,
+        "max_offset": 547,
+        "release_offset": 547,
+        "busy_samples": 23,
+        "selected_row": 1,
+        "directory_opens": 1
+      },
+      {
+        "case": "stop-tap",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "reverse",
+        "frames": 21,
+        "drag_frames": 8,
+        "momentum_frames": 5,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 13,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "bounds",
+        "frames": 18,
+        "drag_frames": 6,
+        "momentum_frames": 3,
+        "max_offset": 384,
+        "release_offset": 384,
+        "busy_samples": 10,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "back",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "home",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "horizontal",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "replaced",
+        "frames": 7,
+        "drag_frames": 6,
+        "momentum_frames": 0,
+        "max_offset": 434,
+        "release_offset": 434,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "cancelled",
+        "retained": true
+      },
+      {
+        "case": "footer-drag",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "modal",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 19,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "queued-up",
+        "frames": 14,
+        "drag_frames": 8,
+        "momentum_frames": 5,
+        "max_offset": 649,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "cleanup",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "actions",
+        "frames": 6,
+        "drag_frames": 5,
+        "momentum_frames": 0,
+        "max_offset": 296,
+        "release_offset": 296,
+        "busy_samples": 5,
+        "selected_row": 6,
+        "directory_opens": 1
+      },
+      {
+        "case": "destination",
+        "frames": 11,
+        "drag_frames": 9,
+        "momentum_frames": 1,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 45
+      },
+      {
+        "case": "handlers",
+        "frames": 10,
+        "drag_frames": 9,
+        "momentum_frames": 0,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 1
+      },
+      {
+        "case": "directory-change",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "handler-change",
+        "frames": 11,
+        "drag_frames": 9,
+        "momentum_frames": 1,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 1
+      },
+      {
+        "case": "confirm-hidden",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 0,
+        "directory_opens": 1
+      },
+      {
+        "case": "cache-reverse",
+        "frames": 36,
+        "drag_frames": 8,
+        "momentum_frames": 7,
+        "max_offset": 1314,
+        "release_offset": 572,
+        "busy_samples": 19,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "options",
+        "frames": 4,
+        "drag_frames": 3,
+        "momentum_frames": 0,
+        "max_offset": 208,
+        "release_offset": 208,
+        "busy_samples": 3,
+        "selected_row": 5,
+        "directory_opens": 1
+      },
+      {
+        "case": "reentry",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "empty",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "read-error",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "coordinates",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "inventory-change",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 2,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "keyboard-busy",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 1,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "rename-keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 2,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      }
+    ],
+    "short-san": [
+      {
+        "case": "drag",
+        "frames": 25,
+        "drag_frames": 8,
+        "momentum_frames": 7,
+        "max_offset": 1333,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "select",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "busy-hit",
+        "frames": 3,
+        "drag_frames": 1,
+        "momentum_frames": 1,
+        "max_offset": 547,
+        "release_offset": 547,
+        "busy_samples": 23,
+        "selected_row": 1,
+        "directory_opens": 1
+      },
+      {
+        "case": "stop-tap",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "reverse",
+        "frames": 21,
+        "drag_frames": 8,
+        "momentum_frames": 5,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 13,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "bounds",
+        "frames": 18,
+        "drag_frames": 6,
+        "momentum_frames": 3,
+        "max_offset": 384,
+        "release_offset": 384,
+        "busy_samples": 10,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "back",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "home",
+        "frames": 3,
+        "drag_frames": 2,
+        "momentum_frames": 0,
+        "max_offset": 150,
+        "release_offset": 150,
+        "busy_samples": 2,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "horizontal",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "replaced",
+        "frames": 7,
+        "drag_frames": 6,
+        "momentum_frames": 0,
+        "max_offset": 434,
+        "release_offset": 434,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "cancelled",
+        "retained": true
+      },
+      {
+        "case": "footer-drag",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "modal",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 19,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "queued-up",
+        "frames": 14,
+        "drag_frames": 8,
+        "momentum_frames": 5,
+        "max_offset": 649,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "cleanup",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "actions",
+        "frames": 6,
+        "drag_frames": 5,
+        "momentum_frames": 0,
+        "max_offset": 296,
+        "release_offset": 296,
+        "busy_samples": 5,
+        "selected_row": 6,
+        "directory_opens": 1
+      },
+      {
+        "case": "destination",
+        "frames": 11,
+        "drag_frames": 9,
+        "momentum_frames": 1,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 45
+      },
+      {
+        "case": "handlers",
+        "frames": 10,
+        "drag_frames": 9,
+        "momentum_frames": 0,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 1
+      },
+      {
+        "case": "directory-change",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "handler-change",
+        "frames": 11,
+        "drag_frames": 9,
+        "momentum_frames": 1,
+        "max_offset": 617,
+        "release_offset": 617,
+        "busy_samples": 9,
+        "selected_row": 8,
+        "directory_opens": 1
+      },
+      {
+        "case": "confirm-hidden",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 0,
+        "directory_opens": 1
+      },
+      {
+        "case": "cache-reverse",
+        "frames": 36,
+        "drag_frames": 8,
+        "momentum_frames": 7,
+        "max_offset": 1314,
+        "release_offset": 572,
+        "busy_samples": 19,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "options",
+        "frames": 4,
+        "drag_frames": 3,
+        "momentum_frames": 0,
+        "max_offset": 208,
+        "release_offset": 208,
+        "busy_samples": 3,
+        "selected_row": 5,
+        "directory_opens": 1
+      },
+      {
+        "case": "reentry",
+        "frames": 10,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": 7,
+        "directory_opens": 1
+      },
+      {
+        "case": "empty",
+        "frames": 1,
+        "drag_frames": 0,
+        "momentum_frames": 0,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "read-error",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 2
+      },
+      {
+        "case": "coordinates",
+        "frames": 9,
+        "drag_frames": 8,
+        "momentum_frames": 0,
+        "max_offset": 572,
+        "release_offset": 572,
+        "busy_samples": 8,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "inventory-change",
+        "frames": 17,
+        "drag_frames": 8,
+        "momentum_frames": 1,
+        "max_offset": 1059,
+        "release_offset": 572,
+        "busy_samples": 14,
+        "selected_row": -1,
+        "directory_opens": 3
+      },
+      {
+        "case": "keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 2,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "keyboard-busy",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 1,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 6,
+        "selected_row": -1,
+        "directory_opens": 1
+      },
+      {
+        "case": "rename-keyboard",
+        "frames": 4,
+        "drag_frames": 0,
+        "momentum_frames": 2,
+        "max_offset": 0,
+        "release_offset": 0,
+        "busy_samples": 0,
+        "selected_row": -1,
+        "directory_opens": 1
+      }
+    ]
+  },
+  "source_sha256": {
+    "Apps/file_browser_operations.inc": "84bbb77304677a4bbc5ed504e49613c8952be758c2ad996d14ddb31635ccf1b4",
+    "Apps/file_browser_paper.inc": "04fd1c71906f30b70d1386505c5c311ba1e73c9d9755bf024e7ac3d63f7d7661",
+    "Apps/file_browser_scroll_view.inc": "d0b905744fd4557c0b5e5556c8f26fd471f8eb2f12e8e63c53306d632a08686c",
+    "Apps/file_browser_portable.inc": "0bcee72503727635238aaa0c65b58b602789d7c11cc60a2cb8e1a6b247a775a7",
+    "Apps/file_browser_scroll_model.inc": "17f6010ba4c194b69aa310490cbdb5ceb96353694899bd291811f6f31787bd6a",
+    "lib/PortableApps/src/adapter.c": "2d9fd088a01daf2f16917f90a7c6a5f53cc49f77da926263f824a97cae5893d9",
+    "lib/PortableApps/src/nova.inc": "70e81d9bd0083e1f2f8c7fb1de4b0fad9ced3e12d29913cc138fd6cd41ab4e72",
+    "lib/PortableApps/include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+    "lib/PortableApps/include/PortableTouch.h": "d9cb76da76343be0ae7c23d517d106f2d3654173da53e42c8f702605a2f2b331",
+    "test/native_apps/touch_scroll_files_entry.c": "3a006ff595eaf190252198024b9c0c4a27f04cd55445688315f14cf7a8939079",
+    "test/native_apps/touch_scroll_files_test.c": "6f8f4ebb17511494f93781491efba8e072cc39bc2090d3b245ef131e2ec894b9",
+    "scripts/test_touch_scroll_files.py": "ad755c6f0dd16985a278493de27636b9e32b88014fc714a29222abf2b9a159ad"
+  },
+  "sdk_sha256": {
+    "RiscRuntimeV1.h": "2f1b785d65729c0866691570bb920299a8c5187765f3eac204df3cb427ce9c84",
+    "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1"
+  },
+  "process_cases": 124,
+  "source_commit": "7e27232fe4dcb08f1051ffeb36d9df2bef6d98fb",
+  "compatibility": {
+    "watch_1.5.8_exact_bytes": true,
+    "motion_1.5.8_exact_bytes": true,
+    "wifi_1.1.11_exact_bytes": true,
+    "repository_python_tests": 75,
+    "watch_browser": "passed",
+    "paper_browser": "passed",
+    "file_operations_faults": "passed"
+  },
+  "runtime_storage_projection": {
+    "runtime_commit": "c546dae32e2e75f7e7f4867dc788b6be53ded64c",
+    "target_sha256": "bef5f836e03aa24b4f36e7bc9a53e8e385867ff6a86e18f39af75ace0b1e0f58",
+    "target_defines": [
+      "-DPORTABLE_FILE_BROWSER_APP",
+      "-DPORTABLE_FILE_BROWSER_CAPABILITY=\"storage.volume\"",
+      "-DPORTABLE_FILE_BROWSER_INSTANCE=9u",
+      "-DFILE_BROWSER_RETURN_APP=\"springboard.elf\"",
+      "-DPORTABLE_FILE_BROWSER_HANDLERS"
+    ],
+    "policy_projection": {
+      "requires": [
+        {
+          "capability": "storage.volume",
+          "api": 1
+        },
+        {
+          "capability": "file.open",
+          "api": 1
+        }
+      ],
+      "grants": [
+        {
+          "capability": "storage.volume",
+          "api": 1,
+          "instance_id": 9
+        },
+        {
+          "capability": "file.open",
+          "api": 1,
+          "instance_id": 0
+        }
+      ]
+    },
+    "normal": "passed",
+    "address_undefined_sanitizers": "passed",
+    "asan_options": "detect_leaks=0",
+    "scope": "production acquisition/controller and bootstrap Runtime; host media/UI fixtures, no hardware qualification",
+    "source_sha256": {
+      "scripts/test_file_browser_runtime.py": "6dad1ff59626ebf95ca69fd75da84974bbfe579d2f5893dbc8a3953e4314a937",
+      "test/native_apps/file_browser_runtime_test.cpp": "f2a9e599fef6143f337747e4599b925db6624147a84b0ac74a25a456845d9972",
+      "test/native_apps/fixtures/file_browser_runtime_app.c": "c8e08049a318b0ada8e0135d6e7cf2e144488fe5d3316e38a63066625e0802e1",
+      "test/native_apps/fixtures/file_browser_runtime_provider.c": "4a32e6bc5874c6245f3e2fa33950ea6f2f3be3ffbc4f3c23635f092cb3d431b7",
+      "test/native_apps/fixtures/file_browser_runtime_receiver.c": "b077f15f4e8cd136cf507673cd21776626ada3f8be115dc3ae19cf0de5675ff5"
+    }
+  },
+  "frames_inspected": [
+    "480x800 and 400x600: directory boundaries, actions, destination, handlers, Delete confirmation"
+  ]
+}

@@ -1,0 +1,4 @@
+state=10 error=3 status=401 
+state=10 error=4 status=0 
+Portable peer controller: instance-zero authority, explicit pairing, BLE release before HTTP, cooperative cleanup retry, stop at every setup phase and actual authenticated server operations PASS
+Peer WebDAV: 8 existing Watch mappings, revision replacement/stale rejection, actual Digest/client/server/UserFiles volume, fragmented nonblocking transport, PUT/GET both directions, PROPFIND, MOVE/COPY/DELETE, exclusive creation and confinement PASS

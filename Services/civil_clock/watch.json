@@ -1,0 +1,20 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "type": "driver",
+  "driver_abi": 2,
+  "id": "civil-clock-watch",
+  "version": "0.1.0",
+  "file_name": "driver.elf",
+  "provides": [
+    {
+      "capability": "time.civil",
+      "api": 1
+    }
+  ],
+  "requires": [
+    {
+      "capability": "rtc.clock",
+      "api": 2
+    }
+  ]
+}

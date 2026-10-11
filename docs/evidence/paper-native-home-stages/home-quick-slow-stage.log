@@ -1,0 +1,99 @@
+APP t_ms=0 stage=radio-preferences result=loaded-or-default
+APP t_ms=0 stage=radio-policy wifi=off
+APP t_ms=0 stage=bluetooth-request enabled=no
+APP t_ms=0 stage=bluetooth-result state=off
+APP t_ms=0 stage=draw-begin 
+APP t_ms=0 stage=draw-end 
+APP t_ms=0 stage=display-submit-begin intent=normal damage=24,32,760,417
+APP t_ms=0 stage=display-submit-end result=accepted
+APP t_ms=360 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=24,32,760,417
+APP t_ms=360 stage=display-transfer-times queued_ms=0 start_ms=0 end_ms=360 valid=0
+APP t_ms=360 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=360 valid=0
+APP t_ms=360 stage=display-complete result=complete
+APP t_ms=360 stage=draw-begin 
+APP t_ms=360 stage=draw-end 
+APP t_ms=360 stage=display-submit-begin intent=normal damage=24,30,760,420
+APP t_ms=360 stage=display-submit-end result=accepted
+APP t_ms=720 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=24,30,760,420
+APP t_ms=720 stage=display-transfer-times queued_ms=360 start_ms=360 end_ms=720 valid=0
+APP t_ms=720 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=720 valid=0
+APP t_ms=720 stage=display-complete result=complete
+APP t_ms=720 stage=draw-begin 
+APP t_ms=720 stage=draw-end 
+APP t_ms=720 stage=display-submit-begin intent=normal damage=24,31,760,419
+APP t_ms=720 stage=display-submit-end result=accepted
+APP t_ms=1080 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=24,31,760,419
+APP t_ms=1080 stage=display-transfer-times queued_ms=720 start_ms=720 end_ms=1080 valid=0
+APP t_ms=1080 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=1080 valid=0
+APP t_ms=1080 stage=display-complete result=complete
+APP t_ms=1240 stage=touch-picked-up source=software-sample
+APP t_ms=1360 stage=touch-released tap=eligible
+APP t_ms=1360 stage=draw-begin 
+APP t_ms=1360 stage=draw-end 
+APP t_ms=1360 stage=display-submit-begin intent=normal damage=0,0,72,480
+APP t_ms=1360 stage=display-submit-end result=accepted
+APP t_ms=1720 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,0,72,480
+APP t_ms=1720 stage=display-transfer-times queued_ms=1360 start_ms=1360 end_ms=1720 valid=0
+APP t_ms=1720 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=1720 valid=0
+APP t_ms=1720 stage=display-complete result=complete
+APP t_ms=1740 stage=radio-preferences result=loaded-or-default
+APP t_ms=1740 stage=radio-policy wifi=off
+APP t_ms=1740 stage=bluetooth-request enabled=no
+APP t_ms=1740 stage=bluetooth-result state=off
+APP t_ms=1740 stage=action name=quick-controls-open
+APP t_ms=1740 stage=draw-begin 
+APP t_ms=1740 stage=draw-end 
+APP t_ms=1740 stage=display-skip reason=pixels-unchanged
+APP t_ms=1748 stage=draw-begin 
+APP t_ms=1748 stage=draw-end 
+APP t_ms=1748 stage=display-submit-begin intent=normal damage=0,0,40,480
+APP t_ms=1748 stage=display-submit-end result=accepted
+APP t_ms=2098 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,0,40,480
+APP t_ms=2098 stage=display-transfer-times queued_ms=1748 start_ms=1748 end_ms=2098 valid=0
+APP t_ms=2098 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=2098 valid=0
+APP t_ms=2098 stage=display-complete result=complete
+APP t_ms=2106 stage=draw-begin 
+APP t_ms=2106 stage=draw-end 
+APP t_ms=2106 stage=display-submit-begin intent=normal damage=0,0,776,480
+APP t_ms=2106 stage=display-submit-end result=accepted
+APP t_ms=2456 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,0,776,480
+APP t_ms=2456 stage=display-transfer-times queued_ms=2106 start_ms=2106 end_ms=2456 valid=0
+APP t_ms=2456 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=2456 valid=0
+APP t_ms=2456 stage=display-complete result=complete
+APP t_ms=4680 stage=touch-picked-up source=software-sample
+APP t_ms=4744 stage=draw-begin 
+APP t_ms=4744 stage=draw-end 
+APP t_ms=4744 stage=display-submit-begin intent=normal damage=0,30,776,420
+APP t_ms=4744 stage=display-submit-end result=accepted
+APP t_ms=4872 stage=touch-released tap=eligible
+APP t_ms=5094 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,30,776,420
+APP t_ms=5094 stage=display-transfer-times queued_ms=4744 start_ms=4744 end_ms=5094 valid=0
+APP t_ms=5094 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=5094 valid=0
+APP t_ms=5094 stage=display-complete result=complete
+APP t_ms=5102 stage=draw-begin 
+APP t_ms=5102 stage=draw-end 
+APP t_ms=5102 stage=display-submit-begin intent=normal damage=0,0,608,480
+APP t_ms=5102 stage=display-submit-end result=accepted
+APP t_ms=5452 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,0,608,480
+APP t_ms=5452 stage=display-transfer-times queued_ms=5102 start_ms=5102 end_ms=5452 valid=0
+APP t_ms=5452 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=5452 valid=0
+APP t_ms=5452 stage=display-complete result=complete
+APP t_ms=5452 stage=action name=quick-controls-close
+APP t_ms=5452 stage=draw-begin 
+APP t_ms=5452 stage=draw-end 
+APP t_ms=5452 stage=display-submit-begin intent=normal damage=0,0,72,480
+APP t_ms=5452 stage=display-submit-end result=accepted
+APP t_ms=5813 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=0,0,72,480
+APP t_ms=5813 stage=display-transfer-times queued_ms=5452 start_ms=5452 end_ms=5813 valid=0
+APP t_ms=5813 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=5813 valid=0
+APP t_ms=5813 stage=display-complete result=complete
+APP t_ms=5813 stage=action name=navigation
+APP t_ms=5813 stage=draw-begin 
+APP t_ms=5813 stage=draw-end 
+APP t_ms=5813 stage=display-submit-begin intent=normal damage=72,40,392,400
+APP t_ms=5813 stage=display-submit-end result=accepted
+APP t_ms=6173 stage=display-transfer bytes=48000 gpio_calls=0 mode=partial window=72,40,392,400
+APP t_ms=6173 stage=display-transfer-times queued_ms=5813 start_ms=5813 end_ms=6173 valid=0
+APP t_ms=6173 stage=display-busy-times refresh_ms=0 assert_ms=0 complete_ms=6173 valid=0
+APP t_ms=6173 stage=display-complete result=complete
+APP t_ms=6173 stage=action name=clock-launch

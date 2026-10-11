@@ -1,0 +1,13 @@
+xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0
+         U esp_fill_random
+         U memcpy
+         U memset
+NativeEntropy.h:30:13:bool RiscCpu::NativeEntropy::safe(void*)	32	static
+NativeEntropy.h:31:13:bool RiscCpu::NativeEntropy::idle(void*, uint64_t)	32	static
+NativeEntropy.h:26:2:RiscCpu::NativeEntropy::Operation::~Operation()	32	static
+NativeEntropy.h:41:13:bool RiscCpu::NativeEntropy::checked(RiscCpu::NativeEntropy::State&)	32	static
+NativeEntropy.h:45:16:int32_t RiscCpu::NativeEntropy::ready(RiscCpu::NativeEntropy::State&)	32	static
+NativeEntropy.h:62:16:int32_t RiscCpu::NativeEntropy::fill(void*, uint64_t, void*, uint32_t)	96	static
+native_entropy_target_compile.cpp:3:44:const RiscBoot::EntropyBackend* entropy_target_compile()	32	static
+native_entropy_target_compile.cpp:6:17:bool entropy_target_configure(bool (*)(), bool (*)(), bool (*)(), void (*)())	48	static
+Native entropy ESP32-S3 C ABI and production SDK object compile PASS (no firmware link or device execution)

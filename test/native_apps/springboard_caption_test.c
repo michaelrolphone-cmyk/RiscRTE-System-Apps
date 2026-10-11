@@ -8,7 +8,9 @@
 
 const t5_app_manifest_t portable_catalog[]={{.display_name="Stopwatch",.icon="solid:f2f2"}};
 const unsigned portable_catalog_count=1;
-const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){(void)version;return NULL;}
+static bool caption_health(risc_runtime_health_v1 *out){out->uptime_ms=0;return true;}
+static const risc_runtime_api_v1 caption_runtime={.api_version=1,.struct_size=sizeof(caption_runtime),.health=caption_health};
+const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&caption_runtime:NULL;}
 static uint16_t pixels[240*243];
 static unsigned char coverage[240*240];
 static void reset_pixels(uint16_t color){
@@ -96,6 +98,7 @@ static void bright_icon_scene(void){
  guards();save_frame("caption-bright-icons-after");
 }
 int main(void){
+ rt=&caption_runtime;
  caption_pixels("10:40 AM",true,16);caption_pixels("--:--",true,16);
  caption_pixels("STOPWATCH",false,197);caption_pixels("Long app name with many words truncated",false,197);
  caption_pixels("A  A",false,100);caption_pixels("",false,197);caption_pixels("   ",true,16);

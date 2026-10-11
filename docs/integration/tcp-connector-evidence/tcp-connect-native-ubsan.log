@@ -1,0 +1,1 @@
+Native TCP production syscall shim: bounds, partial/blocked/EOF, owner generations, Wi-Fi, retained close and no I/O after context loss PASS

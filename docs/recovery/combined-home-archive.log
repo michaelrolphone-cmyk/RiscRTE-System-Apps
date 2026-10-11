@@ -1,0 +1,35 @@
+normal:
+PASS exact formatter to durable spool to verified SD; presentation acknowledgement barrier
+PASS no SD, read-only SD and USB-exported SD preserve spool and usable Continue
+PASS unavailable internal spool leaves native evidence pending; later safe checkpoint backs up then acknowledges
+PASS restart reacquires fresh AppData generations; duplicate append and final-file retry avoid rewrites
+PASS same native identity with different exact text remains two durable reports; exact duplicate does not append
+PASS failed final SD readback retains queue; exact final readback precedes deletion
+PASS eight-report bound keeps oldest seven plus newest; drop identity/counter survive drain and restart
+PASS corrupt/IO/COMMIT_UNKNOWN fail closed; only exact readback resolves ambiguous commit
+PASS ambiguous internal removal reconciles disk before reporting empty; retry deduplicates SD
+PASS AppData retention, uncertain releases and hidden SD stat/mkdir/close/read/remove retention stop every subsequent I/O
+PASS foreground, dispatch, active frame/token, unsettled display, modal, quick UI and handoff gates perform no I/O
+PASS empty queue has no steady-state I/O/logging; retry is exactly 30 seconds and handles clock wrap
+PASS stale delayed acknowledgement requests fresh native review and never dismisses the newer record
+PASS slow synchronous SD callbacks bound admission and retain spool for a later checkpoint
+PASS checked SD state: absent/malformed zero-I/O defer; first-ready/final-close retention; uncertain acquire
+Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)
+sanitized:
+PASS exact formatter to durable spool to verified SD; presentation acknowledgement barrier
+PASS no SD, read-only SD and USB-exported SD preserve spool and usable Continue
+PASS unavailable internal spool leaves native evidence pending; later safe checkpoint backs up then acknowledges
+PASS restart reacquires fresh AppData generations; duplicate append and final-file retry avoid rewrites
+PASS same native identity with different exact text remains two durable reports; exact duplicate does not append
+PASS failed final SD readback retains queue; exact final readback precedes deletion
+PASS eight-report bound keeps oldest seven plus newest; drop identity/counter survive drain and restart
+PASS corrupt/IO/COMMIT_UNKNOWN fail closed; only exact readback resolves ambiguous commit
+PASS ambiguous internal removal reconciles disk before reporting empty; retry deduplicates SD
+PASS AppData retention, uncertain releases and hidden SD stat/mkdir/close/read/remove retention stop every subsequent I/O
+PASS foreground, dispatch, active frame/token, unsettled display, modal, quick UI and handoff gates perform no I/O
+PASS empty queue has no steady-state I/O/logging; retry is exactly 30 seconds and handles clock wrap
+PASS stale delayed acknowledgement requests fresh native review and never dismisses the newer record
+PASS slow synchronous SD callbacks bound admission and retain spool for a later checkpoint
+PASS checked SD state: absent/malformed zero-I/O defer; first-ready/final-close retention; uncertain acquire
+Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)
+Evidence: /tmp/combined-home-archive/evidence.json

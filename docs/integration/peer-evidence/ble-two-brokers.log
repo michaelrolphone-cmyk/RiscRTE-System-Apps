@@ -1,0 +1,3 @@
+Two production BLE brokers: advertised discovery, explicit peer selection, mutual SC numeric comparison, checked GATT descriptor/validity, happy, ephemeral cleanup PASS
+Two production BLE brokers: advertised discovery, explicit peer selection, mutual SC numeric comparison, checked GATT descriptor/validity, reject, ephemeral cleanup PASS
+Two production BLE brokers: advertised discovery, explicit peer selection, mutual SC numeric comparison, checked GATT descriptor/validity, expiry, ephemeral cleanup PASS
