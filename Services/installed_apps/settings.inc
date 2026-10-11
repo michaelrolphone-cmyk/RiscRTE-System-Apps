@@ -1,4 +1,4 @@
-using SettingsCheckpoint=RiscPackages::InstalledSettingsCheckpoint;
+using SettingsCheckpoint=RiscPackages::SettingsCheckpoint;
 alignas(SettingsCheckpoint) unsigned char settingsMemory[sizeof(SettingsCheckpoint)];SettingsCheckpoint*settingsCheckpoint;
 bool settingsApi(){return native&&native->struct_size>=sizeof(*native)&&native->settings_capacity&&native->settings_status&&native->settings_restore&&native->settings_snapshot&&native->settings_ack;}
 bool settingsReady(const Package&p){

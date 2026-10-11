@@ -7,7 +7,7 @@
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include "runtime/packages/StagedAppInstall.h"
 #include "runtime/packages/SdPackageDownload.h"
-#include "runtime/packages/InstalledSettingsCheckpoint.h"
+#include "runtime/packages/PagedSettingsCheckpoint.h"
 #include "runtime/update/Version.h"
 #include <ArduinoJson.h>
 #include <cstring>

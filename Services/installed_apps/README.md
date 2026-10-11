@@ -109,3 +109,5 @@ are released before child entry or sleep. This closes the cold-boot shortcut
 gap when legacy authority migration is selected. Actual resident adapter tests
 cover first-frame ordering, 1000 pending progress/cancel polls, child handoff
 and deferred sleep. No additional display/input rendering path is introduced.
+
+Format-2 native settings use scalable immutable SD pages plus a verified atomic index. The copied worker runs every filesystem operation. Existing NVS migration, v1 compatibility, per-key journal replay and missing-media authority are native responsibilities. A new write does not disappear when an older checkpoint completes. Original private native values are retained only as a migration backup; after the durable SD anchor, they are never fallback defaults.

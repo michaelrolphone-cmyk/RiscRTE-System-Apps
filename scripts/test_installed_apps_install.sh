@@ -7,3 +7,6 @@ flags=();if [[ "${SANITIZE:-0}" == 1 ]];then flags=(-fsanitize=${SANITIZERS:-und
 cc -std=c11 -Wall -Wextra -Werror "${flags[@]}" -I"$root/lib/InstalledCatalog/include" -c "$root/lib/InstalledCatalog/src/InstalledCatalog.c" -o "$build/catalog.o"
 c++ -std=c++17 -Wall -Wextra -Werror "${flags[@]}" -I"$runtime/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$runtime/sdk/hardware" -I"$runtime/lib/ArduinoJson/src" -I"$root/lib/PortableApps/include" -I"$root/lib/InstalledCatalog/include" "$root/test/native_apps/installed_apps_install_test.cpp" "$build/catalog.o" -o "$build/test"
 "$build/test"
+
+c++ -std=c++17 -Wall -Wextra -Werror "${flags[@]}" -I"$runtime/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$runtime/sdk/hardware" -I"$runtime/lib/ArduinoJson/src" -I"$root/lib/PortableApps/include" -I"$root/lib/InstalledCatalog/include" "$root/test/native_apps/paged_settings_test.cpp" "$build/catalog.o" -o "$build/paged"
+"$build/paged"
