@@ -90,3 +90,12 @@ All of this remains separate from X4 .90, whose shared-settings selection stays
 absent. Its general/Wi-Fi values remain native-only, and full initial flashing
 still erases them. Software prototype roundtrip tests must not be described as
 an enabled or hardware-qualified persistence feature.
+
+## Checked X4 selection inventory
+
+The follow-up [writer inventory](WRITER_INVENTORY.md) and its
+[machine-readable evidence](WRITER_INVENTORY.json) cover all 26 apps/32 providers
+in the actual .90 preflight selection, Utilities fc0bdbb, exact provider grants,
+writer origins, atomic groups and cache invalidation. The accompanying read-only
+checker verifies selected bytes and source inputs. Preserved-binary provenance
+gaps remain explicit; this does not enable shared settings or qualify hardware.
