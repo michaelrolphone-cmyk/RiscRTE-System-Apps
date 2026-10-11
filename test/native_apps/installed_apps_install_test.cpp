@@ -11,10 +11,10 @@ std::map<std::string,std::string> disk;
 std::string opened;size_t position;bool writing,validImage=true;
 unsigned validations;
 using Kv=RiscStorage::SdFirstKeyValue;Kv::State kvState;Kv::Workspace kvWorkspace;std::vector<uint8_t> kvJournal;
-bool exported;
+bool exported,legacyNamespace;
 const Kv::Journal kvBackend={nullptr,
  [](void*,uint32_t ns,void*out,uint32_t capacity,uint32_t*n)->int32_t{assert(!executing&&ns==3000);if(kvJournal.empty())return RISC_KEY_VALUE_NOT_FOUND;assert(capacity>=kvJournal.size());*n=kvJournal.size();memcpy(out,kvJournal.data(),*n);return 0;},
- [](void*,uint32_t ns,const void*data,uint32_t n)->int32_t{assert(!executing&&ns==3000);kvJournal.assign(static_cast<const uint8_t*>(data),static_cast<const uint8_t*>(data)+n);return 0;},nullptr};
+ [](void*,uint32_t ns,const void*data,uint32_t n)->int32_t{assert(!executing&&ns==3000);kvJournal.assign(static_cast<const uint8_t*>(data),static_cast<const uint8_t*>(data)+n);return 0;},nullptr,[](void*,uint32_t,bool*exists)->int32_t{*exists=legacyNamespace;return 0;}};
 
 
 risc_storage_worker_admission_v2 nativeWorkerV2{};auto&nativeWorker=nativeWorkerV2.base;
@@ -235,6 +235,12 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  present=false;assert(api.refresh(nullptr)==0&&drive()==INSTALLED_APPS_UNAVAILABLE&&kvJournal==removedPending);
  assert(api.cancel(nullptr)==0);present=true;assert(api.refresh(nullptr)==0&&drive()==0&&kvState.status==Kv::Clean);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // Populated delivered native namespaces remain native and cause no SD
+ // checkpoint, journal writes or repeated background work after restoration.
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ saved=settingsCache;++revision;disk=settingsDisk;disk.erase(settingsPath);kvJournal.clear();kvState={};legacyNamespace=true;
+ graphBegin();assert(api.refresh(nullptr)==0&&drive()==0&&kvState.status==Kv::LegacyNative);
+ assert(api.get(nullptr,0,&row)&&row.available&&!settingsWanted()&&kvJournal.empty()&&!disk.count(settingsPath));
  puts("SD settings catalog/worker: warm-before-available, 65 interruption/restart points, exact checkpoint before journal cleanup, export exclusion and removed-media retry PASS");
  puts("Provider provisioning: 110 interrupted owner ticks, checked cancellation, restart/resume and unavailable-media retry PASS");
 
