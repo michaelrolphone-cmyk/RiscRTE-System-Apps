@@ -1,7 +1,7 @@
 name: Offline sharing entropy
 on:
   push:
-    branches: [fix/entropy-offline-bootstrap]
+    branches: [fix/entropy-offline-bootstrap, fix/files-connection-stage-logs]
   pull_request:
     paths:
       - 'Apps/file_browser*'
