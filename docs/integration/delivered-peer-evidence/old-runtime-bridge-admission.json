@@ -1,0 +1,32 @@
+[
+  {
+    "target": "x4",
+    "source": "build/x4-0.1.81-bundle/store",
+    "destination": "build/x4-delivered-081-bridge/package/store",
+    "runtime_commit": "81845e8027b94abc5c7a36a45e0004884ada73b6",
+    "result": {
+      "prepared": true,
+      "cohort_validated": true,
+      "error": "",
+      "hardware_calls": 0,
+      "storage_calls": 0,
+      "elf_count": 42,
+      "cooperative_yields": 168
+    }
+  },
+  {
+    "target": "watch",
+    "source": "build/watch-1.1.2-bundle/store",
+    "destination": "build/peer-increment-watch/bridge-package/store",
+    "runtime_commit": "81845e8027b94abc5c7a36a45e0004884ada73b6",
+    "result": {
+      "prepared": true,
+      "cohort_validated": true,
+      "error": "",
+      "hardware_calls": 0,
+      "storage_calls": 0,
+      "elf_count": 54,
+      "cooperative_yields": 170
+    }
+  }
+]

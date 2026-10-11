@@ -1,3 +1,5 @@
+> Superseded delivery status: see [DELIVERED_PEER_IMAGES.md](DELIVERED_PEER_IMAGES.md) for completed migration, full images and preserving paths from the actual delivered baselines.
+
 # Peer Files software qualification
 
 The end-to-end software path is implemented and tested: shared Files UI selects
