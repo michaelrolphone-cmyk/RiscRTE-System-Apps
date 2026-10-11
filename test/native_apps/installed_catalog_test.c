@@ -1,4 +1,4 @@
-#include "InstalledCatalog.h"
+#include "InstalledCatalogStore.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -7,6 +7,11 @@ static installed_record app(const char*id,uint8_t kind,uint8_t medium){
  installed_record r={0};strcpy(r.id,id);strcpy(r.name,id);strcpy(r.version,"1.0.0");
  snprintf(r.path,sizeof(r.path),"Apps/%s/%s.elf",id,id);r.kind=kind;r.medium=medium;r.installation_revision=1;r.admitted=true;return r;
 }
+static unsigned char persisted[INSTALLED_CATALOG_CACHE_MAX];
+static uint32_t persisted_size;static uint64_t revision;static int32_t write_result;
+static int32_t store_stat(void*ctx,const char*name,uint32_t*size,uint64_t*rev){(void)ctx;assert(!strcmp(name,"installed.idx"));*size=persisted_size;*rev=revision;return revision?RISC_APP_DATA_OK:RISC_APP_DATA_NOT_FOUND;}
+static int32_t store_read(void*ctx,const char*name,uint64_t expected,void*out,uint32_t capacity,uint32_t*actual,uint64_t*rev){(void)ctx;(void)name;if(expected!=revision)return RISC_APP_DATA_STALE;if(capacity<persisted_size)return RISC_APP_DATA_BUFFER_SMALL;memcpy(out,persisted,persisted_size);*actual=persisted_size;*rev=revision;return RISC_APP_DATA_OK;}
+static int32_t store_replace(void*ctx,const char*name,uint64_t expected,const void*in,uint32_t size){(void)ctx;(void)name;if(expected!=revision)return RISC_APP_DATA_STALE;if(write_result!=RISC_APP_DATA_OK&&write_result!=RISC_APP_DATA_COMMIT_UNKNOWN)return write_result;memcpy(persisted,in,size);persisted_size=size;++revision;return write_result;}
 int main(void){
  installed_catalog*c=calloc(1,sizeof(*c)),*restored=calloc(1,sizeof(*c));assert(c&&restored);
  installed_catalog_init(c);installed_catalog_init(restored);
@@ -37,6 +42,16 @@ int main(void){
  assert(installed_catalog_finish(c,true));assert(c->count==INSTALLED_CATALOG_MAX);
  n=installed_catalog_encode(c,"cohort/policy-v1",cache,INSTALLED_CATALOG_CACHE_MAX);assert(n);
  assert(installed_catalog_decode(restored,"cohort/policy-v1",cache,n));assert(restored->count==INSTALLED_CATALOG_MAX);
+ risc_app_data_v1 store={1,sizeof(store),0,store_stat,store_read,store_replace};uint64_t token=0;
+ assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_NOT_FOUND);
+ assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,0)==RISC_APP_DATA_OK);
+ installed_catalog_init(restored);assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_OK);assert(token==1&&restored->count==INSTALLED_CATALOG_MAX&&!restored->current[1].admitted);
+ assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,0)==RISC_APP_DATA_STALE);
+ write_result=RISC_APP_DATA_NO_SPACE;assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_NO_SPACE);assert(revision==token);
+ write_result=RISC_APP_DATA_RETAINED;assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_RETAINED);
+ write_result=RISC_APP_DATA_COMMIT_UNKNOWN;assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_COMMIT_UNKNOWN);
+ assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_OK);assert(token==2);
+ persisted[0]^=1;assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_INVALID);assert(restored->count==INSTALLED_CATALOG_MAX);
  c->generation=UINT32_MAX;assert(!installed_catalog_begin(c,INSTALLED_SD));assert(!installed_catalog_select(c,0,&s));
  free(cache);free(restored);free(c);puts("installed catalog: transaction, media, update, selection, cache corruption and truncation PASS");
 }

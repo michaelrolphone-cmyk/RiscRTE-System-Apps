@@ -16,10 +16,14 @@ mechanism and never processes executable bytes. Cached records restore labels,
 versions and paths, but NOT admission authority or media readiness. A native
 coordinator must rehydrate policies and confirm volume readiness before launch.
 
-Persistence is deliberately an adapter contract: write/readback an inactive cache
-slot and atomically select its generation using the existing storage transaction
-facility. The model itself does not write files. Do not present its codec as a
-completed durable cache implementation.
+`InstalledCatalogStore` now persists `installed.idx` through the existing
+`storage.app-data@1` atomic replacement API. It reuses that backend's sync,
+readback, revision and crash-selection guarantees instead of adding a journal.
+Load reads only the cache, never SD. Stale revisions, capacity failures,
+COMMIT_UNKNOWN and RETAINED propagate unchanged; corruption preserves the current
+snapshot. Scratch memory and the live namespace grant belong to the caller.
+The adapter is tested against fault-injected backend callbacks; an X4 catalog
+provider still needs its explicit namespace grant and owner-safe scheduling.
 
 Integration steps:
 
@@ -51,3 +55,5 @@ this checkpoint. No device timing or hardware operation has been qualified.
 The catalog C source also compiles with the installed Xtensa ESP32-S3 GCC under
 C11 with `-Wall -Wextra -Werror`. Full-capacity round-trip and overflow rollback
 are covered by the host tests. This is not a linked Springboard target build.
+
+Persistence adapter tests cover empty storage, save/reload, stale revision, no space, retained cleanup, ambiguous commit followed by reload, and corrupted saved bytes.
