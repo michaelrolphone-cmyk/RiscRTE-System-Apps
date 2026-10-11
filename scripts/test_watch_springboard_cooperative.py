@@ -53,4 +53,6 @@ for period in [1,4]:
  assert old['max_submit_gap_ms']>new['max_submit_gap_ms']*2,(old,new)
  assert new['completed_before_stop']>old['completed_before_stop']*2,(old,new)
  assert new['paint_yields'] and not old['paint_yields']
+ assert old['raster_health_reads']>0
+ assert new['raster_health_reads']==0 and new['raster_clock_reads']>0
 print('PASS: real Springboard cooperative-provider starvation reproduced and bounded raster pump verified')

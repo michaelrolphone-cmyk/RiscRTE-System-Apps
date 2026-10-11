@@ -194,6 +194,13 @@ static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 #endif
 static uint32_t millis_now(void) {
   if(failed)return 0; /* A void paint may already have retained the invocation. */
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(rt->struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && rt->monotonic_ms) {
+    uint32_t now=0;
+    if(!rt->monotonic_ms(&now)){failed=true;return 0;}
+    return now;
+  }
+#endif
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
     failed = true;

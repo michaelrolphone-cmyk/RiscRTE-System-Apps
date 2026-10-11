@@ -13,6 +13,7 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/watch-async-canvas'
 CORE = [
+    'clock-monotonic', 'clock-missing', 'clock-truncated', 'clock-failure',
     'raster-pump', 'raster-pump-complete', 'raster-pump-failure',
     'canvas-allocation-failure', 'mailbox', 'mid-paint', 'damage', 'fini-pending', 'fini-drawing', 'crown',
     'launch', 'handoff', 'submit-rejected', 'invalid-surface',
