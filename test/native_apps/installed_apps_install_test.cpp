@@ -63,7 +63,8 @@ void setup(){fixture::setup();
  packageVolume.package_tag=RISC_STORAGE_PACKAGE_TAG;packageVolume.package_version=1;
  packageVolume.submit_package=[](void*,uint64_t s,const risc_storage_package_request_v1*q,uint64_t*t){return risc_storage_package_submit(&bridge,s,q,t);};
  installation.commit=[](void*,const risc_install_candidate_v1*items,uint32_t count,risc_install_result_v1*out,bool replace)->int32_t{
-  if(denyCommit)return RISC_INSTALL_BUSY;++commits;if(replace)registered.clear();
+  if(denyCommit){return RISC_INSTALL_BUSY;}
+  ++commits;if(replace)registered.clear();
   for(unsigned i=0;i<count;++i){JsonDocument d;assert(!deserializeJson(d,items[i].manifest_json));out[i]={};out[i].status=RISC_INSTALL_OK;std::string p=items[i].manifest_path;p.resize(p.rfind('/')+1);p+=d["file_name"].as<const char*>();strcpy(out[i].launch_path,p.c_str());registered.push_back(p);}return RISC_INSTALL_OK;
  };
 }

@@ -176,7 +176,8 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  installation.providers=[](void*,const risc_install_provider_v1*items,uint32_t n,bool check)->int32_t{
   ++graphCalls;assert(n==1&&!check&&items[0].instance==0&&strstr(items[0].manifest_json,"late-provider"));
   JsonDocument durable;assert(!deserializeJson(durable,saved));assert(durable["providers"].size()==1);
-  if(graphBusy)return RISC_INSTALL_BUSY;if(graphDenied)return RISC_INSTALL_DENIED;
+  if(graphBusy){return RISC_INSTALL_BUSY;}
+  if(graphDenied){return RISC_INSTALL_DENIED;}
   graphAvailable=true;return RISC_INSTALL_OK;
  };
  installation.available=[](void*,const char*,uint32_t,uint64_t){return graphAvailable;};installation.provider_capacity=8;
