@@ -35,6 +35,7 @@ static const char *test,*state_path;
 #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
 bool shared_settings_force_busy;
 static unsigned shared_alarm_refreshes,shared_live_cues;
+static unsigned shared_leave_phase;
 extern void shared_settings_assert(void);
 #endif
 static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,promoted,native_valid;
@@ -338,7 +339,12 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();a
   * a foreground confirm after a neutral first frame. */
  unsigned leave=4;
 #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
- leave=80;
+ /* Hydration intentionally resets input. Send a fresh edge after restoration,
+  * rather than tying it to a raw-sample count which may skip during repaint. */
+ if((uint32_t)(ms-start_ms)>=900u && shared_leave_phase<2){
+  if(shared_leave_phase++)out->pressed=out->released=RISC_NAV_CONFIRM;
+ }
+ return true;
 #endif
 #ifdef TEST_HOME_DESK_LOCK
  if(which("terminal"))assert(!"Retained timer must reach terminal entry, not foreground fallback");

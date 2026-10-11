@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
-          ref: c8a4f951abccd2e88660468958621612c82083c3
+          ref: 241e792e67bf904c9fb9303d4b80d2157d7c5732
           path: x4
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -72,6 +72,7 @@ jobs:
           RUNTIME_REPO: ${{ github.workspace }}/runtime
           X4_REPO: ${{ github.workspace }}/x4
           READER_REPO: ${{ github.workspace }}/reader
+          UTILITIES_REPO: ${{ github.workspace }}/utilities
         run: python scripts/test_shared_settings_hydration.py
       - name: Install pinned public compiler
         run: |
