@@ -112,7 +112,7 @@ portable_file_setup_result portable_file_setup_start(portable_file_setup *s,
     if (!s || s->self != s) return PORTABLE_FILE_SETUP_INVALID;
     if (s->view.state == PORTABLE_FILE_SETUP_STATE_RETAINED) return PORTABLE_FILE_SETUP_RETAINED;
     if (s->phase != PHASE_IDLE) return result(s);
-    if (!config || !config->instance_id || !config->setup_lifetime_ms ||
+    if (!config || !config->setup_lifetime_ms ||
         config->setup_lifetime_ms > RISC_SESSION_SETUP_MAX_LIFETIME_MS ||
         !text_size(config->name, sizeof(config->name)) || !valid_descriptor(descriptor) ||
         now_ms > UINT64_MAX - descriptor->remaining_lifetime_ms) return PORTABLE_FILE_SETUP_INVALID;

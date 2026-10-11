@@ -3,12 +3,12 @@
 #define PORTABLE_FILE_SHARING
 #define PORTABLE_NATIVE_CUSTODY_FENCE
 #define PORTABLE_ALARM_TERMINAL_RETENTION
-#define PORTABLE_FILE_SHARING_EXPORT_INSTANCE 32
-#define PORTABLE_FILE_SHARING_TCP_INSTANCE 33
-#define PORTABLE_FILE_SHARING_ENTROPY_INSTANCE 34
+#define PORTABLE_FILE_SHARING_EXPORT_INSTANCE 0
+#define PORTABLE_FILE_SHARING_TCP_INSTANCE 0
+#define PORTABLE_FILE_SHARING_ENTROPY_INSTANCE 0
 #ifdef FILE_SETUP_TEST
 #define PORTABLE_FILE_SETUP
-#define PORTABLE_FILE_SHARING_SETUP_INSTANCE 35
+#define PORTABLE_FILE_SHARING_SETUP_INSTANCE 0
 #endif
 #ifdef FILE_BROWSER_PAPER_PROFILE
 #define PORTABLE_DISPLAY_ROTATION 90
@@ -67,11 +67,11 @@ static risc_app_data_export_v1 export_api;
 static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  live_check();if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
- else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==32&&!fb_grant.api);g->api=&export_api;}
- else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==33);g->api=&tcp;}
- else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==34);g->api=&entropy;}
+ else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==0&&!fb_grant.api);g->api=&export_api;}
+ else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==0);g->api=&tcp;}
+ else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==0);g->api=&entropy;}
 #ifdef FILE_SETUP_TEST
- else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==35&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
+ else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==0&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
 #endif
  else return test_acquire(n,v,id,g);
  test_grants++;return true;

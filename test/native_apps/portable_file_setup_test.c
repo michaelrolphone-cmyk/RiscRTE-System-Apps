@@ -65,7 +65,7 @@ static int32_t close_native(void *context, uint64_t token) {
 }
 static bool acquire(const char *name, uint32_t version, uint64_t instance, risc_runtime_capability_v1 *out) {
     assert(!f.grant_live && !strcmp(name, RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY));
-    assert(version == 1 && instance == UINT64_C(0x1234567800000091));
+    assert(version == 1 && instance == UINT64_C(0));
     assert(out->struct_size == sizeof(*out) && !out->slot && !out->generation && !out->api);
     called(ACQUIRE);
     if (f.acquire_ok || f.malformed_acquire) {
@@ -91,7 +91,7 @@ static const risc_runtime_api_v1 runtime = {
     .api_version = 1, .struct_size = sizeof(runtime), .acquire = acquire, .release = release
 };
 static portable_file_setup_config config(void) {
-    return (portable_file_setup_config){UINT64_C(0x1234567800000091), 60000, "Watch files"};
+    return (portable_file_setup_config){UINT64_C(0), 60000, "Watch files"};
 }
 static risc_bluetooth_session_descriptor_v1 descriptor(void) {
     return (risc_bluetooth_session_descriptor_v1){sizeof(risc_bluetooth_session_descriptor_v1),
@@ -209,7 +209,7 @@ static void test_validation(void) {
         portable_file_setup_config c = config(); risc_bluetooth_session_descriptor_v1 d = descriptor();
         uint64_t now = 1000;
         switch (which) {
-        case 0: c.instance_id = 0; break;
+        case 0: d.struct_size = 0; break;
         case 1: c.setup_lifetime_ms = 0; break;
         case 2: c.setup_lifetime_ms = 300001; break;
         case 3: c.name[0] = 0; break;

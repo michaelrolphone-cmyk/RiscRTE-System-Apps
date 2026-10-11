@@ -3,9 +3,8 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-VERSION = '1.5.19'
-BLE_VERSION = '1.5.20'
-def selected_version(args):return BLE_VERSION if getattr(args,'sharing_setup_instance',None) is not None else VERSION
+VERSION = '1.5.20'
+def selected_version(args):return VERSION
 MODULES = ('WebDavCore','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
 def options(parser):
@@ -19,12 +18,10 @@ def validate(args,parser):
     if not getattr(args,'webdav_sharing',False):
         if setup is not None or any(value is not None for value in values):parser.error('Sharing instances require --webdav-sharing')
         return
-    if any(value is None or not 0<value<=0x7fffffff for value in values):
-        parser.error('--webdav-sharing requires three explicit nonzero sharing instance IDs')
-    if setup is not None:
-        if not 0<setup<=0x7fffffff:parser.error('BLE setup requires an explicit nonzero provider instance')
-        values.append(setup)
-    if len(set(values))!=len(values):parser.error('Sharing providers require distinct instance IDs')
+    if any(value is None or value!=0 for value in values):
+        parser.error('--webdav-sharing requires explicit instance0 for native export and software TCP/entropy capabilities')
+    if setup is not None and setup!=0:
+        parser.error('Software BLE setup requires explicit instance0')
 
 def configure(args,root,out,includes,cc):
     if not getattr(args,'webdav_sharing',False):return [],[],[]

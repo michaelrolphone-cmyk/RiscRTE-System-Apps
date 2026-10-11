@@ -32,7 +32,7 @@ enum {
     PORTABLE_FILE_SETUP_CLOCK_CHANGED = -102
 };
 typedef struct {
-    uint64_t instance_id; /* Nonzero, exact manifest instance; no discovery. */
+    uint64_t instance_id; /* Exact declared instance; software providers use0. No discovery. */
     uint32_t setup_lifetime_ms; /* 1..300000; capped by HTTP remaining duration. */
     char name[21]; /* 1..20 printable ASCII bytes; contains no credentials. */
 } portable_file_setup_config;

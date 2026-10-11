@@ -27,7 +27,7 @@ BLE session setup is a separate generic provider and is not activated by this HT
 ## Optional BLE setup frontend
 
 Files1.5.20 selects `--sharing-setup-instance` in addition to the three HTTP
-instances. It preserves the HTTP-only1.5.19 profile and all existing storage,
+instances. It retains the optional HTTP-only path and all existing storage,
 file-association, navigation, telemetry and resident-client options. The BLE
 button appears only after the explicit finite HTTP session is ready. Bluetooth
 must already be enabled in Quick Actions; starting setup never changes that
@@ -61,3 +61,15 @@ and a10ms maximum simulated active-service gap. These are software timing and
 custody proofs; they are not physical BLE/RF or whole-product memory/latency
 qualification. Complete product admission, configured export map, Runtime0.2.6
 scheduler suffix and provider0.1.1 are required before product activation.
+
+### Production selector correction
+
+The complete Runtime composition uses instance0 for the four distinct
+capabilities: storage.app-data.export, network.tcp.listener, crypto.entropy and
+bluetooth.session-setup. Each selector must be explicitly supplied as0. The
+three software provider boot rows contain only their manifest path and omit
+instance_id; adding a nonzero instance falsely requests hardware.device
+authority and is rejected. Existing Wi-Fi15, KV1/6 and SD volume9 selections
+remain unchanged. Earlier isolated fixture IDs32/33/34/35 were not valid product
+bindings; their receipts remain historical component evidence only. No Runtime
+authority relaxation or invented hardware requirement was introduced.
