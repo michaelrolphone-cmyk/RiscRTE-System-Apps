@@ -6,11 +6,11 @@
 const t5_app_manifest_t portable_catalog_legacy_styles[]={ {.display_name="Legacy appearance",.file_name="Apps/new/",.icon="solid:f02d"}, {.display_name="Not installed",.file_name="Apps/absent/",.icon="solid:f02d"} };
 const unsigned portable_catalog_legacy_style_count=2;
 #endif
-static unsigned volume_acquires,releases,cancels,steps;static bool pending=true,refuse_release,dirty_settings,unavailable;
+static unsigned volume_acquires,releases,cancels,steps,refreshes;static bool pending=true,refuse_release,dirty_settings,unavailable;
 static uint32_t now_ms;
 static bool health(risc_runtime_health_v1*out){out->uptime_ms=now_ms;return true;}
 static bool settings_pending(void*p){(void)p;return dirty_settings;}
-static int refresh(void*p){(void)p;return 0;}
+static int refresh(void*p){(void)p;++refreshes;return 0;}
 static uint32_t generation(void*p){(void)p;return 7;}
 static uint32_t count(void*p){(void)p;return 2;}
 static bool get(void*p,uint32_t i,installed_app_v1*out){(void)p;*out=(installed_app_v1){.available=true};strcpy(out->name,"Discovered");strcpy(out->icon,"solid:f15b");strcpy(out->launch_path,i?"Apps/new/new.elf":"reader.elf");return true;}
@@ -55,6 +55,9 @@ int main(void){
  dirty_settings=pending=false;assert(portable_installed_step(&c,&runtime,42,base,1)==0&&!c.volume_grant.api);
  assert(portable_installed_refresh(&c,&runtime,base,1)==0);
  assert(portable_installed_step(&c,&runtime,42,base,1)==0);
+ unsigned scans=refreshes;assert(portable_installed_close(&c,&runtime)==0);
+ portable_installed_resume(&c);assert(c.resume_requested);
+ dirty_settings=true;assert(portable_installed_step(&c,&runtime,42,base,1)==0&&refreshes==scans);
  dirty_settings=unavailable=true;
  assert(portable_installed_step(&c,&runtime,42,base,1)==INSTALLED_APPS_UNAVAILABLE);unsigned delayed=volume_acquires;
  for(unsigned i=0;i<128;++i)assert(portable_installed_step(&c,&runtime,42,base,1)==0&&volume_acquires==delayed);

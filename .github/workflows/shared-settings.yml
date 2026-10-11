@@ -20,8 +20,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 86c37168ef960ac3af9cbdd98be53c663a0ef4d1
+          ref: 70da873a2b5f35ab23f59f19449008b0683b60ee
           path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
+          ref: c8a4f951abccd2e88660468958621612c82083c3
+          path: x4
           persist-credentials: false
       - name: Shared checkpoint, ABI and cancellation fixtures
         env:
@@ -39,6 +45,11 @@ jobs:
           SANITIZE=1 bash scripts/test_webdav_volume.sh
           SANITIZE=1 bash scripts/test_webdav_core.sh
           SANITIZE=1 bash scripts/test_webdav_peer.sh
+      - name: Shared preference BUSY hydration
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/runtime
+          X4_REPO: ${{ github.workspace }}/x4
+        run: python scripts/test_shared_settings_hydration.py
       - name: Install pinned public compiler
         run: |
           python -m pip install platformio==6.1.19

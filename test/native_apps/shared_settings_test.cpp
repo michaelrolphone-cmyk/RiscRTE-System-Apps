@@ -50,6 +50,7 @@ int main(){using namespace shared_fixture;using State=RiscPackages::InstalledSet
  assert(api.cancel(nullptr)==INSTALLED_APPS_OK);staged_fixture::exported=false;drive();assert(banks[1].deltas.empty());value(1,"late","journal-only");
  // All native data, including originals and anchors, may be erased by flashing.
  checkpointDisk=staged_fixture::disk;for(auto&item:banks){item.second.originals.clear();item.second.deltas.clear();item.second.anchor.clear();}cold();drive();
+ for(const auto&item:banks)assert(!item.second.anchor.empty());
  value(1,"opaque","namespace-one");value(6,"opaque","namespace-six");value(3000,"opaque","private");value(1,"late","journal-only");
  // Recovery repairs an interrupted atomic index before reading any pages.
  auto&disk=staged_fixture::disk;disk["/RTECFG/00000006/settings.index.risc-replace"]=disk.at("/RTECFG/00000006/settings.index");disk.erase("/RTECFG/00000006/settings.index");cold();drive();value(6,"opaque","namespace-six");

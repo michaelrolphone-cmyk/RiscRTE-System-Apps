@@ -292,6 +292,10 @@ static void home_main(void){
 #endif
 break;}
   if(input.exit_requested)break;
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_hydrate()){known=read_clock(&time);clock_dirty=clock_clean=true;}
+  if(desk_retained || portable_app_sleep_retained())return;
+#endif
 #ifdef PORTABLE_DESK_CLOCK
   if(desk_returned){desk_returned=false;down=neutral=false;strcpy(notice,desk_notice());known=read_clock(&time);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START

@@ -104,6 +104,8 @@ void portable_file_browser_scroll_clip(const portable_scroll_viewport *view) {
 static bool paper_flip_ui,paper_orientation_dirty,paper_preferences_retained;
 #ifndef PORTABLE_DESK_CLOCK_SPARSE_START
 static risc_runtime_capability_v1 paper_preferences_grant;
+static bool paper_preferences_pending;
+static uint32_t paper_preferences_retry_at;
 #endif
 static void paper_orient_input(portable_touch_sample *sample);
 #endif
@@ -1589,6 +1591,7 @@ static bool idle_sleep(void) {
 #endif
     portable_desk_clock_mode();
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_mode==-3){last_activity=millis_now();return true;} /* shared settings still restoring */
   if(desk_mode<0){portable_desk_adapter_retain();return false;}
 #else
   if(desk_mode<0){native_sleep_retained=true;failed=true;return false;}
@@ -1817,6 +1820,40 @@ static inline bool paper_apply_flip(unsigned value) {
 #endif
   paper_flip_ui=value!=0;paper_orientation_dirty=true;return true;
 }
+#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
+static void paper_preferences_retry(void) {
+ if(!paper_preferences_pending || failed || surface.frame || paper_token ||
+    (int32_t)(millis_now()-paper_preferences_retry_at)<0)return;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+ if(native_sleep_retained || alarm_modal || !display_settled)return;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(quick_modal || pqa_visible(&quick.ui) || pqa_capture(&quick.ui) || quick.ui.pending)return;
+#endif
+ paper_preferences_retry_at=millis_now()+250u;
+ paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};
+ if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant))return;
+ unsigned value=0;int status=portable_reader_preference_load(paper_preferences_grant.api,false,&value);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return;
+#endif
+ if(!rt->release(&paper_preferences_grant)){
+  paper_preferences_retained=failed=true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  portable_adapter_retain();
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+  native_sleep_retained=true;
+#endif
+  return;
+ }
+ if(status==PORTABLE_READER_UNAVAILABLE)return;
+ if(paper_apply_flip(value))paper_preferences_pending=false;
+}
+#endif
 #endif
 #ifdef PORTABLE_DESK_CLOCK
 bool portable_desk_adapter_flip(unsigned value) {return paper_apply_flip(value);}
@@ -2299,6 +2336,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
+#if defined(PORTABLE_PAPER_PREFERENCES) && !defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+  if(ok && !handoff_requested)paper_preferences_retry();
+#endif
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_io_allowed()) {
     memset(out,0,sizeof(*out));clear_contact_snapshots();return !failed;

@@ -142,7 +142,7 @@ def build():
  if a.desk_points_face:version='0.3.17'
  version=portable_quick_build.version(a,'paper_clock',version)
  if a.boot_animation:version='0.4.7'
- if a.installed_catalog_volume_instance is not None:version='0.4.10'
+ if a.installed_catalog_volume_instance is not None:version='0.4.11'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -174,7 +174,7 @@ def build():
     'lib/PortableApps/src/contexts_adapter.inc',
     'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/contexts_clock.inc')}}
   record['build_defines']=flags
- if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
+ if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'shared_preferences_retry':'foreground-250ms-no-timer-kv','source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
  if a.ble_broadcast:
   record['ble_broadcast']['source_sha256']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in (
    'lib/PortableApps/include/PortableBroadcastClient.h','lib/PortableApps/include/PortableBroadcastAppData.h',

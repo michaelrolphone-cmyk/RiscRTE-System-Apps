@@ -68,13 +68,14 @@ int portable_installed_refresh(portable_installed_catalog*c,const risc_runtime_a
    return INSTALLED_APPS_INVALID;
   }
   c->service=s;
+  c->maintenance_enabled=s->struct_size>=INSTALLED_APPS_SETTINGS_PREFIX_SIZE&&s->settings_pending;
  }
  int rc=c->service->refresh(c->service->context);c->wanted=c->requested=true;c->resume_requested=false;snapshot(c,base,n);
  if(rc==INSTALLED_APPS_RETAINED)c->retained=true;
  return rc;
 }
 void portable_installed_resume(portable_installed_catalog*c){
- if(!c->retained&&c->wanted)c->resume_requested=true;
+ if(!c->retained&&(c->wanted||c->maintenance_enabled))c->resume_requested=true;
 }
 int portable_installed_close(portable_installed_catalog*c,const risc_runtime_api_v1*r){
  if(c->retained)return INSTALLED_APPS_RETAINED;
@@ -90,8 +91,18 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  if(c->retained)return INSTALLED_APPS_RETAINED;
  if(c->closing)return portable_installed_close(c,r);
  if(c->resume_requested){
-  int rc=portable_installed_refresh(c,r,base,n);
-  if(rc!=INSTALLED_APPS_OK)return rc;
+  if(c->wanted){int rc=portable_installed_refresh(c,r,base,n);if(rc!=INSTALLED_APPS_OK)return rc;}
+  else {
+   if(maintenance_wait(c,r))return INSTALLED_APPS_OK;
+   c->service_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->service_grant)};
+   if(!r->acquire(INSTALLED_APPS_CAPABILITY,1,0,&c->service_grant)){maintenance_delay(c,r);return INSTALLED_APPS_UNAVAILABLE;}
+   const installed_apps_v1*s=c->service_grant.api;
+   if(!s||s->api_version!=1||s->struct_size<INSTALLED_APPS_SETTINGS_PREFIX_SIZE||!s->settings_pending||!s->count||!s->get||!s->generation||!s->step||!s->cancel){
+    if(!r->release(&c->service_grant)){c->retained=true;return INSTALLED_APPS_RETAINED;}
+    c->resume_requested=c->maintenance_enabled=false;return INSTALLED_APPS_INVALID;
+   }
+   c->service=s;c->resume_requested=false;snapshot(c,base,n);
+  }
  }
  if(!c->service)return INSTALLED_APPS_OK;
  if(!c->requested){

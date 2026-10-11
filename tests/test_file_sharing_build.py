@@ -16,8 +16,8 @@ class SharingProfile(unittest.TestCase):
  def test_explicit_ble_keeps_http_optional(self):
   argv=["--webdav-sharing","--sharing-export-instance","0","--sharing-tcp-instance","0","--sharing-entropy-instance","0"]
   a=self.options(argv+["--sharing-setup-instance","0"]);needs=[];sharing.requirements(a,needs)
-  self.assertEqual(len(needs),6);self.assertEqual(sharing.selected_version(a),'1.5.26')
-  self.assertEqual(sharing.selected_version(self.options(argv)),'1.5.26')
+  self.assertEqual(len(needs),6);self.assertEqual(sharing.selected_version(a),'1.5.28')
+  self.assertEqual(sharing.selected_version(self.options(argv)),'1.5.28')
   for invalid in (["--sharing-setup-instance","0"],argv+["--sharing-setup-instance","-1"],argv+["--sharing-setup-instance","35"]):
    with self.assertRaises(SystemExit):self.options(invalid)
  def test_reject_incomplete_or_ambiguous(self):

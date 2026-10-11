@@ -187,11 +187,36 @@ static void tick(unsigned amount){ticks+=amount;wifi_tick();}
 static void render(void){wifi_make_view();portable_wifi_render(&view);}
 static void finish(void){fail_disconnect=fail_release=fail_scan_cancel=0;app_module_fini();assert(!opened && !grant_count && !sub_count && !frame_count && !native_active);for(unsigned i=0;i<sizeof(credentials);++i)assert(((uint8_t*)&credentials)[i]==0);for(unsigned i=0;i<sizeof(editor);++i)assert(!editor[i]);}
 int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);
+ if(scenario==63)temporary_store_busy=true;
  if(scenario==6)acquire_denied=1;
  if(scenario==7)kv_denied=1;
  if(scenario==8)short_api=1;
  start();render();
  switch(scenario){
+#if defined(PORTABLE_PAPER_PREFERENCES) && defined(TEST_WIFI_PAPER)
+ case 63:{
+  assert(paper_preferences_pending && !paper_flip_ui);
+  unsigned attempts=grant_count;for(unsigned i=0;i<10;++i)paper_preferences_retry();
+  assert(grant_count==attempts && paper_preferences_pending);
+  temporary_store_busy=false;strcpy(cells[0].name,"reader_flip_ui");
+  const uint8_t encoded[]={0x52,1,1,0xa4};memcpy(cells[0].data,encoded,4);cells[0].size=4;
+  assert(portable_paper_frame_drain());ticks+=250;paper_preferences_retry();
+  assert(paper_flip_ui && !paper_preferences_pending && !writes);break;
+ }
+#endif
+ case 62:{
+  draft();wifi_activate(6);assert(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED);
+  assert(portable_wifi_close());temporary_store_busy=true;assert(wifi_open());
+  assert(wifi_initial_profile_pending && !credentials.ssid[0]);unsigned saved_writes=writes;
+  for(unsigned i=0;i<20;++i){ticks+=25;wifi_initial_profile_step();}
+  assert(wifi_initial_profile_pending && writes==saved_writes && !connects);
+  temporary_store_busy=false;ticks+=250;wifi_initial_profile_step();
+  assert(!wifi_initial_profile_pending && !strcmp(credentials.ssid,"Fixture network") && writes==saved_writes && !connects);
+  assert(portable_wifi_close());temporary_store_busy=true;assert(wifi_open());
+  draft();draft_dirty=true;wifi_initial_profile_step();assert(!wifi_initial_profile_pending);
+  temporary_store_busy=false;ticks+=250;wifi_initial_profile_step();
+  assert(!strcmp(credentials.ssid,"Fixture network") && writes==saved_writes);break;
+ }
  case 61:
   assert(portable_wifi_idle_ready());
   scanning=true;assert(!portable_wifi_idle_ready());scanning=false;

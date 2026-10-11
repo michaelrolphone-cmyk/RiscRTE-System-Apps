@@ -32,6 +32,10 @@
 #include "PointsUtcSchedule.h"
 #endif
 static const char *test,*state_path;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+bool shared_settings_force_busy;
+extern void shared_settings_assert(void);
+#endif
 static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,promoted,native_valid;
 static bool seeded_image,promotion_attempted,loaded_pixels,rtc_live;
 static unsigned barriers;
@@ -314,6 +318,9 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){(void)c;safe();a
  /* Explicit manual sleep for recovery/timezone scenarios; otherwise leave via
   * a foreground confirm after a neutral first frame. */
  unsigned leave=4;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ leave=80;
+#endif
 #ifdef TEST_HOME_DESK_LOCK
  if(which("terminal"))assert(!"Retained timer must reach terminal entry, not foreground fallback");
  if(which("manual")) {
@@ -356,6 +363,9 @@ static bool nav_foreground(void*c,const risc_input_foreground_v1*f,size_t n){(vo
 static bool nav_reset(void*c){(void)c;safe();assert(promoted);return true;}
 static const risc_input_navigation_api_v1 navigation={1,sizeof(navigation),NULL,nav_poll,nav_foreground,nav_reset};
 static int32_t preferences(void*c,const char*k,void*out,uint32_t cap,uint32_t*size){(void)c;safe();assert(promoted);kv_reads++;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(shared_settings_force_busy || (getenv("SHARED_SETTINGS_BUSY") && (uint32_t)(ms-start_ms)<400u))return RISC_KEY_VALUE_BUSY;
+#endif
  if(raw_brightness&&!strcmp(k,"brightness")&&raw_brightness_writes){assert(cap>=1);*(uint8_t*)out=(uint8_t)raw_brightness_value;*size=1;return RISC_KEY_VALUE_OK;}
  if(!strcmp(k,PORTABLE_TIMEZONE_KEY)){
   if(which("missing-zone")){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
@@ -593,7 +603,11 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  }
  if(which("gpio"))assert(!entries&&!lock_clean_frames&&!lock_quality_frames&&lock_fast_frames);
 #endif
- assert(!terminal);app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
+ assert(!terminal);
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ shared_settings_assert();
+#endif
+ app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));
  if(!which("promotion-failed")&&!which("refused-promotion-failed")){
 #ifdef SPARSE_EXPECT_LAUNCHES
