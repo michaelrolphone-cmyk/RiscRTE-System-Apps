@@ -2,7 +2,7 @@
 """Offline source-backed test bundle; never accesses devices or credentials."""
 import argparse,hashlib,io,json,pathlib,shutil,struct,subprocess,sys,zipfile,zlib,re
 p=argparse.ArgumentParser()
-for n in ('runtime','tools','native','store','initial-image','output'):p.add_argument('--'+n,type=pathlib.Path,required=True)
+for n in ('runtime','tools','native','store','initial-image','output','product-metadata'):p.add_argument('--'+n,type=pathlib.Path,required=True)
 p.add_argument('--target',choices=['x4','watch'],required=True);p.add_argument('--sd',type=pathlib.Path);p.add_argument('--product-source',required=True);p.add_argument('--x4-source',type=pathlib.Path)
 a=p.parse_args();a.output.mkdir(parents=True,exist_ok=False)
 sys.path[:0]=[str(a.runtime.resolve()/'scripts'),str(a.tools.resolve()/'scripts')]
@@ -35,7 +35,9 @@ if a.target=='x4':
  record('receipts/x4-native-composition.json',composition)
 store={str(f.relative_to(a.store)):f.read_bytes() for f in a.store.rglob('*') if f.is_file()}
 old_cohort=json.loads(store['cohort.json']);cohort=dict(old_cohort,firmware_sha256=sha(native['firmware.bin']),firmware_size=len(native['firmware.bin']),runtime_version=version,source_revision=a.product_source)
-if a.target=='watch':cohort['version']='1.1.1'
+product=json.loads(a.product_metadata.read_text());assert product['product']==cohort['product'] and re.fullmatch(r'\d+\.\d+\.\d+',product['version'])
+cohort['version']=product['version']
+record('receipts/product-metadata.json',product)
 store['cohort.json']=(json.dumps(cohort,sort_keys=True,indent=2)+'\n').encode()
 image,packing=build(store)
 for n,b in store.items():write('store/'+n,b)
@@ -57,7 +59,7 @@ assert all(x==255 for x in full[cursor:]);assert all(x==255 for x in full[0x8000
 state=parse_record(bytes(full[0xff2000:0xff2060]),True)
 assert state[6]==hashlib.sha256(native['firmware.bin']).digest() and state[7]==hashlib.sha256(image).digest()
 ota=full[0xff0000:0xff0020];assert struct.unpack_from('<I',ota)[0]==1 and struct.unpack_from('<I',ota,24)[0]==2 and struct.unpack_from('<I',ota,28)[0]==zlib.crc32(ota[:4],0xffffffff)&0xffffffff
-write(a.target.upper()+'-Shared-Files-FULL-INITIAL-ERASES-DATA.bin',full)
+write(a.target.upper()+'-'+product['version']+'-Shared-Files-FULL-INITIAL-ERASES-DATA.bin',full)
 for n in ('firmware.elf','firmware.map'):
  if (a.native/n).exists():write('debug/'+n,(a.native/n).read_bytes())
 sdproof=[];boot=json.loads(store['boot.json'])
