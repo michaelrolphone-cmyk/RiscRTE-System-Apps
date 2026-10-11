@@ -811,17 +811,34 @@
       ],
       "selected_classification": {
         "1": [
-          "still_unverified"
+          "read_only_at_launch"
         ]
       },
       "source_behavior": {
         "1": [
-          "still_unverified"
+          "read_only_at_launch"
         ]
       },
-      "source_repository": null,
-      "source_paths": [],
-      "source_binding": "preserved_binary_source_equivalence_unverified"
+      "source_repository": "T5S3-GameBoy",
+      "source_paths": [
+        "capability/backend.cpp"
+      ],
+      "source_binding": "exact_selected_elf_reproduced_after_recorded_compaction",
+      "reproduction_evidence": {
+        "proof": "evidence/gameboy-1324/reproduction.json",
+        "proof_sha256": "29dea5016c56d7206feb92e93768172d5bd5ac5bcd8ba3b81cef6ed45040e20c",
+        "build": "evidence/gameboy-1324/build.json",
+        "build_sha256": "a01469c1ad3d337d48cc8f8aebd7d4d615fbf058f3fe76bfc18313b7350d6e39",
+        "source_commit": "a579dedd2a76956c7dcd654434cff9a556beb37c",
+        "runtime_commit": "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+        "read_keys": [
+          "time_zone",
+          "time_format",
+          "brightness"
+        ],
+        "write_keys": [],
+        "cache_invalidation": "Reload on next launch; current binary has no revision subscription."
+      }
     },
     {
       "manifest": "lists.json",
@@ -1918,9 +1935,8 @@
     }
   ],
   "known_gaps": [
-    "Preserved ELF compile flags and exact source equivalence are not established by seed byte identity.",
+    "Preserved ELF compile flags and exact source equivalence are not established by seed byte identity alone. Game Boy is separately source-reproduced; other preserved shared-capable clients retain their stated gaps.",
     "Daily Paper source writer behavior remains unverified; historical X4 source ledger identifies ba486e56dbf145a9c05d5bb36b39d9b81e0b7ece and matching selected SHA only.",
-    "Game Boy writer behavior remains unverified; a located same-version target build has a different ELF hash.",
     "This inventory does not establish runtime transactions, native/SD migration or hardware behavior."
   ]
 }

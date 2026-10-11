@@ -34,8 +34,10 @@ not automatically prove the manual semantic classifications below.
     source for Points and Timecard, explicitly not proof of their selected ELFs.
 - Seed receipts establish preserved-byte identity, not compile flags or current
   source equivalence. They do not upgrade preserved clients to audited rebuilds.
-  A version match alone is insufficient: a located Game Boy 1.3.24 build has a
-  different ELF hash from the selected Game Boy 1.3.24 image.
+  A version match alone is insufficient. The Game Boy gap was subsequently
+  closed by a fresh source build and the recorded ELF compaction transformation;
+  the complete resulting bytes match the selected image. See the follow-up proof
+  below. Other preserved binaries keep their stated equivalence gaps.
 
 S/U/P path and line references below refer to those exact source inputs. The JSON
 retains full image hashes rather than repeating every hash in prose.
@@ -68,7 +70,7 @@ reduce the existing authorization.
 | Timecard 0.2.15 | Reference native proxy reads time format/timezone; files use app-data | No grant | Reference P; selected binary unverified |
 | OTA Update 1.2.15 | Reference common preference reads | Reference default-profile reader only | Reference S; selected binary unverified |
 | App Store 1.5.1 | Reference common preference reads | Reference default-profile reader only | Reference S; selected binary unverified |
-| Game Boy 1.3.24 | Still unverified | No grant | Preserved bytes; located same-version source build mismatches |
+| Game Boy 1.3.24 | Read-only `time_zone`, `time_format`, `brightness`, once per launch | No grant | Fresh exact selected-byte reproduction; source a579dedd with pinned dependency inputs |
 | Daily Paper/daily_digest 0.1.0 | No grant | Still unverified | Preserved bytes; historical X4 ledger names source ba486e56 but source call graph not verified here |
 | USB Transfer 0.1.10; Lists 0.1.1; Model Viewer 1.3.0; Hollow Trail 1.2.1; eBook Reader 0.1.8 | No direct namespace-1 grant | No direct namespace-6 grant | Authority checked; no claim about unrelated persistence |
 
@@ -80,6 +82,28 @@ because it includes common headers. The current Waterfall temporal recipe define
 `contexts_policy.inc:131-155` excludes rule/preset application despite linking
 Contexts monitoring. Preserved-binary flags must still be recovered before
 asserting those paths are absent from an older ELF.
+
+## Game Boy selected-byte follow-up
+
+The preserved Game Boy 1.3.24 is now independently rebuilt from source
+`a579dedd2a76956c7dcd654434cff9a556beb37c` and Runtime dependency
+`274bc66f193cbe29018d2a85c9400cb0dce8aacc`, using the sealed SDK/System
+inputs and pinned GCC 8.4.0 toolchain. Applying the historical compaction
+(`--remove-section=.xt.lit --remove-section=.xt.prop --discard-all`) produces
+exactly the selected 164,604-byte ELF, SHA-256
+`4e3f218fdee9c8344ca38ac040c337bebfd72ad76fc67832df077e999c7ea794`.
+The previous size/hash mismatch was the uncompacted ELF, not different app code.
+
+`evidence/gameboy-1324/README.md` contains the complete call-path audit;
+`reproduction.json` and `build.json` preserve hashes and compilation custody.
+The inventory checker binds both proof files, selected bytes, exact source and
+dependency commits, read keys, and the no-writer classification. Semantic
+call-path review remains manual; a receipt is not execution on hardware.
+
+The three values are cached at launch. Display-brightness controls change the
+hardware but never save namespace 1. This source-reproduced reader therefore
+needs a next-launch reload or a future revision-aware rebuild after reconciliation;
+the proof does not claim its current binary refreshes an open session.
 
 ## Namespace 6: origins and complete operations
 
@@ -248,7 +272,8 @@ contracts or new rules imposed on existing product behavior.
      only for initial unavailability (`foreground_adapter_open.inc:27-50`,
      `adapter.c:1833-1864`); native alarm apps cache zone/format at open (U
      `alarm_native_utc_io.h:67-74,125-127`). Points/Timecard reference sources also
-     cache format. Native toolbar zone reads are fresh, with a BUSY cached-display
+     cache format. Source-reproduced Game Boy caches timezone, format and brightness
+     once per launch and has no subscription. Native toolbar zone reads are fresh, with a BUSY cached-display
      fallback (S `PortableNativeTimeSource.c:60-93,112-136`).
    - Alarm reconciliation and sleep tickets: refresh/restart staged reads on a
      revision change so alert mode/DND/timezone cannot come from mixed datasets.
@@ -273,12 +298,14 @@ python3 experimental/wifi_reconcile/check_writer_inventory.py \
 ```
 
 Result: 26 apps, 32 providers, exact routes/grants/hashes, 72 source files and
-16 evidence inputs passed; seven altered/incomplete input cases were rejected.
-No target build or app execution was performed for this documentation checkpoint.
+16 original evidence inputs plus the two Game Boy proof files passed; 11
+altered/incomplete input cases were rejected. The Game Boy follow-up includes
+a fresh target build, structural/layout validation and exact compaction equality.
+No app execution or hardware qualification is claimed.
 
 Before activation: resolve every preserved shared-capable ELF's exact provenance
 and selected compile path (especially Settings, BLE Scanner, Battery, temporal
-Waterfall, Game Boy and Daily Paper), update all actual writer boundaries, define
+Waterfall and Daily Paper), update all actual writer boundaries, define
 policy/RTC reconciliation, implement revision-aware readers, and run interruption
 and returning-card tests on the integrated native receiver. Whole-namespace
 legacy KV1 puts cannot safely be relabeled “explicit user intent.”

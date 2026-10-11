@@ -1,0 +1,258 @@
+{
+  "schema": 1,
+  "audit_date_utc": "2026-10-11",
+  "result": "exact-selected-elf-source-reproduced; namespace-1-reader-only",
+  "selected": {
+    "path": "/workspace/shared/x4-shared-settings-090/composition-contexts-preflight/SD/Apps/gameboy/gameboy.elf",
+    "size": 164604,
+    "sha256": "4e3f218fdee9c8344ca38ac040c337bebfd72ad76fc67832df077e999c7ea794"
+  },
+  "fresh_original": {
+    "path": "/workspace/shared/gameboy-settings-audit/fresh-target/gameboy.elf",
+    "size": 256432,
+    "sha256": "fa9942510091b77a4ee092f4ff5c517ccf74b639c6e4f94b549acd7e025d990b"
+  },
+  "fresh_compacted": {
+    "path": "/workspace/shared/gameboy-settings-audit/gameboy.compacted.elf",
+    "size": 164604,
+    "sha256": "4e3f218fdee9c8344ca38ac040c337bebfd72ad76fc67832df077e999c7ea794"
+  },
+  "byte_for_byte_equal_selected": true,
+  "source_revision": "a579dedd2a76956c7dcd654434cff9a556beb37c",
+  "source_clean": true,
+  "runtime_revision": "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+  "source_bundle": {
+    "path": "/workspace/shared/gameboy-1324-source-seal/gameboy.bundle",
+    "size": 2268316,
+    "sha256": "ebea3226fa11df5b89da98f318ac5d89b4fae407b917b084adbf5ec252e67136"
+  },
+  "runtime_bundle": {
+    "path": "/workspace/shared/gameboy-1324-source-seal/runtime.bundle",
+    "size": 2251004,
+    "sha256": "095259160215db75e9a89fb429c784dfd1e550b061c04d861c554e0a8aa7c6c1"
+  },
+  "seal_inventory": {
+    "path": "/workspace/shared/gameboy-1324-source-seal/SHA256SUMS.json",
+    "size": 167495,
+    "sha256": "7e2af4d0b1f82ab0e843fb5070b764a62340930d4597321b6d0aac97cbd75b94",
+    "indexed_files_verified": 1335
+  },
+  "fresh_build_receipt": {
+    "path": "/workspace/shared/gameboy-settings-audit/fresh-target/build.json",
+    "size": 69072,
+    "sha256": "a01469c1ad3d337d48cc8f8aebd7d4d615fbf058f3fe76bfc18313b7350d6e39"
+  },
+  "fresh_build_log": {
+    "path": "/workspace/shared/gameboy-settings-audit/fresh-build.log",
+    "size": 13455,
+    "sha256": "16a24f1bbea9b8fa311208742858a4fe73120c076c0fc3f5d43008d9c3436071"
+  },
+  "compiled_dependencies_verified": 69,
+  "source_hash_map_equal_sealed_target": true,
+  "staged_source_hash_map_equal_sealed_target": true,
+  "compiled_dependency_hash_multiset_equal_sealed_target": true,
+  "compiler": {
+    "path": "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc",
+    "size": 920432,
+    "sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f",
+    "version": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0"
+  },
+  "objcopy": {
+    "path": "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-objcopy",
+    "size": 1310776,
+    "sha256": "e366061dda019ed36a3cf902f7abf5b48a0ac2f8c47ae7ad4794f5e4c0658203",
+    "version": "GNU objcopy (crosstool-NG esp-2021r2-patch5) 2.35.1.20201223"
+  },
+  "compaction_options": [
+    "--remove-section=.xt.lit",
+    "--remove-section=.xt.prop",
+    "--discard-all"
+  ],
+  "historical_custody": {
+    "file": {
+      "path": "/workspace/shared/x4-clean-product-image-055-final/build-custody.json",
+      "size": 141167,
+      "sha256": "b951d965cad019290ac6d89bec564e95a7c91e37e8d7d8372861d57af17564f5"
+    },
+    "json_pointer": "/compactions/gameboy",
+    "record": {
+      "after_bytes": 164604,
+      "after_sha256": "4e3f218fdee9c8344ca38ac040c337bebfd72ad76fc67832df077e999c7ea794",
+      "before_bytes": 256432,
+      "before_sha256": "fa9942510091b77a4ee092f4ff5c517ccf74b639c6e4f94b549acd7e025d990b",
+      "options": [
+        "--remove-section=.xt.lit",
+        "--remove-section=.xt.prop",
+        "--discard-all"
+      ],
+      "original_elf_retained": true,
+      "profile": "loader-metadata-v3",
+      "removed_sections": [
+        ".xt.lit",
+        ".xt.prop"
+      ],
+      "retained_loader_sections_symbols_relocations_unchanged": true,
+      "tool": "GNU objcopy (crosstool-NG esp-2021r2-patch5) 2.35.1.20201223"
+    }
+  },
+  "loader_sections_unchanged": {
+    ".text": {
+      "address": 36864,
+      "size": 97927,
+      "flags": 6,
+      "type": 1,
+      "alignment": 4,
+      "sha256": "17cc194b2099a10a2ed6447a2a0ee4ad3611c6453863e1327d6e26de08ee1b6c"
+    },
+    ".data": {
+      "address": 156856,
+      "size": 5312,
+      "flags": 3,
+      "type": 1,
+      "alignment": 4,
+      "sha256": "f8c65a8977254b92a97f14eca551562da220cd4009a7f70cb0d5404d65df829d"
+    },
+    ".rodata": {
+      "address": 134792,
+      "size": 22064,
+      "flags": 2,
+      "type": 1,
+      "alignment": 4,
+      "sha256": "ae6774f297bdc01f4e2350ec93d303c4c7d98bbee8c9fd8cb5547f00fd9a538b"
+    },
+    ".bss": {
+      "address": 162328,
+      "size": 87032,
+      "flags": 3,
+      "type": 8,
+      "alignment": 8,
+      "sha256": null
+    },
+    ".hash": {
+      "address": 116,
+      "size": 152,
+      "flags": 2,
+      "type": 5,
+      "alignment": 4,
+      "sha256": "01f4edf6ee40bcaa5027b86867cb73a928be39ea583a3fd8a1a66df67e123fc2"
+    },
+    ".dynsym": {
+      "address": 268,
+      "size": 304,
+      "flags": 2,
+      "type": 11,
+      "alignment": 4,
+      "sha256": "9cc9239f4deeb09e071f437f1ac57ad27c36004c4739c317d6e5bead07896bfe"
+    },
+    ".dynstr": {
+      "address": 572,
+      "size": 164,
+      "flags": 2,
+      "type": 3,
+      "alignment": 1,
+      "sha256": "e649ca58b8be42daed03054ff136e260393004cf4abcad34c757f6a4a5f30f55"
+    },
+    ".rela.dyn": {
+      "address": 736,
+      "size": 34032,
+      "flags": 2,
+      "type": 4,
+      "alignment": 4,
+      "sha256": "de7e3554e783741282fad27eb42097e67b94bd818de1afa8c2fdc7c7c37f81fd"
+    },
+    ".rela.plt": {
+      "address": 34768,
+      "size": 1692,
+      "flags": 2,
+      "type": 4,
+      "alignment": 4,
+      "sha256": "4cd51443332745293e10776bd0e97a4150ee5bd9728eb05e283dc7d7a5ad913f"
+    },
+    ".dynamic": {
+      "address": 162168,
+      "size": 160,
+      "flags": 3,
+      "type": 6,
+      "alignment": 4,
+      "sha256": "2b7a6328f771c1716a5370387b24fc3f4ccfd8388760e72ac881f6b9a0466d1b"
+    }
+  },
+  "selected_boot": {
+    "path": "/workspace/shared/x4-shared-settings-090/composition-contexts-preflight/store/boot.json",
+    "size": 45592,
+    "sha256": "98d131581cbf65c2daffa02cfdf8b0fb8837b4103f0e656bd9471b1ec8974b5b"
+  },
+  "selected_boot_entry": {
+    "grants": [
+      {
+        "api": 1,
+        "capability": "display.output",
+        "instance_id": 3
+      },
+      {
+        "api": 1,
+        "capability": "input.navigation",
+        "instance_id": 6
+      },
+      {
+        "api": 1,
+        "capability": "storage.volume",
+        "instance_id": 9
+      },
+      {
+        "api": 1,
+        "capability": "file.open",
+        "instance_id": 0
+      },
+      {
+        "api": 1,
+        "capability": "input.touch.raw",
+        "instance_id": 4
+      },
+      {
+        "api": 1,
+        "capability": "board.battery",
+        "instance_id": 7
+      },
+      {
+        "api": 1,
+        "capability": "runtime.realtime",
+        "instance_id": 0
+      },
+      {
+        "api": 1,
+        "capability": "storage.key-value",
+        "instance_id": 1
+      }
+    ],
+    "image_source": {
+      "path": "Apps/gameboy/gameboy.elf",
+      "volume_instance": 9
+    },
+    "manifest": "gameboy.json",
+    "catalog_authority": true
+  },
+  "namespace": 1,
+  "read_keys": [
+    "time_zone",
+    "time_format",
+    "brightness"
+  ],
+  "write_keys": [],
+  "read_timing": "once in begin_application at each launch; no refresh or subscription",
+  "writer_helpers_absent_from_linked_symbol_table": [
+    "portable_timezone_preference_save",
+    "portable_time_format_save",
+    "pqa_preference_save",
+    "pqa_dnd_save"
+  ],
+  "structural_validation_passed": true,
+  "layout_audit": {
+    "passed": true,
+    "mapped_sections": 4,
+    "relative_relocations_verified": 2834
+  },
+  "target_instructions_executed": false,
+  "hardware_tested": false,
+  "production_inputs_modified": false
+}

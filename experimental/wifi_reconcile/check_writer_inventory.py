@@ -32,6 +32,32 @@ def image_path(row, manifest, provider=False):
     return 'store/' + name
 
 
+def validate_reproduction(item, audit_root):
+    binding = item['reproduction_evidence']
+    proof_path = audit_root / binding['proof']
+    build_path = audit_root / binding['build']
+    require(digest(proof_path) == binding['proof_sha256'], 'reproduction proof changed')
+    require(digest(build_path) == binding['build_sha256'], 'reproduction build receipt changed')
+    proof, build = read(proof_path), read(build_path)
+    require(proof['byte_for_byte_equal_selected'] is True, 'reproduction did not match')
+    for field in ['selected', 'fresh_compacted']:
+        require(proof[field]['sha256'] == item['selected_image_sha256'] and
+                proof[field]['size'] == item['selected_image_bytes'], 'reproduced image differs')
+    require(build['elf'] == {k: proof['fresh_original'][k] for k in ('size', 'sha256')},
+            'uncompacted build receipt differs')
+    require(proof['source_clean'] is True and build['dirty'] is False, 'reproduction used dirty source')
+    require(proof['source_revision'] == build['source'] == binding['source_commit'], 'reproduction source differs')
+    require(proof['runtime_revision'] == build['runtime_source'] == binding['runtime_commit'], 'reproduction dependency differs')
+    require(proof['namespace'] == 1 and proof['read_keys'] == binding['read_keys'] and
+            proof['write_keys'] == binding['write_keys'] == [], 'reproduction key classification differs')
+    require(item['selected_classification'] == item['source_behavior'] == {'1': ['read_only_at_launch']},
+            'reproduced reader classification differs')
+    require(item['source_binding'] == 'exact_selected_elf_reproduced_after_recorded_compaction',
+            'reproduction binding classification differs')
+    require(proof['compaction_options'] == ['--remove-section=.xt.lit', '--remove-section=.xt.prop', '--discard-all'],
+            'compaction transformation differs')
+
+
 def validate(record, roots):
     c = roots['composition']
     boot = read(c / 'store/boot.json')
@@ -80,6 +106,9 @@ def validate(record, roots):
                 else:
                     old = sd_seed.get(image[3:]) if image.startswith('SD/') else seed['store'].get(image[6:])
                     require(old == item['selected_image_sha256'], name + ' is not the recorded preserved seed image')
+                if name == 'gameboy.json':
+                    require('reproduction_evidence' in item, 'Game Boy reproduction proof omitted')
+                    validate_reproduction(item, roots['audit'])
     source_commits = {item['repository']: item['commit'] for item in record['source_inputs']}
     for repository, revision in source_commits.items():
         actual = subprocess.check_output(['git', '-C', str(roots[repository]), 'rev-parse', 'HEAD'], text=True).strip()
@@ -94,6 +123,9 @@ def validate(record, roots):
 
 
 def negative_tests(record, roots):
+    def gameboy(d):
+        return next(item for item in d['apps'] if item['manifest'] == 'gameboy.json')
+
     mutations = [
         lambda d: d['apps'].pop(),
         lambda d: d['providers'].pop(),
@@ -102,6 +134,10 @@ def negative_tests(record, roots):
         lambda d: d['source_inputs'][0].update(sha256='0' * 64),
         lambda d: d['evidence_inputs'][0].update(sha256='0' * 64),
         lambda d: d.update(shared_settings_enabled=True),
+        lambda d: gameboy(d).pop('reproduction_evidence'),
+        lambda d: gameboy(d)['reproduction_evidence'].update(proof_sha256='0' * 64),
+        lambda d: gameboy(d)['reproduction_evidence'].update(source_commit='0' * 40),
+        lambda d: gameboy(d).update(selected_classification={'1': ['explicit_writer']}),
     ]
     for mutate in mutations:
         changed = copy.deepcopy(record)
@@ -121,10 +157,10 @@ def main():
         p.add_argument('--' + name, required=True, type=Path)
     p.add_argument('--negative-tests', action='store_true')
     a = p.parse_args()
-    roots = {'composition': a.composition, 'seed': a.seed, 'System': a.system, 'Utilities': a.utilities, 'Productivity': a.productivity}
+    roots = {'composition': a.composition, 'seed': a.seed, 'System': a.system, 'Utilities': a.utilities, 'Productivity': a.productivity, 'audit': a.inventory.parent}
     record = read(a.inventory)
     validate(record, roots)
-    print('PASS: 26 apps, 32 providers; 20 namespace-1 and 5 namespace-6 apps; exact grants, image routes/hashes, 72 source files and 16 evidence inputs')
+    print('PASS: 26 apps, 32 providers; 20 namespace-1 and 5 namespace-6 apps; exact grants, image routes/hashes, 72 source files and 16 evidence inputs plus exact Game Boy reproduction proof')
     if a.negative_tests:
         print('PASS:', negative_tests(record, roots), 'altered/incomplete audit-input rejection cases')
     print('SOURCE AUDIT ONLY: preserved binary equivalence gaps remain; no activation or hardware qualification')
