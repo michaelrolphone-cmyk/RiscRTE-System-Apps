@@ -351,6 +351,16 @@ break;
 }
 extern "C" void portable_peer_status_get(const portable_peer_files*p,portable_peer_status*out){if(out)*out=p?p->status:portable_peer_status{};
 }
+extern "C" bool portable_peer_network_owned(const portable_peer_files*p){
+ if(!p)return false;
+ if(p->status.state==PEER_RETAINED)return true;
+ if(p->networkInitialized&&(!p->network.view.borrowed||p->network.operation||
+    p->network.service_lease||p->network.service_depth||p->leaseEnding))return true;
+ /* A borrowed LAN can still own a TCP request or pending socket close. Only
+  * these terminal/idle client states prove that no request holds a socket. */
+ const auto state=p->client.state();
+ return state!=Client::State::Off&&state!=Client::State::Ready&&state!=Client::State::Error;
+}
 extern "C" bool portable_peer_row_get(const portable_peer_files*p,unsigned i,portable_peer_row*out){if(!p||!out||i>=p->status.count)return false;
 *out={};
 if(p->status.state==PEER_DISCOVERING){if(i>=RISC_SESSION_PEERS_MAX)return false;

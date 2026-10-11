@@ -85,7 +85,12 @@ static void fsh_retain(void){
 static uint64_t fsh_clock(void){uint32_t now=fb_app->millis();fsh_now+=(uint32_t)(now-fsh_last_clock);fsh_last_clock=now;return fsh_now;}
 bool portable_file_browser_sharing_active(void){return fsh_phase!=FSH_OFF;}
 bool portable_file_browser_stop_pending(void){return fsh_phase==FSH_STOPPING&&!fb_terminal&&!PORTABLE_APP_RETAINED();}
-bool portable_file_browser_network_owned(void){return fsh_network_initialized&&!fsh_link.borrowed&&fsh_phase!=FSH_OFF;}
+bool portable_file_browser_network_owned(void){
+#ifdef PORTABLE_FILE_PEER
+ if(portable_peer_network_owned(fpeer))return true;
+#endif
+ return fsh_network_initialized&&!fsh_link.borrowed&&fsh_phase!=FSH_OFF;
+}
 bool portable_file_browser_idle_ready(void){return fsh_phase==FSH_OFF;}
 void portable_file_browser_resume(void){fb_dirty=true;}
 bool portable_file_browser_services_safe(void){
