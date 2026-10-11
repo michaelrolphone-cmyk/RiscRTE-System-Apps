@@ -10,8 +10,8 @@ int32_t loadProviders(JsonVariantConst rows){
  for(JsonObjectConst row:rows.as<JsonArrayConst>()){
   auto&p=providers[count];
   if(!row["manifest"].is<JsonObjectConst>()||measureJson(row["manifest"])>ManifestMax||
-     !copy(p.path,sizeof(p.path),row["path"])||!row["instance"].is<uint64_t>())return INSTALLED_APPS_INVALID;
-  serializeJson(row["manifest"],p.manifest,sizeof(p.manifest));p.instance=row["instance"];
+     !copy(p.path,sizeof(p.path),row["path"])||!row["instance"].is<uint32_t>())return INSTALLED_APPS_INVALID;
+  serializeJson(row["manifest"],p.manifest,sizeof(p.manifest));p.instance=row["instance"].as<uint32_t>();
   records[count++]={p.manifest,p.path,p.instance};
  }
  // Native admission validates the complete batch transactionally. A rejected
@@ -23,10 +23,11 @@ int32_t loadProviders(JsonVariantConst rows){
 }
 bool saveProviders(JsonDocument&doc){
  auto rows=doc["providers"].to<JsonArray>();
- for(unsigned i=0;i<providerCount;++i){
-  JsonDocument manifest;if(deserializeJson(manifest,providers[i].manifest))return false;
+ const auto*source=providerSavePending?nextProviders:providers;unsigned count=providerSavePending?nextProviderCount:providerCount;
+ for(unsigned i=0;i<count;++i){
+  JsonDocument manifest;if(deserializeJson(manifest,source[i].manifest))return false;
   auto row=rows.add<JsonObject>();row["manifest"]=manifest.as<JsonObjectConst>();
-  row["path"]=providers[i].path;row["instance"]=providers[i].instance;
+  row["path"]=source[i].path;row["instance"]=uint32_t(source[i].instance);
  }
  return true;
 }

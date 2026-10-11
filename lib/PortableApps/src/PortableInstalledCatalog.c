@@ -46,7 +46,7 @@ int portable_installed_refresh(portable_installed_catalog*c,const risc_runtime_a
   c->service_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->service_grant)};
   if(!r->acquire(INSTALLED_APPS_CAPABILITY,1,0,&c->service_grant))return INSTALLED_APPS_UNAVAILABLE;
   const installed_apps_v1*s=c->service_grant.api;
-  if(!s||s->api_version!=1||s->struct_size<sizeof(*s)||!s->refresh||!s->count||!s->get||!s->generation||!s->step||!s->cancel){
+  if(!s||s->api_version!=1||s->struct_size<INSTALLED_APPS_LOCAL_PREFIX_SIZE||!s->refresh||!s->count||!s->get||!s->generation||!s->step||!s->cancel){
    if(!r->release(&c->service_grant)){c->retained=true;return INSTALLED_APPS_RETAINED;}
    return INSTALLED_APPS_INVALID;
   }

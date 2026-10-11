@@ -1,4 +1,15 @@
-# Installed catalog model (not yet connected to Springboard)
+# Installed application catalog
+
+Current integration: Home and Springboard hydrate from the internal protected
+cache and scan through the copied SD worker. App Store selects staged native
+packages, downloads declared missing provider images and durably activates the
+graph before publishing the app. See the catalog 0.6.0 section below for limits.
+SD-first private settings and an online native package feed remain unfinished.
+
+## Earlier model checkpoints
+
+The following sections preserve the progression of the original implementation;
+statements about missing integration describe those earlier checkpoints.
 
 `lib/InstalledCatalog` provides a bounded, allocation-free metadata model for
 applications and drivers. The owner allocates its object in PSRAM and serializes
@@ -110,3 +121,44 @@ The host catalog regression exercises graph-before-app ordering, absent-SD
 restart, busy retries, rejected graph metadata and old-prefix compatibility. This
 checkpoint adds replay only; the App Store provider download transaction and
 SD-first private settings are still separate integration work.
+
+
+## Catalog 0.6.0: selected dependency installation
+
+A staged `Apps/<id>/install.json` may include a `providers` array describing the
+selected native dependency closure. Each entry contains `manifest`, `instance`,
+`size`, lowercase `sha256` and an HTTPS `url`. The native ordinary manifest uses
+an immutable `image-<sha256>.elf` file name. Instances are explicit selected board
+bindings; neither package metadata nor a URL grants additional native authority.
+The complete proposed graph is checked against the firmware-selected envelope.
+The current bound is eight dynamic providers and a 4096-byte selected descriptor.
+
+Before any download mutation the service atomically saves the selected plan and
+private namespace in the protected catalog cache. It reuses `SdPackageDownload`
+for copied-worker image writes, digest/ELF admission, replacement and close.
+Only after every selected image is admitted does it persist the full next graph,
+then publish it through native transactional admission. The app subsequently uses
+the existing staged manifest transaction. Cached graph replay runs before app
+registration. Installation/recovery validates executable bytes; input handling,
+cached rendering and launch do not repeat whole-file digest checks.
+
+App Store 1.5.0 keeps the SD grant while connecting saved Wi-Fi when requested by
+the service. HTTPS remains a provider-private dependency; the app supplies only
+the validated UTC time. Cancel drains the worker and HTTP before releasing media
+or radio ownership. Background Home recovery does not open Wi-Fi. App Store can
+resume the matching cached selection. Removed apps retain their settings and
+installed dependencies; this transaction does not garbage-collect shared drivers.
+
+Validation: actual service/coordinator/worker fixture, 110 interrupted owner ticks
+with cancellation and restart, missing-media retry, cache-before-graph ordering,
+missing-image HTTPS, zero-SD cache replay, offline recovery from admitted bytes,
+plus 38 prior App Store controller scenarios and dependency-network/cancel cases.
+The service target-links for Xtensa using the pinned 8.4.0 compiler. Native runtime
+ELF launch is separately exercised by the runtime `catalog-providers` fixture.
+Boundary doubles in the service tests are not hardware execution.
+
+Remaining product work: online native catalog publication/resolution, general
+board-specific dependency selection, SD-first private settings, exact combined
+Files bridge/final cohort qualification, and hardware testing. Legacy T5 catalog
+records do not automatically become native ordinary providers. This is not a
+published firmware release or a claim that the complete provisioner is finished.

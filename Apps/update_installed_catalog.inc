@@ -17,7 +17,7 @@ static const software_update_v1 *release_service;
 static risc_runtime_capability_v1 inventory_volume_grant;
 static installed_app_v1 inventory_choice;
 static uint32_t inventory_choice_generation;
-static bool inventory_chosen,inventory_removing,inventory_choice_install,inventory_installing;
+static bool inventory_chosen,inventory_removing,inventory_choice_install,inventory_installing,inventory_need_network;
 static const char *inventory_result;
 static bool inventory_drain(void){
  if(!inventory_removing&&!inventory_volume_grant.api)return true;
@@ -26,7 +26,7 @@ static bool inventory_drain(void){
  if(rc!=INSTALLED_APPS_OK)return false;
  if(inventory_volume_grant.api&&!ur->release(&inventory_volume_grant))return false;
  inventory_volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(inventory_volume_grant)};
- inventory_removing=false;return true;
+ inventory_removing=inventory_need_network=false;return true;
 }
 static bool inventory_choose(uint32_t index){
  inventory_chosen=false;
@@ -99,6 +99,7 @@ static bool inventory_step(void*c){(void)c;
 #ifdef PORTABLE_APP_STORE_ACTIONS
  if(inventory_removing){
   int rc=installed_inventory->step(installed_inventory->context,inventory_volume_grant.api);
+  if(rc==INSTALLED_APPS_NEEDS_NETWORK){inventory_need_network=true;return true;}
   if(rc==INSTALLED_APPS_WORKING)return true;
   if(rc==INSTALLED_APPS_RETAINED){PORTABLE_APP_RETAIN();return false;}
   inventory_result=inventory_installing?(rc==INSTALLED_APPS_OK?"App installed; ready to open":rc==INSTALLED_APPS_INVALID?"Package changed or is not admissible":"Install incomplete; return Home to retry"):
@@ -115,7 +116,7 @@ static const software_update_v1 inventory_view={1,sizeof(inventory_view),NULL,in
 static bool inventory_open(void){
  release_service=us;installed_inventory=NULL;
 #ifdef PORTABLE_APP_STORE_ACTIONS
- inventory_chosen=inventory_removing=false;inventory_result=NULL;inventory_volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(inventory_volume_grant)};
+ inventory_chosen=inventory_removing=inventory_need_network=false;inventory_result=NULL;inventory_volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(inventory_volume_grant)};
 #endif
  installed_inventory_grant=(risc_runtime_capability_v1){.struct_size=sizeof(installed_inventory_grant)};
  if(!ur->acquire(INSTALLED_APPS_CAPABILITY,1,0,&installed_inventory_grant)){
@@ -123,7 +124,7 @@ static bool inventory_open(void){
   return true;
  }
  const installed_apps_v1*c=installed_inventory_grant.api;
- if(!c||c->api_version!=1||c->struct_size<sizeof(*c)||!c->refresh||!c->count||!c->get||!c->cancel){
+ if(!c||c->api_version!=1||c->struct_size<INSTALLED_APPS_LOCAL_PREFIX_SIZE||!c->refresh||!c->count||!c->get||!c->cancel){
   if(!ur->release(&installed_inventory_grant)){PORTABLE_APP_RETAIN();return false;}
   return true;
  }

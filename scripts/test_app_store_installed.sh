@@ -13,4 +13,6 @@ for ((i=0;i<38;i++));do "$build/controller" "$i" >/dev/null;done
 cc "${flags[@]}" -DTEST_IDLE_ELIGIBILITY -DPORTABLE_UPDATE_FIRMWARE=0 -DPORTABLE_APP_STORE_CATALOG -DPORTABLE_APP_STORE_ACTIONS "$root/test/native_apps/portable_update_app_test.c" -o "$build/remove-controller"
 "$build/remove-controller" 51
 "$build/remove-controller" 52
+"$build/remove-controller" 53
+"$build/remove-controller" 54
 printf '%s\n' 'App Store installed inventory: 38 existing controller cases plus cached installed-list interaction PASS (UBSan)'

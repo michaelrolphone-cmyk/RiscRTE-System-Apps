@@ -1,5 +1,6 @@
 #pragma once
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <RiscStorageVolumeV1.h>
 #ifdef __cplusplus
@@ -9,6 +10,7 @@ extern "C" {
 #define INSTALLED_APPS_MAX 40u
 #define INSTALLED_APPS_OK 0
 #define INSTALLED_APPS_WORKING 1
+#define INSTALLED_APPS_NEEDS_NETWORK 2
 #define INSTALLED_APPS_UNAVAILABLE (-1)
 #define INSTALLED_APPS_INVALID (-2)
 #define INSTALLED_APPS_RETAINED (-3)
@@ -38,7 +40,10 @@ typedef struct {
  bool (*staged_get)(void*,uint32_t,installed_app_v1*);
  int32_t (*install)(void*,const char*id,const char*version);
 
+ /* App Store owns the Wi-Fi session; transport stays provider-private. */
+ int32_t (*network_ready)(void*,uint64_t utc_seconds);
 } installed_apps_v1;
+#define INSTALLED_APPS_LOCAL_PREFIX_SIZE offsetof(installed_apps_v1,network_ready)
 #ifdef __cplusplus
 }
 #endif

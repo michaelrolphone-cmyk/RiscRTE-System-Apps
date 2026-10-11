@@ -17,7 +17,7 @@ static uint32_t cache_count(void*c){(void)c;return 1;}
 static bool cache_get(void*c,uint32_t i,installed_app_v1*out){(void)c;assert(i==0);*out=(installed_app_v1){.available=true};strcpy(out->id,"new-app");strcpy(out->name,"New SD App");strcpy(out->icon,"solid:f017");strcpy(out->launch_path,"Apps/new-app/new.elf");return true;}
 static int cache_step(void*c,const risc_storage_volume_api_v1*v){(void)c;(void)v;assert(presents&&storage_live);++steps;return INSTALLED_APPS_WORKING;}
 static int cache_cancel(void*c){(void)c;++cancels;if(!storage_live)return INSTALLED_APPS_OK;if(!cancel_started)cancel_started=ticks;return ticks-cancel_started<600?INSTALLED_APPS_WORKING:INSTALLED_APPS_OK;}
-static const installed_apps_v1 cache={1,sizeof(cache),NULL,cache_refresh,cache_generation,cache_count,cache_get,cache_step,cache_cancel,NULL};
+static const installed_apps_v1 cache={1,sizeof(cache),NULL,cache_refresh,cache_generation,cache_count,cache_get,cache_step,cache_cancel,NULL,NULL,NULL,NULL,NULL};
 static const risc_storage_volume_api_v1 sd={.api_version=1,.struct_size=sizeof(sd)};
 static bool display_info(void*c,risc_display_info_v1*out){bool ok=fx_info(c,out);out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;return ok;}
 static bool display_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){assert(!panel);bool ok=fx_submit(c,f,r,n,o,t);panel=true;submitted=ticks;memcpy(immutable,pixels,sizeof(pixels));return ok;}

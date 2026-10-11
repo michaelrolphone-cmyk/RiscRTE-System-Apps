@@ -11,7 +11,7 @@ static uint32_t cache_generation(void*c){(void)c;return 1;}
 static bool cache_get(void*c,uint32_t i,installed_app_v1*r){(void)c;assert(!i);*r=(installed_app_v1){.available=true};strcpy(r->launch_path,"Apps/points_in_time/image.elf");strcpy(r->name,"Points");strcpy(r->icon,"solid:f017");return true;}
 static int cache_step(void*c,const risc_storage_volume_api_v1*v){(void)c;assert(sd_live&&v);++scanned;return INSTALLED_APPS_WORKING;}
 static int cache_cancel(void*c){(void)c;++cancelled;return cancel_ready?INSTALLED_APPS_OK:INSTALLED_APPS_WORKING;}
-static const installed_apps_v1 cache_api={1,sizeof(cache_api),NULL,cache_refresh,cache_generation,cache_count,cache_get,cache_step,cache_cancel,NULL,NULL,NULL,NULL};
+static const installed_apps_v1 cache_api={1,sizeof(cache_api),NULL,cache_refresh,cache_generation,cache_count,cache_get,cache_step,cache_cancel,NULL,NULL,NULL,NULL,NULL};
 static const risc_storage_volume_api_v1 sd={.api_version=1,.struct_size=sizeof(sd)};
 static bool catalog_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  if(!strcmp(n,INSTALLED_APPS_CAPABILITY)){assert(!cache_live&&v==1&&id==0);cache_live=true;g->api=&cache_api;g->slot=++grants;return true;}

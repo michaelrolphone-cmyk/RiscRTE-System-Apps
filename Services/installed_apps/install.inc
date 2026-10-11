@@ -76,7 +76,8 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
    scanner->~Scan();scanner=nullptr;
   }
   validationPending=requested=false;currentPending();volume=v;
-  if(installResume)installPhase=InstallPhase::Admit;
+  if(provisionResume)installPhase=InstallPhase::Provision;
+  else if(installResume)installPhase=InstallPhase::Admit;
   else {
    int rc=a->begin(v->context,&installSession);if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
    if(rc!=RISC_STORAGE_ASYNC_OK)return INSTALLED_APPS_UNAVAILABLE;
@@ -98,7 +99,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
   installOutcome=INSTALLED_APPS_INVALID;
   if(installPhase==InstallPhase::FetchRead&&rc==RISC_STORAGE_ASYNC_OK&&installResult.size&&installResult.size<=4096&&!std::memchr(installResult.data,0,installResult.size)){
    std::memcpy(manifestScratch,installResult.data,installResult.size);manifestScratch[installResult.size]=0;
-   if(descriptor(installDescriptor,manifestScratch,installCandidate,&installRecord)&&!std::strcmp(installId,installCandidate.view.id)&&!std::strcmp(installVersion,installCandidate.view.version)&&!std::strcmp(installExpectedDigest,installDigest)&&installExpectedSize==installRecord.imageSize)installOutcome=INSTALLED_APPS_OK;
+   if(prepareProvision(manifestScratch,false)&&descriptor(installDescriptor,manifestScratch,installCandidate,&installRecord)&&!std::strcmp(installId,installCandidate.view.id)&&!std::strcmp(installVersion,installCandidate.view.version)&&!std::strcmp(installExpectedDigest,installDigest)&&installExpectedSize==installRecord.imageSize)installOutcome=INSTALLED_APPS_OK;
   }
   installPhase=InstallPhase::FetchEnd;
  }
@@ -106,7 +107,10 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
   int rc=a->end(v->context,installSession);if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
   if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}installSession=0;
   if(installOutcome!=INSTALLED_APPS_OK){installPaused=true;return installOutcome;}
-  installPhase=InstallPhase::Admit;
+  installPhase=InstallPhase::Provision;
+ }
+ if(installPhase==InstallPhase::Provision){
+  int rc=provisionStep(v);if(rc!=INSTALLED_APPS_OK)return rc;installPhase=InstallPhase::Admit;
  }
  if(installPhase==InstallPhase::Admit){
   if(!namespaceFor(installCandidate,!installResume)||!candidatePending()){installPaused=true;return INSTALLED_APPS_INVALID;}
@@ -126,7 +130,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
    bool previousOkay=true;
    if(installRecord.previousPresent){JsonDocument old;previousOkay=!deserializeJson(old,installRecord.previous)&&old["id"]==installId&&old["version"].is<const char*>()&&newer(installVersion,old["version"].as<const char*>());}
    if(!previousOkay){installOutcome=INSTALLED_APPS_INVALID;installPhase=InstallPhase::Abort;installer->cancel();return INSTALLED_APPS_WORKING;}
-   installIntent=true;installPhase=InstallPhase::SaveJournal;
+   provisionJson[0]=0;provisionResume=false;installIntent=true;installPhase=InstallPhase::SaveJournal;
   }else if(state==Install::State::Ready){
    if(!candidatePending()){installPaused=true;return INSTALLED_APPS_INVALID;}
    installPhase=InstallPhase::SaveFinal;
@@ -153,6 +157,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
  return INSTALLED_APPS_WORKING;
 }
 int32_t installCancel(){
+ int provisionResult=provisionCancel();if(provisionResult!=INSTALLED_APPS_OK)return provisionResult;
  if(installSession){
   const auto*a=volume?risc_storage_volume_async(volume):nullptr;if(!a){retained=true;return INSTALLED_APPS_RETAINED;}
   int rc=a->end(volume->context,installSession);if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;

@@ -9,16 +9,23 @@ using namespace fixture;
 std::map<std::string,std::string> disk;
 std::string opened;size_t position;bool writing,validImage=true;
 unsigned validations;
-risc_storage_worker_admission_v1 nativeWorker{};
-risc_storage_volume_api_v1_packages packageVolume{};
+risc_storage_worker_admission_v2 nativeWorkerV2{};auto&nativeWorker=nativeWorkerV2.base;
+risc_storage_volume_api_v1_download downloadVolume{};auto&packageVolume=downloadVolume.base;
 const risc_storage_volume_api_v1*volume;
-std::string digest(64,'0');
+std::string digest(64,'0');unsigned httpOffset,httpOpens,httpCloses;bool httpOpen;
+const risc_http_client_v1 http={1,sizeof(http),nullptr,
+ [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{assert(!httpOpen&&q->utc_seconds==1800000000&&strstr(q->url,"late-provider"));httpOpen=true;httpOffset=0;++httpOpens;*h=1;return RISC_HTTP_OK;},
+ [](void*,uint64_t,void*p,uint32_t n,uint32_t*out)->int32_t{assert(httpOpen&&n>=5);if(httpOffset){*out=0;return RISC_HTTP_EOF;}memcpy(p,"DRIVER",6);*out=httpOffset=6;return RISC_HTTP_OK;},
+ [](void*,uint64_t,risc_http_response_v1*out)->int32_t{*out={sizeof(*out),200,6,6};return RISC_HTTP_OK;},
+ [](void*,uint64_t)->int32_t{assert(httpOpen);httpOpen=false;++httpCloses;return RISC_HTTP_OK;}};
+void graphBegin(){const auto*d=t5_driver_get(2);risc_provider_dependency_v1 deps[]={{RISC_INSTALLATION_CAPABILITY,1,&installation},{RISC_BOUND_APP_DATA_CAPABILITY,1,&data},{RISC_HTTP_CLIENT_CAPABILITY,1,&http}};assert(d->start(deps,3));}
+
 std::string envelope(const char*version){return std::string("{\"manifest\":{\"type\":\"application\",\"id\":\"new-after-build\",\"version\":\"")+version+"\",\"file_name\":\"image-"+digest+".elf\",\"requires\":[{\"capability\":\"storage.app-data\",\"api\":1}]},\"size\":5,\"sha256\":\""+digest+"\"}";}
 const char*manifestPath="/Apps/new-after-build/manifest.json";
 const char*descriptorPath="/Apps/new-after-build/install.json";
 void setup(){fixture::setup();
  packageVolume.base=transport;auto&fs=packageVolume.base.fs;auto&ext=fs.state.prepared.base.sleep.terminal.power.volume;auto&v=ext.base;
- v.struct_size=sizeof(packageVolume);volume=&v;
+ v.struct_size=sizeof(downloadVolume);volume=&v;
  v.dir_open=[](void*,const char*)->uint32_t{assert(executing);++io;cursor=0;return present?1:0;};
  v.dir_next=[](void*,uint32_t,risc_storage_dirent_v1*out){assert(executing);++io;if(cursor++)return false;strcpy(out->name,"new-after-build");out->is_directory=true;return true;};
  v.file_open_read=[](void*,const char*p,uint64_t*n)->uint32_t{assert(executing&&opened.empty());++io;auto i=disk.find(p);if(!present||i==disk.end())return 0;opened=p;position=0;writing=false;*n=i->second.size();return 2;};
@@ -31,8 +38,11 @@ void setup(){fixture::setup();
  fs.metadata=[](void*,const char*p,risc_storage_metadata_v1*m)->int32_t{assert(executing);++io;m->flags=0;return !present?RISC_STORAGE_FS_IO:disk.count(p)?RISC_STORAGE_FS_OK:RISC_STORAGE_FS_NOT_FOUND;};
  fs.replace_file=[](void*,const char*from,const char*to){assert(executing);++io;if(!disk.count(from))return false;disk[to]=disk[from];disk.erase(from);return true;};
  fs.recover_replace=[](void*,const char*p){assert(executing);++io;std::string backup=std::string(p)+".risc-replace";if(!disk.count(p)&&disk.count(backup))disk[p]=disk[backup];disk.erase(backup);return true;};
- nativeWorker.base=workerApi;nativeWorker.base.api_version=1;nativeWorker.base.struct_size=sizeof(nativeWorker);nativeWorker.admission_tag=RISC_STORAGE_ADMISSION_TAG;nativeWorker.admission_version=1;
+ nativeWorker.base=workerApi;nativeWorker.base.api_version=1;nativeWorker.base.struct_size=sizeof(nativeWorkerV2);nativeWorker.admission_tag=RISC_STORAGE_ADMISSION_TAG;nativeWorker.admission_version=1;
  nativeWorker.application=[](void*,const risc_storage_volume_api_v1*,const char*path,uint32_t size,const uint8_t*,uint32_t*held)->int32_t{assert(executing);++io;++validations;*held=0;return validImage&&disk.count(path)&&disk[path].size()==size?RISC_STORAGE_WORK_OK:RISC_STORAGE_WORK_INVALID;};
+ nativeWorkerV2.driver_tag=RISC_STORAGE_DRIVER_ADMISSION_TAG;nativeWorkerV2.driver_version=1;nativeWorkerV2.driver=nativeWorker.application;
+ downloadVolume.download_tag=RISC_STORAGE_DOWNLOAD_TAG;downloadVolume.download_version=1;
+ ext.mkdir=[](void*,const char*){assert(executing);++io;return true;};
  bridge.worker=&nativeWorker.base;bridge.volume=&v;bridge.ext=&ext;bridge.fs=&fs;
  packageVolume.package_tag=RISC_STORAGE_PACKAGE_TAG;packageVolume.package_version=1;
  packageVolume.submit_package=[](void*,uint64_t s,const risc_storage_package_request_v1*q,uint64_t*t){return risc_storage_package_submit(&bridge,s,q,t);};
@@ -94,5 +104,77 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  assert(api.install(nullptr,"new-after-build","1.2.0")==0&&drive()==INSTALLED_APPS_UNAVAILABLE);assert(api.cancel(nullptr)==0);validImage=true;
  assert(saved.find("activation")==std::string::npos);assert(api.refresh(nullptr)==0&&api.get(nullptr,0,&row)&&!strcmp(row.version,"1.1.0"));
  assert(api.cancel(nullptr)==0);(void)installed;
+ // Install a missing dependency from a selected native descriptor. Neither
+ // worker image I/O nor provider graph publication may precede durable intent.
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ installation.provider_capacity=8;installation.available=[](void*,const char*,uint32_t,uint64_t){return graphAvailable;};
+ installation.providers=[](void*,const risc_install_provider_v1*rows,uint32_t count,bool check)->int32_t{
+  assert(count==1&&strstr(rows[0].manifest_json,"late-provider"));
+  if(!check){JsonDocument durable;assert(!deserializeJson(durable,saved));assert(durable["providers"].size()==1);graphAvailable=true;++graphCalls;}
+  return RISC_INSTALL_OK;
+ };
+ graphBegin();assert(api.refresh(nullptr)==0);
+ digest.assign(64,'4');JsonDocument selection;assert(!deserializeJson(selection,envelope("1.3.0")));
+ auto dependency=selection["providers"].to<JsonArray>().add<JsonObject>();
+ dependency["instance"]=uint64_t(0);dependency["size"]=6;dependency["sha256"]=std::string(64,'a');dependency["url"]="https://example.invalid/late-provider.elf";
+ auto provider=dependency["manifest"].to<JsonObject>();provider["type"]="driver";provider["id"]="late-provider";provider["version"]="1.0.0";provider["driver_abi"]=2;
+ provider["architecture"]="xtensa-esp32s3";provider["file_name"]="image-"+std::string(64,'a')+".elf";
+ provider["requires"].to<JsonArray>();auto offered=provider["provides"].to<JsonArray>().add<JsonObject>();offered["capability"]="test.late";offered["api"]=1;
+ disk[descriptorPath].clear();serializeJson(selection,disk[descriptorPath]);disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
+ assert(drive()==0&&api.staged_count(nullptr)==1);assert(api.install(nullptr,"new-after-build","1.3.0")==0);
+ n=0;while(!cacheOperation){assert(tick(false)==INSTALLED_APPS_WORKING);assert(++n<100);}
+ assert(provisionPhase==ProvisionPhase::Journal&&!downloader&&!graphCalls&&!httpOpens);
+ for(unsigned i=0;i<1000;++i)assert(api.step(nullptr,staged_fixture::volume)==INSTALLED_APPS_WORKING&&!downloader&&!graphCalls&&!httpOpens);
+ executing=true;assert(cacheWorker.workerStep());executing=false;const auto dependencyJournal=saved;
+ assert(dependencyJournal.find("provision")!=std::string::npos);
+ assert(drive()==INSTALLED_APPS_NEEDS_NETWORK&&!httpOpen&&!graphCalls);
+ assert(api.network_ready(nullptr,1800000000)==0);assert(drive()==0&&httpOpens==1&&httpCloses==1&&graphCalls==1&&graphAvailable);
+ assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.3.0"));assert(saved.find("provision")==std::string::npos);
+
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();graphAvailable=false;graphBegin();before=io;
+ assert(api.refresh(nullptr)==0&&graphAvailable&&io==before&&api.count(nullptr)==1);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // A restart at pre-download intent resumes from the cache, even if the
+ // public descriptor disappears. Existing admitted bytes need no connection.
+ saved=dependencyJournal;++revision;disk.erase(descriptorPath);
+ // Restore the prior app manifest so the fresh install can snapshot it.
+ JsonDocument old;assert(!deserializeJson(old,envelope("1.1.0")));disk[manifestPath].clear();serializeJson(old["manifest"],disk[manifestPath]);
+ graphAvailable=false;graphBegin();before=io;assert(api.refresh(nullptr)==0&&io==before);
+ const auto beforeHttp=httpOpens;assert(drive()==0&&graphAvailable&&httpOpens==beforeHttp);
+ assert(saved.find("provision")==std::string::npos);assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // Every owner-tick interruption is followed by checked drain, provider
+ // restart, cache replay and completion. The worker still owns all media I/O.
+ const auto stableDisk=disk;const auto stableCache=saved;
+ unsigned recoveryCuts=0;
+ for(unsigned cut=0;cut<110;++cut){
+  saved=stableCache;++revision;disk=stableDisk;graphBegin();assert(api.refresh(nullptr)==0);
+  digest.assign(64,'5');assert(!deserializeJson(selection,envelope("1.4.0")));
+  assert(!deserializeJson(old,disk[manifestPath]));
+  JsonDocument selectedDependency;assert(!deserializeJson(selectedDependency,dependencyJournal));
+  selection["providers"]=selectedDependency["provision"]["providers"];
+  selection["providers"][0]["sha256"]=std::string(64,'b');selection["providers"][0]["manifest"]["file_name"]="image-"+std::string(64,'b')+".elf";selection["providers"][0]["manifest"]["version"]="1.0.1";
+  disk[descriptorPath].clear();serializeJson(selection,disk[descriptorPath]);disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
+  assert(drive()==0&&api.install(nullptr,"new-after-build","1.4.0")==0);
+  for(unsigned at=0;at<cut;++at){int rc=tick();if(rc==INSTALLED_APPS_NEEDS_NETWORK){assert(api.network_ready(nullptr,1800000000)==0);continue;}assert(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_OK);if(rc==INSTALLED_APPS_OK)break;}
+  for(unsigned drain=0;;++drain){int rc=api.cancel(nullptr);assert(drain<100);if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}
+  assert(!httpOpen&&opened.empty());assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();graphBegin();assert(api.refresh(nullptr)==0);
+  if(!installId[0]&&(!api.get(nullptr,0,&row)||strcmp(row.version,"1.4.0"))){assert(drive()==0&&api.install(nullptr,"new-after-build","1.4.0")==0);}
+  for(unsigned at=0;;++at){assert(at<500);int rc=tick();if(rc==INSTALLED_APPS_NEEDS_NETWORK){assert(api.network_ready(nullptr,1800000000)==0);continue;}if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);}
+  assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.4.0")&&!httpOpen&&opened.empty());
+  assert(saved.find("provision")==std::string::npos&&saved.find("activation")==std::string::npos);
+  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();++recoveryCuts;
+ }
+ assert(recoveryCuts==110);
+ // Missing/exported media keeps the desired dependency transaction durable.
+ saved=dependencyJournal;++revision;disk=stableDisk;disk.erase(descriptorPath);graphBegin();assert(api.refresh(nullptr)==0);present=false;
+ assert(drive()==INSTALLED_APPS_UNAVAILABLE&&saved.find("provision")!=std::string::npos);
+ assert(api.cancel(nullptr)==0);present=true;assert(api.refresh(nullptr)==0);
+ // The stable card already has the desired image and app; no network is needed.
+ // Recovery accepts only the selected app's predecessor, so preserve that here.
+ assert(!deserializeJson(old,envelope("1.1.0")));disk[manifestPath].clear();serializeJson(old["manifest"],disk[manifestPath]);
+ assert(drive()==0&&!httpOpen);assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ puts("Provider provisioning: 110 interrupted owner ticks, checked cancellation, restart/resume and unavailable-media retry PASS");
+
+ puts("Provider provisioning: durable intent before I/O, missing image HTTPS, whole graph publication, zero-SD restart and offline journal recovery PASS");
  puts("Actual installed provider: staged discovery, cache-first restart, confirmed image admission, journal-before-publication, two recovery boundaries, update/private identity, stale descriptor and corrupt image rejection PASS");
 }

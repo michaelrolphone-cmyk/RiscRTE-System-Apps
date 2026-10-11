@@ -155,14 +155,24 @@ static bool connect_saved(bool install) {
  if(!portable_broadcast_stop())return false;
 #endif
 #ifdef PORTABLE_UPDATE_FEED_DISABLED
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(!inventory_need_network){
+#endif
  if(install||!us)return false;
  bool checked=us->refresh(us->context,0)&&us->status(us->context,&ust);
  message=checked?"No available update; X4 feed not configured":"Update service unavailable";dirty=true;return checked;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ }
+#endif
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!portable_radio_wifi_allowed(ur)){message="Wi-Fi is off in Quick Controls";dirty=true;return false;}
 #endif
- if(!us||!portable_update_suspend())return false;
+ if(!us)return false;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(!inventory_need_network)
+#endif
+ if(!portable_update_suspend())return false;
  uwg=(risc_runtime_capability_v1){.struct_size=sizeof(uwg)};
  if(!ur->acquire("net.wifi",1,PORTABLE_WIFI_INSTANCE,&uwg)){message="Wi-Fi unavailable; retry Check";dirty=true;return false;}
  const wifi_api_v1 *w=uwg.api;
@@ -194,6 +204,12 @@ static void update_tick(void) {
  if(connecting){wifi_link_t s=uw->status(uw->context);wifi_ipv4_v1 ip={0},ap={0};
   if(s==WIFI_LINK_UP&&uw->addresses(uw->context,&ip,&ap)&&(ip.address[0]||ip.address[1]||ip.address[2]||ip.address[3])){
    connecting=false;bool ok=false;
+   #ifdef PORTABLE_APP_STORE_ACTIONS
+   if(inventory_need_network){
+    uint64_t seconds=0;ok=installed_inventory&&installed_inventory->struct_size>=sizeof(*installed_inventory)&&installed_inventory->network_ready&&utc_now(&seconds)&&installed_inventory->network_ready(installed_inventory->context,seconds)==INSTALLED_APPS_OK;
+    if(ok)inventory_need_network=false;
+   }else
+   #endif
    if(install_after_connect){
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
     if(up&&!ups_selected_current()){(void)portable_update_suspend();message="Release changed; choose and confirm again";return;}
@@ -218,6 +234,7 @@ static void update_tick(void) {
  if(!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return;}
  if(memcmp(&before,&ust,sizeof(ust)))dirty=true;
 #ifdef PORTABLE_APP_STORE_ACTIONS
+ if(inventory_need_network){if(!connect_saved(false)){(void)portable_update_suspend();message="Dependency download needs saved Wi-Fi and valid time";dirty=true;}return;}
  if(inventory_result&&!inventory_removing&&message!=inventory_result){message=inventory_result;dirty=true;}
 #endif
  if(ust.state==SOFTWARE_UPDATE_RETAINED){PORTABLE_APP_RETAIN();cleanup_pending=true;message="Cleanup required; retry Back";dirty=true;return;}
