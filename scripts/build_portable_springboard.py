@@ -144,6 +144,7 @@ def build():
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','memchr','strcmp','strlen','snprintf','strcpy','malloc','free'}
+    if args.installed_authority_boot:allowed.add('strncmp')
     if not imports <= allowed: raise ValueError('Unexpected imports: '+str(imports-allowed))
     actual = {line.split()[-1] for line in symbols.splitlines() if len(line.split())>=3 and line.split()[-2] in ('T','D','B','R')}
     if actual != exports: raise ValueError('Unexpected exports: '+str(actual))
