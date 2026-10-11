@@ -3,8 +3,8 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-VERSION = '1.5.24'
-def selected_version(args):return '1.5.25' if getattr(args,'peer_files',False) else VERSION
+VERSION = '1.5.26'
+def selected_version(args):return VERSION
 MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
 def options(parser):
@@ -46,7 +46,7 @@ def configure(args,root,out,includes,cc):
     sources=[root/'lib/PortableApps/src/PortableNetworkSession.c',*objects]
     if setup is not None:
         sources.append(root/'lib/PortableApps/src/PortableFileSetup.c')
-        files.append(root/'Apps/file_browser_setup.inc')
+        files += [root/'Apps/file_browser_setup.inc',root/'Apps/file_browser_direct.inc']
     return flags,sources,files
 
 def requirements(args,needs):
@@ -81,7 +81,7 @@ def record(args,root,out,manifest,record):
     grants=[dict(item,instance_id=instance) for item in manifest['requires'] for instance in bindings.get(item['capability'],[0])]
     if len(grants)>16:raise ValueError(f'Sharing profile exceeds 16 live app grants: {len(grants)}')
     record.update(required_grants=grants,requested_capabilities=manifest['requires'],grant_count=len(grants))
-    record['file_sharing']={'peer_files':getattr(args,'peer_files',False),'enabled':True,'transport':'authenticated-http','content_encrypted':False,'explicit_start':True,'lifetime_ms':300000,'listen_port':8080,'saved_profile':0,'credentials_namespace':6,'radio_policy_namespace':1,'instances':instances,'root_policy':'only boot-configured storage.app-data.export map','ble_setup':setup is not None,'hardware_qualified':False}
+    record['file_sharing']={'peer_files':getattr(args,'peer_files',False),'enabled':True,'transport':'authenticated-http','content_encrypted':False,'explicit_start':True,'lifetime_ms':300000,'listen_port':8080,'default_transport':'ble-private-wifi' if setup is not None else 'same-lan','same_lan_profile':0,'private_network_profile_writes':False,'credentials_namespace':6,'radio_policy_namespace':1,'instances':instances,'root_policy':'only boot-configured storage.app-data.export map','ble_setup':setup is not None,'hardware_qualified':False}
     record['source_sha256']['scripts/portable_file_sharing_build.py']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     dest=out/'licenses/webdav';dest.mkdir(parents=True,exist_ok=True)
     for name in ('lib/RemoteFiles/vendor/tinydtls_sha2/LICENSE.txt','lib/RemoteFiles/vendor/tinydtls_sha2/PROVENANCE.md'):

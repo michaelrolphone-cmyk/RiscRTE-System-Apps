@@ -41,6 +41,7 @@ typedef struct {
     uint32_t provider_state, flags, remaining_ms;
     uint32_t pairing_generation, pairing_number;
     int32_t error;
+    bool network_authorized;
 } portable_file_setup_status;
 typedef struct portable_file_setup {
     /* Private implementation storage: zero-initialize; never copy, overwrite,
@@ -53,6 +54,7 @@ typedef struct portable_file_setup {
     risc_runtime_capability_v1 grant;
     risc_bluetooth_session_setup_v1 api;
     risc_bluetooth_session_descriptor_v1 descriptor;
+    risc_bluetooth_network_offer_v1 network;
     portable_file_setup_config config;
     portable_file_setup_status view;
     uint64_t token, started_ms, last_ms;
@@ -72,6 +74,8 @@ bool portable_file_setup_init(portable_file_setup *, const risc_runtime_api_v1 *
 portable_file_setup_result portable_file_setup_start(portable_file_setup *,
     const portable_file_setup_config *, const risc_bluetooth_session_descriptor_v1 *,
     uint64_t now_ms);
+portable_file_setup_result portable_file_setup_start_network(portable_file_setup*,
+    const portable_file_setup_config*,const risc_bluetooth_network_offer_v1*,uint64_t);
 /* Call at least every 20 ms while active. One acquire OR open OR close/release
  * phase, or one poll(max 16 events) plus one status. No loops/waits. A consumed
  * open attempt immediately wipes local credentials, including failed open.

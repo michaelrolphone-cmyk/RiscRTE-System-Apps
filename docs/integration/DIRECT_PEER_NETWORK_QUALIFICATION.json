@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "hardware_tested": false,
+  "scope": "Production state machines on host with controlled hardware boundaries; real Xtensa target compilation. No RF interoperability claim.",
+  "sanitizer": "UBSan through Darwin host wrapper; not ASan",
+  "dependencies": {
+    "runtime": "791ecf8ee40bab55e4c36ea28189ff4f218d2cfa",
+    "drivers": "281609a0d2ae514f107d2ef67b6e8b4d25c72fb8",
+    "wifi-provider": "6bc28feae525074a1a5e0030c4b1bf6bebdc48fa",
+    "x4": "24fc5b7e8e7cee9d0150dbca2a4036fc21e2cbc4",
+    "watch": "f5ba7734d4fc36b770bc2edf9fbb9fafdf3a2732"
+  },
+  "logs": {
+    "direct-radio-tests.log": {
+      "sha256": "1fc28806e749f94e34a1d4ccc3a392c37bafd0d8edb0f06aec766a2401a69a2d",
+      "bytes": 4497
+    },
+    "direct-hci-coexist.log": {
+      "sha256": "8891720a69db5c91a02f42a9ca7661dda34b0c9716bb44577fdc7af0a2a29eb8",
+      "bytes": 1543
+    },
+    "direct-ble-tests.log": {
+      "sha256": "cffc7743ceffe94ed37cb32c964f1e3437542fd020037d00dfcc860fdea7d1dd",
+      "bytes": 1850
+    },
+    "direct-setup-client.log": {
+      "sha256": "54614ada4fb5dcb9662253a01a35b817a2c8f36ef9a899b7709e77fd164b49d9",
+      "bytes": 92
+    },
+    "direct-server-ui.log": {
+      "sha256": "31abd21900f678dfc2bd83915e0d3f996060f35524baf251ac12483c72e8a627",
+      "bytes": 1280
+    },
+    "direct-peer-ui.log": {
+      "sha256": "b1c72c8358f4999ea72a33c3744b596a787dc7291b9b94eea69af941236061c6",
+      "bytes": 1722
+    },
+    "direct-share-legacy.log": {
+      "sha256": "e8e6b8937844f33118ebbdf33c8203d309ef30aeb9287a5804acb6edf8f9f245",
+      "bytes": 2058
+    },
+    "direct-peer-tests.log": {
+      "sha256": "23c762fd7c1de65dfd0a04b001843dbdbd7b9b4a72529ee2fd0198c6f86ce905",
+      "bytes": 502
+    },
+    "direct-native-build.log": {
+      "sha256": "36cfd50fc07d97ab78b7e9482cd0a50e03c00b38590fd2169e3f2e0bfc52ea31",
+      "bytes": 14270
+    },
+    "direct-watch-native.log": {
+      "sha256": "22d492a7c104af27ccb93ad2f7896476ff3c174ad88074f2e8a43aef24cf670a",
+      "bytes": 13809
+    },
+    "direct-files-x4.log": {
+      "sha256": "2d3deccfe2065c4f9e30312f8029164cc34075c2b3fff38ffc1969d0f8962c91",
+      "bytes": 137
+    },
+    "direct-files-watch.log": {
+      "sha256": "64bbcc565f41d20368dd47ce1d9550a24425568749fa0f3b12dfd2e6aa63505b",
+      "bytes": 160
+    }
+  },
+  "behavior": [
+    "BLE authenticated encrypted mutual numeric confirmation before temporary AP",
+    "No saved router profile or credential persistence",
+    "AP address readiness before WebDAV listener",
+    "Initial connect refusal retry bounded by original deadline; no file write retry",
+    "Stop, rejection, setup and active expiry",
+    "Existing station suspension and checked restoration; restoration failure retains custody",
+    "Peer restart resets discovery state",
+    "SD unavailable/exported refusal and existing file-type application launch",
+    "Same-LAN flow retained",
+    "Runtime software selectors remain zero"
+  ]
+}

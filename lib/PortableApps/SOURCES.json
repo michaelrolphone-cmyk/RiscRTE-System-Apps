@@ -110,7 +110,7 @@
   "RiscBluetoothSessionSetupV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
     "path": "sdk/driver/RiscBluetoothSessionSetupV1.h",
-    "commit": "b2419513da200b150192ba46ffe1b396a82171cc",
-    "sha256": "5011a8fb387ffd8b31471c04b88f73331d3c4c6f42cc0be29722e1e158052a15"
+    "commit": "c66da311c1348b81666d9abeb28e6b151267d4ce",
+    "sha256": "8cc14caeb548f11f0045811bfc7ac66c007ddd3419b5b8db6947dc7362725b9f"
   }
 }

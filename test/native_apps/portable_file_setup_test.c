@@ -103,7 +103,7 @@ static void reset(void) {
     f.lose_owner_at = -1;
     f.open_token = UINT64_C(0xAABBCCDDEEFF0011);
     f.api = (risc_bluetooth_session_setup_v1){1, sizeof(f.api), &f, open_native, poll_native,
-        status_native, confirm_native, close_native};
+        status_native, confirm_native, close_native,0,NULL,NULL,NULL,NULL,0,NULL,NULL};
     f.status = (risc_bluetooth_session_setup_status_v1){.struct_size = sizeof(f.status),
         .state = RISC_SETUP_ADVERTISING, .remaining_ms = 9000};
     ++tests;
