@@ -3,13 +3,13 @@
 #include "RiscBoundAppDataV1.h"
 #include "InstalledAppsV1.h"
 #include "InstalledCatalog.h"
-#include "runtime/packages/InstalledAppDiscovery.h"
+#include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include <ArduinoJson.h>
 #include <cstring>
 #include <cstdio>
 #include <new>
 namespace {
-constexpr unsigned Max=INSTALLED_APPS_MAX,ManifestMax=2048,CacheMax=49152;
+constexpr unsigned Max=INSTALLED_APPS_MAX,ManifestMax=4096,CacheMax=49152;
 struct Package {char path[193],json[ManifestMax+1];installed_app_v1 view;};
 Package current[Max],pending[Max];unsigned currentCount,pendingCount;
 installed_catalog catalog;
@@ -17,9 +17,9 @@ risc_install_candidate_v1 candidates[Max];risc_install_result_v1 admissionResult
 const risc_installation_v1*native;
 const risc_bound_app_data_v1*storage;
 const risc_storage_volume_api_v1*volume;
-using Scan=RiscPackages::InstalledAppDiscovery;
+using Scan=RiscPackages::InstalledAppAsyncDiscovery;
 alignas(Scan) unsigned char scannerMemory[sizeof(Scan)];Scan*scanner;
-char scratch[CacheMax],removeId[96];
+char scratch[CacheMax],persisted[CacheMax],removeId[96];size_t persistedSize;bool persistedKnown;
 bool started,loaded,requested,retained,inCall,overflow,commitPending,commitReplace;
 const char cacheName[]="installed.apps";
 bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
@@ -69,7 +69,16 @@ int32_t publish(bool replace){
   if(!installed_catalog_offer(&catalog,&record)){(void)installed_catalog_finish(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
   acceptedIndexes[accepted++]=i;
  }
- if(!installed_catalog_finish(&catalog,true))return INSTALLED_APPS_UNAVAILABLE;
+ bool unchanged=catalog.pending_count==catalog.count;
+ for(unsigned i=0;unchanged&&i<catalog.count;++i){
+  const installed_record&a=catalog.pending[i],&b=catalog.current[i];
+  unchanged=!std::strcmp(a.id,b.id)&&!std::strcmp(a.version,b.version)&&
+   !std::strcmp(a.path,b.path)&&!std::strcmp(a.name,b.name)&&!std::strcmp(a.icon,b.icon)&&
+   a.installation_revision==b.installation_revision&&a.kind==b.kind&&
+   a.medium==b.medium&&a.admitted==b.admitted;
+ }
+ if(unchanged)(void)installed_catalog_finish(&catalog,false);
+ else if(!installed_catalog_finish(&catalog,true))return INSTALLED_APPS_UNAVAILABLE;
  for(unsigned i=0;i<accepted;++i)current[i]=pending[acceptedIndexes[i]];
  currentCount=accepted;commitPending=false;return INSTALLED_APPS_OK;
 }
@@ -86,6 +95,7 @@ int32_t load(){
  JsonDocument doc;if(actual!=size||deserializeJson(doc,scratch)||doc["schema"]!=1||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
  pendingCount=0;overflow=false;
  for(JsonObjectConst row:doc["apps"].as<JsonArrayConst>())if(!row["path"].is<const char*>()||!row["manifest"].is<const char*>()||!offer(nullptr,row["path"],row["manifest"])){loaded=true;pendingCount=0;return INSTALLED_APPS_INVALID;}
+ std::memcpy(persisted,scratch,actual);persistedSize=actual;persistedKnown=true;
  loaded=true;int32_t outcome=publish(false);
  if(outcome==INSTALLED_APPS_WORKING){commitPending=true;commitReplace=false;}
  return outcome;
@@ -95,18 +105,21 @@ int32_t save(){
  for(unsigned i=0;i<pendingCount;++i){auto row=apps.add<JsonObject>();row["path"]=pending[i].path;row["manifest"]=pending[i].json;}
  size_t size=measureJson(doc);if(!size||size>=sizeof(scratch))return INSTALLED_APPS_INVALID;
  serializeJson(doc,scratch,sizeof(scratch));
+ if(persistedKnown&&persistedSize==size&&!std::memcmp(persisted,scratch,size))return INSTALLED_APPS_OK;
  // Re-stat before replacement: other bound writes may invalidate session tokens.
  uint32_t oldSize=0;uint64_t token=0;int32_t rc=storage->stat(storage->context,cacheName,&oldSize,&token);
  if(rc!=RISC_APP_DATA_OK&&rc!=RISC_APP_DATA_NOT_FOUND)return result(rc);
  rc=storage->replace(storage->context,cacheName,token,scratch,uint32_t(size));
- if(rc==RISC_APP_DATA_COMMIT_UNKNOWN){loaded=false;return INSTALLED_APPS_UNAVAILABLE;}
+ if(rc==RISC_APP_DATA_COMMIT_UNKNOWN){loaded=false;persistedKnown=false;return INSTALLED_APPS_UNAVAILABLE;}
  if(rc!=RISC_APP_DATA_OK)return result(rc);
+ std::memcpy(persisted,scratch,size);persistedSize=size;persistedKnown=true;
  return INSTALLED_APPS_OK;
 }
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
- if(scanner){scanner->cancel();for(unsigned i=0;i<2;++i)scanner->step();
+ if(scanner){scanner->cancel();scanner->step();
   if(scanner->state()==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
+  if(scanner->state()!=Scan::State::Complete&&scanner->state()!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
   scanner->~Scan();scanner=nullptr;
  }
  volume=nullptr;requested=false;return INSTALLED_APPS_OK;
@@ -118,8 +131,7 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  inCall=true;struct Guard{~Guard(){inCall=false;}}guard;
  if(commitPending)return publish(commitReplace);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
- if(!v||!v->ready||!v->ready(v->context)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
- installed_catalog_media(&catalog,true);
+ if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]){
   if(scanner)return INSTALLED_APPS_WORKING;
   unsigned i=0;for(;i<currentCount;++i)if(!std::strcmp(removeId,current[i].view.id))break;
@@ -143,8 +155,10 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  }
  if(volume!=v)return INSTALLED_APPS_INVALID;
  scanner->step();auto state=scanner->state();
+ if(scanner->ready())installed_catalog_media(&catalog,true);
  if(state==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
  if(state!=Scan::State::Complete&&state!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
+ if(state==Scan::State::Failed&&!scanner->ready())installed_catalog_media(&catalog,false);
  scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;
  if(state==Scan::State::Failed||overflow)return INSTALLED_APPS_UNAVAILABLE;
  // No native registry mutation has occurred before complete checked enumeration.
@@ -157,7 +171,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
  if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
- installed_catalog_init(&catalog);currentCount=pendingCount=0;loaded=requested=retained=inCall=overflow=commitPending=commitReplace=false;removeId[0]=0;scanner=nullptr;volume=nullptr;started=true;return true;
+ installed_catalog_init(&catalog);currentCount=pendingCount=0;persistedKnown=false;persistedSize=0;loaded=requested=retained=inCall=overflow=commitPending=commitReplace=false;removeId[0]=0;scanner=nullptr;volume=nullptr;started=true;return true;
 }
 bool quiesce(){return cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}

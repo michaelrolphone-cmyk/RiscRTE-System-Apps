@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Build the experimental cached installed-app provider; no firmware activation.
 
-The metadata/admission provider is target-link qualified by this command. Its
-synchronous storage prototype is not a nonblocking UI integration and must not
-be selected in a production boot profile until an async storage port is supplied.
+The metadata/admission provider is target-link qualified by this command. It requires the
+volume asynchronous suffix; SD discovery never calls the synchronous volume on
+the owner. Internal cache persistence still uses the existing app-data backend.
 """
 import argparse
 import hashlib
@@ -41,8 +41,8 @@ def main():
     if imports - allowed:
         raise RuntimeError('Unexpected imports: '+repr(sorted(imports-allowed)))
     shutil.copyfile(ROOT/'Services/installed_apps/manifest.json', out/'manifest.json')
-    headers = [runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
-    receipt = {'status':'experimental-target-link-only', 'limitations':['No target runtime or hardware execution claimed.', 'Async SD/native lifecycle transport remains required before UI activation.'], 'commands':commands, 'imports':sorted(imports), 'sources':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources+headers}, 'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(), 'repositories':{str(p):{'head':subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','-C',str(p),'status','--porcelain'],text=True))} for p in [ROOT,runtime]}}
+    headers = [runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppAsyncDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
+    receipt = {'status':'experimental-target-link-only', 'limitations':['No target runtime or hardware execution claimed.', 'Requires the scoped async SD provider; cache persistence and UI integration need separate qualification.'], 'commands':commands, 'imports':sorted(imports), 'sources':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources+headers}, 'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(), 'repositories':{str(p):{'head':subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','-C',str(p),'status','--porcelain'],text=True))} for p in [ROOT,runtime]}}
     (out/'build.json').write_text(json.dumps(receipt, indent=2)+'\n')
     print(json.dumps({'elf':str(elf),'bytes':elf.stat().st_size,'imports':sorted(imports),'status':receipt['status']}))
 

@@ -24,10 +24,11 @@ typedef struct {
  uint32_t (*generation)(void*);
  uint32_t (*count)(void*);
  bool (*get)(void*,uint32_t,installed_app_v1*);
- /* Explicit settled owner work, never called from poll/display/input paths.
+ /* Nonblocking owner progress: copied submissions and result collection only.
   * The client owns the live SD grant through cancel or scan completion.
-  * Each scan step advances one bounded metadata I/O operation. */
+  * The volume worker executes filesystem I/O independently of input/display. */
  int32_t (*step)(void*,const risc_storage_volume_api_v1*);
+ /* WORKING keeps the borrowed volume grant live; poll until OK. */
  int32_t (*cancel)(void*);
  int32_t (*remove)(void*,const char*id);
 } installed_apps_v1;
