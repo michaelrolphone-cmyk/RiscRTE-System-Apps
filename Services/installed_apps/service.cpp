@@ -11,7 +11,10 @@
 #include <new>
 namespace {
 constexpr unsigned Max=INSTALLED_APPS_MAX,ManifestMax=4096,CacheMax=65537;
-struct Package {char path[193],json[ManifestMax+1];installed_app_v1 view;};
+struct Package {char path[193],json[ManifestMax+1];installed_app_v1 view;uint32_t namespaceSlot;};
+constexpr unsigned NamespaceMax=128;
+char namespaceIds[NamespaceMax][96];bool namespaceDurable[NamespaceMax];
+uint32_t namespaceSlots[Max];
 Package current[Max],pending[Max];unsigned currentCount,pendingCount;
 installed_catalog catalog;
 risc_install_candidate_v1 candidates[Max];risc_install_result_v1 admissionResults[Max];
@@ -53,14 +56,35 @@ bool offer(void*,const char*path,const char*json){
  for(unsigned i=0;i<pendingCount;++i)if(!std::strcmp(row.view.id,pending[i].view.id)){overflow=true;return false;}
  pending[pendingCount++]=row;return true;
 }
+bool needsNamespace(const Package&p){
+ JsonDocument doc;if(deserializeJson(doc,p.json))return false;
+ for(JsonObjectConst need:doc["requires"].as<JsonArrayConst>())
+  if(need["capability"]=="storage.app-data"||need["capability"]=="storage.key-value")return true;
+ return false;
+}
+bool namespaceFor(Package&p,bool allocate){
+ p.namespaceSlot=0;if(!needsNamespace(p))return true;
+ unsigned capacity=native->namespace_capacity;if(capacity>NamespaceMax)return false;
+ for(unsigned i=0;i<capacity;++i)if(!std::strcmp(namespaceIds[i],p.view.id)){p.namespaceSlot=i+1;return true;}
+ if(allocate)for(unsigned i=0;i<capacity;++i)if(!namespaceIds[i][0]){
+  std::strcpy(namespaceIds[i],p.view.id);p.namespaceSlot=i+1;return true;
+ }
+ return false;
+}
+void discardUnadmittedNamespaces(){
+ for(unsigned i=0;i<NamespaceMax;++i)if(namespaceIds[i][0]&&!namespaceDurable[i]){
+  bool found=false;for(unsigned j=0;j<pendingCount;++j)found|=pending[j].namespaceSlot==i+1;
+  if(!found)namespaceIds[i][0]=0;
+ }
+}
 int32_t result(int32_t rc){if(rc==RISC_APP_DATA_RETAINED){retained=true;return INSTALLED_APPS_RETAINED;}return INSTALLED_APPS_UNAVAILABLE;}
 int32_t publish(bool replace){
  if(catalog.generation==UINT32_MAX||catalog.scanning)return INSTALLED_APPS_UNAVAILABLE;
  auto*items=candidates;auto*results=admissionResults;
  std::memset(results,0,sizeof(admissionResults));
  unsigned acceptedIndexes[Max]{};
- for(unsigned i=0;i<pendingCount;++i)items[i]={pending[i].path,pending[i].json};
- int32_t rc=native->commit(native->context,items,pendingCount,results,replace);
+ for(unsigned i=0;i<pendingCount;++i){items[i]={pending[i].path,pending[i].json};namespaceSlots[i]=pending[i].namespaceSlot;}
+ int32_t rc=native->namespaced(native->context,items,namespaceSlots,pendingCount,results,replace,false);
  if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;
  if(rc!=RISC_INSTALL_OK)return INSTALLED_APPS_UNAVAILABLE;
  if(!installed_catalog_begin(&catalog,INSTALLED_SD))return INSTALLED_APPS_UNAVAILABLE;
@@ -90,6 +114,7 @@ int32_t publish(bool replace){
  currentCount=accepted;commitPending=removalCommitPending=false;return INSTALLED_APPS_OK;
 }
 int32_t load(){
+ std::memset(namespaceIds,0,sizeof(namespaceIds));std::memset(namespaceDurable,0,sizeof(namespaceDurable));
  uint32_t size=0,actual=0;uint64_t token=0;int32_t rc=storage->stat(storage->context,cacheName,&size,&token);
 
  if(rc==RISC_APP_DATA_NOT_FOUND){loaded=true;return INSTALLED_APPS_OK;}
@@ -100,7 +125,15 @@ int32_t load(){
  if(actual>=sizeof(scratch))return INSTALLED_APPS_INVALID;
  scratch[actual]=0;
  JsonDocument doc;if(actual!=size||deserializeJson(doc,static_cast<const char*>(scratch))||
-   (doc["schema"]!=1&&doc["schema"]!=2)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+ if(doc["schema"]==3){
+  if(!doc["namespaces"].is<JsonArrayConst>()||doc["namespaces"].size()>native->namespace_capacity||doc["namespaces"].size()>NamespaceMax){loaded=true;return INSTALLED_APPS_INVALID;}
+  unsigned i=0;for(JsonVariantConst id:doc["namespaces"].as<JsonArrayConst>()){
+   if(!copy(namespaceIds[i],sizeof(namespaceIds[i]),id,true)){loaded=true;return INSTALLED_APPS_INVALID;}
+   if(namespaceIds[i][0])for(unsigned j=0;j<i;++j)if(!std::strcmp(namespaceIds[j],namespaceIds[i])){loaded=true;return INSTALLED_APPS_INVALID;}
+   namespaceDurable[i]=namespaceIds[i][0]!=0;++i;
+  }
+ }
  pendingCount=0;overflow=false;
  for(JsonObjectConst row:doc["apps"].as<JsonArrayConst>()){
   if(!row["path"].is<const char*>()){loaded=true;return INSTALLED_APPS_INVALID;}
@@ -116,7 +149,7 @@ int32_t load(){
    if(measureJson(model)>ManifestMax){loaded=true;return INSTALLED_APPS_INVALID;}
    serializeJson(model,manifestScratch,sizeof(manifestScratch));json=manifestScratch;
   }
-  if(!json||!offer(nullptr,row["path"],json)){loaded=true;pendingCount=0;return INSTALLED_APPS_INVALID;}
+  if(!json||!offer(nullptr,row["path"],json)||!namespaceFor(pending[pendingCount-1],false)){loaded=true;pendingCount=0;return INSTALLED_APPS_INVALID;}
  }
  std::memcpy(persisted,scratch,actual);persistedSize=actual;persistedKnown=true;
  loaded=true;int32_t outcome=publish(false);
@@ -132,10 +165,14 @@ int32_t save(){
   cacheOperation=0;
   if(outcome==RISC_APP_DATA_COMMIT_UNKNOWN){loaded=false;persistedKnown=false;return INSTALLED_APPS_UNAVAILABLE;}
   if(outcome!=RISC_APP_DATA_OK)return result(outcome);
+  for(unsigned i=0;i<NamespaceMax;++i)namespaceDurable[i]=namespaceIds[i][0]!=0;
   std::memcpy(persisted,scratch,pendingPersistedSize);persistedSize=pendingPersistedSize;persistedKnown=true;
   return INSTALLED_APPS_OK;
  }
- JsonDocument doc;doc["schema"]=2;auto dictionary=doc["requirements"].to<JsonArray>();auto apps=doc["apps"].to<JsonArray>();
+ JsonDocument doc;doc["schema"]=3;auto ledger=doc["namespaces"].to<JsonArray>();
+ unsigned last=NamespaceMax;while(last&&!namespaceIds[last-1][0])--last;
+ for(unsigned i=0;i<last;++i)ledger.add(namespaceIds[i]);
+ auto dictionary=doc["requirements"].to<JsonArray>();auto apps=doc["apps"].to<JsonArray>();
  for(unsigned i=0;i<pendingCount;++i){
   JsonDocument manifest;if(deserializeJson(manifest,pending[i].json))return INSTALLED_APPS_INVALID;
   // Description is not used by native admission, launch, handlers or this UI.
@@ -167,8 +204,13 @@ int32_t finishSave(){
 }
 int32_t validateAndSave(){
  // Native validation is transactional and restores every slot on return.
- for(unsigned i=0;i<pendingCount;++i)candidates[i]={pending[i].path,pending[i].json};
- int32_t checked=native->check(native->context,candidates,pendingCount,admissionResults,true);
+ for(unsigned i=0;i<pendingCount;++i){
+  // Exhausted or unconfigured private authority denies this package, without
+  // lending an existing identity's namespace or blocking unrelated packages.
+  (void)namespaceFor(pending[i],true);
+  candidates[i]={pending[i].path,pending[i].json};namespaceSlots[i]=pending[i].namespaceSlot;
+ }
+ int32_t checked=native->namespaced(native->context,candidates,namespaceSlots,pendingCount,admissionResults,true,true);
  if(checked==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;
  validationPending=false;
  if(checked!=RISC_INSTALL_OK)return INSTALLED_APPS_UNAVAILABLE;
@@ -176,7 +218,7 @@ int32_t validateAndSave(){
   if(accepted!=i)pending[accepted]=pending[i];
   ++accepted;
  }
- pendingCount=accepted;
+ pendingCount=accepted;discardUnadmittedNamespaces();
  savePending=true;return finishSave();
 }
 int32_t removeStep(const risc_storage_volume_api_v1*v){
@@ -290,9 +332,10 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_INSTALLATION_CAPABILITY)&&d[i].api_version==1)native=static_cast<const risc_installation_v1*>(d[i].api);
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
- if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!native->check||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;
  asyncStorage=risc_bound_app_data_async(storage);if(!asyncStorage)return false;cacheOperation=0;savePending=removalCommitPending=false;pendingPersistedSize=0;
+ std::memset(namespaceIds,0,sizeof(namespaceIds));std::memset(namespaceDurable,0,sizeof(namespaceDurable));
  installed_catalog_init(&catalog);currentCount=pendingCount=0;persistedKnown=false;persistedSize=0;loaded=requested=retained=inCall=overflow=commitPending=commitReplace=validationPending=false;removeId[0]=0;scanner=nullptr;volume=nullptr;started=true;return true;
 }
 bool quiesce(){return cancel(nullptr)==INSTALLED_APPS_OK;}

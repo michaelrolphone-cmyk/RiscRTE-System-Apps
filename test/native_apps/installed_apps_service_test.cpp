@@ -32,13 +32,22 @@ risc_installation_v1 installation={1,sizeof(installation),nullptr,nullptr,
  },[](void*,const risc_install_candidate_v1*items,uint32_t n,risc_install_result_v1*out,bool)->int32_t{
   for(unsigned i=0;i<n;++i){out[i]={};out[i].status=RISC_INSTALL_OK;assert(strstr(items[i].manifest_json,"application"));}
   return RISC_INSTALL_OK;
- }};
+ },128,nullptr};
 void begin(){
  const auto*d=t5_driver_get(2);risc_provider_dependency_v1 dependencies[]={{RISC_INSTALLATION_CAPABILITY,1,&installation},{RISC_BOUND_APP_DATA_CAPABILITY,1,&data}};
  assert(d->start(dependencies,2));
 }
 int32_t run(){int32_t rc;unsigned steps=0;do{unsigned before=io;rc=api.step(nullptr,&sd.base);assert(io==before);assert(++steps<500);if(steps%3==0){executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}}while(rc==INSTALLED_APPS_WORKING);return rc;}
 void setup(){
+ installation.namespaced=[](void*c,const risc_install_candidate_v1*items,const uint32_t*slots,uint32_t n,risc_install_result_v1*out,bool replace,bool check)->int32_t{
+  int32_t rc=check?installation.check(c,items,n,out,replace):installation.commit(c,items,n,out,replace);
+  for(unsigned i=0;i<n;++i)if(strstr(items[i].manifest_json,"storage.app-data")){
+   if(!slots[i])out[i].status=RISC_INSTALL_DENIED;
+   else if(!check){JsonDocument persistedDoc;assert(!deserializeJson(persistedDoc,saved));JsonDocument m;assert(!deserializeJson(m,items[i].manifest_json));assert(persistedDoc["namespaces"][slots[i]-1]==m["id"]);}
+  }
+  return rc;
+ };
+
  data.begin_replace=[](void*,const char*name,uint64_t expected,const void*bytes,uint32_t size,uint64_t*token){return cacheWorker.begin(1,name,expected,bytes,size,token);};
  data.collect_replace=[](void*,uint64_t token,int32_t*out){return cacheWorker.collect(token,out);};
  auto&v=sd.base;v.api_version=1;v.struct_size=sizeof(transport);
@@ -116,6 +125,18 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  beforeIo=io;assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&api.count(nullptr)==40&&io==beforeIo);
  assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.0.2"));
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // Removed private identities remain in the protected ledger. A new app
+ // gets a new slot; reinstalling the former app recovers its original slot.
+ begin();entryCount=1;manifest=R"({"type":"application","id":"private-a","version":"1.0.0","file_name":"new.elf","requires":[{"capability":"storage.app-data","api":1}]})";
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&api.count(nullptr)==1);
+ assert(current[0].namespaceSlot==1&&namespaceDurable[0]);
+ assert(api.remove(nullptr,"private-a")==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK);
+ assert(saved.find("private-a")!=std::string::npos&&api.count(nullptr)==0);
+ manifestPresent=true;manifest.replace(manifest.find("private-a"),9,"private-b");assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==2);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();begin();beforeIo=io;assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&current[0].namespaceSlot==2&&io==beforeIo);
+ manifest.replace(manifest.find("private-b"),9,"private-a");assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ puts("Durable namespaces: persist before admission, removed identity tombstones, restart and reinstall stable ownership PASS");
  puts("Delayed cache write: 1000 owner/cancel polls, no early registry commit, completion and reentry PASS");
  puts("40 near-4KiB manifests: compact admitted cache and zero-SD cached restart PASS");
  puts("installed provider: cache-only startup, unknown manifest, transactional failure, removal preflight, absent media PASS");
