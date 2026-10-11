@@ -242,6 +242,9 @@ static void stage_display_complete(risc_display_present_token_v1 token) {
  * The submitted lease stays provider-owned until this token completes. */
 static bool paper_async_frames;
 static risc_display_present_token_v1 paper_token;
+#ifdef PORTABLE_INSTALLED_CATALOG
+static bool installed_first_frame_submitted;
+#endif
 static uint32_t paper_submitted_at;
 static bool paper_present_progress(void);
 bool portable_paper_frame_ready(void);
@@ -1345,6 +1348,9 @@ static void present(bool full) {
     display_callback_failure("PORTABLE_APP error=display-submit");
     return;
   }
+#ifdef PORTABLE_INSTALLED_CATALOG
+  installed_first_frame_submitted=true;
+#endif
   portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,false);
   portable_stage_log(rt,"display-submit-end","result=accepted");
 #if defined(PORTABLE_DISPLAY_SETTLED) && defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
@@ -2112,7 +2118,7 @@ replay_input:
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_INSTALLED_CATALOG
-  installed_progress();
+  if(installed_first_frame_submitted)installed_progress();
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained){memset(out,0,sizeof(*out));return false;}
@@ -2545,6 +2551,9 @@ static int initialize(void) {
 #endif
   bg.struct_size = sizeof(bg);
   failed = false;perf_initialize();
+#ifdef PORTABLE_INSTALLED_CATALOG
+  installed_first_frame_submitted=false;
+#endif
   paper_async_frames=false;paper_token=0;paper_token_clean=false;paper_submitted_at=0;
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_flip_ui=paper_orientation_dirty=false;
