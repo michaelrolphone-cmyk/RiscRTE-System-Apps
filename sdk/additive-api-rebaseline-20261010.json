@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "audit_date": "2026-10-10",
-  "scope": "Snapshot provenance and compatibility fixtures only; production headers are unchanged.",
+  "scope": "Append-only SDK snapshot provenance and compatibility fixtures; Runtime suffix synchronized to the existing native 3b90 SDK on 2026-10-11.",
   "comparison": "Table declarations with C comments and whitespace removed. Every previous declaration, type and field order is retained as an exact prefix.",
   "exports_changed": false,
   "exports_sha256": "a88ca6059db7ab70ee41f5557f30e41158812de58eb6d898902a48b0a19c1649",
@@ -25,8 +25,8 @@
       "table": "risc_runtime_api_v1",
       "previous_git_blob": "cac4817bfa67f7e0e6b39f0c58010976a4938366",
       "previous_sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b",
-      "current_git_blob": "8972c0af9e84b8cf553360deec1077b61f06e598",
-      "current_sha256": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
+      "current_git_blob": "0e357b78fffb11c00d60d3cb9fb3e0921234f603",
+      "current_sha256": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
       "preserved_prefix_characters": 345,
       "preserved_prefix_sha256": "fa763c03bec2b29084643bbec08ce22a60206b95f636e7fc6ba386e2fde2006d",
       "appended_members": [
@@ -37,8 +37,17 @@
         "request_default",
         "resident_shell",
         "failure_evidence",
-        "diagnostic_checkpoint_client"
-      ]
+        "diagnostic_checkpoint_client",
+        "monotonic_ms",
+        "exit_requested"
+      ],
+      "native_suffix_sync": {
+        "date": "2026-10-11",
+        "repository": "michaelrolphone-cmyk/RiscRTE",
+        "commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+        "path": "sdk/app/RiscRuntimeV1.h",
+        "reason": "Preserve native clock and exit callbacks in bounded guarded Runtime copies."
+      }
     }
   ],
   "runtime_comment_change": "yield_ms documentation now describes the already-present retained-owner scheduler-only delay; no existing field signature changed.",
