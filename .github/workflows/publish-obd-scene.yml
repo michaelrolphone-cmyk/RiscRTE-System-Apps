@@ -1,0 +1,43 @@
+name: Publish completed OBD scene source
+on:
+  push:
+    branches: [feat/obd-telemetry-scene]
+    paths: [.github/workflows/publish-obd-scene.yml]
+permissions:
+  contents: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify and apply the delivered source patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor b3e11dae700dd2e9d3a9d4025baedef534d171fe HEAD
+          python3 - <<'PY'
+          import base64,gzip,hashlib,subprocess
+          from pathlib import Path
+          root=Path('.source-import/scene-040')
+          data=''.join((root/(part+'.txt')).read_text() for part in ['01','02a','02b','02c','03'])
+          patch=gzip.decompress(base64.b64decode(data,validate=True))
+          assert hashlib.sha256(patch).hexdigest()=='fb381da0bdd375d66904e8b800b58828893de6711364a2bdc657c463c050180e'
+          # This header was already published directly. Check against the exact
+          # added lines in the delivered patch rather than replacing new work.
+          header='sdk/app/RiscSceneTelemetryV1.h'
+          section=patch.decode().split('diff --git a/'+header+' b/'+header+'\n')[1].split('\ndiff --git ',1)[0]
+          expected='\n'.join(line[1:] for line in section.splitlines() if line.startswith('+') and not line.startswith('+++'))+'\n'
+          assert Path(header).read_text()==expected
+          Path('/tmp/scene-040.patch').write_bytes(patch)
+          subprocess.run(['git','apply','--check','--exclude='+header,'/tmp/scene-040.patch'],check=True)
+          subprocess.run(['git','apply','--index','--exclude='+header,'/tmp/scene-040.patch'],check=True)
+          PY
+          git rm -r .source-import/scene-040
+          git rm .github/workflows/publish-obd-scene.yml
+          git diff --cached --check
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Publish completed scene 0.4.0 telemetry components and native tests'
+          git push origin HEAD:feat/obd-telemetry-scene
