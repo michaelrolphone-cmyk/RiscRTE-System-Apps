@@ -74,6 +74,10 @@ int APP_DATA_EXPORT_TEST_ENTRY(void){
  /* Failure cleanup must not turn copy failure into success. A fresh user copy
   * can succeed after NO_SPACE clears; cleanup never replays replacement. */
  setup();disk.result=RISC_APP_DATA_NO_SPACE;assert(!copy());assert(!disk.live&&!disk.published&&portable_file_browser_safe());assert(disk.replacements==1&&disk.commit_calls==1&&disk.cancel_calls==1&&strstr(fb_status,"Copy failed"));assert(fbx_close_owned()&&disk.replacements==1);disk.result=0;assert(copy());expected_bytes();assert(disk.replacements==2&&disk.opens==2);closed();
+ /* A legacy export without the optional catalog callback still has the
+  * complete writer-status prefix and must permit known-failure cancellation. */
+ setup();export_volume()->struct_size=offsetof(risc_app_data_export_v1,entry);
+ disk.result=RISC_APP_DATA_NO_SPACE;assert(!copy()&&!disk.live&&disk.cancel_calls==1);closed();
  /* Both possible publication outcomes remain unknown to the browser. */
  for(unsigned published=0;published<2;published++){
   setup();disk.result=RISC_APP_DATA_COMMIT_UNKNOWN;disk.publish_unknown=published;assert(!copy());assert(!disk.live&&portable_file_browser_safe()&&fb_publication_unknown);assert(strstr(fb_status,"publication unknown")&&strstr(fb_status,"Reload")&&!strstr(fb_status,"aborted"));assert(disk.published==(bool)published&&disk.replacements==1&&disk.commit_calls==1&&disk.cancel_calls==1);if(published)expected_bytes();fbx_cancel();assert(fb_mode==FB_LIST&&strstr(fb_status,"publication unknown")&&strstr(fb_status,"Reload")&&!strstr(fb_status,"cancelled"));closed();assert(disk.replacements==1);
@@ -85,13 +89,14 @@ int APP_DATA_EXPORT_TEST_ENTRY(void){
  /* RETAINED, nonwriter CONTEXT, PENDING and unrecognized status are never a
   * reason to cancel or release. Existing checked-close retries stay intact. */
  expect_retained(RISC_APP_DATA_RETAINED);expect_retained(RISC_APP_DATA_CONTEXT);expect_retained(RISC_APP_DATA_EXPORT_WRITE_PENDING);expect_retained(-123);expect_retained(RISC_APP_DATA_OK);
- /* Exact tag/version/full-size/write_status guards. These other volumes keep
+ /* Exact tag/version/write-status-prefix guards. Optional catalog entry is
+  * not required for legacy writer cleanup. These other volumes keep
   * the legacy commit intent even if their unused status member says NO_SPACE. */
  for(unsigned guard=0;guard<6;guard++){
   setup();disk.result=RISC_APP_DATA_NO_SPACE;
   if(guard==0)disk.api.export_tag^=1;
   if(guard==1)disk.api.export_version++;
-  if(guard==2)export_volume()->struct_size=sizeof(disk.api)-1;
+  if(guard==2)export_volume()->struct_size=offsetof(risc_app_data_export_v1,entry)-1;
   if(guard==3)disk.api.write_status=NULL;
   if(guard==4)export_volume()->struct_size=sizeof(risc_storage_volume_api_v1);
   if(guard==5)export_volume()->api_version=2;

@@ -4,6 +4,7 @@ import argparse
 import json
 import hashlib
 import os
+import sys
 from pathlib import Path
 import shutil
 import subprocess
@@ -49,7 +50,7 @@ with tempfile.TemporaryDirectory(prefix='file-setup-adapter-') as temporary:
                '-I' + str(ROOT / 'lib/NativeApps/include'),
                str(ROOT / 'test/native_apps/file_setup_adapter_test.c'),
                *[str(ROOT / 'lib/PortableApps/src' / name) for name in helpers],
-               '-Wl,--wrap=free', '-o', str(binary)]
+               *(['-Wl,--wrap=free'] if sys.platform != 'darwin' else []), '-o', str(binary)]
     if args.sanitize:
         command[1:1] = ['-fsanitize=address,undefined', '-fno-sanitize-recover=all',
                         '-fno-omit-frame-pointer', '-no-pie']

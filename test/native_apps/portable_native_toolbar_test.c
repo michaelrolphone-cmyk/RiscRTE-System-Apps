@@ -16,7 +16,14 @@ static bool __attribute__((unused)) fixture_time_forward(const twatch_rtc_time_v
   ++forward_calls;return portable_time_forward(in,out);
 }
 #define portable_time_forward fixture_time_forward
+#ifdef __APPLE__
+void __wrap_free(void *);
+#define free __wrap_free
+#endif
 #include "../../lib/PortableApps/src/adapter.c"
+#ifdef __APPLE__
+#undef free
+#endif
 #undef portable_time_forward
 
 #ifndef TEST_CUSTOM_CATALOG
@@ -38,7 +45,11 @@ static twatch_rtc_time_v1 local_time={2026,10,7,3,13,42,56};
 static bool close_quick_on_yield,dnd_saved,dnd_value,retain_refresh,retain_alarm_status,retain_alarm_stop;
 static unsigned refreshes,brightness_calls,kv_writes,alarm_stops;
 #endif
+#ifdef __APPLE__
+static void __real_free(void *pointer){free(pointer);}
+#else
 void __real_free(void *pointer);
+#endif
 void __wrap_free(void *pointer){assert(!retained);++free_calls;__real_free(pointer);}
 static void io(void){assert(!retained);++calls;}
 static bool fx_health(risc_runtime_health_v1 *out){io();out->uptime_ms=ticks;return true;}
