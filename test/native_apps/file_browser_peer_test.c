@@ -15,12 +15,14 @@ static void peer_step(void){test_ticks+=1;fsh_tick();peer_backend_tick(fsh_now);
 static void peer_until(unsigned state){for(unsigned i=0;i<30000;i++){peer_step();if(fpeer_status.state==state)return;assert(!fb_terminal);}assert(!"UI timeout");}
 static void peer_frame(void){for(unsigned i=0;i<12;i++){if(fb_dirty)fb_draw();test_ticks+=1;t5_app_input_t input={0};assert(fb_app->poll(&input,1));if(portable_file_browser_setup_frame_ready()&&!fb_dirty)return;}assert(!"frame incomplete");}
 int main(int argc,char**argv){const char*mode=argc>1?argv[1]:"transfer";test_directory=argc>2?argv[2]:NULL;peer_backend_begin();borrowed=strcmp(mode,"owned")!=0;
- runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;test_runtime_override=&runtime;
+ runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;runtime.diagnostic=files_diagnostic;test_runtime_override=&runtime;
  if(!strcmp(mode,"direct"))peer_backend_direct();else {const portable_wifi_credentials saved={"fixture","synthetic"};assert(portable_wifi_profile_save(&kv,0,&saved)==0);}
  memset(fb_pixels,0xa5,sizeof(fb_pixels));assert(app_module_init()==0&&fb_open());assert(fb_option_count()==8);strcpy(fb_path,"/Downloads");assert(fb_load(0));fb_list_choice=0;
  fb_option(7);assert(fpeer_mode&&fb_mode==FB_SHARING&&fb_grant.api);peer_until(PEER_DISCOVERING);peer_step();assert(fpeer_status.count==1);peer_frame();fpeer_choice=0;fpeer_action();peer_until(PEER_PAIRING);
  fpeer_choice=1;fpeer_action();assert(fpeer_status.state==PEER_PAIRING); /* no displayed number yet */
  peer_frame();capture_paper("peer-pairing");fpeer_action();peer_until(PEER_READY);assert(fpeer_status.count==1);peer_frame();capture_paper("peer-folder");
+ assert(files_trace_confirm&&files_trace_join&&files_trace_handshake);
+ {unsigned before=files_diagnostics;for(unsigned i=0;i<1000;i++)peer_step();assert(files_diagnostics==before);}
  if(!strcmp(mode,"upload")){fpeer_choice=fpeer_status.count+1;fpeer_action();peer_step();peer_until(PEER_READY);peer_backend_uploaded();}
  if(!strcmp(mode,"cancel")||!strcmp(mode,"expiry")){
   if(!strcmp(mode,"expiry"))test_ticks+=300001;else (void)fsh_back();

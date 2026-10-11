@@ -1,7 +1,7 @@
 name: Offline sharing entropy
 on:
   push:
-    branches: [fix/entropy-offline-bootstrap]
+    branches: [fix/entropy-offline-bootstrap, fix/files-connection-stage-logs]
   pull_request:
     paths:
       - 'Apps/file_browser*'
@@ -37,6 +37,8 @@ jobs:
           SANITIZE=1 bash scripts/test_file_browser_direct.sh
           bash scripts/test_webdav_peer.sh
           SANITIZE=1 bash scripts/test_webdav_peer.sh
+          bash scripts/test_file_browser_peer_resident.sh
+          SANITIZE=1 bash scripts/test_file_browser_peer_resident.sh
           bash scripts/test_file_browser_peer.sh
           SANITIZE=1 bash scripts/test_file_browser_peer.sh
           bash scripts/test_file_sharing_client.sh

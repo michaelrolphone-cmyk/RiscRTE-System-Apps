@@ -50,7 +50,21 @@ static uint64_t fsh_now;
 static uint32_t fsh_last_clock,fsh_last_second;
 static char fsh_url[64],fsh_message[96];
 static bool fsh_owner(void *unused){(void)unused;return !fb_terminal&&!portable_adapter_retained();}
-static void fsh_error(const char *message){snprintf(fsh_message,sizeof(fsh_message),"%s",message);fb_dirty=true;}
+static void fsh_trace(const char *event,int result){
+ if(!fb_runtime||!fb_runtime->diagnostic||!fsh_owner(NULL))return;
+ unsigned direct=0;
+#ifdef PORTABLE_FILE_SETUP
+ direct=fsh_direct_stage;
+#endif
+ const char *role="share";
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode)role="nearby";
+#endif
+ char line[160];
+ snprintf(line,sizeof(line),"FILES t_ms=%llu role=%s event=%s phase=%u direct=%u result=%d",(unsigned long long)fsh_now,role,event,fsh_phase,direct,result);
+ (void)fb_runtime->diagnostic(line);
+}
+static void fsh_error(const char *message){fsh_trace("error",0);snprintf(fsh_message,sizeof(fsh_message),"%s",message);fb_dirty=true;}
 static void fsh_retain(void){
  fb_terminal=true;
 #ifdef PORTABLE_FILE_PEER
@@ -71,7 +85,12 @@ static void fsh_retain(void){
 static uint64_t fsh_clock(void){uint32_t now=fb_app->millis();fsh_now+=(uint32_t)(now-fsh_last_clock);fsh_last_clock=now;return fsh_now;}
 bool portable_file_browser_sharing_active(void){return fsh_phase!=FSH_OFF;}
 bool portable_file_browser_stop_pending(void){return fsh_phase==FSH_STOPPING&&!fb_terminal&&!PORTABLE_APP_RETAINED();}
-bool portable_file_browser_network_owned(void){return fsh_network_initialized&&!fsh_link.borrowed&&fsh_phase!=FSH_OFF;}
+bool portable_file_browser_network_owned(void){
+#ifdef PORTABLE_FILE_PEER
+ if(portable_peer_network_owned(fpeer))return true;
+#endif
+ return fsh_network_initialized&&!fsh_link.borrowed&&fsh_phase!=FSH_OFF;
+}
 bool portable_file_browser_idle_ready(void){return fsh_phase==FSH_OFF;}
 void portable_file_browser_resume(void){fb_dirty=true;}
 bool portable_file_browser_services_safe(void){
@@ -187,6 +206,7 @@ static void fsh_start(void){
  fsh_direct_stage=0;fsh_private_started=false;fsh_setup_wipe(&fsh_offer,sizeof(fsh_offer));
 #endif
  fsh_phase=FSH_POLICY;fb_dirty=true;
+ fsh_trace("start",0);
 }
 static unsigned fsh_policy(void){
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
@@ -232,6 +252,14 @@ static void fsh_tick(void){
  fsh_setup_tick();if(!fsh_owner(NULL)||portable_file_browser_cleanup_only())return;
 #endif
  uint64_t now=fsh_clock();
+ { /* State transitions only; stable discovery/connect polls stay silent. */
+  static unsigned phase=~0u,direct=~0u;
+  unsigned next_direct=0;
+#ifdef PORTABLE_FILE_SETUP
+  next_direct=fsh_direct_stage;
+#endif
+  if(phase!=fsh_phase||direct!=next_direct){phase=fsh_phase;direct=next_direct;fsh_trace("state",0);}
+ }
  if(fsh_phase==FSH_ACTIVE&&fsh_status.expires_ms&&now>=fsh_status.expires_ms){fsh_error("Sharing session expired");fsh_phase=FSH_STOPPING;}
  if(fsh_phase==FSH_STOPPING){
 #ifdef PORTABLE_FILE_SETUP

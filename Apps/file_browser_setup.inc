@@ -19,6 +19,11 @@ static void fsh_setup_fence(void){
 static bool fsh_setup_result(int rc){
  if(rc==PORTABLE_FILE_SETUP_RETAINED){fsh_retain();return false;}
  portable_file_setup_status next;portable_file_setup_get_status(&fsh_setup,&next);
+ if(next.state!=fsh_setup_status.state||next.provider_state!=fsh_setup_status.provider_state||next.error!=fsh_setup_status.error){
+  char line[192];
+  snprintf(line,sizeof(line),"FILES t_ms=%llu role=share event=broker state=%u broker=%u result=%d error=%d",(unsigned long long)fsh_now,(unsigned)next.state,(unsigned)next.provider_state,rc,(int)next.error);
+  if(fsh_owner(NULL)&&fb_runtime->diagnostic)(void)fb_runtime->diagnostic(line);
+ }
  if(next.state!=fsh_setup_status.state||next.provider_state!=fsh_setup_status.provider_state||next.flags!=fsh_setup_status.flags||next.pairing_generation!=fsh_setup_status.pairing_generation||next.pairing_number!=fsh_setup_status.pairing_number||next.error!=fsh_setup_status.error)fb_dirty=true;
  if(next.pairing_generation!=fsh_setup_status.pairing_generation||next.pairing_number!=fsh_setup_status.pairing_number){fsh_setup_display_generation=0;fsh_setup_pending_generation=0;}
  fsh_setup_status=next;return true;
@@ -88,6 +93,7 @@ static void fsh_setup_choice(bool accept){
  if(!fsh_setup_display_generation||!portable_file_browser_setup_frame_ready()||fsh_setup_display_generation!=fsh_setup_status.pairing_generation||fsh_setup_display_number!=fsh_setup_status.pairing_number)return;
  uint32_t generation=fsh_setup_display_generation,number=fsh_setup_display_number;
  fsh_setup_display_generation=fsh_setup_pending_generation=0;
+ fsh_trace(accept?"confirm":"reject",0);
  (void)fsh_setup_result(portable_file_setup_confirm(&fsh_setup,generation,number,accept));
  fb_dirty=true;
 }

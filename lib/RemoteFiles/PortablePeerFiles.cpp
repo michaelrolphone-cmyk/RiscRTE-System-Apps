@@ -28,6 +28,31 @@ uint64_t token=0,now=0,copiedAt=0,startedAt=0;
  uint32_t selected=0,generation=0,number=0;
 bool replace=false,accept=false,stopping=false;
 unsigned scanIndex=0;
+ Step tracedStep=Step::Off;
+ unsigned tracedState=~0u,tracedBroker=~0u;
+ int tracedResult=0;
+ const char*tracedOperation=nullptr;
+ static const char*stepName(Step s){
+  static const char*const names[]={"off","tcp","ble","discover","entropy","random","release-entropy","scan","read-descriptor","read-network","close-ble","release-ble","wifi","store","join","network","authenticate","handshake","browse","operation","stop-remote","stop-client","stop-ble","close-network","stop-grants"};
+  return names[static_cast<unsigned>(s)];
+ }
+ void trace(const char*event,int rc=0){
+  /* Fixed stage names and numeric results only: never session material, peer
+   * names, paths, pairing numbers or network credentials. No new clock I/O. */
+  if(!runtime->diagnostic||!owned(this))return;
+  char line[192];
+  snprintf(line,sizeof(line),"FILES t_ms=%llu role=nearby event=%s stage=%s state=%u broker=%u result=%d",(unsigned long long)now,event,stepName(step),unsigned(status.state),unsigned(setup.state),rc);
+  (void)runtime->diagnostic(line);
+ }
+ void traceState(){
+  if(tracedStep==step&&tracedState==unsigned(status.state)&&tracedBroker==unsigned(setup.state))return;
+  tracedStep=step;tracedState=unsigned(status.state);tracedBroker=unsigned(setup.state);
+  trace("state");
+ }
+ void traceResult(const char*operation,int rc){
+  if(tracedOperation==operation&&tracedResult==rc)return;
+  tracedOperation=operation;tracedResult=rc;trace(operation,rc);
+ }
  const risc_storage_volume_api_v1*local=nullptr;
 char first[513]{},second[513]{},method[12]{};
  portable_peer_files(const risc_runtime_api_v1*r,const portable_peer_hooks&h):runtime(r),hooks(h),remote(client,{this,owned}){}
@@ -49,7 +74,7 @@ wipe();
 retain();
 return false;
 }
- void fail(const char*s){snprintf(status.message,sizeof(status.message),"%s",s);
+ void fail(const char*s){trace("failed");snprintf(status.message,sizeof(status.message),"%s",s);
 status.state=PEER_ERROR;
 stopping=true;
 step=Step::StopRemote;
@@ -71,6 +96,7 @@ return false;
 return true;
 }
  bool brokerResult(int32_t rc){if(!owner())return false;
+if(rc<0&&rc!=RISC_SETUP_BUSY)traceResult("broker-result",rc);
 if(rc==RISC_SETUP_RETAINED||rc==RISC_SETUP_CONTEXT){retain();
 return false;
 }if(rc==RISC_SETUP_CLEANUP_PENDING){fail("Bluetooth cleanup pending");
@@ -84,6 +110,7 @@ return false;
  bool closeBroker(){if(!token)return true;
 int rc=broker.close(broker.context,token);
 if(!owner())return false;
+traceResult("close-result",rc);
 if(rc==RISC_SETUP_CLEANUP_PENDING||rc==RISC_SETUP_BUSY)return false;
 if(rc!=RISC_SETUP_OK){retain();
 return false;
@@ -103,12 +130,14 @@ p->stopping=false;
 p->command=portable_peer_files::Command::None;p->scanIndex=0;p->selected=p->generation=p->number=0;
 memset(p->peers,0,sizeof(p->peers));
 p->step=portable_peer_files::Step::Tcp;
+p->tracedState=~0u;p->tracedBroker=~0u;p->tracedOperation=nullptr;p->traceState();
 return true;
 }
 extern "C" void portable_peer_tick(portable_peer_files*p,uint64_t now){
  if(!p||p->step==portable_peer_files::Step::Off||!p->owner())return;
 if(now<p->now){p->fail("Peer clock moved backwards");
 }p->now=now;
+p->traceState();
 using S=portable_peer_files::Step;
 using C=portable_peer_files::Command;
  if(p->step>=S::Tcp&&p->step<=S::ReleaseEntropy&&now-p->startedAt>=10000u)p->fail("Peer startup timed out");
@@ -160,6 +189,7 @@ if(p->brokerResult(p->broker.select_peer(p->broker.context,p->token,p->selected)
 break;
 }
   if(p->command==C::Confirm){p->command=C::None;
+p->trace("confirm");
 if(!p->brokerResult(p->broker.confirm_pairing(p->broker.context,p->token,p->generation,p->number,p->accept)))break;
 p->status.state=PEER_CONNECTING;
 break;
@@ -317,8 +347,19 @@ break;
    int rc=portable_network_session_service_end(&p->network);
    if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();else p->leaseEnding=rc==PORTABLE_NETWORK_SERVICE_PENDING;
  }
+ p->traceState();
 }
 extern "C" void portable_peer_status_get(const portable_peer_files*p,portable_peer_status*out){if(out)*out=p?p->status:portable_peer_status{};
+}
+extern "C" bool portable_peer_network_owned(const portable_peer_files*p){
+ if(!p)return false;
+ if(p->status.state==PEER_RETAINED)return true;
+ if(p->networkInitialized&&(!p->network.view.borrowed||p->network.operation||
+    p->network.service_lease||p->network.service_depth||p->leaseEnding))return true;
+ /* A borrowed LAN can still own a TCP request or pending socket close. Only
+  * these terminal/idle client states prove that no request holds a socket. */
+ const auto state=p->client.state();
+ return state!=Client::State::Off&&state!=Client::State::Ready&&state!=Client::State::Error;
 }
 extern "C" bool portable_peer_row_get(const portable_peer_files*p,unsigned i,portable_peer_row*out){if(!p||!out||i>=p->status.count)return false;
 *out={};

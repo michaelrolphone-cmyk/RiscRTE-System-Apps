@@ -13,6 +13,9 @@ portable_peer_files*portable_peer_create(const risc_runtime_api_v1*,const portab
 bool portable_peer_start(portable_peer_files*,uint64_t);
 void portable_peer_tick(portable_peer_files*,uint64_t);
 void portable_peer_status_get(const portable_peer_files*,portable_peer_status*);
+/* Copied-state query: native network/transport custody blocks resident POLL
+ * handoff until checked quiescence. No provider calls or cleanup. */
+bool portable_peer_network_owned(const portable_peer_files*);
 bool portable_peer_row_get(const portable_peer_files*,unsigned,portable_peer_row*);
 /* Commands only queue copied input; provider/storage I/O runs on later ticks. */
 bool portable_peer_select(portable_peer_files*,uint32_t);

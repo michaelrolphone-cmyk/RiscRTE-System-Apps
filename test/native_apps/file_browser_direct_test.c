@@ -31,6 +31,7 @@ int main(int argc,char**argv){
  else if(!strcmp(mode,"expiry")){test_ticks+=300001;step();}
  else {
   fsh_setup_choice(strcmp(mode,"refuse")!=0);
+  if(strcmp(mode,"refuse"))assert(files_trace_confirm);
   if(!strcmp(mode,"refuse")){for(unsigned i=0;i<30&&fsh_phase!=FSH_OFF;i++)step();assert(!begin_calls&&!listeners);}
   else {
    for(unsigned i=0;i<80&&!listeners;i++)step();

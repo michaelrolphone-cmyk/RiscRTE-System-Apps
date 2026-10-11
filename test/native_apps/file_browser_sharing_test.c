@@ -26,6 +26,20 @@
 #include "RiscEntropySourceV1.h"
 static bool policy_off,policy_busy,policy_context,owned,quiescent,borrowed,empty,lease_busy,end_busy,tcp_fault;
 static unsigned calls,begin_calls,cancel_calls,lease_calls,end_calls,listeners,closed_listeners,retains;
+static unsigned files_diagnostics;
+static bool files_trace_confirm,files_trace_join,files_trace_handshake;
+static bool files_diagnostic(const char*s){
+ assert(!native_custody_retained&&!fb_terminal);
+ if(strncmp(s,"FILES ",6))return true;
+ assert(strlen(s)<192&&!strchr(s,'\n'));
+ assert(strstr(s,"t_ms=")&&strstr(s,"role=")&&strstr(s,"event="));
+ assert(!strstr(s,"password")&&!strstr(s,"ssid")&&!strstr(s,"username")&&!strstr(s,"http://")&&!strstr(s,"synthetic")&&!strstr(s,"fixture")&&!strstr(s,"/Downloads")&&!strstr(s,"pairing_number"));
+ assert(++files_diagnostics<128);
+ if(strstr(s,"event=confirm"))files_trace_confirm=true;
+ if(strstr(s,"stage=join"))files_trace_join=true;
+ if(strstr(s,"stage=handshake"))files_trace_handshake=true;
+ return true;
+}
 static struct {char key[16];uint8_t data[64];uint32_t size;} store[16];
 static unsigned store_count;
 static bool private_test(void){
@@ -145,7 +159,7 @@ static void init(void){
 #ifdef FILE_SETUP_TEST
  fsh_direct=false; /* Existing scenarios explicitly exercise same-LAN mode. */
 #endif
- runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;test_runtime_override=&runtime;
+ runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;runtime.diagnostic=files_diagnostic;test_runtime_override=&runtime;
  test_volume=(risc_storage_volume_api_v1){1,sizeof(test_volume),NULL,test_ready,test_ready,test_label,test_stat,test_diropen,test_dirnext,test_dirclose,test_open,test_read,NULL,NULL,test_close,NULL,test_error_get};
  export_api.volume.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(export_api)};export_api.export_tag=RISC_APP_DATA_EXPORT_TAG;export_api.export_version=1;export_api.entry=catalog;
  if(!empty){const portable_wifi_credentials saved={"fixture","synthetic"};assert(portable_wifi_profile_save(&kv,0,&saved)==0);}
