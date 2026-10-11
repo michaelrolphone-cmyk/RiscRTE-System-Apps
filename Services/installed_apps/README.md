@@ -96,5 +96,8 @@ The staged list stores only bounded display/selection metadata in the protected
 cache. Normal Springboard/App Store count/get calls do no SD work or image hashing.
 A staged manifest scan shares the existing bounded background directory pass.
 Cache-first startup remains SD-free. The install/update controller needs no radio,
-UTC, restart or bank authority. Firmware-declared legacy identities remain
-protected until the separate preserving migration is implemented.
+UTC, restart or bank authority. Runtime 0.2.10 can opt legacy SD identities into dormant catalog authority.
+Their original grants remain reserved for preserving settings while installation
+and removal become catalog-controlled. Springboard 1.8.1 excludes those SD rows
+from its compiled installed list and keeps their labels/icons as appearance only.
+Unselected bootstrap identities remain protected.
