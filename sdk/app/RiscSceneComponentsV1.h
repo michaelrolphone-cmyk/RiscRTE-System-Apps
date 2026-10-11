@@ -4,6 +4,7 @@
  * content, state and intent IDs, never coordinates, fonts or device names.
  * Component documents accept TEXT, ACTION and KEYBOARD from the base kinds;
  * use the component SWITCH/STEPPER/TIME_PICKER/ROW for other control intents.
+ * PROGRESS maximum=0 is indeterminate activity; value cycles 0..2.
  * Legacy documents and navigation remain available through the original API. */
 #include "RiscSceneLifecycleV1.h"
 #define RISC_COMPONENTS_TAG UINT32_C(0x4e4f5631)

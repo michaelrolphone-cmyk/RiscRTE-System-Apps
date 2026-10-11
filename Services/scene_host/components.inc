@@ -87,7 +87,13 @@ static bool nc_toolbar(void){
     return false;
 }
 static bool nc_back_button(void){int r=route_index(&document,current_route());return !nc_toolbar()&&r>=0&&document.routes[r].back_action;}
-static int nc_header_height(void){return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
+/* Focused work screens keep the status and cancel control in the watch viewport. */
+static bool nc_work_screen(void){
+    for(unsigned i=0;i<document.node_count;i++)if(document.nodes[i].route==current_route()&&
+        (document.nodes[i].kind==RISC_COMPONENT_RING||(document.nodes[i].kind==RISC_COMPONENT_PROGRESS&&!document.nodes[i].maximum)))return true;
+    return false;
+}
+static int nc_header_height(void){if(!nc_paper()&&nc_work_screen())return 44;return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
 static int nc_row_height(const risc_scene_node_v1 *n){
     switch(n->kind){
     case RISC_COMPONENT_HEADER_ACTION:return 0;
@@ -99,8 +105,8 @@ static int nc_row_height(const risc_scene_node_v1 *n){
     case RISC_COMPONENT_MARKERS:return nc_size(50);
     case RISC_COMPONENT_CARD:return nc_size(72);
     case RISC_COMPONENT_RING:return nc_size(nc_paper()?116:108);
-    case RISC_SCENE_ACTION:return nc_size(50);
-    case RISC_SCENE_TEXT_NODE:return nc_size(56);
+    case RISC_SCENE_ACTION:return nc_size(!nc_paper()&&nc_work_screen()?46:50);
+    case RISC_SCENE_TEXT_NODE:return nc_size(!nc_paper()&&nc_work_screen()?40:56);
     default:return nc_size(nc_paper()?42:40);
     }
 }
@@ -141,6 +147,17 @@ static int nc_layout(unsigned target,int *ox,int *oy,int *ow,int *oh){
     }
     return y+(chips?38*s:0);
 }
+/* Clockwise arc phase (0..9999), with no libm dependency in the ELF.
+ * Sampled trigonometric directions keep progress proportional to arc length. */
+static const int nc_ring_sine[26]={0,1029,2053,3070,4075,5063,6031,6976,7893,8779,9630,10444,11216,11943,12624,13255,13833,14357,14825,15233,15582,15869,16094,16255,16352,16384};
+static int nc_ring_phase(int x,int y){
+    int ax=paper_abs(x),ay=paper_abs(y),lo=0,hi=25;
+    while(lo+1<hi){int m=(lo+hi)/2;if(ax*nc_ring_sine[25-m]>=ay*nc_ring_sine[m])lo=m;else hi=m;}
+    int a=ax*nc_ring_sine[25-lo]-ay*nc_ring_sine[lo];
+    int b=ay*nc_ring_sine[hi]-ax*nc_ring_sine[25-hi];
+    int q=lo*100+(a+b?100*a/(a+b):0);
+    return y<=0?(x>=0?q:(10000-q)%10000):(x>=0?5000-q:5000+q);
+}
 static void nc_draw_node(unsigned index,int x,int y,int w,int h){
     const risc_scene_node_v1 *n=&document.nodes[index];const risc_component_detail_v1 *d=&document.details[index];
     int s=nc_scale();
@@ -156,13 +173,25 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         return;
     }
     if(n->kind==RISC_COMPONENT_RING){
-        int cx=(int)width/2,cy=y+h/2,r=44*s,stroke=(nc_paper()?9:7)*s;
-        /* Integer octants avoid a floating-point dependency in the presenter. */
-        for(int yy=-r;yy<=r;yy++)for(int xx=-r;xx<=r;xx++){
-            int rr=xx*xx+yy*yy;if(rr>r*r||rr<(r-stroke)*(r-stroke))continue;
-            int ax=paper_abs(xx),ay=paper_abs(yy),q=ax+ay?ax*25/(ax+ay):0;
-            int percent=yy<=0?(xx>=0?q:100-q):(xx>=0?50-q:50+q);
-            pixel(cx+xx,cy+yy,percent* n->maximum<=n->value*100?accent:nc_paper()?fg:0x1125);
+        if(layout_only)return;
+        int cx=(int)width/2,cy=y+h/2,r=44*s,stroke=(nc_paper()?10:7)*s;
+        int outer=r+(stroke+1)/2,inner=r-stroke/2,extent=n->value*10000/n->maximum;
+        for(int yy=-outer;yy<=outer;yy++)for(int xx=-outer;xx<=outer;xx++){
+            if(cy+yy<(int)clip_top||cy+yy>=(int)clip_bottom)continue;
+            int rr=xx*xx+yy*yy;if(rr>outer*outer||rr<inner*inner)continue;
+            int phase=nc_ring_phase(xx,yy);
+            if(extent&&phase<extent)pixel(cx+xx,cy+yy,accent);
+            else if(!nc_paper())pixel(cx+xx,cy+yy,0x1125);
+            /* Bible: a thin dashed guide, not black ink behind the whole arc. */
+            else if(rr>=(r-s)*(r-s)&&rr<=(r+s)*(r+s)&&((phase*2765/10000)%65)<15)
+                pixel(cx+xx,cy+yy,fg);
+        }
+        if(!nc_paper()&&extent>0&&extent<10000){
+            int q=extent/100,quadrant=q/25,k=q%25;
+            int dx=r*nc_ring_sine[k]/16384,dy=-r*nc_ring_sine[25-k]/16384;
+            for(int i=0;i<quadrant;i++){int old=dx;dx=-dy;dy=old;}
+            nc_round(cx-stroke/2,cy-r-stroke/2,stroke,stroke,stroke/2,accent);
+            nc_round(cx+dx-stroke/2,cy+dy-stroke/2,stroke,stroke,stroke/2,accent);
         }
         nc_center(cx-35*s,cy+9*s,70*s,d->badge,4,fg);return;
     }
@@ -176,6 +205,11 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         if(n->label[0]){nc_box(x,y+8*s,w,h-16*s,12*s,nc_paper()?5:s,nc_paper()?fg:0x0a6b,nc_bg());nc_text(x+11*s,y+30*s,w-22*s,n->label,0,accent);nc_text(x+11*s,y+44*s,w-22*s,n->text,3,dim);}
         else nc_center(x,y+15*s,w,n->text,3,dim);
         int bx=x+(n->label[0]?27*s:0),bw=w-(n->label[0]?54*s:0),by=y+h-(n->label[0]?36:20)*s;
+        if(n->maximum==0){
+            /* Reusable indeterminate activity: caller advances phase 0..2. */
+            for(int i=0;i<3;i++)nc_box(bx+bw/2+(i-1)*16*s-5*s,by,10*s,10*s,5*s,s,accent,i==n->value%3?accent:nc_bg());
+            return;
+        }
         nc_box(bx,by,bw,12*s,6*s,2*s,accent,nc_bg());
         int filled=n->maximum>0?(bw*n->value/n->maximum):0;
         if(filled>0)nc_round(bx,by,filled,12*s,6*s,accent);
@@ -298,7 +332,7 @@ static void nc_header(int y){
         }
         if(r>=0)nc_text(left,top+18*s,right-left+3*s,document.routes[r].title,0,accent);
     }else{
-        int top=y+(nc_paper()?20:44)*s;
+        int top=y+(nc_paper()?20:nc_work_screen()?4:44)*s;
         if(r>=0)nc_text(left,top+13*s,right-left,document.routes[r].title,0,accent);
         if(document.subtitle[0])nc_text(left,top+27*s,right-left,document.subtitle,3,nc_color(RISC_TONE_MUTED));
     }
@@ -439,6 +473,6 @@ static bool component_valid(const risc_components_document_v1 *d){
         if(n->kind==RISC_COMPONENT_TIME_PICKER&&(n->minimum||n->maximum!=1439))return false;
         if(n->kind==RISC_COMPONENT_MARKERS&&(n->minimum||n->maximum!=5))return false;
         if(n->kind==RISC_COMPONENT_SEGMENTS){unsigned count=1;bool empty=true;for(const char *p=a->choices;*p;p++){if(*p=='|'){if(empty)return false;count++;empty=true;}else empty=false;}if(empty||count>6||count!=(unsigned)(n->maximum-n->minimum+1))return false;}
-        if(n->kind==RISC_COMPONENT_PROGRESS&&(n->value<0||n->maximum<0||n->maximum>65535||n->value>n->maximum))return false;
+        if(n->kind==RISC_COMPONENT_PROGRESS&&(n->value<0||n->maximum<0||n->maximum>65535||(n->maximum?n->value>n->maximum:n->value>2)))return false;
     }return cancel&&(!d->flags||(modal_actions>=1&&modal_actions<=3&&modal_texts==1));
 }

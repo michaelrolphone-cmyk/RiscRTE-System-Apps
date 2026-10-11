@@ -1,0 +1,7 @@
+{
+  "repository": "michaelrolphone-cmyk/T5S3-Reader",
+  "commit": "aac8c06d3221139084acd0cfc64f7b0ba194a97a",
+  "source": "src/components/StartupScreen.cpp",
+  "source_sha256": "da88f61f129160033ab6d48beae3f43ebd19ba1090c61c7b458cc4a6076ae54f",
+  "adaptation": "Original ink sweep, easing, wordmark and loading dots; C logical row-span raster through immutable deferred draw commands; cold boot only; 1650 ms reveal then 150 ms fade, input may skip; no hardware takeover or worker."
+}
