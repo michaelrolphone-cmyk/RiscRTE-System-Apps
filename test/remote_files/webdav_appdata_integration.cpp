@@ -18,7 +18,11 @@ bool owned=true,authorized=true,closeFault=false;
 unsigned stats=0,reads=0,writes=0,closes=0,networkCalls=0;
 std::string incoming,outgoing;size_t position=0;
 }
+#ifdef __APPLE__
+extern "C" int __real_close(int fd){return ::close(fd);}
+#else
 extern "C" int __real_close(int);
+#endif
 extern "C" int __wrap_close(int fd){int rc=__real_close(fd);if(closeFault){closeFault=false;errno=EIO;return -1;}return rc;}
 namespace {
 const AppDataFiles::Hooks io{nullptr,[](void*){return 0u;},[](void*){return true;},malloc,free};

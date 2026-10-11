@@ -95,7 +95,7 @@ static bool broadcast_tick(void) {
   return broadcast_release();
 }
 
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 static bool broadcast_before_storage(void) {
   if(native_custody_retained)return false;
   /* The client pauses its own advertiser before policy reads/writes. Avoid

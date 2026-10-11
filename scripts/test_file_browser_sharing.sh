@@ -9,6 +9,9 @@ for source in WebDavCore WebDavProperties WebDavSession WebDavDigest WebDavShari
 done
 "${CC:-cc}" -std=c11 "${flags[@]}" -c lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c -o "$output/sha2.o"
 "${CC:-cc}" -std=c11 "${flags[@]}" -c lib/PortableApps/src/PortableNetworkSession.c -o "$output/network.o"
+if [[ "${FILE_CHECKED_STORAGE_TEST:-0}" == 1 ]];then
+ flags+=(-DPORTABLE_CHECKED_STORAGE_RUNTIME -I"${RUNTIME_REPO:?Current Runtime required}/sdk/app")
+fi
 extra=();scenes=(back-off cancel-prepare policy-off policy-busy policy-context empty borrowed owned end-pending lease-busy tcp-terminal expiry)
 if [[ "${FILE_SETUP_TEST:-0}" == 1 ]];then
  flags+=(-DFILE_SETUP_TEST)

@@ -64,6 +64,10 @@ static risc_app_data_export_v1 export_api;
 #ifdef FILE_SETUP_TEST
 #include "file_browser_setup_fixture.inc"
 #endif
+#ifdef PORTABLE_CHECKED_STORAGE_RUNTIME
+static bool checked_battery_read(void*c,risc_battery_sample_v1*out){(void)c;*out=(risc_battery_sample_v1){3900,70,0};return true;}
+static const risc_battery_gauge_api_v1 checked_battery={1,sizeof(checked_battery),NULL,checked_battery_read};
+#endif
 static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  live_check();if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
@@ -72,6 +76,9 @@ static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_
  else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==0);g->api=&entropy;}
 #ifdef FILE_SETUP_TEST
  else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==0&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
+#endif
+#ifdef PORTABLE_CHECKED_STORAGE_RUNTIME
+ else if(!strcmp(n,"board.battery"))g->api=&checked_battery;
 #endif
  else return test_acquire(n,v,id,g);
  test_grants++;return true;

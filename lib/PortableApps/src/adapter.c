@@ -184,8 +184,8 @@ static bool desk_radios_loaded;
 #if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(ALARM_SERVICE_TAGGED_V2)
 #error "Resident Contexts requires the tagged alarm capability view"
 #endif
-#if !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY)
-#error "X4 Contexts requires the checked native storage runtime"
+#if !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
+#error "Contexts requires the checked storage runtime"
 #endif
 #if defined(PORTABLE_DESK_CLOCK_SPARSE_START) && (!defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY) || !defined(PORTABLE_X4_IDLE_POLICY))
 #error "Sparse Clock Contexts requires the explicit RF-only profile and checked idle storage"
@@ -290,7 +290,7 @@ static bool file_setup_callback_active,file_setup_present_pending;
 static bool file_setup_checkpoint(void);
 static bool file_setup_io_allowed(void) {return !portable_file_browser_cleanup_only();}
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 #include "RiscRealtimeV1.h"
 #include "RiscKeyValueV1.h"
 #endif
@@ -371,6 +371,10 @@ unsigned portable_quick_brightness(void) {return quick.brightness;}
 #error Low battery policy requires existing Quick Controls radio lifecycle
 #endif
 static portable_low_battery low_battery;
+#if defined(PORTABLE_CHECKED_STORAGE_RUNTIME) && defined(PORTABLE_APP_SLEEP_LOCAL)
+/* Existing Watch local sleep consumes the confirmed Quick Controls timer. */
+uint32_t portable_quick_sleep_light_ms(void) {return quick.deep_ms;}
+#endif
 static bool low_battery_sampled;
 static uint32_t low_battery_sampled_at;
 #endif
@@ -567,7 +571,7 @@ static inline void input_navigation_reset(void) {
  if(navigation_ready && !navigation->reset(navigation->context))failed=true;
 #endif
 }
-#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 static void input_navigation_close(void) {
  if(navigation_ready) {
   bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
@@ -2802,7 +2806,7 @@ static int initialize(void) {
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;settings_initialized=true;return 0;
 #else
-#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
+#if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
   /* Runtime extensions are optional: never read beyond an older table. */
   memset(&settings_runtime,0,sizeof(settings_runtime));
   memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
@@ -2846,7 +2850,7 @@ static bool wifi_finalize_close(void) {
   return closed;
 }
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
 static void settings_native_finalize(void) {
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
   if(native_custody_retained || !rt || !settings_started)return;
@@ -2903,7 +2907,11 @@ static void settings_native_finalize(void) {
     if(!navigation->foreground(navigation->context,NULL,0) || !navigation->reset(navigation->context)) {portable_adapter_retain();return;}
     navigation_ready=false;
   }
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+  portable_input_navigation_close(rt);if(native_custody_retained)return;
+#else
   if(navigation_grant.api && !rt->release(&navigation_grant))return;
+#endif
   navigation=NULL;
 #endif
   if(!portable_touch_close(&touch,rt)){portable_adapter_retain();return;}
@@ -2919,7 +2927,7 @@ static void settings_native_finalize(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
   free(quick_background);quick_background=NULL;
 #endif
-#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+#if (defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
   np_close();if(native_custody_retained)return;
 #endif
   free(previous_pixels);previous_pixels=NULL;previous_valid=false;
@@ -2975,7 +2983,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   desk_finalize();
-#elif defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+#elif defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
   settings_native_finalize();
 #else
 #ifdef PORTABLE_PAPER_PREFERENCES

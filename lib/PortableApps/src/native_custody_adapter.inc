@@ -54,7 +54,7 @@ void portable_adapter_retain_silent(void) {portable_adapter_retain_inner(false);
 #if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 bool portable_adapter_retained(void) {return native_custody_retained;}
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 static risc_runtime_api_v1 settings_runtime;
 #ifdef PORTABLE_SETTINGS_NATIVE_TIME
 static bool settings_started,settings_initialized;
