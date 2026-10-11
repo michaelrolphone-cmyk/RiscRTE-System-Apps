@@ -37,7 +37,7 @@ static int32_t page_present_with_refresh(void *c,uint64_t s,const risc_scene_pag
  if(refresh!=RISC_SCENE_PAGE_REFRESH_DEFAULT&&refresh!=RISC_SCENE_PAGE_REFRESH_CLEAN)return RISC_SCENE_INVALID;
  risc_scene_page_geometry_v1 g={.struct_size=sizeof(g)};
  if(page_geometry(c,&g)||!p||p->struct_size!=sizeof(*p)||!p->revision||p->revision<=document.revision||!p->previous_action||!p->menu_action||!p->next_action||!p->back_action||!terminated(p->title,sizeof(p->title))||!terminated(p->footer,sizeof(p->footer))||!pixels||length!=(size_t)g.stride*g.height)return RISC_SCENE_INVALID;
- if(!page_live){page_live=malloc(length);page_frozen=malloc(length);if(!page_live||!page_frozen){free(page_live);free(page_frozen);page_live=page_frozen=NULL;return RISC_SCENE_UNAVAILABLE;}page_capacity=length;}
+ if(!page_live){size_t capacity=(size_t)width*height/8u;page_live=malloc(capacity);page_frozen=malloc(capacity);if(!page_live||!page_frozen){free(page_live);free(page_frozen);page_live=page_frozen=NULL;return RISC_SCENE_UNAVAILABLE;}page_capacity=capacity;memset(page_live,0xff,capacity);memset(page_frozen,0xff,capacity);}
  if(length>page_capacity)return RISC_SCENE_UNAVAILABLE;
  risc_components_document_v1 *d=&page_document_scratch;memset(d,0,sizeof(*d));
  d->api_version=1;d->struct_size=sizeof(*d);d->revision=p->revision;d->root=document.root;d->screen_key=0x50414731;d->route_count=1;d->routes[0].id=d->root;d->routes[0].back_action=p->back_action;d->node_count=3;
@@ -45,7 +45,7 @@ static int32_t page_present_with_refresh(void *c,uint64_t s,const risc_scene_pag
  for(unsigned i=0;i<3;i++){d->nodes[i].id=i+1;d->nodes[i].route=d->root;d->nodes[i].kind=RISC_SCENE_ACTION;d->nodes[i].action=actions[i];}
  bool previous_components=model->components;model->components=true;
  int32_t rc=update_document(c,s,d);if(rc){model->components=previous_components;return rc;}
- memcpy(page_live,pixels,length);model->page_document=*p;model->page_view=true;
+ memcpy(page_live,pixels,length);model->page_document=*p;model->page_view=true;model->reading_view=false;model->preview_view=false;
  /* Preserve an unconsumed clean request when a newer page replaces it. The
     raster snapshot consumes it once; chrome/input redraws do not repeat it. */
  model->page_clean=model->page_clean||refresh==RISC_SCENE_PAGE_REFRESH_CLEAN;
