@@ -34,7 +34,7 @@ typedef struct {
     unsigned page_index,focus_index;
     bool finger,dragged;
     int x0,y0;
-    bool components,page_view;
+    bool components,page_view,page_clean;
     risc_scene_page_document_v1 page_document;
     int scroll,scroll_limit,drag_scroll;
     int wheel_node,wheel_part,wheel_value,wheel_offset;
@@ -808,7 +808,8 @@ static int32_t paint(void){
         if(!alive())return RISC_SCENE_RETAINED;
         if(!ok)return RISC_SCENE_AGAIN;
         if(!valid_surface()||surface.pixel_format!=format)return fail_retained();
-        frame_model=logical_model;if(frame_model.page_view)memcpy(page_frozen,page_live,page_capacity);raster_row=0;rasterizing=true;dirty=false;
+        frame_model=logical_model;if(frame_model.page_view)memcpy(page_frozen,page_live,page_capacity);
+        logical_model.page_clean=false;raster_row=0;rasterizing=true;dirty=false;
     }
     /* A bounded logical-row slice works for every pixel format and rotation.
      * No provider callbacks or reentrant dispatch occur with the frozen model
@@ -818,7 +819,9 @@ static int32_t paint(void){
     draw_scene();raster_row=clip_bottom;model=&logical_model;
     if(raster_row<height)return RISC_SCENE_AGAIN;
     risc_display_present_options_v1 options={RISC_DISPLAY_PRESENT_DEFAULT,RISC_DISPLAY_QUEUE_FIFO,0};
-    if(upload.keyboard||frame_model.components){
+    if(frame_model.page_view&&frame_model.page_clean){
+        options.intent=RISC_DISPLAY_PRESENT_CLEAN;
+    }else if(upload.keyboard||frame_model.components){
         options.intent=RISC_DISPLAY_PRESENT_LOW_LATENCY;
         if(info.flags&RISC_DISPLAY_INFO_MAILBOX)options.queue_policy=RISC_DISPLAY_QUEUE_MAILBOX;
     }
@@ -1026,15 +1029,16 @@ static int32_t components_open(void *c,const risc_components_document_v1 *d,cons
     if(!alive())return RISC_SCENE_RETAINED;
     if(!valid_document(d,true)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
     if(active)return RISC_SCENE_BUSY;
-    model->components=true;model->page_view=false;return open_document(c,d,p,out);
+    model->components=true;model->page_view=false;model->page_clean=false;return open_document(c,d,p,out);
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
     if(!model->components)return RISC_SCENE_INVALID;
-    int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;dirty=true;rebuild_hits();}return rc;
+    int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_page_api_v1 api={ {
+static const risc_scene_page_refresh_api_v1 api={ { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
-    RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present};
+    RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;
