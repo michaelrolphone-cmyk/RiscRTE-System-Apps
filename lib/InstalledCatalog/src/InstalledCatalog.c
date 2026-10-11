@@ -35,7 +35,7 @@ bool installed_catalog_begin(installed_catalog*c,uint8_t medium) {
 bool installed_catalog_offer(installed_catalog*c,const installed_record*r) {
   if(!c || !c->scanning || c->failed)return false;
   if(!record_ok(r) || r->medium!=c->scanning_medium || c->pending_count==INSTALLED_CATALOG_MAX){c->failed=true;return false;}
-  for(uint32_t i=0;i<c->pending_count;++i)if(!strcmp(c->pending[i].id,r->id) ||
+  for(uint32_t i=0;i<c->pending_count;++i)if((c->pending[i].medium==r->medium && !strcmp(c->pending[i].id,r->id)) ||
       (c->pending[i].medium==r->medium && !strcmp(c->pending[i].path,r->path))){c->failed=true;return false;}
   c->pending[c->pending_count++]=*r;return true;
 }
@@ -46,15 +46,22 @@ bool installed_catalog_finish(installed_catalog*c,bool complete) {
   c->scanning=false;c->pending_count=0;c->failed=false;return publish;
 }
 void installed_catalog_media(installed_catalog*c,bool ready){if(c && c->sd_ready!=ready){c->sd_ready=ready;(void)generation(c);}}
+static const installed_record* preferred(const installed_catalog*c,const char*id){
+ const installed_record*internal=0,*sd=0;
+ for(uint32_t i=0;i<c->count;++i)if(!strcmp(c->current[i].id,id)){
+  if(c->current[i].medium==INSTALLED_SD)sd=&c->current[i];else internal=&c->current[i];
+ }
+ return c->sd_ready&&sd&&sd->admitted?sd:internal?internal:sd;
+}
 bool installed_catalog_select(const installed_catalog*c,uint32_t i,installed_selection*s) {
   if(!c || !s || c->generation==UINT32_MAX || i>=c->count || c->current[i].kind!=INSTALLED_APP ||
-     !c->current[i].admitted || (c->current[i].medium==INSTALLED_SD&&!c->sd_ready))return false;
+     !preferred(c,c->current[i].id)->admitted || (preferred(c,c->current[i].id)->medium==INSTALLED_SD&&!c->sd_ready))return false;
   s->generation=c->generation;strcpy(s->id,c->current[i].id);return true;
 }
 bool installed_catalog_resolve(const installed_catalog*c,const installed_selection*s,installed_record*out) {
   if(!c || !s || !out || !text(s->id,sizeof(s->id),false) || s->generation!=c->generation)return false;
   for(uint32_t i=0;i<c->count;++i)if(!strcmp(c->current[i].id,s->id)){
-    installed_selection check;if(!installed_catalog_select(c,i,&check))return false;*out=c->current[i];return true;
+    installed_selection check;if(!installed_catalog_select(c,i,&check))return false;*out=*preferred(c,c->current[i].id);return true;
   }return false;
 }
 /* Explicit wire layout: no struct padding, native endianness or pointer data. */
@@ -64,7 +71,7 @@ static uint32_t get32(const uint8_t*p){uint32_t x=0;for(unsigned i=0;i<4;++i)x|=
 static bool write_text(uint8_t*p,size_t cap,size_t*at,const char*s){size_t n=strlen(s);if(n>255 || *at>=cap || n>cap-*at-1)return false;p[(*at)++]=(uint8_t)n;memcpy(p+*at,s,n);*at+=n;return true;}
 static bool read_text(const uint8_t*p,size_t cap,size_t*at,char*s,size_t bound){if(*at>=cap)return false;size_t n=p[(*at)++];if(n>=bound||n>cap-*at||memchr(p+*at,0,n))return false;memcpy(s,p+*at,n);s[n]=0;*at+=n;return true;}
 size_t installed_catalog_encode(const installed_catalog*c,const char*key,void*bytes,size_t cap) {
-  if(!c||!key||!text(key,97,false)||!bytes||cap<20||c->count>INSTALLED_CATALOG_MAX)return 0;
+  if(!c||!key||!text(key,97,false)||!bytes||cap<18||c->count>INSTALLED_CATALOG_MAX)return 0;
   uint8_t*p=bytes;memcpy(p,"ICAT\1\0\0\0",8);put32(p+8,c->count);size_t at=12;
   if(!write_text(p,cap-4,&at,key))return 0;
   for(uint32_t i=0;i<c->count;++i){const installed_record*r=&c->current[i];
@@ -75,7 +82,7 @@ size_t installed_catalog_encode(const installed_catalog*c,const char*key,void*by
   put32(p+at,checksum(p,at));return at+4;
 }
 bool installed_catalog_decode(installed_catalog*c,const char*key,const void*bytes,size_t size) {
-  if(!c||c->scanning||!key||!text(key,97,false)||!bytes||size<20||size>INSTALLED_CATALOG_CACHE_MAX||c->generation==UINT32_MAX)return false;
+  if(!c||c->scanning||!key||!text(key,97,false)||!bytes||size<18||size>INSTALLED_CATALOG_CACHE_MAX||c->generation==UINT32_MAX)return false;
   const uint8_t*p=bytes;uint32_t count=get32(p+8);
   if(memcmp(p,"ICAT\1\0\0\0",8)||count>INSTALLED_CATALOG_MAX||get32(p+size-4)!=checksum(p,size-4))return false;
   char stored[97];size_t at=12;if(!read_text(p,size-4,&at,stored,sizeof(stored))||strcmp(key,stored))return false;
@@ -83,7 +90,7 @@ bool installed_catalog_decode(installed_catalog*c,const char*key,const void*byte
     if(at>size-4||size-4-at<6)return false;
     r->kind=p[at++];r->medium=p[at++];r->installation_revision=get32(p+at);at+=4;
     if(!read_text(p,size-4,&at,r->id,sizeof(r->id))||!read_text(p,size-4,&at,r->version,sizeof(r->version))||!read_text(p,size-4,&at,r->path,sizeof(r->path))||!read_text(p,size-4,&at,r->name,sizeof(r->name))||!read_text(p,size-4,&at,r->icon,sizeof(r->icon))||!record_ok(r))return false;
-    for(uint32_t j=0;j<i;++j)if(!strcmp(c->pending[j].id,r->id)||(c->pending[j].medium==r->medium&&!strcmp(c->pending[j].path,r->path)))return false;
+    for(uint32_t j=0;j<i;++j)if((c->pending[j].medium==r->medium&&!strcmp(c->pending[j].id,r->id))||(c->pending[j].medium==r->medium&&!strcmp(c->pending[j].path,r->path)))return false;
   }
   if(at!=size-4)return false;
   memcpy(c->current,c->pending,count*sizeof(*c->current));c->count=count;c->sd_ready=false;return generation(c);

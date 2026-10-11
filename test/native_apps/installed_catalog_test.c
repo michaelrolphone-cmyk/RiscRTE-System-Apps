@@ -15,6 +15,13 @@ static int32_t store_replace(void*ctx,const char*name,uint64_t expected,const vo
 int main(void){
  installed_catalog*c=calloc(1,sizeof(*c)),*restored=calloc(1,sizeof(*c));assert(c&&restored);
  installed_catalog_init(c);installed_catalog_init(restored);
+ unsigned char tiny[18];assert(installed_catalog_encode(c,"x",tiny,sizeof(tiny))==18);assert(installed_catalog_decode(restored,"x",tiny,sizeof(tiny)));
+ installed_record copy=app("reader",INSTALLED_APP,INSTALLED_INTERNAL),other=app("reader",INSTALLED_APP,INSTALLED_SD),chosen;installed_selection preferred;
+ assert(installed_catalog_begin(restored,INSTALLED_INTERNAL));assert(installed_catalog_offer(restored,&copy));assert(installed_catalog_finish(restored,true));
+ assert(installed_catalog_begin(restored,INSTALLED_SD));assert(installed_catalog_offer(restored,&other));assert(installed_catalog_finish(restored,true));
+ installed_catalog_media(restored,true);assert(installed_catalog_select(restored,0,&preferred));assert(installed_catalog_resolve(restored,&preferred,&chosen));assert(chosen.medium==INSTALLED_SD);
+ installed_catalog_media(restored,false);assert(installed_catalog_select(restored,0,&preferred));assert(installed_catalog_resolve(restored,&preferred,&chosen));assert(chosen.medium==INSTALLED_INTERNAL);
+ installed_catalog_init(restored);
  installed_record a=app("new-app",INSTALLED_APP,INSTALLED_SD),d=app("driver",INSTALLED_DRIVER,INSTALLED_INTERNAL),out;
  assert(installed_catalog_begin(c,INSTALLED_INTERNAL));assert(installed_catalog_offer(c,&d));assert(installed_catalog_finish(c,true));
  assert(installed_catalog_begin(c,INSTALLED_SD));assert(installed_catalog_offer(c,&a));assert(c->count==1);assert(installed_catalog_finish(c,true));assert(c->count==2);
@@ -51,7 +58,10 @@ int main(void){
  write_result=RISC_APP_DATA_RETAINED;assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_RETAINED);
  write_result=RISC_APP_DATA_COMMIT_UNKNOWN;assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_COMMIT_UNKNOWN);
  assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_OK);assert(token==2);
- persisted[0]^=1;assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_INVALID);assert(restored->count==INSTALLED_CATALOG_MAX);
+ persisted[0]^=1;assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_INVALID);assert(restored->count==INSTALLED_CATALOG_MAX);assert(token==2);
+ write_result=RISC_APP_DATA_OK;assert(installed_catalog_save(c,"cohort/policy-v2",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_OK);
+ assert(installed_catalog_load(restored,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,&token)==RISC_APP_DATA_INVALID);assert(token==3);
+ assert(installed_catalog_save(c,"cohort/policy-v1",&store,cache,INSTALLED_CATALOG_CACHE_MAX,token)==RISC_APP_DATA_OK);
  c->generation=UINT32_MAX;assert(!installed_catalog_begin(c,INSTALLED_SD));assert(!installed_catalog_select(c,0,&s));
  free(cache);free(restored);free(c);puts("installed catalog: transaction, media, update, selection, cache corruption and truncation PASS");
 }

@@ -57,3 +57,39 @@ C11 with `-Wall -Wextra -Werror`. Full-capacity round-trip and overflow rollback
 are covered by the host tests. This is not a linked Springboard target build.
 
 Persistence adapter tests cover empty storage, save/reload, stale revision, no space, retained cleanup, ambiguous commit followed by reload, and corrupted saved bytes.
+
+## Experimental provider integration
+
+`Services/installed_apps` now binds the native installation API and one existing
+bound app-data file. Startup refresh rehydrates metadata from that internal
+cache without SD calls. Complete scans stage candidates, persist the cache and
+then invoke one native commit. Failed scans and failed cache writes preserve the
+published view. Uninstall checks native mutability before renaming a manifest;
+protected boot identities cannot be renamed. A native failure after rename
+attempts rollback and fences the provider if rollback fails.
+
+Host integration regression:
+
+```
+RUNTIME_REPO=/path/to/RiscRTE bash scripts/test_installed_apps_service.sh
+RUNTIME_REPO=/path/to/RiscRTE SANITIZE=1 bash scripts/test_installed_apps_service.sh
+python3 scripts/build_installed_apps.py --runtime-repo /path/to/RiscRTE --output-dir /tmp/installed-apps
+```
+
+The provider compiles and links for Xtensa with only the expected libc imports.
+Its receipt records source hashes, repository state, compiler commands and the
+ELF hash. This proves target linking only. The current prototype's explicit
+`step` still performs synchronous I/O and MUST NOT be called from the production
+UI. An attempted panel-settled idle integration was removed: it violates the
+requirement that discovery progress independently of physical display settling.
+Existing Springboard, input, render and launch code remains unchanged.
+
+Required next work is an owner-safe asynchronous SD contract (including lazy
+activation), then the minimal shared adapter binding and a background-cache-to-
+launch acceptance test. App Store installation UI, package validation receipts,
+driver provisioning/activation, and SD-first settings/AppData migration remain
+separate incomplete integration work. The cached metadata UI is not yet shipped.
+
+Catalog-model regressions also cover internal/SD copies of the same identity,
+SD preference with internal fallback, repair after corrupt-cache revision reads,
+and the smallest valid empty cache encoding.

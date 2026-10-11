@@ -35,7 +35,7 @@ bool installed_catalog_select(const installed_catalog*,uint32_t,installed_select
 /* A queued touch must be rejected after any catalog generation changes. */
 bool installed_catalog_resolve(const installed_catalog*,const installed_selection*,installed_record*);
 /* Metadata-only versioned codec, bound to the exact owner policy/cohort key.
- * Persistence adapter must write/readback an inactive slot before selecting it.
+ * Persistence adapter must atomically replace and verify the complete file.
  * Decode is transactional. Cached rows remain unadmitted until native rehydration. */
 size_t installed_catalog_encode(const installed_catalog*,const char* policy_key,void*,size_t);
 bool installed_catalog_decode(installed_catalog*,const char* policy_key,const void*,size_t);

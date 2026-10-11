@@ -7,13 +7,16 @@ int32_t installed_catalog_load(installed_catalog*c,const char*key,const risc_app
  *revision=0;uint32_t size=0;uint64_t token=0;
  int32_t status=a->stat(a->context,name,&size,&token);
  if(status!=RISC_APP_DATA_OK)return status;
+ *revision=token; /* Preserve existing-file authority even if cache bytes are unusable. */
  if(!size||size>INSTALLED_CATALOG_CACHE_MAX||!token)return RISC_APP_DATA_INVALID;
  if(size>capacity)return RISC_APP_DATA_BUFFER_SMALL;
  uint32_t actual=0;uint64_t read_token=0;
  status=a->read(a->context,name,token,scratch,capacity,&actual,&read_token);
  if(status!=RISC_APP_DATA_OK)return status;
- if(actual!=size||!read_token||!installed_catalog_decode(c,key,scratch,actual))return RISC_APP_DATA_INVALID;
- *revision=read_token;return RISC_APP_DATA_OK;
+ if(!read_token)return RISC_APP_DATA_INVALID;
+ *revision=read_token;
+ if(actual!=size||!installed_catalog_decode(c,key,scratch,actual))return RISC_APP_DATA_INVALID;
+ return RISC_APP_DATA_OK;
 }
 int32_t installed_catalog_save(const installed_catalog*c,const char*key,const risc_app_data_v1*a,
  void*scratch,uint32_t capacity,uint64_t expected_revision){
