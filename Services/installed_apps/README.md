@@ -37,3 +37,22 @@ invoke the bank installer. Rendering/get/status do not refresh or read SD. On
 entry, the protected index is rehydrated; Springboard performs async media scans.
 The existing release feed and update transactions remain available. SD package
 installation/uninstall controls are a separate remaining integration step.
+
+### 0.3.2 durable removal checkpoint
+
+Cache schema 4 records a single removal intent and the reduced app inventory
+**before** SD mutation or native withdrawal. Reboot can therefore render the
+reduced cached inventory without opening SD. Cleanup reads only the selected
+manifest, matches its exact ID/version, then submits version-3 async file
+removal. It never deletes an image, private settings, a directory, or a
+replacement identity/version at the same path. Missing manifests complete
+idempotently. The journal is cleared only after checked cleanup; an unavailable
+card retains the intent while permitting Home/USB handoff. Rediscovery follows
+journal completion. Schemas 1–3 remain readable.
+
+UBSan provider tests restore the durable pre-delete journal and the
+post-delete/pre-clear journal across simulated process restarts, cover 1,000
+pending-write polls, offline cancellation, and replacement-version protection.
+This checkpoint supplies the provider transaction; App Store action wiring,
+staged SD installation, legacy authority migration and SD-first provisioning
+remain separate work. Existing release-update rows are unchanged.

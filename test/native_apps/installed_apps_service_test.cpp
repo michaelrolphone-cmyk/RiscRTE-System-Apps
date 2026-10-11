@@ -25,6 +25,7 @@ RiscStorage::AsyncAppDataReplace cacheWorker(cacheBytes,sizeof(cacheBytes),
 risc_installation_v1 installation={1,sizeof(installation),nullptr,nullptr,
  [](void*,const char*,bool check)->int32_t{return denyRemoval||(!check&&denyCommit)?RISC_INSTALL_DENIED:RISC_INSTALL_OK;},
  [](void*,const risc_install_candidate_v1*items,uint32_t n,risc_install_result_v1*out,bool replace)->int32_t{
+  if(denyCommit)return RISC_INSTALL_BUSY;
   ++commits;if(replace)registered.clear();
   for(unsigned i=0;i<n;++i){assert(strstr(items[i].manifest_json,"application"));out[i]={};out[i].status=RISC_INSTALL_OK;
    std::string path=items[i].manifest_path;path.resize(path.rfind('/')+1);path+="new.elf";strcpy(out[i].launch_path,path.c_str());registered.push_back(path);
@@ -56,6 +57,7 @@ void setup(){
  v.dir_next=[](void*,uint32_t,risc_storage_dirent_v1*out){assert(executing);++io;if(cursor==entryCount)return false;++cursor;snprintf(out->name,sizeof(out->name),"uncompiled-package%u",cursor);out->is_directory=true;return true;};
  v.file_open_read=[](void*,const char*,uint64_t*n)->uint32_t{assert(executing);++io;if(!manifestPresent)return 0;offset=0;activeManifest=manifest;if(entryCount>1){auto at=activeManifest.find("new-after-build");activeManifest.replace(at,15,"new-after-build"+std::to_string(cursor));}*n=activeManifest.size();return 2;};
  v.file_read=[](void*,uint32_t,void*out,size_t n)->size_t{assert(executing);++io;n=std::min(n,activeManifest.size()-offset);memcpy(out,activeManifest.data()+offset,n);offset+=n;return n;};
+ v.remove=[](void*,const char*){assert(executing);++io;++renames;manifestPresent=false;return true;};
  v.file_close=[](void*,uint32_t,bool){assert(executing);++io;return true;};
  sd.dir_close_checked=[](void*,uint32_t){assert(executing);++io;return true;};
  sd.handle_error=[](void*,uint32_t,bool dir)->uint32_t{return dir&&directoryError?1:0;};
@@ -64,7 +66,7 @@ void setup(){
  fs.state.observe=[](void*)->int32_t{return present?RISC_STORAGE_STATE_READY:RISC_STORAGE_STATE_UNAVAILABLE;};
  fs.fs_tag=RISC_STORAGE_FS_TAG;fs.fs_version=1;
  fs.dir_tell=[](void*,uint32_t,uint64_t*){return false;};fs.dir_seek=[](void*,uint32_t,uint64_t){return false;};
- fs.metadata=[](void*,const char*,risc_storage_metadata_v1*)->int32_t{return RISC_STORAGE_FS_NOT_FOUND;};
+ fs.metadata=[](void*,const char*,risc_storage_metadata_v1*m)->int32_t{assert(executing);if(!present)return RISC_STORAGE_FS_IO;m->flags=0;return manifestPresent?RISC_STORAGE_FS_OK:RISC_STORAGE_FS_NOT_FOUND;};
  fs.file_truncate=[](void*,uint32_t,uint64_t){return false;};fs.replace_file=[](void*,const char*,const char*){return false;};fs.recover_replace=[](void*,const char*){return false;};
  workerApi.submit=[](void*,const void*q,uint32_t n,uint64_t*t){return worker.submit(q,n,t);};
  workerApi.collect=[](void*,uint64_t t,void*q,uint32_t n,uint32_t*s,int32_t*r){return worker.collect(t,q,n,s,r);};
@@ -90,24 +92,34 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  const unsigned beforeCommits=commits;directoryError=true;assert(run()==INSTALLED_APPS_UNAVAILABLE);assert(commits==beforeCommits&&api.count(nullptr)==1);
  directoryError=false;manifest.replace(manifest.find("1.0.0"),5,"1.0.1");denySave=true;assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_UNAVAILABLE);assert(commits==beforeCommits&&api.count(nullptr)==1);denySave=false;
  denyRemoval=true;assert(api.remove(nullptr,"new-after-build")==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_INVALID);assert(!renames); // protected package never renamed
- denyRemoval=false;denyCommit=true;
+ denyRemoval=false;
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK);
  assert(api.remove(nullptr,"new-after-build")==INSTALLED_APPS_OK);
- assert(run()==INSTALLED_APPS_UNAVAILABLE&&renames==2&&manifestPresent); // asynchronous rollback
- denyCommit=false;
- assert(api.refresh(nullptr)==INSTALLED_APPS_OK);
- assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING); // live scan, before removal
- assert(api.remove(nullptr,"new-after-build")==INSTALLED_APPS_OK);
- assert(run()==INSTALLED_APPS_OK&&renames==3&&!manifestPresent&&api.count(nullptr)==0);
- manifestPresent=true;assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&api.count(nullptr)==1);
- assert(api.remove(nullptr,"new-after-build")==INSTALLED_APPS_OK);
- assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING); // copied rename queued
- for(unsigned i=0;i<10;++i)assert(api.cancel(nullptr)==INSTALLED_APPS_WORKING);
- executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;
- assert(api.cancel(nullptr)==INSTALLED_APPS_WORKING&&!manifestPresent); // durable removal cache queued
- for(unsigned i=0;i<10;++i)assert(api.cancel(nullptr)==INSTALLED_APPS_WORKING);
+ assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING&&cacheOperation);
+ for(unsigned i=0;i<1000;++i)assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING&&renames==0&&api.count(nullptr)==1);
  executing=true;assert(cacheWorker.workerStep());executing=false;
- assert(api.cancel(nullptr)==INSTALLED_APPS_OK&&api.count(nullptr)==0);
- assert(saved.find("new-after-build")==std::string::npos); // cache and native removal agree before exit
+ denyCommit=true;assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING&&renames==0);
+ const std::string interrupted=saved;
+ assert(interrupted.find("removal")!=std::string::npos);
+ denyCommit=false;assert(run()==INSTALLED_APPS_OK&&renames==1&&!manifestPresent&&api.count(nullptr)==0);
+ assert(saved.find("removal")==std::string::npos);
+ // Restore exactly the durable bytes from a power cut before SD mutation.
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ saved=interrupted;++revision;manifestPresent=true;registered.clear();begin();beforeIo=io;
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&api.count(nullptr)==0&&registered.empty()&&io==beforeIo);
+ present=false;assert(run()==INSTALLED_APPS_UNAVAILABLE&&manifestPresent);
+ assert(api.cancel(nullptr)==INSTALLED_APPS_OK); // offline intent does not trap Home
+ assert(saved.find("removal")!=std::string::npos);
+ present=true;assert(api.refresh(nullptr)==INSTALLED_APPS_WORKING);assert(run()==INSTALLED_APPS_OK&&!manifestPresent&&api.count(nullptr)==0);
+ // Repeated restart after deletion but before journal-clear is idempotent.
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();saved=interrupted;++revision;begin();
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&api.count(nullptr)==0);const unsigned deleted=renames;
+ assert(run()==INSTALLED_APPS_OK&&renames==deleted);
+ // A replacement version/card at the same path is never deleted by old intent.
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();saved=interrupted;++revision;manifestPresent=true;
+ manifest.replace(manifest.find("1.0.1"),5,"1.0.2");begin();assert(api.refresh(nullptr)==INSTALLED_APPS_OK);
+ assert(run()==INSTALLED_APPS_OK&&manifestPresent&&renames==deleted&&api.count(nullptr)==1);
+ manifest.replace(manifest.find("1.0.2"),5,"1.0.1");
  manifestPresent=true;assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK);
  present=false;assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_UNAVAILABLE);assert(api.get(nullptr,0,&row)&&!row.available);
  present=true;entryCount=40;manifest.pop_back();manifest+=",\"description\":\""+std::string(3850,'x')+"\"}";

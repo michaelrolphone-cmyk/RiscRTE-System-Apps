@@ -26,9 +26,9 @@ using Scan=RiscPackages::InstalledAppAsyncDiscovery;
 alignas(Scan) unsigned char scannerMemory[sizeof(Scan)];Scan*scanner;
 char manifestScratch[ManifestMax+1];
 char scratch[CacheMax],persisted[CacheMax],removeId[96];size_t persistedSize;bool persistedKnown;
-enum class RemovePhase {Idle,Submit,Wait,RollbackSubmit,RollbackWait,End};
+enum class RemovePhase {Idle,Intent,Commit,Refresh,Read,Delete,End,Clear};
 RemovePhase removePhase;uint64_t removeSession,removeOperation;
-char removeSource[205],removeDestination[205],removeLaunch[193];int32_t removeOutcome;
+char removeSource[205],removeVersion[64];int32_t removeOutcome;bool removeIntent;
 risc_storage_async_result_v1 removeResult;
 bool started,loaded,requested,retained,inCall,overflow,commitPending,commitReplace,validationPending;
 const char cacheName[]="installed.apps";
@@ -39,6 +39,14 @@ bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
  if(n>=bound||(!optional&&!n))return false;
  for(size_t i=0;i<n;++i)if(static_cast<unsigned char>(s[i])<32||s[i]==127)return false;
  std::memcpy(out,s,n+1);return true;
+}
+bool managedManifest(const char*p){
+ if(std::strncmp(p,"/Apps/",6))return false;
+ const char*name=p+6;const char*end=std::strchr(name,'/');
+ if(!end||end==name||std::strcmp(end,"/manifest.json"))return false;
+ if((end-name==1&&name[0]=='.')||(end-name==2&&name[0]=='.'&&name[1]=='.'))return false;
+ for(const char*c=name;c<end;++c)if(!((*c>='a'&&*c<='z')||(*c>='A'&&*c<='Z')||(*c>='0'&&*c<='9')||*c=='-'||*c=='_'||*c=='.'))return false;
+ return true;
 }
 bool parse(Package&out,const char*path,const char*json){
  if(!path||!json||std::strlen(path)>=sizeof(out.path)||std::strlen(json)>ManifestMax)return false;
@@ -126,8 +134,14 @@ int32_t load(){
  if(actual>=sizeof(scratch))return INSTALLED_APPS_INVALID;
  scratch[actual]=0;
  JsonDocument doc;if(actual!=size||deserializeJson(doc,static_cast<const char*>(scratch))||
-   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
- if(doc["schema"]==3){
+   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3&&doc["schema"]!=4)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+ if(doc["schema"]==4&&!doc["removal"].isNull()){
+  auto intent=doc["removal"];
+  if(!copy(removeId,sizeof(removeId),intent["id"])||!copy(removeVersion,sizeof(removeVersion),intent["version"])||
+     !copy(removeSource,sizeof(removeSource),intent["path"])||!managedManifest(removeSource)){loaded=true;return INSTALLED_APPS_INVALID;}
+  removeIntent=true;removePhase=RemovePhase::Refresh;
+ }
+ if(doc["schema"]==3||doc["schema"]==4){
   if(!doc["namespaces"].is<JsonArrayConst>()||doc["namespaces"].size()>native->namespace_capacity||doc["namespaces"].size()>NamespaceMax){loaded=true;return INSTALLED_APPS_INVALID;}
   unsigned i=0;for(JsonVariantConst id:doc["namespaces"].as<JsonArrayConst>()){
    if(!copy(namespaceIds[i],sizeof(namespaceIds[i]),id,true)){loaded=true;return INSTALLED_APPS_INVALID;}
@@ -170,7 +184,9 @@ int32_t save(){
   std::memcpy(persisted,scratch,pendingPersistedSize);persistedSize=pendingPersistedSize;persistedKnown=true;
   return INSTALLED_APPS_OK;
  }
- JsonDocument doc;doc["schema"]=3;auto ledger=doc["namespaces"].to<JsonArray>();
+ JsonDocument doc;doc["schema"]=4;
+ if(removeIntent){doc["removal"]["id"]=removeId;doc["removal"]["version"]=removeVersion;doc["removal"]["path"]=removeSource;}
+ auto ledger=doc["namespaces"].to<JsonArray>();
  unsigned last=NamespaceMax;while(last&&!namespaceIds[last-1][0])--last;
  for(unsigned i=0;i<last;++i)ledger.add(namespaceIds[i]);
  auto dictionary=doc["requirements"].to<JsonArray>();auto apps=doc["apps"].to<JsonArray>();
@@ -222,9 +238,12 @@ int32_t validateAndSave(){
  pendingCount=accepted;discardUnadmittedNamespaces();
  savePending=true;return finishSave();
 }
+// The protected cache records desired removal before touching SD. Restart
+// rehydrates the reduced inventory and resumes cleanup; it cannot resurrect the
+// old image while the card is missing or exported. Images/settings stay intact.
 int32_t removeStep(const risc_storage_volume_api_v1*v){
  const auto*a=v?risc_storage_volume_async(v):nullptr;
- if(!a)return INSTALLED_APPS_UNAVAILABLE;
+ if(!a||a->async_version<3)return INSTALLED_APPS_UNAVAILABLE;
  if(removePhase==RemovePhase::Idle){
   if(scanner){
    scanner->cancel();scanner->step();
@@ -238,51 +257,76 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
   if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;
   if(rc!=RISC_INSTALL_OK){removeId[0]=0;return INSTALLED_APPS_INVALID;}
   std::snprintf(removeSource,sizeof(removeSource),"/%s",current[i].path);
-  if(std::strlen(removeSource)+12>=sizeof(removeDestination)){removeId[0]=0;return INSTALLED_APPS_INVALID;}
-  std::strcpy(removeDestination,removeSource);std::strcat(removeDestination,".uninstalled");
-  std::strcpy(removeLaunch,current[i].view.launch_path);
-  rc=a->begin(v->context,&removeSession);
+  std::strcpy(removeVersion,current[i].view.version);
+  pendingCount=0;for(unsigned j=0;j<currentCount;++j)if(j!=i)pending[pendingCount++]=current[j];
+  removeIntent=true;removePhase=RemovePhase::Intent;volume=v;
+ }
+ if(removePhase==RemovePhase::Intent){
+  int32_t rc=save();if(rc!=INSTALLED_APPS_OK)return rc;
+  removePhase=RemovePhase::Commit;
+ }
+ if(removePhase==RemovePhase::Commit){
+  int32_t rc=publish(true);if(rc!=INSTALLED_APPS_OK)return rc;
+  removePhase=RemovePhase::Refresh;
+ }
+ if(removePhase==RemovePhase::Clear){
+  removeIntent=false;
+  int32_t rc=save();if(rc!=INSTALLED_APPS_OK){removeIntent=true;return rc;}
+  removeId[0]=0;removePhase=RemovePhase::Idle;requested=true;return INSTALLED_APPS_OK;
+ }
+ if(!removeSession){
+  int32_t rc=a->begin(v->context,&removeSession);
   if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
   if(rc!=RISC_STORAGE_ASYNC_OK)return INSTALLED_APPS_UNAVAILABLE;
-  volume=v;removePhase=RemovePhase::Submit;removeOutcome=INSTALLED_APPS_UNAVAILABLE;
+  volume=v;removeOutcome=INSTALLED_APPS_UNAVAILABLE;
  }
  if(volume!=v)return INSTALLED_APPS_INVALID;
- if(removePhase==RemovePhase::Submit||removePhase==RemovePhase::RollbackSubmit){
-  const bool rollback=removePhase==RemovePhase::RollbackSubmit;
-  risc_storage_async_request_v1 q{};q.operation=RISC_STORAGE_ASYNC_RENAME;
-  std::strcpy(q.path,rollback?removeDestination:removeSource);
-  std::strcpy(q.destination,rollback?removeSource:removeDestination);
-  int32_t rc=a->submit(v->context,removeSession,&q,&removeOperation);
-  if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
-  if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}
-  removePhase=rollback?RemovePhase::RollbackWait:RemovePhase::Wait;return INSTALLED_APPS_WORKING;
- }
- if(removePhase==RemovePhase::Wait||removePhase==RemovePhase::RollbackWait){
-  const bool rollback=removePhase==RemovePhase::RollbackWait;
-  int32_t rc=a->collect(v->context,removeSession,removeOperation,&removeResult);
-  if(rc==RISC_STORAGE_ASYNC_PENDING)return INSTALLED_APPS_WORKING;
-  if(rc==RISC_STORAGE_ASYNC_RETAINED||(rollback&&rc!=RISC_STORAGE_ASYNC_OK)){retained=true;return INSTALLED_APPS_RETAINED;}
-  if(!rollback&&rc==RISC_STORAGE_ASYNC_OK){
-   if(native->forget(native->context,removeLaunch,false)!=RISC_INSTALL_OK){removePhase=RemovePhase::RollbackSubmit;return INSTALLED_APPS_WORKING;}
-   for(unsigned i=0;i<currentCount;++i)if(!std::strcmp(current[i].view.launch_path,removeLaunch))current[i].view.available=false;
-   if(catalog.generation<UINT32_MAX)++catalog.generation;
-   removeOutcome=INSTALLED_APPS_OK;
+ if(removePhase!=RemovePhase::End){
+  if(!removeOperation){
+   risc_storage_async_request_v1 q{};
+   q.operation=removePhase==RemovePhase::Refresh?RISC_STORAGE_ASYNC_REFRESH:
+     removePhase==RemovePhase::Read?RISC_STORAGE_ASYNC_READ_SMALL_FILE:RISC_STORAGE_ASYNC_REMOVE_FILE;
+   std::strcpy(q.path,removeSource);
+   int32_t rc=a->submit(v->context,removeSession,&q,&removeOperation);
+   if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
+   if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}
+   return INSTALLED_APPS_WORKING;
   }
+  int32_t rc=a->collect(v->context,removeSession,removeOperation,&removeResult);
+  if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
+  removeOperation=0;
+  if(rc==RISC_STORAGE_ASYNC_RETAINED){retained=true;return INSTALLED_APPS_RETAINED;}
+  if(removePhase==RemovePhase::Refresh&&rc==RISC_STORAGE_ASYNC_OK){removePhase=RemovePhase::Read;return INSTALLED_APPS_WORKING;}
+  if(removePhase==RemovePhase::Read){
+   if(rc==RISC_STORAGE_ASYNC_NOT_FOUND)removeOutcome=INSTALLED_APPS_OK;
+   else if(rc==RISC_STORAGE_ASYNC_OK){
+    JsonDocument manifest;
+    if(!deserializeJson(manifest,removeResult.data,removeResult.size)&&manifest["id"].is<const char*>()&&manifest["version"].is<const char*>()){
+     if(manifest["id"]==removeId&&manifest["version"]==removeVersion){removePhase=RemovePhase::Delete;return INSTALLED_APPS_WORKING;}
+     // A replacement card/version at the same path is not this transaction.
+     removeOutcome=INSTALLED_APPS_OK;
+    }
+   }
+  }else if(removePhase==RemovePhase::Delete&&rc==RISC_STORAGE_ASYNC_OK)removeOutcome=INSTALLED_APPS_OK;
   removePhase=RemovePhase::End;
  }
  int32_t rc=a->end(v->context,removeSession);
  if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
  if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}
- removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeId[0]=0;volume=nullptr;
- if(removeOutcome==INSTALLED_APPS_OK){
-  pendingCount=0;for(unsigned i=0;i<currentCount;++i)if(std::strcmp(current[i].view.launch_path,removeLaunch))pending[pendingCount++]=current[i];
-  savePending=removalCommitPending=true;requested=false;
- }
- return removeOutcome;
+ removeSession=removeOperation=0;volume=nullptr;
+ if(removeOutcome!=INSTALLED_APPS_OK){removePhase=RemovePhase::Refresh;return INSTALLED_APPS_UNAVAILABLE;}
+ pendingCount=currentCount;for(unsigned i=0;i<currentCount;++i)pending[i]=current[i];
+ removePhase=RemovePhase::Clear;return INSTALLED_APPS_WORKING;
 }
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
- if(removePhase!=RemovePhase::Idle){int32_t rc=removeStep(volume);if(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_RETAINED)return rc;}
+ if(removePhase!=RemovePhase::Idle){
+  // Drain already-owned work. An offline cleanup keeps its durable intent but
+  // releases the volume, so Home and USB export need not wait for card return.
+  if(!volume&&removePhase==RemovePhase::Refresh)return INSTALLED_APPS_OK;
+  int32_t rc=removeStep(volume);if(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_RETAINED)return rc;
+  if(removeIntent)return INSTALLED_APPS_OK;
+ }
  if(removalCommitPending){
   if(savePending){int32_t rc=finishSave();
    if(rc==INSTALLED_APPS_RETAINED)return rc;
@@ -302,6 +346,7 @@ int32_t cancel(void*){
  volume=nullptr;requested=validationPending=false;return INSTALLED_APPS_OK;
 }
 int32_t refresh(void*){if(!started||retained||inCall)return INSTALLED_APPS_UNAVAILABLE;
+ if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
 int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(!started||retained||inCall)return retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
@@ -334,7 +379,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
  if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
- removePhase=RemovePhase::Idle;removeSession=removeOperation=0;
+ removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;
  asyncStorage=risc_bound_app_data_async(storage);if(!asyncStorage)return false;cacheOperation=0;savePending=removalCommitPending=false;pendingPersistedSize=0;
  std::memset(namespaceIds,0,sizeof(namespaceIds));std::memset(namespaceDurable,0,sizeof(namespaceDurable));
  installed_catalog_init(&catalog);currentCount=pendingCount=0;persistedKnown=false;persistedSize=0;loaded=requested=retained=inCall=overflow=commitPending=commitReplace=validationPending=false;removeId[0]=0;scanner=nullptr;volume=nullptr;started=true;return true;
