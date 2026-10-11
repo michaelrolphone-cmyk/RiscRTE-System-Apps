@@ -1,3 +1,4 @@
+#include "RiscRuntimeHostControlV1.h"
 #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))
 #error "Settings list scrolling requires selected Settings touch scrolling"
 #endif
@@ -2273,6 +2274,12 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+  // Native exit precedes every modal and shared keyboard branch. This only
+  // requests existing orderly app cleanup; host owns the deadline/ack.
+  if(risc_runtime_exit_requested_v1(rt)) {
+    clear_contact_snapshots();memset(out,0,sizeof(*out));
+    out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;return true;
+  }
 #ifdef PORTABLE_FILE_SETUP
   /* Refused BLE close permits only this checked foreground retry. Its
    * provider supplies a scheduler-only delay; Runtime yield polls unrelated

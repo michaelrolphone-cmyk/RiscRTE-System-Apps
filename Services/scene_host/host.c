@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
+#include "RiscRuntimeHostControlV1.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscTouchV1.h"
 #include "RiscInputNavigationV1.h"
@@ -997,6 +998,13 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!event||event->struct_size!=sizeof(*event))return RISC_SCENE_INVALID;
     if(closing||paused||pausing)return RISC_SCENE_BUSY;
+    if(risc_runtime_exit_requested_v1(risc_runtime_get_api(1))){
+        // Native requests cannot sit behind touch/keyboard/render queues.
+        cancel_contacts();raw_count=key_count=0;have_event=false;
+        *event=(risc_scene_event_v1){.struct_size=sizeof(*event),.kind=RISC_SCENE_SUSPEND_EVENT,
+            .sequence=++event_serial,.document_revision=document.revision};
+        return RISC_SCENE_OK;
+    }
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0)return r;

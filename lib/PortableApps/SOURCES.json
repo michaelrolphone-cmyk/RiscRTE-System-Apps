@@ -112,5 +112,11 @@
     "path": "sdk/driver/RiscBluetoothSessionSetupV1.h",
     "commit": "b2419513da200b150192ba46ffe1b396a82171cc",
     "sha256": "5011a8fb387ffd8b31471c04b88f73331d3c4c6f42cc0be29722e1e158052a15"
+  },
+  "RiscRuntimeHostControlV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscRuntimeHostControlV1.h",
+    "commit": "8ad225cc465925cee0267225b38f06ba7be24985",
+    "sha256": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815"
   }
 }
