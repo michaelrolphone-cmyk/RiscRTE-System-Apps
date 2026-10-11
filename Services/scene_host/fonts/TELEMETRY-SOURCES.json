@@ -1,0 +1,122 @@
+[
+  {
+    "role": 0,
+    "size": 12,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 1,
+    "size": 7,
+    "source": "Orbitron-700.ttf",
+    "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+  },
+  {
+    "role": 2,
+    "size": 6,
+    "source": "Orbitron-700.ttf",
+    "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+  },
+  {
+    "role": 3,
+    "size": 52,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 4,
+    "size": 17,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 5,
+    "size": 8,
+    "source": "Rajdhani-700.ttf",
+    "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+  },
+  {
+    "role": 6,
+    "size": 40,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 7,
+    "size": 13,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 8,
+    "size": 11,
+    "source": "Rajdhani-700.ttf",
+    "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+  },
+  {
+    "role": 9,
+    "size": 11,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 0,
+    "size": 24,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 1,
+    "size": 14,
+    "source": "Orbitron-700.ttf",
+    "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+  },
+  {
+    "role": 2,
+    "size": 13,
+    "source": "Orbitron-700.ttf",
+    "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+  },
+  {
+    "role": 3,
+    "size": 104,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 4,
+    "size": 34,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 5,
+    "size": 16,
+    "source": "Rajdhani-700.ttf",
+    "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+  },
+  {
+    "role": 6,
+    "size": 80,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 7,
+    "size": 26,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  },
+  {
+    "role": 8,
+    "size": 22,
+    "source": "Rajdhani-700.ttf",
+    "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd"
+  },
+  {
+    "role": 9,
+    "size": 22,
+    "source": "Orbitron-900.ttf",
+    "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+  }
+]
