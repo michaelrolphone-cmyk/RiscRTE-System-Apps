@@ -9,7 +9,7 @@ static uint32_t count(void*p){(void)p;return 2;}
 static bool get(void*p,uint32_t i,installed_app_v1*out){(void)p;*out=(installed_app_v1){.available=true};strcpy(out->name,"Discovered");strcpy(out->icon,"solid:f15b");strcpy(out->launch_path,i?"Apps/new/new.elf":"reader.elf");return true;}
 static int step(void*p,const risc_storage_volume_api_v1*v){(void)p;assert(v);++steps;return pending?1:0;}
 static int cancel(void*p){(void)p;++cancels;return pending?1:0;}
-static const installed_apps_v1 api={1,sizeof(api),NULL,refresh,generation,count,get,step,cancel,NULL};
+static const installed_apps_v1 api={1,sizeof(api),NULL,refresh,generation,count,get,step,cancel,NULL,NULL,NULL,NULL};
 static bool acquire(const char*cap,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){assert(version==1);if(!strcmp(cap,"storage.volume")){assert(instance==42);++volume_acquires;g->api=(void*)1;}else {assert(!strcmp(cap,INSTALLED_APPS_CAPABILITY));g->api=&api;}return true;}
 static bool release(risc_runtime_capability_v1*g){assert(!pending);if(refuse_release)return false;++releases;g->api=NULL;return true;}
 int main(void){

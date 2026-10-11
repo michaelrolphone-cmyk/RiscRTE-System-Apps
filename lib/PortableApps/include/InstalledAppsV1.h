@@ -31,6 +31,13 @@ typedef struct {
  /* WORKING keeps the borrowed volume grant live; poll until OK. */
  int32_t (*cancel)(void*);
  int32_t (*remove)(void*,const char*id);
+ /* Cached staged descriptors from Apps/<id>/install.json. Their get result's
+  * launch_path is the descriptor identity, not an executable launch path.
+  * Installation rereads it and validates the selected image exactly once. */
+ uint32_t (*staged_count)(void*);
+ bool (*staged_get)(void*,uint32_t,installed_app_v1*);
+ int32_t (*install)(void*,const char*id,const char*version);
+
 } installed_apps_v1;
 #ifdef __cplusplus
 }

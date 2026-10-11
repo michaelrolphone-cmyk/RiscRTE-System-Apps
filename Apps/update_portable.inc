@@ -87,7 +87,7 @@ bool portable_update_suspend(void) {
 #endif
  if(restart_pending){message=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Update activated; restart required";dirty=true;return false;}
  #ifdef PORTABLE_APP_STORE_ACTIONS
- if(!inventory_drain()){cleanup_pending=true;message="Finishing removal; retry Back";dirty=true;return false;}
+ if(!inventory_drain()){cleanup_pending=true;message="Finishing app change; retry Back";dirty=true;return false;}
 #endif
  bool service_closed=!us||us->cancel(us->context);
  if(!service_closed){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
@@ -248,6 +248,7 @@ static void render_update(void) {
  }else if(confirming){uv.count=2;uv.selected=confirm_choice;uv.rows[0]="Cancel";uv.values[0]="Keep current installation";uv.rows[1]="Install and restart";
 #ifdef PORTABLE_APP_STORE_ACTIONS
  if(selected_row.availability==SOFTWARE_UPDATE_REMOVE)uv.rows[1]="Remove app";
+ if(selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD)uv.rows[1]="Install app";
 #endif
 uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
  else {
@@ -260,7 +261,7 @@ uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
    snprintf(row_names[i],sizeof(row_names[i]),"%s",r.id);
    const char *state=r.availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r.availability==SOFTWARE_UPDATE_CURRENT?"Current":
 #ifdef PORTABLE_APP_STORE_ACTIONS
-   r.availability==SOFTWARE_UPDATE_REMOVE?"Manage":
+   r.availability==SOFTWARE_UPDATE_REMOVE?"Manage":r.availability==SOFTWARE_UPDATE_INSTALL_SD?"Install":
 #endif
 r.availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
    snprintf(row_values[i],sizeof(row_values[i]),"%s  %s",r.version,state);uv.rows[i]=row_names[i];uv.values[i]=row_values[i];
@@ -396,9 +397,9 @@ void app_main(void) {
    if(up&&!ups_selected_current())continue;
 #endif
 #ifdef PORTABLE_APP_STORE_ACTIONS
-   if(selected_row.availability==SOFTWARE_UPDATE_REMOVE){
+   if(selected_row.availability==SOFTWARE_UPDATE_REMOVE||selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD){
     if(!inventory_remove_selected(selected-1))message="App changed or SD unavailable; select again";
-    else message="Removing app; settings will be kept";
+    else message=selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD?"Installing app":"Removing app; settings will be kept";
     if(us)(void)us->status(us->context,&ust);
    }else
 #endif
@@ -408,7 +409,7 @@ void app_main(void) {
   if(us&&us->get(us->context,selected-1,&selected_row)){
    message=selected_row.reason;
 #ifdef PORTABLE_APP_STORE_ACTIONS
-   if(selected_row.availability==SOFTWARE_UPDATE_REMOVE&&inventory_choose(selected-1)){confirming=true;confirm_choice=0;}
+   if((selected_row.availability==SOFTWARE_UPDATE_REMOVE||selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD)&&inventory_choose(selected-1)){confirming=true;confirm_choice=0;}
 #endif
    if(selected_row.availability==SOFTWARE_UPDATE_AVAILABLE){confirming=true;confirm_choice=0;}dirty=true;
   }

@@ -5,6 +5,8 @@
 #include "InstalledAppsV1.h"
 #include "InstalledCatalog.h"
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
+#include "runtime/packages/StagedAppInstall.h"
+#include "runtime/update/Version.h"
 #include <ArduinoJson.h>
 #include <cstring>
 #include <cstdio>
@@ -17,6 +19,23 @@ char namespaceIds[NamespaceMax][96];bool namespaceDurable[NamespaceMax];
 uint32_t namespaceSlots[Max];
 Package current[Max],pending[Max];unsigned currentCount,pendingCount;
 installed_catalog catalog;
+struct Staged {installed_app_v1 view;char digest[65];uint32_t size;};
+Staged staged[Max],stagedPending[Max];unsigned stagedCount,stagedPendingCount;
+using Install=RiscPackages::StagedAppInstall;
+Install::Record installRecord;Package installCandidate,stagedScratch;
+alignas(Install) unsigned char installMemory[sizeof(Install)];Install*installer;
+enum class InstallPhase {Idle,FetchRefresh,FetchRead,FetchEnd,Admit,Run,SaveJournal,SaveFinal,Publish,Abort};
+InstallPhase installPhase;bool installIntent,installResume,installPaused;
+char installId[96],installVersion[64],installDescriptor[193],installDigest[65],installExpectedDigest[65];uint32_t installExpectedSize;
+uint64_t installSession,installOperation;int32_t installOutcome;
+risc_storage_async_result_v1 installResult;
+bool offerStaged(void*,const char*,const char*);
+bool loadActivation(JsonVariantConst);
+void saveActivation(JsonDocument&);
+int32_t installStep(const risc_storage_volume_api_v1*);
+int32_t installCancel();
+void preserveStaged(){stagedPendingCount=stagedCount;for(unsigned i=0;i<stagedCount;++i)stagedPending[i]=staged[i];}
+
 risc_install_candidate_v1 candidates[Max];risc_install_result_v1 admissionResults[Max];
 const risc_installation_v1*native;
 const risc_bound_app_data_v1*storage;const risc_bound_app_data_async_v1*asyncStorage;
@@ -109,6 +128,8 @@ int32_t publish(bool replace){
   if(!installed_catalog_offer(&catalog,&record)){(void)installed_catalog_finish(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
   acceptedIndexes[accepted++]=i;
  }
+ bool stageChanged=stagedCount!=stagedPendingCount;
+ for(unsigned i=0;!stageChanged&&i<stagedCount;++i){const auto&a=staged[i];const auto&b=stagedPending[i];stageChanged=std::strcmp(a.view.id,b.view.id)||std::strcmp(a.view.name,b.view.name)||std::strcmp(a.view.version,b.view.version)||std::strcmp(a.view.launch_path,b.view.launch_path)||std::strcmp(a.digest,b.digest)||a.size!=b.size;}
  bool unchanged=catalog.pending_count==catalog.count;
  for(unsigned i=0;unchanged&&i<catalog.count;++i){
   const installed_record&a=catalog.pending[i],&b=catalog.current[i];
@@ -119,8 +140,10 @@ int32_t publish(bool replace){
  }
  if(unchanged)(void)installed_catalog_finish(&catalog,false);
  else if(!installed_catalog_finish(&catalog,true))return INSTALLED_APPS_UNAVAILABLE;
+ if(unchanged&&stageChanged)++catalog.generation;
  for(unsigned i=0;i<accepted;++i)current[i]=pending[acceptedIndexes[i]];
- currentCount=accepted;commitPending=removalCommitPending=false;return INSTALLED_APPS_OK;
+ currentCount=accepted;stagedCount=stagedPendingCount;for(unsigned i=0;i<stagedCount;++i)staged[i]=stagedPending[i];
+ commitPending=removalCommitPending=false;return INSTALLED_APPS_OK;
 }
 int32_t load(){
  std::memset(namespaceIds,0,sizeof(namespaceIds));std::memset(namespaceDurable,0,sizeof(namespaceDurable));
@@ -134,14 +157,14 @@ int32_t load(){
  if(actual>=sizeof(scratch))return INSTALLED_APPS_INVALID;
  scratch[actual]=0;
  JsonDocument doc;if(actual!=size||deserializeJson(doc,static_cast<const char*>(scratch))||
-   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3&&doc["schema"]!=4)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
- if(doc["schema"]==4&&!doc["removal"].isNull()){
+   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3&&doc["schema"]!=4&&doc["schema"]!=5)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+ if((doc["schema"]==4||doc["schema"]==5)&&!doc["removal"].isNull()){
   auto intent=doc["removal"];
   if(!copy(removeId,sizeof(removeId),intent["id"])||!copy(removeVersion,sizeof(removeVersion),intent["version"])||
      !copy(removeSource,sizeof(removeSource),intent["path"])||!managedManifest(removeSource)){loaded=true;return INSTALLED_APPS_INVALID;}
   removeIntent=true;removePhase=RemovePhase::Refresh;
  }
- if(doc["schema"]==3||doc["schema"]==4){
+ if(doc["schema"]==3||doc["schema"]==4||doc["schema"]==5){
   if(!doc["namespaces"].is<JsonArrayConst>()||doc["namespaces"].size()>native->namespace_capacity||doc["namespaces"].size()>NamespaceMax){loaded=true;return INSTALLED_APPS_INVALID;}
   unsigned i=0;for(JsonVariantConst id:doc["namespaces"].as<JsonArrayConst>()){
    if(!copy(namespaceIds[i],sizeof(namespaceIds[i]),id,true)){loaded=true;return INSTALLED_APPS_INVALID;}
@@ -166,6 +189,17 @@ int32_t load(){
   }
   if(!json||!offer(nullptr,row["path"],json)||!namespaceFor(pending[pendingCount-1],false)){loaded=true;pendingCount=0;return INSTALLED_APPS_INVALID;}
  }
+ stagedPendingCount=0;
+ if(doc["schema"]==5){
+  if(!doc["staged"].is<JsonArrayConst>()||doc["staged"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+  for(JsonObjectConst row:doc["staged"].as<JsonArrayConst>()){
+   auto&stage=stagedPending[stagedPendingCount++];stage={};auto&v=stage.view;
+   if(!copy(v.id,sizeof(v.id),row["id"])||!copy(v.name,sizeof(v.name),row["name"])||!copy(v.version,sizeof(v.version),row["version"])||!copy(v.icon,sizeof(v.icon),row["icon"])||!copy(v.launch_path,sizeof(v.launch_path),row["path"]))return INSTALLED_APPS_INVALID;
+   if(!copy(stage.digest,sizeof(stage.digest),row["sha256"])||std::strlen(stage.digest)!=64||!row["size"].is<uint32_t>()||!row["size"].as<uint32_t>()||row["size"].as<uint32_t>()>2097152u)return INSTALLED_APPS_INVALID;
+   stage.size=row["size"];
+  }
+  if(!loadActivation(doc["activation"]))return INSTALLED_APPS_INVALID;
+ }
  std::memcpy(persisted,scratch,actual);persistedSize=actual;persistedKnown=true;
  loaded=true;int32_t outcome=publish(false);
  if(outcome==INSTALLED_APPS_WORKING){commitPending=true;commitReplace=false;}
@@ -184,7 +218,10 @@ int32_t save(){
   std::memcpy(persisted,scratch,pendingPersistedSize);persistedSize=pendingPersistedSize;persistedKnown=true;
   return INSTALLED_APPS_OK;
  }
- JsonDocument doc;doc["schema"]=4;
+ JsonDocument doc;doc["schema"]=5;
+ saveActivation(doc);
+ auto stagedRows=doc["staged"].to<JsonArray>();
+ for(unsigned i=0;i<stagedPendingCount;++i){const auto&v=stagedPending[i].view;auto row=stagedRows.add<JsonObject>();row["id"]=v.id;row["name"]=v.name;row["version"]=v.version;row["icon"]=v.icon;row["path"]=v.launch_path;row["sha256"]=stagedPending[i].digest;row["size"]=stagedPending[i].size;}
  if(removeIntent){doc["removal"]["id"]=removeId;doc["removal"]["version"]=removeVersion;doc["removal"]["path"]=removeSource;}
  auto ledger=doc["namespaces"].to<JsonArray>();
  unsigned last=NamespaceMax;while(last&&!namespaceIds[last-1][0])--last;
@@ -258,6 +295,7 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
   if(rc!=RISC_INSTALL_OK){removeId[0]=0;return INSTALLED_APPS_INVALID;}
   std::snprintf(removeSource,sizeof(removeSource),"/%s",current[i].path);
   std::strcpy(removeVersion,current[i].view.version);
+  preserveStaged();
   pendingCount=0;for(unsigned j=0;j<currentCount;++j)if(j!=i)pending[pendingCount++]=current[j];
   removeIntent=true;removePhase=RemovePhase::Intent;volume=v;
  }
@@ -319,8 +357,10 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
  pendingCount=currentCount;for(unsigned i=0;i<currentCount;++i)pending[i]=current[i];
  removePhase=RemovePhase::Clear;return INSTALLED_APPS_WORKING;
 }
+#include "install.inc"
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
+ if(installer||installSession||installId[0]||installIntent){int32_t rc=installCancel();if(rc!=INSTALLED_APPS_OK)return rc;}
  if(removePhase!=RemovePhase::Idle){
   // Drain already-owned work. An offline cleanup keeps its durable intent but
   // releases the volume, so Home and USB export need not wait for card return.
@@ -348,6 +388,7 @@ int32_t cancel(void*){
 }
 int32_t refresh(void*){if(!started||retained||inCall)return INSTALLED_APPS_UNAVAILABLE;
  if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
+ if(installPhase!=InstallPhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
 int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(!started||retained||inCall)return retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
@@ -355,13 +396,14 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(savePending)return finishSave();
  if(commitPending)return publish(commitReplace);
  if(validationPending)return validateAndSave();
+ if(installId[0]||installIntent||installer)return installStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
  if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
   int32_t rc=removeStep(v);return rc==INSTALLED_APPS_OK?INSTALLED_APPS_WORKING:rc;
  }
- if(!scanner){volume=v;pendingCount=0;overflow=false;scanner=new(scannerMemory)Scan();
-  if(!scanner->start(v,offer,nullptr)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
+ if(!scanner){volume=v;pendingCount=stagedPendingCount=0;overflow=false;scanner=new(scannerMemory)Scan();
+  if(!scanner->start(v,offer,nullptr,offerStaged)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
   return INSTALLED_APPS_WORKING;
  }
  if(volume!=v)return INSTALLED_APPS_INVALID;
@@ -380,6 +422,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
  if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;
  asyncStorage=risc_bound_app_data_async(storage);if(!asyncStorage)return false;cacheOperation=0;savePending=removalCommitPending=false;pendingPersistedSize=0;
  std::memset(namespaceIds,0,sizeof(namespaceIds));std::memset(namespaceDurable,0,sizeof(namespaceDurable));
@@ -390,7 +433,16 @@ void stop(){started=false;native=nullptr;storage=nullptr;}
 const installed_apps_v1 api={1,sizeof(api),nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&catalog.sd_ready;return true;},step,cancel,
- [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;}};
+ [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||installId[0]||installIntent||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;},
+ [](void*)->uint32_t{return stagedCount;},
+ [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=stagedCount)return false;*out=staged[i].view;out->available=catalog.sd_ready;return true;},
+ [](void*,const char*id,const char*version)->int32_t{
+  if(!loaded||!id||!version||retained||removeId[0]||removeIntent||installId[0]||installIntent)return INSTALLED_APPS_INVALID;
+  for(unsigned i=0;i<stagedCount;++i)if(!std::strcmp(staged[i].view.id,id)&&!std::strcmp(staged[i].view.version,version)){
+   std::strcpy(installId,id);std::strcpy(installVersion,version);std::strcpy(installDescriptor,staged[i].view.launch_path);std::strcpy(installExpectedDigest,staged[i].digest);installExpectedSize=staged[i].size;installPaused=false;return INSTALLED_APPS_OK;
+  }
+  return INSTALLED_APPS_INVALID;
+ }};
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

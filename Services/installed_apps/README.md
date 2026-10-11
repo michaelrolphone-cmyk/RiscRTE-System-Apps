@@ -71,3 +71,30 @@ release-controller scenarios. The image and settings are deliberately retained.
 Its regression holds 1,000 Cancel polls at that exact boundary and proves the
 native cache operation is collected before release. A null borrowed SD pointer
 must not bypass independent cache-write custody.
+
+### 0.4.0 staged install/update transaction
+
+App Store 1.4.0 lists cached staged descriptors separately from installed apps.
+`Apps/<id>/install.json` contains `{manifest, size, sha256}` and selects an
+immutable `image-<64 lowercase SHA256 hex>.elf` in the same directory. The complete
+descriptor is limited to 4096 bytes; images retain the native 2 MiB limit.
+`scripts/stage_sd_app.py` prepares this layout without creating manifest.json.
+This local staging path does not enable an unconfigured X4 network release feed.
+
+The provider rereads the selected descriptor and checks its cached size/digest,
+ID and version, then checks the native capability/namespace transaction without
+publishing it. The scoped worker validates the actual image once. Cache schema 5
+persists the activation journal, previous manifest and namespace ledger while
+keeping the old installed list. Only then is a synced staging manifest replaced
+through the existing filesystem recovery transaction. Final cache publication
+precedes native registry publication. The previous image and private settings
+remain intact. Equal/older versions and nonmatching recovery manifests reject;
+no user content is silently overwritten. Restart recovery validates the selected
+image again for that interrupted admission, not for ordinary launch.
+
+The staged list stores only bounded display/selection metadata in the protected
+cache. Normal Springboard/App Store count/get calls do no SD work or image hashing.
+A staged manifest scan shares the existing bounded background directory pass.
+Cache-first startup remains SD-free. The install/update controller needs no radio,
+UTC, restart or bank authority. Firmware-declared legacy identities remain
+protected until the separate preserving migration is implemented.

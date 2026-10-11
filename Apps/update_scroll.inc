@@ -86,7 +86,7 @@ static bool ups_selected_current(void) {
  software_update_row_v1 current;
  if(ups_status()&&ups_get(selected,&current)&&(current.availability==SOFTWARE_UPDATE_AVAILABLE
 #ifdef PORTABLE_APP_STORE_ACTIONS
- ||current.availability==SOFTWARE_UPDATE_REMOVE
+ ||current.availability==SOFTWARE_UPDATE_REMOVE||current.availability==SOFTWARE_UPDATE_INSTALL_SD
 #endif
  )&&ups_same(&current,&selected_row))return true;
  confirming=false;install_after_connect=false;ups_interrupt();++ups_generation;
@@ -129,13 +129,14 @@ static void ups_render(void) {
    else {const software_update_row_v1 *r=&image.rows[i];name=r->id;
     const char *state=r->availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r->availability==SOFTWARE_UPDATE_CURRENT?"Current":
 #ifdef PORTABLE_APP_STORE_ACTIONS
- r->availability==SOFTWARE_UPDATE_REMOVE?"Manage":
+ r->availability==SOFTWARE_UPDATE_REMOVE?"Manage":r->availability==SOFTWARE_UPDATE_INSTALL_SD?"Install":
 #endif
 r->availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
     snprintf(value,sizeof(value),"%s  %s",r->version,state);detail=value;}
   }else if(ups_mode==UPS_CONFIRM){name=row?"Install and restart":"Cancel";
 #ifdef PORTABLE_APP_STORE_ACTIONS
  if(row&&selected_row.availability==SOFTWARE_UPDATE_REMOVE)name="Remove app";
+ if(row&&selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD)name="Install app";
 #endif
  detail=row?selected_row.version:"Keep current installation";}
   else if(ups_mode==UPS_RESTART){name="Restart device";detail=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Activation confirmed; restart required";}

@@ -168,4 +168,5 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  puts("Delayed cache write: 1000 owner/cancel polls, no early registry commit, completion and reentry PASS");
  puts("40 near-4KiB manifests: compact admitted cache and zero-SD cached restart PASS");
  puts("installed provider: cache-only startup, unknown manifest, transactional failure, removal preflight, absent media PASS");
+ return 0;
 }
