@@ -84,7 +84,11 @@ static void ups_visible(void) {
 }
 static bool ups_selected_current(void) {
  software_update_row_v1 current;
- if(ups_status()&&ups_get(selected,&current)&&current.availability==SOFTWARE_UPDATE_AVAILABLE&&ups_same(&current,&selected_row))return true;
+ if(ups_status()&&ups_get(selected,&current)&&(current.availability==SOFTWARE_UPDATE_AVAILABLE
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ ||current.availability==SOFTWARE_UPDATE_REMOVE
+#endif
+ )&&ups_same(&current,&selected_row))return true;
  confirming=false;install_after_connect=false;ups_interrupt();++ups_generation;
  message="Release changed; choose and confirm again";dirty=true;return false;
 }
@@ -123,9 +127,17 @@ static void ups_render(void) {
    if(!row){name="Check / retry";detail="Repository release catalog";}
    else if(!image.valid[i]){name="Unavailable";detail="Retry Check";}
    else {const software_update_row_v1 *r=&image.rows[i];name=r->id;
-    const char *state=r->availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r->availability==SOFTWARE_UPDATE_CURRENT?"Current":r->availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
+    const char *state=r->availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r->availability==SOFTWARE_UPDATE_CURRENT?"Current":
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ r->availability==SOFTWARE_UPDATE_REMOVE?"Manage":
+#endif
+r->availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
     snprintf(value,sizeof(value),"%s  %s",r->version,state);detail=value;}
-  }else if(ups_mode==UPS_CONFIRM){name=row?"Install and restart":"Cancel";detail=row?selected_row.version:"Keep current installation";}
+  }else if(ups_mode==UPS_CONFIRM){name=row?"Install and restart":"Cancel";
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(row&&selected_row.availability==SOFTWARE_UPDATE_REMOVE)name="Remove app";
+#endif
+ detail=row?selected_row.version:"Keep current installation";}
   else if(ups_mode==UPS_RESTART){name="Restart device";detail=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Activation confirmed; restart required";}
   else if(ups_mode==UPS_CLEANUP){name="Retry cleanup";detail="Resources retained until cleanup succeeds";}
   else {name="Cancel operation";snprintf(value,sizeof(value),"%lu / %lu bytes",(unsigned long)ust.done,(unsigned long)ust.total);detail=value;}

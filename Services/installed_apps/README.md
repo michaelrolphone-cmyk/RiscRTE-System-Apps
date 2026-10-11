@@ -56,3 +56,13 @@ pending-write polls, offline cancellation, and replacement-version protection.
 This checkpoint supplies the provider transaction; App Store action wiring,
 staged SD installation, legacy authority migration and SD-first provisioning
 remain separate work. Existing release-update rows are unchanged.
+
+App Store 1.3.1 now exposes removal through its existing two-choice confirmation
+and scrolling controller. The full installed identity, version, launch path and
+catalog generation are rechecked after confirmation. SD instance 9 is acquired
+only for the explicit action and retained across pending cleanup. Ordinary
+pending cancellation does not mark the invocation irrecoverably retained. The
+release feed and bank-update API remain separate; removal uses no Wi-Fi, UTC or
+restart. Host tests cover the actual controller confirmation, stale selection,
+1,000 pending polls, checked asynchronous cancellation and all 38 existing
+release-controller scenarios. The image and settings are deliberately retained.

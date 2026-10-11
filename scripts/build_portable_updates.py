@@ -35,6 +35,7 @@ def build(args,parser=None):
  if scrolling and (args.product!="x4" or not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):parser.error("--touch-scrolling requires X4 native time and paper transitions")
  portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
  if getattr(args,"installed_catalog",False) and (args.product!="x4" or not args.resident_shell_client):parser.error("--installed-catalog requires the X4 resident App Store")
+ if getattr(args,"installed_catalog",False):args.installed_catalog_volume_instance=9
  service_flags,policy=product_policy(args,parser)
  if not portable_native_toolbar_build.selected(args) and not args.services_only and args.rtc_utc_offset_seconds is None:parser.error('Watch apps require --rtc-utc-offset-seconds')
  if portable_native_toolbar_build.selected(args) and args.rtc_utc_offset_seconds is not None:parser.error('Native UTC cannot use an RTC offset')
@@ -116,10 +117,10 @@ def build(args,parser=None):
    native_receipt['version']=portable_quick_build.version(args,name,portable_idle_build.version(args,name,portable_broadcast_build.version(args,name,native_receipt['version'])))
    manifest['version']=native_receipt['version']
   if name=='app_store' and getattr(args,'installed_catalog',False):
-   flags+=['-DPORTABLE_APP_STORE_CATALOG']
-   manifest['version']='1.3.0'
-   if native_receipt:native_receipt['version']='1.3.0'
-   manifest['requires'].append({'capability':'software.installed-apps','api':1})
+   flags+=['-DPORTABLE_APP_STORE_CATALOG','-DPORTABLE_APP_STORE_ACTIONS']
+   manifest['version']='1.3.1'
+   if native_receipt:native_receipt['version']='1.3.1'
+   manifest['requires'].extend([{'capability':'software.installed-apps','api':1},{'capability':'storage.volume','api':1}])
   flags+=portable_broadcast_build.flags(args)
   portable_quick_build.requirements(args,manifest['requires'])
   if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})

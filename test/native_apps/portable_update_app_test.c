@@ -171,7 +171,18 @@ static int ui_inventory_refresh(void*c){(void)c;return INSTALLED_APPS_OK;}
 static unsigned ui_inventory_count(void*c){(void)c;return 2;}
 static bool ui_inventory_get(void*c,uint32_t i,installed_app_v1*out){(void)c;if(i>=2)return false;*out=(installed_app_v1){.available=i==0};strcpy(out->name,i?"Offline App":"New SD App");strcpy(out->version,"1.0.0");return true;}
 static int ui_inventory_cancel(void*c){(void)c;return INSTALLED_APPS_OK;}
-static const installed_apps_v1 ui_inventory={.api_version=1,.struct_size=sizeof(ui_inventory),.refresh=ui_inventory_refresh,.count=ui_inventory_count,.get=ui_inventory_get,.cancel=ui_inventory_cancel};
+#ifdef PORTABLE_APP_STORE_ACTIONS
+static unsigned ui_removals,ui_remove_pending;
+static uint32_t ui_inventory_generation(void*c){(void)c;return 1;}
+static int ui_inventory_remove(void*c,const char*id){(void)c;(void)id;++ui_removals;ui_remove_pending=2;return INSTALLED_APPS_OK;}
+static int ui_inventory_step(void*c,const risc_storage_volume_api_v1*v){(void)c;assert(v);if(ui_remove_pending){--ui_remove_pending;return INSTALLED_APPS_WORKING;}return INSTALLED_APPS_OK;}
+static const risc_storage_volume_api_v1 ui_volume={.api_version=1,.struct_size=sizeof(ui_volume)};
+#endif
+static const installed_apps_v1 ui_inventory={.api_version=1,.struct_size=sizeof(ui_inventory),.refresh=ui_inventory_refresh,.count=ui_inventory_count,.get=ui_inventory_get,.cancel=ui_inventory_cancel
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ ,.generation=ui_inventory_generation,.remove=ui_inventory_remove,.step=ui_inventory_step
+#endif
+};
 #else
 #define TEST_INSTALLED_ROWS 0u
 #endif
@@ -183,6 +194,9 @@ static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_cap
 #endif
  );if(kv_denied)return false;out->api=&kv_api;}
 #ifdef PORTABLE_APP_STORE_CATALOG
+ #ifdef PORTABLE_APP_STORE_ACTIONS
+ else if(!strcmp(name,"storage.volume")){assert(id==9);out->api=&ui_volume;}
+#endif
  else if(!strcmp(name,INSTALLED_APPS_CAPABILITY)){assert(!id);out->api=&ui_inventory;}
 #endif
  else {assert(!id);if(!strcmp(name,PORTABLE_UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY))out->api=&update_api;else if(!strcmp(name,TWATCH_RTC_CAPABILITY))out->api=&rtc_api;else if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&alarm_api;else return false;}
@@ -203,6 +217,15 @@ static void connect_fixture(bool install){assert(connect_saved(install));assert(
 int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);start_fixture();
  switch(scenario){
 #ifdef PORTABLE_APP_STORE_CATALOG
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ case 51:
+  mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=0;assert(portable_update_services_safe());
+  assert(portable_update_close());
+  event(2,T5_APP_BUTTON_DOWN,-1,0);event(4,T5_APP_BUTTON_CONFIRM,-1,0);
+  event(6,T5_APP_BUTTON_DOWN,-1,0);event(8,T5_APP_BUTTON_CONFIRM,-1,0);
+  event(18,T5_APP_BUTTON_BACK,-1,0);app_main();
+  assert(ui_removals==1&&!begins&&!activations&&!connects&&!opened&&!inventory_volume_grant.api&&launches==1);break;
+#endif
  case 50:
   mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=0;assert(portable_update_services_safe()&&ust.count==2);
   render_update();assert(uv.count==3&&!strcmp(uv.rows[1],"Installed: New SD App")&&!begins);

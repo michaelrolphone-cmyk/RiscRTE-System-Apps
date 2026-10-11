@@ -86,6 +86,9 @@ bool portable_update_suspend(void) {
  if(!portable_broadcast_stop())return false;
 #endif
  if(restart_pending){message=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Update activated; restart required";dirty=true;return false;}
+ #ifdef PORTABLE_APP_STORE_ACTIONS
+ if(!inventory_drain()){cleanup_pending=true;message="Finishing removal; retry Back";dirty=true;return false;}
+#endif
  bool service_closed=!us||us->cancel(us->context);
  if(!service_closed){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
  /* Native checked radio leave refuses while HTTP still owns a session. If
@@ -118,6 +121,9 @@ bool portable_update_services_safe(void) {
  software_update_status_v1 before=ust;
  if(us&&!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return false;}
  if(memcmp(&before,&ust,sizeof(ust)))dirty=true;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(inventory_result&&!inventory_removing&&message!=inventory_result){message=inventory_result;dirty=true;}
+#endif
  if(ust.state==SOFTWARE_UPDATE_RETAINED){PORTABLE_APP_RETAIN();cleanup_pending=true;message="Cleanup required; retry Back";dirty=true;return false;}
  if(uw){
   wifi_link_t state=uw->status(uw->context);wifi_ipv4_v1 ip={0},ap={0};
@@ -211,6 +217,9 @@ static void update_tick(void) {
  if(!us)return;software_update_status_v1 before=ust;(void)us->step(us->context);
  if(!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return;}
  if(memcmp(&before,&ust,sizeof(ust)))dirty=true;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(inventory_result&&!inventory_removing&&message!=inventory_result){message=inventory_result;dirty=true;}
+#endif
  if(ust.state==SOFTWARE_UPDATE_RETAINED){PORTABLE_APP_RETAIN();cleanup_pending=true;message="Cleanup required; retry Back";dirty=true;return;}
  if(ust.state==SOFTWARE_UPDATE_ERROR){if(update_radio_close()){message="Update failed; current install kept";dirty=true;}return;}
  if(ust.state==SOFTWARE_UPDATE_LIST&&uw){if(update_radio_close()){message=ust.count?"Select a release; Check refreshes":"No releases in catalog";dirty=true;}return;}
@@ -236,7 +245,11 @@ static void render_update(void) {
   uv.count=1;uv.rows[0]="Cancel operation";
   snprintf(progress,sizeof(progress),"%lu / %lu bytes",(unsigned long)ust.done,(unsigned long)ust.total);uv.values[0]=progress;
   uv.detail=connecting?"Connecting...":ust.state==SOFTWARE_UPDATE_CATALOG?"Checking catalog":ust.state==SOFTWARE_UPDATE_PREPARING?"Preparing update":ust.state==SOFTWARE_UPDATE_DOWNLOAD?"Downloading update":"Verifying update";
- }else if(confirming){uv.count=2;uv.selected=confirm_choice;uv.rows[0]="Cancel";uv.values[0]="Keep current installation";uv.rows[1]="Install and restart";uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
+ }else if(confirming){uv.count=2;uv.selected=confirm_choice;uv.rows[0]="Cancel";uv.values[0]="Keep current installation";uv.rows[1]="Install and restart";
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(selected_row.availability==SOFTWARE_UPDATE_REMOVE)uv.rows[1]="Remove app";
+#endif
+uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
  else {
   uint32_t total=ust.count+1;if(selected>=total)selected=0;uint32_t first=selected/16*16;
   uv.count=total-first>16?16:total-first;uv.selected=selected-first;
@@ -245,7 +258,11 @@ static void render_update(void) {
    software_update_row_v1 r={.struct_size=sizeof(r)};
    if(!us||!us->get(us->context,index-1,&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
    snprintf(row_names[i],sizeof(row_names[i]),"%s",r.id);
-   const char *state=r.availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r.availability==SOFTWARE_UPDATE_CURRENT?"Current":r.availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
+   const char *state=r.availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r.availability==SOFTWARE_UPDATE_CURRENT?"Current":
+#ifdef PORTABLE_APP_STORE_ACTIONS
+   r.availability==SOFTWARE_UPDATE_REMOVE?"Manage":
+#endif
+r.availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
    snprintf(row_values[i],sizeof(row_values[i]),"%s  %s",r.version,state);uv.rows[i]=row_names[i];uv.values[i]=row_values[i];
   }
  }
@@ -378,11 +395,22 @@ void app_main(void) {
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
    if(up&&!ups_selected_current())continue;
 #endif
+#ifdef PORTABLE_APP_STORE_ACTIONS
+   if(selected_row.availability==SOFTWARE_UPDATE_REMOVE){
+    if(!inventory_remove_selected(selected-1))message="App changed or SD unavailable; select again";
+    else message="Removing app; settings will be kept";
+    if(us)(void)us->status(us->context,&ust);
+   }else
+#endif
    (void)connect_saved(true);}continue;}
   if(!selected){(void)connect_saved(false);continue;}
   selected_row=(software_update_row_v1){.struct_size=sizeof(selected_row)};
   if(us&&us->get(us->context,selected-1,&selected_row)){
-   message=selected_row.reason;if(selected_row.availability==SOFTWARE_UPDATE_AVAILABLE){confirming=true;confirm_choice=0;}dirty=true;
+   message=selected_row.reason;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+   if(selected_row.availability==SOFTWARE_UPDATE_REMOVE&&inventory_choose(selected-1)){confirming=true;confirm_choice=0;}
+#endif
+   if(selected_row.availability==SOFTWARE_UPDATE_AVAILABLE){confirming=true;confirm_choice=0;}dirty=true;
   }
  }
 }

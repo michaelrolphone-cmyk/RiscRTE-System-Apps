@@ -8,7 +8,7 @@ import portable_idle_build
 RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.30', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.26', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.10'}
 
 def version(args,app,current):
-    if app=='app_store' and getattr(args,'installed_catalog',False):return '1.3.0'
+    if app=='app_store' and getattr(args,'installed_catalog',False):return '1.3.1'
     if app=='springboard' and getattr(args,'installed_catalog_volume_instance',None) is not None:return '1.8.0'
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
