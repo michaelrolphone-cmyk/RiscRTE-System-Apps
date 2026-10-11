@@ -135,6 +135,18 @@ static int resident_checkpoint(uint32_t reason) {
 #endif
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_services_safe())return RISC_RESIDENT_BUSY;
+#ifdef PORTABLE_WIFI_SETTINGS_APP
+ /* Service safety permits local input/render work while the native worker
+  * owns a scan/join. It does not permit switching to the resident host: that
+  * crosses Runtime's exit barrier and would permanently retain this session.
+  * Reconcile above first so completed cancellation can resume checkpoints. */
+ if(reason==RISC_RESIDENT_CHECKPOINT_POLL && portable_wifi_async_owned()) {
+#ifdef PORTABLE_RESIDENT_POLICY
+  resident_activity_pending=true;
+#endif
+  return RISC_RESIDENT_BUSY;
+ }
+#endif
 #endif
 #ifdef PORTABLE_RADIO_SESSION
  if(!portable_radio_services_safe())return RISC_RESIDENT_BUSY;

@@ -2,9 +2,15 @@
  * the Runtime concurrency fixture. Only outer display/KV/time are synthetic. */
 #define WIFI_WORKFLOW_LIBRARY
 #include "wifi_workflow_test.c"
+#ifdef TEST_WIFI_RESIDENT_CHECKPOINT
+#include "wifi_resident_seam.inc"
+#endif
 void app_workflow_start(const wifi_async_v1 *api) {
     assert(api&&api->base.struct_size>=sizeof(*api));
     workflow_start(false);assert(portable_wifi_suspend());
+#ifdef TEST_WIFI_RESIDENT_CHECKPOINT
+    resident_fixture_start();
+#endif
     radios=*api;use_async=true;assert(wifi_acquire());draft();
     assert(wifi_async&&wifi_async->begin==api->begin);
 }
@@ -29,6 +35,9 @@ void app_workflow_blocked(void) {
     for(unsigned i=0;i<100;i++){
         ticks+=5;t5_app_input_t input={0};assert(wa->poll(&input,1));
         assert(portable_wifi_services_safe());
+#ifdef TEST_WIFI_RESIDENT_CHECKPOINT
+        resident_fixture_busy();wifi_make_view();portable_wifi_render(&view);assert(!surface.frame);
+#endif
         assert(!portable_wifi_services_begin()&&!wifi_service_depth);
         assert(opened&&wg.api&&grant_count==grants&&!cleanup_pending&&!portable_text_adapter_retained());
     }
