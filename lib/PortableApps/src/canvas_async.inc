@@ -5,7 +5,9 @@
 static uint16_t *canvas_pixels;
 static bool canvas_async,canvas_sealed,canvas_uncertain,canvas_retained;
 static risc_display_present_token_v1 canvas_token;
-static uint32_t canvas_submitted_at;
+static uint32_t canvas_submitted_at,canvas_pumped_at;
+static bool canvas_pumping;
+#define CANVAS_PUMP_INTERVAL_MS 4u
 #define CANVAS_DRAWING_FRAME UINT64_MAX
 static bool canvas_retain(void) {
  failed=true;canvas_uncertain=true;canvas_sealed=false;
@@ -26,17 +28,36 @@ static bool canvas_surface_valid(const risc_display_surface_v1 *s) {
   s->pixel_format==RISC_DISPLAY_FORMAT_RGB565 && s->stride_bytes>=info.width*2u &&
   s->stride_bytes<=UINT32_MAX/info.height && s->size_bytes>=s->stride_bytes*info.height;
 }
+static bool canvas_token_status(void) {
+ if(!canvas_token)return true;
+ risc_display_present_status_v1 status={0};
+ if(!display->present_status(display->context,canvas_token,&status))failed=true;
+ else if(status.state==RISC_DISPLAY_PRESENT_COMPLETE) {
+  canvas_token=0;previous_valid=!failed && previous_pixels;
+ } else if(status.state!=RISC_DISPLAY_PRESENT_QUEUED && status.state!=RISC_DISPLAY_PRESENT_ACTIVE)failed=true;
+ if(failed && canvas_token)return canvas_retain();
+ if(canvas_token && (uint32_t)(millis_now()-canvas_submitted_at)>=10000u)failed=true;
+ if(failed && canvas_token)return canvas_retain();
+ return !failed;
+}
 static bool canvas_progress(void) {
  if(!canvas_async)return !failed;
  if(canvas_retained)return false;
  if(canvas_uncertain)return canvas_retain();
- if(canvas_token) {
-  risc_display_present_status_v1 status={0};
-  if(!display->present_status(display->context,canvas_token,&status))failed=true;
-  else if(status.state==RISC_DISPLAY_PRESENT_COMPLETE) {
-   canvas_token=0;previous_valid=!failed && previous_pixels;
-  } else if(status.state!=RISC_DISPLAY_PRESENT_QUEUED && status.state!=RISC_DISPLAY_PRESENT_ACTIVE)failed=true;
-  if(canvas_token && (uint32_t)(millis_now()-canvas_submitted_at)>=10000u)failed=true;
+ if(!canvas_token_status())return false;
+ /* The provider is cooperative: status reads do not transmit rows. Bound
+  * raster ownership of the owner task, while never copying an unsealed image.
+  * At most one pump is admitted per interval. The guard also fences unexpected
+  * callback reentry; Runtime normally rejects recursive owner-task yields. */
+ if(canvas_token && surface.frame==CANVAS_DRAWING_FRAME && !canvas_pumping &&
+    (uint32_t)(millis_now()-canvas_pumped_at)>=CANVAS_PUMP_INTERVAL_MS) {
+  canvas_pumping=true;
+  rt->yield_ms(1);
+  canvas_pumping=false;
+  /* A yield may have failed the provider. Validate before any normal callback,
+   * touching provider storage, or asking Runtime for a fresh timestamp. */
+  if(!canvas_token_status())return false;
+  canvas_pumped_at=millis_now();
  }
  if(failed){canvas_sealed=false;if(canvas_token)return canvas_retain();return false;}
  /* No progress callback can copy a partly painted canvas. */
@@ -65,7 +86,7 @@ static bool canvas_progress(void) {
    display->release(display->context,lease.frame);failed=true;return false;
   }
   /* Successful submission transfers the real lease to the provider. */
-  canvas_sealed=false;canvas_submitted_at=millis_now();previous_valid=false;
+  canvas_sealed=false;canvas_submitted_at=canvas_pumped_at=millis_now();previous_valid=false;
   if(!canvas_token)return canvas_retain();
   if(previous_pixels)memcpy(previous_pixels,canvas_pixels,(size_t)info.width*info.height*2u);
  }

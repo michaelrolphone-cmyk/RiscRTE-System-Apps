@@ -72,6 +72,11 @@ static bool contexts_capture_checkpoint(void);
 static uint32_t contexts_pixels;
 #define PORTABLE_CONTEXTS_RASTER 1
 #endif
+#if defined(PORTABLE_ASYNC_RGB565) && !defined(PORTABLE_CONTEXTS_CLIENT)
+static uint32_t contexts_pixels;
+static bool contexts_capture_checkpoint(void);
+#define PORTABLE_CONTEXTS_RASTER 1
+#endif
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
 static portable_broadcast_client broadcast_client;
@@ -170,6 +175,8 @@ static bool contexts_capture_checkpoint(void) {
    * alive without issuing another display, storage or service operation. */
   for(;;)rt->yield_ms(50);
 }
+#elif defined(PORTABLE_ASYNC_RGB565)
+static bool contexts_capture_checkpoint(void) {return !failed && canvas_progress();}
 #endif
 #ifdef PORTABLE_SETTINGS_APP
 #include "PortableRtcClock.h"
@@ -345,7 +352,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
   if (y1 > height())
     y1 = height();
   for (int j = y0; j < y1; ++j) {
-#ifdef PORTABLE_CONTEXTS_CLIENT
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_ASYNC_RGB565)
     if(!(j&15)&&!contexts_capture_checkpoint())return;
 #endif
     for (int i = x0; i < x1; ++i) {
@@ -1168,7 +1175,8 @@ static int initialize(void) {
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
 #ifdef PORTABLE_ASYNC_RGB565
-  canvas_pixels=NULL;canvas_async=canvas_sealed=canvas_uncertain=canvas_retained=false;canvas_token=0;canvas_submitted_at=0;
+  canvas_pixels=NULL;canvas_async=canvas_sealed=canvas_uncertain=canvas_retained=false;canvas_token=0;canvas_submitted_at=canvas_pumped_at=0;canvas_pumping=false;
+  contexts_pixels=0;
 #endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;

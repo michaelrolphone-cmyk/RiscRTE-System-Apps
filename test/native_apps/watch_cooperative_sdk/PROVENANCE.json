@@ -1,0 +1,16 @@
+{
+  "display_repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+  "display_commit": "af4feb98d184603d71b75350d824c1843ccb77dd",
+  "display_path": "include/common/display.h",
+  "sdk_repository": "michaelrolphone-cmyk/RiscRTE",
+  "sdk_commit": "6b19977d8a9c63218282531a63a6f42ddbf697b6",
+  "sdk_paths": [
+    "sdk/driver/RiscProviderV2.h",
+    "sdk/driver/RiscStreamProviderV1.h"
+  ],
+  "sha256": {
+    "test/native_apps/watch_cooperative_display_fixture.h": "c754a381be5f1673399fa07e14e4c34e2e551315a9208d2501c0130a6b51a6dc",
+    "test/native_apps/watch_cooperative_sdk/RiscProviderV2.h": "62478822fa8943ddfd1607f8923de52d7b5b6fc8a0db2df6ca07c65c95c62d41",
+    "test/native_apps/watch_cooperative_sdk/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  }
+}
