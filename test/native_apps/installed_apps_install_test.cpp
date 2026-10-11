@@ -63,6 +63,24 @@ int main(){using namespace fixture;using namespace staged_fixture;staged_fixture
  assert(drive()==0&&validations==before+1&&api.count(nullptr)==1&&current[0].namespaceSlot==1);
  // Reset after the manifest switch but before final cache commit.
  const auto published=disk;reboot(journal);disk=published;before=validations;assert(drive()==0&&validations==before+1&&api.count(nullptr)==1);
+ // Offline recovery preserves the activation journal and retries on re-entry.
+ reboot(journal);disk=beforePublication;present=false;
+ assert(drive()==INSTALLED_APPS_UNAVAILABLE&&saved.find("activation")!=std::string::npos&&!disk.count(manifestPath));
+ assert(api.cancel(nullptr)==0);present=true;assert(api.refresh(nullptr)==0&&drive()==0&&api.count(nullptr)==1);
+ // An unrelated manifest never gets overwritten by journal recovery.
+ reboot(journal);disk=beforePublication;disk[manifestPath]="{\"id\":\"other\",\"version\":\"1.0.0\"}";
+ const auto conflict=disk[manifestPath];assert(drive()==INSTALLED_APPS_UNAVAILABLE&&disk[manifestPath]==conflict);
+ assert(api.cancel(nullptr)==0);disk=beforePublication;assert(api.refresh(nullptr)==0);
+ // Cancellation while the final cache write is queued must drain it before
+ // dropping the installer. Re-entry publishes from that exact durable cache.
+ n=0;while(!(installPhase==InstallPhase::SaveFinal&&cacheOperation)){
+  assert(tick(false)==INSTALLED_APPS_WORKING);assert(++n<200);
+ }
+ assert(disk.count(manifestPath)&&saved.find("activation")!=std::string::npos);
+ for(unsigned i=0;i<1000;++i)assert(api.cancel(nullptr)==INSTALLED_APPS_WORKING&&cacheOperation);
+ executing=true;assert(cacheWorker.workerStep());executing=false;
+ assert(api.cancel(nullptr)==0&&!cacheOperation&&saved.find("activation")==std::string::npos);
+ assert(api.refresh(nullptr)==0&&api.count(nullptr)==1&&drive()==0);
  // Updating uses another immutable image and retains the old image/settings.
  const std::string oldImage=registered[0];digest.assign(64,'1');disk[descriptorPath]=envelope("1.1.0");disk["/Apps/new-after-build/image-"+digest+".elf"]="IMAGE";
  assert(api.refresh(nullptr)==0&&drive()==0&&api.staged_count(nullptr)==1);
