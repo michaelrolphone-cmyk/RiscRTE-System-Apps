@@ -86,7 +86,7 @@ static bool health(risc_runtime_health_v1 *h){h->uptime_ms=presentations*40;retu
 static void yield_ms(uint32_t n){(void)n;}
 static bool diagnostic(const char *s){(void)s;return true;}
 static bool launch_app(const char *s){(void)s;assert(!"render test cannot launch");return false;}
-static const risc_runtime_api_v1 runtime={1,sizeof(runtime),health,yield_ms,diagnostic,launch_app,acquire,release};
+static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime:NULL;}
 static bool visible(unsigned i){
  int x=(int)fw/2+(scene->points[i].x+(int)(scene->motion.x*16))/16;

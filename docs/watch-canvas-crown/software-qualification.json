@@ -1,0 +1,76 @@
+{
+  "base_commit": "63532e4611749acad2060d0437a883b7c4ac8fd5",
+  "runtime_sdk_commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+  "focused_cases": 44,
+  "focused_modes": [
+    "plain",
+    "ASan+UBSan"
+  ],
+  "focused_rotations": [
+    0,
+    180
+  ],
+  "passed_regression_scripts": [
+    "test_portable_wifi",
+    "test_portable_update",
+    "test_portable_alarm",
+    "test_portable_file_browser",
+    "test_nova_settings",
+    "test_tap_settings",
+    "test_quick_radios",
+    "test_portable_audio",
+    "test_portable_alarm_settings",
+    "test_portable_radio",
+    "test_nova_launcher",
+    "test_springboard_nova",
+    "test_portable_transition",
+    "test_quick_actions"
+  ],
+  "baseline_failures": {
+    "unittest": "60/62 passed; stale Springboard inventory 1.7.8 versus manifest 1.7.9; timecard capacity expectation 21 versus baseline 23",
+    "test_portable_apps": "After earlier cases pass, invalid-capacity assertion expects max 21/error text; baseline header allows 23",
+    "test_low_battery": "Stale timer expectation rejects 0 and >3600000, while baseline policy allows disabled 0 and up to 14400000"
+  },
+  "sanitizer_environment": "ASAN_OPTIONS=detect_leaks=0 locally because LeakSanitizer is incompatible with ptrace; not embedded in new runner/workflow",
+  "target_sizes": {
+    "springboard": {
+      "baseline_size": 132164,
+      "patched_size": 134520,
+      "delta": 2356
+    },
+    "settings": {
+      "baseline_size": 127600,
+      "patched_size": 128040,
+      "delta": 440
+    }
+  },
+  "target_validation": [
+    "Full-profile Springboard/Settings ELF structure, imports/exports, normalization, compaction",
+    "Focused CI Settings low-battery/Nova/alarm-settings/navigation/full-frames ELF build and checks"
+  ],
+  "fallback_only_paths": [
+    "Exit arriving inside an already-running alarm modal",
+    "Unresponsive/uncertain provider or legacy cleanup loops; native owner deadline remains authoritative"
+  ],
+  "changed_files": {
+    ".github/workflows/build.yml": "26ce87e7129064c88fce9e716ce325e1908bff26a197d853d33410800864842a",
+    "lib/PortableApps/SOURCES.json": "7874b4e1b075d3af7317043a8208b9be7895f5273fca157431ac9716d74e253b",
+    "lib/PortableApps/include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "lib/PortableApps/src/adapter.c": "8670aa685c03e30c1748ef5a47510d1e67e41f3accb8c92f7098b3e96b9e68db",
+    "lib/PortableApps/src/quick_adapter.inc": "20c42e88ba21b2105a6d59613ced85fcae3d85c94b65bd24f13f9bb51b705853",
+    "test/native_apps/nova_peripherals.h": "1e122abb81f745dd92a2c03fcca3b464f930e338c98c713d7be9c5cfc9794b60",
+    "test/native_apps/portable_adapter_test.c": "cbb10e542654871c2428f6f4a0bbd673ee2076224915d6740fc8b7d6f9aae24b",
+    "test/native_apps/portable_alarm_settings_test.c": "0634b7dec1980ef5ceb1df239f2782b24f28ff40e806cbd9317702f4e1a9e5ea",
+    "test/native_apps/portable_file_browser_test.c": "9277fee5d3600ca28eddcddb60761ec984c912545eb862c2b87afcf42c3f61bd",
+    "test/native_apps/portable_handoff_test.c": "486addabc00107bc93a50bc3270ebe077110bb61c245bd70517668af4a45841b",
+    "test/native_apps/portable_settings_test.c": "2dd37d7d0baa9250d484ca30a756f5e4d04fcb99d9d2c36f7e3d9eba53fb0d69",
+    "test/native_apps/portable_update_app_test.c": "963c206bea506a1a69cefd8ab0d7b2a7d8bedef0991f576be79604aabb41a0ea",
+    "test/native_apps/portable_wifi_test.c": "2d8cd7857bc28e451ea1056a7cb6b609496bbdec49e0e0901694be6bf35f4b2d",
+    "test/native_apps/springboard_focus_test.c": "6dfc22a728e2f50476a8900c22fd1d5558eafbfe16e5486fbe7d55de026cdd6c",
+    "test/native_apps/springboard_nova_test.c": "78e7e1cd421726ad2de25ab92edaa819e9a530891ab58672924cce35a03ba077",
+    ".github/workflows/watch-canvas-crown.yml": "69dd873013f87cc93e68c7ce9be950b5d2deaf56704b1f9b52519aa840153cf2",
+    "lib/PortableApps/include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "scripts/test_watch_canvas_crown_exit.py": "baefd075ddc6831c61c6a663a1e2e68e9c6fa4cfe5da277edb2b0aa5979359ef",
+    "test/native_apps/watch_canvas_crown_exit_test.c": "d47d7cce3eb17209532f332bb29405e640df7f08e30f64d8e0cf5d141f1ccb4f"
+  }
+}

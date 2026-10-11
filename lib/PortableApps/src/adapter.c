@@ -1,3 +1,4 @@
+#include "RiscRuntimeHostControlV1.h"
 #ifdef PORTABLE_FILE_BROWSER_APP
 #include "PortableFileBrowser.h"
 #endif
@@ -869,11 +870,27 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 /* Explicit deployment return destination. Queue only a deliberate root exit,
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
+static bool native_exit_input(t5_app_input_t *out) {
+  if(!risc_runtime_exit_requested_v1(rt))return false;
+  input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
+#if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+  nu_gesture=false;
+#endif
+#if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
+  app_contact=(t5_app_contact_t){0};
+#endif
+  memset(out,0,sizeof(*out));out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;
+  return true;
+}
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+  /* Native cancellation wins before modals and never queues a return app.
+   * It remains latched in Runtime through the unchanged app/fini cleanup. */
+  if(native_exit_input(out))return true;
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok)return alarm_failure();
 #endif
+  if(ok && native_exit_input(out))return true;
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)

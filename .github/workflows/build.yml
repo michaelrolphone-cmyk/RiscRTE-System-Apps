@@ -24,6 +24,7 @@ jobs:
         run: |
           python scripts/test_apps.py
           python scripts/test_portable_apps.py
+          python scripts/test_watch_canvas_crown_exit.py
           python scripts/test_portable_wifi.py
           python scripts/test_portable_file_browser.py
           python scripts/test_portable_update.py

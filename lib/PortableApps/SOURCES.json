@@ -7,8 +7,8 @@
   "RiscRuntimeV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE",
     "path": "sdk/app/RiscRuntimeV1.h",
-    "commit": "be6efce33a19d3a21ced4077a038fdcc7b9b94a3",
-    "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b"
+    "commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+    "sha256": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387"
   },
   "T5BatteryApi.h": {
     "repository": "RiscRTE-Utilities",
@@ -60,5 +60,11 @@
     "commit": "52b085c2d8f00ceea287ba7a506eea6dc135a29d",
     "path": "sdk/driver/RiscRadioScanV1.h",
     "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
+  },
+  "RiscRuntimeHostControlV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscRuntimeHostControlV1.h",
+    "commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+    "sha256": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815"
   }
 }

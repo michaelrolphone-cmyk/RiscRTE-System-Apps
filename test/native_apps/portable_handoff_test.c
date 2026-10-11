@@ -91,7 +91,7 @@ static bool mock_acquire(const char *name,uint32_t version,uint64_t instance,ris
     mock_grants++;return true;
 }
 static bool mock_release(risc_runtime_capability_v1 *g){assert(mock_grants && g->api);mock_grants--;g->api=NULL;return true;}
-static const risc_runtime_api_v1 mock_rt={1,sizeof(mock_rt),mock_health,mock_yield,mock_diagnostic,mock_launch,mock_acquire,mock_release};
+static const risc_runtime_api_v1 mock_rt={.api_version=1,.struct_size=sizeof(mock_rt),.health=mock_health,.yield_ms=mock_yield,.diagnostic=mock_diagnostic,.request_launch=mock_launch,.acquire=mock_acquire,.release=mock_release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1?&mock_rt:NULL;}
 
 static void begin_test(void){

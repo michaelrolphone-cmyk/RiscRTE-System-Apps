@@ -136,6 +136,7 @@ static bool quick_foreground(bool *consumed) {
  bool painted=false,wifi=false;uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--";risc_battery_sample_v1 battery={0};bool battery_valid=false;
  while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
+  if(risc_runtime_exit_requested_v1(rt)){*consumed=true;break;}
   uint32_t now=millis_now();bool alarm_consumed=false;
   if(!alarm_foreground(&alarm_consumed)){failed=true;break;}
   if(alarm_consumed){*consumed=true;break;}
@@ -160,6 +161,12 @@ static bool quick_foreground(bool *consumed) {
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
   rt->yield_ms(8);input_service();
  }
+ if(risc_runtime_exit_requested_v1(rt)) {
+  /* Discard unprocessed actions, restore confirmed brightness, then use the
+   * normal saved-frame/free path. A pending slider commit is not confirmed. */
+  quick.ui.pending=0;pqa_cancel(&quick.ui);quick.ui.pending=0;wifi=false;*consumed=true;
+  if(!failed && !pqa_session_restore(&quick,display))failed=true;
+ }
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
@@ -168,7 +175,7 @@ static bool quick_foreground(bool *consumed) {
  }
  quick_modal=false;free(quick_background);quick_background=NULL;
  if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
- if(wifi && !failed && app_allows_launch("wifi_settings.elf")) {
+ if(wifi && !failed && !risc_runtime_exit_requested_v1(rt) && app_allows_launch("wifi_settings.elf")) {
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close())return false;
 #endif

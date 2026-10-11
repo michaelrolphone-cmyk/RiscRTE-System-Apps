@@ -119,7 +119,7 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_outp
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 
 static void start_fixture(void){
- runtime_api=(risc_runtime_api_v1){1,sizeof(runtime_api),fake_health,fake_yield,fake_diag,fake_launch,fake_acquire,fake_release};
+ runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  assert(app_module_init()==0);assert(open_update());
  portable_wifi_credentials saved={0};strcpy(saved.ssid,"Fixture network");strcpy(saved.password,"testpass123");assert(portable_wifi_credentials_save(&kv_api,&saved)==PORTABLE_WIFI_CREDENTIALS_LOADED);portable_wifi_credentials_clear(&saved);writes=0;
