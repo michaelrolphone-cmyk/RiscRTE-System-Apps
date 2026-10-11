@@ -1,0 +1,25 @@
+Real SC numeric comparison, immutable authenticated ATT long reads, happy: PASS
+Descriptor validation rejects unsafe data before radio claim: PASS
+Prefix-only, truncated, invalid tag/version/null scheduler suffix reject before any native or clock call: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, clock-wrap: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, maximum: PASS
+Failed and retained native claims preserve cleanup custody: PASS
+Explicit owner-checked wait refusal is terminal: all later APIs/fini inert and custody retained: PASS
+Native release attempt fences further NimBLE work even after incomplete host stop: PASS
+64 retained close retries and quiesce yield once each, never poll transport, then release custody: PASS
+Retained native release permits cleanup only, with no ordinary host work: PASS
+Repeated immediate close and reopen: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, short-lifetime: PASS
+Completed unauthenticated SC Just Works never exposes credentials: PASS
+Rejected insecure pairing profile legacy: PASS
+Rejected insecure pairing profile short-key: PASS
+Rejected insecure pairing profile invalid-key: PASS
+SMP reject fails closed: PASS
+SMP timeout fails closed: PASS
+SMP tamper fails closed: PASS
+Expiry interrupts ATT long read and destroys the copied secret: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, copy: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, expiry: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, disconnect: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, stale-events: PASS
+Real SC numeric comparison, immutable authenticated ATT long reads, fault: PASS

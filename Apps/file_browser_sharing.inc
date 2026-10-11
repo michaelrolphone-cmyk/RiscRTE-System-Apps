@@ -24,6 +24,7 @@ static void fsh_setup_fence(void);
 #endif
 #ifdef PORTABLE_FILE_PEER
 #include "PortablePeerFiles.h"
+static portable_peer_files *fpeer;
 static bool fpeer_close(void),fpeer_touch(int,int);
 static void fpeer_tick(uint64_t),fpeer_draw(void),fsh_start(void);
 #endif
@@ -44,6 +45,9 @@ static bool fsh_owner(void *unused){(void)unused;return !fb_terminal&&!portable_
 static void fsh_error(const char *message){snprintf(fsh_message,sizeof(fsh_message),"%s",message);fb_dirty=true;}
 static void fsh_retain(void){
  fb_terminal=true;
+#ifdef PORTABLE_FILE_PEER
+ portable_peer_tick(fpeer,fsh_now); /* Owner is false: pure credential wipe/fence. */
+#endif
 #ifdef PORTABLE_FILE_SETUP
  fsh_setup_fence();
 #endif
@@ -107,8 +111,10 @@ bool portable_file_browser_services_end(void){
  return true; /* A pending lease end is drained before any later service work. */
 }
 static bool fsh_close(void){
- if(!fsh_owner(NULL))return false;
+ /* Successful handoff marks the browser terminal after all sharing resources
+  * closed. Fini may recheck this pure completed state without reacquiring. */
  if(fsh_phase==FSH_OFF)return true;
+ if(!fsh_owner(NULL))return false;
  fsh_phase=FSH_STOPPING;
 #ifdef PORTABLE_FILE_PEER
  if(!fpeer_close())return false;

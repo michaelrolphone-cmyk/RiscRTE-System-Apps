@@ -50,6 +50,7 @@ struct ExistingFiles {
  [](void*c,uint32_t ns,const char*n,uint64_t rev,void*b,uint32_t cap,uint32_t*z,uint64_t*r)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);auto i=s.records.find({ns,n});if(i==s.records.end())return -1;if(rev!=i->second.revision)return -10;if(cap<i->second.bytes.size())return -2;memcpy(b,i->second.bytes.data(),i->second.bytes.size());*z=i->second.bytes.size();*r=i->second.revision;return 0;},
  [](void*c,uint32_t ns,const char*n,uint64_t rev,const void*b,uint32_t z)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);auto i=s.records.find({ns,n});if((i==s.records.end()?0:i->second.revision)!=rev)return -10;s.records[{ns,n}]={std::string(static_cast<const char*>(b),z),rev+1};return 0;},[](void*){return true;}};
 };
+#ifndef PEER_UI_BACKEND
 int main(){
  controllerTests();
  {ExistingFiles files;RiscStorage::AppDataExport exported({nullptr,[](void*){return true;},[](void*){return true;},malloc,free});
@@ -87,5 +88,12 @@ int main(){
   assert(!strcmp(remote.publishedPath(),"/Downloads/from-watch.txt"));
   assert(remote.close());assert(local.end());RiscUserFiles::Volume reopened;assert(reopened.begin(&localStore.api,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;},malloc,free}));bool directory=false;assert(reopened.api()->stat(reopened.api()->context,"/Downloads/from-watch.txt",&size,&directory)&&size==bytes.size()&&!directory);assert(reopened.end());
  }
+
+ {Fixture f;f.client.end();f.run();uint8_t random[16]{};risc_bluetooth_session_descriptor_v1 bad{sizeof(bad),RISC_SESSION_HTTP,10000,"http://192.168.2.7:8080/","files","wrong-password","bad"};assert(f.client.begin(&f.link.tcp,bad,random,f.io(),f.now));f.run();unsigned before=f.store.calls;assert(f.client.request("GET","/",nullptr,0,f.io(),f.now));f.run();assert(f.client.state()==Client::State::Error&&f.store.calls==before);}
+ {Fixture f;assert(f.client.request("GET","/",nullptr,0,f.io(),f.now));f.client.tick(f.now++);f.now=300001;f.run();assert(f.client.state()==Client::State::Error&&f.client.error()==Client::Expired&&!f.link.clientLive);}
+ {Fixture f;f.upload=std::string(10000,'q');assert(f.client.request("PUT","/cancelled.txt",nullptr,f.upload.size(),f.io(),f.now));for(unsigned i=0;i<10000&&f.client.state()!=Client::State::UploadRead;i++){f.client.tick(f.now);f.server.tick(f.now++);}assert(f.client.state()==Client::State::UploadRead);f.client.cancel();f.run();for(unsigned i=0;i<20;i++)f.server.tick(f.now++);assert(f.client.uncertain());uint64_t n;bool dir;assert(!f.volume.api()->stat(f.volume.api()->context,"/cancelled.txt",&n,&dir));}
+ {Fixture f;Store backing;RiscUserFiles::Volume local;assert(local.begin(&backing.api,{nullptr,[](void*){return true;},malloc,free}));auto api=*reinterpret_cast<const risc_storage_volume_api_v1_fs*>(local.api());static int observed=RISC_STORAGE_STATE_UNAVAILABLE;api.state.observe=[](void*){return observed;};auto base=&api.state.prepared.base.sleep.terminal.power.volume.base;RemoteVolume remote(f.client,{nullptr,[](void*){return true;}});assert(!remote.download("/missing",base,"/download.txt",f.now));assert(remote.state()==RemoteVolume::State::Failed&&backing.revision==0);observed=RISC_STORAGE_STATE_READY;assert(remote.download("/missing",base,"/download.txt",f.now));observed=RISC_STORAGE_STATE_UNAVAILABLE;for(unsigned i=0;i<20000;i++){auto state=remote.tick(f.now);f.server.tick(f.now++);if(state==RemoteVolume::State::Failed)break;}assert(remote.state()==RemoteVolume::State::Failed&&backing.revision==0);assert(remote.close());assert(local.end());}
  puts("Peer WebDAV: 8 existing Watch mappings, revision replacement/stale rejection, actual Digest/client/server/UserFiles volume, fragmented nonblocking transport, PUT/GET both directions, PROPFIND, MOVE/COPY/DELETE, exclusive creation and confinement PASS");
 }
+
+#endif

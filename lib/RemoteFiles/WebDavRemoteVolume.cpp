@@ -4,419 +4,223 @@
 #include <algorithm>
 namespace RiscWebDav {
 bool RemoteVolume::available()const{return state_==State::Idle||state_==State::Done||state_==State::Failed;
-
 }
 bool RemoteVolume::storageSafe(){if(!local_)return true;
-
 const auto*s=risc_storage_volume_state(local_);
-
 if(!s||s->observe(local_->context)==RISC_STORAGE_STATE_RETAINED){state_=State::Retained;
-
 return false;
-
 }return s->observe(local_->context)==RISC_STORAGE_STATE_READY;
-
 }
 void RemoteVolume::fail(const char*s){if(state_==State::Retained)return;
-
 snprintf(error_,sizeof(error_),"%s",s);
-
 success_=false;
-
 state_=file_?State::Close:State::Failed;
-
 }
 bool RemoteVolume::start(Mode m){if(!available()||file_||!client_.ready()||!hooks_.owner||!hooks_.owner(hooks_.context))return false;
-
 mode_=m;
-
 cancelled_=success_=published_=temporary_=uncertain_=false;
-
 local_=nullptr;
-
 error_[0]=0;
-
 xmlSize_=0;
-
 state_=State::Network;
-
 return true;
-
 }
 Client::Io RemoteVolume::io(){return {this,[](void*c){auto&p=*static_cast<RemoteVolume*>(c);
-
 return p.state_!=State::Retained&&p.hooks_.owner(p.hooks_.context);
-
 },
  [](void*c,void*out,size_t cap,size_t*n){auto&p=*static_cast<RemoteVolume*>(c);
-
 *n=0;
-
 if(!p.storageSafe())return false;
-
 *n=p.local_->file_read(p.local_->context,p.file_,out,cap);
-
 return p.storageSafe();
-
 },
  [](void*c,const void*in,size_t n){auto&p=*static_cast<RemoteVolume*>(c);
-
 if(p.mode_==Mode::List){if(n>=sizeof(p.xml_)-p.xmlSize_)return false;
-
 memcpy(p.xml_+p.xmlSize_,in,n);
-
 p.xmlSize_+=n;
-
 p.xml_[p.xmlSize_]=0;
-
 return true;
-
 }if(p.mode_==Mode::Download){if(!p.storageSafe())return false;
-
 size_t wrote=p.local_->file_write(p.local_->context,p.file_,in,n);
-
 return p.storageSafe()&&wrote==n;
-
 }return true;
-
 }};
-
 }
 bool RemoteVolume::list(const char*p,uint64_t now){char encoded[1537];
-
 if(!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return false;
-
 strcpy(path_,p);
-
 count_=0;
-
 if(!client_.request("PROPFIND",p,nullptr,0,io(),now)){fail("Could not request remote folder");
-
 return false;
-
 }return true;
-
 }
 bool RemoteVolume::download(const char*remote,const risc_storage_volume_api_v1*local,const char*destination,uint64_t now){char encoded[1537];
-
 if(!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return false;
-
-
  local_=local;
-
 if(!storageSafe()){fail("Local storage unavailable or exported");
-
 return false;
-
 }strcpy(destination_,destination);
-
 static uint32_t serial=0;
-
 if(serial==UINT32_MAX){fail("Transfer generation exhausted");
-
 return false;
-
 }const char*slash=strrchr(destination,'/');
-
 int n=snprintf(stage_,sizeof(stage_),"%.*s/.peer-%08x.tmp",int(slash-destination),destination,++serial);
-
 if(n<0||size_t(n)>=sizeof(stage_)){fail("Destination path too long");
-
 return false;
-
 }
  file_=local_->file_open_write(local_->context,stage_);
-
 if(!storageSafe()){fail("Local storage changed while opening");
-
 return false;
-
 }if(!file_){fail("Cannot create local temporary file");
-
 return false;
-
 }temporary_=true;
-
-
  if(!client_.request("GET",remote,nullptr,0,io(),now)){fail("Could not request remote file");
-
 return false;
-
 }return true;
-
 }
 bool RemoteVolume::upload(const risc_storage_volume_api_v1*local,const char*source,const char*remote,uint64_t now,bool replace){char encoded[1537];
-
 if(!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return false;
-
 local_=local;
-
 if(!storageSafe()){fail("Local storage unavailable or exported");
-
 return false;
-
 }uint64_t size=0;
-
 file_=local_->file_open_read(local_->context,source,&size);
-
 if(!storageSafe()){fail("Local storage changed while opening");
-
 return false;
-
 }if(!file_){fail("Cannot read local file");
-
 return false;
-
 }uploadSize_=size;
 strcpy(uploadRemote_,remote);
 if(replace)mode_=Mode::ReplaceHead;
-
 if(!client_.request(replace?"HEAD":"PUT",remote,nullptr,replace?0:size,io(),now)){fail("Could not start remote upload");
-
 return false;
-
 }return true;
-
 }
 bool RemoteVolume::mutate(const char*m,const char*p,const char*d,uint64_t now){if(!m||(strcmp(m,"MKCOL")&&strcmp(m,"DELETE")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))||!start(Mode::Mutation))return false;
-
 if(!client_.request(m,p,d,0,io(),now)){fail("Could not start remote operation");
-
 return false;
-
 }return true;
-
 }
 bool RemoteVolume::decode(const char*p,size_t n,char*out,size_t cap){size_t used=0;
-
 auto digit=[](char c)->int{if(c>='0'&&c<='9')return c-'0';
-
 if(c>='A'&&c<='F')return c-'A'+10;
-
 if(c>='a'&&c<='f')return c-'a'+10;
-
 return -1;
-
 };
-
 for(size_t i=0;i<n;i++){unsigned char c=p[i];
-
 if(c=='%'){if(n-i<3)return false;
-
 int a=digit(p[++i]),b=digit(p[++i]);
-
 if(a<0||b<0)return false;
-
 c=uint8_t(a*16+b);
-
 }if(c<32||c=='\\'||used+1>=cap)return false;
-
 out[used++]=char(c);
-
 }out[used]=0;
-
 if(used>1&&out[used-1]=='/')out[--used]=0;
-
 char encoded[1537];
-
 return Client::encodePath(out,encoded,sizeof(encoded));
-
 }
 bool RemoteVolume::parseListing(){
  if(!strstr(xml_,"<D:multistatus xmlns:D=\"DAV:\">")||!strstr(xml_,"</D:multistatus>")||strstr(xml_,"<!"))return false;
-
-
  const char*p=xml_;
-
 unsigned seen=0;
-
 while((p=strstr(p,"<D:response>"))){const char*end=strstr(p,"</D:response>");
-
 if(!end)return false;
-
 const char*a=strstr(p,"<D:href>"),*b=a?strstr(a,"</D:href>"):nullptr;
-
 if(!a||!b||b>end||++seen>Rows+1)return false;
-
 a+=8;
-
 char decoded[513];
-
 if(!decode(a,size_t(b-a),decoded,sizeof(decoded)))return false;
-
 const char*status=strstr(b,"<D:status>HTTP/1.1 200 OK</D:status>");
-
 if(!status||status>end)return false;
-
-
  if(strcmp(decoded,path_)){size_t prefix=strlen(path_);
-
 if(strncmp(decoded,path_,prefix))return false;
-
 const char*name=decoded+prefix;
-
 if(prefix>1){if(*name++!='/')return false;
-
 }if(!*name||strchr(name,'/')||strlen(name)>=128||count_==Rows)return false;
-
 for(unsigned i=0;i<count_;i++)if(!strcmp(rows_[i].path,decoded))return false;
-
 auto&r=rows_[count_++];
-
 r={};
-
 strcpy(r.name,name);
-
 strcpy(r.path,decoded);
-
 const char*collection=strstr(b,"<D:collection/>");
-
 r.directory=collection&&collection<end;
-
 const char*length=strstr(b,"<D:getcontentlength>");
-
 if(length&&length<end){length+=20;
-
 const char*stop=strstr(length,"</D:getcontentlength>");
-
 if(!stop||stop>end||length==stop)return false;
-
 for(;length<stop;length++){if(*length<'0'||*length>'9'||r.size>(UINT64_MAX-9)/10)return false;
-
 r.size=r.size*10+unsigned(*length-'0');
-
 }}else if(!r.directory)return false;
-
 }
  p=end+13;
-
 }
  return seen>0;
-
-
 }
 RemoteVolume::State RemoteVolume::tick(uint64_t now){
  if(available()||state_==State::Retained)return state_;
-
 if(!hooks_.owner(hooks_.context)){state_=State::Retained;
-
 client_.cancel();
-
 return state_;
-
 }
  if(state_==State::Network){auto s=client_.tick(now);
-
 if(s==Client::State::Retained){state_=State::Retained;
-
 return state_;
-
 }if(s!=Client::State::Ready&&s!=Client::State::Error&&s!=Client::State::Off)return state_;
-
 success_=!cancelled_&&s==Client::State::Ready&&client_.status()>=200&&client_.status()<300;
-
-
  if(success_&&mode_==Mode::ReplaceHead){char match[96];
 snprintf(match,sizeof(match),"%s",client_.etag());
 mode_=Mode::Upload;
-
  if(!match[0]||!client_.request("PUT",uploadRemote_,nullptr,uploadSize_,io(),now,match))fail("Remote file has no safe replacement revision");
 return state_;
 }
  if(!success_){snprintf(error_,sizeof(error_),cancelled_?"Transfer cancelled":"Remote operation failed (%u)",client_.status());
-
 }if(mode_==Mode::List){if(success_&&!parseListing()){success_=false;
-
 snprintf(error_,sizeof(error_),"Invalid or oversized remote folder");
-
 }state_=success_?State::Done:State::Failed;
-
 return state_;
-
 }state_=file_?(success_&&mode_==Mode::Download?State::Sync:State::Close):(success_?State::Done:State::Failed);
-
 return state_;
-
 }
  const auto*ext=local_?risc_storage_volume_extension(local_):nullptr;
-
-
  if(state_==State::Sync){if(!storageSafe()){fail("Local storage unavailable while syncing");
-
 return state_;
-
 }if(!ext||!ext->file_sync||!ext->file_sync(local_->context,file_)){success_=false;
-
 snprintf(error_,sizeof(error_),"Local sync failed");
-
 }if(state_!=State::Retained)state_=State::Close;
-
 return state_;
-
 }
  if(state_==State::Close){if(!local_)return state_;
-
 const auto*obs=risc_storage_volume_state(local_);
-
 if(!obs||obs->observe(local_->context)==RISC_STORAGE_STATE_RETAINED){state_=State::Retained;
-
 return state_;
-
 }if(!local_->file_close(local_->context,file_,mode_==Mode::Download?success_:true)){state_=State::Retained;
-
 return state_;
-
 }file_=0;
-
 if(mode_==Mode::Download&&success_)state_=State::Publish;
-
 else {temporary_=false;
-
 state_=success_?State::Done:State::Failed;
-
 }return state_;
-
 }
  if(state_==State::Publish){if(!storageSafe()){fail("Local storage unavailable at publication");
-
 return state_;
-
 }if(!ext||!ext->rename||!ext->rename(local_->context,stage_,destination_)){uncertain_=true;
-
 fail("Publication not confirmed; reload destination");
-
 return state_;
-
 }temporary_=false;
-
 published_=true;
-
 state_=State::Done;
-
 return state_;
-
 }return state_;
-
-
 }
 void RemoteVolume::cancel(){if(state_==State::Retained)return;
-
 cancelled_=true;
-
 success_=false;
-
 if(state_==State::Network)client_.cancel();
-
 else if(file_)state_=State::Close;
-
 else if(!available())state_=State::Failed;
-
 }
 bool RemoteVolume::close(){cancel();
-
 if(file_||state_==State::Network||state_==State::Retained)return false;
-
 return client_.end();
-
 }
 }
