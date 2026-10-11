@@ -173,7 +173,8 @@ int32_t validateAndSave(){
  validationPending=false;
  if(checked!=RISC_INSTALL_OK)return INSTALLED_APPS_UNAVAILABLE;
  unsigned accepted=0;for(unsigned i=0;i<pendingCount;++i)if(admissionResults[i].status==RISC_INSTALL_OK){
-  if(accepted!=i)pending[accepted]=pending[i];++accepted;
+  if(accepted!=i)pending[accepted]=pending[i];
+  ++accepted;
  }
  pendingCount=accepted;
  savePending=true;return finishSave();
