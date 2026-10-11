@@ -48,6 +48,7 @@ def catalog_source(path,limit=18):
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--touch-scrolling",action="store_true",help="Explicit native X4 horizontal paged paper app grid")
+    parser.add_argument("--installed-catalog-volume-instance",type=int,help="Opt in to cached installed-app discovery on this async storage volume")
     parser.add_argument("--catalog",type=Path,help="Explicit bounded installed/admitted deployment catalog JSON")
     parser.add_argument("--display-rotation",type=int,choices=[0,90],default=None,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
     parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
@@ -72,6 +73,9 @@ def build():
     portable_paper_build.validate(args,parser)
     if args.touch_scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
         parser.error("--touch-scrolling requires --time-profile x4-native-time and --paper-transitions")
+    if args.installed_catalog_volume_instance is not None:
+        if args.installed_catalog_volume_instance<1 or not args.touch_scrolling or not args.resident_shell_client:
+            parser.error('Installed catalog requires a positive volume instance and resident touch-scrolling Springboard')
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.touch_scrolling:flags += ["-DPORTABLE_TOUCH_SCROLL","-DPORTABLE_APP_TOUCH_SCROLL","-DPORTABLE_SPRINGBOARD_TOUCH_SCROLL","-DPORTABLE_NOVA_UI"]
@@ -98,6 +102,9 @@ def build():
         shutil.copyfile(ROOT/"lib/PortableApps/paper_fonts"/name,paper_notices/name)
     includes,native_flags,native_sources,native_receipt=portable_native_toolbar_build.configure(args,parser,ROOT,out,'springboard');flags+=native_flags
     includes,paper_flags,paper_transition=portable_paper_build.stage(args,parser,ROOT,out,includes);flags+=paper_flags
+    if args.installed_catalog_volume_instance is not None:
+        flags += ['-DPORTABLE_INSTALLED_CATALOG','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='+str(args.installed_catalog_volume_instance)+'ULL']
+        shutil.copyfile(args.native_time_runtime_repo/'sdk/app/RiscStorageVolumeV1.h',includes/'RiscStorageVolumeV1.h')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
     flags+=portable_broadcast_build.flags(args)
     exports=portable_quick_build.exports(args,{'app_main', 'app_module_init', 'app_module_fini'})
@@ -105,11 +112,12 @@ def build():
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
     catalog = out/'springboard-catalog.c'
     catalog_text,catalog_record=catalog_source(args.catalog,40 if args.touch_scrolling else 18)
-    catalog_bound=max(1,catalog_record['count'] if catalog_record else 0)
+    catalog_bound=40 if args.installed_catalog_volume_instance is not None else max(1,catalog_record['count'] if catalog_record else 0)
     if args.touch_scrolling:flags.append('-DPORTABLE_SPRINGBOARD_CATALOG_BOUND='+str(catalog_bound))
     catalog.write_text(catalog_text)
     elf = out/'springboard.elf'
     sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources+native_sources
+    if args.installed_catalog_volume_instance is not None:sources.append(ROOT/'lib/PortableApps/src/PortableInstalledCatalog.c')
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror', *flags,
@@ -117,7 +125,7 @@ def build():
         '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
-    allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
+    allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','memchr','strcmp','strlen','snprintf','strcpy','malloc','free'}
     if not imports <= allowed: raise ValueError('Unexpected imports: '+str(imports-allowed))
     actual = {line.split()[-1] for line in symbols.splitlines() if len(line.split())>=3 and line.split()[-2] in ('T','D','B','R')}
     if actual != exports: raise ValueError('Unexpected exports: '+str(actual))
@@ -144,6 +152,8 @@ def build():
         'file_name':'springboard.elf','entry':'app_main','requires':[
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'board.battery','api':1},
 ]}
+    if args.installed_catalog_volume_instance is not None:
+        manifest['requires'] += [{'capability':'software.installed-apps','api':1},{'capability':'storage.volume','api':1}]
     if args.navigation: manifest["requires"].append({"capability":"input.navigation","api":1})
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
     if args.denver or args.wall_time: manifest['requires'].append({'capability':'rtc.clock','api':2})
@@ -181,6 +191,10 @@ def build():
         if portable_performance_build.selected(args):
             path='scripts/portable_performance_build.py'
             record['source_sha256'][path]=hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
+    if args.installed_catalog_volume_instance is not None:
+        record['installed_catalog']={'capability':'software.installed-apps','api':1,'volume_instance':args.installed_catalog_volume_instance,
+          'storage_sdk_sha256':hashlib.sha256((includes/'RiscStorageVolumeV1.h').read_bytes()).hexdigest(),
+          'discovery':'copied-async-owner-polls','cache':'internal-app-data','status':'experimental-integration'}
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)

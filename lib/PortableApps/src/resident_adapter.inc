@@ -128,6 +128,13 @@ static int resident_checkpoint(uint32_t reason) {
  if(reason==RISC_RESIDENT_CHECKPOINT_POLL){resident_activity_pending=true;return RISC_RESIDENT_BUSY;}
 #endif
 #endif
+#ifdef PORTABLE_INSTALLED_CATALOG
+ if(installed_catalog_client.volume_grant.api || installed_catalog_client.closing){
+  if(reason==RISC_RESIDENT_CHECKPOINT_POLL)return RISC_RESIDENT_BUSY;
+  if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK)
+   return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
+ }
+#endif
  if(!resident_bind())return RISC_RESIDENT_INCOMPATIBLE;
  if(surface.frame || paper_token || !display_settled || alarm_modal)return RISC_RESIDENT_BUSY;
 #ifdef PORTABLE_FILE_BROWSER_APP

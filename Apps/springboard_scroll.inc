@@ -1,3 +1,6 @@
+#ifdef PORTABLE_INSTALLED_CATALOG
+int portable_installed_prepare_launch(void);
+#endif
 /* Selected X4 paper grid: standard 3 by 4 geometry, 12 apps per horizontal page.
  * Input snapshots logical identities; presentation never gates interaction. */
 #include "PaperPresentation.h"
@@ -76,6 +79,9 @@ static bool sbs_catalog(void) {
         memcpy(sbs_names[i],app.file_name,sizeof(sbs_names[i]));
     }
     changed|=sbs_catalog_visual!=visual;sbs_catalog_visual=visual;
+#ifdef PORTABLE_INSTALLED_CATALOG
+    if(changed){sbs_pressed=sbs_pending=false;sbs_hit_name[0]=sbs_launch_name[0]=0;}
+#endif
     int same=sbs_resolve(selection);if(same>=0)selected=(unsigned)same;
     else if(selected>=count)selected=0;
     if(sbs_pressed&&sbs_resolve(sbs_hit_name)<0)sbs_pressed=false;
@@ -288,6 +294,11 @@ static bool paper_run(void) {
         /* Admission consumes current intent. The adapter owns any outstanding
          * display lease; a completed highlight is never an input prerequisite. */
         if(sbs_pending&&!sample.down) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+            int cleanup=portable_installed_prepare_launch();
+            if(cleanup==1)continue; /* Poll cleanup while the worker progresses. */
+            if(cleanup<0)break;
+#endif
             t5_app_manifest_t app;int index=sbs_resolve(sbs_launch_name);
             if(index>=0&&api->installed_apps_get((unsigned)index,&app)&&app.compatible&&!strcmp(app.file_name,sbs_launch_name)&&api->request_app_launch((unsigned)index)){sbs_layers_release();return true;}
             portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);sbs_cancel();strcpy(status,"UNABLE TO OPEN APP");dirty=true;

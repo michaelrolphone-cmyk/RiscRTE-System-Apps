@@ -1,0 +1,33 @@
+#include "PortableInstalledCatalog.h"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+static unsigned volume_acquires,releases,cancels,steps;static bool pending=true,refuse_release;
+static int refresh(void*p){(void)p;return 0;}
+static uint32_t generation(void*p){(void)p;return 7;}
+static uint32_t count(void*p){(void)p;return 2;}
+static bool get(void*p,uint32_t i,installed_app_v1*out){(void)p;*out=(installed_app_v1){.available=true};strcpy(out->name,"Discovered");strcpy(out->icon,"solid:f15b");strcpy(out->launch_path,i?"Apps/new/new.elf":"reader.elf");return true;}
+static int step(void*p,const risc_storage_volume_api_v1*v){(void)p;assert(v);++steps;return pending?1:0;}
+static int cancel(void*p){(void)p;++cancels;return pending?1:0;}
+static const installed_apps_v1 api={1,sizeof(api),NULL,refresh,generation,count,get,step,cancel,NULL};
+static bool acquire(const char*cap,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){assert(version==1);if(!strcmp(cap,"storage.volume")){assert(instance==42);++volume_acquires;g->api=(void*)1;}else {assert(!strcmp(cap,INSTALLED_APPS_CAPABILITY));g->api=&api;}return true;}
+static bool release(risc_runtime_capability_v1*g){assert(!pending);if(refuse_release)return false;++releases;g->api=NULL;return true;}
+int main(void){
+ const risc_runtime_api_v1 runtime={.acquire=acquire,.release=release};
+ const t5_app_manifest_t base[]={ {.display_name="Reader",.file_name="reader.elf",.icon="solid:f02d",.compatible=true} };
+ portable_installed_catalog c={0};
+ assert(portable_installed_refresh(&c,&runtime,base,1)==0);
+ assert(volume_acquires==0&&steps==0&&c.count==2);
+ assert(!strcmp(c.rows[0].icon,"solid:f02d")&&!strcmp(c.rows[1].file_name,"Apps/new/new.elf"));
+ for(unsigned i=0;i<1000;++i)assert(portable_installed_step(&c,&runtime,42,base,1)==1);
+ assert(volume_acquires==1&&steps==1000&&releases==0);
+ assert(portable_installed_close(&c,&runtime)==1&&releases==0);
+ assert(portable_installed_refresh(&c,&runtime,base,1)==1);
+ pending=false;assert(portable_installed_step(&c,&runtime,42,base,1)==0);
+ assert(releases==2&&!c.service&&!c.volume_grant.api);
+ assert(portable_installed_refresh(&c,&runtime,base,1)==0);
+ assert(portable_installed_step(&c,&runtime,42,base,1)==0&&releases==3);
+ refuse_release=true;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED);
+ unsigned before=cancels;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED&&cancels==before);
+ puts("Installed catalog client: cache-first snapshot, preserved icons, unknown app, 1000 polls, cancellation and retained lease PASS");
+}

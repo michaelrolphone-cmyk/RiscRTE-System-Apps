@@ -1420,6 +1420,9 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+  if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK)return !native_custody_retained;
+#endif
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
   if(portable_adapter_retained())return false;
 #endif
@@ -1824,6 +1827,7 @@ static void clear_contact_snapshots(void) {
 #if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
 static bool wifi_scroll_poll(t5_app_input_t *out);
 #endif
+#include "installed_catalog_adapter.inc"
 #include "resident_adapter.inc"
 #include "resident_shell.inc"
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
@@ -2107,6 +2111,9 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+  installed_progress();
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_suspended || text_input_retained){memset(out,0,sizeof(*out));return false;}
 #endif
@@ -2166,6 +2173,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_WIFI_SETTINGS_APP
   if(!destination)destination=wifi_deferred_return;
 #endif
+#ifdef PORTABLE_INSTALLED_CATALOG
+  if(!destination)destination=installed_deferred_return;
+#endif
   home_pending=false;
   if(ok && destination
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -2206,6 +2216,13 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_WIFI_SETTINGS_APP
     wifi_deferred_return=NULL;
+#endif
+#ifdef PORTABLE_INSTALLED_CATALOG
+    if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK){
+      installed_deferred_return=destination;home_pending=direct_home;
+      memset(out,0,sizeof(*out));return !native_custody_retained;
+    }
+    installed_deferred_return=NULL;
 #endif
     portable_perf_action(PORTABLE_PERF_LAUNCH,true);
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
@@ -2258,6 +2275,18 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #else
 #define PORTABLE_SELECTED_CATALOG_BOUND 18
 #endif
+#ifdef PORTABLE_INSTALLED_CATALOG
+static bool refresh(void) {
+ int rc=portable_installed_refresh(&installed_catalog_client,rt,portable_catalog,portable_catalog_count);
+ if(rc==INSTALLED_APPS_RETAINED)portable_adapter_retain();
+ return rc==INSTALLED_APPS_OK;
+}
+static uint32_t count(void){return installed_catalog_client.count;}
+static bool get(uint32_t i,t5_app_manifest_t*out){
+ if(!out||i>=count())return false;
+ *out=installed_catalog_client.rows[i];return true;
+}
+#else
 static bool refresh(void) { return portable_catalog_count <= PORTABLE_SELECTED_CATALOG_BOUND; }
 static uint32_t count(void) {
   return portable_catalog_count <= PORTABLE_SELECTED_CATALOG_BOUND ? portable_catalog_count : 0;
@@ -2268,14 +2297,22 @@ static bool get(uint32_t i, t5_app_manifest_t *out) {
   *out = portable_catalog[i];
   return true;
 }
+#endif
 static bool launch(uint32_t i) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+  if(i>=count()||!installed_catalog_client.rows[i].compatible)return false;
+  if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK)return false;
+#define SELECTED_CATALOG installed_catalog_client.rows
+#else
+#define SELECTED_CATALOG portable_catalog
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase!=DESK_FOREGROUND)return false;
 #endif
   /* A terminal Home/return is already accepted. Do not replace its target or
    * report a false launch failure to an unwinding nested app. */
   if(handoff_requested)return true;
-  if(i<count())portable_stage_log(rt,"app-launch-request",portable_catalog[i].file_name);
+  if(i<count())portable_stage_log(rt,"app-launch-request",SELECTED_CATALOG[i].file_name);
 #if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_RASTER_SNAPSHOT)
   /* The final ownership boundary settles any sealed software frame before
    * deciding whether its retained transition has finished. Ordinary model
@@ -2291,13 +2328,14 @@ static bool launch(uint32_t i) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       !handoff_active &&
 #endif
-      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && app_allows_launch(portable_catalog[i].file_name) &&
+      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && app_allows_launch(SELECTED_CATALOG[i].file_name) &&
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
       resident_queue_launch(portable_catalog[i].file_name);
 #else
-      rt->request_launch(portable_catalog[i].file_name);
+      rt->request_launch(SELECTED_CATALOG[i].file_name);
 #endif
 }
+#undef SELECTED_CATALOG
 #ifdef PORTABLE_POWER_STATUS
 #include "PortablePowerStatus.h"
 bool portable_power_read(risc_battery_sample_v1 *out) {
@@ -2684,6 +2722,9 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+  if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK){portable_adapter_retain();return;}
+#endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;
   if(text_input_suspended){portable_text_adapter_retain();return;}

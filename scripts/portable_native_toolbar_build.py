@@ -120,6 +120,8 @@ def record(args, record, manifest, receipt):
     if receipt is None:
         return
     bindings = {'storage.key-value': [1], 'runtime.realtime': [0]}
+    if getattr(args,'installed_catalog_volume_instance',None) is not None:
+        bindings['storage.volume']=[args.installed_catalog_volume_instance]
     if manifest['id'] in ('wifi_settings','ota_update','app_store'):
         bindings.update({'net.wifi': [args.wifi_instance], 'storage.key-value': [6, 1]})
     if manifest['id'] == 'file_browser':
