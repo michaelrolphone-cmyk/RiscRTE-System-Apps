@@ -1,0 +1,85 @@
+{
+  "schema": 1,
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "public_branch": "work/files-sharing-client",
+  "public_parent": "b9527121a1d8fe18b1e3e664702f5e854caa5ece",
+  "public_parent_tree": "8639b707a391d02310601fce3af9503197cfd06e",
+  "public_parent_original_equivalent": "341d0bc54ad0873815ad7b24b709ef9576e6c25e",
+  "unpublished_original_commit": "03a6af38a31f7a2cb3aaf67d19f61e6bf1c1bbe7",
+  "corrected_tree": "683c1fa4e3b3899aa93e15847d8e20bbc4126068",
+  "original_commit_object_available": false,
+  "base_file_count": 1710,
+  "files": [
+    {
+      "path": "docs/PORTABLE_FILE_SETUP.md",
+      "mode": "100644",
+      "before_git_blob": "d65e8302c5398008ad222000920dcfaabcef2d9a",
+      "after_git_blob": "04768a398b09e8dcd05dd798749531a2e8a54be4",
+      "after_sha256": "5836c2c61606a627df08b93e6f3f007118b617bce145339fb23cb4f07d97fbb2",
+      "after_bytes": 7440
+    },
+    {
+      "path": "docs/PORTABLE_FILE_SHARING.md",
+      "mode": "100644",
+      "before_git_blob": "1e1b9159978089d74d24ce650d663ed4fe50a800",
+      "after_git_blob": "bacda3c20f9f53935bacb646422c6b75065f5e5a",
+      "after_sha256": "cd7eb3d21a8c9691b32bc8d804a6e065c98048b8be74500a6a6a10066f11a75f",
+      "after_bytes": 7603
+    },
+    {
+      "path": "lib/PortableApps/include/PortableFileSetup.h",
+      "mode": "100644",
+      "before_git_blob": "8381693e333099035784f22dccfbaea64b293672",
+      "after_git_blob": "2e2c306fc10d293097e130bbe3a8053732045122",
+      "after_sha256": "083534c78eff5047655e8d34f075cf820f5b780aabe60b0aa53a19b56a9a732b",
+      "after_bytes": 5223
+    },
+    {
+      "path": "lib/PortableApps/src/PortableFileSetup.c",
+      "mode": "100644",
+      "before_git_blob": "16a70eb6a6bf0281d4abbfe7667ebf518bb33ef8",
+      "after_git_blob": "39e26cd5e3ee2091049b10c28921d055a71ea895",
+      "after_sha256": "e05cf3884ea22894803ef604af8e1d39664b3ac06e6a76100babd20fa2264902",
+      "after_bytes": 16910
+    },
+    {
+      "path": "scripts/portable_file_sharing_build.py",
+      "mode": "100644",
+      "before_git_blob": "e691d2c3c2525d4cc3a12580f79daf0e186f1921",
+      "after_git_blob": "6ae980ba0e8a78c8ca5fd6b5ab86b686e017b70a",
+      "after_sha256": "8a195ab0ee76b5edf163fb98d9a5b79554978b1ded18849e65e713e3c8c2a1a8",
+      "after_bytes": 6048
+    },
+    {
+      "path": "test/native_apps/file_browser_sharing_test.c",
+      "mode": "100644",
+      "before_git_blob": "982e3af3b67327183a68520abd7735a00decc42f",
+      "after_git_blob": "5ba0b7be2d7108accd53e92585c9499cc88ae7f9",
+      "after_sha256": "43c21502a3115ada1a08e827c8402e002507bf26ce154368b3c5c2b4d3dd41e8",
+      "after_bytes": 11411
+    },
+    {
+      "path": "test/native_apps/portable_file_setup_test.c",
+      "mode": "100644",
+      "before_git_blob": "6c6fabc125a8602de1362452299691a904e89dd7",
+      "after_git_blob": "b0c74483354c246866bacd06424840e11aab59eb",
+      "after_sha256": "5ca0da58a74427936bdd9c2dee7968128294c98d005516cca4cafc1e8a27b478",
+      "after_bytes": 23815
+    },
+    {
+      "path": "tests/test_file_sharing_build.py",
+      "mode": "100644",
+      "before_git_blob": "9160b44f52895417b06c4a5503a396d2f0ad3c45",
+      "after_git_blob": "be8a17f9c6e7f5a5b453603364684d238f7a1b20",
+      "after_sha256": "7de1617d216c42da5c1f4d56835be18d63c5f6b2477ba4c8dc46257ed4dcf0b6",
+      "after_bytes": 1959
+    }
+  ],
+  "verification": {
+    "all_8_current_files_match_saved_payload": true,
+    "patch_applies_to_exact_base_files": true,
+    "patch_result_matches_all_8_files": true,
+    "public_base_tree_recomputed": "8639b707a391d02310601fce3af9503197cfd06e",
+    "corrected_full_tree_recomputed": "683c1fa4e3b3899aa93e15847d8e20bbc4126068"
+  }
+}

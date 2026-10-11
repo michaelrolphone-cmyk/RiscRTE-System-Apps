@@ -15,8 +15,8 @@ store credentials, or implement Bluetooth pairing.
 2. First establish an authorized, ready, finite HTTP(S) WebDAV session. In direct
    response to the user's setup action, build a canonical descriptor containing
    its URL, temporary username/password, session ID, and remaining duration.
-   Call `portable_file_setup_start` with the exact nonzero authorized provider
-   instance, a printable display name, and a distinct 1–300000 ms setup duration.
+   Call `portable_file_setup_start` with the exact authorized provider
+   instance (zero for the selected software provider), a printable display name, and a distinct 1–300000 ms setup duration.
    Start copies the descriptor and performs no external I/O. Wipe the caller's
    temporary descriptor immediately afterward, including on rejected start.
 3. Call `portable_file_setup_step` at least every 20 ms while active. Startup
