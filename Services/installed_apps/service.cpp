@@ -20,6 +20,10 @@ const risc_storage_volume_api_v1*volume;
 using Scan=RiscPackages::InstalledAppAsyncDiscovery;
 alignas(Scan) unsigned char scannerMemory[sizeof(Scan)];Scan*scanner;
 char scratch[CacheMax],persisted[CacheMax],removeId[96];size_t persistedSize;bool persistedKnown;
+enum class RemovePhase {Idle,Submit,Wait,RollbackSubmit,RollbackWait,End};
+RemovePhase removePhase;uint64_t removeSession,removeOperation;
+char removeSource[205],removeDestination[205],removeLaunch[193];int32_t removeOutcome;
+risc_storage_async_result_v1 removeResult;
 bool started,loaded,requested,retained,inCall,overflow,commitPending,commitReplace;
 const char cacheName[]="installed.apps";
 bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
@@ -115,8 +119,65 @@ int32_t save(){
  std::memcpy(persisted,scratch,size);persistedSize=size;persistedKnown=true;
  return INSTALLED_APPS_OK;
 }
+int32_t removeStep(const risc_storage_volume_api_v1*v){
+ const auto*a=v?risc_storage_volume_async(v):nullptr;
+ if(!a)return INSTALLED_APPS_UNAVAILABLE;
+ if(removePhase==RemovePhase::Idle){
+  if(scanner){
+   scanner->cancel();scanner->step();
+   if(scanner->state()==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
+   if(scanner->state()!=Scan::State::Complete&&scanner->state()!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
+   scanner->~Scan();scanner=nullptr;volume=nullptr;
+  }
+  unsigned i=0;for(;i<currentCount;++i)if(!std::strcmp(removeId,current[i].view.id))break;
+  if(i==currentCount){removeId[0]=0;return INSTALLED_APPS_INVALID;}
+  int32_t rc=native->forget(native->context,current[i].view.launch_path,true);
+  if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;
+  if(rc!=RISC_INSTALL_OK){removeId[0]=0;return INSTALLED_APPS_INVALID;}
+  std::snprintf(removeSource,sizeof(removeSource),"/%s",current[i].path);
+  if(std::strlen(removeSource)+12>=sizeof(removeDestination)){removeId[0]=0;return INSTALLED_APPS_INVALID;}
+  std::strcpy(removeDestination,removeSource);std::strcat(removeDestination,".uninstalled");
+  std::strcpy(removeLaunch,current[i].view.launch_path);
+  rc=a->begin(v->context,&removeSession);
+  if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
+  if(rc!=RISC_STORAGE_ASYNC_OK)return INSTALLED_APPS_UNAVAILABLE;
+  volume=v;removePhase=RemovePhase::Submit;removeOutcome=INSTALLED_APPS_UNAVAILABLE;
+ }
+ if(volume!=v)return INSTALLED_APPS_INVALID;
+ if(removePhase==RemovePhase::Submit||removePhase==RemovePhase::RollbackSubmit){
+  const bool rollback=removePhase==RemovePhase::RollbackSubmit;
+  risc_storage_async_request_v1 q{};q.operation=RISC_STORAGE_ASYNC_RENAME;
+  std::strcpy(q.path,rollback?removeDestination:removeSource);
+  std::strcpy(q.destination,rollback?removeSource:removeDestination);
+  int32_t rc=a->submit(v->context,removeSession,&q,&removeOperation);
+  if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
+  if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}
+  removePhase=rollback?RemovePhase::RollbackWait:RemovePhase::Wait;return INSTALLED_APPS_WORKING;
+ }
+ if(removePhase==RemovePhase::Wait||removePhase==RemovePhase::RollbackWait){
+  const bool rollback=removePhase==RemovePhase::RollbackWait;
+  int32_t rc=a->collect(v->context,removeSession,removeOperation,&removeResult);
+  if(rc==RISC_STORAGE_ASYNC_PENDING)return INSTALLED_APPS_WORKING;
+  if(rc==RISC_STORAGE_ASYNC_RETAINED||(rollback&&rc!=RISC_STORAGE_ASYNC_OK)){retained=true;return INSTALLED_APPS_RETAINED;}
+  if(!rollback&&rc==RISC_STORAGE_ASYNC_OK){
+   if(native->forget(native->context,removeLaunch,false)!=RISC_INSTALL_OK){removePhase=RemovePhase::RollbackSubmit;return INSTALLED_APPS_WORKING;}
+   for(unsigned i=0;i<currentCount;++i)if(!std::strcmp(current[i].view.launch_path,removeLaunch))current[i].view.available=false;
+   if(catalog.generation<UINT32_MAX)++catalog.generation;
+   removeOutcome=INSTALLED_APPS_OK;
+  }
+  removePhase=RemovePhase::End;
+ }
+ int32_t rc=a->end(v->context,removeSession);
+ if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
+ if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}
+ removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeId[0]=0;volume=nullptr;
+ if(removeOutcome==INSTALLED_APPS_OK)requested=true;
+ return removeOutcome;
+}
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
+ if(removePhase!=RemovePhase::Idle){int32_t rc=removeStep(volume);if(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_RETAINED)return rc;}
+ removeId[0]=0;
  if(scanner){scanner->cancel();scanner->step();
   if(scanner->state()==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
   if(scanner->state()!=Scan::State::Complete&&scanner->state()!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
@@ -132,22 +193,8 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(commitPending)return publish(commitReplace);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
  if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
- if(removeId[0]){
-  if(scanner)return INSTALLED_APPS_WORKING;
-  unsigned i=0;for(;i<currentCount;++i)if(!std::strcmp(removeId,current[i].view.id))break;
-  if(i==currentCount){removeId[0]=0;return INSTALLED_APPS_INVALID;}
-  const auto*ext=reinterpret_cast<const risc_storage_volume_api_v1_ext*>(v);
-  if(v->struct_size<sizeof(*ext)||!ext->rename)return INSTALLED_APPS_INVALID;
-  char source[194],destination[205];std::snprintf(source,sizeof(source),"/%s",current[i].path);std::snprintf(destination,sizeof(destination),"%s.uninstalled",source);
-  int32_t rc=native->forget(native->context,current[i].view.launch_path,true);
-  if(rc!=RISC_INSTALL_OK){removeId[0]=0;return rc==RISC_INSTALL_BUSY?INSTALLED_APPS_WORKING:INSTALLED_APPS_INVALID;}
-  if(!ext->rename(v->context,source,destination))return INSTALLED_APPS_UNAVAILABLE;
-  rc=native->forget(native->context,current[i].view.launch_path,false);
-  if(rc!=RISC_INSTALL_OK){
-   if(!ext->rename(v->context,destination,source)){retained=true;return INSTALLED_APPS_RETAINED;}
-   return INSTALLED_APPS_UNAVAILABLE;
-  }
-  removeId[0]=0;requested=true;return INSTALLED_APPS_WORKING;
+ if(removeId[0]||removePhase!=RemovePhase::Idle){
+  int32_t rc=removeStep(v);return rc==INSTALLED_APPS_OK?INSTALLED_APPS_WORKING:rc;
  }
  if(!scanner){volume=v;pendingCount=0;overflow=false;scanner=new(scannerMemory)Scan();
   if(!scanner->start(v,offer,nullptr)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
@@ -171,6 +218,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
  if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ removePhase=RemovePhase::Idle;removeSession=removeOperation=0;
  installed_catalog_init(&catalog);currentCount=pendingCount=0;persistedKnown=false;persistedSize=0;loaded=requested=retained=inCall=overflow=commitPending=commitReplace=false;removeId[0]=0;scanner=nullptr;volume=nullptr;started=true;return true;
 }
 bool quiesce(){return cancel(nullptr)==INSTALLED_APPS_OK;}
@@ -178,7 +226,7 @@ void stop(){started=false;native=nullptr;storage=nullptr;}
 const installed_apps_v1 api={1,sizeof(api),nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&catalog.sd_ready;return true;},step,cancel,
- [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;}};
+ [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;}};
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

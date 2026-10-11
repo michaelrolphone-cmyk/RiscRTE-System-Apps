@@ -1942,7 +1942,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     }
 #endif
     if(reason==RISC_RESIDENT_CHECKPOINT_CONTROLS) {
-      resident_controls_requested=false;return true;
+      return resident_controls_complete(status);
     }
   }
 #endif

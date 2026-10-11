@@ -54,6 +54,10 @@ static bool resident_focus(bool active) {
  * linked into a converted foreground. Its model/stack remain live at dispatch. */
 static bool resident_top_pending,resident_controls_requested,resident_neutral_gate;
 static int resident_top_x,resident_top_y;
+static bool resident_controls_complete(int status){
+ if(status!=RISC_RESIDENT_BUSY)resident_controls_requested=false;
+ return true;
+}
 static void resident_input(portable_touch_sample *sample) {
  if(resident_neutral_gate) {
   if(sample->valid && !sample->down && !touch.home_down)resident_neutral_gate=false;
