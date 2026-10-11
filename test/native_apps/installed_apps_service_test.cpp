@@ -111,6 +111,19 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  assert(api.cancel(nullptr)==INSTALLED_APPS_OK); // offline intent does not trap Home
  assert(saved.find("removal")!=std::string::npos);
  present=true;assert(api.refresh(nullptr)==INSTALLED_APPS_WORKING);assert(run()==INSTALLED_APPS_OK&&!manifestPresent&&api.count(nullptr)==0);
+ // Cancellation at journal-clear must collect its native cache write even
+ // though the SD session has already ended and its borrowed volume is null.
+ manifestPresent=true;assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK);
+ assert(api.remove(nullptr,"new-after-build")==INSTALLED_APPS_OK);
+ unsigned clearSteps=0;
+ while(!(removePhase==RemovePhase::Clear&&cacheOperation)){
+  assert(api.step(nullptr,&sd.base)==INSTALLED_APPS_WORKING);assert(++clearSteps<100);
+  executing=true;worker.workerStep();if(removePhase!=RemovePhase::Clear)cacheWorker.workerStep();executing=false;
+ }
+ assert(!volume);
+ for(unsigned i=0;i<1000;++i)assert(api.cancel(nullptr)==INSTALLED_APPS_WORKING&&cacheOperation);
+ executing=true;assert(cacheWorker.workerStep());executing=false;
+ assert(api.cancel(nullptr)==INSTALLED_APPS_OK&&!cacheOperation&&!removeIntent);
  // Repeated restart after deletion but before journal-clear is idempotent.
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();saved=interrupted;++revision;begin();
  assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&api.count(nullptr)==0);const unsigned deleted=renames;

@@ -243,7 +243,7 @@ int32_t validateAndSave(){
 // old image while the card is missing or exported. Images/settings stay intact.
 int32_t removeStep(const risc_storage_volume_api_v1*v){
  const auto*a=v?risc_storage_volume_async(v):nullptr;
- if(!a||a->async_version<3)return INSTALLED_APPS_UNAVAILABLE;
+ if(removePhase==RemovePhase::Idle&&(!a||a->async_version<3))return INSTALLED_APPS_UNAVAILABLE;
  if(removePhase==RemovePhase::Idle){
   if(scanner){
    scanner->cancel();scanner->step();
@@ -274,6 +274,7 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
   int32_t rc=save();if(rc!=INSTALLED_APPS_OK){removeIntent=true;return rc;}
   removeId[0]=0;removePhase=RemovePhase::Idle;requested=true;return INSTALLED_APPS_OK;
  }
+ if(!a||a->async_version<3)return INSTALLED_APPS_UNAVAILABLE;
  if(!removeSession){
   int32_t rc=a->begin(v->context,&removeSession);
   if(rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;

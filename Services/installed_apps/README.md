@@ -66,3 +66,8 @@ release feed and bank-update API remain separate; removal uses no Wi-Fi, UTC or
 restart. Host tests cover the actual controller confirmation, stale selection,
 1,000 pending polls, checked asynchronous cancellation and all 38 existing
 release-controller scenarios. The image and settings are deliberately retained.
+
+0.3.3 also drains a pending journal-clear write after the SD session has ended.
+Its regression holds 1,000 Cancel polls at that exact boundary and proves the
+native cache operation is collected before release. A null borrowed SD pointer
+must not bypass independent cache-write custody.
