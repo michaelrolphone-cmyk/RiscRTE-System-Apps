@@ -3,7 +3,7 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-VERSION = '1.5.27'
+VERSION = '1.5.28'
 def selected_version(args):return VERSION
 MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
@@ -95,6 +95,7 @@ def record(args,root,out,manifest,record):
     if len(grants)>16:raise ValueError(f'Sharing profile exceeds 16 live app grants: {len(grants)}')
     record.update(required_grants=grants,requested_capabilities=manifest['requires'],grant_count=len(grants))
     record['file_sharing']={'peer_files':getattr(args,'peer_files',False),'enabled':True,'transport':'authenticated-http','content_encrypted':False,'explicit_start':True,'lifetime_ms':300000,'listen_port':8080,'default_transport':'ble-private-wifi' if setup is not None else 'same-lan','same_lan_profile':0,'private_network_profile_writes':False,'credentials_namespace':6,'radio_policy_namespace':1,'instances':instances,'app_data_export_required':export_required(args),'root_policy':'selected storage.volume only' if not export_required(args) else 'boot-configured export map or selected storage.volume','ble_setup':setup is not None,'hardware_qualified':False}
+    record['file_sharing']['protected_settings']={'root':'/RTECFG','direct_recursive_and_peer':True,'helper_sha256':hashlib.sha256((root/'lib/PortableApps/include/RiscProtectedSettingsPath.h').read_bytes()).hexdigest()}
     record['source_sha256']['scripts/portable_file_sharing_build.py']=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     dest=out/'licenses/webdav';dest.mkdir(parents=True,exist_ok=True)
     for name in ('lib/RemoteFiles/vendor/tinydtls_sha2/LICENSE.txt','lib/RemoteFiles/vendor/tinydtls_sha2/PROVENANCE.md'):

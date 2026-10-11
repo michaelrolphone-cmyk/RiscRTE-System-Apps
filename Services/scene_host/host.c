@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
+#include "RiscRuntimeHostControlV1.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscTouchV1.h"
 #include "RiscInputNavigationV1.h"
@@ -666,7 +667,7 @@ static void fill(int x,int y,int w,int h,uint16_t c){
     for(int yy=y1;yy<y2;yy++)for(int xx=x1;xx<x2;xx++)pixel(xx,yy,c);
 }
 static void text(int x,int y,int w,const char *s,unsigned scale,uint16_t color){
-    if(layout_only||!scale)return;
+    if(layout_only||!scale||y>=(int)clip_bottom||y+(int)(7u*scale)<=(int)clip_top)return;
     int maximum=w/(int)(6u*scale);if(maximum>72)maximum=72;
     for(int k=0;k<maximum&&s[k];k++){
         unsigned char c=(unsigned char)s[k];
@@ -824,7 +825,8 @@ static int32_t paint(void){
     /* A bounded logical-row slice works for every pixel format and rotation.
      * No provider callbacks or reentrant dispatch occur with the frozen model
      * installed. The caller services physical input between every slice. */
-    model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+8;
+    const unsigned rows=surface.pixel_format==RISC_DISPLAY_FORMAT_RGB565?32u:8u;
+    model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+rows;
     if(clip_bottom>height)clip_bottom=height;
     draw_scene();raster_row=clip_bottom;model=&logical_model;
     if(raster_row<height)return RISC_SCENE_AGAIN;
@@ -997,6 +999,13 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!event||event->struct_size!=sizeof(*event))return RISC_SCENE_INVALID;
     if(closing||paused||pausing)return RISC_SCENE_BUSY;
+    if(risc_runtime_exit_requested_v1(risc_runtime_get_api(1))){
+        // Native requests cannot sit behind touch/keyboard/render queues.
+        cancel_contacts();raw_count=key_count=0;have_event=false;
+        *event=(risc_scene_event_v1){.struct_size=sizeof(*event),.kind=RISC_SCENE_SUSPEND_EVENT,
+            .sequence=++event_serial,.document_revision=document.revision};
+        return RISC_SCENE_OK;
+    }
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0)return r;

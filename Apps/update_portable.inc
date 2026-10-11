@@ -66,7 +66,7 @@ static bool update_radio_close(void) {
  if(uwg.api&&!ur->release(&uwg)){cleanup_pending=true;message="Wi-Fi release failed; retry Back";dirty=true;return false;}
  memset(&uwg,0,sizeof(uwg));uw=NULL;connecting=false;cleanup_pending=false;radio_owned=false;return true;
 }
-#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
 bool portable_update_idle_ready(void) {
  if(PORTABLE_APP_RETAINED())return false;
  return !opened || (!connecting && !cleanup_pending && !confirming && !install_after_connect &&

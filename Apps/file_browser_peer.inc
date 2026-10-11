@@ -71,7 +71,7 @@ fb_dirty=true;
  }
  if(next.state==PEER_READY&&fpeer_open_after){
   fpeer_open_after=false;
-  if(next.published_path[0]&&strlen(next.published_path)<sizeof(fpeer_launch_path)){
+  if(next.published_path[0]&&!risc_protected_settings_path(next.published_path)&&strlen(next.published_path)<sizeof(fpeer_launch_path)){
    strcpy(fpeer_launch_path,next.published_path);
 fpeer_launch=true;
 fsh_phase=FSH_STOPPING;

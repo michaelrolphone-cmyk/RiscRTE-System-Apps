@@ -27,8 +27,9 @@
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && pp_enabled()) {
     paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};unsigned value=0;
+    int preference_status=PORTABLE_READER_UNAVAILABLE;
     if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant)) {
-      (void)portable_reader_preference_load(paper_preferences_grant.api,false,&value);
+      preference_status=portable_reader_preference_load(paper_preferences_grant.api,false,&value);
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
       if(native_custody_retained)return -1;
 #endif
@@ -44,7 +45,9 @@
         return -1;
       }
     }
-    paper_flip_ui=value!=0;
+    paper_preferences_pending=preference_status==PORTABLE_READER_UNAVAILABLE;
+    paper_preferences_retry_at=millis_now()+250u;
+    if(!paper_preferences_pending)paper_flip_ui=value!=0;
   }
 #endif
 #ifdef PORTABLE_NOVA_UI

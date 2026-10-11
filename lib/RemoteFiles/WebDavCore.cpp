@@ -1,4 +1,5 @@
 #include "WebDavCore.h"
+#include <RiscProtectedSettingsPath.h>
 #include "WebDavVolume.h"
 #include <new>
 #include <cstring>
@@ -86,6 +87,7 @@ unsigned parseRequest(const char*data,size_t size,Request&out){
   if(!std::strncmp(value,"http://",7)){value+=7;const char*slash=std::strchr(value,'/');if(!slash||size_t(slash-value)!=std::strlen(out.host)||std::memcmp(value,out.host,slash-value))return 403;value=slash;}
   if(!path(value,std::strlen(value),out.destination))return 400;
  }
+ if(risc_protected_settings_path(out.path)||risc_protected_settings_path(out.destination))return 403;
  if((out.ifMatch[0]&&!tagList(out.ifMatch))||(out.ifNoneMatch[0]&&!tagList(out.ifNoneMatch)))return 400;
  if(out.contentLength>64u*1024u*1024u)return 413;
  if(!std::strcmp(out.method,"PUT")&&!(seen&2))return 400;
@@ -135,8 +137,8 @@ bool Transaction::backend(int32_t rc){
  else if(rc==RISC_APP_DATA_COMMIT_UNKNOWN)error(500,"Commit outcome unknown; reload before retrying\n");else error(500,"Storage operation failed\n");
  return false;
 }
-bool Transaction::selected(const char*p,bool*writable)const{for(unsigned i=0;i<count_;++i)if(!std::strcmp(p,catalog_[i].path)){if(writable)*writable=catalog_[i].writable!=0;return true;}return false;}
-bool Transaction::directory(const char*p)const{if(!std::strcmp(p,"/"))return true;size_t n=std::strlen(p);for(unsigned i=0;i<count_;++i)if(!std::strncmp(p,catalog_[i].path,n)&&catalog_[i].path[n]=='/')return true;return false;}
+bool Transaction::selected(const char*p,bool*writable)const{if(risc_protected_settings_path(p))return false;for(unsigned i=0;i<count_;++i)if(!std::strcmp(p,catalog_[i].path)){if(writable)*writable=catalog_[i].writable!=0;return true;}return false;}
+bool Transaction::directory(const char*p)const{if(risc_protected_settings_path(p))return false;if(!std::strcmp(p,"/"))return true;size_t n=std::strlen(p);for(unsigned i=0;i<count_;++i)if(!risc_protected_settings_path(catalog_[i].path)&&!std::strncmp(p,catalog_[i].path,n)&&catalog_[i].path[n]=='/')return true;return false;}
 bool Transaction::begin(const risc_app_data_export_v1*files,const Hooks&hooks,const Request&request,const void*body,size_t size){
  if(state_!=State::Idle&&state_!=State::Done)return false;
  if(!files||!risc_app_data_export_catalog(&files->volume.terminal.power.volume.base)||!files->stat_revision||!files->read_revision||!files->replace_revision||!hooks.owner||!hooks.authorize||!hooks.authenticationChallenge||!hooks.allocate||!hooks.deallocate||(!body&&size)||size!=request.contentLength||size>RISC_APP_DATA_FILE_MAX)return false;
@@ -155,12 +157,12 @@ bool Transaction::begin(const risc_app_data_export_v1*files,const Hooks&hooks,co
  std::memcpy(challenge_,hooks.authenticationChallenge,challengeSize+1);
  files_=files;hooks_=hooks;request_=request;input_=body;inputSize_=size;count_=row_=rows_=0;headerSize_=outputSize_=outputCapacity_=0;output_=nullptr;etag_[0]=0;operation_=Operation::None;status_=0;head_=!std::strcmp(request.method,"HEAD");properties_={};state_=State::Catalog;
  if(!valid())return false;
- if(!hooks_.authorize(hooks_.context,request_,AuthPhase::Complete,input_,inputSize_)){if(!valid())return false;error(401,"Authentication required\n");}return true;
+ if(!hooks_.authorize(hooks_.context,request_,AuthPhase::Complete,input_,inputSize_)){if(!valid())return false;error(401,"Authentication required\n");}else if(risc_protected_settings_path(request_.path)){error(403,"Protected system settings\n");}return true;
 }
 bool Transaction::buildListing(){
  rows_=1;std::strcpy(listing_[0].path,request_.path);listing_[0].directory=directory(request_.path);
  if(!listing_[0].directory||request_.depth==0)return true;
- const size_t base=std::strlen(request_.path);for(unsigned i=0;i<count_;++i){const char*p=catalog_[i].path;
+ const size_t base=std::strlen(request_.path);for(unsigned i=0;i<count_;++i){const char*p=catalog_[i].path;if(risc_protected_settings_path(p))continue;
   if(base>1){if(std::strncmp(p,request_.path,base)||p[base]!='/')continue;p+=base;}const char*slash=std::strchr(p+1,'/');
   size_t n=slash?size_t(slash-catalog_[i].path):std::strlen(catalog_[i].path);bool exists=false;
   for(unsigned j=0;j<rows_;++j)exists=exists||(std::strlen(listing_[j].path)==n&&!std::memcmp(listing_[j].path,catalog_[i].path,n));

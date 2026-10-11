@@ -48,6 +48,8 @@ int portable_desk_clock_mode(void);
 bool portable_desk_adapter_foreground(void);
 
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+/* Foreground hydration gate only; retained TIMER never changes this state. */
+void portable_desk_adapter_settings_pending(bool pending);
 /* Pure cached classification from the existing boot_read; no extra native read. */
 bool portable_desk_clock_boot_is_cold(void);
 bool portable_desk_clock_boot_is_interactive(void);

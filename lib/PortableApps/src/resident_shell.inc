@@ -3,6 +3,8 @@
 #include "PortableResidentShell.h"
 static bool resident_registered,resident_child_active,resident_dispatching,resident_sleep_pending;
 static const char *resident_launch_pending;
+static bool resident_launch_busy;
+bool portable_resident_launch_busy(void){return resident_launch_busy;}
 static bool resident_queue_launch(const char *path) {
  if(native_custody_retained || !path || resident_launch_pending)return false;
  if(resident_dispatching) {
@@ -122,6 +124,7 @@ static int resident_launch_refused(void) {
  return 0;
 }
 int portable_resident_run_foreground(const char *path) {
+ resident_launch_busy=false;
  if(native_custody_retained)return -1;
  if(resident_child_active || resident_dispatching)return 0;
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
@@ -195,6 +198,7 @@ int portable_resident_run_foreground(const char *path) {
     * an earlier invocation's app or the unrelated previous-reset record. */
    if(outcome.failure.status==status && outcome.failure.invocation==outcome.invocation)
     (void)resident_failure_copy(&launch_failure,&outcome.failure);
+   resident_launch_busy=status==RISC_RESIDENT_BUSY;
    result=0;resident_launch_pending=NULL;resident_sleep_pending=false;break;
   }
   path=resident_launch_pending;

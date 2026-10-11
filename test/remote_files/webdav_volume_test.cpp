@@ -43,6 +43,20 @@ struct Fixture {
 };
 Fixture*Fixture::active=nullptr;size_t Fixture::maximumPeak=0;
 int main(){
+ // Reserved settings are never exposed, even through FAT aliases or URL encoding.
+ for(const char*path:{"/RTECFG","/rtecfg/00000001/settings.index","/%52tEcFg./x","/rtecfg%20/x","/folder/RTECFG/x"}){
+  for(const char*method:{"GET","HEAD","PROPFIND","PUT","DELETE","MKCOL","MOVE","COPY"}){
+   Fixture f;assert(f.run(method,path)==403);assert(f.calls==0);
+  }
+  for(const char*method:{"MOVE","COPY"}){Fixture f;std::string h=std::string("Destination: ")+path+"\r\n";assert(f.run(method,"/file.txt",h.c_str())==403&&f.calls==0);}
+ }
+ {Fixture f;f.nodes["/RTECFG"]={"",true};f.nodes["/rTeCfG. "]={"",true};f.nodes["/RTECFG.txt"]={"visible",false};
+  assert(f.run("PROPFIND","/","Depth: 1\r\n")==207);assert(f.response.find("/RTECFG/")==std::string::npos&&f.response.find("rTeCfG")==std::string::npos&&f.response.find("RTECFG.txt")!=std::string::npos);}
+ for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.nodes["/folder/RtEcFg"]={"",true};f.nodes["/folder/RtEcFg/checkpoint"]={"opaque-test-value",false};
+  assert(f.run(method,"/folder","Destination: /elsewhere\r\n")==409);
+  assert(f.nodes.at("/folder/RtEcFg/checkpoint").data=="opaque-test-value");
+  assert(!f.nodes.count("/elsewhere/RtEcFg")&&!f.nodes.count("/elsewhere/RtEcFg/checkpoint"));}
+
  {Fixture f;assert(f.run("GET","/file.txt")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)=="old");assert(f.run("HEAD","/file.txt")==200);assert(f.response.find("Content-Length: 3")!=std::string::npos);}
  {Fixture f;assert(f.run("PUT","/large-upload","",std::string(1024*1024,'u'))==201);assert(f.nodes["/large-upload"].data==std::string(1024*1024,'u'));}
  {Fixture f;f.nodes["/big"]={std::string(2*1024*1024,'x'),false};assert(f.run("GET","/big")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)==f.nodes["/big"].data);assert(f.run("COPY","/big","Destination: http://watch.local/copy\r\nOverwrite: F\r\n")==201);assert(f.nodes["/copy"].data==f.nodes["/big"].data);}

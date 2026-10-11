@@ -30,13 +30,15 @@ static bool desk_radios_off,desk_held,desk_promoted,desk_promotion_attempted,des
 static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
+static bool desk_config_pending;
+static uint32_t desk_config_retry_at;
 #ifdef PORTABLE_DESK_LOCK_HOME
 static bool desk_lock_requested,desk_direction_known;
 static unsigned desk_foreground_flip;
 bool portable_desk_clock_lock_requested(void){return desk_lock_requested;}
 bool portable_desk_clock_request_lock(bool enabled) {
  if(desk_retained || desk_held)return false;
- if(enabled && !desk_direction_known){desk_returned=true;return false;}
+ if(enabled && (desk_config_pending || !desk_direction_known)){desk_returned=true;return false;}
  desk_lock_requested=enabled;
  return enabled || portable_desk_adapter_landscape(false,desk_foreground_flip);
 }
@@ -135,26 +137,40 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
  if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
  if(!grant.api || !grant.slot || !grant.generation){desk_fence();return false;}
- unsigned face,time_format,language,flip;
+ unsigned face,time_format,language,flip,sleep_mode;
+ portable_rtc_basis next_basis;
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_time_format_load(grant.api,&time_format);
+ int time_status=portable_time_format_load(grant.api,&time_format);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_desk_face_load(grant.api,&face);
+ int face_status=portable_desk_face_load(grant.api,&face);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_reader_preference_load(grant.api,true,&language);
+ int language_status=portable_reader_preference_load(grant.api,true,&language);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_reader_preference_load(grant.api,false,&flip);
+ int flip_status=portable_reader_preference_load(grant.api,false,&flip);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- (void)portable_sleep_load_profile(grant.api,3u,PORTABLE_SLEEP_LIGHT,mode);
+ int sleep_status=portable_sleep_load_profile(grant.api,3u,PORTABLE_SLEEP_LIGHT,&sleep_mode);
  portable_perf_count(PORTABLE_PERF_KV_READS);
  int zone=portable_timezone_preference_load(grant.api,config.time_zone);
  portable_perf_count(PORTABLE_PERF_KV_READS);
- int basis=portable_rtc_basis_load(grant.api,&desk_basis);
+ int basis=portable_rtc_basis_load(grant.api,&next_basis);
 #ifdef PORTABLE_DESK_LOCK_HOME
  unsigned direction=0;portable_perf_count(PORTABLE_PERF_KV_READS);
  int direction_status=portable_desk_direction_load(grant.api,&direction);
 #endif
  if(!rt->release(&grant) || grant.api || grant.slot || grant.generation){desk_fence();return false;}
+ /* Publish a complete read only after BUSY/unavailable has cleared. Keep the
+  * prior confirmed configuration intact while SD restore progresses. */
+ desk_config_pending=time_status==PORTABLE_TIME_FORMAT_UNAVAILABLE ||
+     face_status==PORTABLE_DESK_FACE_UNAVAILABLE || language_status==PORTABLE_READER_UNAVAILABLE ||
+     flip_status==PORTABLE_READER_UNAVAILABLE || sleep_status==PORTABLE_SLEEP_UNAVAILABLE ||
+     zone==PORTABLE_TIMEZONE_UNAVAILABLE || basis==PORTABLE_RTC_BASIS_UNAVAILABLE
+#ifdef PORTABLE_DESK_LOCK_HOME
+     || direction_status==PORTABLE_DESK_FACE_UNAVAILABLE
+#endif
+     ;
+ portable_desk_adapter_settings_pending(desk_config_pending);
+ if(desk_config_pending){desk_config_retry_at=app->millis()+250u;return false;}
+ desk_basis=next_basis;*mode=sleep_mode;
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&
      portable_timezone_resolve(config.time_zone,sizeof(config.time_zone),&desk_rule)==PORTABLE_TIMEZONE_OK;
  desk_basis_known=basis==PORTABLE_RTC_BASIS_LOADED || basis==PORTABLE_RTC_BASIS_MISSING;
@@ -173,7 +189,7 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
 int portable_desk_clock_mode(void) {
  /* TIMER adapter bypasses this function. No promotion attempt can re-admit it. */
  if(!desk_promoted)return PORTABLE_SLEEP_LIGHT;
- return desk_config(&desk_configuration,&desk_sleep_mode)?(int)desk_sleep_mode:-2;
+ return desk_config(&desk_configuration,&desk_sleep_mode)?(int)desk_sleep_mode:desk_config_pending?-3:-2;
 }
 static bool desk_cancelled(void) {
  if(desk_retained || !portable_desk_adapter_ready() || !desk_ops)return true;
@@ -352,6 +368,22 @@ static bool desk_boot_logo(void) {
     !portable_desk_adapter_present(true)){desk_fence();return false;}
  return true;
 }
+/* Called only by the ordinary foreground loop, after catalog progress. The
+ * retained TIMER path uses its record exclusively and never reaches here. */
+static bool desk_hydrate(void) {
+ if(!desk_config_pending || desk_boot_timer || !desk_promoted || desk_held || desk_retained ||
+    (int32_t)(app->millis()-desk_config_retry_at)<0)return false;
+ if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
+#ifdef PORTABLE_DESK_LOCK_HOME
+ bool applied=portable_desk_adapter_landscape(false,desk_foreground_flip);
+#else
+ bool applied=portable_desk_adapter_flip(desk_configuration.flip_ui);
+#endif
+ if(!applied){desk_config_pending=true;desk_config_retry_at=app->millis()+250u;return false;}
+ format=desk_configuration.time_format;
+ risc_realtime_snapshot_v1 sample;(void)desk_sample(true,&sample);
+ return !desk_retained;
+}
 static bool sparse_boot(void) {
  rt=risc_runtime_get_api(1);
  if(!rt || rt->api_version!=1 || rt->struct_size<RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE || !rt->retain_invocation ||
@@ -387,7 +419,7 @@ static bool sparse_boot(void) {
  if(desk_promote()!=1 || !desk_bind())return false;
  portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,false);
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,true);
- if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
+ if(!desk_config(&desk_configuration,&desk_sleep_mode) && !desk_config_pending)return false;
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,false);
  format=desk_configuration.time_format;
 #ifdef PORTABLE_DESK_LOCK_HOME

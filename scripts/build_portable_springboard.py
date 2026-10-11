@@ -213,7 +213,10 @@ def build():
     if args.installed_catalog_volume_instance is not None:
         record['installed_catalog']={'capability':'software.installed-apps','api':1,'volume_instance':args.installed_catalog_volume_instance,
           'storage_sdk_sha256':hashlib.sha256((includes/'RiscStorageVolumeV1.h').read_bytes()).hexdigest(),
-          'discovery':'copied-async-owner-polls','cache':'internal-app-data','status':'experimental-integration'}
+          'discovery':'copied-async-owner-polls','idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'shared_preferences_retry':'foreground-250ms','cache':'internal-app-data','status':'experimental-integration'}
+    if args.installed_catalog_volume_instance is not None:
+        for path in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/include/PortableInstalledCatalog.h','lib/PortableApps/include/InstalledAppsV1.h','lib/PortableApps/src/installed_catalog_adapter.inc']:
+            record['source_sha256'][path]=hashlib.sha256((ROOT/path).read_bytes()).hexdigest()
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)

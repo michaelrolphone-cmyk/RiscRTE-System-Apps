@@ -412,6 +412,7 @@ int32_t cancel(void*){
  volume=nullptr;requested=validationPending=false;return INSTALLED_APPS_OK;
 }
 int32_t refresh(void*){if(!started||retained||inCall)return INSTALLED_APPS_UNAVAILABLE;
+ if(!settingsCheckpoint)settingsCursor=0;
  if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  if(installPhase!=InstallPhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
@@ -423,7 +424,7 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(commitPending){int rc=publish(commitReplace);if(rc==INSTALLED_APPS_OK&&settingsWanted()){requested=true;return INSTALLED_APPS_WORKING;}return rc;}
  if(validationPending)return validateAndSave();
  if(installId[0]||installIntent||installer)return installStep(v);
- if(requested&&!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
+ if(!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
  if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
@@ -451,7 +452,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
  }
  if(packageHttp&&(packageHttp->api_version!=1||packageHttp->struct_size<sizeof(*packageHttp)||!packageHttp->open||!packageHttp->read||!packageHttp->info||!packageHttp->close))return false;
  if(!native||native->struct_size<RISC_INSTALLATION_APP_PREFIX_SIZE||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
- settingsCheckpoint=nullptr;
+ settingsCheckpoint=nullptr;settingsCursor=0;
  providerCount=0;provisionJson[0]=0;provisionResume=providerSavePending=false;provisionPhase=ProvisionPhase::Idle;downloader=nullptr;
  installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;
@@ -474,7 +475,8 @@ const installed_apps_v1 api={1,sizeof(api),nullptr,refresh,
    std::strcpy(installId,id);std::strcpy(installVersion,version);std::strcpy(installDescriptor,staged[i].view.launch_path);std::strcpy(installExpectedDigest,staged[i].digest);installExpectedSize=staged[i].size;installPaused=false;return INSTALLED_APPS_OK;
   }
   return INSTALLED_APPS_INVALID;
- },[](void*,uint64_t utc)->int32_t{if(!packageHttp||!installId[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_INVALID;packageUtc=utc;return INSTALLED_APPS_OK;}};
+ },[](void*,uint64_t utc)->int32_t{if(!packageHttp||!installId[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_INVALID;packageUtc=utc;return INSTALLED_APPS_OK;},
+ [](void*){return started&&!retained&&!inCall&&settingsWanted();}};
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

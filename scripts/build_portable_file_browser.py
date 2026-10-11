@@ -111,6 +111,8 @@ def build(args,parser=None):
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     if args.paper_transitions:files.append(ROOT/'scripts/portable_paper_build.py')
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
+    record['protected_settings']={'root':'/RTECFG','component_match':'case-insensitive-fat-aliases','listing_open_mutation_copy':True,'helper_sha256':hashlib.sha256((ROOT/'lib/PortableApps/include/RiscProtectedSettingsPath.h').read_bytes()).hexdigest(),'hardware_qualified':False}
+    record['source_sha256']['lib/PortableApps/include/RiscProtectedSettingsPath.h']=record['protected_settings']['helper_sha256']
     record['touch_scrolling']=scrolling
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
     record['storage_selection']={'primary':{'capability':args.storage_capability,'api':1,'instance_id':args.storage_instance},

@@ -1,4 +1,5 @@
 #include "WebDavRemoteVolume.h"
+#include <RiscProtectedSettingsPath.h>
 #include <cstring>
 #include <cstdio>
 #include <algorithm>
@@ -47,7 +48,7 @@ return p.storageSafe()&&wrote==n;
 }};
 }
 bool RemoteVolume::list(const char*p,uint64_t now){char encoded[1537];
-if(!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return false;
+if(risc_protected_settings_path(p)||!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return false;
 strcpy(path_,p);
 count_=0;
 if(!client_.request("PROPFIND",p,nullptr,0,io(),now)){fail("Could not request remote folder");
@@ -55,7 +56,7 @@ return false;
 }return true;
 }
 bool RemoteVolume::download(const char*remote,const risc_storage_volume_api_v1*local,const char*destination,uint64_t now){char encoded[1537];
-if(!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return false;
+if(risc_protected_settings_path(remote)||risc_protected_settings_path(destination)||!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return false;
  local_=local;
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
@@ -79,7 +80,7 @@ return false;
 }return true;
 }
 bool RemoteVolume::upload(const risc_storage_volume_api_v1*local,const char*source,const char*remote,uint64_t now,bool replace){char encoded[1537];
-if(!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return false;
+if(risc_protected_settings_path(source)||risc_protected_settings_path(remote)||!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return false;
 local_=local;
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
@@ -96,7 +97,7 @@ if(!client_.request(replace?"HEAD":"PUT",remote,nullptr,replace?0:size,io(),now)
 return false;
 }return true;
 }
-bool RemoteVolume::mutate(const char*m,const char*p,const char*d,uint64_t now){if(!m||(strcmp(m,"MKCOL")&&strcmp(m,"DELETE")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))||!start(Mode::Mutation))return false;
+bool RemoteVolume::mutate(const char*m,const char*p,const char*d,uint64_t now){if(risc_protected_settings_path(p)||risc_protected_settings_path(d)||!m||(strcmp(m,"MKCOL")&&strcmp(m,"DELETE")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))||!start(Mode::Mutation))return false;
 if(!client_.request(m,p,d,0,io(),now)){fail("Could not start remote operation");
 return false;
 }return true;
@@ -132,6 +133,7 @@ char decoded[513];
 if(!decode(a,size_t(b-a),decoded,sizeof(decoded)))return false;
 const char*status=strstr(b,"<D:status>HTTP/1.1 200 OK</D:status>");
 if(!status||status>end)return false;
+ if(risc_protected_settings_path(decoded)){p=end+13;continue;}
  if(strcmp(decoded,path_)){size_t prefix=strlen(path_);
 if(strncmp(decoded,path_,prefix))return false;
 const char*name=decoded+prefix;

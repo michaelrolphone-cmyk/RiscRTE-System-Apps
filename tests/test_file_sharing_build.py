@@ -4,6 +4,7 @@ import tempfile
 from types import SimpleNamespace
 import sys
 from pathlib import Path
+ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 import portable_file_sharing_build as sharing
 class SharingProfile(unittest.TestCase):
@@ -17,8 +18,8 @@ class SharingProfile(unittest.TestCase):
  def test_explicit_ble_keeps_http_optional(self):
   argv=["--webdav-sharing","--sharing-export-instance","0","--sharing-tcp-instance","0","--sharing-entropy-instance","0"]
   a=self.options(argv+["--sharing-setup-instance","0"]);needs=[];sharing.requirements(a,needs)
-  self.assertEqual(len(needs),7);self.assertEqual(sharing.selected_version(a),'1.5.27')
-  self.assertEqual(sharing.selected_version(self.options(argv)),'1.5.27')
+  self.assertEqual(len(needs),7);self.assertEqual(sharing.selected_version(a),'1.5.28')
+  self.assertEqual(sharing.selected_version(self.options(argv)),'1.5.28')
   for invalid in (["--sharing-setup-instance","0"],argv+["--sharing-setup-instance","-1"],argv+["--sharing-setup-instance","35"]):
    with self.assertRaises(SystemExit):self.options(invalid)
  def test_ble_power_authority_is_explicit(self):
@@ -27,7 +28,7 @@ class SharingProfile(unittest.TestCase):
   needs=[];sharing.requirements(a,needs);sharing.requirements(a,needs)
   self.assertEqual(needs.count({'capability':'bluetooth.hci','api':1}),1)
   record={'source_sha256':{}}
-  with tempfile.TemporaryDirectory() as d:sharing.record(a,Path(d),Path(d),{'requires':needs},record)
+  with tempfile.TemporaryDirectory() as d:sharing.record(a,ROOT,Path(d),{'requires':needs},record)
   self.assertEqual(record['grant_bindings']['bluetooth.hci'],[16])
   self.assertIn({'capability':'bluetooth.hci','api':1,'instance_id':16},record['required_grants'])
  def test_x4_volume_only_stays_within_sixteen_grants(self):
@@ -40,7 +41,7 @@ class SharingProfile(unittest.TestCase):
   needs=[{'capability':n,'api':v} for n,v,i in base]
   sharing.requirements(a,needs);sharing.requirements(a,needs)
   record={'source_sha256':{},'grant_bindings':{n:[i] for n,v,i in base}}
-  with tempfile.TemporaryDirectory() as d:sharing.record(a,Path(d),Path(d),{'requires':needs},record)
+  with tempfile.TemporaryDirectory() as d:sharing.record(a,ROOT,Path(d),{'requires':needs},record)
   self.assertEqual(record['grant_count'],16)
   self.assertFalse(record['file_sharing']['app_data_export_required'])
   self.assertFalse(any(g['capability']=='storage.app-data.export' for g in record['required_grants']))

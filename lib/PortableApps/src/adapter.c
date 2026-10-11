@@ -1,3 +1,4 @@
+#include "RiscRuntimeHostControlV1.h"
 #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))
 #error "Settings list scrolling requires selected Settings touch scrolling"
 #endif
@@ -104,6 +105,8 @@ void portable_file_browser_scroll_clip(const portable_scroll_viewport *view) {
 static bool paper_flip_ui,paper_orientation_dirty,paper_preferences_retained;
 #ifndef PORTABLE_DESK_CLOCK_SPARSE_START
 static risc_runtime_capability_v1 paper_preferences_grant;
+static bool paper_preferences_pending;
+static uint32_t paper_preferences_retry_at;
 #endif
 static void paper_orient_input(portable_touch_sample *sample);
 #endif
@@ -315,6 +318,7 @@ static int initialize_providers(void);
 enum { DESK_COLD, DESK_INITIALIZED, DESK_STARTING, DESK_TIMER,
        DESK_FOREGROUND, DESK_FAILED, DESK_FINALIZED };
 static unsigned desk_phase;
+static bool desk_settings_pending,desk_alarm_refresh_pending;
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
 #error "Sparse Clock requires the canonical Runtime invocation-retention SDK"
 #endif
@@ -352,6 +356,8 @@ static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v
 #endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
+static bool quick_restore_pending,quick_restoring;
+static bool quick_restore_step(void);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 static bool quick_clean_present,resident_failure_present;
 #ifdef PORTABLE_RESIDENT_POLICY
@@ -1165,6 +1171,11 @@ bool portable_paper_frame_ready(void) {
   if(!file_setup_checkpoint())return false;
 #endif
   if(failed)return false;
+#ifdef PORTABLE_QUICK_ACTIONS
+  /* Queue the retained underlay before a later app paint, without delaying
+   * input/state until the provider finishes its previous submission. */
+  if(quick_restore_pending&&!quick_restoring&&!quick_restore_step())return false;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   /* Latest-image mailbox: a completed software image which has not acquired
    * a provider lease may be replaced while the panel is BUSY. Never replace
@@ -1589,6 +1600,7 @@ static bool idle_sleep(void) {
 #endif
     portable_desk_clock_mode();
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(desk_mode==-3){last_activity=millis_now();return true;} /* shared settings still restoring */
   if(desk_mode<0){portable_desk_adapter_retain();return false;}
 #else
   if(desk_mode<0){native_sleep_retained=true;failed=true;return false;}
@@ -1817,6 +1829,40 @@ static inline bool paper_apply_flip(unsigned value) {
 #endif
   paper_flip_ui=value!=0;paper_orientation_dirty=true;return true;
 }
+#ifndef PORTABLE_DESK_CLOCK_SPARSE_START
+static void paper_preferences_retry(void) {
+ if(!paper_preferences_pending || failed || surface.frame || paper_token ||
+    (int32_t)(millis_now()-paper_preferences_retry_at)<0)return;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+ if(native_sleep_retained || alarm_modal || !display_settled)return;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(quick_modal || pqa_visible(&quick.ui) || pqa_capture(&quick.ui) || quick.ui.pending)return;
+#endif
+ paper_preferences_retry_at=millis_now()+250u;
+ paper_preferences_grant=(risc_runtime_capability_v1){.struct_size=sizeof(paper_preferences_grant)};
+ if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_READER_STORE_INSTANCE,&paper_preferences_grant))return;
+ unsigned value=0;int status=portable_reader_preference_load(paper_preferences_grant.api,false,&value);
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+ if(native_custody_retained)return;
+#endif
+ if(!rt->release(&paper_preferences_grant)){
+  paper_preferences_retained=failed=true;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+  portable_adapter_retain();
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+  native_sleep_retained=true;
+#endif
+  return;
+ }
+ if(status==PORTABLE_READER_UNAVAILABLE)return;
+ if(paper_apply_flip(value))paper_preferences_pending=false;
+}
+#endif
 #endif
 #ifdef PORTABLE_DESK_CLOCK
 bool portable_desk_adapter_flip(unsigned value) {return paper_apply_flip(value);}
@@ -1929,6 +1975,12 @@ bool portable_desk_adapter_present(bool full) {
 #endif
   return !failed && desk_present_complete;
 }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+void portable_desk_adapter_settings_pending(bool pending) {
+ if(desk_settings_pending && !pending)desk_alarm_refresh_pending=true;
+ desk_settings_pending=pending;
+}
+#endif
 bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
 bool portable_desk_adapter_foreground(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -2273,6 +2325,12 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+  // Native exit precedes every modal and shared keyboard branch. This only
+  // requests existing orderly app cleanup; host owns the deadline/ack.
+  if(risc_runtime_exit_requested_v1(rt)) {
+    clear_contact_snapshots();memset(out,0,sizeof(*out));
+    out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;return true;
+  }
 #ifdef PORTABLE_FILE_SETUP
   /* Refused BLE close permits only this checked foreground retry. Its
    * provider supplies a scheduler-only delay; Runtime yield polls unrelated
@@ -2299,6 +2357,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
+#if defined(PORTABLE_PAPER_PREFERENCES) && !defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+  if(ok && !handoff_requested)paper_preferences_retry();
+#endif
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_io_allowed()) {
     memset(out,0,sizeof(*out));clear_contact_snapshots();return !failed;
@@ -2773,6 +2834,7 @@ static int initialize(void) {
   quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
+  quick_restore_pending=quick_restoring=false;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   quick_open_requested=false;
 #endif
@@ -2933,9 +2995,16 @@ static void settings_native_finalize(void) {
   navigation=NULL;
 #endif
   if(!portable_touch_close(&touch,rt)){portable_adapter_retain();return;}
-#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+#ifdef PORTABLE_SETTINGS_APP
+#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+  if(rtc_grant.api && !rt->release(&rtc_grant))return;
+  rtc=NULL;
+#endif
   if(settings_grant.api && !rt->release(&settings_grant))return;
   settings_store=NULL;sv_active=false;
+#ifdef PORTABLE_ALARM_SETTINGS
+  alert_store=NULL;
+#endif
 #endif
   if(bg.api && !rt->release(&bg))return;
   if(dg.api && !rt->release(&dg))return;

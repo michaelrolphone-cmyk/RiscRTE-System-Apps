@@ -93,6 +93,8 @@ static unsigned wifi_view_identity;
 #endif
 static bool wifi_back_return,wifi_scan_back;
 static bool opened, dirty, armed, open_network, scanning, scan_owned, joining, cleanup_pending, draft_dirty;
+static bool wifi_initial_profile_pending;
+static uint32_t wifi_initial_retry_at;
 static uint32_t operation_started,last_status;
 static uint32_t wifi_service_lease;static unsigned wifi_service_depth;
 static wifi_link_t link_state;
@@ -180,7 +182,7 @@ static bool wifi_disconnect(void) {
   strcpy(status_text,"Disconnected");ip_text[0]=0;
   memset(&scan_result,0,sizeof(scan_result));dirty=true;return true;
 }
-#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
 bool portable_wifi_idle_ready(void) {
  if(PORTABLE_APP_RETAINED())return false;
  return !opened || (!scanning && !scan_owned && !joining && !cleanup_pending && link_state==WIFI_LINK_DOWN
@@ -620,7 +622,7 @@ static void wifi_profiles_step_owned(void) {
       if(PORTABLE_APP_RETAINED())return;
       if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return;
       saved_state=rc;if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!memcmp(&credentials,&profile_draft,sizeof(credentials)))draft_dirty=false;
-      wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_LOADED?"Network saved; storage is not a secure vault":rc==PORTABLE_WIFI_PROFILE_FULL?"Storage index exhausted; forget an unused network":"Save unconfirmed - retry";
+      wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved locally; SD backup not confirmed":rc==PORTABLE_WIFI_PROFILE_FULL?"Storage index exhausted; forget an unused network":"Save unconfirmed - retry";
     }else if(work==WIFI_PROFILE_FORGET){
       if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED){forget_index=slot;forget_index_valid=true;wifi_page(WP_FORGET);}
       else wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_EMPTY?"This network is not saved":"Cannot confirm saved network - retry";
@@ -871,7 +873,7 @@ static void wifi_activate(unsigned selected) {
       if(portable_adapter_retained())return;
 #endif
       if(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED)draft_dirty=false;
-      wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved; storage is not a secure vault":"Save unconfirmed - retry";
+      wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved locally; SD backup not confirmed":"Save unconfirmed - retry";
 #endif
     }
     dirty=true;break;
@@ -916,6 +918,24 @@ static bool wifi_back(void) {
 #endif
   return true;
 }
+/* Shared restore may gate KV on first open. Never replace a user's new draft. */
+static void wifi_initial_profile_step(void) {
+ if(!wifi_initial_profile_pending || !opened || cleanup_pending || PORTABLE_APP_RETAINED())return;
+ if(draft_dirty || credentials.ssid[0]){wifi_initial_profile_pending=false;return;}
+ if(page!=WP_ROOT || (int32_t)(wa->millis()-wifi_initial_retry_at)<0)return;
+ wifi_initial_retry_at=wa->millis()+250u;
+ portable_wifi_credentials pending={0};
+ int state=portable_wifi_credentials_load(wifi_store,&pending);
+ if(PORTABLE_APP_RETAINED()){portable_wifi_credentials_clear(&pending);return;}
+ if(state==PORTABLE_WIFI_CREDENTIALS_AGAIN){portable_wifi_credentials_clear(&pending);return;}
+ wifi_initial_profile_pending=false;saved_state=state;
+ if(state==PORTABLE_WIFI_CREDENTIALS_LOADED){credentials=pending;open_network=!credentials.password[0];}
+ portable_wifi_credentials_clear(&pending);
+ wifi_message=state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved draft loaded; Connect when ready":
+     state==PORTABLE_WIFI_CREDENTIALS_EMPTY?"Enter a network or scan":
+     state==PORTABLE_WIFI_CREDENTIALS_INVALID?"Saved data invalid; enter a network":"Storage unavailable; temporary connection";
+ dirty=true;
+}
 static bool wifi_open(void) {
  if(PORTABLE_APP_RETAINED())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
@@ -959,6 +979,8 @@ static bool wifi_open(void) {
 #endif
   if(!wifi_store){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
   saved_state=portable_wifi_credentials_load(wifi_store,&credentials);
+  wifi_initial_profile_pending=saved_state==PORTABLE_WIFI_CREDENTIALS_AGAIN;
+  wifi_initial_retry_at=wa->millis()+250u;
   if(PORTABLE_APP_RETAINED())return false;
 #ifdef PORTABLE_BLE_BROADCAST
   if(portable_adapter_retained())return false;
@@ -968,7 +990,8 @@ static bool wifi_open(void) {
       saved_state==PORTABLE_WIFI_CREDENTIALS_EMPTY?"result=empty connect=explicit":saved_state==PORTABLE_WIFI_CREDENTIALS_INVALID?"result=invalid":"result=unavailable");
   wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved draft loaded; Connect when ready":
       saved_state==PORTABLE_WIFI_CREDENTIALS_EMPTY?"Enter a network or scan":
-      saved_state==PORTABLE_WIFI_CREDENTIALS_INVALID?"Saved data invalid; enter a network":"Storage unavailable; temporary connection";
+      saved_state==PORTABLE_WIFI_CREDENTIALS_INVALID?"Saved data invalid; enter a network":
+      saved_state==PORTABLE_WIFI_CREDENTIALS_AGAIN?"Saved networks still loading":"Storage unavailable; temporary connection";
   if(!wifi_acquire())wifi_message="Wi-Fi unavailable; retry Connect";
   return !PORTABLE_APP_RETAINED();
 }
@@ -1032,6 +1055,8 @@ void app_main(void) {
      * Never turn that terminal handoff into nested Back or redraw the old app. */
     if(input.exit_requested && !opened)return;
     wifi_tick();
+    if(PORTABLE_APP_RETAINED())return;
+    wifi_initial_profile_step();
     if(PORTABLE_APP_RETAINED())return;
 #ifdef PORTABLE_WIFI_PROFILES
     wifi_profiles_step();if(PORTABLE_APP_RETAINED())return;

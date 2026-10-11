@@ -9,6 +9,8 @@ on:
       - 'test/native_apps/file_browser*'
       - 'test/remote_files/peer_controller_fixture.inc'
       - '.github/workflows/offline-sharing-entropy.yml'
+env:
+  PLATFORMIO_SETTING_ENABLE_TELEMETRY: "no"
 permissions:
   contents: read
 jobs:
@@ -24,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: 3a071a9b5d9878dfadf999506b6f335a099b3639
+          ref: 3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b
           path: runtime
           persist-credentials: false
       - name: Initially-off offline sharing and peer cleanup

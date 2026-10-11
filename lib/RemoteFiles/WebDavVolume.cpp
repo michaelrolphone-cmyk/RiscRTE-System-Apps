@@ -1,4 +1,5 @@
 #include "WebDavVolume.h"
+#include <RiscProtectedSettingsPath.h>
 #include <RiscStorageVolumeFsV1.h>
 #include <algorithm>
 #include <cstdio>
@@ -7,7 +8,7 @@
 namespace RiscWebDav {
 namespace {const char* reason(unsigned n){switch(n){case 200:return "OK";case 201:return "Created";case 204:return "No Content";case 207:return "Multi-Status";case 304:return "Not Modified";case 400:return "Bad Request";case 403:return "Forbidden";case 404:return "Not Found";case 405:return "Method Not Allowed";case 409:return "Conflict";case 412:return "Precondition Failed";case 413:return "Content Too Large";case 415:return "Unsupported Media Type";case 501:return "Not Implemented";case 503:return "Service Unavailable";case 507:return "Insufficient Storage";default:return "Internal Server Error";}}
 bool eq(const char*a,const char*b){return !std::strcmp(a,b);}
-bool reserved(const char*p){for(;*p;++p){for(const char*needle:{".risc-replace",".risc-webdav-"}){size_t n=0;while(needle[n]&&p[n]){char c=p[n];if(c>='A'&&c<='Z')c+=32;if(c!=needle[n])break;++n;}if(!needle[n])return true;}}return false;}
+bool reserved(const char*p){if(risc_protected_settings_path(p))return true;for(;*p;++p){for(const char*needle:{".risc-replace",".risc-webdav-"}){size_t n=0;while(needle[n]&&p[n]){char c=p[n];if(c>='A'&&c<='Z')c+=32;if(c!=needle[n])break;++n;}if(!needle[n])return true;}}return false;}
 }
 bool VolumeTransaction::owner(){if(state_==State::Retained)return false;if(!hooks_.owner(hooks_.context)){state_=State::Retained;return false;}return true;}
 int VolumeTransaction::observed(){if(!owner())return -2;const int n=observation_->observe(api_->context);if(!owner()||n==RISC_STORAGE_STATE_RETAINED||(n!=0&&n!=1)){state_=State::Retained;return -2;}return n;}
@@ -97,7 +98,7 @@ State VolumeTransaction::step(){
   if(eq(m,"MOVE")||eq(m,"COPY")){if(!exists_){fail(404);return state_;}if(!request_.destination[0]||!writablePath(request_.destination)||eq(request_.path,request_.destination)){fail(403);return state_;}copy_=eq(m,"COPY");phase_=Phase::Destination;return state_;}
   fail(405);return state_;
  }
- if(phase_==Phase::Destination){uint64_t bytes=0;bool directory=false;destinationExists_=api_->stat(c,request_.destination,&bytes,&directory);if(!after())return state_;if(destinationExists_&&(!request_.overwrite||directory||isDirectory_)){fail(request_.overwrite?409:412);return state_;}if(destinationExists_&&!risc_storage_volume_fs(api_)){fail(501);return state_;}if(copy_&&isDirectory_){startWalk(false);return state_;}phase_=copy_?Phase::CopyOpen:Phase::Move;return state_;}
+ if(phase_==Phase::Destination){uint64_t bytes=0;bool directory=false;destinationExists_=api_->stat(c,request_.destination,&bytes,&directory);if(!after())return state_;if(destinationExists_&&(!request_.overwrite||directory||isDirectory_)){fail(request_.overwrite?409:412);return state_;}if(destinationExists_&&!risc_storage_volume_fs(api_)){fail(501);return state_;}if(isDirectory_){walkInspect_=!copy_;startWalk(false);return state_;}phase_=copy_?Phase::CopyOpen:Phase::Move;return state_;}
  if(phase_==Phase::RemoveOriginal){bool ok=api_->remove&&api_->remove(c,request_.path);if(after()){if(ok)response(destinationExists_?204:201);else fail(500);}return state_;}
  if(phase_==Phase::ReadOpen){uint64_t n=0;file_=api_->file_open_read(c,request_.path,&n);if(!after())return state_;if(!file_){fail(503);return state_;}size_=remaining_=n;streaming_=true;outputSize_=0;response(200,n);return state_;}
  if(phase_==Phase::ListOpen){directory_=api_->dir_open(c,request_.path);if(!after())return state_;if(!directory_){fail(503);return state_;}phase_=Phase::ListNext;return state_;}
@@ -126,8 +127,8 @@ State VolumeTransaction::step(){
   }
   if(phase_==Phase::WalkTell){bool ok=fs&&fs->dir_tell(c,directory_,&frame.position);if(!after())return state_;if(!ok){fail(503);return state_;}phase_=Phase::WalkClose;return state_;}
   if(phase_==Phase::WalkClose){if(!closeDirectory())return state_;if(walkEof_){if(walkDelete_)phase_=Phase::WalkRemove;else popWalk();}else phase_=Phase::WalkEntry;return state_;}
-  if(phase_==Phase::WalkEntry){if(walkDirectory_){if(depth_==31){fail(507);return state_;}auto&next=walk_[++depth_];std::strcpy(next.source,workSource_);std::strcpy(next.destination,workDestination_);next.position=0;phase_=walkDelete_?Phase::WalkOpen:Phase::WalkMkdir;return state_;}
-   if(walkDelete_){bool ok=api_->remove&&api_->remove(c,workSource_);if(!after())return state_;if(!ok){fail(409);return state_;}phase_=Phase::WalkOpen;}else phase_=Phase::CopyOpen;return state_;
+  if(phase_==Phase::WalkEntry){if(walkDirectory_){if(depth_==31){fail(507);return state_;}auto&next=walk_[++depth_];std::strcpy(next.source,workSource_);std::strcpy(next.destination,workDestination_);next.position=0;phase_=walkDelete_||walkInspect_?Phase::WalkOpen:Phase::WalkMkdir;return state_;}
+   if(walkDelete_){bool ok=api_->remove&&api_->remove(c,workSource_);if(!after())return state_;if(!ok){fail(409);return state_;}phase_=Phase::WalkOpen;}else phase_=walkInspect_?Phase::WalkOpen:Phase::CopyOpen;return state_;
   }
   if(phase_==Phase::WalkRemove){bool ok=api_->remove&&api_->remove(c,frame.source);if(!after())return state_;if(!ok){fail(409);return state_;}popWalk();return state_;}
  }
@@ -160,8 +161,8 @@ bool VolumeTransaction::startWalk(bool removing){
  size_t sourceLength=std::strlen(request_.path);
  if(!removing&&!std::strncmp(request_.path,request_.destination,sourceLength)&&request_.destination[sourceLength]=='/'){fail(403);return false;}
  walk_=static_cast<WalkFrame*>(hooks_.allocate(32*sizeof(WalkFrame)));if(!owner())return false;if(!walk_){fail(503);return false;}
- std::memset(walk_,0,32*sizeof(WalkFrame));std::strcpy(walk_[0].source,request_.path);std::strcpy(walk_[0].destination,request_.destination);depth_=0;walkDelete_=removing;phase_=removing?Phase::WalkOpen:Phase::WalkMkdir;return true;
+ std::memset(walk_,0,32*sizeof(WalkFrame));std::strcpy(walk_[0].source,request_.path);std::strcpy(walk_[0].destination,request_.destination);depth_=0;walkDelete_=removing;phase_=removing||walkInspect_?Phase::WalkOpen:Phase::WalkMkdir;return true;
 }
-void VolumeTransaction::popWalk(){if(depth_){--depth_;phase_=Phase::WalkOpen;}else response(walkDelete_?204:201);}
+void VolumeTransaction::popWalk(){if(depth_){--depth_;phase_=Phase::WalkOpen;}else if(walkInspect_){hooks_.deallocate(walk_);walk_=nullptr;walkInspect_=false;phase_=Phase::Move;}else response(walkDelete_?204:201);}
 
 }
