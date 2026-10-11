@@ -28,8 +28,11 @@ static void nc_text(int x,int baseline,int maximum,const char *s,unsigned role,u
             if(maximum>nc_size(8))fill(x+maximum-nc_size(6),baseline-nc_size(2),nc_size(4),nc_size(1),color);
             break;
         }
-        for(int row=0;row<g->height;row++){
-            int yy=baseline+g->top+row;if(yy<(int)clip_top||yy>=(int)clip_bottom)continue;
+        int first=(int)clip_top-baseline-g->top,last=(int)clip_bottom-baseline-g->top;
+        if(first<0)first=0;
+        if(last>g->height)last=g->height;
+        for(int row=first;row<last;row++){
+            int yy=baseline+g->top+row;
             for(int col=0;col<g->width;col++)if(paper_bit(g,col,row))pixel(x+(pen+32)/64+g->left+col,yy,color);
         }
         pen+=g->advance+nc_tracking(role);
@@ -40,8 +43,10 @@ static void nc_round(int x,int y,int w,int h,int radius,uint16_t color){
     if(layout_only||w<=0||h<=0)return;
     if(radius>w/2)radius=w/2;
     if(radius>h/2)radius=h/2;
-    for(int row=0;row<h;row++){
-        if(y+row<(int)clip_top||y+row>=(int)clip_bottom)continue;
+    int first=(int)clip_top-y,last=(int)clip_bottom-y;
+    if(first<0)first=0;
+    if(last>h)last=h;
+    for(int row=first;row<last;row++){
         int dy=row<radius?radius-row-1:row>=h-radius?row-h+radius:0,inset=0;
         if(dy)while(inset<radius&&(radius-inset)*(radius-inset)+dy*dy>radius*radius)++inset;
         fill(x+inset,y+row,w-2*inset,1,color);
