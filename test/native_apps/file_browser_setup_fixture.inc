@@ -6,7 +6,7 @@ static int32_t setup_open(void*c,const char*n,const risc_bluetooth_session_descr
 }
 static int32_t setup_poll(void*c,uint64_t t,uint32_t n){(void)c;assert(setup_owned&&t==41&&n==16&&!setup_cleanup);setup_polls++;return setup_context?RISC_SETUP_CONTEXT:RISC_SETUP_OK;}
 static int32_t setup_status(void*c,uint64_t t,risc_bluetooth_session_setup_status_v1*out){
- (void)c;assert(setup_owned&&t==41&&!setup_cleanup);*out=(risc_bluetooth_session_setup_status_v1){.struct_size=sizeof(*out),.state=setup_state,.pairing_generation=setup_generation,.pairing_number=setup_state==RISC_SETUP_PAIR_CONFIRM?setup_number:0,.connection_generation=setup_state>=RISC_SETUP_CONNECTED?1:0,.remaining_ms=100000,.flags=setup_state==RISC_SETUP_READY?15:0};return RISC_SETUP_OK;
+ (void)c;assert(setup_owned&&t==41&&!setup_cleanup);*out=(risc_bluetooth_session_setup_status_v1){.struct_size=sizeof(*out),.state=setup_state,.pairing_generation=setup_generation,.pairing_number=setup_state==RISC_SETUP_PAIR_CONFIRM?setup_number:0,.connection_generation=setup_state>=RISC_SETUP_CONNECTED?1:0,.remaining_ms=100000,.flags=setup_state==RISC_SETUP_READY?(fsh_direct?31:15):0};return RISC_SETUP_OK;
 }
 static int32_t setup_confirm(void*c,uint64_t t,uint32_t g,uint32_t n,bool accept){
  (void)c;assert(setup_owned&&t==41&&!setup_cleanup&&g==setup_generation&&n==setup_number);setup_confirms++;
@@ -14,9 +14,12 @@ static int32_t setup_confirm(void*c,uint64_t t,uint32_t g,uint32_t n,bool accept
  setup_state=accept?RISC_SETUP_READY:RISC_SETUP_ENDED;return RISC_SETUP_OK;
 }
 static int32_t setup_close(void*c,uint64_t t){
- (void)c;assert(setup_owned&&t==41&&listeners==1);setup_closes++;
+ (void)c;assert(setup_owned&&t==41&&(listeners==1||fsh_direct));setup_closes++;
  if(setup_refuse){setup_cleanup=true;setup_sleeps++;return RISC_SETUP_CLEANUP_PENDING;}
  setup_cleanup=false;setup_owned=false;return RISC_SETUP_OK;
 }
-static const risc_bluetooth_session_setup_v1 setup_api={1,offsetof(risc_bluetooth_session_setup_v1,peer_tag),NULL,setup_open,setup_poll,setup_status,setup_confirm,setup_close,0,NULL,NULL,NULL,NULL};
+static int32_t setup_open_network(void*c,const char*n,const risc_bluetooth_network_offer_v1*d,uint32_t duration,uint64_t*t){
+ (void)c;assert(fsh_direct&&!setup_owned&&!listeners&&!begin_calls&&strlen(d->password)==32&&strlen(d->ssid)==22&&strlen(d->endpoint.password)==16&&!strcmp(d->endpoint.url,"http://192.168.4.1:8080/")&&!strcmp(n,"RiscRTE Files")&&duration==300000);setup_owned=true;setup_opens++;*t=41;return RISC_SETUP_PENDING;
+}
+static const risc_bluetooth_session_setup_v1 setup_api={1,sizeof(risc_bluetooth_session_setup_v1),NULL,setup_open,setup_poll,setup_status,setup_confirm,setup_close,0,NULL,NULL,NULL,NULL,RISC_SESSION_NETWORK_TAG,setup_open_network,NULL};
 static bool run_setup_scene(const char*);

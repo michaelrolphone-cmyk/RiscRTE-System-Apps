@@ -88,7 +88,7 @@ fpeer_mode=false;
  strcpy(fb_file_path,fpeer_launch_path);
 memset(&fb_selected,0,sizeof(fb_selected));
  const char*name=strrchr(fb_file_path,'/');
-snprintf(fb_selected.name,sizeof(fb_selected.name),"%s",name?name+1:fb_file_path);
+snprintf(fb_selected.name,sizeof(fb_selected.name),"%.*s",(int)sizeof(fb_selected.name)-1,name?name+1:fb_file_path);
  fb_mode=FB_ACTIONS;
 fb_choice=0;
 fb_dirty=true;
@@ -222,7 +222,7 @@ char path[513];
 else if(fb_join(fpeer_status.path,fpeer_upload_name,path,sizeof(path)))(void)portable_peer_upload(fpeer,fb_volume,fpeer_upload_path,path);
 }
   else if(action==2)fpeer_edit(0,"");
-else if(action==3){if(!strcmp(fpeer_status.path,"/")){fsh_error("The shared root cannot be renamed or deleted");}else{memset(&fpeer_selected,0,sizeof(fpeer_selected));fpeer_selected.directory=true;strcpy(fpeer_selected.path,fpeer_status.path);const char*n=strrchr(fpeer_status.path,'/');snprintf(fpeer_selected.name,sizeof(fpeer_selected.name),"%s",n?n+1:fpeer_status.path);fpeer_page=1;fpeer_choice=0;}}
+else if(action==3){if(!strcmp(fpeer_status.path,"/")){fsh_error("The shared root cannot be renamed or deleted");}else{memset(&fpeer_selected,0,sizeof(fpeer_selected));fpeer_selected.directory=true;strcpy(fpeer_selected.path,fpeer_status.path);const char*n=strrchr(fpeer_status.path,'/');snprintf(fpeer_selected.name,sizeof(fpeer_selected.name),"%.*s",(int)sizeof(fpeer_selected.name)-1,n?n+1:fpeer_status.path);fpeer_page=1;fpeer_choice=0;}}
 else fsh_phase=FSH_STOPPING;
  }
  fb_dirty=true;
@@ -233,7 +233,7 @@ static void fpeer_draw(void){
 bool pairing=frame.state==PEER_PAIRING;
 char title[64],label[160],detail[96];
  snprintf(title,sizeof(title),pairing?"COMPARE %06u":"NEARBY FILES",frame.pairing_number);
- snprintf(detail,sizeof(detail),"%s",pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?"Select the device sharing its files":frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
+ snprintf(detail,sizeof(detail),"%.*s",(int)sizeof(detail)-1,pairing?"Compare both numbers. Match only if identical.":fsh_message[0]?fsh_message:frame.message[0]?frame.message:frame.state==PEER_DISCOVERING?(frame.count?"Select the device sharing its files":"Waiting for nearby Files; Back cancels"):frame.state==PEER_READY?frame.path:"Connecting; Back cancels");
  unsigned count=fpeer_count();
 if(fpeer_choice>=count)fpeer_choice=0;
 unsigned first=fpeer_choice/2*2;

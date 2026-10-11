@@ -8,7 +8,7 @@ namespace RiscWebDav {
  * no worker, nested input loop, credential persistence or automatic write retry. */
 class Client final {
 public:
- enum class State { Off, Connect, Connecting, Header, UploadRead, UploadSend, Reply, Body, Closing, Ready, Error, Retained };
+ enum class State { Off, ConnectWait, Connect, Connecting, Header, UploadRead, UploadSend, Reply, Body, Closing, Ready, Error, Retained };
  enum Error { None, Invalid, Transport, Authentication, Expired, Cancelled, Protocol, Storage, Uncertain };
  struct Io { void* context=nullptr; bool (*owner)(void*)=nullptr;
   bool (*source)(void*,void*,size_t,size_t*)=nullptr;
@@ -29,9 +29,9 @@ public:
  static bool encodePath(const char*,char*,size_t);
 private:
  State state_=State::Off; Error error_=None; Io io_{}; risc_tcp_connection_v1 tcp_{};
- risc_tcp_connection_listen_v1 endpoint_{};uint64_t handle_=0,expiry_=0,lastNow_=0,deadline_=0;
+ risc_tcp_connection_listen_v1 endpoint_{};uint64_t handle_=0,expiry_=0,lastNow_=0,deadline_=0,retryAt_=0;
  uint64_t uploadSize_=0,sent_=0,responseSize_=0,received_=0;uint32_t nonceCount_=0;
- unsigned status_=0;bool handshake_=false,authenticated_=false,mutating_=false,uncertain_=false,ending_=false;
+ unsigned status_=0;bool handshake_=false,authenticated_=false,mutating_=false,uncertain_=false,ending_=false,retryConnect_=false;
  char host_[64]{},username_[65]{},password_[65]{},realm_[65]{},nonce_[65]{},cnonce_[33]{},ha1_[65]{};
  char etag_[96]{},match_[96]{};
  char method_[12]{},path_[1537]{},destination_[1537]{},header_[4096]{},reply_[4096]{};

@@ -28,6 +28,13 @@ static bool policy_off,policy_busy,policy_context,owned,quiescent,borrowed,empty
 static unsigned calls,begin_calls,cancel_calls,lease_calls,end_calls,listeners,closed_listeners,retains;
 static struct {char key[16];uint8_t data[64];uint32_t size;} store[16];
 static unsigned store_count;
+static bool private_test(void){
+#if defined(FILE_SETUP_TEST) && !defined(FILE_PEER_FIXTURE)
+ return fsh_direct;
+#else
+ return false;
+#endif
+}
 static bool live_check(void){assert(!native_custody_retained);++calls;return true;}
 static int32_t kv_get(void*c,const char*k,void*b,uint32_t cap,uint32_t*n){
  (void)c;live_check();*n=0;
@@ -49,15 +56,32 @@ static const risc_key_value_v1 kv={1,sizeof(kv),NULL,kv_get,kv_put};
 static wifi_link_t net_status(void*c){(void)c;live_check();return borrowed?WIFI_LINK_UP:WIFI_LINK_DOWN;}
 static int8_t net_rssi(void*c){(void)c;live_check();return -40;}
 static bool net_addresses(void*c,wifi_ipv4_v1*s,wifi_ipv4_v1*a){(void)c;live_check();memset(a,0,sizeof(*a));*s=(wifi_ipv4_v1){{192,0,2,4},{192,0,2,1},{255,255,255,0}};return true;}
-static int32_t net_begin(void*c,const risc_radio_request_v1*r,uint32_t*id){(void)c;live_check();assert(!owned&&!borrowed&&!empty&&!strcmp(r->ssid,"fixture"));owned=true;++begin_calls;*id=11;return RISC_RADIO_ACCEPTED;}
-static int32_t net_poll(void*c,uint32_t id,risc_radio_progress_v1*p){(void)c;live_check();assert(owned&&id==11);*p=(risc_radio_progress_v1){.struct_size=sizeof(*p),.operation_id=id,.phase=quiescent?RISC_RADIO_IDLE:cancel_calls?RISC_RADIO_STOPPING:RISC_RADIO_CONNECTED,.owned=!quiescent,.quiescent=quiescent,.station_state=quiescent?WIFI_LINK_DOWN:WIFI_LINK_UP,.scan={.struct_size=sizeof(garden_radio_scan_result_v1)}};if(!quiescent){p->station[0]=192;p->station[2]=2;p->station[3]=4;}else owned=false;return quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
+static int32_t net_begin(void*c,const risc_radio_request_v1*r,uint32_t*id){(void)c;live_check();assert(!owned);if(private_test())assert(r->kind==RISC_RADIO_REQUEST_AP&&r->flags==RISC_RADIO_TEMPORARY&&!strncmp(r->ssid,"Files-",6));else assert(!borrowed&&!empty&&!strcmp(r->ssid,"fixture"));owned=true;++begin_calls;*id=11;return RISC_RADIO_ACCEPTED;}
+static int32_t net_poll(void*c,uint32_t id,risc_radio_progress_v1*p){(void)c;live_check();assert(owned&&id==11);*p=(risc_radio_progress_v1){.struct_size=sizeof(*p),.operation_id=id,.phase=quiescent?RISC_RADIO_IDLE:cancel_calls?RISC_RADIO_STOPPING:RISC_RADIO_CONNECTED,.owned=!quiescent,.quiescent=quiescent,.station_state=quiescent?WIFI_LINK_DOWN:WIFI_LINK_UP,.scan={.struct_size=sizeof(garden_radio_scan_result_v1)}};if(!quiescent){p->station[0]=192;p->station[1]=private_test()?168:0;p->station[2]=private_test()?4:2;p->station[3]=private_test()?1:4;}else owned=false;return quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
 static int32_t net_cancel(void*c,uint32_t id){(void)c;live_check();assert(owned&&id==11&&!listeners);++cancel_calls;return RISC_RADIO_PENDING;}
 static int32_t net_lease(void*c,uint32_t*id){(void)c;live_check();++lease_calls;*id=lease_busy?0:9;return lease_busy?RISC_RADIO_BUSY:RISC_RADIO_ACCEPTED;}
 static int32_t net_end(void*c,uint32_t id){(void)c;live_check();assert(id==9);++end_calls;return end_busy?RISC_RADIO_AGAIN:RISC_RADIO_ACCEPTED;}
 static const wifi_async_v1 wifi={.base={.api_version=1,.struct_size=sizeof(wifi),.status=net_status,.rssi=net_rssi,.addresses=net_addresses},.async_tag=RISC_RADIO_ASYNC_TAG,.async_version=1,.begin=net_begin,.poll=net_poll,.cancel=net_cancel,.service_begin=net_lease,.service_end=net_end};
-static int32_t entropy_fill(void*c,void*out,uint32_t n){(void)c;live_check();assert(n==32);for(unsigned i=0;i<n;i++)((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);return 0;}
+#ifdef FILE_DIRECT_FIXTURE
+static bool direct_ble_on,direct_ble_initial_on,direct_ble_enable_fail,direct_entropy_busy;
+static unsigned direct_ble_enables,direct_ble_disables,direct_entropy_calls;
+static bool direct_ble_set(void*c,bool on){
+ (void)c;live_check();assert(!fsh_setup_live());
+ if(on){++direct_ble_enables;if(direct_ble_enable_fail)return false;}
+ else ++direct_ble_disables;
+ direct_ble_on=on;return true;
+}
+static bool direct_ble_status(void*c,uint8_t*out){(void)c;live_check();*out=direct_ble_on?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;return true;}
+static const portable_bluetooth_control_v1 direct_ble={1,sizeof(direct_ble),NULL,NULL,NULL,direct_ble_set,direct_ble_status};
+#endif
+static int32_t entropy_fill(void*c,void*out,uint32_t n){(void)c;live_check();assert(n==32);
+#ifdef FILE_DIRECT_FIXTURE
+ assert(direct_ble_on);++direct_entropy_calls;if(direct_entropy_busy)return RISC_ENTROPY_SOURCE_BUSY;
+#endif
+ for(unsigned i=0;i<n;i++){((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);}
+ return 0;}
 static const risc_entropy_source_v1 entropy={1,sizeof(entropy),(void*)1,entropy_fill};
-static int32_t listen_tcp(void*c,const risc_tcp_connection_listen_v1*b,uint64_t*t){(void)c;live_check();assert(b->port==8080&&b->address[3]==4&&!listeners&&!fb_grant.api);*t=7;listeners++;return 0;}
+static int32_t listen_tcp(void*c,const risc_tcp_connection_listen_v1*b,uint64_t*t){(void)c;live_check();assert(b->port==8080&&(b->address[3]==4||private_test())&&!listeners&&!fb_grant.api);*t=7;listeners++;return 0;}
 static int32_t accept_tcp(void*c,uint64_t t,uint64_t*out){(void)c;live_check();assert(t==7&&listeners==1);*out=0;return RISC_TCP_CONNECTION_WOULD_BLOCK;}
 static int32_t read_tcp(void*c,uint64_t t,void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
 static int32_t write_tcp(void*c,uint64_t t,const void*b,uint32_t cap,uint32_t*n){(void)c;(void)t;(void)b;(void)cap;(void)n;assert(false);return 0;}
@@ -78,12 +102,15 @@ extern const void* peer_fixture_capability(const char*);
 static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){
  live_check();
 #ifdef FILE_PEER_FIXTURE
- const void*peer_api=peer_fixture_capability(n);if(peer_api){assert(id==0);g->api=peer_api;test_grants++;return true;}
+ const void*peer_api=peer_fixture_capability(n);if(peer_api){assert(id==(!strcmp(n,"net.wifi")?15u:0u));g->api=peer_api;test_grants++;return true;}
 #endif
  if(!strcmp(n,RISC_KEY_VALUE_CAPABILITY)){assert(id==1||id==6);g->api=&kv;}
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
  else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==0&&!fb_grant.api);g->api=&export_api;}
  else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==0);g->api=&tcp;}
+#ifdef FILE_DIRECT_FIXTURE
+ else if(!strcmp(n,"bluetooth.hci")){assert(id==16);g->api=&direct_ble;}
+#endif
  else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==0);g->api=&entropy;}
 #ifdef FILE_SETUP_TEST
  else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==0&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
@@ -99,6 +126,9 @@ static bool release_cap(risc_runtime_capability_v1*g){
  if(g->api==&setup_api){assert(!setup_owned);setup_releases++;test_grants--;memset(g,0,sizeof(*g));g->struct_size=sizeof(*g);return true;}
  assert(!setup_cleanup);
 #endif
+#ifdef FILE_DIRECT_FIXTURE
+ if(g->api==&direct_ble)assert(direct_ble_on==direct_ble_initial_on);
+#endif
  live_check();if(g->api==&wifi)assert(!owned&&!listeners);return test_release(g);}
 static bool retain_owner(void){retains++;return true;}
 static risc_runtime_api_v1 runtime;
@@ -112,6 +142,9 @@ static void capture_paper(const char *name){
 static void step(void){test_ticks+=10;fsh_tick();}
 static void until_ready(void){for(unsigned i=0;i<60&&fsh_status.state!=PORTABLE_FILE_SHARING_LISTENING;i++)step();assert(fsh_status.state==PORTABLE_FILE_SHARING_LISTENING&&listeners==1&&strlen(fsh_status.password)==16);}
 static void init(void){
+#ifdef FILE_SETUP_TEST
+ fsh_direct=false; /* Existing scenarios explicitly exercise same-LAN mode. */
+#endif
  runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;test_runtime_override=&runtime;
  test_volume=(risc_storage_volume_api_v1){1,sizeof(test_volume),NULL,test_ready,test_ready,test_label,test_stat,test_diropen,test_dirnext,test_dirclose,test_open,test_read,NULL,NULL,test_close,NULL,test_error_get};
  export_api.volume.terminal.power.volume.base=(risc_storage_volume_api_v1){.api_version=1,.struct_size=sizeof(export_api)};export_api.export_tag=RISC_APP_DATA_EXPORT_TAG;export_api.export_version=1;export_api.entry=catalog;
@@ -129,7 +162,7 @@ static void init(void){
 #ifdef FILE_SETUP_TEST
 #include "file_browser_setup_scenes.inc"
 #endif
-#ifndef FILE_PEER_FIXTURE
+#if !defined(FILE_PEER_FIXTURE) && !defined(FILE_DIRECT_FIXTURE)
 int main(int argc,char**argv){
  assert(argc>=2);const char*mode=argv[1];test_directory=argc>2?argv[2]:NULL;
  borrowed=!strcmp(mode,"borrowed");empty=!strcmp(mode,"empty");policy_off=!strcmp(mode,"policy-off");policy_busy=!strcmp(mode,"policy-busy");policy_context=!strcmp(mode,"policy-context");

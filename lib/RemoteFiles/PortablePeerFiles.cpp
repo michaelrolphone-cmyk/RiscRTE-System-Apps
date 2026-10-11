@@ -1,4 +1,5 @@
 #include "PortablePeerFiles.h"
+#include "PortableNetworkSession.h"
 #include "WebDavRemoteVolume.h"
 #include <RiscEntropySourceV1.h>
 #include <cstring>
@@ -10,15 +11,18 @@ struct portable_peer_files {
 portable_peer_hooks hooks;
 Client client;
 RemoteVolume remote;
- risc_runtime_capability_v1 tcp{},entropy{},ble{};
+ risc_runtime_capability_v1 tcp{},entropy{},ble{},wifi{},store{};
 risc_bluetooth_session_setup_v1 broker{};
  risc_bluetooth_session_descriptor_v1 descriptor{};
+risc_bluetooth_network_offer_v1 offer{};
+portable_network_session network{};
+bool networkInitialized=false,networkReady=false,leaseEnding=false;
 risc_bluetooth_session_setup_status_v1 setup{};
  risc_bluetooth_session_peer_v1 peers[RISC_SESSION_PEERS_MAX]{};
  portable_peer_status status{};
 uint8_t random[16]{};
-uint64_t token=0,now=0,copiedAt=0;
- enum class Step{Off,Tcp,Entropy,Random,ReleaseEntropy,Ble,Discover,Scan,ReadDescriptor,CloseBle,ReleaseBle,Authenticate,Handshake,Browse,Operation,StopRemote,StopClient,StopBle,StopGrants}step=Step::Off;
+uint64_t token=0,now=0,copiedAt=0,startedAt=0;
+ enum class Step{Off,Tcp,Ble,Discover,Entropy,Random,ReleaseEntropy,Scan,ReadDescriptor,ReadNetwork,CloseBle,ReleaseBle,Wifi,Store,Join,Network,Authenticate,Handshake,Browse,Operation,StopRemote,StopClient,StopBle,CloseNetwork,StopGrants}step=Step::Off;
  enum class Command{None,Select,Confirm,List,Download,Upload,Mutate}command=Command::None;
  uint32_t selected=0,generation=0,number=0;
 bool replace=false,accept=false,stopping=false;
@@ -32,6 +36,7 @@ return p.status.state!=PEER_RETAINED&&p.hooks.owner(p.hooks.context);
  void wipe(){volatile unsigned char*p=reinterpret_cast<volatile unsigned char*>(&descriptor);
 for(size_t i=0;i<sizeof(descriptor);i++)p[i]=0;
 memset(random,0,sizeof(random));
+volatile unsigned char*n=reinterpret_cast<volatile unsigned char*>(&offer);for(size_t i=0;i<sizeof(offer);i++)n[i]=0;
 }
  void retain(){status.state=PEER_RETAINED;
 client.tick(now);
@@ -49,9 +54,9 @@ stopping=true;
 step=Step::StopRemote;
 wipe();
 }
- bool acquire(const char*cap,risc_runtime_capability_v1&g){g={};
+ bool acquire(const char*cap,risc_runtime_capability_v1&g,uint64_t instance=0){g={};
 g.struct_size=sizeof(g);
-bool ok=runtime->acquire(cap,1,0,&g);
+bool ok=runtime->acquire(cap,1,instance,&g);
 if(!owner())return false;
 if(!ok||!g.api){if(g.api)retain();
 else fail("Peer service is unavailable");
@@ -90,10 +95,12 @@ void*p=h->allocate(sizeof(portable_peer_files));
 return p?new(p)portable_peer_files(r,*h):nullptr;
 }
 extern "C" bool portable_peer_start(portable_peer_files*p,uint64_t now){if(!p||p->step!=portable_peer_files::Step::Off||!p->owner())return false;
-p->now=now;
+p->now=p->startedAt=now;
 p->status={};
 p->status.state=PEER_STARTING;
 p->stopping=false;
+p->command=portable_peer_files::Command::None;p->scanIndex=0;p->selected=p->generation=p->number=0;
+memset(p->peers,0,sizeof(p->peers));
 p->step=portable_peer_files::Step::Tcp;
 return true;
 }
@@ -103,10 +110,16 @@ if(now<p->now){p->fail("Peer clock moved backwards");
 }p->now=now;
 using S=portable_peer_files::Step;
 using C=portable_peer_files::Command;
+ if(p->step>=S::Tcp&&p->step<=S::ReleaseEntropy&&now-p->startedAt>=10000u)p->fail("Peer startup timed out");
+ if(p->leaseEnding){int rc=portable_network_session_service_end(&p->network);if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();else if(rc==PORTABLE_NETWORK_SERVICE_OK)p->leaseEnding=false;return;}
+ bool lease=false;
+ if(p->networkReady && p->step>=S::Authenticate && p->step<=S::StopClient){
+   int rc=portable_network_session_service_begin(&p->network);if(rc==PORTABLE_NETWORK_SERVICE_RETAINED){p->retain();return;}if(rc!=PORTABLE_NETWORK_SERVICE_OK)return;lease=true;
+ }
  switch(p->step){
  case S::Tcp:if(p->acquire(RISC_TCP_CONNECTION_CAPABILITY,p->tcp)){auto*t=static_cast<const risc_tcp_connection_v1*>(p->tcp.api);
 if(t->api_version!=1||t->struct_size<sizeof(*t)||t->connect_tag!=RISC_TCP_CONNECTION_CONNECT_TAG||!t->connect||!t->connected)p->fail("This Runtime lacks peer TCP support");
-else p->step=S::Entropy;
+else p->step=S::Ble;
 }break;
  case S::Entropy:if(p->acquire(RISC_ENTROPY_SOURCE_CAPABILITY,p->entropy))p->step=S::Random;
 break;
@@ -124,20 +137,20 @@ break;
 }p->step=S::ReleaseEntropy;
 break;
 }
- case S::ReleaseEntropy:if(p->release(p->entropy))p->step=S::Ble;
+ case S::ReleaseEntropy:if(p->release(p->entropy)){p->step=S::Scan;p->status.state=PEER_DISCOVERING;}
 break;
  case S::Ble:if(p->acquire(RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY,p->ble)){auto*b=static_cast<const risc_bluetooth_session_setup_v1*>(p->ble.api);
-if(b->api_version!=1||b->struct_size<sizeof(*b)||b->peer_tag!=RISC_SESSION_PEER_TAG||!b->discover||!b->peer||!b->select_peer||!b->peer_descriptor||!b->poll||!b->status||!b->close||!b->confirm_pairing){p->fail("This Bluetooth provider lacks peer discovery");
+if(b->api_version!=1||b->struct_size<offsetof(risc_bluetooth_session_setup_v1,network_tag)||b->peer_tag!=RISC_SESSION_PEER_TAG||!b->discover||!b->peer||!b->select_peer||!b->peer_descriptor||!b->poll||!b->status||!b->close||!b->confirm_pairing){p->fail("This Bluetooth provider lacks peer discovery");
 break;
-}p->broker=*b;
+}memcpy(&p->broker,b,b->struct_size<sizeof(p->broker)?b->struct_size:sizeof(p->broker));
 p->step=S::Discover;
 }break;
  case S::Discover:{int rc=p->broker.discover(p->broker.context,300000,&p->token);
 if(!p->brokerResult(rc))break;
 if(!p->token){p->retain();
 break;
-}p->step=S::Scan;
-p->status.state=PEER_DISCOVERING;
+}// Discovery claims/enables BLE before entropy; no peer or router is required.
+p->step=S::Entropy;
 break;
 }
  case S::Scan:{
@@ -175,12 +188,38 @@ break;
  case S::ReadDescriptor:p->descriptor={};
 p->descriptor.struct_size=sizeof(p->descriptor);
 if(p->brokerResult(p->broker.peer_descriptor(p->broker.context,p->token,&p->descriptor))){p->copiedAt=now;
-p->step=S::CloseBle;
+p->step=S::ReadNetwork;
 }break;
+ case S::ReadNetwork:
+ p->offer={};p->offer.struct_size=sizeof(p->offer);
+ if(p->broker.network_tag==RISC_SESSION_NETWORK_TAG&&p->broker.peer_network){
+   int rc=p->broker.peer_network(p->broker.context,p->token,&p->offer);
+   if(rc==RISC_SETUP_INVALID)p->offer={};else {
+    if(!p->brokerResult(rc))break;
+    if(p->offer.struct_size!=sizeof(p->offer)||!memchr(p->offer.ssid,0,sizeof(p->offer.ssid))||!p->offer.ssid[0]||!memchr(p->offer.password,0,sizeof(p->offer.password))||strlen(p->offer.password)<8||memcmp(p->offer.address,"\xc0\xa8\x04\x01",4)||memcmp(p->offer.endpoint.url,p->descriptor.url,sizeof(p->descriptor.url))||memcmp(p->offer.endpoint.username,p->descriptor.username,sizeof(p->descriptor.username))||memcmp(p->offer.endpoint.password,p->descriptor.password,sizeof(p->descriptor.password))){p->fail("Invalid private network offer");break;}
+   }
+ }else p->offer={};
+ p->step=S::CloseBle;break;
  case S::CloseBle:if(p->closeBroker())p->step=S::ReleaseBle;
 break;
- case S::ReleaseBle:if(p->release(p->ble))p->step=S::Authenticate;
+ case S::ReleaseBle:if(p->release(p->ble))p->step=S::Wifi;
 break;
+ case S::Wifi:if(p->acquire("net.wifi",p->wifi,15))p->step=p->offer.struct_size?S::Join:S::Store;break;
+ case S::Store:if(p->acquire("storage.key-value",p->store,6))p->step=S::Join;break;
+ case S::Join:{
+  portable_network_session_init(&p->network,static_cast<const wifi_api_v1*>(p->wifi.api),static_cast<const risc_key_value_v1*>(p->store.api),portable_peer_files::owned,p);p->networkInitialized=true;
+  int rc=p->offer.struct_size?portable_network_session_start_private(&p->network,false,p->offer.ssid,p->offer.password,uint32_t(now)):portable_network_session_start(&p->network,uint32_t(now));
+  memset(&p->offer,0,sizeof(p->offer));
+  if(rc==PORTABLE_NETWORK_RETAINED){p->retain();break;}
+  if(rc!=PORTABLE_NETWORK_PENDING){p->fail("Peer network setup unavailable");break;}p->step=S::Network;break;
+ }
+ case S::Network:{
+  if(now-p->copiedAt>=p->descriptor.remaining_lifetime_ms){p->fail("Peer session expired");break;}
+  int rc=portable_network_session_step(&p->network,uint32_t(now));
+  if(rc==PORTABLE_NETWORK_RETAINED){p->retain();break;}
+  if(rc<0){p->fail("Peer Wi-Fi connection failed");break;}
+  if(rc==PORTABLE_NETWORK_READY){p->networkReady=true;p->step=S::Authenticate;}break;
+ }
  case S::Authenticate:{uint64_t elapsed=now-p->copiedAt;
 if(elapsed>=p->descriptor.remaining_lifetime_ms){p->fail("Peer session expired");
 break;
@@ -254,9 +293,14 @@ if(p->client.tick(now)==Client::State::Retained){p->retain();
 break;
 }if(p->client.state()==Client::State::Off)p->step=S::StopBle;
 break;
- case S::StopBle:if(p->closeBroker())p->step=S::StopGrants;
+ case S::StopBle:if(p->closeBroker())p->step=S::CloseNetwork;
 break;
- case S::StopGrants:if(p->ble.api){p->release(p->ble);
+ case S::CloseNetwork:
+  if(p->networkInitialized){int rc=portable_network_session_close(&p->network);if(rc==PORTABLE_NETWORK_CLOSE_RETAINED){p->retain();break;}if(rc!=PORTABLE_NETWORK_CLOSED)break;}
+  p->networkReady=p->networkInitialized=false;p->step=S::StopGrants;break;
+ case S::StopGrants:
+ if(p->wifi.api){p->release(p->wifi);break;}if(p->store.api){p->release(p->store);break;}
+if(p->ble.api){p->release(p->ble);
 break;
 }if(p->entropy.api){p->release(p->entropy);
 break;
@@ -268,6 +312,10 @@ p->step=S::Off;
 break;
  default:break;
 }
+ if(lease && p->owner()){
+   int rc=portable_network_session_service_end(&p->network);
+   if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();else p->leaseEnding=rc==PORTABLE_NETWORK_SERVICE_PENDING;
+ }
 }
 extern "C" void portable_peer_status_get(const portable_peer_files*p,portable_peer_status*out){if(out)*out=p?p->status:portable_peer_status{};
 }

@@ -102,6 +102,7 @@ nonceCount_=0;
 expiry_=now+d.remaining_lifetime_ms;
 lastNow_=now;
 ending_=false;
+retryConnect_=false;
 handshake_=true;
 authenticated_=false;
 state_=State::Ready;
@@ -267,11 +268,17 @@ wipe();
 if(!strcmp(method_,"HEAD")||status_==204||status_==304)responseSize_=0;
  return true;
 }
-void Client::fail(Error e){error_=e;
+void Client::fail(Error e){
+// A private AP can become addressable just before its listener is ready.
+// Retry only the initial connect, before any HTTP byte; never retry a write.
+retryConnect_=e==Transport&&handshake_&&!headerAt_&&!ending_&&
+ (state_==State::Connect||state_==State::Connecting)&&lastNow_+250<deadline_&&lastNow_+250<expiry_;
+retryAt_=lastNow_+250;
+error_=e;
 if(mutating_&&headerAt_){uncertain_=true;
 if(e==Transport)e=Uncertain;
 error_=e;
-}state_=handle_?State::Closing:State::Error;
+}state_=handle_?State::Closing:retryConnect_?State::ConnectWait:State::Error;
 }
 bool Client::result(int32_t rc){if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED){state_=State::Retained;
 error_=Transport;
@@ -304,6 +311,7 @@ return state_;
  int32_t rc=0;
 uint32_t n=0;
  switch(state_){
+ case State::ConnectWait:if(now>=retryAt_){retryConnect_=false;error_=None;state_=State::Connect;}break;
  case State::Connect:rc=tcp_.connect(tcp_.context,&endpoint_,&handle_);
 if(result(rc)){if(rc||!handle_){fail(Transport);
 break;
@@ -357,7 +365,8 @@ error_=Transport;
 wipe();
 break;
 }handle_=0;
-}erase(header_,sizeof(header_));
+}if(retryConnect_&&!ending_){state_=State::ConnectWait;break;}
+erase(header_,sizeof(header_));
 erase(buffer_,sizeof(buffer_));
 if(ending_){wipe();
 state_=State::Off;

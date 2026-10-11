@@ -70,6 +70,10 @@ void portable_network_session_init(portable_network_session *session,
  * at most four codec reads, three copied link reads, or one async call. Every
  * backend call has an owner check before and after it. Yield between steps. */
 portable_network_result portable_network_session_start(portable_network_session *session, uint32_t now_ms);
+/* Explicit temporary AP/JOIN; never reads or writes profiles. Native owner
+ * restores a suspended healthy station before close reports CLOSED. */
+portable_network_result portable_network_session_start_private(portable_network_session*,
+    bool access_point,const char*ssid,const char*password,uint32_t now_ms);
 portable_network_result portable_network_session_step(portable_network_session *session, uint32_t now_ms);
 void portable_network_session_snapshot(const portable_network_session *session, portable_network_snapshot *out);
 /* Stop application services first, pair outstanding service_end, then close.

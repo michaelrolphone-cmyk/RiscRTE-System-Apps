@@ -20,14 +20,14 @@ struct Store {
  [](void*c,const char*n,uint64_t rev,const void*in,uint32_t size)->int32_t{auto&s=*static_cast<Store*>(c);assert(!strcmp(n,"documents.ruf"));s.calls++;if(!s.available)return -5;if(rev!=s.revision)return -10;s.bytes.assign(static_cast<const char*>(in),size);s.revision++;return 0;}};
 };
 struct Link {
- bool owner=true,clientLive=false,serverLive=false,accepted=false,drop=false,closeFault=false;uint64_t serial=10;std::string up,down;size_t upAt=0,downAt=0;unsigned calls=0;
+ bool owner=true,clientLive=false,serverLive=false,accepted=false,drop=false,closeFault=false;uint64_t serial=10;std::string up,down;size_t upAt=0,downAt=0;unsigned calls=0,refuseConnect=0;
  risc_tcp_connection_v1 tcp{1,sizeof(tcp),this,
  [](void*,const risc_tcp_connection_listen_v1*,uint64_t*out)->int32_t{*out=1;return 0;},
  [](void*c,uint64_t,uint64_t*out)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*out=0;if(!s.clientLive||s.accepted)return 1;s.accepted=true;s.serverLive=true;*out=s.serial+1000;return 0;},
  [](void*c,uint64_t h,void*out,uint32_t cap,uint32_t*n)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*n=0;if(s.drop)return -4;bool server=h>1000;auto&b=server?s.up:s.down;auto&at=server?s.upAt:s.downAt;*n=std::min<size_t>({cap,31,b.size()-at});if(!*n)return server?(!s.clientLive?2:1):(!s.serverLive&&s.accepted?2:1);memcpy(out,b.data()+at,*n);at+=*n;return 0;},
  [](void*c,uint64_t h,const void*in,uint32_t cap,uint32_t*n)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*n=0;if(s.drop)return -4;*n=std::min(cap,41u);(h>1000?s.down:s.up).append(static_cast<const char*>(in),*n);return 0;},
  [](void*c,uint64_t h)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;if(s.closeFault)return -6;if(h>1000)s.serverLive=false;else if(h>1)s.clientLive=false;return 0;},RISC_TCP_CONNECTION_CONNECT_TAG,
- [](void*c,const risc_tcp_connection_listen_v1*r,uint64_t*out)->int32_t{auto&s=*static_cast<Link*>(c);assert(r->port==8080&&r->address[0]==192);assert(!s.clientLive&&!s.serverLive);s.calls++;s.up.clear();s.down.clear();s.upAt=s.downAt=0;s.accepted=false;s.clientLive=true;*out=++s.serial;return 0;},
+ [](void*c,const risc_tcp_connection_listen_v1*r,uint64_t*out)->int32_t{auto&s=*static_cast<Link*>(c);assert(r->port==8080&&r->address[0]==192);assert(!s.clientLive&&!s.serverLive);s.calls++;if(s.refuseConnect){s.refuseConnect--;*out=0;return -4;}s.up.clear();s.down.clear();s.upAt=s.downAt=0;s.accepted=false;s.clientLive=true;*out=++s.serial;return 0;},
  [](void*c,uint64_t)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;return s.drop?-4:0;}};
 };
 struct Fixture {

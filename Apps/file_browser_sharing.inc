@@ -10,8 +10,16 @@
 #include "PortableBackgroundServices.h"
 #ifdef PORTABLE_FILE_SETUP
 #include "PortableFileSetup.h"
+#include "RiscEntropySourceV1.h"
+#include "PortableBluetoothControl.h"
+static bool fsh_direct=true,fsh_private_started;
+static unsigned fsh_direct_stage;
+static risc_bluetooth_network_offer_v1 fsh_offer;
+static risc_runtime_capability_v1 fsh_entropy_grant,fsh_ble_power_grant;
+static bool fsh_ble_restore_off,fsh_ble_power_ready;
 static bool fsh_setup_close(void);
 static void fsh_setup_fence(void);
+static void fsh_setup_wipe(void*,size_t);
 #endif
 #ifndef PORTABLE_FILE_SHARING_EXPORT_INSTANCE
 #error Sharing requires an explicit app-data export grant selection
@@ -50,6 +58,7 @@ static void fsh_retain(void){
 #endif
 #ifdef PORTABLE_FILE_SETUP
  fsh_setup_fence();
+ fsh_setup_wipe(&fsh_offer,sizeof(fsh_offer));
 #endif
  portable_file_sharing_stop(fsh_client); /* Pure owner failure wipes local secrets. */
  memset(&fsh_status,0,sizeof(fsh_status));
@@ -110,6 +119,21 @@ bool portable_file_browser_services_end(void){
  fsh_service_ending=rc==PORTABLE_NETWORK_SERVICE_PENDING;
  return true; /* A pending lease end is drained before any later service work. */
 }
+#ifdef PORTABLE_FILE_SETUP
+static bool fsh_ble_power_close(void){
+ if(!fsh_ble_power_grant.api)return true;
+ const portable_bluetooth_control_v1*b=fsh_ble_power_grant.api;
+ if(fsh_ble_restore_off){
+  bool off=b->set_enabled(b->context,false);
+  if(!fsh_owner(NULL)){fsh_retain();return false;}
+  uint8_t state=PORTABLE_BLUETOOTH_RETAINED;
+  if(!off||!b->status(b->context,&state)||!fsh_owner(NULL)||state!=PORTABLE_BLUETOOTH_OFF){fsh_retain();return false;}
+ }
+ if(!fsh_release(&fsh_ble_power_grant))return false;
+ fsh_ble_restore_off=fsh_ble_power_ready=false;
+ return true;
+}
+#endif
 static bool fsh_close(void){
  /* Successful handoff marks the browser terminal after all sharing resources
   * closed. Fini may recheck this pure completed state without reacquiring. */
@@ -140,6 +164,10 @@ static bool fsh_close(void){
   if(rc==PORTABLE_NETWORK_CLOSE_PENDING)return false;
   fsh_network_initialized=false;memset(&fsh_link,0,sizeof(fsh_link));
  }
+ #ifdef PORTABLE_FILE_SETUP
+ if(!fsh_release(&fsh_entropy_grant)||!fsh_ble_power_close())return false;
+ fsh_setup_wipe(&fsh_offer,sizeof(fsh_offer));fsh_private_started=false;fsh_direct_stage=0;
+#endif
  if(!fsh_release(&fsh_wifi_grant)||!fsh_release(&fsh_store_grant))return false;
  fsh_phase=FSH_OFF;fsh_url[0]=0;fb_dirty=true;return true;
 }
@@ -155,6 +183,9 @@ static void fsh_start(void){
  if(!portable_background_stop()){fsh_retain();return;}
  fsh_now=0;fsh_last_clock=fb_app->millis();fsh_last_second=UINT32_MAX;
  fsh_message[0]=0;fsh_url[0]=0;memset(&fsh_status,0,sizeof(fsh_status));
+ #ifdef PORTABLE_FILE_SETUP
+ fsh_direct_stage=0;fsh_private_started=false;fsh_setup_wipe(&fsh_offer,sizeof(fsh_offer));
+#endif
  fsh_phase=FSH_POLICY;fb_dirty=true;
 }
 static unsigned fsh_policy(void){
@@ -188,6 +219,9 @@ static bool fsh_acquire(const char *name,uint64_t instance,risc_runtime_capabili
 #ifdef PORTABLE_FILE_PEER
 #include "file_browser_peer.inc"
 #endif
+#ifdef PORTABLE_FILE_SETUP
+#include "file_browser_direct.inc"
+#endif
 static void fsh_tick(void){
 #ifdef PORTABLE_FILE_PEER
  fpeer_after_close();
@@ -216,6 +250,12 @@ static void fsh_tick(void){
   if(allowed!=PORTABLE_WIFI_POLICY_ALLOWED){fsh_error(allowed==PORTABLE_WIFI_POLICY_OFF?"Enable Wi-Fi in Quick Actions first":"Wi-Fi settings unavailable");fsh_phase=FSH_STOPPING;return;}
   fsh_phase=FSH_STORE;return;
  }
+ #ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode){if(fsh_phase==FSH_STORE)fsh_phase=FSH_CONNECT;fpeer_tick(now);return;}
+#endif
+#ifdef PORTABLE_FILE_SETUP
+ if(fsh_direct){fsh_direct_tick(now);return;}
+#endif
  if(fsh_phase==FSH_STORE){if(fsh_acquire(RISC_KEY_VALUE_CAPABILITY,PORTABLE_WIFI_CREDENTIALS_STORE_INSTANCE,&fsh_store_grant))fsh_phase=FSH_WIFI;return;}
  if(fsh_phase==FSH_WIFI){
   if(!fsh_acquire("net.wifi",15,&fsh_wifi_grant))return;
@@ -282,21 +322,24 @@ static void fsh_draw(void){
  if(fb_paper){
   fb_paper->begin();fbp_text(32,28,fbp_w()-64,fsh_title(),true,true,false);fb_app->fill_rect(32,100,fbp_w()-64,3,true);
   if(ready){fbp_wrap(32,128,fbp_w()-64,2,fsh_url,true);fbp_text(32,220,fbp_w()-64,"USERNAME",false,true,false);fbp_text(32,252,fbp_w()-64,fsh_status.username,false,true,true);fbp_text(32,308,fbp_w()-64,"TEMPORARY PASSWORD",false,true,false);fbp_text(32,344,fbp_w()-64,fsh_status.password,true,true,true);fbp_text(32,408,fbp_w()-64,detail,false,true,false);}
-  else fbp_wrap(32,132,fbp_w()-64,5,fsh_phase==FSH_OFF?(fsh_volume_share()?"Share this SD volume for 5 minutes on local Wi-Fi. The session allows reading and file management.":"Share configured saved files for 5 minutes on your local Wi-Fi network. A fresh password is required for every session."):"Preparing the saved network and private session. Back cancels.",true);
+  else fbp_wrap(32,132,fbp_w()-64,5,fsh_phase==FSH_OFF?(fsh_volume_share()?"Share this SD volume for 5 minutes. Choose direct device or an existing local network.":"Share saved files for 5 minutes. Nearby devices connect directly after you both confirm the number."):"Preparing the private session. Back cancels.",true);
 #ifdef PORTABLE_FILE_SETUP
+  if(fsh_phase==FSH_OFF)fbp_button(32,448,fbp_w()-64,48,fsh_direct?"DIRECT DEVICE (NO ROUTER)":"SAME LAN",NULL,false);
   if(ready)fbp_button(32,448,fbp_w()-64,48,"BLUETOOTH SETUP",NULL,false);
 #endif
   fbp_text(32,fbp_h()-296,fbp_w()-64,"Authenticated HTTP.",false,true,true);
   fbp_text(32,fbp_h()-268,fbp_w()-64,"File contents are unencrypted.",false,true,true);
-  fbp_text(32,fbp_h()-240,fbp_w()-64,"Use a trusted local network.",false,true,true);
+  fbp_text(32,fbp_h()-240,fbp_w()-64,"Confirm setup on both devices.",false,true,true);
   fbp_wrap(32,fbp_h()-190,fbp_w()-64,2,fsh_message,true);
-  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"BACK",NULL,false);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,fsh_phase==FSH_OFF?"START HTTP":"STOP",NULL,true);
+  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"BACK",NULL,false);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,fsh_phase==FSH_OFF?"START SHARING":"STOP",NULL,true);
  }else{
   portable_nova_begin();portable_nova_header(fsh_title());
   if(ready){portable_nova_wrap(3,16,49,208,13,2,fsh_url,NOVA_CYAN);portable_nova_text(3,16,81,208,"USER: files",NOVA_CAP);portable_nova_text(2,16,101,208,fsh_status.password,NOVA_WHITE);portable_nova_text(3,16,128,208,fsh_message[0]?fsh_message:detail,NOVA_CAP);}
-  else portable_nova_wrap(2,16,52,208,17,4,fsh_phase==FSH_OFF?(fsh_volume_share()?"Share this SD volume for 5 minutes. The session allows reading and file management.":"Share saved files for 5 minutes using your saved Wi-Fi network."):"Connecting... Back cancels.",NOVA_TEXT);
+  else portable_nova_wrap(2,16,52,208,17,4,fsh_phase==FSH_OFF?(fsh_volume_share()?"Share this SD volume for 5 minutes. The session allows reading and file management.":"Share saved files for 5 minutes. Confirm the number on both devices to connect directly."):"Connecting... Back cancels.",NOVA_TEXT);
 #ifdef PORTABLE_FILE_SETUP
+  if(fsh_phase==FSH_OFF)portable_nova_button(16,146,208,24,fsh_direct?"Direct device (no router)":"Same LAN",false);
   if(ready){portable_nova_button(16,146,208,24,"Bluetooth setup",false);portable_nova_wrap(3,16,174,208,10,2,"Authenticated HTTP. Contents unencrypted.",NOVA_CAP);}
+  else if(fsh_phase==FSH_OFF)portable_nova_wrap(3,16,174,208,10,2,"Authenticated HTTP. Contents unencrypted.",NOVA_CAP);
   else
 #endif
   portable_nova_wrap(3,16,149,208,12,3,"HTTP is authenticated. File contents are unencrypted.",NOVA_CAP);
@@ -305,7 +348,7 @@ static void fsh_draw(void){
    &&!ready
 #endif
   )portable_nova_wrap(3,16,178,208,12,1,fsh_message,NOVA_CYAN);
-  portable_nova_button(16,196,84,36,"Back",false);portable_nova_button(108,196,116,36,fsh_phase==FSH_OFF?"Start HTTP":"Stop",true);
+  portable_nova_button(16,196,84,36,"Back",false);portable_nova_button(108,196,116,36,fsh_phase==FSH_OFF?"Share files":"Stop",true);
  }
  fb_app->present(false);fb_dirty=false;
 }
@@ -315,6 +358,7 @@ static bool fsh_touch(int x,int y){
 #endif
 #ifdef PORTABLE_FILE_SETUP
  if(fsh_setup_screen)return fsh_setup_touch(x,y);
+ if(fsh_phase==FSH_OFF&&((fb_paper&&x>=32&&x<fbp_w()-32&&y>=448&&y<496)||(!fb_paper&&x>=16&&x<224&&y>=146&&y<170))){fsh_direct=!fsh_direct;fb_dirty=true;return false;}
  if(fsh_phase==FSH_ACTIVE){
   if((fb_paper&&x>=32&&x<fbp_w()-32&&y>=448&&y<496)||(!fb_paper&&x>=16&&x<224&&y>=146&&y<170)){fsh_setup_start();return false;}
  }
