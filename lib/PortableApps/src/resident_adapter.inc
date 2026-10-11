@@ -231,6 +231,9 @@ static int resident_checkpoint(uint32_t reason) {
   if(status!=RISC_RESIDENT_EXIT && !resident_focus(true))return RISC_RESIDENT_RETAINED;
   paper_previous_valid=previous_valid=false;
  }
+#ifdef PORTABLE_INSTALLED_CATALOG
+ if(modal&&status!=RISC_RESIDENT_EXIT)portable_installed_resume_discovery();
+#endif
  if(status==RISC_RESIDENT_EXIT)handoff_requested=true;
  return status;
 }

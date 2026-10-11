@@ -1,5 +1,6 @@
 #ifdef PORTABLE_INSTALLED_CATALOG
 int portable_installed_prepare_launch(void);
+void portable_installed_resume_discovery(void);
 #endif
 /* Selected X4 paper grid: standard 3 by 4 geometry, 12 apps per horizontal page.
  * Input snapshots logical identities; presentation never gates interaction. */
@@ -301,6 +302,9 @@ static bool paper_run(void) {
 #endif
             t5_app_manifest_t app;int index=sbs_resolve(sbs_launch_name);
             if(index>=0&&api->installed_apps_get((unsigned)index,&app)&&app.compatible&&!strcmp(app.file_name,sbs_launch_name)&&api->request_app_launch((unsigned)index)){sbs_layers_release();return true;}
+#ifdef PORTABLE_INSTALLED_CATALOG
+            portable_installed_resume_discovery();
+#endif
             portable_perf_action(PORTABLE_PERF_LAUNCH_FAILED,false);sbs_cancel();strcpy(status,"UNABLE TO OPEN APP");dirty=true;
         }
     }

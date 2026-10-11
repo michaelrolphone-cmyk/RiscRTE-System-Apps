@@ -9,8 +9,9 @@ typedef struct {
  const installed_apps_v1 *service;
  t5_app_manifest_t rows[INSTALLED_APPS_MAX];
  unsigned count;uint32_t generation;
- bool requested,closing,retained;
+ bool requested,closing,retained,wanted,resume_requested;
 } portable_installed_catalog;
 int portable_installed_refresh(portable_installed_catalog*,const risc_runtime_api_v1*,const t5_app_manifest_t*,unsigned);
 int portable_installed_step(portable_installed_catalog*,const risc_runtime_api_v1*,uint64_t,const t5_app_manifest_t*,unsigned);
+void portable_installed_resume(portable_installed_catalog*);
 int portable_installed_close(portable_installed_catalog*,const risc_runtime_api_v1*);

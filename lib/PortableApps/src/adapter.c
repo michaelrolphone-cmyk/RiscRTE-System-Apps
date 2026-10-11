@@ -2234,6 +2234,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
     bool requested=rt->request_launch(destination);
 #endif
     if(!requested) {
+#ifdef PORTABLE_INSTALLED_CATALOG
+      portable_installed_resume_discovery();
+#endif
       rt->diagnostic("PORTABLE_APP error=return-request");
 #ifdef PORTABLE_APP_LAUNCH_GUARD
       /* Admission refusal is not a cleanup failure. The guarded app remains

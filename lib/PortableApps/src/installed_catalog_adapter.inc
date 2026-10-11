@@ -11,6 +11,7 @@ int portable_installed_prepare_launch(void){
  if(rc==INSTALLED_APPS_RETAINED)portable_adapter_retain();
  return rc;
 }
+void portable_installed_resume_discovery(void){portable_installed_resume(&installed_catalog_client);}
 static void installed_progress(void){
  int rc=portable_installed_step(&installed_catalog_client,rt,PORTABLE_INSTALLED_VOLUME_INSTANCE,
                               portable_catalog,portable_catalog_count);

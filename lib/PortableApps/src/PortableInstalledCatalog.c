@@ -38,9 +38,12 @@ int portable_installed_refresh(portable_installed_catalog*c,const risc_runtime_a
   }
   c->service=s;
  }
- int rc=c->service->refresh(c->service->context);c->requested=true;snapshot(c,base,n);
+ int rc=c->service->refresh(c->service->context);c->wanted=c->requested=true;c->resume_requested=false;snapshot(c,base,n);
  if(rc==INSTALLED_APPS_RETAINED)c->retained=true;
  return rc;
+}
+void portable_installed_resume(portable_installed_catalog*c){
+ if(!c->retained&&c->wanted)c->resume_requested=true;
 }
 int portable_installed_close(portable_installed_catalog*c,const risc_runtime_api_v1*r){
  if(c->retained)return INSTALLED_APPS_RETAINED;
@@ -55,6 +58,10 @@ int portable_installed_close(portable_installed_catalog*c,const risc_runtime_api
 int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_v1*r,uint64_t instance,const t5_app_manifest_t*base,unsigned n){
  if(c->retained)return INSTALLED_APPS_RETAINED;
  if(c->closing)return portable_installed_close(c,r);
+ if(c->resume_requested){
+  int rc=portable_installed_refresh(c,r,base,n);
+  if(rc!=INSTALLED_APPS_OK)return rc;
+ }
  if(!c->requested||!c->service)return INSTALLED_APPS_OK;
  if(!c->volume_grant.api){
   c->volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->volume_grant)};
@@ -68,6 +75,7 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  int ended=c->service->cancel(c->service->context);
  if(ended==INSTALLED_APPS_WORKING)return ended;
  if(ended!=INSTALLED_APPS_OK){c->retained=true;return INSTALLED_APPS_RETAINED;}
+ if(rc==INSTALLED_APPS_OK)c->wanted=false;
  c->requested=false;if(release_volume(c,r)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  return rc;
 }

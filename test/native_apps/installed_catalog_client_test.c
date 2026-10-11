@@ -25,8 +25,16 @@ int main(void){
  assert(portable_installed_refresh(&c,&runtime,base,1)==1);
  pending=false;assert(portable_installed_step(&c,&runtime,42,base,1)==0);
  assert(releases==2&&!c.service&&!c.volume_grant.api);
- assert(portable_installed_refresh(&c,&runtime,base,1)==0);
- assert(portable_installed_step(&c,&runtime,42,base,1)==0&&releases==3);
+ /* A dismissed modal rearms the original scan after checked cancellation. */
+ assert(c.wanted);portable_installed_resume(&c);
+ pending=true;assert(portable_installed_step(&c,&runtime,42,base,1)==1&&volume_acquires==2);
+ assert(portable_installed_close(&c,&runtime)==1);pending=false;
+ assert(portable_installed_step(&c,&runtime,42,base,1)==0&&releases==4);
+ /* A refused launch likewise resumes discovery instead of losing intent. */
+ portable_installed_resume(&c);pending=true;
+ assert(portable_installed_step(&c,&runtime,42,base,1)==1&&volume_acquires==3);
+ pending=false;assert(portable_installed_step(&c,&runtime,42,base,1)==0&&releases==5&&!c.wanted);
+ portable_installed_resume(&c);assert(!c.resume_requested);
  refuse_release=true;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED);
  unsigned before=cancels;assert(portable_installed_close(&c,&runtime)==INSTALLED_APPS_RETAINED&&cancels==before);
  puts("Installed catalog client: cache-first snapshot, preserved icons, unknown app, 1000 polls, cancellation and retained lease PASS");
