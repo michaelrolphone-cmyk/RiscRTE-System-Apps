@@ -2,6 +2,8 @@
 
 Source checkpoint plan, 2026-10-11. No firmware assembly until inputs qualify.
 
+**Current status:** the earlier plan and blockers below are historical. The authoritative current result is [SOURCE_BUILD_READY.md](SOURCE_BUILD_READY.md): full current X4 and Watch stores admitted, SD WebDAV implemented and qualified, capacity and lossless packing qualified. No full firmware or hardware qualification is claimed.
+
 ## Exact dependencies
 - Current System base: 81c877ddc5667b702350570f5c680ea99a16a7c4 (dynamic installed packages).
 - Current Runtime base: 73f07a6bf333fad881b3b15ef0f282b244e11fa4 (dynamic installed packages; preserve current capacity).

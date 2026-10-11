@@ -1,0 +1,6 @@
+/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/build/sd-real-qualified/bridge.c:66:1: warning: non-void function does not return a value in all control paths [-Wreturn-type]
+   66 | }
+      | ^
+1 warning generated.
+Production X4 async-v3 SD + FatFs + shared WebDAV: streamed PUT/GET, atomic overwrite, recursive COPY/DELETE, MOVE, PROPFIND USB export/recovery, async-install exclusion and removed-media retention PASS
+
