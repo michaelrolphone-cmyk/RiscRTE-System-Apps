@@ -27,3 +27,13 @@ namespace across product updates. Native cohort admission preserves the range.
 This is opt-in development source. Product boot/store composition, App Store SD
 installation transactions, driver provisioning, and migration of existing static
 app namespaces still need integration. No hardware qualification is claimed.
+
+## App Store view
+
+The optional `build_portable_updates.py --installed-catalog` selection builds
+App Store 1.3.0. It displays cached installed SD entries alongside existing release
+rows using the current scrolling renderer and controller. Installed rows cannot
+invoke the bank installer. Rendering/get/status do not refresh or read SD. On
+entry, the protected index is rehydrated; Springboard performs async media scans.
+The existing release feed and update transactions remain available. SD package
+installation/uninstall controls are a separate remaining integration step.

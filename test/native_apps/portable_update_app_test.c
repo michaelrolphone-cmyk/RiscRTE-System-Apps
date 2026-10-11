@@ -165,6 +165,16 @@ static const software_update_v1 update_api={1,sizeof(update_api),NULL,update_ref
 static bool rtc_read(void*c,twatch_rtc_time_v1*out){(void)c;*out=(twatch_rtc_time_v1){2026,10,4,0,12,0,0};return true;}
 static const twatch_rtc_api_v1 rtc_api={2,sizeof(rtc_api),NULL,rtc_read,NULL,NULL,NULL};
 
+#ifdef PORTABLE_APP_STORE_CATALOG
+#define TEST_INSTALLED_ROWS 2u
+static int ui_inventory_refresh(void*c){(void)c;return INSTALLED_APPS_OK;}
+static unsigned ui_inventory_count(void*c){(void)c;return 2;}
+static bool ui_inventory_get(void*c,uint32_t i,installed_app_v1*out){(void)c;if(i>=2)return false;*out=(installed_app_v1){.available=i==0};strcpy(out->name,i?"Offline App":"New SD App");strcpy(out->version,"1.0.0");return true;}
+static int ui_inventory_cancel(void*c){(void)c;return INSTALLED_APPS_OK;}
+static const installed_apps_v1 ui_inventory={.api_version=1,.struct_size=sizeof(ui_inventory),.refresh=ui_inventory_refresh,.count=ui_inventory_count,.get=ui_inventory_get,.cancel=ui_inventory_cancel};
+#else
+#define TEST_INSTALLED_ROWS 0u
+#endif
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out) && (v==1||v==2));if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
@@ -172,6 +182,9 @@ static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_cap
  || id==1
 #endif
  );if(kv_denied)return false;out->api=&kv_api;}
+#ifdef PORTABLE_APP_STORE_CATALOG
+ else if(!strcmp(name,INSTALLED_APPS_CAPABILITY)){assert(!id);out->api=&ui_inventory;}
+#endif
  else {assert(!id);if(!strcmp(name,PORTABLE_UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY))out->api=&update_api;else if(!strcmp(name,TWATCH_RTC_CAPABILITY))out->api=&rtc_api;else if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=&alarm_api;else return false;}
  ++grant_count;return true;
 }
@@ -189,6 +202,13 @@ static void start_fixture(void){
 static void connect_fixture(bool install){assert(connect_saved(install));assert(connecting&&native_active);fake_link=WIFI_LINK_UP;update_tick();assert(!connecting);}
 int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);start_fixture();
  switch(scenario){
+#ifdef PORTABLE_APP_STORE_CATALOG
+ case 50:
+  mock_update.state=SOFTWARE_UPDATE_LIST;mock_update.count=0;assert(portable_update_services_safe()&&ust.count==2);
+  render_update();assert(uv.count==3&&!strcmp(uv.rows[1],"Installed: New SD App")&&!begins);
+  assert(portable_update_close());event(input_step()+3,T5_APP_BUTTON_DOWN,-1,0);event(input_step()+6,T5_APP_BUTTON_CONFIRM,-1,0);event(input_step()+10,T5_APP_BUTTON_BACK,-1,0);
+  app_main();assert(!opened&&!begins&&!activations&&launches==1);break;
+#endif
  case 40:
   ust.state=SOFTWARE_UPDATE_IDLE;assert(portable_update_idle_ready());
   connecting=true;assert(!portable_update_idle_ready());connecting=false;
@@ -229,7 +249,7 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
  app_main();assert(begins==1&&!activations&&!restart_pending&&launches==1&&!opened&&!native_active);break;
  case 26:case 27:assert(portable_update_close());mock_update.count=scenario==27?1:0;mock_update.state=SOFTWARE_UPDATE_DOWNLOAD;mock_update.done=14336;mock_update.total=32768;mock_update.resources_open=true;
  event(2,0,120,225);event(16,T5_APP_BUTTON_BACK,-1,0);app_main();
- assert(mock_update.state==(scenario==27?SOFTWARE_UPDATE_LIST:SOFTWARE_UPDATE_IDLE));assert(!uv.detail&&uv.count==mock_update.count+1&&!strcmp(uv.rows[0],"Check / retry"));
+ assert(mock_update.state==(scenario==27?SOFTWARE_UPDATE_LIST:SOFTWARE_UPDATE_IDLE));assert(!uv.detail&&uv.count==mock_update.count+1+TEST_INSTALLED_ROWS&&!strcmp(uv.rows[0],"Check / retry"));
  assert(!strncmp(uv.message,"Cancelled",9)&&presents>=3&&!begins&&!activations&&launches==1);break;
  case 28:mock_update.state=SOFTWARE_UPDATE_DOWNLOAD;ust=mock_update;render_update();assert(!dirty);mock_update.state=SOFTWARE_UPDATE_IDLE;
  assert(portable_update_services_safe()&&dirty);render_update();assert(!uv.detail&&!strcmp(uv.rows[0],"Check / retry"));break;

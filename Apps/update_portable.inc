@@ -39,6 +39,9 @@ static const t5_app_api_v1 *ua;
 static const risc_runtime_api_v1 *ur;
 static risc_runtime_capability_v1 usg,uwg,ukg,ucg;
 static const software_update_v1 *us;
+#ifdef PORTABLE_APP_STORE_CATALOG
+#include "update_installed_catalog.inc"
+#endif
 static const wifi_api_v1 *uw;
 static const risc_key_value_v1 *uk;
 #ifndef PORTABLE_NATIVE_TIME_TOOLBAR
@@ -98,6 +101,9 @@ void portable_update_resume(void) {if(PORTABLE_APP_RETAINED())return;if(opened){
 bool portable_update_close(void) {
  if(PORTABLE_APP_RETAINED())return false;
  if(!opened)return true;if(!portable_update_suspend())return false;
+ #ifdef PORTABLE_APP_STORE_CATALOG
+ if(!inventory_close())return false;
+ #endif
  if(usg.api&&!ur->release(&usg))return false;memset(&usg,0,sizeof(usg));us=NULL;
  if(ukg.api&&!ur->release(&ukg))return false;memset(&ukg,0,sizeof(ukg));uk=NULL;
  if(ucg.api&&!ur->release(&ucg))return false;memset(&ucg,0,sizeof(ucg));
@@ -274,6 +280,9 @@ static bool open_update(void) {
  if(ur->acquire(PORTABLE_UPDATE_FIRMWARE?SOFTWARE_UPDATE_FIRMWARE_CAPABILITY:SOFTWARE_UPDATE_APPS_CAPABILITY,1,0,&usg)){
   const software_update_v1 *s=usg.api;if(s&&s->api_version==1&&s->struct_size>=sizeof(*s)&&s->refresh&&s->step&&s->status&&s->get&&s->begin&&s->cancel&&s->activate&&s->restart)us=s;}
  if(!us){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
+#ifdef PORTABLE_APP_STORE_CATALOG
+ if(us&&!inventory_open())return false;
+#endif
  if(ur->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_WIFI_CREDENTIALS_STORE_INSTANCE,&ukg)){
   const risc_key_value_v1 *k=ukg.api;if(k&&k->api_version==1&&k->struct_size>=sizeof(*k)&&k->get)uk=k;}
  if(!uk){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;}
