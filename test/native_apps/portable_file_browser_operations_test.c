@@ -269,6 +269,27 @@ static void check_controller_failures(void){
  puts("Production app_main/raw touch: SD absence/removal/reinsert, listing/preview errors, rename/move/delete failures, copy read/write/removal/open failures and retained file/directory cleanup passed");
 }
 
+static void check_protected_settings(void){
+ init_disk(&sd);init_disk(&usb);add(&sd,"/ordinary",false,3);
+ add(&sd,"/RTECFG",true,0);add(&sd,"/RTECFG/index",false,4);add(&sd,"/rTeCfG. ",true,0);
+ add(&sd,"/Tree",true,0);add(&sd,"/Tree/RTECFG",true,0);add(&sd,"/Tree/RTECFG/index",false,4);
+ test_volume=sd.api.base;test_volume.struct_size=sizeof(test_volume);
+ assert(app_module_init()==0&&fb_open());assert(portable_file_browser_close());fb_runtime=&runtime;fb_hidden=true;
+ assert(fb_load(0));for(unsigned i=0;i<fb_count;++i)assert(!risc_protected_settings_path(fb_rows[i].name));
+ unsigned reads=sd.read_opens,writes=usb.write_opens,renames=sd.rename_calls,removes=sd.remove_calls;
+ strcpy(fb_file_path,"/rtecfg/index");assert(!fb_preview_read());fbx_open(false);
+ assert(!fbx_copy(&sd.api.base,"/RTECFG/index",&usb.api.base,"/copy"));
+ assert(!fbx_copy(&sd.api.base,"/ordinary",&usb.api.base,"/RTECFG/index"));
+ assert(!fbx_remove_tree("/RTECFG"));assert(!fbx_remove_tree("/Tree"));
+ select_item("/Tree");strcpy(fb_editor,"Renamed");fbx_rename();assert(sd.rename_calls==renames);
+ fbx_destination(true);strcpy(fb_path,"/Books");fbx_commit_destination();assert(sd.rename_calls==renames);
+ assert(sd.read_opens==reads&&usb.write_opens==writes&&sd.remove_calls==removes);
+ assert(find(&sd,"/Tree/RTECFG/index")>=0&&find(&sd,"/RTECFG/index")>=0);
+ strcpy(fb_path,"/RTECFG");assert(!fb_load(0));
+ no_handles();assert(portable_file_browser_close());app_module_fini();
+ puts("Files protected settings: listing, aliases, preview, open, copy, rename, parent move and recursive delete PASS");
+}
+
 #ifdef FILE_BROWSER_RGB_PROFILE
 #define main legacy_rgb_operation_fixture_main
 #endif
@@ -309,5 +330,6 @@ int main(void){
  test_runtime_override=&runtime;test_polls=0;test_seen_modes=0;test_touch_script=deletion_cancel_script;assert(app_module_init()==0);app_main();app_module_fini();test_touch_script=NULL;test_runtime_override=NULL;
  assert((test_seen_modes&(1u<<FB_ACTIONS))&&(test_seen_modes&(1u<<FB_DELETE))&&find(&sd,"/read.txt")>=0&&test_launches==1);assert(!test_grants&&!test_frames&&!test_subs);
  check_controller_failures();
+ check_protected_settings();
  puts("Paper file operations: rename/move/copy/delete, recursive folders, collision/cancel/close failures, explicit volume selection, handler paging/dispatch/unavailable and SD ELF admission passed");
 }

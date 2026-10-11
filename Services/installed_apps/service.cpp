@@ -423,7 +423,7 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(commitPending){int rc=publish(commitReplace);if(rc==INSTALLED_APPS_OK&&settingsWanted()){requested=true;return INSTALLED_APPS_WORKING;}return rc;}
  if(validationPending)return validateAndSave();
  if(installId[0]||installIntent||installer)return installStep(v);
- if(requested&&!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
+ if(!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
  if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
@@ -474,7 +474,8 @@ const installed_apps_v1 api={1,sizeof(api),nullptr,refresh,
    std::strcpy(installId,id);std::strcpy(installVersion,version);std::strcpy(installDescriptor,staged[i].view.launch_path);std::strcpy(installExpectedDigest,staged[i].digest);installExpectedSize=staged[i].size;installPaused=false;return INSTALLED_APPS_OK;
   }
   return INSTALLED_APPS_INVALID;
- },[](void*,uint64_t utc)->int32_t{if(!packageHttp||!installId[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_INVALID;packageUtc=utc;return INSTALLED_APPS_OK;}};
+ },[](void*,uint64_t utc)->int32_t{if(!packageHttp||!installId[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_INVALID;packageUtc=utc;return INSTALLED_APPS_OK;},
+ [](void*){return started&&!retained&&!inCall&&settingsWanted();}};
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

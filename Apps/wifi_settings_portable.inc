@@ -620,7 +620,7 @@ static void wifi_profiles_step_owned(void) {
       if(PORTABLE_APP_RETAINED())return;
       if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN)return;
       saved_state=rc;if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED&&!memcmp(&credentials,&profile_draft,sizeof(credentials)))draft_dirty=false;
-      wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_LOADED?"Network saved; storage is not a secure vault":rc==PORTABLE_WIFI_PROFILE_FULL?"Storage index exhausted; forget an unused network":"Save unconfirmed - retry";
+      wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved locally; SD backup not confirmed":rc==PORTABLE_WIFI_PROFILE_FULL?"Storage index exhausted; forget an unused network":"Save unconfirmed - retry";
     }else if(work==WIFI_PROFILE_FORGET){
       if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED){forget_index=slot;forget_index_valid=true;wifi_page(WP_FORGET);}
       else wifi_message=rc==PORTABLE_WIFI_CREDENTIALS_EMPTY?"This network is not saved":"Cannot confirm saved network - retry";
@@ -871,7 +871,7 @@ static void wifi_activate(unsigned selected) {
       if(portable_adapter_retained())return;
 #endif
       if(saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED)draft_dirty=false;
-      wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved; storage is not a secure vault":"Save unconfirmed - retry";
+      wifi_message=saved_state==PORTABLE_WIFI_CREDENTIALS_LOADED?"Saved locally; SD backup not confirmed":"Save unconfirmed - retry";
 #endif
     }
     dirty=true;break;

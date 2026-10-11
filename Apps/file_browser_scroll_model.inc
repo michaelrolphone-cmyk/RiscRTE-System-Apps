@@ -22,6 +22,7 @@ void portable_file_browser_scroll_interrupt(void) {
 static bool fbs_directory_mode(void){return fb_mode==FB_LIST||fb_mode==FB_DESTINATION;}
 static bool fbs_list_mode(void){return fbs_directory_mode()||fb_mode==FB_OPTIONS||fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS;}
 static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned anchor) {
+ if(risc_protected_settings_path(fb_path)){fb_count=0;fb_loaded=false;portable_file_browser_scroll_interrupt();fb_message("Protected system settings");return false;}
  fb_count=0;fb_matched=0;fb_more=false;fb_loaded=false;
  if(!fb_ready()){portable_file_browser_scroll_interrupt();++fbs_generation;return false;}
  risc_storage_dir_t directory=fb_volume->dir_open(fb_volume->context,fb_path);
@@ -30,6 +31,7 @@ static bool fbs_read(int direction,const risc_storage_dirent_v1 *cursor,unsigned
  while(fb_volume->dir_next(fb_volume->context,directory,&item)) {
   if((++examined&63u)==0)fb_runtime->yield_ms(1);
   if(!fb_name_valid(item.name,sizeof(item.name))||item.is_directory>1){invalid=true;break;}
+  if(risc_protected_settings_path(item.name))continue;
   if(fb_mode==FB_DESTINATION&&!item.is_directory)continue;
   if((!fb_hidden&&item.name[0]=='.')||!fb_contains(item.name,fb_query))continue;
   if(fb_matched<UINT32_MAX)++fb_matched;

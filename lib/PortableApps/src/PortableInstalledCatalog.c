@@ -76,7 +76,12 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
   int rc=portable_installed_refresh(c,r,base,n);
   if(rc!=INSTALLED_APPS_OK)return rc;
  }
- if(!c->requested||!c->service)return INSTALLED_APPS_OK;
+ if(!c->service)return INSTALLED_APPS_OK;
+ if(!c->requested){
+  /* Poll only the append-only RAM query. Old providers remain scan-only. */
+  if(c->service->struct_size<INSTALLED_APPS_SETTINGS_PREFIX_SIZE||!c->service->settings_pending||!c->service->settings_pending(c->service->context))return INSTALLED_APPS_OK;
+  c->requested=true;
+ }
  if(!c->volume_grant.api){
   c->volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->volume_grant)};
   if(!r->acquire("storage.volume",1,instance,&c->volume_grant)){c->requested=false;return INSTALLED_APPS_UNAVAILABLE;}

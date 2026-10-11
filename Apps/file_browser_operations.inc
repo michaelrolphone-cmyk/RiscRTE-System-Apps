@@ -14,6 +14,31 @@ static bool fbx_same_or_child(const char *candidate,const char *parent){size_t n
 #endif
 static bool fbx_write_available(const risc_storage_volume_api_v1 *v){return v&&v->file_open_write&&v->file_write&&v->file_close;}
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
+/* Inspect a directory before an atomic rename can carry a hidden reserved
+ * descendant elsewhere. Reopen with a bounded position stack; never keep a
+ * directory handle across descent or a failed checked close. */
+static bool fbx_tree_allowed(const char *root){
+ if(risc_protected_settings_path(root))return false;
+ char path[FB_PATH_CAP];if(strlen(root)>=sizeof(path))return false;strcpy(path,root);
+ unsigned position[32]={0},depth=0;
+ for(;;){
+  risc_storage_dir_t dir=fb_volume->dir_open(fb_volume->context,path);if(!dir)return false;
+  risc_storage_dirent_v1 entry={0};unsigned index=0;bool got=false,bad=false;
+  while((got=fb_volume->dir_next(fb_volume->context,dir,&entry))){
+   if(!fb_name_valid(entry.name,sizeof(entry.name))||entry.is_directory>1||risc_protected_settings_path(entry.name)){bad=true;break;}
+   if(index++>=position[depth])break;
+  }
+  const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);
+  bool error=ext&&ext->handle_error?ext->handle_error(fb_volume->context,dir,true)!=0:false;
+  if(!ext||!ext->handle_error){char message[96]={0};error=fb_volume->last_error(fb_volume->context,message,sizeof(message))&&message[0];}
+  if(!fbx_close_dir(fb_volume,dir)||bad||error)return false;
+  if(got){
+   position[depth]=index;
+   if(entry.is_directory){char next[FB_PATH_CAP];if(depth==31||!fb_join(path,entry.name,next,sizeof(next)))return false;strcpy(path,next);position[++depth]=0;}
+  }else {if(!depth)return true;--depth;if(!fb_parent(path))return false;}
+  fb_runtime->yield_ms(1);
+ }
+}
 static bool fbx_rename_available(void){const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);return ext&&ext->rename;}
 #endif
 static bool fbx_exists(const risc_storage_volume_api_v1 *v,const char *path){uint64_t size;bool dir;return v->stat(v->context,path,&size,&dir);}
@@ -48,6 +73,7 @@ static void fbx_actions(void){
 }
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
 static void fbx_rename(void){
+ if(risc_protected_settings_path(fb_file_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
  if(!fbx_rename_available()){fb_message("Rename unavailable on this volume");return;}
  if(!fb_name_valid(fb_editor,sizeof(fb_editor))){fb_message("Invalid name. No slash, backslash, . or ..");return;}
@@ -55,6 +81,7 @@ static void fbx_rename(void){
  if(!fb_join(fb_path,fb_editor,destination,sizeof(destination))){fb_message("Path too long");return;}
  if(!strcmp(fb_file_path,destination)){fb_mode=FB_ACTIONS;fb_message("Name unchanged");return;}
  if(fbx_exists(fb_volume,destination)){fb_message("That name already exists");return;}
+ if(fb_selected.is_directory&&!fbx_tree_allowed(fb_file_path)){fb_message("Folder unavailable or contains protected settings");return;}
  const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);
  if(!ext->rename(fb_volume->context,fb_file_path,destination)){fb_error("Rename failed");return;}
  fbx_success("Renamed successfully");
@@ -74,6 +101,7 @@ static void fbx_cancel(void){
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_publication_unknown?"Copy publication unknown. Reload destination.":fb_moving?"Move cancelled":"Copy cancelled");
 }
 static void fbx_destination(bool move){
+ if(risc_protected_settings_path(fb_file_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
 #ifdef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  if(move){fbx_notice("Move unavailable in this profile");return;}
@@ -90,6 +118,7 @@ static void fbx_destination(bool move){
 }
 static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,const risc_storage_volume_api_v1 *target,const char *to){
  fb_publication_unknown=false;
+ if(risc_protected_settings_path(from)||risc_protected_settings_path(to)){fb_message("Protected system settings");return false;}
  if(!fbx_write_available(target)){fb_message("Destination is read-only");return false;}
  if(!source->refresh(source->context)||!source->ready(source->context)||!target->refresh(target->context)||!target->ready(target->context)){fb_message("Storage disconnected");return false;}
  if(fbx_exists(target,to)){fb_message("Destination already exists");return false;}
@@ -120,6 +149,7 @@ static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,c
  return true;
 }
 static void fbx_commit_destination(void){
+ if(risc_protected_settings_path(fb_source_path)||risc_protected_settings_path(fb_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
  char destination[FB_PATH_CAP];if(!fb_join(fb_path,fb_selected.name,destination,sizeof(destination))){fb_message("Destination path too long");return;}
  bool same=fb_storage_index==fb_source_index;
@@ -133,6 +163,7 @@ static void fbx_commit_destination(void){
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  if(fb_moving){
   if(!same){fb_message("Move requires the same volume. Use Copy instead.");return;}
+  if(fb_selected.is_directory&&!fbx_tree_allowed(fb_source_path)){fb_message("Folder unavailable or contains protected settings");return;}
   const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);
   okay=ext&&ext->rename&&ext->rename(fb_volume->context,fb_source_path,destination);
   if(!okay)fb_error("Move failed");
@@ -148,6 +179,7 @@ static void fbx_commit_destination(void){
  * Close each directory before descending/removing; a failed close is retained
  * and halts mutation. Reopening the parent avoids stale directory cursors. */
 static bool fbx_remove_tree(const char *root){
+ if(risc_protected_settings_path(root))return false;
  char path[FB_PATH_CAP];strcpy(path,root);
  for(;;){
   uint64_t size;bool directory;
@@ -209,6 +241,7 @@ static bool fbx_handler_page(void){
 static void fbx_dispatch(unsigned selected){
  unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;if(selected>=n)return;
  if(!portable_file_browser_safe()){fbx_notice("Close failed. Back retries safely.");return;}
+ if(risc_protected_settings_path(fb_handler_path)){fbx_notice("Protected system settings");return;}
  t5_file_handler_t handler=fb_handlers[selected];
  /* Reader's system-reader dispatch is a separate browser service, not an
   * invented native launch. A composed broker may expose normal app handlers. */
@@ -219,6 +252,7 @@ static void fbx_dispatch(unsigned selected){
  fb_terminal=true;
 }
 static void fbx_open(bool choose){
+ if(risc_protected_settings_path(fb_file_path)){fbx_notice("Protected system settings");return;}
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
  if(fb_storage_index){fbx_notice("Copy this file to primary storage before opening");return;}
  if(!fb_ready())return;

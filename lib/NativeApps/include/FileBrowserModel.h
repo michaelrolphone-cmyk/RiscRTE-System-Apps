@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#include "RiscProtectedSettingsPath.h"
 static inline char fb_lower(char c) { return c>='A' && c<='Z' ? (char)(c+'a'-'A') : c; }
 static inline int fb_name_compare(const char *a, bool ad, const char *b, bool bd) {
     if(ad!=bd)return ad?-1:1;
@@ -28,7 +29,7 @@ static inline bool fb_name_valid(const char *name,size_t capacity) {
     return n<capacity && strcmp(name,".") && strcmp(name,"..");
 }
 static inline bool fb_join(const char *dir,const char *name,char *out,size_t cap) {
-    if(!dir || dir[0]!='/' || !fb_name_valid(name,128))return false;
+    if(!dir || dir[0]!='/' || !fb_name_valid(name,128) || risc_protected_settings_path(dir) || risc_protected_settings_path(name))return false;
     size_t d=strlen(dir),n=strlen(name),separator=d>1;
     if(d+separator+n>=cap)return false;
     memcpy(out,dir,d);if(separator)out[d++]='/';memcpy(out+d,name,n+1);return true;

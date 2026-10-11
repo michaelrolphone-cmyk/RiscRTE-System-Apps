@@ -236,6 +236,7 @@ static int fb_compare(const risc_storage_dirent_v1 *a,const risc_storage_dirent_
 #include "file_browser_scroll_model.inc"
 #endif
 static bool fb_load(int direction) {
+ if(risc_protected_settings_path(fb_path)){fb_count=0;fb_loaded=false;fb_message("Protected system settings");return false;}
 #ifdef PORTABLE_TOUCH_SCROLL
  if(fb_paper)return fbs_load(direction);
 #endif
@@ -249,6 +250,7 @@ static bool fb_load(int direction) {
  while(fb_volume->dir_next(fb_volume->context,directory,&item)) {
   if((++examined&63u)==0)fb_runtime->yield_ms(1);
   if(!fb_name_valid(item.name,sizeof(item.name)) || item.is_directory>1){invalid=true;break;}
+  if(risc_protected_settings_path(item.name))continue;
   if(fb_mode==FB_DESTINATION && !item.is_directory)continue;
   if((!fb_hidden && item.name[0]=='.') || !fb_contains(item.name,fb_query))continue;
   if(fb_matched<UINT32_MAX)++fb_matched;
@@ -291,6 +293,7 @@ static void fb_size_text(uint64_t value,char *out,size_t cap) {
  if(n+7>=cap){if(cap)out[0]=0;return;}for(unsigned i=0;i<n;i++)out[i]=reversed[n-1-i];memcpy(out+n," bytes",7);
 }
 static bool fb_preview_read(void) {
+ if(risc_protected_settings_path(fb_file_path)){fb_preview_count=0;fb_message("Protected system settings");return false;}
  fb_preview_count=0;
  if(!fb_ready())return false;
  uint64_t size=0;bool directory=false;

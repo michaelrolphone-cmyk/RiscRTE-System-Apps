@@ -1,0 +1,47 @@
+name: Shared settings SD safety
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  shared-settings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: cf05de32288f0a911092819881653f5444e2a5f7
+          path: .runtime-shared-settings
+      - name: Shared checkpoint, ABI and cancellation fixtures
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/.runtime-shared-settings
+        run: |
+          bash scripts/test_shared_settings.sh
+          SANITIZE=1 bash scripts/test_shared_settings.sh
+          bash scripts/test_installed_apps_service.sh
+          SANITIZE=1 bash scripts/test_installed_apps_install.sh
+          SANITIZE=1 bash scripts/test_installed_catalog_client.sh
+      - name: Files and WebDAV reserved-path regression
+        run: |
+          SANITIZE=1 bash scripts/test_protected_settings.sh
+          python scripts/test_file_browser_operations.py
+          SANITIZE=1 bash scripts/test_webdav_volume.sh
+          SANITIZE=1 bash scripts/test_webdav_core.sh
+          SANITIZE=1 bash scripts/test_webdav_peer.sh
+      - name: Install pinned public compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build provider and record composition evidence
+        run: python scripts/build_installed_apps.py --runtime-repo .runtime-shared-settings --output-dir build/shared-settings-provider
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-settings-source-validation-${{ github.sha }}
+          path: build/shared-settings-provider
+          if-no-files-found: error
+          retention-days: 7

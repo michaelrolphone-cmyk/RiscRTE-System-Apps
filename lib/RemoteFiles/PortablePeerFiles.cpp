@@ -1,3 +1,4 @@
+#include <RiscProtectedSettingsPath.h>
 #include "PortablePeerFiles.h"
 #include "PortableNetworkSession.h"
 #include "WebDavRemoteVolume.h"
@@ -325,7 +326,7 @@ out->peer_id=p->peers[i].peer_id;
 snprintf(out->name,sizeof(out->name),"%s",p->peers[i].name);
 return true;
 }const auto*r=p->remote.entry(i);
-if(!r)return false;
+if(!r||risc_protected_settings_path(r->path))return false;
 out->directory=r->directory;
 out->size=r->size;
 strcpy(out->name,r->name);
@@ -333,6 +334,7 @@ strcpy(out->path,r->path);
 return true;
 }
 static bool queue(portable_peer_files*p,portable_peer_files::Command c,const char*a,const char*b){if(!p||p->status.state!=PEER_READY||p->command!=portable_peer_files::Command::None||!a||!memchr(a,0,sizeof(p->first))||(b&&!memchr(b,0,sizeof(p->second))))return false;
+if(risc_protected_settings_path(a)||risc_protected_settings_path(b))return false;
 strcpy(p->first,a);
 p->second[0]=0;
 if(b)strcpy(p->second,b);
