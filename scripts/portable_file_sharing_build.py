@@ -3,7 +3,7 @@ import hashlib
 from pathlib import Path
 import shutil
 import subprocess
-VERSION = '1.5.28'
+VERSION = '1.5.29'
 def selected_version(args):return VERSION
 MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 

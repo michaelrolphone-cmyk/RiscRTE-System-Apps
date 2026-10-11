@@ -5,16 +5,10 @@
     "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
   },
   "RiscRuntimeV1.h": {
-    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
-    "path": "lib/PortableApps/include/RiscRuntimeV1.h",
-    "commit": "713597cab3335a9609d8024c8976756b8fb209b1",
-    "sha256": "90411ef3271f19b5c3613e5e41aa20e6c9e284d7804aec0309c2b072a68894d4",
-    "upstream_baseline": {
-      "repository": "michaelrolphone-cmyk/RiscRTE",
-      "path": "sdk/app/RiscRuntimeV1.h",
-      "commit": "be6efce33a19d3a21ced4077a038fdcc7b9b94a3",
-      "sha256": "6fbfacaa46d532bfef083e8c7dd3bbe36613e557279fdda887d814d53915526b"
-    },
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscRuntimeV1.h",
+    "commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+    "sha256": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
     "rebaseline": "sdk/additive-api-rebaseline-20261010.json"
   },
   "T5BatteryApi.h": {
