@@ -1,5 +1,5 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneReadingV1.h"
+#include "RiscSceneReadingLinksV1.h"
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
@@ -37,6 +37,7 @@ typedef struct {
     bool components,page_view,page_clean,reading_view,preview_view;
     uint32_t preview_node;
     risc_scene_reading_document_v1 reading_document;
+    risc_scene_reading_links_v1 reading_links;
     risc_scene_page_document_v1 page_document;
     int scroll,scroll_limit,drag_scroll;
     int wheel_node,wheel_part,wheel_value,wheel_offset;
@@ -1073,10 +1074,10 @@ static int32_t components_update(void *c,uint64_t s,const risc_components_docume
     if(!model->components)return RISC_SCENE_INVALID;
     int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_reading_api_v1 api={{ { { {
+static const risc_scene_reading_links_api_v1 api={{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
-    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present};
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;

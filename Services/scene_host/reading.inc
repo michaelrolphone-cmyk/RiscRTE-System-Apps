@@ -34,6 +34,14 @@ static void reading_draw(void){
   add_hit(edge,0,(int)width-2*edge,(int)height,HIT_ACTION,2,0,0);
   add_hit((int)width-edge,0,edge,(int)height,HIT_ACTION,3,0,0);
  }
+ /* Link text overrides generic edge/center taps, but never bars or gestures.
+  * Geometry uses the same copied snapshot and top offset as the page pixels. */
+ int link_top=chrome?51*s:top,link_bottom=chrome?(int)height-96*s:top+(int)ph;
+ for(unsigned i=0;i<model->reading_links.count;i++){
+  const risc_scene_reading_link_v1 *l=&model->reading_links.items[i];
+  int y=top+l->y,bottom=y+l->height;if(y<link_top)y=link_top;if(bottom>link_bottom)bottom=link_bottom;
+  if(bottom>y)add_hit(l->x,y,l->width,bottom-y,HIT_VALUE,RISC_SCENE_READING_LINK_NODE,0,(int)i);
+ }
  if(!chrome)return;
  /* Bars overlay the page; showing them does not repaginate the document. */
  fill(0,0,(int)width,51*s,bg);fill(0,50*s,(int)width,2*s,fg);
@@ -56,7 +64,7 @@ static void reading_draw(void){
  reading_button((int)width/4-14*s,by+52*s,6,RISC_SYMBOL_DOCUMENT_LIST);
  reading_button((int)width*3/4-14*s,by+52*s,5,RISC_SYMBOL_FONT);
 }
-static int32_t reading_present(void *c,uint64_t session_id,const risc_scene_reading_document_v1 *r,const uint8_t *pixels,size_t length,uint32_t refresh){
+static int32_t reading_present_impl(void *c,uint64_t session_id,const risc_scene_reading_document_v1 *r,const risc_scene_reading_links_v1 *links,const uint8_t *pixels,size_t length,uint32_t refresh){
  int32_t rc=check(session_id);if(rc)return rc;
  if(closing||paused||pausing)return RISC_SCENE_BUSY;
  risc_scene_page_geometry_v1 g={.struct_size=sizeof(g)};
@@ -66,6 +74,13 @@ static int32_t reading_present(void *c,uint64_t session_id,const risc_scene_read
     !r->bookmark_action||!r->layout_action||!r->contents_action||!r->scrub_action||!r->scroll_action||
     !terminated(r->base.title,sizeof(r->base.title))||!terminated(r->base.footer,sizeof(r->base.footer))||
     !terminated(r->progress_text,sizeof(r->progress_text))||refresh>RISC_SCENE_PAGE_REFRESH_CLEAN)return RISC_SCENE_INVALID;
+ if(links){
+  if(links->struct_size!=sizeof(*links)||!links->action||links->reserved||links->count>RISC_SCENE_READING_MAX_LINKS)return RISC_SCENE_INVALID;
+  for(unsigned i=0;i<links->count;i++){
+   const risc_scene_reading_link_v1 *l=&links->items[i];
+   if(!l->width||!l->height||(uint32_t)l->x+l->width>g.width||(uint32_t)l->y+l->height>g.height)return RISC_SCENE_INVALID;
+  }
+ }
  size_t expected=(size_t)g.stride*g.height;
  if(pixels?length!=expected:(length||!model->reading_view||!page_live))return RISC_SCENE_INVALID;
  if(!page_live){
@@ -84,13 +99,26 @@ static int32_t reading_present(void *c,uint64_t session_id,const risc_scene_read
   if(i>=6){n->kind=RISC_COMPONENT_STEPPER;n->step=1;n->maximum=i==6?1000:2048;n->value=i==6?(int)r->progress:1024;}
   d->details[i].marker=6;
  }
+ if(links&&links->count){
+  risc_scene_node_v1 *n=&d->nodes[d->node_count++];n->id=RISC_SCENE_READING_LINK_NODE;n->route=d->root;
+  n->kind=RISC_COMPONENT_STEPPER;n->action=links->action;n->maximum=(int)links->count-1;n->step=1;d->details[d->node_count-1].marker=6;
+ }
  bool previous=model->components;model->components=true;
  rc=update_document(c,session_id,d);if(rc){model->components=previous;return rc;}
  bool inversion_changed=model->reading_view&&((model->reading_document.flags^r->flags)&RISC_SCENE_READING_INVERT);
  if(pixels)memcpy(page_live,pixels,length);
+ if(links)model->reading_links=*links;else memset(&model->reading_links,0,sizeof(model->reading_links));
  model->reading_document=*r;model->page_document=r->base;model->page_view=true;model->reading_view=true;model->preview_view=false;
  model->page_clean=model->page_clean||refresh==RISC_SCENE_PAGE_REFRESH_CLEAN||inversion_changed;
  dirty=true;rebuild_hits();return RISC_SCENE_OK;
+}
+
+static int32_t reading_present(void *c,uint64_t s,const risc_scene_reading_document_v1 *r,const uint8_t *p,size_t n,uint32_t f){
+ return reading_present_impl(c,s,r,NULL,p,n,f);
+}
+static int32_t reading_present_linked(void *c,uint64_t s,const risc_scene_reading_document_v1 *r,const risc_scene_reading_links_v1 *links,const uint8_t *p,size_t n,uint32_t f){
+ if(!links)return RISC_SCENE_INVALID;
+ return reading_present_impl(c,s,r,links,p,n,f);
 }
 
 static int32_t preview_geometry(void *c,risc_scene_page_geometry_v1 *g){

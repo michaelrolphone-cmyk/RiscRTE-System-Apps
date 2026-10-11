@@ -44,3 +44,24 @@ provider tests for edge/center input, all ten scrub targets, overlay actions,
 scroll release, immutable bitmap copies, preview validation, inversion and
 idle pause/resume. It also runs the legacy page and checkpoint tests.
 Host execution and structural ELF validation do not qualify physical hardware.
+
+## Reading links (scene 0.3.6)
+
+`RiscSceneReadingLinksV1.h` appends an optional size/tag/version-checked suffix.
+`present_linked` copies the reading document, bitmap and up to 64 link rectangles
+in one revision. Rectangles use the page bitmap's coordinates, not physical panel
+coordinates. The presenter adds the reading top offset, clips against overlaid
+chrome, and emits node 9 VALUE events with the supplied action and region index.
+The application resolves destinations from its matching immutable link snapshot.
+No URI, application pointer or callback is stored by the presenter.
+
+Text links take precedence over generic edge/center tap zones. Toolbar controls
+and scroll/swipe gestures keep precedence over links. Held contacts spanning a
+revision change are discarded. Link geometry survives checkpoint pause/resume
+and is cleared by the legacy present function. All older API prefixes, refresh
+semantics and static-page behavior remain unchanged. Older readers work with
+this provider; older providers lack the optional link-touch extension.
+
+`test/scene/reading_links_test.c` drives raw touch events through the real
+presenter, including copied bounds, toolbar clipping, gestures, stale contacts,
+checkpoint retention, invalid geometry and legacy fallback.

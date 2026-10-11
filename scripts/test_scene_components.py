@@ -14,6 +14,9 @@ def run(runtime):
   reading=out/'reading'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/reading_test.c'),'-o',str(reading)],check=True)
   subprocess.run([str(reading)],check=True)
+  links=out/'reading-links'
+  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/reading_links_test.c'),'-o',str(links)],check=True)
+  subprocess.run([str(links)],check=True)
   checkpoint=out/'checkpoint'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/checkpoint_test.c'),'-o',str(checkpoint)],check=True)
   for mode in ('static','external','raster','pending','paused-close','unsubscribe-fault','subscribe','snapshot','foreground','reset'):subprocess.run([str(checkpoint),mode],check=True)
