@@ -72,6 +72,10 @@ static bool fb_opened;
 static t5_file_handler_t fb_handlers[FB_MAX_PAGE_ROWS];
 static void fb_draw(void);
 #ifdef PORTABLE_FILE_SHARING
+#ifdef PORTABLE_FILE_PEER
+static bool fpeer_mode,fpeer_editing;
+static void fpeer_open(void),fpeer_edit_done(void),fpeer_move(int),fpeer_action(void);
+#endif
 static bool fsh_close(void),fsh_back(void),fsh_touch(int,int);
 static void fsh_tick(void),fsh_open(void),fsh_draw(void),fsh_action(void);
 #endif
@@ -323,12 +327,19 @@ static void fb_filter_key(unsigned key) {
  if(key<PWK_CHARACTERS){unsigned ch=portable_watch_key_character(fb_key_page,key);if(ch && n+1<(fb_mode==FB_RENAME?sizeof(fb_editor):sizeof(fb_query))){fb_editor[n]=(char)ch;fb_editor[n+1]=0;}else if(ch)fb_message("Filter is full");}
  else if(key==PWK_PAGE)fb_key_page=(fb_key_page+1)%PWK_PAGES;
  else if(key==PWK_DELETE){if(n)fb_editor[n-1]=0;}
- else if(key==PWK_DONE){if(fb_mode==FB_RENAME){fbx_rename();return;}if(strlen(fb_editor)>=sizeof(fb_query)){fb_message("Filter is full");return;}strcpy(fb_query,fb_editor);fb_mode=FB_LIST;(void)fb_load(0);}
+ else if(key==PWK_DONE){
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_editing){fpeer_edit_done();return;}
+#endif
+ if(fb_mode==FB_RENAME){fbx_rename();return;}if(strlen(fb_editor)>=sizeof(fb_query)){fb_message("Filter is full");return;}strcpy(fb_query,fb_editor);fb_mode=FB_LIST;(void)fb_load(0);}
  fb_dirty=true;
 }
 static bool fb_back(void) {
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING)return fsh_back();
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_editing){fpeer_editing=false;fb_mode=FB_SHARING;fb_dirty=true;return false;}
+#endif
 #endif
 #ifdef PORTABLE_TOUCH_SCROLL
  portable_file_browser_scroll_interrupt();
@@ -354,9 +365,15 @@ static bool fb_back(void) {
 static const char *const fb_options[]={"Find by name","Refresh folder","Show hidden","Go to root","Selected item","Switch volume"
 #ifdef PORTABLE_FILE_SHARING
  ,"Share over Wi-Fi"
+#ifdef PORTABLE_FILE_PEER
+ ,"Nearby files"
+#endif
 #endif
 };
 static unsigned fb_option_count(void){
+#ifdef PORTABLE_FILE_PEER
+ return 8;
+#endif
 #ifdef PORTABLE_FILE_SHARING
  return 7;
 #endif
@@ -369,6 +386,9 @@ static unsigned fb_option_count(void){
 static void fbx_actions(void);
 static void fbx_switch(void);
 static void fb_option(unsigned choice) {
+#ifdef PORTABLE_FILE_PEER
+ if(choice==7){fpeer_open();return;}
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(choice==6){fsh_open();return;}
 #endif
@@ -446,7 +466,11 @@ static void fb_draw(void) {
 }
 static void fb_move(int direction) {
 #ifdef PORTABLE_FILE_SHARING
- if(fb_mode==FB_SHARING){fb_choice^=1;fb_dirty=true;return;}
+ if(fb_mode==FB_SHARING){
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode){fpeer_move(direction);return;}
+#endif
+ fb_choice^=1;fb_dirty=true;return;}
 #endif
 #ifdef PORTABLE_TOUCH_SCROLL
  if(fb_paper && fbs_move(direction))return;
@@ -462,7 +486,11 @@ static void fb_move(int direction) {
 }
 static void fb_activate(void) {
 #ifdef PORTABLE_FILE_SHARING
- if(fb_mode==FB_SHARING){if(fb_choice)(void)fsh_back();else fsh_action();return;}
+ if(fb_mode==FB_SHARING){
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer_mode){fpeer_action();return;}
+#endif
+ if(fb_choice)(void)fsh_back();else fsh_action();return;}
 #endif
  if(fb_mode>=FB_ACTIONS){fbx_activate();fb_dirty=true;return;}
  if(fb_mode==FB_LIST)fb_activate_file(fb_choice);

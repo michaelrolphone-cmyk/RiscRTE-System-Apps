@@ -18,5 +18,5 @@ static int32_t setup_close(void*c,uint64_t t){
  if(setup_refuse){setup_cleanup=true;setup_sleeps++;return RISC_SETUP_CLEANUP_PENDING;}
  setup_cleanup=false;setup_owned=false;return RISC_SETUP_OK;
 }
-static const risc_bluetooth_session_setup_v1 setup_api={1,sizeof(setup_api),NULL,setup_open,setup_poll,setup_status,setup_confirm,setup_close};
+static const risc_bluetooth_session_setup_v1 setup_api={1,offsetof(risc_bluetooth_session_setup_v1,peer_tag),NULL,setup_open,setup_poll,setup_status,setup_confirm,setup_close,0,NULL,NULL,NULL,NULL};
 static bool run_setup_scene(const char*);
