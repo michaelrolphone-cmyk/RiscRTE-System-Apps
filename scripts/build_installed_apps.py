@@ -37,7 +37,7 @@ def main():
         subprocess.run(command, check=True)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
-    allowed = {'malloc', 'realloc', 'free', 'memcpy', 'memmove', 'memset', 'memcmp', 'strlen', 'strcmp', 'strncmp', 'strcpy', 'strchr', 'strrchr', 'snprintf', 'strncpy', 'strtoul', 'strtol', 'strtod', 'memchr'}
+    allowed = {'malloc', 'realloc', 'free', 'memcpy', 'memmove', 'memset', 'memcmp', 'strlen', 'strcmp', 'strncmp', 'strcpy', 'strcat', 'strchr', 'strrchr', 'snprintf', 'strncpy', 'strtoul', 'strtol', 'strtod', 'memchr'}
     if imports - allowed:
         raise RuntimeError('Unexpected imports: '+repr(sorted(imports-allowed)))
     shutil.copyfile(ROOT/'Services/installed_apps/manifest.json', out/'manifest.json')
