@@ -24,12 +24,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: ec4ffc472334fb5fd1d2b8c4431cce7f54be16d7
+          ref: 3a071a9b5d9878dfadf999506b6f335a099b3639
           path: runtime
           persist-credentials: false
       - name: Initially-off offline sharing and peer cleanup
         working-directory: system
         run: |
+          python3 tests/test_file_sharing_build.py
           bash scripts/test_file_browser_direct.sh
           SANITIZE=1 bash scripts/test_file_browser_direct.sh
           bash scripts/test_webdav_peer.sh
