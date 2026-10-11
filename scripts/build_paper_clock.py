@@ -142,7 +142,7 @@ def build():
  if a.desk_points_face:version='0.3.17'
  version=portable_quick_build.version(a,'paper_clock',version)
  if a.boot_animation:version='0.4.7'
- if a.installed_catalog_volume_instance is not None:version='0.4.9'
+ if a.installed_catalog_volume_instance is not None:version='0.4.10'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})

@@ -9,7 +9,7 @@ RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.30', 'settings': '1.3.28', 'file_b
 
 def version(args,app,current):
     if app=='app_store' and getattr(args,'installed_catalog',False):return '1.4.0'
-    if app=='springboard' and getattr(args,'installed_catalog_volume_instance',None) is not None:return '1.8.1' if getattr(args,'installed_authority_boot',None) else '1.8.0'
+    if app=='springboard' and getattr(args,'installed_catalog_volume_instance',None) is not None:return '1.8.2' if getattr(args,'installed_authority_boot',None) else '1.8.0'
     # Explicit X4 cohort reservations; ordinary/Watch profiles keep identity.
     if getattr(args,'resident_shell_host',False) and app=='paper_clock':
         if getattr(args,'crash_report_sd',False):return '0.4.6'
