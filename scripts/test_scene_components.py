@@ -11,6 +11,9 @@ def run(runtime):
   page=out/'page'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/page_test.c'),'-o',str(page)],check=True)
   subprocess.run([str(page)],check=True)
+  reading=out/'reading'
+  subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/reading_test.c'),'-o',str(reading)],check=True)
+  subprocess.run([str(reading)],check=True)
   checkpoint=out/'checkpoint'
   subprocess.run([os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-fsanitize=undefined','-fno-sanitize-recover=all','-I'+str(include),str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/checkpoint_test.c'),'-o',str(checkpoint)],check=True)
   for mode in ('static','external','raster','pending','paused-close','unsubscribe-fault','subscribe','snapshot','foreground','reset'):subprocess.run([str(checkpoint),mode],check=True)

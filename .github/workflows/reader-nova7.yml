@@ -1,0 +1,52 @@
+name: Reader NOVA-7 scene qualification
+on:
+  push:
+    branches: [feat/reader-nova7-gui]
+  pull_request:
+    paths:
+      - Services/scene_host/**
+      - sdk/app/**
+      - test/scene/**
+      - scripts/scene_sdk.py
+      - scripts/test_scene_components.py
+      - .github/workflows/reader-nova7.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scene:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 536e01a36461d2e66bdfa735186c1d02267b3fb7
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify shared components and all presenter lifecycles
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/reader-evidence
+          git rev-parse HEAD > /tmp/reader-evidence/source-commit.txt
+          python scripts/test_scene_components.py --runtime Runtime | tee /tmp/reader-evidence/components.log
+          python scripts/test_scene_host.py --runtime Runtime | tee /tmp/reader-evidence/lifecycles.log
+      - name: Compile and structurally validate Xtensa modules
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_scene_services.py --runtime Runtime --output /tmp/reader-scene
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reader-scene-035
+          path: |
+            /tmp/reader-scene/scene-host/
+            /tmp/reader-evidence/
+          retention-days: 14
