@@ -98,14 +98,14 @@
   "RiscAppDataExportV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE",
     "path": "sdk/app/RiscAppDataExportV1.h",
-    "sha256": "7d9b6a119291f671a11397ad72941aaff4550126daf08e8580fc1cf29ae89fa5",
-    "commit": "3c479f536930bf8f89b0d9aae70ffdc0dfcc67a4"
+    "sha256": "56f9afd075f0fe3d8e7e8cdbec2d34813018dfe6cb3de3f18b326c4de948cddd",
+    "commit": "73f07a6bf333fad881b3b15ef0f282b244e11fa4"
   },
   "RiscAppDataV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE",
     "path": "sdk/app/RiscAppDataV1.h",
-    "sha256": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201",
-    "commit": "545cc8b98d264fe45f60e0aeabadd490ea450eb5"
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e",
+    "commit": "73f07a6bf333fad881b3b15ef0f282b244e11fa4"
   },
   "RiscBluetoothSessionSetupV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",

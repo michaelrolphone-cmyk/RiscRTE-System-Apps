@@ -10,6 +10,7 @@
 #define PORTABLE_FILE_BROWSER_APP
 #define PORTABLE_NOVA_UI
 #define PORTABLE_APP_OWNS_TOUCH_CHROME
+#include "../../Apps/PaperFrame.h"
 #include "../../lib/PortableApps/src/adapter.c"
 static const t5_app_api_v1 *test_browser_api(uint32_t);
 #define t5_app_get_api test_browser_api
