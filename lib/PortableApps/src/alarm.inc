@@ -293,7 +293,27 @@ static bool alarm_foreground(bool *consumed) {
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    /* A cold shared map is not an alarm error. Only inspect copied status while
+     * Home restores it; never hide an existing occurrence or uncertain output. */
+    if(desk_settings_pending || desk_alarm_refresh_pending) {
+        if(!portable_alarm_status(&alarms) || alarms.status.output_uncertain)return alarm_failure();
+        if(!portable_alarm_owned(&alarms)) {
+            if(desk_settings_pending)return true;
+#if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+            if(!portable_alarm_refresh(&alarms))return alarm_failure();
+#else
+            int32_t status=alarms.api->refresh(alarms.api->context);
+            if(status!=ALARM_OK && status!=ALARM_PENDING)return alarm_failure();
+#endif
+            desk_alarm_refresh_pending=false;
+        }
+    }
+#endif
     if(!alarm_audio_pump()){failed=true;return alarm_failure();}
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    if(desk_settings_pending && !portable_alarm_owned(&alarms))return true;
+#endif
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
     if(alarm_service_deferred)return true;
 #endif
@@ -328,6 +348,9 @@ static bool alarm_foreground(bool *consumed) {
             break;
         }
     }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+    if(desk_settings_pending && !portable_alarm_owned(&alarms)){if(cue_seen)alarm_cancel_input();return true;}
+#endif
     bool error=alarms.status.state==ALARM_STATE_BLOCKED;
     if(!portable_alarm_owned(&alarms) && (!error ||
         (alarm_error_seen && alarm_seen_error==alarms.status.error && alarm_seen_snapshot==alarms.status.snapshot)))return true;

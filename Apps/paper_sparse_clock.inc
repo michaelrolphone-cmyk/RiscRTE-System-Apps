@@ -168,6 +168,7 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
      || direction_status==PORTABLE_DESK_FACE_UNAVAILABLE
 #endif
      ;
+ portable_desk_adapter_settings_pending(desk_config_pending);
  if(desk_config_pending){desk_config_retry_at=app->millis()+250u;return false;}
  desk_basis=next_basis;*mode=sleep_mode;
  desk_zone_known=(zone==PORTABLE_TIMEZONE_LOADED || zone==PORTABLE_TIMEZONE_MISSING) &&

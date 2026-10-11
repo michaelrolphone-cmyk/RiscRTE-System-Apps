@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 RUNTIME=Path(os.environ['RUNTIME_REPO']).resolve()
 X4=Path(os.environ['X4_REPO']).resolve()
+READER=Path(os.environ['READER_REPO']).resolve()
 def run(command,**kw):return subprocess.run(list(map(str,command)),check=True,**kw)
 with tempfile.TemporaryDirectory(prefix='shared-hydration-') as tmp:
  out=Path(tmp);inc=out/'include';shutil.copytree(ROOT/'lib/PortableApps/include',inc)
@@ -12,8 +13,8 @@ with tempfile.TemporaryDirectory(prefix='shared-hydration-') as tmp:
  for name in ('RiscRuntimeV1.h','RiscRealtimeV1.h','RiscProviderPromotionV1.h','RiscRetainedWakeV1.h'):
   shutil.copyfile(RUNTIME/'sdk/app'/name,inc/name)
  for name in ('RiscDisplayOutputV1.h','RiscDisplayOutputPowerV1.h','RiscTouchV1.h','RiscTouchPowerV1.h','RiscStorageVolumeV1.h'):
-  shutil.copyfile(RUNTIME/'sdk/driver'/name,inc/name)
- includes=['-I'+str(inc),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(RUNTIME/'sdk/driver'),'-I'+str(X4/'minimal/drivers/x4pro_power')]
+  shutil.copyfile(READER/'sdk/driver'/name,inc/name)
+ includes=['-I'+str(inc),'-I'+str(ROOT/'lib/NativeApps/include'),'-I'+str(READER/'sdk/driver'),'-I'+str(X4/'minimal/drivers/x4pro_power')]
  common=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror']
  for san in (False,True):
   flags=['-fsanitize=undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer'] if san else []
@@ -31,7 +32,11 @@ with tempfile.TemporaryDirectory(prefix='shared-hydration-') as tmp:
    run([home,'foreground',state],env=dict(env,PAPER_FRAME=str(pixels),**({'SHARED_SETTINGS_BUSY':'1'} if busy else {})))
    images.append(pixels.read_bytes())
   assert images[0]==images[1], 'BUSY boot must converge to restored foreground preferences'
+  state=out/'cold';state.unlink(missing_ok=True)
+  run([home,'cold',state],env=dict(env,SHARED_SETTINGS_BUSY='1'))
+  state=out/'cue';state.unlink(missing_ok=True)
+  run([home,'foreground',state],env=dict(env,SHARED_SETTINGS_BUSY='1',SHARED_LIVE_CUE='1'))
   # Retained timer bypass must never read live settings, even when poisoned.
   state=out/'timer';state.unlink(missing_ok=True)
   run([home,'terminal',state],env=dict(env,SHARED_SETTINGS_BUSY='1'))
-print('Shared hydration normal/UBSan: Wi-Fi draft-safe reload, reader flip, Home format/zone/basis/direction, cached-value preservation and timer KV bypass PASS')
+print('Shared hydration normal/UBSan: Wi-Fi draft-safe reload, reader flip, Home format/zone/basis/direction, cached-value preservation, deferred alarm refresh/live cue safety and timer KV bypass PASS')

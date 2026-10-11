@@ -317,6 +317,7 @@ static int initialize_providers(void);
 enum { DESK_COLD, DESK_INITIALIZED, DESK_STARTING, DESK_TIMER,
        DESK_FOREGROUND, DESK_FAILED, DESK_FINALIZED };
 static unsigned desk_phase;
+static bool desk_settings_pending,desk_alarm_refresh_pending;
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
 #error "Sparse Clock requires the canonical Runtime invocation-retention SDK"
 #endif
@@ -1966,6 +1967,12 @@ bool portable_desk_adapter_present(bool full) {
 #endif
   return !failed && desk_present_complete;
 }
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+void portable_desk_adapter_settings_pending(bool pending) {
+ if(desk_settings_pending && !pending)desk_alarm_refresh_pending=true;
+ desk_settings_pending=pending;
+}
+#endif
 bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
 bool portable_desk_adapter_foreground(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START

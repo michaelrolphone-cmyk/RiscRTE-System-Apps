@@ -2,6 +2,7 @@
 #include "native_system_apps_test.c"
 extern const portable_touch_scroll *scroll_files_state(void);
 extern void scroll_files_coordinate_checks(void);
+extern void scroll_files_protected_checks(bool);
 extern unsigned scroll_files_mode(void),scroll_files_cache(void),scroll_files_selected(void),scroll_files_generation(void),scroll_files_complete_generation(void);
 extern int scroll_files_complete_q8(void);
 extern const char *scroll_files_name(void),*scroll_files_path(void),*scroll_files_editor(void),*scroll_files_query(void);
@@ -26,6 +27,7 @@ static bool scroll_info(void *c,risc_display_info_v1 *out){bool ok=fx_info(c,out
 static bool scroll_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
  assert(!pending&&!raster_clip_active);if(dirs)assert(scroll_files_cleanup());
  const portable_touch_scroll *s=scroll_files_state();
+ if(scase("protected") && list_page())scroll_files_protected_checks(true);
  if(list_page()&&!started)started=ticks+delay_ms+80;
  if(list_page()&&!quick_modal){
   ++shown;unsigned at=elapsed();
@@ -137,8 +139,9 @@ static bool scroll_snapshot(void *c,risc_touch_snapshot_v1 *out) {
 
 static risc_storage_dir_t scroll_dir(void *c,const char *path){(void)c;io();assert(!dirs&&path[0]=='/');++dirs;++directory_opens;directory_index=0;return 1;}
 static bool scroll_dir_next(void *c,risc_storage_dir_t h,risc_storage_dirent_v1 *out){
- (void)c;io();assert(h==1&&dirs);unsigned total=scase("empty")?0:scase("destination")?48:scase("bounds")?8:96;if(directory_index>=total)return false;
+ (void)c;io();assert(h==1&&dirs);unsigned total=scase("empty")?0:scase("destination")?48:scase("bounds")?8:scase("protected")?98:96;if(directory_index>=total)return false;
  unsigned i=total-1-directory_index++;memset(out,0,sizeof(*out));
+ if(scase("protected") && i>=96){strcpy(out->name,i==96?"RTECFG":"rTeCfG. ");out->is_directory=1;++directory_entries;return true;}
  if(scase("destination")&&i<32){snprintf(out->name,sizeof(out->name),"Folder %03u",i);out->is_directory=1;}
  else {unsigned num=scase("destination")?i-32:i;snprintf(out->name,sizeof(out->name),"File %03u.txt",num);out->size=100+num;}
  if(scase("inventory-change")&&directory_opens>=2&&i==50)strcpy(out->name,"Changed 050.txt");
@@ -213,6 +216,7 @@ int main(int argc,char **argv){
  if(scase("destination")){char want[64];snprintf(want,sizeof(want),"/Folder %03d",expected_row);assert(!strcmp(scroll_files_path(),want));}
  if(keyboard_case())assert(keyboard_checked&&back_sent);
  if(scase("coordinates"))scroll_files_coordinate_checks();
+ if(scase("protected")){unsigned before=directory_opens;scroll_files_protected_checks(false);assert(directory_opens==before);}
  if(scase("cancelled"))assert(event_errors&&cancelled_samples&&recovered_samples);
  app_module_fini();assert(!live&&!frames&&!subscriptions&&!barriers);
  printf("{\"case\":\"%s\",\"frames\":%u,\"drag_frames\":%u,\"momentum_frames\":%u,\"max_offset\":%d,\"release_offset\":%d,\"busy_samples\":%u,\"selected_row\":%d,\"directory_opens\":%u}\n",scroll_case,shown,drag_frames,momentum_frames,maximum_offset,release_offset,busy_samples,expected_row,directory_opens);

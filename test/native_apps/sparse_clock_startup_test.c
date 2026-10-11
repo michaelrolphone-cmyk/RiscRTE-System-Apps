@@ -34,6 +34,7 @@
 static const char *test,*state_path;
 #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
 bool shared_settings_force_busy;
+static unsigned shared_alarm_refreshes,shared_live_cues;
 extern void shared_settings_assert(void);
 #endif
 static bool terminal,in_main,loaded,pending,panel_off,touch_off,sd_off,dark,promoted,native_valid;
@@ -270,9 +271,27 @@ static bool disable_bt(void*c,bool enabled){(void)c;(void)enabled;safe();assert(
 static bool bt_status(void*c,uint8_t*out){(void)c;safe();assert(promoted);*out=PORTABLE_BLUETOOTH_OFF;return true;}
 static const wifi_api_v1 wifi={.api_version=1,.struct_size=sizeof(wifi),.status=wifi_status,.disconnect_checked=disconnect_wifi};
 static const portable_bluetooth_control_v1 bt={.api_version=1,.struct_size=sizeof(bt),.set_enabled=disable_bt,.status=bt_status};
-static int32_t step_alarm(void*c){safe();if(promoted&&which("alarm-output")){terminal=true;return ALARM_OUTPUT;}return alarm_step(c);}
+static int32_t step_alarm(void*c){safe();
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(promoted && getenv("SHARED_SETTINGS_BUSY") && (uint32_t)(ms-start_ms)<400u) {
+  assert(alarm_state.state==ALARM_STATE_CUE);++shared_live_cues;
+  alarm_state.state=ALARM_STATE_READY;alarm_state.occurrence=(alarm_token_v1){0};return ALARM_OK;
+ }
+#endif
+ if(promoted&&which("alarm-output")){terminal=true;return ALARM_OUTPUT;}return alarm_step(c);
+}
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+static int32_t shared_alarm_refresh(void*c){
+ safe();assert(!promoted || !getenv("SHARED_SETTINGS_BUSY") || (uint32_t)(ms-start_ms)>=400u);
+ ++shared_alarm_refreshes;alarm_state.state=ALARM_STATE_READY;alarm_state.error=0;return alarm_refresh(c);
+}
+#endif
 static int32_t status_alarm(void*c,alarm_status_v1*out){safe();int32_t result=alarm_status(c,out);
- if(promoted&&which("alarm-uncertain")){out->output_uncertain=1;terminal=true;}return result;}
+ if(promoted&&which("alarm-uncertain")){out->output_uncertain=1;terminal=true;}
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(promoted && getenv("SHARED_SETTINGS_BUSY") && !shared_alarm_refreshes && out->state!=ALARM_STATE_CUE){out->state=ALARM_STATE_BLOCKED;out->error=ALARM_STORAGE;}
+#endif
+ return result;}
 static int32_t prepare_alarm(void*c,alarm_sleep_v1*out){(void)c;safe();out->rtc_seconds=epoch+(ms-start_ms)/1000u;
  out->deadline=which("alarm-due")?out->rtc_seconds:0;return ALARM_OK;}
 static int32_t read_record(void*c,uint32_t type,uint32_t schema,risc_retained_wake_record_v1*out,uint32_t*cause){(void)c;safe();assert(!starts&&!presents&&type==PORTABLE_DESK_CLOCK_RECORD_TYPE&&schema==PORTABLE_DESK_CLOCK_RECORD_SCHEMA);
@@ -485,9 +504,17 @@ static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_cap
  else if(!strcmp(name,ALARM_SERVICE_CAPABILITY)){
   #ifdef ALARM_SERVICE_TAGGED_V2
   assert(version==2);static alarm_service_descriptor_v2 service;service=(alarm_service_descriptor_v2){.base=alarm_api,.tag=ALARM_SERVICE_DESCRIPTOR_TAG,.descriptor_version=ALARM_SERVICE_DESCRIPTOR_VERSION};
-  service.base.api_version=2;service.base.struct_size=sizeof(service);service.base.prepare_sleep=prepare_alarm;service.base.step=step_alarm;service.base.status=status_alarm;api=&service.base;
+  service.base.api_version=2;service.base.struct_size=sizeof(service);service.base.prepare_sleep=prepare_alarm;service.base.step=step_alarm;service.base.status=status_alarm;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+  service.base.refresh=shared_alarm_refresh;
+#endif
+  api=&service.base;
 #else
-  static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;service.step=step_alarm;service.status=status_alarm;api=&service;
+  static alarm_service_v1 service;service=alarm_api;service.prepare_sleep=prepare_alarm;service.step=step_alarm;service.status=status_alarm;
+#ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+  service.refresh=shared_alarm_refresh;
+#endif
+  api=&service;
 #endif
  }
  else if(!strcmp(name,X4_POWER_CAPABILITY)){assert(version==1&&id==17);api=&power;}
@@ -590,6 +617,9 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  printf("Desk lock terminal direction=%u clean=%u quality=%u fast=%u polls=%u queued_press=%u\n",record.config.flip_ui,lock_clean_frames,lock_quality_frames,lock_fast_frames,polls,lock_queued_press);
 #endif
  printf("Sparse terminal PASS (%u grants max, %u native reads)\n",high_water,native_reads);return 0;}
+ #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
+ if(getenv("SHARED_LIVE_CUE"))alarm_state.state=ALARM_STATE_CUE;
+ #endif
  app_main();if(which("cold-acquire")||which("cold-submit")||which("cold-wait"))assert(!rtc_reads&&!native_reads&&!launches);if(portable_app_sleep_retained()){assert(terminal&&(grants||which("native-acquire-retained"))&&barriers==1);unsigned held=grants;app_module_fini();assert(grants==held);printf("Sparse retained %s PASS\n",test);return 0;}
 #ifdef TEST_HOME_DESK_LOCK
  if(which("manual")) {
@@ -606,6 +636,8 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
  assert(!terminal);
 #ifdef PORTABLE_SHARED_SETTINGS_FIXTURE
  shared_settings_assert();
+ if(getenv("SHARED_SETTINGS_BUSY"))assert(shared_alarm_refreshes==1);
+ if(getenv("SHARED_LIVE_CUE"))assert(shared_live_cues==1);
 #endif
  app_module_fini();assert(!grants&&!subs&&!frames&&!pending&&!panel_off&&!touch_off&&!sd_off&&!native_live);
  assert(promotions==(which("promotion-failed")||which("promotion-partial")||which("refused-promotion-failed")||which("refused-promotion-partial")?2u:1u));

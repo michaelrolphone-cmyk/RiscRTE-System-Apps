@@ -429,6 +429,7 @@ break;}
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
    if(shell_result>0)notice[0]=0;
+   else if(portable_resident_launch_busy())strcpy(notice,"APP NOT READY. RETRY SHORTLY.");
    down=neutral=false;known=read_clock(&time);
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
    if(desk_retained || portable_app_sleep_retained())return;
