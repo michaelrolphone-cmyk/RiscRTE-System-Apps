@@ -1,0 +1,34 @@
+PASS early allocation failure gates startup without losing reservation
+PASS first app_main checkpoint commits before initVariant/PSRAM/app-data
+PASS empty NVS history produces no fabricated recovered summary
+PASS early failed attempt is exported as an explicit NVS summary without extra NVS writes
+PASS early recovered summary reaches the checked persistent text file
+PASS corrupt NVS history produces no fabricated recovered summary
+PASS native checkpoints remain separate from full ordered trace
+PASS early text buffers without mounting or formatting storage
+PASS source waits for recovered prefix resolution
+PASS actual named initialization and result lines persist beyond event 64
+PASS native rail operations and reset/session start have actual timing
+PASS failure outcome closes current boot trace
+PASS previous failed attempt survives reset in internal file
+PASS copied source exports previous and current actual text in exact order
+PASS USB recovery exports preceding failed text and current session with reset boundaries
+PASS first-display special record does not end startup capture
+PASS RTC and Clock initialization after logo remain captured
+PASS idle frame/touch chatter causes no flash writes
+PASS saved text verifies monotonic event order and timestamp/reset boundaries
+PASS unaligned cursor rejected without source mutation
+PASS insufficient capacity cannot split a line
+PASS credential-bearing diagnostics are explicitly redacted
+PASS uncertain internal write is never retried
+PASS subsequent lines stay buffered after uncertain internal close
+PASS NVS failure does not erase settings and labels fallback session identity
+PASS finite capture capacity emits explicit overflow instead of silent last-checkpoint loss
+PASS failure special record and text use reserved tail after trace overflow
+PASS PSRAM failure uses only fixed early RAM and reports overflow
+PASS unavailable internal storage still exposes buffered trace to SD
+PASS bounded eight-session NVS summaries remain recoverable
+PASS offline extractor reads actual C++-serialized session records
+PASS erased/truncated data is not presented as a boot record
+PASS altered records are rejected by checksums
+PASS recovery distinguishes forensic data from committed NVS state

@@ -1,0 +1,29 @@
+{
+  "after": {
+    "firmware_sha256": "b649d2928b138758b1dd94565c11bf752bc8de948ed4caba0149fc7f98d48d6b",
+    "firmware_size": 1435648,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "xteink-x4-pro",
+    "runtime_version": "0.2.8",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+    "source_revision": "92f5a1122b7e7111ecbda604b1cada8352c6aa65",
+    "store_abi": 2,
+    "version": "0.1.80"
+  },
+  "before": {
+    "firmware_sha256": "fc1fe5f1286668136156949932605a792c7dea048dc403f3f04d676ded14ab36",
+    "firmware_size": 1389296,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "xteink-x4-pro",
+    "runtime_version": "0.2.5",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+    "source_revision": "3a669127c5629f1545360f99ed9a1986a27a27fa",
+    "store_abi": 2,
+    "version": "0.1.80"
+  },
+  "scope": "Development shared Files test composition; version label is not a release identity. Exact source and hashes identify this bundle."
+}

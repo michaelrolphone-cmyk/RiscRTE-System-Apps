@@ -1,0 +1,375 @@
+{
+  "bundle_bytes": 63739,
+  "bundle_certificates": 136,
+  "bundle_sha256": "b62829db28e499f001c1eac071921f6708ef0b562c141d88fb050b2ef23286af",
+  "iq": {
+    "allocated_sections": [
+      {
+        "address": 1611653120,
+        "bytes": 33,
+        "name": ".rtc.text"
+      },
+      {
+        "address": 1611653120,
+        "bytes": 33,
+        "name": ".rtc.dummy"
+      },
+      {
+        "address": 1611653156,
+        "bytes": 8,
+        "name": ".rtc.force_fast"
+      },
+      {
+        "address": 1342177280,
+        "bytes": 4072,
+        "name": ".rtc_noinit"
+      },
+      {
+        "address": 1077362688,
+        "bytes": 1027,
+        "name": ".iram0.vectors"
+      },
+      {
+        "address": 1077363716,
+        "bytes": 98919,
+        "name": ".iram0.text"
+      },
+      {
+        "address": 1070104576,
+        "bytes": 83564,
+        "name": ".dram0.dummy"
+      },
+      {
+        "address": 1070188144,
+        "bytes": 26592,
+        "name": ".dram0.data"
+      },
+      {
+        "address": 1070214736,
+        "bytes": 45856,
+        "name": ".dram0.bss"
+      },
+      {
+        "address": 1107296288,
+        "bytes": 1029011,
+        "name": ".flash.text"
+      },
+      {
+        "address": 1006632992,
+        "bytes": 1048576,
+        "name": ".flash_rodata_dummy"
+      },
+      {
+        "address": 1007681568,
+        "bytes": 256,
+        "name": ".flash.appdesc"
+      },
+      {
+        "address": 1007681824,
+        "bytes": 279676,
+        "name": ".flash.rodata"
+      },
+      {
+        "address": 1007961500,
+        "bytes": 15988,
+        "name": ".flash.rodata_noload"
+      },
+      {
+        "address": 1077462635,
+        "bytes": 1,
+        "name": ".iram0.data"
+      }
+    ],
+    "bank_base": 1070268416,
+    "bank_bytes": 65536,
+    "elf_sha256": "b97581336975a6387a2b5473793c4de02738761c2c50edce0d2eeac6ac444d9f",
+    "heap_start": 1070260592,
+    "iram_alias": 1077542912,
+    "iram_end": 1077462636,
+    "reservation_table": [
+      [
+        1070268416,
+        1070333952
+      ],
+      [
+        1611661296,
+        1611661312
+      ],
+      [
+        1611653120,
+        1611653164
+      ],
+      [
+        1023410176,
+        1040187392
+      ],
+      [
+        1077362688,
+        1077462636
+      ],
+      [
+        1070088192,
+        1070188140
+      ],
+      [
+        1070188144,
+        1070260592
+      ]
+    ],
+    "reservation_table_address": 1007961444,
+    "schema": 1,
+    "scope": "Pre-heap reservation and final linked static-memory proof only; no hardware or RF qualification."
+  },
+  "policy": {
+    "live_app_grants": 16,
+    "manifest_requirements": 24,
+    "marker": "RISC_APP_POLICY_ROWS:24",
+    "requirement_marker": "RISC_APP_REQUIREMENT_ROWS:24",
+    "rows": 24
+  },
+  "required_symbols": [
+    "verifyRollbackLater",
+    "esp_ota_mark_app_valid_cancel_rollback",
+    "esp_ota_mark_app_invalid_rollback_and_reboot",
+    "esp_tls_conn_new_async",
+    "esp_crt_bundle_attach",
+    "http_parser_execute",
+    "_binary_x509_crt_bundle_start",
+    "_binary_x509_crt_bundle_end"
+  ],
+  "rollback_hook_hex": "3641000c121df0",
+  "static_dram_bytes": 72448,
+  "static_dram_sections": {
+    ".dram0.bss": 45856,
+    ".dram0.data": 26592
+  },
+  "x4_options": {
+    "app_image_cache": {
+      "enabled": true,
+      "implementation_symbols": {
+        "_ZN12_GLOBAL__N_118imagePressureOwnerE": {
+          "bytes": 4,
+          "section": ".dram0.bss"
+        },
+        "_ZN12_GLOBAL__N_120imagePressureRuntimeE": {
+          "bytes": 4,
+          "section": ".dram0.bss"
+        },
+        "_ZN8RiscBoot7Runtime16reclaimAppImagesEv": {
+          "bytes": 61,
+          "section": ".flash.text",
+          "sha256": "d0ef55cb08b230db1e227fbf34a1eba6595662268c7e740d8beb0da09dd4834c"
+        },
+        "esp_dl_image_cache_create": {
+          "bytes": 31,
+          "section": ".flash.text",
+          "sha256": "e5ca98138c8a4b7003c8f1c7fe95853818921073f46b9b0e5de5cc6c32f20a68"
+        },
+        "risc_runtime_reclaim_app_images": {
+          "bytes": 51,
+          "section": ".flash.text",
+          "sha256": "587f0bcc0f6cb41a24c8c0e7dc9aeea1cccfebc7d178a1857c546590a394d7ab"
+        }
+      },
+      "target_call_edges": {
+        "_ZN8RiscBoot7Runtime16reclaimAppImagesEv -> esp_dl_image_cache_reclaim": {
+          "instruction": 1107371842,
+          "target": 1107544956
+        },
+        "_ZN8RiscBoot7Runtime3runEv -> esp_dl_image_cache_create": {
+          "instruction": 1107372564,
+          "target": 1107544880
+        },
+        "risc_runtime_reclaim_app_images -> _ZN8RiscBoot7Runtime16reclaimAppImagesEv": {
+          "instruction": 1107371905,
+          "target": 1107371796
+        }
+      }
+    },
+    "app_policy": {
+      "live_app_grants": 16,
+      "manifest_requirements": 24,
+      "marker": "RISC_APP_POLICY_ROWS:24",
+      "requirement_marker": "RISC_APP_REQUIREMENT_ROWS:24",
+      "requirement_symbol": "risc_app_requirement_rows",
+      "rows": 24,
+      "symbol": "risc_app_policy_rows"
+    },
+    "build_options": {
+      "app_image_cache": true,
+      "app_policy_rows": 24,
+      "app_requirement_rows": 24,
+      "failure_evidence": true,
+      "installed_app_capacity": 64,
+      "provider_capacity": 32,
+      "retained_wake_bytes": 512,
+      "shared_files_transport": true,
+      "usb_phy": true
+    },
+    "composition_sha256": "05799edc94083d2e47952fce3d6b25b0aa01644396e6f1d14616a99b26938385",
+    "elf_sha256": "b97581336975a6387a2b5473793c4de02738761c2c50edce0d2eeac6ac444d9f",
+    "failure_evidence": {
+      "abi": 1,
+      "enabled": true,
+      "marker": "risc_native_failure_evidence_abi"
+    },
+    "firmware_sha256": "b649d2928b138758b1dd94565c11bf752bc8de948ed4caba0149fc7f98d48d6b",
+    "hardware_qualified": false,
+    "retained_wake": {
+      "marker": "risc_retained_wake_payload_max",
+      "memory": {
+        "fast": {
+          "capacity_bytes": 8192,
+          "sections": [
+            {
+              "address": 1611653120,
+              "bytes": 33,
+              "name": ".rtc.text"
+            },
+            {
+              "address": 1611653120,
+              "bytes": 33,
+              "name": ".rtc.dummy"
+            },
+            {
+              "address": 1611653156,
+              "bytes": 8,
+              "name": ".rtc.force_fast"
+            }
+          ],
+          "used_span_bytes": 44
+        },
+        "slow": {
+          "capacity_bytes": 8192,
+          "sections": [
+            {
+              "address": 1342177280,
+              "bytes": 4072,
+              "name": ".rtc_noinit"
+            }
+          ],
+          "used_span_bytes": 4072
+        }
+      },
+      "payload_bytes": 512,
+      "rtc_object_address": 1342178832,
+      "rtc_object_bytes": 1212
+    },
+    "schema": "x4.runtime-options-proof",
+    "schema_version": 1,
+    "usb_phy": {
+      "enabled": true,
+      "implementation_symbols": {
+        "resumeUsbPhy": {
+          "sha256": "0fad250e75f13060e47d24bdb8ca2d9fdac8a13cf3898789d5e2270b29c3dd4f",
+          "symbol": "_ZN15RiscDiagnostics12resumeUsbPhyEv"
+        },
+        "suspendUsbPhy": {
+          "sha256": "73582d7bd3f5a49d8a1a64fde107ea88eff8863b5adb4709093d4d17060bc7ca",
+          "symbol": "_ZN15RiscDiagnostics13suspendUsbPhyEv"
+        },
+        "usbPhyClaim": {
+          "sha256": "573c9dad554e24d511a0bc8c267ad63585797575e87da4cc60ad7d588e5139d4",
+          "symbol": "_ZN7RiscCpu4Port11usbPhyClaimEPvPy"
+        },
+        "usbPhyRelease": {
+          "sha256": "88f394a79d8ba3963d0d263945c30b70735b87087748e2b3f3d7dfbbba5b9231",
+          "symbol": "_ZN7RiscCpu4Port13usbPhyReleaseEPvy"
+        }
+      },
+      "marker": "risc_usb_phy_resource_enabled"
+    }
+  },
+  "x4_startup": {
+    "composition_sha256": "05799edc94083d2e47952fce3d6b25b0aa01644396e6f1d14616a99b26938385",
+    "earliest_scope": "IDF app_main; after IDF hardware/PSRAM/core initialization",
+    "elf_sha256": "b97581336975a6387a2b5473793c4de02738761c2c50edce0d2eeac6ac444d9f",
+    "entry_hook": "__wrap_app_main",
+    "gpio1_handoff_call_order": [
+      {
+        "instruction": 1107311203,
+        "target": 1107576108,
+        "target_name": "gpio_set_level"
+      },
+      {
+        "instruction": 1107311233,
+        "target": 1107308544,
+        "target_name": "_ZL16stageDigitalRailv"
+      },
+      {
+        "instruction": 1107311265,
+        "target": 1107597460,
+        "target_name": "rtc_gpio_deinit"
+      },
+      {
+        "instruction": 1107311299,
+        "target": 1107576108,
+        "target_name": "gpio_set_level"
+      },
+      {
+        "instruction": 1107311331,
+        "target": 1107576276,
+        "target_name": "gpio_get_level"
+      },
+      {
+        "instruction": 1107311372,
+        "target": 1107577484,
+        "target_name": "gpio_hold_dis"
+      },
+      {
+        "instruction": 1107311404,
+        "target": 1107577340,
+        "target_name": "gpio_hold_en"
+      },
+      {
+        "instruction": 1107311435,
+        "target": 1107576276,
+        "target_name": "gpio_get_level"
+      }
+    ],
+    "gpio1_staging_scope": "digital latch/OE/matrix/IOMUX before RTC mux; HIGH pad readback before unhold",
+    "hardware_qualified": false,
+    "hold": true,
+    "initial_level": 1,
+    "persistent_capture": "app-main-after-existing-rail-before-Arduino",
+    "pin": 1,
+    "required_strong_symbols": [
+      "initVariant",
+      "__wrap_app_main",
+      "app_main",
+      "risc_x4_boot_record",
+      "risc_native_startup_error",
+      "risc_native_diagnostic_observer",
+      "risc_native_diagnostic_drain",
+      "risc_native_diagnostic_read",
+      "risc_x4_native_composition_identity"
+    ],
+    "rom_and_rail_failure_coverage": false,
+    "rtc_record_bytes": 264,
+    "schema": "x4.native-startup-proof",
+    "schema_version": 1,
+    "sd_export_owner": "x4pro-sd",
+    "sd_export_path": "/x4-boot.log",
+    "sd_export_start": "after validated provider activation and successful FatFs mount",
+    "startup_status": "risc_native_startup_error",
+    "target_call_edges": {
+      "_ZN15RiscDiagnostics4lineEPKc -> risc_native_diagnostic_observer": {
+        "instruction": 1107511953,
+        "target": 1107312016
+      },
+      "__wrap_app_main -> app_main": {
+        "instruction": 1107311488,
+        "target": 1107560284
+      },
+      "app_main -> initArduino": {
+        "instruction": 1107560296,
+        "target": 1107558496
+      },
+      "main_task -> __wrap_app_main": {
+        "instruction": 1108323484,
+        "literal": 1108163140,
+        "target": 1107311000
+      }
+    }
+  }
+}

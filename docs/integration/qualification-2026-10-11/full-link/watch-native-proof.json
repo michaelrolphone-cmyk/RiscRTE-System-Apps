@@ -1,0 +1,146 @@
+{
+  "bundle_bytes": 63739,
+  "bundle_certificates": 136,
+  "bundle_sha256": "b62829db28e499f001c1eac071921f6708ef0b562c141d88fb050b2ef23286af",
+  "iq": {
+    "allocated_sections": [
+      {
+        "address": 1611653120,
+        "bytes": 33,
+        "name": ".rtc.text"
+      },
+      {
+        "address": 1611653120,
+        "bytes": 33,
+        "name": ".rtc.dummy"
+      },
+      {
+        "address": 1611653156,
+        "bytes": 8,
+        "name": ".rtc.force_fast"
+      },
+      {
+        "address": 1342177280,
+        "bytes": 2144,
+        "name": ".rtc_noinit"
+      },
+      {
+        "address": 1077362688,
+        "bytes": 1027,
+        "name": ".iram0.vectors"
+      },
+      {
+        "address": 1077363716,
+        "bytes": 93343,
+        "name": ".iram0.text"
+      },
+      {
+        "address": 1070104576,
+        "bytes": 77988,
+        "name": ".dram0.dummy"
+      },
+      {
+        "address": 1070182576,
+        "bytes": 25592,
+        "name": ".dram0.data"
+      },
+      {
+        "address": 1070208168,
+        "bytes": 40184,
+        "name": ".dram0.bss"
+      },
+      {
+        "address": 1107296288,
+        "bytes": 995103,
+        "name": ".flash.text"
+      },
+      {
+        "address": 1006632992,
+        "bytes": 1048576,
+        "name": ".flash_rodata_dummy"
+      },
+      {
+        "address": 1007681568,
+        "bytes": 256,
+        "name": ".flash.appdesc"
+      },
+      {
+        "address": 1007681824,
+        "bytes": 266972,
+        "name": ".flash.rodata"
+      },
+      {
+        "address": 1007948796,
+        "bytes": 15988,
+        "name": ".flash.rodata_noload"
+      },
+      {
+        "address": 1077457059,
+        "bytes": 1,
+        "name": ".iram0.data"
+      }
+    ],
+    "bank_base": 1070268416,
+    "bank_bytes": 65536,
+    "elf_sha256": "3cd38b6cc500dfa34819f1086ee21db52d16542f9f1b31706302d12ffae9dbed",
+    "heap_start": 1070248352,
+    "iram_alias": 1077542912,
+    "iram_end": 1077457060,
+    "reservation_table": [
+      [
+        1070268416,
+        1070333952
+      ],
+      [
+        1611661296,
+        1611661312
+      ],
+      [
+        1611653120,
+        1611653164
+      ],
+      [
+        1023410176,
+        1040187392
+      ],
+      [
+        1077362688,
+        1077457060
+      ],
+      [
+        1070088192,
+        1070182564
+      ],
+      [
+        1070182576,
+        1070248352
+      ]
+    ],
+    "reservation_table_address": 1007948740,
+    "schema": 1,
+    "scope": "Pre-heap reservation and final linked static-memory proof only; no hardware or RF qualification."
+  },
+  "policy": {
+    "live_app_grants": 16,
+    "manifest_requirements": 24,
+    "marker": "RISC_APP_POLICY_ROWS:24",
+    "requirement_marker": "RISC_APP_REQUIREMENT_ROWS:24",
+    "rows": 24
+  },
+  "required_symbols": [
+    "verifyRollbackLater",
+    "esp_ota_mark_app_valid_cancel_rollback",
+    "esp_ota_mark_app_invalid_rollback_and_reboot",
+    "esp_tls_conn_new_async",
+    "esp_crt_bundle_attach",
+    "http_parser_execute",
+    "_binary_x509_crt_bundle_start",
+    "_binary_x509_crt_bundle_end"
+  ],
+  "rollback_hook_hex": "3641000c121df0",
+  "static_dram_bytes": 65776,
+  "static_dram_sections": {
+    ".dram0.bss": 40184,
+    ".dram0.data": 25592
+  }
+}

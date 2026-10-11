@@ -1,0 +1,162 @@
+[
+  {
+    "manifest": "ble_scanner.json",
+    "manifest_matches": true,
+    "path": "Apps/ble_scanner/ble_scanner.elf",
+    "sha256": "53eda9257bc9a4bb9f5995b7cbfa4a1bb207c6c59c8541e03cf3b4448f1aea5f",
+    "size": 155124,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "points_in_time.json",
+    "manifest_matches": true,
+    "path": "Apps/points_in_time/points_in_time.elf",
+    "sha256": "0ea368123a6f07bc251e233a15f116831fd2cf60e1144e9ae0514bb231dc0501",
+    "size": 264532,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "calculator.json",
+    "manifest_matches": true,
+    "path": "Apps/calculator/calculator.elf",
+    "sha256": "b18e7746b475ef4fb965b4aeb84ee1d56d52ccf608f7c708adf02a2566fbd2d3",
+    "size": 138876,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "stopwatch.json",
+    "manifest_matches": true,
+    "path": "Apps/stopwatch/stopwatch.elf",
+    "sha256": "38815777c30764737436e806922f80632353c58c4248ea8dfc59b3dc4c4b75aa",
+    "size": 142268,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "countdown.json",
+    "manifest_matches": true,
+    "path": "Apps/countdown/countdown.elf",
+    "sha256": "3bcc882c7e85c5c45dc54f45fb02fe4f51d972d759e2c13b83c2d07ad58f7e84",
+    "size": 146368,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "timecard.json",
+    "manifest_matches": true,
+    "path": "Apps/timecard/timecard.elf",
+    "sha256": "7b74d87f3a568b4b9d968c1695870ab79a06cac2f5f91099885291b40b69cf71",
+    "size": 167200,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "ble_touchpad.json",
+    "manifest_matches": true,
+    "path": "Apps/ble_touchpad/ble_touchpad.elf",
+    "sha256": "4138f2364aca210d02a81dc7427c1665fa1ba89af1c76650b39e851b704550ec",
+    "size": 155212,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "ble_buttons.json",
+    "manifest_matches": true,
+    "path": "Apps/ble_buttons/ble_buttons.elf",
+    "sha256": "91497b0f2dd97e307258dbd50128a7f7e94d444c3711f7db0b9fe82e024289c4",
+    "size": 155244,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "waterfall.json",
+    "manifest_matches": true,
+    "path": "Apps/waterfall/waterfall.elf",
+    "sha256": "6bc23b727a855e93d7b742bf3eece8e52e0726653a7bb56018ebf00025161ae6",
+    "size": 272028,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "contexts.json",
+    "manifest_matches": true,
+    "path": "Apps/contexts/contexts.elf",
+    "sha256": "d035d32c6e34d9728f3c20e322d1276d6d48a52a24358dbd381f77b258c702f9",
+    "size": 76948,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "gameboy.json",
+    "manifest_matches": true,
+    "path": "Apps/gameboy/gameboy.elf",
+    "sha256": "4e3f218fdee9c8344ca38ac040c337bebfd72ad76fc67832df077e999c7ea794",
+    "size": 164604,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "lists.json",
+    "manifest_matches": true,
+    "path": "Apps/lists/lists.elf",
+    "sha256": "716458214fe30123c186d1972a6950332820f5922397a7a506b3802edffbb582",
+    "size": 33192,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "model_viewer.json",
+    "manifest_matches": true,
+    "path": "Apps/model_viewer/model_viewer.elf",
+    "sha256": "24b73fff728355ab88e5b34f9eae1caeb9442bbbc36240bd6bc8c29f0708fed0",
+    "size": 39284,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "hollow_trail.json",
+    "manifest_matches": true,
+    "path": "Apps/hollow_trail/hollow_trail.elf",
+    "sha256": "77e1bd9ee703dde60d6a48f67b147ac13281a3ca5720e32f681fdf5198952de7",
+    "size": 449584,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "ebook_reader.json",
+    "manifest_matches": true,
+    "path": "Apps/ebook-reader/ebook_reader.elf",
+    "sha256": "455190996d053b15b79cbad3637386222f3a5286f76016c128f48594801f8bab",
+    "size": 1922496,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  },
+  {
+    "manifest": "daily_digest.json",
+    "manifest_matches": true,
+    "path": "Apps/daily-digest/daily_digest.elf",
+    "sha256": "72a8ef9d1c7eb087e889bbc717c635cdb59a4dd6e7d97d3500971c6b743381aa",
+    "size": 27656,
+    "imports_resolved": true,
+    "native_role_admitted": true,
+    "result": ""
+  }
+]
