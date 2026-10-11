@@ -135,6 +135,9 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  manifestPresent=true;manifest.replace(manifest.find("private-a"),9,"private-b");assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==2);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();begin();beforeIo=io;assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&current[0].namespaceSlot==2&&io==beforeIo);
  manifest.replace(manifest.find("private-b"),9,"private-a");assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
+ JsonDocument noPrivate;assert(!deserializeJson(noPrivate,manifest));noPrivate["requires"].to<JsonArray>();manifest.clear();serializeJson(noPrivate,manifest);
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();begin();assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
  puts("Durable namespaces: persist before admission, removed identity tombstones, restart and reinstall stable ownership PASS");
  puts("Delayed cache write: 1000 owner/cancel polls, no early registry commit, completion and reentry PASS");

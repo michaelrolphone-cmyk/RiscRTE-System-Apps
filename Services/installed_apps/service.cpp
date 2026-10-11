@@ -63,9 +63,10 @@ bool needsNamespace(const Package&p){
  return false;
 }
 bool namespaceFor(Package&p,bool allocate){
- p.namespaceSlot=0;if(!needsNamespace(p))return true;
+ p.namespaceSlot=0;
  unsigned capacity=native->namespace_capacity;if(capacity>NamespaceMax)return false;
  for(unsigned i=0;i<capacity;++i)if(!std::strcmp(namespaceIds[i],p.view.id)){p.namespaceSlot=i+1;return true;}
+ if(!needsNamespace(p))return true;
  if(allocate)for(unsigned i=0;i<capacity;++i)if(!namespaceIds[i][0]){
   std::strcpy(namespaceIds[i],p.view.id);p.namespaceSlot=i+1;return true;
  }
