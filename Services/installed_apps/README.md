@@ -101,3 +101,11 @@ Their original grants remain reserved for preserving settings while installation
 and removal become catalog-controlled. Springboard 1.8.1 excludes those SD rows
 from its compiled installed list and keeps their labels/icons as appearance only.
 Unselected bootstrap identities remain protected.
+
+Home 0.4.9 opts into the same catalog client after its first submitted frame.
+It hydrates native metadata from the cache, then polls background discovery.
+Pending cancellation preserves launch/sleep intent; the SD and catalog grants
+are released before child entry or sleep. This closes the cold-boot shortcut
+gap when legacy authority migration is selected. Actual resident adapter tests
+cover first-frame ordering, 1000 pending progress/cancel polls, child handoff
+and deferred sleep. No additional display/input rendering path is introduced.

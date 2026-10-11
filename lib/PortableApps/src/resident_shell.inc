@@ -124,6 +124,14 @@ static int resident_launch_refused(void) {
 int portable_resident_run_foreground(const char *path) {
  if(native_custody_retained)return -1;
  if(resident_child_active || resident_dispatching)return 0;
+#ifdef PORTABLE_INSTALLED_CATALOG_HOST
+ int catalog_close=portable_installed_prepare_launch();
+ if(catalog_close!=INSTALLED_APPS_OK){
+  if(catalog_close==INSTALLED_APPS_RETAINED)return -1;
+  if(path&&!resident_launch_pending)resident_launch_pending=path;
+  return 0;
+ }
+#endif
  if(
 #ifndef PORTABLE_RESIDENT_LEGACY_HANDOFF
     !path ||
@@ -200,6 +208,9 @@ int portable_resident_run_foreground(const char *path) {
  if(launch_failure.kind && !resident_failure_show(&launch_failure))return -1;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
  last_activity=millis_now();
+#endif
+#ifdef PORTABLE_INSTALLED_CATALOG_HOST
+ portable_installed_resume_discovery();
 #endif
  return result;
 }
