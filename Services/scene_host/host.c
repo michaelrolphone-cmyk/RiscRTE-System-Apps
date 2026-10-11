@@ -1,5 +1,5 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscScenePageV1.h"
+#include "RiscSceneCheckpointV1.h"
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
@@ -83,6 +83,7 @@ static uint64_t session,serial,event_serial,subscription,last_sequence;
 static uint32_t epoch;
 static unsigned width,height;
 static bool started,active,dirty,pending,closing,retained,nav_claimed,have_event;
+static bool paused,pausing;
 static bool neutral,keyboard_waiting;
 static bool lifecycle_enabled,activity_pending,input_unsynchronized,top_pending,handoff_waiting;
 static uint32_t lifecycle_features,navigation_buttons;
@@ -848,11 +849,12 @@ static int32_t complete_frame(void){
     pending=false;present_token=0;
     return RISC_SCENE_OK;
 }
-static int32_t close_owned(void){
-    closing=true;have_event=false;key_count=raw_count=0;cancel_contacts();contact=false;top_pending=false;neutral=false;handoff_waiting=true;
+static int32_t detach_owned(bool preserve){
+    pausing=true;have_event=false;key_count=raw_count=0;cancel_contacts();contact=false;top_pending=false;neutral=false;handoff_waiting=true;
     if(rasterizing){
         display->release(display->context,surface.frame);
         if(!alive())return fail_retained();
+        if(preserve){dirty=true;logical_model.page_clean|=frame_model.page_clean;}
         surface=(risc_display_surface_v1){0};rasterizing=false;
     }
     int32_t r=complete_frame();if(r!=RISC_SCENE_OK)return r;
@@ -862,8 +864,36 @@ static int32_t close_owned(void){
         ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();
         nav_claimed=false;
     }
+    return RISC_SCENE_OK;
+}
+static int32_t scene_pause(void *c,uint64_t s){
+    (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;
+    if(paused)return RISC_SCENE_OK;
+    r=detach_owned(true);if(r)return r;
+    paused=true;pausing=false;return RISC_SCENE_OK;
+}
+static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
+    (void)c;int32_t r=check(s);if(r)return r;
+    if(flags&~(RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_CLEAN) ||
+       ((flags&RISC_SCENE_RESUME_CLEAN)&&(!(flags&RISC_SCENE_RESUME_REDRAW)||!model->page_view)))return RISC_SCENE_INVALID;
+    if(closing||pausing||!paused)return RISC_SCENE_BUSY;
+    subscription=touch->subscribe(touch->context);
+    if(!alive()||!subscription||!synchronize_touch())return fail_retained();
+    if(navigation){
+        const risc_input_foreground_v1 claims[]={{"input.touch.raw",1}};nav_claimed=true;
+        bool ok=navigation->foreground(navigation->context,claims,1);if(!alive()||!ok)return fail_retained();
+        ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();
+    }
+    activity_pending=false;input_unsynchronized=true;navigation_buttons=0;
+    have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
+    paused=false;
+    if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
+    return RISC_SCENE_OK;
+}
+static int32_t close_owned(void){
+    closing=true;int32_t r=detach_owned(false);if(r)return r;
     free(page_live);free(page_frozen);page_live=page_frozen=NULL;page_capacity=0;model->page_view=false;
-    active=false;closing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
+    active=false;closing=paused=pausing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
     memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));return RISC_SCENE_OK;
 }
 static int32_t open_document(void *c,const risc_components_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
@@ -884,7 +914,7 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
     model->scroll=0;model->wheel_node=-1;model->toast_until=0;
     document=*d;path=(risc_scene_navigation_v1){.api_version=1,.struct_size=sizeof(path),.depth=1,.routes={d->root}};
     if(p)path=*p;
-    key_head=key_count=0;key_barrier=false;active=true;session=++serial;epoch=1;event_serial=0;closing=false;dirty=true;pending=false;have_event=false;visible=(hit_map){0};focus_part=0;keyboard_waiting=false;
+    key_head=key_count=0;key_barrier=false;active=true;session=++serial;epoch=1;event_serial=0;closing=paused=pausing=false;dirty=true;pending=false;have_event=false;visible=(hit_map){0};focus_part=0;keyboard_waiting=false;
     lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;top_pending=false;
     handoff_waiting=false;lifecycle_features=0;navigation_buttons=0;
     restore_page();subscription=touch->subscribe(touch->context);
@@ -905,7 +935,7 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
     rebuild_hits();*out=session;return RISC_SCENE_OK;
 }
 static int32_t update_document(void *c,uint64_t s,const risc_components_document_v1 *d){
-    (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;
+    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(!valid_document(d,model->components)||d->root!=document.root)return RISC_SCENE_INVALID;
     risc_scene_navigation_v1 next_path=path;
     if(model->components)for(unsigned i=0;i<next_path.depth;i++)if(node_index(d,next_path.focus[i])<0)next_path.focus[i]=0;
@@ -957,7 +987,7 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
 static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!event||event->struct_size!=sizeof(*event))return RISC_SCENE_INVALID;
-    if(closing)return RISC_SCENE_BUSY;
+    if(closing||paused||pausing)return RISC_SCENE_BUSY;
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0)return r;
@@ -980,12 +1010,12 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     return RISC_SCENE_IDLE;
 }
 static int32_t scene_navigate(void *c,uint64_t s,uint32_t op,uint32_t route){
-    (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;return navigate_impl(op,route);
+    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;return navigate_impl(op,route);
 }
 static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uint32_t *flags){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!p||p->struct_size!=sizeof(*p)||!flags)return RISC_SCENE_INVALID;
-    *p=path;*flags=(pending||dirty||rasterizing?RISC_SCENE_PRESENTING:0u)|(closing?RISC_SCENE_CLOSING:0u);
+    *p=path;*flags=(pending||dirty||rasterizing?RISC_SCENE_PRESENTING:0u)|(closing||paused||pausing?RISC_SCENE_CLOSING:0u);
     if(lifecycle_enabled){
         if(activity_pending)*flags|=RISC_SCENE_ACTIVITY;
         if(contact||!neutral||input_unsynchronized||touch_state.contact_count||touch_state.buttons||
@@ -996,7 +1026,7 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
 }
 static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
-    (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;
+    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~RISC_SCENE_FEATURE_SHARED_CONTROLS)return RISC_SCENE_INVALID;
     if(!synchronize_touch())return fail_retained();
     if(navigation){bool ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();}
@@ -1035,10 +1065,10 @@ static int32_t components_update(void *c,uint64_t s,const risc_components_docume
     if(!model->components)return RISC_SCENE_INVALID;
     int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_page_refresh_api_v1 api={ { {
+static const risc_scene_checkpoint_api_v1 api={ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
-    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh};
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;

@@ -32,13 +32,19 @@ static inline int32_t risc_scene_resident_poll_work_v1(risc_scene_resident_v1 *s
 static inline int32_t risc_scene_resident_poll_v1(risc_scene_resident_v1 *s,uint32_t scene_flags){
     return risc_scene_resident_poll_work_v1(s,scene_flags,0);
 }
-/* Precondition: scene.close completed, including input and display custody.
- * OK/BUSY permits reopening with the caller's copied document and navigation. */
-static inline int32_t risc_scene_resident_dispatch_v1(risc_scene_resident_v1 *s,uint32_t reason){
+/* Precondition: scene.close or the optional scene.pause completed, including
+ * input and display custody. OK/BUSY permits reopening/resuming. Preserve the
+ * reply REDRAW bit: CONFIGURATION_CHANGED alone does not invalidate pixels. */
+static inline int32_t risc_scene_resident_dispatch_reply_v1(risc_scene_resident_v1 *s,uint32_t reason,uint32_t *flags){
+    if(flags)*flags=0;
     if(!s->enabled)return RISC_RESIDENT_DENIED;
     risc_resident_request_v1 request={sizeof(request),reason,0,0};risc_resident_reply_v1 reply={sizeof(reply),0};
     int32_t rc=s->client.checkpoint(s->client.invocation,&request,&reply);
     if(!risc_runtime_get_api(1)||rc==RISC_RESIDENT_RETAINED)return RISC_RESIDENT_RETAINED;
     if(rc==RISC_RESIDENT_OK&&reason==RISC_RESIDENT_CHECKPOINT_POLICY)s->policy=false;
+    if(rc==RISC_RESIDENT_OK&&flags)*flags=reply.flags;
     return rc;
+}
+static inline int32_t risc_scene_resident_dispatch_v1(risc_scene_resident_v1 *s,uint32_t reason){
+    return risc_scene_resident_dispatch_reply_v1(s,reason,NULL);
 }

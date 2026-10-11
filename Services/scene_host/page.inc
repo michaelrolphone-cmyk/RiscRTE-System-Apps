@@ -33,6 +33,7 @@ static void page_draw(void){
 }
 static int32_t page_present_with_refresh(void *c,uint64_t s,const risc_scene_page_document_v1 *p,const uint8_t *pixels,size_t length,uint32_t refresh){
  int32_t state=check(s);if(state)return state;
+ if(closing||paused||pausing)return RISC_SCENE_BUSY;
  if(refresh!=RISC_SCENE_PAGE_REFRESH_DEFAULT&&refresh!=RISC_SCENE_PAGE_REFRESH_CLEAN)return RISC_SCENE_INVALID;
  risc_scene_page_geometry_v1 g={.struct_size=sizeof(g)};
  if(page_geometry(c,&g)||!p||p->struct_size!=sizeof(*p)||!p->revision||p->revision<=document.revision||!p->previous_action||!p->menu_action||!p->next_action||!p->back_action||!terminated(p->title,sizeof(p->title))||!terminated(p->footer,sizeof(p->footer))||!pixels||length!=(size_t)g.stride*g.height)return RISC_SCENE_INVALID;
