@@ -93,3 +93,20 @@ separate incomplete integration work. The cached metadata UI is not yet shipped.
 Catalog-model regressions also cover internal/SD copies of the same identity,
 SD preference with internal fallback, repair after corrupt-cache revision reads,
 and the smallest valid empty cache encoding.
+
+### Durable provider graph replay (catalog 0.5.0)
+
+Cache schema 6 adds a bounded `providers` array of previously admitted ordinary
+provider manifests, immutable SD image paths and selected instance IDs. A cold
+start replays the complete batch through the runtime installation authority
+before registering any dependent apps. Replay does not open the SD card or hash
+images; physical availability and retained media custody remain runtime launch
+checks. Busy graph publication is retried without publishing dependent apps;
+rejected graphs leave app registration untouched. Every subsequent catalog save
+preserves the graph. Schemas 1–5 and the original app-only installation API prefix
+remain supported. Nonempty graphs require the explicitly enabled provider API.
+
+The host catalog regression exercises graph-before-app ordering, absent-SD
+restart, busy retries, rejected graph metadata and old-prefix compatibility. This
+checkpoint adds replay only; the App Store provider download transaction and
+SD-first private settings are still separate integration work.

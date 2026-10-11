@@ -38,6 +38,12 @@ void preserveStaged(){stagedPendingCount=stagedCount;for(unsigned i=0;i<stagedCo
 
 risc_install_candidate_v1 candidates[Max];risc_install_result_v1 admissionResults[Max];
 const risc_installation_v1*native;
+constexpr unsigned ProviderMax=8;
+struct CachedProvider {char manifest[ManifestMax+1],path[193];uint64_t instance;};
+CachedProvider providers[ProviderMax];unsigned providerCount;
+bool providerApi(){return native&&native->struct_size>=sizeof(*native)&&native->providers&&native->available&&native->provider_capacity;}
+int32_t loadProviders(JsonVariantConst);
+bool saveProviders(JsonDocument&);
 const risc_bound_app_data_v1*storage;const risc_bound_app_data_async_v1*asyncStorage;
 uint64_t cacheOperation;size_t pendingPersistedSize;bool savePending,removalCommitPending;
 const risc_storage_volume_api_v1*volume;
@@ -157,14 +163,14 @@ int32_t load(){
  if(actual>=sizeof(scratch))return INSTALLED_APPS_INVALID;
  scratch[actual]=0;
  JsonDocument doc;if(actual!=size||deserializeJson(doc,static_cast<const char*>(scratch))||
-   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3&&doc["schema"]!=4&&doc["schema"]!=5)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
- if((doc["schema"]==4||doc["schema"]==5)&&!doc["removal"].isNull()){
+   (doc["schema"]!=1&&doc["schema"]!=2&&doc["schema"]!=3&&doc["schema"]!=4&&doc["schema"]!=5&&doc["schema"]!=6)||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
+ if((doc["schema"]==4||doc["schema"]==5||doc["schema"]==6)&&!doc["removal"].isNull()){
   auto intent=doc["removal"];
   if(!copy(removeId,sizeof(removeId),intent["id"])||!copy(removeVersion,sizeof(removeVersion),intent["version"])||
      !copy(removeSource,sizeof(removeSource),intent["path"])||!managedManifest(removeSource)){loaded=true;return INSTALLED_APPS_INVALID;}
   removeIntent=true;removePhase=RemovePhase::Refresh;
  }
- if(doc["schema"]==3||doc["schema"]==4||doc["schema"]==5){
+ if(doc["schema"]==3||doc["schema"]==4||doc["schema"]==5||doc["schema"]==6){
   if(!doc["namespaces"].is<JsonArrayConst>()||doc["namespaces"].size()>native->namespace_capacity||doc["namespaces"].size()>NamespaceMax){loaded=true;return INSTALLED_APPS_INVALID;}
   unsigned i=0;for(JsonVariantConst id:doc["namespaces"].as<JsonArrayConst>()){
    if(!copy(namespaceIds[i],sizeof(namespaceIds[i]),id,true)){loaded=true;return INSTALLED_APPS_INVALID;}
@@ -190,7 +196,7 @@ int32_t load(){
   if(!json||!offer(nullptr,row["path"],json)||!namespaceFor(pending[pendingCount-1],false)){loaded=true;pendingCount=0;return INSTALLED_APPS_INVALID;}
  }
  stagedPendingCount=0;
- if(doc["schema"]==5){
+ if(doc["schema"]==5||doc["schema"]==6){
   if(!doc["staged"].is<JsonArrayConst>()||doc["staged"].size()>Max){loaded=true;return INSTALLED_APPS_INVALID;}
   for(JsonObjectConst row:doc["staged"].as<JsonArrayConst>()){
    auto&stage=stagedPending[stagedPendingCount++];stage={};auto&v=stage.view;
@@ -200,6 +206,7 @@ int32_t load(){
   }
   if(!loadActivation(doc["activation"]))return INSTALLED_APPS_INVALID;
  }
+ int32_t graph=loadProviders(doc["providers"]);if(graph!=INSTALLED_APPS_OK)return graph;
  std::memcpy(persisted,scratch,actual);persistedSize=actual;persistedKnown=true;
  loaded=true;int32_t outcome=publish(false);
  if(outcome==INSTALLED_APPS_WORKING){commitPending=true;commitReplace=false;}
@@ -218,7 +225,8 @@ int32_t save(){
   std::memcpy(persisted,scratch,pendingPersistedSize);persistedSize=pendingPersistedSize;persistedKnown=true;
   return INSTALLED_APPS_OK;
  }
- JsonDocument doc;doc["schema"]=5;
+ JsonDocument doc;doc["schema"]=6;
+ if(!saveProviders(doc))return INSTALLED_APPS_INVALID;
  saveActivation(doc);
  auto stagedRows=doc["staged"].to<JsonArray>();
  for(unsigned i=0;i<stagedPendingCount;++i){const auto&v=stagedPending[i].view;auto row=stagedRows.add<JsonObject>();row["id"]=v.id;row["name"]=v.name;row["version"]=v.version;row["icon"]=v.icon;row["path"]=v.launch_path;row["sha256"]=stagedPending[i].digest;row["size"]=stagedPending[i].size;}
@@ -357,6 +365,7 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
  pendingCount=currentCount;for(unsigned i=0;i<currentCount;++i)pending[i]=current[i];
  removePhase=RemovePhase::Clear;return INSTALLED_APPS_WORKING;
 }
+#include "providers.inc"
 #include "install.inc"
 int32_t cancel(void*){
  if(retained)return INSTALLED_APPS_RETAINED;
@@ -421,7 +430,8 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
   if(!std::strcmp(d[i].capability_id,RISC_INSTALLATION_CAPABILITY)&&d[i].api_version==1)native=static_cast<const risc_installation_v1*>(d[i].api);
   if(!std::strcmp(d[i].capability_id,RISC_BOUND_APP_DATA_CAPABILITY)&&d[i].api_version==1)storage=static_cast<const risc_bound_app_data_v1*>(d[i].api);
  }
- if(!native||native->struct_size<sizeof(*native)||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ if(!native||native->struct_size<RISC_INSTALLATION_APP_PREFIX_SIZE||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
+ providerCount=0;
  installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
  removePhase=RemovePhase::Idle;removeSession=removeOperation=0;removeIntent=false;
  asyncStorage=risc_bound_app_data_async(storage);if(!asyncStorage)return false;cacheOperation=0;savePending=removalCommitPending=false;pendingPersistedSize=0;

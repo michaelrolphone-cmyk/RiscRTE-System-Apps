@@ -9,6 +9,7 @@
 #include "../../Services/installed_apps/service.cpp"
 namespace fixture {
 std::string saved,manifest,activeManifest;unsigned entryCount=1;uint64_t revision;unsigned io,commits,renames,cursor,offset;
+bool requireProvider=false,graphAvailable=false,graphBusy=false,graphDenied=false;unsigned graphCalls=0;
 bool present=true,directoryError=false,denyRemoval=false,denyCommit=false,denySave=false,manifestPresent=true;
 std::vector<std::string> registered;
 risc_storage_volume_api_v1_async transport{};
@@ -33,7 +34,7 @@ risc_installation_v1 installation={1,sizeof(installation),nullptr,nullptr,
  },[](void*,const risc_install_candidate_v1*items,uint32_t n,risc_install_result_v1*out,bool)->int32_t{
   for(unsigned i=0;i<n;++i){out[i]={};out[i].status=RISC_INSTALL_OK;assert(strstr(items[i].manifest_json,"application"));}
   return RISC_INSTALL_OK;
- },128,nullptr};
+ },128,nullptr,nullptr,nullptr,0};
 void begin(){
  const auto*d=t5_driver_get(2);risc_provider_dependency_v1 dependencies[]={{RISC_INSTALLATION_CAPABILITY,1,&installation},{RISC_BOUND_APP_DATA_CAPABILITY,1,&data}};
  assert(d->start(dependencies,2));
@@ -41,6 +42,7 @@ void begin(){
 int32_t run(){int32_t rc;unsigned steps=0;do{unsigned before=io;rc=api.step(nullptr,&sd.base);assert(io==before);assert(++steps<500);if(steps%3==0){executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}}while(rc==INSTALLED_APPS_WORKING);return rc;}
 void setup(){
  installation.namespaced=[](void*c,const risc_install_candidate_v1*items,const uint32_t*slots,uint32_t n,risc_install_result_v1*out,bool replace,bool check)->int32_t{
+  if(requireProvider)assert(graphAvailable);
   int32_t rc=check?installation.check(c,items,n,out,replace):installation.commit(c,items,n,out,replace);
   for(unsigned i=0;i<n;++i)if(strstr(items[i].manifest_json,"storage.app-data")){
    if(!slots[i])out[i].status=RISC_INSTALL_DENIED;
@@ -164,6 +166,38 @@ int main(){using namespace fixture;setup();begin();assert(api.refresh(nullptr)==
  assert(api.refresh(nullptr)==INSTALLED_APPS_OK);assert(run()==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();begin();assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&current[0].namespaceSlot==1);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // Schema 6 restores the durable graph before app publication, without SD.
+ JsonDocument graphCache;assert(!deserializeJson(graphCache,saved));graphCache["schema"]=6;
+ auto dependency=graphCache["providers"].to<JsonArray>().add<JsonObject>();
+ dependency["manifest"]["type"]="driver";dependency["manifest"]["id"]="late-provider";
+ dependency["manifest"]["version"]="1.0.0";dependency["instance"]=uint64_t(0);
+ dependency["path"]="/Drivers/late-provider/image-0000000000000000000000000000000000000000000000000000000000000000.elf";
+ saved.clear();serializeJson(graphCache,saved);++revision;const auto graphSaved=saved;
+ installation.providers=[](void*,const risc_install_provider_v1*items,uint32_t n,bool check)->int32_t{
+  ++graphCalls;assert(n==1&&!check&&items[0].instance==0&&strstr(items[0].manifest_json,"late-provider"));
+  JsonDocument durable;assert(!deserializeJson(durable,saved));assert(durable["providers"].size()==1);
+  if(graphBusy)return RISC_INSTALL_BUSY;if(graphDenied)return RISC_INSTALL_DENIED;
+  graphAvailable=true;return RISC_INSTALL_OK;
+ };
+ installation.available=[](void*,const char*,uint32_t,uint64_t){return graphAvailable;};installation.provider_capacity=8;
+ requireProvider=true;graphBusy=true;beforeIo=io;begin();const auto beforeGraphCommit=commits;
+ assert(api.refresh(nullptr)==INSTALLED_APPS_WORKING&&commits==beforeGraphCommit&&!api.count(nullptr));
+ graphBusy=false;assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&graphAvailable&&api.count(nullptr)==1&&io==beforeIo);
+ assert(run()==INSTALLED_APPS_OK);JsonDocument savedGraph;assert(!deserializeJson(savedGraph,saved)&&savedGraph["providers"].size()==1);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();graphAvailable=false;begin();beforeIo=io;
+ assert(api.refresh(nullptr)==INSTALLED_APPS_OK&&graphAvailable&&io==beforeIo);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ graphDenied=true;graphAvailable=false;begin();const auto deniedCommits=commits;
+ assert(api.refresh(nullptr)==INSTALLED_APPS_INVALID&&commits==deniedCommits&&!api.count(nullptr));
+ graphDenied=false;requireProvider=false;assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ // An app-only older native prefix remains usable; graphs need the suffix.
+ installation.struct_size=RISC_INSTALLATION_APP_PREFIX_SIZE;begin();
+ assert(api.refresh(nullptr)==INSTALLED_APPS_UNAVAILABLE&&!api.count(nullptr));
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();
+ assert(!deserializeJson(graphCache,graphSaved));graphCache.remove("providers");graphCache["schema"]=5;
+ saved.clear();serializeJson(graphCache,saved);++revision;begin();assert(api.refresh(nullptr)==INSTALLED_APPS_OK);
+ assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();installation.struct_size=sizeof(installation);
+ puts("Provider cache: graph before apps, zero-SD restart, busy retry, denial and old-prefix compatibility PASS");
  puts("Durable namespaces: persist before admission, removed identity tombstones, restart and reinstall stable ownership PASS");
  puts("Delayed cache write: 1000 owner/cancel polls, no early registry commit, completion and reentry PASS");
  puts("40 near-4KiB manifests: compact admitted cache and zero-SD cached restart PASS");
