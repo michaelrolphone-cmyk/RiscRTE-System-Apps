@@ -1,0 +1,122 @@
+[
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-TEST.zip",
+    "bytes": 7087661,
+    "sha256": "871fe8a76521c29e2ec5344d34520400223019808f92c492412e2975d430f963",
+    "files": 46
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-SOURCE-SYMBOLS-EVIDENCE-01.zip",
+    "bytes": 7643122,
+    "sha256": "3f921615fcb2f5e25d5e550d71b64960b0d8b36353799f0b0c8c91e08ba68e2d",
+    "files": 1
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-SOURCE-SYMBOLS-EVIDENCE-02.zip",
+    "bytes": 3537062,
+    "sha256": "5b6abfea1e8ac19378efed3650de1260bd783a45b08debd0867c99f9a079bc3d",
+    "files": 9
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-SOURCE-SYMBOLS-EVIDENCE-03.zip",
+    "bytes": 3086165,
+    "sha256": "ccc96f1cc6e710250d70ed76ecdd7003bc2e909e28989eea5a755d651fdc8a11",
+    "files": 44
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-SOURCE-SYMBOLS-EVIDENCE-04.zip",
+    "bytes": 17115812,
+    "sha256": "f1345ebbf8ad4bcdf8698dbb9d447299d4ada38c1a3f99373e4371276bacc5fc",
+    "files": 76
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-SOURCE-SYMBOLS-EVIDENCE-05.zip",
+    "bytes": 433628,
+    "sha256": "3498dd0af1edd377b79f66e7d6ac6d00b52b8692f1423d7b38cd12e327647554",
+    "files": 31
+  },
+  {
+    "target": "X4",
+    "version": "0.1.81",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/X4-0.1.81-INDEX-AND-REASSEMBLY.zip",
+    "bytes": 10645,
+    "sha256": "45a4ff8b697138f046cbab4ee8555633e3644cc0b626d03ff3b7a4ba29fcbf04",
+    "files": 3
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-TEST.zip",
+    "bytes": 3449897,
+    "sha256": "792fdf37792ccabb433909273d0a41e3e6c238926cbca27cf25b452e3736a8f6",
+    "files": 5
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-01.zip",
+    "bytes": 7524602,
+    "sha256": "03e737f792b8f0de27527fe086359b6722ed5a25e2172bd88bd01070d9cd7ba8",
+    "files": 1
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-02.zip",
+    "bytes": 923254,
+    "sha256": "8d77f004cbffc94f3f0ab8a9201e26cd646e8497ff6005c03e13f8f61b553ccf",
+    "files": 1
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-03.zip",
+    "bytes": 18710131,
+    "sha256": "3efd503a89cc4e97fac1888a9be9d93c6fc0ba3fab74f29593a74503e67878a2",
+    "files": 1
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-04.zip",
+    "bytes": 14584933,
+    "sha256": "bfeb080022dd83fbf5139a8edd6c903bd8d74e90b367812b5cb77ac6c0fefd32",
+    "files": 9
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-05.zip",
+    "bytes": 3959639,
+    "sha256": "08baf4370b08a169f14fda70c5af4907fe8222a772e4cdb2a4a32dd54f8c1b8f",
+    "files": 42
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-SOURCE-SYMBOLS-EVIDENCE-06.zip",
+    "bytes": 13836660,
+    "sha256": "409af5c5222046174514e25e6f9b93ef60bb9b3b5bb34983f177dfb89922e3e0",
+    "files": 113
+  },
+  {
+    "target": "WATCH",
+    "version": "1.1.2",
+    "file": "/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/deliverables/split/WATCH-1.1.2-INDEX-AND-REASSEMBLY.zip",
+    "bytes": 9700,
+    "sha256": "6d4d6e32d354dcbacca9986203be168936a49ef8c6e836d97da246754c7d2c04",
+    "files": 3
+  }
+]
