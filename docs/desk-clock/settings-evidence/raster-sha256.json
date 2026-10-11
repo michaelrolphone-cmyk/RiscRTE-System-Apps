@@ -1,0 +1,86 @@
+{
+  "face-0.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "3e5c9d87c191872928b50b5a194d71a96fe4a4dfd4b7a96b39f1cb7fbc97d541",
+    "pixel_sha256": "b59fe497b8b56b1f6d0137e5d838b000327e27539a06bc0f6c6b5f455703eb5d"
+  },
+  "face-1.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "00e6044dbaa02f8508b77a10a0449d9ba154fb7dda8bd2db6e9a44e124396982",
+    "pixel_sha256": "aa04ba833e1ad2a107d5ac1ea04856f2169444ce7a150f408e2e8d92d3ac2080"
+  },
+  "face-2.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "bd8bbeef1b2683c6f3d827ac0d69acd98c487624d7ffd7de62f90ca1eccaba21",
+    "pixel_sha256": "4317caf70fa2d70e5b2ecedac1e3609acaba77e5f84c2d61b1df7bdbc200614d"
+  },
+  "face-3.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "376e22a0ec74b88beb173f94f3e40ef24db3ca6a12c7c3d3178bddc370009fe8",
+    "pixel_sha256": "78bc12b9c37bc01be2a610c6ab53922281208629701a8f33c6cc59d8bae92b6a"
+  },
+  "face-4.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "1f4f3e32b0996a145f2bf17c8d625aa173dfdac4d1b79b471d85174886854815",
+    "pixel_sha256": "f9dff5bf57680594f7afa90cc1a376fd4a82d333179aa0e2c2564e7a955fdd05"
+  },
+  "face-5.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "2dd47c5dd49fb7fe56d804e78463fff887647406439d6b0564bb11e876567934",
+    "pixel_sha256": "a5e12a1bc9d892a2f01598c1c8b98d134933c24abe0a0c5c0989705ab79732c6"
+  },
+  "root-more.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "38c7cf9eba6c80a6f336ab8ec38b3487ecca144c7168d43528de0d7fb3679c6d",
+    "pixel_sha256": "b865b9445eb37e618e3452b57aff0e2f6fcea2921ddce17e4ec670af958a8cdf"
+  },
+  "root.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "90c36b35e34f6bd136167c3fad901cafd49ef0a4e0e28bcf6d80910f8fd110f9",
+    "pixel_sha256": "69d6969803d0c9f3ac37322fa155e2dc26c5b2ab56f995500f25085026ae74f4"
+  },
+  "sleep-deep.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "3e61cfd04563c1fbaf92f6a57efa6200b230700be1f852ceb5b47b367da081a2",
+    "pixel_sha256": "671a77874af0773fad50f314fb6657d2cebbcd2dbf4af185610eff796e575e38"
+  },
+  "sleep-invalid.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "1807472d3793dfa3f7e0c6e99368e8cc8b1971c68fe0a451997f8be82ff9ab1d",
+    "pixel_sha256": "4e9ca64854ee9911f54cfc9c079c36aa3d6a94209cf3d8d8f8ab87686cf295f4"
+  },
+  "sleep-light.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "3b11515e26ab13dd966d7b31a43602b95e89644009aca6249e8936f55f86352c",
+    "pixel_sha256": "2ae014f24e67d59856d8963eeaf3ce69d0291d3a5188616e37efd4dab4e56248"
+  },
+  "sleep-missing.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "7285d1551790aeb21f3e1e930c80dfb83418d786f13411b5388bb930f99201b5",
+    "pixel_sha256": "ddcfa6ec54b1ae2dba4878aa84e902c658d7fd3dc60e54ea670ad83af08b141c"
+  },
+  "sleep-stale.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "999d80b175e553ec2a65b566524ca4b6c90e7c53dd2b2b956d8f14ac5c60f849",
+    "pixel_sha256": "7c20654eff6206c7acb1ebfd8a567f8638a36de9ac0862110915a2ec62e2fe02"
+  },
+  "sleep-unavailable.png": {
+    "width": 480,
+    "height": 800,
+    "sha256": "a6d99d1614a8d93818b7816e30b866f2c33f85d687ffde890db4fb46e95c5cf8",
+    "pixel_sha256": "94fcb85c150347f5f0ffb154527478bf94255b5a3f04d156488786e5832bf26f"
+  }
+}

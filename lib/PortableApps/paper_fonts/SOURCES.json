@@ -1,0 +1,13 @@
+{
+  "license": "SIL OFL 1.1",
+  "inputs_sha256": {
+    "lib/PortableApps/quick_fonts/Orbitron-700.ttf": "a24fe8031eefd8451d40e31882868d768ce6bed7c3659293281b3c5c7732a952",
+    "lib/PortableApps/quick_fonts/Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144"
+  },
+  "text.inc_sha256": "9ee273df1c27df92d8ab2a985fb474d15b715770984894da4fee40b8cd9f2e4a",
+  "sizes": {
+    "Orbitron-700": 28,
+    "Rajdhani-600": 20
+  },
+  "threshold": 128
+}

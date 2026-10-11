@@ -1,0 +1,35 @@
+{
+  "schema": 2,
+  "source": {
+    "firmware_sha256": "935e6f1e157e40c0727c101d5b6101e342b859e9c52fab757ce453e00e8fb982",
+    "firmware_size": 1382448,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "twatch-s3",
+    "runtime_version": "0.2.14",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "source_revision": "89a2a7670ec6ea1e2647059a0673617e66f3c61b",
+    "store_abi": 2,
+    "version": "1.1.3"
+  },
+  "target": {
+    "firmware_sha256": "9de7c08d7b21b32e9fc9ee6ae8c37e79348642d615456ab1d47565a816e523c7",
+    "firmware_size": 1332720,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "twatch-s3",
+    "runtime_version": "0.2.14",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+    "source_revision": "e3c24a2ae3c2df5d440eebf2efab375f036841a6",
+    "store_abi": 2,
+    "version": "1.1.4"
+  },
+  "shared_kv": [],
+  "header_sha256": "75f9b14c32b29a9b93f8a833ab80fbc87f103f734741baf488b5651c32e6b2e7",
+  "boot_sha256": [
+    "7780f59f615b0e1fab7ea06b893cb30195dbcffa7d13206f0706c2d458bb13cf",
+    "b8e7b00f14915b83dbf7047b9a10e2880e48eaaf9a909b45ebd27e98d4e3a2ac"
+  ]
+}

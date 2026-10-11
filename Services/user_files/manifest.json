@@ -1,0 +1,11 @@
+{
+  "type": "driver",
+  "id": "user-files",
+  "version": "0.1.0",
+  "driver_abi": 2,
+  "architecture": "xtensa-esp32s3",
+  "file_name": "driver.elf",
+  "requires": [{"capability": "storage.app-data.bound", "api": 1}],
+  "provides": [{"capability": "storage.user-files", "api": 1}],
+  "status": "development; explicit isolated document namespace; no hardware qualification"
+}

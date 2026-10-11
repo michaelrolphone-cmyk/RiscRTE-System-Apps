@@ -1,0 +1,4 @@
+Durable namespaces: persist before admission, removed identity tombstones, restart and reinstall stable ownership PASS
+Delayed cache write: 1000 owner/cancel polls, no early registry commit, completion and reentry PASS
+40 near-4KiB manifests: compact admitted cache and zero-SD cached restart PASS
+installed provider: cache-only startup, unknown manifest, transactional failure, removal preflight, absent media PASS

@@ -1,0 +1,4 @@
+Native TCP production syscall shim: bounds, partial/blocked/EOF, owner generations, Wi-Fi, retained close and no I/O after context loss PASS
+candidate: 
+Assertion failed: (admitted&&calls==0), function main, file tcp_listener_runtime_test.cpp, line 101.
+/Users/micahelbyrns/Documents/Codex/2026-10-11/task-7/runtime/test/run_tcp_listener_test.sh: line 23: 88689 Abort trap: 6           "$build/runtime" "$build/store"

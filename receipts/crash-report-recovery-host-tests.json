@@ -1,0 +1,507 @@
+{
+  "qualification": "focused recovered-source host tests only",
+  "target_build": "pending",
+  "hardware": false,
+  "spool": {
+    "hardware_tested": false,
+    "backend": "fake AppData with stat/read/atomic replace, revisions and injected faults",
+    "runtime_sdk": "/tmp/runtime-home-spool-capacity-0105/sdk/app/RiscAppDataV1.h",
+    "runtime_sdk_sha256": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201",
+    "source_sha256": {
+      "lib/PortableApps/include/CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+      "test/native_apps/crash_report_spool_test.c": "ef45a18cb53cb0e994953b50c4e6caa4cf927ffe63bb38dfd35b51048471a580",
+      "scripts/test_crash_report_spool.py": "cd0b10eee03a3027bb4b0d90116f0b8194f065450a82b6c733aabe33e930fce3"
+    },
+    "runs": [
+      {
+        "mode": "normal",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-I/workspace/shared/crash-home-recovery-20261010/lib/PortableApps/include",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "/workspace/shared/crash-home-recovery-20261010/test/native_apps/crash_report_spool_test.c",
+          "-o",
+          "/workspace/shared/crash-report-recovery-proof/spool-fresh/crash-report-spool-normal"
+        ],
+        "result": "Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, oldest-seven/newest overflow, saturation, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232"
+      },
+      {
+        "mode": "sanitized",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-fsanitize=address,undefined",
+          "-fno-sanitize-recover=all",
+          "-fno-omit-frame-pointer",
+          "-no-pie",
+          "-I/workspace/shared/crash-home-recovery-20261010/lib/PortableApps/include",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "/workspace/shared/crash-home-recovery-20261010/test/native_apps/crash_report_spool_test.c",
+          "-o",
+          "/workspace/shared/crash-report-recovery-proof/spool-fresh/crash-report-spool-sanitized"
+        ],
+        "result": "Crash report spool: 12 groups PASS; canonical LE/CRC, bounded UTF-8, exact dedupe/text variants, oldest-seven/newest overflow, saturation, stale/ambiguous recovery, removal, reboot, corruption, terminal retained; state=37440 file_max=33232"
+      }
+    ]
+  },
+  "lifecycle": {
+    "hardware_tested": false,
+    "scope": "Real included failure_archive.inc, shared formatter, AppData spool and SD exporter; in-memory host capability boundaries with strict lifetimes and operation ordering",
+    "excluded": "Physical OSD page completion and native Runtime/AppData broker; tested separately",
+    "runtime_sdk": "/tmp/runtime-home-spool-capacity-0105/sdk/app",
+    "sdk_sha256": {
+      "RiscRuntimeV1.h": "0171988c0b4cb7ff1146e871fab17e408ad352a1220f5851abef4c152473e8ad",
+      "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+      "RiscAppDataV1.h": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201"
+    },
+    "source_sha256": {
+      "test/native_apps/failure_archive_lifecycle_test.c": "cb16e1937591cc6e10609f89c0d460d3a026130609f3748f0a0acc44adb83483",
+      "scripts/test_failure_archive_lifecycle.py": "aaa4dd10e907b7fba1dd4022798cba66c4c41cb03de5bc691796335baabdc534",
+      "lib/PortableApps/src/failure_archive.inc": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+      "lib/PortableApps/include/FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+      "lib/PortableApps/include/CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+      "lib/PortableApps/include/CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+      "lib/PortableApps/include/RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+      "lib/PortableApps/include/RiscStorageExportV1.h": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
+      "lib/PortableApps/include/RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1"
+    },
+    "runs": [
+      {
+        "mode": "normal",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "-I/workspace/shared/crash-home-recovery-20261010/lib/PortableApps/include",
+          "/workspace/shared/crash-home-recovery-20261010/test/native_apps/failure_archive_lifecycle_test.c",
+          "-o",
+          "/workspace/shared/crash-report-recovery-proof/lifecycle-fresh/failure-archive-lifecycle-normal"
+        ],
+        "exit_code": 0,
+        "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+        "log": "/workspace/shared/crash-report-recovery-proof/lifecycle-fresh/normal.log"
+      },
+      {
+        "mode": "sanitized",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-fsanitize=address,undefined",
+          "-fno-sanitize-recover=all",
+          "-fno-omit-frame-pointer",
+          "-no-pie",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "-I/workspace/shared/crash-home-recovery-20261010/lib/PortableApps/include",
+          "/workspace/shared/crash-home-recovery-20261010/test/native_apps/failure_archive_lifecycle_test.c",
+          "-o",
+          "/workspace/shared/crash-report-recovery-proof/lifecycle-fresh/failure-archive-lifecycle-sanitized"
+        ],
+        "exit_code": 0,
+        "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+        "log": "/workspace/shared/crash-report-recovery-proof/lifecycle-fresh/sanitized.log"
+      }
+    ]
+  },
+  "osd": {
+    "runtime_commit": "77580cf25d61cd65ac21a4569a2276feb01f8761",
+    "runtime_dirty": false,
+    "runtime_compiled_source_sha256": {
+      "src/bootstrap/Json.cpp": "d5d129287d7093bef4ffa737d341995a9dae1968880fd7879987989ce4a635b0",
+      "src/bootstrap/Board.cpp": "f34dd2fe0a37aa0975774eb8fcbf7060093cd75535dcb133ca4812ddaa3451a5",
+      "src/bootstrap/Runtime.cpp": "88323e41cca4c3866d08ca8e52eb26c5e592364b65005450ebb76d65a2483775",
+      "src/runtime/streams/AppStreamSessions.cpp": "517fdec0e58361d7373fb63ba55f753df0ac64630dfe78cdaf4ecc1c6c37866d",
+      "src/runtime/streams/ProviderQueueHost.cpp": "4f7c546c3a33422c7f8e43e5efd2ed4483122abf029aa37d56898a6f19bcbc96",
+      "src/runtime/drivers/ProviderGraphV2.cpp": "259e6fa3423f367dfa0e7ed2e7ada358872e9900dcd3c16e6bedb923c3adafee",
+      "src/runtime/drivers/ProviderModuleV2.cpp": "eb1a091e4269b5364dd544c0da81ebef51073510f14aac3d989c0dfe00e529bb"
+    },
+    "old_system_commit": null,
+    "sdk_sha256": {
+      "RiscRuntimeV1.h": "0171988c0b4cb7ff1146e871fab17e408ad352a1220f5851abef4c152473e8ad",
+      "RiscResidentShellV1.h": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
+      "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265"
+    },
+    "completed_frame_sha256": {
+      "sanitized/failure-touch-failure-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-stale-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-back-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-invalid-stack-2.pbm": "75cea057062ba60e0c5f7fe89b830e0562560c568a4b8cd9391e9d6f5e4e386c",
+      "sanitized/failure-right-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-unsupported-1.pbm": "119d71864c2aeabbc2c60f194edc577c88a3a13bad9aee0792f8ced5dd99a862",
+      "sanitized/failure-repeat-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-back-3.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-ack-denied-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-landscape-2.pbm": "b0cf34ce85e7c8f70a9dc9e3e7425f5fec5ae613a846c0bf4cde70ada737b6ba",
+      "sanitized/failure-empty-1.pbm": "f408991bd76546620171176dfd6bd27fe05f26fad59d6414ad1e2b76acf1c0a5",
+      "sanitized/failure-back-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-stale-4.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-ack-denied-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-landscape-1.pbm": "764c36892c14048c1fdd23e9d9e9be8b20ffe7fd6789a719da3ea809adec9c57",
+      "sanitized/failure-normal-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-home-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-repeat-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-touch-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-normal-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-long-2.pbm": "d14d6c863fd27c841d95f9917d9b2f09d1382e692edb145494d1fdf53d0ab71b",
+      "sanitized/failure-long-1.pbm": "c1e456221f0d679c8149f2dd9f5012c90bd328ac4c336e4163df34f7e1593930",
+      "sanitized/failure-navigation-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-retention-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-stale-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-held-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-back-4.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-invalid-stack-1.pbm": "5f3bde5b65ef7fcbf317cf64eae9061fc7c27798349b84a5783329bee1eaf1d6",
+      "sanitized/failure-home-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "sanitized/failure-touch-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-held-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "sanitized/failure-stale-3.pbm": "810baf1cfb9a684b348a8c8050759dba8a27ba11feb5863245791b37b57546a5",
+      "sanitized/failure-retention-1.pbm": "bba00ba733ca53b16d8ec04aad4d47b34c2697d8320eb926a19d2043f5960b39",
+      "sanitized/failure-landscape-3.pbm": "9e270c5af57ca187051a1d6b8525ca7182a594c2271c8d00508bcbbb3d94f586",
+      "sanitized/failure-right-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-touch-failure-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-stale-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-back-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-invalid-stack-2.pbm": "75cea057062ba60e0c5f7fe89b830e0562560c568a4b8cd9391e9d6f5e4e386c",
+      "normal/failure-right-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-unsupported-1.pbm": "119d71864c2aeabbc2c60f194edc577c88a3a13bad9aee0792f8ced5dd99a862",
+      "normal/failure-repeat-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-back-3.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-ack-denied-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-landscape-2.pbm": "b0cf34ce85e7c8f70a9dc9e3e7425f5fec5ae613a846c0bf4cde70ada737b6ba",
+      "normal/failure-empty-1.pbm": "f408991bd76546620171176dfd6bd27fe05f26fad59d6414ad1e2b76acf1c0a5",
+      "normal/failure-back-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-stale-4.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-ack-denied-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-landscape-1.pbm": "764c36892c14048c1fdd23e9d9e9be8b20ffe7fd6789a719da3ea809adec9c57",
+      "normal/failure-normal-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-home-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-repeat-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-touch-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-normal-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-long-2.pbm": "d14d6c863fd27c841d95f9917d9b2f09d1382e692edb145494d1fdf53d0ab71b",
+      "normal/failure-long-1.pbm": "c1e456221f0d679c8149f2dd9f5012c90bd328ac4c336e4163df34f7e1593930",
+      "normal/failure-navigation-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-retention-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-stale-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-held-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-back-4.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-invalid-stack-1.pbm": "5f3bde5b65ef7fcbf317cf64eae9061fc7c27798349b84a5783329bee1eaf1d6",
+      "normal/failure-home-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f",
+      "normal/failure-touch-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-held-2.pbm": "4018151eee7772ef3ef91ba4caff0e898aadce847c17fff199eae3cb95e26cb1",
+      "normal/failure-stale-3.pbm": "810baf1cfb9a684b348a8c8050759dba8a27ba11feb5863245791b37b57546a5",
+      "normal/failure-retention-1.pbm": "bba00ba733ca53b16d8ec04aad4d47b34c2697d8320eb926a19d2043f5960b39",
+      "normal/failure-landscape-3.pbm": "9e270c5af57ca187051a1d6b8525ca7182a594c2271c8d00508bcbbb3d94f586",
+      "normal/failure-right-1.pbm": "8b95e44929c95322b61bbfaa297322986cbe9eeccaec5c2f9269c368f561b44f"
+    },
+    "normal_sanitizer_pixels_identical": true,
+    "hardware_tested": false,
+    "runtime_mocked": false,
+    "runs": [
+      {
+        "case": "normal",
+        "sanitized": false,
+        "result": "Failure evidence normal: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "landscape",
+        "sanitized": false,
+        "result": "Failure evidence landscape: screens=3 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "empty",
+        "sanitized": false,
+        "result": "Failure evidence empty: screens=1 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "unsupported",
+        "sanitized": false,
+        "result": "Failure evidence unsupported: screens=1 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "invalid-stack",
+        "sanitized": false,
+        "result": "Failure evidence invalid-stack: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "retention",
+        "sanitized": false,
+        "result": "Failure evidence retention: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "long",
+        "sanitized": false,
+        "result": "Failure evidence long: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "none",
+        "sanitized": false,
+        "result": "Failure evidence none: screens=0 reads=1 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "acknowledged",
+        "sanitized": false,
+        "result": "Failure evidence acknowledged: screens=0 reads=1 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "old-runtime",
+        "sanitized": false,
+        "result": "Failure evidence old-runtime: screens=0 reads=0 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "repeat",
+        "sanitized": false,
+        "result": "Failure evidence repeat: screens=2 reads=4 acknowledgements=1 hosts=3 retained=0 PASS"
+      },
+      {
+        "case": "stale",
+        "sanitized": false,
+        "result": "Failure evidence stale: screens=4 reads=2 acknowledgements=2 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "ack-denied",
+        "sanitized": false,
+        "result": "Failure evidence ack-denied: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "held",
+        "sanitized": false,
+        "result": "Failure evidence held: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "touch",
+        "sanitized": false,
+        "result": "Failure evidence touch: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "back",
+        "sanitized": false,
+        "result": "Failure evidence back: screens=4 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "home",
+        "sanitized": false,
+        "result": "Failure evidence home: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "right",
+        "sanitized": false,
+        "result": "Failure evidence right: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "acquire",
+        "sanitized": false,
+        "result": "Failure evidence acquire: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "surface",
+        "sanitized": false,
+        "result": "Failure evidence surface: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "submit",
+        "sanitized": false,
+        "result": "Failure evidence submit: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "status",
+        "sanitized": false,
+        "result": "Failure evidence status: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "failed",
+        "sanitized": false,
+        "result": "Failure evidence failed: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "superseded",
+        "sanitized": false,
+        "result": "Failure evidence superseded: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "timeout",
+        "sanitized": false,
+        "result": "Failure evidence timeout: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "navigation",
+        "sanitized": false,
+        "result": "Failure evidence navigation: screens=1 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "touch-failure",
+        "sanitized": false,
+        "result": "Failure evidence touch-failure: screens=1 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "normal",
+        "sanitized": true,
+        "result": "Failure evidence normal: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "landscape",
+        "sanitized": true,
+        "result": "Failure evidence landscape: screens=3 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "empty",
+        "sanitized": true,
+        "result": "Failure evidence empty: screens=1 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "unsupported",
+        "sanitized": true,
+        "result": "Failure evidence unsupported: screens=1 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "invalid-stack",
+        "sanitized": true,
+        "result": "Failure evidence invalid-stack: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "retention",
+        "sanitized": true,
+        "result": "Failure evidence retention: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "long",
+        "sanitized": true,
+        "result": "Failure evidence long: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "none",
+        "sanitized": true,
+        "result": "Failure evidence none: screens=0 reads=1 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "acknowledged",
+        "sanitized": true,
+        "result": "Failure evidence acknowledged: screens=0 reads=1 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "old-runtime",
+        "sanitized": true,
+        "result": "Failure evidence old-runtime: screens=0 reads=0 acknowledgements=0 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "repeat",
+        "sanitized": true,
+        "result": "Failure evidence repeat: screens=2 reads=4 acknowledgements=1 hosts=3 retained=0 PASS"
+      },
+      {
+        "case": "stale",
+        "sanitized": true,
+        "result": "Failure evidence stale: screens=4 reads=2 acknowledgements=2 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "ack-denied",
+        "sanitized": true,
+        "result": "Failure evidence ack-denied: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "held",
+        "sanitized": true,
+        "result": "Failure evidence held: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "touch",
+        "sanitized": true,
+        "result": "Failure evidence touch: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "back",
+        "sanitized": true,
+        "result": "Failure evidence back: screens=4 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "home",
+        "sanitized": true,
+        "result": "Failure evidence home: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "right",
+        "sanitized": true,
+        "result": "Failure evidence right: screens=2 reads=1 acknowledgements=1 hosts=1 retained=0 PASS"
+      },
+      {
+        "case": "acquire",
+        "sanitized": true,
+        "result": "Failure evidence acquire: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "surface",
+        "sanitized": true,
+        "result": "Failure evidence surface: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "submit",
+        "sanitized": true,
+        "result": "Failure evidence submit: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "status",
+        "sanitized": true,
+        "result": "Failure evidence status: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "failed",
+        "sanitized": true,
+        "result": "Failure evidence failed: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "superseded",
+        "sanitized": true,
+        "result": "Failure evidence superseded: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "timeout",
+        "sanitized": true,
+        "result": "Failure evidence timeout: screens=0 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "navigation",
+        "sanitized": true,
+        "result": "Failure evidence navigation: screens=1 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      },
+      {
+        "case": "touch-failure",
+        "sanitized": true,
+        "result": "Failure evidence touch-failure: screens=1 reads=1 acknowledgements=0 hosts=1 retained=1 PASS"
+      }
+    ],
+    "source_sha256": {
+      "lib/PortableApps/src/adapter.c": "d8d6d0c7413d07422289a0337d326d3f7ecafac7e5208b8aa697ab0f88282459",
+      "lib/PortableApps/src/resident_shell.inc": "d29f7fe46a00fd7599738415cecd7405a2f781d4ba371adf4bac4416ceb85061",
+      "lib/PortableApps/src/resident_failure.inc": "b2b0f9cd238226a289dca6cf84c149e0c9ac173e04dfb9cb73564317ed8a1982",
+      "lib/PortableApps/src/failure_evidence.inc": "da00385aa6370285d95e9845b224db62d787049e79aa5f69d153a3ff1b51ca0e",
+      "test/native_apps/failure_evidence_fixture.c": "57c29535ee457a7d1b42d0ff8bed38be211a3344bc7ec9e4049ac206c4f60aa9",
+      "test/native_apps/failure_evidence_runtime.cpp": "6d46544c11ceb5d5877688e112e78ef4c05e0f7dc422e97953365942165f6c2f",
+      "test/native_apps/failure_evidence_report_test.c": "cbe6e5c01f2c2e35184cb932bd514b2147e0ab87cbe6162827bc57ba1b9e51ce",
+      "test/native_apps/failure_evidence_app.c": "9cdd68ae06632dce053ed0d7baad928ccfb87bce45f93544b6e36edd7a50869d",
+      "scripts/test_failure_evidence.py": "44d4496fa8798ffeda5d559338faec8db7bc547c24d82afe50ddd55be1d61cbb"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+WebDAV real AppDataFiles/export: read PASS
+WebDAV real AppDataFiles/export: write PASS
+WebDAV real AppDataFiles/export: create PASS
+WebDAV real AppDataFiles/export: scope PASS
+WebDAV real AppDataFiles/export: auth PASS
+WebDAV real AppDataFiles/export: propfind PASS
+WebDAV real AppDataFiles/export: race PASS
+WebDAV real AppDataFiles/export: retained checked-close stops response/transport/cleanup PASS

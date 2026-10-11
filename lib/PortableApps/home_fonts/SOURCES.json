@@ -1,0 +1,145 @@
+{
+  "description": "Native physical size, no magnification of smaller bitmaps",
+  "license": "SIL OFL 1.1",
+  "threshold": 128,
+  "anchor": "left-baseline",
+  "fonts": [
+    {
+      "id": "R700_22",
+      "source": "Rajdhani-700.ttf",
+      "size": 22,
+      "weight": 700,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+      "kerning_pairs": 0,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    },
+    {
+      "id": "O700_24",
+      "source": "Orbitron-wght.ttf",
+      "size": 24,
+      "weight": 700,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 1,
+      "characters": " -0123456789:AMPT"
+    },
+    {
+      "id": "O900_52",
+      "source": "Orbitron-wght.ttf",
+      "size": 52,
+      "weight": 900,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 35,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    },
+    {
+      "id": "R700_30",
+      "source": "Rajdhani-700.ttf",
+      "size": 30,
+      "weight": 700,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+      "kerning_pairs": 0,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    },
+    {
+      "id": "O700_28",
+      "source": "Orbitron-wght.ttf",
+      "size": 28,
+      "weight": 700,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 1,
+      "characters": " -0123456789:AMP"
+    },
+    {
+      "id": "R700_28",
+      "source": "Rajdhani-700.ttf",
+      "size": 28,
+      "weight": 700,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+      "kerning_pairs": 0,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    },
+    {
+      "id": "R600_22",
+      "source": "Rajdhani-600.ttf",
+      "size": 22,
+      "weight": 600,
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da",
+      "kerning_pairs": 0,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    },
+    {
+      "id": "O700_20",
+      "source": "Orbitron-wght.ttf",
+      "size": 20,
+      "weight": 700,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 0,
+      "characters": " %+-0123456789"
+    },
+    {
+      "id": "O900_100",
+      "source": "Orbitron-wght.ttf",
+      "size": 100,
+      "weight": 900,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 0,
+      "characters": "-0123456789:"
+    },
+    {
+      "id": "O600_18",
+      "source": "Orbitron-wght.ttf",
+      "size": 18,
+      "weight": 600,
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "kerning_pairs": 3,
+      "characters": "-7ANOV"
+    },
+    {
+      "id": "R700_26",
+      "source": "Rajdhani-700.ttf",
+      "size": 26,
+      "weight": 700,
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+      "kerning_pairs": 0,
+      "characters": " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`{|}~"
+    }
+  ],
+  "text.inc_sha256": "c027811edd22a69ac963a4fc1e0cf7f9c95b0c819bdb1ec77c58974276539a1d",
+  "source_records": [
+    {
+      "name": "Orbitron-wght.ttf",
+      "sha": "1fc54ce7116a6ec549f37358466bcc92f9a72c33",
+      "url": "https://github.com/google/fonts/blob/main/ofl/orbitron/Orbitron[wght].ttf",
+      "sha256": "f42db2dd16e642258e35782916eceb1dcdbea06fb958d77ad71dc5963587e8fd",
+      "size": 38576
+    },
+    {
+      "name": "Rajdhani-700.ttf",
+      "sha": "47af15713b45605a5d98241b8211a3409f522b34",
+      "url": "https://github.com/google/fonts/blob/main/ofl/rajdhani/Rajdhani-Bold.ttf",
+      "sha256": "691470dd3286a14e9677940d0bf75796179841ba5215cbda1a2c8910a3226afd",
+      "size": 400680
+    },
+    {
+      "name": "Rajdhani-600.ttf",
+      "sha": "d43750bd05c130d36c8e7fbeb06ecd7c5d3c3b17",
+      "url": "https://github.com/google/fonts/blob/main/ofl/rajdhani/Rajdhani-SemiBold.ttf",
+      "sha256": "94bbd25a18ca665999feb05a537de9fd2b860dcfb78bbe9ca00270825bf235da",
+      "size": 390340
+    },
+    {
+      "name": "LICENSE-Orbitron.txt",
+      "sha": "91ede459e18c22d3f2ba7c27d925b49cc945abe4",
+      "url": "https://github.com/google/fonts/blob/main/ofl/orbitron/OFL.txt",
+      "sha256": "ab609b0e110d622435ff337cdf233288556e011bbf9bd0550be98846c0630819",
+      "size": 4426
+    },
+    {
+      "name": "LICENSE-Rajdhani.txt",
+      "sha": "6dd809659a8ccace7ccee108d024d33cd4f936da",
+      "url": "https://github.com/google/fonts/blob/main/ofl/rajdhani/OFL.txt",
+      "sha256": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+      "size": 4373
+    }
+  ]
+}

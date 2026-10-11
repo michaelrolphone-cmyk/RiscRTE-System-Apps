@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "production": "Services/scene_host/host.c",
+  "production_sha256": "5922080ddec668196c1ef46fbcfaa4615bd17e15bf51b605657a393da1c803f6",
+  "source_checkpoint": "2803747904158f88d9fd02737b9fb01b05d5336b",
+  "regression": "Empty keyboard completion queue cleared ordinary scene/header contact between separately delivered DOWN and UP. Preserve the independently owned contact.",
+  "results": {
+    "presenter_normal": 179,
+    "presenter_asan_ubsan": 179,
+    "exact_gt911_header_normal": 48,
+    "exact_gt911_header_asan_ubsan": 48,
+    "scanner_normal": 24,
+    "scanner_asan_ubsan": 24
+  },
+  "logs": {
+    "presenter-normal.log": {
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "bytes": 10733
+    },
+    "presenter-sanitized.log": {
+      "sha256": "c81b688c3a138e4b3280bdadf3a5ed8b2233e5af21c6edbb5478a2be500bd2db",
+      "bytes": 10733
+    },
+    "split-header-exact-gt911-normal-final.log": {
+      "sha256": "fdd88daab8c768485269ed2cee8038d32390ff09b41c6687c7929dec181db5b4",
+      "bytes": 7816
+    },
+    "split-header-exact-gt911-sanitized-final.log": {
+      "sha256": "fdd88daab8c768485269ed2cee8038d32390ff09b41c6687c7929dec181db5b4",
+      "bytes": 7816
+    },
+    "decoupling-normal.log": {
+      "sha256": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55",
+      "bytes": 74
+    },
+    "decoupling-sanitized.log": {
+      "sha256": "9ae1df9571428c56299163136d4a2c583498317d701616b5575d8f825ede6a55",
+      "bytes": 74
+    }
+  },
+  "limits": [
+    "Physical reports and timing are simulated while using production GT911/Runtime/scene code; no physical device or radio actions.",
+    "Targets produced before the final clean build remain investigation evidence only."
+  ]
+}

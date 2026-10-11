@@ -1,0 +1,3 @@
+PROPFIND parser: expanded names, duplicate coalescing, copied lifetime, unsafe XML and size/occurrence bounds PASS
+PROPFIND parser: expanded names, duplicate coalescing, copied lifetime, unsafe XML and size/occurrence bounds PASS
+WebDAV property request parser: ordinary and AddressSanitizer/UndefinedBehaviorSanitizer passed

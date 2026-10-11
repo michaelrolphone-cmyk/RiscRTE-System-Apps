@@ -1,0 +1,21 @@
+{
+  "source": "NOVA-7 E-Ink Interactive \u2014 480\u00d7800.html vFace",
+  "center": [
+    240,
+    256
+  ],
+  "outer_radius": 198,
+  "inner_radius": {
+    "major": 168,
+    "minor": 184
+  },
+  "widths": {
+    "major": 9,
+    "elapsed": 6,
+    "upcoming": 2.5
+  },
+  "line_cap": "butt",
+  "supersample": 8,
+  "threshold": 128,
+  "dial.inc_sha256": "bb0ec471a837d97574c3b7047a53d1962b0de1adf2f2476072719578c80ea4c6"
+}

@@ -3,11 +3,10 @@
 Inputs are an audited Reader checkout and the unmodified NOVA TTF inputs.
 The generated rasters are renamed RiscPortableIcons/RiscPortableText (OFL).
 """
-import argparse, csv, hashlib, json, pathlib, re, struct
+import argparse, csv, hashlib, json, pathlib, struct
 from PIL import ImageFont
 ROOT=pathlib.Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser();p.add_argument('--reader',type=pathlib.Path,required=True);p.add_argument('--fonts',type=pathlib.Path);p.add_argument('--icons-only',action='store_true',help='Extract from the same pinned CPFont inputs without regenerating text or licenses');a=p.parse_args()
-if not a.icons_only and a.fonts is None:p.error('--fonts is required unless --icons-only is selected')
+p=argparse.ArgumentParser();p.add_argument('--reader',type=pathlib.Path,required=True);p.add_argument('--fonts',type=pathlib.Path,required=True);a=p.parse_args()
 out=ROOT/'lib/PortableApps/fonts';out.mkdir(exist_ok=True)
 # The deployed cross-repository inventory is an explicit shared contract, including external Audio Tools.
 registry=json.loads((ROOT/'lib/PortableApps/catalog-icons.json').read_text())['apps']
@@ -37,32 +36,6 @@ for style in ('solid','regular'):
   w,h,adv,left,top,length,offset=struct.unpack_from('<BBHhhH2xI',data,goff+16*matches[0]);bits=data[boff+offset:boff+offset+length];assert len(bits)==(w*h+3)//4 and w and h
   ident='rpi_'+style+'_'+format(cp,'x');arrays.append('static const uint8_t '+ident+'[] = {'+','.join(map(str,bits))+'};');rows.append('{"%s",%d,%d,%s}'%(name,w,h,ident))
 content='/* Generated genuine Font Awesome 7 Free rasters, renamed RiscPortableIcons.\n * Fonticons, Inc.; SIL OFL 1.1. See LICENSE-FontAwesome.txt and SOURCES.json. */\n'+ '\n'.join(arrays)+'\ntypedef struct { const char *name; uint8_t width,height; const uint8_t *bits; } rpi_glyph;\nstatic const rpi_glyph rpi_icons[] = {\n'+',\n'.join(rows)+'\n};\n'
-if a.icons_only:
- prior=json.loads((out/'SOURCES.json').read_text())
- old=(out/'icons.inc').read_text()
- assert hashlib.sha256(old.encode()).hexdigest()==prior['icons.inc_sha256'], 'Existing icon raster custody differs'
- for path,digest in provenance['files'].items():
-  assert prior['files'].get(path)==digest, 'Icons-only input differs from audited CPFont: '+path
- text_hash=hashlib.sha256((out/'text.inc').read_bytes()).hexdigest()
- assert prior['text.inc_sha256']==text_hash, 'Existing text raster custody differs'
- # Keep old declaration/lookup order too: earlier audited additions may have
- # appended rows rather than regenerating the entire subset.
- old_arrays={re.search(r'(rpi_\w+)\[\]',line)[1]:line for line in old.splitlines() if line.startswith('static const uint8_t rpi_')}
- new_arrays={re.search(r'(rpi_\w+)\[\]',line)[1]:line for line in arrays}
- old_rows={re.search(r'\{"([^\"]+)"',line)[1]:line.rstrip(',') for line in old.splitlines() if line.startswith('{"')}
- new_rows={re.search(r'\{"([^\"]+)"',line)[1]:line for line in rows}
- for ident,line in old_arrays.items():assert new_arrays.get(ident)==line, 'Existing glyph bytes changed: '+ident
- for name,line in old_rows.items():assert new_rows.get(name)==line, 'Existing glyph geometry changed: '+name
- content=old.replace('typedef struct { const char *name;', ''.join(line+'\n' for ident,line in new_arrays.items() if ident not in old_arrays)+'typedef struct { const char *name;',1)
- marker='static const rpi_glyph rpi_icons[] = {\n'
- content=content.replace(marker,marker+''.join(line+',\n' for name,line in new_rows.items() if name not in old_rows),1)
- provenance['files']=prior['files']
- provenance['icons.inc_sha256']=hashlib.sha256(content.encode()).hexdigest()
- provenance['text.inc_sha256']=text_hash
- (out/'icons.inc').write_text(content)
- (out/'SOURCES.json').write_text(json.dumps(provenance,indent=2)+'\n')
- print('Generated',len(names),'audited real FA icons; text and license bytes preserved')
- raise SystemExit(0)
 (out/'icons.inc').write_text(content)
 arrays=[];rows=[]
 for family,size in [('Orbitron-500.ttf',11),('Rajdhani-600.ttf',15)]:

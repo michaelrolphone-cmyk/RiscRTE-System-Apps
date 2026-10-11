@@ -10,3 +10,11 @@ for suffix,flags in [('plain',[]),('san',['-fsanitize=address,undefined','-fno-o
   '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
   str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_alarm_test.c'),'-o',str(exe)],check=True)
  for scenario in range(11):subprocess.run([str(exe),str(scenario)],check=True,timeout=10)
+
+# Copy the extended zero-output descriptor through the real Settings controller.
+for suffix,flags in [('plain',[]),('san',['-fsanitize=address,undefined','-fno-omit-frame-pointer','-no-pie'])]:
+ exe=out/('visual-settings-'+suffix)
+ subprocess.run([os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror',*flags,
+  '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),
+  str(ROOT/'Apps/settings.c'),str(ROOT/'test/native_apps/portable_visual_settings_test.c'),'-o',str(exe)],check=True)
+ subprocess.run([str(exe)],check=True,timeout=10)

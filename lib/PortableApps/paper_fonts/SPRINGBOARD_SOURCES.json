@@ -1,0 +1,22 @@
+{
+  "sources": {
+    "700": {
+      "path": "lib/PortableApps/home_fonts/Orbitron-reference-700.ttf",
+      "sha256": "7427419051683fa09b122579dddacd1bad5d72f05344818a71230ae77174c5dd"
+    },
+    "900": {
+      "path": "lib/PortableApps/home_fonts/Orbitron-reference-900.ttf",
+      "sha256": "0f400490a6a736ff1caed71d39cca5bae16456ca78c426649c6c11a8fa474613"
+    }
+  },
+  "license": "SIL OFL 1.1",
+  "anchor": "left-baseline",
+  "size_px": 30,
+  "threshold": 128,
+  "weights": {
+    "title": 900,
+    "clock": 700
+  },
+  "title_tracking_px": 4,
+  "text_sha256": "f9101e2954009cc27a4e8a5eefaa57683ebf9875c4040c681cfc99bb1e4dfbec"
+}

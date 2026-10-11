@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "source_revision": "b2419513da200b150192ba46ffe1b396a82171cc",
+  "source_dirty": false,
+  "nimble_commit": "da7e3256da3ba80b232df880f40d8359311cc62e",
+  "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "size_bytes": 259792,
+  "sha256": "eb4a6c87532d92640842e85a3e6a8092b5c2b81c17ca3475ffbef9b7d8d16a91",
+  "imports": [
+    "memchr",
+    "memcmp",
+    "memcpy",
+    "memmove",
+    "memset",
+    "strcmp",
+    "strlen"
+  ],
+  "exports": [
+    "t5_driver_get"
+  ],
+  "physical_verification": "not-performed",
+  "allocated_sections": {
+    ".hash": 56,
+    ".dynsym": 144,
+    ".dynstr": 65,
+    ".rela.dyn": 34092,
+    ".rela.plt": 2460,
+    ".text": 87456,
+    ".rodata": 1354,
+    ".got.loc": 5472,
+    ".data.rel.ro": 1448,
+    ".dynamic": 160,
+    ".got": 4,
+    ".data": 410,
+    ".bss": 41008
+  },
+  "allocated_bytes": 174129,
+  "bss_bytes": 41008,
+  "reused_port_files": {
+    "Drivers/ble_hid/port/ble_port.h": "a339f00e5696426424f98c868255a75059b134389cd9efe9e642a42ea2fde5f3",
+    "Drivers/ble_hid/port/ble_port.c": "10da1402df5b8a7696096dc3a4037b7a0ec01cf7a690a228c0916d6da399419f",
+    "Drivers/ble_hid/port/assert.h": "3d3384353e0a312ac3c9fc233e03e9ae2a64b6050a306ee5f5d2959e543bd0b0",
+    "Drivers/ble_hid/port/nimble/nimble_npl_os_log.h": "294b02050698e6b242f91ff7587672f731041192bc356aaa00a964babb65c4b3",
+    "Drivers/ble_hid/port/nimble/nimble_npl_os.h": "a60acd459e2ed1e178a16a2cd3c7953d9a964712c01e12cc5761355e52dca764",
+    "Drivers/ble_hid/port/syscfg/syscfg.h": "aefa5a3f523648f0e8f08649d6c462d2bbc0ccf5229ee530a2aa9140bcbe4758"
+  }
+}

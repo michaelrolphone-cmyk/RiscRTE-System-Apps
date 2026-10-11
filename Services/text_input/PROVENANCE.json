@@ -1,0 +1,43 @@
+{
+  "scene_sdk": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "commit": "b70cb87bdead507b9bc826f445935c5ad2b08bad",
+    "paths": [
+      "sdk/app/RiscSceneV1.h",
+      "sdk/app/RiscSceneStateV1.h"
+    ]
+  },
+  "usb_sdk": {
+    "RiscUsbHidV1.h": {
+      "repository": "RiscRTE-Productivity",
+      "path": "sdk/driver/RiscUsbHidV1.h",
+      "commit": "4a88568ffba53e10f05a922a07bada73354eb3b7",
+      "sha256": "5b5549c4cb718dec55f2aca8bc93f401b2d5a703d30aaa1a78d1bcdd26755b5c"
+    },
+    "RiscUsbControllerV1.h": {
+      "repository": "RiscRTE-Productivity",
+      "path": "sdk/driver/RiscUsbControllerV1.h",
+      "commit": "4a88568ffba53e10f05a922a07bada73354eb3b7",
+      "sha256": "2fb2908caee99b0822838956f33cf8302db9d2cbd0600a9eed21fcce5f68232b"
+    },
+    "RiscUsbProviderV1.h": {
+      "repository": "RiscRTE-Productivity",
+      "path": "sdk/driver/RiscUsbProviderV1.h",
+      "commit": "4a88568ffba53e10f05a922a07bada73354eb3b7",
+      "sha256": "77f67cf5db7ed3fd7c6e148807bc705b5f8443c90d401b546069d756eb997b9a"
+    }
+  },
+  "predecessor_draft": "system-plain-text-input app-local draft; not a deployed shared service",
+  "scene_host_base": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "commit": "63fa39755fadd1d38f1dc2a5e02a2dcb11e9ad5b",
+    "pull_request": 88
+  },
+  "current_system_base": "9d32d82389bf287443aa5287bd74c75f62e6fd39",
+  "transport_abi_fixture": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+    "commit": "4088b6892c2e2654b0342f04a7d191068e4a8e2e",
+    "path": "sdk/driver/RiscTextInputV1.h",
+    "sha256": "32f2a6cda3b7a4fef8487cc046ceb891261e483feafed32908cbd924112a1a77"
+  }
+}

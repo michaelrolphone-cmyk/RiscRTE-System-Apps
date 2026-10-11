@@ -1,0 +1,32 @@
+{
+  "hardware": "not run",
+  "combined_transition_cases": 50,
+  "tagged_alarm_native_home_cases": 28,
+  "legacy_native_home_compatibility_cases": 12,
+  "stage_enabled_PBM_frames_identical_to_stage_disabled": 296,
+  "production_source_changes": "none; fixture and evidence additions only",
+  "grants_preserved": {
+    "Clock": 14,
+    "Springboard": 7
+  },
+  "alarm_api": 2,
+  "Springboard_catalog_count": 14,
+  "Runtime_SDK_compiled_headers": "byte-identical to x4-runtime-fast-stage-0160/sdk/app",
+  "target_receipts": "Builds succeeded before this proof commit; receipts currently record 95526c4 and working_tree_dirty=true. Rebuild clean receipts before product composition.",
+  "targets": {
+    "Clock": {
+      "version": "0.3.9",
+      "sha256": "017c1f9d3614f9c01b03cfab2c5b99ef4c60aa55cb3817381705f0f6cb736ffa",
+      "size_bytes": 301772,
+      "repository_commit": "95526c490132291f00fd851dbb1b126854e3d6fd",
+      "working_tree_dirty": true
+    },
+    "Springboard": {
+      "version": "1.7.6",
+      "sha256": "e76107e39a514cbbff0659940e876bf2f0ad301ffb405691454138354c52d615",
+      "size_bytes": 185748,
+      "repository_commit": "95526c490132291f00fd851dbb1b126854e3d6fd",
+      "working_tree_dirty": true
+    }
+  }
+}

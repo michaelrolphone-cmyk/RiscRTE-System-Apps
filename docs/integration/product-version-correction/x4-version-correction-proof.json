@@ -1,0 +1,20 @@
+{
+  "product_version": "0.1.81",
+  "store_only_changed": [
+    "cohort.json"
+  ],
+  "cohort_only_changed": [
+    "version",
+    "source_revision"
+  ],
+  "all_native_binaries_unchanged": true,
+  "all_app_provider_elfs_unchanged": true,
+  "all_sd_bytes_unchanged": true,
+  "full_image_only_changed_regions": [
+    "bootfs0",
+    "bank_state"
+  ],
+  "independent_image_verification": true,
+  "full_image_sha256": "4764cfc487ab6ab88353a586c2bad1954e82fe0cb9951d93f51a36d60c918855",
+  "previous_full_image_sha256": "f02b0abbcebc207734b80de881d74e27881dc2ce24260ef63ed0c66387882b8f"
+}

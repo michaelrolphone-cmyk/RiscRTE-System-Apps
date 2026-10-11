@@ -1,0 +1,9 @@
+# Renderer-free resident Contexts editor
+
+A selected resident Contexts editor uses the shared adapter without compiling Quick Actions state, fonts or rendering. It selects native custody, tagged alarms, `PORTABLE_CONTEXTS_EDITOR`, and the resident policy contract explicitly. Host and other existing Contexts profiles retain their previous code paths.
+
+The editor keeps a small read-only validity view for DND, frontlight level/restore level, and volume. Reads occur at startup or a settled Contexts resume with capture paused; they do not run per resident POLL. Applicability also checks admitted display brightness and alarm output modes. It never opens an audio provider merely to detect hardware. The host-owned idle action remains available; unsupported deep/sleep actions remain absent. Original records and the editor's guarded draft behavior are unchanged.
+
+A modal controls/policy checkpoint suspends and releases the borrowed Contexts service before changing focus or entering the host. Failed pause/release retains custody and immediately stops provider use. The next settled editor iteration reopens the service. Ordinary POLL is locally deferred while cached enabled source policy could own capture; the Runtime exit barrier is never bypassed.
+
+The authoritative Contexts client worktree's actual editor fixture qualified missing/default and malformed preferences, visual-only and sound/vibration output, terminal preference release, controls release/reopen, capture deferral, host policy preserving a draft, guard refusal, and failed pause/service release. Normal, reversed paper rendering and ASan/UBSan evidence is in `/workspace/shared/x4-resident-contexts-client/build/resident-client`. Its independently owned source receipt pins the final System adapter commit. The target Contexts app passed loader/descriptor/import checks and contains no shared renderer. Peripheral APIs are fixtures; hardware remains unqualified.

@@ -1,0 +1,25 @@
+Compiling .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/FrameworkArduino/main.cpp.o
+Compiling .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/FrameworkArduino/stdlib_noniso.c.o
+Compiling .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/FrameworkArduino/wiring_pulse.c.o
+Compiling .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/FrameworkArduino/wiring_shift.c.o
+Archiving .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/libFrameworkArduino.a
+Indexing .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/libFrameworkArduino.a
+Linking .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/firmware.elf
+verify([".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/firmware.elf"], [".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/bootstrap/Board.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/bootstrap/EmbeddedStore.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/bootstrap/Json.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/bootstrap/Runtime.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/main.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/native/NativeAppMemory.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/CpuPort.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeAppData.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeBankStore.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeBootstrap.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeFailureEvidence.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeHardware.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeRealtime.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeRetainedWake.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NativeSntp.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/NvsKeyValue.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/OwnerNvsInstaller.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/ProviderDiagnostics.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/ports/esp32s3/SleepDiagnostics.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/drivers/ProviderGraphV2.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/drivers/ProviderModuleV2.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/BootstrapInput.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/Coordinator.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/Installer.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/Maintenance.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/Profile.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/provisioning/StoreFiles.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/storage/AppDataFiles.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/storage/ScopedUserVolume.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/storage/ScopedUserVolumeBinding.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/streams/AppStreamSessions.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/streams/ProviderQueueHost.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/update/PairedBank.cpp.o", ".pio/build/esp32s3-16mb-appdata-iq-sharing-migration/src/runtime/update/StoreAudit.cpp.o"])
+Verified IQ bank reservation and DRAM/IRAM alias exclusion: 0x3fcb0000
+Retrieving maximum program size .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/firmware.elf
+Checking size .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/firmware.elf
+Advanced Memory Usage is available via "PlatformIO Home > Project Inspect"
+RAM:   [==        ]  20.1% (used 65808 bytes from 327680 bytes)
+Flash: [======    ]  57.7% (used 1437953 bytes from 2490368 bytes)
+Building .pio/build/esp32s3-16mb-appdata-iq-sharing-migration/firmware.bin
+esptool.py v4.11.0
+Creating esp32s3 image...
+Merged 3 ELF sections
+Successfully created esp32s3 image.
+========================= [SUCCESS] Took 30.38 seconds =========================
+
+Environment                                Status    Duration
+-----------------------------------------  --------  ------------
+esp32s3-16mb-appdata-iq-sharing-migration  SUCCESS   00:00:30.384
+========================= 1 succeeded in 00:00:30.384 =========================

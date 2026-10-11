@@ -1,0 +1,2 @@
+Native TCP production syscall shim: bounds, partial/blocked/EOF, owner generations, Wi-Fi, retained close and no I/O after context loss PASS
+Runtime TCP: opt-in/admission, provider generation ownership, raw app denial and retention fences PASS

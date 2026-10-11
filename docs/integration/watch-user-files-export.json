@@ -1,0 +1,61 @@
+{
+  "label": "Watch user files",
+  "files": [
+    {
+      "owner": "timecard",
+      "namespace": 1,
+      "name": "timecard.json",
+      "path": "/timecard/timecard.json",
+      "access": "read-write"
+    },
+    {
+      "owner": "audio_spectrum",
+      "namespace": 2,
+      "name": "spectrum-events-a.sqt",
+      "path": "/audio-spectrum/spectrum-events-a.sqt",
+      "access": "read-write"
+    },
+    {
+      "owner": "audio_spectrum",
+      "namespace": 2,
+      "name": "spectrum-events-b.sqt",
+      "path": "/audio-spectrum/spectrum-events-b.sqt",
+      "access": "read-write"
+    },
+    {
+      "owner": "waterfall",
+      "namespace": 3,
+      "name": "rf-events-a.rft",
+      "path": "/waterfall/rf-events-a.rft",
+      "access": "read-write"
+    },
+    {
+      "owner": "waterfall",
+      "namespace": 3,
+      "name": "rf-events-b.rft",
+      "path": "/waterfall/rf-events-b.rft",
+      "access": "read-write"
+    },
+    {
+      "owner": "lists",
+      "namespace": 62,
+      "name": "lists.bin",
+      "path": "/lists/lists.bin",
+      "access": "read-write"
+    },
+    {
+      "owner": "model_viewer",
+      "namespace": 64,
+      "name": "model.obj",
+      "path": "/models/model.obj",
+      "access": "read-write"
+    },
+    {
+      "owner": "model_viewer",
+      "namespace": 64,
+      "name": "model.stl",
+      "path": "/models/model.stl",
+      "access": "read-write"
+    }
+  ]
+}

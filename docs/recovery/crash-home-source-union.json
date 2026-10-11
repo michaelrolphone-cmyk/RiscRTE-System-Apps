@@ -1,0 +1,75 @@
+{
+  "merged_source": "e6159933cd915a4ad9609e722370f7d3c9678cb9",
+  "focused_patch_sha256": "11bcacfa1c91ec733493c9f22db98eec6fdd3c64719f4d330a0502fafb13f5b6",
+  "scope": "Source union, no target/release claim",
+  "archive": {
+    "hardware_tested": false,
+    "scope": "Real included failure_archive.inc, shared formatter, AppData spool and SD exporter; in-memory host capability boundaries with strict lifetimes and operation ordering",
+    "excluded": "Physical OSD page completion and native Runtime/AppData broker; tested separately",
+    "runtime_sdk": "/tmp/runtime-home-spool-capacity-0105/sdk/app",
+    "sdk_sha256": {
+      "RiscRuntimeV1.h": "0171988c0b4cb7ff1146e871fab17e408ad352a1220f5851abef4c152473e8ad",
+      "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+      "RiscAppDataV1.h": "49ced12bd617ce9e29626f97ee21d824edcf5f8272524a7da8780c60979df201"
+    },
+    "source_sha256": {
+      "test/native_apps/failure_archive_lifecycle_test.c": "cb16e1937591cc6e10609f89c0d460d3a026130609f3748f0a0acc44adb83483",
+      "scripts/test_failure_archive_lifecycle.py": "aaa4dd10e907b7fba1dd4022798cba66c4c41cb03de5bc691796335baabdc534",
+      "lib/PortableApps/src/failure_archive.inc": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+      "lib/PortableApps/include/FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+      "lib/PortableApps/include/CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+      "lib/PortableApps/include/CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+      "lib/PortableApps/include/RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+      "lib/PortableApps/include/RiscStorageExportV1.h": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
+      "lib/PortableApps/include/RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1"
+    },
+    "runs": [
+      {
+        "mode": "normal",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/include",
+          "/tmp/system-ui-state-decoupling-20261010/test/native_apps/failure_archive_lifecycle_test.c",
+          "-o",
+          "/tmp/combined-home-archive/failure-archive-lifecycle-normal"
+        ],
+        "exit_code": 0,
+        "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+        "log": "/tmp/combined-home-archive/normal.log"
+      },
+      {
+        "mode": "sanitized",
+        "command": [
+          "cc",
+          "-std=c11",
+          "-O1",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "-pedantic",
+          "-fsanitize=address,undefined",
+          "-fno-sanitize-recover=all",
+          "-fno-omit-frame-pointer",
+          "-no-pie",
+          "-I/tmp/runtime-home-spool-capacity-0105/sdk/app",
+          "-I/tmp/system-ui-state-decoupling-20261010/lib/PortableApps/include",
+          "/tmp/system-ui-state-decoupling-20261010/test/native_apps/failure_archive_lifecycle_test.c",
+          "-o",
+          "/tmp/combined-home-archive/failure-archive-lifecycle-sanitized"
+        ],
+        "exit_code": 0,
+        "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+        "log": "/tmp/combined-home-archive/sanitized.log"
+      }
+    ]
+  }
+}

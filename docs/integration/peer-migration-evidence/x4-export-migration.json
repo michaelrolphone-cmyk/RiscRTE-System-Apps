@@ -1,0 +1,39 @@
+{
+  "schema": 2,
+  "source": {
+    "firmware_sha256": "fc1fe5f1286668136156949932605a792c7dea048dc403f3f04d676ded14ab36",
+    "firmware_size": 1389296,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "xteink-x4-pro",
+    "runtime_version": "0.2.14",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+    "source_revision": "1108e7b99a4aa20c219b326d7502c6d136748a91",
+    "store_abi": 2,
+    "version": "0.1.82"
+  },
+  "target": {
+    "firmware_sha256": "fc1fe5f1286668136156949932605a792c7dea048dc403f3f04d676ded14ab36",
+    "firmware_size": 1389296,
+    "layout": "riscrte-paired-appdata-v2",
+    "product": "xteink-x4-pro",
+    "runtime_version": "0.2.14",
+    "schema": "riscrte.cohort",
+    "schema_version": 1,
+    "source_repo": "michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO",
+    "source_revision": "7394ea165deb5fbb568b6993fb7cf6fab766ef24",
+    "store_abi": 2,
+    "version": "0.1.83"
+  },
+  "shared_kv": [
+    "file_browser:1:6"
+  ],
+  "header_sha256": "6542474b3662bfddcdfd999d275580dbc61fcead445c0d5be3971303993d0b31",
+  "boot_sha256": [
+    "846be0643f8a29fd1146fdda290a1883f741f45c03929e730dbecb2e2b2aefd3",
+    "47890debe2c0ba334eb0779ab0cb9e34790808470a352d062846ce23fd8aac3a"
+  ],
+  "sd_placement_receipt": "sd-first/placement.json",
+  "note": "Only provider image_source placement changed after policy generation; app_capabilities and selected native authority remain byte-identical."
+}

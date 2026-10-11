@@ -13,6 +13,7 @@ for san in (False,True):
 for san in (False,True):
  for fixture in ('portable_wifi_test','portable_update_app_test'):
   flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-misleading-indentation','-DTEST_RADIO_POLICY','-DPORTABLE_NOVA_UI','-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include')]
+  flags+=['-DTEST_IDLE_ELIGIBILITY']
   if san:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
   exe=out/(fixture+'-'+str(int(san)))
   subprocess.run([os.environ.get('CC','cc'),*flags,str(ROOT/'test/native_apps'/(fixture+'.c')),'-o',str(exe)],check=True)

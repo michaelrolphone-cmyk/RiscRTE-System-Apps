@@ -93,20 +93,21 @@ static void slider(pqa_row *r,int y,const pqa_icon *ic,unsigned value,bool valid
     text(r,GLYPHS(percent),label,4,220-width,y+11,error?RGB(255,135,65):RGB(207,233,238),a);
 }
 static void panel_row(pqa_row *r,const pqa_state *s,const char *time,bool bv,unsigned bp) {
-    text(r,GLYPHS(time),time?time:"--:--",8,20,31,RGB(255,255,255),256);
+    int shift=s->contexts_controls?24:0;
+    text(r,GLYPHS(time),time?time:"--:--",8,20,s->contexts_controls?19:31,RGB(255,255,255),256);
     char battery[5]; percentage(battery,bv,bp);
     int bw=text_width(GLYPHS(percent),battery,4);
-    text(r,GLYPHS(percent),battery,4,146-bw,30,bv?GREEN:MUTED,256);
-    for(int i=0;i<10;++i)rect(r,152+i*7,24,5,4,1,GREEN,bv && (unsigned)i*10<bp?256:41);
-    slider(r,55,&pqa_icon_sun,s->brightness,s->brightness_valid,false,(s->error_flags&PQA_ERROR_BRIGHTNESS)!=0);
-    text(r,GLYPHS(caption),"NOTIFICATIONS",13,44,80,MUTED,210);
-    slider(r,85,s->volume_valid && !s->volume?&pqa_icon_muted:&pqa_icon_volume,
+    text(r,GLYPHS(percent),battery,4,146-bw,s->contexts_controls?18:30,bv?GREEN:MUTED,256);
+    for(int i=0;i<10;++i)rect(r,152+i*7,s->contexts_controls?12:24,5,4,1,GREEN,bv && (unsigned)i*10<bp?256:41);
+    slider(r,55-shift,&pqa_icon_sun,s->brightness,s->brightness_valid,false,(s->error_flags&PQA_ERROR_BRIGHTNESS)!=0);
+    text(r,GLYPHS(caption),"NOTIFICATIONS",13,44,80-shift,MUTED,210);
+    slider(r,85-shift,s->volume_valid && !s->volume?&pqa_icon_muted:&pqa_icon_volume,
            s->volume,s->volume_valid,s->volume_valid && !s->volume,(s->error_flags&PQA_ERROR_VOLUME)!=0);
-    rect(r,20,108,200,1,0,LINE,256);
+    rect(r,20,108-shift,200,1,0,LINE,256);
     static const char *const labels[]={"SILENT","DND","AIRPLANE","WI-FI SETUP","BLUETOOTH","TORCH"};
     const pqa_icon *const icons[]={&pqa_icon_silent,&pqa_icon_dnd,&pqa_icon_airplane,&pqa_icon_wifi,&pqa_icon_bluetooth,&pqa_icon_torch};
     for(int i=0;i<6;++i) {
-        int x=20+(i%3)*71,y=118+(i/3)*48;
+        int x=20+(i%3)*71,y=118+(i/3)*48-(s->contexts_controls?30:0);
         bool disabled=(i==1 && !s->dnd_valid) || ((i==2||i==4||(i==3&&s->radio_controls)) && !s->radios_valid) || (i==0 && !s->volume_valid);
         bool on=(i==1 && s->dnd_valid && s->dnd_enabled) || (i==0 && s->volume_valid && !s->volume) || (i==5 && s->torch) || (s->radios_valid && ((i==2&&s->airplane)||(i==3&&s->wifi_enabled)||(i==4&&s->bluetooth_enabled)));
         rect(r,x,y,62,42,12,on?CYAN:LINE,256);
@@ -119,7 +120,18 @@ static void panel_row(pqa_row *r,const pqa_state *s,const char *time,bool bv,uns
         /* Small unavailable dash reinforces dim disabled tiles, no fake state. */
         if(disabled)rect(r,x+49,y+6,5,1,0,RGB(66,82,88),256);
     }
-    rect(r,104,216,32,4,2,CYAN,128);
+    if(s->contexts_controls){
+        bool on=s->contexts_valid&&s->contexts_enabled;
+        uint16_t color=s->contexts_valid?CYAN:MUTED;
+        rect(r,20,182,200,40,12,color,256);rect(r,21,183,198,38,11,TILE,256);
+        text(r,GLYPHS(label),"CONTEXT",7,31,198,color,256);
+        text(r,GLYPHS(label),"DETECTION",9,31,212,color,256);
+        rect(r,143,191,65,22,10,LINE,256);
+        rect(r,on?176:145,193,30,18,8,on?CYAN:LINE,256);
+        center_text(r,GLYPHS(label),s->contexts_valid?"OFF":"?",160,205,on?MUTED:RGB(255,255,255),256);
+        center_text(r,GLYPHS(label),"ON",192,205,on?RGB(0,20,24):MUTED,256);
+    }
+    rect(r,104,s->contexts_controls?227:216,32,4,2,CYAN,128);
     if(s->error_flags&PQA_ERROR_SAVE)
         center_text(r,GLYPHS(caption),"SAVE UNCONFIRMED",120,231,RGB(255,135,65),256);
 }
@@ -131,7 +143,8 @@ static unsigned torch_edge(int v) {
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
-bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
+    if(first>240u || count>240u-first)return false;
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565 ||
        f->width!=240 || f->height!=240 || f->stride_bytes<480u)return false;
     uint64_t span=(uint64_t)239*f->stride_bytes+480u;
@@ -141,7 +154,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     int position=s->position_q8<0?0:s->position_q8>PQA_OPEN_Q8?PQA_OPEN_Q8:s->position_q8;
     pqa_row row;
     if(s->torch) {
-        for(int y=0;y<240;++y) {
+        for(int y=(int)first;y<(int)(first+count);++y) {
             row.y=y;
             for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);
             center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,210,RGB(106,90,48),256);
@@ -156,7 +169,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     }
     int offset=(position-PQA_OPEN_Q8)/256;
     unsigned face_alpha=(unsigned)(position>=190*256?0:256-position/190);
-    for(int y=0;y<240;++y) {
+    for(int y=(int)first;y<(int)(first+count);++y) {
         uint8_t *dst=(uint8_t*)f->pixels+(size_t)y*f->stride_bytes;
         int local=y-offset;
         bool in_panel=local>=0 && local<240;
@@ -168,4 +181,25 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
         }
     }
     return true;
+}
+
+bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+    return render_rows(f,s,time,bv,bp,0,240);
+}
+#ifdef PORTABLE_RASTER_SNAPSHOT
+bool pqa_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
+    return render_rows(f,s,time,bv,bp,first,count);
+}
+#endif
+
+void pqa_paper_icon(unsigned index,int x,int y,int size,bool black,
+                    void (*draw)(int,int,uint32_t,unsigned)) {
+    const pqa_icon *const icons[]={&pqa_icon_silent,&pqa_icon_dnd,&pqa_icon_airplane,
+      &pqa_icon_wifi,&pqa_icon_bluetooth,&pqa_icon_torch,&pqa_icon_sun,&pqa_icon_volume};
+    if(index>=sizeof(icons)/sizeof(icons[0]) || !draw || size<1 || size>64)return;
+    const pqa_icon *ic=icons[index];int largest=ic->width>ic->height?ic->width:ic->height;
+    int w=ic->width*size/largest,h=ic->height*size/largest;
+    for(int j=0;j<h;j++)for(int i=0;i<w;i++)
+      if(pqa_alpha[ic->offset+(unsigned)(j*ic->height/h)*ic->width+(unsigned)(i*ic->width/w)]>=128)
+        draw(x+(size-w)/2+i,y+(size-h)/2+j,black?0:0xffffff,255);
 }
