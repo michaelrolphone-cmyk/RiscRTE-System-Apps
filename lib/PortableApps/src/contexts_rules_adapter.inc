@@ -51,7 +51,10 @@ static bool contexts_rules_tick(void){
   else if(action.step.kind==CR_TIMER){ok=portable_context_timer(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage);if(contexts_client.storage.api)return false;}
   else if(action.step.kind==CR_LAUNCH){
    bool installed=false;for(unsigned i=0;i<portable_catalog_count;i++)if(portable_catalog[i].compatible&&!strcmp(portable_catalog[i].file_name,action.step.text))installed=true;
-   if(installed&&app_allows_launch(action.step.text)){ok=rt->request_launch(action.step.text);if(ok)context_launch_pending=true;}
+   if(installed&&app_allows_launch(action.step.text)){
+    if(!canvas_exit_barrier())return false;
+    ok=rt->request_launch(action.step.text);if(ok)context_launch_pending=true;
+   }
   }
   action.claim=false;action.result=ok?CR_RAN:CR_FAILED;if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&action))return false;
  }
@@ -65,11 +68,13 @@ static bool contexts_message_foreground(void){
  if(!portable_contexts_pause(&contexts_client))return false;
  bool painted=false;
  while(context_message_open&&!failed){
-  if(display_settled&&!surface.frame&&!painted){clear();label(8,height()/3,width()-16,"CONTEXT MESSAGE");label(8,height()/2,width()-16,context_message);label(8,height()-45,width()-16,"TAP TO DISMISS");present(true);painted=true;}
+  if(!canvas_progress())return false;
+  if(risc_runtime_exit_requested_v1(rt)){context_message_open=false;return true;}
+  if(foreground_frame_ready()&&!painted){clear();label(8,height()/3,width()-16,"CONTEXT MESSAGE");label(8,height()/2,width()-16,context_message);label(8,height()-45,width()-16,"TAP TO DISMISS");present(true);painted=true;}
   bool consumed=false;if(!alarm_foreground(&consumed))return false;if(consumed){painted=false;continue;}
   rt->yield_ms(8);input_service();
   t5_app_input_t nav={0};input_navigation_take(&nav);portable_touch_sample touch_event;input_take(&touch_event);
-  if(display_settled&&(nav.buttons&T5_APP_BUTTON_BACK||touch_event.released)){context_message_open=false;}
+  if(foreground_frame_ready()&&(nav.buttons&T5_APP_BUTTON_BACK||touch_event.released)){context_message_open=false;}
  }
  return !failed;
 }

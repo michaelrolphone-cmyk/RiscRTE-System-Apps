@@ -22,6 +22,7 @@ def build(args):
     out = args.output_dir or ROOT/'dist/portable'
     if args.low_battery:args.sleep_settings=args.alarm_client=True
     flags=['-DPORTABLE_SETTINGS_APP']
+    if getattr(args,'async_rgb565',False):flags.append('-DPORTABLE_ASYNC_RGB565')
     if args.low_battery:flags+=['-DPORTABLE_LOW_BATTERY','-DPORTABLE_QUICK_ACTIONS','-DPORTABLE_QUICK_RADIOS']
     if args.sleep_settings: flags.append('-DPORTABLE_SLEEP_SETTINGS')
     if args.tap_settings: flags.append('-DPORTABLE_TAP_SETTINGS')
@@ -113,6 +114,7 @@ def build(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--async-rgb565',action='store_true',help='Explicit bounded 240x240 color mailbox; requires asynchronous display and Runtime retention support')
     parser.add_argument('--low-battery',action='store_true',help='Build the automatic low-battery Watch profile with shared Quick Controls and timers')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')

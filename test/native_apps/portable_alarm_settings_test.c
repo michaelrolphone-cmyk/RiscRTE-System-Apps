@@ -29,7 +29,11 @@ static bool diagnostic(const char *message) {(void)message;++diagnostics;return 
 static bool request_launch(const char *path) {(void)path;assert(!"No launch is authorized");return false;}
 static bool display_info(void *c,risc_display_info_v1 *out) {
   (void)c;*out=(risc_display_info_v1){.width=240,.height=240,
-    .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;
+    .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+#ifdef PORTABLE_ASYNC_RGB565
+  out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
+#endif
+  return true;
 }
 static bool frame_acquire(void *c,uint32_t format,risc_display_surface_v1 *out) {
   (void)c;assert(!frames);frames=1;

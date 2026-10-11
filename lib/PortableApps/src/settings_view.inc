@@ -359,7 +359,7 @@ static bool settings_view_poll(t5_app_input_t *out) {
     }
 #endif
   }
-  if(sample.down && sv_gesture && sv_eligible) {
+  if((sample.down || (sample.released && sample.release_position_valid)) && sv_gesture && sv_eligible) {
     int dx=x-sv_start_x,dy=y-sv_start_y;
     sv_last_x=x;sv_last_y=y;
     if(sample.moved || sv_abs(dx)+sv_abs(dy)>=6)sv_dragged=true;

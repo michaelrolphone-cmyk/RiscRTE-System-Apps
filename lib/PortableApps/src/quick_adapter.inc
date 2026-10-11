@@ -22,7 +22,7 @@ static bool quick_storage_safe(void) {
 }
 #ifdef PORTABLE_LOW_BATTERY
 static bool low_battery_poll(void) {
- if(!display_settled||surface.frame||!quick_storage_safe())return true;
+ if(!foreground_frame_ready()||!quick_storage_safe())return true;
  uint32_t now=millis_now();
  if(low_battery_sampled&&(uint32_t)(now-low_battery_sampled_at)<5000u)return true;
  low_battery_sampled=true;low_battery_sampled_at=now;
@@ -117,7 +117,7 @@ static bool quick_foreground(bool *consumed) {
   if(!settings_tap_close()){*consumed=true;return true;}
  }
 #endif
- if(!display_settled || surface.frame || !alarm_pixels_valid)return false;
+ if(!canvas_progress() || !foreground_frame_ready() || !alarm_pixels_valid)return false;
  if(!quick_storage_safe()){pqa_cancel(&quick.ui);return true;}
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if(!portable_background_stop())return false;
@@ -161,6 +161,7 @@ static bool quick_foreground(bool *consumed) {
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
   rt->yield_ms(8);input_service();
  }
+ if(native_sleep_retained)return false;
  if(risc_runtime_exit_requested_v1(rt)) {
   /* Discard unprocessed actions, restore confirmed brightness, then use the
    * normal saved-frame/free path. A pending slider commit is not confirmed. */
@@ -171,6 +172,11 @@ static bool quick_foreground(bool *consumed) {
   * final action still owns a hardware restoration even after the loop ends. */
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
  if(painted && !failed) {
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_async && alarm_pixels && quick_background) {
+   memcpy(alarm_pixels,quick_background,240u*240u*2u);alarm_pixels_valid=true;
+  }
+#endif
   if(!quick_copy_background())failed=true;else present(true);
  }
  quick_modal=false;free(quick_background);quick_background=NULL;
@@ -185,6 +191,7 @@ static bool quick_foreground(bool *consumed) {
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   if(!portable_wifi_suspend())return false;
 #endif
+  if(!canvas_exit_barrier())return false;
   if(!rt->request_launch("wifi_settings.elf")){quick.ui.error_flags|=PQA_ERROR_WIFI;rt->diagnostic("QUICK Wi-Fi launch-failed");}
   else quick_launch_pending=true; /* caller exits via ordinary cleanup */
  }

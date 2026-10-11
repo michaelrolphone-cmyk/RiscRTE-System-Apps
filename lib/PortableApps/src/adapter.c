@@ -119,6 +119,7 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+static bool canvas_progress(void);
 #ifdef PORTABLE_TAP_SETTINGS
 static bool settings_motion_active,settings_motion_interrupted;
 static bool settings_tap_close(void);
@@ -161,7 +162,7 @@ static bool alarm_failure(void);
 static unsigned first_row, last_rows;
 #ifdef PORTABLE_CONTEXTS_CLIENT
 static bool contexts_capture_checkpoint(void) {
-  if(failed||native_sleep_retained)return false;
+  if(failed||native_sleep_retained||!canvas_progress())return false;
   if(portable_contexts_capture(&contexts_client))return true;
   failed=true;
   if(portable_contexts_retain(&contexts_client)){native_sleep_retained=true;return false;}
@@ -185,6 +186,7 @@ static bool current_app_contact(t5_app_contact_t *out) {
 static void set_back_exits(bool enabled) { back_exits_app=enabled; }
 #endif
 static uint32_t millis_now(void) {
+  if(failed)return 0; /* A void paint may already have retained the invocation. */
   risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
   if (!rt->health(&h)) {
     failed = true;
@@ -255,6 +257,7 @@ static void input_navigation_close(void) {
 }
 #endif
 static void input_service(void) {
+ if(!canvas_progress())return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(!contexts_capture_checkpoint())return;
 #endif
@@ -330,6 +333,7 @@ static void handoff_finish(void) {
  free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
 }
 #endif
+#include "canvas_async.inc"
 static int32_t width(void) { return info.width; }
 static int32_t height(void) { return info.height; }
 static void fill(int x, int y, int w, int h, uint16_t color) {
@@ -356,10 +360,17 @@ static void clear_color(uint16_t color) {
   if (failed)
     return;
   if (surface.frame) {
+#ifdef PORTABLE_ASYNC_RGB565
+    if(!canvas_async)
+#endif
     display->release(display->context, surface.frame);
     surface.frame = 0;
   }
-  if (!display->acquire(display->context, RISC_DISPLAY_FORMAT_RGB565,
+  if (
+#ifdef PORTABLE_ASYNC_RGB565
+      !canvas_begin() &&
+#endif
+      !display->acquire(display->context, RISC_DISPLAY_FORMAT_RGB565,
                         &surface)) {
     failed = true;
     return;
@@ -530,6 +541,9 @@ static void present(bool full) {
         info.width,info.height,alpha))handoff_finish();
   }
 #endif
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_async){canvas_present();return;}
+#endif
   if(previous_pixels
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
      && !handoff_active
@@ -603,6 +617,12 @@ static bool idle_sleep(void) {
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_async && (canvas_token || canvas_sealed)) {
+    int ready=canvas_sleep_barrier();
+    if(ready<=0)return ready==0;
+  }
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
 #endif
@@ -706,6 +726,7 @@ static bool contexts_tick(void) {
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
+  if(!canvas_progress())return false;
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(context_launch_pending){out->exit_requested=true;return true;}
   if(!contexts_message_foreground())return false;
@@ -713,8 +734,6 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   app_contact=(t5_app_contact_t){0};
 #endif
-  if (failed)
-    return false;
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed))return false;
@@ -729,16 +748,17 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   }
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
-  if(display_settled && !surface.frame && !broadcast_tick()){failed=true;return false;}
+  if(foreground_frame_ready() && !broadcast_tick()){failed=true;return false;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
 #ifdef PORTABLE_CONTEXTS_CLIENT
   uint32_t remaining=spent<wait?wait-spent:1;
-  while(remaining){uint32_t slice=remaining>8?8:remaining;rt->yield_ms(slice);remaining-=slice;if(!contexts_capture_checkpoint())return false;}
+  while(remaining){uint32_t slice=remaining>8?8:remaining;rt->yield_ms(slice);remaining-=slice;if(!canvas_progress() || !contexts_capture_checkpoint())return false;}
 #else
   rt->yield_ms(spent<wait?wait-spent:1);
 #endif
   last_poll_at=millis_now();
+  if(!canvas_progress())return false;
   input_service();
   if(failed)return false;
 #ifdef PORTABLE_ALARM_CLIENT
@@ -757,7 +777,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(!low_battery_poll()){failed=true;return false;}
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  if(display_settled&&!surface.frame&&!contexts_tick()){failed=true;return false;}
+  if(foreground_frame_ready()&&!contexts_tick()){failed=true;return false;}
 #endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
@@ -872,6 +892,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool native_exit_input(t5_app_input_t *out) {
   if(!risc_runtime_exit_requested_v1(rt))return false;
+  (void)canvas_exit_barrier();
   input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
   nu_gesture=false;
@@ -883,14 +904,17 @@ static bool native_exit_input(t5_app_input_t *out) {
   return true;
 }
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_retained)return false;
+#endif
   /* Native cancellation wins before modals and never queues a return app.
    * It remains latched in Runtime through the unchanged app/fini cleanup. */
-  if(native_exit_input(out))return true;
+  if(native_exit_input(out))return !failed;
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
-  if(!ok)return alarm_failure();
+  if(!ok){(void)canvas_exit_barrier();return alarm_failure();}
 #endif
-  if(ok && native_exit_input(out))return true;
+  if(ok && native_exit_input(out))return !failed;
 #ifdef PORTABLE_RETURN_APP
   bool returning=out->exit_requested;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
@@ -915,6 +939,7 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_AUDIO_SESSION
     if(!portable_audio_suspend())return alarm_failure();
 #endif
+    if(!canvas_exit_barrier())return false;
     if(!rt->request_launch(PORTABLE_RETURN_APP)) {
       rt->diagnostic("PORTABLE_APP error=return-request");
 #ifdef PORTABLE_APP_LAUNCH_GUARD
@@ -956,7 +981,7 @@ static bool launch(uint32_t i) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
       !handoff_active &&
 #endif
-      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && rt->request_launch(portable_catalog[i].file_name);
+      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && canvas_exit_barrier() && rt->request_launch(portable_catalog[i].file_name);
 }
 #ifdef PORTABLE_POWER_STATUS
 #include "PortablePowerStatus.h"
@@ -971,7 +996,7 @@ bool portable_power_read(risc_battery_sample_v1 *out) {
 #endif
 static bool read_battery(t5_battery_state_t *out) {
   risc_battery_sample_v1 b = {0};
-  if (!gauge || !out || !gauge->read(gauge->context, &b))
+  if (failed || !gauge || !out || !gauge->read(gauge->context, &b))
     return false;
   const bool known_soc = b.percent <= 100 && !(b.flags & RISC_BATTERY_PROFILE_MISSING);
   memset(out, 0, sizeof(*out));
@@ -1142,6 +1167,9 @@ static int initialize(void) {
 #endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
+#ifdef PORTABLE_ASYNC_RGB565
+  canvas_pixels=NULL;canvas_async=canvas_sealed=canvas_uncertain=canvas_retained=false;canvas_token=0;canvas_submitted_at=0;
+#endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
 #endif
@@ -1160,6 +1188,12 @@ static int initialize(void) {
     return -1;
 #ifdef PORTABLE_NOVA_UI
   if(info.width!=240 || info.height!=240)return -1;
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+  canvas_async=rt->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE && rt->retain_invocation &&
+    info.width==240 && info.height==240 &&
+    (info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && !(info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE);
+  if(canvas_async){canvas_pixels=malloc((size_t)info.width*info.height*2u);if(!canvas_pixels)return -1;}
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   alarm_pixels=malloc((size_t)info.width*info.height*2);
@@ -1202,8 +1236,15 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_retained)return;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return; /* Runtime normally blocks fini first. */
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+  (void)canvas_exit_barrier();
+  if(canvas_retained)return;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   while(!portable_contexts_pause(&contexts_client)) {
@@ -1277,10 +1318,16 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   free(quick_background);quick_background=NULL;
 #endif
   if (surface.frame)
+#ifdef PORTABLE_ASYNC_RGB565
+    if(!canvas_async)
+#endif
     display->release(display->context, surface.frame);
   surface.frame = 0;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_finish();
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+  free(canvas_pixels);canvas_pixels=NULL;canvas_async=canvas_sealed=false;
 #endif
   np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)

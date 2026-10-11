@@ -8,8 +8,13 @@
 
 int app_module_init(void);
 void app_module_fini(void);
+#ifdef WATCH_ASYNC_CONTEXT_LAUNCH_FIXTURE
+const t5_app_manifest_t portable_catalog[] = {{.compatible=true,.file_name="wifi_settings.elf"}};
+const unsigned portable_catalog_count = 1;
+#else
 const t5_app_manifest_t portable_catalog[] = {{.compatible=false}};
 const unsigned portable_catalog_count = 0;
+#endif
 static unsigned scenario, ticks, polls, grants, subscriptions, frame_count, displays;
 static unsigned writes, reads_after_write, diagnostics;
 static uint16_t framebuffer[240 * 240];
@@ -150,6 +155,9 @@ static int32_t kv_get(void *c,const char *key,void *data,uint32_t cap,uint32_t *
   (void)c;*size=0;
 #ifdef PORTABLE_ALARM_SETTINGS
   if(!strcmp(key,PORTABLE_ALERT_KEY))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  if(!strcmp(key,PORTABLE_CONTEXT_ENABLED_KEY))return RISC_KEY_VALUE_NOT_FOUND;
 #endif
   if(!strcmp(key,PORTABLE_TIME_FORMAT_KEY)) {
     ++format_reads;

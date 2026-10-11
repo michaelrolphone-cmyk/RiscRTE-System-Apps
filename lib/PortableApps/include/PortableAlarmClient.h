@@ -1,7 +1,8 @@
 #pragma once
 /* Optional Utilities service consumer. No schedule, RTC or output policy here.
- * Every normal call belongs to the foreground serialized settled-frame point.
- * A failed/pending presentation permits only failure_stop, never pump. */
+ * Normal calls require a serialized point without a mutable display lease.
+ * A qualified immutable asynchronous image may still be presenting. Failed or
+ * uncertain display custody must be fenced before any normal service call. */
 #include "AlarmServiceV1.h"
 #include "RiscRuntimeV1.h"
 #include <string.h>

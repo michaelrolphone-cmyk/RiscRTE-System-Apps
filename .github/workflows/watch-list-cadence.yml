@@ -1,0 +1,69 @@
+name: Watch asynchronous list cadence
+on:
+  push:
+    branches: [investigate/watch-list-cadence]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PLATFORMIO_SETTING_ENABLE_TELEMETRY: "no"
+  UTILITIES_SOURCE: ${{ github.workspace }}/.ci-utilities
+jobs:
+  cadence-and-custody:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+      - name: Check out qualified Stopwatch source
+        uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: fc0bdbbbc600ce891e60c44d091fce0586ade7d8
+          path: .ci-utilities
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check logical cadence and fail-closed latest-image custody
+        run: |
+          python scripts/probe_watch_list_cadence.py
+          python scripts/test_watch_async_canvas.py
+          python scripts/test_watch_async_stopwatch.py
+      - name: Preserve existing UI, modal, service and transition behavior
+        # Legacy retained-invocation fixtures deliberately keep allocations alive.
+        # Address/undefined checks remain enabled; this is not a leak-scan claim.
+        env:
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          python scripts/test_watch_canvas_crown_exit.py
+          python scripts/test_portable_transition.py
+          python scripts/test_portable_alarm.py
+          python scripts/test_portable_alarm_settings.py
+          python scripts/test_quick_actions.py
+          python scripts/test_quick_radios.py
+          python scripts/test_nova_settings.py
+          python scripts/test_tap_settings.py
+          python scripts/test_context_adapter.py
+          python scripts/test_context_quick_toggle.py
+          python scripts/test_low_battery.py
+          python scripts/test_broadcast_adapter.py
+          python scripts/test_portable_audio.py
+          python scripts/test_portable_radio.py
+      - name: Install pinned public target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build and admit opt-in target Settings
+        run: |
+          python scripts/build_portable_settings.py --async-rgb565 --low-battery --nova-ui --alarm-settings --navigation --full-frames --output-dir dist/watch-list-cadence/settings
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watch-list-cadence-${{ github.sha }}
+          path: |
+            build/watch-list-cadence/
+            build/watch-async-canvas/
+            dist/watch-list-cadence/
+          if-no-files-found: error
+          retention-days: 14

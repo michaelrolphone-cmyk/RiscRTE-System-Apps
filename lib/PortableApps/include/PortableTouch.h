@@ -28,6 +28,8 @@ typedef struct {
 typedef struct {
   bool valid, down, began, released, cancelled, tap_eligible, moved;
   uint16_t x, y;
+  /* A real UP supplies its final coordinate; snapshot-only release does not. */
+  bool release_position_valid;
 } portable_touch_sample;
 static bool portable_touch_open(portable_touch *t,
                                 const risc_runtime_api_v1 *r) {
@@ -88,6 +90,7 @@ static void portable_touch_read(portable_touch *t, portable_touch_sample *out) {
     out->tap_eligible = t->neutral;
     out->moved = t->moved;
     out->x = saw_up?up_x:t->x; out->y = saw_up?up_y:t->y;
+    out->release_position_valid=saw_up;
     t->neutral = true; t->down = false;
     if(out->released)portable_touch_orient(s.width,s.height,&out->x,&out->y);
     return;

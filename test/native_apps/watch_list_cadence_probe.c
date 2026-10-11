@@ -6,7 +6,13 @@
 static unsigned latency, submitted_at, done_at, raw_samples, busy_raw_samples;
 static unsigned logical_polls, changes, longest_poll, max_scroll;
 static unsigned drag_start=100,drag_end=500;
-static bool probing;
+static bool probing,release_sent;
+static bool probe_retain(void){assert(!"Healthy cadence must not retain");return true;}
+static int32_t timed_next(void*c,uint64_t sub,risc_touch_event_v1*out){
+ (void)c;(void)sub;
+ if(probing && !release_sent && ticks>=drag_end){release_sent=true;*out=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=120,.y=60};return 1;}
+ return 0;
+}
 static bool timed_health(risc_runtime_health_v1*out){out->uptime_ms=ticks;return ticks<1500;}
 static bool timed_snapshot(void*c,risc_touch_snapshot_v1*out){
  (void)c;*out=(risc_touch_snapshot_v1){.width=240,.height=240};++raw_samples;
@@ -28,9 +34,12 @@ int main(int argc,char**argv){
  assert(argc>=2);latency=(unsigned)atoi(argv[1]);drag_start=latency+100;
  drag_end=drag_start+(argc==3?(unsigned)atoi(argv[2]):400);
  scenario=100;assert(app_module_init()==0);
+#ifdef PORTABLE_ASYNC_RGB565
+ canvas_async=true;canvas_pixels=malloc(240u*240u*2u);assert(canvas_pixels);
+#endif
  risc_display_output_api_v1 timed_display=display_api;timed_display.submit=timed_submit;timed_display.present_status=timed_status;
- risc_touch_api_v1 timed_touch=touch_api;timed_touch.snapshot=timed_snapshot;
- risc_runtime_api_v1 timed_runtime=runtime_api;timed_runtime.health=timed_health;
+ risc_touch_api_v1 timed_touch=touch_api;timed_touch.snapshot=timed_snapshot;timed_touch.next=timed_next;
+ risc_runtime_api_v1 timed_runtime=runtime_api;timed_runtime.health=timed_health;timed_runtime.retain_invocation=probe_retain;
  display=&timed_display;touch.api=&timed_touch;rt=&timed_runtime;probing=true;
  const t5_app_api_v1*api=t5_app_get_api(1);api->settings_render(0,0);
  while(ticks<latency+900){

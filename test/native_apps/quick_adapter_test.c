@@ -43,9 +43,9 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
 #ifdef PORTABLE_BLE_BROADCAST
  if(!strcmp(key,TELEMETRY_BROADCAST_KEY)){*size=0;return RISC_KEY_VALUE_NOT_FOUND;}
 #endif
- /* Settings row reads retain their existing read-only model contract. Quick
-  * control preferences still require a settled, unleased display. */
- if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(!surface.frame && display_settled);
+ /* Settings rows retain their read-only model contract. Quick preferences
+  * require no mutable display lease; async physical ownership is separate. */
+ if(pref_index(key)>=0 || !strcmp(key,"quick_radio"))assert(fixture_foreground_frame_safe());
 #ifdef PORTABLE_LOW_BATTERY
  int low_index=low_key(key);
  if(low_index>=0){*size=low_sizes[low_index];if(!*size)return RISC_KEY_VALUE_NOT_FOUND;if(capacity<*size)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(data,low_records[low_index],*size);return RISC_KEY_VALUE_OK;}
@@ -60,7 +60,7 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
  *(uint8_t*)data=pref_value[index];return RISC_KEY_VALUE_OK;
 }
 static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size) {
- assert(!surface.frame && display_settled);
+ assert(fixture_foreground_frame_safe());
 #ifdef PORTABLE_LOW_BATTERY
  int low_index=low_key(key);
  if(low_index>=0){assert(size<=5);low_writes[low_index]++;if(low_write_fail==low_index)return RISC_KEY_VALUE_IO;low_sizes[low_index]=size;memcpy(low_records[low_index],data,size);return RISC_KEY_VALUE_OK;}
@@ -75,7 +75,7 @@ static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size)
 }
 static const risc_key_value_v1 quick_kv_api={1,sizeof(quick_kv_api),NULL,quick_get,quick_put};
 static bool quick_brightness(void *c,uint16_t level,uint16_t maximum) {
- (void)c;assert(!surface.frame && display_settled);assert(maximum==100 && level<=100);
+ (void)c;assert(fixture_foreground_frame_safe());assert(maximum==100 && level<=100);
  hardware_brightness=level;brightness_calls++;return true;
 }
 static int32_t quick_step(void *c) {

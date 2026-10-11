@@ -1,0 +1,487 @@
+{
+  "scope": "Isolated async canvas prototype; no product artifact/hardware qualification",
+  "production_sha256": {
+    "lib/PortableApps/include/PortableTouch.h": "ea6e61d9864921855d47de7361e2520b1bc8ae2e96123e3b1e6cc2849a0a8bc4",
+    "lib/PortableApps/include/PortableAlarmClient.h": "7394d8b17aa30d1e06f0e00901c6a3ac4e3b17e0cbba463d22ef297554ae6e89",
+    "lib/PortableApps/src/adapter.c": "3581e5f2c923825101d71eda413a2e4e8c039d7927a1b39d58b9b2a8aad28357",
+    "lib/PortableApps/src/alarm.inc": "2077f2b2349c31521c105d8fa8041e52a1aa872aea086e078aedfd3ce6c3ddd7",
+    "lib/PortableApps/src/canvas_async.inc": "212b03f576eccb7ed9e3a2b097f6bf6a0f22ed4b551a20f7dc3fbe25a031cd26",
+    "lib/PortableApps/src/contexts_rules_adapter.inc": "bc379c1581c2822e0a06864b5cf70f9512997f75088b3a71bdb70838cf1010f1",
+    "lib/PortableApps/src/quick_adapter.inc": "dba68d25f1befc652110f966e7e31ad0aaaa19dc1eacc40ef61e0e9a4a909434",
+    "lib/PortableApps/src/settings_view.inc": "4cf8c91ba8ccb0c091c516ddcb13a7dca686b506f523712bed59f7a53231c87e"
+  },
+  "additional_canvas_bytes": 115200,
+  "target_clients": {
+    "alarms": {
+      "bytes": 118172,
+      "sha256": "000ea8665777c7d49f931b04c2573a9249dab9cc13328517c11929b331e47cc9",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 114688
+    },
+    "app_store": {
+      "bytes": 115748,
+      "sha256": "62e814e1eb578db280ab794745c48dda8de98c006728f5629e508e597603e065",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 111652
+    },
+    "audio_spectrum": {
+      "bytes": 233760,
+      "sha256": "fc36ae610e60189a6a71319f62c39a52427cfca0135f80bd232d3c15b1d999d3",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 230944
+    },
+    "battery": {
+      "bytes": 115804,
+      "sha256": "561a599096b46c9039fb8ad08df77aab11b7d96c2dc174e584368e82f323c9cb",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 115804
+    },
+    "ble_buttons": {
+      "bytes": 120944,
+      "sha256": "415c91d60d2aefe5997a6302063939bd0e279305c766e68c98c4a6a58025f7c0",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 117252
+    },
+    "ble_scanner": {
+      "bytes": 123976,
+      "sha256": "08861a70d70be428f9eb97e197ec73cf9dc5211016de027181cdf0d94e683266",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 119880
+    },
+    "ble_touchpad": {
+      "bytes": 120680,
+      "sha256": "b051d6dc26b7e7883762a029741ccde2d034cbfd4007e380d0facc8e852eb7f1",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 116984
+    },
+    "calculator": {
+      "bytes": 115864,
+      "sha256": "cdefe6c765e82a5ee322cd1e425b68792d18b0be79cba6a2832f0b65f7d69dcd",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 111768
+    },
+    "countdown": {
+      "bytes": 115804,
+      "sha256": "efedeee292dd6931828111a8cd43e28a6a4f7f7b193167dbc4375098cb4a7a1c",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 111708
+    },
+    "frequency_generator": {
+      "bytes": 107524,
+      "sha256": "6d84f5123953f20487da6a065b743f75faa1cf347d76282b65af246e94dee102",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 103428
+    },
+    "lora_messages": {
+      "bytes": 119916,
+      "sha256": "ccd0a39b86851431a32ae7cea638a573d0237615f4c45eb46d14d3783f2f154b",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strlen"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 116092
+    },
+    "ota_update": {
+      "bytes": 115748,
+      "sha256": "588d665d730e3cd1d500ef65c0785d9750e0699a12a07084f575df8bb425c9ea",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 111652
+    },
+    "points_in_time": {
+      "bytes": 155144,
+      "sha256": "4e28d07ac67332633044e9e128ba0f0eacedd529cc4773c8ece7fa8fa142cbdb",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strlen",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 151068
+    },
+    "settings": {
+      "bytes": 131504,
+      "sha256": "cbcf8b7db26f35e003198aec2c9d1694c11cb70281b59492699b0c9ef90a456a",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 128040
+    },
+    "springboard": {
+      "bytes": 136248,
+      "sha256": "5abef23e4c30bc7f6b19de99df3e7317b1d5f0979419a9380b7e07548f2a0576",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 134520
+    },
+    "stopwatch": {
+      "bytes": 115756,
+      "sha256": "e3ebda4fad28f5096d4bca2f878efb4baac73f3cbf672890b9744129027959c7",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "strcmp",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 111660
+    },
+    "timecard": {
+      "bytes": 132536,
+      "sha256": "7377387534f233058bcc8c95a1563623633e559b3773a30a7a49b2705ff7ba15",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strncmp"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 128440
+    },
+    "waterfall": {
+      "bytes": 240824,
+      "sha256": "dbca100ed647c21500aa8cbff46e5b9c49a2febd1743daea98325a5fb823bc0e",
+      "imports": [
+        "free",
+        "malloc",
+        "memchr",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy",
+        "strlen"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 237968
+    },
+    "wifi_settings": {
+      "bytes": 120476,
+      "sha256": "d8a2309e583ec332f7a7f763522ea4bc89387fbcc65d9dcd80fe2e4c1fb6cbbb",
+      "imports": [
+        "free",
+        "malloc",
+        "memcmp",
+        "memcpy",
+        "memset",
+        "risc_runtime_get_api",
+        "snprintf",
+        "strcmp",
+        "strcpy"
+      ],
+      "exports": [
+        "app_main",
+        "app_module_fini",
+        "app_module_init"
+      ],
+      "prior_bytes": 116860
+    }
+  },
+  "complete_store_fit": {
+    "scope": "Software-only store-size and byte-roundtrip proof; not a product or flash image",
+    "files": 111,
+    "modified": [
+      "alarms.elf",
+      "app_store.elf",
+      "audio_spectrum.elf",
+      "battery.elf",
+      "ble_buttons.elf",
+      "ble_scanner.elf",
+      "ble_touchpad.elf",
+      "calculator.elf",
+      "countdown.elf",
+      "frequency_generator.elf",
+      "lora_messages.elf",
+      "ota_update.elf",
+      "points_in_time.elf",
+      "settings.elf",
+      "springboard.elf",
+      "stopwatch.elf",
+      "timecard.elf",
+      "waterfall.elf",
+      "wifi_settings.elf"
+    ],
+    "packing": {
+      "generator": "esp-idf-spiffsgen",
+      "upstream_commit": "38eeba213aa695aabfd6d89aa9f5078dbe5a94c3",
+      "generator_sha256": "5779792a4d98a12383233267511735769a201b5c2c79b582186a40c22b7c6466",
+      "config": {
+        "page_size": 256,
+        "page_ix_len": 2,
+        "block_size": 4096,
+        "block_ix_len": 2,
+        "meta_len": 4,
+        "obj_name_len": 32,
+        "obj_id_len": 2,
+        "span_ix_len": 2,
+        "packed": true,
+        "aligned": true,
+        "endianness": "little",
+        "use_magic": true,
+        "use_magic_len": true,
+        "aligned_obj_ix_tables": false
+      },
+      "order": "sorted ASCII path names",
+      "metadata": "zero",
+      "image_bytes": 5308416,
+      "file_count": 111,
+      "payload_bytes": 4701483,
+      "occupied_blocks": 1269,
+      "empty_blocks": 27,
+      "sha256": "386d4612c52d8fdc21ab19a2602227bf9203eee4f1d19bde907ed3e2b0ae19de",
+      "independent_round_trip_verified": true
+    },
+    "sha256": "386d4612c52d8fdc21ab19a2602227bf9203eee4f1d19bde907ed3e2b0ae19de",
+    "bytes": 5308416
+  }
+}

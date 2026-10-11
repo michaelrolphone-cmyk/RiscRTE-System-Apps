@@ -119,14 +119,27 @@ static void failures(void){
 static void timer_records(void){
  reset();uint32_t ms;assert(portable_sleep_timer_load(&kv,false,&ms)==PORTABLE_SLEEP_MISSING&&ms==60000);
  assert(portable_sleep_timer_load(&kv,true,&ms)==PORTABLE_SLEEP_MISSING&&ms==300000);
- assert(!portable_sleep_timer_save(&kv,false,0)&&!portable_sleep_timer_save(&kv,false,4999)&&!portable_sleep_timer_save(&kv,true,3600001));
- for(unsigned seconds=5;seconds<=3600;seconds++){
-  assert(portable_sleep_timer_save(&kv,false,seconds*1000));assert(portable_sleep_timer_load(&kv,false,&ms)==0&&ms==seconds*1000);
- }
- unsigned n=writes[1];assert(portable_sleep_timer_save(&kv,false,3600000)&&writes[1]==n);
- for(unsigned i=0;i<5;i++)for(unsigned bit=0;bit<8;bit++){
-  uint8_t before=records[1].data[i];records[1].data[i]^=(uint8_t)(1u<<bit);
-  assert(portable_sleep_timer_load(&kv,false,&ms)==PORTABLE_SLEEP_INVALID&&ms==60000);records[1].data[i]=before;
+ for(unsigned deep=0;deep<2;deep++){
+  unsigned index=deep?2:1,minimum=deep?60:5;uint32_t fallback=deep?300000:60000;
+  unsigned n=writes[index];
+  assert(!portable_sleep_timer_save(&kv,deep,1));
+  assert(!portable_sleep_timer_save(&kv,deep,(minimum-1)*1000));
+  assert(!portable_sleep_timer_save(&kv,deep,minimum*1000-1));
+  assert(!portable_sleep_timer_save(&kv,deep,minimum*1000+1));
+  assert(!portable_sleep_timer_save(&kv,deep,14400001));
+  assert(!portable_sleep_timer_save(&kv,deep,14401000)&&writes[index]==n);
+  /* Zero is the stored disabled value; callers load the no-deadline sentinel. */
+  assert(portable_sleep_timer_save(&kv,deep,0));
+  assert(portable_sleep_timer_load(&kv,deep,&ms)==PORTABLE_SLEEP_LOADED&&ms==UINT32_MAX);
+  for(unsigned seconds=minimum;seconds<=14400;seconds++){
+   assert(portable_sleep_timer_save(&kv,deep,seconds*1000));
+   assert(portable_sleep_timer_load(&kv,deep,&ms)==PORTABLE_SLEEP_LOADED&&ms==seconds*1000);
+  }
+  n=writes[index];assert(portable_sleep_timer_save(&kv,deep,14400000)&&writes[index]==n);
+  for(unsigned i=0;i<5;i++)for(unsigned bit=0;bit<8;bit++){
+   uint8_t before=records[index].data[i];records[index].data[i]^=(uint8_t)(1u<<bit);
+   assert(portable_sleep_timer_load(&kv,deep,&ms)==PORTABLE_SLEEP_INVALID&&ms==fallback);records[index].data[i]=before;
+  }
  }
 }
 int main(void){crossings();invalid_samples();failures();timer_records();puts("Low battery: crossing/reboot/manual overrides/charging/unknown/error and shared settings parity passed");}

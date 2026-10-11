@@ -30,7 +30,15 @@ bool portable_audio_suspend(void){
 #endif
 static bool reset_after_ack(void*c){(void)c;return acks==0;}
 static int32_t service_status(void*c,alarm_status_v1*out){(void)c;*out=alarm_fake;return ALARM_OK;}
-static int32_t service_step(void*c){(void)c;assert(display_settled&&!live_display&&!surface.frame);service_steps++;if(failed)normal_after_failure++;
+/* A selected async Watch token owns an immutable provider image, not a
+ * mutable app lease. SPI is drained at provider yield/poll boundaries. */
+static bool fixture_foreground_frame_safe(void) {
+#ifdef PORTABLE_ASYNC_RGB565
+ if(canvas_async)return !surface.frame && !frame_count && !failed && !canvas_uncertain;
+#endif
+ return display_settled && !live_display && !surface.frame;
+}
+static int32_t service_step(void*c){(void)c;assert(fixture_foreground_frame_safe());service_steps++;if(failed)normal_after_failure++;
 #ifdef PORTABLE_AUDIO_SESSION
  if(alarm_fake.state==ALARM_STATE_ALERT||alarm_fake.state==ALARM_STATE_DISMISSING||alarm_fake.state==ALARM_STATE_CUE)assert(!application_audio);
 #endif

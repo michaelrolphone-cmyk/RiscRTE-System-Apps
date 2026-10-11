@@ -1,0 +1,279 @@
+{
+  "source": "dddc4c577159c07fd05d4f1fe5d87c6f4100f838",
+  "dirty": true,
+  "scope": "Real Settings/controller/adapter; synthetic wall-clock input and display latency; no target hardware measurements",
+  "observations": {
+    "legacy": [
+      {
+        "display_latency_ms": 0,
+        "drag_duration_ms": 400,
+        "physical_samples": 45,
+        "samples_while_present_busy": 0,
+        "logical_polls": 45,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 16,
+        "drag_duration_ms": 400,
+        "physical_samples": 46,
+        "samples_while_present_busy": 0,
+        "logical_polls": 46,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 36,
+        "max_scroll_pixels": 119,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 40,
+        "drag_duration_ms": 400,
+        "physical_samples": 59,
+        "samples_while_present_busy": 24,
+        "logical_polls": 35,
+        "scroll_state_changes": 11,
+        "longest_logical_poll_ms": 60,
+        "max_scroll_pixels": 120,
+        "presentations": 12
+      },
+      {
+        "display_latency_ms": 80,
+        "drag_duration_ms": 400,
+        "physical_samples": 56,
+        "samples_while_present_busy": 28,
+        "logical_polls": 28,
+        "scroll_state_changes": 6,
+        "longest_logical_poll_ms": 100,
+        "max_scroll_pixels": 120,
+        "presentations": 7
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 400,
+        "physical_samples": 69,
+        "samples_while_present_busy": 56,
+        "logical_polls": 13,
+        "scroll_state_changes": 3,
+        "longest_logical_poll_ms": 260,
+        "max_scroll_pixels": 120,
+        "presentations": 4
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 80,
+        "physical_samples": 66,
+        "samples_while_present_busy": 42,
+        "logical_polls": 24,
+        "scroll_state_changes": 2,
+        "longest_logical_poll_ms": 260,
+        "max_scroll_pixels": 119,
+        "presentations": 3
+      }
+    ],
+    "legacy-san": [
+      {
+        "display_latency_ms": 0,
+        "drag_duration_ms": 400,
+        "physical_samples": 45,
+        "samples_while_present_busy": 0,
+        "logical_polls": 45,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 16,
+        "drag_duration_ms": 400,
+        "physical_samples": 46,
+        "samples_while_present_busy": 0,
+        "logical_polls": 46,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 36,
+        "max_scroll_pixels": 119,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 40,
+        "drag_duration_ms": 400,
+        "physical_samples": 59,
+        "samples_while_present_busy": 24,
+        "logical_polls": 35,
+        "scroll_state_changes": 11,
+        "longest_logical_poll_ms": 60,
+        "max_scroll_pixels": 120,
+        "presentations": 12
+      },
+      {
+        "display_latency_ms": 80,
+        "drag_duration_ms": 400,
+        "physical_samples": 56,
+        "samples_while_present_busy": 28,
+        "logical_polls": 28,
+        "scroll_state_changes": 6,
+        "longest_logical_poll_ms": 100,
+        "max_scroll_pixels": 120,
+        "presentations": 7
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 400,
+        "physical_samples": 69,
+        "samples_while_present_busy": 56,
+        "logical_polls": 13,
+        "scroll_state_changes": 3,
+        "longest_logical_poll_ms": 260,
+        "max_scroll_pixels": 120,
+        "presentations": 4
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 80,
+        "physical_samples": 66,
+        "samples_while_present_busy": 42,
+        "logical_polls": 24,
+        "scroll_state_changes": 2,
+        "longest_logical_poll_ms": 260,
+        "max_scroll_pixels": 119,
+        "presentations": 3
+      }
+    ],
+    "async": [
+      {
+        "display_latency_ms": 0,
+        "drag_duration_ms": 400,
+        "physical_samples": 45,
+        "samples_while_present_busy": 0,
+        "logical_polls": 45,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 16,
+        "drag_duration_ms": 400,
+        "physical_samples": 46,
+        "samples_while_present_busy": 0,
+        "logical_polls": 46,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 119,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 40,
+        "drag_duration_ms": 400,
+        "physical_samples": 47,
+        "samples_while_present_busy": 22,
+        "logical_polls": 47,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 12
+      },
+      {
+        "display_latency_ms": 80,
+        "drag_duration_ms": 400,
+        "physical_samples": 49,
+        "samples_while_present_busy": 26,
+        "logical_polls": 49,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 7
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 400,
+        "physical_samples": 57,
+        "samples_while_present_busy": 46,
+        "logical_polls": 57,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 4
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 80,
+        "physical_samples": 57,
+        "samples_while_present_busy": 34,
+        "logical_polls": 57,
+        "scroll_state_changes": 4,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 3
+      }
+    ],
+    "async-san": [
+      {
+        "display_latency_ms": 0,
+        "drag_duration_ms": 400,
+        "physical_samples": 45,
+        "samples_while_present_busy": 0,
+        "logical_polls": 45,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 16,
+        "drag_duration_ms": 400,
+        "physical_samples": 46,
+        "samples_while_present_busy": 0,
+        "logical_polls": 46,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 119,
+        "presentations": 21
+      },
+      {
+        "display_latency_ms": 40,
+        "drag_duration_ms": 400,
+        "physical_samples": 47,
+        "samples_while_present_busy": 22,
+        "logical_polls": 47,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 12
+      },
+      {
+        "display_latency_ms": 80,
+        "drag_duration_ms": 400,
+        "physical_samples": 49,
+        "samples_while_present_busy": 26,
+        "logical_polls": 49,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 7
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 400,
+        "physical_samples": 57,
+        "samples_while_present_busy": 46,
+        "logical_polls": 57,
+        "scroll_state_changes": 20,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 4
+      },
+      {
+        "display_latency_ms": 240,
+        "drag_duration_ms": 80,
+        "physical_samples": 57,
+        "samples_while_present_busy": 34,
+        "logical_polls": 57,
+        "scroll_state_changes": 4,
+        "longest_logical_poll_ms": 20,
+        "max_scroll_pixels": 120,
+        "presentations": 3
+      }
+    ]
+  }
+}

@@ -98,6 +98,23 @@ static bool alarm_audio_pump(void) {
 #else
 #define alarm_audio_pump() portable_alarm_pump(&alarms)
 #endif
+/* Native cancellation stops output without acknowledging the occurrence or
+ * saving a draft. The surrounding poll owns the eventual display barrier. */
+static int alarm_native_cancel(bool *consumed) {
+ if(!risc_runtime_exit_requested_v1(rt))return 0;
+ *consumed=true;
+ bool stopped=portable_alarm_failure_stop(&alarms);
+ alarm_failed_cleaned=true;
+ if(stopped)return 1;
+ failed=true;
+#ifdef PORTABLE_ASYNC_RGB565
+ if(canvas_async){(void)canvas_retain();return -1;}
+#endif
+ if(rt->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE && rt->retain_invocation && rt->retain_invocation()) {
+  native_sleep_retained=true;return -1;
+ }
+ for(;;)rt->yield_ms(50);
+}
 /* Service labels are copied status, never retained storage pointers. Accept
  * bounded printable titles; a malformed provider title keeps the old fallback. */
 static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
@@ -145,7 +162,7 @@ static bool alarm_restore(const uint16_t *saved) {
     clear();if(failed)return false;
     for(unsigned y=0;y<info.height;y++)memcpy((uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,
         saved+(size_t)y*info.width,info.width*2);
-    present(false);return !failed && display_settled;
+    present(false);return !failed && foreground_frame_ready();
 }
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
 /* A failed radio cleanup forbids storage-backed service calls. Output-only
@@ -171,7 +188,7 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif
-    if(failed || !display_settled || surface.frame)return alarm_failure();
+    if(!canvas_progress() || !foreground_frame_ready())return alarm_failure();
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif
@@ -188,6 +205,9 @@ static bool alarm_foreground(bool *consumed) {
             cue_seen=true;*consumed=true;
         }
         rt->yield_ms(portable_alarm_cue(&alarms)?20:1);
+        if(!canvas_progress())return alarm_failure();
+        int cancellation=alarm_native_cancel(consumed);
+        if(cancellation)return cancellation>0;
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return !failed;
 #endif
@@ -221,8 +241,13 @@ static bool alarm_foreground(bool *consumed) {
     bool redraw=true;
     for(;;) {
         if(redraw){alarm_draw();redraw=false;}
-        if(failed || !display_settled){alarm_modal=false;return alarm_failure();}
-        rt->yield_ms(20);input_service();
+        if(!canvas_progress() || !foreground_frame_ready()){alarm_modal=false;return alarm_failure();}
+        rt->yield_ms(20);
+        if(!canvas_progress()){alarm_modal=false;return alarm_failure();}
+        int cancellation=alarm_native_cancel(consumed);
+        if(cancellation<0){alarm_modal=false;return false;}
+        if(cancellation>0)break;
+        input_service();
         if(failed){alarm_modal=false;return alarm_failure();}
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
@@ -249,7 +274,7 @@ static bool alarm_foreground(bool *consumed) {
                 alarm_error_seen=true;alarm_seen_error=alarms.status.error;alarm_seen_snapshot=alarms.status.snapshot;break;
             }
         }
-        if(failed || !display_settled || surface.frame){alarm_modal=false;return alarm_failure();}
+        if(!canvas_progress() || !foreground_frame_ready()){alarm_modal=false;return alarm_failure();}
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
