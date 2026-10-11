@@ -20,3 +20,9 @@ Validation: real catalog/worker fixture covers 65 durable-state interruption cut
 execute a newly registered SD app twice through the private KV broker and enforce
 cold readiness. Target Xtensa catalog links successfully. Hardware qualification
 and final product composition remain separate.
+
+Catalog 0.7.1 recognizes Runtime 0.2.17's legacy-native settings state. Delivered
+namespaces that already exist in NVS keep their original backend and key count;
+they are available after restoration and are never checkpointed into the new
+16-key SD snapshot. New namespaces still select SD-first settings. The actual
+Runtime fixture preserves 32 existing values and grows the namespace to 65 keys.

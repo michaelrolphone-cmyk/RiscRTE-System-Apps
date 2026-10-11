@@ -3,16 +3,17 @@ alignas(SettingsCheckpoint) unsigned char settingsMemory[sizeof(SettingsCheckpoi
 bool settingsApi(){return native&&native->struct_size>=sizeof(*native)&&native->settings_capacity&&native->settings_status&&native->settings_restore&&native->settings_snapshot&&native->settings_ack;}
 bool settingsReady(const Package&p){
  if(!p.settingsNeeded||!p.namespaceSlot||!settingsApi())return true;
- const auto status=native->settings_status(native->context,p.namespaceSlot);return status==1||status==2;
+ const auto status=native->settings_status(native->context,p.namespaceSlot);return status==1||status==2||status==4;
 }
+bool settingsPending(uint32_t slot){const auto status=native->settings_status(native->context,slot);return status!=1&&status!=4;}
 bool settingsWanted(){
  if(!settingsApi())return false;
- for(unsigned i=0;i<currentCount;++i)if(current[i].settingsNeeded&&current[i].namespaceSlot&&native->settings_status(native->context,current[i].namespaceSlot)!=1)return true;
+ for(unsigned i=0;i<currentCount;++i)if(current[i].settingsNeeded&&current[i].namespaceSlot&&settingsPending(current[i].namespaceSlot))return true;
  return false;
 }
 int32_t settingsStep(const risc_storage_volume_api_v1*v){
  if(!settingsCheckpoint){
-  for(unsigned i=0;i<currentCount;++i){const auto&p=current[i];if(!p.settingsNeeded||!p.namespaceSlot||native->settings_status(native->context,p.namespaceSlot)==1)continue;
+  for(unsigned i=0;i<currentCount;++i){const auto&p=current[i];if(!p.settingsNeeded||!p.namespaceSlot||!settingsPending(p.namespaceSlot))continue;
    settingsCheckpoint=new(settingsMemory)SettingsCheckpoint();
    if(!settingsCheckpoint->start(native,v,p.namespaceSlot,p.view.id)){settingsCheckpoint->~SettingsCheckpoint();settingsCheckpoint=nullptr;installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
    volume=v;break;
