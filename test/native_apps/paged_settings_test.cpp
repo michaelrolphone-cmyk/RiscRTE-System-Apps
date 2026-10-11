@@ -35,5 +35,14 @@ int main(){using namespace scalable_fixture;using State=RiscPackages::InstalledS
  staged_fixture::exported=true;assert(!S::put(values,backend,3000,"new","kept",4));auto pending=deltas;
  RiscPackages::PagedSettingsCheckpoint excluded;assert(!excluded.start(&fixture::installation,staged_fixture::volume,1,"app")&&deltas==pending);staged_fixture::exported=false;
  values.clear();RiscPackages::PagedSettingsCheckpoint replay;assert(replay.start(&fixture::installation,staged_fixture::volume,1,"app"));finish(replay);assert(replay.state()==State::Done&&values.count==99&&deltas.empty());char out[8];uint32_t n;assert(!S::get(values,"new",out,sizeof out,&n)&&std::string(out,n)=="kept");
+ // Media absence must retain the native delta; reinsertion replays it.
+ assert(!S::put(values,backend,3000,"removed","safe",4));pending=deltas;
+ fixture::present=false;RiscPackages::PagedSettingsCheckpoint absent;
+ assert(absent.start(&fixture::installation,staged_fixture::volume,1,"app"));finish(absent);
+ assert(absent.state()==State::Failed&&deltas==pending);
+ fixture::present=true;values.clear();RiscPackages::PagedSettingsCheckpoint inserted;
+ assert(inserted.start(&fixture::installation,staged_fixture::volume,1,"app"));finish(inserted);
+ assert(inserted.state()==State::Done&&deltas.empty());
+ assert(!S::get(values,"removed",out,sizeof out,&n)&&std::string(out,n)=="safe");
  printf("Paged SD checkpoint: %u interruption boundaries; 98 existing values including 2048-byte opaque value, copied-worker I/O, cold recovery, export exclusion, native delta replay and immutable page verification PASS\n",ticks);
 }
