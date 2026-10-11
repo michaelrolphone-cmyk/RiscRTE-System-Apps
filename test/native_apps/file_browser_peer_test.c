@@ -24,11 +24,11 @@ int main(int argc,char**argv){const char*mode=argc>1?argv[1]:"transfer";test_dir
  if(!strcmp(mode,"upload")){fpeer_choice=fpeer_status.count+1;fpeer_action();peer_step();peer_until(PEER_READY);peer_backend_uploaded();}
  if(!strcmp(mode,"cancel")||!strcmp(mode,"expiry")){
   if(!strcmp(mode,"expiry"))test_ticks+=300001;else (void)fsh_back();
-  for(unsigned i=0;i<30000&&fsh_phase!=FSH_OFF;i++)peer_step();assert(fsh_phase==FSH_OFF&&!fpeer&&!handler_launches&&!retains);assert(portable_file_browser_close());app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);peer_backend_end();puts("Actual peer UI stop/expiry cleanup PASS");return 0;
+  for(unsigned i=0;i<30000&&fsh_phase!=FSH_OFF;i++){peer_step();}assert(fsh_phase==FSH_OFF&&!fpeer&&!handler_launches&&!retains);assert(portable_file_browser_close());app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);peer_backend_end();puts("Actual peer UI stop/expiry cleanup PASS");return 0;
  }
  if(!strcmp(mode,"unavailable"))peer_backend_local_state(RISC_STORAGE_STATE_UNAVAILABLE);
  fpeer_choice=0;fpeer_action();assert(fpeer_page==1);fpeer_choice=1;fpeer_action(); /* download and open */
- if(!strcmp(mode,"unavailable")){peer_step();assert(!handler_launches&&!fpeer_status.published_path[0]);(void)fsh_back();for(unsigned i=0;i<30000&&fsh_phase!=FSH_OFF;i++)peer_step();assert(!handler_launches&&!fpeer&&!retains);assert(portable_file_browser_close());app_module_fini();assert(!test_grants);peer_backend_end();puts("Actual peer UI unavailable/exported local media refuses download and launch PASS");return 0;}
- for(unsigned i=0;i<30000&&!handler_launches;i++)peer_step();assert(handler_launches==1&&fb_terminal&&!fpeer&&!owned&&!retains);app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);peer_backend_end();
+ if(!strcmp(mode,"unavailable")){peer_step();assert(!handler_launches&&!fpeer_status.published_path[0]);(void)fsh_back();for(unsigned i=0;i<30000&&fsh_phase!=FSH_OFF;i++){peer_step();}assert(!handler_launches&&!fpeer&&!retains);assert(portable_file_browser_close());app_module_fini();assert(!test_grants);peer_backend_end();puts("Actual peer UI unavailable/exported local media refuses download and launch PASS");return 0;}
+ for(unsigned i=0;i<30000&&!handler_launches;i++){peer_step();}assert(handler_launches==1&&fb_terminal&&!fpeer&&!owned&&!retains);app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);peer_backend_end();
  puts("Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS");return 0;
 }

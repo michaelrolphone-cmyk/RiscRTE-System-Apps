@@ -16,7 +16,7 @@ for source in lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c lib/PortableApps/src/P
 done
 for profile in rgb paper;do
  selected=();if [[ "$profile" == paper ]];then selected+=(-DFILE_BROWSER_PAPER_PROFILE);fi
- "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -c test/native_apps/file_browser_peer_test.c -o "$output/$profile.o"
+ "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -Wno-unused-function -c test/native_apps/file_browser_peer_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
  for scenario in direct transfer upload cancel expiry unavailable owned;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
 done
