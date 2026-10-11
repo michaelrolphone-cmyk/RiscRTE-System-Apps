@@ -62,7 +62,23 @@ static int32_t net_cancel(void*c,uint32_t id){(void)c;live_check();assert(owned&
 static int32_t net_lease(void*c,uint32_t*id){(void)c;live_check();++lease_calls;*id=lease_busy?0:9;return lease_busy?RISC_RADIO_BUSY:RISC_RADIO_ACCEPTED;}
 static int32_t net_end(void*c,uint32_t id){(void)c;live_check();assert(id==9);++end_calls;return end_busy?RISC_RADIO_AGAIN:RISC_RADIO_ACCEPTED;}
 static const wifi_async_v1 wifi={.base={.api_version=1,.struct_size=sizeof(wifi),.status=net_status,.rssi=net_rssi,.addresses=net_addresses},.async_tag=RISC_RADIO_ASYNC_TAG,.async_version=1,.begin=net_begin,.poll=net_poll,.cancel=net_cancel,.service_begin=net_lease,.service_end=net_end};
-static int32_t entropy_fill(void*c,void*out,uint32_t n){(void)c;live_check();assert(n==32);for(unsigned i=0;i<n;i++)((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);return 0;}
+#ifdef FILE_DIRECT_FIXTURE
+static bool direct_ble_on,direct_ble_initial_on,direct_ble_enable_fail,direct_entropy_busy;
+static unsigned direct_ble_enables,direct_ble_disables,direct_entropy_calls;
+static bool direct_ble_set(void*c,bool on){
+ (void)c;live_check();assert(!fsh_setup_live());
+ if(on){++direct_ble_enables;if(direct_ble_enable_fail)return false;}
+ else ++direct_ble_disables;
+ direct_ble_on=on;return true;
+}
+static bool direct_ble_status(void*c,uint8_t*out){(void)c;live_check();*out=direct_ble_on?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;return true;}
+static const portable_bluetooth_control_v1 direct_ble={1,sizeof(direct_ble),NULL,NULL,NULL,direct_ble_set,direct_ble_status};
+#endif
+static int32_t entropy_fill(void*c,void*out,uint32_t n){(void)c;live_check();assert(n==32);
+#ifdef FILE_DIRECT_FIXTURE
+ assert(direct_ble_on);++direct_entropy_calls;if(direct_entropy_busy)return RISC_ENTROPY_SOURCE_BUSY;
+#endif
+ for(unsigned i=0;i<n;i++)((uint8_t*)out)[i]=(uint8_t)(i+test_ticks);return 0;}
 static const risc_entropy_source_v1 entropy={1,sizeof(entropy),(void*)1,entropy_fill};
 static int32_t listen_tcp(void*c,const risc_tcp_connection_listen_v1*b,uint64_t*t){(void)c;live_check();assert(b->port==8080&&(b->address[3]==4||private_test())&&!listeners&&!fb_grant.api);*t=7;listeners++;return 0;}
 static int32_t accept_tcp(void*c,uint64_t t,uint64_t*out){(void)c;live_check();assert(t==7&&listeners==1);*out=0;return RISC_TCP_CONNECTION_WOULD_BLOCK;}
@@ -91,6 +107,9 @@ static bool get_cap(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_
  else if(!strcmp(n,"net.wifi")){assert(id==15);g->api=&wifi;}
  else if(!strcmp(n,RISC_APP_DATA_EXPORT_CAPABILITY)){assert(id==0&&!fb_grant.api);g->api=&export_api;}
  else if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY)){assert(id==0);g->api=&tcp;}
+#ifdef FILE_DIRECT_FIXTURE
+ else if(!strcmp(n,"bluetooth.hci")){assert(id==16);g->api=&direct_ble;}
+#endif
  else if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY)){assert(id==0);g->api=&entropy;}
 #ifdef FILE_SETUP_TEST
  else if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){assert(id==0&&!setup_owned);g->api=&setup_api;g->slot=35;g->generation=1;}
@@ -105,6 +124,9 @@ static bool release_cap(risc_runtime_capability_v1*g){
 #ifdef FILE_SETUP_TEST
  if(g->api==&setup_api){assert(!setup_owned);setup_releases++;test_grants--;memset(g,0,sizeof(*g));g->struct_size=sizeof(*g);return true;}
  assert(!setup_cleanup);
+#endif
+#ifdef FILE_DIRECT_FIXTURE
+ if(g->api==&direct_ble)assert(direct_ble_on==direct_ble_initial_on);
 #endif
  live_check();if(g->api==&wifi)assert(!owned&&!listeners);return test_release(g);}
 static bool retain_owner(void){retains++;return true;}

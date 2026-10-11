@@ -15,5 +15,5 @@ for profile in rgb paper;do
  selected=();if [[ "$profile" == paper ]];then selected+=(-DFILE_BROWSER_PAPER_PROFILE);fi
  "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -c test/native_apps/file_browser_direct_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
- for scenario in complete refuse cancel expiry active-expiry;do "$output/$profile" "$scenario";done
+ for scenario in complete initial-on refuse cancel expiry active-expiry no-peer radio-fail entropy-busy $(seq -f 'stop-%g' 0 35);do "$output/$profile" "$scenario";done
 done

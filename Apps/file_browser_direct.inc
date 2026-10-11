@@ -1,9 +1,36 @@
 /* Shared direct-device orchestration. No saved profile is read or written. */
 static void fsh_direct_fail(const char*message){fsh_error(message);fsh_phase=FSH_STOPPING;}
+// Keep the already-declared control grant pinned until broker cleanup. The
+// broker records ON as its restore state; we restore the original power state
+// only after its checked close. No saved Bluetooth preference is changed.
+static bool fsh_direct_power_prepare(void){
+ if(fsh_ble_power_ready)return true;
+ if(!fsh_ble_power_grant.api){
+  if(!fsh_acquire("bluetooth.hci",16,&fsh_ble_power_grant))return false;
+  return false;
+ }
+ const portable_bluetooth_control_v1*b=fsh_ble_power_grant.api;
+ if(b->api_version!=1||b->struct_size<sizeof(*b)||!b->set_enabled||!b->status){
+  fsh_direct_fail("Bluetooth power control unavailable");return false;
+ }
+ uint8_t state=PORTABLE_BLUETOOTH_RETAINED;
+ if(!b->status(b->context,&state)||!fsh_owner(NULL)||state>PORTABLE_BLUETOOTH_ON){fsh_retain();return false;}
+ if(state==PORTABLE_BLUETOOTH_OFF){
+  fsh_ble_restore_off=true;
+  bool enabled=b->set_enabled(b->context,true);
+  if(!fsh_owner(NULL)){fsh_retain();return false;}
+  if(!enabled){fsh_direct_fail("Bluetooth could not start");return false;}
+  state=PORTABLE_BLUETOOTH_RETAINED;
+  if(!b->status(b->context,&state)||!fsh_owner(NULL)||state!=PORTABLE_BLUETOOTH_ON){fsh_retain();return false;}
+ }
+ fsh_ble_power_ready=true;return true;
+}
 static void fsh_direct_tick(uint64_t now){
+ if(fsh_direct_stage<6&&now>=10000u){fsh_direct_fail("Private setup timed out");return;}
  if(!(fsh_radio_flags&PORTABLE_RADIO_BLUETOOTH)){fsh_direct_fail("Enable Bluetooth in Quick Actions first");return;}
  if(!portable_file_browser_setup_service_supported()){fsh_direct_fail("Direct setup needs a cooperative display");return;}
  if(fsh_direct_stage==0){
+  if(!fsh_direct_power_prepare())return;
   if(!fsh_acquire("net.wifi",15,&fsh_wifi_grant))return;
   portable_network_session_init(&fsh_network,fsh_wifi_grant.api,NULL,fsh_owner,NULL);fsh_network_initialized=true;
   fsh_direct_stage=1;return;

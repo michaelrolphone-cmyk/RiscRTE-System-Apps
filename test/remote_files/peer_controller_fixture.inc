@@ -5,9 +5,9 @@ struct PeerControllerFixture {
  static PeerControllerFixture*active;
  Fixture f;unsigned grants=0,bleState=RISC_SETUP_OFF,closePending=2;bool acquiredBle=false,token=false,cleanupOnly=false;
  wifi_async_v1 wifi{};risc_key_value_v1 kv{1,sizeof(kv),nullptr,nullptr,nullptr};
- bool privateNetwork=false,networkLive=false,networkCancelled=false;unsigned joins=0;
+ bool privateNetwork=false,networkLive=false,networkCancelled=false,noPeers=false,entropyBusy=false;unsigned joins=0,entropyCalls=0;uint64_t discoveryDeadline=0;
  risc_runtime_api_v1 runtime{};risc_bluetooth_session_setup_v1 ble{};
- risc_entropy_source_v1 entropy{1,sizeof(entropy),this,[](void*,void*out,uint32_t n)->int32_t{assert(n==16);memset(out,55,n);return 0;}};
+ risc_entropy_source_v1 entropy{1,sizeof(entropy),this,[](void*c,void*out,uint32_t n)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(n==16&&p.token&&p.acquiredBle);++p.entropyCalls;if(p.entropyBusy)return RISC_ENTROPY_SOURCE_BUSY;memset(out,55,n);return 0;}};
  portable_peer_files*peer=nullptr;portable_peer_status status{};
  PeerControllerFixture(){active=this;f.client.end();f.run();runtime.api_version=1;runtime.struct_size=sizeof(runtime);
  runtime.acquire=[](const char*c,uint32_t v,uint64_t i,risc_runtime_capability_v1*g){auto&p=*active;assert(v==1);if(!strcmp(c,"net.wifi")){assert(i==15);g->api=&p.wifi;}else if(!strcmp(c,"storage.key-value")){assert(i==6);g->api=&p.kv;}else if(!strcmp(c,RISC_TCP_CONNECTION_CAPABILITY))g->api=&p.f.link.tcp;else if(!strcmp(c,RISC_ENTROPY_SOURCE_CAPABILITY))g->api=&p.entropy;else if(!strcmp(c,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY)){g->api=&p.ble;p.acquiredBle=true;}else return false;p.grants++;return true;};
@@ -23,10 +23,10 @@ struct PeerControllerFixture {
  ble.network_tag=RISC_SESSION_NETWORK_TAG;
  ble.peer_network=[](void*c,uint64_t,risc_bluetooth_network_offer_v1*out)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);if(!p.privateNetwork)return RISC_SETUP_INVALID;out->struct_size=sizeof(*out);p.ble.peer_descriptor(c,7,&out->endpoint);strcpy(out->ssid,"Files-fixture");strcpy(out->password,"private-password-fixture");memcpy(out->address,"\xc0\xa8\x04\x01",4);return 0;};
  ble.api_version=1;ble.struct_size=sizeof(ble);ble.context=this;ble.peer_tag=RISC_SESSION_PEER_TAG;
- ble.discover=[](void*c,uint32_t n,uint64_t*t)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(n==300000&&p.acquiredBle);p.token=true;*t=7;p.bleState=RISC_SETUP_DISCOVERING;return p.cleanupOnly?RISC_SETUP_CLEANUP_PENDING:0;};
- ble.poll=[](void*c,uint64_t t,uint32_t n)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(!p.cleanupOnly&&p.token&&t==7&&n<=2);return 0;};
+ ble.discover=[](void*c,uint32_t n,uint64_t*t)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(n==300000&&p.acquiredBle);p.token=true;p.discoveryDeadline=p.f.now+n;*t=7;p.bleState=RISC_SETUP_DISCOVERING;return p.cleanupOnly?RISC_SETUP_CLEANUP_PENDING:0;};
+ ble.poll=[](void*c,uint64_t t,uint32_t n)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(!p.cleanupOnly&&p.token&&t==7&&n<=2);return p.f.now>=p.discoveryDeadline?RISC_SETUP_EXPIRED:0;};
  ble.status=[](void*c,uint64_t t,risc_bluetooth_session_setup_status_v1*out)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(!p.cleanupOnly&&p.token&&t==7);out->state=p.bleState;out->pairing_generation=9;out->pairing_number=123456;return 0;};
- ble.peer=[](void*c,uint64_t t,uint32_t i,risc_bluetooth_session_peer_v1*out)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(p.token&&t==7);if(i)return -1;out->peer_id=123;strcpy(out->name,"Watch Files");return 0;};
+ ble.peer=[](void*c,uint64_t t,uint32_t i,risc_bluetooth_session_peer_v1*out)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(p.token&&t==7);if(i||p.noPeers)return -1;out->peer_id=123;strcpy(out->name,"Watch Files");return 0;};
  ble.select_peer=[](void*c,uint64_t t,uint32_t id)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(p.token&&t==7&&id==123);p.bleState=RISC_SETUP_PAIR_CONFIRM;return 0;};
  ble.confirm_pairing=[](void*c,uint64_t t,uint32_t gen,uint32_t number,bool accept)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(p.token&&t==7&&gen==9&&number==123456);p.bleState=accept?RISC_SETUP_READY:RISC_SETUP_ENDED;return 0;};
  ble.peer_descriptor=[](void*c,uint64_t t,risc_bluetooth_session_descriptor_v1*out)->int32_t{auto&p=*static_cast<PeerControllerFixture*>(c);assert(p.token&&t==7&&p.bleState==RISC_SETUP_READY);*out={sizeof(*out),RISC_SESSION_HTTP,250000,"http://192.168.2.7:8080/","files","test-password","fixture"};if(p.privateNetwork)strcpy(out->url,"http://192.168.4.1:8080/");if(const char*path=getenv("PEER_BLE_DESCRIPTOR")){FILE*in=fopen(path,"rb");assert(in&&fread(out,1,sizeof(*out),in)==sizeof(*out));fclose(in);}return 0;};
@@ -41,6 +41,14 @@ struct PeerControllerFixture {
 };
 PeerControllerFixture*PeerControllerFixture::active=nullptr;
 static void controllerTests(){
+ {PeerControllerFixture p;p.noPeers=true;p.until(PEER_DISCOVERING);
+  assert(p.entropyCalls==1&&p.token&&p.acquiredBle&&!p.joins);
+  for(unsigned i=0;i<100;++i)p.tick();
+  assert(p.status.state==PEER_DISCOVERING&&!p.status.count&&!p.status.message[0]);
+  p.f.now+=300001;p.until(PEER_OFF);assert(strstr(p.status.message,"expired")&&!p.grants);p.stop();}
+ {PeerControllerFixture p;p.entropyBusy=true;p.until(PEER_OFF);
+  assert(p.entropyCalls&&strstr(p.status.message,"startup timed out")&&!p.grants&&!p.token);p.stop();}
+
  // Every pre-authentication stop point must finish despite repeated UI stop requests.
  for(unsigned at=0;at<14;at++){PeerControllerFixture p;for(unsigned i=0;i<at;i++)p.tick();p.stop();}
  {PeerControllerFixture p;p.cleanupOnly=true;p.until(PEER_OFF);assert(!p.token&&!p.grants);}

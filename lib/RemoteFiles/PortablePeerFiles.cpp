@@ -21,8 +21,8 @@ risc_bluetooth_session_setup_status_v1 setup{};
  risc_bluetooth_session_peer_v1 peers[RISC_SESSION_PEERS_MAX]{};
  portable_peer_status status{};
 uint8_t random[16]{};
-uint64_t token=0,now=0,copiedAt=0;
- enum class Step{Off,Tcp,Entropy,Random,ReleaseEntropy,Ble,Discover,Scan,ReadDescriptor,ReadNetwork,CloseBle,ReleaseBle,Wifi,Store,Join,Network,Authenticate,Handshake,Browse,Operation,StopRemote,StopClient,StopBle,CloseNetwork,StopGrants}step=Step::Off;
+uint64_t token=0,now=0,copiedAt=0,startedAt=0;
+ enum class Step{Off,Tcp,Ble,Discover,Entropy,Random,ReleaseEntropy,Scan,ReadDescriptor,ReadNetwork,CloseBle,ReleaseBle,Wifi,Store,Join,Network,Authenticate,Handshake,Browse,Operation,StopRemote,StopClient,StopBle,CloseNetwork,StopGrants}step=Step::Off;
  enum class Command{None,Select,Confirm,List,Download,Upload,Mutate}command=Command::None;
  uint32_t selected=0,generation=0,number=0;
 bool replace=false,accept=false,stopping=false;
@@ -95,7 +95,7 @@ void*p=h->allocate(sizeof(portable_peer_files));
 return p?new(p)portable_peer_files(r,*h):nullptr;
 }
 extern "C" bool portable_peer_start(portable_peer_files*p,uint64_t now){if(!p||p->step!=portable_peer_files::Step::Off||!p->owner())return false;
-p->now=now;
+p->now=p->startedAt=now;
 p->status={};
 p->status.state=PEER_STARTING;
 p->stopping=false;
@@ -110,6 +110,7 @@ if(now<p->now){p->fail("Peer clock moved backwards");
 }p->now=now;
 using S=portable_peer_files::Step;
 using C=portable_peer_files::Command;
+ if(p->step>=S::Tcp&&p->step<=S::ReleaseEntropy&&now-p->startedAt>=10000u)p->fail("Peer startup timed out");
  if(p->leaseEnding){int rc=portable_network_session_service_end(&p->network);if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();else if(rc==PORTABLE_NETWORK_SERVICE_OK)p->leaseEnding=false;return;}
  bool lease=false;
  if(p->networkReady && p->step>=S::Authenticate && p->step<=S::StopClient){
@@ -118,7 +119,7 @@ using C=portable_peer_files::Command;
  switch(p->step){
  case S::Tcp:if(p->acquire(RISC_TCP_CONNECTION_CAPABILITY,p->tcp)){auto*t=static_cast<const risc_tcp_connection_v1*>(p->tcp.api);
 if(t->api_version!=1||t->struct_size<sizeof(*t)||t->connect_tag!=RISC_TCP_CONNECTION_CONNECT_TAG||!t->connect||!t->connected)p->fail("This Runtime lacks peer TCP support");
-else p->step=S::Entropy;
+else p->step=S::Ble;
 }break;
  case S::Entropy:if(p->acquire(RISC_ENTROPY_SOURCE_CAPABILITY,p->entropy))p->step=S::Random;
 break;
@@ -136,7 +137,7 @@ break;
 }p->step=S::ReleaseEntropy;
 break;
 }
- case S::ReleaseEntropy:if(p->release(p->entropy))p->step=S::Ble;
+ case S::ReleaseEntropy:if(p->release(p->entropy)){p->step=S::Scan;p->status.state=PEER_DISCOVERING;}
 break;
  case S::Ble:if(p->acquire(RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY,p->ble)){auto*b=static_cast<const risc_bluetooth_session_setup_v1*>(p->ble.api);
 if(b->api_version!=1||b->struct_size<offsetof(risc_bluetooth_session_setup_v1,network_tag)||b->peer_tag!=RISC_SESSION_PEER_TAG||!b->discover||!b->peer||!b->select_peer||!b->peer_descriptor||!b->poll||!b->status||!b->close||!b->confirm_pairing){p->fail("This Bluetooth provider lacks peer discovery");
@@ -148,8 +149,8 @@ p->step=S::Discover;
 if(!p->brokerResult(rc))break;
 if(!p->token){p->retain();
 break;
-}p->step=S::Scan;
-p->status.state=PEER_DISCOVERING;
+}// Discovery claims/enables BLE before entropy; no peer or router is required.
+p->step=S::Entropy;
 break;
 }
  case S::Scan:{

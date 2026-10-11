@@ -11,10 +11,12 @@
 #ifdef PORTABLE_FILE_SETUP
 #include "PortableFileSetup.h"
 #include "RiscEntropySourceV1.h"
+#include "PortableBluetoothControl.h"
 static bool fsh_direct=true,fsh_private_started;
 static unsigned fsh_direct_stage;
 static risc_bluetooth_network_offer_v1 fsh_offer;
-static risc_runtime_capability_v1 fsh_entropy_grant;
+static risc_runtime_capability_v1 fsh_entropy_grant,fsh_ble_power_grant;
+static bool fsh_ble_restore_off,fsh_ble_power_ready;
 static bool fsh_setup_close(void);
 static void fsh_setup_fence(void);
 static void fsh_setup_wipe(void*,size_t);
@@ -117,6 +119,21 @@ bool portable_file_browser_services_end(void){
  fsh_service_ending=rc==PORTABLE_NETWORK_SERVICE_PENDING;
  return true; /* A pending lease end is drained before any later service work. */
 }
+#ifdef PORTABLE_FILE_SETUP
+static bool fsh_ble_power_close(void){
+ if(!fsh_ble_power_grant.api)return true;
+ const portable_bluetooth_control_v1*b=fsh_ble_power_grant.api;
+ if(fsh_ble_restore_off){
+  bool off=b->set_enabled(b->context,false);
+  if(!fsh_owner(NULL)){fsh_retain();return false;}
+  uint8_t state=PORTABLE_BLUETOOTH_RETAINED;
+  if(!off||!b->status(b->context,&state)||!fsh_owner(NULL)||state!=PORTABLE_BLUETOOTH_OFF){fsh_retain();return false;}
+ }
+ if(!fsh_release(&fsh_ble_power_grant))return false;
+ fsh_ble_restore_off=fsh_ble_power_ready=false;
+ return true;
+}
+#endif
 static bool fsh_close(void){
  /* Successful handoff marks the browser terminal after all sharing resources
   * closed. Fini may recheck this pure completed state without reacquiring. */
@@ -148,7 +165,7 @@ static bool fsh_close(void){
   fsh_network_initialized=false;memset(&fsh_link,0,sizeof(fsh_link));
  }
  #ifdef PORTABLE_FILE_SETUP
- if(!fsh_release(&fsh_entropy_grant))return false;
+ if(!fsh_release(&fsh_entropy_grant)||!fsh_ble_power_close())return false;
  fsh_setup_wipe(&fsh_offer,sizeof(fsh_offer));fsh_private_started=false;fsh_direct_stage=0;
 #endif
  if(!fsh_release(&fsh_wifi_grant)||!fsh_release(&fsh_store_grant))return false;
