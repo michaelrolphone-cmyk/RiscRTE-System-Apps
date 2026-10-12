@@ -3,6 +3,8 @@ on:
   push:
     branches: [feat/wifi-scene-manager]
     paths: [.github/workflows/wifi-scene-sources.yml]
+  pull_request:
+    paths: [.github/workflows/wifi-scene-sources.yml]
   workflow_dispatch:
 permissions:
   contents: read
