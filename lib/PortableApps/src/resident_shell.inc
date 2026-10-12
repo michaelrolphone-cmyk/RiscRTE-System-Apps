@@ -168,7 +168,7 @@ int portable_resident_run_foreground(const char *path) {
  do {
   resident_launch_pending=NULL;resident_child_active=true;
 #ifdef PORTABLE_RESIDENT_POLICY
-  resident_policy_requested=false;last_activity=millis_now();
+  resident_policy_requested=resident_policy_input_continuity=false;last_activity=millis_now();
   quick_launch_pending=handoff_requested=false;
   if(native_custody_retained)return -1;
 #endif

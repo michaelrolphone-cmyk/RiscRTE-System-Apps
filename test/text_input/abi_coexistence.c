@@ -43,6 +43,16 @@ SAME_OFFSET(old_extended_api,risc_text_entry_api_v1_extended,open_extended);
 SAME_OFFSET(old_extended_api,risc_text_entry_api_v1_extended,poll_extended);
 _Static_assert(offsetof(risc_text_entry_api_v1_long,base)==0,"extended remains prefix");
 _Static_assert(offsetof(risc_text_entry_api_v1_long,long_tag)==sizeof(old_extended_api),"long suffix follows frozen extension");
+/* The checkpoint suffix preserves the full frozen long-text provider shape. */
+typedef struct {old_extended_api base;uint32_t long_tag,long_version;
+ int32_t (*open_long)(void*,const risc_text_entry_request_v1_long*,uint64_t*);
+ int32_t (*poll_long)(void*,uint64_t,risc_text_entry_state_v1_long*);} old_long_api;
+SAME_SIZE(old_long_api,risc_text_entry_api_v1_long);
+SAME_OFFSET(old_long_api,risc_text_entry_api_v1_long,long_tag);
+SAME_OFFSET(old_long_api,risc_text_entry_api_v1_long,open_long);
+SAME_OFFSET(old_long_api,risc_text_entry_api_v1_long,poll_long);
+_Static_assert(offsetof(risc_text_entry_api_v1_checkpoint,base)==0,"long remains prefix");
+_Static_assert(offsetof(risc_text_entry_api_v1_checkpoint,checkpoint_tag)==sizeof(old_long_api),"checkpoint follows frozen long suffix");
 int main(void){
  risc_text_input_api_v1 transport={.api_version=RISC_TEXT_INPUT_API_V1};
  risc_text_entry_api_v1 session={.api_version=RISC_TEXT_ENTRY_API_V1};

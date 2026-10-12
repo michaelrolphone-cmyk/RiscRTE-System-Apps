@@ -12,6 +12,7 @@ extern unsigned text_runtime_frames(void);
 extern uint64_t text_runtime_preview_hash(void);
 extern void text_runtime_app_event(unsigned,const void*);
 extern void text_runtime_check_token(uint64_t);
+extern void text_runtime_checkpoint_boundary(bool);
 static unsigned witness;
 __attribute__((constructor)) static void load(void){text_runtime_app_event(1,&witness);}
 __attribute__((destructor)) static void unload(void){text_runtime_app_event(2,&witness);}
@@ -76,6 +77,32 @@ static void long_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v
  assert(a->close(a->context,token)==RISC_TEXT_ENTRY_AGAIN);text_runtime_control(5);int rc;tries=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
  assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
 }
+static void checkpoint_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v1 *grant,unsigned invocation,const char *mode){
+ const risc_text_entry_api_v1 *a=grant->api;const risc_text_entry_api_v1_checkpoint *cp=risc_text_entry_checkpoint(a);assert(cp);
+ risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=25,.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Name",.text="DRAFT"};
+ uint64_t token=0;assert(a->open(a->context,&q,&token)==0&&token);text_runtime_check_token(token);
+ assert(cp->checkpoint_enable(a->context,token)==0);
+ bool close_paused=!strcmp(mode,"checkpoint-close"),full=!strcmp(mode,"checkpoint-full");
+ for(unsigned cycle=0;cycle<3;cycle++){
+  risc_text_entry_state_v1 copied=settle_entry(a,token);assert(!strcmp(copied.text,"DRAFT"));
+  risc_text_entry_checkpoint_state_v1 snapshot={.struct_size=sizeof(snapshot)};
+  assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0);
+  int result;unsigned attempts=0;
+  while((result=full?cp->pause_for_focus_change(a->context,token):cp->pause(a->context,token))==RISC_TEXT_ENTRY_BUSY||result==RISC_TEXT_ENTRY_AGAIN){
+   assert(++attempts<2048);
+   if(result==RISC_TEXT_ENTRY_BUSY){(void)settle_entry(a,token);assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0);}
+   else r->yield_ms(1);
+  }
+  assert(result==0);text_runtime_checkpoint_boundary(!full);
+  assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0&&snapshot.flags==RISC_TEXT_ENTRY_CHECKPOINT_PAUSED);
+  copied.struct_size=sizeof(copied);assert(a->poll(a->context,token,&copied)==RISC_TEXT_ENTRY_BUSY);
+  if(close_paused)break;
+  assert(cp->resume(a->context,token,RISC_TEXT_ENTRY_RESUME_REDRAW)==0);
+  copied=settle_entry(a,token);assert(copied.state==RISC_TEXT_ENTRY_EDITING&&!strcmp(copied.text,"DRAFT"));
+ }
+ int rc;unsigned attempts=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++attempts<2048);}assert(rc==0);
+ assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
+}
 __attribute__((visibility("default"))) void app_main(void){
  unsigned invocation=text_runtime_entry();if(invocation>2)return;
  const char*mode=text_runtime_mode();const risc_runtime_api_v1*r=risc_runtime_get_api(1);assert(r);
@@ -88,6 +115,7 @@ __attribute__((visibility("default"))) void app_main(void){
  }
  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};assert(r->acquire(RISC_TEXT_ENTRY_CAPABILITY,1,0,&g));
  const risc_text_entry_api_v1*a=g.api;assert(a&&a->api_version==1&&a->struct_size>=sizeof(*a));
+ if(!strncmp(mode,"checkpoint-",11)){checkpoint_workflow(r,&g,invocation,mode);return;}
  if(!strncmp(mode,"long",4)){long_workflow(r,&g,invocation,mode);return;}
  if(!strncmp(mode,"extended",8)){extended_workflow(r,&g,invocation,mode);return;}
  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=16,.label="Name"};strcpy(q.text,invocation==1?"first":"fresh");

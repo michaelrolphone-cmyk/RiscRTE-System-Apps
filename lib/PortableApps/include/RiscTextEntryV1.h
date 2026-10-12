@@ -135,3 +135,42 @@ static inline const risc_text_entry_api_v1_long *risc_text_entry_long(const risc
         ext->long_version==RISC_TEXT_ENTRY_LONG_VERSION&&
         ext->open_long&&ext->poll_long?ext:NULL;
 }
+
+/* Opt-in resident-policy handoff. The complete long/plain/masked ABI remains
+ * a frozen prefix. Enable immediately after open, before the first input poll.
+ * Snapshot reports logical activity/held input independently of presentation.
+ * Pause releases display ownership, retaining navigation claims, bounded
+ * passive input subscriptions and copied draft/layer/caps/focus state. Routine policy
+ * resume preserves queued edges; FOCUS_CHANGED discards intervening-focus
+ * events and neutralizes held input after actual sleep. It never accepts or
+ * saves a draft. BUSY means input changed; poll again instead of dispatching.
+ * AGAIN retains exact custody and requires another pause call. After OK the
+ * client may checkpoint, then resume or close; close never requires resume.
+ */
+#define RISC_TEXT_ENTRY_CHECKPOINT_TAG 0x54435031u
+#define RISC_TEXT_ENTRY_CHECKPOINT_VERSION 1u
+#define RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING 1u
+#define RISC_TEXT_ENTRY_CHECKPOINT_INPUT_BUSY 2u
+#define RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY 4u
+#define RISC_TEXT_ENTRY_CHECKPOINT_PAUSED 8u
+#define RISC_TEXT_ENTRY_RESUME_REDRAW 1u
+#define RISC_TEXT_ENTRY_RESUME_FOCUS_CHANGED 2u
+typedef struct {uint32_t struct_size,flags;} risc_text_entry_checkpoint_state_v1;
+typedef struct {
+    risc_text_entry_api_v1_long base;
+    uint32_t checkpoint_tag,checkpoint_version;
+    int32_t (*checkpoint_enable)(void *,uint64_t);
+    int32_t (*checkpoint_snapshot)(void *,uint64_t,risc_text_entry_checkpoint_state_v1 *);
+    int32_t (*pause)(void *,uint64_t);
+    int32_t (*resume)(void *,uint64_t,uint32_t);
+    /* Legacy/idle policy without an explicit continuity promise must release
+     * all input subscriptions and navigation before native power preparation. */
+    int32_t (*pause_for_focus_change)(void *,uint64_t);
+} risc_text_entry_api_v1_checkpoint;
+static inline const risc_text_entry_api_v1_checkpoint *risc_text_entry_checkpoint(const risc_text_entry_api_v1 *api){
+    if(!risc_text_entry_long(api)||api->struct_size<sizeof(risc_text_entry_api_v1_checkpoint))return NULL;
+    const risc_text_entry_api_v1_checkpoint *ext=(const risc_text_entry_api_v1_checkpoint *)api;
+    return ext->checkpoint_tag==RISC_TEXT_ENTRY_CHECKPOINT_TAG&&
+        ext->checkpoint_version==RISC_TEXT_ENTRY_CHECKPOINT_VERSION&&ext->checkpoint_enable&&
+        ext->checkpoint_snapshot&&ext->pause&&ext->resume&&ext->pause_for_focus_change?ext:NULL;
+}

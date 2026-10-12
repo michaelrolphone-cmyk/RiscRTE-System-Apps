@@ -127,3 +127,11 @@ selection, cohort binding and physical Watch/X4 testing remain separate; see
 `SHARED_TEXT_INPUT_INTEGRATION.md` for the exact edges and remaining migration
 scope. No
 product image, hardware operation, release, push or PR update is performed here.
+
+## Optional resident-policy checkpoints
+
+Text host 0.1.7 provides a backward-compatible, opt-in checkpoint suffix that
+preserves an open editor across resident power-policy and idle-Light handoffs.
+Existing callers retain their original ABI and behavior. See
+[SHARED_TEXT_INPUT_CHECKPOINT.md](SHARED_TEXT_INPUT_CHECKPOINT.md) for ownership,
+activity, pause/resume and qualification requirements.
