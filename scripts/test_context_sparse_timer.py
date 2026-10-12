@@ -20,6 +20,7 @@ p.add_argument('--runtime-sdk', type=Path, required=True)
 p.add_argument('--sleep-source', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--baseline-pixels', type=Path, help='Existing test_sparse_points_expiry.py proof to compare')
+p.add_argument('--timer-storage', action='store_true', help='Model the mounted SD transport that native deep sleep must close')
 a = p.parse_args()
 out = a.output.resolve()
 include = out / 'include'
@@ -35,6 +36,8 @@ if (a.runtime_sdk/'RiscFailureEvidenceV1.h').is_file():
     shutil.copyfile(a.runtime_sdk/'RiscFailureEvidenceV1.h',include/'RiscFailureEvidenceV1.h')
 shutil.copytree(ROOT / 'lib/PortableApps/time', out / 'time', dirs_exist_ok=True)
 flags = [f for f in receipt['build_defines'] if f.startswith('-D')]
+if a.timer_storage:
+    flags.append('-DTEST_TIMER_STORAGE_SLEEP')
 for feature in ('PORTABLE_CONTEXTS_CLIENT', 'PORTABLE_CONTEXTS_CLOCK_RF_ONLY',
                 'PORTABLE_RESIDENT_POLICY', 'PORTABLE_RESIDENT_LEGACY_HANDOFF', 'TEST_NATIVE_LANDSCAPE'):
     flag = '-D' + feature
@@ -48,6 +51,8 @@ names = ('adapter.c', 'desk_clock_faces.c', 'PortableRealtimeClient.c', 'Portabl
 sources = [ROOT / 'Apps/paper_clock.c', *[ROOT / 'lib/PortableApps/src' / name for name in names],
            a.sleep_source, Path(receipt['idle_policy']['source']),
            ROOT / 'test/native_apps/context_sparse_timer_test.c']
+if '-DPORTABLE_INSTALLED_CATALOG' in flags:
+    sources.append(ROOT / 'lib/PortableApps/src/PortableInstalledCatalog.c')
 incs = ['-I' + str(include), '-I' + str(ROOT / 'lib/NativeApps/include'),
         '-I' + str(a.sleep_source.parent.parent / 'drivers/x4pro_power')]
 cases = ('valid', 'expired', 'rewind', 'old-snapshot', 'step-terminal', 'projection-terminal', 'uncertain')
@@ -104,7 +109,7 @@ tracked = [*sources, ROOT / 'test/native_apps/sparse_points_expiry_test.c',
              'resident_policy.inc')], Path(__file__)]
 (out / 'receipt.json').write_text(json.dumps(dict(
     process_cases=len(runs), runs=runs, build_defines=flags, retained_schema=3, retained_bytes=408,
-    timer_live_grant_bound=6, runtime_live_grant_bound=16, contexts_timer_acquisitions=0,
+    timer_live_grant_bound=7 if a.timer_storage else 6, runtime_live_grant_bound=16, contexts_timer_acquisitions=0,
     pixels='normal and ASan/UBSan byte identical', hardware='not run',
     baseline_pixels=str(a.baseline_pixels) if a.baseline_pixels else None,
     baseline_matching_images=baseline_matches, baseline_records='408-byte records byte identical' if baseline_matches else None,
