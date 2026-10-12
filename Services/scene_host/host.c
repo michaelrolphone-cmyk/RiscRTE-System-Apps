@@ -1,5 +1,6 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneReadingLinksV1.h"
+#include "RiscSceneTelemetryV1.h"
+#include "RiscSceneConnectivityV1.h"
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
@@ -38,6 +39,7 @@ typedef struct {
     uint32_t preview_node;
     risc_scene_reading_document_v1 reading_document;
     risc_scene_reading_links_v1 reading_links;
+    risc_scene_telemetry_v1 telemetry;
     risc_scene_page_document_v1 page_document;
     int scroll,scroll_limit,drag_scroll;
     int wheel_node,wheel_part,wheel_value,wheel_offset;
@@ -116,7 +118,7 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
     if(route_index(d,d->root)<0)return false;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];
-        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_TEXT_PREVIEW:RISC_SCENE_KEYBOARD_NODE)||
+        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_CONNECTION_STEP:RISC_SCENE_KEYBOARD_NODE)||
            n->flags&~15u||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
         for(unsigned j=0;j<i;j++)if(d->nodes[j].id==n->id)return false;
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
@@ -254,7 +256,7 @@ static void keyboard_emit(const risc_scene_node_v1 *n,unsigned key){
         sizeof(queued),RISC_SCENE_VALUE_EVENT,document.revision,n->id,n->action,(int32_t)key,++event_serial};
     /* Later contacts cannot cross a layer or completion boundary. The owner
      * must acknowledge this event before a fresh contact can be accepted. */
-    if(key==RISC_SCENE_KEY_LAYER||key==RISC_SCENE_KEY_DONE||key==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+    if(key==RISC_SCENE_KEY_REVEAL||key==RISC_SCENE_KEY_LAYER||key==RISC_SCENE_KEY_DONE||key==RISC_SCENE_KEY_CANCEL)key_barrier=true;
     contact=false;
 }
 static void back(void){
@@ -768,9 +770,11 @@ static bool valid_surface(void){
     return surface.stride_bytes>=row&&(uint64_t)surface.stride_bytes*surface.height<=surface.size_bytes;
 }
 
+#include "telemetry.inc"
 #include "components.inc"
 #include "page.inc"
 #include "reading.inc"
+#include "telemetry_draw.inc"
 
 static void draw_scene(void){
     if(model->page_view){if(model->reading_view)reading_draw();else page_draw();return;}
@@ -980,7 +984,7 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
         dirty=true;key_barrier=false;
         for(unsigned i=0;i<key_count;i++){
             int value=key_queue[(key_head+i)%KEY_QUEUE_SIZE].value;
-            if(value==RISC_SCENE_KEY_LAYER||value==RISC_SCENE_KEY_DONE||value==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+            if(value==RISC_SCENE_KEY_REVEAL||value==RISC_SCENE_KEY_LAYER||value==RISC_SCENE_KEY_DONE||value==RISC_SCENE_KEY_CANCEL)key_barrier=true;
         }
     }
     else invalidate_view();
@@ -1068,16 +1072,16 @@ static int32_t components_open(void *c,const risc_components_document_v1 *d,cons
     if(!alive())return RISC_SCENE_RETAINED;
     if(!valid_document(d,true)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
     if(active)return RISC_SCENE_BUSY;
-    model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
+    model->telemetry.count=0;model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
     if(!model->components)return RISC_SCENE_INVALID;
-    int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
+    int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_reading_links_api_v1 api={{{ { { {
+static const risc_scene_connectivity_api_v1 api={{{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
-    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked};
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked},RISC_SCENE_TELEMETRY_TAG,1,telemetry_present},RISC_SCENE_CONNECTIVITY_TAG,1};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;

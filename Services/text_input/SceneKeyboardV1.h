@@ -13,9 +13,14 @@ enum {
     RISC_SCENE_KEY_SPACE = 130,
     RISC_SCENE_KEY_DONE = 131,
     RISC_SCENE_KEY_CANCEL = 132,
-    RISC_SCENE_KEY_CLEAR = 133
+    RISC_SCENE_KEY_CLEAR = 133,
+    RISC_SCENE_KEY_REVEAL = 134
 };
 
 /* Text-only document revisions preserve the displayed topology and queued
  * keys. The host rebases each delivered key to the latest acknowledged text
  * revision. Every other change invalidates the input epoch and queued keys. */
+
+/* Provider-owned secret display state; no password validation in scene host. */
+#define RISC_SCENE_KEYBOARD_SECRET 2u
+#define RISC_SCENE_KEYBOARD_REVEALED 4u

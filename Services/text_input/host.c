@@ -16,6 +16,7 @@ static risc_scene_document_v1 document;
 static risc_text_entry_state_v1 state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
 static uint32_t capacity,page,request_flags;
+static bool revealed;
 static bool started,active,closing,retained,connected,neutral,caps,changed,draining;
 
 static int32_t retain(void){retained=true;return RISC_TEXT_ENTRY_RETAINED;}
@@ -48,6 +49,7 @@ static unsigned character(uint8_t key,uint8_t mods){
 }
 static void apply(unsigned key){
     if(state.state!=RISC_TEXT_ENTRY_EDITING)return;
+    if(key==RISC_SCENE_KEY_REVEAL){if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED){revealed=!revealed;(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_DONE){state.state=RISC_TEXT_ENTRY_ACCEPTED;(void)changed_state();return;}
     if(key==RISC_SCENE_KEY_CANCEL){state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
     if(key==RISC_SCENE_KEY_LAYER){page=(page+1)%4;(void)changed_state();return;}
@@ -107,14 +109,14 @@ static int32_t keyboard_step(void){
 }
 static void copy_display_text(void){
     memset(document.nodes[0].text,0,sizeof(document.nodes[0].text));
-    if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)
+    if((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)&&!revealed)
         memset(document.nodes[0].text,'*',strlen(state.text));
     else memcpy(document.nodes[0].text,state.text,sizeof(state.text));
 }
 static int32_t update_scene(void){
     document.revision=state.revision;
     document.nodes[0].value=(int32_t)page;
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].flags=(connected?RISC_SCENE_DISABLED:0)|((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)?RISC_SCENE_KEYBOARD_SECRET:0)|(revealed?RISC_SCENE_KEYBOARD_REVEALED:0);
     copy_display_text();
     int32_t r=scene->update(scene->context,scene_session,&document);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
@@ -148,7 +150,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
     state=(risc_text_entry_state_v1){.struct_size=sizeof(state),.revision=1};
     memcpy(state.text,request->text,strlen(request->text)+1);
-    capacity=request->capacity;request_flags=request->reserved;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
+    capacity=request->capacity;request_flags=request->reserved;revealed=false;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
     active=true;session=++serial;
     if(keyboard){
         subscription=keyboard->subscribe(keyboard->context,0);
@@ -162,7 +164,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     memcpy(document.routes[0].title,request->label,sizeof(request->label));
     memcpy(document.nodes[0].label,request->label,sizeof(request->label));
     copy_display_text();
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].flags=(connected?RISC_SCENE_DISABLED:0)|((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)?RISC_SCENE_KEYBOARD_SECRET:0)|(revealed?RISC_SCENE_KEYBOARD_REVEALED:0);
     document.nodes[0].target=capacity-1;
     int32_t r=scene->open(scene->context,&document,NULL,&scene_session);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
