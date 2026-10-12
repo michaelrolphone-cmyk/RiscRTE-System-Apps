@@ -10,7 +10,7 @@ def main():
  for header in (ROOT/'lib/PortableApps/include').glob('*.h'):
   if not header.name.startswith(('Risc','AlarmService')):shutil.copyfile(header,inc/header.name)
  shutil.copytree(ROOT/'lib/PortableApps/time',out/'time',dirs_exist_ok=True)
- omitted={'PORTABLE_CONTEXTS_CLIENT','PORTABLE_CONTEXTS_CLOCK_RF_ONLY','PORTABLE_RESIDENT_POLICY','PORTABLE_RESIDENT_LEGACY_HANDOFF','PORTABLE_X4_IDLE_POLICY','PORTABLE_LOW_BATTERY'}
+ omitted={'PORTABLE_CRASH_REPORT_SD','PORTABLE_INSTALLED_CATALOG','PORTABLE_INSTALLED_CATALOG_HOST','PORTABLE_CONTEXTS_CLIENT','PORTABLE_CONTEXTS_CLOCK_RF_ONLY','PORTABLE_RESIDENT_POLICY','PORTABLE_RESIDENT_LEGACY_HANDOFF','PORTABLE_X4_IDLE_POLICY','PORTABLE_LOW_BATTERY'}
  flags=[f for f in receipt['build_defines'] if f.startswith('-D') and f[2:].split('=')[0] not in omitted]
  flags+=['-DTEST_NATIVE_LANDSCAPE','-DTEST_HOME_DESK_LOCK']
  sources=[ROOT/'Apps/paper_clock.c',ROOT/'test/native_apps/shared_quick_adapter.c',ROOT/'test/native_apps/frontlight_tone_home_test.c']

@@ -17,6 +17,7 @@ typedef struct portable_preference_atomic {
  bool (*guard)(void *);void *guard_context;
  uint64_t revision,token;
  bool present,cancelled,submitted,valid;
+ bool brightness_off;uint8_t restore_brightness;
  uint32_t expected_size,desired_size;
  char key[16];uint8_t expected[64],desired[64],intent[PORTABLE_PREFERENCE_INTENT_BYTES];
  int status;risc_key_value_atomic_receipt_v1 receipt;
@@ -32,7 +33,8 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
 }
 static inline bool portable_preference_atomic_key(const char *key) {
  static const char *const allowed[]={"time_format","time_zone","desk_clock_face","desk_direction",
-  "reader_flip_ui","reader_language","sleep_idle","rtc_basis"};
+  "reader_flip_ui","reader_language","sleep_idle","rtc_basis",
+  "brightness","frontlight_tone","alert_dnd","contexts_on","quick_radio"};
  if(!key)return false;
  for(unsigned i=0;i<sizeof(allowed)/sizeof(*allowed);++i)if(!strcmp(key,allowed[i]))return true;
  return false;
@@ -48,9 +50,9 @@ static inline bool portable_preference_atomic_terminal(int rc) {
 /* Called before loading the editor draft, never at Save time. A non-user
  * origin cannot enter this selected controller route. Future automatic writers
  * need their own policy and boundary; these enum values confer no authority. */
-static inline int portable_preference_atomic_begin(portable_preference_atomic *s,
+static inline int portable_preference_atomic_begin_at(portable_preference_atomic *s,
  const risc_key_value_atomic_v1 *api,const char *key,unsigned origin,
- bool (*guard)(void *),void *context) {
+ bool (*guard)(void *),void *context,uint64_t captured_revision) {
  if(!s||s->token)return RISC_ATOMIC_RETAINED;
  memset(s,0,sizeof(*s));s->api=api;s->guard=guard;s->guard_context=context;
  if(origin!=PORTABLE_PREFERENCE_USER||!portable_preference_atomic_api_valid(api)||
@@ -61,6 +63,7 @@ static inline int portable_preference_atomic_begin(portable_preference_atomic *s
  if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
  if(rc)return s->status=rc;
  if(!portable_preference_atomic_state_valid(&state))return s->status=RISC_ATOMIC_INVALID;
+ if(captured_revision&&state.revision!=captured_revision)return s->status=RISC_ATOMIC_STALE;
  s->revision=state.revision;memcpy(s->key,key,strlen(key)+1);
  rc=api->get(api->context,s->revision,key,s->expected,sizeof(s->expected),&s->expected_size);
  if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
@@ -68,6 +71,11 @@ static inline int portable_preference_atomic_begin(portable_preference_atomic *s
  if((rc==RISC_ATOMIC_OK&&s->expected_size>sizeof(s->expected))||
     (rc==RISC_ATOMIC_NOT_FOUND&&s->expected_size))return s->status=RISC_ATOMIC_INVALID;
  s->present=rc==RISC_ATOMIC_OK;s->valid=true;return s->status=PORTABLE_PREFERENCE_READY;
+}
+static inline int portable_preference_atomic_begin(portable_preference_atomic *s,
+ const risc_key_value_atomic_v1 *api,const char *key,unsigned origin,
+ bool (*guard)(void *),void *context) {
+ return portable_preference_atomic_begin_at(s,api,key,origin,guard,context,0);
 }
 static inline void portable_preference_word(uint8_t *p,uint32_t v) {
  for(unsigned i=0;i<4;++i)p[i]=(uint8_t)(v>>(i*8u));
@@ -82,7 +90,7 @@ static inline uint32_t portable_preference_crc(const uint8_t *p,unsigned size) {
  * value; key and captured local revision. Zero padding and LE words are fixed. */
 static inline int portable_preference_atomic_prepare(portable_preference_atomic *s,const void *value,uint32_t size) {
  if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||!value||!size||size>64)return RISC_ATOMIC_INVALID;
- memcpy(s->desired,value,size);s->desired_size=size;
+ s->brightness_off=false;memcpy(s->desired,value,size);s->desired_size=size;
  memset(s->intent,0,sizeof(s->intent));memcpy(s->intent,"PFI0001",7);
  s->intent[8]=PORTABLE_PREFERENCE_USER;s->intent[9]=RISC_ATOMIC_PUT;s->intent[10]=(uint8_t)s->present;
  memcpy(s->intent+12,s->key,strlen(s->key));portable_preference_word(s->intent+28,s->expected_size);
@@ -90,6 +98,34 @@ static inline int portable_preference_atomic_prepare(portable_preference_atomic 
  portable_preference_word(s->intent+40,(uint32_t)(s->revision>>32));
  memcpy(s->intent+44,s->expected,s->expected_size);memcpy(s->intent+108,value,size);
  portable_preference_word(s->intent+172,portable_preference_crc(s->intent,172));return PORTABLE_PREFERENCE_READY;
+}
+/* Brightness OFF has one semantic intention and one subordinate restore
+ * byte. The copied group publishes both or neither; quick_bright cannot be
+ * selected as an independent USER intention. PFI0001 remains unchanged. */
+static inline int portable_preference_atomic_prepare_brightness_off(portable_preference_atomic *s,
+ const void *value,uint32_t size,uint8_t restore) {
+ if(!s||strcmp(s->key,"brightness")||!value||size!=1||*(const uint8_t*)value||restore<10||restore>100)return RISC_ATOMIC_INVALID;
+ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
+ risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
+ int rc=s->api->state(s->api->context,&state);
+ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
+ if(rc)return rc;
+ if(!portable_preference_atomic_state_valid(&state)||state.max_mutations<2)return RISC_ATOMIC_CAPACITY;
+ if(state.revision!=s->revision)return RISC_ATOMIC_STALE;
+ if(s->present&&(s->expected_size!=1||s->expected[0]>100||(s->expected[0]&&s->expected[0]<10)))return RISC_ATOMIC_INVALID;
+ uint8_t prior=s->present?s->expected[0]:40;
+ if(!prior) {
+  uint32_t n=0;uint8_t stored=0;
+  rc=s->api->get(s->api->context,s->revision,"quick_bright",&stored,1,&n);
+  if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
+  if(rc==RISC_ATOMIC_NOT_FOUND&&!n)prior=40;
+  else if(rc==RISC_ATOMIC_OK&&n==1&&stored>=10&&stored<=100)prior=stored;
+  else return rc==RISC_ATOMIC_OK||rc==RISC_ATOMIC_NOT_FOUND?RISC_ATOMIC_INVALID:rc;
+ }
+ if(restore!=prior)return RISC_ATOMIC_STALE;
+ rc=portable_preference_atomic_prepare(s,value,size);
+ if(rc!=PORTABLE_PREFERENCE_READY)return rc;
+ s->brightness_off=true;s->restore_brightness=restore;return rc;
 }
 /* Preflight is useful before irreversible physical clock writes. It detects
  * known stale drafts; it cannot lock other writers out while hardware runs. */
@@ -105,8 +141,9 @@ static inline int portable_preference_atomic_check(portable_preference_atomic *s
 static inline int portable_preference_atomic_submit(portable_preference_atomic *s) {
  if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||!s->desired_size)return RISC_ATOMIC_INVALID;
  if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
- risc_key_value_atomic_mutation_v1 mutation={s->key,RISC_ATOMIC_PUT,s->desired,s->desired_size};
- uint64_t token=0;int rc=s->api->submit(s->api->context,s->revision,&mutation,1,s->intent,sizeof(s->intent),&token);
+ risc_key_value_atomic_mutation_v1 mutations[2]={{s->key,RISC_ATOMIC_PUT,s->desired,s->desired_size},
+  {"quick_bright",RISC_ATOMIC_PUT,&s->restore_brightness,1}};
+ uint64_t token=0;int rc=s->api->submit(s->api->context,s->revision,mutations,s->brightness_off?2:1,s->intent,sizeof(s->intent),&token);
  /* Keep ANY returned token, even a contract violation. Never release custody
   * or lose an accepted/ambiguous operation by resetting the app staging. */
  s->token=token;

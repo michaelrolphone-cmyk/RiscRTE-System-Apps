@@ -69,6 +69,15 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
 #if defined(PORTABLE_RESIDENT_LOADING) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
 #error "App loading presentation belongs to the resident host"
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#if !defined(PORTABLE_RESIDENT_SHELL_HOST) || !defined(PORTABLE_DESK_CLOCK_SPARSE_START) || !defined(PORTABLE_FRONTLIGHT_TONE) || !defined(PORTABLE_PAPER_TRANSITIONS)
+#error "Atomic Quick preferences require the selected X4 sparse resident Home"
+#endif
+static bool quick_atomic_running;
+static unsigned quick_atomic_contact;
+static bool quick_atomic_owned(void);
+static bool quick_atomic_close(void);
+#endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
@@ -360,11 +369,19 @@ static pqa_session quick;
 static pqa_radios quick_radios;
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 static bool desk_radios_load(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *);
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+static bool desk_radios_apply_user(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *,uint32_t,pqa_user_preference_save,void*,bool(*)(void*));
+#else
 static bool desk_radios_apply(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *,uint32_t);
+#endif
 static bool desk_radios_suspend(const risc_runtime_api_v1 *);
 static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *);
 #define pqa_radios_load desk_radios_load
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#define pqa_radios_apply_user desk_radios_apply_user
+#else
 #define pqa_radios_apply desk_radios_apply
+#endif
 #define pqa_radios_suspend desk_radios_suspend
 #define pqa_radios_resume desk_radios_resume
 #endif
@@ -731,7 +748,13 @@ static void input_dispatch(void) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
-  bool reserved=pqa_input(&quick.ui,input_delivered_at,next.valid&&!next.cancelled,
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running)++quick_atomic_contact;
+  bool reserved=quick_atomic_running||pqa_input(&quick.ui,
+#else
+  bool reserved=pqa_input(&quick.ui,
+#endif
+      input_delivered_at,next.valid&&!next.cancelled,
       next.down?1u:0u,next.contact_id,
       quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):next.x,
       quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):next.y,
@@ -2884,6 +2907,11 @@ static int initialize(void) {
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
   quick_restore_pending=quick_restoring=false;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  quick_atomic_running=false;quick_atomic_contact=0;quick_atomic_attempted=false;quick_atomic_revision=0;
+  quick_atomic_grant=(risc_runtime_capability_v1){0};quick_atomic_edit=(portable_preference_atomic){0};
+  quick.save_user=quick_atomic_save;
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   quick_open_requested=false;
 #endif
@@ -3090,6 +3118,13 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  /* Collect/cancel before any unrelated teardown or provider operation. */
+  if(rt&&!quick_atomic_close()){
+   if(!native_custody_retained)portable_adapter_retain();
+   return;
+  }
+#endif
 #ifdef PORTABLE_FILE_SETUP
   /* Do not drain displays, read policy, reset input or yield before this
    * fence. Keep all dependencies until the checked close finishes. */

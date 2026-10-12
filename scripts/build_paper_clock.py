@@ -11,6 +11,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--experimental-atomic-quick',action='store_true',help='Default-off X4 Home explicit namespace-1 atomic preference intents; no production activation')
  p.add_argument('--deferred-foreground-services',action='store_true',help='X4 sparse Home: apply Quick radio policy after first completed Home frame or before an explicit lifecycle transition')
  p.add_argument('--installed-catalog-volume-instance',type=int,help='Hydrate cached apps and scan SD after first Home frame')
  p.add_argument('--display-rotation',type=int,choices=[0,90],default=90)
@@ -35,6 +36,8 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.experimental_atomic_quick and not (a.sparse_start and a.resident_shell_host and a.frontlight_tone and a.quick_radios and a.paper_transitions):
+  p.error('--experimental-atomic-quick requires X4 sparse resident Home, frontlight tone, radios and paper transitions')
  if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
   p.error('--deferred-foreground-services requires the full sparse resident Home/Points/Quick-radio/loading/catalog profile')
  if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<1 or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
@@ -101,6 +104,7 @@ def build():
  if a.installed_catalog_volume_instance is not None:flags+=['-DPORTABLE_INSTALLED_CATALOG','-DPORTABLE_INSTALLED_CATALOG_HOST','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='+str(a.installed_catalog_volume_instance)+'ULL']
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
+ if a.experimental_atomic_quick:flags+=['-DPORTABLE_QUICK_ATOMIC_PREFERENCES']
  if a.ble_broadcast:flags += ["-DPORTABLE_BLE_BROADCAST","-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF"]
  if a.desk_points_face:flags+=['-DPORTABLE_DESK_POINTS_FACE','-DPORTABLE_DESK_POINTS_SNAPSHOT']
  if a.desk_lock_home:flags+=['-DPORTABLE_DESK_LOCK_HOME']
@@ -154,6 +158,7 @@ def build():
  if a.desk_clock:needs.extend([{'capability':'runtime.retained-wake','api':1},{'capability':'storage.volume','api':1}])
  if a.alarm_client:needs.append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
  portable_quick_build.requirements(a,needs)
+ if a.experimental_atomic_quick:needs.append({'capability':'storage.key-value.atomic','api':1})
  if a.desk_clock:
   for name in ('net.wifi','bluetooth.hci'):
    requirement={'capability':name,'api':1}
@@ -161,11 +166,17 @@ def build():
   if a.sparse_start:needs.extend([{'capability':'runtime.realtime-control','api':1},{'capability':'runtime.provider-promotion','api':1}])
   if a.ble_broadcast:needs.append({"capability":"telemetry.broadcast","api":1})
   if a.contexts_rf_only:needs.extend([{'capability':'contexts.service','api':1},{'capability':'storage.shared-data','api':1}])
-  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)):raise ValueError('Desk clock grant count mismatch')
+  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)+int(a.experimental_atomic_quick)):raise ValueError('Desk clock grant count mismatch')
  if a.installed_catalog_volume_instance is not None:needs.append({'capability':'software.installed-apps','api':1})
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
+ if a.experimental_atomic_quick:
+  record['atomic_quick']={'experimental':True,'default_selected':False,'namespace':1,
+   'capability':'storage.key-value.atomic@1','intent':'PFI0001','subordinate_off_key':'quick_bright',
+   'legacy_put_fallback':False,'automatic_policy_migrated':False,'sd_acknowledged':False,
+   'activation_gate':'automatic context/low-battery writers and source-conflict policy unresolved'}
+  record.setdefault('grant_bindings',{})['storage.key-value.atomic']=[1]
  if a.ble_broadcast:record['ble_broadcast']={'enabled':True,'default':'off','grant_lifetime':'transient','timer_only':False,'shared_preferences_instance':1};record['build_defines']=flags
  if a.contexts_rf_only:
   record['contexts']={'profile':'rf-only','supported_sources':2,'owner':'waterfall.elf','service_api':1,

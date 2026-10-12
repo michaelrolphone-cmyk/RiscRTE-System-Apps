@@ -144,11 +144,17 @@ static bool paper_tone_apply(pqa_session *s,const risc_runtime_api_v1 *rt,
   * provider operation; no rollback is safe once custody is terminal. */
  if(!tone_set(s,d,tone,wanted))return false;
  if(!(actions&PQA_TONE_COMMIT))return true;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ (void)rt;const uint8_t byte=(uint8_t)wanted;
+ bool saved=s->save_user&&s->save_user(s->save_context,PQA_TONE_KEY,&byte,1,NULL);
+ if(s->retained)return false;
+#else
  risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
  bool saved=pqa_preference_save(kv,PQA_TONE_KEY,wanted,0);
  if(g.api && !rt->release(&g)) {
   s->ui.error_flags|=PQA_ERROR_SAVE;return tone_failed(s);
  }
+#endif
  if(saved) {
   s->tone=wanted;s->ui.tone=(uint8_t)wanted;s->ui.tone_valid=true;
   s->ui.error_flags&=~PQA_ERROR_SAVE;return true;
@@ -179,6 +185,14 @@ static bool paper_light_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const
  if(!(actions&(PQA_BRIGHTNESS_PREVIEW|PQA_BRIGHTNESS_COMMIT|PQA_TORCH)))return true;
  if(actions&PQA_BRIGHTNESS_COMMIT) {
   unsigned wanted=s->ui.action_brightness,restore=s->brightness?s->brightness:s->restore_brightness;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  (void)rt;const uint8_t byte=(uint8_t)wanted,back=(uint8_t)restore;
+  bool saved=(wanted==0||wanted>=10)&&wanted<=100&&restore>=10&&restore<=100&&
+   s->save_user&&s->save_user(s->save_context,PQA_BRIGHTNESS_KEY,&byte,1,wanted?NULL:&back);
+#ifdef PORTABLE_FRONTLIGHT_TONE
+  if(s->retained)return false;
+#endif
+#else
   risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
   /* Preserve a confirmed way back before committing OFF. A save failure
    * restores the previous hardware level; release failure retains custody. */
@@ -186,6 +200,7 @@ static bool paper_light_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const
       (wanted!=0 || pqa_preference_save(kv,PQA_RESTORE_BRIGHTNESS_KEY,restore,10));
   bool saved=ready&&pqa_preference_save(kv,PQA_BRIGHTNESS_KEY,wanted,0);
   if(g.api&&!rt->release(&g))return false;
+#endif
   if(saved) {
    s->brightness=wanted;s->restore_brightness=wanted?wanted:restore;
    s->ui.last_nonzero_brightness=(uint8_t)s->restore_brightness;
@@ -209,6 +224,29 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
  if(s->ui.paper)storage_actions&=~PQA_BRIGHTNESS_COMMIT;
 #endif
  if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND|PQA_CONTEXTS)) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  /* This route is X4 visual-only. Unsupported audio actions fail closed. */
+  if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT))s->ui.error_flags|=PQA_ERROR_SAVE;
+  if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
+   uint8_t enabled=s->ui.action_contexts?1:0;
+   const uint8_t bytes[]={'C',1,enabled,(uint8_t)(enabled^0xa5u)};
+   if(s->save_user&&s->save_user(s->save_context,PORTABLE_CONTEXT_ENABLED_KEY,bytes,4,NULL)) {
+    s->ui.contexts_enabled=enabled;s->ui.contexts_valid=true;
+    s->ui.error_flags&=~(PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE);
+   }else{s->ui.contexts_valid=false;s->ui.error_flags|=PQA_ERROR_CONTEXTS|PQA_ERROR_SAVE;}
+  }
+  if(actions&PQA_DND) {
+   const uint8_t byte=s->ui.action_dnd?1:0;
+   if(s->save_user&&s->save_user(s->save_context,PQA_DND_KEY,&byte,1,NULL)) {
+    *alerts_changed|=s->dnd_enabled!=(byte!=0);s->dnd_enabled=byte!=0;
+    s->ui.dnd_enabled=s->dnd_enabled;s->ui.dnd_valid=true;
+    s->ui.error_flags&=~(PQA_ERROR_DND|PQA_ERROR_SAVE);
+   }else{s->ui.dnd_enabled=s->dnd_enabled;s->ui.dnd_valid=false;s->ui.error_flags|=PQA_ERROR_DND|PQA_ERROR_SAVE;}
+  }
+#ifdef PORTABLE_FRONTLIGHT_TONE
+  if(s->retained)return false;
+#endif
+#else
   risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;(void)acquire(rt,&g,&kv);
   if(storage_actions&PQA_BRIGHTNESS_COMMIT) {
    unsigned wanted=s->ui.action_brightness;
@@ -245,6 +283,7 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
    }
   }
   if(g.api && !rt->release(&g))return false;
+#endif
  }
 #ifdef PORTABLE_PAPER_TRANSITIONS
  if(s->ui.paper)return paper_light_apply(s,rt,d,actions);

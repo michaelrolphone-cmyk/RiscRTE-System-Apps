@@ -39,6 +39,9 @@ static bool quick_storage_safe(void) {
 #endif
  return true;
 }
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#include "quick_atomic.inc"
+#endif
 #ifdef PORTABLE_X4_IDLE_POLICY
 static bool automatic_idle_interaction_ready(void) {
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
@@ -172,13 +175,19 @@ static bool quick_apply(uint32_t actions) {
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if(!portable_background_stop())return false;
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_storage_safe()||!quick_atomic_capture(actions))return false;
+ quick.save_user=quick_atomic_save;
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(((actions&PQA_AIRPLANE)&&!quick.ui.airplane)||((actions&PQA_WIFI)&&quick.ui.wifi_enabled)) {
   if(!portable_wifi_suspend())return false;
  }
 #endif
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!pqa_radios_apply_user(&quick_radios,&quick.ui,rt,actions,quick_atomic_save,NULL,quick_atomic_guard)){portable_adapter_retain();return false;}
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
  if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions)){portable_adapter_retain();return false;}
 #else
  if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions))return false;
@@ -438,6 +447,9 @@ static bool quick_foreground(bool *consumed) {
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if(!portable_background_stop())return false;
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_atomic_modal_begin())return false;
+#endif
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
 #ifdef PORTABLE_PAPER_TRANSITIONS
@@ -455,7 +467,12 @@ static bool quick_foreground(bool *consumed) {
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
  quick_background=malloc(quick_frame_bytes());
- if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
+ if(!quick_background){
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!quick_atomic_close())return false;
+#endif
+  pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;
+ }
  memcpy(quick_background,alarm_pixels,quick_frame_bytes());quick_modal=true;
  portable_stage_log(rt,"action","name=quick-controls-open");
  bool painted=false,wifi=false;
@@ -560,6 +577,9 @@ static bool quick_foreground(bool *consumed) {
 #endif
  #if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS) && defined(PORTABLE_RESIDENT_SHELL_HOST)
  portable_layer_release(&quick_sheet_layer);
+#endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_atomic_close())return false;
 #endif
  quick_modal=false;
  if(!quick_restore_pending){free(quick_background);quick_background=NULL;}

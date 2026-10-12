@@ -1,5 +1,8 @@
 #pragma once
 #include "PortableQuickActions.h"
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#include "PortableQuickUserPreference.h"
+#endif
 #include "PortableQuickPreferences.h"
 #include "PortableSleepPolicy.h"
 #include "RiscRuntimeV1.h"
@@ -7,6 +10,9 @@
 /* One invocation-local session. No retained grants or app pointers. */
 typedef struct {
  pqa_state ui;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ pqa_user_preference_save save_user;void *save_context;
+#endif
  unsigned brightness,volume,restore_volume;
 #ifdef PORTABLE_LOW_BATTERY
  uint32_t idle_ms,deep_ms;
