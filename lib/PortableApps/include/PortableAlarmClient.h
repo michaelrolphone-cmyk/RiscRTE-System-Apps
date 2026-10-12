@@ -19,6 +19,10 @@ typedef struct {
     risc_runtime_capability_v1 grant;
     const alarm_service_v1 *api;
     alarm_status_v1 status;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    /* Current step result only, never an inferred READY state. */
+    bool deferred;
+#endif
 #ifdef ALARM_SERVICE_TAGGED_V2
     bool retained;
 #endif
@@ -89,6 +93,17 @@ static inline bool portable_alarm_status(portable_alarm_client *c) {
         c->status.state<=ALARM_STATE_CUE;
 }
 static inline bool portable_alarm_pump(portable_alarm_client *c) {
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+#if !defined(ALARM_SERVICE_TAGGED_V2)
+#error "Busy deferral requires the selected tagged alarm service"
+#endif
+    c->deferred=false;
+    if(!portable_alarm_callable(c))return false;
+    int32_t result=c->api->step(c->api->context);
+    if(!portable_alarm_result(c,result))return false;
+    c->deferred=result==ALARM_PENDING;
+    return portable_alarm_status(c);
+#else
 #ifdef ALARM_SERVICE_TAGGED_V2
     if(!portable_alarm_callable(c) || !portable_alarm_result(c,c->api->step(c->api->context)))return false;
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
@@ -98,6 +113,7 @@ static inline bool portable_alarm_pump(portable_alarm_client *c) {
     (void)c->api->step(c->api->context);
 #endif
     return portable_alarm_status(c);
+#endif
 }
 static inline bool portable_alarm_owned(const portable_alarm_client *c) {
     return c->status.state==ALARM_STATE_CUE || c->status.occurrence.generation || c->status.output_uncertain ||
