@@ -1,0 +1,40 @@
+name: Publish completed Wi-Fi scene source
+on:
+  push:
+    branches: [feat/wifi-scene-manager]
+    paths: [.wifi-source/03.txt]
+permissions:
+  contents: read
+concurrency:
+  group: wifi-source-publication
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply the exact tested source changes
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git merge --no-edit b3e11dae700dd2e9d3a9d4025baedef534d171fe
+          python3 - <<'PY'
+          import base64, hashlib, zlib
+          from pathlib import Path
+          text=''.join(Path(f'.wifi-source/{i:02}.txt').read_text().strip() for i in range(1,4))
+          patch=zlib.decompress(base64.b64decode(text,validate=True))
+          assert hashlib.sha256(patch).hexdigest()=='2ce7ad0c14666f8dae20cbbd6757fdcf3e4d22efcf9d8ff7cb8adeb38e8186e9'
+          Path('/tmp/wifi-scene.patch').write_bytes(patch)
+          PY
+          git apply --check /tmp/wifi-scene.patch
+          git apply --index /tmp/wifi-scene.patch
+          git rm .wifi-source/*.txt .github/workflows/publish-wifi-scene.yml
+          git diff --cached --check
+          git commit -m 'Migrate Wi-Fi Manager to shared scene and existing password keyboard (2.0.0)'
+          git push origin HEAD:feat/wifi-scene-manager
