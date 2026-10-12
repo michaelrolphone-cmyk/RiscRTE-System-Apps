@@ -28,7 +28,7 @@ static void declare(wifi_manager *a){
                 i=node(a,RISC_COMPONENT_CONNECTION_CARD,SELECT_CURRENT,a->connected.ssid,b);a->next_doc.nodes[i].value=(int)strength(a->connected_rssi);a->next_doc.details[i].symbol=RISC_SYMBOL_WIFI;
                 ipv4_text(c,sizeof(c),a->progress.station);
                 snprintf(a->next_doc.details[i].choices,72,"%d DBM|NOT REPORTED|%s|%lu MIN",(int)a->connected_rssi,c,(unsigned long)((uint32_t)(a->now-a->connected_at)/60000));
-            }else{i=node(a,RISC_COMPONENT_CARD,0,a->scanning?"SCANNING...":a->stopping?"STOPPING...":"NOT CONNECTED","2.4 GHz / connect only when requested");a->next_doc.details[i].symbol=RISC_SYMBOL_WIFI;}
+            }else{i=node(a,RISC_COMPONENT_CARD,0,a->scanning?"SCANNING...":a->stopping?"STOPPING...":"NOT CONNECTED","2.4 GHz / on-demand");a->next_doc.details[i].symbol=RISC_SYMBOL_WIFI;}
             section(a,a->link_up?"OTHER NETWORKS":"AVAILABLE NETWORKS");
             if(a->scanning){i=node(a,RISC_COMPONENT_PROGRESS,0,"", "Scanning for nearby access points");a->next_doc.nodes[i].value=(int)((a->now/1000)%3);}
             else{

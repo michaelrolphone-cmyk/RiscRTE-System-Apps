@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Run actual app, shared scene and keyboard against bounded radio/storage fixtures."""
-import argparse, os, subprocess
+import argparse, json, os, subprocess
 from pathlib import Path
 from build_wifi_manager import sdk
 ROOT=Path(__file__).resolve().parents[1]
 MODES=('behavior','busy-storage','storage-failure','old-scene','missing-keyboard','unsupported','cancel','loss','failure','forget','hidden-network','keyboard-cancel','storage-loss','bad-progress')
 def run(runtime, output, sanitize=False):
+    manifest=json.loads((ROOT/'Apps/native/wifi_settings.json').read_text())
+    assert manifest['id']=='wifi_settings' and manifest['file_name']=='wifi_settings.elf', 'Preserve the deployed Wi-Fi settings identity'
+    assert manifest['runtime_lifecycle']=='foreground'
     # The app must stay semantic: no private renderer, keyboard or input driver.
     text='\n'.join(p.read_text() for p in (ROOT/'Apps/wifi_manager').glob('*') if p.suffix in ('.c','.inc','.h'))
     for forbidden in ('RiscDisplayV1.h','PortableKeyboard','input.touch.raw','display.output','risc_display_v1','draw_pixel','nc_draw','kp_render'):
