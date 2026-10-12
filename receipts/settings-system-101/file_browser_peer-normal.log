@@ -1,0 +1,37 @@
+{"command": ["bash", "scripts/test_file_browser_peer.sh"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {"SANITIZE": "0", "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/file_browser_peer-normal"}}
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI unavailable/exported local media refuses download and launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI unavailable/exported local media refuses download and launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI stop/expiry cleanup PASS
+Actual peer UI unavailable/exported local media refuses download and launch PASS
+Actual shared Files UI: local selection, peer discovery, displayed-number confirmation, production WebDAV download, cleanup before declared Model Viewer file-type launch PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS
+Actual Files main: local file.open handoff, completed terminal drain and fini PASS

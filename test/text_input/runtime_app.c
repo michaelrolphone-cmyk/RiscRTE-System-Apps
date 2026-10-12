@@ -9,12 +9,18 @@ extern bool text_runtime_arm_retention(void);
 extern const char *text_runtime_mode(void);
 extern void text_runtime_control(unsigned);
 extern unsigned text_runtime_frames(void);
+extern uint64_t text_runtime_preview_hash(void);
 extern void text_runtime_app_event(unsigned,const void*);
 extern void text_runtime_check_token(uint64_t);
 static unsigned witness;
 __attribute__((constructor)) static void load(void){text_runtime_app_event(1,&witness);}
 __attribute__((destructor)) static void unload(void){text_runtime_app_event(2,&witness);}
 static risc_text_entry_state_v1 poll(const risc_text_entry_api_v1*a,uint64_t s){risc_text_entry_state_v1 v={.struct_size=sizeof(v)};assert(a->poll(a->context,s,&v)==0);return v;}
+static risc_text_entry_state_v1 settle_entry(const risc_text_entry_api_v1 *a,uint64_t s){
+ risc_text_entry_state_v1 v;unsigned polls=0;
+ do{v=poll(a,s);assert(++polls<2048);}while(v.flags&RISC_TEXT_ENTRY_PRESENTING);
+ return v;
+}
 static void accepted_pending(const risc_text_entry_api_v1*a,uint64_t s){
  unsigned before=text_runtime_frames(),waits=0;text_runtime_control(4);
  do{risc_text_entry_state_v1 v=poll(a,s);assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);assert(++waits<2048);}while(text_runtime_frames()==before);
@@ -33,7 +39,7 @@ __attribute__((visibility("default"))) void app_main(void){
  const risc_text_entry_api_v1*a=g.api;assert(a&&a->api_version==1&&a->struct_size>=sizeof(*a));
  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=16,.label="Name"};strcpy(q.text,invocation==1?"first":"fresh");
  if(!strncmp(mode,"fast",4)){q.capacity=72;q.text[0]=0;}
- if(!strcmp(mode,"masked")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}
+ if(!strcmp(mode,"masked")||!strcmp(mode,"visibility")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}
  bool home_reason=!strncmp(mode,"reason-",7);
  if(home_reason){assert(risc_text_entry_home_reason(a));q.reserved=strcmp(mode,"reason-legacy-home")?RISC_TEXT_ENTRY_REQUEST_HOME_REASON:0;}
  uint64_t s=0;int opened=a->open(a->context,&q,&s);
@@ -72,6 +78,25 @@ __attribute__((visibility("default"))) void app_main(void){
   else {text_runtime_control(16);assert(poll(a,s).state==RISC_TEXT_ENTRY_ACCEPTED);}
   text_runtime_control(100);risc_text_entry_state_v1 final=poll(a,s);assert(!strcmp(final.text,expected));
   text_runtime_control(5);int rc;unsigned tries=0;while((rc=a->close(a->context,s))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
+  assert(r->release(&g));if(invocation==1)assert(r->request_launch("child.elf"));return;
+ }
+ if(!strcmp(mode,"visibility")){
+  risc_text_entry_state_v1 before=settle_entry(a,s);uint64_t masked=text_runtime_preview_hash();
+  text_runtime_control(22);risc_text_entry_state_v1 visible=settle_entry(a,s);
+  assert(visible.revision>before.revision&&!strcmp(visible.text,before.text));
+  assert(text_runtime_preview_hash()!=masked);
+  text_runtime_control(22);risc_text_entry_state_v1 hidden=settle_entry(a,s);
+  assert(hidden.revision>visible.revision&&!strcmp(hidden.text,before.text));
+  assert(text_runtime_preview_hash()==masked);
+  /* Toggle still works while hardware owns character entry. */
+  text_runtime_control(1);settle_entry(a,s);
+  text_runtime_control(22);visible=settle_entry(a,s);assert(visible.flags&RISC_TEXT_ENTRY_HARDWARE);
+  assert(text_runtime_preview_hash()!=masked);
+  text_runtime_control(22);hidden=settle_entry(a,s);assert(hidden.flags&RISC_TEXT_ENTRY_HARDWARE);
+  assert(text_runtime_preview_hash()==masked);
+  text_runtime_control(3);settle_entry(a,s);
+  text_runtime_control(6);assert(poll(a,s).state==RISC_TEXT_ENTRY_CANCELLED);
+  int rc;unsigned tries=0;while((rc=a->close(a->context,s))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
   assert(r->release(&g));if(invocation==1)assert(r->request_launch("child.elf"));return;
  }
  if(!strncmp(mode,"reason-race-",12)){

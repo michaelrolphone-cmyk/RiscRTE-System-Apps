@@ -21,7 +21,7 @@ CAPS = [('display.output', 1), ('input.touch.raw', 1), ('input.navigation', 1),
         ('bluetooth.hci', 1), ('storage.volume', 1), ('software.update.apps', 1),
         ('software.update.firmware', 1), ('usb.device.msc', 1)]
 CASES = {
-    'files': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'file-open'],
+    'files': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'file-open', 'scroll-policy'],
     'wifi': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],
     'apps': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],
     'ota': ['overlay', 'busy', 'cleanup', 'cleanup-terminal', 'terminal', 'poll', 'capture', 'policy-busy'],

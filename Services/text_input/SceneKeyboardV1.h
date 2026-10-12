@@ -4,6 +4,9 @@
  * value selects the plain-text page (0..3); text is printable ASCII; label is
  * the prompt; action receives VALUE_EVENT key codes below. minimum=0,
  * maximum=3, step=1. target optionally carries the character limit (0 means unknown). DISABLED means a hardware keyboard is attached.
+ * On keyboard nodes only, the otherwise-unused PRIMARY/DESTRUCTIVE bits
+ * describe a password field and an explicit user-requested reveal. Existing
+ * presenters ignore those bits and retain the masked default; no ABI grows.
  * The text-input owner updates the scene after every key, even an ignored key.
  */
 enum { RISC_SCENE_KEYBOARD_NODE = 7 };
@@ -13,7 +16,13 @@ enum {
     RISC_SCENE_KEY_SPACE = 130,
     RISC_SCENE_KEY_DONE = 131,
     RISC_SCENE_KEY_CANCEL = 132,
-    RISC_SCENE_KEY_CLEAR = 133
+    RISC_SCENE_KEY_CLEAR = 133,
+    RISC_SCENE_KEY_VISIBILITY = 134
+};
+
+enum {
+    RISC_SCENE_KEYBOARD_PASSWORD = 2u,
+    RISC_SCENE_KEYBOARD_REVEALED = 4u
 };
 
 /* Text-only document revisions preserve the displayed topology and queued

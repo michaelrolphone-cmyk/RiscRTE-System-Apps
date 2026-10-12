@@ -14,10 +14,15 @@ done
 for source in lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c lib/PortableApps/src/PortableNetworkSession.c lib/PortableApps/src/PortableFileSetup.c;do
  object="$output/$(basename "$source").o";"${CC:-cc}" -std=c11 "${flags[@]}" -c "$source" -o "$object";objects+=("$object")
 done
-for profile in rgb paper paper-scroll;do
+for profile in rgb paper paper-scroll paper-scroll-snapshot;do
  selected=();if [[ "$profile" == paper* ]];then selected+=(-DFILE_BROWSER_PAPER_PROFILE);fi
- if [[ "$profile" == paper-scroll ]];then selected+=(-DPORTABLE_TOUCH_SCROLL);fi
+ if [[ "$profile" == paper-scroll* ]];then selected+=(-DPORTABLE_TOUCH_SCROLL);fi
+ if [[ "$profile" == paper-scroll-snapshot ]];then selected+=(-DPORTABLE_RASTER_SNAPSHOT);fi
  "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -Wno-unused-function -c test/native_apps/file_browser_peer_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
- for scenario in direct transfer upload existing cancel expiry unavailable owned;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
+ scenarios=(local-handoff local-handoff-closed local-handoff-unavailable)
+ # The new snapshot profile exercises the actual app_main handoff. The older
+ # manually stepped peer_frame fixture assumes immediate raster completion.
+ if [[ "$profile" != paper-scroll-snapshot ]];then scenarios+=(direct transfer upload existing cancel expiry unavailable owned);fi
+ for scenario in "${scenarios[@]}";do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
 done

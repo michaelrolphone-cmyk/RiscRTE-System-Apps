@@ -29,6 +29,15 @@ static void ordered_overlap(void){
     push_edge(1,3,0,0);push_edge(1,4,0,1);push_edge(3,4,0,1);
     assert(tick(&e)==RISC_SCENE_IDLE);
     push_edge(3,3,0,0);expect_key('Q');ack_only();expect_key('W');ack_only();
+    /* A released contact's hardware ID can be reused before an older finger
+     * lifts. Every press keeps its DOWN order, including repeated keys. */
+    push_edge(1,0,0,0);
+    for(unsigned i=0;i<8;i++){
+        push_edge(1,1,0,i%2);push_edge(3,1,0,i%2);
+    }
+    assert(tick(&e)==RISC_SCENE_IDLE);
+    push_edge(3,0,0,0);expect_key('Q');ack_only();
+    for(unsigned i=0;i<8;i++){expect_key(i%2?'W':'Q');ack_only();}
     /* Layer acknowledgement changes logical hit mapping while the old frame
      * is still being rasterized or physically refreshed. */
     push_edge(1,0,2,0);push_edge(3,0,2,0);push_edge(1,1,0,0);push_edge(3,1,0,0);

@@ -493,8 +493,20 @@ static void component_draw(void){
         nc_box(16*s,10*s,28*s,28*s,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
         nc_icon(RISC_SYMBOL_BACK,23*s,17*s,14*s,nc_color(RISC_TONE_ACCENT));
         nc_hit(13*s,7*s,34*s,34*s,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
-        nc_box(16*s,42*s,(int)width-32*s,32*s,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
-        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>(int)width-48*s)++tail;nc_text(24*s,63*s,(int)width-48*s,tail,2,nc_fg());
+        keyboard_key visibility;bool password=keyboard_visibility_bounds(keyboard,&visibility);
+        int field_width=password?visibility.x-24*s:(int)width-32*s;
+        nc_box(16*s,42*s,field_width,32*s,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>field_width-16*s)++tail;nc_text(24*s,63*s,field_width-16*s,tail,2,nc_fg());
+        if(password){
+            bool selected=keyboard->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
+            nc_box(visibility.x,visibility.y,visibility.w,visibility.h,6*s,selected?2*s:s,nc_color(RISC_TONE_ACCENT),nc_bg());
+            nc_center(visibility.x,visibility.y+visibility.h/2+4*s,visibility.w,keyboard_visibility_caption(keyboard),3,nc_fg());
+            add_hit(visibility.x,visibility.y,visibility.w,visibility.h,HIT_VALUE,keyboard->id,0,RISC_SCENE_KEY_VISIBILITY);
+        }
+        if(keyboard->flags&RISC_SCENE_DISABLED){
+            nc_center(0,100*s,(int)width,"Hardware keyboard",3,nc_fg());
+            nc_center(0,125*s,(int)width,"ENTER done / ESC cancel",3,nc_fg());return;
+        }
         for(unsigned i=0;;i++){keyboard_key k;if(!keyboard_bounds((unsigned)keyboard->value,i,&k))break;char ch[2];const char *label=keyboard_caption((unsigned)keyboard->value,k.key,ch);
             bool selected=keyboard->id==path.focus[path.depth-1]&&i==focus_part;nc_box(k.x,k.y,k.w,k.h,3*s,s,nc_color(RISC_TONE_ACCENT),selected?nc_color(RISC_TONE_ACCENT):nc_bg());nc_center(k.x,k.y+k.h/2+4*s,k.w,label,3,selected?nc_bg():nc_fg());nc_hit(k.x,k.y,k.w,k.h,HIT_VALUE,keyboard,(int)k.key,true);
         }
@@ -530,6 +542,7 @@ static void component_draw(void){
 static bool component_activate(const hit *h){
     if(h->kind==HIT_TOAST){if(model->toast_until&&document.toast_action)emit(RISC_SCENE_ACTION_EVENT,0,document.toast_action,0);return true;}
     int i=node_index(&document,h->node);if(i<0)return true;const risc_scene_node_v1 *n=&document.nodes[i];
+    if(n->kind==RISC_SCENE_KEYBOARD_NODE)return false;
     if(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))return true;
     if(h->kind==HIT_VALUE&&(n->kind==RISC_COMPONENT_SEGMENTS||n->kind==RISC_COMPONENT_TAB_BAR))focus_part=(unsigned)(h->value-n->minimum);
     if(h->kind==HIT_SECONDARY){path.focus[path.depth-1]=n->id;emit(RISC_SCENE_ACTION_EVENT,n->id,document.details[i].secondary_action,0);return true;}return false;

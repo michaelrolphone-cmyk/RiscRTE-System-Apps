@@ -29,7 +29,7 @@ sources=['bootstrap/Json.cpp','bootstrap/Board.cpp','bootstrap/Runtime.cpp','run
 subprocess.run([os.environ.get('CXX','c++'),'-std=c++17',*flags,*san,'-Wno-missing-field-initializers','-O0','-fno-pie','-no-pie','-rdynamic',*incs,'-I'+str(runtime/'src'),'-I'+str(runtime/'lib/ArduinoJson/src'),'-I'+str(runtime/'test/drivers/stubs'),*[str(runtime/'src'/x) for x in sources],str(ROOT/'test/text_input/runtime_test.cpp'),'-ldl','-o',str(out/'test')],check=True)
 for activation in ['eager','demand','demand-retained','demand-retained-armed']:
  boot=json.loads((out/'boot.json').read_text());boot['provider_activation']='demand-retained' if activation=='demand-retained-armed' else activation;write('boot.json',boot)
- for mode in (['fast','fast-cancel'] if a.fast_only else ['masked','reason-race-accept-home','reason-race-back-home','reason-home','reason-back','reason-home-pending','reason-back-pending','reason-legacy-home','fast','fast-cancel','plain','hardware','pending','unclosed','retained',
+ for mode in (['fast','fast-cancel'] if a.fast_only else ['masked','visibility','reason-race-accept-home','reason-race-back-home','reason-home','reason-back','reason-home-pending','reason-back-pending','reason-legacy-home','fast','fast-cancel','plain','hardware','pending','unclosed','retained',
               *['native-'+point for point in ('keyboard_subscribe','keyboard_snapshot','info','subscribe',
                 'snapshot','snapshot-fail','foreground','reset','keyboard_poll','keyboard_next',
                 'touch_poll','next','navigation_poll','acquire','submit','status','keyboard_unsubscribe','unsubscribe')]]):

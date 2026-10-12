@@ -1,0 +1,3 @@
+{"command": ["bash", "scripts/test_portable_file_setup.sh"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {"SANITIZE": "1", "OUTPUT_DIR": "/workspace/shared/x4-settings-system-101-evidence-20261012/portable_file_setup-ubsan"}}
+portable file setup: 93 deterministic cases passed
+canonical setup header provenance passed
