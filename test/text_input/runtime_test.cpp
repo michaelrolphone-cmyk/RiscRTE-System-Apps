@@ -23,7 +23,7 @@ static void provider_io(const char*name){
 static bool held,touch_sub,keyboard_sub,attached,pending,bad_unsubscribe;
 static uint8_t pixels[800*480*2];
 static uint64_t ms;
-static bool paper,contact_held;
+static bool paper,contact_held,touch_only;
 static risc_touch_event_v1 touches[32];static unsigned touch_at,touch_count;static uint64_t touch_sequence;
 static unsigned panel_width(){return paper?800u:240u;}
 static unsigned panel_height(){return paper?480u:240u;}
@@ -59,17 +59,22 @@ extern "C" uint64_t text_runtime_preview_hash(void){
  }
  return hash;
 }
+static void header_tap(bool home){
+ assert(!paper);uint16_t x=home?220:20,y=20;
+ touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,x,y};
+ touches[touch_count++]={++touch_sequence,ms+10,RISC_TOUCH_EVENT_UP,0,x,y};
+}
 extern "C" void text_runtime_control(unsigned command){
  queued=at=0;touch_at=touch_count=0;
  if(command==1){attached=true;push(1,0);push(3,4);}
  else if(command==2)push(3,4);
  else if(command==3){attached=false;push(2,0);push(3,5);}
  else if(command==4){pending=true; /* Force a pending host frame after edit. */
-   nav=RISC_NAV_LEFT;
+   if(touch_only)tap(2,0);else nav=RISC_NAV_LEFT;
  }
  else if(command==5)pending=false;
- else if(command==6)nav=RISC_NAV_BACK;
- else if(command==7)nav=RISC_NAV_HOME;
+ else if(command==6){if(touch_only)header_tap(false);else nav=RISC_NAV_BACK;}
+ else if(command==7){if(touch_only)header_tap(true);else nav=RISC_NAV_HOME;}
  else if(command==9)bad_unsubscribe=true;
  else if(command==10){pending=true;tap(0,0);}
  else if(command==11){for(unsigned col:{0u,0u,1u,2u,1u,0u})tap(0,col);}
@@ -79,7 +84,7 @@ extern "C" void text_runtime_control(unsigned command){
  else if(command==15)tap(0,0);
  else if(command==16)tap(3,3);
  else if(command==19){assert(paper);touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,408,192};touches[touch_count++]={++touch_sequence,ms+10,RISC_TOUCH_EVENT_UP,0,408,192};}
- else if(command==20||command==21){push(3,command==20?0x28:0x29);nav=RISC_NAV_HOME;}
+ else if(command==20||command==21){push(3,command==20?0x28:0x29);if(touch_only)header_tap(true);else nav=RISC_NAV_HOME;}
  else if(command==22){
   uint16_t x=paper?240:192,y=paper?278:58;
   touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,x,y};
@@ -116,7 +121,7 @@ static const risc_usb_keyboard_api_v1 keyboard={1,sizeof(keyboard),nullptr,keybo
 extern "C" const void*text_runtime_provider(const char*name){if(!strcmp(name,"display.output"))return &display;if(!strcmp(name,"input.touch.raw"))return &touch;if(!strcmp(name,"input.navigation"))return &navigation;if(!strcmp(name,"usb.hid.keyboard"))return &keyboard;assert(0);return nullptr;}
 extern "C" bool text_runtime_provider_event(const char*name,unsigned event){if(event==1)++starts;else if(event==2)++stops;else if(event==3){if(!strcmp(name,"display.output"))return !held;if(!strcmp(name,"input.touch.raw"))return !touch_sub;if(!strcmp(name,"usb.hid.keyboard"))return !keyboard_sub;}return true;}
 int main(int argc,char**argv){
- assert(argc==4);paper=std::getenv("TEXT_TEST_PAPER")!=nullptr;mode=argv[2];activation=argv[3];bool retained=mode=="retained"||mode=="unclosed"||mode.rfind("native-",0)==0;
+ assert(argc==4);touch_only=std::getenv("TEXT_TEST_TOUCH_ONLY")!=nullptr;paper=std::getenv("TEXT_TEST_PAPER")!=nullptr;mode=argv[2];activation=argv[3];bool retained=mode=="retained"||mode=="unclosed"||mode.rfind("native-",0)==0;
  RiscBoot::Port port{[](){return true;},[](risc_runtime_health_v1*){return true;},[](uint32_t n){ms+=n;},[](const char*){return true;}};
  port.retainedDelay=[](uint32_t){};
  port.bindPlatforms=[](RiscBoot::Runtime&r){return r.registerPlatform("platform.clock",1,RiscBoot::Runtime::Scope::Global,0,&clock_api);};

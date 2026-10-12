@@ -1,0 +1,56 @@
+name: Watch compact scene qualification
+on:
+  push:
+    branches: [fix/watch-compact-scene-043-20261012]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .deps/sdk-runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 267aab6d9382ce4921a1536fab1620749b2f5301
+          path: .deps/watch-runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate full-reference fonts and qualify compact profile
+        run: |
+          set -euo pipefail
+          python -m pip install Pillow==12.3.0
+          python scripts/generate_telemetry_fonts.py
+          mkdir evidence
+          python scripts/test_scene_host.py --runtime .deps/sdk-runtime --host-profile watch-compact --sanitize 2>&1 | tee evidence/scene.log
+          python scripts/test_scene_components.py --runtime .deps/sdk-runtime --host-profile watch-compact 2>&1 | tee evidence/components.log
+          python scripts/test_scene_compact_profile.py --runtime .deps/sdk-runtime --output build/profile 2>&1 | tee evidence/profile.log
+          python scripts/test_scene_telemetry.py --runtime .deps/sdk-runtime 2>&1 | tee evidence/full-telemetry.log
+          python scripts/test_text_input_runtime.py --runtime .deps/watch-runtime --host-profile watch-compact --sanitize --output build/runtime 2>&1 | tee evidence/runtime.log
+      - name: Build explicit compact source profile
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_text_input_services.py --runtime .deps/sdk-runtime --host-profile watch-compact --output dist/keyboard 2>&1 | tee evidence/target.log
+          git rev-parse HEAD > evidence/published-source.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: watch-compact-scene-pair
+          path: |
+            dist/keyboard/
+            evidence/
+            build/profile/raster-parity.json
+          retention-days: 14

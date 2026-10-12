@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 from scene_sdk import stage_sdk
-from build_scene_services import PROFILE_FLAGS
+from build_scene_services import PROFILE_FLAGS, HOST_PROFILE_FLAGS
 
 ROOT = Path(__file__).resolve().parents[1]
 MODES = ('behavior', 'inflight', 'stale-frame', 'gap', 'transient', 'held',
@@ -28,10 +28,10 @@ LIFECYCLE_MODES = ('lifecycle-discovery', 'lifecycle-activity', 'lifecycle-busy'
                    'lifecycle-native-snapshot-fail', 'lifecycle-native-reset')
 
 
-def run(runtime: Path, output: Path, sanitize: bool) -> int:
+def run(runtime: Path, output: Path, sanitize: bool, host_profile: str = 'full') -> int:
     include = stage_sdk(runtime, ROOT, output / 'sdk')
     compiler = os.environ.get('CC', 'cc')
-    flags = ['-std=c11', '-O1', '-Wall', '-Wextra', '-Werror']
+    flags = ['-std=c11', '-O1', '-Wall', '-Wextra', '-Werror', *HOST_PROFILE_FLAGS[host_profile]]
     if sanitize:
         flags += ['-g', '-fsanitize=address,undefined', '-fno-sanitize-recover=all',
                   '-fno-omit-frame-pointer']
@@ -41,7 +41,7 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
                     str(ROOT/'test/scene/host_test.c'), '-o', str(exe)], check=True)
     env = dict(os.environ)
     env.setdefault('ASAN_OPTIONS', 'detect_leaks=0')
-    for profile in ('watch', 'paper', 'gray'):
+    for profile in (('watch',) if host_profile=='watch-compact' else ('watch','paper','gray')):
         for mode in MODES:
             command = [str(exe), mode, profile]
             if mode == 'behavior':
@@ -51,7 +51,7 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
     subprocess.run([compiler, *flags, '-I'+str(include),
                     str(ROOT/'Services/scene_host/host.c'),
                     str(ROOT/'test/scene/keyboard_test.c'), '-o', str(keyboard_exe)], check=True)
-    for profile in ('watch', 'paper', 'gray'):
+    for profile in (('watch',) if host_profile=='watch-compact' else ('watch','paper','gray')):
         for mode in KEYBOARD_MODES:
             command = [str(keyboard_exe), mode, profile]
             if mode == 'keyboard-raster':
@@ -61,15 +61,17 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
     subprocess.run([compiler, *flags, '-DTEST_SCENE_PRIVACY_PROBE', '-I'+str(include),
                     str(ROOT/'test/scene/privacy_probe.c'),
                     str(ROOT/'test/scene/keyboard_test.c'), '-o', str(privacy_exe)], check=True)
-    for profile in ('watch', 'paper', 'gray'):
+    for profile in (('watch',) if host_profile=='watch-compact' else ('watch','paper','gray')):
         subprocess.run([str(privacy_exe), 'keyboard-visibility', profile], env=env, check=True)
     lifecycle_exe = output / 'scene-lifecycle-test'
     subprocess.run([compiler, *flags, '-I'+str(include),
                     str(ROOT/'Services/scene_host/host.c'),
                     str(ROOT/'test/scene/lifecycle_test.c'), '-o', str(lifecycle_exe)], check=True)
-    for profile in ('watch', 'paper', 'gray'):
+    for profile in (('watch',) if host_profile=='watch-compact' else ('watch','paper','gray')):
         for mode in LIFECYCLE_MODES:
             subprocess.run([str(lifecycle_exe), mode, profile], env=env, check=True)
+    if host_profile=='watch-compact':
+        return len(MODES)+len(KEYBOARD_MODES)+len(LIFECYCLE_MODES)+1
     # Compile the actual independently packaged profiles with the exact target
     # builder flags, then assert against the installed panel/touch contract.
     for name, profile_flags in PROFILE_FLAGS.items():
@@ -106,7 +108,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime', type=Path, required=True)
     parser.add_argument('--sanitize', action='store_true')
+    parser.add_argument('--host-profile', choices=HOST_PROFILE_FLAGS, default='full')
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='risc-scene-host-') as temporary:
-        count = run(args.runtime.resolve(), Path(temporary), args.sanitize)
+        count = run(args.runtime.resolve(), Path(temporary), args.sanitize, args.host_profile)
     print(f'{count} presenter/profile executions passed; hardware remains untested.')

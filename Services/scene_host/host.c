@@ -1,5 +1,15 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
 #include "RiscSceneTelemetryV1.h"
+/* Explicit source profile: the default remains the complete presenter. */
+#ifndef SCENE_HOST_WATCH_240
+#define SCENE_HOST_WATCH_240 0
+#endif
+#ifndef SCENE_HOST_TELEMETRY
+#define SCENE_HOST_TELEMETRY 1
+#endif
+#if SCENE_HOST_TELEMETRY != 0 && SCENE_HOST_TELEMETRY != 1
+#error "SCENE_HOST_TELEMETRY must be 0 or 1"
+#endif
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
@@ -789,11 +799,17 @@ static bool valid_surface(void){
     return surface.stride_bytes>=row&&(uint64_t)surface.stride_bytes*surface.height<=surface.size_bytes;
 }
 
+#if SCENE_HOST_TELEMETRY
 #include "telemetry.inc"
+#else
+#include "telemetry_disabled.inc"
+#endif
 #include "components.inc"
 #include "page.inc"
 #include "reading.inc"
+#if SCENE_HOST_TELEMETRY
 #include "telemetry_draw.inc"
+#endif
 
 static void draw_scene(void){
     if(model->page_view){if(model->reading_view)reading_draw();else page_draw();return;}
@@ -959,6 +975,9 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
        info.width<160||info.height<160||info.width>2048||info.height>2048||
        info.preferred_format<1||info.preferred_format>5||
        !(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(info.preferred_format)))return RISC_SCENE_UNAVAILABLE;
+#if SCENE_HOST_WATCH_240
+    if(info.width!=240||info.height!=240||info.preferred_format!=RISC_DISPLAY_FORMAT_RGB565||profile->preferred_format!=RISC_DISPLAY_FORMAT_RGB565)return RISC_SCENE_UNAVAILABLE;
+#endif
     width=info.width;height=info.height;
     if(profile->display_rotation==90||profile->display_rotation==270){width=info.height;height=info.width;}
     if(height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
@@ -1137,10 +1156,19 @@ static int32_t components_update(void *c,uint64_t s,const risc_components_docume
     if(!model->components)return RISC_SCENE_INVALID;
     int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_telemetry_api_v1 api={{{{ { { {
+#if SCENE_HOST_TELEMETRY
+static const risc_scene_telemetry_api_v1 api={
+#else
+static const risc_scene_reading_links_api_v1 api=
+#endif
+{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
-    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked},RISC_SCENE_TELEMETRY_TAG,1,telemetry_present};
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked}
+#if SCENE_HOST_TELEMETRY
+,RISC_SCENE_TELEMETRY_TAG,1,telemetry_present}
+#endif
+;
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;

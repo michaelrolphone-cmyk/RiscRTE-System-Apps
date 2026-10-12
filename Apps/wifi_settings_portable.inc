@@ -1035,7 +1035,13 @@ void app_main(void) {
     }
     if(dirty){
       wifi_make_view();
+#ifdef PORTABLE_RASTER_SNAPSHOT
+      /* The selected Watch snapshot renderer also needs bounded RGB565 work.
+       * The frame gate records immutable commands and advances between polls. */
+      if(paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
+#else
       if(!portable_wifi_paper() || paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
+#endif
     }
     t5_app_input_t input;
     if(!wa->poll(&input,25)) {
