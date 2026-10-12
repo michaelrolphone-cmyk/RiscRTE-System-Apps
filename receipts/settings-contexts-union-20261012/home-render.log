@@ -1,0 +1,8 @@
+Home cache: 15 captures, 30 blits; unchanged returns use zero paint spans; visible changes, orientation, deferred dirty and fallback have exact pixels PASS
+Actual Home catalog raster: all 31-byte ASCII labels fit two measured lines, four rows, full IDs, both orientations, unpadded hours passed
+Home clean foreground generation reload: one complete read, no writes, no timer/held discovery
+Home settings notices: actual scene cache and raster, all status captions fit, unchanged scenes retained
+Home cache: 15 captures, 30 blits; unchanged returns use zero paint spans; visible changes, orientation, deferred dirty and fallback have exact pixels PASS
+Actual Home catalog raster: all 31-byte ASCII labels fit two measured lines, four rows, full IDs, both orientations, unpadded hours passed
+Home clean foreground generation reload: one complete read, no writes, no timer/held discovery
+Home settings notices: actual scene cache and raster, all status captions fit, unchanged scenes retained

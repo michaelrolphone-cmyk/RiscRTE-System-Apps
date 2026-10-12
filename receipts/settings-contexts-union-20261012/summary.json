@@ -1,0 +1,116 @@
+{
+  "source_commit": "034ec3d82a9eebf1d0ab5fb5a8ac91c951fb382c",
+  "public_exact_tree": "677fdd5278ce32f37318a37289ba4d0494a85df9",
+  "tree": "055bbc0ff8138c86b658c66c2ee472df8aecbdc7",
+  "independent_shared_host_delta": [
+    "45672b4602df1bf8029e517c2f4ec0945345fee2",
+    "f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165"
+  ],
+  "preserved_combined_paths": [
+    "lib/PortableApps/include/PortableContextsClient.h",
+    "lib/PortableApps/src/quick_adapter.inc",
+    "lib/PortableApps/src/resident_shell.inc"
+  ],
+  "cases_per_flavor": {
+    "settings_availability": 17,
+    "settings_atomic": 47,
+    "home_availability": 9,
+    "home_automatic": 47,
+    "quick_atomic": 41,
+    "wifi_availability": 17,
+    "text_checkpoint": 70,
+    "text_handoff_continuity": 52
+  },
+  "raster_cache_and_clean_reload": true,
+  "sanitizers": "ASan+UBSan; LeakSanitizer disabled because executor uses ptrace",
+  "initial_lsan_failure_preserved": "x4-settings-contexts-union-evidence-20261012/wifi-sanitized.log",
+  "product_activation": false,
+  "hardware_tested": false,
+  "logs": [
+    {
+      "path": "settings-normal.log",
+      "bytes": 664,
+      "sha256": "888a70e740c000900006adfeb6db7ce4d53ae5a7d69a9bfd23f575c5e5dac367"
+    },
+    {
+      "path": "settings-sanitized.log",
+      "bytes": 664,
+      "sha256": "888a70e740c000900006adfeb6db7ce4d53ae5a7d69a9bfd23f575c5e5dac367"
+    },
+    {
+      "path": "settings-atomic-normal.log",
+      "bytes": 2725,
+      "sha256": "65d6280ce54a49e7080aa2575f165dcf385686a4832b4b075cc9d8a9c0d983f5"
+    },
+    {
+      "path": "settings-atomic-sanitized.log",
+      "bytes": 2725,
+      "sha256": "65d6280ce54a49e7080aa2575f165dcf385686a4832b4b075cc9d8a9c0d983f5"
+    },
+    {
+      "path": "home-normal.log",
+      "bytes": 270,
+      "sha256": "655fdd1743560732d023c8f9249e088d4969e70b0562ba72ec4e4afb17010ba6"
+    },
+    {
+      "path": "home-sanitized.log",
+      "bytes": 270,
+      "sha256": "655fdd1743560732d023c8f9249e088d4969e70b0562ba72ec4e4afb17010ba6"
+    },
+    {
+      "path": "home-automatic-normal.log",
+      "bytes": 3380,
+      "sha256": "69957b20a2cfebcad6eb5872eb907fb7de3be10e458a66199cffb25d620c4338"
+    },
+    {
+      "path": "home-automatic-sanitized.log",
+      "bytes": 3380,
+      "sha256": "69957b20a2cfebcad6eb5872eb907fb7de3be10e458a66199cffb25d620c4338"
+    },
+    {
+      "path": "quick-normal.log",
+      "bytes": 2127,
+      "sha256": "23b4e328e5b4a6962d16ff2220f3be5d32b506261fb9b1381a0d98c4836262e5"
+    },
+    {
+      "path": "quick-sanitized.log",
+      "bytes": 2127,
+      "sha256": "23b4e328e5b4a6962d16ff2220f3be5d32b506261fb9b1381a0d98c4836262e5"
+    },
+    {
+      "path": "wifi-normal.log",
+      "bytes": 628,
+      "sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "path": "wifi-sanitized-no-lsan.log",
+      "bytes": 628,
+      "sha256": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+    },
+    {
+      "path": "checkpoint-normal.log",
+      "bytes": 4588,
+      "sha256": "811ec215948fdb7161c5944f0f3a437332c2e63c2e90882ea9a56362de55f8c5"
+    },
+    {
+      "path": "checkpoint-sanitized.log",
+      "bytes": 9141,
+      "sha256": "e981905ef32157926eae53493663db10ccdd8a48365c7c96bb9c185b2129b22a"
+    },
+    {
+      "path": "continuity-normal.log",
+      "bytes": 3280,
+      "sha256": "9e912e4d98bc80a5a750724c73db5aa041716db246d31370627e1c3871a00066"
+    },
+    {
+      "path": "continuity-sanitized.log",
+      "bytes": 6528,
+      "sha256": "0e9a65051df339d275f411147b8b359e5b144b6031bd55c4984dba106e513a0a"
+    },
+    {
+      "path": "home-render.log",
+      "bytes": 990,
+      "sha256": "d5d6fbc8cccd70aa1fc490205cdef3fdd8e504c2d6b85b2d89ed62b0de02b59c"
+    }
+  ]
+}

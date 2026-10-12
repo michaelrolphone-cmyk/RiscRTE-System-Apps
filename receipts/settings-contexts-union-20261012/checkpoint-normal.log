@@ -1,0 +1,66 @@
+review checkpoint abi PASS (callbacks=2 configures=0 pauses=0 resumes=0)
+review checkpoint unsupported PASS (callbacks=4 configures=0 pauses=0 resumes=0)
+review checkpoint unsupported-continuity PASS (callbacks=5 configures=1 pauses=0 resumes=0)
+review checkpoint opt-in PASS (callbacks=2 configures=0 pauses=0 resumes=0)
+review checkpoint flags PASS (callbacks=7 configures=1 pauses=0 resumes=0)
+review checkpoint usb-flags PASS (callbacks=42 configures=2 pauses=1 resumes=0)
+review checkpoint usb-activity-race PASS (callbacks=29 configures=2 pauses=1 resumes=0)
+review checkpoint usb-queue PASS (callbacks=65 configures=2 pauses=1 resumes=0)
+review checkpoint outcome-race PASS (callbacks=7 configures=1 pauses=0 resumes=0)
+review checkpoint home-race PASS (callbacks=7 configures=1 pauses=0 resumes=0)
+review checkpoint key-race PASS (callbacks=8 configures=1 pauses=0 resumes=0)
+review checkpoint layer PASS (callbacks=21 configures=2 pauses=1 resumes=1)
+review checkpoint caps PASS (callbacks=49 configures=2 pauses=1 resumes=1)
+review checkpoint pause-again PASS (callbacks=14 configures=2 pauses=3 resumes=1)
+review checkpoint close-pausing PASS (callbacks=11 configures=2 pauses=1 resumes=0)
+review checkpoint close-paused PASS (callbacks=11 configures=2 pauses=1 resumes=0)
+review checkpoint invalid PASS (callbacks=3 configures=1 pauses=0 resumes=0)
+review checkpoint loss-enable-configure PASS (callbacks=2 configures=1 pauses=0 resumes=0)
+review checkpoint loss-enable-usb-snapshot PASS (callbacks=5 configures=1 pauses=0 resumes=0)
+review checkpoint loss-checkpoint-snapshot PASS (callbacks=12 configures=1 pauses=0 resumes=0)
+review checkpoint loss-close-subscription PASS (callbacks=20 configures=2 pauses=1 resumes=0)
+review checkpoint loss-pause-scene PASS (callbacks=10 configures=2 pauses=1 resumes=0)
+review checkpoint loss-resume-usb-snapshot PASS (callbacks=22 configures=2 pauses=1 resumes=0)
+review checkpoint loss-resume-scene PASS (callbacks=11 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-repeated PASS (callbacks=44 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-held PASS (callbacks=47 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-cancel PASS (callbacks=31 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-done PASS (callbacks=31 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-sleep PASS (callbacks=43 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-overflow PASS (callbacks=72 configures=2 pauses=1 resumes=1)
+review checkpoint usb-continuity-close PASS
+review checkpoint usb-full-roundtrip PASS (callbacks=47 configures=3 pauses=1 resumes=1)
+review checkpoint usb-full-again PASS (callbacks=49 configures=3 pauses=3 resumes=1)
+review checkpoint usb-full-close PASS (callbacks=21 configures=2 pauses=1 resumes=0)
+review checkpoint fault-enable-configure PASS (callbacks=2 configures=1 pauses=0 resumes=0)
+review checkpoint fault-enable-usb-snapshot PASS (callbacks=5 configures=1 pauses=0 resumes=0)
+review checkpoint fault-close-subscription PASS (callbacks=20 configures=2 pauses=1 resumes=0)
+review checkpoint fault-pause-scene PASS (callbacks=10 configures=2 pauses=1 resumes=0)
+review checkpoint fault-resume-usb-snapshot PASS (callbacks=22 configures=2 pauses=1 resumes=0)
+review checkpoint fault-resume-scene PASS (callbacks=11 configures=2 pauses=1 resumes=1)
+review checkpoint client bounded old allocations PASS
+review checkpoint client lifecycle PASS
+review checkpoint client close-paused PASS
+review checkpoint client enable-busy PASS
+review checkpoint client enable-unavailable PASS
+review checkpoint client enable-loss PASS
+review checkpoint client enable-retained PASS
+review checkpoint client enable-invalid PASS
+review checkpoint client snapshot-loss PASS
+review checkpoint client snapshot-retained PASS
+review checkpoint client snapshot-busy PASS
+review checkpoint client snapshot-size PASS
+review checkpoint client snapshot-flags PASS
+review checkpoint client snapshot-phase PASS
+review checkpoint client snapshot-paused-presenting PASS
+review checkpoint client snapshot-paused-busy PASS
+review checkpoint client pause-loss PASS
+review checkpoint client pause-retained PASS
+review checkpoint client pause-busy PASS
+review checkpoint client pause-busy-after-again PASS
+review checkpoint client pause-invalid PASS
+review checkpoint client resume-loss PASS
+review checkpoint client resume-retained PASS
+review checkpoint client resume-busy PASS
+review checkpoint client resume-invalid PASS
+70 review checkpoint scenarios PASS
