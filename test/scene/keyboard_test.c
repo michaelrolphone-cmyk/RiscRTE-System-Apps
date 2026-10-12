@@ -44,6 +44,65 @@ static void expect_key(unsigned key){
     if(e.value!=(int32_t)key)fprintf(stderr,"expected %u got %d layer %d revision %u\n",key,e.value,doc.nodes[0].value,doc.revision);
     assert(e.kind==RISC_SCENE_VALUE_EVENT&&e.action==77&&e.node==1&&e.value==(int32_t)key&&e.document_revision==doc.revision);
 }
+static void visibility_tap(void){
+    bool portrait=logical_height()>=logical_width()*3u/2u;
+    touch_tap((portrait?240:384)*logical_width()/480,
+        (portrait?278:58)*logical_height()/(portrait?800:240));
+}
+static void keyboard_visibility(void){
+    doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD;strcpy(doc.nodes[0].text,"***********");acknowledge();
+    visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);
+    /* A delivered toggle does not repeat while the owner acknowledges it. */
+    risc_scene_event_v1 e;assert(tick(&e)==RISC_SCENE_IDLE);
+    doc.nodes[0].flags|=RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"Fixture-a9!");acknowledge();
+    visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);
+    doc.nodes[0].flags&=~RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"***********");acknowledge();
+    key_tap(0,0);expect_key('Q');acknowledge();
+    /* Up from the first keyboard row reaches the visible Show control. */
+    nav_pressed=RISC_NAV_UP;assert(tick(&e)==RISC_SCENE_IDLE);
+    nav_pressed=RISC_NAV_CONFIRM;expect_key(RISC_SCENE_KEY_VISIBILITY);acknowledge();
+    doc.nodes[0].flags|=RISC_SCENE_DISABLED;acknowledge();
+    visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);acknowledge();
+    key_tap(0,0);assert(tick(&e)==RISC_SCENE_IDLE);
+    nav_pressed=RISC_NAV_PAGE_FORWARD;expect_key(RISC_SCENE_KEY_VISIBILITY);acknowledge();
+    nav_pressed=RISC_NAV_CONFIRM;expect_key(RISC_SCENE_KEY_DONE);acknowledge();
+    doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD;++doc.revision;assert(!api->update(NULL,session,&doc));
+    allow_complete=false;begin_frame();visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);
+    doc.nodes[0].flags|=RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"Fixture-a9!");++doc.revision;
+    assert(!api->update(NULL,session,&doc));visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);
+    doc.nodes[0].flags&=~RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"***********");++doc.revision;
+    assert(!api->update(NULL,session,&doc));allow_complete=true;settle();
+    doc.nodes[0].flags=0;acknowledge();visibility_tap();assert(tick(&e)==RISC_SCENE_IDLE);
+    /* Leave an actual revealed draft in the frozen model for the close-time
+     * private-storage probe; it must not survive successful teardown. */
+    doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_KEYBOARD_REVEALED;
+    strcpy(doc.nodes[0].text,"Fixture-a9!");acknowledge();
+}
+static uint8_t privacy_pixels[sizeof(pixels)];
+static unsigned privacy_submits;
+static void masked_submit(void){
+    /* Check each future submission, not only the eventual settled picture. */
+    assert(!memcmp(privacy_pixels,pixels,sizeof(pixels)));++privacy_submits;
+}
+static bool keyboard_hide_inflight(bool native_loss){
+    doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD;strcpy(doc.nodes[0].text,"***********");acknowledge();
+    memcpy(privacy_pixels,pixels,sizeof(pixels));
+    doc.nodes[0].flags|=RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"Fixture-a9!");
+    ++doc.revision;assert(!api->update(NULL,session,&doc));
+    unsigned before=submits,returned=releases;risc_scene_event_v1 e;
+    assert(tick(&e)==RISC_SCENE_IDLE&&held&&!presenting&&submits==before);
+    if(native_loss)loss_callback="release";
+    doc.nodes[0].flags&=~RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"***********");++doc.revision;
+    int rc=api->update(NULL,session,&doc);
+    if(native_loss){
+        assert(rc==RISC_SCENE_RETAINED&&!native_alive);unsigned io_before=calls;
+        assert(tick(&e)==RISC_SCENE_RETAINED&&api->close(NULL,session)==RISC_SCENE_RETAINED);
+        assert(!driver->quiesce());driver->stop();assert(calls==io_before);return true;
+    }
+    assert(rc==RISC_SCENE_OK&&!held&&releases==returned+1&&submits==before);
+    submit_observer=masked_submit;settle();assert(privacy_submits==1&&submits==before+1);
+    submit_observer=NULL;return false;
+}
 static void keyboard_touch(void){
     const char *rows[4][4]={
         {"QWERTYUIOP","ASDFGHJKL","\200ZXCVBNM\201",",\202.\203"},
@@ -327,12 +386,21 @@ int main(int argc,char **argv){
     if(!strcmp(mode,"profile-orientation"))packaged_orientation();
     else
 #endif
-    if(!strcmp(mode,"keyboard-preview")){
-        strcpy(doc.routes[0].title,"NEW TYPE");strcpy(doc.nodes[0].text,"POWER NAP");doc.nodes[0].target=31;
+    if(!strcmp(mode,"keyboard-preview")||!strcmp(mode,"keyboard-password-preview")){
+        bool password=!strcmp(mode,"keyboard-password-preview");
+        strcpy(doc.routes[0].title,password?"PASSWORD":"NEW TYPE");strcpy(doc.nodes[0].label,password?"Password":"Name");
+        strcpy(doc.nodes[0].text,password?"Fixture-a9!":"POWER NAP");doc.nodes[0].target=password?63:31;
+        if(password)doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_KEYBOARD_REVEALED;
         doc.nodes[0].value=argc>4?atoi(argv[4]):0;acknowledge();
         assert(argc>3);FILE *f=fopen(argv[3],"wb");assert(f);unsigned bits=format==5?16:format==3?4:1;
         assert(fwrite(pixels+16,1,(w*bits+7)/8*h,f)==(w*bits+7)/8*h);fclose(f);
     }
+    else if(!strcmp(mode,"keyboard-hide-inflight")||!strcmp(mode,"keyboard-hide-native")){
+        if(keyboard_hide_inflight(!strcmp(mode,"keyboard-hide-native"))){
+            printf("scene host %s %s PASS (no I/O after privacy-release retention)\n",mode,argv[2]);return 0;
+        }
+    }
+    else if(!strcmp(mode,"keyboard-visibility"))keyboard_visibility();
     else if(!strcmp(mode,"keyboard-fast"))keyboard_fast();
     else if(!strcmp(mode,"keyboard-touch"))keyboard_touch();
     else if(!strcmp(mode,"keyboard-navigation"))keyboard_navigation();
@@ -346,6 +414,10 @@ int main(int argc,char **argv){
     else if(!strcmp(mode,"keyboard-raster"))keyboard_raster(argc>3?argv[3]:NULL);
     else assert(0);
     finish();
+#ifdef TEST_SCENE_PRIVACY_PROBE
+    extern int scene_private_storage_cleared(void);
+    assert(scene_private_storage_cleared());
+#endif
     printf("scene host %s %s PASS (frames=%u calls=%u)\n",mode,argv[2],submits,calls);return 0;
 }
 

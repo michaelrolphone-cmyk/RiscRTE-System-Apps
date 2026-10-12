@@ -48,6 +48,17 @@ extern "C" void text_runtime_check_token(uint64_t token){assert(token);if(activa
 extern "C" void text_runtime_app_event(unsigned n,const void*p){if(n==1){++loads;app_pointer=p;}else{assert(n==2);++unloads;}}
 static void push(unsigned kind,unsigned usage){queue[queued++]={++sequence,7,(uint8_t)kind,(uint8_t)usage,0,0};}
 extern "C" unsigned text_runtime_frames(void){return frames;}
+/* The displayed draft only, excluding focus borders and visibility caption.
+ * Coordinates use the independent installed X4 logical-to-panel transform. */
+extern "C" uint64_t text_runtime_preview_hash(void){
+ uint64_t hash=1469598103934665603ull;
+ unsigned left=paper?48:10,top=paper?164:47,right=paper?350:145,bottom=paper?222:63;
+ for(unsigned y=top;y<bottom;y++)for(unsigned x=left;x<right;x++){
+  unsigned px=paper?y:x,py=paper?479-x:y,at=(py*panel_width()+px)*2;
+  hash=(hash^pixels[at])*1099511628211ull;hash=(hash^pixels[at+1])*1099511628211ull;
+ }
+ return hash;
+}
 extern "C" void text_runtime_control(unsigned command){
  queued=at=0;touch_at=touch_count=0;
  if(command==1){attached=true;push(1,0);push(3,4);}
@@ -69,6 +80,11 @@ extern "C" void text_runtime_control(unsigned command){
  else if(command==16)tap(3,3);
  else if(command==19){assert(paper);touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,408,192};touches[touch_count++]={++touch_sequence,ms+10,RISC_TOUCH_EVENT_UP,0,408,192};}
  else if(command==20||command==21){push(3,command==20?0x28:0x29);nav=RISC_NAV_HOME;}
+ else if(command==22){
+  uint16_t x=paper?240:192,y=paper?278:58;
+  touches[touch_count++]={++touch_sequence,ms,RISC_TOUCH_EVENT_DOWN,0,x,y};
+  touches[touch_count++]={++touch_sequence,ms+10,RISC_TOUCH_EVENT_UP,0,x,y};
+ }
  else if(command>=100&&command<110)tap(0,command-100);
  else assert(0);
 }

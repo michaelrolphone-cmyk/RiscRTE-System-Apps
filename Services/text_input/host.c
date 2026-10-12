@@ -16,7 +16,7 @@ static risc_scene_document_v1 document;
 static risc_text_entry_state_v1 state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
 static uint32_t capacity,page,request_flags;
-static bool started,active,closing,retained,connected,neutral,caps,changed,draining;
+static bool started,active,closing,retained,connected,neutral,caps,changed,draining,revealed;
 
 static int32_t retain(void){retained=true;return RISC_TEXT_ENTRY_RETAINED;}
 static bool live(void){if(retained)return false;if(!risc_runtime_get_api(1)){retain();return false;}return true;}
@@ -48,11 +48,15 @@ static unsigned character(uint8_t key,uint8_t mods){
 }
 static void apply(unsigned key){
     if(state.state!=RISC_TEXT_ENTRY_EDITING)return;
-    if(key==RISC_SCENE_KEY_DONE){state.state=RISC_TEXT_ENTRY_ACCEPTED;(void)changed_state();return;}
-    if(key==RISC_SCENE_KEY_CANCEL){state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_DONE){revealed=false;state.state=RISC_TEXT_ENTRY_ACCEPTED;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_CANCEL){revealed=false;state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
     if(key==RISC_SCENE_KEY_LAYER){page=(page+1)%4;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_VISIBILITY){
+        if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED){revealed=!revealed;(void)changed_state();}
+        return;
+    }
     size_t n=strlen(state.text);
-    if(key==RISC_SCENE_KEY_CLEAR){if(n){state.text[0]=0;(void)changed_state();}return;}
+    if(key==RISC_SCENE_KEY_CLEAR){if(n){memset(state.text,0,sizeof(state.text));(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_BACKSPACE){if(n){state.text[n-1]=0;(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_SPACE)key=' ';
     if(key>=32&&key<=126&&n+1<capacity){state.text[n]=(char)key;state.text[n+1]=0;(void)changed_state();}
@@ -107,14 +111,19 @@ static int32_t keyboard_step(void){
 }
 static void copy_display_text(void){
     memset(document.nodes[0].text,0,sizeof(document.nodes[0].text));
-    if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)
+    if((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)&&!revealed)
         memset(document.nodes[0].text,'*',strlen(state.text));
     else memcpy(document.nodes[0].text,state.text,sizeof(state.text));
+}
+static uint32_t display_flags(void){
+    return (connected?RISC_SCENE_DISABLED:0)|
+        ((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)?RISC_SCENE_KEYBOARD_PASSWORD:0)|
+        (revealed?RISC_SCENE_KEYBOARD_REVEALED:0);
 }
 static int32_t update_scene(void){
     document.revision=state.revision;
     document.nodes[0].value=(int32_t)page;
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].flags=display_flags();
     copy_display_text();
     int32_t r=scene->update(scene->context,scene_session,&document);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
@@ -136,7 +145,7 @@ static int32_t close_owned(void){
         if(r!=RISC_SCENE_OK)return retain();
         scene_session=0;
     }
-    active=closing=connected=neutral=caps=changed=draining=false;session=0;
+    active=closing=connected=neutral=caps=changed=draining=revealed=false;session=0;
     memset(&state,0,sizeof(state));memset(&document,0,sizeof(document));return RISC_TEXT_ENTRY_OK;
 }
 static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,uint64_t *out){
@@ -148,7 +157,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
     state=(risc_text_entry_state_v1){.struct_size=sizeof(state),.revision=1};
     memcpy(state.text,request->text,strlen(request->text)+1);
-    capacity=request->capacity;request_flags=request->reserved;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
+    capacity=request->capacity;request_flags=request->reserved;page=0;last_sequence=0;connected=caps=closing=changed=draining=revealed=false;neutral=true;
     active=true;session=++serial;
     if(keyboard){
         subscription=keyboard->subscribe(keyboard->context,0);
@@ -162,7 +171,7 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     memcpy(document.routes[0].title,request->label,sizeof(request->label));
     memcpy(document.nodes[0].label,request->label,sizeof(request->label));
     copy_display_text();
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].flags=display_flags();
     document.nodes[0].target=capacity-1;
     int32_t r=scene->open(scene->context,&document,NULL,&scene_session);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
@@ -188,7 +197,7 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
                     apply(RISC_SCENE_KEY_CANCEL);
                 }else if(event.kind==RISC_SCENE_ACTION_EVENT&&event.action==2)apply(RISC_SCENE_KEY_CANCEL);
                 else if(event.kind==RISC_SCENE_VALUE_EVENT&&event.node==1&&event.action==1&&
-                    (!connected||event.value==RISC_SCENE_KEY_DONE||event.value==RISC_SCENE_KEY_CANCEL)){
+                    (!connected||event.value==RISC_SCENE_KEY_DONE||event.value==RISC_SCENE_KEY_CANCEL||event.value==RISC_SCENE_KEY_VISIBILITY)){
                     apply((unsigned)event.value);if(!changed&&!changed_state())return RISC_TEXT_ENTRY_RETAINED;
                 }
             }

@@ -251,12 +251,12 @@ static void keyboard_emit(const risc_scene_node_v1 *n,unsigned key){
     if(!keyboard_ready()||closing||retained)return;
     if(key_count==KEY_QUEUE_SIZE||event_serial==UINT64_MAX){(void)fail_retained();return;}
     path.focus[path.depth-1]=n->id;
-    for(unsigned i=0;;i++){keyboard_key bounds;if(!keyboard_bounds((unsigned)n->value,i,&bounds))break;if(bounds.key==key){focus_part=i;break;}}
+    for(unsigned i=0;;i++){keyboard_key bounds;if(!keyboard_focus_bounds(n,i,&bounds))break;if(bounds.key==key){focus_part=i;break;}}
     key_queue[(key_head+key_count++)%KEY_QUEUE_SIZE]=(risc_scene_event_v1){
         sizeof(queued),RISC_SCENE_VALUE_EVENT,document.revision,n->id,n->action,(int32_t)key,++event_serial};
-    /* Later contacts cannot cross a layer or completion boundary. The owner
+    /* Later contacts cannot cross a layer, visibility or completion boundary. The owner
      * must acknowledge this event before a fresh contact can be accepted. */
-    if(key==RISC_SCENE_KEY_LAYER||key==RISC_SCENE_KEY_DONE||key==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+    if(keyboard_boundary(key))key_barrier=true;
     contact=false;
 }
 static void back(void){
@@ -297,7 +297,9 @@ static void activate(const hit *h){
     if(model->components&&component_activate(h))return;
     int i=node_index(&document,h->node);if(i<0)return;
     const risc_scene_node_v1 *n=&document.nodes[i];
-    if(n->route!=current_route()||n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))return;
+    if(n->route!=current_route()||(n->flags&RISC_SCENE_HIDDEN))return;
+    if((n->flags&RISC_SCENE_DISABLED)&&!(n->kind==RISC_SCENE_KEYBOARD_NODE&&
+       (n->flags&RISC_SCENE_KEYBOARD_PASSWORD)&&h->value==RISC_SCENE_KEY_VISIBILITY))return;
     path.focus[path.depth-1]=n->id;
     if(n->kind==RISC_SCENE_KEYBOARD_NODE){keyboard_emit(n,(unsigned)h->value);return;}
     if(h->kind==HIT_LINK)(void)navigate_impl(RISC_SCENE_PUSH,n->target);
@@ -355,7 +357,9 @@ static bool keyboard_contact_key(void){
  * but a later release cannot overtake an earlier press. Other scene gestures
  * keep their single-contact cancellation policy. No visual epoch participates. */
 typedef struct { uint8_t id; bool ready,accepted; uint64_t at; uint32_t epoch; hit bounds; int x,y; } key_contact;
-static key_contact contacts[RISC_TOUCH_MAX_CONTACTS];
+/* Released presses may await an earlier finger. Their hardware IDs can be
+ * reused immediately, and their count is not the active-contact limit. */
+static key_contact contacts[KEY_QUEUE_SIZE];
 static unsigned contacts_count;
 static void cancel_contacts(void){contacts_count=0;}
 static void finish_contacts(void){
@@ -376,7 +380,7 @@ static bool key_contact_event(const risc_touch_event_v1 *e,int x,int y){
     const risc_scene_node_v1 *keyboard=current_keyboard();
     if(!keyboard)return false;
     unsigned at=contacts_count;
-    for(unsigned i=0;i<contacts_count;i++)if(contacts[i].id==e->id){at=i;break;}
+    for(unsigned i=0;i<contacts_count;i++)if(!contacts[i].ready&&contacts[i].id==e->id){at=i;break;}
     if(e->kind==RISC_TOUCH_EVENT_DOWN){
         if(at<contacts_count){cancel_contacts();contact=false;neutral=false;return true;}
         if(!keyboard_ready()||(!neutral&&!contacts_count)||have_event||handoff_waiting)return true;
@@ -386,7 +390,7 @@ static bool key_contact_event(const risc_touch_event_v1 *e,int x,int y){
             if(x>=candidate->x&&y>=candidate->y&&x<candidate->x+candidate->w&&y<candidate->y+candidate->h){h=candidate;break;}
         }
         if(!h||h->kind!=HIT_VALUE||h->node!=keyboard->id)return false;
-        if(contacts_count==RISC_TOUCH_MAX_CONTACTS){(void)fail_retained();return true;}
+        if(contacts_count==KEY_QUEUE_SIZE){(void)fail_retained();return true;}
         contacts[contacts_count++]=(key_contact){e->id,false,true,e->timestamp_ms,epoch,*h,x,y};
         contact=true;moved=false;down_x=x;down_y=y;dirty=true;return true;
     }
@@ -563,16 +567,17 @@ static void move_focus(int direction){
 }
 static void keyboard_move(const risc_scene_node_v1 *n,uint32_t pressed){
     keyboard_key from,key;unsigned count=0;
-    while(keyboard_bounds((unsigned)n->value,count,&key))++count;
+    while(keyboard_focus_bounds(n,count,&key))++count;
     if(!count)return;
     if(focus_part>=count)focus_part=0;
     unsigned next=focus_part;
     if(pressed&RISC_NAV_LEFT)next=(focus_part+count-1)%count;
     else if(pressed&RISC_NAV_RIGHT)next=(focus_part+1)%count;
     else {
-        (void)keyboard_bounds((unsigned)n->value,focus_part,&from);
-        unsigned row=(from.row+(pressed&RISC_NAV_UP?3u:1u))%4u;int distance=INT_MAX;
-        for(unsigned i=0;keyboard_bounds((unsigned)n->value,i,&key);i++)if(key.row==row){
+        (void)keyboard_focus_bounds(n,focus_part,&from);
+        unsigned rows=n->flags&RISC_SCENE_KEYBOARD_PASSWORD?5u:4u;
+        unsigned row=(from.row+(pressed&RISC_NAV_UP?rows-1:1u))%rows;int distance=INT_MAX;
+        for(unsigned i=0;keyboard_focus_bounds(n,i,&key);i++)if(key.row==row){
             int delta=key.center-from.center;if(delta<0)delta=-delta;
             if(delta<distance){distance=delta;next=i;}
         }
@@ -595,11 +600,13 @@ static int32_t poll_navigation(void){
         if(!keyboard_ready())return RISC_SCENE_OK;
         if(f.pressed&RISC_NAV_BACK)keyboard_emit(keyboard,RISC_SCENE_KEY_CANCEL);
         else if(keyboard->flags&RISC_SCENE_DISABLED){
-            if(f.pressed&RISC_NAV_CONFIRM)keyboard_emit(keyboard,RISC_SCENE_KEY_DONE);
+            if((keyboard->flags&RISC_SCENE_KEYBOARD_PASSWORD)&&
+               (f.pressed&(RISC_NAV_PAGE_BACK|RISC_NAV_PAGE_FORWARD)))keyboard_emit(keyboard,RISC_SCENE_KEY_VISIBILITY);
+            else if(f.pressed&RISC_NAV_CONFIRM)keyboard_emit(keyboard,RISC_SCENE_KEY_DONE);
         }else if(f.pressed&(RISC_NAV_LEFT|RISC_NAV_RIGHT|RISC_NAV_UP|RISC_NAV_DOWN))keyboard_move(keyboard,f.pressed);
         else if(f.pressed&(RISC_NAV_PAGE_BACK|RISC_NAV_PAGE_FORWARD))keyboard_emit(keyboard,RISC_SCENE_KEY_LAYER);
         else if(f.pressed&RISC_NAV_CONFIRM){
-            keyboard_key key;if(keyboard_bounds((unsigned)keyboard->value,focus_part,&key))keyboard_emit(keyboard,key.key);
+            keyboard_key key;if(keyboard_focus_bounds(keyboard,focus_part,&key))keyboard_emit(keyboard,key.key);
         }
         return RISC_SCENE_OK;
     }
@@ -710,11 +717,23 @@ static void draw_keyboard(const risc_scene_node_v1 *n,int y,int h){
     text(pad,label_y,w,n->label,scale,fg);
     /* Keep the insertion end visible in the small viewport, without changing
      * the provider-owned draft or introducing input-format variants. */
-    unsigned columns=(unsigned)w/(6u*scale);size_t length=strlen(n->text);
+    keyboard_key visibility;bool password=keyboard_visibility_bounds(n,&visibility);
+    int field_width=password?visibility.x-pad-8:w;
+    unsigned columns=(unsigned)field_width/(6u*scale);size_t length=strlen(n->text);
     const char *tail=n->text+(length>columns?length-columns:0);
-    text(pad,text_y,w,tail,scale,fg);
+    text(pad,text_y,field_width,tail,scale,fg);
+    if(password){
+        bool selected=n->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
+        int border=selected?3:1;const char *caption=keyboard_visibility_caption(n);
+        fill(visibility.x,visibility.y,visibility.w,visibility.h,accent);
+        fill(visibility.x+border,visibility.y+border,visibility.w-2*border,visibility.h-2*border,bg);
+        unsigned vs=scale;while(vs>1&&strlen(caption)*6u*vs>(unsigned)(visibility.w-4))--vs;
+        int tw=(int)(strlen(caption)*6u*vs)-(int)vs;
+        text(visibility.x+(visibility.w-tw)/2,visibility.y+(visibility.h-(int)(7u*vs))/2,visibility.w,caption,vs,fg);
+        add_hit(visibility.x,visibility.y,visibility.w,visibility.h,HIT_VALUE,n->id,0,RISC_SCENE_KEY_VISIBILITY);
+    }
     if(n->flags&RISC_SCENE_DISABLED){
-        int guide_y=text_y+(int)(10u*scale);
+        int guide_y=password?visibility.y+visibility.h+4:text_y+(int)(10u*scale);
         const char *guidance[]={"Hardware keyboard","Type to edit","ENTER done","ESC cancel"};
         for(unsigned i=0;i<4;i++){
             if(guide_y+(int)(7u*scale)>y+h)break;
@@ -825,13 +844,28 @@ static int32_t paint(void){
         frame_model=logical_model;if(frame_model.page_view||frame_model.preview_view)memcpy(page_frozen,page_live,page_capacity);
         logical_model.page_clean=false;raster_row=0;rasterizing=true;dirty=false;
     }
-    /* A bounded logical-row slice works for every pixel format and rotation.
-     * No provider callbacks or reentrant dispatch occur with the frozen model
-     * installed. The caller services physical input between every slice. */
+    /* Input capture has its own cadence, including while the immutable frame
+     * is being drawn. Never wait for an eight/32-row raster batch to sample a
+     * short release between repeated keys. Provider calls run only after the
+     * logical model is restored. The caller captures immediately after this
+     * bounded batch, before yielding; neither operation changes the frame. */
     const unsigned rows=surface.pixel_format==RISC_DISPLAY_FORMAT_RGB565?32u:8u;
-    model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+rows;
-    if(clip_bottom>height)clip_bottom=height;
-    draw_scene();raster_row=clip_bottom;model=&logical_model;
+    if(!current_keyboard()){
+        model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+rows;
+        if(clip_bottom>height)clip_bottom=height;
+        draw_scene();raster_row=clip_bottom;model=&logical_model;
+    }else{
+        uint64_t began=clock_api->monotonic_ms(clock_api->context);
+        if(!alive()||began==UINT64_MAX)return fail_retained();
+        for(unsigned row=0;row<rows&&raster_row<height;row++){
+            model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+1;
+            draw_scene();raster_row=clip_bottom;model=&logical_model;
+            uint64_t now=clock_api->monotonic_ms(clock_api->context);
+            if(!alive()||now==UINT64_MAX||now<began)return fail_retained();
+            /* Resume this same frame after input, regardless of text revisions. */
+            if(now-began>=2u)break;
+        }
+    }
     if(raster_row<height)return RISC_SCENE_AGAIN;
     risc_display_present_options_v1 options={RISC_DISPLAY_PRESENT_DEFAULT,RISC_DISPLAY_QUEUE_FIFO,0};
     if(frame_model.page_view&&frame_model.page_clean){
@@ -908,7 +942,10 @@ static int32_t close_owned(void){
     closing=true;int32_t r=detach_owned(false);if(r)return r;
     free(page_live);free(page_frozen);page_live=page_frozen=NULL;page_capacity=0;model->page_view=false;model->reading_view=false;model->preview_view=false;
     active=false;closing=paused=pausing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
-    memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));return RISC_SCENE_OK;
+    memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));
+    /* A revealed password was copied into the immutable raster model. Detach
+     * has returned custody, so neither owned document may outlive the session. */
+    memset(&frame_model,0,sizeof(frame_model));return RISC_SCENE_OK;
 }
 static int32_t open_document(void *c,const risc_components_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
     (void)c;if(!alive())return RISC_SCENE_RETAINED;
@@ -957,9 +994,12 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
     if(d->revision<=document.revision)return RISC_SCENE_STALE;
     path=next_path;
     const risc_scene_node_v1 *old=current_keyboard();
-    bool attachment_changed=false;
+    bool attachment_changed=false,hide_password=false;
     if(old){
         int next=node_index(d,old->id);
+        unsigned privacy=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_KEYBOARD_REVEALED;
+        hide_password=(old->flags&privacy)==privacy&&
+            (next<0||d->nodes[next].kind!=old->kind||(d->nodes[next].flags&privacy)!=privacy);
         attachment_changed=next>=0&&((old->flags^d->nodes[next].flags)&RISC_SCENE_DISABLED);
         if(next<0||d->nodes[next].kind!=old->kind||d->nodes[next].value!=old->value||d->nodes[next].flags!=old->flags)focus_part=0;
     }
@@ -980,12 +1020,23 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
         if(document.screen_key!=d->screen_key){model->scroll=0;path.focus[path.depth-1]=0;}
         if(d->toast_token!=document.toast_token){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;model->toast_until=now+4000;}
     }
+    if(hide_password){
+        /* Hide must not newly submit an older revealed raster. Only an owned,
+         * unsubmitted frame can be cancelled; submitted display tokens retain
+         * their existing completion/custody path. */
+        if(rasterizing){
+            display->release(display->context,surface.frame);
+            if(!alive())return fail_retained();
+            surface=(risc_display_surface_v1){0};rasterizing=false;
+        }
+        memset(&frame_model,0,sizeof(frame_model));
+    }
     document=*d;keyboard_waiting=false;
     if(same){
         dirty=true;key_barrier=false;
         for(unsigned i=0;i<key_count;i++){
             int value=key_queue[(key_head+i)%KEY_QUEUE_SIZE].value;
-            if(value==RISC_SCENE_KEY_LAYER||value==RISC_SCENE_KEY_DONE||value==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+            if(keyboard_boundary((unsigned)value))key_barrier=true;
         }
     }
     else invalidate_view();
