@@ -19,5 +19,5 @@ for profile in rgb paper paper-scroll;do
  if [[ "$profile" == paper-scroll ]];then selected+=(-DPORTABLE_TOUCH_SCROLL);fi
  "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -Wno-unused-function -c test/native_apps/file_browser_source_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
- for scenario in local choose full unavailable unsupported begin-busy cancel busy-cancel remote remote-cancel remote-full;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
+ for scenario in local local-short choose full unavailable unsupported begin-busy cancel busy-cancel remote remote-short remote-cancel remote-full remote-interrupted remote-reopen;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
 done

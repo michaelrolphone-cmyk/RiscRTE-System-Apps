@@ -27,6 +27,14 @@ static bool fsource_acquire(void){
  if(!a||a->api_version!=1||a->struct_size<sizeof(*a)||!a->handler_count||!a->handler_get||!a->handler_supported||!a->begin||!a->write||!a->finish||!a->discard||!a->open_request){PORTABLE_APP_RETAIN();return false;}
  fsource_api=a;return true;
 }
+static bool fsource_resume_result(void){
+ if(!fsource_acquire()||!fsource_api->take_result)return false;
+ int32_t error=0;uint64_t cookie=0;
+ if(!fsource_api->take_result(&error,&cookie)||cookie!=UINT64_C(0x4642524f57534552))return false;
+ if(error){char message[96];snprintf(message,sizeof(message),"File handler returned error %d",(int)error);fb_message(message);}
+ else fb_message("File handler returned");
+ return true;
+}
 static bool fsource_handler_get(uint32_t index,t5_file_handler_t*out){return fsource_api&&fsource_api->handler_get(fsource_name,index,out);}
 static void fsource_open_scoped(bool choose,bool remote){
  if(fsource_state!=FSOURCE_NONE){fbx_notice("Finish or cancel the current Open first");return;}
@@ -74,7 +82,7 @@ static void fsource_fail(int32_t error){fsource_error=error;fsource_state=FSOURC
 static bool fsource_volume_ready(void*c){(void)c;return fsource_token&&fsource_error!=RISC_FILE_SOURCE_RETAINED;}
 static bool fsource_volume_stat(void*c,const char*p,uint64_t*z,bool*d){(void)c;if(z)*z=0;if(d)*d=false;if(!z||!d)return false;if(!strcmp(p,"/")){*d=true;return true;}if((fsource_writer||fsource_sealed)&&!strcmp(p,fsource_stage)){*z=fsource_copied;return true;}if(fsource_published&&!strcmp(p,"/selected")){*z=fsource_size;return true;}return false;}
 static risc_storage_file_t fsource_volume_open(void*c,const char*p){(void)c;if(!fsource_token||fsource_writer||fsource_sealed||strncmp(p,"/.peer-",7)||strlen(p)>=sizeof(fsource_stage))return 0;strcpy(fsource_stage,p);fsource_writer=true;return 1;}
-static size_t fsource_volume_write(void*c,risc_storage_file_t h,const void*b,size_t n){(void)c;if(h!=1||!fsource_writer||!n||n>RISC_FILE_OPEN_SOURCE_IO_MAX)return 0;uint32_t written=0;if(!fsource_result(fsource_api->write(fsource_token,b,(uint32_t)n,&written))||written>n)return 0;fsource_copied+=written;fsource_progress();return written;}
+static size_t fsource_volume_write(void*c,risc_storage_file_t h,const void*b,size_t n){(void)c;if(h!=1||!fsource_writer||!n||n>RISC_FILE_OPEN_SOURCE_IO_MAX)return 0;size_t at=0;while(at<n){uint32_t written=0;if(!fsource_result(fsource_api->write(fsource_token,(const uint8_t*)b+at,(uint32_t)(n-at),&written))||!written||written>n-at)return at;at+=written;fsource_copied+=written;}fsource_progress();return at;}
 static bool fsource_volume_sync(void*c,risc_storage_file_t h){(void)c;if(h!=1||!fsource_writer||!fsource_result(fsource_api->finish(fsource_token)))return false;fsource_sealed=true;return true;}
 static bool fsource_volume_close(void*c,risc_storage_file_t h,bool commit){(void)c;if(h!=1||!fsource_writer)return false;if(!commit&&!fsource_discard())return false;fsource_writer=false;return true;}
 static bool fsource_volume_remove(void*c,const char*p){(void)c;if(!strcmp(p,fsource_stage))return fsource_discard();return false;}

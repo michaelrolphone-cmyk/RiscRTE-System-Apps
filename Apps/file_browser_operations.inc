@@ -297,6 +297,9 @@ static bool fbx_handlers(void) {
 #endif
 static void fbx_resume_result(void);
 static void fbx_resume_result_scoped(void){
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_resume_result())return;
+#endif
 #ifdef PORTABLE_FILE_BROWSER_HANDLERS
  char previous[sizeof(fb_status)];strcpy(previous,fb_status);bool feedback=fb_feedback;
  if(!fbx_handlers()){strcpy(fb_status,previous);fb_feedback=feedback;return;}

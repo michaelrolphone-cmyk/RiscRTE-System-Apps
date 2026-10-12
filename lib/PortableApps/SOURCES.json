@@ -116,7 +116,7 @@
   "RiscFileOpenSourceV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE",
     "path": "sdk/app/RiscFileOpenSourceV1.h",
-    "commit": "c2623b59ca87eaa22e0057f5f2306093379a6ca5",
-    "sha256": "43fdd6cd1673ee19f46246e444d8d1e260fa60b52493134e35592742a7031ac9"
+    "commit": "98b9d2b08cd6a05f75ec0ca0cd755a63484a2246",
+    "sha256": "6f4592ea20f26262125e9a1a1ae030aa13bbc08d06eb319c7d7f09417598ad02"
   }
 }

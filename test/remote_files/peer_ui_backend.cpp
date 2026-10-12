@@ -7,6 +7,7 @@ static RiscUserFiles::Volume localVolume;
 static const char bytes[]="v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
 static void put(const risc_storage_volume_api_v1*a,const char*p,const char*b){auto f=a->file_open_write(a->context,p);assert(f&&a->file_write(a->context,f,b,strlen(b))==strlen(b)&&a->file_close(a->context,f,true));}
 extern "C" void peer_backend_begin(){backend=new PeerControllerFixture;backend->stop();clockBase=backend->f.now;backend->acquiredBle=true;assert(localVolume.begin(&localStore.api,{nullptr,[](void*){return true;},malloc,free}));auto a=localVolume.api();assert(risc_storage_volume_extension(a)->mkdir(a->context,"/Downloads"));put(a,"/Downloads/local.txt","local upload");put(backend->f.volume.api(),"/incoming.obj",bytes);localApi=*reinterpret_cast<const risc_storage_volume_api_v1_fs*>(a);localApi.state.observe=[](void*){return localState;};}
+extern "C" void peer_backend_drop(bool drop){backend->f.link.drop=drop;}
 extern "C" void peer_backend_direct(){backend->privateNetwork=true;}
 extern "C" const void*peer_backend_capability(const char*n){if(!strcmp(n,"net.wifi")&&backend->privateNetwork)return &backend->wifi;if(!strcmp(n,RISC_BLUETOOTH_SESSION_SETUP_CAPABILITY))return &backend->ble;if(!strcmp(n,RISC_TCP_CONNECTION_CAPABILITY))return &backend->f.link.tcp;if(!strcmp(n,RISC_ENTROPY_SOURCE_CAPABILITY))return &backend->entropy;if(!strcmp(n,"storage.installed-files"))return &localApi;return nullptr;}
 extern "C" void peer_backend_tick(uint64_t now){backend->f.now=now+clockBase;backend->f.server.tick(now+clockBase);}

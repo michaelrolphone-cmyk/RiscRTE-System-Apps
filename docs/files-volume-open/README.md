@@ -34,8 +34,16 @@ These execute production Files/controller, the existing authenticated
 WebDAV client/server and synthetic capability/network backends in RGB, paper,
 and scrolling-paper profiles. Cases cover declared handler choice, local and
 BLE-negotiated private-network remote source, unavailable capability, unsupported
-receiver, full storage, prolonged BUSY, cancel, and original-file preservation.
+receiver, full storage, prolonged BUSY, short writes, cancel and reopening, interrupted
+network transfer, and original-file preservation.
 The capability stub checks that handoff occurs only after transport quiescence.
 This controller fixture is separate from actual Runtime lifecycle and native
 scratch-backend qualification. Hardware radios, displays and flash are not
 qualified by these host checks.
+
+The Runtime FILES_ROOT=<this repository> SCENARIOS=controller bash
+test/run_file_source_runtime_test.sh path loads
+the production Files fixture through the actual Runtime, stages a 12 MiB+123
+source, launches a receiver, cleans it up and resumes a fresh Files invocation.
+The source result is consumed through source take_result, leaving the original
+path-based file.open ABI untouched.

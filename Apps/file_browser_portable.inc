@@ -80,7 +80,7 @@ static const risc_file_open_source_api_v1 *fsource_api;
 enum {FSOURCE_NONE,FSOURCE_CHOOSE,FSOURCE_START,FSOURCE_LOCAL,FSOURCE_REMOTE,FSOURCE_SEALED,FSOURCE_CANCEL};
 static unsigned fsource_state;
 static bool fsource_remote,fsource_handoff;
-static bool fsource_busy(void),fsource_close(void),fsource_back(void),fsource_handler_get(uint32_t,t5_file_handler_t*);
+static bool fsource_busy(void),fsource_close(void),fsource_back(void),fsource_handler_get(uint32_t,t5_file_handler_t*),fsource_resume_result(void);
 static void fsource_open(bool,bool),fsource_start(unsigned),fsource_tick(void),fsource_reset(void);
 #ifdef PORTABLE_FILE_PEER
 static void fsource_remote_done(bool);
