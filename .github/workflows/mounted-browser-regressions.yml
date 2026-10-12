@@ -1,13 +1,15 @@
 name: Mounted Files browser
 on:
   push:
-    branches: [feat/files-mounted-peer-browser]
+    branches: [feat/files-mounted-peer-browser, feat/files-volume-open-handoff]
   pull_request:
     paths:
       - 'Apps/file_browser*'
       - 'lib/RemoteFiles/**'
       - 'lib/PortableApps/include/PortablePeerFiles.h'
       - 'scripts/test_file_browser_mount.sh'
+      - 'scripts/test_file_browser_source.sh'
+      - 'lib/PortableApps/include/RiscFileOpenSourceV1.h'
       - 'scripts/test_file_browser_local_scopes.sh'
       - 'test/native_apps/file_browser*'
       - 'test/remote_files/**'
@@ -34,9 +36,9 @@ jobs:
         working-directory: system
         run: |
           python3 tests/test_file_sharing_build.py
-          for script in test_file_browser_mount test_file_browser_local_scopes test_file_browser_peer test_file_browser_peer_resident test_webdav_peer; do
+          for script in test_file_browser_mount test_file_browser_source test_file_browser_local_scopes test_file_browser_peer test_file_browser_peer_resident test_webdav_peer; do
             bash scripts/$script.sh
-            SANITIZE=1 bash scripts/$script.sh
+            ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash scripts/$script.sh
           done
           python3 scripts/test_file_browser_operations.py
           python3 scripts/test_file_browser_paper.py

@@ -187,7 +187,7 @@ static bool fbs_touch(int x,int y) {
  else if(fb_mode==FB_HANDLERS){
   t5_file_handler_t current={0};
   if(!portable_file_browser_safe()||!fb_service_begin())return false;
-  bool okay=fb_handler_api->handler_get(fb_handler_path,row,&current);
+  bool okay=fbx_handler_get(row,&current);
   if(!fb_service_end())return false;
   if(!okay||memcmp(&current,&fbs_hit_item.handler,sizeof(current))){fb_message("Handlers changed. Choose again.");return false;}
  }

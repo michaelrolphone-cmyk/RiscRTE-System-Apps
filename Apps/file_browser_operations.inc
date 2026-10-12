@@ -313,10 +313,16 @@ static void fbx_resume_result(void) {
  (void)fb_service_end();
 }
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
+static bool fbx_handler_get(uint32_t index,t5_file_handler_t*out){
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_state==FSOURCE_CHOOSE)return fsource_handler_get(index,out);
+#endif
+ return fb_handler_api&&fb_handler_api->handler_get(fb_handler_path,index,out);
+}
 static bool fbx_handler_page(void);
 static bool fbx_handler_page_scoped(void){
  unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;
- for(unsigned i=0;i<n;i++){t5_file_handler_t *h=&fb_handlers[i];memset(h,0,sizeof(*h));if(!fb_handler_api->handler_get(fb_handler_path,fb_handler_offset+i,h)||!memchr(h->app_id,0,sizeof(h->app_id))||!h->app_id[0]||!memchr(h->display_name,0,sizeof(h->display_name))||!memchr(h->icon,0,sizeof(h->icon))||h->kind>T5_FILE_HANDLER_SYSTEM_READER){fbx_notice("Invalid file handler data");return false;}}
+ for(unsigned i=0;i<n;i++){t5_file_handler_t *h=&fb_handlers[i];memset(h,0,sizeof(*h));if(!fbx_handler_get(fb_handler_offset+i,h)||!memchr(h->app_id,0,sizeof(h->app_id))||!h->app_id[0]||!memchr(h->display_name,0,sizeof(h->display_name))||!memchr(h->icon,0,sizeof(h->icon))||h->kind>T5_FILE_HANDLER_SYSTEM_READER){fbx_notice("Invalid file handler data");return false;}}
  fb_choice=0;fb_mode=FB_HANDLERS;fb_dirty=true;return true;
 }
 static bool fbx_handler_page(void) {
@@ -325,6 +331,9 @@ static bool fbx_handler_page(void) {
  return fb_service_end()&&result;
 }
 static void fbx_dispatch(unsigned selected){
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_state==FSOURCE_CHOOSE){fsource_start(selected);return;}
+#endif
  unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;if(selected>=n)return;
  if(!portable_file_browser_safe()){fbx_notice("Close failed. Back retries safely.");return;}
  if(risc_protected_settings_path(fb_handler_path)){fbx_notice("Protected system settings");return;}
@@ -346,7 +355,11 @@ static void fbx_open(bool choose){
 #endif
  if(risc_protected_settings_path(fb_file_path)){fbx_notice("Protected system settings");return;}
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fb_storage_index||strcmp(PORTABLE_FILE_BROWSER_CAPABILITY,"storage.volume")){fsource_open(choose,false);return;}
+#else
  if(fb_storage_index){fbx_notice("Copy this file to primary storage before opening");return;}
+#endif
  if(!fb_ready())return;
  size_t len=strlen(fb_selected.name);
  if(!choose&&len>=4&&fb_contains(fb_selected.name+len-4,".elf")){
@@ -363,6 +376,9 @@ static void fbx_open(bool choose){
 }
 #endif
 static void fbx_activate(void){
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy())return;
+#endif
 #ifdef PORTABLE_FILE_PEER
  if(fbm_mounted&&fbm_busy())return;
 #endif

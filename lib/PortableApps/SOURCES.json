@@ -112,5 +112,11 @@
     "path": "sdk/app/RiscRuntimeHostControlV1.h",
     "commit": "97b780888663be667582e21039dd1345b9eda6e8",
     "sha256": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815"
+  },
+  "RiscFileOpenSourceV1.h": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "path": "sdk/app/RiscFileOpenSourceV1.h",
+    "commit": "c2623b59ca87eaa22e0057f5f2306093379a6ca5",
+    "sha256": "43fdd6cd1673ee19f46246e444d8d1e260fa60b52493134e35592742a7031ac9"
   }
 }
