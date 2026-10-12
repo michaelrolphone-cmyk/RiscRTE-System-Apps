@@ -161,6 +161,9 @@ static const alarm_service_v1 alarm_api={1,sizeof(alarm_api),NULL,fake_alarm_sta
 static alarm_service_outputs_v1 visual_alarm;
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out));if(!strcmp(name,"rtc.clock")){assert(v==2);return false;}assert(v==1);if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
+#ifdef TEST_WIFI_ATOMIC_FIXTURE
+ else if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(id==6);if(kv_denied)return false;out->api=&atomic_fixture_api;}
+#endif
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
 #if defined(TEST_RADIO_POLICY) || defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_PAPER_PREFERENCES)
  || id==1

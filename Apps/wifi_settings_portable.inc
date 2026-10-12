@@ -15,6 +15,9 @@
 #endif
 #ifdef PORTABLE_WIFI_PROFILES
 #include "PortableWifiProfiles.h"
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+#include "PortableWifiAtomic.h"
+#endif
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
@@ -57,6 +60,20 @@ static bool wifi_async_stop(void);
 static void wifi_async_tick(void);
 static bool wifi_async_begin(uint32_t kind);
 static void wifi_select_entry(const garden_radio_scan_entry_v1 *entry);
+#endif
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+#if !defined(PORTABLE_WIFI_PROFILES) || !defined(PORTABLE_WIFI_REMEMBER_CONNECTED)
+#error "Atomic Wi-Fi requires the explicit profile/Remember build"
+#endif
+static const risc_key_value_atomic_v1 *wifi_atomic_api;
+static portable_wifi_atomic wifi_atomic_edit;
+static risc_key_value_v1 wifi_atomic_read_view;
+static bool wifi_atomic_connect_ready;
+static int32_t wifi_atomic_current_get(void*,const char*,void*,uint32_t,uint32_t*);
+static int32_t wifi_atomic_deny_put(void*,const char*,const void*,uint32_t);
+static void wifi_atomic_profile_start(unsigned,const portable_wifi_credentials*);
+static bool wifi_atomic_step_work(void),wifi_atomic_back(void);
+static void wifi_atomic_discard(void),wifi_connect_now(void);
 #endif
 static const risc_key_value_v1 *wifi_store;
 #if defined(PORTABLE_BLE_BROADCAST) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
@@ -107,7 +124,7 @@ static unsigned profile_work;
 static portable_wifi_credentials joined_profile;
 static bool remember_join,remember_pending;
 #endif
-enum { WIFI_PROFILE_SAVE=1, WIFI_PROFILE_SCAN, WIFI_PROFILE_FORGET };
+enum { WIFI_PROFILE_SAVE=1, WIFI_PROFILE_SCAN, WIFI_PROFILE_FORGET, WIFI_PROFILE_ATOMIC_CONNECT, WIFI_PROFILE_ATOMIC_FORGET };
 static uint32_t saved_base,saved_count,forget_index;
 static unsigned saved_loading,saved_rows;
 static bool saved_loading_active,forget_index_valid,saved_open_pending,saved_select_pending,forget_pending;
@@ -188,6 +205,9 @@ bool portable_wifi_idle_ready(void) {
  return !opened || (!scanning && !scan_owned && !joining && !cleanup_pending && link_state==WIFI_LINK_DOWN
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
  && !remember_pending && profile_work!=WIFI_PROFILE_SAVE
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+ && !portable_wifi_atomic_pending(&wifi_atomic_edit) && profile_work!=WIFI_PROFILE_ATOMIC_FORGET && profile_work!=WIFI_PROFILE_ATOMIC_CONNECT
+#endif
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
  && !wifi_text_active && !wifi_home_return
@@ -232,7 +252,11 @@ bool portable_wifi_services_end(void) {
 }
 bool portable_wifi_stop_pending(void) {
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
- if(!cleanup_pending&&!PORTABLE_APP_RETAINED()&&(remember_pending||profile_work==WIFI_PROFILE_SAVE))return true;
+ if(!cleanup_pending&&!PORTABLE_APP_RETAINED()&&(remember_pending||profile_work==WIFI_PROFILE_SAVE
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+ ||portable_wifi_atomic_pending(&wifi_atomic_edit)||profile_work==WIFI_PROFILE_ATOMIC_FORGET
+#endif
+ ))return true;
 #endif
 #ifdef WIFI_ASYNC_V1_SIZE
  return wifi_stopping&&wifi_operation&&!cleanup_pending&&!PORTABLE_APP_RETAINED();
@@ -245,9 +269,17 @@ bool portable_wifi_suspend(void) {
   WIFI_SCROLL_CANCEL();
   if(!opened)return true;
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
-  if(remember_pending||profile_work==WIFI_PROFILE_SAVE) {
+  if(remember_pending||profile_work==WIFI_PROFILE_SAVE
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+     ||portable_wifi_atomic_pending(&wifi_atomic_edit)||profile_work==WIFI_PROFILE_ATOMIC_FORGET
+#endif
+  ) {
     wifi_profiles_step();
-    if(remember_pending||profile_work==WIFI_PROFILE_SAVE)return false;
+    if(remember_pending||profile_work==WIFI_PROFILE_SAVE
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+       ||portable_wifi_atomic_pending(&wifi_atomic_edit)||profile_work==WIFI_PROFILE_ATOMIC_FORGET
+#endif
+    )return false;
   }
 #endif
   if(!portable_wifi_stop_pending())portable_stage_log(wr,"wifi-suspend","begin disconnect=required");
@@ -275,6 +307,10 @@ bool portable_wifi_close(void) {
   if(wifi_text_active)return false;
 #endif
   if(!portable_wifi_suspend())return false;
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  if(portable_wifi_atomic_pending(&wifi_atomic_edit))return false;
+  wifi_atomic_discard();wifi_atomic_api=NULL;
+#endif
   if(wk.api && !wr->release(&wk))return false;
   memset(&wk,0,sizeof(wk));wifi_store=NULL;
   portable_wifi_credentials_clear(&credentials);wifi_zero(editor,sizeof(editor));wifi_zero(masked,sizeof(masked));
@@ -329,7 +365,15 @@ static bool wifi_policy_allows(const char *stage) {
   dirty=true;return false;
 }
 #endif
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
 static void wifi_connect(void) {
+ if(PORTABLE_APP_RETAINED()||!wifi_draft_valid())return;
+ wifi_atomic_profile_start(WIFI_PROFILE_ATOMIC_CONNECT,&credentials);
+}
+static void wifi_connect_now(void) {
+#else
+static void wifi_connect(void) {
+#endif
  if(PORTABLE_APP_RETAINED())return;
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_stop())return ;
@@ -584,6 +628,9 @@ static void wifi_text_step(void) {
 #endif
 #ifdef PORTABLE_WIFI_PROFILES
 static void wifi_profile_start_value(unsigned work,const portable_wifi_credentials *value) {
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  if(work==WIFI_PROFILE_SAVE||work==WIFI_PROFILE_FORGET){wifi_atomic_profile_start(work,value);return;}
+#endif
   if(profile_work)return;
   portable_wifi_credentials_clear(&profile_draft);profile_draft=*value;
   int rc=portable_wifi_profile_search_begin(wifi_store,value->ssid,&profile_search);
@@ -604,6 +651,9 @@ static void wifi_saved_open(uint32_t base) {
   saved_loading=0;saved_loading_active=true;wifi_message="Loading saved networks - Back cancels";
 }
 static void wifi_profiles_step_owned(void) {
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  if(wifi_atomic_step_work())return;
+#endif
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
   if(remember_pending && !profile_work) {
     wifi_profile_start_value(WIFI_PROFILE_SAVE,&joined_profile);
@@ -659,6 +709,9 @@ static void wifi_profiles_step(void) {
   /* Keep save/search work within one owner-turn lease. Other actions may
    * hand off to the keyboard and must not carry a lease into that handoff. */
   bool saving=profile_work==WIFI_PROFILE_SAVE;
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  saving|=profile_work==WIFI_PROFILE_FORGET||profile_work==WIFI_PROFILE_ATOMIC_FORGET;
+#endif
 #ifdef PORTABLE_WIFI_REMEMBER_CONNECTED
   saving|=!profile_work&&remember_pending;
 #endif
@@ -781,6 +834,10 @@ static void wifi_forget(void) {
   }
 #ifdef PORTABLE_WIFI_PROFILES
   if(!forget_index_valid){forget_pending=false;wifi_message="Choose a saved network first";wifi_page(WP_ROOT);return;}
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  if(wifi_atomic_edit.status!=PORTABLE_WIFI_ATOMIC_READY||wifi_atomic_edit.operation!=PORTABLE_WIFI_ATOMIC_FORGET){forget_pending=false;forget_index_valid=false;wifi_message="Saved networks changed; choose Forget again";dirty=true;return;}
+  forget_pending=false;profile_work=WIFI_PROFILE_ATOMIC_FORGET;wifi_message="Forgetting saved network";dirty=true;return;
+#else
   int result=portable_wifi_profile_forget(wifi_store,forget_index);
   if(result==PORTABLE_WIFI_CREDENTIALS_AGAIN){forget_pending=true;wifi_message="Storage busy - Back cancels Forget";dirty=true;return;}
   forget_pending=false;
@@ -788,8 +845,12 @@ static void wifi_forget(void) {
     wifi_message="Forget unconfirmed - retry or Back";dirty=true;return;
   }
   forget_index_valid=false;
+#endif
 #else
   int result=portable_wifi_credentials_forget(wifi_store);
+#endif
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  int result=PORTABLE_WIFI_CREDENTIALS_UNCONFIRMED;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
   if(portable_adapter_retained())return;
@@ -809,6 +870,9 @@ static void wifi_select_entry(const garden_radio_scan_entry_v1 *entry) {
 #endif
 }
 #ifdef PORTABLE_WIFI_PROFILES
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+#include "wifi_atomic.inc"
+#endif
 static void wifi_saved_select(uint32_t slot) {
   portable_wifi_credentials stored={{0},{0}};
   saved_select_pending=false;
@@ -816,7 +880,11 @@ static void wifi_saved_select(uint32_t slot) {
   if(rc==PORTABLE_WIFI_CREDENTIALS_LOADED){credentials=stored;saved_state=rc;draft_dirty=false;open_network=!credentials.password[0];wifi_message="Saved network selected; Connect when ready";wifi_page(WP_ROOT);}
   else if(rc==PORTABLE_WIFI_CREDENTIALS_EMPTY){portable_wifi_credentials_clear(&credentials);draft_dirty=false;open_network=false;wifi_edit(WP_SSID);}
   else if(rc==PORTABLE_WIFI_CREDENTIALS_AGAIN){saved_select_pending=true;saved_pending_slot=slot;wifi_message="Loading selection - Back cancels";dirty=true;}
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  else {wifi_message="Unreadable saved network; conflict preserved";dirty=true;}
+#else
   else {forget_index=slot;forget_index_valid=true;wifi_page(WP_FORGET);wifi_message="Unreadable slot; confirm before forgetting";}
+#endif
   portable_wifi_credentials_clear(&stored);return;
 }
 #endif
@@ -893,6 +961,9 @@ static void wifi_activate(unsigned selected) {
 }
 static bool wifi_back(void) {
   WIFI_SCROLL_CANCEL();
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  if(wifi_atomic_back())return false;
+#endif
 #ifdef WIFI_ASYNC_V1_SIZE
   wifi_select_pending=false;wifi_zero(&wifi_next_request,sizeof(wifi_next_request));wifi_zero(&wifi_pending_entry,sizeof(wifi_pending_entry));
 #endif
@@ -970,10 +1041,18 @@ static bool wifi_open(void) {
   if(!portable_broadcast_stop())return false;
 #endif
   wk.struct_size=sizeof(wk);
+#ifdef PORTABLE_WIFI_ATOMIC_EXPERIMENTAL
+  wifi_atomic_api=NULL;portable_wifi_atomic_clear(&wifi_atomic_edit);wifi_atomic_connect_ready=false;
+  if(wr->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,PORTABLE_WIFI_STORAGE_INSTANCE,&wk)){
+    const risc_key_value_atomic_v1 *atomic=wk.api;
+    if(portable_wifi_atomic_api_valid(atomic)){wifi_atomic_api=atomic;wifi_atomic_read_view=(risc_key_value_v1){1,sizeof(wifi_atomic_read_view),NULL,wifi_atomic_current_get,wifi_atomic_deny_put};wifi_store=&wifi_atomic_read_view;}
+  }
+#else
   if(wr->acquire(RISC_KEY_VALUE_CAPABILITY,1,PORTABLE_WIFI_STORAGE_INSTANCE,&wk)) {
     const risc_key_value_v1 *kv=wk.api;
     if(kv && kv->api_version==1 && kv->struct_size>=sizeof(*kv) && kv->get && kv->put)wifi_store=kv;
   }
+#endif
 #if defined(PORTABLE_BLE_BROADCAST) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR)
   if(wifi_store){wifi_store_source=wifi_store;wifi_store_checked=*wifi_store;wifi_store_checked.get=wifi_store_get;wifi_store_checked.put=wifi_store_put;wifi_store=&wifi_store_checked;}
 #endif

@@ -24,6 +24,9 @@ def build(args, parser=None):
     parser = parser or argparse.ArgumentParser(description=__doc__)
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
+    atomic=getattr(args,'experimental_atomic_wifi',False)
+    if atomic and (not portable_native_toolbar_build.selected(args) or not args.resident_shell_client):
+        parser.error('--experimental-atomic-wifi requires explicit X4 native-time resident selection')
     scrolling=getattr(args,'touch_scrolling',False)
     shared_text=getattr(args,'shared_text_input',False) or args.resident_shell_client
     if scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
@@ -35,6 +38,7 @@ def build(args, parser=None):
     out = args.output_dir or ROOT/'dist/portable/wifi'
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
     if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')
+    if atomic: flags+=['-DPORTABLE_WIFI_ATOMIC_EXPERIMENTAL','-I'+str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2')]
     if scrolling: flags.append('-DPORTABLE_TOUCH_SCROLL')
     if shared_text: flags+=['-DPORTABLE_TEXT_INPUT_CLIENT','-DPORTABLE_WIFI_PROFILES']
     flags.append('-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation))
@@ -67,6 +71,7 @@ def build(args, parser=None):
     catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'wifi_settings.elf'
     sources = [ROOT/'Apps/wifi_settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]+quick_sources+native_sources
+    if atomic: sources.append(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c')
     compile_command=[cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror',
@@ -99,6 +104,7 @@ def build(args, parser=None):
             {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
             {'capability':'net.wifi','api':1}]}
     if shared_text: manifest['requires'].append({'capability':'ui.text-input','api':1})
+    if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -113,6 +119,9 @@ def build(args, parser=None):
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
     inputs += ['Apps/PaperPresentation.h', 'Apps/PaperFrame.h', 'scripts/portable_quick_build.py']
+    if atomic:
+        inputs+=['Apps/wifi_atomic.inc']
+        inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2').glob('*')) if p.is_file()]
     if args.paper_transitions:inputs.append('scripts/portable_paper_build.py')
     inputs=sorted(set(inputs))
     for group in ['settings_fonts','fonts','paper_fonts']:
@@ -142,6 +151,14 @@ def build(args, parser=None):
         'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
     record['shared_settings']={'busy_reload':'draft-safe-250ms','save_acknowledges':'native-journal','sd_checkpoint_confirmed':False,'hardware_qualified':False}
+    if atomic:
+        record['atomic_wifi']={'experimental':True,'capability':'storage.key-value.atomic@1','namespace':6,'copied_async':True,'native_map_and_intent_atomic':True,'sd_checkpoint_confirmed':False,'production_broker_connected':False}
+        record['grant_bindings']['storage.key-value.atomic']=[6]
+        record['grant_bindings']['storage.key-value']=[1] if args.quick_actions else []
+        record['shared_settings']['save_acknowledges']='native-atomic-map-and-intent'
+        notice=out/'licenses'/'wifi-intent-sha256';notice.mkdir(parents=True,exist_ok=True)
+        shutil.copyfile(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c',notice/'sha2.c')
+        shutil.copyfile(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.h',notice/'sha2.h')
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
     if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
     if native_receipt:
@@ -157,6 +174,7 @@ def build(args, parser=None):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--experimental-atomic-wifi',action='store_true',help='Disconnected X4 native atomic map+intent capability; never falls back to KV1')
     parser.add_argument('--shared-text-input',action='store_true',help='Use the separately loaded shared keyboard, required for resident X4 builds')
     parser.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None)
