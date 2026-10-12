@@ -107,7 +107,7 @@ static bool snt_save(int fold) {
   snt_last_result.stage=PORTABLE_SET_TIME_KV_WRITE;
   snt_last_result.metadata_outcome=PORTABLE_SET_TIME_UNCONFIRMED;
   bool saved=settings_atomic_save(PORTABLE_RTC_BASIS_KEY,bytes,sizeof(bytes),&editor_message);
-  snt_last_result.metadata_write_accepted=settings_atomic_edit.submitted;
+  snt_last_result.metadata_write_accepted=settings_atomic_submission_accepted;
   if(saved){snt_last_result.metadata_outcome=PORTABLE_SET_TIME_CONFIRMED;snt_last_result.stage=PORTABLE_SET_TIME_DONE;}
   snt_describe_result();
   if(!saved) {

@@ -8,9 +8,11 @@ static bool settings_atomic_save(const char *key,const void *value,uint32_t size
  bool cancel=false;
  for(;;) {
   if(!settings_atomic_guard(NULL)){rc=RISC_ATOMIC_RETAINED;break;}
+  bool accepting=!cancel&&!settings_atomic_edit.token;
   rc=cancel?portable_preference_atomic_cancel(&settings_atomic_edit):
     settings_atomic_edit.token?portable_preference_atomic_collect(&settings_atomic_edit):
     portable_preference_atomic_submit(&settings_atomic_edit);
+  if(accepting&&rc==RISC_ATOMIC_PENDING)settings_atomic_submission_accepted=true;
   if(rc!=RISC_ATOMIC_PENDING&&rc!=PORTABLE_PREFERENCE_READY)break;
   if(cancel) {
    /* poll returns immediately on a host exit request; this checked scheduler

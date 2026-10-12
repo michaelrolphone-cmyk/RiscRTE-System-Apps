@@ -5,7 +5,7 @@ static risc_runtime_capability_v1 settings_atomic_grant;
 static const risc_key_value_atomic_v1 *settings_atomic_api;
 static portable_preference_atomic settings_atomic_edit;
 static risc_key_value_v1 settings_atomic_view;
-static bool settings_atomic_running,settings_atomic_exit;
+static bool settings_atomic_running,settings_atomic_exit,settings_atomic_submission_accepted;
 static int settings_atomic_status;
 static bool settings_atomic_guard(void *unused) {
  (void)unused;return !native_custody_retained&&!failed;
@@ -66,7 +66,7 @@ static bool settings_atomic_open(void) {
  settings_store=&settings_atomic_view;return true;
 }
 static bool settings_atomic_begin(const char *key) {
- settings_atomic_exit=false;
+ settings_atomic_exit=false;settings_atomic_submission_accepted=false;
  int rc=portable_preference_atomic_begin(&settings_atomic_edit,settings_atomic_api,key,
   PORTABLE_PREFERENCE_USER,settings_atomic_guard,NULL);
  settings_atomic_result(rc);

@@ -141,3 +141,29 @@ I/O, uncertainty, malformed receipts, missing/wrong capability, custody retentio
 close while pending, checked release, and explicit automatic-origin rejection.
 Host simulation and target ELF/import checks do not qualify hardware or product
 activation.
+
+### Qualification checkpoint
+
+`receipts/settings-atomic-20261012.json` records the initial 40-case checkpoint.
+The follow-on `receipts/settings-atomic-touch-20261012.json` records 47 cases at
+both 480×800 and 400×600 logical sizes, normally and with ASan/UBSan: 188 fresh
+process runs. These include ordered raw touch DOWN/UP streams, held Save,
+touch cancellation before and after acceptance, and Set Time metadata
+cancellation/uncertainty after both clocks are verified. A refused stale submit
+is explicitly distinguished from an accepted metadata write in the result.
+
+The original shared native-time fixture predates ordered touch input; this
+fixture converts its scripted contacts into copied provider events with sequence
+numbers. Snapshot-only changes are not used as pretend touch evidence.
+
+The final flag-off resident ELF remains byte-identical to `a5bd60f`, SHA-256
+`395e6edae17fcb4395c981efc8e3eb0e29c42ae359fbf6734363c04510144242`.
+The selected Xtensa ELF passes structural validation and import/export checks.
+All 108 repository unit tests and the 18 legacy app fixtures pass.
+
+`scripts/measure_settings_stack.py --target TARGET --output OUT` uses the same
+Xtensa `-Os` selection with `-fstack-usage`. The final measured caller frames
+include Settings activation 240 bytes, atomic save 96, choice encoding 48,
+Set Time save 176, atomic collect 64 and app entry 32. The complete table is in
+the receipt. These individual frames are not a total native/broker/RTOS/interrupt
+or libc stack bound; no stack policy changed.

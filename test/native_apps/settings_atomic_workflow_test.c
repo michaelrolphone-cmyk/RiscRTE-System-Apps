@@ -70,7 +70,7 @@ static int32_t atomic_collect(void *ctx,uint64_t token,risc_key_value_atomic_rec
  if(which("collect-error"))return RISC_ATOMIC_IO;
  if(which("collect-retained")){hidden=true;return RISC_ATOMIC_RETAINED;}
  if(which("close-pending"))return RISC_ATOMIC_PENDING;
- if(++collect_ticks<(which("cancel-pending")||which("cancel-race")||which("home-pending")||which("cancel-error")?12u:3u))return RISC_ATOMIC_PENDING;
+ if(++collect_ticks<(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("cancel-race")||which("home-pending")||which("cancel-error")?12u:3u))return RISC_ATOMIC_PENDING;
  int status=fault_status?fault_status:cancellation&&!which("cancel-race")?RISC_ATOMIC_CANCELLED:RISC_ATOMIC_OK;
  if(status==RISC_ATOMIC_OK){memcpy(values[pending_index],pending_value,pending_size);sizes[pending_index]=pending_size;++revision;}
  *receipt=(risc_key_value_atomic_receipt_v1){sizeof(*receipt),status,revision,status==RISC_ATOMIC_OK?45:0};
@@ -101,6 +101,30 @@ static bool selected_rtc_write(void *ctx,const twatch_rtc_time_v1 *value) {
  if(which("stale-time-during")){++revision;intervened=true;}
  return ok;
 }
+/* The current touch reducer consumes ordered raw edges; the older shared
+ * fixture's snapshot-only schedule must be converted at its provider boundary. */
+static risc_touch_snapshot_v1 raw_state={.width=LOGICAL_WIDTH,.height=LOGICAL_HEIGHT};
+static risc_touch_event_v1 raw_queue[256];static unsigned raw_first,raw_last;
+static void selected_touch_emit(unsigned kind,risc_touch_contact_v1 contact) {
+ assert(raw_last-raw_first<256);
+ raw_queue[raw_last++%256]=(risc_touch_event_v1){++raw_state.sequence,ticks,(uint8_t)kind,contact.id,contact.x,contact.y};
+}
+static bool selected_touch_poll(void *ctx,size_t count) {
+ bool ok=touch_poll(ctx,count);risc_touch_snapshot_v1 report;assert(touch_snapshot(ctx,&report));
+ if(raw_state.contact_count&&!report.contact_count)selected_touch_emit(RISC_TOUCH_EVENT_UP,raw_state.contacts[0]);
+ if(report.contact_count) {
+  if(!raw_state.contact_count)selected_touch_emit(RISC_TOUCH_EVENT_DOWN,report.contacts[0]);
+  else if(memcmp(&raw_state.contacts[0],&report.contacts[0],sizeof(report.contacts[0])))selected_touch_emit(RISC_TOUCH_EVENT_MOVE,report.contacts[0]);
+ }
+ report.sequence=raw_state.sequence;report.timestamp_ms=ticks;raw_state=report;return ok;
+}
+static int32_t selected_touch_next(void *ctx,uint64_t token,risc_touch_event_v1 *out) {
+ (void)ctx;io();assert(token==1);if(raw_first==raw_last)return 0;
+ *out=raw_queue[raw_first++%256];return 1;
+}
+static bool selected_touch_snapshot(void *ctx,risc_touch_snapshot_v1 *out) {
+ (void)ctx;io();*out=raw_state;return true;
+}
 static bool selected_acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1 *grant) {
  if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)) {
   io();++atomic_acquires;assert(api==1&&instance==1&&grant->struct_size==sizeof(*grant));
@@ -115,6 +139,8 @@ static bool selected_acquire(const char *name,uint32_t api,uint64_t instance,ris
   static risc_key_value_v1 kv;kv=kv_api;kv.get=selected_legacy_get;kv.put=selected_legacy_put;grant->api=&kv;
  } else if(!strcmp(name,"display.output")) {
   static risc_display_output_api_v1 display;display=display_api;display.submit=selected_show;grant->api=&display;
+ } else if(!strcmp(name,"input.touch.raw")) {
+  static risc_touch_api_v1 touch;touch=touch_api;touch.snapshot=selected_touch_snapshot;touch.poll=selected_touch_poll;touch.next=selected_touch_next;grant->api=&touch;
  } else if(!strcmp(name,TWATCH_RTC_CAPABILITY)) {
   static twatch_rtc_api_v1 rtc;rtc=rtc_api;rtc.write=selected_rtc_write;grant->api=&rtc;
  }
@@ -182,35 +208,43 @@ int main(int argc,char **argv) {
  if(!strcmp(test_name,"timer-save")){row=SETTINGS_TIMER_ROW;index=6;}
  bool clocks=strstr(test_name,"time-")||which("rtc-write-false")||which("native-seed-io");
  if(clocks){row=0;index=7;}
- if(which("uncertain"))fault_status=RISC_ATOMIC_UNCERTAIN;
+ if(which("uncertain")||which("time-uncertain"))fault_status=RISC_ATOMIC_UNCERTAIN;
  if(which("io"))fault_status=RISC_ATOMIC_IO;
  if(which("capacity"))fault_status=RISC_ATOMIC_CAPACITY;
  api->settings_render(0,(int32_t)row+1);inputs();
- if(row==0){save_time(false);}
+ if(row==0){save_time(which("time-touch-save"));}
  else if(row==1){next_at+=20;nav(RISC_NAV_DOWN);next_at+=20;nav(RISC_NAV_CONFIRM);next_at+=20;nav(RISC_NAV_CONFIRM);}
- else {
+ else if(which("format-touch-save")||which("cancel-touch-before")||which("cancel-touch-pending")||which("held-touch-save")) {
+  next_at+=16;tap(LOGICAL_WIDTH/2,300);next_at+=16;
+  if(which("cancel-touch-before"))tap(80,FOOTER_Y);
+  else if(which("held-touch-save")){for(unsigned i=0;i<12;++i)point(next_at+i,SAVE_X,FOOTER_Y);next_at+=20;}
+  else tap(SAVE_X,FOOTER_Y);
+ } else {
   if(!which("same-value"))nav(RISC_NAV_RIGHT);
   nav(which("cancel-before")?RISC_NAV_BACK:RISC_NAV_CONFIRM);
  }
- if(which("cancel-pending")||which("cancel-race")||which("cancel-error"))nav(RISC_NAV_BACK);
+ if(which("cancel-touch-pending"))tap(80,FOOTER_Y);
+ else if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-race")||which("cancel-error"))nav(RISC_NAV_BACK);
  else if(which("home-pending"))nav(RISC_NAV_HOME);
  else if(which("repeated-confirm"))nav(RISC_NAV_CONFIRM);
  next_at+=40;end_app();
  uint8_t result=api->settings_activate(0,row);
  if(getenv("NATIVE_SETTINGS_TRACE"))fprintf(stderr,"case=%s result=%u submits=%u revision=%llu status=%d message=%s tf=%s retained=%u pending=%llu\n",test_name,result,submitted,(unsigned long long)revision,settings_atomic_status,settings_message,time_format_message,retained,(unsigned long long)pending_token);
  assert(!legacy_puts&&!checkpoint_owned);
- bool no_submit=which("stale-draft")||which("stale-unrelated")||which("stale-time-before")||which("stale-time-during")||which("cancel-before")||which("rtc-write-false")||which("native-seed-io");
+ bool no_submit=which("stale-draft")||which("stale-unrelated")||which("stale-time-before")||which("stale-time-during")||which("cancel-before")||which("cancel-touch-before")||which("rtc-write-false")||which("native-seed-io");
  bool retained_case=which("collect-error")||which("collect-retained")||which("bad-receipt")||which("bad-revision")||which("submit-dirty-refusal")||which("cancel-error")||which("rtc-write-false");
- bool rejected=no_submit||fault_status||retained_case||which("cancel-pending")||which("home-pending");
+ bool rejected=no_submit||fault_status||retained_case||which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("home-pending");
  if(!rejected)assert(result==T5_APP_SETTING_UPDATED&&submitted==1&&sizes[index]&&revision==8);
  else assert(result!=T5_APP_SETTING_UPDATED);
  assert(retained==retained_case);
  if(no_submit)assert(!submitted);
  if(which("stale-time-before"))assert(!rtc_writes&&!seeds);
  if(which("stale-time-during"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED&&strstr(snt_status_text,"stale"));
+ if(which("time-cancel-pending")||which("time-uncertain"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED&&snt_last_result.metadata_write_accepted);
+ if(which("stale-time-during"))assert(!snt_last_result.metadata_write_accepted);
  if(which("time-save"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_CONFIRMED);
- if(which("cancel-pending")||which("cancel-race")||which("home-pending"))assert(cancelled==1);
- if(which("cancel-pending")||fault_status)assert(!sizes[0]);
+ if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("cancel-race")||which("home-pending"))assert(cancelled==1);
+ if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||fault_status)assert(!sizes[0]);
  if(which("submit-busy"))assert(busy_refusals==4);
  if(which("cancel-before"))assert(!cancelled&&!sizes[0]);
  if(which("same-value"))assert(sizes[0]==4&&!values[0][2]);
