@@ -1,11 +1,13 @@
 /* One host owns persisted power policy. A settled child grants a separate
- * POLICY boundary only after dropping focus and its touch subscription. */
+ * POLICY boundary after releasing display custody. Only an explicit POLL
+ * promise permits retaining passive input through a non-sleep sample. */
 #ifdef PORTABLE_RESIDENT_POLICY
 #if !defined(PORTABLE_X4_IDLE_POLICY) || !defined(PORTABLE_LOW_BATTERY)
 #error Resident host policy requires the typed X4 idle and low-battery profile
 #endif
+#include "PortableResidentPolicyInput.h"
 #include "resident_sleep.inc"
-static bool resident_policy_requested;
+static bool resident_policy_requested,resident_policy_input_continuity;
 static bool resident_policy_due(uint32_t now) {
  return !low_battery_sampled || (uint32_t)(now-low_battery_sampled_at)>=5000u ||
    (uint32_t)(now-last_activity)>=portable_idle_ms();
@@ -17,13 +19,20 @@ static int resident_policy_dispatch(const risc_resident_request_v1 *request,risc
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
  if(request->reason==RISC_RESIDENT_CHECKPOINT_POLL) {
   if(request->flags&(RISC_RESIDENT_POLL_ACTIVITY|RISC_RESIDENT_POLL_INHIBIT_IDLE))last_activity=now;
+  resident_policy_input_continuity=false;
   if(request->flags&RISC_RESIDENT_POLL_INHIBIT_POLICY)resident_policy_requested=false;
   else if(resident_policy_due(now)) {
    resident_policy_requested=true;reply->flags=RISC_RESIDENT_REPLY_POLICY_REQUEST;
+   if((uint32_t)(now-last_activity)<portable_idle_ms()) {
+    resident_policy_input_continuity=true;
+    reply->flags|=PORTABLE_RESIDENT_REPLY_INPUT_CONTINUITY;
+   }
   }
   return RISC_RESIDENT_OK;
  }
  if(!resident_policy_requested)return RISC_RESIDENT_BUSY;
+ const bool preserve_input=resident_policy_input_continuity;
+ resident_policy_input_continuity=false;
  resident_dispatching=true;
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(!contexts_suspend())return RISC_RESIDENT_RETAINED;
@@ -39,7 +48,7 @@ static int resident_policy_dispatch(const risc_resident_request_v1 *request,risc
  }
  now=millis_now();
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
- if((uint32_t)(now-last_activity)>=portable_idle_ms()) {
+ if(!preserve_input && (uint32_t)(now-last_activity)>=portable_idle_ms()) {
   /* This path is reversible Light only. Explicit deep sleep is handled by
    * CHECKPOINT_SLEEP, clean child return, then the host's ordinary sleep path. */
   int status=portable_app_idle_sleep_with_ui(rt,display,gauge,alarm_sleep_api(),&resident_sleep_ui);

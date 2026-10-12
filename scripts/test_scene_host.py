@@ -18,7 +18,7 @@ MODES = ('behavior', 'inflight', 'stale-frame', 'gap', 'transient', 'held',
          'native-poll-status', 'native-close-status', 'native-close-unsubscribe',
          'native-close-foreground', 'native-close-reset')
 KEYBOARD_MODES = ('keyboard-hide-inflight', 'keyboard-hide-native', 'keyboard-visibility', 'keyboard-fast', 'keyboard-overflow', 'keyboard-press', 'keyboard-touch', 'keyboard-navigation', 'keyboard-pending',
-                  'keyboard-stale', 'keyboard-hardware', 'keyboard-invalid', 'keyboard-gesture',
+                  'keyboard-stale', 'keyboard-hardware', 'keyboard-long', 'keyboard-invalid', 'keyboard-gesture',
                   'keyboard-raster', 'keyboard-superseded', 'keyboard-native-snapshot', 'keyboard-native-reset')
 
 LIFECYCLE_MODES = ('lifecycle-discovery', 'lifecycle-activity', 'lifecycle-busy',

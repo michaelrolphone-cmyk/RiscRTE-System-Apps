@@ -48,6 +48,7 @@ extern "C" void text_runtime_check_token(uint64_t token){assert(token);if(activa
 extern "C" void text_runtime_app_event(unsigned n,const void*p){if(n==1){++loads;app_pointer=p;}else{assert(n==2);++unloads;}}
 static void push(unsigned kind,unsigned usage){queue[queued++]={++sequence,7,(uint8_t)kind,(uint8_t)usage,0,0};}
 extern "C" unsigned text_runtime_frames(void){return frames;}
+extern "C" void text_runtime_checkpoint_boundary(bool continuity){assert(!held&&!pending);assert(!!touch_sub==continuity&&!!keyboard_sub==continuity);}
 /* The displayed draft only, excluding focus borders and visibility caption.
  * Coordinates use the independent installed X4 logical-to-panel transform. */
 extern "C" uint64_t text_runtime_preview_hash(void){

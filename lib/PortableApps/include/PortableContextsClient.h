@@ -4,6 +4,16 @@
 #include "PortableRadioPolicy.h"
 #include "PortableLowBattery.h"
 #include "RiscRuntimeV1.h"
+/* Opt-in invocation fence. Existing clients retain their prior generated path.
+ * Evaluate after callbacks, before another provider call or grant cleanup. */
+#ifndef PORTABLE_CONTEXTS_LIVE
+#define PORTABLE_CONTEXTS_LIVE() true
+#define portable_contexts_callback(result) (result)
+#define PORTABLE_CONTEXTS_CHECK_LIVE()
+#else
+#define PORTABLE_CONTEXTS_CHECK_LIVE() do {if(!PORTABLE_CONTEXTS_LIVE())return false;} while(0)
+static inline bool portable_contexts_callback(bool result){return PORTABLE_CONTEXTS_LIVE()&&result;}
+#endif
 #ifndef PORTABLE_CONTEXTS_CUSTODY_SAFE
 #define PORTABLE_CONTEXTS_CUSTODY_SAFE() true
 #endif
@@ -34,20 +44,21 @@ typedef struct {
 #include "PortableContextFingerprints.h"
 #include "PortableContextRules.h"
 static inline bool portable_contexts_open(portable_contexts_client *c,const risc_runtime_api_v1 *rt) {
+    PORTABLE_CONTEXTS_CHECK_LIVE();
     memset(c,0,sizeof(*c));c->runtime=rt;c->grant.struct_size=sizeof(c->grant);
-    if(!rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant))return false;
+    if(!portable_contexts_callback(rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant)))return false;
     const contexts_service_v1 *p=c->grant.api;
     if(!p||p->api_version!=1||p->struct_size<CONTEXTS_SERVICE_V1_SIZE||!p->step||!p->pause||!p->status||
        !p->request_export||!p->begin_export||!p->export_record||!p->finish_export||!p->label||
        !p->claim_preset||!p->preset_result||!p->capture_audio)return false;
     c->api=p;c->policy.struct_size=sizeof(c->policy);c->fingerprint_sources=PORTABLE_CONTEXTS_SOURCE_MASK;
     const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(p);
-    if(fp){contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=PORTABLE_CONTEXTS_SOURCE_MASK};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)||!portable_fp_checkpoint(c,true)||!portable_context_rules_load(c))return false;}
+    if(fp){contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=PORTABLE_CONTEXTS_SOURCE_MASK};if(!portable_contexts_callback(fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg))||!portable_fp_checkpoint(c,true)||!portable_context_rules_load(c))return false;}
     return true;
 }
 static inline bool portable_contexts_pause(portable_contexts_client *c) {
-    c->loaded=false;if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
-    if(c->api&&!c->api->pause(c->api->context)){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
+    c->loaded=false;PORTABLE_CONTEXTS_CHECK_LIVE();if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
+    if(c->api&&!portable_contexts_callback(c->api->pause(c->api->context))){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
     return portable_fp_checkpoint(c,false);
 }
 /* A shared preference writer invalidates the cached background policy. */
@@ -70,8 +81,8 @@ static inline bool portable_contexts_retain(portable_contexts_client *c) {
     return retain&&retain();
 }
 static inline bool portable_contexts_release_storage(portable_contexts_client *c) {
-    if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
-    if(c->storage.api&&!c->runtime->release(&c->storage)){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
+    PORTABLE_CONTEXTS_CHECK_LIVE();if(!PORTABLE_CONTEXTS_CUSTODY_SAFE())return false;
+    if(c->storage.api&&!portable_contexts_callback(c->runtime->release(&c->storage))){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
     memset(&c->storage,0,sizeof(c->storage));return true;
 }
 static inline bool portable_contexts_step(portable_contexts_client *c,bool audio_allowed,bool radio_allowed) {
@@ -137,7 +148,7 @@ static inline bool portable_contexts_set_enabled(portable_contexts_client *c,boo
 }
 static inline bool portable_contexts_close(portable_contexts_client *c) {
     if(!portable_contexts_release_storage(c))return false;
-    if(c->grant.api&&!c->runtime->release(&c->grant)){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
+    if(c->grant.api&&!portable_contexts_callback(c->runtime->release(&c->grant))){PORTABLE_CONTEXTS_CLEANUP_FAILURE();return false;}
     memset(c,0,sizeof(*c));return true;
 }
 /* Caller claims a confirmed room edge in the service before this function.

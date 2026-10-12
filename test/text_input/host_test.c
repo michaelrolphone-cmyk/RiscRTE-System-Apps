@@ -1,4 +1,9 @@
+#ifdef TEST_LEGACY_TEXT_ENTRY_HEADER
+/* Frozen before the long suffix, from System 52ad3d545b7da6c71048b89f8b3c33ecfa1bce22. */
+#include "fixtures/RiscTextEntryV1_128.h"
+#else
 #include "RiscTextEntryV1.h"
+#endif
 #include "RiscRuntimeV1.h"
 #include "RiscSceneV1.h"
 #include "SceneKeyboardV1.h"

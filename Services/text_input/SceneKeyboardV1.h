@@ -35,3 +35,6 @@ enum {
  * neither the scene document ABI nor ordinary keyboard semantics. */
 #define RISC_SCENE_KEYBOARD_EXTENDED 16u
 #define RISC_SCENE_KEYBOARD_EXTENDED_LIMIT 127u
+/* The same bounded scene viewport can carry the longer checked text-input
+ * suffix. Older presenters reject targets above their supported limit. */
+#define RISC_SCENE_KEYBOARD_LONG_LIMIT 255u
