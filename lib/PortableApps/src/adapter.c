@@ -1756,7 +1756,11 @@ static bool idle_sleep(void) {
 #endif
      !pqa_radios_resume(&quick_radios,&quick.ui,rt)){failed=true;return false;}
 #endif
-  if(!portable_touch_open(&touch,rt)){
+  if(
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+     !text_input_suspended &&
+#endif
+     !portable_touch_open(&touch,rt)){
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
     portable_desk_adapter_retain();return false;
 #endif
@@ -2562,6 +2566,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 #include "text_input_handoff.inc"
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#include "text_input_policy.inc"
+#endif
 #endif
 #ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
 #define PORTABLE_SELECTED_CATALOG_BOUND PORTABLE_SPRINGBOARD_CATALOG_BOUND
