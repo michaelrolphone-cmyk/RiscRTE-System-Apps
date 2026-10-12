@@ -17,6 +17,7 @@ snprintf(error_,sizeof(error_),"%s",s);
 success_=false;
 state_=file_?State::Close:State::Failed;
 }
+bool RemoteVolume::reject(const char*s){if(available()){published_=false;xmlSize_=0;fail(s);}return false;}
 bool RemoteVolume::start(Mode m){if(!available()||file_||!client_.ready()||!hooks_.owner||!hooks_.owner(hooks_.context))return false;
 mode_=m;
 cancelled_=success_=published_=temporary_=uncertain_=false;
@@ -36,7 +37,9 @@ if(!p.storageSafe())return false;
 return p.storageSafe();
 },
  [](void*c,const void*in,size_t n){auto&p=*static_cast<RemoteVolume*>(c);
-if(p.mode_==Mode::List){if(n>=sizeof(p.xml_)-p.xmlSize_)return false;
+if(p.mode_==Mode::List||p.mode_==Mode::Preview){
+if(p.mode_==Mode::Preview&&p.previewSkipped_<p.previewOffset_){size_t skip=size_t(std::min<uint64_t>(n,p.previewOffset_-p.previewSkipped_));p.previewSkipped_+=skip;in=static_cast<const unsigned char*>(in)+skip;n-=skip;}
+if(n>=sizeof(p.xml_)-p.xmlSize_)return false;
 memcpy(p.xml_+p.xmlSize_,in,n);
 p.xmlSize_+=n;
 p.xml_[p.xmlSize_]=0;
@@ -48,15 +51,26 @@ return p.storageSafe()&&wrote==n;
 }};
 }
 bool RemoteVolume::list(const char*p,uint64_t now){char encoded[1537];
-if(risc_protected_settings_path(p)||!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return false;
+if(risc_protected_settings_path(p)||!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return reject("Invalid remote folder request");
 strcpy(path_,p);
 count_=0;
 if(!client_.request("PROPFIND",p,nullptr,0,io(),now)){fail("Could not request remote folder");
 return false;
 }return true;
 }
+bool RemoteVolume::preview(const char*p,size_t limit,uint64_t now,uint64_t offset){char encoded[1537];
+if(offset>64u*1024u*1024u||!limit||limit>PreviewMax||risc_protected_settings_path(p)||!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::Preview))return reject("Invalid remote preview request");
+previewOffset_=offset;previewSkipped_=0;
+if(!client_.request("GET",p,nullptr,0,io(),now,nullptr,size_t(offset)+limit)){fail("Could not request remote preview");return false;}
+return true;
+}
+bool RemoteVolume::previewGet(void*out,size_t capacity,size_t*size)const{
+if(size)*size=0;
+if(!size||!out||mode_!=Mode::Preview||state_!=State::Done||!success_||cancelled_||capacity<xmlSize_)return false;
+memcpy(out,xml_,xmlSize_);*size=xmlSize_;return true;
+}
 bool RemoteVolume::download(const char*remote,const risc_storage_volume_api_v1*local,const char*destination,uint64_t now){char encoded[1537];
-if(risc_protected_settings_path(remote)||risc_protected_settings_path(destination)||!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return false;
+if(risc_protected_settings_path(remote)||risc_protected_settings_path(destination)||!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return reject("Invalid local download destination");
  local_=local;
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
@@ -80,7 +94,7 @@ return false;
 }return true;
 }
 bool RemoteVolume::upload(const risc_storage_volume_api_v1*local,const char*source,const char*remote,uint64_t now,bool replace){char encoded[1537];
-if(risc_protected_settings_path(source)||risc_protected_settings_path(remote)||!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return false;
+if(risc_protected_settings_path(source)||risc_protected_settings_path(remote)||!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return reject("Invalid local upload source");
 local_=local;
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
@@ -97,7 +111,7 @@ if(!client_.request(replace?"HEAD":"PUT",remote,nullptr,replace?0:size,io(),now)
 return false;
 }return true;
 }
-bool RemoteVolume::mutate(const char*m,const char*p,const char*d,uint64_t now){if(risc_protected_settings_path(p)||risc_protected_settings_path(d)||!m||(strcmp(m,"MKCOL")&&strcmp(m,"DELETE")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))||!start(Mode::Mutation))return false;
+bool RemoteVolume::mutate(const char*m,const char*p,const char*d,uint64_t now){if(risc_protected_settings_path(p)||risc_protected_settings_path(d)||!m||(strcmp(m,"MKCOL")&&strcmp(m,"DELETE")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))||!start(Mode::Mutation))return reject("Invalid remote operation");
 if(!client_.request(m,p,d,0,io(),now)){fail("Could not start remote operation");
 return false;
 }return true;
@@ -175,8 +189,13 @@ mode_=Mode::Upload;
  if(!match[0]||!client_.request("PUT",uploadRemote_,nullptr,uploadSize_,io(),now,match))fail("Remote file has no safe replacement revision");
 return state_;
 }
- if(!success_){snprintf(error_,sizeof(error_),cancelled_?"Transfer cancelled":"Remote operation failed (%u)",client_.status());
+ if(success_&&(mode_==Mode::Mutation||mode_==Mode::Upload))count_=0;
+ if(!success_){const char*reason=nullptr;
+if(cancelled_)reason="Transfer cancelled";
+else switch(client_.error()){case Client::Expired:reason="Peer session or request expired";break;case Client::Authentication:reason="Peer authentication failed";break;case Client::Protocol:reason="Invalid peer response";break;case Client::Transport:reason="Peer connection failed";break;case Client::Storage:reason="Transfer storage operation failed";break;case Client::Uncertain:reason="Operation outcome unknown; reload";break;default:break;}
+if(reason)snprintf(error_,sizeof(error_),"%s",reason);else snprintf(error_,sizeof(error_),"Remote operation failed (%u)",client_.status());
 }if(mode_==Mode::List){if(success_&&!parseListing()){success_=false;
+count_=0;
 snprintf(error_,sizeof(error_),"Invalid or oversized remote folder");
 }state_=success_?State::Done:State::Failed;
 return state_;
@@ -217,7 +236,7 @@ return state_;
 void RemoteVolume::cancel(){if(state_==State::Retained)return;
 cancelled_=true;
 success_=false;
-if(state_==State::Network)client_.cancel();
+if(state_==State::Network)client_.cancelRequest();
 else if(file_)state_=State::Close;
 else if(!available())state_=State::Failed;
 }

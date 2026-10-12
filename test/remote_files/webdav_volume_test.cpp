@@ -43,6 +43,22 @@ struct Fixture {
 };
 Fixture*Fixture::active=nullptr;size_t Fixture::maximumPeak=0;
 int main(){
+ // OPTIONS and method admission must reflect the actual optional callbacks.
+ for(unsigned missing=0;missing<7;++missing){Fixture f;
+  if(missing==0||missing==6)f.base().file_open_write=nullptr;
+  if(missing==1||missing==6)f.base().file_write=nullptr;
+  if(missing==2||missing==6)f.ext().file_sync=nullptr;
+  if(missing==3||missing==6)f.ext().rename=nullptr;
+  if(missing==4||missing==6)f.base().remove=nullptr;
+  if(missing==5||missing==6)f.ext().mkdir=nullptr;
+  assert(f.run("OPTIONS","/")==200);const std::string allow=f.response;
+  bool writable=missing==5,remove=missing!=4&&missing!=6,mkdir=missing!=5&&missing!=6,move=missing!=3&&missing!=6;
+  for(auto method:{"PUT","DELETE","MKCOL","MOVE","COPY"}){bool supported=!strcmp(method,"PUT")||!strcmp(method,"COPY")?writable:!strcmp(method,"DELETE")?remove:!strcmp(method,"MKCOL")?mkdir:move;
+   assert((allow.find(std::string(", ")+method)!=std::string::npos)==supported);
+   if(!supported){unsigned before=f.calls;assert(f.run(method,!strcmp(method,"DELETE")||!strcmp(method,"MOVE")||!strcmp(method,"COPY")?"/file.txt":"/new","Destination: /other\r\n")==405);assert(f.calls==before);}
+  }
+ }
+
  // Reserved settings are never exposed, even through FAT aliases or URL encoding.
  for(const char*path:{"/RTECFG","/rtecfg/00000001/settings.index","/%52tEcFg./x","/rtecfg%20/x","/folder/RTECFG/x"}){
   for(const char*method:{"GET","HEAD","PROPFIND","PUT","DELETE","MKCOL","MOVE","COPY"}){

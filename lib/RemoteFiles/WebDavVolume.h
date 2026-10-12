@@ -41,6 +41,6 @@ class VolumeTransaction {
  bool owner();int observed();bool safe();bool after();bool closeFile(risc_storage_file_t&,bool);bool closeDirectory();
  void response(unsigned,size_t=0,const char* ="application/octet-stream");void fail(unsigned);
  bool reserve(size_t);bool append(const char*);bool escaped(const char*,bool=false);bool row(const char*,bool,uint64_t);
- bool writablePath(const char*)const;
+ bool writablePath(const char*)const;bool supports(const char*)const;
 };
 }
