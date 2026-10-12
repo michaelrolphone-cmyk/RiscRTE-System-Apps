@@ -29,7 +29,14 @@ static bool fsh_setup_result(int rc){
  fsh_setup_status=next;return true;
 }
 bool portable_file_browser_setup_service(void){
- if(!fsh_owner(NULL))return false;
+ if(!fsh_owner(NULL)){
+  /* A successful file.open dispatch closes Files, then app_main still drains
+   * its last frame. Completed setup owns no work; terminal is not retention.
+   * Never relax the owner fence for live, pending or retained setup. */
+  return fb_terminal&&!portable_adapter_retained()&&fsh_phase==FSH_OFF&&
+   (!fsh_setup_initialized||fsh_setup_status.state==PORTABLE_FILE_SETUP_STATE_OFF||
+    fsh_setup_status.state==PORTABLE_FILE_SETUP_STATE_UNAVAILABLE);
+ }
  if(!fsh_setup_initialized||fsh_setup_status.state!=PORTABLE_FILE_SETUP_STATE_ACTIVE)return true;
  if(fsh_setup_servicing){fsh_retain();return false;}
  fsh_setup_servicing=true;

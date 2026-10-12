@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "baseline_system_commit": "c2889adff2a06bcd6c6207f11fbd0795fbbd99fa",
+  "files_version": "1.5.32",
+  "runtime_commit": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70",
+  "hardware_tested": false,
+  "target_built": true,
+  "publication": "none",
+  "regression": "Files kinetic tail admitted background policy before scrolling settled",
+  "baseline_failure": "resident-system-test: test/native_apps/resident_system_app.c:134: app_main: Assertion `!(system_client_pending()&2u)' failed.",
+  "passed": {
+    "resident-fixed": {
+      "runs": 18,
+      "evidence_sha256": "493ae13c19ed86b90dcfba66d8081f19bd5783666ed37caed171f0e1131c5d48"
+    },
+    "logical-fixed": {
+      "runs": 48,
+      "evidence_sha256": "e5ce6cbeb0170ff72a9bfb47152a83880944a7f73433d7e3ef71e5f0ae1abee0"
+    },
+    "gt911": {
+      "runs": 16,
+      "evidence_sha256": "87cb1bdbf850cf6451ef631fd303d86d3a69b3baae504f1c2135b44087c9f315"
+    },
+    "mounted-ubsan": {
+      "runs": 9,
+      "log_sha256": "e369a42ea6edd7bf635f7f77e01c97ec12bcc4a4092c9d68389e030a6ac8947b"
+    },
+    "portable-files": {
+      "runs": 8,
+      "log_sha256": "2b14e413ffb934c7f42854cb9ae4ca7520c8021710b4001949247213f7e7a051"
+    }
+  },
+  "source_sha256": {
+    "Apps/file_browser_scroll_model.inc": "9d7234cd52723b48103c992a11093b1926317456c051f9452992816190e63796",
+    "lib/PortableApps/include/PortableFileBrowser.h": "ba52e70f3dd1ac3f705d29155eaeb5885550cb2b33cf459cfd15ddbe09bbccd3",
+    "lib/PortableApps/src/resident_adapter.inc": "c8086ddb8f773046eb3961d2bb4e20b9916867d3e14351d7231c316c38b2d806",
+    "scripts/portable_file_sharing_build.py": "65729a7b0eed0ed2514eef461fbb35cd2ba0a69da1003edfddd9c26b3a661a49",
+    "scripts/test_resident_system_clients.py": "86d2250692b91291a338b2f39a310c9d92edf21b1b52dab7849d7f9700675d14",
+    "test/native_apps/resident_system_app.c": "2a4ad5914aea6d769bbbd8831bee7a2188170f4ef5ec416337a0537b32e65c99",
+    "test/native_apps/resident_system_test.c": "96b967a65183f036f49c3de5465d7a70552a346155dfac595832e87d912443cc",
+    "scripts/test_files_scroll_gt911.py": "186dad59ccb2c5b223e90eb29cf9fd97a38a145767e61b519a7b3d5ff2765d43",
+    "test/native_apps/files_scroll_gt911_test.c": "a728129f8e7d1630e4de4a92ee80bf43ec2bc73bf1d20c5cd1c9d5a21dfdcf19"
+  },
+  "qualification_limits": [
+    "Native SDK/provider and time fixtures; physical panel and touch are untested.",
+    "Local Files snap-to-top is not yet reproduced.",
+    "Snapshot-only legacy scroll fixture and optional snapshot latency frame-count assertion fail on unchanged baseline; see documentation."
+  ],
+  "target": {
+    "version": "1.5.32",
+    "repository_commit": "df01180beef1979ec69b2e84c64c756aef7ba8fd",
+    "working_tree_dirty": false,
+    "size_bytes": 483816,
+    "sha256": "928d8a727e94dc5f96093c803809e84e7b24b9837430a962165cba9b927a53b5",
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "grant_count": 16,
+    "build_record_sha256": "7d67f32b44c1485d76eb8543d0c3f6184099fc83a634bff7931a2fd09592c79e",
+    "validation": "Real structural ELF validator and import/export checks passed; all existing deployed1.5.31 define/grant/storage/sharing invariants byte-equivalent",
+    "integration_status": "Development scroll-only checkpoint; required terminal Files handoff fix and final product rebuild pending"
+  }
+}

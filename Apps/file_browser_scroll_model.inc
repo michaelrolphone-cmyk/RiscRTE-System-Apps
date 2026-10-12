@@ -16,6 +16,11 @@ static void fbs_reset(void) {
  memset(&fbs_scroll,0,sizeof(fbs_scroll));fbs_generation=1;fbs_mode=UINT32_MAX;
  fbs_origin=fbs_cache_start=fbs_selected=fbs_directory_selected=0;fbs_hit_ready=fbs_inventory_valid=false;
 }
+/* Raw UP ends contact before kinetic motion ends. Resident policy must keep
+ * this logical owner live until the bounded coast settles or is interrupted. */
+bool portable_file_browser_scroll_active(void) {
+ return fbs_scroll.contact||fbs_scroll.velocity_q8!=0;
+}
 void portable_file_browser_scroll_interrupt(void) {
  portable_scroll_cancel(&fbs_scroll);fbs_hit_ready=false;
 }

@@ -109,6 +109,9 @@ static uint32_t resident_policy_flags(void) {
 #endif
  if(blocked)flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
  if(portable_app_ui_active())flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_TOUCH_SCROLL)
+ if(portable_file_browser_scroll_active())flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
+#endif
  if(touch.down || touch.home_down || home_pending || crown_pending || navigation_pending ||
     resident_top_pending || resident_controls_requested || handoff_requested ||
     (input_pending && (input_sample.down || input_sample.released || input_sample.cancelled)))
