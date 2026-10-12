@@ -7,6 +7,14 @@ namespace RiscWebDav {
 bool RemoteVolume::available()const{return state_==State::Idle||state_==State::Done||state_==State::Failed;
 }
 bool RemoteVolume::storageSafe(){if(!local_)return true;
+if(atomic_){if(!hooks_.owner(hooks_.context)){state_=State::Retained;return false;}
+const auto*ext=risc_storage_volume_extension(local_);
+int32_t rc=mode_==Mode::Download?atomic_->write_status(local_->context,file_):int32_t(ext->handle_error(local_->context,file_,false));
+if(!hooks_.owner(hooks_.context)||rc==RISC_APP_DATA_RETAINED||rc==RISC_APP_DATA_CONTEXT){state_=State::Retained;return false;}
+if(rc!=(mode_==Mode::Download?RISC_APP_DATA_EXPORT_WRITE_PENDING:0))return false;
+risc_app_data_export_entry_v1 entry{};rc=atomic_->entry(local_->context,atomicIndex_-1,&entry);
+if(!hooks_.owner(hooks_.context)||rc==RISC_APP_DATA_RETAINED||rc==RISC_APP_DATA_CONTEXT){state_=State::Retained;return false;}
+return rc==0;}
 const auto*s=risc_storage_volume_state(local_);
 if(!s||s->observe(local_->context)==RISC_STORAGE_STATE_RETAINED){state_=State::Retained;
 return false;
@@ -21,7 +29,7 @@ bool RemoteVolume::reject(const char*s){if(available()){published_=false;xmlSize
 bool RemoteVolume::start(Mode m){if(!available()||file_||!client_.ready()||!hooks_.owner||!hooks_.owner(hooks_.context))return false;
 mode_=m;
 cancelled_=success_=published_=temporary_=uncertain_=false;
-local_=nullptr;
+local_=nullptr;atomic_=nullptr;atomicIndex_=0;
 error_[0]=0;
 xmlSize_=0;
 state_=State::Network;
@@ -44,11 +52,12 @@ memcpy(p.xml_+p.xmlSize_,in,n);
 p.xmlSize_+=n;
 p.xml_[p.xmlSize_]=0;
 return true;
-}if(p.mode_==Mode::Download){if(!p.storageSafe())return false;
+}if(p.mode_==Mode::Download){if(p.atomic_&&p.client_.total()>RISC_APP_DATA_FILE_MAX)return false;
+if(!p.storageSafe())return false;
 size_t wrote=p.local_->file_write(p.local_->context,p.file_,in,n);
 return p.storageSafe()&&wrote==n;
 }return true;
-}};
+},atomic_?512u:0u};
 }
 bool RemoteVolume::list(const char*p,uint64_t now){char encoded[1537];
 if(risc_protected_settings_path(p)||!Client::encodePath(p,encoded,sizeof(encoded))||!start(Mode::List))return reject("Invalid remote folder request");
@@ -70,8 +79,10 @@ if(!size||!out||mode_!=Mode::Preview||state_!=State::Done||!success_||cancelled_
 memcpy(out,xml_,xmlSize_);*size=xmlSize_;return true;
 }
 bool RemoteVolume::download(const char*remote,const risc_storage_volume_api_v1*local,const char*destination,uint64_t now){char encoded[1537];
-if(risc_protected_settings_path(remote)||risc_protected_settings_path(destination)||!local||!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return reject("Invalid local download destination");
- local_=local;
+const auto*atomic=local?risc_app_data_export_catalog(local):nullptr;
+if(risc_protected_settings_path(remote)||risc_protected_settings_path(destination)||!local||(!atomic&&(!risc_storage_volume_extension(local)||!risc_storage_volume_state(local)))||(atomic&&!atomic->write_status)||!local->file_open_write||!local->file_write||!local->file_close||!Client::encodePath(remote,encoded,sizeof(encoded))||!Client::encodePath(destination,encoded,sizeof(encoded))||!strcmp(destination,"/")||!start(Mode::Download))return reject("Invalid local download destination");
+ local_=local;atomic_=atomic;strcpy(destination_,destination);
+if(atomic_){strcpy(uploadRemote_,remote);state_=State::Prepare;return true;}
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
 }strcpy(destination_,destination);
@@ -94,8 +105,10 @@ return false;
 }return true;
 }
 bool RemoteVolume::upload(const risc_storage_volume_api_v1*local,const char*source,const char*remote,uint64_t now,bool replace){char encoded[1537];
-if(risc_protected_settings_path(source)||risc_protected_settings_path(remote)||!local||!local->file_open_read||!local->file_read||!local->file_close||!risc_storage_volume_state(local)||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return reject("Invalid local upload source");
-local_=local;
+const auto*atomic=local?risc_app_data_export_catalog(local):nullptr;const auto*ext=local?risc_storage_volume_extension(local):nullptr;
+if(risc_protected_settings_path(source)||risc_protected_settings_path(remote)||!local||!local->file_open_read||!local->file_read||!local->file_close||(!atomic&&!risc_storage_volume_state(local))||(atomic&&(!ext||!ext->handle_error))||!Client::encodePath(source,encoded,sizeof(encoded))||!Client::encodePath(remote,encoded,sizeof(encoded))||!start(Mode::Upload))return reject("Invalid local upload source");
+local_=local;atomic_=atomic;
+if(atomic_){strcpy(stage_,source);strcpy(uploadRemote_,remote);if(replace)mode_=Mode::ReplaceHead;state_=State::Prepare;return true;}
 if(!storageSafe()){fail("Local storage unavailable or exported");
 return false;
 }uint64_t size=0;
@@ -178,6 +191,23 @@ if(!hooks_.owner(hooks_.context)){state_=State::Retained;
 client_.cancel();
 return state_;
 }
+ if(state_==State::Prepare){
+ // Catalog admission is copied policy metadata; open_write itself exclusively
+ // checks absence. No unconfigured path or staging alias is ever submitted.
+ risc_app_data_export_entry_v1 entry{};int32_t rc=atomic_->entry(local_->context,atomicIndex_,&entry);
+ if(!hooks_.owner(hooks_.context)||rc==RISC_APP_DATA_RETAINED||rc==RISC_APP_DATA_CONTEXT){state_=State::Retained;return state_;}
+ if(rc){fail(rc==RISC_APP_DATA_NOT_FOUND?"Destination is not a configured saved file":"Saved files unavailable");return state_;}
+ if(atomicIndex_++>=16||!memchr(entry.path,0,sizeof(entry.path))||entry.writable>1){state_=State::Retained;return state_;}
+ const bool downloading=mode_==Mode::Download;const char*path=downloading?destination_:stage_;
+ if(strcmp(entry.path,path))return state_;
+ if(downloading&&!entry.writable){fail("Destination is read-only");return state_;}
+ file_=downloading?local_->file_open_write(local_->context,path):local_->file_open_read(local_->context,path,&uploadSize_);
+ if(!hooks_.owner(hooks_.context)){state_=State::Retained;return state_;}
+ if(!file_){rc=atomic_->entry(local_->context,atomicIndex_-1,&entry);if(!hooks_.owner(hooks_.context)||rc==RISC_APP_DATA_RETAINED||rc==RISC_APP_DATA_CONTEXT){state_=State::Retained;return state_;}fail(downloading?"Cannot create saved file; it may already exist":"Cannot read saved file");return state_;}
+ if(!storageSafe()){fail("Saved file unavailable");return state_;}
+ if(!client_.request(downloading?"GET":mode_==Mode::ReplaceHead?"HEAD":"PUT",uploadRemote_,nullptr,downloading||mode_==Mode::ReplaceHead?0:uploadSize_,io(),now)){fail("Could not start remote transfer");return state_;}
+ state_=State::Network;return state_;
+ }
  if(state_==State::Network){auto s=client_.tick(now);
 if(s==Client::State::Retained){state_=State::Retained;
 return state_;
@@ -199,7 +229,7 @@ count_=0;
 snprintf(error_,sizeof(error_),"Invalid or oversized remote folder");
 }state_=success_?State::Done:State::Failed;
 return state_;
-}state_=file_?(success_&&mode_==Mode::Download?State::Sync:State::Close):(success_?State::Done:State::Failed);
+}state_=file_?(success_&&mode_==Mode::Download&&!atomic_?State::Sync:State::Close):(success_?State::Done:State::Failed);
 return state_;
 }
  const auto*ext=local_?risc_storage_volume_extension(local_):nullptr;
@@ -211,6 +241,27 @@ snprintf(error_,sizeof(error_),"Local sync failed");
 return state_;
 }
  if(state_==State::Close){if(!local_)return state_;
+if(atomic_){
+ const bool downloading=mode_==Mode::Download;
+ int32_t status=downloading?atomic_->write_status(local_->context,file_):int32_t(ext->handle_error(local_->context,file_,false));
+ if(!hooks_.owner(hooks_.context)||status==RISC_APP_DATA_RETAINED||status==RISC_APP_DATA_CONTEXT){state_=State::Retained;return state_;}
+ // The exact export's catalog reports admission without filesystem access.
+ // A temporarily unavailable gate holds custody until a later settled tick.
+ risc_app_data_export_entry_v1 entry{};status=atomic_->entry(local_->context,atomicIndex_-1,&entry);
+ if(!hooks_.owner(hooks_.context)||status==RISC_APP_DATA_RETAINED||status==RISC_APP_DATA_CONTEXT){state_=State::Retained;return state_;}
+ if(status==RISC_APP_DATA_UNAVAILABLE||status==RISC_APP_DATA_BUSY)return state_;
+ if(status){state_=State::Retained;return state_;}
+ bool commit=downloading?success_:true;bool closed=local_->file_close(local_->context,file_,commit);
+ if(!hooks_.owner(hooks_.context)){state_=State::Retained;return state_;}
+ if(closed){file_=0;published_=downloading&&commit;state_=success_?State::Done:State::Failed;return state_;}
+ if(!downloading||!commit){status=atomic_->entry(local_->context,atomicIndex_-1,&entry);if(hooks_.owner(hooks_.context)&&(status==RISC_APP_DATA_UNAVAILABLE||status==RISC_APP_DATA_BUSY))return state_;state_=State::Retained;return state_;}
+ // A copied status query never repeats publication. Release only the in-memory
+ // writer on a later tick; COMMIT_UNKNOWN must not delete a possible new file.
+ status=atomic_->write_status(local_->context,file_);
+ if(!hooks_.owner(hooks_.context)||status==RISC_APP_DATA_RETAINED||status==RISC_APP_DATA_CONTEXT){state_=State::Retained;return state_;}
+ uncertain_=status==RISC_APP_DATA_COMMIT_UNKNOWN;success_=false;
+ snprintf(error_,sizeof(error_),"%s",uncertain_?"Publication unknown; reload destination":"Saved file commit failed; no retry performed");return state_;
+}
 const auto*obs=risc_storage_volume_state(local_);
 if(!obs||obs->observe(local_->context)==RISC_STORAGE_STATE_RETAINED){state_=State::Retained;
 return state_;
@@ -238,7 +289,7 @@ cancelled_=true;
 success_=false;
 if(state_==State::Network)client_.cancelRequest();
 else if(file_)state_=State::Close;
-else if(!available())state_=State::Failed;
+else if(!available()){state_=State::Failed;snprintf(error_,sizeof(error_),"Transfer cancelled");}
 }
 bool RemoteVolume::close(){cancel();
 if(file_||state_==State::Network||state_==State::Retained)return false;

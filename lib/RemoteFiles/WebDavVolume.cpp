@@ -104,12 +104,12 @@ State VolumeTransaction::step(){
   }
   if(eq(m,"GET")||head_){if(!exists_){fail(404);return state_;}if(isDirectory_){fail(405);return state_;}if(head_){response(200,size_);return state_;}phase_=Phase::ReadOpen;return state_;}
   if(eq(m,"PUT")){if(!writablePath(request_.path)){fail(403);return state_;}if(isDirectory_&&exists_){fail(405);return state_;}if(exists_&&!risc_storage_volume_fs(api_)){fail(501);return state_;}phase_=Phase::WriteOpen;return state_;}
-  if(eq(m,"DELETE")){if(!exists_){fail(404);return state_;}if(isDirectory_){startWalk(true);return state_;}phase_=Phase::Remove;return state_;}
+  if(eq(m,"DELETE")){if(!exists_){fail(404);return state_;}if(isDirectory_){walkInspect_=inspectDelete_=true;startWalk(false);return state_;}phase_=Phase::Remove;return state_;}
   if(eq(m,"MKCOL")){if(exists_){fail(405);return state_;}phase_=Phase::Mkdir;return state_;}
   if(eq(m,"MOVE")||eq(m,"COPY")){if(!exists_){fail(404);return state_;}if(!request_.destination[0]||!writablePath(request_.destination)||eq(request_.path,request_.destination)){fail(403);return state_;}copy_=eq(m,"COPY");phase_=Phase::Destination;return state_;}
   fail(405);return state_;
  }
- if(phase_==Phase::Destination){uint64_t bytes=0;bool directory=false;destinationExists_=api_->stat(c,request_.destination,&bytes,&directory);if(!after())return state_;if(destinationExists_&&(!request_.overwrite||directory||isDirectory_)){fail(request_.overwrite?409:412);return state_;}if(destinationExists_&&!risc_storage_volume_fs(api_)){fail(501);return state_;}if(isDirectory_){if(copy_&&!ext_->mkdir){fail(405);return state_;}walkInspect_=!copy_;startWalk(false);return state_;}phase_=copy_?Phase::CopyOpen:Phase::Move;return state_;}
+ if(phase_==Phase::Destination){uint64_t bytes=0;bool directory=false;destinationExists_=api_->stat(c,request_.destination,&bytes,&directory);if(!after())return state_;if(destinationExists_&&(!request_.overwrite||directory||isDirectory_)){fail(request_.overwrite?409:412);return state_;}if(destinationExists_&&!risc_storage_volume_fs(api_)){fail(501);return state_;}if(isDirectory_){if(copy_&&!ext_->mkdir){fail(405);return state_;}walkInspect_=true;inspectDelete_=false;startWalk(false);return state_;}phase_=copy_?Phase::CopyOpen:Phase::Move;return state_;}
  if(phase_==Phase::RemoveOriginal){bool ok=api_->remove&&api_->remove(c,request_.path);if(after()){if(ok)response(destinationExists_?204:201);else fail(500);}return state_;}
  if(phase_==Phase::ReadOpen){uint64_t n=0;file_=api_->file_open_read(c,request_.path,&n);if(!after())return state_;if(!file_){fail(503);return state_;}size_=remaining_=n;streaming_=true;outputSize_=0;response(200,n);return state_;}
  if(phase_==Phase::ListOpen){directory_=api_->dir_open(c,request_.path);if(!after())return state_;if(!directory_){fail(503);return state_;}phase_=Phase::ListNext;return state_;}
@@ -174,6 +174,6 @@ bool VolumeTransaction::startWalk(bool removing){
  walk_=static_cast<WalkFrame*>(hooks_.allocate(32*sizeof(WalkFrame)));if(!owner())return false;if(!walk_){fail(503);return false;}
  std::memset(walk_,0,32*sizeof(WalkFrame));std::strcpy(walk_[0].source,request_.path);std::strcpy(walk_[0].destination,request_.destination);depth_=0;walkDelete_=removing;phase_=removing||walkInspect_?Phase::WalkOpen:Phase::WalkMkdir;return true;
 }
-void VolumeTransaction::popWalk(){if(depth_){--depth_;phase_=Phase::WalkOpen;}else if(walkInspect_){hooks_.deallocate(walk_);walk_=nullptr;walkInspect_=false;phase_=Phase::Move;}else response(walkDelete_?204:201);}
+void VolumeTransaction::popWalk(){if(depth_){--depth_;phase_=Phase::WalkOpen;}else if(walkInspect_){hooks_.deallocate(walk_);walk_=nullptr;walkInspect_=false;if(inspectDelete_){inspectDelete_=false;startWalk(true);}else if(copy_)startWalk(false);else phase_=Phase::Move;}else response(walkDelete_?204:201);}
 
 }

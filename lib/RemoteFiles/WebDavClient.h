@@ -13,7 +13,7 @@ public:
  enum Error { None, Invalid, Transport, Authentication, Expired, Cancelled, Protocol, Storage, Uncertain };
  struct Io { void* context=nullptr; bool (*owner)(void*)=nullptr;
   bool (*source)(void*,void*,size_t,size_t*)=nullptr;
-  bool (*sink)(void*,const void*,size_t)=nullptr; };
+  bool (*sink)(void*,const void*,size_t)=nullptr; size_t responseChunk=0; };
  bool begin(const risc_tcp_connection_v1*,const risc_bluetooth_session_descriptor_v1&,
             const uint8_t entropy[16],const Io&,uint64_t now);
  bool request(const char* method,const char* path,const char* destination,uint64_t size,const Io&,uint64_t now,const char* match=nullptr,size_t readLimit=0);

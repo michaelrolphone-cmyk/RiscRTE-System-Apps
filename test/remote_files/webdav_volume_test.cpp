@@ -68,11 +68,14 @@ int main(){
  }
  {Fixture f;f.nodes["/RTECFG"]={"",true};f.nodes["/rTeCfG. "]={"",true};f.nodes["/RTECFG.txt"]={"visible",false};
   assert(f.run("PROPFIND","/","Depth: 1\r\n")==207);assert(f.response.find("/RTECFG/")==std::string::npos&&f.response.find("rTeCfG")==std::string::npos&&f.response.find("RTECFG.txt")!=std::string::npos);}
- for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.nodes["/folder/RtEcFg"]={"",true};f.nodes["/folder/RtEcFg/checkpoint"]={"opaque-test-value",false};
+ for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.nodes["/folder/RtEcFg"]={"",true};f.nodes["/folder/RtEcFg/checkpoint"]={"opaque-test-value",false};f.nodes["/folder/000-safe.txt"]={"preserve me",false};
   assert(f.run(method,"/folder","Destination: /elsewhere\r\n")==409);
   assert(f.nodes.at("/folder/RtEcFg/checkpoint").data=="opaque-test-value");
+  assert(f.nodes.count("/folder/000-safe.txt")&&f.nodes.at("/folder/000-safe.txt").data=="preserve me"&&!f.nodes.count("/elsewhere"));
   assert(!f.nodes.count("/elsewhere/RtEcFg")&&!f.nodes.count("/elsewhere/RtEcFg/checkpoint"));}
 
+ // Without position-safe traversal, refuse folder mutation before any write.
+ for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.fs.fs_tag=0;f.nodes["/folder/a"]={"preserved",false};assert(f.run(method,"/folder","Destination: /elsewhere\r\n")==405);assert(f.nodes.at("/folder/a").data=="preserved"&&!f.nodes.count("/elsewhere"));}
  {Fixture f;assert(f.run("GET","/file.txt")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)=="old");assert(f.run("HEAD","/file.txt")==200);assert(f.response.find("Content-Length: 3")!=std::string::npos);}
  {Fixture f;assert(f.run("PUT","/large-upload","",std::string(1024*1024,'u'))==201);assert(f.nodes["/large-upload"].data==std::string(1024*1024,'u'));}
  {Fixture f;f.nodes["/big"]={std::string(2*1024*1024,'x'),false};assert(f.run("GET","/big")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)==f.nodes["/big"].data);assert(f.run("COPY","/big","Destination: http://watch.local/copy\r\nOverwrite: F\r\n")==201);assert(f.nodes["/copy"].data==f.nodes["/big"].data);}

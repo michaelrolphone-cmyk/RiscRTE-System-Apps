@@ -32,7 +32,7 @@ class VolumeTransaction {
  unsigned char chunk_[RISC_STORAGE_VOLUME_IO_MAX]{};size_t chunkSize_=0;
  uint64_t size_=0,remaining_=0;risc_storage_file_t file_=0,writer_=0;risc_storage_dir_t directory_=0;
  struct WalkFrame {char source[RISC_STORAGE_VOLUME_PATH_MAX+1],destination[RISC_STORAGE_VOLUME_PATH_MAX+1];uint64_t position;};
- WalkFrame* walk_=nullptr;unsigned depth_=0;bool walkDelete_=false,walkEof_=false,walkDirectory_=false,walkInspect_=false;
+ WalkFrame* walk_=nullptr;unsigned depth_=0;bool walkDelete_=false,walkEof_=false,walkDirectory_=false,walkInspect_=false,inspectDelete_=false;
  char workSource_[RISC_STORAGE_VOLUME_PATH_MAX+1]{},workDestination_[RISC_STORAGE_VOLUME_PATH_MAX+1]{};
  bool startWalk(bool);void popWalk();const char* sourcePath()const{return walk_?workSource_:request_.path;}const char* destinationPath()const{return walk_?workDestination_:request_.destination;}
  dtls_sha256_ctx entity_{};bool upload_=false;

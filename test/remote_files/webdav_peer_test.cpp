@@ -20,12 +20,12 @@ struct Store {
  [](void*c,const char*n,uint64_t rev,const void*in,uint32_t size)->int32_t{auto&s=*static_cast<Store*>(c);assert(!strcmp(n,"documents.ruf"));s.calls++;if(!s.available)return -5;if(rev!=s.revision)return -10;s.bytes.assign(static_cast<const char*>(in),size);s.revision++;return 0;}};
 };
 struct Link {
- bool owner=true,clientLive=false,serverLive=false,accepted=false,drop=false,closeFault=false;uint64_t serial=10;std::string up,down;size_t upAt=0,downAt=0;unsigned calls=0,refuseConnect=0,readChunk=31;size_t clientBytes=0;
+ bool owner=true,clientLive=false,serverLive=false,accepted=false,drop=false,closeFault=false;uint64_t serial=10;std::string up,down;size_t upAt=0,downAt=0;unsigned calls=0,refuseConnect=0,readChunk=31,writeChunk=41;size_t clientBytes=0;
  risc_tcp_connection_v1 tcp{1,sizeof(tcp),this,
  [](void*,const risc_tcp_connection_listen_v1*,uint64_t*out)->int32_t{*out=1;return 0;},
  [](void*c,uint64_t,uint64_t*out)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*out=0;if(!s.clientLive||s.accepted)return 1;s.accepted=true;s.serverLive=true;*out=s.serial+1000;return 0;},
  [](void*c,uint64_t h,void*out,uint32_t cap,uint32_t*n)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*n=0;if(s.drop)return -4;bool server=h>1000;auto&b=server?s.up:s.down;auto&at=server?s.upAt:s.downAt;*n=std::min<size_t>({cap,s.readChunk,b.size()-at});if(!*n)return server?(!s.clientLive?2:1):(!s.serverLive&&s.accepted?2:1);memcpy(out,b.data()+at,*n);at+=*n;if(!server)s.clientBytes+=*n;return 0;},
- [](void*c,uint64_t h,const void*in,uint32_t cap,uint32_t*n)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*n=0;if(s.drop||(h>1000&&!s.clientLive))return -4;*n=std::min(cap,41u);(h>1000?s.down:s.up).append(static_cast<const char*>(in),*n);return 0;},
+ [](void*c,uint64_t h,const void*in,uint32_t cap,uint32_t*n)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;*n=0;if(s.drop||(h>1000&&!s.clientLive))return -4;*n=std::min(cap,s.writeChunk);(h>1000?s.down:s.up).append(static_cast<const char*>(in),*n);return 0;},
  [](void*c,uint64_t h)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;if(s.closeFault)return -6;if(h>1000)s.serverLive=false;else if(h>1)s.clientLive=false;return 0;},RISC_TCP_CONNECTION_CONNECT_TAG,
  [](void*c,const risc_tcp_connection_listen_v1*r,uint64_t*out)->int32_t{auto&s=*static_cast<Link*>(c);assert(r->port==8080&&r->address[0]==192);assert(!s.clientLive&&!s.serverLive);s.calls++;if(s.refuseConnect){s.refuseConnect--;*out=0;return -4;}s.up.clear();s.down.clear();s.upAt=s.downAt=0;s.clientBytes=0;s.accepted=false;s.clientLive=true;*out=++s.serial;return 0;},
  [](void*c,uint64_t)->int32_t{auto&s=*static_cast<Link*>(c);s.calls++;return s.drop?-4:0;}};
@@ -46,12 +46,57 @@ struct Fixture {
 #include "peer_controller_fixture.inc"
 struct ExistingFiles {
  struct Record{std::string bytes;uint64_t revision;};
- std::map<std::pair<uint32_t,std::string>,Record> records;unsigned calls=0;
+ std::map<std::pair<uint32_t,std::string>,Record> records;unsigned calls=0,replacements=0;int32_t replaceResult=0;bool publishUnknown=false;
  RiscBoot::AppDataBackend backend{this,
  [](void*c,uint32_t ns,const char*n,uint32_t*z,uint64_t*r)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);assert(ns==1||ns==2||ns==3||ns==62||ns==64);s.calls++;auto i=s.records.find({ns,n});*z=0;*r=0;if(i==s.records.end())return -1;*z=i->second.bytes.size();*r=i->second.revision;return 0;},
  [](void*c,uint32_t ns,const char*n,uint64_t rev,void*b,uint32_t cap,uint32_t*z,uint64_t*r)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);auto i=s.records.find({ns,n});if(i==s.records.end())return -1;if(rev!=i->second.revision)return -10;if(cap<i->second.bytes.size())return -2;memcpy(b,i->second.bytes.data(),i->second.bytes.size());*z=i->second.bytes.size();*r=i->second.revision;return 0;},
- [](void*c,uint32_t ns,const char*n,uint64_t rev,const void*b,uint32_t z)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);auto i=s.records.find({ns,n});if((i==s.records.end()?0:i->second.revision)!=rev)return -10;s.records[{ns,n}]={std::string(static_cast<const char*>(b),z),rev+1};return 0;},[](void*){return true;}};
+ [](void*c,uint32_t ns,const char*n,uint64_t rev,const void*b,uint32_t z)->int32_t{auto&s=*static_cast<ExistingFiles*>(c);++s.replacements;auto i=s.records.find({ns,n});if((i==s.records.end()?0:i->second.revision)!=rev)return -10;if(s.replaceResult&&!(s.replaceResult==RISC_APP_DATA_COMMIT_UNKNOWN&&s.publishUnknown))return s.replaceResult;s.records[{ns,n}]={std::string(static_cast<const char*>(b),z),rev+1};return s.replaceResult;},[](void*){return true;}};
 };
+struct AtomicLocal {
+ ExistingFiles files;bool owned=true,available=true;risc_app_data_export_v1 api{};
+ RiscStorage::AppDataExport exported;
+ AtomicLocal():exported({this,[](void*c){return static_cast<AtomicLocal*>(c)->owned;},[](void*c){return static_cast<AtomicLocal*>(c)->available;},malloc,free}){
+  RiscStorage::AppDataExport::Entry rows[]={{"model_viewer",64,"model.obj","/models/model.obj",true},{"model_viewer",64,"model.stl","/models/model.stl",false}};
+  files.records[{64,"model.stl"}]={"readonly source",1};assert(exported.configure(&files.backend,rows,2,"Watch user files")&&exported.begin(&api));
+ }
+ const risc_storage_volume_api_v1*volume(){return &api.volume.terminal.power.volume.base;}
+ ~AtomicLocal(){if(owned&&!exported.retained()){available=true;assert(exported.end());}}
+};
+[[maybe_unused]] static void atomicTransferTests(){
+ auto pump=[](Fixture&f,RemoteVolume&r){for(unsigned i=0;i<30000;i++){unsigned before=f.link.calls;auto state=r.tick(f.now);assert(f.link.calls-before<=1);f.server.tick(f.now++);if(state==RemoteVolume::State::Done||state==RemoteVolume::State::Failed||state==RemoteVolume::State::Retained)return;}assert(!"atomic transfer timeout");};
+ {Fixture f;AtomicLocal local;std::string bytes(10000,'a');bytes[3000]=0;assert(f.request("PUT","/model.obj",nullptr,bytes)==201);f.link.readChunk=f.link.writeChunk=2048;
+  RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});
+  assert(remote.download("/model.obj",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Done&&remote.publishedPath()&&!strcmp(remote.publishedPath(),"/models/model.obj")&&local.files.records.at({64,"model.obj"}).bytes==bytes&&local.files.replacements==1);
+  assert(remote.download("/model.obj",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&local.files.replacements==1&&!remote.publishedPath());
+  unsigned before=local.files.calls;assert(remote.download("/model.obj",local.volume(),"/models/other.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&local.files.calls==before);
+  assert(remote.download("/model.obj",local.volume(),"/models/model.stl",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&local.files.records.at({64,"model.stl"}).bytes=="readonly source");
+  assert(remote.upload(local.volume(),"/models/model.obj","/copied.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Done);assert(f.request("GET","/copied.obj")==200&&f.download==bytes);
+  assert(remote.upload(local.volume(),"/models/model.stl","/readonly.stl",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Done);assert(f.request("GET","/readonly.stl")==200&&f.download=="readonly source");
+  // Generic SD has no strong revision: replacement refuses, preserving bytes.
+  assert(remote.upload(local.volume(),"/models/model.obj","/copied.obj",f.now,true));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&strstr(remote.error(),"revision"));assert(f.request("GET","/copied.obj")==200&&f.download==bytes);
+  local.files.records.erase({64,"model.obj"});before=f.link.serial;assert(remote.upload(local.volume(),"/models/model.obj","/absent.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&f.link.serial==before);
+  local.available=false;assert(remote.download("/model.obj",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&f.link.serial==before);local.available=true;
+  assert(remote.download("/model.obj",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Done);
+  local.files.records.erase({64,"model.obj"});assert(f.request("PUT","/empty")==201);assert(remote.download("/empty",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Done&&local.files.records.at({64,"model.obj"}).bytes.empty());assert(remote.close());
+ }
+ {Fixture f;AtomicLocal local;assert(f.request("PUT","/source",nullptr,"incoming")==201);RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/source",local.volume(),"/models/model.obj",f.now));remote.tick(f.now++);assert(remote.state()==RemoteVolume::State::Network);local.files.records[{64,"model.obj"}]={"concurrent create",1};pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!remote.publishedPath()&&local.files.replacements==1&&local.files.records.at({64,"model.obj"}).bytes=="concurrent create");assert(remote.close());}
+ for(int32_t result:{RISC_APP_DATA_IO,RISC_APP_DATA_STALE,RISC_APP_DATA_COMMIT_UNKNOWN})for(bool published:{false,true}){
+  if(result!=RISC_APP_DATA_COMMIT_UNKNOWN&&published)continue;Fixture f;AtomicLocal local;assert(f.request("PUT","/source",nullptr,"saved bytes")==201);local.files.replaceResult=result;local.files.publishUnknown=published;
+  RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/source",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!remote.publishedPath()&&local.files.replacements==1&&remote.uncertain()==(result==RISC_APP_DATA_COMMIT_UNKNOWN));assert(local.files.records.count({64,"model.obj"})==unsigned(published));assert(remote.close());
+ }
+ for(bool afterOpen:{false,true}){Fixture f;AtomicLocal local;assert(f.request("PUT","/source",nullptr,std::string(2000,'x'))==201);RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/source",local.volume(),"/models/model.obj",f.now));if(afterOpen){remote.tick(f.now++);assert(remote.state()==RemoteVolume::State::Network);}remote.cancel();pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!local.files.replacements&&!local.files.records.count({64,"model.obj"}));assert(remote.close());}
+ // Temporary unavailability after a writer opens keeps custody until abort can close.
+ {Fixture f;AtomicLocal local;assert(f.request("PUT","/source",nullptr,std::string(2000,'x'))==201);RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/source",local.volume(),"/models/model.obj",f.now));remote.tick(f.now++);local.available=false;remote.cancel();for(unsigned i=0;i<5;++i)remote.tick(f.now++);assert(remote.state()==RemoteVolume::State::Close&&!remote.close());local.available=true;pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!local.files.replacements&&remote.close());}
+ // Source admission, read-close cancellation and pending cleanup use the same exact export contract.
+ {Fixture f;AtomicLocal local;RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});local.available=false;assert(remote.upload(local.volume(),"/models/model.stl","/out",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!f.link.clientLive);local.available=true;assert(remote.upload(local.volume(),"/models/model.stl","/out",f.now));for(unsigned i=0;i<3&&remote.state()==RemoteVolume::State::Prepare;++i)remote.tick(f.now++);assert(remote.state()==RemoteVolume::State::Network);remote.cancel();pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&remote.close());}
+ {Fixture f;AtomicLocal local;RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.upload(local.volume(),"/models/model.stl","/out",f.now));for(unsigned i=0;i<3&&remote.state()==RemoteVolume::State::Prepare;++i)remote.tick(f.now++);local.available=false;remote.cancel();for(unsigned i=0;i<5;++i)remote.tick(f.now++);assert(remote.state()==RemoteVolume::State::Close&&!remote.close());local.available=true;pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&remote.close());}
+ {Fixture f;AtomicLocal local;RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/too-big",local.volume(),"/models/model.obj",f.now));remote.tick(f.now++);f.inject("HTTP/1.1 200 OK\r\nContent-Length: 65537\r\n\r\n"+std::string(512,'x'));pump(f,remote);assert(remote.state()==RemoteVolume::State::Failed&&!local.files.replacements&&!local.files.records.count({64,"model.obj"})&&remote.close());}
+ // A retained atomic publication must never be retried or aborted.
+ {Fixture f;AtomicLocal local;assert(f.request("PUT","/source",nullptr,"bytes")==201);local.files.replaceResult=RISC_APP_DATA_RETAINED;RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.download("/source",local.volume(),"/models/model.obj",f.now));pump(f,remote);assert(remote.state()==RemoteVolume::State::Retained&&local.exported.retained()&&local.files.replacements==1);unsigned before=f.link.calls;remote.tick(f.now++);remote.cancel();assert(!remote.close()&&f.link.calls==before&&local.files.replacements==1);}
+ // Loss of exact export custody fences further network/storage and cleanup.
+ {Fixture f;AtomicLocal local;RemoteVolume remote(f.client,{&f,[](void*c){return static_cast<Fixture*>(c)->link.owner;}});assert(remote.upload(local.volume(),"/models/model.stl","/out",f.now));local.owned=false;unsigned before=f.link.calls;assert(remote.tick(f.now++)==RemoteVolume::State::Retained&&!remote.close()&&f.link.calls==before);}
+ puts("Atomic Watch peer transfer: exclusive mapped creates, bounded reads/writes, source snapshots, cancellation, unavailable gate and unknown-commit preservation PASS");
+}
 struct RawPeer {
  Link link;Client client;RemoteVolume remote;uint64_t now=1;
  static bool owner(void*c){return static_cast<Link*>(c)->owner;}
@@ -80,7 +125,7 @@ struct RawPeer {
 }
 #ifndef PEER_UI_BACKEND
 int main(){
- controllerTests();previewFailureTests();
+ controllerTests();previewFailureTests();atomicTransferTests();
  {ExistingFiles files;RiscStorage::AppDataExport exported({nullptr,[](void*){return true;},[](void*){return true;},malloc,free});
   RiscStorage::AppDataExport::Entry rows[]={
    {"timecard",1,"timecard.json","/timecard/timecard.json",true},

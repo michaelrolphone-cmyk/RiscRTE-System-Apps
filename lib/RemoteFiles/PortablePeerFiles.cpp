@@ -330,7 +330,7 @@ p->step=S::Browse;
 }break;
 }
  case S::StopRemote:p->remote.cancel();
-if(p->remote.state()==RemoteVolume::State::Network||p->remote.state()==RemoteVolume::State::Close||p->remote.state()==RemoteVolume::State::Sync||p->remote.state()==RemoteVolume::State::Publish)p->remote.tick(now);
+if(p->remote.state()==RemoteVolume::State::Prepare||p->remote.state()==RemoteVolume::State::Network||p->remote.state()==RemoteVolume::State::Close||p->remote.state()==RemoteVolume::State::Sync||p->remote.state()==RemoteVolume::State::Publish)p->remote.tick(now);
 if(p->remote.state()==RemoteVolume::State::Retained){p->retain();
 break;
 }if(p->remote.close())p->step=S::StopClient;

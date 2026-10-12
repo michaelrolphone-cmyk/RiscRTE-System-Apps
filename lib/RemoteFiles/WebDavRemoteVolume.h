@@ -1,6 +1,7 @@
 #pragma once
 #include "WebDavClient.h"
 #include <RiscStorageVolumeStateV1.h>
+#include <RiscAppDataExportV1.h>
 namespace RiscWebDav {
 /* Asynchronous remote volume operations. Local storage keeps its existing ABI;
  * no network wait is hidden inside a synchronous storage callback. */
@@ -8,7 +9,7 @@ class RemoteVolume final {
 public:
  static constexpr unsigned Rows=64,PreviewMax=2048;
  struct Entry {char name[128]{};char path[513]{};uint64_t size=0;bool directory=false;};
- enum class State { Idle, Network, Sync, Close, Publish, Done, Failed, Retained };
+ enum class State { Idle, Prepare, Network, Sync, Close, Publish, Done, Failed, Retained };
  struct Hooks {void*context;bool(*owner)(void*);};
  explicit RemoteVolume(Client&client,const Hooks&h):client_(client),hooks_(h){}
  bool list(const char*,uint64_t);
@@ -29,7 +30,7 @@ public:
  bool uncertain()const{return uncertain_||client_.uncertain();}
 private:
  enum class Mode { List,Preview,Download,Upload,ReplaceHead,Mutation }mode_=Mode::List;State state_=State::Idle;
- Client&client_;Hooks hooks_;const risc_storage_volume_api_v1*local_=nullptr;
+ Client&client_;Hooks hooks_;const risc_storage_volume_api_v1*local_=nullptr;const risc_app_data_export_v1*atomic_=nullptr;unsigned atomicIndex_=0;
  risc_storage_file_t file_=0;bool cancelled_=false,success_=false,published_=false,temporary_=false,uncertain_=false;
  uint64_t uploadSize_=0,previewOffset_=0,previewSkipped_=0;char uploadRemote_[513]{};
  char path_[513]{},destination_[513]{},stage_[513]{},error_[96]{};
