@@ -11,6 +11,10 @@ on:
       - 'lib/PortableApps/include/RiscTextEntryV1.h'
       - 'lib/PortableApps/include/PortableTextInput*'
       - 'lib/PortableApps/include/PortableResidentPolicyInput.h'
+      - 'lib/PortableApps/include/PortableContext*'
+      - 'lib/PortableApps/include/PortableFingerprintClock.h'
+      - 'scripts/test_contexts_backend_liveness.py'
+      - 'test/contexts/backend*'
       - 'lib/PortableApps/src/resident*'
       - 'scripts/test_resident*'
       - 'test/native_apps/resident*'
@@ -96,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Drivers
-          ref: ee244590d3c835af012776ce2480e47b25e23477
+          ref: 281609a0d2ae514f107d2ef67b6e8b4d25c72fb8
           path: .dependencies/drivers
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -116,6 +120,12 @@ jobs:
           repository: michaelrolphone-cmyk/RiscRTE-System-Apps
           ref: 7fb13b09b4dac275a8111b224784f8a472f39264
           path: .dependencies/old-system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 64c8e52e46fd91e8fdafd636db04eed88f0c51a9
+          path: .dependencies/watch-runtime
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
@@ -147,6 +157,12 @@ jobs:
           --tone-sdk .dependencies/product/minimal/interfaces --async-display
           --legacy-policy-root .dependencies/old-system
           --output-dir build/old-native-policy
+      - name: Opt-in Contexts backend fences and unchanged default object code
+        run: >-
+          python scripts/test_contexts_backend_liveness.py
+          --runtime .dependencies/watch-runtime --x4-runtime .dependencies/runtime
+          --utilities .dependencies/utilities --baseline-system .dependencies/old-system
+          --sanitize --output build/contexts-fences
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -154,4 +170,5 @@ jobs:
           path: |
             build/native-policy/evidence.json
             build/old-native-policy/evidence.json
+            build/contexts-fences/results.json
           if-no-files-found: error

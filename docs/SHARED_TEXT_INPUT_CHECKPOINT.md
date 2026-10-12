@@ -73,6 +73,17 @@ covering early refusal and input-cancelled settling; it is not proof of hardware
 sleep or focus acquisition. Full-detach paths preserve predecessor neutralization
 for all those outcomes. A finer confirmed-focus signal remains follow-up work.
 
+## Optional Contexts backend lifetime fence
+
+The shared-input Contexts caller may define PORTABLE_CONTEXTS_LIVE() before
+including PortableContextsClient.h. Its checkpoint open/load, pause/save and
+close/release helpers check invocation liveness after each callback and stop
+before a later callback or grant cleanup if custody is lost. The default macro
+is a no-op: O1/O2/Os object comparisons on both host and Xtensa preserve existing
+clients' generated code. This changes no fingerprint/rule algorithm, schema or
+saved-data format. The dedicated backend runner injects callback loss across
+both device profiles, normally and with ASan/UBSan.
+
 ## Motivation and qualification
 
 The Lists scene editor previously performed resident POLL/POLICY while settled.
