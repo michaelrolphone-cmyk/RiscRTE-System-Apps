@@ -1,0 +1,35 @@
+name: Wi-Fi scene source snapshot
+on:
+  push:
+    branches: [feat/wifi-scene-manager]
+    paths: [.github/workflows/wifi-scene-sources.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sources:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: ff34f976f1209fba85e455e21c9e2d5429d5b800
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: f5ba7734d4fc36b770bc2edf9fbb9fafdf3a2732
+          path: Watch
+          persist-credentials: false
+      - run: tar -czf wifi-scene-sources.tar.gz System Runtime Watch
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wifi-scene-sources
+          path: wifi-scene-sources.tar.gz
+          retention-days: 3
+          compression-level: 0
