@@ -30,6 +30,9 @@ static unsigned files_diagnostics;
 static bool files_trace_confirm,files_trace_join,files_trace_handshake;
 static bool files_diagnostic(const char*s){
  assert(!native_custody_retained&&!fb_terminal);
+#ifdef FILE_POLICY_FIXTURE
+ if(getenv("FILES_POLICY_DEBUG"))fprintf(stderr,"DIAG %s\n",s);
+#endif
  if(strncmp(s,"FILES ",6))return true;
  assert(strlen(s)<192&&!strchr(s,'\n'));
  assert(strstr(s,"t_ms=")&&strstr(s,"role=")&&strstr(s,"event="));
@@ -52,6 +55,9 @@ static bool private_test(void){
 static bool live_check(void){assert(!native_custody_retained);++calls;return true;}
 static int32_t kv_get(void*c,const char*k,void*b,uint32_t cap,uint32_t*n){
  (void)c;live_check();*n=0;
+#ifdef FILE_POLICY_FIXTURE
+ for(unsigned i=0;i<store_count;i++)if(!strcmp(store[i].key,k)){*n=store[i].size;if(cap<*n)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(b,store[i].data,*n);return 0;}
+#endif
  if(!strcmp(k,PORTABLE_RADIO_KEY)){
   if(policy_context)return RISC_KEY_VALUE_CONTEXT;
   if(policy_busy)return RISC_KEY_VALUE_BUSY;
@@ -75,7 +81,14 @@ static int32_t net_poll(void*c,uint32_t id,risc_radio_progress_v1*p){(void)c;liv
 static int32_t net_cancel(void*c,uint32_t id){(void)c;live_check();assert(owned&&id==11&&!listeners);++cancel_calls;return RISC_RADIO_PENDING;}
 static int32_t net_lease(void*c,uint32_t*id){(void)c;live_check();++lease_calls;*id=lease_busy?0:9;return lease_busy?RISC_RADIO_BUSY:RISC_RADIO_ACCEPTED;}
 static int32_t net_end(void*c,uint32_t id){(void)c;live_check();assert(id==9);++end_calls;return end_busy?RISC_RADIO_AGAIN:RISC_RADIO_ACCEPTED;}
-static const wifi_async_v1 wifi={.base={.api_version=1,.struct_size=sizeof(wifi),.status=net_status,.rssi=net_rssi,.addresses=net_addresses},.async_tag=RISC_RADIO_ASYNC_TAG,.async_version=1,.begin=net_begin,.poll=net_poll,.cancel=net_cancel,.service_begin=net_lease,.service_end=net_end};
+#ifdef FILE_POLICY_FIXTURE
+static bool policy_wifi_disconnect(void*c){(void)c;assert(!owned);borrowed=false;return true;}
+#endif
+static const wifi_async_v1 wifi={.base={.api_version=1,.struct_size=sizeof(wifi),.status=net_status,.rssi=net_rssi,.addresses=net_addresses
+#ifdef FILE_POLICY_FIXTURE
+,.disconnect_checked=policy_wifi_disconnect
+#endif
+},.async_tag=RISC_RADIO_ASYNC_TAG,.async_version=1,.begin=net_begin,.poll=net_poll,.cancel=net_cancel,.service_begin=net_lease,.service_end=net_end};
 #ifdef FILE_DIRECT_FIXTURE
 static bool direct_ble_on,direct_ble_initial_on,direct_ble_enable_fail,direct_entropy_busy;
 static unsigned direct_ble_enables,direct_ble_disables,direct_entropy_calls;

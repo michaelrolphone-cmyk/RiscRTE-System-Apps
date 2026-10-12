@@ -1,4 +1,9 @@
 /* Actual portable controller, adapter and NOVA raster, with a fake volume. */
+#ifdef FILE_BROWSER_RESIDENT_PROFILE
+#define PORTABLE_ALARM_CLIENT
+#define PORTABLE_INPUT_NAVIGATION
+#define PORTABLE_INPUT_NAVIGATION_LOCAL
+#endif
 #ifdef FILE_BROWSER_FULL_PROFILE
 #define PORTABLE_ALARM_CLIENT
 #define PORTABLE_APP_SLEEP_LOCAL
@@ -22,6 +27,9 @@ static const t5_app_api_v1 *test_browser_api(uint32_t);
 static uint8_t fb_pixels[100*480];
 #else
 static uint16_t fb_pixels[240*244];
+#endif
+#ifdef FILE_POLICY_FIXTURE
+static unsigned file_policy_sleep_count;
 #endif
 static unsigned test_grants,test_frames,test_subs,test_presents,test_ticks,test_entry,test_entries=8,test_offset,test_length=577,test_reads,test_closes;
 static unsigned test_polls,test_steps,test_launches,test_script,test_seen_modes,test_wifi_launches;
@@ -63,7 +71,14 @@ static bool test_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
 #endif
 return true;}
 static bool test_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
-static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present};
+#ifdef FILE_POLICY_FIXTURE
+static bool policy_display_brightness(void*c,uint16_t level,uint16_t maximum){(void)c;assert(maximum==100&&level<=maximum);return true;}
+#endif
+static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present
+#ifdef FILE_POLICY_FIXTURE
+,.set_brightness=policy_display_brightness
+#endif
+};
 /* Script time advances once per app input pass, independently of hardware
  * collection during raster work or idle waits. Snapshots never advance input;
  * every changed report is also published as ordered raw edges. */
@@ -138,7 +153,7 @@ static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){
 }
 static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=test_touch_state;return true;}
 static const risc_touch_api_v1 test_touch={1,sizeof(test_touch),NULL,test_sub,test_unsub,test_poll,test_next,test_snapshot};
-#ifdef FILE_BROWSER_FULL_PROFILE
+#if defined(FILE_BROWSER_FULL_PROFILE) || defined(FILE_BROWSER_RESIDENT_PROFILE)
 static int32_t test_alarm_status(void*c,alarm_status_v1*out){(void)c;*out=(alarm_status_v1){.api_version=1,.struct_size=sizeof(*out),.state=ALARM_STATE_READY};return ALARM_OK;}
 static int32_t test_alarm_step(void*c){(void)c;return ALARM_OK;}
 static int32_t test_alarm_ack(void*c,const alarm_token_v1*t){(void)c;(void)t;return ALARM_OK;}
@@ -150,10 +165,15 @@ static bool test_navigation_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 test_nav={1,sizeof(test_nav),NULL,test_navigation,test_foreground,test_navigation_reset};
 const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1*r){(void)r;return &test_nav;}
 void portable_input_navigation_close(const risc_runtime_api_v1*r){(void)r;}
-int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!fb_grant.api);return 1;}
+int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!fb_grant.api);
+#ifdef FILE_POLICY_FIXTURE
+ if(fb_text_active)assert(fb_text_checkpoint.paused&&fb_text_checkpoint.focus_change&&!test_subs);
+ file_policy_sleep_count++;
+#endif
+ return 1;}
 #endif
 static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){assert(g->struct_size==sizeof(*g));(void)id;if(!strcmp(n,PORTABLE_FILE_BROWSER_CAPABILITY)){assert(v==1);if(test_fail_acquire)return false;g->api=&test_volume;}else if(!strcmp(n,"display.output"))g->api=&test_display;else if(!strcmp(n,"input.touch.raw"))g->api=&test_touch;
-#ifdef FILE_BROWSER_FULL_PROFILE
+#if defined(FILE_BROWSER_FULL_PROFILE) || defined(FILE_BROWSER_RESIDENT_PROFILE)
  else if(!strcmp(n,ALARM_SERVICE_CAPABILITY))g->api=&test_alarm;
 #endif
  else return false;

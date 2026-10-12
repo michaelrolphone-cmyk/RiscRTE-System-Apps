@@ -19,8 +19,23 @@ static int32_t text_scene_next(void*c,uint64_t s,risc_scene_event_v1*out){(void)
 }
 static int32_t text_scene_snapshot(void*c,uint64_t s,risc_scene_navigation_v1*p,uint32_t*f){(void)c;(void)p;assert(s==11);*f=text_presenting?RISC_SCENE_PRESENTING:0;return 0;}
 static int32_t text_scene_close(void*c,uint64_t s){(void)c;assert(s==11);if(text_fail_close)return RISC_SCENE_RETAINED;if(text_presenting)return RISC_SCENE_AGAIN;++text_closes;return 0;}
+#ifdef FILE_POLICY_FIXTURE
+#include "file_browser_policy_scene.inc"
+#else
 static const risc_scene_api_v1 text_scene={1,sizeof(text_scene),NULL,text_scene_open,text_scene_update,text_scene_next,NULL,text_scene_snapshot,text_scene_close};
+#endif
 static bool text_acquire(const char*n,uint32_t v,uint64_t instance,risc_runtime_capability_v1*g){
+#ifdef FILE_POLICY_FIXTURE
+ if(getenv("FILES_POLICY_DEBUG"))fprintf(stderr,"GET %s %u %llu\n",n,v,(unsigned long long)instance);
+#endif
+#ifdef FILE_POLICY_FIXTURE
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(!strcmp(n,CONTEXTS_SERVICE_CAPABILITY)){g->api=&contexts_api;g->slot=95;g->generation=1;test_grants++;return true;}
+#endif
+ if(!strcmp(n,"telemetry.broadcast")){g->api=&broadcast_api;g->slot=96;g->generation=1;test_grants++;return true;}
+ if(!strcmp(n,"bluetooth.hci")){g->api=&policy_ble;g->slot=98;g->generation=1;test_grants++;return true;}
+ if(!strcmp(n,"board.battery")){g->api=&policy_battery;g->slot=97;g->generation=1;test_grants++;return true;}
+#endif
  if(strcmp(n,RISC_TEXT_ENTRY_CAPABILITY)){bool ok=get_cap(n,v,instance,g);if(ok){g->slot=g->slot?g->slot:1;g->generation=g->generation?g->generation:1;}return ok;}
  assert(v==1&&!instance&&!text_grants);if(text_denied)return false;
  g->api=text_driver->capability;g->slot=91;g->generation=1;text_grants++;test_grants++;return true;
@@ -61,6 +76,7 @@ static void entry_workflow(const char*scenario){
  else assert(peer_backend_local_exists("/Downloads/QQWW")&&!peer_backend_local_exists("/Downloads/local.txt"));
  assert(!entry_pending||entry_closing_ticks>=3);assert(text_driver->quiesce());text_driver->stop();peer_backend_end();printf("Files actual app_main %s: shared text result, retained pending close, neutral resume and terminal exit PASS\n",scenario);
 }
+#ifndef FILE_POLICY_FIXTURE
 int main(int argc,char**argv){
  assert(argc>=2);const char*scenario=argv[1];test_directory=argc>2?argv[2]:NULL;peer_backend_begin();peer_backend_folders();borrowed=true;
  text_driver=files_text_driver_get(2);risc_provider_dependency_v1 dependency={RISC_SCENE_CAPABILITY,1,&text_scene};assert(text_driver->start(&dependency,1));
@@ -116,3 +132,5 @@ int main(int argc,char**argv){
  }
  text_clean();printf("Files shared text %s: drafts, mutation boundary, checked host close and browser restoration PASS\n",scenario);return 0;
 }
+
+#endif
