@@ -1,0 +1,7 @@
+{
+  "source_repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "source_commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+  "source_path": "lib/PortableApps/fonts/icons.inc",
+  "source_sha256": "df8c293fd11b3f9f55a0627fad79863d26d7e98944f17fa8113d8f6068d5c920",
+  "purpose": "Exact delivered Watch1.1.17 Points icon set. No glyph or rendering change; later portrait-only additions are not part of this frozen product contract."
+}
