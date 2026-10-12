@@ -83,3 +83,11 @@ bool portable_desk_clock_request_lock(bool enabled);
 bool portable_desk_clock_lock_requested(void);
 bool portable_desk_adapter_landscape(bool landscape,unsigned direction);
 #endif
+
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+/* Selected foreground-only settings status; private app linkage, no Runtime export. */
+bool portable_home_settings_poll(void);
+uint64_t portable_home_settings_generation(void);
+bool portable_home_settings_available(void);
+const char *portable_home_settings_notice(void);
+#endif

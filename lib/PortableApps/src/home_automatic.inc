@@ -37,6 +37,9 @@ static bool home_automatic_close(void) {
 }
 static bool home_automatic_begin(unsigned boundary) {
  if(home_automatic_owned()||!home_automatic_guard(NULL))return false;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_poll()||!portable_home_settings_available())return false;
+#endif
  home_automatic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(home_automatic_grant)};
  bool opened=rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,1,&home_automatic_grant);
  if(!home_automatic_guard(NULL))return false;

@@ -1,0 +1,48 @@
+format-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+format-touch-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+held-touch-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+time-touch-save: submits=1 collect=3 cancel=0 retained=0 clocks=1/1
+time-cancel-pending: submits=1 collect=12 cancel=1 retained=0 clocks=1/1
+time-uncertain: submits=1 collect=3 cancel=0 retained=0 clocks=1/1
+cancel-touch-before: submits=0 collect=0 cancel=0 retained=0 clocks=0/0
+cancel-touch-pending: submits=1 collect=12 cancel=1 retained=0 clocks=0/0
+zone-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+face-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+direction-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+flip-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+language-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+timer-save: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+time-save: submits=1 collect=3 cancel=0 retained=0 clocks=1/1
+same-value: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+cancel-before: submits=0 collect=0 cancel=0 retained=0 clocks=0/0
+cancel-pending: submits=1 collect=12 cancel=1 retained=0 clocks=0/0
+cancel-race: submits=1 collect=12 cancel=1 retained=0 clocks=0/0
+home-pending: submits=1 collect=12 cancel=1 retained=0 clocks=0/0
+submit-busy: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+repeated-confirm: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+stale-draft: submits=0 collect=0 cancel=0 retained=0 clocks=0/0
+stale-unrelated: submits=0 collect=0 cancel=0 retained=0 clocks=0/0
+stale-time-before: submits=0 collect=0 cancel=0 retained=0 clocks=0/0
+stale-time-during: submits=0 collect=0 cancel=0 retained=0 clocks=1/1
+uncertain: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+io: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+capacity: submits=1 collect=3 cancel=0 retained=0 clocks=0/0
+collect-error: submits=1 collect=1 cancel=0 retained=1 clocks=0/0
+collect-retained: submits=1 collect=1 cancel=0 retained=1 clocks=0/0
+bad-receipt: submits=1 collect=3 cancel=0 retained=1 clocks=0/0
+bad-revision: submits=1 collect=3 cancel=0 retained=1 clocks=0/0
+submit-dirty-refusal: submits=1 collect=0 cancel=0 retained=1 clocks=0/0
+cancel-error: submits=1 collect=1 cancel=1 retained=1 clocks=0/0
+release-error: submits=1 collect=3 cancel=0 retained=1 clocks=0/0
+missing-capability
+bad-api
+wrong-namespace
+small-intent
+read-io
+read-retained
+origin-fence
+put-fence
+close-pending
+rtc-write-false: submits=0 collect=0 cancel=0 retained=1 clocks=1/0
+native-seed-io: submits=0 collect=0 cancel=0 retained=0 clocks=1/1
+47 actual Settings controller cases passed; native endpoint scheduled double, hardware not run.

@@ -50,6 +50,9 @@ static bool quick_storage_safe(void) {
  return true;
 }
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "home_settings_availability.inc"
+#endif
 #include "quick_atomic.inc"
 #define quick_take_action() quick_atomic_take_action()
 #ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
@@ -162,6 +165,9 @@ static bool low_battery_poll(void) {
 }
 #endif
 static bool quick_apply(uint32_t actions) {
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ actions=home_settings_filter_actions(actions);
+#endif
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
@@ -494,6 +500,9 @@ static bool quick_foreground(bool *consumed) {
 #endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
+#endif
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ home_settings_readonly_controls();
 #endif
  quick_background=malloc(quick_frame_bytes());
  if(!quick_background){

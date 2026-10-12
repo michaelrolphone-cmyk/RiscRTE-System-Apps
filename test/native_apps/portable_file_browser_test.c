@@ -162,7 +162,9 @@ static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_gra
 static const risc_runtime_api_v1 test_runtime={.api_version=1,.struct_size=sizeof(test_runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diag,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 static const risc_runtime_api_v1 *test_runtime_override;
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
+static bool (*test_browser_poll_override)(t5_app_input_t*,uint32_t);
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){
+ if(test_browser_poll_override)return test_browser_poll_override(out,wait);
  test_steps++;
  bool ok=t5_app_get_api(1)->poll(out,wait);
  if(ok && test_script==3 && test_steps>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}
@@ -182,6 +184,7 @@ static size_t test_read(void*c,risc_storage_file_t h,void*out,size_t n){(void)c;
 static bool test_close(void*c,risc_storage_file_t h,bool commit){(void)c;assert(h==2 && commit);test_closes++;return !test_fail_close;}
 static bool test_error_get(void*c,char*out,size_t n){(void)c;snprintf(out,n,"%s",test_error);return true;}
 static void check_model(void){char path[512]="/";assert(fb_name_compare("file2",false,"file10",false)<0);assert(fb_name_compare("z",true,"a",false)<0);assert(fb_join(path,"folder",path,sizeof(path)));assert(!strcmp(path,"/folder"));assert(fb_parent(path) && !strcmp(path,"/"));assert(!fb_parent(path));assert(!fb_join("/","..",path,sizeof(path)));assert(!fb_join("/","../secret",path,sizeof(path)));assert(!fb_join("/","a\\b",path,sizeof(path)));assert(fb_contains("Manifest.JSON","json"));assert(!fb_contains("JSON","jsno"));char longdir[510];memset(longdir,'x',sizeof(longdir));longdir[0]='/';longdir[509]=0;assert(!fb_join(longdir,"long",path,sizeof(path)));}
+#ifndef FILE_SHARED_INPUT_FIXTURE
 int main(int argc,char**argv){
  test_directory=argc>1?argv[1]:NULL;memset(fb_pixels,0xa5,sizeof(fb_pixels));check_model();
  test_volume=(risc_storage_volume_api_v1){1,sizeof(test_volume),NULL,test_ready,test_ready,test_label,test_stat,test_diropen,test_dirnext,test_dirclose,test_open,test_read,NULL,NULL,test_close,NULL,test_error_get};
@@ -214,3 +217,5 @@ int main(int argc,char**argv){
  }
  puts("File Browser: streaming513-item pagination, natural ordering, filter/keyboard, preview boundaries, long names, empty/missing/invalid/failing storage, retry and cleanup passed");return 0;
 }
+
+#endif

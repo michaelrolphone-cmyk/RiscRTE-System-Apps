@@ -44,6 +44,7 @@ static void drained(void){for(unsigned n=0;profile_work||remember_pending;n++){w
 static void set_record(unsigned slot,const char*ssid,const char*password){portable_wifi_credentials v={{0},{0}};strcpy(v.ssid,ssid);strcpy(v.password,password);assert(!portable_wifi_profile_save(&kv_api,slot,&v));++native_revision;}
 static void assert_record(unsigned slot,const char*ssid,const char*password){portable_wifi_credentials v={{0},{0}};assert(!portable_wifi_profile_load(&kv_api,slot,&v));assert(!strcmp(v.ssid,ssid)&&!strcmp(v.password,password));}
 static void clean_edit(void){for(unsigned i=0;i<sizeof(wifi_atomic_edit.intent);i++)assert(!wifi_atomic_edit.intent[i]);for(unsigned i=0;i<sizeof(wifi_atomic_edit.mutations);i++)assert(!((uint8_t*)wifi_atomic_edit.mutations)[i]);assert(!wifi_atomic_edit.expected.password[0]&&!wifi_atomic_edit.desired.password[0]);}
+#ifndef WIFI_ATOMIC_WORKFLOW_LIBRARY
 int main(int argc,char**argv){
  (void)text_done;(void)seed;(void)search_done;(void)stopped;
  assert(argc==2);unsigned which=(unsigned)atoi(argv[1]);
@@ -77,3 +78,5 @@ int main(int argc,char**argv){
  if(opened){if(remember_join)assert(wifi_disconnect());if(job_state==1)native_worker();drained();}
  finish();clean_edit();printf("Atomic Wi-Fi controller case %u PASS\n",which);
 }
+
+#endif

@@ -81,6 +81,9 @@ static bool quick_atomic_close(void) {
 }
 static bool quick_atomic_modal_begin(void) {
  if(!quick_atomic_close())return false;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_poll())return false;
+#endif
  quick_atomic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(quick_atomic_grant)};
  if(!rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,1,&quick_atomic_grant)) {
   quick.ui.error_flags|=PQA_ERROR_SAVE;return quick_atomic_guard(NULL);
@@ -88,6 +91,9 @@ static bool quick_atomic_modal_begin(void) {
  if(!quick_atomic_guard(NULL))return false;
  if(quick_atomic_grant.struct_size!=sizeof(quick_atomic_grant)||!quick_atomic_grant.slot||
     !quick_atomic_grant.generation||!portable_preference_atomic_api_valid(quick_atomic_grant.api))return quick_atomic_result(RISC_ATOMIC_RETAINED);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_available()){quick.ui.error_flags|=PQA_ERROR_SAVE;return true;}
+#endif
  const risc_key_value_atomic_v1 *api=quick_atomic_grant.api;
  risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
  int rc=api->state(api->context,&state);
@@ -144,6 +150,9 @@ static bool quick_atomic_capture(uint32_t actions) {
 }
 static bool quick_atomic_save(void *unused,const char *key,const void *value,uint32_t size,const uint8_t *restore) {
  (void)unused;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_available())return false;
+#endif
  if(!quick_atomic_guard(NULL)||!quick_atomic_attempted||strcmp(key,quick_atomic_key))return false;
  int rc=restore?portable_preference_atomic_prepare_brightness_off(&quick_atomic_edit,value,size,*restore):
   portable_preference_atomic_prepare(&quick_atomic_edit,value,size);

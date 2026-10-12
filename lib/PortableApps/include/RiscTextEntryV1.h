@@ -73,3 +73,35 @@ static inline int risc_text_entry_masked(const risc_text_entry_api_v1 *api) {
     return ext->masked_tag==RISC_TEXT_ENTRY_MASKED_TAG &&
         ext->masked_version==RISC_TEXT_ENTRY_MASKED_VERSION;
 }
+
+/* Opt-in long plaintext drafts. Existing non-control filename bytes are
+ * preserved losslessly; keyboard keys remain printable ASCII and unsupported
+ * preview glyphs are replaced only in the scene copy. Bounds count bytes.
+ * The original 72-byte requests/results and all
+ * existing suffix offsets stay unchanged. A client must validate this suffix
+ * before calling these typed entrypoints; old providers reject no new data. */
+#define RISC_TEXT_ENTRY_EXTENDED_BYTES 128u
+#define RISC_TEXT_ENTRY_EXTENDED_TAG 0x54455854u
+#define RISC_TEXT_ENTRY_EXTENDED_VERSION 1u
+typedef struct {
+    uint32_t api_version, struct_size, capacity, reserved;
+    char label[RISC_TEXT_ENTRY_LABEL];
+    char text[RISC_TEXT_ENTRY_EXTENDED_BYTES];
+} risc_text_entry_request_v1_extended;
+typedef struct {
+    uint32_t struct_size, state, flags, revision;
+    char text[RISC_TEXT_ENTRY_EXTENDED_BYTES];
+} risc_text_entry_state_v1_extended;
+typedef struct {
+    risc_text_entry_api_v1_masked base;
+    uint32_t extended_tag, extended_version;
+    int32_t (*open_extended)(void *, const risc_text_entry_request_v1_extended *, uint64_t *);
+    int32_t (*poll_extended)(void *, uint64_t, risc_text_entry_state_v1_extended *);
+} risc_text_entry_api_v1_extended;
+static inline const risc_text_entry_api_v1_extended *risc_text_entry_extended(const risc_text_entry_api_v1 *api) {
+    if(!risc_text_entry_masked(api)||api->struct_size<sizeof(risc_text_entry_api_v1_extended))return NULL;
+    const risc_text_entry_api_v1_extended *ext=(const risc_text_entry_api_v1_extended *)api;
+    return ext->extended_tag==RISC_TEXT_ENTRY_EXTENDED_TAG&&
+        ext->extended_version==RISC_TEXT_ENTRY_EXTENDED_VERSION&&
+        ext->open_extended&&ext->poll_extended?ext:NULL;
+}

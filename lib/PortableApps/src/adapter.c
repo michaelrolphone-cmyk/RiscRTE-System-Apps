@@ -99,6 +99,10 @@ static void quick_atomic_discard(void);
 #include "PortableApps.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 static bool settings_atomic_owned(void);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+static bool settings_availability_editing(void);
+static bool settings_availability_filter(t5_app_input_t *);
+#endif
 #endif
 #include "PortablePerformance.h"
 #include "PortableStageLog.h"
@@ -2419,7 +2423,11 @@ replay_input:
 static bool poll(t5_app_input_t *out, uint32_t wait) {
   // Native exit precedes every modal and shared keyboard branch. This only
   // requests existing orderly app cleanup; host owns the deadline/ack.
-  if(risc_runtime_exit_requested_v1(rt)) {
+  if(risc_runtime_exit_requested_v1(rt)
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_SETTINGS_APP)
+     && !settings_availability_editing()
+#endif
+    ) {
     clear_contact_snapshots();memset(out,0,sizeof(*out));
     out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;return true;
   }
@@ -2449,6 +2457,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
   bool ok=poll_input(out,wait);
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_SETTINGS_APP)
+  if(ok && settings_availability_filter(out))return true;
+#endif
 #if defined(PORTABLE_PAPER_PREFERENCES) && !defined(PORTABLE_DESK_CLOCK_SPARSE_START)
   if(ok && !handoff_requested)paper_preferences_retry();
 #endif

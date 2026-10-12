@@ -114,7 +114,12 @@ static void fbm_new_folder(void){
  if(fbm_busy())return;
  if(fb_storage_index==2){if(!fbm_cap(PEER_CAP_MKCOL,"New folder unavailable on this volume"))return;}
  else {if(!fb_ready())return;const risc_storage_volume_api_v1_ext*ext=risc_storage_volume_extension(fb_volume);if(!ext||!ext->mkdir){fbx_notice("New folder unavailable on this volume");return;}}
- fbm_new_directory=true;fb_editor[0]=0;fb_key_page=PWK_INITIAL_PAGE;fbp_key_page=0;fb_choice=0;fb_mode=FB_RENAME;fb_message("Enter new folder name");
+ fbm_new_directory=true;fb_editor[0]=0;
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(!fb_text_begin(FB_RENAME,"New folder"))fbm_new_directory=false;
+#else
+ fb_key_page=PWK_INITIAL_PAGE;fbp_key_page=0;fb_choice=0;fb_mode=FB_RENAME;fb_message("Enter new folder name");
+#endif
 }
 static void fbm_delete(void){
  if(fbm_busy()||!fbm_cap(PEER_CAP_DELETE,"Delete unavailable on this volume"))return;

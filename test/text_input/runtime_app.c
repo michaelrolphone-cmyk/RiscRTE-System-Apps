@@ -25,6 +25,31 @@ static void accepted_pending(const risc_text_entry_api_v1*a,uint64_t s){
  unsigned before=text_runtime_frames(),waits=0;text_runtime_control(4);
  do{risc_text_entry_state_v1 v=poll(a,s);assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);assert(++waits<2048);}while(text_runtime_frames()==before);
 }
+static risc_text_entry_state_v1_extended extended_poll(const risc_text_entry_api_v1 *a,uint64_t session){
+ const risc_text_entry_api_v1_extended *ext=risc_text_entry_extended(a);assert(ext);
+ risc_text_entry_state_v1_extended v={.struct_size=sizeof(v)};assert(ext->poll_extended(a->context,session,&v)==0);return v;
+}
+static void extended_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v1 *grant,unsigned invocation,const char *mode){
+ const risc_text_entry_api_v1 *a=grant->api;const risc_text_entry_api_v1_extended *ext=risc_text_entry_extended(a);assert(ext);
+ risc_text_entry_request_v1_extended q={.api_version=1,.struct_size=sizeof(q),.capacity=128,.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Long file name"};
+ memset(q.text,'a',65);uint64_t token=0;assert(ext->open_extended(a->context,&q,&token)==0&&token);text_runtime_check_token(token);
+ char expected[128]={0};memset(expected,'a',65);memset(&q,0xa5,sizeof(q));
+ unsigned tries=0;while(extended_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING)assert(++tries<2048);
+ unsigned baseline_frames=text_runtime_frames();text_runtime_control(10);strcat(expected,"Q");assert(!strcmp(extended_poll(a,token).text,expected));
+ tries=0;while(text_runtime_frames()==baseline_frames){assert(extended_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING);assert(++tries<2048);}
+ unsigned frames=text_runtime_frames();text_runtime_control(11);
+ const char *burst="QQWEWQ";for(unsigned i=0;i<6;i++){size_t n=strlen(expected);expected[n]=burst[i];expected[n+1]=0;risc_text_entry_state_v1_extended v=extended_poll(a,token);assert(!strcmp(v.text,expected));assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);}
+ for(unsigned i=0;i<55;i++){text_runtime_control(100+i%2);size_t n=strlen(expected);if(n<127){expected[n]=i%2?'W':'Q';expected[n+1]=0;}assert(!strcmp(extended_poll(a,token).text,expected));}
+ assert(strlen(expected)==127&&text_runtime_frames()<=frames+1);
+ text_runtime_control(100);assert(!strcmp(extended_poll(a,token).text,expected));
+ risc_text_entry_state_v1 old={.struct_size=sizeof(old)};assert(a->poll(a->context,token,&old)==RISC_TEXT_ENTRY_INVALID);
+ bool home=strstr(mode,"home")!=NULL,cancel=strstr(mode,"cancel")!=NULL;
+ text_runtime_control(home?7:cancel?6:16);risc_text_entry_state_v1_extended result=extended_poll(a,token);
+ assert(result.state==(home||cancel?RISC_TEXT_ENTRY_CANCELLED:RISC_TEXT_ENTRY_ACCEPTED));assert(!!(result.flags&RISC_TEXT_ENTRY_HOME_CANCEL)==home);
+ assert(!strcmp(result.text,expected));text_runtime_control(100);assert(!strcmp(extended_poll(a,token).text,expected));
+ assert(a->close(a->context,token)==RISC_TEXT_ENTRY_AGAIN);text_runtime_control(5);int rc;tries=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
+ assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
+}
 __attribute__((visibility("default"))) void app_main(void){
  unsigned invocation=text_runtime_entry();if(invocation>2)return;
  const char*mode=text_runtime_mode();const risc_runtime_api_v1*r=risc_runtime_get_api(1);assert(r);
@@ -37,6 +62,7 @@ __attribute__((visibility("default"))) void app_main(void){
  }
  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};assert(r->acquire(RISC_TEXT_ENTRY_CAPABILITY,1,0,&g));
  const risc_text_entry_api_v1*a=g.api;assert(a&&a->api_version==1&&a->struct_size>=sizeof(*a));
+ if(!strncmp(mode,"extended",8)){extended_workflow(r,&g,invocation,mode);return;}
  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=16,.label="Name"};strcpy(q.text,invocation==1?"first":"fresh");
  if(!strncmp(mode,"fast",4)){q.capacity=72;q.text[0]=0;}
  if(!strcmp(mode,"masked")||!strcmp(mode,"visibility")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}

@@ -63,7 +63,11 @@ static wifi_api_v1 radio_api;
 static risc_runtime_api_v1 runtime_api;
 static void observed(void){if(terminal_sleep)++late_calls;}
 static bool fake_health(risc_runtime_health_v1 *h){h->uptime_ms=ticks;return poll_count<limit_polls;}
-static void fake_yield(uint32_t ms){ticks+=ms;if(break_radio_on_yield){break_radio_on_yield=false;fake_link=WIFI_LINK_DOWN;fail_disconnect=1;}if(block_expected && blocked_note)longjmp(blocked,1);}
+static void fake_yield(uint32_t ms){ticks+=ms;
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ test_wifi_availability_checkpoint();
+#endif
+if(break_radio_on_yield){break_radio_on_yield=false;fake_link=WIFI_LINK_DOWN;fail_disconnect=1;}if(block_expected && blocked_note)longjmp(blocked,1);}
 static bool fake_diag(const char *s){assert(!strstr(s,"testpass") && !strstr(s,"Fixture"));if(strstr(s,"retained"))blocked_note=true;return true;}
 static bool fake_launch(const char *s){
 #ifdef PORTABLE_HOME_APP
@@ -162,17 +166,37 @@ static alarm_service_outputs_v1 visual_alarm;
 static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_capability_v1*out){
  observed();assert(out->struct_size==sizeof(*out));if(!strcmp(name,"rtc.clock")){assert(v==2);return false;}assert(v==1);if(!strcmp(name,"net.wifi")){assert(id==15);if(acquire_denied)return false;out->api=&radio_api;}
 #ifdef TEST_WIFI_ATOMIC_FIXTURE
- else if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(id==6);if(kv_denied)return false;out->api=&atomic_fixture_api;}
+ else if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(id==6);if(kv_denied)return false;out->api=&atomic_fixture_api;
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ ++availability_data_grants;++availability_data_acquires;
+#endif
+ }
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ else if(!strcmp(name,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)){assert(id==6);if(availability_denied)return false;out->api=&availability_fixture_api;}
+#endif
 #endif
  else if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)){assert(id==6
 #if defined(TEST_RADIO_POLICY) || defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_PAPER_PREFERENCES)
  || id==1
 #endif
- );if(kv_denied)return false;out->api=&kv_api;}
+ );
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ if(id==6)++availability_legacy_grants;
+#endif
+ if(kv_denied)return false;
+ out->api=&kv_api;}
  else {assert(!id);if(!strcmp(name,"display.output"))out->api=&display_api;else if(!strcmp(name,"input.touch.raw"))out->api=&touch_api;else if(!strcmp(name,"input.navigation"))out->api=&nav_api;else if(!strcmp(name,ALARM_SERVICE_CAPABILITY))out->api=scenario==60?&visual_alarm.service:&alarm_api;else return false;}
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ out->slot=grant_count+1;out->generation=1;
+#endif
  ++grant_count;return true;
 }
-static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api && grant_count);if(g->api==&radio_api){assert(!native_active || fail_disconnect);if(fail_release)return false;}--grant_count;g->api=NULL;return true;}
+static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api && grant_count);
+#ifdef TEST_WIFI_AVAILABILITY_FIXTURE
+ if(g->api==&atomic_fixture_api){if(availability_release_denied)return false;assert(availability_data_grants);--availability_data_grants;++availability_data_releases;}
+ if(g->api==&availability_fixture_api&&availability_status_release_denied)return false;
+#endif
+if(g->api==&radio_api){assert(!native_active || fail_disconnect);if(fail_release)return false;}--grant_count;g->api=NULL;return true;}
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime_api:NULL;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!native_active && !scan_active && !wg.api && !wifi && !sub_count && !surface.frame);++sleeps;if(sleep_outcome==-2)terminal_sleep=1;return sleep_outcome;}
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}

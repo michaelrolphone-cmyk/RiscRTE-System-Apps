@@ -76,7 +76,15 @@ static uint8_t stz_activate(void) {
         }
       }
     }
-    if(cancel)break;
+    if(cancel) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+      if(settings_availability_draft) {
+        t5_app_input_t request={.exit_requested=true};
+        (void)settings_availability_filter(&request);continue;
+      }
+#endif
+      break;
+    }
     if(back){if(!cities)break;stz_back_regions();continue;}
     if(confirm) {
       if(!cities){stz_open_cities();continue;}

@@ -169,6 +169,7 @@ static void cleanup(void) {
   app_module_fini();settings_view_redraw();assert(provider_calls==calls&&live==leases_held&&barriers==1);
  } else assert(!live&&!subscriptions&&!frames&&!barriers&&!pending_token);
 }
+#ifndef SETTINGS_AVAILABILITY_FIXTURE
 int main(int argc,char **argv) {
  assert(argc==2);test_name=argv[1];zone_id="UTC";native_epoch=expected_epoch=1768505696;
  configure_records();memcpy(values[1],zone_record,zone_size);sizes[1]=zone_size;
@@ -258,3 +259,5 @@ int main(int argc,char **argv) {
  cleanup();if(which("release-error"))assert(retained&&atomic_releases==1);
  printf("%s: submits=%u collect=%u cancel=%u retained=%u clocks=%u/%u\n",test_name,submitted,collected,cancelled,retained,rtc_writes,seeds);
 }
+
+#endif

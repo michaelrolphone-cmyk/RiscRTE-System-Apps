@@ -2,10 +2,54 @@ import hashlib
 import json
 from pathlib import Path
 import unittest
+import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 
 class PortableWifiContract(unittest.TestCase):
+    def test_availability_requires_explicit_atomic_native_selection(self):
+        builder = ROOT/'scripts/build_portable_wifi.py'
+        for flags, message in [
+            (['--experimental-settings-availability'], 'requires --experimental-atomic-wifi'),
+            (['--experimental-settings-availability', '--experimental-atomic-wifi'], 'requires explicit X4 native-time resident selection'),
+        ]:
+            result = subprocess.run([sys.executable, str(builder), *flags], text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            self.assertEqual(result.returncode, 2, result.stdout)
+            self.assertIn(message, result.stdout)
+
+    def test_availability_cannot_compile_without_atomic_selection(self):
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-fsyntax-only',
+                '-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_SETTINGS_AVAILABILITY',
+                '-I'+str(ROOT/'lib/PortableApps/include'), '-I'+str(ROOT/'lib/NativeApps/include'),
+                str(ROOT/'Apps/wifi_settings.c')], text=True,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=directory)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn('Wi-Fi settings availability requires the explicit atomic profile', result.stdout)
+
+    def test_availability_rejects_wrong_namespace_at_compile_time(self):
+        import os
+        result = subprocess.run([os.environ.get('CC', 'cc'), '-std=c11', '-fsyntax-only',
+            '-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_SETTINGS_AVAILABILITY',
+            '-DPORTABLE_WIFI_ATOMIC_EXPERIMENTAL', '-DPORTABLE_WIFI_PROFILES',
+            '-DPORTABLE_WIFI_REMEMBER_CONNECTED', '-DPORTABLE_WIFI_STORAGE_INSTANCE=1',
+            '-I'+str(ROOT/'lib/PortableApps/include'), '-I'+str(ROOT/'lib/NativeApps/include'),
+            '-I'+str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2'),
+            str(ROOT/'Apps/wifi_settings.c')], text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Wi-Fi settings availability requires exact namespace 6', result.stdout)
+
+    def test_availability_namespace_is_exact_and_default_off(self):
+        source = (ROOT/'Apps/wifi_settings_portable.inc').read_text()
+        self.assertIn('PORTABLE_WIFI_STORAGE_INSTANCE != 6u', source)
+        self.assertNotIn('#define PORTABLE_SETTINGS_AVAILABILITY', source)
+        self.assertNotIn('storage.key-value.availability', (ROOT/'Apps/wifi_settings.json').read_text())
+
     def test_reader_branch_is_unchanged(self):
         data = (ROOT/'Apps/wifi_settings.c').read_bytes()
         legacy = data.split(b'#else\n', 1)[1].split(b'\n#endif /* Reader')[0]

@@ -1,4 +1,7 @@
 /* Settings-only model/controller, reusing Apps/settings.c and the compact view. */
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && (!defined(PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL) || !defined(PORTABLE_SETTINGS_NATIVE_TIME))
+#error "Settings availability requires the selected X4 native atomic profile"
+#endif
 #include <stdio.h>
 #include "PortableTime.h"
 #include "PortableTimeFormat.h"
@@ -142,15 +145,21 @@ static bool face_unconfirmed;
 #define PORTABLE_SETTINGS_SLEEP_TIMER
 #define SETTINGS_TIMER_ROW SETTINGS_CORE_ROW_COUNT
 #if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
+#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
 #else
-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
+#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
 #endif
 static bool timer_deep;
 static uint32_t timer_choice;
 static const char *timer_message="";
 #else
-#define SETTINGS_ROW_COUNT SETTINGS_CORE_ROW_COUNT
+#define SETTINGS_ORDINARY_ROW_COUNT SETTINGS_CORE_ROW_COUNT
+#endif
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#define SETTINGS_STORAGE_ROW SETTINGS_ORDINARY_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_ORDINARY_ROW_COUNT+1u)
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_ORDINARY_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
@@ -212,6 +221,16 @@ static uint32_t settings_count(uint32_t category) { return category?0:SETTINGS_R
 static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out) {
   if(category || index>=SETTINGS_ROW_COUNT || !out)return false;
   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(index==SETTINGS_STORAGE_ROW) {
+    if(!settings_availability_refresh())return false;
+    strcpy(out->label,"Settings storage");out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE?"Available locally":
+      settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"Recovered; reload needed":
+      settings_availability.state.availability==RISC_KEY_VALUE_CONFLICT?"Source conflict":"Unavailable; temporary defaults");
+    return true;
+  }
+#endif
   static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
 #ifdef PORTABLE_SLEEP_SETTINGS
 #ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
@@ -404,8 +423,16 @@ static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take
 #include "settings_view.inc"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 #include "settings_atomic_save.inc"
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "settings_availability.inc"
+#endif
 #endif
 static void settings_render(uint32_t category,int32_t selected) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(!settings_availability_refresh())return;
+  if(!portable_settings_availability_available(&settings_availability))
+    settings_message=portable_settings_availability_message(&settings_availability);
+#endif
   if(handoff_requested)return;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
@@ -566,7 +593,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 #endif
           result=T5_APP_SETTING_UPDATED;break;
         }
+#ifndef PORTABLE_SETTINGS_AVAILABILITY
         (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+#endif
 #ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         timer_message="Save unconfirmed - retry";
 #else
@@ -605,7 +634,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
           time_format_mode=time_format_choice;time_format_status=PORTABLE_TIME_FORMAT_LOADED;
           result=T5_APP_SETTING_UPDATED;break;
         }
+#ifndef PORTABLE_SETTINGS_AVAILABILITY
         time_format_choice=time_format_mode;
+#endif
 #ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         time_format_message="Save unconfirmed - retry";
 #else
@@ -923,6 +954,9 @@ T5_APP_SETTING_UPDATED;break;}
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(category||index>=SETTINGS_ROW_COUNT||failed)return T5_APP_SETTING_ERROR;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(index==SETTINGS_STORAGE_ROW)return settings_availability_activate();
+#endif
   const char *key=index==0?"rtc_basis":index==1?"time_zone":index==2?"time_format":
     index==SETTINGS_FACE_ROW?"desk_clock_face":index==SETTINGS_DESK_DIRECTION_ROW?"desk_direction":
     index==SETTINGS_FLIP_ROW?"reader_flip_ui":index==SETTINGS_LANGUAGE_ROW?"reader_language":
@@ -935,6 +969,11 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(index==SETTINGS_FLIP_ROW&&settings_atomic_status==RISC_ATOMIC_OK&&reader_unconfirmed[0])
     settings_message="Preference saved; display flip unconfirmed";
   if(index==0&&snt_result_available)settings_message=snt_status_text;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
+  if(!portable_settings_availability_available(&settings_availability))
+    settings_message=portable_settings_availability_message(&settings_availability);
+#endif
   settings_atomic_edit.valid=false;
   if(!native_custody_retained)settings_view_redraw();
   return result;

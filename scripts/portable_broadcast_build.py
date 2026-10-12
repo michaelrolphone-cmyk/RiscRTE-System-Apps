@@ -80,7 +80,8 @@ def record(args,root,record,manifest,defines):
     if not set(DEFINES)<=set(defines) or '-DPORTABLE_NATIVE_CUSTODY_FENCE' not in defines or '-DALARM_SERVICE_TAGGED_V2' not in defines:
         raise ValueError('Telemetry compilation lacks canonical native custody/alarm flags')
     grants=record.get('required_grants',[])
-    if grants.count({**CAPABILITY,'instance_id':0})!=1 or len(grants)>16:
+    policy_rows=17 if manifest['id']=='file_browser' and getattr(args,'shared_text_input',False) else 16
+    if grants.count({**CAPABILITY,'instance_id':0})!=1 or len(grants)>policy_rows:
         raise ValueError('Telemetry singleton authority is missing or exceeds Runtime capacity')
     if not any(g=={'capability':'storage.key-value','api':1,'instance_id':1} for g in grants):
         raise ValueError('Telemetry shared namespace1 authority is missing')

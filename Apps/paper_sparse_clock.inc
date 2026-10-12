@@ -32,6 +32,10 @@ static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
 static bool desk_config_pending;
 static uint32_t desk_config_retry_at;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+static uint64_t desk_settings_generation,desk_settings_observed;
+static uint32_t desk_settings_poll_at;
+#endif
 #ifdef PORTABLE_DESK_LOCK_HOME
 static bool desk_lock_requested,desk_direction_known;
 static unsigned desk_foreground_flip;
@@ -371,8 +375,27 @@ static bool desk_boot_logo(void) {
 /* Called only by the ordinary foreground loop, after catalog progress. The
  * retained TIMER path uses its record exclusively and never reaches here. */
 static bool desk_hydrate(void) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ bool status_changed=false;
+ if(!desk_boot_timer&&desk_promoted&&!desk_held&&!desk_retained&&
+    (int32_t)(app->millis()-desk_settings_poll_at)>=0) {
+  desk_settings_poll_at=app->millis()+1000u;
+  if(!portable_home_settings_poll())return false;
+  status_changed=desk_settings_observed!=portable_home_settings_generation();
+  desk_settings_observed=portable_home_settings_generation();
+  if(portable_home_settings_available()&&desk_settings_generation!=portable_home_settings_generation()) {
+   desk_config_pending=true;desk_config_retry_at=app->millis();
+  }
+ }
+#endif
  if(!desk_config_pending || desk_boot_timer || !desk_promoted || desk_held || desk_retained ||
-    (int32_t)(app->millis()-desk_config_retry_at)<0)return false;
+    (int32_t)(app->millis()-desk_config_retry_at)<0)return
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  status_changed
+#else
+  false
+#endif
+  ;
  if(!desk_config(&desk_configuration,&desk_sleep_mode))return false;
 #ifdef PORTABLE_DESK_LOCK_HOME
  bool applied=portable_desk_adapter_landscape(false,desk_foreground_flip);
@@ -381,6 +404,9 @@ static bool desk_hydrate(void) {
 #endif
  if(!applied){desk_config_pending=true;desk_config_retry_at=app->millis()+250u;return false;}
  format=desk_configuration.time_format;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ desk_settings_generation=portable_home_settings_generation();
+#endif
  risc_realtime_snapshot_v1 sample;(void)desk_sample(true,&sample);
  return !desk_retained;
 }
@@ -418,6 +444,10 @@ static bool sparse_boot(void) {
  portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,true);
  if(desk_promote()!=1 || !desk_bind())return false;
  portable_perf_span(PORTABLE_PERF_SPAN_PROMOTION,false);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_home_settings_poll())return false;
+ desk_settings_generation=portable_home_settings_generation();
+#endif
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,true);
  if(!desk_config(&desk_configuration,&desk_sleep_mode) && !desk_config_pending)return false;
  portable_perf_span(PORTABLE_PERF_SPAN_CONFIG,false);

@@ -1,6 +1,25 @@
 /* Only the selected Settings UI owns USER preference intents. settings_store
  * is a same-Core read view whose put is fenced; it is never a legacy fallback. */
 #include "PortablePreferenceAtomic.h"
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "PortableSettingsAvailability.h"
+static PortableSettingsAvailability settings_availability;
+static bool settings_availability_draft,settings_availability_temporary,settings_availability_discard;
+static bool settings_availability_refresh(void) {
+ uint64_t prior=settings_availability.state.generation;
+ if(!portable_settings_availability_refresh(&settings_availability)||
+    (settings_availability_draft&&prior!=settings_availability.state.generation&&
+     portable_settings_availability_available(&settings_availability))){portable_adapter_retain();return false;}
+ return true;
+}
+static bool settings_availability_save_ready(const char **message) {
+ if(!settings_availability_refresh())return false;
+ if(settings_availability_temporary||!portable_settings_availability_available(&settings_availability)){
+  *message="Draft kept; discard before loading recovered settings";return false;
+ }
+ return true;
+}
+#endif
 static risc_runtime_capability_v1 settings_atomic_grant;
 static const risc_key_value_atomic_v1 *settings_atomic_api;
 static portable_preference_atomic settings_atomic_edit;
@@ -11,7 +30,11 @@ static bool settings_atomic_guard(void *unused) {
  (void)unused;return !native_custody_retained&&!failed;
 }
 static bool settings_atomic_owned(void) {
- return settings_atomic_running||settings_atomic_edit.token!=0;
+ return settings_atomic_running||settings_atomic_edit.token!=0
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  ||settings_availability_draft
+#endif
+  ;
 }
 static const char *settings_atomic_message(int rc) {
  return rc==RISC_ATOMIC_STALE?"Settings changed; reopen editor":
@@ -29,6 +52,10 @@ static int settings_atomic_result(int rc) {
 static int32_t settings_atomic_get(void *unused,const char *key,void *out,uint32_t cap,uint32_t *size) {
  (void)unused;if(size)*size=0;
  if(!settings_atomic_api||!settings_atomic_guard(NULL))return RISC_KEY_VALUE_IO;
+ #ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability_refresh())return RISC_KEY_VALUE_CONTEXT;
+ if(!portable_settings_availability_available(&settings_availability))return RISC_KEY_VALUE_NOT_FOUND;
+#endif
  uint64_t revision=settings_atomic_edit.valid?settings_atomic_edit.revision:0;
  int rc=RISC_ATOMIC_OK;
  if(!revision) {
@@ -51,6 +78,12 @@ static int32_t settings_atomic_deny_put(void *c,const char *key,const void *data
  (void)c;(void)key;(void)data;(void)size;return RISC_KEY_VALUE_CONTEXT;
 }
 static bool settings_atomic_open(void) {
+ #ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability.api&&!portable_settings_availability_open(&settings_availability,rt,1)){
+  settings_atomic_result(RISC_ATOMIC_RETAINED);return false;
+ }
+ settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
+#endif
  settings_atomic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_atomic_grant)};
  settings_atomic_api=NULL;settings_atomic_edit=(portable_preference_atomic){0};
  settings_atomic_running=settings_atomic_exit=false;settings_atomic_status=RISC_ATOMIC_OK;
@@ -67,10 +100,26 @@ static bool settings_atomic_open(void) {
 }
 static bool settings_atomic_begin(const char *key) {
  settings_atomic_exit=false;settings_atomic_submission_accepted=false;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability_refresh())return false;
+ if(!settings_atomic_api){settings_message="Settings editing unavailable; reopen";return false;}
+ settings_availability_draft=true;settings_availability_discard=false;
+ settings_availability_temporary=!portable_settings_availability_available(&settings_availability);
+ if(settings_availability_temporary) {
+  settings_atomic_edit=(portable_preference_atomic){0};
+  if(!portable_preference_atomic_key(key))return false;
+  memcpy(settings_atomic_edit.key,key,strlen(key)+1);
+  settings_atomic_status=PORTABLE_PREFERENCE_READY;return true;
+ }
+#endif
  int rc=portable_preference_atomic_begin(&settings_atomic_edit,settings_atomic_api,key,
   PORTABLE_PREFERENCE_USER,settings_atomic_guard,NULL);
  settings_atomic_result(rc);
- if(rc!=PORTABLE_PREFERENCE_READY){settings_message=settings_atomic_message(rc);return false;}
+ if(rc!=PORTABLE_PREFERENCE_READY){settings_message=settings_atomic_message(rc);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ settings_availability_draft=false;
+#endif
+ return false;}
  return true;
 }
 static bool settings_atomic_save(const char *key,const void *value,uint32_t size,const char **message);
@@ -78,6 +127,9 @@ static bool settings_atomic_save(const char *key,const void *value,uint32_t size
  * failed release keeps the grant, token, staging and entire invocation live. */
 static bool settings_atomic_close(void) {
  if(native_custody_retained)return false;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(settings_availability_draft)return false;
+#endif
  if(settings_atomic_edit.token) {
   int rc=portable_preference_atomic_cancel(&settings_atomic_edit);
   if(rc==RISC_ATOMIC_PENDING || rc==RISC_ATOMIC_RETAINED) {
@@ -87,5 +139,8 @@ static bool settings_atomic_close(void) {
  if(settings_atomic_running){settings_atomic_result(RISC_ATOMIC_RETAINED);return false;}
  if(settings_atomic_grant.api&&!rt->release(&settings_atomic_grant))return false;
  if(native_custody_retained)return false;
+ #ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!portable_settings_availability_close(&settings_availability,rt))return false;
+#endif
  settings_atomic_api=NULL;settings_store=NULL;settings_atomic_edit=(portable_preference_atomic){0};return true;
 }

@@ -20,7 +20,12 @@ static void portable_adapter_retain(void);
 #include "PortableContextsClient.h"
 #include "PortablePreferenceAutomatic.h"
 #include "PortableContextActions.h"
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "PortableQuickActions.h"
+static struct {bool retained;pqa_state ui;} quick;
+#else
 static struct {bool retained;} quick;
+#endif
 static portable_low_battery low_battery;
 static bool home_pending,handoff_requested;
 static unsigned navigation_pending;
@@ -30,6 +35,9 @@ static bool contexts_before_storage(void){return !native_custody_retained;}
 static bool contexts_before_storage_read(void){return !native_custody_retained;}
 static void input_service(void);
 static void input_dispatch(void){}
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "../../lib/PortableApps/src/home_settings_availability.inc"
+#endif
 #include "../../lib/PortableApps/src/home_automatic.inc"
 static const char *test;
 static bool is(const char *name){return !strcmp(test,name);}

@@ -176,6 +176,9 @@ static home_scene_key home_scene_current(const twatch_rtc_time_v1 *time,bool kno
  return key;
 }
 static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,const char*notice,bool initial){
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!notice||!*notice)notice=portable_home_settings_notice();
+#endif
  clock_clean|=initial;
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  if(home_refresh_pending){if(!home_points_refresh(known))return false;home_refresh_pending=false;}

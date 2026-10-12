@@ -25,6 +25,9 @@ def build(args, parser=None):
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     atomic=getattr(args,'experimental_atomic_wifi',False)
+    availability=getattr(args,'experimental_settings_availability',False)
+    if availability and not atomic:
+        parser.error('--experimental-settings-availability requires --experimental-atomic-wifi')
     if atomic and (not portable_native_toolbar_build.selected(args) or not args.resident_shell_client):
         parser.error('--experimental-atomic-wifi requires explicit X4 native-time resident selection')
     scrolling=getattr(args,'touch_scrolling',False)
@@ -39,6 +42,7 @@ def build(args, parser=None):
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
     if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')
     if atomic: flags+=['-DPORTABLE_WIFI_ATOMIC_EXPERIMENTAL','-I'+str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2')]
+    if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
     if scrolling: flags.append('-DPORTABLE_TOUCH_SCROLL')
     if shared_text: flags+=['-DPORTABLE_TEXT_INPUT_CLIENT','-DPORTABLE_WIFI_PROFILES']
     flags.append('-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation))
@@ -105,6 +109,7 @@ def build(args, parser=None):
             {'capability':'net.wifi','api':1}]}
     if shared_text: manifest['requires'].append({'capability':'ui.text-input','api':1})
     if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
+    if availability: manifest['requires'].append({'capability':'storage.key-value.availability','api':1})
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -167,6 +172,21 @@ def build(args, parser=None):
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
+    # Native toolbar bookkeeping defaults to legacy KV; this explicit atomic
+    # Wi-Fi selection owns exact data/status namespaces, with no writer fallback.
+    if atomic:
+        record['grant_bindings']['storage.key-value']=[1]
+        record['grant_bindings']['storage.key-value.atomic']=[6]
+        if availability:
+            record['grant_bindings']['storage.key-value.availability']=[6]
+            record['settings_availability']={'experimental':True,'namespace':6,
+                'capability':'storage.key-value.availability@1','default_enabled':False,
+                'unavailable_edits':'temporary-ram','reload_boundary':'explicit-discard-or-clean-data-release',
+                'pending_provider_grants':'clean-runtime-restart-may-be-required',
+                'sd_checkpoint_confirmed':False,'hardware_qualified':False}
+        record['required_grants']=[dict(item,instance_id=instance) for item in manifest['requires']
+            for instance in record['grant_bindings'].get(item['capability'],[0])]
+        record['grant_count']=len(record['required_grants'])
     portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     portable_quick_build.record(args,record)
     (out/'wifi_settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
@@ -174,6 +194,7 @@ def build(args, parser=None):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off exact namespace-6 availability; requires the experimental atomic X4 profile')
     parser.add_argument('--experimental-atomic-wifi',action='store_true',help='Disconnected X4 native atomic map+intent capability; never falls back to KV1')
     parser.add_argument('--shared-text-input',action='store_true',help='Use the separately loaded shared keyboard, required for resident X4 builds')
     parser.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum')

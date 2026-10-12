@@ -35,3 +35,8 @@ subprocess.run([os.environ.get('CC','cc'),*flags,'-DTEST_TEXT_PRIVACY_PROBE',
  str(ROOT/'test/text_input/privacy_probe.c'),str(ROOT/'test/text_input/host_test.c'),'-o',str(privacy)],check=True)
 for mode in ('visibility-edit','visibility-hardware','visibility-home','visibility-back','visibility-close'):
  subprocess.run([str(privacy),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+extended=a.output/'extended-client-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-I'+str(inc),'-I'+str(provider/'lib/PortableApps/include'),str(ROOT/'test/text_input/extended_client_test.c'),'-o',str(extended)],check=True)
+for mode in ('ok','prefix','home','masked','short','tag','version','open-null','poll-null','home-cancel','bad-text','bad-ascii','bad-size','bad-revision','bad-flags','bad-home'):
+ subprocess.run([str(extended),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

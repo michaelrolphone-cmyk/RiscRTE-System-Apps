@@ -11,6 +11,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--experimental-settings-availability',action='store_true',help='Default-off Home temporary settings status and safe reload; requires atomic Home automatic')
  p.add_argument('--experimental-atomic-home-automatic',action='store_true',help='Default-off X4 Home automatic origins; requires atomic Quick and RF contexts')
  p.add_argument('--experimental-atomic-quick',action='store_true',help='Default-off X4 Home explicit namespace-1 atomic preference intents; no production activation')
  p.add_argument('--deferred-foreground-services',action='store_true',help='X4 sparse Home: apply Quick radio policy after first completed Home frame or before an explicit lifecycle transition')
@@ -37,6 +38,8 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.experimental_settings_availability and not a.experimental_atomic_home_automatic:
+  p.error('--experimental-settings-availability requires --experimental-atomic-home-automatic')
  if a.experimental_atomic_home_automatic and not (a.experimental_atomic_quick and a.contexts_rf_only and portable_idle_build.selected(a)):
   p.error('--experimental-atomic-home-automatic requires atomic Quick, RF contexts and checked X4 idle')
  if a.experimental_atomic_quick and not (a.sparse_start and a.resident_shell_host and a.frontlight_tone and a.quick_radios and a.paper_transitions):
@@ -108,6 +111,7 @@ def build():
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
  if a.experimental_atomic_quick:flags+=['-DPORTABLE_QUICK_ATOMIC_PREFERENCES']
+ if a.experimental_settings_availability:flags+=['-DPORTABLE_SETTINGS_AVAILABILITY']
  if a.experimental_atomic_home_automatic:flags+=['-DPORTABLE_HOME_AUTOMATIC_PREFERENCES']
  if a.ble_broadcast:flags += ["-DPORTABLE_BLE_BROADCAST","-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF"]
  if a.desk_points_face:flags+=['-DPORTABLE_DESK_POINTS_FACE','-DPORTABLE_DESK_POINTS_SNAPSHOT']
@@ -163,6 +167,7 @@ def build():
  if a.alarm_client:needs.append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
  portable_quick_build.requirements(a,needs)
  if a.experimental_atomic_quick:needs.append({'capability':'storage.key-value.atomic','api':1})
+ if a.experimental_settings_availability:needs.append({'capability':'storage.key-value.availability','api':1})
  if a.desk_clock:
   for name in ('net.wifi','bluetooth.hci'):
    requirement={'capability':name,'api':1}
@@ -170,7 +175,7 @@ def build():
   if a.sparse_start:needs.extend([{'capability':'runtime.realtime-control','api':1},{'capability':'runtime.provider-promotion','api':1}])
   if a.ble_broadcast:needs.append({"capability":"telemetry.broadcast","api":1})
   if a.contexts_rf_only:needs.extend([{'capability':'contexts.service','api':1},{'capability':'storage.shared-data','api':1}])
-  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)+int(a.experimental_atomic_quick)):raise ValueError('Desk clock grant count mismatch')
+  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)+int(a.experimental_atomic_quick)+int(a.experimental_settings_availability)):raise ValueError('Desk clock grant count mismatch')
  if a.installed_catalog_volume_instance is not None:needs.append({'capability':'software.installed-apps','api':1})
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
@@ -188,6 +193,18 @@ def build():
    'lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/resident_shell.inc')}
   record['atomic_quick']['sdk_sha256']=hashlib.sha256((includes/'RiscKeyValueAtomicV1.h').read_bytes()).hexdigest()
   record.setdefault('grant_bindings',{})['storage.key-value.atomic']=[1]
+ if a.experimental_settings_availability:
+  record['settings_availability']={'experimental':True,'default_selected':False,'namespace':1,
+   'capability':'storage.key-value.availability@1','temporary_defaults_only':True,
+   'unavailable_quick_preferences':'read-only','automatic_writes':'refused until authoritative',
+   'reconciliation':'clean foreground generation reload; provider-held pending needs clean Runtime restart',
+   'retained_timer_changed':False,'sdk_sha256':hashlib.sha256((includes/'RiscKeyValueAvailabilityV1.h').read_bytes()).hexdigest()}
+  record['settings_availability']['source_sha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+   'lib/PortableApps/include/PortableSettingsAvailability.h','lib/PortableApps/include/RiscKeyValueAvailabilityV1.h',
+   'lib/PortableApps/src/home_settings_availability.inc','lib/PortableApps/src/home_automatic.inc',
+   'lib/PortableApps/src/quick_atomic.inc','lib/PortableApps/src/quick_adapter.inc','lib/PortableApps/src/quick_paper.inc',
+   'Apps/paper_clock.c','Apps/paper_sparse_clock.inc')}
+  record.setdefault('grant_bindings',{})['storage.key-value.availability']=[1]
  if a.experimental_atomic_home_automatic:
   record['atomic_home_automatic']={'experimental':True,'default_selected':False,'namespace':1,
    'intent':'PFA0001','origin':'AUTOMATIC','boundaries':['low-battery','Home-rules','claimed-room-preset'],

@@ -1,6 +1,9 @@
 /* The modal remains an ordinary input/display controller while Native owns
  * the copied operation. No resident host handoff crosses an owned token. */
 static bool settings_atomic_save(const char *key,const void *value,uint32_t size,const char **message) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability_save_ready(message)){settings_atomic_status=RISC_ATOMIC_BUSY;return false;}
+#endif
  int rc=strcmp(key,settings_atomic_edit.key)?RISC_ATOMIC_INVALID:
   portable_preference_atomic_prepare(&settings_atomic_edit,value,size);
  if(rc!=PORTABLE_PREFERENCE_READY){*message=settings_atomic_message(rc);return false;}
@@ -28,6 +31,11 @@ static bool settings_atomic_save(const char *key,const void *value,uint32_t size
   }
  }
  settings_atomic_running=false;settings_atomic_result(rc);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ /* Cancelling a save does not discard the editor's RAM draft. The accepted
+  * attempt cannot be replayed; keep it visible until explicit Discard. */
+ if(rc!=RISC_ATOMIC_RETAINED)settings_atomic_exit=false;
+#endif
  *message=rc==RISC_ATOMIC_OK?"Saved locally; SD backup not confirmed":settings_atomic_message(rc);
  return rc==RISC_ATOMIC_OK;
 }

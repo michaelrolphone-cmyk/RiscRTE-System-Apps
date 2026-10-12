@@ -68,6 +68,9 @@ static void snt_describe_result(void) {
   editor_message=snt_status_text;snt_result_available=true;
 }
 static bool snt_save(int fold) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability_save_ready(&editor_message))return false;
+#endif
   if(snt_basis_status!=PORTABLE_RTC_BASIS_LOADED && snt_basis_status!=PORTABLE_RTC_BASIS_MISSING) {
     editor_message=snt_basis_label();return false;
   }
