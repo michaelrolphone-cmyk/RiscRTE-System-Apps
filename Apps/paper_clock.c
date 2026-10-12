@@ -231,6 +231,9 @@ static CLOCK_DRAW_RESULT draw_clock(const twatch_rtc_time_v1*time,bool known,con
 home_composite:
  if(portable_layer_valid(home_scene_layer))portable_raster_layer_blit(home_scene_layer,0,0,app->screen_width(),app->screen_height(),0,0);
  app->present(clock_clean);clock_dirty=clock_clean=false;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ portable_desk_adapter_home_submitted();
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
 #endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC

@@ -121,6 +121,13 @@ static void paper_orient_input(portable_touch_sample *sample);
 static bool desk_present_complete;
 #ifdef PORTABLE_QUICK_RADIOS
 static bool desk_radios_loaded;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+#if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) || !defined(PORTABLE_RESIDENT_LOADING)
+#error "Deferred foreground radios require sparse Home and guarded resident loading"
+#endif
+static bool desk_home_submitted;
+static bool desk_radio_policy_ready(bool force);
+#endif
 #endif
 #endif
 #include "T5BatteryApi.h"
@@ -1618,6 +1625,9 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(paper_token)return true;
 #endif
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+  if(!desk_radio_policy_ready(true))return false;
+#endif
 #if defined(PORTABLE_FILE_BROWSER_APP) && !defined(PORTABLE_FILE_SHARING)
   if(!portable_file_browser_close()){last_activity=millis_now();return !failed;}
 #endif
@@ -1982,11 +1992,34 @@ void portable_desk_adapter_settings_pending(bool pending) {
 }
 #endif
 bool portable_desk_adapter_sleep(void) { return idle_sleep(); }
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+/* Home submits through the normal renderer. Boot logo/loading/desk frames do
+ * not call this marker and cannot accidentally trigger optional radio work. */
+void portable_desk_adapter_home_submitted(void) {
+ if(!failed && !native_sleep_retained && desk_phase==DESK_FOREGROUND)
+  desk_home_submitted=true;
+}
+static bool desk_radio_policy_ready(bool force) {
+ if(failed || native_sleep_retained)return false;
+ if(desk_phase==DESK_TIMER || desk_radios_loaded)return true;
+ if(desk_phase!=DESK_FOREGROUND || raster_lease_mutable())return false;
+ if(!force && (!desk_home_submitted || !display_settled || !portable_paper_frame_idle()))return true;
+ /* An explicit action may arrive while its immutable Home frame is queued.
+  * Finish that existing frame before acquiring storage/radio policy clients. */
+ if(force && (!portable_paper_frame_drain() || !display_settled))return false;
+ if(!pqa_radios_load(&quick_radios,&quick.ui,rt)) {
+  portable_desk_adapter_retain();return false;
+ }
+ desk_radios_loaded=true;
+ portable_stage_log(rt,"foreground-radios",force?"forced-before-transition":"after-home-complete");
+ return !native_sleep_retained;
+}
+#endif
 bool portable_desk_adapter_foreground(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(failed || desk_phase!=DESK_FOREGROUND)return false;
 #endif
-#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_QUICK_RADIOS) && !defined(PORTABLE_DESK_DEFER_RADIOS)
  if(!desk_radios_loaded){
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt)){portable_desk_adapter_retain();return false;}
   desk_radios_loaded=true;
@@ -2068,6 +2101,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
     crown_pending=false;return true;}
 #endif
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+  if(!raster_lease_mutable() && !desk_radio_policy_ready(false))return false;
+#endif
 #ifdef PORTABLE_BLE_BROADCAST
   /* Background model/service progression shares the owner task, not the
    * display completion clock. Mutable raster custody is still excluded. */
@@ -2123,6 +2159,11 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
     portable_file_browser_scroll_interrupt();
 #endif
     crown_pending=false;return true;}
+#endif
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+  if((navigation_pending || home_pending || crown_pending ||
+      (input_sample.valid && input_sample.down)) && !desk_radio_policy_ready(true))return false;
+  if(!raster_lease_mutable() && !desk_radio_policy_ready(false))return false;
 #endif
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
   /* A recognized pull-down is model state. Keep it while an existing image
@@ -2875,6 +2916,9 @@ static int initialize(void) {
   desk_guarded_runtime.diagnostic=desk_guard_diagnostic;desk_guarded_runtime.request_launch=desk_guard_launch;
 #ifdef PORTABLE_QUICK_RADIOS
   desk_quick_runtime=desk_guarded_runtime;desk_quick_runtime.acquire=desk_quick_acquire;
+#endif
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+  desk_radios_loaded=false;desk_home_submitted=false;
 #endif
   rt=&desk_guarded_runtime;desk_phase=DESK_INITIALIZED;
   return 0;

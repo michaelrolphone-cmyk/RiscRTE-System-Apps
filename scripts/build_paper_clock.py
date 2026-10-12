@@ -11,6 +11,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--deferred-foreground-services',action='store_true',help='X4 sparse Home: apply Quick radio policy after first completed Home frame or before an explicit lifecycle transition')
  p.add_argument('--installed-catalog-volume-instance',type=int,help='Hydrate cached apps and scan SD after first Home frame')
  p.add_argument('--display-rotation',type=int,choices=[0,90],default=90)
  p.add_argument('--relocation-tools',type=Path,help='Canonical Reader scripts for Xtensa relocation normalization')
@@ -34,6 +35,8 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
+  p.error('--deferred-foreground-services requires the full sparse resident Home/Points/Quick-radio/loading/catalog profile')
  if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<1 or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
  if a.boot_animation and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation requires canonical --relocation-tools')
  if a.boot_animation and not (a.sparse_start and a.raster_snapshot):p.error('--boot-animation requires --sparse-start and --raster-snapshot')
@@ -94,6 +97,7 @@ def build():
  else:catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports=portable_quick_build.exports(a,{'app_main','app_module_init','app_module_fini'});mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
+ if a.deferred_foreground_services:flags+=['-DPORTABLE_DESK_DEFER_RADIOS']
  if a.installed_catalog_volume_instance is not None:flags+=['-DPORTABLE_INSTALLED_CATALOG','-DPORTABLE_INSTALLED_CATALOG_HOST','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='+str(a.installed_catalog_volume_instance)+'ULL']
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
@@ -143,6 +147,7 @@ def build():
  version=portable_quick_build.version(a,'paper_clock',version)
  if a.boot_animation:version='0.4.7'
  if a.installed_catalog_volume_instance is not None:version='0.4.11'
+ if a.deferred_foreground_services:version='0.4.13'
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -174,6 +179,8 @@ def build():
     'lib/PortableApps/src/contexts_adapter.inc',
     'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/contexts_clock.inc')}}
   record['build_defines']=flags
+ if a.deferred_foreground_services:record['deferred_foreground_services']=True;record['deferred_radio_policy']={'completion':'first completed Home frame','forced_before':['user-input','quick-controls','sleep','launch','resident-loading'],'broadcast_cleanup':'unchanged','alarm_priority':'existing cue/modal completes before deferred policy','low_battery_policy':'existing immediate safety override','timer_radio_loads':0}
+ if a.deferred_foreground_services:record['deferred_foreground_sources']={n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['Apps/paper_clock.c','lib/PortableApps/include/PortableDeskClockApp.h','lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/resident_loading.inc','scripts/build_paper_clock.py']}
  if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'shared_preferences_retry':'foreground-250ms-no-timer-kv','alarm_reconcile_waits_for_shared_preferences':True,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
  if a.ble_broadcast:
   record['ble_broadcast']['source_sha256']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in (
