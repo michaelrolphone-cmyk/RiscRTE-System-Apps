@@ -92,7 +92,8 @@ static inline int portable_wifi_atomic_step(portable_wifi_atomic*s) {
   risc_key_value_atomic_receipt_v1 receipt={.struct_size=sizeof(receipt)};
   int rc=s->api->collect(s->api->context,s->token,&receipt);
   if(rc==RISC_ATOMIC_PENDING||rc==RISC_ATOMIC_BUSY)return PORTABLE_WIFI_ATOMIC_AGAIN;
-  if(rc!=RISC_ATOMIC_OK)return portable_wifi_atomic_finish(s,RISC_ATOMIC_RETAINED);
+  if(rc!=RISC_ATOMIC_OK||receipt.struct_size<sizeof(receipt)||receipt.status<RISC_ATOMIC_RETAINED||receipt.status>RISC_ATOMIC_CANCELLED||receipt.status==RISC_ATOMIC_PENDING||
+     (receipt.status==RISC_ATOMIC_OK&&(!receipt.revision||!receipt.operation_id))||(receipt.status!=RISC_ATOMIC_OK&&receipt.operation_id))return s->status=RISC_ATOMIC_RETAINED;
   s->receipt=receipt;return portable_wifi_atomic_finish(s,receipt.status);
  }
  if(s->status!=PORTABLE_WIFI_ATOMIC_AGAIN)return s->status;
@@ -100,7 +101,7 @@ static inline int portable_wifi_atomic_step(portable_wifi_atomic*s) {
   risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
   int rc=s->api->state(s->api->context,&state);if(rc==RISC_ATOMIC_BUSY)return s->status;
   if(rc)return portable_wifi_atomic_finish(s,rc);
-  if(state.namespace_id!=PORTABLE_WIFI_CREDENTIALS_STORE_INSTANCE||!state.revision||state.max_mutations<PORTABLE_WIFI_ATOMIC_MUTATIONS||state.max_value_bytes<64||state.max_group_bytes<1024||state.max_intent_bytes<sizeof(s->intent)||
+  if(state.struct_size<sizeof(state)||state.namespace_id!=PORTABLE_WIFI_CREDENTIALS_STORE_INSTANCE||!state.revision||state.max_mutations<PORTABLE_WIFI_ATOMIC_MUTATIONS||state.max_value_bytes<64||state.max_group_bytes<1024||state.max_intent_bytes<sizeof(s->intent)||
      (state.flags&(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC))!=(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC))return portable_wifi_atomic_finish(s,RISC_ATOMIC_INVALID);
   s->revision=state.revision;s->phase=1;return s->status;
  }

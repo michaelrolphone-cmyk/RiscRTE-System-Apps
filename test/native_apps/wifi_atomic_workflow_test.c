@@ -49,7 +49,7 @@ int main(int argc,char**argv){
  assert(argc==2);unsigned which=(unsigned)atoi(argv[1]);
  atomic_fixture_api=(risc_key_value_atomic_v1){1,sizeof(atomic_fixture_api),NULL,atomic_state,atomic_get,atomic_submit,atomic_collect,atomic_cancel};
  if(which==12)kv_denied=1;
- workflow_start(false);draft();
+ workflow_start(which>=19&&which<=21);draft();
  if(which==0){wifi_activate(6);prepared();assert(job_state==1&&!writes&&!native_sequence);clean_edit();native_worker();assert(native_sequence==1&&profile_work);drained();assert(saved_state==0&&!draft_dirty);assert_record(0,"Fixture network","testpass123");assert(last_intent[8]==1&&!last_intent[9]);}
  else if(which==1){set_record(0,"Fixture network","testpass123");unsigned before=writes;wifi_activate(7);prepared();assert(page==WP_FORGET&&writes==before&&!submits);wifi_activate(1);drained();portable_wifi_credentials out;assert(portable_wifi_profile_load(&kv_api,0,&out)==PORTABLE_WIFI_CREDENTIALS_EMPTY);assert(last_intent[8]==2&&last_intent[9]);for(unsigned i=49;i<113;i++)assert(!last_intent[i]);}
  else if(which==2){set_record(0,"Fixture network","testpass123");wifi_activate(7);prepared();set_record(0,"Replacement","replacement-pass");unsigned before=writes;wifi_activate(1);drained();assert(!native_sequence&&writes==before&&strstr(wifi_message,"changed"));assert_record(0,"Replacement","replacement-pass");}
@@ -69,6 +69,10 @@ int main(int argc,char**argv){
  else if(which==16){wifi_activate(6);prepared();assert(!portable_wifi_suspend()&&job_state);native_worker();assert(portable_wifi_suspend()&&!profile_work&&collects==1);}
  else if(which==17){set_record(0,"Fixture network","testpass123");wifi_activate(7);prepared();assert(!wifi_back());assert(!submits&&!forget_index_valid);clean_edit();}
  else if(which==18){wifi_connect();prepared();assert(remember_join);assert(wifi_disconnect());assert(!submits&&!writes);wifi_activate(6);drained();assert(native_sequence==1);}
+ else if(which==19){wifi_connect();prepared();assert(async_starts==1&&joining&&!writes&&!submits);progress.phase=RISC_RADIO_CONNECTED;progress.station_state=2;tick(250);assert(remember_pending);drained();assert(native_sequence==1&&service_begins&&service_begins==service_ends&&!service_live);assert(!wifi_disconnect());stopped();}
+ else if(which==20){begin_unavailable=true;wifi_connect();prepared();assert(!wifi_operation&&!async_starts&&!submits&&!writes&&!remember_join);assert(wifi_back());}
+ else if(which==21){wifi_connect();wifi_profiles_step();assert(!wifi_back()&&!profile_work&&!async_starts&&!writes);clean_edit();}
+ else if(which==22){wifi_activate(6);prepared();native_worker();job_receipt.operation_id=0;wifi_profiles_step();assert(wifi_atomic_edit.status==RISC_ATOMIC_RETAINED&&portable_wifi_atomic_pending(&wifi_atomic_edit)&&cleanup_pending);puts("Atomic Wi-Fi malformed receipt retains invocation PASS");return 0;}
  else assert(!"unknown scenario");
  if(opened){if(remember_join)assert(wifi_disconnect());if(job_state==1)native_worker();drained();}
  finish();clean_edit();printf("Atomic Wi-Fi controller case %u PASS\n",which);

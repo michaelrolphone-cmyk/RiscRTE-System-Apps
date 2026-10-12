@@ -4,6 +4,7 @@ static int32_t wifi_atomic_current_get(void*c,const char*k,void*out,uint32_t cap
  (void)c;if(n)*n=0;if(!wifi_atomic_api)return RISC_KEY_VALUE_IO;
  risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
  int rc=wifi_atomic_api->state(wifi_atomic_api->context,&state);
+ if(!rc&&(state.struct_size<sizeof(state)||state.namespace_id!=PORTABLE_WIFI_STORAGE_INSTANCE))return RISC_KEY_VALUE_IO;
  if(!rc)rc=wifi_atomic_api->get(wifi_atomic_api->context,state.revision,k,out,cap,n);
  return rc==RISC_ATOMIC_OK?RISC_KEY_VALUE_OK:rc==RISC_ATOMIC_NOT_FOUND?RISC_KEY_VALUE_NOT_FOUND:
         rc==RISC_ATOMIC_BUSY||rc==RISC_ATOMIC_STALE?RISC_KEY_VALUE_BUSY:rc==RISC_ATOMIC_BUFFER_SMALL?RISC_KEY_VALUE_BUFFER_SMALL:RISC_KEY_VALUE_IO;

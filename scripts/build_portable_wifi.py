@@ -154,7 +154,7 @@ def build(args, parser=None):
     if atomic:
         record['atomic_wifi']={'experimental':True,'capability':'storage.key-value.atomic@1','namespace':6,'copied_async':True,'native_map_and_intent_atomic':True,'sd_checkpoint_confirmed':False,'production_broker_connected':False}
         record['grant_bindings']['storage.key-value.atomic']=[6]
-        record['grant_bindings']['storage.key-value']=[1] if args.quick_actions else []
+        record['grant_bindings']['storage.key-value']=[1]  # X4 radio policy remains read through KV1
         record['shared_settings']['save_acknowledges']='native-atomic-map-and-intent'
         notice=out/'licenses'/'wifi-intent-sha256';notice.mkdir(parents=True,exist_ok=True)
         shutil.copyfile(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c',notice/'sha2.c')
