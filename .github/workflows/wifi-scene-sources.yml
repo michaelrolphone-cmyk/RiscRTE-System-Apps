@@ -12,24 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: System
+          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
+          ref: a304597bf26491483bb0a567569f0ca0267cdf9c
+          path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: ff34f976f1209fba85e455e21c9e2d5429d5b800
+          ref: 8d713b52edca004e1d53bf30a1c584859fe33d14
           path: Runtime
           persist-credentials: false
-      - uses: actions/checkout@v4
-        with:
-          repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
-          ref: f5ba7734d4fc36b770bc2edf9fbb9fafdf3a2732
-          path: Watch
-          persist-credentials: false
-      - run: tar -czf wifi-scene-sources.tar.gz System Runtime Watch
+      - run: tar -czf wifi-deployed-sources.tar.gz Runtime Watch
       - uses: actions/upload-artifact@v4
         with:
-          name: wifi-scene-sources
-          path: wifi-scene-sources.tar.gz
+          name: wifi-deployed-sources
+          path: wifi-deployed-sources.tar.gz
           retention-days: 3
           compression-level: 0
