@@ -30,3 +30,21 @@ This is host evidence for the observed pre-Reader retention signature, not a
 physical X4 boot or complete Reader-launch test. The final target must keep
 the deployed 16-grant mounted Files profile documented in
 `FILES_SCROLL_POLICY_20261012.md`, at the same candidate version 1.5.32.
+
+## Final qualification
+
+All passed after the fix: 36 real controller/peer/handoff UBSan cases (including
+12 local actual-`app_main` handoffs), 16 real setup-frontend ASan+UBSan cases,
+27 adapter ASan+UBSan cases, and 93 setup-helper cases with ASan+UBSan. The
+existing owner-loss, recursive callback, refused cleanup, finalization and
+sleep-refusal checks still pass. Leak detection is disabled in this traced
+executor; address and undefined-behavior checks remain enabled.
+
+The clean target built from `f0a2f240aceb5e46eb95af9c3a264d9eede6467b` passes
+real ELF structural/loader/import/export validation. It is 484024 bytes,
+SHA-256 `6a28d9745c7212740e641874142abad899dcef2559960c190abe954d82128c41`.
+All deployed 1.5.31 defines, imports, exports, capabilities, 16 grant bindings,
+storage selection, peer/WebDAV/setup, BLE, raster and scroll settings compare
+identically. `receipts/files-terminal-handoff-20261012.json` records hashes and
+qualification limits. Hardware installation and Reader entry remain product
+integration checks.
