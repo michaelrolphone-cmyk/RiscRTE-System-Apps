@@ -1,0 +1,29 @@
+name: Alarm startup BUSY adapter
+on:
+  push:
+    branches: [fix/x4-alarm-startup-busy-20261012]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alarm-busy-adapter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 80efb298c9ca8d0f62f9a31840c9e51d380b40f6
+          path: .dependencies/utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .dependencies/runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python scripts/test_alarm_busy_adapter.py --runtime .dependencies/runtime --utilities .dependencies/utilities

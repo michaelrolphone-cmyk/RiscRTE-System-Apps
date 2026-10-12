@@ -132,6 +132,9 @@ static void fbp_draw(void) {
 #endif
 }
 static bool fbp_touch(int x,int y) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy()){if(x>=32&&x<fbp_w()-32&&y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
+#endif
 #ifdef PORTABLE_FILE_PEER
  if(fbm_mounted&&fbm_busy()){if(x>=32&&x<32+(fbp_w()-88)/4&&y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
 #endif

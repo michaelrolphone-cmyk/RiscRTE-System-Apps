@@ -317,6 +317,11 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
     if(alarm_service_deferred)return true;
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
+        *consumed=true;return true;
+    }
+#endif
     /* Reconciliation is bounded by service phases, not provider poll. Input
        waits until the snapshot says READY or gives an alert/error. */
     bool cue_seen=false;
@@ -338,6 +343,12 @@ static bool alarm_foreground(bool *consumed) {
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
         if(alarm_service_deferred)return true;
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+        if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
+            *consumed=true;return true;
+        }
+#endif
+
         /* Drain one short cue with the original frame untouched. Finish once
          * its outputs and durable ACK are settled; subsequent simultaneous
          * cues reconcile on the next foreground call rather than exhausting

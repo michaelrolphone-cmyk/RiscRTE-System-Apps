@@ -14,6 +14,10 @@
 #include "PortableFileBrowser.h"
 #include "PaperPresentation.h"
 #include "T5FileOpenApi.h"
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+#include "RiscFileOpenSourceV1.h"
+#include "RiscStorageVolumeStateV1.h"
+#endif
 #include <stdlib.h>
 #ifdef PORTABLE_ALARM_CLIENT
 #include "PortableAppSleep.h"
@@ -70,6 +74,18 @@ static char fb_handler_path[FB_PATH_CAP];
 static bool fb_opened;
 #endif
 static t5_file_handler_t fb_handlers[FB_MAX_PAGE_ROWS];
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+static risc_runtime_capability_v1 fsource_grant;
+static const risc_file_open_source_api_v1 *fsource_api;
+enum {FSOURCE_NONE,FSOURCE_CHOOSE,FSOURCE_START,FSOURCE_LOCAL,FSOURCE_REMOTE,FSOURCE_SEALED,FSOURCE_CANCEL};
+static unsigned fsource_state;
+static bool fsource_remote,fsource_handoff;
+static bool fsource_busy(void),fsource_close(void),fsource_back(void),fsource_handler_get(uint32_t,t5_file_handler_t*),fsource_resume_result(void);
+static void fsource_open(bool,bool),fsource_start(unsigned),fsource_tick(void),fsource_reset(void);
+#ifdef PORTABLE_FILE_PEER
+static void fsource_remote_done(bool);
+#endif
+#endif
 static void fb_draw(void);
 #ifdef PORTABLE_FILE_SHARING
 #ifdef PORTABLE_FILE_PEER
@@ -227,6 +243,9 @@ bool portable_file_browser_close(void) {
 #ifdef PORTABLE_TOUCH_SCROLL
  portable_file_browser_scroll_interrupt();
 #endif
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(!fsource_close())return false;
+#endif
  if(!fbx_close_owned())return false;
  if(fb_retained_file) {
   if(!fb_volume || !fb_volume->file_close(fb_volume->context,fb_retained_file,true)){PORTABLE_APP_RETAIN();return false;}
@@ -326,6 +345,9 @@ static bool fb_load_scoped(int direction) {
  else if(!direction)fb_page=0;
  fb_choice=0;fb_loaded=true;
  fb_manage=
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ true ||
+#endif
 #ifdef PORTABLE_FILE_PEER
  fb_storage_index==2 ||
 #endif
@@ -408,6 +430,9 @@ static void fb_filter_key(unsigned key) {
  fb_dirty=true;
 }
 static bool fb_back(void) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_back())return false;
+#endif
 #ifdef PORTABLE_FILE_PEER
  fbm_new_directory=false;
  if(fbm_mounted&&fbm_back())return false;
@@ -502,6 +527,9 @@ static void fb_activate(void);
 #ifdef PORTABLE_FILE_SHARING
 #include "file_browser_sharing.inc"
 #endif
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+#include "file_browser_source.inc"
+#endif
 static void fb_draw(void) {
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING){fsh_draw();return;}
@@ -556,6 +584,9 @@ static void fb_draw(void) {
  fb_app->present(false);fb_dirty=false;
 }
 static void fb_move(int direction) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy())return;
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING){
 #ifdef PORTABLE_FILE_PEER
@@ -576,6 +607,9 @@ static void fb_move(int direction) {
  fb_dirty=true;
 }
 static void fb_activate(void) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy())return;
+#endif
 #ifdef PORTABLE_FILE_PEER
  if(fbm_mounted&&fbm_busy())return;
 #endif
@@ -595,6 +629,9 @@ static void fb_activate(void) {
  fb_dirty=true;
 }
 static bool fb_touch(int x,int y) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy()){if((x<52&&y<44)||(x>=16&&x<224&&y>=188&&y<232))return fb_back();return false;}
+#endif
 #ifdef PORTABLE_FILE_PEER
  if(fbm_mounted&&fbm_busy()){if((x<52&&y<44)||(fb_mode==FB_DESTINATION&&x>=16&&x<64&&y>=188&&y<232))return fb_back();return false;}
 #endif
@@ -627,6 +664,9 @@ static bool fb_open(void) {
 #endif
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  fb_opened=true;
+#endif
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ fsource_reset();
 #endif
  fbp_key_page=0;fbp_clean=true;fbp_last_mode=0;fbp_contact_down=false;fb_publication_unknown=false;
  memset(&fb_grant,0,sizeof(fb_grant));memset(&fb_other_grant,0,sizeof(fb_other_grant));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_other_volume=NULL;fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
@@ -661,6 +701,9 @@ void app_main(void) {
   if(fb_terminal)return;
 #ifdef PORTABLE_FILE_SHARING
   fsh_tick();if(fb_terminal||PORTABLE_APP_RETAINED())return;
+#endif
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+  fsource_tick();if(fb_terminal||PORTABLE_APP_RETAINED())return;
 #endif
 #ifdef PORTABLE_FILE_SETUP
   if(portable_file_browser_cleanup_only())continue;

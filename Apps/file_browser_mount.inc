@@ -4,7 +4,7 @@ static char fbm_requested_path[FB_PATH_CAP],fbm_replace_path[FB_PATH_CAP];
 static uint64_t fbm_preview_offset;
 static bool fbm_preview_hex;
 static void fbm_queued(void){portable_peer_status status;portable_peer_status_get(fpeer,&status);fbm_wait_generation=status.operation_generation;}
-enum { FBM_IDLE,FBM_PREVIEW,FBM_COPY,FBM_MUTATE,FBM_OPEN,FBM_CANCEL,FBM_REFRESH,FBM_RETURN };
+enum { FBM_IDLE,FBM_PREVIEW,FBM_COPY,FBM_MUTATE,FBM_OPEN,FBM_CANCEL,FBM_REFRESH,FBM_RETURN,FBM_SOURCE };
 static bool fbm_choose_handler,fbm_dispatch_pending;
 /* An authenticated peer is a browser mount. Directory callbacks inspect the
  * completed copied listing only; requests run on later foreground ticks. They
@@ -76,6 +76,10 @@ static void fbm_tick(void){
   if(!fbm_mounted){fbm_mounted=true;fbm_enter();strcpy(fb_path,fpeer_status.path);fb_query[0]=0;fb_mode=FB_LIST;strcpy(fbm_requested_path,fb_path);fbm_loading=true;}
   if(fbm_operation){
    unsigned completed=fbm_operation;fbm_operation=FBM_IDLE;
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+   if(completed==FBM_SOURCE){fsource_remote_done(fpeer_status.operation_ok);return;}
+   if(completed==FBM_CANCEL&&fsource_remote&&fsource_state==FSOURCE_CANCEL){fsource_remote_done(false);return;}
+#endif
    if(completed==FBM_CANCEL){fb_mode=FB_LIST;fb_loaded=false;fb_count=0;fb_message(fpeer_status.operation_ok?"Operation completed. Refresh folder to inspect.":fpeer_status.uncertain?"Publication unknown. Refresh folder to inspect.":"Request cancelled. Refresh folder to inspect.");return;}
    if(!fpeer_status.operation_ok){fb_message(fpeer_status.message[0]?fpeer_status.message:"Remote operation failed. Retry.");return;}
    if(completed==FBM_PREVIEW){fb_offset=fbm_preview_offset;fb_hex=fbm_preview_hex;size_t n=0;if(!portable_peer_preview_get(fpeer,fb_preview,sizeof(fb_preview),&n)){fb_message("Preview unavailable");return;}fb_preview_count=(unsigned)n;fb_size=fpeer_status.preview_total;fb_message(n?"Preview only / no execution":"Empty file");return;}
@@ -162,6 +166,9 @@ static void fbm_open_scoped(bool choose){
 #else
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
  if(fbm_busy()||!fbm_cap(PEER_CAP_READ,"Reading unavailable on this volume"))return;
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(strcmp(PORTABLE_FILE_BROWSER_CAPABILITY,"storage.volume")){fsource_open(choose,true);return;}
+#endif
  const risc_storage_volume_api_v1*local=fbm_local_index==0?fbm_local_volume:fb_other_volume;
  if(!fbx_write_available(local)){fbx_notice("Opening remote files needs a writable local handler destination");return;}
  if(!fbx_handlers()){fb_notice_return=FB_ACTIONS;fb_mode=FB_NOTICE;return;}

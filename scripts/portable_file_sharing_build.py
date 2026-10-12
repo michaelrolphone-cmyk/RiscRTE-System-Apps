@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import subprocess
 VERSION = '1.5.32'
-def selected_version(args):return VERSION
+def selected_version(args):return '1.5.33' if getattr(args,'source_handoff',False) else VERSION
 MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
 def options(parser):

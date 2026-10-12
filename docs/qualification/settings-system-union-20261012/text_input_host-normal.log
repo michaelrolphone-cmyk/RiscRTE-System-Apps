@@ -1,0 +1,64 @@
+{"command": ["python3", "scripts/test_text_input_host.py", "--runtime", "/workspace/shared/x4-https-099-20261012/runtime", "--decoupled-attention", "--output", "/workspace/shared/x4-settings-points-union-evidence-20261012/text_input_host-normal"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {}}
+text host invalid PASS (calls=0 opens=0 closes=0)
+text host masked PASS (calls=32 opens=2 closes=2)
+text host visibility-edit PASS (calls=95 opens=3 closes=3)
+text host visibility-hardware PASS (calls=71 opens=3 closes=3)
+text host visibility-stale PASS (calls=40 opens=3 closes=3)
+text host visibility-home PASS (calls=35 opens=3 closes=3)
+text host visibility-back PASS (calls=35 opens=3 closes=3)
+text host visibility-close PASS (calls=28 opens=3 closes=3)
+text host reason-home PASS (calls=32 opens=2 closes=2)
+text host reason-back PASS (calls=32 opens=2 closes=2)
+text host reason-home-pending PASS (calls=33 opens=2 closes=2)
+text host reason-back-pending PASS (calls=33 opens=2 closes=2)
+text host reason-legacy-home PASS (calls=32 opens=2 closes=2)
+text host plain PASS (calls=30 opens=2 closes=2)
+text host pending PASS (calls=16 opens=1 closes=1)
+text host scene-fault PASS (calls=4 opens=1 closes=0)
+text host close-fault PASS (calls=9 opens=1 closes=0)
+text host snapshot-fault PASS (calls=11 opens=1 closes=0)
+text host keyboard-fault PASS (calls=10 opens=1 closes=0)
+text host held PASS (calls=28 opens=1 closes=1)
+text host attach-detach PASS (calls=49 opens=1 closes=1)
+text host gap PASS (calls=37 opens=1 closes=1)
+text host transient PASS (calls=36 opens=1 closes=1)
+text host drain PASS (calls=73 opens=1 closes=1)
+text host ascii PASS (calls=56 opens=1 closes=1)
+text host shortcuts PASS (calls=42 opens=1 closes=1)
+text host native-subscribe PASS (calls=1 opens=0 closes=0)
+text host native-scene-open PASS (calls=3 opens=1 closes=0)
+text host native-scene-update PASS (calls=13 opens=1 closes=0)
+text host native-scene-next PASS (calls=12 opens=1 closes=0)
+text host native-scene-snapshot PASS (calls=13 opens=1 closes=0)
+text host native-scene-close PASS (calls=10 opens=1 closes=1)
+text host native-unsubscribe PASS (calls=9 opens=1 closes=0)
+text host native-poll PASS (calls=9 opens=1 closes=0)
+text host native-next PASS (calls=10 opens=1 closes=0)
+text host native-snapshot PASS (calls=11 opens=1 closes=0)
+text host revision overflow suspend PASS (no I/O after retention)
+text host revision overflow action PASS (no I/O after retention)
+text host revision overflow value PASS (no I/O after retention)
+transport text and modal text-entry ABIs coexist PASS
+masked request uses only negotiated capability PASS
+masked request uses only negotiated capability PASS
+masked request uses only negotiated capability PASS
+masked request uses only negotiated capability PASS
+masked request uses only negotiated capability PASS
+text client legacy PASS
+text client short PASS
+text client bad-tag PASS
+text client bad-version PASS
+text client future-version PASS
+text client home PASS
+text client back PASS
+text client home-pending PASS
+text client unsolicited PASS
+text client home-editing PASS
+text client home-accepted PASS
+text client release-fault PASS
+text client attention-pending PASS
+text host visibility-edit PASS (calls=95 opens=3 closes=3)
+text host visibility-hardware PASS (calls=71 opens=3 closes=3)
+text host visibility-home PASS (calls=35 opens=3 closes=3)
+text host visibility-back PASS (calls=35 opens=3 closes=3)
+text host visibility-close PASS (calls=28 opens=3 closes=3)
