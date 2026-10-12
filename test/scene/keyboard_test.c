@@ -253,6 +253,25 @@ static void keyboard_invalid(void){
     }
     settle();key_tap(0,0);expect_key('Q');
 }
+static void keyboard_long(void){
+    const unsigned limits[]={72,127,128,240,255};
+    for(unsigned i=0;i<sizeof(limits)/sizeof(limits[0]);i++){
+        doc.nodes[0].flags=RISC_SCENE_KEYBOARD_EXTENDED;
+        doc.nodes[0].target=(limits[i]<<16)|limits[i];
+        memset(doc.nodes[0].text,'A',RISC_SCENE_TEXT-1);doc.nodes[0].text[RISC_SCENE_TEXT-1]=0;
+        acknowledge();key_tap(0,0);expect_key('Q');acknowledge();
+    }
+    unsigned before=calls;
+    for(unsigned i=0;i<5;i++){
+        risc_scene_document_v1 bad=doc;++bad.revision;
+        if(i==0)bad.nodes[0].target=(255u<<16)|256u;
+        if(i==1)bad.nodes[0].target=(256u<<16)|255u;
+        if(i==2)bad.nodes[0].target=(71u<<16)|71u;
+        if(i==3)bad.nodes[0].text[70]=0;
+        if(i==4)bad.nodes[0].target=240u; /* Length zero contradicts viewport. */
+        assert(api->update(NULL,session,&bad)==RISC_SCENE_INVALID&&calls==before);
+    }
+}
 static void keyboard_gesture(void){
     settle();unsigned x,y;key_center(0,0,&x,&y);risc_scene_event_v1 e;
     /* A down in the gap cannot release onto a neighboring key. */
@@ -409,6 +428,7 @@ int main(int argc,char **argv){
     else if(!strcmp(mode,"keyboard-hardware"))keyboard_hardware();
     else if(!strcmp(mode,"keyboard-press"))keyboard_press();
     else if(!strcmp(mode,"keyboard-invalid"))keyboard_invalid();
+    else if(!strcmp(mode,"keyboard-long"))keyboard_long();
     else if(!strcmp(mode,"keyboard-gesture"))keyboard_gesture();
     else if(!strcmp(mode,"keyboard-superseded"))keyboard_superseded();
     else if(!strcmp(mode,"keyboard-raster"))keyboard_raster(argc>3?argv[3]:NULL);

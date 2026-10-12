@@ -13,7 +13,7 @@
 static const risc_scene_api_v1 *scene;
 static const risc_usb_keyboard_api_v1 *keyboard;
 static risc_scene_document_v1 document;
-static risc_text_entry_state_v1_extended state;
+static risc_text_entry_state_v1_long state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
 static uint32_t capacity,page,request_flags;
 static bool started,active,closing,retained,connected,neutral,caps,changed,draining,revealed;
@@ -162,7 +162,7 @@ static int32_t close_owned(void){
 static int32_t open_checked(const char *label,const char *text,uint32_t limit,uint32_t flags,uint64_t *out){
     if(active)return RISC_TEXT_ENTRY_BUSY;
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
-    state=(risc_text_entry_state_v1_extended){.struct_size=sizeof(state),.revision=1};
+    state=(risc_text_entry_state_v1_long){.struct_size=sizeof(state),.revision=1};
     memcpy(state.text,text,strlen(text)+1);
     capacity=limit;request_flags=flags;page=0;last_sequence=0;connected=caps=closing=changed=draining=revealed=false;neutral=true;
     active=true;session=++serial;
@@ -198,6 +198,13 @@ static int32_t open_extended(void *c,const risc_text_entry_request_v1_extended *
     if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
        (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_EXTENDED_BYTES||
        !filename_bytes(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
+    return open_checked(request->label,request->text,request->capacity,request->reserved,out);
+}
+static int32_t open_long(void *c,const risc_text_entry_request_v1_long *request,uint64_t *out){
+    (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
+    if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
+       (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_LONG_BYTES||
+       !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
     return open_checked(request->label,request->text,request->capacity,request->reserved,out);
 }
 static int32_t poll_checked(uint32_t *presentation){
@@ -239,17 +246,26 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
 }
 static int32_t poll_extended(void *c,uint64_t s,risc_text_entry_state_v1_extended *out){
     (void)c;int32_t r=check(s);if(r)return r;
+    if(!out||out->struct_size!=sizeof(*out)||capacity>RISC_TEXT_ENTRY_EXTENDED_BYTES)return RISC_TEXT_ENTRY_INVALID;
+    if(closing)return RISC_TEXT_ENTRY_BUSY;
+    uint32_t presentation=0;r=poll_checked(&presentation);if(r)return r;
+    *out=(risc_text_entry_state_v1_extended){.struct_size=sizeof(*out),.state=state.state,.flags=state.flags|presentation,.revision=state.revision};
+    memcpy(out->text,state.text,sizeof(out->text));return RISC_TEXT_ENTRY_OK;
+}
+static int32_t poll_long(void *c,uint64_t s,risc_text_entry_state_v1_long *out){
+    (void)c;int32_t r=check(s);if(r)return r;
     if(!out||out->struct_size!=sizeof(*out))return RISC_TEXT_ENTRY_INVALID;
     if(closing)return RISC_TEXT_ENTRY_BUSY;
     uint32_t presentation=0;r=poll_checked(&presentation);if(r)return r;
     *out=state;out->flags|=presentation;return RISC_TEXT_ENTRY_OK;
 }
 static int32_t close_session(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
-static const risc_text_entry_api_v1_extended api={
-    {{{1,sizeof(api),NULL,open_session,poll_session,close_session},
-      RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION},
-     RISC_TEXT_ENTRY_MASKED_TAG,RISC_TEXT_ENTRY_MASKED_VERSION},
-    RISC_TEXT_ENTRY_EXTENDED_TAG,RISC_TEXT_ENTRY_EXTENDED_VERSION,open_extended,poll_extended};
+static const risc_text_entry_api_v1_long api={
+    {{{{1,sizeof(api),NULL,open_session,poll_session,close_session},
+       RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION},
+      RISC_TEXT_ENTRY_MASKED_TAG,RISC_TEXT_ENTRY_MASKED_VERSION},
+     RISC_TEXT_ENTRY_EXTENDED_TAG,RISC_TEXT_ENTRY_EXTENDED_VERSION,open_extended,poll_extended},
+    RISC_TEXT_ENTRY_LONG_TAG,RISC_TEXT_ENTRY_LONG_VERSION,open_long,poll_long};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||!deps||!count||count>2)return false;
     scene=NULL;keyboard=NULL;

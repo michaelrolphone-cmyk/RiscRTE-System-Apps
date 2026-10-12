@@ -1,0 +1,25 @@
+name: Watch color profile contract
+on:
+  push:
+    branches: [fix/watch-points-color-profile-20261012]
+  pull_request:
+    paths:
+      - 'lib/PortableApps/src/paper.inc'
+      - 'lib/PortableApps/src/quick_adapter.inc'
+      - 'lib/PortableApps/src/nova.inc'
+      - 'lib/PortableApps/src/foreground_adapter_open.inc'
+      - 'lib/PortableApps/fonts/watch-240-icons*'
+      - 'scripts/test_watch_color_profile.py'
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python scripts/test_watch_color_profile.py

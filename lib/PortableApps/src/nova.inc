@@ -4,7 +4,12 @@
 #if defined(PORTABLE_RTC_UTC8_DENVER) && defined(PORTABLE_RTC_WALL_TIME)
 #error "Select exactly one explicit RTC policy"
 #endif
+#ifdef PORTABLE_WATCH_FROZEN_ICONS
+/* Product-selected icon bytes from the delivered Watch contract. */
+#include "../fonts/watch-240-icons.inc"
+#else
 #include "../fonts/icons.inc"
+#endif
 #if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
 #include "../fonts/springboard_gamepad.inc"
 #endif

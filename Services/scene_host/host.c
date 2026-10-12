@@ -134,7 +134,7 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
             if(n->flags&RISC_SCENE_KEYBOARD_EXTENDED){
                 unsigned limit=n->target&65535u,length=n->target>>16;
-                if(limit>=128u||limit<RISC_SCENE_TEXT||length>limit||strlen(n->text)!=(length<RISC_SCENE_TEXT?length:RISC_SCENE_TEXT-1u))return false;
+                if(limit>RISC_SCENE_KEYBOARD_LONG_LIMIT||limit<RISC_SCENE_TEXT||length>limit||strlen(n->text)!=(length<RISC_SCENE_TEXT?length:RISC_SCENE_TEXT-1u))return false;
             }else if(n->target>=RISC_SCENE_TEXT)return false;
             if(!n->action||n->minimum!=0||n->maximum!=3||n->step!=1||n->value<0||n->value>3)return false;
             for(const unsigned char *p=(const unsigned char*)n->text;*p;p++)if(*p<32||*p>126)return false;

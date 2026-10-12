@@ -5,7 +5,17 @@
 #endif
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
+#ifndef PORTABLE_WATCH_COLOR_ONLY
 #include "quick_paper.inc"
+#else
+#ifdef ALARM_SERVICE_TAGGED_V2
+#define quick_alarm_output_modes() alarm_output_modes()
+#else
+#define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
+#endif
+#define quick_paper_capabilities() ((void)0)
+#define quick_paper_changed(a,b) ((void)(a),(void)(b),false)
+#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
 /* Copied explicit intent survives checked shutdown and policy/UI reloads. */
 static uint32_t quick_deferred_actions;
@@ -509,8 +519,11 @@ static bool quick_foreground(bool *consumed) {
 #endif
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
    if(dirty && portable_paper_frame_ready()) {
+#ifndef PORTABLE_WATCH_COLOR_ONLY
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
-    else if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
+    else
+#endif
+    if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
     /* Present can sample input while the panel is busy. Record only the state
      * rendered above; newer input must remain dirty for the next frame. */
     painted_state=quick.ui;

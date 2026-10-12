@@ -105,3 +105,33 @@ static inline const risc_text_entry_api_v1_extended *risc_text_entry_extended(co
         ext->extended_version==RISC_TEXT_ENTRY_EXTENDED_VERSION&&
         ext->open_extended&&ext->poll_extended?ext:NULL;
 }
+
+/* Opt-in longer printable-ASCII drafts. Capacity includes the NUL terminator;
+ * pass 241 for a 240-byte message. The complete extended ABI remains a frozen
+ * prefix, so providers/clients predating this suffix continue to interoperate.
+ * A missing or malformed suffix is unsupported, never a truncating fallback. */
+#define RISC_TEXT_ENTRY_LONG_BYTES 256u
+#define RISC_TEXT_ENTRY_LONG_TAG 0x544c4e47u
+#define RISC_TEXT_ENTRY_LONG_VERSION 1u
+typedef struct {
+    uint32_t api_version, struct_size, capacity, reserved;
+    char label[RISC_TEXT_ENTRY_LABEL];
+    char text[RISC_TEXT_ENTRY_LONG_BYTES];
+} risc_text_entry_request_v1_long;
+typedef struct {
+    uint32_t struct_size, state, flags, revision;
+    char text[RISC_TEXT_ENTRY_LONG_BYTES];
+} risc_text_entry_state_v1_long;
+typedef struct {
+    risc_text_entry_api_v1_extended base;
+    uint32_t long_tag, long_version;
+    int32_t (*open_long)(void *, const risc_text_entry_request_v1_long *, uint64_t *);
+    int32_t (*poll_long)(void *, uint64_t, risc_text_entry_state_v1_long *);
+} risc_text_entry_api_v1_long;
+static inline const risc_text_entry_api_v1_long *risc_text_entry_long(const risc_text_entry_api_v1 *api) {
+    if(!risc_text_entry_extended(api)||api->struct_size<sizeof(risc_text_entry_api_v1_long))return NULL;
+    const risc_text_entry_api_v1_long *ext=(const risc_text_entry_api_v1_long *)api;
+    return ext->long_tag==RISC_TEXT_ENTRY_LONG_TAG&&
+        ext->long_version==RISC_TEXT_ENTRY_LONG_VERSION&&
+        ext->open_long&&ext->poll_long?ext:NULL;
+}

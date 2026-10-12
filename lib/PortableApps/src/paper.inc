@@ -96,6 +96,11 @@ static bool pp_battery(uint8_t *percent,bool *charging) {
 }
 static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock,pp_battery};
 static bool pp_enabled(void) {
+#ifdef PORTABLE_WATCH_COLOR_ONLY
+  /* A product-selected 240x240 RGB565 Watch cannot expose the separate
+   * portrait Paper presentation. Keep generic builds capability-selected. */
+  return false;
+#else
   return ((width()>=400 && width()<=600 && height()>=600 && height()>width())
 #ifdef PORTABLE_DESK_LOCK_HOME
     /* The selected desk scene rotates the same native X4 surface. It must
@@ -105,6 +110,7 @@ static bool pp_enabled(void) {
     ) &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
+#endif
 }
 const paper_presentation *paper_presentation_get(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
