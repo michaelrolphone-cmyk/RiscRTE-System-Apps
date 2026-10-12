@@ -30,6 +30,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Generate and verify telemetry typography
+        run: |
+          python -m pip install Pillow==12.3.0
+          python scripts/generate_telemetry_fonts.py
+          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+          git diff --exit-code
       - name: Verify shared components and all presenter lifecycles
         run: |
           set -euo pipefail
@@ -45,7 +51,7 @@ jobs:
           python scripts/build_scene_services.py --runtime Runtime --output /tmp/reader-scene
       - uses: actions/upload-artifact@v4
         with:
-          name: reader-scene-036
+          name: reader-scene-041
           path: |
             /tmp/reader-scene/scene-host/
             /tmp/reader-evidence/

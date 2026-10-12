@@ -5,3 +5,6 @@ __pycache__/
 .pio/
 
 /.desk-deps/
+
+# Reproducibly generated telemetry typography
+/Services/scene_host/fonts/telemetry.inc
