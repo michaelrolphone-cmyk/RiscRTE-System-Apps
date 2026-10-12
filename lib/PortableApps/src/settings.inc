@@ -239,8 +239,18 @@ static void settings_render(uint32_t category,int32_t selected) {
 }
 /* Exactly one write per explicit Save/choice. Verification stays in raw RTC
  * coordinates and tolerates one ticking second/date boundary within250ms. */
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+#ifndef PORTABLE_ALARM_CLIENT
+#error "Clock-change Settings requires its foreground alarm client"
+#endif
+#include "AlarmClockChangeV1.h"
+#endif
 static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
   if(!calendar_valid(value)){editor_message="Invalid date or time";return false;}
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+  const alarm_clock_change_v1 *clock_control=alarm_clock_change_control(alarms.api);
+  if(!clock_control){editor_message="Alarm service update required";return false;}
+#endif
   uint32_t start=millis_now();if(failed)return false;
   if(!rtc->write(rtc->context,value)){editor_message="Write failed - check RTC";return false;}
   for(unsigned attempt=0;attempt<4;++attempt) {
@@ -248,7 +258,15 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
     uint32_t elapsed=millis_now()-start;if(failed || elapsed>250)break;
     if(read && calendar_valid(&actual) && actual.weekday==calendar_weekday(&actual)) {
       uint32_t wanted=calendar_seconds(value),got=calendar_seconds(&actual);
-      if(got>=wanted && got-wanted<=elapsed/1000+1)return true;
+      if(got>=wanted && got-wanted<=elapsed/1000+1) {
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+        int32_t result=clock_control->clock_changed(alarms.api->context,got);
+        if(result!=ALARM_PENDING && result!=ALARM_OK) {
+          editor_message="RTC saved; alarm sync failed";return false;
+        }
+#endif
+        return true;
+      }
     }
     if(attempt!=3)rt->yield_ms(20);
   }
