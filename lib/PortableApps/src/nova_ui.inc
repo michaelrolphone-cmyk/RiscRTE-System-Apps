@@ -1,7 +1,15 @@
 /* Settings is the visual authority: its unmodified Rajdhani/Orbitron glyphs,
  * palette and six-pixel rounded outlines are shared by portable utility apps. */
 #include "PortableNovaUi.h"
+#ifdef PORTABLE_NOVA_TEXT_FACES_012
+#if defined(PORTABLE_SETTINGS_APP) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#error "NOVA faces 0/1/2 profile excludes Settings/Wi-Fi/Updates full-face views"
+#endif
+/* Explicit product opt-in; preserve the generic six-face font by default. */
+#include "../settings_fonts/text-faces-012.inc"
+#else
 #include "../settings_fonts/text.inc"
+#endif
 static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NU_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
@@ -35,6 +43,9 @@ static void nu_rect(int x,int y,int w,int h,uint32_t rgb) {
 int portable_nova_measure(unsigned face,const char *s) {
   int n=0;if(!s || face>NOVA_FACE_ORBITRON_10)return 0;
   unsigned source=face==NOVA_FACE_ORBITRON_10?0u:face,scale=face==NOVA_FACE_ORBITRON_10?183u:256u;
+#ifdef PORTABLE_NOVA_TEXT_FACES_012
+  if(source>=sizeof(rps_text)/sizeof(rps_text[0])/95u)return 0;
+#endif
   for(unsigned i=0;i<96 && s[i];i++){unsigned c=(unsigned char)s[i];if(c<32 || c>126)c='?';n+=(int)(rps_text[source*95+c-32].advance_q4*scale/256u);}
   return (n+15)/16;
 }
@@ -44,6 +55,9 @@ void portable_nova_text(unsigned face,int x,int y,int max_width,const char *s,ui
 #endif
   if(!s || face>NOVA_FACE_ORBITRON_10 || max_width<=0)return;
   unsigned source=face==NOVA_FACE_ORBITRON_10?0u:face,scale=face==NOVA_FACE_ORBITRON_10?183u:256u;
+#ifdef PORTABLE_NOVA_TEXT_FACES_012
+  if(source>=sizeof(rps_text)/sizeof(rps_text[0])/95u)return;
+#endif
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
     unsigned c=(unsigned char)s[k];if(c<32 || c>126)c='?';const rps_glyph *g=&rps_text[source*95+c-32];
@@ -130,6 +144,9 @@ bool portable_nova_hit(int x,int y,int left,int top,int w,int h) {
 }
 
 bool portable_nova_wrap(unsigned face,int x,int y,int w,int line_height,unsigned max_lines,const char *s,uint32_t color) {
+#ifdef PORTABLE_NOVA_TEXT_FACES_012
+  if(face>=sizeof(rps_text)/sizeof(rps_text[0])/95u)return false;
+#endif
   if(!s || face>5 || w<=0 || line_height<=0 || max_lines<1 || max_lines>4)return false;
   unsigned at=0;
   for(unsigned row=0;row<max_lines && s[at] && at<96;row++) {

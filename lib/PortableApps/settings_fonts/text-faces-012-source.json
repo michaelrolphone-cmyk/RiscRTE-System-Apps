@@ -1,0 +1,28 @@
+{
+  "description": "Exact byte-and-metric subset of RiscPortableSettingsText; no rerasterization.",
+  "selection_macro": "PORTABLE_NOVA_TEXT_FACES_012",
+  "source": "text.inc",
+  "source_sha256": "8453a3f7c123799354a0ff4246dba420de2a612f421d6d9de9bf4c976073b449",
+  "generator": "scripts/generate_nova_text_faces_012.py",
+  "faces": [
+    0,
+    1,
+    2
+  ],
+  "derived_face": {
+    "6": "Original face 0 at the unchanged 183/256 renderer scale"
+  },
+  "codepoints": {
+    "first": 32,
+    "last": 126,
+    "count_per_face": 95
+  },
+  "glyph_count": 285,
+  "license": "SIL OFL 1.1",
+  "source_attribution": "SOURCES.json",
+  "license_files": [
+    "LICENSE-Orbitron.txt",
+    "LICENSE-Rajdhani.txt"
+  ],
+  "subset_sha256": "5aa2c530cd0aaf9281e4b07f0c7188c8f42bded3a303feb058d33c096b46548d"
+}
