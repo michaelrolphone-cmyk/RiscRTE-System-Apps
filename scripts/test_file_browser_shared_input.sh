@@ -21,5 +21,5 @@ for profile in rgb paper paper-scroll;do
  if [[ "$profile" == paper-scroll ]];then selected+=(-DPORTABLE_TOUCH_SCROLL);fi
  "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -Isdk/app -I../runtime/sdk/driver -Wno-unused-function -c test/native_apps/file_browser_shared_input_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
- for scenario in entry-accept entry-cancel entry-home entry-pending entry-home-pending local-rename local-nonascii local-filter local-mkdir local-cancel local-home local-invalid local-long local-unavailable remote-rename remote-mkdir remote-cancel remote-home remote-invalid remote-long remote-unavailable remote-expiry local-retained;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
+ for scenario in entry-accept entry-cancel entry-home entry-pending entry-home-pending local-rename local-nonascii local-filter local-mkdir local-cancel local-home local-invalid local-long local-unavailable remote-rename remote-actions remote-mkdir remote-cancel remote-home remote-invalid remote-long remote-unavailable remote-expiry local-retained;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
 done

@@ -102,5 +102,17 @@ int main(int argc,char**argv){
    text_open_action("renamed.txt");text_replace("cancel.txt");text_finish(RISC_SCENE_KEY_CANCEL);text_open_action("renamed.txt");text_replace("final.txt");text_finish(RISC_SCENE_KEY_DONE);mount_idle();assert(fb_mode==FB_LIST);
   }
  }
+ if(!strcmp(scenario,"remote-actions")){
+  /* Return from the shared host into the ordinary full Files workflow. */
+  fb_mode=FB_OPTIONS;fb_choice=8;fb_option(8);assert(fb_text_active&&fbm_new_directory);text_replace("Created");text_finish(RISC_SCENE_KEY_DONE);mount_idle();assert(peer_backend_remote_exists("/Created"));
+  mount_action("final.txt",2);mount_idle();assert(fb_mode==FB_PREVIEW&&fb_preview_count==32);assert(!fb_back());assert(!fb_back());
+  mount_action("final.txt",5);mount_idle();assert(fb_mode==FB_DESTINATION&&fb_source_index==2);assert(fbx_swap()&&fb_storage_index==0);strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();mount_idle();assert(peer_backend_local_exists("/Downloads/final.txt")&&fb_storage_index==2&&fb_mode==FB_LIST);
+  /* Replacement still requires the normal explicit confirmation. */
+  mount_action("final.txt",5);mount_idle();assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();assert(fb_mode==FB_DESTINATION&&strstr(fb_status,"already exists")&&!fbm_operation);fbx_cancel();mount_idle();assert(fb_storage_index==2);
+  assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));mount_action("final.txt",5);assert(fbx_swap());strcpy(fb_path,"/");assert(!fb_load(0));mount_idle();fbx_commit_destination();assert(fb_mode==FB_REPLACE);fb_choice=0;fbx_activate();assert(fb_mode==FB_DESTINATION);fbx_commit_destination();assert(fb_mode==FB_REPLACE);fb_choice=1;fbx_activate();mount_idle();assert(fb_mode==FB_LIST&&fb_storage_index==0);assert(fbx_swap());strcpy(fb_path,"/");assert(!fb_load(0));mount_idle();
+  mount_action("final.txt",4);mount_idle();fb_choice=mount_find("Created");fbx_activate();mount_idle();fbx_commit_destination();mount_idle();assert(peer_backend_remote_exists("/Created/final.txt")&&!peer_backend_remote_exists("/final.txt"));
+  fb_choice=mount_find("Created");fb_activate_file(fb_choice);mount_idle();mount_action("final.txt",6);assert(fb_mode==FB_DELETE);fb_choice=0;fbx_activate();assert(fb_mode==FB_ACTIONS&&peer_backend_remote_exists("/Created/final.txt"));fb_choice=6;fbx_activate();fb_choice=1;fbx_activate();mount_idle();assert(!peer_backend_remote_exists("/Created/final.txt"));
+  assert(!fb_back());mount_idle();fb_choice=mount_find("Documents");fb_activate_file(fb_choice);mount_idle();fb_choice=mount_find("Nested");fb_activate_file(fb_choice);mount_idle();mount_action("note.txt",5);mount_idle();assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();assert(fbm_operation==FBM_COPY);fbx_cancel();assert(fbm_operation==FBM_CANCEL);mount_idle();assert(!peer_backend_local_exists("/Downloads/note.txt"));
+ }
  text_clean();printf("Files shared text %s: drafts, mutation boundary, checked host close and browser restoration PASS\n",scenario);return 0;
 }
