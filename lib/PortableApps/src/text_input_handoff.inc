@@ -135,10 +135,21 @@ int portable_text_adapter_attention(void) {
      * alarm over a host lease; a pending alarm instead cancels the editor. */
     if(!alarm_audio_pump()||alarms.status.output_uncertain)return text_input_failure();
     if(!text_input_alive())return text_input_failure();
-    return portable_alarm_owned(&alarms)||alarms.status.state==ALARM_STATE_BLOCKED||alarms.status.state==ALARM_STATE_CUE;
-#else
-    return 0;
+    if(portable_alarm_owned(&alarms)||alarms.status.state==ALARM_STATE_BLOCKED||alarms.status.state==ALARM_STATE_CUE)return 1;
 #endif
+#if defined(PORTABLE_INPUT_NAVIGATION) && defined(PORTABLE_INPUT_NAVIGATION_LOCAL)
+    /* Touch-only Watch scenes cannot poll the app-owned PMU bridge. Poll its
+     * bounded copied frame here; ordinary shared navigation stays host-owned. */
+    if(navigation_ready) {
+        risc_input_navigation_frame_v1 frame={0};
+        bool ok=navigation->poll(navigation->context,&frame);
+        if(!text_input_alive()||!ok)return text_input_failure();
+        if(!navigation_neutral) {
+            if(!frame.buttons&&!frame.pressed&&!frame.released)navigation_neutral=true;
+        } else if(frame.pressed&RISC_NAV_BACK)return 1;
+    }
+#endif
+    return 0;
 }
 int portable_text_adapter_resume(void) {
     if(!text_input_alive())return text_input_failure();

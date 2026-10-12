@@ -1,0 +1,26 @@
+name: Shared text local navigation
+on:
+  push:
+    branches: [work/points-local-navigation-policy-20261012]
+  pull_request:
+    paths:
+      - 'lib/PortableApps/src/text_input_handoff.inc'
+      - 'test/text_input/local_navigation_attention_test.c'
+      - 'scripts/test_text_input_local_navigation.py'
+      - '.github/workflows/text-local-navigation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  attention:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: python3 scripts/test_text_input_local_navigation.py --output build/local-navigation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-navigation-attention-evidence
+          path: build/local-navigation/result.json
