@@ -39,13 +39,18 @@ static bool fbx_tree_allowed(const char *root){
   fb_runtime->yield_ms(1);
  }
 }
-static bool fbx_rename_available(void){const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);return ext&&ext->rename;}
+static bool fbx_rename_available(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fb_storage_index==2)return fbm_can_rename();
+#endif
+const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);return ext&&ext->rename;}
 #endif
 static bool fbx_exists(const risc_storage_volume_api_v1 *v,const char *path){uint64_t size;bool dir;return v->stat(v->context,path,&size,&dir);}
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
 static void fbx_success(const char *message){fb_mode=FB_LIST;fb_query[0]=0;(void)fb_load(0);fb_message(message);}
 #endif
-static bool fbx_swap(void) {
+static bool fbx_swap_local(void);
+static bool fbx_swap_local_scoped(void) {
 #ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
  if(!portable_file_browser_safe()){fb_message(fb_publication_unknown?"Copy publication unknown; cleanup retained. Back retries cleanup.":"Close failed. Back retries safely.");return false;}
  if(!fb_other_volume){
@@ -64,6 +69,17 @@ static bool fbx_swap(void) {
  fb_message("No secondary volume configured");return false;
 #endif
 }
+static bool fbx_swap_local(void) {
+ if(!fb_service_begin())return false;
+ bool result=fbx_swap_local_scoped();
+ return fb_service_end()&&result;
+}
+static bool fbx_swap(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted)return fbm_swap();
+#endif
+ return fbx_swap_local();
+}
 static void fbx_switch(void){if(fbx_swap()){strcpy(fb_path,"/");fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);}else {fb_notice_return=FB_LIST;fb_mode=FB_NOTICE;fb_dirty=true;}}
 static void fbx_actions(void){
  if(!fb_loaded||fb_choice>=fb_count){fb_mode=FB_LIST;fb_message("Select an item first");return;}
@@ -72,7 +88,12 @@ static void fbx_actions(void){
  fb_size=fb_selected.size;fb_choice=0;fb_action_page=0;fb_mode=FB_ACTIONS;fb_dirty=true;
 }
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
-static void fbx_rename(void){
+static void fbx_rename(void);
+static void fbx_rename_scoped(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_new_directory&&fb_storage_index!=2){fbm_local_mkdir();return;}
+ if(fb_storage_index==2){fbm_rename();return;}
+#endif
  if(risc_protected_settings_path(fb_file_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
  if(!fbx_rename_available()){fb_message("Rename unavailable on this volume");return;}
@@ -86,10 +107,18 @@ static void fbx_rename(void){
  if(!ext->rename(fb_volume->context,fb_file_path,destination)){fb_error("Rename failed");return;}
  fbx_success("Renamed successfully");
 }
+static void fbx_rename(void) {
+ bool scope=fb_service_local();if(scope&&!fb_service_begin())return;
+ fbx_rename_scoped();
+ if(scope)(void)fb_service_end();
+}
 #else
 static void fbx_rename(void){fb_message("Rename unavailable in this profile");}
 #endif
 static void fbx_cancel(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&fbm_back())return;
+#endif
  /* The paper destination's Cancel button reaches here directly. Retry retained
   * closes before switching volumes, with their original commit/abort intent. */
  if(!portable_file_browser_safe()&&!portable_file_browser_close()){
@@ -97,10 +126,19 @@ static void fbx_cancel(void){
   else fb_error("Close failed. Cancel retries safely.");
   return;
  }
- if(fb_storage_index!=fb_source_index&&!fbx_swap())return;
+ if(fb_storage_index!=fb_source_index&&(
+#ifdef PORTABLE_FILE_PEER
+ fbm_mounted?!fbm_select(fb_source_index):!fbx_swap()
+#else
+ !fbx_swap()
+#endif
+ ))return;
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_publication_unknown?"Copy publication unknown. Reload destination.":fb_moving?"Move cancelled":"Copy cancelled");
 }
 static void fbx_destination(bool move){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&!fbm_destination(move))return;
+#endif
  if(risc_protected_settings_path(fb_file_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
 #ifdef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
@@ -116,7 +154,8 @@ static void fbx_destination(bool move){
 #endif
  fb_mode=FB_DESTINATION;fb_query[0]=0;strcpy(fb_path,"/");(void)fb_load(0);
 }
-static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,const risc_storage_volume_api_v1 *target,const char *to){
+static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,const risc_storage_volume_api_v1 *target,const char *to);
+static bool fbx_copy_scoped(const risc_storage_volume_api_v1 *source,const char *from,const risc_storage_volume_api_v1 *target,const char *to){
  fb_publication_unknown=false;
  if(risc_protected_settings_path(from)||risc_protected_settings_path(to)){fb_message("Protected system settings");return false;}
  if(!fbx_write_available(target)){fb_message("Destination is read-only");return false;}
@@ -148,7 +187,16 @@ static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,c
  }
  return true;
 }
-static void fbx_commit_destination(void){
+static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,const risc_storage_volume_api_v1 *target,const char *to) {
+ if(!fb_service_begin())return false;
+ bool result=fbx_copy_scoped(source,from,target,to);
+ return fb_service_end()&&result;
+}
+static void fbx_commit_destination(void);
+static void fbx_commit_destination_scoped(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&(fb_source_index==2||fb_storage_index==2)){(void)fbm_commit_destination();return;}
+#endif
  if(risc_protected_settings_path(fb_source_path)||risc_protected_settings_path(fb_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
  char destination[FB_PATH_CAP];if(!fb_join(fb_path,fb_selected.name,destination,sizeof(destination))){fb_message("Destination path too long");return;}
@@ -171,8 +219,19 @@ static void fbx_commit_destination(void){
 #endif
  okay=fbx_copy(same?fb_volume:fb_other_volume,fb_source_path,fb_volume,destination);
  if(!okay)return;
- if(fb_storage_index!=fb_source_index&&!fbx_swap())return;
+ if(fb_storage_index!=fb_source_index&&(
+#ifdef PORTABLE_FILE_PEER
+ fbm_mounted?!fbm_select(fb_source_index):!fbx_swap()
+#else
+ !fbx_swap()
+#endif
+ ))return;
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_moving?"Moved successfully":"Copied successfully");
+}
+static void fbx_commit_destination(void) {
+ if(!fb_service_begin())return;
+ fbx_commit_destination_scoped();
+ (void)fb_service_end();
 }
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
 /* Same recursive-folder delete operation as Reader, using bounded path memory.
@@ -199,14 +258,24 @@ static bool fbx_remove_tree(const char *root){
   fb_runtime->yield_ms(1);
  }
 }
-static void fbx_delete(void){
+static void fbx_delete(void);
+static void fbx_delete_scoped(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fb_storage_index==2){fbm_delete();return;}
+#endif
  if(!fb_ready())return;
  if(!fb_volume->remove){fbx_notice("Delete unavailable on this volume");return;}
  fb_message("Deleting selected item...");fb_draw();
  if(fbx_remove_tree(fb_file_path))fbx_success("Deleted successfully");
  else {fb_notice_return=FB_LIST;fb_mode=FB_NOTICE;fb_error(portable_file_browser_safe()?"Delete stopped; some items may remain":"Close failed. Back retries safely.");}
 }
-static bool fbx_handlers(void){
+static void fbx_delete(void) {
+ bool scope=fb_service_local();if(scope&&!fb_service_begin())return;
+ fbx_delete_scoped();
+ if(scope)(void)fb_service_end();
+}
+static bool fbx_handlers(void);
+static bool fbx_handlers_scoped(void){
 #ifdef PORTABLE_FILE_BROWSER_HANDLERS
  if(fb_handler_api)return true;
  if(fb_handler_grant.api){fb_message("File handler service release failed");return false;}
@@ -220,8 +289,14 @@ static bool fbx_handlers(void){
 #endif
  fb_message("File handler service unavailable");return false;
 }
+static bool fbx_handlers(void) {
+ if(!fb_service_begin())return false;
+ bool result=fbx_handlers_scoped();
+ return fb_service_end()&&result;
+}
 #endif
-static void fbx_resume_result(void){
+static void fbx_resume_result(void);
+static void fbx_resume_result_scoped(void){
 #ifdef PORTABLE_FILE_BROWSER_HANDLERS
  char previous[sizeof(fb_status)];strcpy(previous,fb_status);bool feedback=fb_feedback;
  if(!fbx_handlers()){strcpy(fb_status,previous);fb_feedback=feedback;return;}
@@ -232,11 +307,22 @@ static void fbx_resume_result(void){
  }
 #endif
 }
+static void fbx_resume_result(void) {
+ if(!fb_service_begin())return;
+ fbx_resume_result_scoped();
+ (void)fb_service_end();
+}
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
-static bool fbx_handler_page(void){
+static bool fbx_handler_page(void);
+static bool fbx_handler_page_scoped(void){
  unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;
  for(unsigned i=0;i<n;i++){t5_file_handler_t *h=&fb_handlers[i];memset(h,0,sizeof(*h));if(!fb_handler_api->handler_get(fb_handler_path,fb_handler_offset+i,h)||!memchr(h->app_id,0,sizeof(h->app_id))||!h->app_id[0]||!memchr(h->display_name,0,sizeof(h->display_name))||!memchr(h->icon,0,sizeof(h->icon))||h->kind>T5_FILE_HANDLER_SYSTEM_READER){fbx_notice("Invalid file handler data");return false;}}
  fb_choice=0;fb_mode=FB_HANDLERS;fb_dirty=true;return true;
+}
+static bool fbx_handler_page(void) {
+ if(!fb_service_begin())return false;
+ bool result=fbx_handler_page_scoped();
+ return fb_service_end()&&result;
 }
 static void fbx_dispatch(unsigned selected){
  unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;if(selected>=n)return;
@@ -246,12 +332,18 @@ static void fbx_dispatch(unsigned selected){
  /* Reader's system-reader dispatch is a separate browser service, not an
   * invented native launch. A composed broker may expose normal app handlers. */
  if(handler.kind!=T5_FILE_HANDLER_APP){fbx_notice("System document reader unavailable");return;}
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted){fbm_defer_dispatch(selected);return;}
+#endif
  if(!fb_handler_api->open_request(fb_handler_path,handler.app_id,UINT64_C(0x4642524f57534552))){fbx_notice("File handler launch failed");return;}
  /* Successful request is terminal even if capability release must be retried. */
  if(!portable_file_browser_close()){if(PORTABLE_APP_RETAINED())return;fb_runtime->diagnostic("FILE_BROWSER handler cleanup-unconfirmed; invocation retained");for(;;)fb_runtime->yield_ms(50);}
  fb_terminal=true;
 }
 static void fbx_open(bool choose){
+#ifdef PORTABLE_FILE_PEER
+ if(fb_storage_index==2){fbm_open(choose);return;}
+#endif
  if(risc_protected_settings_path(fb_file_path)){fbx_notice("Protected system settings");return;}
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
  if(fb_storage_index){fbx_notice("Copy this file to primary storage before opening");return;}
@@ -263,12 +355,20 @@ static void fbx_open(bool choose){
  if(strlen(fb_file_path)+3>=sizeof(fb_handler_path)){fbx_notice("File handler path is too long");return;}
  strcpy(fb_handler_path,"/sd");strcpy(fb_handler_path+3,fb_file_path);
  if(!fbx_handlers()){fb_notice_return=FB_ACTIONS;fb_mode=FB_NOTICE;return;}
+ if(!fb_service_begin())return;
  fb_handler_count=fb_handler_api->handler_count(fb_handler_path);if(fb_handler_count>128)fb_handler_count=128;
+ if(!fb_service_end())return;
  if(!fb_handler_count){fbx_notice("No declared application for this file type");return;}
  fb_handler_offset=0;if(fbx_handler_page()&&!choose&&fb_handler_count==1)fbx_dispatch(0);
 }
 #endif
 static void fbx_activate(void){
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&fbm_busy())return;
+#endif
+#ifdef PORTABLE_FILE_PEER
+ if(fb_mode==FB_REPLACE){if(fb_choice)fbm_replace_confirm();else {fb_mode=FB_DESTINATION;fb_choice=0;}return;}
+#endif
  if(fb_mode==FB_NOTICE){fb_mode=fb_notice_return;fb_choice=0;return;}
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  if(fb_mode==FB_RENAME){fb_filter_key(fb_choice);return;}
@@ -289,7 +389,11 @@ static void fbx_activate(void){
   case 3:if(!fbx_rename_available()){fbx_notice("Rename unavailable on this volume");break;}strcpy(fb_editor,fb_selected.name);fb_key_page=PWK_INITIAL_PAGE;fbp_key_page=0;fb_choice=0;fb_mode=FB_RENAME;fb_message("Done renames / Cancel keeps original");break;
   case 4:fbx_destination(true);break;
   case 5:fbx_destination(false);break;
-  case 6:if(!fb_volume->remove){fbx_notice("Delete unavailable on this volume");break;}fb_mode=FB_DELETE;fb_choice=0;fb_message("Deletion cannot be undone");break;
+  case 6:if(!fb_volume->remove
+#ifdef PORTABLE_FILE_PEER
+ &&!(fb_storage_index==2&&fbm_can_delete())
+#endif
+ ){fbx_notice("Delete unavailable on this volume");break;}fb_mode=FB_DELETE;fb_choice=0;fb_message("Deletion cannot be undone");break;
  }
 #endif
 }
@@ -298,6 +402,6 @@ static void fbx_move(int direction){
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  if(fb_mode==FB_HANDLERS){unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;if(direction>0&&fb_choice+1>=n){if(fb_handler_offset+n<fb_handler_count){fb_handler_offset+=n;(void)fbx_handler_page();}}else if(direction<0&&!fb_choice){if(fb_handler_offset){fb_handler_offset-=fb_page_rows;(void)fbx_handler_page();}}else fb_choice=(unsigned)((int)fb_choice+direction);fb_dirty=true;return;}
 #endif
- unsigned count=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_mode==FB_RENAME?PWK_COUNT:fb_mode==FB_DELETE?2:1;
+ unsigned count=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_mode==FB_RENAME?PWK_COUNT:(fb_mode==FB_DELETE||fb_mode==FB_REPLACE)?2:1;
  fb_choice=(fb_choice+count+(unsigned)direction)%count;fb_action_page=fb_choice/fb_page_rows;fb_dirty=true;
 }

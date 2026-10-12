@@ -40,7 +40,7 @@ static void fbp_footer(void) {
  for(unsigned i=0;i<4;i++)fbp_button(32+(int)i*(width+8),fbp_h()-112,width,88,names[i],icons[i],i==2);
 }
 static void fbp_management(void) {
- fbp_text(32,28,fbp_w()-152,fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_DELETE?"DELETE ITEM":fb_mode==FB_HANDLERS?"OPEN WITH":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS",true,true,false);
+ fbp_text(32,28,fbp_w()-152,fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_REPLACE?"REPLACE FILE":fb_mode==FB_DELETE?"DELETE ITEM":fb_mode==FB_HANDLERS?"OPEN WITH":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS",true,true,false);
  fbp_text(32,72,fbp_w()-64,fb_mode==FB_DESTINATION?fb_path:fb_selected.name,false,true,true);fb_app->fill_rect(32,106,fbp_w()-64,3,true);
  if(fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS){
   unsigned start=fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0,total=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_handler_count-fb_handler_offset;
@@ -58,15 +58,15 @@ static void fbp_management(void) {
   fbp_text(32,fbp_h()-146,fbp_w()-64,fb_status,false,true,false);
   const char *labels[]={"CANCEL","UP","HERE","NEXT"};int w=(fbp_w()-88)/4;
   for(unsigned i=0;i<4;i++)fbp_button(32+(int)i*(w+8),fbp_h()-112,w,88,labels[i],NULL,i==2);
- }else if(fb_mode==FB_DELETE){
-  fbp_wrap(32,144,fbp_w()-64,4,fb_selected.is_directory?"Permanently delete this folder and all of its contents?":"Permanently delete this file?",true);
+ }else if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){
+  fbp_wrap(32,144,fbp_w()-64,4,fb_mode==FB_REPLACE?"Replace the existing destination file? Its current revision will be checked.":fb_selected.is_directory?"Permanently delete this folder and all of its contents?":"Permanently delete this file?",true);
 #ifdef PORTABLE_TOUCH_SCROLL
   fbp_wrap(32,fbp_h()<700?272:320,fbp_w()-64,fbp_h()<700?3:5,fb_selected.name,true);
   fbp_wrap(32,fbp_h()-160,fbp_w()-64,1,"This cannot be undone.",true);
 #else
   fbp_wrap(32,320,fbp_w()-64,5,fb_selected.name,true);fbp_wrap(32,512,fbp_w()-64,3,"This cannot be undone.",true);
 #endif
-  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,fb_choice==0);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,"DELETE",NULL,fb_choice==1);
+  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,fb_choice==0);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,fb_mode==FB_REPLACE?"REPLACE":"DELETE",NULL,fb_choice==1);
  }else {fbp_wrap(32,144,fbp_w()-64,12,fb_status,true);fbp_button(32,fbp_h()-112,fbp_w()-64,88,"BACK",NULL,false);}
 }
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -132,6 +132,9 @@ static void fbp_draw(void) {
 #endif
 }
 static bool fbp_touch(int x,int y) {
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&fbm_busy()){if(x>=32&&x<32+(fbp_w()-88)/4&&y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING)return fsh_touch(x,y);
 #endif
@@ -148,7 +151,7 @@ static bool fbp_touch(int x,int y) {
    if(col<5&&(x-32)%width<width-3&&key<keys&&c<=126){fb_key_page=(c-32)/32;fb_filter_key((c-32)%32);}}
   return false;
  }
- if(fb_mode==FB_DELETE){if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;fb_choice=x<fbp_w()/2?0:1;fbx_activate();fb_dirty=true;}return false;}
+ if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;fb_choice=x<fbp_w()/2?0:1;fbx_activate();fb_dirty=true;}return false;}
  if(fb_mode==FB_NOTICE){if(y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
  if(fb_mode==FB_DESTINATION){
   if(!fb_moving&&x>=fbp_w()-120&&y>=8&&y<96){if(fbx_swap()){strcpy(fb_path,"/");(void)fb_load(0);}return false;}

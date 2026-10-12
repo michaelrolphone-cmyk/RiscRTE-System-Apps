@@ -118,12 +118,17 @@ bool Transaction::escaped(const char*s,bool uri){
 void Transaction::response(unsigned code,const char*type,size_t representationSize){
  if(!valid())return;
  status_=code;const size_t size=representationSize==SIZE_MAX?outputSize_:representationSize;
+ bool writable=false;
+ for(unsigned i=0;i<count_;++i)if(catalog_[i].writable&&!risc_protected_settings_path(catalog_[i].path)){
+  const size_t n=std::strlen(request_.path);if(!std::strcmp(request_.path,"/")||!std::strcmp(request_.path,catalog_[i].path)||(!std::strncmp(request_.path,catalog_[i].path,n)&&catalog_[i].path[n]=='/')){writable=true;break;}
+ }
+ const char*allow=writable?"Allow: OPTIONS, GET, HEAD, PROPFIND, PUT\r\n":"Allow: OPTIONS, GET, HEAD, PROPFIND\r\n";
  char length[64]{};
  if(code!=204&&code!=304)std::snprintf(length,sizeof(length),"Content-Length: %zu\r\n",size);
  const int n=std::snprintf(header_,sizeof(header_),
   "HTTP/1.1 %u %s\r\nContent-Type: %s\r\n%sConnection: close\r\nCache-Control: no-store\r\n%s%s%s%s%s%s%s\r\n",
   code,reason(code),type,length,etag_[0]?"ETag: ":"",etag_,etag_[0]?"\r\n":"",
-  (code==405||!std::strcmp(request_.method,"OPTIONS"))?"Allow: OPTIONS, GET, HEAD, PROPFIND, PUT\r\n":"",
+  (code==405||!std::strcmp(request_.method,"OPTIONS"))?allow:"",
   code==401?"WWW-Authenticate: ":"",code==401?challenge_:"",code==401?"\r\n":"");
  if(n<0||size_t(n)>=sizeof(header_)){state_=State::Retained;return;}headerSize_=n;state_=State::Ready;
 }

@@ -1,6 +1,6 @@
 /* Compact color presentation of the shared, capability-checked operations. */
 static void fbr_draw(void) {
- portable_nova_begin();portable_nova_header(fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_DELETE?"DELETE":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS");
+ portable_nova_begin();portable_nova_header(fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_REPLACE?"REPLACE":fb_mode==FB_DELETE?"DELETE":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS");
  portable_nova_text(3,18,47,204,fb_mode==FB_DESTINATION?fb_path:fb_selected.name,NOVA_CYAN);
  if(fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS||fb_mode==FB_DESTINATION) {
   unsigned start=fb_mode==FB_ACTIONS?fb_action_page*2:0;
@@ -21,14 +21,14 @@ static void fbr_draw(void) {
   }
  } else {
   portable_nova_wrap(1,18,68,204,18,6,fb_mode==FB_DELETE?"Delete this item permanently? This cannot be undone.":fb_status,NOVA_WHITE);
-  if(fb_mode==FB_DELETE){portable_nova_button(16,188,100,44,"Cancel",fb_choice==0);portable_nova_button(124,188,100,44,"Delete",fb_choice==1);}
+  if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){portable_nova_button(16,188,100,44,"Cancel",fb_choice==0);portable_nova_button(124,188,100,44,fb_mode==FB_REPLACE?"Replace":"Delete",fb_choice==1);}
   else portable_nova_button(16,188,208,44,"Back",false);
  }
  fb_app->present(false);fb_dirty=false;
 }
 static bool fbr_touch(int x,int y) {
  if(fb_mode==FB_NOTICE){if(x>=16&&x<224&&y>=188&&y<232)return fb_back();return false;}
- if(fb_mode==FB_DELETE){if(y>=188&&y<232&&((x>=16&&x<116)||(x>=124&&x<224))){fb_choice=x<116?0:1;fbx_activate();fb_dirty=true;}return false;}
+ if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){if(y>=188&&y<232&&((x>=16&&x<116)||(x>=124&&x<224))){fb_choice=x<116?0:1;fbx_activate();fb_dirty=true;}return false;}
  if(fb_mode==FB_DESTINATION) {
   if(!fb_moving&&x>=184&&y<44){if(fbx_swap()){strcpy(fb_path,"/");(void)fb_load(0);}return false;}
   if(y>=188&&y<232&&x>=16){unsigned at=(unsigned)(x-16)/54;if(at<4&&(x-16)%54<48){

@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <new>
 using namespace RiscWebDav;
+static_assert(uint32_t(PEER_CAP_LIST)==Client::List&&uint32_t(PEER_CAP_READ)==Client::Read&&uint32_t(PEER_CAP_HEAD)==Client::Head&&uint32_t(PEER_CAP_PUT)==Client::Put&&uint32_t(PEER_CAP_DELETE)==Client::Delete&&uint32_t(PEER_CAP_MKCOL)==Client::Mkcol&&uint32_t(PEER_CAP_MOVE)==Client::Move&&uint32_t(PEER_CAP_COPY)==Client::Copy,"Peer capability ABI");
+static_assert(PORTABLE_PEER_PREVIEW_MAX==RemoteVolume::PreviewMax,"Peer preview bound");
 struct portable_peer_files {
  const risc_runtime_api_v1*runtime;
 portable_peer_hooks hooks;
@@ -23,17 +25,17 @@ risc_bluetooth_session_setup_status_v1 setup{};
  portable_peer_status status{};
 uint8_t random[16]{};
 uint64_t token=0,now=0,copiedAt=0,startedAt=0;
- enum class Step{Off,Tcp,Ble,Discover,Entropy,Random,ReleaseEntropy,Scan,ReadDescriptor,ReadNetwork,CloseBle,ReleaseBle,Wifi,Store,Join,Network,Authenticate,Handshake,Browse,Operation,StopRemote,StopClient,StopBle,CloseNetwork,StopGrants}step=Step::Off;
- enum class Command{None,Select,Confirm,List,Download,Upload,Mutate}command=Command::None;
+ enum class Step{Off,Tcp,Ble,Discover,Entropy,Random,ReleaseEntropy,Scan,ReadDescriptor,ReadNetwork,CloseBle,ReleaseBle,Wifi,Store,Join,Network,Authenticate,Handshake,Capabilities,Browse,Operation,StopRemote,StopClient,StopBle,CloseNetwork,StopGrants}step=Step::Off;
+ enum class Command{None,Select,Confirm,List,Preview,Download,Upload,Mutate}command=Command::None;
  uint32_t selected=0,generation=0,number=0;
-bool replace=false,accept=false,stopping=false;
+bool replace=false,accept=false,stopping=false,cancelRequested=false;size_t previewLimit=0;uint64_t previewOffset=0;
 unsigned scanIndex=0;
  Step tracedStep=Step::Off;
  unsigned tracedState=~0u,tracedBroker=~0u;
  int tracedResult=0;
  const char*tracedOperation=nullptr;
  static const char*stepName(Step s){
-  static const char*const names[]={"off","tcp","ble","discover","entropy","random","release-entropy","scan","read-descriptor","read-network","close-ble","release-ble","wifi","store","join","network","authenticate","handshake","browse","operation","stop-remote","stop-client","stop-ble","close-network","stop-grants"};
+  static const char*const names[]={"off","tcp","ble","discover","entropy","random","release-entropy","scan","read-descriptor","read-network","close-ble","release-ble","wifi","store","join","network","authenticate","handshake","capabilities","browse","operation","stop-remote","stop-client","stop-ble","close-network","stop-grants"};
   return names[static_cast<unsigned>(s)];
  }
  void trace(const char*event,int rc=0){
@@ -64,7 +66,7 @@ for(size_t i=0;i<sizeof(descriptor);i++)p[i]=0;
 memset(random,0,sizeof(random));
 volatile unsigned char*n=reinterpret_cast<volatile unsigned char*>(&offer);for(size_t i=0;i<sizeof(offer);i++)n[i]=0;
 }
- void retain(){status.state=PEER_RETAINED;
+ void retain(){status.state=PEER_RETAINED;status.operation_ok=false;status.completed_generation=status.operation_generation;
 client.tick(now);
  /* owned() is false; wipes session material without I/O. */
 snprintf(status.message,sizeof(status.message),"Resource custody retained; restart required");
@@ -75,7 +77,7 @@ retain();
 return false;
 }
  void fail(const char*s){trace("failed");snprintf(status.message,sizeof(status.message),"%s",s);
-status.state=PEER_ERROR;
+status.state=PEER_ERROR;status.operation_ok=false;status.completed_generation=status.operation_generation;
 stopping=true;
 step=Step::StopRemote;
 wipe();
@@ -124,9 +126,10 @@ return p?new(p)portable_peer_files(r,*h):nullptr;
 }
 extern "C" bool portable_peer_start(portable_peer_files*p,uint64_t now){if(!p||p->step!=portable_peer_files::Step::Off||!p->owner())return false;
 p->now=p->startedAt=now;
-p->status={};
+const uint32_t generation=p->status.operation_generation;
+p->status={};p->status.operation_generation=p->status.completed_generation=generation;
 p->status.state=PEER_STARTING;
-p->stopping=false;
+p->stopping=p->cancelRequested=false;
 p->command=portable_peer_files::Command::None;p->scanIndex=0;p->selected=p->generation=p->number=0;
 memset(p->peers,0,sizeof(p->peers));
 p->step=portable_peer_files::Step::Tcp;
@@ -268,7 +271,13 @@ if(state==Client::State::Retained){p->retain();
 break;
 }if(state==Client::State::Error){p->fail("Peer authentication failed");
 break;
-}if(state==Client::State::Ready){if(!p->remote.list("/",now)){p->fail("Could not list peer files");
+}if(state==Client::State::Ready){if(!p->client.request("OPTIONS","/",nullptr,0,{p,portable_peer_files::owned,nullptr,nullptr},now)){p->fail("Could not query peer capabilities");break;}p->step=S::Capabilities;}
+break;
+}
+ case S::Capabilities:{auto state=p->client.tick(now);
+if(state==Client::State::Retained){p->retain();break;}
+if(state==Client::State::Error){p->fail("Could not query peer capabilities");break;}
+if(state==Client::State::Ready){p->status.capabilities=p->client.capabilities();if(!p->remote.list("/",now)){p->fail("Could not list peer files");
 break;
 }p->step=S::Operation;
 p->status.state=PEER_WORKING;
@@ -279,9 +288,12 @@ if(state==Client::State::Retained){p->retain();
 break;
 }if(state==Client::State::Error){p->fail("Peer session expired or ended");
 break;
-}if(p->command==C::None)break;
+}if(p->cancelRequested){p->cancelRequested=false;p->command=C::None;p->status.operation_ok=false;p->status.completed_generation=p->status.operation_generation;snprintf(p->status.message,sizeof(p->status.message),"Operation cancelled");break;}
+if(p->command==C::None)break;
 bool ok=false;
 switch(p->command){case C::List:ok=p->remote.list(p->first,now);
+break;
+case C::Preview:ok=p->remote.preview(p->first,p->previewLimit,now,p->previewOffset);
 break;
 case C::Download:ok=p->remote.download(p->first,p->local,p->second,now);
 break;
@@ -291,19 +303,25 @@ case C::Mutate:ok=p->remote.mutate(p->method,p->first,p->second[0]?p->second:nul
 break;
 default:break;
 }p->command=C::None;
-if(!ok&&p->remote.state()!=RemoteVolume::State::Close){snprintf(p->status.message,sizeof(p->status.message),"%s",p->remote.error());
+if(!ok&&p->remote.state()!=RemoteVolume::State::Close){
+if(p->remote.state()==RemoteVolume::State::Retained){p->retain();break;}
+p->status.completed_generation=p->status.operation_generation;
+snprintf(p->status.message,sizeof(p->status.message),"%s",p->remote.error()[0]?p->remote.error():"Could not start remote operation");
 break;
 }p->status.published_path[0]=0;
 p->step=S::Operation;
 p->status.state=PEER_WORKING;
 break;
 }
- case S::Operation:{auto state=p->remote.tick(now);
+ case S::Operation:{if(p->cancelRequested){p->cancelRequested=false;p->remote.cancel();}
+auto state=p->remote.tick(now);
 p->status.progress=p->remote.progress();
 p->status.uncertain=p->remote.uncertain();
 if(state==RemoteVolume::State::Retained){p->retain();
 break;
 }if(state==RemoteVolume::State::Done||state==RemoteVolume::State::Failed){snprintf(p->status.message,sizeof(p->status.message),"%s",state==RemoteVolume::State::Done?"Operation complete":p->remote.error());
+p->status.operation_ok=state==RemoteVolume::State::Done;p->status.completed_generation=p->status.operation_generation;
+p->status.preview_size=p->remote.previewSize();p->status.preview_offset=p->status.operation_ok?p->previewOffset:0;p->status.preview_total=p->remote.previewTotal();p->status.preview_truncated=p->remote.previewTruncated();
 if(const char*path=p->remote.publishedPath())snprintf(p->status.published_path,sizeof(p->status.published_path),"%s",path);
 snprintf(p->status.path,sizeof(p->status.path),"%s",p->remote.directory());
 p->status.count=p->remote.count();
@@ -312,7 +330,7 @@ p->step=S::Browse;
 }break;
 }
  case S::StopRemote:p->remote.cancel();
-if(p->remote.state()==RemoteVolume::State::Network||p->remote.state()==RemoteVolume::State::Close||p->remote.state()==RemoteVolume::State::Sync||p->remote.state()==RemoteVolume::State::Publish)p->remote.tick(now);
+if(p->remote.state()==RemoteVolume::State::Prepare||p->remote.state()==RemoteVolume::State::Network||p->remote.state()==RemoteVolume::State::Close||p->remote.state()==RemoteVolume::State::Sync||p->remote.state()==RemoteVolume::State::Publish)p->remote.tick(now);
 if(p->remote.state()==RemoteVolume::State::Retained){p->retain();
 break;
 }if(p->remote.close())p->step=S::StopClient;
@@ -392,7 +410,8 @@ if(p->status.state==PEER_DISCOVERING){if(i>=RISC_SESSION_PEERS_MAX)return false;
 out->peer_id=p->peers[i].peer_id;
 snprintf(out->name,sizeof(out->name),"%s",p->peers[i].name);
 return true;
-}const auto*r=p->remote.entry(i);
+}if(p->status.state!=PEER_READY||p->status.operation_generation!=p->status.completed_generation)return false;
+const auto*r=p->remote.entry(i);
 if(!r||risc_protected_settings_path(r->path))return false;
 out->directory=r->directory;
 out->size=r->size;
@@ -400,12 +419,14 @@ strcpy(out->name,r->name);
 strcpy(out->path,r->path);
 return true;
 }
-static bool queue(portable_peer_files*p,portable_peer_files::Command c,const char*a,const char*b){if(!p||p->status.state!=PEER_READY||p->command!=portable_peer_files::Command::None||!a||!memchr(a,0,sizeof(p->first))||(b&&!memchr(b,0,sizeof(p->second))))return false;
-if(risc_protected_settings_path(a)||risc_protected_settings_path(b))return false;
+static bool queue(portable_peer_files*p,portable_peer_files::Command c,const char*a,const char*b){if(!p||p->status.state!=PEER_READY||p->command!=portable_peer_files::Command::None||p->status.operation_generation==UINT32_MAX||!a||!memchr(a,0,sizeof(p->first))||(b&&!memchr(b,0,sizeof(p->second))))return false;
+char encoded[1537];
+if(risc_protected_settings_path(a)||risc_protected_settings_path(b)||!Client::encodePath(a,encoded,sizeof(encoded))||(b&&!Client::encodePath(b,encoded,sizeof(encoded))))return false;
 strcpy(p->first,a);
 p->second[0]=0;
 if(b)strcpy(p->second,b);
-p->command=c;
+p->command=c;p->previewOffset=0;++p->status.operation_generation;
+p->status.operation_ok=false;p->status.uncertain=false;p->status.progress=0;p->status.preview_size=0;p->status.preview_total=0;p->status.preview_offset=0;p->status.preview_truncated=false;p->status.published_path[0]=0;p->status.message[0]=0;
 return true;
 }
 extern "C" bool portable_peer_select(portable_peer_files*p,uint32_t id){if(!p||p->status.state!=PEER_DISCOVERING||p->command!=portable_peer_files::Command::None)return false;
@@ -420,27 +441,39 @@ p->accept=accept;
 p->command=portable_peer_files::Command::Confirm;
 return true;
 }
-extern "C" bool portable_peer_list(portable_peer_files*p,const char*path){return queue(p,portable_peer_files::Command::List,path,nullptr);
+extern "C" bool portable_peer_list(portable_peer_files*p,const char*path){return p&&(p->status.capabilities&PEER_CAP_LIST)&&queue(p,portable_peer_files::Command::List,path,nullptr);
 }
-extern "C" bool portable_peer_download(portable_peer_files*p,const char*remote,const risc_storage_volume_api_v1*local,const char*dest){if(!local||!queue(p,portable_peer_files::Command::Download,remote,dest))return false;
+extern "C" bool portable_peer_preview(portable_peer_files*p,const char*path,size_t limit){return portable_peer_preview_range(p,path,0,limit);}
+extern "C" bool portable_peer_preview_range(portable_peer_files*p,const char*path,uint64_t offset,size_t limit){if(offset>64u*1024u*1024u||!p||!(p->status.capabilities&PEER_CAP_READ)||!limit||limit>PORTABLE_PEER_PREVIEW_MAX||!queue(p,portable_peer_files::Command::Preview,path,nullptr))return false;
+p->previewLimit=limit;p->previewOffset=offset;return true;
+}
+extern "C" bool portable_peer_preview_get(const portable_peer_files*p,void*out,size_t capacity,size_t*size){if(size)*size=0;
+return p&&p->status.state==PEER_READY&&p->command==portable_peer_files::Command::None&&!p->cancelRequested&&p->status.operation_ok&&p->status.operation_generation==p->status.completed_generation&&p->remote.previewGet(out,capacity,size);
+}
+extern "C" void portable_peer_cancel_operation(portable_peer_files*p){if(!p||p->stopping||p->status.state==PEER_RETAINED)return;
+if(p->step==portable_peer_files::Step::Operation||(p->step==portable_peer_files::Step::Browse&&p->command!=portable_peer_files::Command::None))p->cancelRequested=true;
+}
+extern "C" bool portable_peer_download(portable_peer_files*p,const char*remote,const risc_storage_volume_api_v1*local,const char*dest){if(!p||!(p->status.capabilities&PEER_CAP_READ)||!local||!queue(p,portable_peer_files::Command::Download,remote,dest))return false;
 p->local=local;
 return true;
 }
-extern "C" bool portable_peer_upload(portable_peer_files*p,const risc_storage_volume_api_v1*local,const char*source,const char*remote){if(!local||!queue(p,portable_peer_files::Command::Upload,source,remote))return false;
+extern "C" bool portable_peer_upload(portable_peer_files*p,const risc_storage_volume_api_v1*local,const char*source,const char*remote){if(!p||!(p->status.capabilities&PEER_CAP_PUT)||!local||!queue(p,portable_peer_files::Command::Upload,source,remote))return false;
 p->local=local;
 p->replace=false;
 return true;
 }
-extern "C" bool portable_peer_replace(portable_peer_files*p,const risc_storage_volume_api_v1*local,const char*source,const char*remote){if(!portable_peer_upload(p,local,source,remote))return false;
+extern "C" bool portable_peer_replace(portable_peer_files*p,const risc_storage_volume_api_v1*local,const char*source,const char*remote){if(!p||!(p->status.capabilities&PEER_CAP_HEAD)||!portable_peer_upload(p,local,source,remote))return false;
 p->replace=true;
 return true;
 }
-extern "C" bool portable_peer_mutate(portable_peer_files*p,const char*method,const char*path,const char*dest){if(!method||!memchr(method,0,12)||!queue(p,portable_peer_files::Command::Mutate,path,dest))return false;
+extern "C" bool portable_peer_mutate(portable_peer_files*p,const char*method,const char*path,const char*dest){if(!p||!method||!memchr(method,0,12))return false;
+uint32_t capability=!strcmp(method,"MKCOL")?PEER_CAP_MKCOL:!strcmp(method,"DELETE")?PEER_CAP_DELETE:!strcmp(method,"MOVE")?PEER_CAP_MOVE:!strcmp(method,"COPY")?PEER_CAP_COPY:0;
+if(((!strcmp(method,"MOVE")||!strcmp(method,"COPY"))&&!dest)||!(p->status.capabilities&capability)||!queue(p,portable_peer_files::Command::Mutate,path,dest))return false;
 strcpy(p->method,method);
 return true;
 }
 extern "C" void portable_peer_stop(portable_peer_files*p){if(!p||p->stopping||p->status.state==PEER_RETAINED||p->step==portable_peer_files::Step::Off)return;
-p->status.state=PEER_STOPPING;
+p->status.state=PEER_STOPPING;p->status.operation_ok=false;p->status.completed_generation=p->status.operation_generation;
 p->stopping=true;
 p->command=portable_peer_files::Command::None;
 p->wipe();

@@ -82,4 +82,6 @@ void properties(){
 
 }
 }
-int main(){parser();basics();writes();failures();properties();std::cout<<"WebDAV actual core: parsing, scope, preconditions, snapshots, retention and cleanup PASS\n";}
+int main(){
+ {Fixture f;for(auto&entry:f.files)entry.second.writable=false;Transaction tx;assert(tx.begin(&f.api,f.hooks(),request("OPTIONS","/"),nullptr,0));run(tx,f);assert(tx.status()==200&&std::strstr(tx.header(),"Allow: OPTIONS, GET, HEAD, PROPFIND\r\n")&&!std::strstr(tx.header(),", PUT"));assert(tx.finish());}
+parser();basics();writes();failures();properties();std::cout<<"WebDAV actual core: parsing, scope, preconditions, snapshots, retention and cleanup PASS\n";}
