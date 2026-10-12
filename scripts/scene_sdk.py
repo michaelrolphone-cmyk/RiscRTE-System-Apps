@@ -26,7 +26,7 @@ def stage_sdk(runtime: Path, system: Path, output: Path) -> Path:
     for name in ('RiscSceneV1.h', 'RiscSceneStateV1.h', 'RiscSceneLifecycleV1.h',
                  'RiscSceneComponentsV1.h', 'RiscScenePageV1.h',
                  'RiscSceneCheckpointV1.h', 'RiscSceneReadingV1.h', 'RiscSceneReadingLinksV1.h', 'RiscSceneTelemetryV1.h',
-                 'RiscCivilClockV1.h', 'RiscSceneResidentV1.h'):
+                 'RiscSceneConnectivityV1.h', 'RiscCivilClockV1.h', 'RiscSceneResidentV1.h'):
         if name not in sources:
             canonical(system / 'sdk/app' / name)
     canonical(system / 'Services/scene_profile/SceneProfileV1.h')

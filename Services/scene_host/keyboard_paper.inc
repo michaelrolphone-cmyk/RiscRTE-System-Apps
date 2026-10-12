@@ -84,7 +84,7 @@ static void paper_keyboard(const risc_scene_node_v1 *n){
     char count[24];size_t len=strlen(n->text);
     if(n->target)snprintf(count,sizeof(count),"%u / %u",(unsigned)len,(unsigned)n->target);
     else snprintf(count,sizeof(count),"%u",(unsigned)len);
-    paper_text(&PCF_R700_16,32,142,"TEXT",8,0,200,fg);paper_text(&PCF_R700_18,448,142,count,2,2,180,fg);
+    paper_text(&PCF_R700_16,32,142,(n->flags&RISC_SCENE_KEYBOARD_SECRET)?"PASSWORD":"TEXT",(n->flags&RISC_SCENE_KEYBOARD_SECRET)?2:8,0,200,fg);paper_text(&PCF_R700_18,448,142,count,2,2,180,fg);
     paper_box(32,152,328,80,10,false,4);
     const pc_font *font=len>10?&PCF_O900_30:len>7?&PCF_O900_38:&PCF_O900_46;
     unsigned size=len>10?30:len>7?38:46;
@@ -95,6 +95,11 @@ static void paper_keyboard(const risc_scene_node_v1 *n){
     int cursor=(paper_measure(font,tail,0)+32)/64;paper_fill(52+cursor,174,5,40,fg);
     paper_box(368,152,80,80,10,false,4);paper_text(&PCF_R700_17,408,199,"CLEAR",2,1,76,fg);
     if(!(n->flags&RISC_SCENE_DISABLED))paper_hit(368,152,80,80,HIT_VALUE,n,RISC_SCENE_KEY_CLEAR);
+    if(n->flags&RISC_SCENE_KEYBOARD_SECRET){
+        paper_box(314,250,134,40,18,false,3);
+        paper_text(&PCF_R700_18,381,276,(n->flags&RISC_SCENE_KEYBOARD_REVEALED)?"HIDE":"SHOW",2,1,126,fg);
+        paper_hit(314,250,134,40,HIT_VALUE,n,RISC_SCENE_KEY_REVEAL);
+    }
     if(n->flags&RISC_SCENE_DISABLED){
         paper_text(&PCF_R700_20,240,286,"HARDWARE KEYBOARD",3,1,416,fg);
         paper_text(&PCF_R700_20,240,330,"ENTER done / ESC cancel",1,1,416,fg);return;

@@ -2,6 +2,7 @@
  * modal arbitration and density adaptation live here, never in an app. */
 #include "fonts/components.inc"
 #include "fonts/document_icons.inc"
+#include "fonts/connectivity_icons.inc"
 static bool nc_paper(void){return profile->preferred_format!=RISC_DISPLAY_FORMAT_RGB565;}
 static int nc_scale(void){return width>=400?2:1;}
 static int nc_size(int n){return n*nc_scale();}
@@ -65,6 +66,12 @@ static void nc_line(int x,int y,int xx,int yy,int stroke,uint16_t c){
 }
 static void tm_icon(unsigned,int,int,int,uint16_t);
 static void nc_icon(unsigned symbol,int x,int y,int size,uint16_t c){
+    if(symbol>=RISC_SYMBOL_WIFI && symbol<=RISC_SYMBOL_GLOBE){
+        const uint32_t *mask=nc_connectivity_icons[symbol-RISC_SYMBOL_WIFI];
+        if(!layout_only&&size>0)for(int yy=0;yy<size;yy++)for(int xx=0;xx<size;xx++)
+            if(mask[yy*28/size]&(1u<<(27-xx*28/size)))pixel(x+xx,y+yy,c);
+        return;
+    }
     if(symbol>=RISC_SYMBOL_GAUGE){tm_icon(symbol,x,y,size,c);return;}
     if(symbol>=RISC_SYMBOL_BOOK&&symbol<=RISC_SYMBOL_CLOSE){
         const uint32_t *mask=nc_doc_icons[symbol-RISC_SYMBOL_BOOK];
@@ -114,7 +121,7 @@ static bool nc_work_screen(void){
         (document.nodes[i].kind==RISC_COMPONENT_RING||(document.nodes[i].kind==RISC_COMPONENT_PROGRESS&&!document.nodes[i].maximum)))return true;
     return false;
 }
-static int nc_header_height(void){if(document.flags&RISC_COMPONENTS_TELEMETRY)return nc_size(nc_toolbar()?50:52);if(!nc_paper()&&nc_work_screen())return 44;return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
+static int nc_header_height(void){if(document.flags&RISC_COMPONENTS_CONNECTIVITY)return nc_size(document.subtitle[0]?64:56);if(document.flags&RISC_COMPONENTS_TELEMETRY)return nc_size(nc_toolbar()?50:52);if(!nc_paper()&&nc_work_screen())return 44;return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
 static int nc_row_height(const risc_scene_node_v1 *n){
     switch(n->kind){
     case RISC_COMPONENT_HEADER_ACTION:case RISC_COMPONENT_TAB_BAR:return 0;
@@ -128,6 +135,10 @@ static int nc_row_height(const risc_scene_node_v1 *n){
     case RISC_COMPONENT_TRACE_LEGEND:return nc_size(24);
     case RISC_COMPONENT_STATUS_TILE:return nc_size(32);
     case RISC_COMPONENT_CODE_ROW:return nc_size(58);
+    case RISC_COMPONENT_NETWORK_ROW:return nc_size(46);
+    case RISC_COMPONENT_CONNECTION_CARD:return nc_size(128);
+    case RISC_COMPONENT_SIGNAL_HERO:return nc_size(90);
+    case RISC_COMPONENT_CONNECTION_STEP:return nc_size(46);
     case RISC_COMPONENT_SECTION:return nc_size(28);
     case RISC_COMPONENT_PROGRESS:return nc_size(n->label[0]?88:((document.flags&RISC_COMPONENTS_DOCUMENT)&&!n->text[0]?28:46));
     case RISC_COMPONENT_EMPTY:return nc_size(140);
@@ -195,8 +206,9 @@ static int nc_ring_phase(int x,int y){
     int q=lo*100+(a+b?100*a/(a+b):0);
     return y<=0?(x>=0?q:(10000-q)%10000):(x>=0?5000-q:5000+q);
 }
+#include "connectivity.inc"
 static void nc_draw_node(unsigned index,int x,int y,int w,int h){
-    if(tm_draw(index,x,y,w,h))return;
+    if(cn_draw(index,x,y,w,h)||tm_draw(index,x,y,w,h))return;
     const risc_scene_node_v1 *n=&document.nodes[index];const risc_component_detail_v1 *d=&document.details[index];
     int s=nc_scale();
     if(y+h<0||y>(int)height)return;
@@ -561,22 +573,24 @@ static void component_focus(int direction){
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){
-    if(!d->screen_key||d->flags&~31u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
+    if(!d->screen_key||d->flags&~63u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
     bool cancel=!(d->flags&3u);unsigned headers=0,modal_actions=0,modal_texts=0,tabs=0,tiles=0;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];const risc_component_detail_v1 *a=&d->details[i];
         if(d->flags&3u){if(n->kind==RISC_SCENE_ACTION)modal_actions++;else if(n->kind==RISC_SCENE_TEXT_NODE)modal_texts++;else return false;}
         if(n->kind==RISC_SCENE_TIME_OF_DAY||n->kind==RISC_SCENE_INTEGER||n->kind==RISC_SCENE_BOOLEAN||n->kind==RISC_SCENE_LINK)return false;
-        if(a->symbol>RISC_SYMBOL_GEAR||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;
+        if(a->symbol>RISC_SYMBOL_GLOBE||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;
         if(n->kind==RISC_SCENE_ACTION&&n->action==d->cancel_action&&!(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_DESTRUCTIVE|RISC_SCENE_HIDDEN)))cancel=true;
         if(n->kind==RISC_COMPONENT_HEADER_ACTION&&++headers>2)return false;
         if(n->kind>=RISC_COMPONENT_ROW&&n->kind!=RISC_COMPONENT_PROGRESS&&n->kind!=RISC_COMPONENT_EMPTY&&n->kind<RISC_COMPONENT_CARD&&!n->action)return false;
         if(tm_kind(n->kind)&&!(d->flags&RISC_COMPONENTS_TELEMETRY))return false;
-        if(n->kind==RISC_COMPONENT_TAB_BAR&&(++tabs>1||!n->action||n->minimum!=0||n->maximum!=3||n->step!=1||n->value<0||n->value>3))return false;
+        if(n->kind==RISC_COMPONENT_TAB_BAR&&(++tabs>1||!n->action||n->minimum!=0||n->maximum<1||n->maximum>5||n->step!=1||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_METRIC_TILE&&++tiles>8)return false;
         if(n->kind==RISC_COMPONENT_BAR_GAUGE&&(n->minimum<0||n->maximum<1||n->maximum>65535||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_PLOT&&(n->minimum<0||n->minimum>10000||n->maximum<0||n->maximum>10000||n->step<0||n->step>3||n->value<1||n->value>600))return false;
         if((n->kind==RISC_COMPONENT_TRACE_LEGEND||n->kind==RISC_COMPONENT_STATUS_TILE)&&(n->value<0||n->value>2))return false;
+        if((n->kind==RISC_COMPONENT_NETWORK_ROW||n->kind==RISC_COMPONENT_SIGNAL_HERO||n->kind==RISC_COMPONENT_CONNECTION_CARD)&&(n->value<0||n->value>4))return false;
+        if(n->kind==RISC_COMPONENT_CONNECTION_STEP&&(n->value<0||n->value>2))return false;
         if(n->kind==RISC_COMPONENT_RING&&(n->maximum<1||n->maximum>100||n->value<0||n->value>n->maximum))return false;
         if(n->kind==RISC_COMPONENT_STRENGTH&&(n->value<0||n->value>3))return false;
         if(n->kind==RISC_COMPONENT_CHECK_ROW||n->kind==RISC_COMPONENT_SWITCH){if(n->minimum||n->maximum!=1||n->step!=1||n->value<0||n->value>1)return false;}
