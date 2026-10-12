@@ -176,6 +176,13 @@ def build():
    'capability':'storage.key-value.atomic@1','intent':'PFI0001','subordinate_off_key':'quick_bright',
    'legacy_put_fallback':False,'automatic_policy_migrated':False,'sd_acknowledged':False,
    'activation_gate':'automatic context/low-battery writers and source-conflict policy unresolved'}
+  record['atomic_quick']['source_sha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+   'lib/PortableApps/include/PortablePreferenceAtomic.h','lib/PortableApps/include/PortableQuickUserPreference.h',
+   'lib/PortableApps/include/PortableQuickSession.h','lib/PortableApps/include/PortableQuickRadios.h',
+   'lib/PortableApps/src/quick_atomic.inc','lib/PortableApps/src/quick_adapter.inc',
+   'lib/PortableApps/src/quick_session.c','lib/PortableApps/src/quick_radios.c',
+   'lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/resident_shell.inc')}
+  record['atomic_quick']['sdk_sha256']=hashlib.sha256((includes/'RiscKeyValueAtomicV1.h').read_bytes()).hexdigest()
   record.setdefault('grant_bindings',{})['storage.key-value.atomic']=[1]
  if a.ble_broadcast:record['ble_broadcast']={'enabled':True,'default':'off','grant_lifetime':'transient','timer_only':False,'shared_preferences_instance':1};record['build_defines']=flags
  if a.contexts_rf_only:

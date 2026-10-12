@@ -111,8 +111,10 @@ static bool diagnostic(const char *s){(void)s;io();return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.yield_ms=yield_ms,.diagnostic=diagnostic};
 static bool apply(uint32_t action){
  if(!quick_atomic_capture(action))return false;
- if(action&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE))return pqa_radios_apply_user(&quick_radios,&quick.ui,rt,action,quick_atomic_save,NULL,quick_atomic_guard);
- bool changed=false;return pqa_session_apply(&quick,rt,&display_api.snapshot.metrics.power.history.base,action,&changed);
+ bool changed=false;
+ bool ok=action&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE)?pqa_radios_apply_user(&quick_radios,&quick.ui,rt,action,quick_atomic_save,NULL,quick_atomic_guard):
+  pqa_session_apply(&quick,rt,&display_api.snapshot.metrics.power.history.base,action,&changed);
+ quick_atomic_show_queue_error();return ok;
 }
 static bool seed(void *context,risc_display_frame_v1 frame) {(void)context;(void)frame;assert(false);return false;}
 static int32_t power(void *context,uint32_t timeout) {(void)context;(void)timeout;assert(false);return -1;}
@@ -156,6 +158,32 @@ int main(int argc,char **argv){
   assert(pqa_session_restore(&quick,&display_api.snapshot.metrics.power.history.base));assert(!atomic_acquires&&!submits&&!legacy_puts);puts("quick torch restore PASS");return 0;
  }
  assert(quick_atomic_modal_begin());
+ if(which("queued-controls")||which("queue-overflow")) {
+  quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;quick.ui.audio_controls=false;quick.ui.tone_controls=true;
+  quick.ui.radio_controls=quick.ui.radios_valid=true;quick.ui.wifi_enabled=true;
+  pqa_set_levels(&quick.ui,true,40,false,50);
+  assert(pqa_input(&quick.ui,1,true,0,0,0,0,true));
+  unsigned now=2;
+  if(which("queue-overflow")) {
+   for(unsigned i=0;i<QUICK_ATOMIC_QUEUE_CAPACITY+4;++i){++quick_atomic_contact;quick.ui.pending=PQA_DND;quick.ui.action_dnd=!(i%2);quick_atomic_enqueue();}
+   assert(quick_atomic_queue_count==QUICK_ATOMIC_QUEUE_CAPACITY&&quick_atomic_queue_overflow);
+  } else {
+   const unsigned controls[]={1,3,4,9,1};
+   for(unsigned i=0;i<sizeof(controls)/sizeof(*controls);++i) {
+    int x,y;assert(pqa_paper_tile(&quick.ui,controls[i],&x,&y));++quick_atomic_contact;
+    assert(pqa_input(&quick.ui,now++,true,1,quick_atomic_contact,x+80,y+40,true));quick_atomic_enqueue();
+    assert(pqa_input(&quick.ui,now++,true,0,0,0,0,true));quick_atomic_enqueue();
+   }
+   ++quick_atomic_contact;int y=pqa_paper_slider_y(&quick.ui,0)+15;
+   assert(pqa_input(&quick.ui,now++,true,1,quick_atomic_contact,364,y,true));quick_atomic_enqueue();
+   assert(pqa_input(&quick.ui,now++,true,0,0,0,0,true));quick_atomic_enqueue();
+   assert(quick_atomic_queue_count==7);quick.ui.action_brightness=13;quick.ui.action_dnd=true;
+  }
+  while(quick_atomic_queue_count){uint32_t action=quick_atomic_take_action();assert(action);assert(apply(action));}
+  if(which("queued-controls")){assert(submits==6&&records[0][0]==100&&records[3][0]==0&&records[4][2]==1&&records[5][2]==2);}
+  else assert(submits==QUICK_ATOMIC_QUEUE_CAPACITY&&(quick.ui.error_flags&PQA_ERROR_SAVE));
+  assert(!legacy_puts&&quick_atomic_close());printf("quick %s ordered copied reducer actions PASS\n",test);return 0;
+ }
  if(!strncmp(test,"raw-",4)) {
   bool tone_edit=which("raw-tone");
   quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;quick.ui.audio_controls=false;quick.ui.tone_controls=true;

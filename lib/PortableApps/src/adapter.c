@@ -77,6 +77,8 @@ static bool quick_atomic_running;
 static unsigned quick_atomic_contact;
 static bool quick_atomic_owned(void);
 static bool quick_atomic_close(void);
+static void quick_atomic_enqueue(void);
+static void quick_atomic_discard(void);
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
@@ -759,6 +761,9 @@ static void input_dispatch(void) {
       quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):next.x,
       quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):next.y,
       next.tap_eligible&&(quick.ui.paper || (info.width==240&&info.height==240)));
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!quick_atomic_running)quick_atomic_enqueue();
+#endif
   if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
      !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
   if(reserved) {
@@ -2910,6 +2915,7 @@ static int initialize(void) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   quick_atomic_running=false;quick_atomic_contact=0;quick_atomic_attempted=false;quick_atomic_revision=0;
   quick_atomic_grant=(risc_runtime_capability_v1){0};quick_atomic_edit=(portable_preference_atomic){0};
+  quick_atomic_discard();
   quick.save_user=quick_atomic_save;
 #endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC

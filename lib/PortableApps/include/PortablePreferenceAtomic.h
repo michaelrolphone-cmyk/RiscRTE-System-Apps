@@ -104,7 +104,7 @@ static inline int portable_preference_atomic_prepare(portable_preference_atomic 
  * selected as an independent USER intention. PFI0001 remains unchanged. */
 static inline int portable_preference_atomic_prepare_brightness_off(portable_preference_atomic *s,
  const void *value,uint32_t size,uint8_t restore) {
- if(!s||strcmp(s->key,"brightness")||!value||size!=1||*(const uint8_t*)value||restore<10||restore>100)return RISC_ATOMIC_INVALID;
+ if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||strcmp(s->key,"brightness")||!value||size!=1||*(const uint8_t*)value||restore<10||restore>100)return RISC_ATOMIC_INVALID;
  if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
  risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
  int rc=s->api->state(s->api->context,&state);

@@ -17,6 +17,15 @@ modal's own successful collected receipt advances the baseline for the next
 independent action. An external revision change requires reopening; no rebase,
 retry against a new revision, source conflict selection or merge is defined.
 
+Each ordered input reduction copies its pending action and values into a bounded
+32-entry FIFO before another sample can OR flags into it. Distinct controls and
+commits keep their order; only adjacent same-contact previews coalesce. Queued
+DND/radio/brightness operations publish as separate explicit intents, with
+revision advancement only from prior successful receipts. Overflow rejects
+new events, keeps already captured actions, and shows a save error until the
+modal is reopened. Low-battery and alarm interruption clear obsolete queued
+UI actions rather than turning them into automatic intentions.
+
 Selected user paths use explicit session/radio callbacks, never legacy KV1
 puts: brightness, frontlight_tone, alert_dnd, contexts_on and quick_radio.
 Brightness OFF submits brightness and quick_bright together. quick_bright is
@@ -57,3 +66,18 @@ malformed receipts, dirty-token refusals, failed release and retained close.
 This is host qualification, not a physical-device test or product-selected
 Runtime end-to-end test. `receipts/quick-atomic-20261012.json` records completed
 checks and the exact default-off baseline comparison.
+
+Final selected qualification runs 41 cases normally and under ASan+UBSan,
+including actual reducer DND/Wi-Fi/Bluetooth/Contexts/brightness actions queued
+through one delayed apply window and bounded-queue overflow. The shared Settings
+helper regression passes 47 actual controller cases under ASan+UBSan. Existing
+Quick actions (108 core/session/adapter executions), radio, tone-input and
+frontlight-session regressions pass. Xtensa compile, ELF structure and
+imports/exports validate; the default-off Home ELF and manifest remain exactly
+byte-identical to a5bd60f.
+
+The older sparse Home tone-startup fixture timed out on both the selected and
+unchanged flag-off .94 profiles after excluding unsupported unrelated fixture
+features. That broader startup/wake matrix is not claimed as passed. Full
+product-selected Runtime routing, independent automatic-origin policy,
+source-conflict handling, and physical-device qualification remain gates.

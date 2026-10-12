@@ -9,6 +9,48 @@ static char quick_atomic_key[16];
 static bool quick_atomic_attempted;
 static uint64_t quick_atomic_revision;
 static unsigned quick_atomic_captured_contact;
+/* Ordered input can run while paper presentation is pending. Capture each
+ * reducer result before its bit mask is ORed with a later user action. */
+#define QUICK_ATOMIC_QUEUE_CAPACITY 32u
+typedef struct {
+ uint32_t actions;unsigned contact;
+ uint8_t brightness,tone,volume;bool torch,action_torch,dnd,contexts;
+} quick_atomic_action;
+static quick_atomic_action quick_atomic_queue[QUICK_ATOMIC_QUEUE_CAPACITY];
+static unsigned quick_atomic_queue_head,quick_atomic_queue_count,quick_atomic_delivered_contact;
+static bool quick_atomic_queue_overflow,quick_atomic_delivering;
+static void quick_atomic_discard(void) {
+ quick_atomic_queue_head=quick_atomic_queue_count=0;quick_atomic_queue_overflow=quick_atomic_delivering=false;
+}
+static void quick_atomic_enqueue(void) {
+ uint32_t actions=pqa_take_action(&quick.ui);if(!actions)return;
+ if(quick_atomic_queue_overflow){quick.ui.error_flags|=PQA_ERROR_SAVE;return;}
+ quick_atomic_action next={actions,quick_atomic_contact,quick.ui.action_brightness,quick.ui.action_tone,
+  quick.ui.action_volume,quick.ui.torch,quick.ui.action_torch,quick.ui.action_dnd,quick.ui.action_contexts};
+ /* Consecutive previews of the same contact may collapse; commits and
+  * distinct controls never do. There is no provider call at this boundary. */
+ const uint32_t previews=PQA_BRIGHTNESS_PREVIEW|PQA_TONE_PREVIEW;
+ if(!(actions&~previews)&&quick_atomic_queue_count) {
+  unsigned last=(quick_atomic_queue_head+quick_atomic_queue_count-1)%QUICK_ATOMIC_QUEUE_CAPACITY;
+  if(quick_atomic_queue[last].actions==actions&&quick_atomic_queue[last].contact==next.contact){quick_atomic_queue[last]=next;return;}
+ }
+ if(quick_atomic_queue_count==QUICK_ATOMIC_QUEUE_CAPACITY) {
+  quick_atomic_queue_overflow=true;quick.ui.error_flags|=PQA_ERROR_SAVE;
+  pqa_cancel_input(&quick.ui);(void)pqa_take_action(&quick.ui);return;
+ }
+ quick_atomic_queue[(quick_atomic_queue_head+quick_atomic_queue_count++)%QUICK_ATOMIC_QUEUE_CAPACITY]=next;
+}
+static void quick_atomic_show_queue_error(void) {if(quick_atomic_queue_overflow)quick.ui.error_flags|=PQA_ERROR_SAVE;}
+static uint32_t quick_atomic_take_action(void) {
+ quick_atomic_enqueue();if(quick_atomic_queue_overflow)quick.ui.error_flags|=PQA_ERROR_SAVE;
+ if(!quick_atomic_queue_count)return 0;
+ const quick_atomic_action *a=&quick_atomic_queue[quick_atomic_queue_head];
+ quick.ui.action_brightness=a->brightness;quick.ui.action_tone=a->tone;quick.ui.action_volume=a->volume;
+ quick.ui.torch=a->torch;quick.ui.action_torch=a->action_torch;quick.ui.action_dnd=a->dnd;quick.ui.action_contexts=a->contexts;
+ quick_atomic_delivered_contact=a->contact;quick_atomic_delivering=true;uint32_t actions=a->actions;
+ quick_atomic_queue_head=(quick_atomic_queue_head+1)%QUICK_ATOMIC_QUEUE_CAPACITY;--quick_atomic_queue_count;
+ return actions;
+}
 static bool quick_atomic_guard(void *unused) {
  (void)unused;return !native_custody_retained&&!failed&&!quick.retained;
 }
@@ -23,6 +65,9 @@ static bool quick_atomic_result(int rc) {
  return quick_atomic_guard(NULL);
 }
 static bool quick_atomic_close(void) {
+ if(!quick_atomic_grant.api&&!quick_atomic_edit.token&&!quick_atomic_running) {
+  quick_atomic_revision=0;quick_atomic_attempted=false;quick_atomic_discard();return true;
+ }
  if(!quick_atomic_guard(NULL))return false;
  if(quick_atomic_edit.token) {
   int rc=portable_preference_atomic_cancel(&quick_atomic_edit);
@@ -32,7 +77,7 @@ static bool quick_atomic_close(void) {
  if(quick_atomic_grant.api&&!rt->release(&quick_atomic_grant))return quick_atomic_result(RISC_ATOMIC_RETAINED);
  if(!quick_atomic_guard(NULL))return false;
  quick_atomic_grant=(risc_runtime_capability_v1){0};quick_atomic_edit=(portable_preference_atomic){0};
- quick_atomic_attempted=false;quick_atomic_revision=0;quick_atomic_key[0]=0;return true;
+ quick_atomic_attempted=false;quick_atomic_revision=0;quick_atomic_key[0]=0;quick_atomic_discard();return true;
 }
 static bool quick_atomic_modal_begin(void) {
  if(!quick_atomic_close())return false;
@@ -83,10 +128,11 @@ static bool quick_atomic_matches_display(void) {
 }
 static bool quick_atomic_capture(uint32_t actions) {
  const char *key=quick_atomic_action_key(actions);if(!key)return true;
- if(quick_atomic_attempted&&quick_atomic_captured_contact==quick_atomic_contact&&!strcmp(key,quick_atomic_key))return true;
+ unsigned contact=quick_atomic_delivering?quick_atomic_delivered_contact:quick_atomic_contact;
+ if(quick_atomic_attempted&&quick_atomic_captured_contact==contact&&!strcmp(key,quick_atomic_key))return true;
  if(quick_atomic_owned())return quick_atomic_result(RISC_ATOMIC_RETAINED);
  quick_atomic_edit=(portable_preference_atomic){0};
- quick_atomic_attempted=true;quick_atomic_captured_contact=quick_atomic_contact;
+ quick_atomic_attempted=true;quick_atomic_captured_contact=contact;
  memcpy(quick_atomic_key,key,strlen(key)+1);
  int rc=quick_atomic_revision?portable_preference_atomic_begin_at(&quick_atomic_edit,quick_atomic_grant.api,key,
   PORTABLE_PREFERENCE_USER,quick_atomic_guard,NULL,quick_atomic_revision):RISC_ATOMIC_INVALID;

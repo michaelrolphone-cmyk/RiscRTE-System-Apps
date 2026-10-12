@@ -3,7 +3,7 @@
 import argparse,hashlib,json,os,shutil,subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-CASES='raw-brightness raw-tone raw-coalesced raw-stale raw-cancel repeated brightness off off-already restore-stale tone dnd contexts radio same-value preview restore origins automatic copy busy stale display-stale cancel cancel-race cancel-error small-group wrong-namespace read-io missing submit-io uncertain capacity conflict dirty-submit collect-io bad-receipt release-failed close-pending'.split()
+CASES='queued-controls queue-overflow raw-brightness raw-tone raw-coalesced raw-stale raw-cancel repeated brightness off off-already restore-stale tone dnd contexts radio same-value preview restore origins automatic copy busy stale display-stale cancel cancel-race cancel-error small-group wrong-namespace read-io missing submit-io uncertain capacity conflict dirty-submit collect-io bad-receipt release-failed close-pending'.split()
 def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
  receipt=json.loads((a.target/'build-evidence.json').read_text());inc=a.output/'include';shutil.copytree(receipt['paper_transition']['compiled_include_directory'],inc,dirs_exist_ok=True)

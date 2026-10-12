@@ -41,6 +41,9 @@ static bool quick_storage_safe(void) {
 }
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
 #include "quick_atomic.inc"
+#define quick_take_action() quick_atomic_take_action()
+#else
+#define quick_take_action() pqa_take_action(&quick.ui)
 #endif
 #ifdef PORTABLE_X4_IDLE_POLICY
 static bool automatic_idle_interaction_ready(void) {
@@ -111,6 +114,9 @@ static bool low_battery_poll_inner(void) {
 #endif
  /* Cancel stale preview/pending actions before reloading confirmed settings.
   * A later new gesture is a manual override and remains authoritative. */
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_discard();
+#endif
  pqa_cancel(&quick.ui);(void)pqa_take_action(&quick.ui);
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_suspend())return false;
@@ -221,6 +227,9 @@ static bool quick_apply(uint32_t actions) {
  if(changed && service)(void)service->refresh(service->context);
 #endif
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_show_queue_error();
+#endif
  return true;
 }
 static bool quick_copy_background(void) {
@@ -293,6 +302,9 @@ static bool quick_interrupt(void) {
  if(failed || native_custody_retained)return false;
 #endif
  if(!quick_modal)return true;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_discard();
+#endif
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
  /* Alarm's saved restoration frame is the app, never the torch/controls. */
@@ -485,7 +497,11 @@ static bool quick_foreground(bool *consumed) {
  uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
  pqa_state painted_state={0};uint8_t painted_battery=0;
- while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
+ while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui)
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+     ||quick_atomic_queue_count
+#endif
+     )) {
   input_service();input_dispatch();
   if(failed)break;
   uint32_t now=millis_now();bool alarm_consumed=false;
@@ -500,7 +516,7 @@ static bool quick_foreground(bool *consumed) {
    * Keep the existing idle policy for the animated Watch sheet. */
   if(!quick.ui.paper && (uint32_t)(now-last_activity)>=portable_idle_ms())pqa_cancel(&quick.ui);
 #endif
-  uint32_t actions=pqa_take_action(&quick.ui);
+  uint32_t actions=quick_take_action();
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   clean_pending|=quick.ui.clean_refresh_valid&&!!(actions&PQA_CLEAN_REFRESH);
   actions&=~PQA_CLEAN_REFRESH;
@@ -553,7 +569,11 @@ static bool quick_foreground(bool *consumed) {
  }
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ while(!failed) {uint32_t actions=quick_take_action();if(!actions)break;if(!quick_apply(actions))failed=true;}
+#else
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
+#endif
  /* The modal's release has already been reduced. Cancel only a still-held
   * logical gesture; never adopt a newer physical snapshot watermark here. */
  if(*consumed) {
