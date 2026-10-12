@@ -20,6 +20,7 @@ static void mount_idle(void){for(unsigned i=0;i<30000;i++){peer_step();if(!fbm_o
 static unsigned mount_find(const char*name){for(unsigned pages=0;pages<40;pages++){for(unsigned i=0;i<fb_count;i++)if(!strcmp(fb_rows[i].name,name))return i;if(!fb_more)break;fb_page_next();}assert(!"missing browser row");return 0;}
 static void mount_action(const char*name,unsigned action){fb_choice=mount_find(name);fbx_actions();assert(fb_mode==FB_ACTIONS);fb_choice=action;fbx_activate();}
 
+#ifndef FILE_SHARED_INPUT_FIXTURE
 int main(int argc,char**argv){const char*scenario=argc>1?argv[1]:"actions";test_directory=argc>2?argv[2]:NULL;peer_backend_begin();if(!strcmp(scenario,"watch-export"))peer_backend_watch();else peer_backend_folders();borrowed=true;
  runtime=test_runtime;runtime.acquire=get_cap;runtime.release=release_cap;runtime.retain_invocation=retain_owner;runtime.diagnostic=files_diagnostic;test_runtime_override=&runtime;
  const portable_wifi_credentials saved={"fixture","synthetic"};assert(portable_wifi_profile_save(&kv,0,&saved)==0);
@@ -90,3 +91,5 @@ int main(int argc,char**argv){const char*scenario=argc>1?argv[1]:"actions";test_
  assert(portable_file_browser_close());app_module_fini();assert(!test_grants&&!test_frames&&!test_subs);peer_backend_end();
  puts("Mounted peer: common rows/navigation/preview/rename/mkdir/copy/move/delete/cancel and checked disconnect PASS");return 0;
 }
+
+#endif

@@ -86,7 +86,8 @@ static void paper_keyboard(const risc_scene_node_v1 *n){
     paper_stroke(415,43,415,58,3,fg);paper_stroke(415,58,433,58,3,fg);paper_stroke(433,58,433,43,3,fg);
     paper_hit(396,18,56,56,HIT_HOME,NULL,0);paper_fill(32,106,416,4,fg);
     char count[24];size_t len=strlen(n->text);
-    if(n->target)snprintf(count,sizeof(count),"%u / %u",(unsigned)len,(unsigned)n->target);
+    if(n->flags&RISC_SCENE_KEYBOARD_EXTENDED)snprintf(count,sizeof(count),"%u / %u",(unsigned)(n->target>>16),(unsigned)(n->target&65535u));
+    else if(n->target)snprintf(count,sizeof(count),"%u / %u",(unsigned)len,(unsigned)n->target);
     else snprintf(count,sizeof(count),"%u",(unsigned)len);
     bool password=(n->flags&RISC_SCENE_KEYBOARD_PASSWORD)!=0;
     paper_text(&PCF_R700_16,32,142,password?"PASSWORD":"TEXT",password?3:8,0,240,fg);paper_text(&PCF_R700_18,448,142,count,2,2,180,fg);

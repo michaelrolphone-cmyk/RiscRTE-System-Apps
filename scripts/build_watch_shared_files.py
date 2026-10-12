@@ -12,6 +12,7 @@ p=argparse.ArgumentParser(description=__doc__)
 for n in ('watch','utilities','runtime','baseline','output'):p.add_argument('--'+n,type=Path,required=True)
 p.add_argument("--peer-files",action="store_true")
 p.add_argument("--source-handoff",action="store_true")
+p.add_argument("--shared-text-input",action="store_true")
 a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 watch=a.watch.resolve();utilities=a.utilities.resolve();runtime=a.runtime.resolve()
 sys.path.insert(0,str(watch/'scripts'))
@@ -35,6 +36,7 @@ alarm.write_text('#include "'+str(utilities/'lib/Alarm/include/AlarmServiceV1.h'
 flags+=['-include',str(alarm)]
 flags+=['-DPORTABLE_FILE_BROWSER_RGB_ONLY','-DPORTABLE_DISPLAY_ROTATION=0','-DPORTABLE_WIFI_INSTANCE=15','-DPORTABLE_FILE_BROWSER_HANDLERS','-DPORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY="storage.app-data.export"','-DPORTABLE_FILE_BROWSER_SECONDARY_INSTANCE=0']
 if a.source_handoff:flags+=['-DPORTABLE_FILE_BROWSER_SOURCE_HANDOFF']
+if a.shared_text_input:flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT','-flto','-mno-target-align']
 repos={'system-apps':ROOT,'utilities':utilities,'runtime':runtime}
 sources,includes,allowed=application_inputs('file_browser',ROOT/'Apps/file_browser.c',repos,watch,out,'runtime-features')
 includes += [utilities/'lib/Contexts/include',runtime/'sdk/app']
@@ -48,22 +50,29 @@ subprocess.run(cmd,check=True)
 syms=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
 imports={x.split()[-1] for x in syms.splitlines() if ' U ' in ' '+x}
 exports={x.split()[-1] for x in syms.splitlines() if len(x.split())>=3 and x.split()[-2] in ('T','D','B','R')}
-assert imports<=allowed|{'strstr','strchr'},imports-allowed
+assert imports<=allowed|{'strstr','strchr','memchr'},imports-allowed
 assert exports=={'app_main','app_module_init','app_module_fini'}
 validator=out/'validate-elf'
 subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
 subprocess.run([str(validator),str(elf)],check=True)
+compaction=None
+if a.shared_text_input:
+ from compact_current_elf import compact
+ compaction=compact(elf,cc,debug_path=out/'debug/file_browser.elf')
+ subprocess.run([str(validator),str(elf)],check=True)
 sharing.requirements(args,manifest['requires'])
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
-if a.source_handoff:manifest['requires'].append({'capability':'file.open.source','api':1})
-manifest['version']=sharing.selected_version(a)
+if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
+if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
+manifest['version']='1.5.34' if a.shared_text_input else sharing.selected_version(a)
 grants=old['grants'].copy()
 for cap,api,instance in [('storage.app-data.export',1,0),('network.tcp.listener',1,0),('crypto.entropy',1,0),('bluetooth.session-setup',1,0),('storage.key-value',1,6),('file.open',1,0)]:
  g=dict(capability=cap,api=api,instance_id=instance)
  if g not in grants:grants.append(g)
-if a.source_handoff:grants.append(dict(capability='file.open.source',api=1,instance_id=0))
+if a.source_handoff and dict(capability='file.open.source',api=1,instance_id=0) not in grants:grants.append(dict(capability='file.open.source',api=1,instance_id=0))
+if a.shared_text_input and dict(capability='ui.text-input',api=1,instance_id=0) not in grants:grants.append(dict(capability='ui.text-input',api=1,instance_id=0))
 assert all(g in grants for g in old['grants'])
-record={'schema':1,'purpose':'target component; no firmware or hardware qualification','product_baseline':watch_commit,'version':manifest['version'],'required_grants':grants,'policy_rows':len(grants),'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'bytes':elf.stat().st_size,'sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'sources':{n:subprocess.check_output(['git','-C',str(r),'rev-parse','HEAD'],text=True).strip() for n,r in {'system':ROOT,'runtime':runtime,'watch':watch,'utilities':utilities}.items()},'baseline_files':{n:hashlib.sha256((a.baseline/n).read_bytes()).hexdigest() for n in ('boot.json','file_browser.json')},'baseline_grants_preserved':True,'command':cmd,'composition_required':['current Runtime with 24 app policy rows; exact graph/live-grant capacity admission','explicit AppData export map with existing owner namespace identity','provider graph additions and complete 25-app store admission','file.open handler declarations and transport membership checks'],'source_sha256':{str(s):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources if s.suffix!='.o'}}
+record={'schema':1,'compaction':compaction,'purpose':'target component; no firmware or hardware qualification','product_baseline':watch_commit,'version':manifest['version'],'required_grants':grants,'policy_rows':len(grants),'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'bytes':elf.stat().st_size,'sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'sources':{n:subprocess.check_output(['git','-C',str(r),'rev-parse','HEAD'],text=True).strip() for n,r in {'system':ROOT,'runtime':runtime,'watch':watch,'utilities':utilities}.items()},'baseline_files':{n:hashlib.sha256((a.baseline/n).read_bytes()).hexdigest() for n in ('boot.json','file_browser.json')},'baseline_grants_preserved':True,'command':cmd,'composition_required':['current Runtime with 24 app policy rows; exact graph/live-grant capacity admission','explicit AppData export map with existing owner namespace identity','provider graph additions and complete 25-app store admission','file.open handler declarations and transport membership checks'],'source_sha256':{str(s):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources if s.suffix!='.o'}}
 # Hash all local headers/includes in the compiled source trees as well as C units.
 for tree in (ROOT/'lib/PortableApps', ROOT/'Apps', ROOT/'lib/RemoteFiles',runtime/'sdk/app',utilities/'lib/Alarm/include'):
  for dep in tree.rglob('*'):

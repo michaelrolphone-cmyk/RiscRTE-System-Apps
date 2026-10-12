@@ -28,3 +28,10 @@ enum {
 /* Text-only document revisions preserve the displayed topology and queued
  * keys. The host rebases each delivered key to the latest acknowledged text
  * revision. Every other change invalidates the input epoch and queued keys. */
+
+/* Opt-in bounded long draft viewport. text contains the last 71 characters;
+ * target packs the complete length in the upper 16 bits and limit below it.
+ * Older presenters reject this flag before acquiring a session. This changes
+ * neither the scene document ABI nor ordinary keyboard semantics. */
+#define RISC_SCENE_KEYBOARD_EXTENDED 16u
+#define RISC_SCENE_KEYBOARD_EXTENDED_LIMIT 127u

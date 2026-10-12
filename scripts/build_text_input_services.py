@@ -2,13 +2,13 @@
 """Build the one text session host plus shared scene presenter/profiles."""
 import argparse,json,os,shutil,subprocess,tempfile
 from pathlib import Path
-from build_scene_services import run as build_scenes
+from build_scene_services import run as build_scenes, HOST_PROFILE_FLAGS
 from scene_build import build,compiler_path,json_write
 from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();runtime=a.runtime.resolve();out=a.output.resolve()
+p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--host-profile',choices=HOST_PROFILE_FLAGS,default='full');a=p.parse_args();runtime=a.runtime.resolve();out=a.output.resolve()
 if out.exists():raise FileExistsError(out)
-out.mkdir(parents=True);build_scenes(runtime,out/'presentation')
+out.mkdir(parents=True);build_scenes(runtime,out/'presentation',a.host_profile)
 with tempfile.TemporaryDirectory(prefix='text-input-sdk-') as temporary:
  inc=stage_sdk(runtime,ROOT,Path(temporary));shutil.copy(ROOT/'sdk/app/RiscTextEntryV1.h',inc)
  for name in ['RiscUsbHidV1.h','RiscUsbControllerV1.h','RiscUsbProviderV1.h']:

@@ -10,7 +10,16 @@
 #include "RiscAppDataExportV1.h"
 #include "FileBrowserModel.h"
 #include "PortableNovaUi.h"
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+#ifndef PORTABLE_TEXT_INPUT_CLIENT
+#error Shared Files input requires the presenter handoff client
+#endif
+#include "PortableTextInputExtendedClient.h"
+#define FB_EDITOR_CHOICES 1u
+#else
 #include "PortableWatchKeyboard.h"
+#define FB_EDITOR_CHOICES PWK_COUNT
+#endif
 #include "PortableFileBrowser.h"
 #include "PaperPresentation.h"
 #include "T5FileOpenApi.h"
@@ -87,6 +96,14 @@ static void fsource_remote_done(bool);
 #endif
 #endif
 static void fb_draw(void);
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+static portable_text_client fb_text;
+static risc_text_entry_state_v1_extended fb_text_state;
+static unsigned fb_text_mode,fb_text_return_mode,fb_text_return_choice,fb_text_storage;
+static bool fb_text_active,fb_text_closing,fb_text_home,fb_text_invalidated;
+static bool fb_text_begin(unsigned,const char*),fb_text_close(void);
+static void fb_text_step(void),fb_text_draw(void);
+#endif
 #ifdef PORTABLE_FILE_SHARING
 #ifdef PORTABLE_FILE_PEER
 static bool fpeer_mode,fbm_new_directory;
@@ -173,7 +190,10 @@ static const paper_presentation *const fb_paper=NULL;
 static const paper_presentation *fb_paper;
 #endif
 static unsigned fb_page_rows;
-static unsigned fb_count,fb_choice,fb_page,fb_mode,fb_key_page,fb_preview_count,fb_detail_offset;
+static unsigned fb_count,fb_choice,fb_page,fb_mode,fb_preview_count,fb_detail_offset;
+#ifndef PORTABLE_FILE_BROWSER_SHARED_INPUT
+static unsigned fb_key_page;
+#endif
 static uint32_t fb_matched;
 static bool fb_feedback;
 static bool fb_dirty,fb_armed,fb_hidden,fb_more,fb_hex,fb_loaded,fb_contact,fb_drag;
@@ -234,9 +254,20 @@ static bool fb_acquire(void) {
  if(!fb_api_valid(fb_grant.api)){PORTABLE_APP_RETAIN();return false;}
  fb_volume=fb_grant.api;return true;
 }
-bool portable_file_browser_safe(void) {if(PORTABLE_APP_RETAINED())return false;if(fb_retained_file)return false;for(unsigned i=0;i<4;i++)if(fb_owned[i].handle)return false;return true;}
+bool portable_file_browser_safe(void) {
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(fb_text_active||fb_text.retained||portable_text_adapter_retained())return false;
+#endif
+ if(PORTABLE_APP_RETAINED())return false;
+ if(fb_retained_file)return false;
+ for(unsigned i=0;i<4;i++)if(fb_owned[i].handle)return false;
+ return true;
+}
 bool portable_file_browser_close(void) {
  if(PORTABLE_APP_RETAINED())return false;
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(!fb_text_close())return false;
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(!fsh_close())return false;
 #endif
@@ -420,16 +451,26 @@ static void fb_activate_file(unsigned choice) {
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;(void)fb_load(0);return;}
  fb_mode=fb_manage?FB_ACTIONS:FB_DETAIL;fb_choice=0;fb_action_page=0;fb_detail_offset=0;fb_size=fb_selected.size;fb_offset=0;fb_hex=false;fb_message("Preview files without executing them");
 }
+static void fb_filter_apply(void) {
+ if(fb_mode==FB_RENAME){fbx_rename();return;}
+ if(strlen(fb_editor)>=sizeof(fb_query)){fb_message("Filter is full");return;}
+ strcpy(fb_query,fb_editor);fb_mode=FB_LIST;(void)fb_load(0);
+}
+#ifndef PORTABLE_FILE_BROWSER_SHARED_INPUT
 static void fb_filter_key(unsigned key) {
  size_t n=strlen(fb_editor);
  if(key<PWK_CHARACTERS){unsigned ch=portable_watch_key_character(fb_key_page,key);if(ch && n+1<(fb_mode==FB_RENAME?sizeof(fb_editor):sizeof(fb_query))){fb_editor[n]=(char)ch;fb_editor[n+1]=0;}else if(ch)fb_message("Filter is full");}
  else if(key==PWK_PAGE)fb_key_page=(fb_key_page+1)%PWK_PAGES;
  else if(key==PWK_DELETE){if(n)fb_editor[n-1]=0;}
  else if(key==PWK_DONE){
- if(fb_mode==FB_RENAME){fbx_rename();return;}if(strlen(fb_editor)>=sizeof(fb_query)){fb_message("Filter is full");return;}strcpy(fb_query,fb_editor);fb_mode=FB_LIST;(void)fb_load(0);}
+ fb_filter_apply();}
  fb_dirty=true;
 }
+#endif
 static bool fb_back(void) {
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(fb_text_active){fb_text_state.state=RISC_TEXT_ENTRY_CANCELLED;fb_text_closing=true;fb_text_step();return false;}
+#endif
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
  if(fsource_back())return false;
 #endif
@@ -507,7 +548,13 @@ static void fb_option(unsigned choice) {
 #endif
  if(choice==4){fb_choice=fb_list_choice;fbx_actions();return;}
  if(choice==5){fbx_switch();return;}
- if(choice==0){strcpy(fb_editor,fb_query);fb_key_page=PWK_INITIAL_PAGE;fb_choice=0;fb_mode=FB_FILTER;fb_message("Done applies / Back cancels");}
+ if(choice==0){strcpy(fb_editor,fb_query);
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ (void)fb_text_begin(FB_FILTER,"Find file");
+#else
+ fb_key_page=PWK_INITIAL_PAGE;fb_choice=0;fb_mode=FB_FILTER;fb_message("Done applies / Back cancels");
+#endif
+ }
  else {if(choice==2)fb_hidden=!fb_hidden;if(choice==3){strcpy(fb_path,"/");fb_query[0]=0;}fb_mode=FB_LIST;(void)fb_load(0);}
 }
 static void fb_preview_page(int direction) {
@@ -530,7 +577,14 @@ static void fb_activate(void);
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
 #include "file_browser_source.inc"
 #endif
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+#include "file_browser_shared_input.inc"
+#endif
 static void fb_draw(void) {
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(fb_text_active)return;
+ if(fb_mode==FB_FILTER||fb_mode==FB_RENAME){fb_text_draw();return;}
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING){fsh_draw();return;}
 #endif
@@ -551,7 +605,9 @@ static void fb_draw(void) {
  } else if(fb_mode==FB_OPTIONS) {
   portable_nova_text(3,18,47,204,fb_label,NOVA_CAP);
   for(unsigned j=0;j<2;j++){unsigned i=fb_choice/2*2+j;if(i>=fb_option_count())break;portable_nova_row(16,62+(int)j*58,208,54,fb_options[i],i==2?(fb_hidden?"On":"Off"):"",i==fb_choice);}
- } else if(fb_mode==FB_FILTER||fb_mode==FB_RENAME) {
+ }
+#ifndef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ else if(fb_mode==FB_FILTER||fb_mode==FB_RENAME) {
   size_t n=strlen(fb_editor);portable_nova_text(2,18,48,204,fb_editor+(n>23?n-23:0),NOVA_CYAN);
   for(unsigned i=0;i<PWK_COUNT;i++) {
    portable_watch_key_rect r;portable_watch_key_bounds(i,&r);unsigned ch=portable_watch_key_character(fb_key_page,i);char letter[]={(char)(ch?ch:' '),0};
@@ -559,7 +615,9 @@ static void fb_draw(void) {
    portable_nova_fill(r.x,r.y,r.w,r.h,i==fb_choice?NOVA_DIM:NOVA_LINE);portable_nova_text(2,r.x+5,r.y+7,r.w-10,label,NOVA_CYAN);
   }
   portable_nova_text(3,18,216,204,fb_status,NOVA_CAP);
- } else if(fb_mode==FB_DETAIL) {
+ }
+#endif
+ else if(fb_mode==FB_DETAIL) {
   char size[32];fb_size_text(fb_size,size,sizeof(size));
   char name[65];snprintf(name,sizeof(name),"%.64s",fb_selected.name+fb_detail_offset);
   portable_nova_wrap(1,18,52,204,17,4,name,NOVA_WHITE);
@@ -600,7 +658,7 @@ static void fb_move(int direction) {
  if(fb_mode>=FB_ACTIONS){fbx_move(direction);return;}
  if(fb_mode==FB_PREVIEW){fb_preview_page(direction);return;}
  if(fb_mode==FB_DETAIL){if(direction<0)fb_detail_offset=0;else if(strlen(fb_selected.name)>64)fb_detail_offset=64;fb_dirty=true;return;}
- unsigned count=fb_mode==FB_FILTER?PWK_COUNT:fb_mode==FB_OPTIONS?fb_option_count():fb_count;
+ unsigned count=fb_mode==FB_FILTER?FB_EDITOR_CHOICES:fb_mode==FB_OPTIONS?fb_option_count():fb_count;
  if(!count)return;
  if(direction<0){if(fb_choice)fb_choice--;else if(fb_mode==FB_LIST)fb_page_previous();else fb_choice=count-1;}
  else {if(fb_choice+1<count)fb_choice++;else if(fb_mode==FB_LIST)fb_page_next();else fb_choice=0;}
@@ -623,7 +681,13 @@ static void fb_activate(void) {
  if(fb_mode>=FB_ACTIONS){fbx_activate();fb_dirty=true;return;}
  if(fb_mode==FB_LIST)fb_activate_file(fb_choice);
  else if(fb_mode==FB_OPTIONS)fb_option(fb_choice);
- else if(fb_mode==FB_FILTER)fb_filter_key(fb_choice);
+ else if(fb_mode==FB_FILTER){
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ (void)fb_text_begin(FB_FILTER,"Find file");
+#else
+ fb_filter_key(fb_choice);
+#endif
+ }
  else if(fb_mode==FB_DETAIL){fb_mode=FB_PREVIEW;fb_offset=0;(void)fb_preview_read();}
  else {fb_hex=!fb_hex;fb_offset=0;(void)fb_preview_read();}
  fb_dirty=true;
@@ -642,7 +706,13 @@ static bool fb_touch(int x,int y) {
  if(x<52 && y<44)return fb_back();
  if(fb_mode==FB_LIST && x>=184 && y<44){fb_list_choice=fb_choice;fb_mode=FB_OPTIONS;fb_choice=0;fb_dirty=true;return false;}
  if(fb_mode>=FB_ACTIONS&&fb_mode!=FB_RENAME)return fbr_touch(x,y);
- if(fb_mode==FB_FILTER||fb_mode==FB_RENAME){int key=portable_watch_key_hit(x,y);if(key>=0){fb_choice=(unsigned)key;fb_filter_key(fb_choice);}return false;}
+ if(fb_mode==FB_FILTER||fb_mode==FB_RENAME){
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(x>=16&&x<224&&y>=188&&y<232)(void)fb_text_begin(fb_mode,fb_mode==FB_FILTER?"Find file":"Edit name");
+#else
+ int key=portable_watch_key_hit(x,y);if(key>=0){fb_choice=(unsigned)key;fb_filter_key(fb_choice);}
+#endif
+ return false;}
  if(y>=188 && y<232){if(x>=16 && x<80)fb_move(-1);else if(x>=88 && x<152)fb_activate();else if(x>=160 && x<224)fb_move(1);return false;}
  if(x>=16 && x<224 && (fb_mode==FB_LIST || fb_mode==FB_OPTIONS))for(unsigned row=0;row<2;row++)if(y>=62+(int)row*58 && y<116+(int)row*58){unsigned index=fb_mode==FB_OPTIONS?fb_choice/2*2+row:row;if(index<(fb_mode==FB_OPTIONS?fb_option_count():fb_count)){fb_choice=index;fb_activate();}break;}
  return false;
@@ -667,6 +737,10 @@ static bool fb_open(void) {
 #endif
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
  fsource_reset();
+#endif
+ #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ fb_text=(portable_text_client){0};fb_text_state=(risc_text_entry_state_v1_extended){0};
+ fb_text_active=fb_text_closing=fb_text_home=fb_text_invalidated=false;
 #endif
  fbp_key_page=0;fbp_clean=true;fbp_last_mode=0;fbp_contact_down=false;fb_publication_unknown=false;
  memset(&fb_grant,0,sizeof(fb_grant));memset(&fb_other_grant,0,sizeof(fb_other_grant));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_other_volume=NULL;fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
@@ -698,6 +772,9 @@ void app_main(void) {
  if(!fb_open())return;
  for(;;) {
  if(PORTABLE_APP_RETAINED())return;
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ if(fb_text.retained||portable_text_adapter_retained())return;
+#endif
   if(fb_terminal)return;
 #ifdef PORTABLE_FILE_SHARING
   fsh_tick();if(fb_terminal||PORTABLE_APP_RETAINED())return;
@@ -707,6 +784,16 @@ void app_main(void) {
 #endif
 #ifdef PORTABLE_FILE_SETUP
   if(portable_file_browser_cleanup_only())continue;
+#endif
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+  if(fb_text_active){fb_text_step();if(fb_text.retained||PORTABLE_APP_RETAINED())return;fb_runtime->yield_ms(1);continue;}
+  if(fb_text_home){
+   if(!portable_file_browser_close()){if(PORTABLE_APP_RETAINED())return;fb_runtime->yield_ms(1);continue;}
+#ifdef PORTABLE_HOME_APP
+   (void)fb_runtime->request_launch(PORTABLE_HOME_APP);
+#endif
+   return;
+  }
 #endif
   if(fb_dirty)fb_draw();
   t5_app_input_t input={0};

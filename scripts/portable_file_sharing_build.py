@@ -4,7 +4,7 @@ from pathlib import Path
 import shutil
 import subprocess
 VERSION = '1.5.32'
-def selected_version(args):return '1.5.33' if getattr(args,'source_handoff',False) else VERSION
+def selected_version(args):return '1.5.34' if getattr(args,'shared_text_input',False) else '1.5.33' if getattr(args,'source_handoff',False) else VERSION
 MODULES = ('WebDavCore','WebDavVolume','WebDavProperties','WebDavSession','WebDavDigest','WebDavSharing','PortableFileSharing')
 
 def options(parser):
@@ -92,7 +92,9 @@ def record(args,root,out,manifest,record):
         name=getattr(args,'secondary_storage_capability','storage.volume')
         bindings[name]=list(dict.fromkeys([*bindings.get(name,[]),args.secondary_storage_instance]))
     grants=[dict(item,instance_id=instance) for item in manifest['requires'] for instance in bindings.get(item['capability'],[0])]
-    if len(grants)>16:raise ValueError(f'Sharing profile exceeds 16 live app grants: {len(grants)}')
+    policy_rows=17 if getattr(args,'shared_text_input',False) else 16
+    if len(grants)>policy_rows:raise ValueError(f'Sharing profile exceeds {policy_rows} declared app policy rows: {len(grants)}')
+    if getattr(args,'shared_text_input',False):record['text_input_policy']={'declared_rows':len(grants),'minimum_native_policy_rows':17,'simultaneous_live_grants_not_inferred_from_declarations':True}
     record.update(required_grants=grants,requested_capabilities=manifest['requires'],grant_count=len(grants))
     record['file_sharing']={'peer_files':getattr(args,'peer_files',False),'enabled':True,'transport':'authenticated-http','content_encrypted':False,'explicit_start':True,'lifetime_ms':300000,'listen_port':8080,'default_transport':'ble-private-wifi' if setup is not None else 'same-lan','same_lan_profile':0,'private_network_profile_writes':False,'credentials_namespace':6,'radio_policy_namespace':1,'instances':instances,'app_data_export_required':export_required(args),'root_policy':'selected storage.volume only' if not export_required(args) else 'boot-configured export map or selected storage.volume','ble_setup':setup is not None,'hardware_qualified':False}
     record['file_sharing']['protected_settings']={'root':'/RTECFG','direct_recursive_and_peer':True,'helper_sha256':hashlib.sha256((root/'lib/PortableApps/include/RiscProtectedSettingsPath.h').read_bytes()).hexdigest()}

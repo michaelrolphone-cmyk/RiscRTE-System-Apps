@@ -390,7 +390,13 @@ static void fbx_activate(void){
 #endif
  if(fb_mode==FB_NOTICE){fb_mode=fb_notice_return;fb_choice=0;return;}
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
- if(fb_mode==FB_RENAME){fb_filter_key(fb_choice);return;}
+ if(fb_mode==FB_RENAME){
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ (void)fb_text_begin(FB_RENAME,"Edit name");
+#else
+ fb_filter_key(fb_choice);
+#endif
+ return;}
  if(fb_mode==FB_DELETE){if(fb_choice==1)fbx_delete();else {fb_mode=FB_ACTIONS;fb_choice=0;}return;}
  if(fb_mode==FB_HANDLERS){fbx_dispatch(fb_choice);return;}
 #endif
@@ -405,7 +411,13 @@ static void fbx_activate(void){
   case 0:fbx_open(false);break;
   case 1:fbx_open(true);break;
   case 2:if(fb_selected.is_directory){fbx_notice("Select a file to preview");break;}fb_mode=FB_PREVIEW;fb_offset=0;fb_hex=false;(void)fb_preview_read();break;
-  case 3:if(!fbx_rename_available()){fbx_notice("Rename unavailable on this volume");break;}strcpy(fb_editor,fb_selected.name);fb_key_page=PWK_INITIAL_PAGE;fbp_key_page=0;fb_choice=0;fb_mode=FB_RENAME;fb_message("Done renames / Cancel keeps original");break;
+  case 3:if(!fbx_rename_available()){fbx_notice("Rename unavailable on this volume");break;}strcpy(fb_editor,fb_selected.name);
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+ (void)fb_text_begin(FB_RENAME,"Rename");
+#else
+ fb_key_page=PWK_INITIAL_PAGE;fbp_key_page=0;fb_choice=0;fb_mode=FB_RENAME;fb_message("Done renames / Cancel keeps original");
+#endif
+ break;
   case 4:fbx_destination(true);break;
   case 5:fbx_destination(false);break;
   case 6:if(!fb_volume->remove
@@ -421,6 +433,6 @@ static void fbx_move(int direction){
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  if(fb_mode==FB_HANDLERS){unsigned n=fb_handler_count-fb_handler_offset;if(n>fb_page_rows)n=fb_page_rows;if(direction>0&&fb_choice+1>=n){if(fb_handler_offset+n<fb_handler_count){fb_handler_offset+=n;(void)fbx_handler_page();}}else if(direction<0&&!fb_choice){if(fb_handler_offset){fb_handler_offset-=fb_page_rows;(void)fbx_handler_page();}}else fb_choice=(unsigned)((int)fb_choice+direction);fb_dirty=true;return;}
 #endif
- unsigned count=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_mode==FB_RENAME?PWK_COUNT:(fb_mode==FB_DELETE||fb_mode==FB_REPLACE)?2:1;
+ unsigned count=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_mode==FB_RENAME?FB_EDITOR_CHOICES:(fb_mode==FB_DELETE||fb_mode==FB_REPLACE)?2:1;
  fb_choice=(fb_choice+count+(unsigned)direction)%count;fb_action_page=fb_choice/fb_page_rows;fb_dirty=true;
 }

@@ -13,8 +13,13 @@ static uint16_t nc_color(unsigned tone){
     return colors[tone<=RISC_TONE_MUTED?tone:0];
 }
 static const pc_font *nc_font(unsigned role){
+#if SCENE_HOST_WATCH_240
+    static const pc_font *const faces[6]={&nova_title_1,&nova_section_1,&nova_body_1,&nova_small_1,&nova_value_1,&nova_tab_1};
+    return faces[role];
+#else
     static const pc_font *const faces[2][6]={{&nova_title_1,&nova_section_1,&nova_body_1,&nova_small_1,&nova_value_1,&nova_tab_1},{&nova_title_2,&nova_section_2,&nova_body_2,&nova_small_2,&nova_value_2,&nova_tab_2}};
     return faces[nc_scale()-1][role];
+#endif
 }
 static int nc_tracking(unsigned role){return role==5?31*nc_scale():0;}
 static int nc_measure(unsigned role,const char *s){return (paper_measure(nc_font(role),s,0)+(int)strlen(s)*nc_tracking(role)+32)/64;}
@@ -579,6 +584,10 @@ static void component_focus(int direction){
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){
+#if !SCENE_HOST_TELEMETRY
+    if(d->flags&RISC_COMPONENTS_TELEMETRY)return false;
+    for(unsigned i=0;i<d->node_count;i++)if(tm_kind(d->nodes[i].kind)||d->details[i].symbol>=RISC_SYMBOL_GAUGE)return false;
+#endif
     if(!d->screen_key||d->flags&~31u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
     bool cancel=!(d->flags&3u);unsigned headers=0,modal_actions=0,modal_texts=0,tabs=0,tiles=0;
     for(unsigned i=0;i<d->node_count;i++){

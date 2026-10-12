@@ -4,6 +4,7 @@ cd "$(dirname "$0")/.."
 output="${OUTPUT_DIR:-$(mktemp -d /tmp/files-peer-ui.XXXXXX)}";mkdir -p "$output"
 flags=(-g -O1 -Wall -Wextra -Werror -Ilib/PortableApps/include -Ilib/NativeApps/include -Ilib/RemoteFiles -Ilib/UserFiles -I../runtime/src -I../runtime/sdk/app -DPORTABLE_FILE_SHARING_SELECTED_VOLUME)
 if [[ "${SANITIZE:-0}" == 1 ]];then flags+=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie);fi
+if [[ "${FILES_SHARED_TEXT:-0}" == 1 ]];then flags+=(-DPORTABLE_FILE_BROWSER_SHARED_INPUT -DPORTABLE_TEXT_INPUT_CLIENT -DFILE_SHARED_INPUT_FIXTURE);fi
 objects=()
 for source in WebDavCore WebDavVolume WebDavProperties WebDavSession WebDavDigest WebDavSharing PortableFileSharing WebDavClient WebDavRemoteVolume PortablePeerFiles;do
  "${CXX:-c++}" -std=c++17 "${flags[@]}" -c "lib/RemoteFiles/$source.cpp" -o "$output/$source.o";objects+=("$output/$source.o")
