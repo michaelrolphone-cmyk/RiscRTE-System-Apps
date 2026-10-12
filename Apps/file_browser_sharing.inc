@@ -111,10 +111,20 @@ static bool fsh_release(risc_runtime_capability_v1 *grant){
  if(!fb_runtime->release(grant)||!fsh_owner(NULL)){fsh_retain();return false;}
  memset(grant,0,sizeof(*grant));return true;
 }
+#ifdef PORTABLE_FILE_PEER
+static bool fsh_peer_service_result(bool ok){
+ portable_peer_status status;portable_peer_status_get(fpeer,&status);
+ if(status.state==PEER_RETAINED){fsh_retain();return false;}
+ return ok;
+}
+#endif
 bool portable_file_browser_services_begin(void){
  if(!fsh_owner(NULL))return false;
 #ifdef PORTABLE_FILE_SETUP
  if(portable_file_browser_cleanup_only())return false;
+#endif
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer)return fsh_peer_service_result(portable_peer_services_begin(fpeer));
 #endif
  if(!fsh_network_initialized)return true;
  if(fsh_service_ending){
@@ -131,6 +141,9 @@ bool portable_file_browser_services_end(void){
  if(!fsh_owner(NULL))return false;
 #ifdef PORTABLE_FILE_SETUP
  if(portable_file_browser_cleanup_only())return false;
+#endif
+#ifdef PORTABLE_FILE_PEER
+ if(fpeer)return fsh_peer_service_result(portable_peer_services_end(fpeer));
 #endif
  if(!fsh_network_initialized)return true;
  int rc=portable_network_session_service_end(&fsh_network);

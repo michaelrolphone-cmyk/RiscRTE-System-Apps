@@ -6,6 +6,9 @@ on:
     paths:
       - 'Apps/file_browser*'
       - 'lib/RemoteFiles/PortablePeerFiles.cpp'
+      - 'lib/PortableApps/include/PortablePeerFiles.h'
+      - 'scripts/test_file_browser_peer_alarm.sh'
+      - 'test/remote_files/peer_resident_backend.cpp'
       - 'test/native_apps/file_browser*'
       - 'test/remote_files/peer_controller_fixture.inc'
       - '.github/workflows/offline-sharing-entropy.yml'
@@ -29,6 +32,17 @@ jobs:
           ref: 3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b
           path: runtime
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: fc0bdbbbc600ce891e60c44d091fce0586ade7d8
+          path: utilities
+          persist-credentials: false
+      - name: Nearby alarm service lease regression
+        working-directory: system
+        run: |
+          bash scripts/test_file_browser_peer_alarm.sh
+          SANITIZE=1 bash scripts/test_file_browser_peer_alarm.sh
       - name: Initially-off offline sharing and peer cleanup
         working-directory: system
         run: |

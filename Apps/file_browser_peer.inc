@@ -9,15 +9,14 @@ static char fpeer_local_folder[FB_PATH_CAP],fpeer_upload_path[FB_PATH_CAP],fpeer
 static const char *const fpeer_actions[]={"Download","Download and open","Rename","Move to path","Copy to path","Delete","Replace with selected local file","Back to folder"};
 static bool fpeer_close(void){
  if(!fpeer)return true;
- if(!portable_file_browser_services_begin())return false;
+ /* The peer owns its internal leases; cancellation must run outside them. */
  portable_peer_stop(fpeer);
 portable_peer_tick(fpeer,fsh_clock());
 portable_peer_status_get(fpeer,&fpeer_status);
  if(fpeer_status.state==PEER_RETAINED){fsh_retain();
 return false;
 }
- if(!portable_file_browser_services_end())return false;
- if(fpeer_status.state!=PEER_OFF||fsh_service_ending)return false;
+ if(fpeer_status.state!=PEER_OFF)return false;
  if(!portable_peer_destroy(fpeer)){fsh_retain();
 return false;
 }fpeer=NULL;
@@ -56,14 +55,13 @@ return;
 }
   fsh_phase=FSH_ACTIVE;
  }
- if(!portable_file_browser_services_begin())return;
+ /* Do not lease over JOIN/poll/cancel. The peer scopes its own I/O. */
  portable_peer_tick(fpeer,now);
 portable_peer_status next;
 portable_peer_status_get(fpeer,&next);
  if(next.state==PEER_RETAINED){fsh_retain();
 return;
 }
- if(!portable_file_browser_services_end())return;
  if(memcmp(&next,&fpeer_status,sizeof(next))){
   if(next.state!=fpeer_status.state)fpeer_choice=0;
   fpeer_status=next;

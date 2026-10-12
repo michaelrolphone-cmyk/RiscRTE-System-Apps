@@ -361,6 +361,31 @@ extern "C" bool portable_peer_network_owned(const portable_peer_files*p){
  const auto state=p->client.state();
  return state!=Client::State::Off&&state!=Client::State::Ready&&state!=Client::State::Error;
 }
+/* External foreground services share the same native lease as peer I/O.
+ * Peer ticks themselves remain unwrapped so JOIN/poll/cancel can advance. */
+extern "C" bool portable_peer_services_begin(portable_peer_files*p){
+ if(!p)return true;
+ if(!p->owner())return false;
+ if(!p->networkInitialized)return true;
+ if(p->leaseEnding){
+  int rc=portable_network_session_service_end(&p->network);
+  if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();
+  else if(rc==PORTABLE_NETWORK_SERVICE_OK)p->leaseEnding=false;
+  return false; /* Drain the previous scope without replaying its work. */
+ }
+ int rc=portable_network_session_service_begin(&p->network);
+ if(rc==PORTABLE_NETWORK_SERVICE_RETAINED)p->retain();
+ return rc==PORTABLE_NETWORK_SERVICE_OK;
+}
+extern "C" bool portable_peer_services_end(portable_peer_files*p){
+ if(!p)return true;
+ if(!p->owner())return false;
+ if(!p->networkInitialized)return true;
+ int rc=portable_network_session_service_end(&p->network);
+ if(rc==PORTABLE_NETWORK_SERVICE_RETAINED){p->retain();return false;}
+ p->leaseEnding=rc==PORTABLE_NETWORK_SERVICE_PENDING;
+ return true;
+}
 extern "C" bool portable_peer_row_get(const portable_peer_files*p,unsigned i,portable_peer_row*out){if(!p||!out||i>=p->status.count)return false;
 *out={};
 if(p->status.state==PEER_DISCOVERING){if(i>=RISC_SESSION_PEERS_MAX)return false;
