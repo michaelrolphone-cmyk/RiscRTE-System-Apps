@@ -44,10 +44,18 @@ static bool desk_guard_diagnostic(const char *line) {
 static bool desk_guard_launch(const char *path) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(native_sleep_retained || !portable_paper_frame_drain())return false;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ if(!desk_radio_policy_ready(true))return false;
+#endif
  if(!contexts_suspend())return false;
  return desk_runtime->request_launch(path);
 #else
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ return !native_sleep_retained && portable_paper_frame_drain() &&
+        desk_radio_policy_ready(true) && desk_runtime->request_launch(path);
+#else
  return !native_sleep_retained && portable_paper_frame_drain() && desk_runtime->request_launch(path);
+#endif
 #endif
 }
 #ifdef PORTABLE_QUICK_RADIOS
@@ -171,6 +179,10 @@ static bool desk_radios_load(pqa_radios *state,pqa_state *ui,const risc_runtime_
  (void)runtime;
  if(native_sleep_retained)return false;
  if(!pqa_radios_load(state,ui,&desk_quick_runtime)){portable_desk_adapter_retain();return false;}
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ /* The ordinary settled Quick modal reload also completes deferred policy. */
+ if(state==&quick_radios && !native_sleep_retained)desk_radios_loaded=true;
+#endif
  return !native_sleep_retained;
 }
 static bool desk_radios_apply(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime,uint32_t actions) {
@@ -254,7 +266,7 @@ static int desk_open_foreground(void) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
-#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_QUICK_RADIOS) && !defined(PORTABLE_DESK_DEFER_RADIOS)
  if(!desk_radios_load(&quick_radios,&quick.ui,rt) || native_sleep_retained) {
   portable_desk_adapter_retain();return desk_start_error();
  }

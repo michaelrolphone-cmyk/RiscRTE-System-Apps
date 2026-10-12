@@ -35,6 +35,10 @@ static int32_t resident_loading(void *context,const char *path) {
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
  if(!path || failed || surface.frame || paper_token || !display_settled ||
     alarm_modal || quick_modal || !pp_enabled())return RISC_RESIDENT_BUSY;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ /* Also covers a saved NULL-path continuation; NO_PENDING does not call us. */
+ if(!desk_radio_policy_ready(true))return RISC_RESIDENT_RETAINED;
+#endif
 #ifdef PORTABLE_PAPER_CROSSFADE
  /* This scene must be legible before loading starts, even on a fast launch. */
  portable_paper_transition_cancel();

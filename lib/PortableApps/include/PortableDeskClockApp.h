@@ -46,6 +46,10 @@ void portable_desk_clock_radios_off(void);
 /* Defer optional radio policy application until normal foreground is needed. */
 int portable_desk_clock_mode(void);
 bool portable_desk_adapter_foreground(void);
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+/* Mark a real foreground Home submission, not logo/loading/desk imagery. */
+void portable_desk_adapter_home_submitted(void);
+#endif
 
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
 /* Foreground hydration gate only; retained TIMER never changes this state. */
