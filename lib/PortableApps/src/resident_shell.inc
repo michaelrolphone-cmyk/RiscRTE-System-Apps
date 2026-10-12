@@ -49,7 +49,7 @@ static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *r
  (void)context;
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
- if(quick_atomic_owned())return RISC_RESIDENT_BUSY;
+ if(quick_atomic_owned()||home_automatic_input_busy())return RISC_RESIDENT_BUSY;
 #endif
  if(!resident_child_active || resident_dispatching || !request || request->struct_size<sizeof(*request) ||
     !reply || reply->struct_size<sizeof(*reply))return RISC_RESIDENT_INVALID;

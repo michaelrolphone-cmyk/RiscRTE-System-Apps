@@ -169,9 +169,19 @@ static inline bool portable_contexts_apply_preferences(const risc_key_value_v1 *
 #undef CONTEXT_WRITE
     return true;
 }
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+static inline bool portable_contexts_apply_room_using(portable_contexts_client *c,uint16_t *applied,
+        bool (*face_save)(const risc_key_value_v1 *,unsigned),
+        bool (*apply_claimed)(portable_contexts_client *,const portable_context_preset *,bool,uint16_t *,
+                              bool (*)(const risc_key_value_v1 *,unsigned))) {
+#else
 static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint16_t *applied,
         bool (*face_save)(const risc_key_value_v1 *,unsigned)) {
+#endif
     if(!PORTABLE_CONTEXTS_CUSTODY_SAFE()||!applied)return false;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+    if(!apply_claimed)return false; /* Selected scope has no legacy fallback. */
+#endif
     if(c->storage.api)return false;
     *applied=0;if(!c->api||!c->settings_valid||!c->policy.enabled)return true;
     if(c->preset_checked&&c->preset_checked_at==c->loaded_at)return true;
@@ -207,8 +217,12 @@ static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint
     if(!c->api->claim_preset(c->api->context,room->source,(uint32_t)room->room_slot,room->room_name,room->model_generation))return true;
     if(!portable_contexts_pause(c))return false;
     c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};bool ok=false;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+    ok=apply_claimed(c,&selected,c->low_battery,applied,face_save);
+#else
     if(c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage))
         ok=portable_contexts_apply_preferences(c->storage.api,&selected,c->low_battery,applied,face_save);
+#endif
     if(!portable_contexts_release_storage(c))return false;
     return c->api->preset_result(c->api->context,room->source,room->model_generation,
         ok&&*applied==selected.actions?CONTEXTS_PRESET_APPLIED:CONTEXTS_PRESET_PARTIAL);

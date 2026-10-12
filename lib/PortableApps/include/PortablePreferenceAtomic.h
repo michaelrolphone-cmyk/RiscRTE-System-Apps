@@ -34,8 +34,15 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
 static inline bool portable_preference_atomic_key(const char *key) {
  static const char *const allowed[]={"time_format","time_zone","desk_clock_face","desk_direction",
   "reader_flip_ui","reader_language","sleep_idle","rtc_basis",
-  "brightness","frontlight_tone","alert_dnd","contexts_on","quick_radio"};
+  "brightness","frontlight_tone","alert_dnd","contexts_on","quick_radio",
+  "ble_broadcast","context_sources","context_timing"};
  if(!key)return false;
+ /* Explicit BLE alias/tombstone identities only; exactly one address type
+  * digit and twelve canonical lowercase address nibbles. */
+ if(strlen(key)==15&&key[0]=='b'&&key[1]=='s'&&key[2]>='0'&&key[2]<='3'){
+  for(unsigned i=3;i<15;i++)if(!((key[i]>='0'&&key[i]<='9')||(key[i]>='a'&&key[i]<='f')))return false;
+  return true;
+ }
  for(unsigned i=0;i<sizeof(allowed)/sizeof(*allowed);++i)if(!strcmp(key,allowed[i]))return true;
  return false;
 }

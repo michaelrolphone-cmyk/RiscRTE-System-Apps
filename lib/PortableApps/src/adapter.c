@@ -69,11 +69,26 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
 #if defined(PORTABLE_RESIDENT_LOADING) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
 #error "App loading presentation belongs to the resident host"
 #endif
+#if defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES) && !defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
+#error "Atomic Home automatic preferences require atomic Quick"
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
 #if !defined(PORTABLE_RESIDENT_SHELL_HOST) || !defined(PORTABLE_DESK_CLOCK_SPARSE_START) || !defined(PORTABLE_FRONTLIGHT_TONE) || !defined(PORTABLE_PAPER_TRANSITIONS)
 #error "Atomic Quick preferences require the selected X4 sparse resident Home"
 #endif
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+#if !defined(PORTABLE_X4_IDLE_POLICY) || !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY)
+#error "Atomic Home automatic preferences require selected X4 idle and RF contexts"
+#endif
+static bool home_automatic_owned(void);
+static bool home_automatic_close(void);
+#endif
 static bool quick_atomic_running;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+#define home_automatic_input_busy() home_automatic_owned()
+#else
+#define home_automatic_input_busy() false
+#endif
 static unsigned quick_atomic_contact;
 static bool quick_atomic_owned(void);
 static bool quick_atomic_close(void);
@@ -751,8 +766,8 @@ static void input_dispatch(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
-  if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running)++quick_atomic_contact;
-  bool reserved=quick_atomic_running||pqa_input(&quick.ui,
+  if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running&&!home_automatic_input_busy())++quick_atomic_contact;
+  bool reserved=quick_atomic_running||home_automatic_input_busy()||pqa_input(&quick.ui,
 #else
   bool reserved=pqa_input(&quick.ui,
 #endif
@@ -762,7 +777,7 @@ static void input_dispatch(void) {
       quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):next.y,
       next.tap_eligible&&(quick.ui.paper || (info.width==240&&info.height==240)));
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
-  if(!quick_atomic_running)quick_atomic_enqueue();
+  if(!quick_atomic_running&&!home_automatic_input_busy())quick_atomic_enqueue();
 #endif
   if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
      !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
@@ -2916,6 +2931,9 @@ static int initialize(void) {
   quick_atomic_running=false;quick_atomic_contact=0;quick_atomic_attempted=false;quick_atomic_revision=0;
   quick_atomic_grant=(risc_runtime_capability_v1){0};quick_atomic_edit=(portable_preference_atomic){0};
   quick_atomic_discard();
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  home_automatic_grant=(risc_runtime_capability_v1){0};home_automatic=(portable_preference_automatic){0};
+#endif
   quick.save_user=quick_atomic_save;
 #endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
@@ -3125,6 +3143,9 @@ static void settings_native_finalize(void) {
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  if(rt&&!home_automatic_close()) {if(!native_custody_retained)portable_adapter_retain();return;}
+#endif
   /* Collect/cancel before any unrelated teardown or provider operation. */
   if(rt&&!quick_atomic_close()){
    if(!native_custody_retained)portable_adapter_retain();

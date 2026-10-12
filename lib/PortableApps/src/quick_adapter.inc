@@ -42,6 +42,9 @@ static bool quick_storage_safe(void) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
 #include "quick_atomic.inc"
 #define quick_take_action() quick_atomic_take_action()
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+#include "home_automatic.inc"
+#endif
 #else
 #define quick_take_action() pqa_take_action(&quick.ui)
 #endif
@@ -97,7 +100,11 @@ static bool low_battery_poll_inner(void) {
   return !failed && !native_sleep_retained;
  }
 #endif
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+ unsigned result=home_automatic_low_battery(&sample);
+#else
  unsigned result=portable_low_battery_update(&low_battery,rt,&sample);
+#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
  if(native_sleep_retained || !portable_wifi_services_end())return false;
  low_battery_transition_pending=false;

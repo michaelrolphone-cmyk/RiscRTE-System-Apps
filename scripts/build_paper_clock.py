@@ -11,6 +11,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--experimental-atomic-home-automatic',action='store_true',help='Default-off X4 Home automatic origins; requires atomic Quick and RF contexts')
  p.add_argument('--experimental-atomic-quick',action='store_true',help='Default-off X4 Home explicit namespace-1 atomic preference intents; no production activation')
  p.add_argument('--deferred-foreground-services',action='store_true',help='X4 sparse Home: apply Quick radio policy after first completed Home frame or before an explicit lifecycle transition')
  p.add_argument('--installed-catalog-volume-instance',type=int,help='Hydrate cached apps and scan SD after first Home frame')
@@ -36,6 +37,8 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.experimental_atomic_home_automatic and not (a.experimental_atomic_quick and a.contexts_rf_only and portable_idle_build.selected(a)):
+  p.error('--experimental-atomic-home-automatic requires atomic Quick, RF contexts and checked X4 idle')
  if a.experimental_atomic_quick and not (a.sparse_start and a.resident_shell_host and a.frontlight_tone and a.quick_radios and a.paper_transitions):
   p.error('--experimental-atomic-quick requires X4 sparse resident Home, frontlight tone, radios and paper transitions')
  if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
@@ -105,6 +108,7 @@ def build():
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
  if a.experimental_atomic_quick:flags+=['-DPORTABLE_QUICK_ATOMIC_PREFERENCES']
+ if a.experimental_atomic_home_automatic:flags+=['-DPORTABLE_HOME_AUTOMATIC_PREFERENCES']
  if a.ble_broadcast:flags += ["-DPORTABLE_BLE_BROADCAST","-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF"]
  if a.desk_points_face:flags+=['-DPORTABLE_DESK_POINTS_FACE','-DPORTABLE_DESK_POINTS_SNAPSHOT']
  if a.desk_lock_home:flags+=['-DPORTABLE_DESK_LOCK_HOME']
@@ -184,6 +188,18 @@ def build():
    'lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/resident_shell.inc')}
   record['atomic_quick']['sdk_sha256']=hashlib.sha256((includes/'RiscKeyValueAtomicV1.h').read_bytes()).hexdigest()
   record.setdefault('grant_bindings',{})['storage.key-value.atomic']=[1]
+ if a.experimental_atomic_home_automatic:
+  record['atomic_home_automatic']={'experimental':True,'default_selected':False,'namespace':1,
+   'intent':'PFA0001','origin':'AUTOMATIC','boundaries':['low-battery','Home-rules','claimed-room-preset'],
+   'legacy_put_fallback':False,'partial_failure_replay':False,'editor_mask_applied_to_home_rules':False,
+   'sd_acknowledged':False,'activation_gate':'foreign/conflicting sources remain unresolved; Utilities automatic rules remain separate',
+   'source_sha256':{name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+    'lib/PortableApps/include/PortablePreferenceAutomatic.h','lib/PortableApps/src/home_automatic.inc',
+    'lib/PortableApps/include/PortableLowBattery.h','lib/PortableApps/include/PortableContextActions.h',
+    'lib/PortableApps/include/PortableContextsClient.h','lib/PortableApps/src/contexts_rules_adapter.inc',
+    'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/quick_adapter.inc','lib/PortableApps/src/adapter.c')}}
+  record['atomic_quick']['automatic_policy_migrated']=True
+  record['atomic_quick']['activation_gate']='foreign/conflicting sources and Utilities automatic rules remain unresolved'
  if a.ble_broadcast:record['ble_broadcast']={'enabled':True,'default':'off','grant_lifetime':'transient','timer_only':False,'shared_preferences_instance':1};record['build_defines']=flags
  if a.contexts_rf_only:
   record['contexts']={'profile':'rf-only','supported_sources':2,'owner':'waterfall.elf','service_api':1,
