@@ -15,6 +15,9 @@
 #error Shared Files input requires the presenter handoff client
 #endif
 #include "PortableTextInputExtendedClient.h"
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#include "PortableTextInputPolicy.h"
+#endif
 #define FB_EDITOR_CHOICES 1u
 #else
 #include "PortableWatchKeyboard.h"
@@ -115,6 +118,10 @@ static portable_text_client fb_text;
 static risc_text_entry_state_v1_extended fb_text_state;
 static unsigned fb_text_mode,fb_text_return_mode,fb_text_return_choice,fb_text_storage;
 static bool fb_text_active,fb_text_closing,fb_text_home,fb_text_invalidated;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+static portable_text_checkpoint_client fb_text_checkpoint;
+static bool fb_text_policy_continuity,fb_text_policy_boundary;
+#endif
 static bool fb_text_begin(unsigned,const char*),fb_text_close(void);
 static void fb_text_step(void),fb_text_draw(void);
 #endif
@@ -292,7 +299,11 @@ static bool fb_acquire(void) {
 }
 bool portable_file_browser_safe(void) {
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+ if((fb_text_active&&!fb_text_policy_boundary)||fb_text.retained||portable_text_adapter_retained())return false;
+#else
  if(fb_text_active||fb_text.retained||portable_text_adapter_retained())return false;
+#endif
 #endif
  if(PORTABLE_APP_RETAINED())return false;
  if(fb_retained_file)return false;
@@ -302,6 +313,11 @@ bool portable_file_browser_safe(void) {
 bool portable_file_browser_close(void) {
  if(PORTABLE_APP_RETAINED())return false;
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+ /* Only this synchronous, settled policy dispatch may release storage/radio
+  * resources while keeping the fully paused host and its draft alive. */
+ if(!(fb_text_policy_boundary&&fb_text_checkpoint.paused))
+#endif
  if(!fb_text_close())return false;
 #endif
 #ifdef PORTABLE_FILE_SHARING

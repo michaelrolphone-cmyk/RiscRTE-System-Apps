@@ -28,6 +28,12 @@ int portable_text_adapter_policy_prepare(uint32_t flags,bool *continuity) {
     /* A settled host has no mutable raster custody. Preserve the predecessor
      * service progression without consuming any of its input subscriptions. */
     if(flags&RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING)return 0;
+#ifdef PORTABLE_FILE_BROWSER_APP
+    if(!portable_file_browser_safe())return 0;
+#ifdef PORTABLE_FILE_SHARING
+    if(!portable_file_browser_services_safe())return text_input_alive()?0:text_input_failure();
+#endif
+#endif
 #ifdef PORTABLE_BLE_BROADCAST
     if(!broadcast_tick()||!text_input_alive())return text_input_failure();
 #endif
@@ -46,6 +52,11 @@ int portable_text_adapter_policy_prepare(uint32_t flags,bool *continuity) {
     if((uint32_t)(now-text_policy_poll_at)<500u)return 0;
     text_policy_poll_at=now;
     if(resident_capture_active()){resident_activity_pending=true;return 0;}
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_FILE_SHARING)
+    /* Match the ordinary resident gate: a native network owner must never
+     * cross Runtime's exit barrier, even for a bookkeeping-only POLL. */
+    if(portable_file_browser_network_owned()){resident_activity_pending=true;return 0;}
+#endif
     if(!resident_bind())return text_input_failure();
     risc_resident_request_v1 request={sizeof(request),RISC_RESIDENT_CHECKPOINT_POLL,resident_policy_flags(),0};
     risc_resident_reply_v1 reply={sizeof(reply),0};
@@ -66,7 +77,11 @@ int portable_text_adapter_policy_prepare(uint32_t flags,bool *continuity) {
 #else
     bool sleep_due=false,battery_due=false;
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
-    sleep_due=(uint32_t)(now-last_activity)>=portable_idle_ms()&&!idle_capture_active();
+    sleep_due=(uint32_t)(now-last_activity)>=portable_idle_ms()&&!idle_capture_active()
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_FILE_SHARING)
+        &&portable_file_browser_idle_ready()
+#endif
+        ;
 #endif
 #ifdef PORTABLE_LOW_BATTERY
     battery_due=!low_battery_sampled||(uint32_t)(now-low_battery_sampled_at)>=5000u;
@@ -103,6 +118,9 @@ int portable_text_adapter_policy_apply(bool continuity,uint32_t *resume_flags) {
 #ifdef PORTABLE_BLE_BROADCAST
     if(!portable_broadcast_stop()||!text_input_alive())return text_input_failure();
 #endif
+#ifdef PORTABLE_FILE_BROWSER_APP
+    if(!portable_file_browser_close()||!text_input_alive())return text_input_failure();
+#endif
     risc_resident_request_v1 request={sizeof(request),RISC_RESIDENT_CHECKPOINT_POLICY,0,0};
     risc_resident_reply_v1 reply={sizeof(reply),0};
     int status=resident.checkpoint(resident.invocation,&request,&reply);
@@ -120,7 +138,11 @@ int portable_text_adapter_policy_apply(bool continuity,uint32_t *resume_flags) {
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
     /* A routine battery sample cannot turn into sleep if time or preferences
      * changed since prepare. A fresh detached boundary handles it next time. */
-    if(!continuity&&(uint32_t)(millis_now()-last_activity)>=portable_idle_ms()&&!idle_capture_active()) {
+    if(!continuity&&(uint32_t)(millis_now()-last_activity)>=portable_idle_ms()&&!idle_capture_active()
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_FILE_SHARING)
+       &&portable_file_browser_idle_ready()
+#endif
+       ) {
         if(!idle_sleep()||!text_input_alive())return text_input_failure();
     }
 #endif
