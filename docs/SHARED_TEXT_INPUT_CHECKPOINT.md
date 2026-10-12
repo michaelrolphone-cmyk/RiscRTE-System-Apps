@@ -133,3 +133,35 @@ ptrace runs use the invoking ASAN_OPTIONS=detect_leaks=0; pre-existing legacy
 host/runtime runners retain their documented local leak-detection override.
 Host tests and target validation do not establish physical-device sleep, battery,
 USB or display timing. No hardware was flashed or binary delivered by this work.
+
+## Final qualification receipt (2026-10-12)
+
+[The compact receipt](qualification/text-input-checkpoint-20261012.json) binds
+public source `f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165` to
+[successful public CI](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38301221916)
+and hashed local evidence. Local target/app results retain System `87f7766` and
+Productivity `b8a926a`; matching source bytes reconcile publication without
+relabeling those runs. The later Contexts headers and native test runner have
+separate local/CI coverage, rather than being attributed to the older native run.
+
+Passing local executions include 140 checkpoint host/client, 104 scene/text
+handoff, 106 native-policy, 2 frozen-owner fallback, 10 unchanged-native-client,
+282 legacy text and 344 real Runtime/provider-graph cases. Scene presenter checks
+passed 197 executions per normal/sanitized flavor. Contexts checks passed 379
+probes per profile/flavor (1,516 total) and 12 default-object parity comparisons.
+The Lists app cross-check records 1,952 actual app runs, 1,954 evidence records,
+59 frame/storage comparisons per profile/flavor and 750 reducer states per
+flavor. These overlapping suites are not a unique-test grand total.
+
+All 137 dependency entries for the six Lists/text/scene target builds and all
+210 X4 Home dependency entries were rechecked against their recorded hashes.
+X4 Home retains its frozen predecessor Contexts headers; its only overlay is
+`resident_policy.inc`, `resident_shell.inc` and `PortableResidentPolicyInput.h`.
+It preserves the selected flags, fonts and independent boot/wake/deferred-radio
+fixes. Existing clients retain full-detach behavior; new clients fall back to it
+when the exact native continuity promise is absent.
+
+Qualification remains software-only. Bounded delivered-edge continuity cannot
+recover a physical press/release completed between synchronous provider polls;
+host timings do not establish device latency or actual sleep. No hardware was
+flashed, binary attached, or SD setting changed by this receipt.

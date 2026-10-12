@@ -1,0 +1,398 @@
+{
+  "schema": "shared-text-input.qualification.v1",
+  "date": "2026-10-12",
+  "scope": "Source/host/runtime/target-build qualification receipt. No physical-device validation or binary delivery.",
+  "public_compiled_source": {
+    "repository": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps",
+    "commit": "f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165",
+    "tree": "f89c7e713961a48b13dacd42ee2df2f90fdb2423"
+  },
+  "public_ci": {
+    "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38301221916",
+    "head_sha": "f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165",
+    "head_tree": "f89c7e713961a48b13dacd42ee2df2f90fdb2423",
+    "status": "completed",
+    "conclusion": "success",
+    "run_attempt": 1,
+    "updated_at": "2026-10-12T20:01:45Z",
+    "jobs": [
+      {
+        "name": "native-owner-regressions",
+        "id": 114984353206,
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38301221916/job/114984353206"
+      },
+      {
+        "name": "host-regressions",
+        "id": 114984353395,
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38301221916/job/114984353395"
+      }
+    ]
+  },
+  "local_evidence_provenance": {
+    "qualified_system_commit": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+    "qualified_productivity_commit": "b8a926abfeda9fbd904931725da1d0c4fe46cd81",
+    "semantics": "Local evidence retains its recorded source commits and hashes; publication reconciliation is byte comparison, not a claim that these runs used the later public commit. Counts below include repeated profiles/flavors and are not summed into a unique-test total.",
+    "historical_native_policy_differences_from_public": {
+      "lib/PortableApps/include/PortableContextFingerprints.h": {
+        "local_evidence_sha256": "76bfffa6336aa1caa10a0c479c6d67f6792847083a32da6b2910c3ec675d381c",
+        "public_sha256": "11493f75a58e83a67189c24c33bbd9657fdfd86da19266e4d8c56e98342a3d18"
+      },
+      "lib/PortableApps/include/PortableContextRules.h": {
+        "local_evidence_sha256": "c5dc73ff50bdd59b2011a61a3a04a0f6949287cd8ec051bc4b898aeafef3f3cf",
+        "public_sha256": "b259780f2366e80f9e818e63da659cc7cd8883dd73c22d2192f1452efa87e510"
+      },
+      "lib/PortableApps/include/PortableContextsClient.h": {
+        "local_evidence_sha256": "791163fe6f944f4b6d4a72611073c43c328dc93275a1bb7d68b09405be9dbe7c",
+        "public_sha256": "00519e55164c81cca72e97d9b8f42058e66428ef759a82be76e6c7b19b64ad64"
+      },
+      "lib/PortableApps/include/PortableFingerprintClock.h": {
+        "local_evidence_sha256": "7e133d788602d27b9332cecda8cc9cf8ee27bd30257f3d7570c886c675aa729b",
+        "public_sha256": "26ec2a7c36f6a795d466c2cf2c4fafe37c03c24fa41060096676913b4c3a059d"
+      },
+      "scripts/test_resident_idle.py": {
+        "local_evidence_sha256": "10ce95fab90ac4ec3bf445327cecd4027a05b05d6e044e05fcd6e92184d91cc6",
+        "public_sha256": "e351d21f2afe449fe8978ccf335700fd182bb459ee90fd1f8aaf9a4540d31281"
+      }
+    },
+    "later_contexts_and_runner_coverage": "The successful public CI run executes the public source. The separate local Contexts receipt preserves its dirty-worktree head and exact matching header/test/runner hashes."
+  },
+  "local_tests": {
+    "checkpoint_host_client": {
+      "evidence": "system/intent-host/review-checkpoint-results.json",
+      "passed_executions": 140,
+      "by_flavor": {
+        "asan_ubsan": 70,
+        "normal": 70
+      },
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_text_input_review_checkpoint.py"
+    },
+    "real_scene_text_handoff": {
+      "evidence": "system/continuity-final/handoff-continuity-results.json",
+      "passed_executions": 104,
+      "by_flavor": {
+        "asan_ubsan": 52,
+        "normal": 52
+      },
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_text_input_handoff_continuity.py"
+    },
+    "native_policy_historical": {
+      "evidence": "system/native-final-policy/evidence.json",
+      "passed_executions": 106,
+      "by_flavor": {
+        "asan_ubsan": 53,
+        "normal": 53
+      },
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_resident_idle.py"
+    },
+    "frozen_old_native_owner": {
+      "evidence": "system/native-legacy-policy/evidence.json",
+      "passed_executions": 2,
+      "by_flavor": {
+        "asan_ubsan": 1,
+        "normal": 1
+      },
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_resident_idle.py"
+    },
+    "unchanged_native_client": {
+      "passed_executions": 10,
+      "runs": [
+        {
+          "flavor": "normal",
+          "passed_log_records": 5,
+          "evidence": "system/native-old-client-normal.log"
+        },
+        {
+          "flavor": "sanitized",
+          "passed_log_records": 5,
+          "evidence": "system/native-old-client-sanitized.log"
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_resident_policy.py"
+    },
+    "legacy_text_host": {
+      "passed_executions": 282,
+      "runs": [
+        {
+          "flavor": "normal",
+          "passed_log_records": 141,
+          "evidence": "system/intent-legacy-normal.log"
+        },
+        {
+          "flavor": "sanitized",
+          "passed_log_records": 141,
+          "evidence": "system/intent-legacy-sanitized.log"
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_text_input_host.py"
+    },
+    "real_runtime_provider_graph": {
+      "passed_executions": 344,
+      "runs": [
+        {
+          "flavor": "normal",
+          "passed_log_records": 172,
+          "evidence": "system/intent-runtime-normal.log"
+        },
+        {
+          "flavor": "sanitized",
+          "passed_log_records": 172,
+          "evidence": "system/intent-runtime-sanitized.log"
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_text_input_runtime.py"
+    },
+    "scene_presenter": {
+      "runs": [
+        {
+          "evidence": "system/scene-normal.log",
+          "passed_executions": 197
+        },
+        {
+          "evidence": "system/scene-sanitized.log",
+          "passed_executions": 197
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_scene_host.py"
+    },
+    "scene_components": {
+      "runs": [
+        {
+          "evidence": "system/scene-components.log",
+          "passed_log_records": 15
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_scene_components.py"
+    },
+    "scene_telemetry": {
+      "runs": [
+        {
+          "evidence": "system/scene-telemetry.log",
+          "passed_log_records": 2
+        }
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_scene_telemetry.py"
+    },
+    "contexts_backend": {
+      "evidence": "system/contexts-fences/results.json",
+      "passed_probes": 1516,
+      "probes_per_profile_flavor": 379,
+      "profiles": [
+        "watch",
+        "paper"
+      ],
+      "flavors": [
+        "normal",
+        "asan_ubsan"
+      ],
+      "identical_default_objects": 12,
+      "object_compilers": [
+        "host",
+        "Xtensa"
+      ],
+      "object_optimizations": [
+        "O1",
+        "O2",
+        "Os"
+      ],
+      "test": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/blob/f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165/scripts/test_contexts_backend_liveness.py",
+      "recorded_system_head": "9f98546231ca3235399252c93e8ce3c1fb5fc0a0",
+      "recorded_working_tree_was_dirty": true,
+      "compiled_header_test_runner_hashes_match_public": true
+    }
+  },
+  "lists_app_cross_check": {
+    "result": "PASS",
+    "actual_app_runs": 1952,
+    "evidence_records": 1954,
+    "frame_and_storage_hashes_per_profile_flavor": {
+      "normal/watch": 59,
+      "normal/paper": 59,
+      "sanitized/watch": 59,
+      "sanitized/paper": 59
+    },
+    "reducer_states_per_flavor": {
+      "normal/reducer": 750,
+      "sanitized/reducer": 750
+    },
+    "source_inventory_tests": 73,
+    "summary": "app/focus-policy/qualification-summary.json",
+    "results": "app/focus-policy/results.json",
+    "source_commits": {
+      "system_apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+      "runtime": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9",
+      "x4_runtime": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70",
+      "baseline_productivity": "395c48de8fa10b672816c89c02dd9a5d4987a094",
+      "productivity": "b8a926abfeda9fbd904931725da1d0c4fe46cd81"
+    }
+  },
+  "public_source_reconciliation": {
+    "checkpoint_handoff_and_policy_source_sha256": {
+      "Services/scene_host/host.c": "2110ecf4de15d299dfca0e12d461e48abddf9f43ae956df4c97a6a482d9516cf",
+      "Services/text_input/checkpoint.inc": "4fc01913869da777c9f510f5639df69e20fa811906fd4ab96ec2c7f008294c57",
+      "Services/text_input/host.c": "a35225f8afc149c55d2d15caf3671def4f0b631aecd267eb6c01085689556904",
+      "lib/PortableApps/include/PortableResidentPolicyInput.h": "58063d5b10c848c09a1340e297c6aeb8fc7b9b4d7aed32e813d6c1904fbc5c0e",
+      "lib/PortableApps/include/PortableTextInputCheckpointClient.h": "1c5c1dd7c1e47cc9844d1838e85c09fdd8949c9c43006e99205d0cc4f2059de0",
+      "lib/PortableApps/include/PortableTextInputResidentCheckpoint.h": "827ef461207082700ef01dba563bd46e69394f7749d3694031016cf478fb390a",
+      "lib/PortableApps/src/resident_policy.inc": "0d8dfb5b531706b3ab7fb0da8291335fed77446cb0539825ae6830f10e21429a",
+      "lib/PortableApps/src/resident_shell.inc": "1da77c2ced23782ceef3ebf21e5393834d7f70a3b70187cbbcc40569c6d0fdda",
+      "sdk/app/RiscSceneCheckpointV1.h": "478ca88a15aeeb5a906623fb67482b29a0b5fa37dd933a5c9ca3a856ec967e44",
+      "sdk/app/RiscSceneLifecycleV1.h": "52a3d5dcfc6a9be8d598e0c93bf9bf6c6f824674280ef03ee0c0043a01eb31f5",
+      "sdk/app/RiscTextEntryV1.h": "a5733f06b1d8caf86f21d730abcd9ff833b603807c8b028a49544c997b6cdba3"
+    },
+    "target_direct_system_files_matched": 20,
+    "target_direct_system_manifest_sha256": "a528edbab1ffab67482344f5f51502086a045206a2bef572824ad4a102826dc2",
+    "manifest_hash_format": "SHA256 of UTF-8 JSON mapping paths to SHA256, sorted keys, compact separators, no trailing newline.",
+    "target_dependency_entries_reverified": 137,
+    "contexts_headers_absent_from_six_app_text_scene_closures": true,
+    "generated_full_profile_telemetry_font_sha256": "2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1",
+    "generated_font_scope": "Generated X4 full-profile input, reproduced and hash-checked in public CI; not a replacement for the frozen Watch compact-profile fonts."
+  },
+  "target_components": {
+    "watch": {
+      "lists": {
+        "build_receipt": "components/watch-continuity-clean/lists/lists-build-record.json",
+        "sha256": "31be400bcf3dfa6b4c27501c2938316375f3c2b82fdadddbecd426d1f7f049b6",
+        "bytes": 26584,
+        "dependency_entries_reverified": 23,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "productivity": "b8a926abfeda9fbd904931725da1d0c4fe46cd81",
+          "runtime": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+        }
+      },
+      "text": {
+        "build_receipt": "components/watch-continuity-clean/text/text-build-record.json",
+        "sha256": "c3cbb95ceee72fe4374b2ba4382d13bf6907b2956496218a80819bb6f85aad35",
+        "bytes": 11980,
+        "dependency_entries_reverified": 15,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "runtime": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+        }
+      },
+      "scene": {
+        "build_receipt": "components/watch-continuity-clean/scene/scene-build-record.json",
+        "sha256": "feb5eff6e568ec18b2570a0ea67f05cb0d786ac8a874358b060b9e5d7a01be38",
+        "bytes": 159504,
+        "dependency_entries_reverified": 29,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "runtime": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+        }
+      }
+    },
+    "x4": {
+      "lists": {
+        "build_receipt": "components/x4-continuity-clean/lists/lists-build-record.json",
+        "sha256": "8bdbc1a3c500a43bb59a115736b0e263d433f840195e5da5b34dd122ab87ba4c",
+        "bytes": 41524,
+        "dependency_entries_reverified": 23,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "productivity": "b8a926abfeda9fbd904931725da1d0c4fe46cd81",
+          "runtime": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70"
+        }
+      },
+      "text": {
+        "build_receipt": "components/x4-continuity-clean/text/text-build-record.json",
+        "sha256": "f2f39e89719fd93155a4ce649e2606c450f8d264569a47c7300a2befaa262c92",
+        "bytes": 19232,
+        "dependency_entries_reverified": 15,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "runtime": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70"
+        }
+      },
+      "scene": {
+        "build_receipt": "components/x4-continuity-clean/scene/scene-build-record.json",
+        "sha256": "a264c572f180d53e6f8e4632bd2834e5dc0b3a3581c95e5fe9995197deea4359",
+        "bytes": 467088,
+        "dependency_entries_reverified": 32,
+        "source_commits": {
+          "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+          "runtime": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70"
+        }
+      }
+    }
+  },
+  "x4_home": {
+    "build_receipt": "components/x4-continuity-clean/owner/owner-build-record.json",
+    "source_commits": {
+      "selected-system": "0cae9c90b74982e784f5e59c655f246dfbc69178",
+      "system-apps": "87f7766e2dbfea16f46ad17310551c9a7c1a0552",
+      "selected-product": "16ce5f68002c77d79e10feb7e794437d2b16b8b5"
+    },
+    "sha256": "e9dbe8b91e93463e97cdc43a94f3fa1a7c1b07013e4c6689ad0fced51be7f776",
+    "bytes": 557472,
+    "predecessor_sha256": "85c56071217d603a594514c0eef3a25982c7b03bafe86f1121880db62b3c5bb9",
+    "baseline_reproduced_exactly": true,
+    "dependency_entries_reverified": 210,
+    "approved_overlays": {
+      "lib/PortableApps/src/resident_policy.inc": "0d8dfb5b531706b3ab7fb0da8291335fed77446cb0539825ae6830f10e21429a",
+      "lib/PortableApps/src/resident_shell.inc": "1da77c2ced23782ceef3ebf21e5393834d7f70a3b70187cbbcc40569c6d0fdda",
+      "lib/PortableApps/include/PortableResidentPolicyInput.h": "58063d5b10c848c09a1340e297c6aeb8fc7b9b4d7aed32e813d6c1904fbc5c0e"
+    },
+    "frozen_predecessor_contexts_headers": {
+      "PortableContextsClient.h": "791163fe6f944f4b6d4a72611073c43c328dc93275a1bb7d68b09405be9dbe7c",
+      "PortableContextFingerprints.h": "76bfffa6336aa1caa10a0c479c6d67f6792847083a32da6b2910c3ec675d381c",
+      "PortableFingerprintClock.h": "7e133d788602d27b9332cecda8cc9cf8ee27bd30257f3d7570c886c675aa729b",
+      "PortableContextRules.h": "c5dc73ff50bdd59b2011a61a3a04a0f6949287cd8ec051bc4b898aeafef3f3cf"
+    },
+    "flags_fonts_boot_wake_and_deferred_radio_inputs_preserved": true,
+    "later_system_contexts_headers_in_owner": false,
+    "runtime_firmware_changed": false,
+    "peak_call_chain_stack_usage_proven": false
+  },
+  "compatibility": [
+    "Existing plain/masked/extended/long text ABI and ordinary clients remain unchanged; the suffix and same-session scene continuity are opt-in.",
+    "Only an exact OK POLL reply pairing POLICY_REQUEST with INPUT_CONTINUITY grants continuity. Old or ambiguous owners use full detach; existing clients ignore the optional bit.",
+    "Ordinary continuity retains bounded passive input queues; full-focus/sleep paths retain predecessor neutralization. No application persistence before clean close/release/resume.",
+    "Only X4 Home is rebuilt from its frozen selected source/flags/fonts plus the three listed overlays. Watch native Clock and selected boot remain unchanged.",
+    "The optional Contexts lifetime fence preserves default object code at O1/O2/Os on both profiles and host/Xtensa; it changes no stored schema or fingerprint/rule algorithm."
+  ],
+  "limitations": [
+    "No Watch/X4 hardware execution, flash, battery, USB or display timing validation. No binaries are attached by this receipt; no SD-settings changes are made.",
+    "Guarantee covers ordered edges delivered by native transports within bounded queues, not lossless physical sampling. FT6336U and GT911 providers poll physical reports and expose cached snapshots; press/release entirely between polls cannot be reconstructed. Watch buttons also use polled debounce.",
+    "Scene raw FIFO is 64 edges; selected Watch native ring is 31 and X4 queue is 32. GAP/overflow neutralizes ambiguous history or fails closed while preserving custody.",
+    "Virtual transport gaps and instrumented callback wall times are host-fixture measurements, not device latency. Native REDRAW denotes an attempted sleep branch, not proof of actual hardware sleep/focus transfer.",
+    "Local ASan/UBSan used invocation ASAN_OPTIONS=detect_leaks=0 under ptrace. The new checkpoint CI suite uses platform-default leak detection; legacy runners retain their existing local override.",
+    "X4 entry-frame checks do not prove peak call-chain stack usage."
+  ],
+  "evidence_root_names": {
+    "system": "lists-shared-input-system-evidence-20261012",
+    "app": "lists-shared-input-evidence-20261012",
+    "components": "lists-shared-input-components-20261012"
+  },
+  "evidence_sha256": {
+    "app/focus-policy/qualification-summary.json": "7b35a9b1b8fd0b93b5f501a5d0e9cfe25673d76f07492f8ea1f3d34623918a10",
+    "app/focus-policy/results.json": "a3cb4047612a6bfac6a3aa450f9f324e33060cbda5c3fe073c93b98a669f7cb9",
+    "app/independent-review.json": "3b655d23829991e6ce85546ef1fbce3c365e6233aef62c2135cdd3490deaeb22",
+    "components/watch-continuity-clean/lists/lists-build-record.json": "4bca1520c96f183014db7d3fffc925a684223bb6bb8d619e8cd19845d87f66a3",
+    "components/watch-continuity-clean/scene/scene-build-record.json": "7f51b337b29fe9819c0b0ff5f199d9467aadc1ed554ef5e2195810b199786d35",
+    "components/watch-continuity-clean/text/text-build-record.json": "5cce4447b82395c2165d5af7c969d73d89461748a9d382f82f05de7a5cb18f51",
+    "components/x4-continuity-clean/lists/lists-build-record.json": "39b445061d1d83719ecc2a9f46b341e6fa08ad3a518981ff4c2152d7c8419dad",
+    "components/x4-continuity-clean/owner/owner-build-record.json": "217f557fc678994f1431745d56da85969aa8161411b2bfea9de5322bfb6047aa",
+    "components/x4-continuity-clean/scene/scene-build-record.json": "512006c9a9ba435eae30cc5bb025fda56d94394d68fd42fca3e8409cd5574df3",
+    "components/x4-continuity-clean/text/text-build-record.json": "554c49a5c0788cb85f382552076a303caedb577f5fdda2a74d9bce8498e82586",
+    "system/contexts-fences/results.json": "1e6cb7850c7bdc07d7143351b54065cf1a7688b8074663aa21c892ca42a10bc9",
+    "system/continuity-final/handoff-continuity-results.json": "a0a91d334408d4550179cbf8d43e5fa7c196f7a178ab45e6aeb4f9cfa6817c0c",
+    "system/intent-host/review-checkpoint-results.json": "1fdd116cd072385e3c1e5e6ae0aece01e4b13da9bbbcf3e43f0f2bb069c28f5a",
+    "system/intent-legacy-normal.log": "a67e562a0efd3646e555bfe0c86cc3bc1301e86581ef372e8ca88cc16e6477f4",
+    "system/intent-legacy-sanitized.log": "a67e562a0efd3646e555bfe0c86cc3bc1301e86581ef372e8ca88cc16e6477f4",
+    "system/intent-runtime-normal.log": "836f8ecf83a77c3f7a4cec4ee38d15ae4a60a4d6c48d0943c9f1cbbb3d837c14",
+    "system/intent-runtime-sanitized.log": "836f8ecf83a77c3f7a4cec4ee38d15ae4a60a4d6c48d0943c9f1cbbb3d837c14",
+    "system/native-final-policy/evidence.json": "b170f1fe97a17d974a849be09d8876c2f8449ec915be256c0f7c638c59916a1e",
+    "system/native-legacy-policy/evidence.json": "dfe032a5398f52a4bcf09deebe519fa7f829e2be9027dfc45209ccf3cf46aa09",
+    "system/native-old-client-normal.log": "e441092f74c5327f0fbbad22cc391044b1fb3b6a3fe758460d1b47896dd0224f",
+    "system/native-old-client-sanitized.log": "e441092f74c5327f0fbbad22cc391044b1fb3b6a3fe758460d1b47896dd0224f",
+    "system/review-final-compatibility.json": "749a0a428011f8965d0ce226a50323a21e932663da774c7a9c1f58372a2285f3",
+    "system/scene-components.log": "60a78de14354bcd3b5ba794c13fe394bcf9d79fa7a26338628cc85714842c578",
+    "system/scene-normal.log": "a77e80c7df9bb1151da7eee9503a6fe2e57fd34f221205d22fb14e3fc0bf63f8",
+    "system/scene-sanitized.log": "a77e80c7df9bb1151da7eee9503a6fe2e57fd34f221205d22fb14e3fc0bf63f8",
+    "system/scene-telemetry.log": "72bc258bb8ebde7f4c17e9245f16447fb5d247554913bf45765c8b2822376d87"
+  }
+}
