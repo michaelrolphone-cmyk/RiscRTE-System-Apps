@@ -69,6 +69,10 @@ def build(args,parser=None):
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
+    atomic=getattr(args,'experimental_atomic_settings',False)
+    if atomic and (not native_time or not args.resident_shell_client or not args.resident_policy or
+                   not args.home_desk_lock or args.alarm_settings):
+        parser.error('--experimental-atomic-settings requires X4 native-time resident policy, home-desk-lock and no alarm-settings')
     portable_broadcast_build.validate(args,parser,native_time)
     scrolling=getattr(args,'touch_scrolling',False)
     home_desk_lock=getattr(args,'home_desk_lock',False)
@@ -106,6 +110,7 @@ def build(args,parser=None):
     elif getattr(args,'native_time_runtime_repo',None):
         parser.error('--native-time-runtime-repo requires --settings-profile x4-native-time')
     flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
+    if atomic: flags.append('-DPORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL')
     if args.return_app:
         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.return_app):
             raise ValueError('Return app must be a plain .elf filename')
@@ -193,6 +198,7 @@ def build(args,parser=None):
             {'capability':'rtc.clock','api':2}]}
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
     manifest['requires'].append({'capability':'storage.key-value','api':1})
+    if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
     if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
                                               {'capability':'board.battery','api':1}]
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
@@ -267,7 +273,7 @@ def build(args,parser=None):
             native_time_control_instance=0,rtc_access='explicit-save-only',
             grant_count=len(manifest['requires']),
             required_grants=[dict(requirement,instance_id={'storage.key-value':1,'net.wifi':15,
-                'bluetooth.hci':16}.get(requirement['capability'],0)) for requirement in manifest['requires']],
+                'bluetooth.hci':16,'storage.key-value.atomic':1}.get(requirement['capability'],0)) for requirement in manifest['requires']],
             mode_capabilities={'foreground_settings':True,'native_realtime_read':True,
                 'explicit_checked_set_time':True,'timezone_preference_only':True,
                 'sleep_preference_modes':['light','deep'],'sleep_backend':False,
@@ -292,6 +298,14 @@ def build(args,parser=None):
                            'readonly':True,'activation':'no-change','sleep_preference':'preserved; not read or written by this row'})
         record['mode_capabilities']['sleep_preference_modes']=[]
         record['mode_capabilities']['sleep_preference_editable']=False
+    if atomic:
+        record['atomic_settings']={'experimental':True,'capability':'storage.key-value.atomic@1',
+            'namespace':1,'intent_format':'PFI0001','origin':'explicit-user',
+            'keys':['time_format','time_zone','desk_clock_face','desk_direction','reader_flip_ui',
+                    'reader_language','sleep_idle','rtc_basis'],
+            'revision_capture':'editor-entry before draft reads','legacy_put_fallback':False,
+            'native_map_and_intent_atomic':True,'physical_clocks_atomic':False,
+            'sd_checkpoint_confirmed':False,'production_activation':False}
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
@@ -301,6 +315,7 @@ def build(args,parser=None):
 
 def argument_parser():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--experimental-atomic-settings',action='store_true',help='Default-off X4 Settings explicit namespace-1 atomic preference intents; no production activation')
     parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
     parser.add_argument('--native-time-runtime-repo',type=Path,help='Local Runtime Git checkout containing canonical '+NATIVE_TIME_RUNTIME_COMMIT+' SDK; x4-native-time only')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None,help='Default: 90 for x4-native-time, otherwise 0')

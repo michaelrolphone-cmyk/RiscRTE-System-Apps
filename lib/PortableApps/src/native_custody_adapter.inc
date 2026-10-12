@@ -154,6 +154,13 @@ static bool custody_acquire_for(const char *name,uint32_t version,uint64_t insta
   bool ok=native_custody_runtime->acquire(name,version,instance,grant);
   if(native_custody_retained)return false;
   if(!ok) {
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
+       grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
+      if(risc_runtime_get_api(1)!=native_custody_runtime)portable_adapter_retain();
+      return false;
+    }
+#endif
 #ifdef PORTABLE_FILE_SETUP
     if(custody_setup_unavailable(name,version,instance,grant)) {
       /* Empty refusal is optional unavailability only while this invocation

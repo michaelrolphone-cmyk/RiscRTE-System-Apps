@@ -1,4 +1,9 @@
 #include "RiscRuntimeHostControlV1.h"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) || !defined(PORTABLE_RESIDENT_SHELL_CLIENT) || !defined(PORTABLE_RESIDENT_POLICY) || !defined(PORTABLE_SETTINGS_HOME_DESK_LOCK) || defined(PORTABLE_ALARM_SETTINGS)
+#error "Atomic Settings requires the selected X4 resident Settings controller profile"
+#endif
+#endif
 #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))
 #error "Settings list scrolling requires selected Settings touch scrolling"
 #endif
@@ -66,6 +71,9 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+static bool settings_atomic_owned(void);
+#endif
 #include "PortablePerformance.h"
 #include "PortableStageLog.h"
 #include "PortableTouch.h"
@@ -2986,6 +2994,9 @@ static void settings_native_finalize(void) {
   if(native_custody_retained || !rt || !settings_started)return;
 #else
   if(native_custody_retained || !rt)return;
+#endif
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_close())return;
 #endif
   if(paper_token && !portable_paper_frame_drain())return;
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
