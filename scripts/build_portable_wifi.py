@@ -30,6 +30,9 @@ def build(args, parser=None):
         parser.error('--experimental-settings-availability requires --experimental-atomic-wifi')
     if atomic and (not portable_native_toolbar_build.selected(args) or not args.resident_shell_client):
         parser.error('--experimental-atomic-wifi requires explicit X4 native-time resident selection')
+    policy=getattr(args,'shared_text_policy',False)
+    if policy and (not availability or not args.resident_policy):
+        parser.error('--shared-text-policy requires X4 atomic settings availability and resident policy')
     scrolling=getattr(args,'touch_scrolling',False)
     shared_text=getattr(args,'shared_text_input',False) or args.resident_shell_client
     if scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
@@ -43,6 +46,7 @@ def build(args, parser=None):
     if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')
     if atomic: flags+=['-DPORTABLE_WIFI_ATOMIC_EXPERIMENTAL','-I'+str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2')]
     if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
+    if policy: flags.append('-DPORTABLE_TEXT_INPUT_POLICY')
     if scrolling: flags.append('-DPORTABLE_TOUCH_SCROLL')
     if shared_text: flags+=['-DPORTABLE_TEXT_INPUT_CLIENT','-DPORTABLE_WIFI_PROFILES']
     flags.append('-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation))
@@ -64,6 +68,7 @@ def build(args, parser=None):
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version']
     flags+=portable_broadcast_build.flags(args)
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
+    if policy: version='1.1.29'
     if native_receipt:native_receipt['version']=version
     flags.append('-DPORTABLE_WIFI_VERSION=\"'+version+'\"')
     quick_flags, quick_sources = portable_quick_build.configure(args,parser,ROOT,out,includes)
@@ -102,6 +107,7 @@ def build(args, parser=None):
     if native_receipt:native_receipt['version']=portable_broadcast_build.version(args,'wifi_settings',native_receipt['version'])
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version']
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
+    if policy: version='1.1.29'
     if native_receipt:native_receipt['version']=version
     manifest={'type':'application','id':'wifi_settings','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'wifi_settings.elf','entry':'app_main','requires':[
@@ -194,6 +200,7 @@ def build(args, parser=None):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--shared-text-policy',action='store_true',help='X4 shared editor checkpoint progression; selected availability profile only')
     parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off exact namespace-6 availability; requires the experimental atomic X4 profile')
     parser.add_argument('--experimental-atomic-wifi',action='store_true',help='Disconnected X4 native atomic map+intent capability; never falls back to KV1')
     parser.add_argument('--shared-text-input',action='store_true',help='Use the separately loaded shared keyboard, required for resident X4 builds')

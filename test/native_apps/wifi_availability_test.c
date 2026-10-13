@@ -38,6 +38,7 @@ static void availability_start(void){
  availability_fixture_api=(risc_key_value_availability_v1){1,sizeof(availability_fixture_api),NULL,availability_snapshot};
  workflow_start(false);
 }
+#ifndef WIFI_AVAILABILITY_LIBRARY
 int main(int argc,char**argv){
  (void)text_done;(void)seed;(void)search_done;(void)stopped;(void)assert_record;(void)prepared;(void)drained;(void)clean_edit;
  assert(argc==2);unsigned which=(unsigned)atoi(argv[1]);
@@ -130,3 +131,5 @@ int main(int argc,char**argv){
  }
  finish();assert(!availability_data_grants&&!availability_legacy_grants);printf("Wi-Fi availability case %u PASS\n",which);return 0;
 }
+
+#endif

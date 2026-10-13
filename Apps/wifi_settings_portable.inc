@@ -12,6 +12,10 @@
 #include "PortableWifiCredentials.h"
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 #include "PortableTextInputClient.h"
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#include "PortableTextInputPolicy.h"
+#include "RiscRuntimeHostControlV1.h"
+#endif
 #endif
 #ifdef PORTABLE_WIFI_PROFILES
 #include "PortableWifiProfiles.h"
@@ -165,6 +169,10 @@ static void wifi_profile_start_value(unsigned work,const portable_wifi_credentia
 static portable_text_client wifi_text;
 static risc_text_entry_state_v1 wifi_text_state;
 static bool wifi_text_active,wifi_text_closing,wifi_home_return;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+static portable_text_checkpoint_client wifi_checkpoint;
+static bool wifi_policy_continuity,wifi_policy_exit;
+#endif
 static unsigned wifi_text_field;
 static void wifi_text_step(void);
 #endif
@@ -233,7 +241,16 @@ bool portable_wifi_idle_ready(void) {
 #endif
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#ifdef WIFI_ASYNC_V1_SIZE
+ && !wifi_operation && !wifi_stopping && !wifi_next_request.kind
+#endif
+ /* Only opted-in editors can yield at a settled checkpoint. Radio and storage
+  * ownership above still inhibit policy throughout a modal session. */
+ && (!wifi_text_active || wifi_checkpoint.enabled) && !wifi_home_return
+#else
  && !wifi_text_active && !wifi_home_return
+#endif
 #endif
  );
 }
@@ -372,10 +389,19 @@ static void wifi_edit(unsigned field) {
   size_t n=wifi_length(source,field==WP_SSID?32:63);memcpy(editor,source,n);
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   wifi_text_field=field;wifi_text_closing=false;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+  wifi_checkpoint=(portable_text_checkpoint_client){0};wifi_policy_continuity=wifi_policy_exit=false;
+#endif
   wifi_text_state=(risc_text_entry_state_v1){.struct_size=sizeof(wifi_text_state)};
   int rc=portable_text_client_begin_mode(&wifi_text,wr,field==WP_PASSWORD?"Wi-Fi password":"Network name",editor,field==WP_PASSWORD?64u:33u,field==WP_PASSWORD);
   if(rc==RISC_TEXT_ENTRY_RETAINED||wifi_text.retained)return;
-  if(rc==RISC_TEXT_ENTRY_OK){wifi_text_active=true;return;}
+  if(rc==RISC_TEXT_ENTRY_OK){
+    wifi_text_active=true;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+    (void)portable_text_checkpoint_enable(&wifi_text,&wifi_checkpoint);
+#endif
+    return;
+  }
   wifi_zero(editor,sizeof(editor));wifi_message="Shared keyboard unavailable - retry";dirty=true;
 #else
   key_page=PWK_INITIAL_PAGE;
@@ -651,21 +677,67 @@ static void wifi_tick(void) {
   strcpy(status_text,status);strcpy(ip_text,address);
 }
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+static void wifi_text_policy(void) {
+  if(!wifi_checkpoint.pausing&&!wifi_checkpoint.paused){
+    risc_text_entry_checkpoint_state_v1 snapshot={.struct_size=sizeof(snapshot)};
+    int rc=portable_text_checkpoint_snapshot(&wifi_text,&wifi_checkpoint,&snapshot);
+    if(rc!=RISC_TEXT_ENTRY_OK||wifi_text.retained)return;
+    rc=portable_text_adapter_policy_prepare(snapshot.flags,&wifi_policy_continuity);
+    if(rc<0){(void)portable_text_client_retain(&wifi_text);return;}
+    if(!rc)return;
+  }
+  int rc=portable_text_checkpoint_pause_mode(&wifi_text,&wifi_checkpoint,wifi_policy_continuity);
+  if(rc!=RISC_TEXT_ENTRY_OK||wifi_text.retained)return;
+  uint32_t flags=0;int policy=portable_text_adapter_policy_apply(wifi_policy_continuity,&flags);
+  if(policy<0){(void)portable_text_client_retain(&wifi_text);return;}
+  if(policy>0){wifi_policy_exit=true;wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;wifi_text_closing=true;return;}
+  (void)portable_text_checkpoint_resume(&wifi_text,&wifi_checkpoint,flags);
+}
+#endif
 static void wifi_text_step(void) {
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+  if(wifi_text.retained)return;
+  if(portable_text_adapter_policy_capture()<0){(void)portable_text_client_retain(&wifi_text);return;}
+  int exit_pending=portable_text_adapter_exit_pending();
+  if(exit_pending<0){(void)portable_text_client_retain(&wifi_text);return;}
+  if(exit_pending){wifi_policy_exit=true;wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;wifi_text_closing=true;}
+  if(!wifi_text_closing&&(wifi_checkpoint.pausing||wifi_checkpoint.paused)){
+    int attention=portable_text_adapter_attention();
+    if(attention<0){(void)portable_text_client_retain(&wifi_text);return;}
+    if(!attention){wifi_text_policy();return;}
+    wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;wifi_text_closing=true;
+  }
+#endif
   int rc;
   if(!wifi_text_closing){
     rc=portable_text_client_poll(&wifi_text,&wifi_text_state);
     if(rc==RISC_TEXT_ENTRY_AGAIN)return;
     if(rc==RISC_TEXT_ENTRY_RETAINED||wifi_text.retained)return;
     if(rc!=RISC_TEXT_ENTRY_OK){wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;wifi_message="Keyboard unavailable";}
-    else if(wifi_text_state.state==RISC_TEXT_ENTRY_EDITING)return;
+    else if(wifi_text_state.state==RISC_TEXT_ENTRY_EDITING){
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+      wifi_text_policy();
+#endif
+      return;
+    }
     wifi_text_closing=true;
   }
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+  exit_pending=portable_text_adapter_exit_pending();
+  if(exit_pending<0){(void)portable_text_client_retain(&wifi_text);return;}
+  if(exit_pending){wifi_policy_exit=true;wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;}
+#endif
   rc=portable_text_client_close(&wifi_text);
   if(rc==RISC_TEXT_ENTRY_AGAIN)return;
   if(rc!=RISC_TEXT_ENTRY_OK||wifi_text.retained)return;
   wifi_text_active=wifi_text_closing=false;
   wifi_home_return=(wifi_text_state.flags&RISC_TEXT_ENTRY_HOME_CANCEL)!=0;
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+  wifi_home_return|=wifi_policy_exit||risc_runtime_exit_requested_v1(wr);
+  if(PORTABLE_APP_RETAINED())return;
+  if(wifi_home_return)wifi_text_state.state=RISC_TEXT_ENTRY_CANCELLED;
+#endif
   if(wifi_text_state.state==RISC_TEXT_ENTRY_ACCEPTED){
     char *destination=wifi_text_field==WP_PASSWORD?credentials.password:credentials.ssid;
     size_t capacity=wifi_text_field==WP_PASSWORD?sizeof(credentials.password):sizeof(credentials.ssid);

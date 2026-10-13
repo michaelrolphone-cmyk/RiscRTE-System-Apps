@@ -12,6 +12,11 @@ int portable_text_adapter_policy_capture(void){
 #endif
     return 0;
 }
+int portable_text_adapter_exit_pending(void){
+    if(!text_input_alive())return text_input_failure();
+    bool requested=handoff_requested||risc_runtime_exit_requested_v1(rt);
+    return text_input_alive()?(requested?1:0):text_input_failure();
+}
 int portable_text_adapter_policy_prepare(uint32_t flags,bool *continuity) {
     if(!text_input_alive()||!text_input_suspended||!continuity)return text_input_failure();
     const uint32_t now=millis_now();

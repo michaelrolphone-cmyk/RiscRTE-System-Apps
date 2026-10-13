@@ -202,8 +202,11 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_outp
 static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 /* Eight raw samples span the adapter cadence, followed by an explicit neutral gap. */
 static void held_touch(unsigned at,int x,int y){for(unsigned i=0;i<8;i++)event(at+i,0,x,y);}
+#ifndef TEST_WIFI_RUNTIME_BINDINGS
+#define TEST_WIFI_RUNTIME_BINDINGS
+#endif
 static void start(void){
- runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
+ runtime_api=(risc_runtime_api_v1){TEST_WIFI_RUNTIME_BINDINGS .api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
  radio_api=(wifi_api_v1){.api_version=1,.struct_size=short_api?WIFI_PREFIX_V1_SIZE:sizeof(radio_api),.connect=fake_connect,.disconnect=fake_disconnect_legacy,.status=fake_status,.rssi=fake_rssi,.addresses=fake_addresses,.scan_start=fake_scan_start,.scan_poll=fake_scan_poll,.scan_cancel=fake_scan_cancel,.disconnect_checked=fake_disconnect};
  fake_scan=(garden_radio_scan_result_v1){.struct_size=sizeof(fake_scan),.state=GARDEN_RADIO_SCAN_RUNNING};
  visual_alarm=(alarm_service_outputs_v1){.service=alarm_api,.output_modes=ALARM_MODE_VISUAL};visual_alarm.service.struct_size=sizeof(visual_alarm);
