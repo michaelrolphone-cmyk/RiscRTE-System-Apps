@@ -50,6 +50,14 @@ static bool contexts_rules_tick(void){
   if(action.step.kind==CR_MESSAGE){memcpy(context_message,action.step.text,sizeof(context_message));context_message_open=true;ok=true;}
   else if(action.step.kind==CR_TIMER){ok=portable_context_timer(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage);if(contexts_client.storage.api)return false;}
   else if(action.step.kind==CR_LAUNCH){
+#ifdef PORTABLE_RUNTIME_APP_CATALOG
+   portable_app_catalog_launch destination;
+   bool installed=catalog_launchable_name(action.step.text,&destination);
+   if(native_custody_retained)return false;
+   if(installed && app_allows_launch(destination.route) && portable_paper_frame_drain() && !failed && !native_custody_retained && catalog_checked(portable_catalog_launch_valid(&runtime_catalog,&destination))){
+    ok=rt->request_launch(destination.route);if(ok)context_launch_pending=true;
+   }
+#else
    bool installed=false;for(unsigned i=0;i<portable_catalog_count;i++)if(portable_catalog[i].compatible&&!strcmp(portable_catalog[i].file_name,action.step.text))installed=true;
    if(installed&&app_allows_launch(action.step.text)){
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
@@ -58,6 +66,7 @@ static bool contexts_rules_tick(void){
     ok=rt->request_launch(action.step.text);if(ok)context_launch_pending=true;
 #endif
 }
+#endif
   }
   action.claim=false;action.result=ok?CR_RAN:CR_FAILED;if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&action))return false;
  }

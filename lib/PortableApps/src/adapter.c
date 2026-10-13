@@ -2031,6 +2031,30 @@ bool portable_desk_adapter_foreground(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
 #include "quick_adapter.inc"
 #endif
+#ifdef PORTABLE_RUNTIME_APP_CATALOG
+#if !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error Runtime catalog Files profile requires checked native custody
+#endif
+#include "PortableAppCatalog.h"
+static portable_app_catalog runtime_catalog;
+static bool catalog_checked(bool ok) {
+ if(runtime_catalog.uncertain){portable_adapter_retain();return false;}
+ return ok;
+}
+static bool catalog_refresh(void) {
+ return rt && !failed && !native_custody_retained &&
+     catalog_checked(portable_catalog_refresh(&runtime_catalog,rt));
+}
+#ifdef PORTABLE_CONTEXTS_CLIENT
+static bool catalog_launchable_name(const char *name,portable_app_catalog_launch *destination) {
+ if(!catalog_refresh())return false;
+ for(uint32_t i=0;i<runtime_catalog.count;i++)
+  if(!strcmp(runtime_catalog.entries[i].manifest.file_name,name))
+   return catalog_checked(portable_catalog_launch_prepare(&runtime_catalog,i,destination));
+ return false;
+}
+#endif
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #include "contexts_policy.inc"
 #endif
@@ -2563,6 +2587,36 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 #include "text_input_handoff.inc"
 #endif
+#ifdef PORTABLE_RUNTIME_APP_CATALOG
+static bool refresh(void){return catalog_refresh();}
+static uint32_t count(void){
+ if(!rt || failed || native_custody_retained)return 0;
+ if(!runtime_catalog.initialized && !refresh())return 0;
+ return runtime_catalog.count;
+}
+static bool get(uint32_t i,t5_app_manifest_t *out){
+ if(!out || i>=count())return false;
+ *out=runtime_catalog.entries[i].manifest;return true;
+}
+static bool launch(uint32_t i){
+ if(!rt || failed || native_custody_retained)return false;
+ if(handoff_requested)return true;
+ portable_app_catalog_launch destination;
+ if(i>=count() || !catalog_checked(portable_catalog_launch_prepare(&runtime_catalog,i,&destination)))return false;
+ if(!portable_paper_frame_drain())return false;
+#ifdef PORTABLE_ALARM_CLIENT
+ bool consumed=false;if(!alarm_foreground(&consumed) || consumed)return false;
+#endif
+ if(failed || native_custody_retained ||
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+ handoff_active ||
+#endif
+ (input_pending && (input_sample.down || input_sample.cancelled)) || (navigation_pending&T5_APP_BUTTON_BACK) || !app_allows_launch(destination.route))return false;
+ portable_stage_log(rt,"app-launch-request",destination.route);
+ portable_perf_action(PORTABLE_PERF_LAUNCH,true);
+ return !failed && !native_custody_retained && catalog_checked(portable_catalog_launch_valid(&runtime_catalog,&destination)) && rt->request_launch(destination.route);
+}
+#else
 #ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
 #define PORTABLE_SELECTED_CATALOG_BOUND PORTABLE_SPRINGBOARD_CATALOG_BOUND
 #else
@@ -2629,6 +2683,7 @@ static bool launch(uint32_t i) {
 #endif
 }
 #undef SELECTED_CATALOG
+#endif
 #ifdef PORTABLE_POWER_STATUS
 #include "PortablePowerStatus.h"
 bool portable_power_read(risc_battery_sample_v1 *out) {
@@ -3009,6 +3064,9 @@ static void settings_native_finalize(void) {
 #endif
     ){if(!native_custody_retained)portable_adapter_retain();return;}
   if(native_custody_retained)return;
+#endif
+#ifdef PORTABLE_RUNTIME_APP_CATALOG
+  if(native_custody_retained || !catalog_checked(portable_catalog_close(&runtime_catalog,rt)))return;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
   if(!portable_radio_suspend()){portable_adapter_retain();return;}

@@ -26,7 +26,7 @@ old=next(x for x in boot['app_capabilities'] if x['manifest']=='file_browser.jso
 # Keep every Watch feature and exact existing grant, including Contexts shared
 # namespaces, motion wake, telemetry, local Quick Actions and local sleep.
 watch_commit=subprocess.check_output(['git','-C',str(watch),'rev-parse','HEAD'],text=True).strip()
-assert watch_commit in ('089868395268b696c05651c33816345bfe0425df','e0b43ef70f312cc512861926109ebe99f41c964d'),'Watch dependency changed; requalify'
+assert watch_commit=='6e82fdcaec0b73ed700d2104cfb4d94f011c19d4','Watch dependency changed; requalify'
 flags=definitions('file_browser',sharing.selected_version(a),watch)
 flags+=['-DPORTABLE_CHECKED_STORAGE_RUNTIME']
 # Watch v1's appended sleep callback is not X4's output-mode descriptor. Use
@@ -39,6 +39,8 @@ if a.source_handoff:flags+=['-DPORTABLE_FILE_BROWSER_SOURCE_HANDOFF']
 if a.shared_text_input:flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT','-flto','-mno-target-align']
 repos={'system-apps':ROOT,'utilities':utilities,'runtime':runtime}
 sources,includes,allowed=application_inputs('file_browser',ROOT/'Apps/file_browser.c',repos,watch,out,'runtime-features')
+sources=[s for s in sources if s.name!='empty_catalog.c']
+flags+=['-DPORTABLE_RUNTIME_APP_CATALOG','-DPORTABLE_NAVIGATION_RETENTION','-DPORTABLE_ASYNC_RGB565','-DPORTABLE_WATCH_NATIVE_HEIGHT']
 includes += [utilities/'lib/Contexts/include',runtime/'sdk/app']
 (out/'empty_catalog.c').write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
 args=SimpleNamespace(peer_files=a.peer_files,webdav_sharing=True,sharing_export_instance=0,sharing_tcp_instance=0,sharing_entropy_instance=0,sharing_setup_instance=0)
@@ -61,11 +63,16 @@ if a.shared_text_input:
  compaction=compact(elf,cc,debug_path=out/'debug/file_browser.elf')
  subprocess.run([str(validator),str(elf)],check=True)
 sharing.requirements(args,manifest['requires'])
+manifest['requires'].append({'capability':'app.catalog','api':1})
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
 if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
 if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
 manifest['version']='1.5.34' if a.shared_text_input else sharing.selected_version(a)
 grants=old['grants'].copy()
+grants.append(dict(capability='app.catalog',api=1,instance_id=0))
+for cap in ('input.power-key','power.sleep','display.power'):
+ grants.append(dict(capability=cap,api=1,instance_id=0))
+ if dict(capability=cap,api=1) not in manifest['requires']:manifest['requires'].append(dict(capability=cap,api=1))
 for cap,api,instance in [('storage.app-data.export',1,0),('network.tcp.listener',1,0),('crypto.entropy',1,0),('bluetooth.session-setup',1,0),('storage.key-value',1,6),('file.open',1,0)]:
  g=dict(capability=cap,api=api,instance_id=instance)
  if g not in grants:grants.append(g)
