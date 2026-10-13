@@ -536,6 +536,7 @@ static void settings_close(void) {
   settings_store=NULL;
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_close();
+  if(app_invocation_retained())return;
 #endif
   if(rtc_grant.api && !rt->release(&rtc_grant))rt->diagnostic("PORTABLE_APP error=rtc-release");
   rtc=NULL;

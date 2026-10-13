@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run the Springboard host lifecycle with every audited deployment feature.
 
-Pass the archived springboard-exact-build.json. All -D feature switches and
+Optionally pass the archived springboard-exact-build.json; the default is the
+repository-local exact feature/profile fixture. All -D feature switches and
 forced profile includes are preserved, plus the shared native-height switch.
 Only the target-specific navigation/sleep boundaries use host test doubles.
 Alarm/Broadcast/Contexts are all deliberately unavailable while Runtime remains
@@ -17,11 +18,11 @@ import subprocess
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "build/watch-native-springboard"
 parser = argparse.ArgumentParser()
-parser.add_argument("recipe", type=pathlib.Path)
+parser.add_argument("recipe", nargs="?", type=pathlib.Path, default=ROOT / "test/native_apps/fixtures/watch_springboard_features.json")
 args = parser.parse_args()
 command = json.loads(args.recipe.read_text())["command"]
 features = [part for part in command if part.startswith("-D")]
-forced = [command[i + 1] for i, part in enumerate(command) if part == "-include"]
+forced = [str(pathlib.Path(command[i + 1]) if pathlib.Path(command[i + 1]).is_absolute() else ROOT / command[i + 1]) for i, part in enumerate(command) if part == "-include"]
 required = {"PORTABLE_ALARM_CLIENT", "PORTABLE_BLE_BROADCAST", "PORTABLE_CONTEXTS_CLIENT",
             "PORTABLE_QUICK_ACTIONS", "PORTABLE_QUICK_RADIOS", "PORTABLE_LOW_BATTERY",
             "PORTABLE_RETAINED_RGB565_HANDOFF", "PORTABLE_ASYNC_RGB565"}

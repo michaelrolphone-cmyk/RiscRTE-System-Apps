@@ -12,4 +12,8 @@
 const risc_input_navigation_api_v1 *portable_input_navigation_open(
     const risc_runtime_api_v1 *runtime);
 void portable_input_navigation_close(const risc_runtime_api_v1 *runtime);
+#ifdef PORTABLE_NAVIGATION_RETENTION
+/* Explicit generic opt-in. This query is local and performs no runtime I/O. */
+bool portable_input_navigation_retained(void);
+#endif
 #endif

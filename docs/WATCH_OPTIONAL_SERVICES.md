@@ -91,3 +91,17 @@ Reproduction (repeat the compile/run pair for each named test):
 
 These are not asserted as newly passing by this change. No publication, device
 image, flash, or physical-device qualification is included in this receipt.
+
+## Separately gated local-navigation custody query
+
+`PORTABLE_NAVIGATION_RETENTION` together with `PORTABLE_INPUT_NAVIGATION_LOCAL`
+requires the bridge's no-I/O `portable_input_navigation_retained()` query. The
+adapter checks it around open, foreground, reset, poll and close. A latched bridge
+failure enters the same terminal invocation fence before subsequent I/O or frees,
+including Settings' later RTC-grant cleanup. Older bridge recipes do not define
+this opt-in and do not gain an unresolved symbol.
+
+`python3 scripts/test_navigation_retention_adapter.py` covers 20 normal and
+ASan/UBSan actual-adapter boundary-spy cases, including healthy repeated entry.
+These spies do not replace the real bridge. The opt-in deployment profile remains
+pending separate qualification linking the new generic bridge and actual adapter.

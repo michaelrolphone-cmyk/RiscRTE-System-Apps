@@ -33,6 +33,7 @@ jobs:
       - name: Optional-service startup and terminal authority
         run: |
           python scripts/test_optional_service_adapter.py
+          python scripts/test_navigation_retention_adapter.py
           python scripts/test_watch_native_springboard_features.py
           python scripts/test_context_adapter.py
           python scripts/test_broadcast_adapter.py

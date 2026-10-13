@@ -43,7 +43,7 @@ static bool canvas_retained;
 #ifdef PORTABLE_ALARM_CLIENT
 static bool native_sleep_retained;
 #endif
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
 static bool optional_services_retained;
 /* An acquisition/cleanup custody failure is never optional absence. No
  * provider operation, release or free follows a terminal invocation fence. */
@@ -62,7 +62,7 @@ static void optional_services_retain(void) {
 }
 #endif
 static bool app_invocation_retained(void) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(optional_services_retained)return true;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
@@ -292,9 +292,18 @@ static risc_runtime_capability_v1 navigation_grant;
 #endif
 static const risc_input_navigation_api_v1 *navigation;
 static bool navigation_neutral,navigation_ready;
+static bool input_navigation_safe(void) {
+ if(app_invocation_retained())return false;
+#if defined(PORTABLE_INPUT_NAVIGATION_LOCAL) && defined(PORTABLE_NAVIGATION_RETENTION)
+ if(portable_input_navigation_retained()){optional_services_retain();return false;}
+#endif
+ return true;
+}
 static bool input_navigation_open(void) {
+ if(!input_navigation_safe())return false;
 #ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
  navigation=portable_input_navigation_open(rt);
+ if(!input_navigation_safe())return false;
 #else
  navigation_grant.struct_size=sizeof(navigation_grant);
  if(!rt->acquire("input.navigation",1,0,&navigation_grant))return false;
@@ -305,20 +314,33 @@ static bool input_navigation_open(void) {
  navigation_ready=true;
  const risc_input_foreground_v1 claims[]={{"input.touch.raw",1}};
  navigation_neutral=false;
- return navigation->foreground(navigation->context,claims,1) && navigation->reset(navigation->context);
+ bool claimed=navigation->foreground(navigation->context,claims,1);
+ if(!input_navigation_safe()||!claimed)return false;
+ bool reset=navigation->reset(navigation->context);
+ return input_navigation_safe()&&reset;
 }
 static inline void input_navigation_reset(void) {
+ if(!input_navigation_safe())return;
  navigation_pending=0;navigation_neutral=false;
- if(navigation_ready && !navigation->reset(navigation->context))failed=true;
+ if(navigation_ready) {
+  bool reset=navigation->reset(navigation->context);
+  if(!input_navigation_safe())return;
+  if(!reset)failed=true;
+ }
 }
 static void input_navigation_close(void) {
+ if(!input_navigation_safe())return;
  if(navigation_ready) {
-  bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
+  bool cleared=navigation->foreground(navigation->context,NULL,0);
+  if(!input_navigation_safe())return;
+  bool reset=navigation->reset(navigation->context);
+  if(!input_navigation_safe())return;
   if(!cleared||!reset)rt->diagnostic("PORTABLE_APP error=navigation-reset");
   navigation_ready=false;
  }
 #ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
  portable_input_navigation_close(rt);
+ if(!input_navigation_safe())return;
 #else
  if(navigation_grant.api && !rt->release(&navigation_grant))rt->diagnostic("PORTABLE_APP error=navigation-release");
 #endif
@@ -379,7 +401,9 @@ static void input_service(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(navigation_ready) {
   risc_input_navigation_frame_v1 frame={0};
-  if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
+  bool polled=navigation->poll(navigation->context,&frame);
+  if(!input_navigation_safe())return;
+  if(!polled)navigation_neutral=false;
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else navigation_pending|=frame.pressed;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -466,6 +490,8 @@ static void clear_color(uint16_t color) {
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_pending) {
     handoff_pending=false;
+    /* Unknown refresh skips only this optional animation; NOVA presentation
+     * identity is selected independently from display timing metadata. */
     if(info.width<=PORTABLE_TRANSITION_MAX_SIDE &&
        info.height<=PORTABLE_TRANSITION_MAX_SIDE &&
        info.nominal_refresh_millihz>=20000 &&
@@ -753,6 +779,7 @@ static bool idle_sleep(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif
+  if(app_invocation_retained())return false;
   input_sample=(portable_touch_sample){0};input_pending=false;navigation_pending=0;
   last_activity=last_poll_at=input_sampled_at=millis_now();previous_valid=false;
   rt->diagnostic(status?"PORTABLE_APP sleep=resumed":"PORTABLE_APP sleep=refused");
@@ -972,7 +999,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool native_exit_input(t5_app_input_t *out) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return false;
 #endif
   if(!risc_runtime_exit_requested_v1(rt))return false;
@@ -988,7 +1015,7 @@ static bool native_exit_input(t5_app_input_t *out) {
   return true;
 }
 static bool poll(t5_app_input_t *out, uint32_t wait) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return false;
 #endif
 #ifdef PORTABLE_ASYNC_RGB565
@@ -1349,7 +1376,7 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return;
 #endif
 #ifdef PORTABLE_ASYNC_RGB565
@@ -1447,11 +1474,13 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   np_close();free(previous_pixels);previous_pixels=NULL;previous_valid=false;
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_SETTINGS_APP)
   input_navigation_close();
+  if(app_invocation_retained())return;
 #endif
   if (!portable_touch_close(&touch, rt))
     rt->diagnostic("PORTABLE_APP error=touch-release");
 #ifdef PORTABLE_SETTINGS_APP
   settings_close();
+  if(app_invocation_retained())return;
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
   if(!portable_broadcast_close(&broadcast_client,rt)){optional_services_retain();return;}

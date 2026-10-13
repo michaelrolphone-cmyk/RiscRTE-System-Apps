@@ -9,7 +9,7 @@ static const alarm_service_v1 *alarm_sleep_api(void) { return alarms.api; }
 static bool alarm_error_seen,alarm_failed_cleaned;
 static int32_t alarm_seen_error;
 static uint32_t alarm_seen_snapshot;
-static void alarm_cancel_input(void) {
+static bool alarm_cancel_input(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
     if(quick_modal)pqa_cancel_input(&quick.ui);
 #endif
@@ -18,6 +18,7 @@ static void alarm_cancel_input(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
     input_navigation_reset();
 #endif
+    return !app_invocation_retained();
 }
 static bool alarm_failure(void) {
     failed=true;
@@ -178,9 +179,11 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
         rt->diagnostic("ALARM Wi-Fi pause stop-unconfirmed; invocation retained");
         for(;;)rt->yield_ms(50);
     }
-    alarm_cancel_input();bool ok=alarm_restore(saved);alarm_modal=false;
+    if(!alarm_cancel_input())return false;
+    bool ok=alarm_restore(saved);alarm_modal=false;
     if(!ok)return alarm_failure();
-    alarm_cancel_input();return !failed;
+    if(!alarm_cancel_input())return false;
+    return !failed;
 }
 #endif
 /* Returns false only on foreground failure; consumed prevents initiating Back
@@ -220,7 +223,7 @@ static bool alarm_foreground(bool *consumed) {
          * cues reconcile on the next foreground call rather than exhausting
          * one loading-loop budget. Consumed input cannot leak into an exit. */
         if(cue_seen && !portable_alarm_cue(&alarms)) {
-            alarm_cancel_input();
+            if(!alarm_cancel_input())return false;
             if(alarms.status.state!=ALARM_STATE_BLOCKED)return true;
             break;
         }
@@ -236,7 +239,8 @@ static bool alarm_foreground(bool *consumed) {
 #endif
     uint16_t *saved;
     if(!alarm_save_frame(&saved)){failed=true;return alarm_failure();}
-    *consumed=true;alarm_cancel_input();
+    *consumed=true;
+    if(!alarm_cancel_input())return false;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
     handoff_finish();
 #endif
@@ -266,13 +270,16 @@ static bool alarm_foreground(bool *consumed) {
         bool dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=info.height-88 && sample.y<info.height-42);
 #endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
-            (void)alarms.api->refresh(alarms.api->context);alarm_cancel_input();redraw=true;
+            (void)alarms.api->refresh(alarms.api->context);
+            if(!alarm_cancel_input())return false;
+            redraw=true;
         } else if(dismiss) {
             if(alarms.status.occurrence.generation) {
                 /* Copy exact current token; service rejects stale identities. */
                 alarm_token_v1 token=alarms.status.occurrence;
                 (void)alarms.api->acknowledge(alarms.api->context,&token);
-                alarm_cancel_input();redraw=true;
+                if(!alarm_cancel_input())return false;
+                redraw=true;
             } else if(alarms.status.state==ALARM_STATE_BLOCKED && !alarms.status.output_uncertain) {
                 alarm_error_seen=true;alarm_seen_error=alarms.status.error;alarm_seen_snapshot=alarms.status.snapshot;break;
             }
@@ -284,16 +291,18 @@ static bool alarm_foreground(bool *consumed) {
         uint32_t old_state=alarms.status.state;int32_t old_error=alarms.status.error;
         if(!alarm_audio_pump()){failed=true;alarm_modal=false;return alarm_failure();}
         if(memcmp(&shown,&alarms.status.occurrence,sizeof(shown))) {
-            shown=alarms.status.occurrence;alarm_cancel_input();redraw=true;
+            shown=alarms.status.occurrence;
+            if(!alarm_cancel_input())return false;
+            redraw=true;
         }
         if(old_state!=alarms.status.state || old_error!=alarms.status.error)redraw=true;
         /* Only READY after durable ACK/expiry and safe output close restores
            the caller. A new simultaneous due identity stays in the modal. */
         if(alarms.status.state==ALARM_STATE_READY && !portable_alarm_owned(&alarms))break;
     }
-    alarm_cancel_input();
+    if(!alarm_cancel_input())return false;
     bool ok=alarm_restore(saved);alarm_modal=false;
     if(!ok)return alarm_failure();
-    alarm_cancel_input(); /* restore presentation may have sampled contact */
+    if(!alarm_cancel_input())return false; /* restore presentation may have sampled contact */
     return failed?alarm_failure():true;
 }

@@ -151,12 +151,14 @@ static bool nav_foreground(void *c,const risc_input_foreground_v1 *f,size_t n){
 static risc_input_navigation_api_v1 nav_api={1,sizeof(nav_api),NULL,nav_poll,nav_foreground,nav_reset};
 #ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
 static unsigned local_opens,local_closes;
+#ifndef PORTABLE_SETTINGS_NAVIGATION_OVERRIDE
 const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1 *runtime){
   assert(runtime);++local_opens;return scenario==38?NULL:&nav_api;
 }
 void portable_input_navigation_close(const risc_runtime_api_v1 *runtime){
   assert(runtime);++local_closes;
 }
+#endif
 #endif
 #endif
 static uint8_t format_bytes[64];static uint32_t format_size;

@@ -1,0 +1,31 @@
+{
+  "schema": 1,
+  "purpose": "Repository-local copy of exact audited Springboard feature switches and forced profile headers; external file paths rebased only",
+  "original_recipe_sha256": "5e20e17904c6f0624975ad602a0f31d3f8872faba5eb42566a6c68cc56b7907f",
+  "command": [
+    "-DPORTABLE_LOW_BATTERY",
+    "-DPORTABLE_BLE_BROADCAST",
+    "-DPORTABLE_TOUCH_ROTATION=0",
+    "-DPORTABLE_RTC_UTC8_DENVER",
+    "-DPORTABLE_FORCE_FULL_FRAMES",
+    "-DPORTABLE_INPUT_NAVIGATION",
+    "-DPORTABLE_INPUT_NAVIGATION_LOCAL",
+    "-DPORTABLE_APP_SLEEP_LOCAL",
+    "-DPORTABLE_ALARM_CLIENT",
+    "-DPORTABLE_QUICK_ACTIONS",
+    "-DPORTABLE_QUICK_RADIOS",
+    "-DPORTABLE_MOTION_WAKE",
+    "-DWATCH_ALARM_SLEEP_RESUME",
+    "-DPORTABLE_NOVA_UI",
+    "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+    "-DPORTABLE_HANDOFF_EAGER_MS=60",
+    "-DPORTABLE_RETURN_APP=\"clock.elf\"",
+    "-DPORTABLE_CONTEXTS_CLIENT",
+    "-DPORTABLE_CATALOG_LIMIT=23",
+    "-DPORTABLE_ASYNC_RGB565",
+    "-include",
+    "test/native_apps/fixtures/watch_profile/ContextsFaces.h",
+    "-include",
+    "test/native_apps/fixtures/watch_profile/watch-alarm-profile.h"
+  ]
+}

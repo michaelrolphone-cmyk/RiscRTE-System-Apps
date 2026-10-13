@@ -151,7 +151,10 @@ static void check_fenced(void){
  clear();present(false);input_service();
  assert(acquires==a&&releases==r&&health_reads==h&&diagnostics==d&&context_pauses==c&&service_steps==s&&broadcast_steps==b&&fences==1&&fp_calls==fp&&file_calls==files&&display_status_reads==display_reads);
 }
-int main(int argc,char**argv){
+#ifndef OPTIONAL_SERVICE_FIXTURE_MAIN
+#define OPTIONAL_SERVICE_FIXTURE_MAIN main
+#endif
+int OPTIONAL_SERVICE_FIXTURE_MAIN(int argc,char**argv){
  assert(argc==4);missing_mask=(unsigned)atoi(argv[1]);target_service=(unsigned)atoi(argv[2]);fault=(unsigned)atoi(argv[3]);configure();
  unsigned original_fault=fault;int result=app_module_init();
 #ifdef PORTABLE_ASYNC_RGB565
