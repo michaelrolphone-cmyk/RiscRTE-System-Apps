@@ -23,7 +23,7 @@ static bool stopwatch_crown_failure,stopwatch_paint_failure;
 static unsigned stopwatch_acquires,stopwatch_releases;
 void watch_test_stopwatch_main(void);
 #endif
-static uint16_t physical_snapshot[240*240];
+static uint16_t physical_snapshot[SETTINGS_FIXTURE_WIDTH*SETTINGS_FIXTURE_HEIGHT];
 static void physical_immutable(void){if(physical_busy)assert(!memcmp(framebuffer,physical_snapshot,sizeof(framebuffer)));}
 static void normal_allowed(void){physical_immutable();assert(!physical_failure&&!retained_display);++normal_calls;}
 static bool async_acquire_frame(void*c,uint32_t f,risc_display_surface_v1*out){normal_allowed();assert(!physical_busy);return frame_acquire(c,f,out);}

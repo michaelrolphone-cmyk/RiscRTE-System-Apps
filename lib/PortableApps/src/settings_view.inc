@@ -14,8 +14,22 @@ static unsigned sv_axis; /* 1 vertical, 2 horizontal, 3 numeric slider */
 static int sv_start_x, sv_start_y, sv_last_x, sv_last_y, sv_start_scroll;
 static bool sv_dragged;
 static void settings_view_redraw(void);
+static int sv_height(void) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  return native_watch_height();
+#else
+  return 240;
+#endif
+}
+static int sv_bottom(int y) { return y+sv_height()-240; }
 static int sv_abs(int n) { return n < 0 ? -n : n; }
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#ifdef PORTABLE_CONTEXTS_RASTER
+  if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
+#endif
+  native_watch_pixel(x,y,rgb,alpha);return;
+#endif
   if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;
   x += (width() - 240) / 2; y += (height() - 240) / 2;
   uint8_t *p = (uint8_t *)surface.pixels + (size_t)y * surface.stride_bytes + (size_t)x * 2;
@@ -60,10 +74,10 @@ static void sv_right(unsigned face,int x,int y,const char *s,uint32_t color,int 
 }
 #ifdef PORTABLE_NOVA_UI
 #define SV_ROW_HEIGHT 44
-#define SV_MESSAGE_Y 172
-#define SV_FIELD_BOTTOM 166
+#define SV_MESSAGE_Y sv_bottom(172)
+#define SV_FIELD_BOTTOM sv_bottom(166)
 static void sv_geometry(int *x,int *y,int *w,int *h) {
-  if(*h==26 && (*y==192 || *y==200)){*y=188;*h=44;}
+  if(*h==26 && (*y==192 || *y==200)){*y=sv_bottom(188);*h=44;}
   else if(*h==36 && *y==66){*x=*x<100?20:176;*y=74;*w=*h=44;}
   else if(*h==30 && (*y==66 || *y==104 || *y==142)) {
     bool first=*y==66,last=*y==142;*x=first || last?20:124;*y=last?120:64;*w=last?200:96;*h=44;
@@ -104,7 +118,10 @@ static void sv_heading(const char *title) {
 }
 static void sv_back(void) { sv_button(82,192,76,26,"< BACK",false); }
 static int sv_row_y(unsigned index) { return index<3?124+(int)index*SV_ROW_HEIGHT:278+(int)(index-3)*SV_ROW_HEIGHT; }
-static int sv_max_scroll(void) { return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144); }
+static int sv_max_scroll(void) {
+  int maximum=(sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144))-(sv_height()-240);
+  return maximum>0?maximum:0;
+}
 static void sv_clamp_scroll(void) {
   unsigned p=sv_page==SV_ROOT?0:1;
   if(sv_scroll[p]<0)sv_scroll[p]=0;
@@ -132,18 +149,18 @@ static void sv_root(void) {
     if(row.type==T5_APP_SETTING_ACTION)sv_text(1,211,y+9,">",SV_DIM,0);
   }
 #ifdef PORTABLE_NOVA_UI
-  sv_fade(0,184);sv_rect(0,184,240,56,0);
+  sv_fade(0,sv_bottom(184));sv_rect(0,sv_bottom(184),240,56,0);
 #else
   sv_fade(0,192);sv_rect(0,190,240,50,0);
 #endif
-  if(settings_message[0])sv_center(3,173,settings_message,SV_CYAN,0);
+  if(settings_message[0])sv_center(3,sv_bottom(173),settings_message,SV_CYAN,0);
   sv_back();
 }
 static void sv_fields(void) {
   sv_heading("TIME AND DATE");
   for(unsigned i=0;i<6;++i) {
     int y=60+(int)i*SV_ROW_HEIGHT-sv_scroll[1];
-    if(y+SV_ROW_HEIGHT<=50 || y>=184)continue;
+    if(y+SV_ROW_HEIGHT<=50 || y>=sv_bottom(184))continue;
     char value[24];editor_value_text(i,value,sizeof(value));
     sv_rect(20,y,2,SV_ROW_HEIGHT,editor_field==i?SV_CYAN:SV_LINE);
     sv_rect(22,y+SV_ROW_HEIGHT-1,198,1,SV_LINE);
@@ -152,7 +169,7 @@ static void sv_fields(void) {
   }
   /* Keep the fixed heading/buttons intact while rows move behind them. */
 #ifdef PORTABLE_NOVA_UI
-  sv_fade(50,166);sv_rect(0,166,240,74,0);
+  sv_fade(50,SV_FIELD_BOTTOM);sv_rect(0,SV_FIELD_BOTTOM,240,74,0);
 #else
   sv_fade(50,188);sv_rect(0,188,240,52,0);
 #endif
@@ -160,7 +177,7 @@ static void sv_fields(void) {
   sv_button(24,200,86,26,"CANCEL",editor_field==7);
   sv_button(130,200,86,26,"SAVE",editor_field==6);
 #ifdef PORTABLE_NOVA_UI
-  sv_center(3,171,editor_message,SV_CAP,0);
+  sv_center(3,sv_bottom(171),editor_message,SV_CAP,0);
 #else
   sv_center(3,185,editor_message,SV_CAP,0);
 #endif
@@ -229,11 +246,11 @@ static void sv_sleep(void) {
   sv_button(28,104,184,30,"DEEP SLEEP",sleep_choice==PORTABLE_SLEEP_DEEP);
 #ifdef PORTABLE_LOW_BATTERY
   sv_button(28,142,184,30,"LIGHT THEN DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
-  sv_center(3,172,sleep_message[0]?sleep_message:"Uses Deep Sleep Timer",SV_CAP,0);
+  sv_center(3,sv_bottom(172),sleep_message[0]?sleep_message:"Uses Deep Sleep Timer",SV_CAP,0);
 #else
   sv_button(28,142,184,30,"LIGHT 5 MIN - DEEP",sleep_choice==PORTABLE_SLEEP_HYBRID);
 #ifdef PORTABLE_NOVA_UI
-  sv_center(3,172,sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
+  sv_center(3,sv_bottom(172),sleep_message[0]?sleep_message:"Apps: Light 5 min then Deep",SV_CAP,0);
 #else
   sv_center(3,177,"Apps: Light 5 min then Deep",SV_CAP,0);
   sv_center(3,190,sleep_message,SV_CYAN,0);
@@ -250,7 +267,7 @@ static void sv_timer(void) {
   sv_center(0,66,value,SV_CYAN,0);
   sv_button(20,88,64,44,"-",false);sv_button(156,88,64,44,"+",false);
   sv_center(3,150,timer_deep?"Time asleep before Deep":"Idle time before sleep",SV_CAP,0);
-  sv_center(3,172,timer_message,SV_CYAN,0);
+  sv_center(3,sv_bottom(172),timer_message,SV_CYAN,0);
   sv_button(24,200,86,26,"CANCEL",false);sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
@@ -336,7 +353,11 @@ static bool settings_view_poll(t5_app_input_t *out) {
   if(!sample.valid || sample.cancelled) {
     sv_gesture=false;sv_need_neutral=true;return true;
   }
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  int x=sample.x,y=sample.y;
+#else
   int x=(int)sample.x-(width()-240)/2,y=(int)sample.y-(height()-240)/2;
+#endif
   bool fresh_tap=sample.released && sample.tap_eligible && !sample.moved;
   if(sv_need_neutral) {
     if(!sample.down || (sample.began && sample.tap_eligible))sv_need_neutral=false;
@@ -347,7 +368,7 @@ static bool settings_view_poll(t5_app_input_t *out) {
     sv_axis=0;sv_dragged=false;
   }
   if(sample.began) {
-    sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
+    sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<sv_height();
     sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_axis=0;sv_dragged=false;
 #ifdef PORTABLE_QUICK_ACTIONS
     if(quick_replay_pending){sv_start_x=quick.ui.start_x;sv_start_y=quick.ui.start_y;quick_replay_pending=false;}

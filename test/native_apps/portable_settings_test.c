@@ -17,7 +17,23 @@ const unsigned portable_catalog_count = 0;
 #endif
 static unsigned scenario, ticks, polls, grants, subscriptions, frame_count, displays;
 static unsigned writes, reads_after_write, diagnostics;
-static uint16_t framebuffer[240 * 240];
+#ifndef SETTINGS_FIXTURE_WIDTH
+#define SETTINGS_FIXTURE_WIDTH 240
+#define SETTINGS_FIXTURE_HEIGHT 240
+#endif
+static uint16_t framebuffer[SETTINGS_FIXTURE_WIDTH * SETTINGS_FIXTURE_HEIGHT];
+static void fixture_point(uint16_t *x,uint16_t *y) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(*y>=207)*y+=(SETTINGS_FIXTURE_HEIGHT*240u+SETTINGS_FIXTURE_WIDTH-1u)/SETTINGS_FIXTURE_WIDTH-240u;
+  *x=(*x*SETTINGS_FIXTURE_WIDTH+239u)/240u;
+  *y=(*y*SETTINGS_FIXTURE_WIDTH+239u)/240u;
+#endif
+#if PORTABLE_TOUCH_ROTATION == 180
+  *x=SETTINGS_FIXTURE_WIDTH-1-*x;*y=SETTINGS_FIXTURE_HEIGHT-1-*y;
+#else
+  (void)x;(void)y;
+#endif
+}
 static twatch_rtc_time_v1 stored = {2024, 2, 29, 4, 23, 59, 59};
 static twatch_rtc_time_v1 written;
 typedef struct { unsigned poll; uint16_t x, y; } contact;
@@ -44,13 +60,13 @@ static bool test_launch(const char *path) {
 #endif
 }
 static bool display_info(void *c, risc_display_info_v1 *out) {
-  (void)c; *out = (risc_display_info_v1){.width=240,.height=240,
+  (void)c; *out = (risc_display_info_v1){.width=SETTINGS_FIXTURE_WIDTH,.height=SETTINGS_FIXTURE_HEIGHT,
     .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)}; return true;
 }
 static bool frame_acquire(void *c, uint32_t f, risc_display_surface_v1 *out) {
   (void)c; assert(!frame_count); frame_count=1;
-  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=240,.height=240,
-    .stride_bytes=480,.size_bytes=sizeof(framebuffer),.pixel_format=f};return true;
+  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=SETTINGS_FIXTURE_WIDTH,.height=SETTINGS_FIXTURE_HEIGHT,
+    .stride_bytes=SETTINGS_FIXTURE_WIDTH*2,.size_bytes=sizeof(framebuffer),.pixel_format=f};return true;
 }
 static void frame_release(void *c, risc_display_frame_v1 f) {
   (void)c;assert(f==1 && frame_count);frame_count=0;
@@ -80,15 +96,13 @@ static bool touch_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && subscri
 static bool touch_poll(void *c,size_t n){(void)c;assert(n==1);++polls;return polls!=fail_poll_at;}
 static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){(void)c;(void)s;(void)e;return polls==gap_at?-1:0;}
 static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
-  (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
+  (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;
   for(size_t i=0;i<input_count;++i)if(input_script[i].poll==polls){
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=polls==replace_at?2:1,.x=input_script[i].x,.y=input_script[i].y};
 #ifdef PORTABLE_NOVA_UI
     nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
 #endif
-#if PORTABLE_TOUCH_ROTATION == 180
-    out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
-#endif
+fixture_point(&out->contacts[0].x,&out->contacts[0].y);
     break;
   }return true;
 }

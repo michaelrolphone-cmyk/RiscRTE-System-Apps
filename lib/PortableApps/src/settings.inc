@@ -233,7 +233,7 @@ static void settings_render(uint32_t category,int32_t selected) {
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
     if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
-    else if(y+SV_ROW_HEIGHT>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(174-SV_ROW_HEIGHT);
+    else if(y+SV_ROW_HEIGHT>sv_bottom(174))sv_scroll[0]=sv_row_y((unsigned)selected-1)-(sv_bottom(174)-SV_ROW_HEIGHT);
   }
   if(sv_page!=SV_ROOT)sv_switch(SV_ROOT);else settings_view_redraw();
 }
@@ -475,7 +475,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
     }
     if(input.buttons&T5_APP_BUTTON_UP)editor_select_field((editor_field+7)%8);
     else if(input.buttons&T5_APP_BUTTON_DOWN)editor_select_field((editor_field+1)%8);
-    else if(input.tapped && input.touch_y>=50 && input.touch_y<184) {
+    else if(input.tapped && input.touch_y>=50 && input.touch_y<sv_bottom(184)) {
       int y=input.touch_y+sv_scroll[1]-60;
       if(y>=0 && y<6*SV_ROW_HEIGHT){editor_field=(unsigned)y/SV_ROW_HEIGHT;sv_switch(SV_VALUE);continue;}
     } else if(input.buttons&T5_APP_BUTTON_CONFIRM) {
@@ -490,7 +490,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   sv_switch(SV_ROOT);return result;
 }
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
-  if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
+  if(!category || !selected || x<20 || x>=220 || y<0 || y>=sv_bottom(190))return T5_APP_SETTING_NO_CHANGE;
   *category=0;
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+SV_ROW_HEIGHT) {
     *selected=(int32_t)i+1;return settings_activate(0,i);

@@ -124,6 +124,9 @@ static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static bool failed, list_mode;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "watch_native_layout.inc"
+#endif
 static bool canvas_progress(void);
 #ifdef PORTABLE_TAP_SETTINGS
 static bool settings_motion_active,settings_motion_interrupted;
@@ -276,6 +279,10 @@ static void input_service(void) {
  if(!contexts_capture_checkpoint())return;
 #endif
  portable_touch_sample next;portable_touch_read(&touch,&next);
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ if(next.valid && !watch_layout_touch(&native_watch_layout,next.x,next.y,&next.x,&next.y))
+   next=(portable_touch_sample){.cancelled=true};
+#endif
  input_sampled_at=millis_now();
 #ifdef PORTABLE_APP_SLEEP_LOCAL
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
@@ -283,7 +290,13 @@ static void input_service(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
   bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
-      next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible&&info.width==240&&info.height==240);
+      next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+      && native_watch_layout.height>=240
+#else
+      &&info.width==240&&info.height==240
+#endif
+      );
   if(reserved) {
    input_pending=false;input_sample=(portable_touch_sample){0};
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -1201,12 +1214,22 @@ static int initialize(void) {
       !(info.supported_formats &
         RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
     return -1;
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(!watch_layout_open(&native_watch_layout,info.width,info.height,NULL) ||
+     native_watch_layout.height<240)return -1;
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(!pqa_set_height(&quick.ui,native_watch_layout.height))return -1;
+#endif
+#elif defined(PORTABLE_NOVA_UI)
   if(info.width!=240 || info.height!=240)return -1;
 #endif
 #ifdef PORTABLE_ASYNC_RGB565
   canvas_async=rt->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE && rt->retain_invocation &&
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    watch_layout_valid(&native_watch_layout) &&
+#else
     info.width==240 && info.height==240 &&
+#endif
     (info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && !(info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE);
   if(canvas_async){canvas_pixels=malloc((size_t)info.width*info.height*2u);if(!canvas_pixels)return -1;}
 #endif

@@ -23,6 +23,27 @@ static int columns, rows, page_size, cell_w, cell_h, grid_top;
 static bool compact;
 __attribute__((weak)) const springboard_presentation *springboard_presentation_get(void) { return NULL; }
 __attribute__((weak)) bool springboard_transition_active(void) { return false; }
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "WatchLayout.h"
+/* Only this controller sees logical watch coordinates. The adapter/provider
+ * API remains physical for surfaces, lifecycle and generic app clients. */
+static watch_layout springboard_watch_layout;
+static t5_app_api_v1 springboard_watch_api;
+static int32_t springboard_watch_width(void) { return (int32_t)springboard_watch_layout.width; }
+static int32_t springboard_watch_height(void) { return (int32_t)springboard_watch_layout.height; }
+static bool springboard_watch_open(void) {
+    if (!watch_layout_open(&springboard_watch_layout, (uint32_t)api->screen_width(),
+            (uint32_t)api->screen_height(), NULL)) return false;
+    size_t bytes = api->struct_size < sizeof(springboard_watch_api) ? api->struct_size : sizeof(springboard_watch_api);
+    memset(&springboard_watch_api, 0, sizeof(springboard_watch_api));
+    memcpy(&springboard_watch_api, api, bytes);
+    springboard_watch_api.struct_size = (uint32_t)bytes;
+    springboard_watch_api.screen_width = springboard_watch_width;
+    springboard_watch_api.screen_height = springboard_watch_height;
+    api = &springboard_watch_api;
+    return true;
+}
+#endif
 static bool missing_icons;
 static bool edit_mode;
 static bool selection_visible;
@@ -395,6 +416,9 @@ __attribute__((visibility("default"))) void app_main(void) {
     api = t5_app_get_api(T5_APP_ABI_VERSION);
     storage = t5_storage_get_api(T5_STORAGE_API_VERSION);
     if (!has_required_app_api()) return;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    if (!springboard_watch_open()) return;
+#endif
     api->installed_apps_refresh();
     count = api->installed_apps_count();
     if (count > MAX_HOME_APPS) count = MAX_HOME_APPS;

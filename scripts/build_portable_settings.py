@@ -28,6 +28,9 @@ def build(args):
     if args.tap_settings: flags.append('-DPORTABLE_TAP_SETTINGS')
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
     if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if getattr(args,'watch_native_height',False):
+        if not args.nova_ui: raise ValueError('--watch-native-height requires --nova-ui')
+        flags.append('-DPORTABLE_WATCH_NATIVE_HEIGHT')
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
@@ -116,6 +119,7 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--async-rgb565',action='store_true',help='Explicit bounded 240x240 color mailbox; requires asynchronous display and Runtime retention support')
     parser.add_argument('--low-battery',action='store_true',help='Build the automatic low-battery Watch profile with shared Quick Controls and timers')
+    parser.add_argument('--watch-native-height',action='store_true',help='Width-scaled NOVA canvas with extra native vertical layout space')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')

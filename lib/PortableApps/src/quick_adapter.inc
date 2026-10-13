@@ -75,7 +75,7 @@ static bool quick_apply(uint32_t actions) {
 static bool quick_copy_background(void) {
  clear();if(failed)return false;
  if(!quick_background)return false;
- for(unsigned y=0;y<240;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,quick_background+y*240,480);
+ for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,quick_background+(size_t)y*info.width,(size_t)info.width*2u);
  return true;
 }
 static bool quick_interrupt(void) {
@@ -83,7 +83,7 @@ static bool quick_interrupt(void) {
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
  /* Alarm's saved restoration frame is the app, never the torch/controls. */
- if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,240u*240u*2u);alarm_pixels_valid=true;}
+ if(quick_background && alarm_pixels){memcpy(alarm_pixels,quick_background,(size_t)info.width*info.height*2u);alarm_pixels_valid=true;}
  return pqa_session_restore(&quick,display);
 }
 static void quick_time(char out[6]) {
@@ -130,9 +130,9 @@ static bool quick_foreground(bool *consumed) {
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
- quick_background=malloc(240u*240u*2u);
+ quick_background=malloc((size_t)info.width*info.height*2u);
  if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
- memcpy(quick_background,alarm_pixels,240u*240u*2u);quick_modal=true;
+ memcpy(quick_background,alarm_pixels,(size_t)info.width*info.height*2u);quick_modal=true;
  bool painted=false,wifi=false;uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--";risc_battery_sample_v1 battery={0};bool battery_valid=false;
  while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
@@ -174,7 +174,7 @@ static bool quick_foreground(bool *consumed) {
  if(painted && !failed) {
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_async && alarm_pixels && quick_background) {
-   memcpy(alarm_pixels,quick_background,240u*240u*2u);alarm_pixels_valid=true;
+   memcpy(alarm_pixels,quick_background,(size_t)info.width*info.height*2u);alarm_pixels_valid=true;
   }
 #endif
   if(!quick_copy_background())failed=true;else present(true);

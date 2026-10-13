@@ -16,7 +16,15 @@ static unsigned kv_writes,kv_reads,rtc_writes,diagnostics,alert_frames,error_fra
 static uint8_t bytes[64];
 static uint32_t blob_size;
 static bool exists;
-static uint16_t framebuffer[240*240];
+#ifndef SETTINGS_FIXTURE_WIDTH
+#define SETTINGS_FIXTURE_WIDTH 240
+#define SETTINGS_FIXTURE_HEIGHT 240
+#endif
+#ifndef SETTINGS_FIXTURE_PADDING
+#define SETTINGS_FIXTURE_PADDING 0
+#endif
+#define SETTINGS_FIXTURE_PITCH (SETTINGS_FIXTURE_WIDTH+SETTINGS_FIXTURE_PADDING)
+static uint16_t framebuffer[SETTINGS_FIXTURE_PITCH*SETTINGS_FIXTURE_HEIGHT];
 typedef struct {unsigned poll;uint16_t x,y;} contact;
 static contact contacts[20];
 static unsigned contact_count;
@@ -28,7 +36,7 @@ static void yield_ms(uint32_t ms) {ticks+=ms;}
 static bool diagnostic(const char *message) {(void)message;++diagnostics;return true;}
 static bool request_launch(const char *path) {(void)path;assert(!"No launch is authorized");return false;}
 static bool display_info(void *c,risc_display_info_v1 *out) {
-  (void)c;*out=(risc_display_info_v1){.width=240,.height=240,
+  (void)c;*out=(risc_display_info_v1){.width=SETTINGS_FIXTURE_WIDTH,.height=SETTINGS_FIXTURE_HEIGHT,
     .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
 #ifdef PORTABLE_ASYNC_RGB565
   out->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
@@ -37,8 +45,8 @@ static bool display_info(void *c,risc_display_info_v1 *out) {
 }
 static bool frame_acquire(void *c,uint32_t format,risc_display_surface_v1 *out) {
   (void)c;assert(!frames);frames=1;
-  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=240,.height=240,
-    .stride_bytes=480,.size_bytes=sizeof(framebuffer),.pixel_format=format};return true;
+  *out=(risc_display_surface_v1){.frame=1,.pixels=framebuffer,.width=SETTINGS_FIXTURE_WIDTH,.height=SETTINGS_FIXTURE_HEIGHT,
+    .stride_bytes=SETTINGS_FIXTURE_PITCH*2,.size_bytes=sizeof(framebuffer),.pixel_format=format};return true;
 }
 static void frame_release(void *c,risc_display_frame_v1 frame) {(void)c;assert(frame==1 && frames);frames=0;}
 static bool frame_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *rect,
@@ -69,14 +77,19 @@ static bool touch_unsubscribe(void *c,uint64_t s) {(void)c;assert(s==1 && subscr
 static bool touch_poll(void *c,size_t n) {(void)c;assert(n==1);++polls;return true;}
 static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {(void)c;(void)s;(void)out;return 0;}
 static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
-  (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
+  (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;
   for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==polls) {
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};
 #ifdef PORTABLE_NOVA_UI
     nova_fixture_choice_coordinates(sv_page,&out->contacts[0].x,&out->contacts[0].y);
 #endif
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    if(out->contacts[0].y>=188)out->contacts[0].y+=(SETTINGS_FIXTURE_HEIGHT*240u+SETTINGS_FIXTURE_WIDTH-1u)/SETTINGS_FIXTURE_WIDTH-240u;
+    out->contacts[0].x=(out->contacts[0].x*SETTINGS_FIXTURE_WIDTH+239u)/240u;
+    out->contacts[0].y=(out->contacts[0].y*SETTINGS_FIXTURE_WIDTH+239u)/240u;
+#endif
 #if PORTABLE_TOUCH_ROTATION == 180
-    out->contacts[0].x=239-out->contacts[0].x;out->contacts[0].y=239-out->contacts[0].y;
+    out->contacts[0].x=SETTINGS_FIXTURE_WIDTH-1-out->contacts[0].x;out->contacts[0].y=SETTINGS_FIXTURE_HEIGHT-1-out->contacts[0].y;
 #endif
     break;
   }

@@ -5,7 +5,7 @@
 #include "portable_alarm_test.c"
 
 static uint8_t pref_value[4];
-static uint16_t expected_background[240*240];
+static uint16_t expected_background[SETTINGS_FIXTURE_WIDTH*SETTINGS_FIXTURE_HEIGHT];
 static bool pref_present[4], pref_write_fail, pref_read_fail;
 static unsigned pref_writes[4], brightness_calls, hardware_brightness=40;
 static unsigned inject_alarm_at, wifi_launches;
@@ -104,9 +104,7 @@ static int32_t quick_next(void *c,uint64_t subscription,risc_touch_event_v1 *eve
  if(!current && last && emitted_up_poll!=polls) {
   emitted_up_poll=polls;
   *event=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=last->x,.y=last->y};
-#if PORTABLE_TOUCH_ROTATION == 180
-  event->x=239-event->x;event->y=239-event->y;
-#endif
+fixture_point(&event->x,&event->y);
   return 1;
  }
  return 0;
@@ -135,7 +133,7 @@ static void capture_frame(const char *name) {
 static bool capture_submit(void *c,risc_display_frame_v1 frame,const risc_display_rect_v1 *rect,size_t count,
                            const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
  bool result=frame_submit(c,frame,rect,count,options,token);
- if(quick.ui.position_q8==PQA_OPEN_Q8 && !quick.ui.torch)capture_frame("adapter-panel");
+ if(quick.ui.position_q8==pqa_open_q8(&quick.ui) && !quick.ui.torch)capture_frame("adapter-panel");
  if(quick.ui.torch)capture_frame("adapter-torch");
  if(alarm_modal)capture_frame("adapter-alarm");
  return result;
@@ -149,11 +147,18 @@ static void setup(void) {
  rt=&quick_runtime;display_settled=true;failed=false;
  dg.struct_size=sizeof(dg);bg.struct_size=sizeof(bg);
  assert(rt->acquire("display.output",1,0,&dg));display=dg.api;assert(display_info(NULL,&info));
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ assert(watch_layout_open(&native_watch_layout,info.width,info.height,NULL));
+#endif
  assert(portable_touch_open(&touch,rt));
  alarm_pixels=malloc(sizeof(framebuffer));assert(alarm_pixels);assert(portable_alarm_open(&alarms,rt));
  alarm_fake.state=ALARM_STATE_READY;
  assert(settings_open());
- pqa_session_init(&quick);assert(pqa_session_load(&quick,rt));
+ pqa_session_init(&quick);
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ assert(pqa_set_height(&quick.ui,native_watch_layout.height));
+#endif
+ assert(pqa_session_load(&quick,rt));
 #ifdef PORTABLE_QUICK_RADIOS
  assert(pqa_radios_load(&quick_radios,&quick.ui,rt));assert(quick.ui.radios_valid&&quick.ui.wifi_enabled&&!quick.ui.bluetooth_enabled);
 #endif
@@ -161,7 +166,7 @@ static void setup(void) {
  assert(!pref_writes[0] && !pref_writes[1] && !pref_writes[2]);
  settings_draft=(twatch_rtc_time_v1){2028,4,20,4,17,23,31};
  sv_page=SV_ROOT;settings_editing=false;
- clear();fill(0,0,240,240,0x24e2);present(false);assert(alarm_pixels_valid);
+ clear();fill(0,0,info.width,info.height,0x24e2);present(false);assert(alarm_pixels_valid);
  memcpy(expected_background,framebuffer,sizeof(expected_background));
  capture_frame("adapter-background");
 }

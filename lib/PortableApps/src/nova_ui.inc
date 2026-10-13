@@ -2,9 +2,19 @@
  * palette and six-pixel rounded outlines are shared by portable utility apps. */
 #include "PortableNovaUi.h"
 #include "../settings_fonts/text.inc"
+static int nu_height(void) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  return native_watch_height();
+#else
+  return 240;
+#endif
+}
 static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
 #ifdef PORTABLE_CONTEXTS_RASTER
   if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
+#endif
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  native_watch_pixel(x,y,rgb,alpha);return;
 #endif
   if(!surface.frame || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
   x+=(width()-240)/2;y+=(height()-240)/2;
@@ -17,7 +27,7 @@ static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
   uint16_t c=(uint16_t)((r>>3)<<11|(g>>2)<<5|(b>>3));p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
 }
 static void nu_rect(int x,int y,int w,int h,uint32_t rgb) {
-  if(w<=0 || h<=0 || w>240 || h>240)return;
+  if(w<=0 || h<=0 || w>240 || h>nu_height())return;
   for(int j=0;j<h;j++)for(int i=0;i<w;i++)nu_pixel(x+i,y+j,rgb,255);
 }
 int portable_nova_measure(unsigned face,const char *s) {
@@ -59,7 +69,7 @@ void portable_nova_right(unsigned face,int x,int y,int w,const char *s,uint32_t 
 }
 void portable_nova_fill(int x,int y,int w,int h,uint32_t rgb){nu_rect(x,y,w,h,rgb);}
 void portable_nova_round(int x,int y,int w,int h,int radius,uint32_t rgb) {
-  if(w<=0||h<=0||w>240||h>240)return;
+  if(w<=0||h<=0||w>240||h>nu_height())return;
   if(radius<0)radius=0;
   if(radius>w/2)radius=w/2;
   if(radius>h/2)radius=h/2;
@@ -71,7 +81,7 @@ void portable_nova_round(int x,int y,int w,int h,int radius,uint32_t rgb) {
 void portable_nova_begin(void) {list_mode=false;clear_color(0);}
 void portable_nova_rule(int x,int y,int w) {nu_rect(x,y,w,1,NOVA_DIM);}
 void portable_nova_button(int x,int y,int w,int h,const char *s,bool selected) {
-  if(w<1 || h<1 || w>240 || h>240)return;
+  if(w<1 || h<1 || w>240 || h>nu_height())return;
   for(int j=0;j<h;j++)for(int i=0;i<w;i++) {
     int dx=i<6?6-i:i>=w-6?i-(w-7):0,dy=j<6?6-j:j>=h-6?j-(h-7):0;
     if(dx*dx+dy*dy>36)continue;

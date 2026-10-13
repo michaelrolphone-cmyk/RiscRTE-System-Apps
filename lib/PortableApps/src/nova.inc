@@ -14,12 +14,29 @@ static unsigned np_root(unsigned n) {
   unsigned r=0,b=1u<<30;while(b>n)b>>=2;
   while(b){if(n>=r+b){n-=r+b;r=(r>>1)+b;}else r>>=1;b>>=2;}return r;
 }
+static int np_width(void) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  return (int)native_watch_layout.width;
+#else
+  return width();
+#endif
+}
+static int np_height(void) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  return native_watch_height();
+#else
+  return height();
+#endif
+}
 static uint16_t np_rgb(uint32_t rgb) {
   return (uint16_t)(((rgb>>19)&31)<<11|((rgb>>10)&63)<<5|((rgb>>3)&31));
 }
 static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
 #ifdef PORTABLE_CONTEXTS_RASTER
   if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
+#endif
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(native_watch_layout.physical_width!=WATCH_LAYOUT_WIDTH) {native_watch_pixel(x,y,rgb,a);return;}
 #endif
   if(!surface.frame || x<0 || y<0 || x>=width() || y>=height() || !a)return;
   uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
@@ -68,7 +85,14 @@ static void np_mask(void) {
 #ifdef PORTABLE_CONTEXTS_RASTER
     if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
 #endif
-    int dx=x<width()-x?x:width()-x,dy=y<height()-y?y:height()-y;
+    int lx=x,ly=y;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    /* Use the same inverse as touch and logical-pixel rasterization. The
+     * original edge feather keeps its proportions on a taller native panel. */
+    lx=(int)((uint32_t)x*WATCH_LAYOUT_WIDTH/native_watch_layout.physical_width);
+    ly=(int)((uint32_t)y*WATCH_LAYOUT_WIDTH/native_watch_layout.physical_width);
+#endif
+    int dx=lx<np_width()-lx?lx:np_width()-lx,dy=ly<np_height()-ly?ly:np_height()-ly;
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
     unsigned a=ax*ay/255;
@@ -98,7 +122,7 @@ static void np_caption_backing(int left,int top,int right,int bottom) {
 }
 static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
   np_mask();if(!s)return;
-  int length=0,total=0,spacing=clock?21:34,max=width()-16;
+  int length=0,total=0,spacing=clock?21:34,max=np_width()-16;
   while(length<95 && s[length]){
     unsigned c=(unsigned char)s[length];if(c>='a' && c<='z')c-=32;
     if(c<32 || c>126)c='?';
@@ -108,8 +132,8 @@ static void np_caption(int y,const char *s,bool clock,uint32_t rgb) {
     total=next;++length;
   }
   if(!length)return;
-  int start=(width()*16-total)/2,x=start;
-  int left=width(),top=height(),right=-1,bottom=-1;
+  int start=(np_width()*16-total)/2,x=start;
+  int left=np_width(),top=np_height(),right=-1,bottom=-1;
   for(int k=0;k<length;++k){
     unsigned c=(unsigned char)s[k];if(c>='a' && c<='z')c-=32;if(c<32 || c>126)c='?';
     const rpt_glyph *g=&rpt_text[(clock?0:95)+c-32];
@@ -154,7 +178,9 @@ static void np_close(void) {
 static void np_poll(t5_app_input_t *out);
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
   if(width()>=400 && height()>=400)return NULL;
+#endif
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #ifdef PORTABLE_RTC_UTC8_DENVER
@@ -175,6 +201,6 @@ const springboard_presentation *springboard_presentation_get(void) {
 static void np_poll(t5_app_input_t *out) {
   portable_touch_sample s;input_take(&s);
   nova_contact=(springboard_contact){s.valid,s.down,s.began,s.released,s.cancelled,s.tap_eligible&&!s.moved,(int16_t)s.x,(int16_t)s.y};
-  if(s.x>=info.width || s.y>=info.height){nova_contact.valid=false;nova_contact.cancelled=true;}
+  if(s.x>=np_width() || s.y>=np_height()){nova_contact.valid=false;nova_contact.cancelled=true;}
   if(s.released && s.tap_eligible && !s.moved && s.x<44 && s.y<40){out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;}
 }

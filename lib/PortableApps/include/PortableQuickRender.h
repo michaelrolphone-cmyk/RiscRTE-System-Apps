@@ -5,7 +5,9 @@
 extern "C" {
 #endif
 /* Overlay on a fresh complete app image every frame. No retained pixels.
- * 240x240 RGB565 little endian only. Tight and padded/unaligned surfaces work;
+ * Default: 240x240 RGB565 little endian. PORTABLE_WATCH_NATIVE_HEIGHT adds
+ * uniformly width-scaled native surfaces matching pqa_set_height().
+ * Tight and padded/unaligned surfaces work;
  * active rows need stride>=480 and size>=(239*stride+480), with overflow checks.
  * A valid closed controller is a no-op. Time is a bounded caller-owned label
  * (up to eight ASCII characters); NULL shows --:--. Battery 0 is valid.
