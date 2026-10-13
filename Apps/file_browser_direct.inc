@@ -56,7 +56,7 @@ static void fsh_direct_tick(uint64_t now){
 #ifdef PORTABLE_FILE_SHARING_SELECTED_VOLUME
   config.storage_volume=fsh_volume_share();config.files_instance=config.storage_volume?PORTABLE_FILE_BROWSER_INSTANCE:PORTABLE_FILE_SHARING_EXPORT_INSTANCE;
 #ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
-  if(config.storage_volume&&fb_storage_index)config.files_instance=PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
+  if(config.storage_volume)config.files_instance=fb_root_instance(fb_storage_index);
 #endif
 #endif
   if(!portable_file_sharing_start(fsh_client,&config,now)){fsh_direct_fail("Cannot prepare private sharing");return;}

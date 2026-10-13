@@ -1,3 +1,9 @@
+#ifdef FILE_SOURCE_ROOTS
+#define PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY "storage.app-data.export"
+#define PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE 0
+#define PORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY "storage.volume"
+#define PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE 0
+#endif
 #define PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
 #define FILE_PEER_FIXTURE
 #define FILE_SETUP_TEST
@@ -20,7 +26,11 @@ static int32_t source_finish(uint64_t token){assert(source_active&&token==source
 static int32_t source_discard(uint64_t token){assert(source_active&&token==source_live);source_active=false;source_finished=false;source_discards++;return 0;}
 static bool source_open(uint64_t token,const char*handler,uint64_t cookie){assert(source_active&&source_finished&&token==source_live&&source_supports(handler)&&cookie==UINT64_C(0x4642524f57534552));assert(fsh_phase==FSH_OFF&&!fpeer&&!owned&&!fsource_input&&!fb_owned[0].handle);source_launched=true;source_opens++;return true;}
 static const risc_file_open_source_api_v1 source_api={.api_version=1,.struct_size=sizeof(source_api),.handler_count=source_count,.handler_get=source_get,.handler_supported=source_supports,.begin=source_begin,.write=source_write,.finish=source_finish,.discard=source_discard,.open_request=source_open};
-const void*peer_fixture_capability(const char*n){if(!strcmp(n,RISC_FILE_OPEN_SOURCE_CAPABILITY))return source_available?&source_api:NULL;return peer_backend_capability(n);}
+const void*peer_fixture_capability(const char*n){if(!strcmp(n,RISC_FILE_OPEN_SOURCE_CAPABILITY))return source_available?&source_api:NULL;
+#ifdef FILE_SOURCE_ROOTS
+if(!strcmp(n,"storage.app-data.export")||!strcmp(n,"storage.volume"))return peer_backend_capability("storage.installed-files");
+#endif
+return peer_backend_capability(n);}
 static void source_step(void){test_ticks++;fsh_tick();if(!fb_terminal)fsource_tick();peer_backend_tick(fsh_now);if(cancel_calls)quiescent=true;}
 static void source_until(unsigned state){for(unsigned i=0;i<30000;i++){source_step();if(fpeer_status.state==state)return;assert(!fb_terminal);}assert(!"source peer timeout");}
 static void source_frame(void){for(unsigned i=0;i<20;i++){if(fb_dirty)fb_draw();test_ticks++;t5_app_input_t in={0};assert(fb_app->poll(&in,1));if(portable_file_browser_setup_frame_ready()&&!fb_dirty)return;}assert(!"source frame timeout");}
@@ -31,8 +41,19 @@ int main(int argc,char**argv){assert(argc>=2);source_scenario=argv[1];test_direc
  borrowed=true;source_short=strstr(source_scenario,"short")!=NULL;source_available=strcmp(source_scenario,"unavailable")!=0;source_full=!strcmp(source_scenario,"full");source_unsupported=!strcmp(source_scenario,"unsupported");source_multi=!strcmp(source_scenario,"choose");
  memset(fb_pixels,0xa5,sizeof(fb_pixels));assert(app_module_init()==0&&fb_open());strcpy(fb_path,"/Downloads");assert(fb_load(0));
  const bool remote=!strncmp(source_scenario,"remote",6);
- if(remote){peer_backend_direct();borrowed=false;fb_list_choice=0;fb_option(7);source_until(PEER_DISCOVERING);source_step();source_frame();fpeer_choice=0;fpeer_action();source_until(PEER_PAIRING);source_frame();fpeer_choice=1;fpeer_action();source_until(PEER_READY);assert(fbm_mounted&&fb_mode==FB_LIST&&fb_storage_index==2);source_actions("incoming.obj");}
- else source_actions("local.txt");
+ if(remote){peer_backend_direct();borrowed=false;fb_list_choice=0;fb_option(7);source_until(PEER_DISCOVERING);source_step();source_frame();fpeer_choice=0;fpeer_action();source_until(PEER_PAIRING);source_frame();fpeer_choice=1;fpeer_action();source_until(PEER_READY);assert(fbm_mounted&&fb_mode==FB_LIST&&fb_storage_index==FB_REMOTE_ROOT);
+#ifdef FILE_SOURCE_ROOTS
+ assert(fbx_swap()&&fb_storage_index==0);assert(fbx_swap()&&fb_storage_index==1);assert(fbx_swap()&&fb_storage_index==2);assert(fbx_swap()&&fb_storage_index==FB_REMOTE_ROOT);
+#endif
+ source_actions("incoming.obj");}
+ else {
+#ifdef FILE_SOURCE_ROOTS
+  if(!strcmp(source_scenario,"local-secondary"))assert(fbx_select_local(1));
+  if(!strcmp(source_scenario,"local-tertiary"))assert(fbx_select_local(2));
+  assert(fb_load(0));
+#endif
+  source_actions("local.txt");
+ }
  fb_choice=source_multi?1:0;fbx_activate();
  if(!strcmp(source_scenario,"unavailable")){assert(fsource_state==FSOURCE_NONE&&strstr(fb_status,"unavailable")&&!source_begins);}
  else if(source_unsupported){assert(fb_mode==FB_NOTICE&&!source_begins&&strstr(fb_status,"cannot read"));assert(!fb_back());}

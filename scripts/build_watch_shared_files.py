@@ -12,6 +12,7 @@ p=argparse.ArgumentParser(description=__doc__)
 for n in ('watch','utilities','runtime','baseline','output'):p.add_argument('--'+n,type=Path,required=True)
 p.add_argument("--peer-files",action="store_true")
 p.add_argument("--source-handoff",action="store_true")
+p.add_argument("--volume-instance",type=int,help="Optional third generic storage.volume root instance")
 p.add_argument("--shared-text-input",action="store_true")
 a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 watch=a.watch.resolve();utilities=a.utilities.resolve();runtime=a.runtime.resolve()
@@ -35,6 +36,7 @@ alarm=out/'watch-alarm-profile.h'
 alarm.write_text('#include "'+str(utilities/'lib/Alarm/include/AlarmServiceV1.h')+'"\n#define ALARM_MODE_VISUAL 0u\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1 *s){return s?ALARM_MODE_BOTH:ALARM_MODE_VISUAL;}\n')
 flags+=['-include',str(alarm)]
 flags+=['-DPORTABLE_FILE_BROWSER_RGB_ONLY','-DPORTABLE_DISPLAY_ROTATION=0','-DPORTABLE_WIFI_INSTANCE=15','-DPORTABLE_FILE_BROWSER_HANDLERS','-DPORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY="storage.app-data.export"','-DPORTABLE_FILE_BROWSER_SECONDARY_INSTANCE=0']
+if a.volume_instance is not None:flags+=['-DPORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY="storage.volume"','-DPORTABLE_FILE_BROWSER_TERTIARY_INSTANCE='+str(a.volume_instance)]
 if a.source_handoff:flags+=['-DPORTABLE_FILE_BROWSER_SOURCE_HANDOFF']
 if a.shared_text_input:flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT','-flto','-mno-target-align']
 repos={'system-apps':ROOT,'utilities':utilities,'runtime':runtime}
@@ -67,8 +69,12 @@ manifest['requires'].append({'capability':'app.catalog','api':1})
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
 if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
 if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
-manifest['version']='1.5.35' if a.shared_text_input else sharing.selected_version(a)
+manifest['version']='1.5.36' if a.source_handoff else '1.5.35' if a.shared_text_input else sharing.selected_version(a)
 grants=old['grants'].copy()
+if a.volume_instance is not None:
+ q=dict(capability='storage.volume',api=1);g=dict(**q,instance_id=a.volume_instance)
+ if q not in manifest['requires']:manifest['requires'].append(q)
+ if g not in grants:grants.append(g)
 grants.append(dict(capability='app.catalog',api=1,instance_id=0))
 for cap in ('input.power-key','power.sleep','display.power'):
  grants.append(dict(capability=cap,api=1,instance_id=0))

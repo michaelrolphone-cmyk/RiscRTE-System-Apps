@@ -17,7 +17,7 @@ done
 for profile in rgb paper paper-scroll;do
  selected=();if [[ "$profile" == paper* ]];then selected+=(-DFILE_BROWSER_PAPER_PROFILE);fi
  if [[ "$profile" == paper-scroll ]];then selected+=(-DPORTABLE_TOUCH_SCROLL);fi
- "${CC:-cc}" -std=c11 "${flags[@]}" "${selected[@]}" -Wno-unused-function -c test/native_apps/file_browser_mount_test.c -o "$output/$profile.o"
+ "${CC:-cc}" -std=c11 "${flags[@]}" ${selected[@]+"${selected[@]}"} -Wno-unused-function -c test/native_apps/file_browser_mount_test.c -o "$output/$profile.o"
  "${CXX:-c++}" "${flags[@]}" "$output/$profile.o" "${objects[@]}" -o "$output/$profile"
  for scenario in actions failures watch-export;do mkdir -p "$output/$profile-$scenario";"$output/$profile" "$scenario" "$output/$profile-$scenario";done
 done

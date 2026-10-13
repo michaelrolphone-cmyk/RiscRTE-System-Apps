@@ -157,7 +157,7 @@ enum { COPY_READ_FAIL,COPY_WRITE_FAIL,COPY_SD_REMOVED,COPY_USB_REMOVED,
  COPY_SOURCE_OPEN_FAIL,COPY_TARGET_OPEN_FAIL,COPY_ABORT_RETRY,COPY_COMMIT_RETRY,COPY_SOURCE_CLOSE_RETRY };
 static unsigned copy_failure;
 static void inject_copy_failure(void){
- assert(fb_storage_index==1&&fb_volume==&usb.api.base&&fb_other_volume==&sd.api.base&&!strcmp(fb_path,"/Books"));
+ assert(fb_storage_index==1&&fb_volume==&usb.api.base&&fb_root_volumes[fb_storage_index^1u]==&sd.api.base&&!strcmp(fb_path,"/Books"));
  switch(copy_failure){
   case COPY_READ_FAIL:sd.fail_read=true;break;
   case COPY_WRITE_FAIL:usb.fail_write=true;break;
@@ -186,7 +186,7 @@ static void expect_copy_owned(void){
  disk *owner=copy_failure==COPY_SOURCE_CLOSE_RETRY?&sd:&usb;
  bool commit=copy_failure!=COPY_ABORT_RETRY;
  unsigned owned=0;
- assert(!portable_file_browser_safe()&&fb_grant.api==&usb.api&&fb_other_grant.api==&sd.api);
+ assert(!portable_file_browser_safe()&&fb_grant.api==&usb.api&&fb_root_grants[fb_storage_index^1u].api==&sd.api);
  assert(fb_storage_index==1&&find(&sd,"/read.txt")>=0&&!sd.removals);
  for(unsigned i=0;i<4;i++)if(fb_owned[i].handle){
   owned++;assert(fb_owned[i].api==&owner->api.base&&!fb_owned[i].directory&&fb_owned[i].commit==commit);
@@ -293,7 +293,10 @@ static void check_protected_settings(void){
 #ifdef FILE_BROWSER_RGB_PROFILE
 #define main legacy_rgb_operation_fixture_main
 #endif
-int main(void){
+#ifndef FILES_OPERATIONS_MAIN
+#define FILES_OPERATIONS_MAIN main
+#endif
+int FILES_OPERATIONS_MAIN(void){
  init_disk(&sd);init_disk(&usb);add(&sd,"/read.txt",false,5000);add(&sd,"/existing.txt",false,3);add(&sd,"/empty",false,0);
  test_volume=sd.api.base;test_volume.struct_size=sizeof(test_volume);
  assert(app_module_init()==0&&fb_open());assert(portable_file_browser_close());fb_runtime=&runtime;assert(fb_load(0)&&fb_manage&&fb_paper);frame("writable-files");
@@ -319,9 +322,9 @@ int main(void){
  handler_result_pending=true;handler_result_error=-7;fbx_resume_result();assert(!handler_result_pending&&strstr(fb_status,"-7"));handler_result_pending=true;handler_result_error=0;fbx_resume_result();assert(!strcmp(fb_status,"File handler returned"));
  handler_request_fail=true;fbx_open(false);fbx_dispatch(0);assert(fb_mode==FB_NOTICE&&!fb_terminal&&handler_calls==1);handler_request_fail=false;
  for(unsigned i=0;i<3;i++){
-  assert(fbx_swap()&&fbx_swap());select_item("/read.txt");fbx_open(true);assert(fb_handler_grant.api&&fb_other_grant.api&&fb_grant.api);
+  assert(fbx_swap()&&fbx_swap());select_item("/read.txt");fbx_open(true);assert(fb_handler_grant.api&&fb_root_grants[fb_storage_index^1u].api&&fb_grant.api);
   release_target=i==0?(const void*)&handlers:i==1?(const void*)&usb.api:(const void*)&sd.api;
-  assert(!portable_file_browser_close());if(i==0)assert(fb_handler_grant.api);else if(i==1)assert(!fb_handler_grant.api&&fb_other_grant.api);else assert(!fb_handler_grant.api&&!fb_other_grant.api&&fb_grant.api);
+  assert(!portable_file_browser_close());if(i==0)assert(fb_handler_grant.api);else if(i==1)assert(!fb_handler_grant.api&&fb_root_grants[fb_storage_index^1u].api);else assert(!fb_handler_grant.api&&!fb_root_grants[fb_storage_index^1u].api&&fb_grant.api);
   release_target=NULL;assert(portable_file_browser_close()&&fb_load(0));no_handles();
  }
  add(&sd,"/unadmitted.elf",false,4);select_item("/unadmitted.elf");fbx_open(false);assert(fb_mode==FB_NOTICE&&strstr(fb_status,"admit")&&!test_launches);
@@ -332,4 +335,5 @@ int main(void){
  check_controller_failures();
  check_protected_settings();
  puts("Paper file operations: rename/move/copy/delete, recursive folders, collision/cancel/close failures, explicit volume selection, handler paging/dispatch/unavailable and SD ELF admission passed");
+ return 0;
 }

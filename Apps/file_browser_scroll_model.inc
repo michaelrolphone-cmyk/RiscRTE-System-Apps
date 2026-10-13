@@ -72,7 +72,7 @@ static bool fbs_read_scoped(int direction,const risc_storage_dirent_v1 *cursor,u
  fb_choice=fbs_selected>=fbs_cache_start&&fbs_selected<fbs_cache_start+fb_count?fbs_selected-fbs_cache_start:UINT32_MAX;
  fb_manage=
 #ifdef PORTABLE_FILE_PEER
- fb_storage_index==2||
+ fb_storage_index==FB_REMOTE_ROOT||
 #endif
  fb_volume->remove||fb_volume->file_open_write||(ext&&ext->rename);
  return true;

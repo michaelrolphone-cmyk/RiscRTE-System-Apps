@@ -41,7 +41,7 @@ static bool fbx_tree_allowed(const char *root){
 }
 static bool fbx_rename_available(void){
 #ifdef PORTABLE_FILE_PEER
- if(fb_storage_index==2)return fbm_can_rename();
+ if(fb_storage_index==FB_REMOTE_ROOT)return fbm_can_rename();
 #endif
 const risc_storage_volume_api_v1_ext *ext=risc_storage_volume_extension(fb_volume);return ext&&ext->rename;}
 #endif
@@ -49,27 +49,35 @@ static bool fbx_exists(const risc_storage_volume_api_v1 *v,const char *path){uin
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
 static void fbx_success(const char *message){fb_mode=FB_LIST;fb_query[0]=0;(void)fb_load(0);fb_message(message);}
 #endif
-static bool fbx_swap_local(void);
-static bool fbx_swap_local_scoped(void) {
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
+static bool fbx_select_local_scoped(unsigned index){
+ if(index>=FB_LOCAL_ROOT_COUNT||fb_storage_index>=FB_LOCAL_ROOT_COUNT)return false;
+ if(index==fb_storage_index)return true;
  if(!portable_file_browser_safe()){fb_message(fb_publication_unknown?"Copy publication unknown; cleanup retained. Back retries cleanup.":"Close failed. Back retries safely.");return false;}
- if(!fb_other_volume){
-  if(fb_other_grant.api){if(!fb_runtime->release(&fb_other_grant)){fb_message("Other volume release failed");return false;}memset(&fb_other_grant,0,sizeof(fb_other_grant));}
-  fb_other_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_other_grant)};
-  uint64_t instance=fb_storage_index?PORTABLE_FILE_BROWSER_INSTANCE:PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
-  const char *cap=fb_storage_index?PORTABLE_FILE_BROWSER_CAPABILITY:PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY;
-  if(!fb_runtime->acquire(cap,1,instance,&fb_other_grant)){fb_message("Other volume unavailable or not granted");return false;}
-  if(!fb_api_valid(fb_other_grant.api)){PORTABLE_APP_RETAIN();if(PORTABLE_APP_RETAINED())return false;if(fb_runtime->release(&fb_other_grant))memset(&fb_other_grant,0,sizeof(fb_other_grant));fb_message("Other volume has an invalid interface");return false;}
-  fb_other_volume=fb_other_grant.api;
+ risc_runtime_capability_v1 *grant=&fb_root_grants[index];
+ if(!fb_root_volumes[index]){
+  if(grant->api){if(!fb_runtime->release(grant)){fb_message("Volume release failed");return false;}memset(grant,0,sizeof(*grant));}
+  *grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};
+  if(!fb_runtime->acquire(fb_root_capability(index),1,fb_root_instance(index),grant))return false;
+  if(!fb_api_valid(grant->api)){PORTABLE_APP_RETAIN();if(!PORTABLE_APP_RETAINED()&&fb_runtime->release(grant))memset(grant,0,sizeof(*grant));fb_message("Volume has an invalid interface");return false;}
+  fb_root_volumes[index]=grant->api;
  }
- const risc_storage_volume_api_v1 *v=fb_volume;fb_volume=fb_other_volume;fb_other_volume=v;
- risc_runtime_capability_v1 g=fb_grant;fb_grant=fb_other_grant;fb_other_grant=g;fb_storage_index^=1;
- return true;
-#else
- fb_message("No secondary volume configured");return false;
-#endif
+ fb_root_volumes[fb_storage_index]=fb_volume;fb_root_grants[fb_storage_index]=fb_grant;
+ fb_volume=fb_root_volumes[index];fb_grant=*grant;fb_storage_index=index;
+ fb_root_volumes[index]=NULL;memset(grant,0,sizeof(*grant));return true;
 }
-static bool fbx_swap_local(void) {
+static bool fbx_select_local(unsigned index){
+ if(!fb_service_begin())return false;
+ bool result=fbx_select_local_scoped(index);
+ return fb_service_end()&&result;
+}
+static bool fbx_swap_local_scoped(void){
+ for(unsigned offset=1;offset<FB_LOCAL_ROOT_COUNT;offset++){
+  if(fbx_select_local_scoped((fb_storage_index+offset)%FB_LOCAL_ROOT_COUNT))return true;
+  if(PORTABLE_APP_RETAINED()||!portable_file_browser_safe())return false;
+ }
+ fb_message("No other storage root is available or granted");return false;
+}
+static bool fbx_swap_local(void){
  if(!fb_service_begin())return false;
  bool result=fbx_swap_local_scoped();
  return fb_service_end()&&result;
@@ -91,8 +99,8 @@ static void fbx_actions(void){
 static void fbx_rename(void);
 static void fbx_rename_scoped(void){
 #ifdef PORTABLE_FILE_PEER
- if(fbm_new_directory&&fb_storage_index!=2){fbm_local_mkdir();return;}
- if(fb_storage_index==2){fbm_rename();return;}
+ if(fbm_new_directory&&fb_storage_index!=FB_REMOTE_ROOT){fbm_local_mkdir();return;}
+ if(fb_storage_index==FB_REMOTE_ROOT){fbm_rename();return;}
 #endif
  if(risc_protected_settings_path(fb_file_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
@@ -128,9 +136,9 @@ static void fbx_cancel(void){
  }
  if(fb_storage_index!=fb_source_index&&(
 #ifdef PORTABLE_FILE_PEER
- fbm_mounted?!fbm_select(fb_source_index):!fbx_swap()
+ fbm_mounted?!fbm_select(fb_source_index):!fbx_select_local(fb_source_index)
 #else
- !fbx_swap()
+ !fbx_select_local(fb_source_index)
 #endif
  ))return;
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_publication_unknown?"Copy publication unknown. Reload destination.":fb_moving?"Move cancelled":"Copy cancelled");
@@ -195,7 +203,7 @@ static bool fbx_copy(const risc_storage_volume_api_v1 *source,const char *from,c
 static void fbx_commit_destination(void);
 static void fbx_commit_destination_scoped(void){
 #ifdef PORTABLE_FILE_PEER
- if(fbm_mounted&&(fb_source_index==2||fb_storage_index==2)){(void)fbm_commit_destination();return;}
+ if(fbm_mounted&&(fb_source_index==FB_REMOTE_ROOT||fb_storage_index==FB_REMOTE_ROOT)){(void)fbm_commit_destination();return;}
 #endif
  if(risc_protected_settings_path(fb_source_path)||risc_protected_settings_path(fb_path)){fb_message("Protected system settings");return;}
  if(!fb_ready())return;
@@ -217,13 +225,13 @@ static void fbx_commit_destination_scoped(void){
   if(!okay)fb_error("Move failed");
  }else
 #endif
- okay=fbx_copy(same?fb_volume:fb_other_volume,fb_source_path,fb_volume,destination);
+ okay=fbx_copy(fb_local_volume(fb_source_index),fb_source_path,fb_volume,destination);
  if(!okay)return;
  if(fb_storage_index!=fb_source_index&&(
 #ifdef PORTABLE_FILE_PEER
- fbm_mounted?!fbm_select(fb_source_index):!fbx_swap()
+ fbm_mounted?!fbm_select(fb_source_index):!fbx_select_local(fb_source_index)
 #else
- !fbx_swap()
+ !fbx_select_local(fb_source_index)
 #endif
  ))return;
  strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);fb_mode=FB_LIST;(void)fb_load(0);fb_message(fb_moving?"Moved successfully":"Copied successfully");
@@ -261,7 +269,7 @@ static bool fbx_remove_tree(const char *root){
 static void fbx_delete(void);
 static void fbx_delete_scoped(void){
 #ifdef PORTABLE_FILE_PEER
- if(fb_storage_index==2){fbm_delete();return;}
+ if(fb_storage_index==FB_REMOTE_ROOT){fbm_delete();return;}
 #endif
  if(!fb_ready())return;
  if(!fb_volume->remove){fbx_notice("Delete unavailable on this volume");return;}
@@ -354,15 +362,14 @@ static void fbx_dispatch(unsigned selected){
 }
 static void fbx_open(bool choose){
 #ifdef PORTABLE_FILE_PEER
- if(fb_storage_index==2){fbm_open(choose);return;}
+ if(fb_storage_index==FB_REMOTE_ROOT){fbm_open(choose);return;}
 #endif
  if(risc_protected_settings_path(fb_file_path)){fbx_notice("Protected system settings");return;}
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
- if(fb_storage_index||strcmp(PORTABLE_FILE_BROWSER_CAPABILITY,"storage.volume")){fsource_open(choose,false);return;}
+ fsource_open(choose,false);return;
 #else
  if(fb_storage_index){fbx_notice("Copy this file to primary storage before opening");return;}
-#endif
  if(!fb_ready())return;
  size_t len=strlen(fb_selected.name);
  if(!choose&&len>=4&&fb_contains(fb_selected.name+len-4,".elf")){
@@ -376,6 +383,7 @@ static void fbx_open(bool choose){
  if(!fb_service_end())return;
  if(!fb_handler_count){fbx_notice("No declared application for this file type");return;}
  fb_handler_offset=0;if(fbx_handler_page()&&!choose&&fb_handler_count==1)fbx_dispatch(0);
+#endif
 }
 #endif
 static void fbx_activate(void){
@@ -422,7 +430,7 @@ static void fbx_activate(void){
   case 5:fbx_destination(false);break;
   case 6:if(!fb_volume->remove
 #ifdef PORTABLE_FILE_PEER
- &&!(fb_storage_index==2&&fbm_can_delete())
+ &&!(fb_storage_index==FB_REMOTE_ROOT&&fbm_can_delete())
 #endif
  ){fbx_notice("Delete unavailable on this volume");break;}fb_mode=FB_DELETE;fb_choice=0;fb_message("Deletion cannot be undone");break;
  }

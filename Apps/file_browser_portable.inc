@@ -65,8 +65,19 @@ static risc_runtime_capability_v1 fb_grant;
 static risc_storage_file_t fb_retained_file;
 typedef struct {const risc_storage_volume_api_v1 *api;uint32_t handle;bool directory,commit;} fb_owned_handle;
 static fb_owned_handle fb_owned[4];
-static risc_runtime_capability_v1 fb_other_grant,fb_handler_grant;
-static const risc_storage_volume_api_v1 *fb_other_volume;
+#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
+#ifndef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
+#error A third root requires a configured second root
+#endif
+#define FB_LOCAL_ROOT_COUNT 3u
+#elif defined(PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE)
+#define FB_LOCAL_ROOT_COUNT 2u
+#else
+#define FB_LOCAL_ROOT_COUNT 1u
+#endif
+#define FB_REMOTE_ROOT (FB_LOCAL_ROOT_COUNT<2u?2u:FB_LOCAL_ROOT_COUNT)
+static risc_runtime_capability_v1 fb_root_grants[FB_LOCAL_ROOT_COUNT],fb_handler_grant;
+static const risc_storage_volume_api_v1 *fb_root_volumes[FB_LOCAL_ROOT_COUNT];
 static const t5_file_open_api_v1 *fb_handler_api;
 static unsigned fb_storage_index,fb_source_index,fb_list_choice,fb_action_page,fb_handler_offset,fb_handler_count,fb_notice_return,fbp_key_page;
 static bool fb_manage,fb_terminal,fb_publication_unknown;
@@ -229,7 +240,7 @@ static bool fb_service_end(void) {
 }
 static bool fb_service_local(void) {
 #ifdef PORTABLE_FILE_PEER
- return fb_storage_index!=2;
+ return fb_storage_index!=FB_REMOTE_ROOT;
 #else
  return true;
 #endif
@@ -242,17 +253,39 @@ static bool fb_api_valid(const risc_storage_volume_api_v1 *p) {
 #endif
  return true;
 }
+/* Probe only configured, granted generic roots. A present capability remains
+ * selectable when its media is absent; ready/refresh report that state. */
+static const char *fb_root_capability(unsigned index){
+ (void)index;
+#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
+ if(index==2)return PORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY;
+#endif
+#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
+ if(index==1)return PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY;
+#endif
+ return PORTABLE_FILE_BROWSER_CAPABILITY;
+}
+static uint64_t fb_root_instance(unsigned index){
+ (void)index;
+#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
+ if(index==2)return PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE;
+#endif
+#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
+ if(index==1)return PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
+#endif
+ return PORTABLE_FILE_BROWSER_INSTANCE;
+}
+static const risc_storage_volume_api_v1 *fb_local_volume(unsigned index){
+ if(index>=FB_LOCAL_ROOT_COUNT)return NULL;
+ return index==fb_storage_index?fb_volume:fb_root_volumes[index];
+}
 static bool fb_acquire(void) {
  if(PORTABLE_APP_RETAINED())return false;
  if(fb_volume)return true;
  if(fb_grant.api){if(!fb_runtime->release(&fb_grant))return false;memset(&fb_grant,0,sizeof(fb_grant));}
  fb_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_grant)};
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
- const char *capability=fb_storage_index?PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY:PORTABLE_FILE_BROWSER_CAPABILITY;
- uint64_t instance=fb_storage_index?PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE:PORTABLE_FILE_BROWSER_INSTANCE;
-#else
- const char *capability=PORTABLE_FILE_BROWSER_CAPABILITY;uint64_t instance=PORTABLE_FILE_BROWSER_INSTANCE;
-#endif
+ const char *capability=fb_root_capability(fb_storage_index);
+ uint64_t instance=fb_root_instance(fb_storage_index);
  if(!fb_runtime->acquire(capability,1,instance,&fb_grant))return false;
  if(!fb_api_valid(fb_grant.api)){PORTABLE_APP_RETAIN();return false;}
  fb_volume=fb_grant.api;return true;
@@ -287,8 +320,10 @@ bool portable_file_browser_close(void) {
  }
  if(fb_handler_grant.api && !fb_runtime->release(&fb_handler_grant))return false;
  memset(&fb_handler_grant,0,sizeof(fb_handler_grant));fb_handler_api=NULL;
- if(fb_other_grant.api && !fb_runtime->release(&fb_other_grant))return false;
- memset(&fb_other_grant,0,sizeof(fb_other_grant));fb_other_volume=NULL;
+ for(unsigned i=0;i<FB_LOCAL_ROOT_COUNT;i++){
+  if(fb_root_grants[i].api&&!fb_runtime->release(&fb_root_grants[i]))return false;
+  memset(&fb_root_grants[i],0,sizeof(fb_root_grants[i]));fb_root_volumes[i]=NULL;
+ }
  if(fb_grant.api && !fb_runtime->release(&fb_grant))return false;
  memset(&fb_grant,0,sizeof(fb_grant));fb_volume=NULL;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
@@ -339,7 +374,7 @@ static int fb_compare(const risc_storage_dirent_v1 *a,const risc_storage_dirent_
 static bool fb_load(int direction);
 static bool fb_load_scoped(int direction) {
 #ifdef PORTABLE_FILE_PEER
- if(fbm_mounted&&fb_storage_index==2&&!fbm_before_load(direction))return false;
+ if(fbm_mounted&&fb_storage_index==FB_REMOTE_ROOT&&!fbm_before_load(direction))return false;
 #endif
  if(risc_protected_settings_path(fb_path)){fb_count=0;fb_loaded=false;fb_message("Protected system settings");return false;}
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -383,7 +418,7 @@ static bool fb_load_scoped(int direction) {
  true ||
 #endif
 #ifdef PORTABLE_FILE_PEER
- fb_storage_index==2 ||
+ fb_storage_index==FB_REMOTE_ROOT ||
 #endif
  fb_volume->remove || fb_volume->file_open_write || (risc_storage_volume_extension(fb_volume)&&risc_storage_volume_extension(fb_volume)->rename);
  fb_message(fb_mode==FB_DESTINATION?"Choose folder; HERE confirms":!fb_count?(fb_query[0]?"No matching files":"This folder is empty"):fb_manage?"Select item or open options":"Browse files / read-only volume");fb_feedback=false;
@@ -412,7 +447,7 @@ static void fb_size_text(uint64_t value,char *out,size_t cap) {
 static bool fb_preview_read(void);
 static bool fb_preview_read_scoped(void) {
 #ifdef PORTABLE_FILE_PEER
- if(fb_storage_index==2)return fbm_preview();
+ if(fb_storage_index==FB_REMOTE_ROOT)return fbm_preview();
 #endif
  if(risc_protected_settings_path(fb_file_path)){fb_preview_count=0;fb_message("Protected system settings");return false;}
  fb_preview_count=0;
@@ -502,7 +537,7 @@ static bool fb_back(void) {
  if(fb_mode==FB_PREVIEW){fb_mode=fb_manage?FB_ACTIONS:FB_DETAIL;fb_dirty=true;return false;}
  if(fb_mode!=FB_LIST){fb_mode=FB_LIST;fb_choice=0;fb_dirty=true;return false;}
 #ifdef PORTABLE_FILE_PEER
- if(fbm_mounted&&fb_storage_index==2&&!strcmp(fb_path,"/")&&!fbm_loading){fbm_leave();strcpy(fb_path,fbm_local_path);fb_query[0]=0;(void)fb_load(0);return false;}
+ if(fbm_mounted&&fb_storage_index==FB_REMOTE_ROOT&&!strcmp(fb_path,"/")&&!fbm_loading){fbm_leave();strcpy(fb_path,fbm_local_path);fb_query[0]=0;(void)fb_load(0);return false;}
 #endif
  if(fb_parent(fb_path)){fb_query[0]=0;(void)fb_load(0);return false;}
  if(!portable_file_browser_close()){fb_message("Storage release failed. Retry Back.");return false;}
@@ -540,7 +575,7 @@ static void fb_option(unsigned choice) {
 #ifdef PORTABLE_FILE_PEER
  if(choice==9){fb_mode=FB_LIST;(void)fsh_back();return;}
  if(choice==8){fbm_new_folder();return;}
- if(choice==7){if(fbm_mounted){if(fb_storage_index!=2){while(fb_storage_index!=2)if(!fbx_swap())return;}strcpy(fb_path,"/");fb_mode=FB_LIST;(void)fb_load(0);}else fpeer_open();return;}
+ if(choice==7){if(fbm_mounted){if(fb_storage_index!=FB_REMOTE_ROOT){while(fb_storage_index!=FB_REMOTE_ROOT)if(!fbx_swap())return;}strcpy(fb_path,"/");fb_mode=FB_LIST;(void)fb_load(0);}else fpeer_open();return;}
 #endif
 #ifdef PORTABLE_FILE_SHARING
  if(choice==6){
@@ -749,7 +784,7 @@ static bool fb_open(void) {
  fb_text_active=fb_text_closing=fb_text_home=fb_text_invalidated=false;
 #endif
  fbp_key_page=0;fbp_clean=true;fbp_last_mode=0;fbp_contact_down=false;fb_publication_unknown=false;
- memset(&fb_grant,0,sizeof(fb_grant));memset(&fb_other_grant,0,sizeof(fb_other_grant));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_other_volume=NULL;fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
+ memset(&fb_grant,0,sizeof(fb_grant));memset(fb_root_grants,0,sizeof(fb_root_grants));memset(fb_root_volumes,0,sizeof(fb_root_volumes));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
  if(fb_app->set_back_exits_app)fb_app->set_back_exits_app(false);
 #ifdef PORTABLE_BLE_BROADCAST
  if(!portable_broadcast_stop())return false;

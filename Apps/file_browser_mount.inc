@@ -30,35 +30,36 @@ static void fbm_dir_close(void*context,risc_storage_dir_t handle){(void)context;
 static bool fbm_error(void*context,char*out,size_t n){(void)context;if(n)out[0]=0;return false;}
 static risc_storage_volume_api_v1 fbm_volume={.api_version=1,.struct_size=sizeof(fbm_volume),.refresh=fbm_cached,.ready=fbm_cached,.label=fbm_label,.stat=fbm_stat,.dir_open=fbm_dir_open,.dir_next=fbm_dir_next,.dir_close=fbm_dir_close,.last_error=fbm_error};
 static void fbm_enter(void){
+ fb_root_volumes[fb_storage_index]=fb_volume;fb_root_grants[fb_storage_index]=fb_grant;
  fbm_local_volume=fb_volume;fbm_local_grant=fb_grant;fbm_local_index=fb_storage_index;
  snprintf(fbm_local_path,sizeof(fbm_local_path),"%s",fb_path);
- fb_volume=&fbm_volume;memset(&fb_grant,0,sizeof(fb_grant));fb_storage_index=2;
+ fb_volume=&fbm_volume;memset(&fb_grant,0,sizeof(fb_grant));fb_storage_index=FB_REMOTE_ROOT;
 }
 static void fbm_leave(void){
- if(fb_storage_index!=2)return;
+ if(fb_storage_index!=FB_REMOTE_ROOT)return;
  fb_volume=fbm_local_volume;fb_grant=fbm_local_grant;fb_storage_index=fbm_local_index;
+ fb_root_volumes[fb_storage_index]=NULL;memset(&fb_root_grants[fb_storage_index],0,sizeof(fb_root_grants[fb_storage_index]));
  fbm_local_volume=NULL;memset(&fbm_local_grant,0,sizeof(fbm_local_grant));
 }
 static void fbm_unmount(void){
  if(!fbm_mounted)return;
- bool was_remote=fb_storage_index==2;
- bool remote_destination=fb_mode==FB_DESTINATION&&fb_source_index==2;
+ bool was_remote=fb_storage_index==FB_REMOTE_ROOT;
+ bool remote_destination=fb_mode==FB_DESTINATION&&fb_source_index==FB_REMOTE_ROOT;
  fbm_leave();fbm_mounted=fbm_loading=fbm_applying=false;fbm_operation=FBM_IDLE;
  if(was_remote)snprintf(fb_path,sizeof(fb_path),"%s",fbm_local_path);
  if(was_remote||remote_destination){fb_mode=FB_LIST;fb_count=0;fb_loaded=false;fsh_back_pending=true;}
- if(fb_source_index==2){fb_source_index=fb_storage_index;fb_source_path[0]=fb_source_base[0]=fb_source_query[0]=0;}
+ if(fb_source_index==FB_REMOTE_ROOT){fb_source_index=fb_storage_index;fb_source_path[0]=fb_source_base[0]=fb_source_query[0]=0;}
 }
 static bool fbm_swap(void){
  if(fbm_loading||fbm_operation){fb_message("Folder is loading; Back cancels");return false;}
- if(fb_storage_index==2){fbm_leave();
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
-  if(fb_storage_index&&!fbx_swap_local())return false;
-#endif
-  return true;
+ if(fb_storage_index==FB_REMOTE_ROOT){fbm_leave();
+  for(unsigned index=0;index<FB_LOCAL_ROOT_COUNT;index++)if(fbx_select_local(index))return true;
+  return false;
  }
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
- if(!fb_storage_index)return fbx_swap_local();
-#endif
+ for(unsigned index=fb_storage_index+1;index<FB_LOCAL_ROOT_COUNT;index++){
+  if(fbx_select_local(index))return true;
+  if(PORTABLE_APP_RETAINED()||!portable_file_browser_safe())return false;
+ }
  fbm_enter();return true;
 }
 static bool fbm_before_load(int direction){
@@ -85,16 +86,16 @@ static void fbm_tick(void){
    if(completed==FBM_PREVIEW){fb_offset=fbm_preview_offset;fb_hex=fbm_preview_hex;size_t n=0;if(!portable_peer_preview_get(fpeer,fb_preview,sizeof(fb_preview),&n)){fb_message("Preview unavailable");return;}fb_preview_count=(unsigned)n;fb_size=fpeer_status.preview_total;fb_message(n?"Preview only / no execution":"Empty file");return;}
    if(completed==FBM_OPEN){if(!fpeer_status.published_path[0]||strlen(fpeer_status.published_path)>=sizeof(fpeer_launch_path)){fb_message("File was not published within the supported path bound");return;}strcpy(fpeer_launch_path,fpeer_status.published_path);fpeer_launch=true;fsh_phase=FSH_STOPPING;return;}
    if(completed==FBM_COPY||completed==FBM_RETURN){if(!fbm_select(fb_source_index)){if(fb_io_pending)fbm_operation=FBM_RETURN;return;}strcpy(fb_path,fb_source_base);strcpy(fb_query,fb_source_query);}
-   fb_mode=FB_LIST;if(!fb_load(0)&&fb_io_pending&&fb_storage_index!=2)fbm_operation=FBM_REFRESH;return;
+   fb_mode=FB_LIST;if(!fb_load(0)&&fb_io_pending&&fb_storage_index!=FB_REMOTE_ROOT)fbm_operation=FBM_REFRESH;return;
   }
-  if(fbm_loading){fbm_loading=false;if(!fpeer_status.operation_ok){fb_message(fpeer_status.message[0]?fpeer_status.message:"Folder read failed. Refresh retries.");return;}if(fb_storage_index==2){strcpy(fb_path,fbm_requested_path);fbm_applying=true;(void)fb_load(0);fbm_applying=false;}}
+  if(fbm_loading){fbm_loading=false;if(!fpeer_status.operation_ok){fb_message(fpeer_status.message[0]?fpeer_status.message:"Folder read failed. Refresh retries.");return;}if(fb_storage_index==FB_REMOTE_ROOT){strcpy(fb_path,fbm_requested_path);fbm_applying=true;(void)fb_load(0);fbm_applying=false;}}
  }else if(fbm_mounted&&fpeer_status.state==PEER_ERROR){fbm_loading=false;fb_loaded=false;fb_count=0;fb_message(fpeer_status.message[0]?fpeer_status.message:"Remote folder failed. Refresh retries.");}
 }
 static bool fbm_busy(void){if(fbm_loading||fbm_operation){fb_message("Operation in progress; Back cancels");return true;}return false;}
 static bool fbm_cap(uint32_t cap,const char*message){if(!(fpeer_status.capabilities&cap)){fbx_notice(message);return false;}return true;}
 static bool fbm_can_rename(void){return (fpeer_status.capabilities&PEER_CAP_MOVE)!=0;}
 static bool fbm_can_delete(void){return (fpeer_status.capabilities&PEER_CAP_DELETE)!=0;}
-static bool fbm_select(unsigned index){for(unsigned i=0;i<3&&fb_storage_index!=index;i++)if(!fbx_swap())return false;return fb_storage_index==index;}
+static bool fbm_select(unsigned index){for(unsigned i=0;i<FB_LOCAL_ROOT_COUNT+1&&fb_storage_index!=index;i++)if(!fbx_swap())return false;return fb_storage_index==index;}
 static bool fbm_preview(void){
  if(fbm_busy()||!fbm_cap(PEER_CAP_READ,"Reading unavailable on this volume"))return false;
  fb_preview_count=0;
@@ -112,7 +113,7 @@ static void fbm_rename(void){
 }
 static void fbm_new_folder(void){
  if(fbm_busy())return;
- if(fb_storage_index==2){if(!fbm_cap(PEER_CAP_MKCOL,"New folder unavailable on this volume"))return;}
+ if(fb_storage_index==FB_REMOTE_ROOT){if(!fbm_cap(PEER_CAP_MKCOL,"New folder unavailable on this volume"))return;}
  else {if(!fb_ready())return;const risc_storage_volume_api_v1_ext*ext=risc_storage_volume_extension(fb_volume);if(!ext||!ext->mkdir){fbx_notice("New folder unavailable on this volume");return;}}
  fbm_new_directory=true;fb_editor[0]=0;
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
@@ -128,7 +129,7 @@ static void fbm_delete(void){
 }
 static bool fbm_destination(bool move){
  if(fbm_busy())return false;
- if(fb_storage_index==2&&!fbm_cap(move?PEER_CAP_MOVE:PEER_CAP_READ,move?"Move unavailable on this volume":"Reading unavailable on this volume"))return false;
+ if(fb_storage_index==FB_REMOTE_ROOT&&!fbm_cap(move?PEER_CAP_MOVE:PEER_CAP_READ,move?"Move unavailable on this volume":"Reading unavailable on this volume"))return false;
  return true;
 }
 static bool fbm_commit_destination(void){
@@ -138,10 +139,10 @@ static bool fbm_commit_destination(void){
  if(fb_storage_index==fb_source_index&&!strcmp(destination,fb_source_path)){fb_message("Already in this folder");return false;}
  if(fb_moving&&fb_storage_index!=fb_source_index){fb_message("Move requires the same volume. Use Copy instead.");return false;}
  bool queued=false;
- if(fb_source_index==2&&fb_storage_index==2){
+ if(fb_source_index==FB_REMOTE_ROOT&&fb_storage_index==FB_REMOTE_ROOT){
   if(!fbm_cap(fb_moving?PEER_CAP_MOVE:PEER_CAP_COPY,fb_moving?"Move unavailable on this volume":"Copy within this volume is unavailable"))return false;
   queued=portable_peer_mutate(fpeer,fb_moving?"MOVE":"COPY",fb_source_path,destination);
- }else if(fb_source_index==2){
+ }else if(fb_source_index==FB_REMOTE_ROOT){
   if(!fb_service_begin())return false;
   bool ready=fb_ready()&&fbx_write_available(fb_volume);
   bool exists=ready&&fbx_exists(fb_volume,destination);
@@ -158,7 +159,7 @@ static bool fbm_commit_destination(void){
    strcpy(fbm_replace_path,destination);fb_mode=FB_REPLACE;fb_choice=0;
    fb_message("Replace the existing file? Current contents will be overwritten.");return false;
   }
-  const risc_storage_volume_api_v1*source=fbm_local_index==fb_source_index?fbm_local_volume:fb_other_volume;
+  const risc_storage_volume_api_v1*source=fb_local_volume(fb_source_index);
   queued=portable_peer_upload(fpeer,source,fb_source_path,destination);
  }
  if(!queued){fb_message("Operation unavailable or peer busy");return false;}
@@ -172,9 +173,9 @@ static void fbm_open_scoped(bool choose){
  if(fb_selected.is_directory){strcpy(fb_path,fb_file_path);fb_query[0]=0;fb_mode=FB_LIST;(void)fb_load(0);return;}
  if(fbm_busy()||!fbm_cap(PEER_CAP_READ,"Reading unavailable on this volume"))return;
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
- if(strcmp(PORTABLE_FILE_BROWSER_CAPABILITY,"storage.volume")){fsource_open(choose,true);return;}
-#endif
- const risc_storage_volume_api_v1*local=fbm_local_index==0?fbm_local_volume:fb_other_volume;
+ fsource_open(choose,true);return;
+#else
+ const risc_storage_volume_api_v1*local=fb_local_volume(0);
  if(!fbx_write_available(local)){fbx_notice("Opening remote files needs a writable local handler destination");return;}
  if(!fbx_handlers()){fb_notice_return=FB_ACTIONS;fb_mode=FB_NOTICE;return;}
  char remote[FB_PATH_CAP],destination[FB_PATH_CAP];strcpy(remote,fb_file_path);
@@ -194,6 +195,7 @@ static void fbm_open_scoped(bool choose){
  }
  if(!portable_peer_download(fpeer,remote,local,destination)){fbx_notice("Download unavailable for the local volume");return;}
  fbm_choose_handler=choose;fbm_queued();fbm_operation=FBM_OPEN;fb_message("Opening file; Back cancels");
+#endif
 #endif
 }
 static void fbm_open(bool choose) {
@@ -217,8 +219,8 @@ static void fbm_defer_dispatch(unsigned selected){
 }
 
 static void fbm_replace_confirm(void){
- if(fbm_busy()||!fbm_mounted||fb_storage_index!=2||fb_source_index==2)return;
- const risc_storage_volume_api_v1*source=fbm_local_index==fb_source_index?fbm_local_volume:fb_other_volume;
+ if(fbm_busy()||!fbm_mounted||fb_storage_index!=FB_REMOTE_ROOT||fb_source_index==FB_REMOTE_ROOT)return;
+ const risc_storage_volume_api_v1*source=fb_local_volume(fb_source_index);
  if(!portable_peer_replace(fpeer,source,fb_source_path,fbm_replace_path)){fb_message("Replacement unavailable or peer busy");return;}
  fbm_queued();fbm_operation=FBM_COPY;fb_mode=FB_DESTINATION;fb_message("Replacing file; Back cancels");
 }
