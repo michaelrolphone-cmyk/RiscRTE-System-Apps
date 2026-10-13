@@ -14,7 +14,9 @@ p.add_argument("--peer-files",action="store_true")
 p.add_argument("--source-handoff",action="store_true")
 p.add_argument("--volume-instance",type=int,help="Optional third generic storage.volume root instance")
 p.add_argument("--shared-text-input",action="store_true")
+p.add_argument("--shared-text-policy",action="store_true",help="Service lifecycle policy inside shared Files editing")
 a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
+if a.shared_text_policy and not a.shared_text_input:p.error('--shared-text-policy requires --shared-text-input')
 watch=a.watch.resolve();utilities=a.utilities.resolve();runtime=a.runtime.resolve()
 sys.path.insert(0,str(watch/'scripts'))
 from build_current_apps import application_inputs
@@ -39,6 +41,7 @@ flags+=['-DPORTABLE_FILE_BROWSER_RGB_ONLY','-DPORTABLE_DISPLAY_ROTATION=0','-DPO
 if a.volume_instance is not None:flags+=['-DPORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY="storage.volume"','-DPORTABLE_FILE_BROWSER_TERTIARY_INSTANCE='+str(a.volume_instance)]
 if a.source_handoff:flags+=['-DPORTABLE_FILE_BROWSER_SOURCE_HANDOFF']
 if a.shared_text_input:flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT','-flto','-mno-target-align']
+if a.shared_text_policy:flags+=['-DPORTABLE_TEXT_INPUT_POLICY']
 repos={'system-apps':ROOT,'utilities':utilities,'runtime':runtime}
 sources,includes,allowed=application_inputs('file_browser',ROOT/'Apps/file_browser.c',repos,watch,out,'runtime-features')
 sources=[s for s in sources if s.name!='empty_catalog.c']
@@ -69,7 +72,7 @@ manifest['requires'].append({'capability':'app.catalog','api':1})
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
 if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
 if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
-manifest['version']='1.5.36' if a.source_handoff else '1.5.35' if a.shared_text_input else sharing.selected_version(a)
+manifest['version']='1.5.37' if a.shared_text_policy else '1.5.36' if a.source_handoff else '1.5.35' if a.shared_text_input else sharing.selected_version(a)
 grants=old['grants'].copy()
 if a.volume_instance is not None:
  q=dict(capability='storage.volume',api=1);g=dict(**q,instance_id=a.volume_instance)
