@@ -1,0 +1,38 @@
+name: Home alarm frame progress
+on:
+  push:
+    branches: [fix/x4-home-alarm-progress-20261012]
+  pull_request:
+    paths:
+      - 'lib/PortableApps/src/alarm.inc'
+      - 'test/native_apps/alarm_frame_progress_test.c'
+      - 'scripts/test_alarm_frame_progress.py'
+      - '.github/workflows/home-alarm-progress.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 80efb298c9ca8d0f62f9a31840c9e51d380b40f6
+          path: utilities
+          persist-credentials: false
+      - name: Queued frame, active display and pending worker regression
+        run: python system/scripts/test_alarm_frame_progress.py --runtime runtime --utilities utilities --output out/progress
+      - name: Existing BUSY and retained error controls
+        run: python system/scripts/test_alarm_busy_adapter.py --runtime runtime --utilities utilities --output out/controls
