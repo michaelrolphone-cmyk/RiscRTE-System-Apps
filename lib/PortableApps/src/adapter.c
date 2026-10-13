@@ -1,3 +1,6 @@
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#include "RiscRuntimeHostControlV1.h"
+#endif
 #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))
 #error "Settings list scrolling requires selected Settings touch scrolling"
 #endif
@@ -2224,6 +2227,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 #include "text_input_handoff.inc"
+#ifdef PORTABLE_TEXT_INPUT_POLICY
+#include "text_input_policy.inc"
+#endif
 #endif
 #ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
 #define PORTABLE_SELECTED_CATALOG_BOUND PORTABLE_SPRINGBOARD_CATALOG_BOUND

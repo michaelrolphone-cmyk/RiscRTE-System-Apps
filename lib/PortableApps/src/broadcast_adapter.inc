@@ -26,10 +26,10 @@ static bool broadcast_release(void) {
   broadcast_client.api=NULL;return true;
 }
 bool portable_broadcast_stop(void) {
-#if defined(PORTABLE_WIFI_SETTINGS_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP)
   /* Wi-Fi admission pauses advertising before it owns the async operation.
    * HCI start/stop remains deferred through checked Wi-Fi quiescence. */
-  if(portable_wifi_async_owned())return !native_custody_retained && broadcast_pause_confirmed;
+  if(wifi_session_interaction_active())return !native_custody_retained && broadcast_pause_confirmed;
 #endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(desk_phase==DESK_TIMER)return !native_custody_retained;
@@ -57,12 +57,33 @@ bool portable_broadcast_enable(bool enabled) {
   }
   return broadcast_release() && ok;
 }
+#ifdef PORTABLE_BROADCAST_RESULT_ONLY
+/* The controller already owns the native storage receipt. Apply exactly the
+ * existing post-save service policy without issuing another preference write.
+ * In particular, failed Disable must remain paused until explicit retry. */
+bool portable_broadcast_preference_result(bool enabled,bool saved) {
+  if(!broadcast_open())return false;
+  if(!portable_broadcast_pause(&broadcast_client)||!portable_broadcast_release_storage(&broadcast_client)) {
+    portable_adapter_retain();return false;
+  }
+  broadcast_client.policy=(telemetry_broadcast_policy_v1){.struct_size=sizeof(broadcast_client.policy)};
+  broadcast_client.save_failed=!saved;broadcast_client.loaded=false;
+  broadcast_client.policy.enabled=saved&&enabled;broadcast_client.policy.settings_valid=saved;
+  bool safe=broadcast_client.api->step(broadcast_client.api->context,false,&broadcast_client.policy);
+  if(native_custody_retained)return false;
+  telemetry_broadcast_status_v1 state={.struct_size=sizeof(state)};
+  if(!broadcast_client.api->status(broadcast_client.api->context,&state)||state.cleanup_pending) {
+    portable_adapter_retain();return false;
+  }
+  return broadcast_release()&&saved&&safe;
+}
+#endif
 static bool broadcast_tick(void) {
   if(native_custody_retained)return false;
-#ifdef PORTABLE_WIFI_SETTINGS_APP
+#ifdef PORTABLE_WIFI_SESSION_APP
   /* Poll completion even while deferring the advertiser, so Cancel progresses. */
   if(!portable_wifi_services_safe())return !native_custody_retained;
-  if(portable_wifi_async_owned())return broadcast_pause_confirmed;
+  if(wifi_session_interaction_active())return broadcast_pause_confirmed;
 #endif
   bool allow=true;
 #ifdef PORTABLE_BLE_FOREGROUND
@@ -80,7 +101,7 @@ static bool broadcast_tick(void) {
 #ifdef PORTABLE_UPDATE_APP
   allow=allow && portable_update_broadcast_safe();
 #endif
-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
+#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
   allow=allow && portable_wifi_services_safe();
 #endif
   if(!broadcast_open())return false;
@@ -95,11 +116,17 @@ static bool broadcast_tick(void) {
   return broadcast_release();
 }
 
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY)
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 static bool broadcast_before_storage(void) {
   if(native_custody_retained)return false;
   /* The client pauses its own advertiser before policy reads/writes. Avoid
    * reacquiring/releasing the grant that owns that synchronous operation. */
   return broadcast_policy_io || portable_broadcast_stop();
+}
+static inline bool broadcast_before_storage_read(void) {
+  bool loaded=broadcast_client.loaded;
+  if(!broadcast_before_storage())return false;
+  broadcast_client.loaded=loaded;
+  return true;
 }
 #endif
