@@ -52,6 +52,8 @@ void portable_desk_adapter_home_submitted(void);
 #endif
 
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+/* Confirmed foreground sleep return: schedule one fresh RTC check. */
+void portable_desk_clock_resumed(void);
 /* Foreground hydration gate only; retained TIMER never changes this state. */
 void portable_desk_adapter_settings_pending(bool pending);
 /* Pure cached classification from the existing boot_read; no extra native read. */
