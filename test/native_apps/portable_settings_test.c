@@ -5,11 +5,12 @@
 #define PORTABLE_SETTINGS_APP
 #include "../../lib/PortableApps/src/adapter.c"
 #include "nova_settings_coordinates.h"
+#include "fixtures/installed_catalog_provider.h"
 
 int app_module_init(void);
 void app_module_fini(void);
 #ifdef WATCH_ASYNC_CONTEXT_LAUNCH_FIXTURE
-const t5_app_manifest_t portable_catalog[] = {{.compatible=true,.file_name="wifi_settings.elf"}};
+const t5_app_manifest_t portable_catalog[] = {{.display_name="Wi-Fi",.compatible=true,.file_name="wifi_settings.elf"}};
 const unsigned portable_catalog_count = 1;
 #else
 const t5_app_manifest_t portable_catalog[] = {{.compatible=false}};
@@ -217,7 +218,8 @@ static bool test_acquire(const char *name,uint32_t version,uint64_t id,risc_runt
     grant->api=&kv_api;++grants;return true;
   }
   assert(!id && grant->struct_size==sizeof(*grant));
-  if(!strcmp(name,"display.output")){assert(version==1);grant->api=&display_api;}
+  if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY)){assert(version==1);grant->api=&fixture_catalog_api;}
+  else if(!strcmp(name,"display.output")){assert(version==1);grant->api=&display_api;}
   else if(!strcmp(name,"input.touch.raw")){assert(version==1);grant->api=&touch_api;}
   else if(!strcmp(name,"rtc.clock")){assert(version==2);if(scenario==7)return false;grant->api=&rtc_api;}
 #if defined(PORTABLE_INPUT_NAVIGATION) && !defined(PORTABLE_INPUT_NAVIGATION_LOCAL)

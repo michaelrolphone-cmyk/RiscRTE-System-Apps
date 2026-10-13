@@ -45,6 +45,7 @@ static bool springboard_watch_open(void) {
 }
 #endif
 static bool missing_icons;
+static bool catalog_available;
 static bool edit_mode;
 static bool selection_visible;
 static bool home_pinned[MAX_HOME_APPS];
@@ -289,8 +290,8 @@ static void raster_page(const char *status) {
     const uint32_t first = count ? current_page() * (uint32_t)page_size : 0;
     missing_icons = false;
     if (!count) {
-        api->draw_text(24, 120, "No installed apps found.");
-        api->draw_text(24, 160, "Copy .elf + .json pairs into /Apps on SD.");
+        api->draw_text(24, 120, catalog_available ? "No installed apps found." : "Installed apps unavailable.");
+        if (catalog_available) api->draw_text(24, 160, "Installed apps appear here.");
     }
     for (int cell = 0; cell < page_size && first + cell < count; ++cell) {
         t5_app_manifest_t app;
@@ -320,7 +321,7 @@ static void raster_page(const char *status) {
         api->draw_label(x + 6, y + (compact ? 72 : 98), cell_w - 12, app.display_name);
         if (!app.compatible) {
             char required[48];
-            snprintf(required, sizeof(required), "Needs %s", app.min_firmware_version);
+            strcpy(required, "Unavailable");
             api->draw_label(x + 6, y + (compact ? 88 : 115), cell_w - 12, required);
         }
         if (selection_visible && first + cell == selected)
@@ -366,7 +367,7 @@ static bool toggle_home(void) {
     }
     if (!app.compatible) {
         char status[80];
-        snprintf(status, sizeof(status), "Requires firmware %s", app.min_firmware_version);
+        strcpy(status, "Application unavailable");
         draw(status);
         return false;
     }
@@ -382,17 +383,34 @@ static bool toggle_home(void) {
     return true;
 }
 
+/* A rejected stale publication is not permission to launch its shifted index.
+ * Fetch the current publication and require a fresh selection/gesture. */
+static bool refresh_changed_catalog(void) {
+    if (api->installed_apps_count() == count) return false;
+    catalog_available = api->installed_apps_refresh();
+    count = api->installed_apps_count();
+    if (count > MAX_HOME_APPS) count = MAX_HOME_APPS;
+    selected = 0;
+    if (t5_app_get_api(T5_APP_ABI_VERSION)) load_home_pins();
+    else memset(home_pinned, 0, sizeof(home_pinned));
+    layout();
+    return true;
+}
+
 static bool launch(void) {
     t5_app_manifest_t app;
     if (!count || !api->installed_apps_get(selected, &app)) return false;
     if (!app.compatible) {
         char status[80];
-        snprintf(status, sizeof(status), "Requires firmware %s", app.min_firmware_version);
+        strcpy(status, "Application unavailable");
         draw(status);
         return false;
     }
     if (api->request_app_launch(selected)) return true;
-    draw("Unable to queue application launch");
+    if (!t5_app_get_api(T5_APP_ABI_VERSION)) return false;
+    bool changed = refresh_changed_catalog();
+    if (!t5_app_get_api(T5_APP_ABI_VERSION)) return false;
+    draw(changed ? "Apps changed. Select again." : "Unable to queue application launch");
     return false;
 }
 
@@ -419,7 +437,10 @@ __attribute__((visibility("default"))) void app_main(void) {
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
     if (!springboard_watch_open()) return;
 #endif
-    api->installed_apps_refresh();
+    catalog_available = api->installed_apps_refresh();
+    /* A terminal native custody fence invalidates the bridge; no presentation
+     * or clock provider may be entered after that failure. */
+    if (!catalog_available && !t5_app_get_api(T5_APP_ABI_VERSION)) return;
     count = api->installed_apps_count();
     if (count > MAX_HOME_APPS) count = MAX_HOME_APPS;
     selected = 0;

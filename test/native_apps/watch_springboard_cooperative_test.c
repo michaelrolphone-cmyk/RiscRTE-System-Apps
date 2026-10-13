@@ -1,3 +1,4 @@
+#include "fixtures/installed_catalog_provider.h"
 /* Real Springboard + adapter + exact deployed cooperative display state machine.
  * Hardware row cost and CPU-work clock are explicit host test parameters. */
 #define _POSIX_C_SOURCE 200809L
@@ -57,7 +58,7 @@ static bool touch_poll(void*c,size_t n){(void)c;(void)n;++raw_polls;return true;
 static int32_t touch_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
 static bool touch_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240};unsigned ms=(unsigned)(now_us/1000);if(ms>=200 && ms<3800){unsigned phase=(ms-200)%1200;unsigned x=phase<600?50+phase/5:170-(phase-600)/5;s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=120};}return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,subscribe,unsubscribe,touch_poll,touch_next,touch_snapshot};
-static bool runtime_acquire(const char*s,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){(void)v;(void)id;if(!strcmp(s,"display.output"))g->api=&output;else if(!strcmp(s,"input.touch.raw"))g->api=&touch_api;else return false;return true;}
+static bool runtime_acquire(const char*s,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){(void)v;(void)id;if(!strcmp(s,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;else if(!strcmp(s,"display.output"))g->api=&output;else if(!strcmp(s,"input.touch.raw"))g->api=&touch_api;else return false;return true;}
 static bool runtime_release(risc_runtime_capability_v1*g){g->api=NULL;return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=runtime_health,.yield_ms=runtime_yield,.diagnostic=diagnostic,.request_launch=launch,.acquire=runtime_acquire,.release=runtime_release,.retain_invocation=retain,.monotonic_ms=runtime_monotonic};
 const risc_runtime_api_v1*risc_runtime_get_api(uint32_t v){return v==1?&runtime:NULL;}

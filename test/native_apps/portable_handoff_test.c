@@ -1,3 +1,4 @@
+#include "fixtures/installed_catalog_provider.h"
 /* Production adapter lifecycle checks. Pixel math has a separate independent
  * oracle; this fixture checks ownership, elapsed time, full frames and input. */
 #include <assert.h>
@@ -85,7 +86,8 @@ static const risc_display_output_api_v1 mock_display={.api_version=1,.struct_siz
 static const risc_touch_api_v1 mock_touch={1,sizeof(mock_touch),NULL,mock_subscribe,mock_unsubscribe,mock_poll_touch,mock_next,mock_snapshot};
 static bool mock_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *g){
     assert(version==1 && !instance);g->struct_size=sizeof(*g);
-    if(!strcmp(name,"display.output"))g->api=&mock_display;
+    if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;
+    else if(!strcmp(name,"display.output"))g->api=&mock_display;
     else if(!strcmp(name,"input.touch.raw"))g->api=&mock_touch;
     else return false;
     mock_grants++;return true;

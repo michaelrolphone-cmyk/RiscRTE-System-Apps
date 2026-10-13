@@ -52,10 +52,13 @@ static bool contexts_rules_tick(void){
   if(action.step.kind==CR_MESSAGE){memcpy(context_message,action.step.text,sizeof(context_message));context_message_open=true;ok=true;}
   else if(action.step.kind==CR_TIMER){ok=portable_context_timer_checked(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage,&contexts_client.acquisition_uncertain);if(contexts_client.acquisition_uncertain||portable_optional_grant_owned(&contexts_client.storage))return false;}
   else if(action.step.kind==CR_LAUNCH){
-   bool installed=false;for(unsigned i=0;i<portable_catalog_count;i++)if(portable_catalog[i].compatible&&!strcmp(portable_catalog[i].file_name,action.step.text))installed=true;
-   if(installed&&app_allows_launch(action.step.text)){
+   portable_app_catalog_launch destination;bool installed=catalog_launchable_name(action.step.text,&destination);
+   if(app_invocation_retained())return false;
+   if(installed&&app_allows_launch(destination.route)){
     if(!canvas_exit_barrier())return false;
-    ok=rt->request_launch(action.step.text);if(ok)context_launch_pending=true;
+    if(!catalog_checked(portable_catalog_launch_valid(&installed_catalog,&destination))) {
+     if(app_invocation_retained())return false;
+    } else {ok=rt->request_launch(destination.route);if(ok)context_launch_pending=true;}
    }
   }
   action.claim=false;action.result=ok?CR_RAN:CR_FAILED;if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&action))return false;

@@ -42,16 +42,17 @@ def build(args):
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'settings.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
-    catalog = out/'catalog.c'
-    catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'settings.elf'
-    sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c', catalog]
+    sources = [ROOT/'Apps/settings.c', ROOT/'lib/PortableApps/src/adapter.c']
     if args.low_battery:sources += [ROOT/'lib/PortableApps/src'/name for name in ('quick_actions.c','quick_render.c','quick_session.c','quick_radios.c')]
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror',
         *flags, '-I'+str(ROOT/'lib/PortableApps/include'),
         '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
+    all_symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', str(elf)], text=True)
+    if any(line.split()[-1] in ('portable_catalog','portable_catalog_count') for line in all_symbols.splitlines() if line.split()):
+        raise ValueError('Compiled installed-app inventory is forbidden')
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -71,7 +72,7 @@ def build(args):
     version=json.loads((ROOT/'Apps/settings.json').read_text())['version']
     manifest={'type':'application','id':'settings','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'settings.elf','entry':'app_main','requires':[
-            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
+            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'app.catalog','api':1},
             {'capability':'rtc.clock','api':2}]}
     if args.low_battery:manifest['requires'] += [{'capability':name,'api':1} for name in ('board.battery','net.wifi','bluetooth.hci')]
     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':1})

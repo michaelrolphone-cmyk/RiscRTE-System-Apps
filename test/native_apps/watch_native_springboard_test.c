@@ -1,3 +1,4 @@
+#include "fixtures/installed_catalog_provider.h"
 /* Real honeycomb controller + production presenter. One executable accepts
  * every display geometry; the provider and touch fixtures remain physical. */
 #include <assert.h>
@@ -20,7 +21,7 @@ extern const unsigned portable_catalog_count;
 static unsigned fw,fh,pitch,ticks,polls,grants,subscriptions,frames,presents,launches;
 static uint16_t *guarded,*pixels;
 static const char *directory;
-static char launched[128];
+static char launched[256];
 static bool use_async,expect_transition,expect_presentation=true;
 static unsigned refresh_millihz=60000,present_latency_us=16000,display_flags;
 static const char *metadata_profile="eligible";
@@ -100,7 +101,8 @@ static bool nt_diagnostic(const char *s) {(void)s;return true;}
 static bool nt_launch(const char *name) {assert(strlen(name)<sizeof(launched));strcpy(launched,name);++launches;return true;}
 static bool nt_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *out) {
  assert(out->struct_size==sizeof(*out));
- if(!strcmp(name,"display.output")){assert(version==1&&!id);out->api=&nt_display;}
+ if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY)){assert(version==1&&!id);out->api=&fixture_catalog_api;}
+ else if(!strcmp(name,"display.output")){assert(version==1&&!id);out->api=&nt_display;}
  else if(!strcmp(name,"input.touch.raw")){assert(version==1&&!id);out->api=&nt_touch;}
  else return false;
  ++grants;return true;

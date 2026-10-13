@@ -109,7 +109,7 @@ static void nova_render(nova_state *s) {
         t5_app_manifest_t app;
         if (api->installed_apps_get(s->first+s->focus,&app))
             s->view->caption(api->screen_height()-43,app.display_name,false,0xffffff);
-    } else s->view->caption(api->screen_height()/2,"NO APPS",false,0xffffff);
+    } else s->view->caption(api->screen_height()/2,catalog_available?"NO APPS":"APPS UNAVAILABLE",false,0xffffff);
     if (unavailable_icon) s->view->caption(api->screen_height()-16,"ICON UNAVAILABLE",false,0x7d8c90);
     else if (count>NOVA_PAGE_APPS) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
@@ -242,7 +242,11 @@ static bool nova_run(void) {
             selected=s.first+(unsigned)s.pending;
             t5_app_manifest_t app;
             if(api->installed_apps_get(selected,&app) && app.compatible && api->request_app_launch(selected)) break;
-            strcpy(s.status,"UNABLE TO OPEN APP");s.pending=-1;s.dirty=true;
+            if(!t5_app_get_api(T5_APP_ABI_VERSION)) break;
+            bool changed=refresh_changed_catalog();
+            if(!t5_app_get_api(T5_APP_ABI_VERSION)) break;
+            if(changed){nova_cancel(&s);s.first=0;nova_layout(&s);}
+            strcpy(s.status,changed?"APPS CHANGED. SELECT AGAIN":"APP UNAVAILABLE");s.pending=-1;s.dirty=true;
         }
     }
     return true;

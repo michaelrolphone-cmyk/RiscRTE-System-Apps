@@ -1,4 +1,5 @@
 #define _POSIX_C_SOURCE 200809L
+#include "fixtures/installed_catalog_provider.h"
 /* Opt-in async adapter regression: one provider-owned token, one replaceable
  * complete app image, and no ownership release after uncertain completion.
  * These providers model selected Watch semantics, not a physical panel. */
@@ -77,7 +78,7 @@ static int32_t next_touch(void*c,uint64_t s,risc_touch_event_v1*out){(void)c;(vo
 static bool snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;normal_io();*out=(risc_touch_snapshot_v1){.width=240,.height=240};return true;}
 static const risc_display_output_api_v1 provider={.api_version=1,.struct_size=sizeof(provider),.get_info=get_info,.acquire=acquire_frame,.release=release_frame,.submit=submit_frame,.present_status=present_status};
 static const risc_touch_api_v1 touch_provider={1,sizeof(touch_provider),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
-static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){normal_io();assert(version==1&&!instance);if(!strcmp(name,"display.output"))g->api=&provider;else if(!strcmp(name,"input.touch.raw"))g->api=&touch_provider;else return false;++grants;return true;}
+static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){normal_io();assert(version==1&&!instance);if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;else if(!strcmp(name,"display.output"))g->api=&provider;else if(!strcmp(name,"input.touch.raw"))g->api=&touch_provider;else return false;++grants;return true;}
 static bool release(risc_runtime_capability_v1*g){normal_io();assert(grants&&g->api&&!provider_busy&&!leases);--grants;g->api=NULL;return true;}
 static risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release,.exit_requested=native_exit,.retain_invocation=retain};
 static const risc_runtime_api_v1 *runtime_source=&runtime;

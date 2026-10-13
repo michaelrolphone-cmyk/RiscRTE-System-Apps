@@ -1,3 +1,4 @@
+#include "fixtures/installed_catalog_provider.h"
 #include "PortableApps.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscRuntimeV1.h"
@@ -86,7 +87,7 @@ static const risc_display_output_api_v1 d={.api_version=1,.struct_size=sizeof(d)
 static bool clock_read(void *c,twatch_rtc_time_v1 *out){(void)c;*out=(twatch_rtc_time_v1){2026,10,4,0,0,40,0};return scenario!=33;}
 static const twatch_rtc_api_v1 clock_api={.api_version=2,.struct_size=sizeof(clock_api),.read=clock_read};
 static const risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
-static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(!id&&g->struct_size==sizeof(*g));if(!strcmp(name,"rtc.clock")){assert(v==2);g->api=&clock_api;++grants;return true;}assert(v==1);if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;++grants;return true;}
+static bool acquire(const char *name,uint32_t v,uint64_t id,risc_runtime_capability_v1 *g){assert(!id&&g->struct_size==sizeof(*g));if(!strcmp(name,"rtc.clock")){assert(v==2);g->api=&clock_api;++grants;return true;}assert(v==1);if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;else if(!strcmp(name,"display.output"))g->api=&d;else if(!strcmp(name,"input.touch.raw"))g->api=&t;else return false;++grants;return true;}
 static bool release(risc_runtime_capability_v1 *g){assert(grants&&g->api);--grants;g->api=NULL;return true;}
 static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=launch_app,.acquire=acquire,.release=release};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&rt:NULL;}

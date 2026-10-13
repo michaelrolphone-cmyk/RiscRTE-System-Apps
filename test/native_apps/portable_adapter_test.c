@@ -1,3 +1,4 @@
+#include "fixtures/installed_catalog_provider.h"
 #include "PortableApps.h"
 #include "T5BatteryApi.h"
 #include "RiscBatteryGaugeV1.h"
@@ -40,6 +41,9 @@ static bool info(void *c, risc_display_info_v1 *o) {
   (void)c;
   memset(o, 0, sizeof(*o));
   o->width = o->height = 240;
+  /* This fixture exercises the generic grid, not the fast honeycomb. Zero
+   * timing is now intentionally unknown, so select explicit slow metadata. */
+  o->nominal_refresh_millihz = 19999;
   o->supported_formats = RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);
   return true;
 }
@@ -152,7 +156,9 @@ static const risc_battery_gauge_api_v1 b = {1, sizeof(b), NULL, battery_read};
 static bool acquire(const char *name, uint32_t v, uint64_t id,
                     risc_runtime_capability_v1 *g) {
   assert(id == 0 && v == 1 && g->struct_size == sizeof(*g));
-  if (!strcmp(name, "display.output"))
+  if (!strcmp(name, RISC_APP_CATALOG_CAPABILITY))
+    g->api = &fixture_catalog_api;
+  else if (!strcmp(name, "display.output"))
     g->api = &d;
   else if (!strcmp(name, "input.touch.raw")) {
     if (scenario == 4)

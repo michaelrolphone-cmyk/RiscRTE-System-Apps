@@ -4,6 +4,7 @@
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
+#include "PortableAppCatalog.h"
 #include "PortableTouch.h"
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
@@ -43,7 +44,6 @@ static bool canvas_retained;
 #ifdef PORTABLE_ALARM_CLIENT
 static bool native_sleep_retained;
 #endif
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
 static bool optional_services_retained;
 /* An acquisition/cleanup custody failure is never optional absence. No
  * provider operation, release or free follows a terminal invocation fence. */
@@ -60,11 +60,8 @@ static void optional_services_retain(void) {
   /* Without a confirmed fence, ordinary yields may still poll providers. */
   for(;;){}
 }
-#endif
 static bool app_invocation_retained(void) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(optional_services_retained)return true;
-#endif
 #ifdef PORTABLE_ALARM_CLIENT
   if(native_sleep_retained)return true;
 #endif
@@ -73,6 +70,34 @@ static bool app_invocation_retained(void) {
 #endif
   return false;
 }
+static portable_app_catalog installed_catalog;
+static bool catalog_checked(bool result) {
+  if(installed_catalog.uncertain){optional_services_retain();return false;}
+  return result;
+}
+static bool refresh(void) {
+  return rt && !failed && !app_invocation_retained() &&
+      catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
+}
+static uint32_t count(void) {
+  if(!rt || failed || app_invocation_retained())return 0;
+  if(!installed_catalog.initialized && !refresh())return 0;
+  return installed_catalog.count;
+}
+static bool get(uint32_t i,t5_app_manifest_t *out) {
+  if(!out || i>=count())return false;
+  *out=installed_catalog.entries[i].manifest;return true;
+}
+#ifdef PORTABLE_CONTEXTS_CLIENT
+static bool catalog_launchable_name(const char *name,portable_app_catalog_launch *destination) {
+  if(!refresh())return false;
+  for(uint32_t i=0;i<installed_catalog.count;i++)
+    if(!strcmp(installed_catalog.entries[i].manifest.file_name,name)) {
+      return catalog_checked(portable_catalog_launch_prepare(&installed_catalog,i,destination));
+    }
+  return false;
+}
+#endif
 #include "PortableBackgroundServices.h"
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #include "PortableContextsClient.h"
@@ -999,9 +1024,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool native_exit_input(t5_app_input_t *out) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return false;
-#endif
   if(!risc_runtime_exit_requested_v1(rt))return false;
   (void)canvas_exit_barrier();
   input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
@@ -1015,9 +1038,7 @@ static bool native_exit_input(t5_app_input_t *out) {
   return true;
 }
 static bool poll(t5_app_input_t *out, uint32_t wait) {
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return false;
-#endif
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_retained)return false;
 #endif
@@ -1076,26 +1097,25 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_ALARM_CLIENT
 #include "alarm.inc"
 #endif
-static bool refresh(void) { return portable_catalog_count <= PORTABLE_CATALOG_LIMIT; }
-static uint32_t count(void) {
-  return portable_catalog_count <= PORTABLE_CATALOG_LIMIT ? portable_catalog_count : 0;
-}
-static bool get(uint32_t i, t5_app_manifest_t *out) {
-  if (!out || i >= count())
-    return false;
-  *out = portable_catalog[i];
-  return true;
-}
 static bool launch(uint32_t i) {
+  if(!rt || failed || app_invocation_retained())return false;
 #ifdef PORTABLE_ALARM_CLIENT
   bool consumed=false;
   if(!alarm_foreground(&consumed) || consumed)return false;
 #endif
-  return !failed &&
+  if(failed ||
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
-      !handoff_active &&
+      handoff_active ||
 #endif
-      !(input_pending && (input_sample.down || input_sample.cancelled)) && !(navigation_pending&T5_APP_BUTTON_BACK) && i < count() && canvas_exit_barrier() && rt->request_launch(portable_catalog[i].file_name);
+      (input_pending && (input_sample.down || input_sample.cancelled)) || (navigation_pending&T5_APP_BUTTON_BACK) ||
+      i>=count())return false;
+  /* Guards and presentation drain may yield and replace the publication. Pin
+   * a copied identity and revalidate after them, immediately before launch. */
+  portable_app_catalog_launch destination;
+  if(!catalog_checked(portable_catalog_launch_prepare(&installed_catalog,i,&destination)) ||
+     !app_allows_launch(destination.route) || !canvas_exit_barrier() || failed || app_invocation_retained())return false;
+  return catalog_checked(portable_catalog_launch_valid(&installed_catalog,&destination)) &&
+      rt->request_launch(destination.route);
 }
 #ifdef PORTABLE_POWER_STATUS
 #include "PortablePowerStatus.h"
@@ -1250,6 +1270,7 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+  installed_catalog=(portable_app_catalog){0};
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
@@ -1376,9 +1397,7 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
-#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT) || defined(PORTABLE_NAVIGATION_RETENTION)
   if(app_invocation_retained())return;
-#endif
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_retained)return;
 #endif
@@ -1389,6 +1408,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   (void)canvas_exit_barrier();
   if(canvas_retained)return;
 #endif
+  if(!catalog_checked(portable_catalog_close(&installed_catalog,rt)))return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!portable_contexts_pause(&contexts_client)){optional_services_retain();return;}
 #endif

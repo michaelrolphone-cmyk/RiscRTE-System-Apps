@@ -25,11 +25,10 @@ def build():
     parser.add_argument("--full-frames",action="store_true",help="Disable optional partial-damage and previous-frame cache")
     parser.add_argument("--handoff-ms", type=int, choices=[60,180], default=180)
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
-    parser.add_argument("--catalog-limit",type=int,choices=[17,18,19,20],default=17,
-                        help="18 is opt-in for the SDR Springboard; historical default is 17")
+    parser.add_argument("--catalog-limit",type=int,default=None,
+                        help="Deprecated, ignored: app.catalog has one runtime-owned 128-entry bound")
     args=parser.parse_args()
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
-    if args.catalog_limit != 17: flags.append("-DPORTABLE_CATALOG_LIMIT="+str(args.catalog_limit))
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
     if args.nova_ui: flags.append("-DPORTABLE_NOVA_UI")
@@ -48,15 +47,16 @@ def build():
     exports = {'app_main', 'app_module_init', 'app_module_fini'}
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
-    catalog = out/'springboard-catalog.c'
-    catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
     elf = out/'springboard.elf'
-    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]
+    sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c']
     subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror', *flags,
         '-I'+str(ROOT/'lib/PortableApps/include'),
         '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
+    all_symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', str(elf)], text=True)
+    if any(line.split()[-1] in ('portable_catalog','portable_catalog_count') for line in all_symbols.splitlines() if line.split()):
+        raise ValueError('Compiled installed-app inventory is forbidden')
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -76,7 +76,7 @@ def build():
     version=json.loads((ROOT/'Apps/springboard.json').read_text())['version']
     manifest={'type':'application','id':'springboard','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'springboard.elf','entry':'app_main','requires':[
-            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1},
+            {'capability':'display.output','api':1}, {'capability':'input.touch.raw','api':1}, {'capability':'app.catalog','api':1},
 ]}
     if args.alarm_client: manifest["requires"].append({"capability":"alarm.service","api":1})
     if args.denver: manifest['requires'].append({'capability':'rtc.clock','api':2})
@@ -93,7 +93,7 @@ def build():
     inputs=sorted(set(inputs))
     record={'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-        'catalog_limit':args.catalog_limit,'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
+        'catalog_source':'app.catalog@1','catalog_capacity':128,'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'unavailable',
         'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
