@@ -135,3 +135,33 @@ access can read the checkpoint. No product profile is enabled by this change.
 The build receipt records `shared_settings_sd`, `shared_settings_root` and
 `idle_settings_maintenance` for explicit composition checks. The shared flag is
 false when built with an older Runtime SDK.
+
+### 0.9.1 application image downloads
+
+An optional HTTPS `url` in the existing selected `install.json` descriptor now
+allows the app ELF to be absent. The catalog persists the resolved descriptor,
+URL, expected digest and namespace before starting any download mutation. It
+uses the existing copied-worker `SdPackageDownload` transaction for both
+providers and the application. Only fully validated immutable images proceed to
+the existing activation journal and manifest publication. Network ownership is
+requested through the existing App Store capability flow; cold Home recovery
+never connects Wi-Fi itself. Recovery uses the protected plan even if the public
+descriptor disappears. A matching admitted image permits offline recovery.
+
+`stage_sd_app.py --url HTTPS_URL` emits the descriptor without copying the image;
+the supplied local ELF is still checked and hashed to describe exact bytes.
+Without `--url`, existing local staging is unchanged. This is selected package
+installation, not an online native catalog feed or automatic core inventory.
+
+New host coverage adds 160 interruption/restart points through the real catalog
+coordinator and worker, descriptor removal, missing-media retry, and catalog
+refresh. Existing 110 provider provisioning cuts, 65 private settings cuts,
+153 paged settings cuts, and durable uninstall tests remain passing. HTTP, ELF
+admission and media are boundary fixtures; no hardware qualification is claimed.
+
+Still separate: live placement across SD/internal volumes, a configured native
+core-package feed, and product activation. The selected .111 installation API
+binds one volume (SD 9). Its app-data capability grants only named complete files;
+it is not an internal executable directory. The offline placement planner and
+native boot-time full-store installer cannot safely be treated as a live fallback
+callback. Failed or retained SD custody never triggers a storage switch.

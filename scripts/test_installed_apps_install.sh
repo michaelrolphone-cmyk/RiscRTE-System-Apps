@@ -10,3 +10,6 @@ c++ -std=c++17 -Wall -Wextra -Werror "${flags[@]}" -I"$runtime/src" -I"$runtime/
 
 c++ -std=c++17 -Wall -Wextra -Werror "${flags[@]}" -I"$runtime/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$runtime/sdk/hardware" -I"$runtime/lib/ArduinoJson/src" -I"$root/lib/PortableApps/include" -I"$root/lib/InstalledCatalog/include" "$root/test/native_apps/paged_settings_test.cpp" "$build/catalog.o" -o "$build/paged"
 "$build/paged"
+
+c++ -std=c++17 -Wall -Wextra -Werror "${flags[@]}" -I"$runtime/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$runtime/sdk/hardware" -I"$runtime/lib/ArduinoJson/src" -I"$root/lib/PortableApps/include" -I"$root/lib/InstalledCatalog/include" "$root/test/native_apps/installed_apps_download_test.cpp" "$build/catalog.o" -o "$build/download"
+"$build/download"

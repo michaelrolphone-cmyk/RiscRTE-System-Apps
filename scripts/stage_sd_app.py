@@ -13,7 +13,7 @@ import re
 from pathlib import Path
 
 
-def stage(manifest_path, image_path, output):
+def stage(manifest_path, image_path, output, url=None):
     manifest = json.loads(manifest_path.read_text())
     identity = manifest.get('id')
     if manifest.get('type') != 'application' or not isinstance(identity, str) or not re.fullmatch(r'[A-Za-z0-9_-][A-Za-z0-9_.-]{0,94}', identity):
@@ -32,14 +32,22 @@ def stage(manifest_path, image_path, output):
         raise ValueError('Package identity exceeds the existing native launch-path bound')
     manifest = dict(manifest, file_name=name)
     manifest.pop('description', None)
-    encoded = json.dumps(dict(manifest=manifest, size=len(image), sha256=digest), separators=(',', ':'), ensure_ascii=True).encode()
+    descriptor = dict(manifest=manifest, size=len(image), sha256=digest)
+    if url is not None:
+        from urllib.parse import urlsplit
+        parsed = urlsplit(url)
+        if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password or parsed.fragment or len(url) > 2048 or any(ord(c) < 33 or ord(c) > 126 for c in url):
+            raise ValueError('A bounded HTTPS package URL without credentials or fragment is required')
+        descriptor['url'] = url
+    encoded = json.dumps(descriptor, separators=(',', ':'), ensure_ascii=True).encode()
     if len(encoded) > 4096:
         raise ValueError('Staged descriptor exceeds 4096 bytes; no fields were truncated')
     if output.exists():
         raise ValueError('Output must be a new staging directory')
     folder = output / 'Apps' / identity
     folder.mkdir(parents=True)
-    (folder / name).write_bytes(image)
+    if url is None:
+        (folder / name).write_bytes(image)
     (folder / 'install.json').write_bytes(encoded)
     return dict(id=identity, version=version, image_sha256=digest, image_bytes=len(image), directory=str(folder), installed=False)
 
@@ -49,5 +57,6 @@ if __name__ == '__main__':
     parser.add_argument('--manifest', type=Path, required=True)
     parser.add_argument('--image', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--url', help='Publish only the descriptor; download this exact image through HTTPS on device')
     args = parser.parse_args()
-    print(json.dumps(stage(args.manifest, args.image, args.output), indent=2))
+    print(json.dumps(stage(args.manifest, args.image, args.output, args.url), indent=2))

@@ -5,6 +5,7 @@ alignas(Download) unsigned char downloadMemory[sizeof(Download)];Download*downlo
 Download::Record downloadRecord;
 enum class ProvisionPhase {Idle,Journal,Download,SaveGraph,Publish,Done};
 ProvisionPhase provisionPhase;unsigned provisionIndex,provisionCount;
+bool provisionAppImage;
 const risc_http_client_v1 packageProxy={1,sizeof(packageProxy),nullptr,
  [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{
   if(!packageHttp||!packageUtc)return RISC_HTTP_NETWORK;
@@ -66,8 +67,15 @@ bool prepareProvision(const char*json,bool resume){
  if(downloader)return false;
  JsonDocument doc;if(deserializeJson(doc,json)||!selectCatalogProviders(doc))return false;
  auto rows=doc["providers"];
- if(rows.isNull()||(rows.is<JsonArrayConst>()&&!rows.size())){provisionJson[0]=0;provisionPhase=ProvisionPhase::Done;provisionResume=false;return true;}
- if(!providerApi()||!rows.is<JsonArrayConst>()||rows.size()>ProviderMax||std::strlen(json)>ManifestMax)return false;
+ provisionAppImage=!doc["url"].isNull();
+ if(provisionAppImage){
+  char url[RISC_HTTP_URL_MAX+1];
+  if(!copy(url,sizeof(url),doc["url"])||std::strncmp(url,"https://",8))return false;
+ }
+ if(rows.isNull())rows=doc["providers"].to<JsonArray>();
+ if(!rows.is<JsonArrayConst>()||rows.size()>ProviderMax||std::strlen(json)>ManifestMax)return false;
+ if(!rows.size()&&!provisionAppImage){provisionJson[0]=0;provisionPhase=ProvisionPhase::Done;provisionResume=false;return true;}
+ if(rows.size()&&!providerApi())return false;
  nextProviderCount=providerCount;for(unsigned i=0;i<providerCount;++i)nextProviders[i]=providers[i];
  for(unsigned i=0;i<rows.size();++i){
   CachedProvider entry;if(!provisionRecord(rows[i],downloadRecord,entry))return false;
@@ -76,12 +84,13 @@ bool prepareProvision(const char*json,bool resume){
   if(slot==nextProviderCount){if(nextProviderCount==ProviderMax)return false;++nextProviderCount;}
   nextProviders[slot]=entry;
  }
- if(nextProviderCount>native->provider_capacity)return false;
+ if(nextProviderCount&&(!providerApi()||nextProviderCount>native->provider_capacity))return false;
  // Admission is repeated at publication to account for an intervening live
  // consumer. BUSY never grants permission to replace an active provider.
- int rc=checkProvisionGraph(true);if(rc!=RISC_INSTALL_OK&&rc!=RISC_INSTALL_BUSY)return false;
+ int rc=rows.size()?checkProvisionGraph(true):RISC_INSTALL_OK;if(rc!=RISC_INSTALL_OK&&rc!=RISC_INSTALL_BUSY)return false;
  if(measureJson(doc)>ManifestMax)return false;
  serializeJson(doc,provisionJson,sizeof(provisionJson));provisionCount=rows.size();provisionIndex=0;
+ provisionCount+=provisionAppImage?1:0;
  provisionResume=resume;provisionPhase=resume?ProvisionPhase::Download:ProvisionPhase::Journal;return true;
 }
 void saveProvision(JsonDocument&doc){
@@ -102,14 +111,24 @@ int32_t provisionStep(const risc_storage_volume_api_v1*v){
  if(!provisionJson[0]||provisionPhase==ProvisionPhase::Done)return INSTALLED_APPS_OK;
  if(provisionPhase==ProvisionPhase::Journal){
   if(!namespaceFor(installCandidate,true))return INSTALLED_APPS_INVALID;
-  int rc=checkProvisionGraph(true);if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;if(rc!=RISC_INSTALL_OK)return INSTALLED_APPS_INVALID;
+  int rc=nextProviderCount?checkProvisionGraph(true):RISC_INSTALL_OK;if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;if(rc!=RISC_INSTALL_OK)return INSTALLED_APPS_INVALID;
   currentPending();rc=save();if(rc!=INSTALLED_APPS_OK)return rc;
   provisionResume=true;provisionPhase=ProvisionPhase::Download;return INSTALLED_APPS_WORKING;
  }
  if(provisionPhase==ProvisionPhase::Download){
   if(!downloader){
    JsonDocument plan;if(deserializeJson(plan,provisionJson))return INSTALLED_APPS_INVALID;
-   CachedProvider entry;if(!provisionRecord(plan["providers"][provisionIndex],downloadRecord,entry))return INSTALLED_APPS_INVALID;
+   if(provisionAppImage&&provisionIndex==provisionCount-1){
+    // The app uses the same immutable, copied-worker download transaction as
+    // dependencies. The protected plan survives descriptor removal/restart.
+    downloadRecord={};
+    if(!copy(downloadRecord.url,sizeof(downloadRecord.url),plan["url"]))return INSTALLED_APPS_INVALID;
+    std::strcpy(downloadRecord.path,installRecord.imagePath);
+    downloadRecord.size=installRecord.imageSize;
+    std::memcpy(downloadRecord.sha256,installRecord.digest,32);
+   }else{
+    CachedProvider entry;if(!provisionRecord(plan["providers"][provisionIndex],downloadRecord,entry))return INSTALLED_APPS_INVALID;
+   }
    downloader=new(downloadMemory)Download();
    if(!downloader->start(v,&packageProxy,downloadRecord,packageUtc,true)){downloader->~Download();downloader=nullptr;return INSTALLED_APPS_UNAVAILABLE;}
   }
@@ -120,7 +139,9 @@ int32_t provisionStep(const risc_storage_volume_api_v1*v){
   if(state!=Download::State::Ready)return INSTALLED_APPS_WORKING;
   downloader->~Download();downloader=nullptr;
   if(++provisionIndex<provisionCount)return INSTALLED_APPS_WORKING;
-  packageUtc=0;providerSavePending=true;provisionPhase=ProvisionPhase::SaveGraph;
+  packageUtc=0;
+  if(provisionCount==(provisionAppImage?1u:0u)){provisionPhase=ProvisionPhase::Done;return INSTALLED_APPS_OK;}
+  providerSavePending=true;provisionPhase=ProvisionPhase::SaveGraph;
  }
  if(provisionPhase==ProvisionPhase::SaveGraph){
   int rc=save();if(rc!=INSTALLED_APPS_OK)return rc;

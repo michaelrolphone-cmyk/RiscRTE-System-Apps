@@ -1,0 +1,38 @@
+name: X4 catalog application downloads
+on:
+  push:
+    branches: ['feat/x4-auto-provision-20261013']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transactions:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        sanitize: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: runtime
+      - name: Catalog, uninstall, application and driver transactions
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/runtime
+          SANITIZE: ${{ matrix.sanitize }}
+          SANITIZERS: address,undefined
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          mkdir -p results
+          bash scripts/test_installed_catalog.sh 2>&1 | tee results/catalog.log
+          bash scripts/test_installed_apps_service.sh 2>&1 | tee results/service.log
+          bash scripts/test_installed_apps_install.sh 2>&1 | tee results/install.log
+          bash scripts/test_app_store_installed.sh 2>&1 | tee results/app-store.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-transactions-${{ matrix.sanitize }}
+          path: results
