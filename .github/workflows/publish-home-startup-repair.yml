@@ -1,0 +1,59 @@
+name: Publish checked Home startup repair
+on:
+  push:
+    branches: [fix/x4-home-alarm-progress-20261012]
+    paths: ['.github/workflows/publish-home-startup-repair.yml']
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/x4-home-alarm-progress-20261012
+          path: system
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 80efb298c9ca8d0f62f9a31840c9e51d380b40f6
+          path: utilities
+          persist-credentials: false
+      - name: Apply exact locally tested source patch
+        working-directory: system
+        run: |
+          echo 'a14926fe9c75369eaa406cc39de1ccd74cf5c8cb4293f8f7f175b94ab9bf67ae  .repair/home-startup.patch' | sha256sum -c -
+          git apply --check .repair/home-startup.patch
+          git apply .repair/home-startup.patch
+      - name: Verify old failure and corrected production poll
+        working-directory: system
+        run: |
+          mkdir -p evidence
+          cp lib/PortableApps/src/alarm.inc /tmp/alarm-fixed.inc
+          git show HEAD:lib/PortableApps/src/alarm.inc > lib/PortableApps/src/alarm.inc
+          python scripts/test_alarm_frame_progress.py --runtime ../runtime --utilities ../utilities --output ../before --expect-starvation | tee evidence/before.log
+          cp /tmp/alarm-fixed.inc lib/PortableApps/src/alarm.inc
+          python scripts/test_alarm_frame_progress.py --runtime ../runtime --utilities ../utilities --output ../after | tee evidence/after.log
+          python scripts/test_alarm_busy_adapter.py --runtime ../runtime --utilities ../utilities --output ../regression | tee evidence/regression.log
+      - name: Publish actual implementation, remove one-time transfer files
+        working-directory: system
+        run: |
+          git rm .repair/home-startup.patch .github/workflows/publish-home-startup-repair.yml
+          git add lib/PortableApps/src/alarm.inc test/native_apps/alarm_frame_progress_test.c scripts/test_alarm_frame_progress.py
+          git config user.name 'michaelrolphone-cmyk'
+          git config user.email 'michael.rol.phone@gmail.com'
+          git commit -m 'Fix X4 startup starvation while alarm storage is pending'
+          git push origin HEAD:refs/heads/fix/x4-home-alarm-progress-20261012
+          git rev-parse HEAD > evidence/source.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: home-startup-repair-tests
+          path: system/evidence/
+          retention-days: 14
