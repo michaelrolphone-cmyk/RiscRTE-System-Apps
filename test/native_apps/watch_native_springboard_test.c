@@ -21,10 +21,17 @@ static unsigned fw,fh,pitch,ticks,polls,grants,subscriptions,frames,presents,lau
 static uint16_t *guarded,*pixels;
 static const char *directory;
 static char launched[128];
-static bool use_async,expect_transition;
+static bool use_async,expect_transition,expect_presentation=true;
+static unsigned refresh_millihz=60000,present_latency_us=16000,display_flags;
+static const char *metadata_profile="eligible";
+/* Keep the exact provider output under observation throughout real presenter,
+ * controller, input, submission and teardown. UI selection must never invent
+ * refresh/latency values or rewrite any physical display metadata. */
+static const risc_display_info_v1 *reported_info;
+static risc_display_info_v1 reported_snapshot;
 static bool contact_down;
 static unsigned contact_x,contact_y,contact_id,contact_count;
-static unsigned full_run; /* 1 launch, 2 return, 3 held entry, 4 drag */
+static unsigned full_run; /* 1 launch, 2 return, 3 held entry, 4 drag, 5 idle fallback */
 static const springboard_presentation *production;
 static int logical_height(void) {
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
@@ -41,14 +48,16 @@ static unsigned physical(unsigned logical) {
 #endif
 }
 static void guards(void) {
+ if(reported_info)assert(!memcmp(reported_info,&reported_snapshot,sizeof(reported_snapshot)));
  assert(guarded[0]==0xa55a && guarded[fh*pitch+1]==0xa55a);
  for(unsigned y=0;y<fh;y++)for(unsigned x=fw;x<pitch;x++)assert(pixels[y*pitch+x]==0xa55a);
 }
 static bool nt_info(void *c,risc_display_info_v1 *out) {
  (void)c;*out=(risc_display_info_v1){.width=fw,.height=fh,
  .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565),
- .nominal_refresh_millihz=60000,.typical_present_latency_us=16000,
- .flags=use_async?RISC_DISPLAY_INFO_ASYNC_PRESENT:0};return true;
+ .nominal_refresh_millihz=refresh_millihz,.typical_present_latency_us=present_latency_us,
+ .flags=display_flags|(use_async?RISC_DISPLAY_INFO_ASYNC_PRESENT:0)};
+ reported_info=out;memcpy(&reported_snapshot,out,sizeof(reported_snapshot));return true;
 }
 static bool nt_frame(void *c,uint32_t format,risc_display_surface_v1 *out) {
  (void)c;assert(!frames);frames=1;
@@ -58,7 +67,9 @@ static bool nt_frame(void *c,uint32_t format,risc_display_surface_v1 *out) {
 static void nt_frame_release(void *c,risc_display_frame_v1 f) {(void)c;assert(f==1&&frames);frames=0;}
 static bool nt_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,
  const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
- (void)c;(void)r;(void)n;(void)options;assert(f==1&&frames);frames=0;*token=++presents;guards();return true;
+ (void)c;(void)r;(void)n;(void)options;assert(f==1&&frames);frames=0;*token=++presents;guards();
+ if(!refresh_millihz || !expect_presentation)assert(!springboard_transition_active());
+ return true;
 }
 static bool nt_brightness(void *c,uint16_t value,uint16_t maximum) {(void)c;assert(value<=maximum);return true;}
 static bool nt_status(void *c,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
@@ -74,7 +85,7 @@ static bool nt_snapshot(void *c,risc_touch_snapshot_v1 *out) {
  (void)c;*out=(risc_touch_snapshot_v1){.width=fw,.height=fh};
  bool down=contact_down;unsigned x=contact_x,y=contact_y;
  if(full_run) {
-  down=full_run==3?polls<=3:polls>=2&&polls<=4;
+  down=full_run==5?false:full_run==3?polls<=3:polls>=2&&polls<=4;
   x=physical(full_run==2?20u:120u);y=physical(full_run==2?20u:(unsigned)logical_height()/2);
   if(full_run==4 && polls>=3){x=physical(120u+(polls-2)*15u);y=physical((unsigned)logical_height()/2+(polls-2)*12u);}
  }
@@ -102,6 +113,7 @@ static bool nt_nav_reset(void *c) {(void)c;return true;}
 static const risc_input_navigation_api_v1 nt_navigation={1,sizeof(nt_navigation),NULL,nt_nav_poll,nt_nav_foreground,nt_nav_reset};
 const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1 *r) {(void)r;return &nt_navigation;}
 void portable_input_navigation_close(const risc_runtime_api_v1 *r) {(void)r;}
+bool portable_input_navigation_retained(void) {return false;}
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 #include "PortableAppSleep.h"
@@ -134,9 +146,9 @@ static void open_controller(void) {
 #endif
  assert(api->screen_width()==240 && api->screen_height()==logical_height());
  count=api->installed_apps_count();assert(count==23 && portable_catalog_count==23);selected=0;layout();assert(compact);
- production=springboard_presentation_get();assert(production);
+ production=springboard_presentation_get();assert(!!production==expect_presentation);guards();
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
- expect_transition=true;
+ expect_transition=expect_presentation && refresh_millihz>=20000;
 #endif
  /* The provider-facing API still reports physical geometry after app setup. */
  const t5_app_api_v1 *provider=t5_app_get_api(T5_APP_ABI_VERSION);
@@ -156,6 +168,7 @@ static springboard_contact input(nova_state *s,bool down,unsigned x,unsigned y) 
 static void render(nova_state *s) {
  nova_render(s);guards();
  if(expect_transition) {assert(springboard_transition_active());expect_transition=false;}
+ if(!refresh_millihz)assert(!springboard_transition_active());
  /* Observe the complete destination after the real retained-frame transition. */
  unsigned remaining=20;
  while(springboard_transition_active()&&remaining--){ticks+=40;nova_render(s);guards();}
@@ -233,11 +246,33 @@ static void application_tests(void) {
  /* Re-entry after launch/return starts clean and recreates the initial frame. */
  open_controller();nova_state s={.view=production,.pending=-1,.initial=true};nova_layout(&s);render(&s);capture("reentry");close_controller();
 }
+static void fallback_tests(void) {
+ full_run=5;open_controller();assert(!production && !nova_run());
+ unsigned before=presents;app_main();assert(presents>before && !launches);
+ assert(!springboard_transition_active());capture("generic-grid");close_controller();full_run=0;
+}
+static void select_metadata(const char *profile) {
+ metadata_profile=profile;
+ if(!strcmp(profile,"eligible"))return;
+ if(!strcmp(profile,"eligible-threshold")){refresh_millihz=20000;present_latency_us=50000;return;}
+ if(!strcmp(profile,"unknown-refresh")){refresh_millihz=0;return;}
+ if(!strcmp(profile,"unknown-timing")){refresh_millihz=present_latency_us=0;return;}
+ expect_presentation=false;
+ if(!strcmp(profile,"slow-refresh")){refresh_millihz=19999;return;}
+ if(!strcmp(profile,"slow-latency")){present_latency_us=50001;return;}
+ if(!strcmp(profile,"retains-image")){display_flags=RISC_DISPLAY_INFO_RETAINS_IMAGE;return;}
+ if(!strcmp(profile,"unknown-slow-latency")){refresh_millihz=0;present_latency_us=50001;return;}
+ if(!strcmp(profile,"unknown-retains-image")){refresh_millihz=0;display_flags=RISC_DISPLAY_INFO_RETAINS_IMAGE;return;}
+ assert(!"unrecognized metadata profile");
+}
 int main(int argc,char **argv) {
- assert(argc>=3&&argc<=5);fw=(unsigned)atoi(argv[1]);fh=(unsigned)atoi(argv[2]);directory=argc>=4&&strcmp(argv[3],"-")?argv[3]:NULL;use_async=argc==5&&!strcmp(argv[4],"async");
+ assert(argc>=3&&argc<=6);fw=(unsigned)atoi(argv[1]);fh=(unsigned)atoi(argv[2]);directory=argc>=4&&strcmp(argv[3],"-")?argv[3]:NULL;use_async=argc>=5&&!strcmp(argv[4],"async");
+ if(argc==6)select_metadata(argv[5]);
  assert(fw>=160&&fw<=1024&&fh>=fw&&fh<=1024);pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
  for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
- controller_tests();application_tests();free(guarded);
- printf("Springboard %ux%u: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry and guards passed\n",fw,fh);
+ if(expect_presentation){controller_tests();application_tests();}else fallback_tests();
+ free(guarded);
+ printf("Springboard %ux%u %s: %s; exact provider metadata, transition policy and guards passed\n",fw,fh,metadata_profile,
+  expect_presentation?"original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry":"known-ineligible metadata keeps generic grid");
  return 0;
 }

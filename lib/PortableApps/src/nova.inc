@@ -181,7 +181,10 @@ const springboard_presentation *springboard_presentation_get(void) {
 #ifndef PORTABLE_WATCH_NATIVE_HEIGHT
   if(width()>=400 && height()>=400)return NULL;
 #endif
-  if(info.nominal_refresh_millihz<20000 ||
+  /* Zero is unknown timing, not evidence that the selected presentation is
+   * incompatible. Keep known slow/retained displays on their existing path;
+   * optional retained-frame animation has its own conservative timing gate. */
+  if((info.nominal_refresh_millihz && info.nominal_refresh_millihz<20000) ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #ifdef PORTABLE_RTC_UTC8_DENVER
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);

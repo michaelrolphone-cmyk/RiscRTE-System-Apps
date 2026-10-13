@@ -149,11 +149,17 @@ static void delayed_held_contact_and_wrap(void){
     mock_ms=handoff_started+180u;draw_fresh();mock_latency=0;present(false);assert_fresh();assert(!handoff_active);end_test();
 }
 static void unsupported_display(void){
-    begin_test();mock_hz=0;assert(app_module_init()==0);assert(!springboard_presentation_get());
+    begin_test();mock_hz=19999;assert(app_module_init()==0);assert(!springboard_presentation_get());
     draw_fresh();present(false);assert_fresh();assert(!mock_allocations);end_test();
 }
+static void unknown_timing(void){
+    begin_test();mock_hz=0;assert(app_module_init()==0);assert(springboard_presentation_get());
+    assert(handoff_pending && info.nominal_refresh_millihz==0);
+    draw_fresh();assert(!handoff_pending && !handoff_active && !mock_live);
+    present(false);assert_fresh();assert(!mock_allocations && info.nominal_refresh_millihz==0);end_test();
+}
 int main(void){
-    lifecycle();allocation_fallback();failed_and_interrupted();delayed_held_contact_and_wrap();unsupported_display();
+    lifecycle();allocation_fallback();failed_and_interrupted();delayed_held_contact_and_wrap();unsupported_display();unknown_timing();
     puts("Retained handoff: exact first/final frame, held touch, delayed full-frame submit, rollover, allocation failures and interrupted cleanup passed");
     return 0;
 }

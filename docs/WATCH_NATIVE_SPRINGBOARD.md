@@ -39,9 +39,36 @@ native raster's inverse. Invalid physical contacts are rejected before they
 can be turned into a live hit. The last partial logical row maps to the last
 physical row. At scale one the original direct pixel path is retained.
 
+## Presentation eligibility and unknown timing
+
+The selected shared honeycomb treats `nominal_refresh_millihz == 0` as an
+unreported refresh rate. It remains eligible when no reported characteristic
+rules it out. This applies at both Watch sizes and does not depend on a device
+name or provider brand. The selection code never changes the provider's display
+metadata or substitutes a guessed refresh rate or latency.
+
+The existing known-incompatible fallbacks remain unchanged:
+
+- A nonzero nominal refresh below 20,000 mHz
+- `RISC_DISPLAY_INFO_RETAINS_IMAGE`
+- Reported typical present latency above 50,000 microseconds
+
+The exact boundary of 20,000 mHz / 50,000 microseconds remains eligible. Unknown
+refresh does not override a retained-image flag or a known high latency. A zero
+latency keeps its previous behavior; this change does not assign it a measured
+latency or alter the controller's existing bounded frame/input cadence.
+
+Retained animation has a separate conservative capability decision. The
+existing adapter gate still requires nominal refresh of at least 20,000 mHz,
+so unknown refresh skips its two temporary buffers and retained-frame animation.
+It still renders the original honeycomb, with its full catalog, input mapping
+and normal controller lifecycle. An eligible known refresh preserves the
+original transition behavior.
+
 ## Retained transition and resource ceiling
 
-The original retained RGB565 handoff is retained on 410 × 502. Under the shared
+The original retained RGB565 handoff remains eligible on 410 × 502 when the
+provider reports compatible timing. Under the shared
 native-height flag only, `PORTABLE_TRANSITION_MAX_SIDE` increases from 320 to
 512. The default profile retains the original 320 bound. The adapter already
 uses this shared ceiling, so no lifecycle, submission or custody code changes.
@@ -65,7 +92,11 @@ Run:
 The first script compiles an isolated original 1476260 source archive and the
 current native-height source. Normal and ASan/UBSan variants each run against
 synchronous and asynchronous provider capabilities. Each native executable is
-reused for all three runtime geometries. At 240 × 240, every captured frame is
+reused for all three runtime geometries and all nine metadata profiles: eligible,
+exact threshold, unknown refresh, fully unknown timing, known low refresh, known
+high latency, retained image, and unknown refresh combined with each known
+latency/retention exclusion. The complete matrix has 112 invocations, including
+the original baseline runs. At 240 × 240, every captured frame is
 pixel-identical to the original: initial view, both pages, pan result, page
 change by touch, completed launch, and clean re-entry.
 
@@ -78,8 +109,14 @@ The production controller/presenter tests cover:
 - Lower honeycomb content/hits in the added native vertical area
 - Invalid/out-of-surface/multicontact cancellation and the last physical row
 - Actual app loop launch, return, held-contact entry, drag, and re-entry
-- Retained transition activation at both sizes, sync/async surfaces, padded
-  stride sentinels and released display/touch/runtime resources
+- Identical captured destination pixels for unknown timing and known-eligible
+  timing at every tested geometry, including complete 240-pixel baseline parity
+- Actual generic-grid fallback on every known-ineligible metadata profile
+- Byte-for-byte preservation of the provider's entire display metadata through
+  presentation selection, input, rendering, submission and teardown
+- Retained transition activation with known eligible timing and no retained
+  animation with unknown refresh, sync/async surfaces, padded stride sentinels
+  and released display/touch/runtime resources
 
 The second script extends only the existing test oracle's allocation/rejection
 bounds in a build-only copy; its independent reference blur/mix is unchanged.
@@ -91,7 +128,9 @@ explicitly disable leak scanning; ASan bounds/use-after-free and all UBSan check
 remain enabled, with explicit resource counters and pixel guards. This is host
 qualification, not a measured hardware latency or on-device acceptance claim.
 
-Generated reports and real-render PPMs are under `build/watch-native-springboard`.
+Generated reports are under `build/watch-native-springboard`. Each metadata
+profile's real-render PPMs are losslessly stored in its `frames.zip`; the script
+verifies extracted SHA-256 hashes before removing its temporary raw captures.
 
 For the full original feature profile, run:
 
@@ -99,7 +138,8 @@ For the full original feature profile, run:
 
 This extracts every feature switch and forced profile include from the audited
 recipe, then runs the same native executable at both sizes with synchronous and
-asynchronous provider capabilities, normally and under ASan/UBSan. All Alarm,
+asynchronous provider capabilities and all nine metadata profiles, normally and
+under ASan/UBSan (72 invocations). All Alarm,
 Broadcast/BLE, Contexts, Quick Controls, Low Battery, RTC, local navigation/sleep,
 retained handoff and async feature switches remain enabled. The actual controller
 and adapter initialize, render, accept touch, launch, return and re-enter while

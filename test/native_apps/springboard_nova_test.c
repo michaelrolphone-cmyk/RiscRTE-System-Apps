@@ -31,7 +31,9 @@ static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<350;}
 static void yield_ms(uint32_t n){ms+=scenario==23?8:scenario==24?33:n;if((scenario==19||scenario==30) && polls==6)ms+=1000;}
 static bool diagnostic(const char *s){(void)s;return true;}
 static bool launch_app(const char *s){++launches;if(scenario==11)return false;strcpy(launched,s);return true;}
-static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=o->height=240;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?0:60000;o->typical_present_latency_us=16000;return true;}
+/* Scenario 22 keeps the known-slow grid path; zero/unknown presentation is
+ * covered by the complete native Springboard metadata matrix. */
+static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=o->height=240;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565);o->nominal_refresh_millihz=scenario==22?19999:60000;o->typical_present_latency_us=16000;return true;}
 static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(!frames);frames=1;*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.size_bytes=sizeof(pixels),.width=240,.height=scenario==10?200:240,.stride_bytes=480,.pixel_format=f};return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static void save_frame(void){

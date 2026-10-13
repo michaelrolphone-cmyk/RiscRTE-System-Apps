@@ -46,11 +46,14 @@ for sanitized in (False, True):
                     "-o", str(binary)], check=True)
     for width, height in ((240, 240), (410, 502)):
         for provider in ("sync", "async"):
-            result = subprocess.run([str(binary), str(width), str(height), "-", provider],
-                                    env=env, check=True, timeout=60, capture_output=True, text=True)
-            print(result.stdout, end="", flush=True)
-            results.append({"binary": binary.name, "width": width, "height": height,
-                            "provider": provider, "result": result.stdout.strip()})
+            for metadata in ("eligible", "unknown-refresh", "unknown-timing", "eligible-threshold",
+                             "slow-refresh", "slow-latency", "retains-image",
+                             "unknown-slow-latency", "unknown-retains-image"):
+                result = subprocess.run([str(binary), str(width), str(height), "-", provider, metadata],
+                                        env=env, check=True, timeout=60, capture_output=True, text=True)
+                print(result.stdout, end="", flush=True)
+                results.append({"binary": binary.name, "width": width, "height": height,
+                                "provider": provider, "metadata": metadata, "result": result.stdout.strip()})
 (OUT / "feature-results.json").write_text(json.dumps({"features": features, "forced_includes": forced,
                                                        "checks": results}, indent=2) + "\n")
 print("PASS: every audited Springboard feature enabled; actual honeycomb startup/input/launch/return survives qualified optional-service absence")
