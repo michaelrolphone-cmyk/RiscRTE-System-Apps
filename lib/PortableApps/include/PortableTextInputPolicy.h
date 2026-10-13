@@ -9,3 +9,6 @@ int portable_text_adapter_policy_apply(bool continuity,uint32_t *resume_flags);
 
 /* Capture-only progression is safe through submitted/mutable host frames. */
 int portable_text_adapter_policy_capture(void);
+/* Distinguish a resident/Runtime exit from ordinary alarm cancellation.
+ * Negative means retained; positive means close and return without redraw. */
+int portable_text_adapter_exit_pending(void);

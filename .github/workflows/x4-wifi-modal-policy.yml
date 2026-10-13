@@ -1,0 +1,61 @@
+name: X4 Wi-Fi deployed source and modal policy
+on:
+  push:
+    branches: [fix/x4-wifi-modal-policy-20261013]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  wifi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: 8f6670a10ab72502bb8c1fc34337a6051488db48
+          path: .deps/baseline
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .deps/runtime
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: b0b32919a12d7fd12326091f2c6eb0bcfad5b4ad
+          path: .deps/utilities
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Modal and existing Wi-Fi regression suites
+        run: |
+          python scripts/test_x4_wifi_modal_policy.py --runtime .deps/runtime --output build/x4-wifi/modal
+          python scripts/test_x4_wifi_modal_policy.py --runtime .deps/runtime --output build/x4-wifi/modal-asan --mode asan
+          python scripts/test_portable_wifi.py
+          python scripts/test_wifi_workflow.py --output build/x4-wifi/workflow --sanitize
+          python scripts/test_wifi_atomic.py --output build/x4-wifi/atomic --sanitize
+          python scripts/test_wifi_availability.py --output build/x4-wifi/availability --sanitize
+          python scripts/test_wifi_availability.py --output build/x4-wifi/availability-paper --paper --sanitize
+      - name: Install pinned compiler and ELF parser
+        run: |
+          pip install platformio==6.1.19 pyelftools==0.32
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Reproduce deployed executable and successor twice
+        run: |
+          python scripts/reproduce_x4_wifi_1128.py --system .deps/baseline --runtime .deps/runtime --utilities .deps/utilities --output build/x4-wifi/baseline
+          python scripts/build_x4_wifi_policy.py --runtime .deps/runtime --utilities .deps/utilities --output build/x4-wifi/candidate
+          python scripts/build_x4_wifi_policy.py --runtime .deps/runtime --utilities .deps/utilities --output build/x4-wifi/repeat
+          cmp build/x4-wifi/candidate/wifi_settings.elf build/x4-wifi/repeat/wifi_settings.elf
+          cmp build/x4-wifi/candidate/wifi_settings.json build/x4-wifi/repeat/wifi_settings.json
+          echo '6a5894b9991d71bb952c9a0d49f1a4184da537cd52ab4027449553b4e5ba1f9c  build/x4-wifi/candidate/wifi_settings.elf' | sha256sum --check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: x4-wifi-target-and-policy-evidence
+          path: |
+            build/x4-wifi/*/*.elf
+            build/x4-wifi/*/*.json
+            build/x4-wifi/*/*.log
+          retention-days: 14
