@@ -5,6 +5,7 @@ output="${OUTPUT_DIR:-$(mktemp -d /tmp/files-peer-ui.XXXXXX)}";mkdir -p "$output
 flags=(-g -O1 -Wall -Wextra -Werror -Ilib/PortableApps/include -Ilib/NativeApps/include -Ilib/RemoteFiles -Ilib/UserFiles -I../runtime/src -I../runtime/sdk/app -DPORTABLE_FILE_SHARING_SELECTED_VOLUME)
 if [[ "${SANITIZE:-0}" == 1 ]];then flags+=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie);fi
 if [[ "${FILES_RESIDENT:-0}" == 1 ]];then flags+=(-DFILE_POLICY_RESIDENT);fi
+if [[ "${FILES_POLICY_SOURCE_ROOTS:-0}" == 1 ]];then flags+=(-DFILE_POLICY_SOURCE_ROOTS);fi
 objects=()
 if [[ "${FILES_POLICY:-0}" == 1 ]];then
  utilities="${UTILITIES_ROOT:?Set UTILITIES_ROOT for policy fixtures}"

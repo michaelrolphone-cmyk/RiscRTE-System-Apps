@@ -1,4 +1,11 @@
 #define FILE_POLICY_FIXTURE
+#ifdef FILE_POLICY_SOURCE_ROOTS
+#define PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+#define PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY "storage.app-data.export"
+#define PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE 0
+#define PORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY "storage.volume"
+#define PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE 0
+#endif
 #ifdef FILE_POLICY_RESIDENT
 #define FILE_BROWSER_RESIDENT_PROFILE
 #define PORTABLE_RESIDENT_SHELL_CLIENT
@@ -36,7 +43,7 @@ int main(int argc,char**argv){
  low_battery_sampled=false;
 #endif
  bool remote=!strncmp(scenario,"remote",6);
- if(remote){fb_list_choice=0;fb_option(7);peer_until(PEER_DISCOVERING);peer_step();peer_frame();fpeer_choice=0;fpeer_action();peer_until(PEER_PAIRING);peer_frame();fpeer_choice=1;fpeer_action();peer_until(PEER_READY);assert(fbm_mounted&&fb_storage_index==2);}
+ if(remote){fb_list_choice=0;fb_option(7);peer_until(PEER_DISCOVERING);peer_step();peer_frame();fpeer_choice=0;fpeer_action();peer_until(PEER_PAIRING);peer_frame();fpeer_choice=1;fpeer_action();peer_until(PEER_READY);assert(fbm_mounted&&fb_storage_index==FB_REMOTE_ROOT);}
  fb_draw();
  policy_scene_missing=!strcmp(scenario,"missing");
  fb_mode=FB_OPTIONS;fb_option(0);if(!fb_text_active)fprintf(stderr,"open failed status=%s retained=%u adapter=%u mode=%u grants=%u\n",fb_status,fb_text.retained,portable_text_adapter_retained(),fb_mode,test_grants);assert(fb_text_active);

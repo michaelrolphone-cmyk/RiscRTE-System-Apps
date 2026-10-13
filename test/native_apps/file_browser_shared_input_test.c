@@ -85,7 +85,7 @@ int main(int argc,char**argv){
  memset(fb_pixels,0xa5,sizeof(fb_pixels));assert(app_module_init()==0&&fb_open());strcpy(fb_path,"/Downloads");assert(fb_load(0));
  if(!strncmp(scenario,"entry-",6)){entry_workflow(scenario);return 0;}
  bool remote=!strncmp(scenario,"remote",6);
- if(remote){fb_list_choice=0;fb_option(7);peer_until(PEER_DISCOVERING);peer_step();peer_frame();fpeer_choice=0;fpeer_action();peer_until(PEER_PAIRING);peer_frame();fpeer_choice=1;fpeer_action();peer_until(PEER_READY);assert(fbm_mounted&&fb_storage_index==2);}
+ if(remote){fb_list_choice=0;fb_option(7);peer_until(PEER_DISCOVERING);peer_step();peer_frame();fpeer_choice=0;fpeer_action();peer_until(PEER_PAIRING);peer_frame();fpeer_choice=1;fpeer_action();peer_until(PEER_READY);assert(fbm_mounted&&fb_storage_index==FB_REMOTE_ROOT);}
  const char*name=remote?"incoming.obj":"local.txt";
  if(strstr(scenario,"filter")){
   fb_mode=FB_OPTIONS;fb_choice=0;fb_option(0);assert(fb_text_active&&fb_mode==FB_FILTER);text_replace("local");text_finish(RISC_SCENE_KEY_DONE);assert(fb_mode==FB_LIST&&!strcmp(fb_query,"local")&&fb_count==1);
@@ -122,9 +122,9 @@ int main(int argc,char**argv){
   /* Return from the shared host into the ordinary full Files workflow. */
   fb_mode=FB_OPTIONS;fb_choice=8;fb_option(8);assert(fb_text_active&&fbm_new_directory);text_replace("Created");text_finish(RISC_SCENE_KEY_DONE);mount_idle();assert(peer_backend_remote_exists("/Created"));
   mount_action("final.txt",2);mount_idle();assert(fb_mode==FB_PREVIEW&&fb_preview_count==32);assert(!fb_back());assert(!fb_back());
-  mount_action("final.txt",5);mount_idle();assert(fb_mode==FB_DESTINATION&&fb_source_index==2);assert(fbx_swap()&&fb_storage_index==0);strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();mount_idle();assert(peer_backend_local_exists("/Downloads/final.txt")&&fb_storage_index==2&&fb_mode==FB_LIST);
+  mount_action("final.txt",5);mount_idle();assert(fb_mode==FB_DESTINATION&&fb_source_index==FB_REMOTE_ROOT);assert(fbx_swap()&&fb_storage_index==0);strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();mount_idle();assert(peer_backend_local_exists("/Downloads/final.txt")&&fb_storage_index==FB_REMOTE_ROOT&&fb_mode==FB_LIST);
   /* Replacement still requires the normal explicit confirmation. */
-  mount_action("final.txt",5);mount_idle();assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();assert(fb_mode==FB_DESTINATION&&strstr(fb_status,"already exists")&&!fbm_operation);fbx_cancel();mount_idle();assert(fb_storage_index==2);
+  mount_action("final.txt",5);mount_idle();assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));fbx_commit_destination();assert(fb_mode==FB_DESTINATION&&strstr(fb_status,"already exists")&&!fbm_operation);fbx_cancel();mount_idle();assert(fb_storage_index==FB_REMOTE_ROOT);
   assert(fbx_swap());strcpy(fb_path,"/Downloads");assert(fb_load(0));mount_action("final.txt",5);assert(fbx_swap());strcpy(fb_path,"/");assert(!fb_load(0));mount_idle();fbx_commit_destination();assert(fb_mode==FB_REPLACE);fb_choice=0;fbx_activate();assert(fb_mode==FB_DESTINATION);fbx_commit_destination();assert(fb_mode==FB_REPLACE);fb_choice=1;fbx_activate();mount_idle();assert(fb_mode==FB_LIST&&fb_storage_index==0);assert(fbx_swap());strcpy(fb_path,"/");assert(!fb_load(0));mount_idle();
   mount_action("final.txt",4);mount_idle();fb_choice=mount_find("Created");fbx_activate();mount_idle();fbx_commit_destination();mount_idle();assert(peer_backend_remote_exists("/Created/final.txt")&&!peer_backend_remote_exists("/final.txt"));
   fb_choice=mount_find("Created");fb_activate_file(fb_choice);mount_idle();mount_action("final.txt",6);assert(fb_mode==FB_DELETE);fb_choice=0;fbx_activate();assert(fb_mode==FB_ACTIONS&&peer_backend_remote_exists("/Created/final.txt"));fb_choice=6;fbx_activate();fb_choice=1;fbx_activate();mount_idle();assert(!peer_backend_remote_exists("/Created/final.txt"));

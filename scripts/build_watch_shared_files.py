@@ -68,7 +68,7 @@ if a.shared_text_input:
  compaction=compact(elf,cc,debug_path=out/'debug/file_browser.elf')
  subprocess.run([str(validator),str(elf)],check=True)
 sharing.requirements(args,manifest['requires'])
-manifest['requires'].append({'capability':'app.catalog','api':1})
+if {'capability':'app.catalog','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'app.catalog','api':1})
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
 if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
 if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
@@ -78,9 +78,9 @@ if a.volume_instance is not None:
  q=dict(capability='storage.volume',api=1);g=dict(**q,instance_id=a.volume_instance)
  if q not in manifest['requires']:manifest['requires'].append(q)
  if g not in grants:grants.append(g)
-grants.append(dict(capability='app.catalog',api=1,instance_id=0))
+if dict(capability='app.catalog',api=1,instance_id=0) not in grants:grants.append(dict(capability='app.catalog',api=1,instance_id=0))
 for cap in ('input.power-key','power.sleep','display.power'):
- grants.append(dict(capability=cap,api=1,instance_id=0))
+ if dict(capability=cap,api=1,instance_id=0) not in grants:grants.append(dict(capability=cap,api=1,instance_id=0))
  if dict(capability=cap,api=1) not in manifest['requires']:manifest['requires'].append(dict(capability=cap,api=1))
 for cap,api,instance in [('storage.app-data.export',1,0),('network.tcp.listener',1,0),('crypto.entropy',1,0),('bluetooth.session-setup',1,0),('storage.key-value',1,6),('file.open',1,0)]:
  g=dict(capability=cap,api=api,instance_id=instance)
@@ -88,6 +88,7 @@ for cap,api,instance in [('storage.app-data.export',1,0),('network.tcp.listener'
 if a.source_handoff and dict(capability='file.open.source',api=1,instance_id=0) not in grants:grants.append(dict(capability='file.open.source',api=1,instance_id=0))
 if a.shared_text_input and dict(capability='ui.text-input',api=1,instance_id=0) not in grants:grants.append(dict(capability='ui.text-input',api=1,instance_id=0))
 assert all(g in grants for g in old['grants'])
+assert len(grants)<=32 and len(manifest['requires'])<=32
 record={'schema':1,'compaction':compaction,'purpose':'target component; no firmware or hardware qualification','product_baseline':watch_commit,'version':manifest['version'],'required_grants':grants,'policy_rows':len(grants),'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'bytes':elf.stat().st_size,'sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'sources':{n:subprocess.check_output(['git','-C',str(r),'rev-parse','HEAD'],text=True).strip() for n,r in {'system':ROOT,'runtime':runtime,'watch':watch,'utilities':utilities}.items()},'baseline_files':{n:hashlib.sha256((a.baseline/n).read_bytes()).hexdigest() for n in ('boot.json','file_browser.json')},'baseline_grants_preserved':True,'command':cmd,'composition_required':['current Runtime with 24 app policy rows; exact graph/live-grant capacity admission','explicit AppData export map with existing owner namespace identity','provider graph additions and complete 25-app store admission','file.open handler declarations and transport membership checks'],'source_sha256':{str(s):hashlib.sha256(s.read_bytes()).hexdigest() for s in sources if s.suffix!='.o'}}
 # Hash all local headers/includes in the compiled source trees as well as C units.
 for tree in (ROOT/'lib/PortableApps', ROOT/'Apps', ROOT/'lib/RemoteFiles',runtime/'sdk/app',utilities/'lib/Alarm/include'):
