@@ -279,15 +279,18 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
 }
 #endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
-/* LOADING defers logical input, not the owner task or an immutable queued
- * frame. In particular, startup animation waits poll this path before Home
- * exists. Returning consumed without progress starves both raster replay and
- * the native worker that must resolve the pending alarm storage operation. */
-static bool alarm_defer_loading(bool *consumed) {
+/* Deferring alarm reconciliation consumes input, not the owner's scheduler or
+ * sealed frame. In particular, the cold boot animation waits on that frame.
+ * Returning without these checkpoints starves it until its timeout, and fini
+ * becomes the first place that ever submits the queued pixels. No alarm or
+ * storage lease crosses this cooperative boundary. */
+static bool alarm_loading_checkpoint(bool *consumed) {
     *consumed=true;
     input_service();
-    if(failed || !paper_present_progress())return alarm_failure();
+    if(failed || native_sleep_retained)return false;
     rt->yield_ms(1);
+    if(failed || native_sleep_retained)return false;
+    if(!paper_present_progress())return alarm_failure();
     return !failed && !native_sleep_retained;
 }
 #endif
@@ -332,7 +335,7 @@ static bool alarm_foreground(bool *consumed) {
 #endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
     if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
-        return alarm_defer_loading(consumed);
+        return alarm_loading_checkpoint(consumed);
     }
 #endif
     /* Reconciliation is bounded by service phases, not provider poll. Input
@@ -358,7 +361,7 @@ static bool alarm_foreground(bool *consumed) {
 #endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
         if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
-            return alarm_defer_loading(consumed);
+            return alarm_loading_checkpoint(consumed);
         }
 #endif
 
