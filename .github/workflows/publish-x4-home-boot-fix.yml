@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/x4-home-alarm-progress-20261012
-      - name: Apply source-hash-checked production edits
+      - name: Apply reconciled source-hash-checked production edits
         shell: bash
         run: |
           python - <<'PY'
@@ -31,10 +31,10 @@ jobs:
           p.write_text(s)
           assert hashlib.sha256(p.read_bytes()).hexdigest()=='f08d7597195f9766ddaf427f2d33c45048a9945582fe410ef862f8286cdb6a99'
           p=Path('lib/PortableApps/src/alarm.inc');s=p.read_text()
-          assert hashlib.sha256(p.read_bytes()).hexdigest()=='310619d5df3759fd20c7594a26eb08b5180e201795cc67af879ec3dfd1fa525e'
-          needle='/* Returns false only on foreground failure; consumed prevents initiating Back'
-          assert s.count(needle)==1
-          s=s.replace(needle,'''#ifdef PORTABLE_ALARM_BUSY_DEFER
+          assert hashlib.sha256(p.read_bytes()).hexdigest()=='2450456a78afc8a0c1d0dea70c2bb417e1f71357d19abf734600d0c913e79459'
+          start=s.index('#ifdef PORTABLE_ALARM_BUSY_DEFER\n/* LOADING defers logical input')
+          end=s.index('/* Returns false only on foreground failure; consumed prevents initiating Back',start)
+          s=s[:start]+'''#ifdef PORTABLE_ALARM_BUSY_DEFER
           /* Deferring alarm reconciliation consumes input, not the owner's scheduler or
            * sealed frame. In particular, the cold boot animation waits on that frame.
            * Returning without these checkpoints starves it until its timeout, and fini
@@ -50,15 +50,15 @@ jobs:
               return !failed && !native_sleep_retained;
           }
           #endif
-          '''+needle)
-          assert s.count('*consumed=true;return true;')==2
-          s=s.replace('*consumed=true;return true;','return alarm_loading_checkpoint(consumed);')
+          '''+s[end:]
+          assert s.count('return alarm_defer_loading(consumed);')==2
+          s=s.replace('return alarm_defer_loading(consumed);','return alarm_loading_checkpoint(consumed);')
           p.write_text(s)
           assert hashlib.sha256(p.read_bytes()).hexdigest()=='371a8b2162a5799424185df9c77adf58563f792cbe78763c6f0c7913adf39847'
           PY
           git diff --check
           git add lib/PortableApps/src/sparse_clock_adapter.inc lib/PortableApps/src/alarm.inc
           git rm .github/workflows/publish-x4-home-boot-fix.yml
-          git -c user.name='ChatGPT' -c user.email='chatgpt@users.noreply.github.com' commit -m 'Fix X4 cold Home retention and alarm-deferred frame starvation'
+          git -c user.name='ChatGPT' -c user.email='chatgpt@users.noreply.github.com' commit -m 'Fix cold Home settings BUSY retention and preserve alarm-deferred frame progress'
           git push origin HEAD:refs/heads/fix/x4-home-alarm-progress-20261012
           git rev-parse HEAD
