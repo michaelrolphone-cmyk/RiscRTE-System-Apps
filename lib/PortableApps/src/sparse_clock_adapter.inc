@@ -96,8 +96,11 @@ typedef struct {bool live;const risc_key_value_v1 *source;risc_key_value_v1 api;
 static desk_kv_slot desk_kv_slots[16];
 static void desk_kv_reset(void){memset(desk_kv_slots,0,sizeof(desk_kv_slots));}
 static int32_t desk_kv_result(int32_t rc) {
+ /* BUSY means no I/O began. Native settings discovery/checkpoint work may
+  * still be running at cold start; keep cached values and permit retry.
+  * CONTEXT and unknown results still fence this exact invocation. */
  if(rc!=RISC_KEY_VALUE_OK && rc!=RISC_KEY_VALUE_NOT_FOUND && rc!=RISC_KEY_VALUE_BUFFER_SMALL &&
-    rc!=RISC_KEY_VALUE_INVALID && rc!=RISC_KEY_VALUE_IO)portable_desk_adapter_retain();
+    rc!=RISC_KEY_VALUE_INVALID && rc!=RISC_KEY_VALUE_IO && rc!=RISC_KEY_VALUE_BUSY)portable_desk_adapter_retain();
  return rc;
 }
 static int32_t desk_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {

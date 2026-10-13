@@ -278,6 +278,22 @@ static bool alarm_wifi_pause(const uint16_t *saved) {
     alarm_cancel_input();return !failed;
 }
 #endif
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+/* Deferring alarm reconciliation consumes input, not the owner's scheduler or
+ * sealed frame. In particular, the cold boot animation waits on that frame.
+ * Returning without these checkpoints starves it until its timeout, and fini
+ * becomes the first place that ever submits the queued pixels. No alarm or
+ * storage lease crosses this cooperative boundary. */
+static bool alarm_loading_checkpoint(bool *consumed) {
+    *consumed=true;
+    input_service();
+    if(failed || native_sleep_retained)return false;
+    rt->yield_ms(1);
+    if(failed || native_sleep_retained)return false;
+    if(!paper_present_progress())return alarm_failure();
+    return !failed && !native_sleep_retained;
+}
+#endif
 /* Returns false only on foreground failure; consumed prevents initiating Back
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
@@ -319,7 +335,7 @@ static bool alarm_foreground(bool *consumed) {
 #endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
     if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
-        *consumed=true;return true;
+        return alarm_loading_checkpoint(consumed);
     }
 #endif
     /* Reconciliation is bounded by service phases, not provider poll. Input
@@ -345,7 +361,7 @@ static bool alarm_foreground(bool *consumed) {
 #endif
 #ifdef PORTABLE_ALARM_BUSY_DEFER
         if(alarms.deferred && alarms.status.state==ALARM_STATE_LOADING) {
-            *consumed=true;return true;
+            return alarm_loading_checkpoint(consumed);
         }
 #endif
 
