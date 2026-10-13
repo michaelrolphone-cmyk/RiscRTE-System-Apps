@@ -118,7 +118,7 @@ with tempfile.TemporaryDirectory(prefix='sparse-clock-startup-') as tmp:
        '--local-sleep-source',a.x4/'minimal/apps/portable_sleep.c','--output-dir',target,
        *(['--quick-actions','--quick-radios'] if quick else [])],env=dict(os.environ,NATIVE_APP_CC=a.xtensa_cc))
   receipt=json.loads((target/'build-evidence.json').read_text());assert receipt['grant_count']==14
-  assert receipt['version']=='0.4.14' and receipt['sparse_start'] and receipt['invocation_retention']
+  assert receipt['version']=='0.4.18' and receipt['sparse_start'] and receipt['invocation_retention']
   targets.append(receipt)
  # Actual unchanged default artifacts against the exact public base. A trusted
  # local Git archive preserves original relative includes without a worktree.

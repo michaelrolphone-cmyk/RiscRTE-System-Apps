@@ -194,7 +194,7 @@ class PerformanceBuildProfiles(unittest.TestCase):
                         'springboard.json' if module is springboard else 'settings.json')).read_text())
                     # Sparse Clock's RTC reconciliation release overrides the
                     # generic performance-profile version.
-                    expected_version = ('0.4.14' if module is clock else
+                    expected_version = ('0.4.18' if module is clock else
                                         performance.VERSIONS[manifest['id']])
                     self.assertEqual(manifest['version'], expected_version)
                     self.assertEqual(record['version'], manifest['version'])
