@@ -3005,8 +3005,6 @@ static int initialize(void) {
   /* Runtime extensions are optional: never read beyond an older table. */
   memset(&settings_runtime,0,sizeof(settings_runtime));
   memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
-  /* A copied prefix must never advertise the uncopied native suffix. */
-  settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
@@ -3016,8 +3014,6 @@ static int initialize(void) {
   /* Runtime extensions are optional: never read beyond an older table. */
   memset(&settings_runtime,0,sizeof(settings_runtime));
   memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
-  /* A copied prefix must never advertise the uncopied native suffix. */
-  settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
