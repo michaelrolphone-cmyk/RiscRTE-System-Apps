@@ -192,7 +192,11 @@ class PerformanceBuildProfiles(unittest.TestCase):
                     record = json.loads((out/filename).read_text())
                     manifest = json.loads((out/('default.json' if module is clock else
                         'springboard.json' if module is springboard else 'settings.json')).read_text())
-                    self.assertEqual(manifest['version'], performance.VERSIONS[manifest['id']])
+                    # Sparse Clock's RTC reconciliation release overrides the
+                    # generic performance-profile version.
+                    expected_version = ('0.4.18' if module is clock else
+                                        performance.VERSIONS[manifest['id']])
+                    self.assertEqual(manifest['version'], expected_version)
                     self.assertEqual(record['version'], manifest['version'])
                     trace = record['performance_trace']
                     self.assertEqual(trace['commit'], performance.RUNTIME_COMMIT)

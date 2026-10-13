@@ -1,0 +1,4 @@
+Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)
+RTC reconciliation PASS: +/-drift, 1200 refreshes, 1440 minute checks, explicit changes, light/deep foreground wake, timer isolation, malformed/slow/uncertain RTC and seed verification
+Portable realtime production client: 123 scenarios PASS (timer isolation, recovery, ambiguity, bounds, grants, no-I/O stops and projection)
+RTC reconciliation PASS: +/-drift, 1200 refreshes, 1440 minute checks, explicit changes, light/deep foreground wake, timer isolation, malformed/slow/uncertain RTC and seed verification

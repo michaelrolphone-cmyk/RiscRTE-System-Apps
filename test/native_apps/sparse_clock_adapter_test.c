@@ -154,6 +154,7 @@ static const risc_runtime_api_v1 fx_runtime={.api_version=1,.struct_size=sizeof(
  .yield_ms=fx_yield,.diagnostic=fx_diagnostic,.request_launch=fx_launch,.acquire=fx_acquire,.release=fx_release,
  .retain_invocation=fx_retain};
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&fx_runtime:NULL;}
+void portable_desk_clock_resumed(void){}
 int portable_desk_clock_mode(void){mode_calls++;return 0;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,const risc_battery_gauge_api_v1 *b,const alarm_service_v1 *a){
  io();assert(r==rt&&d==display&&!b&&a==alarms.api);assert(!subscriptions&&!navigation_ready);sleep_calls++;

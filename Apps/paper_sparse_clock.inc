@@ -31,6 +31,7 @@ static const portable_desk_sleep_ops *desk_ops;
 static unsigned desk_rectangles,desk_sleep_mode;
 static uint32_t desk_started_at;
 static bool desk_config_pending;
+static portable_realtime_reconcile_state desk_rtc_check;
 static uint32_t desk_config_retry_at;
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
 static uint64_t desk_settings_generation,desk_settings_observed;
@@ -80,11 +81,16 @@ static int desk_sample(bool recover,risc_realtime_snapshot_v1 *out) {
      desk_phase_guard,NULL);
  if(desk_halted(status))return desk_fence();
  if(status!=PORTABLE_REALTIME_OK)return status;
- if(recover && desk_promoted && desk_zone_known && desk_basis_known) {
+ if(recover)desk_rtc_check.checked=false;
+ if(desk_promoted && desk_zone_known && desk_basis_known && paper_frame_idle()) {
   portable_realtime_recovery_policy policy={.rtc_instance=0,.rule=desk_rule,
       .basis=desk_basis,.fold_choice=-1,.allow_basis_change=false};
   portable_realtime_recovery_result result;
-  status=portable_realtime_recover_rtc(&client,&policy,&result);
+  status=portable_realtime_reconcile_rtc(&client,&policy,&desk_rtc_check,&result);
+  /* A safely rejected RTC sample does not erase an already valid native
+   * display. Uncertain ownership still fences below; no retry in this frame. */
+  if(status<0 && !desk_halted(status) && !result.seeded)
+   status=portable_realtime_read(&client,&result.snapshot);
   if(status==PORTABLE_REALTIME_OK || status==PORTABLE_REALTIME_RECOVERED)*out=result.snapshot;
  } else status=portable_realtime_read(&client,out);
  if(desk_halted(status))return desk_fence();
@@ -125,7 +131,8 @@ static void close_clock(void) { /* No persistent clock/battery grants. */
 #endif
 }
 static void open_clock(void) { /* Each read takes and closes one native grant. */ }
-void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;}
+void portable_desk_clock_resumed(void) {desk_rtc_check.checked=false;}
+void portable_desk_clock_refused(void) {desk_returned=true;desk_radios_off=false;desk_rtc_check.checked=false;}
 void portable_desk_clock_radios_off(void) {desk_radios_off=true;}
 static const char *desk_notice(void) {
  return desk_radios_off?"DESK CLOCK STOPPED; RADIOS OFF":"DESK CLOCK DID NOT SLEEP";
@@ -230,7 +237,7 @@ static bool desk_scene(const portable_desk_config *config,int64_t minute) {
 static int desk_restore(void) {
  if(desk_retained)return -2;
  if(desk_ops->resume(desk_ops->context)!=1)return desk_fence();
- desk_held=false;portable_desk_adapter_invalidate();return 0;
+ desk_held=false;desk_rtc_check.checked=false;portable_desk_adapter_invalidate();return 0;
 }
 /* Pinned Runtime health uses the same esp_timer boot domain as realtime,
  * rounded down to milliseconds. Use its upper microsecond endpoint; at most
