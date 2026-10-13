@@ -69,8 +69,8 @@ bool prepareProvision(const char*json,bool resume){
  auto rows=doc["providers"];
  provisionAppImage=!doc["url"].isNull();
  if(provisionAppImage){
-  char url[RISC_HTTP_URL_MAX+1];
-  if(!copy(url,sizeof(url),doc["url"])||std::strncmp(url,"https://",8))return false;
+  if(!copy(downloadRecord.url,sizeof(downloadRecord.url),doc["url"])||
+     std::strncmp(downloadRecord.url,"https://",8))return false;
  }
  if(rows.isNull())rows=doc["providers"].to<JsonArray>();
  if(!rows.is<JsonArrayConst>()||rows.size()>ProviderMax||std::strlen(json)>ManifestMax)return false;
