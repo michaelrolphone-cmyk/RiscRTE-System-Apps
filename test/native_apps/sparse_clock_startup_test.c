@@ -47,7 +47,8 @@ static uint8_t home_idle_pixels[48000];static bool home_idle_saved,home_quick_se
 #endif
 static unsigned entries,seeds,restores,clears,promotions,starts,kv_reads,rtc_reads,native_reads;
 static unsigned battery_acquires,display_acquires,native_live,seed_calls,key_reads,high_water;
-static uint32_t epoch=1791331197u,start_ms;static int native_context,promotion_context;
+static uint32_t epoch=1791331197u,start_ms;
+static uint32_t rtc_epoch,rtc_start_ms;static int native_context,promotion_context;
 static uint8_t physical[sizeof(pixels)];
 #if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
 /* Selected Desk Points records use the canonical tagged extended wake tail. */
@@ -262,7 +263,13 @@ static int32_t panel_resume(void*c,uint32_t timeout){(void)c;(void)timeout;io();
  panel_off=false;restores++;return RISC_DISPLAY_POWER_OK;}
 static int32_t touch_prepare(void*c,uint32_t timeout){(void)c;safe();assert(promoted&&timeout&&!subs&&!frames);touch_off=true;return RISC_TOUCH_POWER_OK;}
 static int32_t touch_resume(void*c,uint32_t timeout){(void)c;(void)timeout;io();assert(!panel_off&&!sd_off);touch_off=false;return RISC_TOUCH_POWER_OK;}
-static bool prepare_sd(void*c){(void)c;io();assert(promoted&&!subs&&!frames&&panel_off&&touch_off);return true;}
+static bool prepare_sd(void*c){(void)c;io();assert(!subs&&!frames&&panel_off);
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(promoted?touch_off:!touch_off);
+#else
+ assert(promoted&&touch_off);
+#endif
+ return true;}
 static bool commit_sd(void*c){(void)c;io();sd_off=true;return true;}
 static int32_t resume_sd(void*c){(void)c;io();sd_off=false;return RISC_STORAGE_SLEEP_READY;}
 static bool legacy_sd(void*c){(void)c;assert(0);return false;}
@@ -322,7 +329,12 @@ static risc_retained_wake_api_v1_extended wake={{1,sizeof(wake),NULL,read_record
 static const risc_retained_wake_api_v1 wake={1,sizeof(wake),NULL,read_record,stage_record,clear_record};
 #endif
 static int32_t deep(void*c,uint32_t duration){(void)c;io();assert(pending&&duration&&duration<=60000&&!subs&&!frames&&dark&&panel_off&&!native_live);
- assert(promoted?(touch_off&&sd_off):(!touch_off&&!sd_off));entries++;
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(sd_off && (promoted?touch_off:!touch_off));
+#else
+ assert(promoted?(touch_off&&sd_off):(!touch_off&&!sd_off));
+#endif
+ entries++;
 #ifdef TEST_HOME_DESK_LOCK
  if(which("manual")){
   assert(lock_attempted && lock_phase==2 && ms>=lock_hold_until && lock_clean_frames);
@@ -490,7 +502,7 @@ static bool read_rtc(void*c,twatch_rtc_time_v1*out){(void)c;safe();assert(promot
  if(which("rtc-read-retained")){terminal=true;return false;}
  if(which("fold")){*out=(twatch_rtc_time_v1){2026,11,1,0,1,30,0};return true;}
  if(which("gap")){*out=(twatch_rtc_time_v1){2026,3,8,0,2,30,0};return true;}
- time_t stamp=epoch;struct tm*tm=gmtime(&stamp);assert(tm);*out=(twatch_rtc_time_v1){(uint16_t)(tm->tm_year+1900),(uint8_t)(tm->tm_mon+1),(uint8_t)tm->tm_mday,(uint8_t)tm->tm_wday,(uint8_t)tm->tm_hour,(uint8_t)tm->tm_min,(uint8_t)tm->tm_sec};return true;}
+ time_t stamp=(getenv("CLOCK_NATIVE_DRIFT")?rtc_epoch:epoch)+(ms-(getenv("CLOCK_NATIVE_DRIFT")?rtc_start_ms:start_ms))/1000u;struct tm*tm=gmtime(&stamp);assert(tm);*out=(twatch_rtc_time_v1){(uint16_t)(tm->tm_year+1900),(uint8_t)(tm->tm_mon+1),(uint8_t)tm->tm_mday,(uint8_t)tm->tm_wday,(uint8_t)tm->tm_hour,(uint8_t)tm->tm_min,(uint8_t)tm->tm_sec};return true;}
 static bool read_battery(void*c,risc_battery_sample_v1*out){safe();assert(promoted);return battery_read(c,out);}
 #ifdef PORTABLE_BLE_BROADCAST
 #include "TelemetryBroadcastV1.h"
@@ -524,6 +536,9 @@ static bool obtain(const char*name,uint32_t version,uint64_t id,risc_runtime_cap
 #endif
  }
  else if(!strcmp(name,X4_POWER_CAPABILITY)){assert(version==1&&id==17);api=&power;}
+#ifdef TEST_X4_TIMER_STORAGE
+ else if(!strcmp(name,"storage.volume")){assert(version==1&&(promoted?(id==0||id==9):id==9));api=&sd;}
+#endif
  else {assert(promoted&&promotion_attempted);
   if(!strcmp(name,"input.touch.raw"))api=&touch_power;
   else if(!strcmp(name,"input.navigation"))api=&navigation;
@@ -600,8 +615,10 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
 #if PORTABLE_DESK_CLOCK_RECORD_BYTES > RISC_RETAINED_WAKE_PAYLOAD_MAX
  if(getenv("NATIVE_WAKE_CAPACITY"))wake.max_payload_bytes=(uint32_t)atoi(getenv("NATIVE_WAKE_CAPACITY"));
 #endif
- assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;
+ assert(app_module_init()==0);assert(!grants&&!starts&&!kv_reads&&!native_reads);in_main=true;start_ms=ms;rtc_epoch=epoch;rtc_start_ms=ms;
+ if(getenv("CLOCK_NATIVE_DRIFT"))epoch=(uint32_t)((int64_t)epoch+atoi(getenv("CLOCK_NATIVE_DRIFT")));
  if(setjmp(entry)){assert(terminal&&entries&&grants&&!subs&&!frames&&!native_live);
+ if(getenv("CLOCK_NATIVE_DRIFT"))assert(seed_calls==1 && rtc_reads==1);
 #ifndef PORTABLE_SLEEP_MANUAL_ONLY
  if(raw_lifetime){assert(raw_dismiss_started&&raw_restored&&raw_sheet_updates>=3&&(uint32_t)(ms-raw_released_at)>=90000u);printf("Paper inspection completed before ordinary idle sleep PASS\n");return 0;}
 #endif
@@ -612,7 +629,12 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
  assert(!home_reads&&!home_acquires);
 #endif
- assert(high_water<=6);}
+#ifdef TEST_X4_TIMER_STORAGE
+ assert(high_water<=7);
+#else
+ assert(high_water<=6);
+#endif
+ }
  else assert(promoted&&promotions==1&&battery_acquires==1&&high_water<=16);
 #ifdef TEST_HOME_DESK_LOCK
  if(getenv("LOCK_SAME_MINUTE"))assert(seeds&&!presents);
@@ -660,6 +682,7 @@ SPARSE_FIXTURE_MAIN_LINKAGE int SPARSE_FIXTURE_MAIN(int argc,char**argv){assert(
 #endif
  }
  if(raw_lifetime||raw_brightness){assert(raw_restored&&raw_dismiss_started);if(raw_lifetime)assert((uint32_t)(ms-raw_released_at)>=90000u);}
+ if(getenv("CLOCK_NATIVE_DRIFT")){assert(seed_calls==1 && rtc_reads==1);assert(epoch==rtc_epoch+(start_ms-rtc_start_ms)/1000u);}
  if(which("unset")||which("missing-zone")||which("missing-basis"))assert(seed_calls==1&&rtc_reads==1);
  if(which("bad-zone")||which("bad-basis"))assert(!seed_calls&&!rtc_reads);
  if(which("fold")||which("gap"))assert(!seed_calls&&rtc_reads==1);

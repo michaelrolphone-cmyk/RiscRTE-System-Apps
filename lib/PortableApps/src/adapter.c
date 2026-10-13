@@ -1791,6 +1791,9 @@ static bool idle_sleep(void) {
 #endif
 #endif
   if(status<0){failed=true;return false;}
+#ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+  if(status>0)portable_desk_clock_resumed();
+#endif
 #ifdef PORTABLE_FRONTLIGHT_TONE
   if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
