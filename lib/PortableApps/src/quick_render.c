@@ -144,47 +144,54 @@ static unsigned torch_edge(int v) {
     return 102u+(unsigned)(d-14)*154u/32u;
 }
 static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
-    if(first>240u || count>240u-first)return false;
+    if(!f || first>f->height || count>f->height-first)return false;
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565 ||
-       f->width!=240 || f->height!=240 || f->stride_bytes<480u)return false;
-    uint64_t span=(uint64_t)239*f->stride_bytes+480u;
+       !f->width || !f->height || f->width>2048 || f->height>2048 || f->stride_bytes<f->width*2u)return false;
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
+    if(f->width!=240 || f->height!=240)return false;
+#endif
+    uint64_t span=(uint64_t)(f->height-1)*f->stride_bytes+f->width*2u;
     if(span>f->size_bytes)return false;
     if(!pqa_visible(s))return true;
     bv=bv && bp<=100;
     int position=s->position_q8<0?0:s->position_q8>PQA_OPEN_Q8?PQA_OPEN_Q8:s->position_q8;
     pqa_row row;
     if(s->torch) {
-        for(int y=(int)first;y<(int)(first+count);++y) {
+        for(unsigned py=first;py<first+count;++py) {
+            int y=(int)(py*240u/f->width);
             row.y=y;
             for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);
             center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,210,RGB(106,90,48),256);
-            uint8_t *dst=(uint8_t*)f->pixels+(size_t)y*f->stride_bytes;
-            for(int x=0;x<240;++x) {
-                unsigned a=torch_edge(x)*torch_edge(y)/256u;
+            uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
+            for(unsigned px=0;px<f->width;++px) {
+                int x=(int)(px*240u/f->width);
+                unsigned a=torch_edge(x)*torch_edge(y<240?y:239)/256u;
                 /* Fade to black, not potentially bright underlying app pixels. */
-                write_pixel(dst+2*x,mix(0,row.pixels[x],a));
+                write_pixel(dst+2*px,mix(0,row.pixels[x],a));
             }
         }
         return true;
     }
     int offset=(position-PQA_OPEN_Q8)/256;
     unsigned face_alpha=(unsigned)(position>=190*256?0:256-position/190);
-    for(int y=(int)first;y<(int)(first+count);++y) {
-        uint8_t *dst=(uint8_t*)f->pixels+(size_t)y*f->stride_bytes;
+    for(unsigned py=first;py<first+count;++py) {
+            int y=(int)(py*240u/f->width);
+        uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
         int local=y-offset;
         bool in_panel=local>=0 && local<240;
         unsigned a=in_panel?(local<218?256u:(unsigned)(240-local)*256u/22u):0;
         if(in_panel){memset(row.pixels,0,sizeof(row.pixels));row.y=local;panel_row(&row,s,time,bv,bp);}
-        for(int x=0;x<240;++x) {
-            uint16_t behind=mix(0,read_pixel(dst+2*x),face_alpha);
-            write_pixel(dst+2*x,in_panel?mix(behind,row.pixels[x],a):behind);
+        for(unsigned px=0;px<f->width;++px) {
+            unsigned x=px*240u/f->width;
+            uint16_t behind=mix(0,read_pixel(dst+2*px),face_alpha);
+            write_pixel(dst+2*px,in_panel?mix(behind,row.pixels[x],a):behind);
         }
     }
     return true;
 }
 
 bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
-    return render_rows(f,s,time,bv,bp,0,240);
+    return render_rows(f,s,time,bv,bp,0,f?f->height:0);
 }
 #ifdef PORTABLE_RASTER_SNAPSHOT
 bool pqa_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {

@@ -54,7 +54,9 @@
     if(!paper_preferences_pending)paper_flip_ui=value!=0;
   }
 #endif
-#ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || !nu_layout_ready() || nu_height()<240)return -1;
+#elif defined(PORTABLE_NOVA_UI)
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE

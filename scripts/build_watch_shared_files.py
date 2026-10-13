@@ -67,7 +67,7 @@ manifest['requires'].append({'capability':'app.catalog','api':1})
 if {'capability':'file.open','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open','api':1})
 if a.source_handoff and {'capability':'file.open.source','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'file.open.source','api':1})
 if a.shared_text_input and {'capability':'ui.text-input','api':1} not in manifest['requires']:manifest['requires'].append({'capability':'ui.text-input','api':1})
-manifest['version']='1.5.34' if a.shared_text_input else sharing.selected_version(a)
+manifest['version']='1.5.35' if a.shared_text_input else sharing.selected_version(a)
 grants=old['grants'].copy()
 grants.append(dict(capability='app.catalog',api=1,instance_id=0))
 for cap in ('input.power-key','power.sleep','display.power'):

@@ -10,32 +10,59 @@
 #else
 #include "../settings_fonts/text.inc"
 #endif
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "WatchLayout.h"
+static watch_layout nu_layout;
+static bool nu_layout_ready(void){
+ if(nu_layout.physical_width!=(uint32_t)width()||nu_layout.physical_height!=(uint32_t)height())
+  return watch_layout_open(&nu_layout,width(),height(),NULL);
+ return watch_layout_valid(&nu_layout);
+}
+#endif
+static int nu_height(void){
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ return nu_layout_ready()?(int)nu_layout.height:0;
+#else
+ return 240;
+#endif
+}
 static void nu_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NU_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
 #endif
-#ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   if(raster_replaying&&(y+(height()-240)/2<raster_band_top||y+(height()-240)/2>=raster_band_bottom))return;
 #endif
   if(failed || (!(++raster_pixels&511u)&&!raster_checkpoint()))return;
-  if(!raster_surface_writable() || x<0 || y<0 || x>=240 || y>=240 || !alpha)return;
-  x+=(width()-240)/2;y+=(height()-240)/2;
-  if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
-  uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+(size_t)x*2;
+  if(!raster_surface_writable() || x<0 || y<0 || x>=240 || y>=nu_height() || !alpha)return;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  watch_layout_rect logical={x,y,1,1},physical;
+  if(!watch_layout_native_rect(&nu_layout,&logical,&physical))return;
+  for(int py=physical.y;py<physical.y+(int)physical.height;py++)
+   for(int px=physical.x;px<physical.x+(int)physical.width;px++){
+#else
+  {int px=x+(width()-240)/2,py=y+(height()-240)/2;
+#endif
+#if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+  if(raster_replaying&&(py<raster_band_top||py>=raster_band_bottom))continue;
+#endif
+  if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(px,py,rgb,alpha);return;}
+  uint8_t *p=(uint8_t*)surface.pixels+(size_t)py*surface.stride_bytes+(size_t)px*2;
   uint16_t old=(uint16_t)(p[0]|p[1]<<8);
   if(alpha>255)alpha=255;
   unsigned r=(((old>>11)&31)*255/31*(255-alpha)+((rgb>>16)&255)*alpha)/255;
   unsigned g=(((old>>5)&63)*255/63*(255-alpha)+((rgb>>8)&255)*alpha)/255;
   unsigned b=((old&31)*255/31*(255-alpha)+(rgb&255)*alpha)/255;
   uint16_t c=(uint16_t)((r>>3)<<11|(g>>2)<<5|(b>>3));p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
+  }
 }
 static void nu_rect(int x,int y,int w,int h,uint32_t rgb) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NU_RECT,(int32_t[8]){x,y,w,h,(int32_t)rgb},NULL))return;
 #endif
-  if(w<=0 || h<=0 || w>240 || h>240)return;
+  if(w<=0 || h<=0 || w>240 || h>nu_height())return;
   int row_first=0,row_end=h;
-#ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++)nu_pixel(x+i,y+j,rgb,255);
@@ -67,7 +94,7 @@ void portable_nova_text(unsigned face,int x,int y,int max_width,const char *s,ui
     if(gw<1&&g->width)gw=1;
     if(gh<1&&g->height)gh=1;
     int row_first=0,row_end=gh;
-#ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_WATCH_NATIVE_HEIGHT)
     raster_rows((int64_t)y+((int)g->top*(int)scale/256)+(height()-240)/2,&row_first,&row_end);
 #endif
     for(int j=row_first;j<row_end;j++)for(int i=0;i<gw;i++) {
@@ -95,12 +122,12 @@ void portable_nova_round(int x,int y,int w,int h,int radius,uint32_t rgb) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NU_ROUND,(int32_t[8]){x,y,w,h,radius,(int32_t)rgb},NULL))return;
 #endif
-  if(w<=0||h<=0||w>240||h>240)return;
+  if(w<=0||h<=0||w>240||h>nu_height())return;
   if(radius<0)radius=0;
   if(radius>w/2)radius=w/2;
   if(radius>h/2)radius=h/2;
   int row_first=0,row_end=h;
-#ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++) {
@@ -114,9 +141,9 @@ void portable_nova_button(int x,int y,int w,int h,const char *s,bool selected) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NU_BUTTON,(int32_t[8]){x,y,w,h,selected},s))return;
 #endif
-  if(w<1 || h<1 || w>240 || h>240)return;
+  if(w<1 || h<1 || w>240 || h>nu_height())return;
   int row_first=0,row_end=h;
-#ifdef PORTABLE_RASTER_SNAPSHOT
+#if defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   raster_rows((int64_t)y+(height()-240)/2,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;j++)for(int i=0;i<w;i++) {

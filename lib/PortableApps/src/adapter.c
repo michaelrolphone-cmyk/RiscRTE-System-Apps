@@ -723,11 +723,15 @@ static void input_dispatch(void) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
+  int quick_x=next.x,quick_y=next.y;bool quick_native=false;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(!quick.ui.paper&&info.width&&info.height){quick_x=(uint32_t)next.x*240u/info.width;quick_y=(uint32_t)next.y*240u/info.width;quick_native=true;}
+#endif
   bool reserved=pqa_input(&quick.ui,input_delivered_at,next.valid&&!next.cancelled,
       next.down?1u:0u,next.contact_id,
-      quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):next.x,
-      quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):next.y,
-      next.tap_eligible&&(quick.ui.paper || (info.width==240&&info.height==240)));
+      quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):quick_x,
+      quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):quick_y,
+      next.tap_eligible&&(quick.ui.paper || quick_native || (info.width==240&&info.height==240)));
   if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
      !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
   if(reserved) {

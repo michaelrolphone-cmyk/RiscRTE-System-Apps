@@ -56,6 +56,9 @@
 
 enum { FB_LIST, FB_OPTIONS, FB_FILTER, FB_DETAIL, FB_PREVIEW, FB_ACTIONS, FB_RENAME, FB_DESTINATION, FB_DELETE, FB_HANDLERS, FB_NOTICE, FB_REPLACE, FB_SHARING };
 static const t5_app_api_v1 *fb_app;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "file_browser_native_layout.inc"
+#endif
 static const risc_runtime_api_v1 *fb_runtime;
 static const risc_storage_volume_api_v1 *fb_volume;
 static risc_runtime_capability_v1 fb_grant;
@@ -723,6 +726,9 @@ static bool fb_open(void) {
  if(fb_opened)return true;
 #endif
  fb_app=t5_app_get_api(1);fb_runtime=PORTABLE_APP_RUNTIME();
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ if(!fb_app||!fb_app->screen_width||!fb_app->screen_height||!watch_layout_open(&fb_layout,fb_app->screen_width(),fb_app->screen_height(),NULL)||fb_layout.height<240)return false;
+#endif
  if(!fb_app || !fb_app->poll || !fb_app->millis || !fb_app->present || !fb_app->screen_width || !fb_app->screen_height || fb_app->screen_width()<240 || fb_app->screen_height()<240 || !fb_runtime || fb_runtime->api_version!=1 || fb_runtime->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !fb_runtime->acquire || !fb_runtime->release || !fb_runtime->request_launch || !fb_runtime->yield_ms || !fb_runtime->diagnostic)return false;
 #ifndef PORTABLE_FILE_BROWSER_RGB_ONLY
  fb_paper=paper_presentation_get();
@@ -821,6 +827,10 @@ void app_main(void) {
   if(!fb_paper&&fb_app->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(fb_app->touch_contact) && fb_app->touch_contact) {
    t5_app_contact_t contact={0};if(fb_app->touch_contact(&contact)) {
     int y=contact.y-(fb_app->screen_height()-240)/2;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    uint16_t lx,ly;if(!watch_layout_touch(&fb_layout,contact.x,contact.y,&lx,&ly))contact.down=false;
+    else y=ly;
+#endif
     if(contact.down && !fb_contact){fb_contact_y=y;fb_drag=false;}
     if(contact.down && fb_contact && (y-fb_contact_y>36 || fb_contact_y-y>36)) {
      if(!fb_drag && fb_mode==FB_LIST && fb_contact_y>=62 && fb_contact_y<176) {
@@ -847,7 +857,14 @@ void app_main(void) {
   fb_armed=false;
   if(input.buttons&T5_APP_BUTTON_BACK){if(fb_back())return;continue;}
   if(input.tapped&&fb_paper){if(fbp_touch(input.touch_x,input.touch_y))return;continue;}
-  if(input.tapped){if(fb_touch(input.touch_x-(fb_app->screen_width()-240)/2,input.touch_y-(fb_app->screen_height()-240)/2))return;continue;}
+  if(input.tapped){
+   int x=input.touch_x-(fb_app->screen_width()-240)/2,y=input.touch_y-(fb_app->screen_height()-240)/2;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+   if(!fb_layout_touch(input.touch_x,input.touch_y,&x,&y))continue;
+#endif
+   if(fb_touch(x,y))return;
+   continue;
+  }
   if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))fb_move(-1);
   else if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))fb_move(1);
   else if(input.buttons&T5_APP_BUTTON_CONFIRM){

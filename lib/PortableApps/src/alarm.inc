@@ -380,6 +380,9 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+        if(info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
+#endif
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
         bool paper=pp_enabled();

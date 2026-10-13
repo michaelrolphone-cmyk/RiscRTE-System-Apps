@@ -18,10 +18,19 @@ static const t5_app_api_v1 *test_browser_api(uint32_t);
 #undef t5_app_get_api
 #include <assert.h>
 #include <stdlib.h>
+#ifndef FILE_TEST_WIDTH
+#define FILE_TEST_WIDTH 240u
+#define FILE_TEST_HEIGHT 240u
+#endif
 #ifdef FILE_BROWSER_PAPER_PROFILE
 static uint8_t fb_pixels[100*480];
 #else
-static uint16_t fb_pixels[240*244];
+#ifndef FILE_TEST_WIDTH
+#define FILE_TEST_WIDTH 240u
+#define FILE_TEST_HEIGHT 240u
+#endif
+#define FILE_TEST_STRIDE (FILE_TEST_WIDTH+4u)
+static uint16_t fb_pixels[FILE_TEST_HEIGHT*FILE_TEST_STRIDE];
 #endif
 static unsigned test_grants,test_frames,test_subs,test_presents,test_ticks,test_entry,test_entries=8,test_offset,test_length=577,test_reads,test_closes;
 static unsigned test_polls,test_steps,test_launches,test_script,test_seen_modes,test_wifi_launches;
@@ -46,20 +55,20 @@ static bool test_info(void*c,risc_display_info_v1*s){(void)c;
 #endif
 ,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
 #else
-*s=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+*s=(risc_display_info_v1){.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
 #endif
 return true;}
 static bool test_frame(void*c,uint32_t f,risc_display_surface_v1*s){(void)c;assert(!test_frames);test_frames=1;
 #ifdef FILE_BROWSER_PAPER_PROFILE
 assert(f==RISC_DISPLAY_FORMAT_MONO1);*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=800,.height=480,.stride_bytes=100,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
 #else
-*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=240,.height=240,.stride_bytes=488,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
+*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT,.stride_bytes=FILE_TEST_STRIDE*2,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
 #endif
 return true;}
 static void test_frame_release(void*c,risc_display_frame_v1 f){(void)c;assert(f==1 && test_frames);test_frames=0;}
 static bool test_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)r;(void)n;(void)o;assert(f==1 && test_frames);test_frames=0;*t=++test_presents;test_seen_modes|=1u<<fb_mode;
 #ifndef FILE_BROWSER_PAPER_PROFILE
- if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n240 240\n255\n");for(unsigned y=0;y<240;y++)for(unsigned x=0;x<244;x++){unsigned v=fb_pixels[y*244+x];if(x<240){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}
+ if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n%u %u\n255\n",FILE_TEST_WIDTH,FILE_TEST_HEIGHT);for(unsigned y=0;y<FILE_TEST_HEIGHT;y++)for(unsigned x=0;x<FILE_TEST_STRIDE;x++){unsigned v=fb_pixels[y*FILE_TEST_STRIDE+x];if(x<FILE_TEST_WIDTH){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}
 #endif
 return true;}
 static bool test_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
@@ -77,7 +86,7 @@ static uint64_t test_sub(void*c){
 #ifdef FILE_BROWSER_PAPER_PROFILE
   .width=480,.height=800
 #else
-  .width=240,.height=240
+  .width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT
 #endif
  };
  return 1;
@@ -93,7 +102,7 @@ static void test_report(risc_touch_snapshot_v1*s){
  if(test_script==5){if(test_steps==5){x=100;y=600;}if(test_steps==6){x=100;y=160;}if(test_steps==13){x=75;y=730;}}
  if(test_script==6){if(test_steps==5){x=420;y=50;}if(test_steps==11){x=100;y=150;}if(test_steps==17){x=100;y=624;}if(test_steps==23){x=321;y=424;}if(test_steps==29){x=100;y=730;}if(test_steps==35){x=75;y=730;}}
 #else
- *s=(risc_touch_snapshot_v1){.width=240,.height=240};
+ *s=(risc_touch_snapshot_v1){.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT};
 #endif
  if(test_script==1 || test_script==3){if(test_steps==5){x=100;y=82;}if(test_steps==11){x=120;y=207;}if(test_steps==17||test_steps==23||test_steps==29){x=25;y=25;}}
  if(test_script==2){if(test_steps==5){x=100;y=154;}if(test_steps==6){x=100;y=82;}if(test_steps==13){x=25;y=25;}}
