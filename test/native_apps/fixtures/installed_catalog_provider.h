@@ -1,7 +1,9 @@
 #pragma once
 /* Compatibility fixtures now exercise the same read-only runtime boundary as
  * deployed apps. These source arrays belong solely to the fake native owner. */
-#include "RiscAppCatalogV1.h"
+/* The mock native owner uses the current capability ABI even when the app and
+ * its SDK are compiled from an isolated, pre-capability baseline archive. */
+#include "../../../lib/PortableApps/include/RiscAppCatalogV1.h"
 #include "T5AppApi.h"
 #include <string.h>
 extern const t5_app_manifest_t portable_catalog[];

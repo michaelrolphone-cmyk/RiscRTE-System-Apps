@@ -1,0 +1,87 @@
+{
+  "scope": "Independent source and host review; no publication, full firmware build or device operation",
+  "runtime_approved_pin": "71aa21674afd48510623de34822827e0f45bbb33",
+  "system_tested_pin": "3100ddb4d623b7a8941df5211641d779d42d2086",
+  "system_approval": "Approved source and host boundary; no remaining findings in reviewed scope",
+  "native_cases": {
+    "normal": 8,
+    "asan_ubsan": 8,
+    "leak_sanitizer": "Disabled because the execution environment uses ptrace"
+  },
+  "ui_cases": {
+    "catalog_normal_and_sanitized": 152,
+    "contexts_normal_and_sanitized": 10,
+    "baseline_23_row_pixels": "identical at240x240 and410x502 for sync/async providers"
+  },
+  "independent_reproductions_fixed": [
+    "Native catalog acquisition did not fence failed storage safety",
+    "Native catalog acquisition could succeed after reentrant owner loss",
+    "Nested noncatalog acquisition could be overwritten in the selected grant slot",
+    "Guard/canvas callbacks could mutate catalog generation after prelaunch check",
+    "Long native routes were newly rejected at boot",
+    "Unavailable readiness was mislabeled as firmware incompatibility",
+    "Long-route native IDs could collide with short-route UI keys",
+    "Stale catalog refresh left Home pins bound to obsolete row indices"
+  ],
+  "grant_peak": {
+    "actual_adapter": "Settings with all services present plus actual generic input.power-key bridge",
+    "profiles": [
+      [
+        240,
+        240
+      ],
+      [
+        410,
+        502
+      ]
+    ],
+    "normal_and_asan_ubsan": true,
+    "steady_with_catalog": 10,
+    "maximum_observed": 13,
+    "native_limit": 16,
+    "capacity_denials": 0,
+    "exercised": [
+      "startup",
+      "catalog refresh",
+      "Context fingerprint checkpoint",
+      "Context rules evaluation",
+      "broadcast",
+      "alarm polling",
+      "Quick radio controls",
+      "temporary RTC"
+    ],
+    "limitations": [
+      "Native providers are host mocks",
+      "Sleep/calibration grant bound reviewed statically rather than through physical execution",
+      "Springboard has fewer persistent grants; separate exact peak not measured"
+    ]
+  },
+  "memory_bytes": {
+    "native_entry": 512,
+    "cached_item": 537,
+    "maximum128_cache": 68736,
+    "maximum128_atomic_refresh_peak": 137472,
+    "current23_cache": 12351,
+    "current23_atomic_refresh_peak": 24702
+  },
+  "discovery_regression": {
+    "normal": 13,
+    "asan_ubsan": 13,
+    "stock_script": "Pre-existing misleading-indentation -Werror blocks compilation; independent run demoted only that diagnostic"
+  },
+  "abi_header_sha256": "34550d01d90513459ff7f3284681c4c108af9e64d5c20af6ae4696a1c051b0c5",
+  "generic_navigation_sha256": "b9c143f6156676352418d7fb0947b96e31b7188aaa0e3ee574f09ca8791a2b04",
+  "probe_files": {
+    "final-system-catalog.log": "62d5e3fcae8d66dd432c206940880e5c533913e2c3f2ba1f01cb2c86cf0e4f52",
+    "grant-peak.log": "11145a35be3ec42172d32f45b945cf02252b21b95339d40d83b7edcba3c4733d",
+    "measure_grant_peak.c": "647aa120511870f1c8df944f504beb8bb9147d72fdfcf9922ade402294f6d2a4",
+    "final-system-contexts.log": "11695adbce95c2c28c5621c84861c97129c781fd084f47b7ffad02d3b2f8f759",
+    "run_grant_peak.sh": "4c31e56fcd42fcfc8499fd8ede92d7baa4f213085fe3e6ec640b8b81be4f0177"
+  },
+  "system_approved_pin": "3100ddb4d623b7a8941df5211641d779d42d2086",
+  "final_check": "Independently reran all152 catalog cases and10 Contexts cases at final System pin after pin-rebinding correction; Native71aa216 normal/sanitized suites passed and exact headers match.",
+  "runtime_head_at_approval": "71aa21674afd48510623de34822827e0f45bbb33",
+  "runtime_tracked_status_at_approval": [],
+  "system_head_at_approval": "3100ddb4d623b7a8941df5211641d779d42d2086",
+  "system_tracked_status_at_approval": []
+}

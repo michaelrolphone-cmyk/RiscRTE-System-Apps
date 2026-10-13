@@ -1,0 +1,167 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-13",
+  "scope": "Host/client and exact target-app qualification only; no full firmware or hardware qualification.",
+  "compiled_system_revision": "72f435fcee376ec62d17ece6180753385ea547d9",
+  "compiled_system_trees": {
+    "Apps": "a38415a91015ece6987a20289591982bcbe5df10",
+    "lib": "7c8a0b085439f9b3b2b49064e1c2b4e9cbe2f1fa"
+  },
+  "native_contract": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "revision": "a6c7f273025a59b1383e9c2795fa0ff0a8e9efad",
+    "tree": "2e4cc470d8af03c9cbef2540adb85164d795f9b8"
+  },
+  "shared_bridge": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+    "revision": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4"
+  },
+  "recipe_sha256": "7f1f28667d5f49f90a475e395b68d8486315c614a8c8fb2b43b503567545650e",
+  "compiler": {
+    "package": "espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5",
+    "version": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0"
+  },
+  "target_apps": {
+    "settings": {
+      "sha256": "4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385",
+      "size_bytes": 225256,
+      "inventory_independent": true
+    },
+    "springboard": {
+      "sha256": "f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17",
+      "size_bytes": 228136,
+      "inventory_independent": true
+    }
+  },
+  "independent_review": {
+    "file": "review.json",
+    "sha256": "cdca07b773f652cfc32fb2db02f327304edc2fe2692ff3ff1e9f70ff32e4195d",
+    "reviewed_system_revision": "3100ddb4d623b7a8941df5211641d779d42d2086",
+    "reviewed_native_revision": "71aa21674afd48510623de34822827e0f45bbb33",
+    "reviewed_trees_match_public_pins": true,
+    "native_normal_and_sanitized_runs": 16,
+    "catalog_cases": 152,
+    "contexts_cases": 10,
+    "settings_all_service_live_grants_peak": 13,
+    "live_grants_limit": 16
+  },
+  "host_workflow": {
+    "status": "pass",
+    "existing_watch_native_height_scripts": 14,
+    "extra_scripts": 3,
+    "asan_options": "detect_leaks=0 (executor ptrace restriction)",
+    "scripts": [
+      {
+        "script": "scripts/test_watch_native_height.py",
+        "exit_code": 0,
+        "log_sha256": "3145370c7329ff324559c8430c67f9d5238451a20947ac3eafd24b44e40ec552"
+      },
+      {
+        "script": "scripts/test_watch_native_springboard.py",
+        "exit_code": 0,
+        "log_sha256": "f606a286f79916cbc41a08668e704405b053183e24898ed95335ab94c5f72dd7"
+      },
+      {
+        "script": "scripts/test_watch_native_springboard_transition.py",
+        "exit_code": 0,
+        "log_sha256": "88d96dc08e3bcf05e0adbb8666ce7d88295849265f6a6cf8657473bce3187e78"
+      },
+      {
+        "script": "scripts/test_optional_service_adapter.py",
+        "exit_code": 0,
+        "log_sha256": "aff8ea74c3d297f4e4609fbeceab797c8396fb75b81b005830c9cfbc4e8898ae"
+      },
+      {
+        "script": "scripts/test_navigation_retention_adapter.py",
+        "exit_code": 0,
+        "log_sha256": "b4b11520a5089323fa6570d83f63d7ef1c83c9b11e9195d8f78f6e86319ee1f8"
+      },
+      {
+        "script": "scripts/test_watch_native_springboard_features.py",
+        "exit_code": 0,
+        "log_sha256": "bd2c2867cda72f88475ebc52bc6854453346256675459059ad9d9c421852083c"
+      },
+      {
+        "script": "scripts/test_context_adapter.py",
+        "exit_code": 0,
+        "log_sha256": "5a270ad8b97c02f92c7a5a009d2a4779155e0a4cd5c83c78cba2f84c78ef188a"
+      },
+      {
+        "script": "scripts/test_broadcast_adapter.py",
+        "exit_code": 0,
+        "log_sha256": "5c5c3d9abbae08e141b338b4cfd902a793185a49f48dba6f0fb055e8a0483b1d"
+      },
+      {
+        "script": "scripts/test_portable_alarm.py",
+        "exit_code": 0,
+        "log_sha256": "49489405de13ab52ed665aa119b0f3c2c66c47c22a97762a865e4f8cc5150876"
+      },
+      {
+        "script": "scripts/test_settings_clock_change.py",
+        "exit_code": 0,
+        "log_sha256": "6f8f42d1001659d6f3600b7b6b16f5b3dcd83f017f888328af4763a53012595d"
+      },
+      {
+        "script": "scripts/test_tap_settings.py",
+        "exit_code": 0,
+        "log_sha256": "c716adada54281c1be5dabb13de2a0cd8542707818e886a002f776f96e7d272d"
+      },
+      {
+        "script": "scripts/test_portable_transition.py",
+        "exit_code": 0,
+        "log_sha256": "2d9a4d30612ea611f576a0dd4daa7151e51a75f93d7c237ace34bc6f409ca77b"
+      },
+      {
+        "script": "scripts/test_springboard_nova.py",
+        "exit_code": 0,
+        "log_sha256": "de05996c82bffdaad77d157ca786893ea5673deb1e90153f9c737ad1e4c84553"
+      },
+      {
+        "script": "scripts/test_nova_launcher.py",
+        "exit_code": 0,
+        "log_sha256": "f30acf61f8f8bffff44924d263d1c8644beba2603f2b3fb5c5619e9ab5c7882e"
+      },
+      {
+        "script": "scripts/test_nova_ui.py",
+        "exit_code": 0,
+        "log_sha256": "1139d82abd6fef3fbf61b2420e51ffc91c108b9d00b6b7cbf689cb1db9bd78bc"
+      },
+      {
+        "script": "scripts/test_runtime_app_catalog.py",
+        "exit_code": 0,
+        "log_sha256": "62d5e3fcae8d66dd432c206940880e5c533913e2c3f2ba1f01cb2c86cf0e4f52"
+      },
+      {
+        "script": "scripts/test_runtime_context_catalog.py",
+        "exit_code": 0,
+        "log_sha256": "11695adbce95c2c28c5621c84861c97129c781fd084f47b7ffad02d3b2f8f759"
+      }
+    ]
+  },
+  "fresh_checkout_target_proof": {
+    "status": "pass",
+    "compiled_system_revision": "72f435fcee376ec62d17ece6180753385ea547d9",
+    "source_app_trees_clean": true,
+    "source_checkout": "Fresh detached Git worktree of the public compiled System pin with the new proof script and recipe materialized into it.",
+    "proof_script_sha256": "50be0a97d9e749c1eb1250c63c878965a9a487722fe6861fb820262d9cbcc9f4",
+    "target_links": 4,
+    "actual_transitive_inputs": {
+      "settings": 141,
+      "springboard": 139
+    },
+    "declared_input_roots_only": [
+      "System checkout",
+      "Immutable public bridge Git objects",
+      "Pinned compiler toolchain"
+    ]
+  },
+  "not_run": [
+    "Full product firmware composition/build",
+    "Physical device/hardware operation"
+  ],
+  "legacy_baseline_fix": "The mock native provider includes the current app.catalog ABI by fixture-relative path; legacy controller, adapter and SDK bytes remain from the original immutable archive.",
+  "fixture_repairs": [
+    "Resolve the current mock native capability ABI independently of the isolated legacy SDK include tree.",
+    "Export the installed catalog from the Nova fake native owner and assert14 discovered entries before glyph/lifetime checks."
+  ]
+}

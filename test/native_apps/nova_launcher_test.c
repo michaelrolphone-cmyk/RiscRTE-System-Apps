@@ -4,7 +4,8 @@
 #include "PortableNovaUi.h"
 int main(int argc,char **argv) {
   assert(argc==2);directory=argv[1];memset(pixels,0xa5,sizeof(pixels));assert(portable_catalog_count==14);
-  assert(app_module_init()==0);const t5_app_api_v1 *api=t5_app_get_api(1);portable_nova_begin();
+  assert(app_module_init()==0);const t5_app_api_v1 *api=t5_app_get_api(1);
+  assert(api->installed_apps_refresh());assert(api->installed_apps_count()==14);portable_nova_begin();
   for(unsigned i=0;i<portable_catalog_count;i++) {
     for(unsigned j=0;j<i;j++)assert(strcmp(portable_catalog[i].icon,portable_catalog[j].icon));
     int x=10+(int)(i%4)*57,y=10+(int)(i/4)*56;assert(api->draw_icon(x,y,portable_catalog[i].icon,40,false));

@@ -62,17 +62,53 @@ ignored; the service has one hardware-independent bound.
   [--exact-inputs <archived recipe directory>]`: target app ELF byte independence
   from changed legacy inventory sources, complete symbol scans, standard
   builder import/export/structure checks and optional original-feature recipes.
-- `scripts/prove_shared_catalog_target.py` repeats the complete original-feature
-  target link with immutable public generic bridge revision
-  `6e82fdcaec0b73ed700d2104cfb4d94f011c19d4`, native-height/navigation-retention
-  flags, and separate pinned Settings/Springboard Utilities inputs. It records
-  every actual preprocessor dependency, source hash, import/export and final
-  ELF hash; changed inventory JSON and forbidden legacy C files cannot enter
-  the link. Only small application ELFs are retained, never firmware images.
+- `python scripts/prove_shared_catalog_target.py --compiler <Xtensa gcc>
+  --bridges <RiscRTE-Watch checkout>`: reproduce the complete original-feature
+  target links with only this checkout, Python 3.11, the compiler below, and
+  immutable public bridge revision
+  `6e82fdcaec0b73ed700d2104cfb4d94f011c19d4`. The runner reads bridge Git objects,
+  never dependency working-tree modifications. Checked-in
+  `test/native_apps/fixtures/catalog_target/recipes.json` locks full flags,
+  source order, actual transitive bytes, compiler identity, imports/exports,
+  sizes, and target hashes. The existing local Watch alarm profile includes the
+  vendored `AlarmServiceV1.h`, byte-identical to both audited Utilities revisions;
+  no Utilities checkout or archived absolute path is needed. Unused historical
+  include paths are omitted. Native height and navigation retention stay enabled.
+  Each app is linked twice with different runtime inventories and a forbidden
+  legacy catalog source. Only small app ELFs and JSON receipts are retained.
+  This successor changes test/recipe/docs/CI inputs only; compiled app sources
+  remain public System `72f435fcee376ec62d17ece6180753385ea547d9`.
 - Existing native-height Settings, exact-feature Springboard, optional-service,
   navigation-retention and async-canvas suites remain applicable.
 
-Host fixtures prove client and controller behavior. Native directory admission,
-capability grant custody, actual product composition and hardware operation are
-separate qualification boundaries. Exact original-feature recipes preserve
-archived local bridge sources; this test does not qualify a replacement bridge.
+### Fresh-checkout target reproduction
+
+Check out this System revision (including its Git history for legacy host parity),
+then fetch the public bridge into any local path:
+
+```sh
+git clone https://github.com/michaelrolphone-cmyk/RiscRTE-Watch.git watch-bridge
+git -C watch-bridge checkout 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+python -m pip install platformio==6.1.19
+pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+python scripts/prove_shared_catalog_target.py \
+  --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" \
+  --bridges watch-bridge
+```
+
+The pinned compiler identifies as `xtensa-esp32s3-elf-gcc (crosstool-NG
+esp-2021r2-patch5) 8.4.0`. Expected SHA-256:
+
+- Settings: `4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385`
+- Springboard: `f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17`
+
+`.github/workflows/runtime-app-catalog.yml` runs the catalog/Contexts host suites
+and this exact target proof, checking out the bridge at the immutable revision.
+The workflow does not consume archived build recipes or local workstation paths.
+
+Host fixtures prove client and controller behavior; target app links prove the
+locked UI byte contract and import boundary. The committed qualification receipt
+in `test/native_apps/fixtures/catalog_target/qualification.json` binds these
+results to native contract and independent review pins. Native product
+composition, full firmware builds and hardware operation remain separate
+qualification boundaries and are not claimed by these tests.
