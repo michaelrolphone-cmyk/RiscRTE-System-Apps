@@ -12,6 +12,9 @@
 #include "PortableNativeTimeToolbar.h"
 #endif
 #include "PortableUpdate.h"
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "WatchViewLayout.h"
+#endif
 #include "SoftwareUpdateV1.h"
 #include "RiscRuntimeV1.h"
 #include "PortableAppCustody.h"
@@ -388,7 +391,12 @@ void app_main(void) {
     if(hit<uv.count){if(confirming)confirm_choice=hit;else if(!connecting&&(ust.state==SOFTWARE_UPDATE_LIST||ust.state==SOFTWARE_UPDATE_IDLE))selected=selected/16*16+hit;dirty=true;}
    }continue;
   }
-  if(input.tapped){int x=input.touch_x-(ua->screen_width()-240)/2,y=input.touch_y-(ua->screen_height()-240)/2;
+  if(input.tapped){int x=input.touch_x,y=input.touch_y;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+   if(!watch_view_touch(ua->screen_width(),ua->screen_height(),false,&x,&y))continue;
+#else
+   x-=(ua->screen_width()-240)/2;y-=(ua->screen_height()-240)/2;
+#endif
 #ifdef PORTABLE_NOVA_UI
    if(y>=188&&y<232){if(x>=16&&x<80)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=160&&x<224)input.buttons=T5_APP_BUTTON_DOWN;}
 #else

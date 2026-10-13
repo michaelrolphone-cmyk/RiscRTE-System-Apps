@@ -2347,13 +2347,21 @@ replay_input:
   if (sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled) {
     if (x >= width() || y >= height())
       return !failed;
+#ifndef PORTABLE_APP_OWNS_TOUCH_CHROME
+#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+    uint16_t chrome_x=0,chrome_y=0;
+    if(!nu_layout_ready()||!watch_layout_touch(&nu_layout,x,y,&chrome_x,&chrome_y))return !failed;
+#else
+    uint16_t chrome_x=x,chrome_y=y;
+#endif
+#endif
     if (
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
         false /* App tabs and drag gestures own the whole touch surface. */
 #elif defined(PORTABLE_NOVA_UI)
-        y>=4 && y<48 && x>=8 && x<52
+        chrome_y>=4 && chrome_y<48 && chrome_x>=8 && chrome_x<52
 #else
-        y<40 && x<56
+        chrome_y<40 && chrome_x<56
 #endif
        ) {
 #ifdef PORTABLE_SETTINGS_APP

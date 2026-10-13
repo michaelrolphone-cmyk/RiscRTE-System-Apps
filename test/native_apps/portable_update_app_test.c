@@ -43,8 +43,12 @@ static garden_radio_scan_result_v1 fake_scan;
 #define UF RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1)
 #define UI_FLAGS RISC_DISPLAY_INFO_RETAINS_IMAGE
 #else
+#ifndef UW
 #define UW 240
+#endif
+#ifndef UH
 #define UH 240
+#endif
 #define UF RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)
 #define UI_FLAGS 0
 #endif
@@ -209,7 +213,11 @@ static bool fake_acquire(const char*name,uint32_t v,uint64_t id,risc_runtime_cap
 static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api && grant_count);if(g->api==&radio_api){assert(!radio_owned || !native_active || fail_disconnect);if(fail_release)return false;}--grant_count;g->api=NULL;return true;}
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime_api:NULL;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!native_active && !scan_active && !uwg.api && !uw && !sub_count && !surface.frame);++sleeps;if(sleep_outcome==-2)terminal_sleep=1;return sleep_outcome;}
-static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
+static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ if(x>=0){if(y>=175)y+=watch_view_footer_offset(UW,UH);x=(x*UW+239)/240;y=(y*UW+239)/240;}
+#endif
+ script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 
 static void start_fixture(void){
  runtime_api=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime_api),.health=fake_health,.yield_ms=fake_yield,.diagnostic=fake_diag,.request_launch=fake_launch,.acquire=fake_acquire,.release=fake_release};
@@ -303,7 +311,14 @@ int main(int argc,char**argv){assert(argc==2);scenario=(unsigned)atoi(argv[1]);s
  case 33:mock_update.state=SOFTWARE_UPDATE_RETAINED;ust=mock_update;dirty=false;assert(!portable_update_services_safe()&&cleanup_pending&&dirty);render_update();assert(!strcmp(uv.rows[0],"Retry cleanup")&&!strcmp(uv.message,"Cleanup required; retry Back"));mock_update.state=SOFTWARE_UPDATE_IDLE;assert(portable_update_suspend());break;
  case 34: {
   mock_update.count=5;mock_update.state=SOFTWARE_UPDATE_LIST;ust=mock_update;selected=3;render_update();
-#ifdef PORTABLE_NOVA_UI
+#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+  for(int y=-1;y<=UH;y++)for(int x=-1;x<=UW;x++){
+   int expected=-1;
+   if(x>=0&&x<UW&&y>=0&&y<UH){int lx=x*240/UW,ly=y*240/UW;
+    if(lx>=16&&lx<224){if(ly>=62&&ly<116)expected=2;else if(ly>=120&&ly<174)expected=3;}}
+   assert(portable_wifi_hit(&uv,x,y)==expected);
+  }
+#elif defined(PORTABLE_NOVA_UI)
   assert(portable_wifi_hit(&uv,16,62)==2 && portable_wifi_hit(&uv,223,115)==2);
   assert(portable_wifi_hit(&uv,16,120)==3 && portable_wifi_hit(&uv,223,173)==3);
   assert(portable_wifi_hit(&uv,15,62)==-1 && portable_wifi_hit(&uv,224,120)==-1);
