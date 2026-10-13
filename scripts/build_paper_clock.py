@@ -160,7 +160,7 @@ def build():
  if a.boot_animation:version='0.4.7'
  if a.installed_catalog_volume_instance is not None:version='0.4.11'
  if a.deferred_foreground_services:version='0.4.13'
- if a.sparse_start:version='0.4.14' # bounded foreground RTC reconciliation
+ if a.sparse_start:version='0.4.18' # bounded foreground RTC reconciliation
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})

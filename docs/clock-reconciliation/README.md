@@ -12,7 +12,7 @@ This change is based on System `8ecf587d81763cd6b4d7d4b0d4324c5e8b4d68f2`, retai
 - Timezone, RTC UTC/local basis, range, ambiguous fold and nonexistent local time rules are unchanged. Native time is never written to the external RTC.
 - Safely rejected malformed calendar or slow samples leave a valid native display available and retry at the next minute. A boolean RTC read/acquire failure cannot prove clean custody; the existing sticky retention fence remains. This API cannot safely treat those failures as transient and retry them in-place.
 - Unpromoted timer-only deep wakes do not acquire RTC or load preferences. Reconciliation happens on promoted foreground/GPIO wake. Continuous unattended timer-only operation retains the original native-time authority; this change does not recalibrate the hardware oscillator or claim to correct that domain during every timer wake.
-- Sparse Clock package version is 0.4.14; non-sparse builds retain their versions.
+- Sparse Clock package version is 0.4.18; non-sparse builds retain their versions.
 
 ## Verification
 
