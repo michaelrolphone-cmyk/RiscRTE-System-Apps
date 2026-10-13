@@ -16,8 +16,10 @@
                                  RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
 #ifdef PORTABLE_WATCH_COLOR_ONLY
-  if(info.width!=240 || info.height!=240 ||
-     !(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))return -1;
+  if(!(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))return -1;
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(info.width!=240 || info.height!=240)return -1;
+#endif
 #endif
 #ifdef PORTABLE_USB_TRANSFER_APP
   /* A blocking panel wait would starve the owner-task USB service. */

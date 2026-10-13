@@ -97,7 +97,7 @@ static bool pp_battery(uint8_t *percent,bool *charging) {
 static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock,pp_battery};
 static bool pp_enabled(void) {
 #ifdef PORTABLE_WATCH_COLOR_ONLY
-  /* A product-selected 240x240 RGB565 Watch cannot expose the separate
+  /* A product-selected RGB565 Watch cannot expose the separate
    * portrait Paper presentation. Keep generic builds capability-selected. */
   return false;
 #else
