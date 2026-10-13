@@ -1,5 +1,8 @@
 #pragma once
 /* Product policy is selected at build time, never from downloaded metadata. */
+#ifdef UPDATE_PRODUCT_POLICY_HEADER
+#include UPDATE_PRODUCT_POLICY_HEADER
+#else
 namespace WatchUpdate {
 #ifdef UPDATE_PRODUCT_X4
 constexpr const char *Repository="michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO";
@@ -19,3 +22,5 @@ constexpr bool RequireProduct=false,AllowRuntimeOnly=true;
 constexpr const char *CatalogUrl="https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/release-index/release-index.json";
 #endif
 }
+
+#endif // externally selected provider policy
