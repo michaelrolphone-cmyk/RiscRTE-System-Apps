@@ -21,7 +21,7 @@ static unsigned fw,fh,pitch,ticks,polls,grants,subscriptions,frames,presents,lau
 static uint16_t *guarded,*pixels;
 static const char *directory;
 static char launched[128];
-static bool use_async;
+static bool use_async,expect_transition;
 static bool contact_down;
 static unsigned contact_x,contact_y,contact_id,contact_count;
 static unsigned full_run; /* 1 launch, 2 return, 3 held entry, 4 drag */
@@ -118,6 +118,9 @@ static void open_controller(void) {
  assert(api->screen_width()==240 && api->screen_height()==logical_height());
  count=api->installed_apps_count();assert(count==23 && portable_catalog_count==23);selected=0;layout();assert(compact);
  production=springboard_presentation_get();assert(production);
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+ expect_transition=true;
+#endif
  /* The provider-facing API still reports physical geometry after app setup. */
  const t5_app_api_v1 *provider=t5_app_get_api(T5_APP_ABI_VERSION);
  assert(provider->screen_width()==(int)fw && provider->screen_height()==(int)fh);
@@ -135,6 +138,7 @@ static springboard_contact input(nova_state *s,bool down,unsigned x,unsigned y) 
 }
 static void render(nova_state *s) {
  nova_render(s);guards();
+ if(expect_transition) {assert(springboard_transition_active());expect_transition=false;}
  /* Observe the complete destination after the real retained-frame transition. */
  unsigned remaining=20;
  while(springboard_transition_active()&&remaining--){ticks+=40;nova_render(s);guards();}

@@ -1,0 +1,39 @@
+name: Original Watch native-height UI
+on:
+  push:
+    branches: [work/watch-native-height-20261013]
+  pull_request:
+    paths:
+      - 'Apps/springboard.c'
+      - 'Apps/settings.c'
+      - 'lib/PortableApps/**'
+      - 'scripts/test_watch_native_*.py'
+      - 'test/native_apps/**'
+      - '.github/workflows/watch-native-height.yml'
+permissions:
+  contents: read
+jobs:
+  retained-watch-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native geometry and original 240 pixel parity
+        run: |
+          python scripts/test_watch_native_height.py
+          python scripts/test_watch_native_springboard.py
+          python scripts/test_watch_native_springboard_transition.py
+      - name: RTC synchronization and retained interaction regressions
+        run: |
+          python scripts/test_settings_clock_change.py
+          python scripts/test_tap_settings.py
+          python scripts/test_portable_transition.py
+          python scripts/test_springboard_nova.py
+          python scripts/test_nova_launcher.py
