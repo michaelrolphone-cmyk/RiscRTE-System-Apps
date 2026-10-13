@@ -5,6 +5,13 @@
 #endif
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
+static bool quick_load(void) {
+ if(!pqa_session_load(&quick,rt))return false;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if(contexts_client.unavailable){quick.ui.contexts_valid=false;quick.ui.contexts_enabled=false;}
+#endif
+ return true;
+}
 static bool quick_storage_safe(void) {
 #ifdef PORTABLE_FILE_BROWSER_APP
  if(!portable_file_browser_safe())return false;
@@ -44,13 +51,20 @@ static bool low_battery_poll(void) {
 #ifdef PORTABLE_RADIO_SESSION
  if(!portable_radio_suspend())return false;
 #endif
- if(!pqa_session_load(&quick,rt)||!pqa_radios_load(&quick_radios,&quick.ui,rt)||
+ if(!quick_load()||!pqa_radios_load(&quick_radios,&quick.ui,rt)||
     !pqa_session_restore(&quick,display))return false;
  rt->diagnostic(result&PORTABLE_LOW_BATTERY_ERROR?"LOW_BATTERY crossing=partial-once":"LOW_BATTERY crossing=applied-once");return true;
 }
 #endif
 static bool quick_apply(uint32_t actions) {
  if(!actions)return true;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+ if((actions&PQA_CONTEXTS)&&contexts_client.unavailable) {
+  quick.ui.contexts_valid=false;quick.ui.contexts_enabled=false;
+  quick.ui.error_flags|=PQA_ERROR_CONTEXTS;actions&=~(uint32_t)PQA_CONTEXTS;
+  if(!actions)return true;
+ }
+#endif
  if(!quick_storage_safe())return false;
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if((actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE|PQA_CONTEXTS)) && !portable_background_stop())return false;
@@ -126,7 +140,7 @@ static bool quick_foreground(bool *consumed) {
  /* Drain before radio controls load/apply; a dismiss never resumes RF. */
  if(!portable_radio_suspend())return false;
 #endif
- if(!pqa_session_load(&quick,rt))return false;
+ if(!quick_load())return false;
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
@@ -171,6 +185,7 @@ static bool quick_foreground(bool *consumed) {
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
+ if(native_sleep_retained)return false;
  if(painted && !failed) {
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_async && alarm_pixels && quick_background) {

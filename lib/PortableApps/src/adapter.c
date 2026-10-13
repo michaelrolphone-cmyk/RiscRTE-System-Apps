@@ -36,6 +36,43 @@
 #include <limits.h>
 #include <stdlib.h>
 static const risc_runtime_api_v1 *rt;
+static bool failed;
+#ifdef PORTABLE_ASYNC_RGB565
+static bool canvas_retained;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+static bool native_sleep_retained;
+#endif
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+static bool optional_services_retained;
+/* An acquisition/cleanup custody failure is never optional absence. No
+ * provider operation, release or free follows a terminal invocation fence. */
+static void optional_services_retain(void) {
+  failed=true;optional_services_retained=true;
+#ifdef PORTABLE_ASYNC_RGB565
+  canvas_retained=true;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+  native_sleep_retained=true;
+#endif
+  if(rt->struct_size>=RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE &&
+     rt->retain_invocation && rt->retain_invocation())return;
+  /* Without a confirmed fence, ordinary yields may still poll providers. */
+  for(;;){}
+}
+#endif
+static bool app_invocation_retained(void) {
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+  if(optional_services_retained)return true;
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+  if(native_sleep_retained)return true;
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+  if(canvas_retained)return true;
+#endif
+  return false;
+}
 #include "PortableBackgroundServices.h"
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #include "PortableContextsClient.h"
@@ -43,13 +80,22 @@ static const risc_runtime_api_v1 *rt;
 #error Contexts integration requires the foreground alarm and controls clients
 #endif
 static portable_contexts_client contexts_client;
-const contexts_service_v1 *portable_contexts_service(void) {return contexts_client.api;}
-bool portable_contexts_stop(void) {return portable_contexts_pause(&contexts_client);}
-bool portable_contexts_enable(bool enabled) {return portable_contexts_set_enabled(&contexts_client,enabled);}
-bool portable_contexts_training(bool enabled){if(!portable_contexts_pause(&contexts_client))return false;contexts_client.foreground_learning=enabled;return true;}
-bool portable_contexts_rules_read(cr_store*out){return portable_context_rules_read(&contexts_client,out);}
-bool portable_contexts_rules_save(const cr_store*value){return portable_context_rules_save(&contexts_client,value);}
-bool portable_contexts_models_save(void){return portable_contexts_pause(&contexts_client)&&!contexts_client.fingerprint_error;}
+static bool contexts_ready(void) {
+  if(app_invocation_retained())return false;
+  if(contexts_client.acquisition_uncertain || portable_optional_grant_owned(&contexts_client.fingerprint_store) ||
+     portable_optional_grant_owned(&contexts_client.storage)){optional_services_retain();return false;}
+  return true;
+}
+static bool contexts_checked(bool result) {
+  return contexts_ready()&&result;
+}
+const contexts_service_v1 *portable_contexts_service(void) {return contexts_ready()?contexts_client.api:NULL;}
+bool portable_contexts_stop(void) {return contexts_ready()&&contexts_checked(portable_contexts_pause(&contexts_client));}
+bool portable_contexts_enable(bool enabled) {return contexts_ready()&&contexts_checked(portable_contexts_set_enabled(&contexts_client,enabled));}
+bool portable_contexts_training(bool enabled){if(!contexts_ready()||!contexts_client.api||!contexts_checked(portable_contexts_pause(&contexts_client)))return false;contexts_client.foreground_learning=enabled;return true;}
+bool portable_contexts_rules_read(cr_store*out){return contexts_ready()&&contexts_checked(portable_context_rules_read(&contexts_client,out));}
+bool portable_contexts_rules_save(const cr_store*value){return contexts_ready()&&contexts_checked(portable_context_rules_save(&contexts_client,value));}
+bool portable_contexts_models_save(void){return contexts_ready()&&contexts_client.api&&contexts_checked(portable_contexts_pause(&contexts_client))&&!contexts_client.fingerprint_error;}
 
 unsigned portable_contexts_face_count(void) {
 #ifdef PORTABLE_CONTEXT_FACE_COUNT
@@ -80,14 +126,24 @@ static bool contexts_capture_checkpoint(void);
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
 static portable_broadcast_client broadcast_client;
+static bool broadcast_ready(void) {
+  if(app_invocation_retained())return false;
+  if(broadcast_client.acquisition_uncertain || portable_optional_grant_owned(&broadcast_client.storage)) {
+    optional_services_retain();return false;
+  }
+  return true;
+}
+static bool broadcast_checked(bool result) {return broadcast_ready()&&result;}
 bool portable_broadcast_status(telemetry_broadcast_status_v1 *out) {
-  return broadcast_client.api && broadcast_client.api->status(broadcast_client.api->context,out);
+  return broadcast_ready() && broadcast_client.api && broadcast_client.api->status(broadcast_client.api->context,out);
 }
 bool portable_broadcast_enable(bool enabled) {
-  return portable_broadcast_set_enabled(&broadcast_client,enabled);
+  return broadcast_ready()&&broadcast_checked(portable_broadcast_set_enabled(&broadcast_client,enabled));
 }
-bool portable_broadcast_stop(void) { return portable_broadcast_pause(&broadcast_client); }
+bool portable_broadcast_stop(void) { return broadcast_ready()&&broadcast_checked(portable_broadcast_pause(&broadcast_client)); }
 static bool broadcast_tick(void) {
+  if(!broadcast_ready())return false;
+  if(broadcast_client.unavailable)return true;
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_safe())return portable_broadcast_pause(&broadcast_client);
 #endif
@@ -101,9 +157,9 @@ static bool broadcast_tick(void) {
   if(!portable_wifi_services_safe())return portable_broadcast_pause(&broadcast_client);
 #endif
 #ifdef PORTABLE_BLE_FOREGROUND
-  return portable_broadcast_step(&broadcast_client,false);
+  return broadcast_checked(portable_broadcast_step(&broadcast_client,false));
 #else
-  return portable_broadcast_step(&broadcast_client,true);
+  return broadcast_checked(portable_broadcast_step(&broadcast_client,true));
 #endif
 }
 #endif
@@ -123,7 +179,7 @@ static const risc_battery_gauge_api_v1 *gauge;
 static portable_touch touch;
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
-static bool failed, list_mode;
+static bool list_mode;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
 #include "watch_native_layout.inc"
 #endif
@@ -158,7 +214,7 @@ uint32_t portable_quick_sleep_light_ms(void) {return quick.deep_ms;}
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
-static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained;
+static bool display_settled,alarm_pixels_valid,alarm_modal;
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
@@ -172,11 +228,7 @@ static unsigned first_row, last_rows;
 static bool contexts_capture_checkpoint(void) {
   if(failed||native_sleep_retained||!canvas_progress())return false;
   if(portable_contexts_capture(&contexts_client))return true;
-  failed=true;
-  if(portable_contexts_retain(&contexts_client)){native_sleep_retained=true;return false;}
-  /* Older runtimes have no terminal fence. Keep this invocation's memory
-   * alive without issuing another display, storage or service operation. */
-  for(;;)rt->yield_ms(50);
+  optional_services_retain();return false;
 }
 #elif defined(PORTABLE_ASYNC_RGB565)
 static bool contexts_capture_checkpoint(void) {return !failed && canvas_progress();}
@@ -726,7 +778,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 }
 #include "contexts_rules_adapter.inc"
 static bool contexts_tick(void) {
-  if(!quick_storage_safe()||quick_modal||alarm_modal)return portable_contexts_pause(&contexts_client);
+  if(!contexts_ready())return false;
+  if(contexts_client.unavailable)return true;
+  if(!quick_storage_safe()||quick_modal||alarm_modal)return contexts_checked(portable_contexts_pause(&contexts_client));
   bool audio_allowed=true,radio_allowed=true;
 #if defined(PORTABLE_AUDIO_SESSION) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
   audio_allowed=false;
@@ -734,13 +788,13 @@ static bool contexts_tick(void) {
 #if defined(PORTABLE_RADIO_SESSION) || defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP) || defined(PORTABLE_BLE_FOREGROUND)
   radio_allowed=false;
 #endif
-  if(!portable_contexts_step(&contexts_client,audio_allowed,radio_allowed))return false;
+  if(!contexts_checked(portable_contexts_step(&contexts_client,audio_allowed,radio_allowed)))return false;
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
-  if(contexts_client.rules_available){if(!contexts_rules_tick())return false;}
-  else if(!portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save))return false;
+  if(contexts_client.rules_available){if(!contexts_checked(contexts_rules_tick()))return false;}
+  else if(!contexts_checked(portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save)))return false;
   if(applied) {
-    if(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display))return false;
+    if(!quick_load()||!pqa_session_restore(&quick,display))return false;
     const alarm_service_v1 *service=alarm_sleep_api();
     if(service&&(applied&(PORTABLE_CONTEXT_VOLUME|PORTABLE_CONTEXT_DND|PORTABLE_CONTEXT_ALERT)))
       (void)service->refresh(service->context);
@@ -918,6 +972,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool native_exit_input(t5_app_input_t *out) {
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+  if(app_invocation_retained())return false;
+#endif
   if(!risc_runtime_exit_requested_v1(rt))return false;
   (void)canvas_exit_barrier();
   input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
@@ -931,6 +988,9 @@ static bool native_exit_input(t5_app_input_t *out) {
   return true;
 }
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+  if(app_invocation_retained())return false;
+#endif
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_retained)return false;
 #endif
@@ -1153,22 +1213,13 @@ const t5_video_api_v1 *t5_video_get_api(uint32_t v) {
   return NULL;
 }
 static int initialize(void) {
+  if(app_invocation_retained())return -1;
   rt = risc_runtime_get_api(1);
   if (!rt || rt->api_version != 1 ||
       rt->struct_size < RISC_RUNTIME_CAPABILITIES_V1_SIZE || !rt->acquire ||
       !rt->release || !rt->health || !rt->yield_ms || !rt->request_launch ||
       !rt->diagnostic)
     return -1;
-#ifdef PORTABLE_CONTEXTS_CLIENT
-  contexts_pixels=0;
-  if(!portable_contexts_open(&contexts_client,rt)||!portable_contexts_pause(&contexts_client))return -1;
-#endif
-#ifdef PORTABLE_BLE_BROADCAST
-  if(!portable_broadcast_open(&broadcast_client,rt))return -1;
-#ifdef PORTABLE_BLE_FOREGROUND
-  if(!portable_broadcast_pause(&broadcast_client))return -1;
-#endif
-#endif
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
@@ -1200,6 +1251,25 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
+#endif
+#ifdef PORTABLE_CONTEXTS_CLIENT
+  contexts_pixels=0;
+  if(!portable_contexts_open(&contexts_client,rt)) {
+    if(contexts_client.acquisition_uncertain || contexts_client.api){optional_services_retain();return -1;}
+    if(!contexts_client.unavailable)return -1;
+    rt->diagnostic("CONTEXTS unavailable");
+  }
+  if(!portable_contexts_pause(&contexts_client)){optional_services_retain();return -1;}
+#endif
+#ifdef PORTABLE_BLE_BROADCAST
+  if(!portable_broadcast_open(&broadcast_client,rt)) {
+    if(broadcast_client.acquisition_uncertain){optional_services_retain();return -1;}
+    if(!broadcast_client.unavailable)return -1;
+    rt->diagnostic("BROADCAST unavailable");
+  }
+#ifdef PORTABLE_BLE_FOREGROUND
+  if(!portable_broadcast_pause(&broadcast_client)){optional_services_retain();return -1;}
+#endif
 #endif
   if (!rt->acquire("display.output", 1, 0, &dg))
     return -1;
@@ -1235,7 +1305,12 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   alarm_pixels=malloc((size_t)info.width*info.height*2);
-  if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return -1;
+  if(!alarm_pixels)return -1;
+  if(!portable_alarm_open(&alarms,rt)) {
+    if(alarms.acquisition_uncertain){optional_services_retain();return -1;}
+    if(!alarms.unavailable)return -1;
+    rt->diagnostic("ALARM unavailable");
+  }
 #endif
   if (!portable_touch_open(&touch, rt))return -1;
 #ifndef PORTABLE_FORCE_FULL_FRAMES
@@ -1258,7 +1333,7 @@ static int initialize(void) {
   last_activity=millis_now();
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
-  if(!pqa_session_load(&quick,rt))return -1;
+  if(!quick_load())return -1;
 #ifdef PORTABLE_QUICK_RADIOS
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
 #endif
@@ -1274,6 +1349,9 @@ static int initialize(void) {
 __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_ALARM_CLIENT)
+  if(app_invocation_retained())return;
+#endif
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_retained)return;
 #endif
@@ -1285,19 +1363,18 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if(canvas_retained)return;
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  while(!portable_contexts_pause(&contexts_client)) {
-    rt->diagnostic("CONTEXTS cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
-  }
+  if(!portable_contexts_pause(&contexts_client)){optional_services_retain();return;}
 #endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
   if(failed || !display_settled || surface.frame)while(!portable_background_stop()) {
+    if(app_invocation_retained())return;
     rt->diagnostic("BROADCAST cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
   }
 #endif
 #ifdef PORTABLE_TAP_SETTINGS
   while(!settings_tap_close()){
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     rt->diagnostic("TAP cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
   }
@@ -1306,7 +1383,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if(!portable_file_browser_close()) {
     rt->diagnostic("FILE_BROWSER cleanup-unconfirmed; invocation retained");
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     for(;;)rt->yield_ms(50);
   }
@@ -1315,7 +1392,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if(!portable_wifi_close()) {
     rt->diagnostic("WIFI cleanup-unconfirmed; invocation retained");
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     for(;;)rt->yield_ms(50);
   }
@@ -1324,7 +1401,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if(!portable_radio_suspend()) {
     rt->diagnostic("RADIO cleanup-unconfirmed; invocation retained");
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     for(;;)rt->yield_ms(50);
   }
@@ -1333,7 +1410,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if(!portable_audio_suspend()) {
     rt->diagnostic("AUDIO cleanup-unconfirmed; invocation retained");
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     for(;;)rt->yield_ms(50);
   }
@@ -1344,11 +1421,11 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
       !portable_alarm_failure_stop(&alarms)) {
     rt->diagnostic("ALARM fini output-stop-unconfirmed; invocation retained");
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
-    while(!portable_background_stop())rt->yield_ms(50);
+    while(!portable_background_stop()){if(app_invocation_retained())return;rt->yield_ms(50);}
 #endif
     for(;;)rt->yield_ms(50);
   }
-  if(!portable_alarm_close(&alarms,rt))rt->diagnostic("ALARM error=release");
+  if(!portable_alarm_close(&alarms,rt)){optional_services_retain();return;}
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -1377,21 +1454,16 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   settings_close();
 #endif
 #ifdef PORTABLE_BLE_BROADCAST
-  while(!portable_broadcast_close(&broadcast_client,rt)) {
-    (void)portable_broadcast_pause(&broadcast_client);
-    rt->diagnostic("BROADCAST grant retained");rt->yield_ms(50);
-  }
+  if(!portable_broadcast_close(&broadcast_client,rt)){optional_services_retain();return;}
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
-  while(!portable_contexts_close(&contexts_client)) {
-    (void)portable_contexts_pause(&contexts_client);
-    rt->diagnostic("CONTEXTS grant retained");rt->yield_ms(50);
-  }
+  if(!portable_contexts_close(&contexts_client)){optional_services_retain();return;}
 #endif
   if (bg.api && !rt->release(&bg))
     rt->diagnostic("PORTABLE_APP error=battery-release");
   if (dg.api && !rt->release(&dg))
     rt->diagnostic("PORTABLE_APP error=display-release");
+  rt=NULL;
 }
 
 __attribute__((visibility("default"))) int app_module_init(void) {

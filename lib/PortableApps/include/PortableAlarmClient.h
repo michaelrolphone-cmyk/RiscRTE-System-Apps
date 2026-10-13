@@ -1,4 +1,5 @@
 #pragma once
+#include "PortableOptionalService.h"
 /* Optional Utilities service consumer. No schedule, RTC or output policy here.
  * Normal calls require a serialized point without a mutable display lease.
  * A qualified immutable asynchronous image may still be presenting. Failed or
@@ -7,13 +8,14 @@
 #include "RiscRuntimeV1.h"
 #include <string.h>
 typedef struct {
+    bool unavailable,acquisition_uncertain;
     risc_runtime_capability_v1 grant;
     const alarm_service_v1 *api;
     alarm_status_v1 status;
 } portable_alarm_client;
 static inline bool portable_alarm_open(portable_alarm_client *c,const risc_runtime_api_v1 *r) {
     memset(c,0,sizeof(*c));c->grant.struct_size=sizeof(c->grant);
-    if(!r->acquire(ALARM_SERVICE_CAPABILITY,1,0,&c->grant))return false;
+    if(!portable_optional_acquire(r,ALARM_SERVICE_CAPABILITY,&c->grant,&c->unavailable,&c->acquisition_uncertain))return false;
     const alarm_service_v1 *a=c->grant.api;
     if(!a || a->api_version!=1 || a->struct_size<sizeof(*a) || !a->status || !a->step ||
        !a->refresh || !a->acknowledge || !a->prepare_sleep || !a->stop_only)return false;
@@ -45,6 +47,6 @@ static inline bool portable_alarm_failure_stop(portable_alarm_client *c) {
     return result==ALARM_OK;
 }
 static inline bool portable_alarm_close(portable_alarm_client *c,const risc_runtime_api_v1 *r) {
-    if(c->grant.api && !r->release(&c->grant))return false;
+    if(portable_optional_grant_owned(&c->grant) && !r->release(&c->grant))return false;
     memset(c,0,sizeof(*c));return true;
 }

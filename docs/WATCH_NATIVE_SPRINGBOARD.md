@@ -92,3 +92,21 @@ remain enabled, with explicit resource counters and pixel guards. This is host
 qualification, not a measured hardware latency or on-device acceptance claim.
 
 Generated reports and real-render PPMs are under `build/watch-native-springboard`.
+
+For the full original feature profile, run:
+
+`python3 scripts/test_watch_native_springboard_features.py /path/to/springboard-exact-build.json`
+
+This extracts every feature switch and forced profile include from the audited
+recipe, then runs the same native executable at both sizes with synchronous and
+asynchronous provider capabilities, normally and under ASan/UBSan. All Alarm,
+Broadcast/BLE, Contexts, Quick Controls, Low Battery, RTC, local navigation/sleep,
+retained handoff and async feature switches remain enabled. The actual controller
+and adapter initialize, render, accept touch, launch, return and re-enter while
+Alarm/Broadcast/Contexts are explicitly absent and Runtime is healthy. Only
+host navigation and sleep hook boundaries are test doubles; the test never
+claims to exercise hardware sleep or substitute hardware services.
+
+Completed capture sets may be stored losslessly in `verified-frames.zip`, with
+`frame-archive-receipt.json` recording SHA-256 hashes verified after extracting
+each member. The JSON render/parity results remain available beside the archive.

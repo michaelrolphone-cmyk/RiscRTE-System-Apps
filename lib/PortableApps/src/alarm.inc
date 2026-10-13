@@ -24,6 +24,7 @@ static bool alarm_failure(void) {
     if(native_sleep_retained)return false;
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
     while(!portable_background_stop()) {
+        if(native_sleep_retained)return false;
         rt->diagnostic("BROADCAST foreground-failed cleanup-unconfirmed; invocation retained");rt->yield_ms(50);
     }
 #endif
@@ -63,7 +64,8 @@ static bool alarm_failure(void) {
 static bool alarm_sessions_safe(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
     contexts_status_v1 status={.struct_size=sizeof(status)};
-    if(!contexts_client.api||!contexts_client.api->status(contexts_client.api->context,&status)||status.cleanup_pending)return false;
+    if(!contexts_client.unavailable && (!contexts_client.api||
+       !contexts_client.api->status(contexts_client.api->context,&status)||status.cleanup_pending))return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_services_safe())return false;
@@ -75,7 +77,7 @@ static bool alarm_sessions_safe(void) {
 }
 static bool alarm_sessions_suspend(void) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
-    if(!portable_contexts_pause(&contexts_client))return false;
+    if(!portable_contexts_stop())return false;
 #endif
 #ifdef PORTABLE_RADIO_SESSION
     if(!portable_radio_suspend())return false;
@@ -189,6 +191,7 @@ static bool alarm_foreground(bool *consumed) {
     if(!portable_file_browser_safe())return !failed;
 #endif
     if(!canvas_progress() || !foreground_frame_ready())return alarm_failure();
+    if(alarms.unavailable)return !failed;
 #if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
     if(!portable_wifi_services_safe())return !failed;
 #endif

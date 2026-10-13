@@ -1,4 +1,5 @@
 #pragma once
+#include "PortableOptionalService.h"
 #include "alarm_writer.h"
 /* Apply only settings composed by the rule engine; consume before writes and
  * report partial failure. Manual changes are not overwritten on every poll. */
@@ -17,15 +18,22 @@ static inline bool portable_context_setting(const risc_key_value_v1*kv,unsigned 
  default:return false;
  }
 }
-static inline bool portable_context_timer(const risc_runtime_api_v1*rt,const alarm_service_v1*service,uint32_t duration,risc_runtime_capability_v1*grant){
+static inline bool portable_context_timer_checked(const risc_runtime_api_v1*rt,const alarm_service_v1*service,uint32_t duration,risc_runtime_capability_v1*grant,bool*uncertain){
  if(!duration||duration>ALARM_COUNTDOWN_MAX||!service)return false;
  alarm_status_v1 status={.struct_size=sizeof(status)};if(service->status(service->context,&status)!=ALARM_OK||status.state!=ALARM_STATE_READY||!status.rtc_seconds||status.rtc_seconds>ALARM_RTC_MAX-ALARM_RECOVERY_SECONDS-duration)return false;
  *grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};
- if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,3,grant))return false;
- const risc_key_value_v1*kv=grant->api;alarm_writer writer={0};bool ok=pqa_preferences_valid(kv)&&!alarm_writer_load(&writer,kv,2)&&writer.saved.revision<UINT32_MAX;
+ if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,3,grant)){if(!portable_optional_missing(rt,grant))*uncertain=true;return false;}
+ portable_optional_kv checked;const risc_key_value_v1*kv=portable_optional_kv_open(&checked,grant->api,uncertain);alarm_writer writer={0};bool ok=pqa_preferences_valid(kv)&&!alarm_writer_load(&writer,kv,2)&&writer.saved.revision<UINT32_MAX;
  /* Never replace a user's already-running countdown. */
  if(ok&&writer.saved.enabled&&writer.saved.deadline>status.rtc_seconds)ok=false;
  if(ok){alarm_config config={.revision=writer.saved.revision+1,.deadline=status.rtc_seconds+duration,.created=status.rtc_seconds,.duration=duration,.kind=2,.enabled=1};ok=!alarm_writer_commit(&writer,kv,&config);}
- if(!rt->release(grant))return false;
+ if(*uncertain)return false;
+ if(!rt->release(grant)){*uncertain=true;return false;}
  memset(grant,0,sizeof(*grant));if(ok)(void)service->refresh(service->context);return ok;
+}
+
+/* Keep the existing synchronous helper available to older callers. */
+static inline bool portable_context_timer(const risc_runtime_api_v1*rt,const alarm_service_v1*service,
+        uint32_t duration,risc_runtime_capability_v1*grant){
+ bool uncertain=false;return portable_context_timer_checked(rt,service,duration,grant,&uncertain);
 }

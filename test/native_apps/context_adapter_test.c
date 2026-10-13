@@ -64,7 +64,7 @@ int main(int argc,char**argv) {
   else input_service();
   assert(failed&&native_sleep_retained&&retain_calls==1);
   unsigned calls=capture_calls,old_grants=grants,old_frames=frame_count;
-  present(false);input_service();app_module_fini();
+  present(false);input_service();app_module_fini();assert(app_module_init()==-1);
   t5_app_input_t input;assert(!poll(&input,8));
   assert(capture_calls==calls&&service_steps==before&&polls==old_polls&&grants==old_grants&&frame_count==old_frames);
   puts("Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS");return 0;

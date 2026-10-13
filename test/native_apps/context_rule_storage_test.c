@@ -6,7 +6,7 @@
 #include "ContextFingerprintService.h"
 typedef struct {
  const contexts_service_v1 *api;const risc_runtime_api_v1 *runtime;
- risc_runtime_capability_v1 fingerprint_store;uint64_t rules_revision;bool loaded,rules_available;
+ risc_runtime_capability_v1 fingerprint_store;uint64_t rules_revision;bool loaded,rules_available,acquisition_uncertain;
 } portable_contexts_client;
 #include "PortableContextRules.h"
 static uint8_t disk[CR_FILE_BYTES];static uint32_t length;static uint64_t revision=1;

@@ -1,10 +1,12 @@
 #pragma once
+#include "PortableOptionalService.h"
 #include "ContextsServiceV1.h"
 #include "PortableContextPreferences.h"
 #include "PortableRadioPolicy.h"
 #include "PortableLowBattery.h"
 #include "RiscRuntimeV1.h"
 typedef struct {
+    bool unavailable,acquisition_uncertain;
     risc_runtime_capability_v1 grant,storage,fingerprint_store;
     int32_t fingerprint_error;
     uint32_t fingerprint_sources,fingerprint_checkpoint_at,fingerprint_unread;
@@ -21,7 +23,7 @@ typedef struct {
 #include "PortableContextRules.h"
 static inline bool portable_contexts_open(portable_contexts_client *c,const risc_runtime_api_v1 *rt) {
     memset(c,0,sizeof(*c));c->fingerprint_sources=CONTEXTS_ALL;c->runtime=rt;c->grant.struct_size=sizeof(c->grant);
-    if(!rt->acquire(CONTEXTS_SERVICE_CAPABILITY,1,0,&c->grant))return false;
+    if(!portable_optional_acquire(rt,CONTEXTS_SERVICE_CAPABILITY,&c->grant,&c->unavailable,&c->acquisition_uncertain))return false;
     const contexts_service_v1 *p=c->grant.api;
     if(!p||p->api_version!=1||p->struct_size<CONTEXTS_SERVICE_V1_SIZE||!p->step||!p->pause||!p->status||
        !p->request_export||!p->begin_export||!p->export_record||!p->finish_export||!p->label||
@@ -33,7 +35,8 @@ static inline bool portable_contexts_open(portable_contexts_client *c,const risc
     return true;
 }
 static inline bool portable_contexts_pause(portable_contexts_client *c) {
-    c->loaded=false;if(!c->api)return true;
+    c->loaded=false;if(c->acquisition_uncertain||portable_optional_grant_owned(&c->fingerprint_store))return false;
+    if(!c->api)return true;
     if(!c->api->pause(c->api->context))return false;
     return portable_fp_checkpoint(c,false);
 }
@@ -42,7 +45,8 @@ static inline void portable_contexts_settings_changed(portable_contexts_client *
     c->loaded=false;c->settings_valid=false;c->save_failed=!confirmed;c->policy.enabled=false;
 }
 static inline bool portable_contexts_capture(portable_contexts_client *c) {
-    return !c->api||c->api->capture_audio(c->api->context);
+    return !c->acquisition_uncertain&&!portable_optional_grant_owned(&c->fingerprint_store)&&
+        (!c->api||c->api->capture_audio(c->api->context));
 }
 /* Runtime0.1.54 appends the terminal invocation fence after boot confirmation.
  * A renderer may retain borrowed frame memory after capture cleanup fails, so
@@ -55,22 +59,23 @@ static inline bool portable_contexts_retain(portable_contexts_client *c) {
     return retain&&retain();
 }
 static inline bool portable_contexts_release_storage(portable_contexts_client *c) {
-    if(c->storage.api&&!c->runtime->release(&c->storage))return false;
+    if(c->acquisition_uncertain)return false;
+    if(portable_optional_grant_owned(&c->storage)&&!c->runtime->release(&c->storage)){c->acquisition_uncertain=true;return false;}
     memset(&c->storage,0,sizeof(c->storage));return true;
 }
 static inline bool portable_contexts_step(portable_contexts_client *c,bool audio_allowed,bool radio_allowed) {
-    if(!c->api||c->fingerprint_store.api)return false;
+    if(c->acquisition_uncertain||!c->api||c->fingerprint_store.api)return false;
     if(c->storage.api) {
         if(!portable_contexts_pause(c)||!portable_contexts_release_storage(c))return false;
     }
     risc_runtime_health_v1 health={.struct_size=sizeof(health)};
-    if(!c->runtime->health(&health))return portable_contexts_pause(c);
+    if(!c->runtime->health(&health)){c->acquisition_uncertain=true;return false;}
     if(!c->save_failed&&!c->loaded) {
         c->policy=(contexts_policy_v1){.struct_size=sizeof(c->policy),.sources=CONTEXTS_ALL};
         c->settings_valid=false;c->low_battery=true;
         c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};
         if(c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage)) {
-            const risc_key_value_v1 *kv=c->storage.api;uint8_t flags=0;bool enabled=false,low=true;
+            portable_optional_kv checked;const risc_key_value_v1 *kv=portable_optional_kv_open(&checked,c->storage.api,&c->acquisition_uncertain);uint8_t flags=0;bool enabled=false,low=true;
             c->settings_valid=portable_context_enabled_load(kv,&enabled)&&portable_radio_load(kv,&flags)&&
                 portable_low_battery_load(kv,&low);
             c->low_battery=low;c->policy.enabled=c->settings_valid&&enabled;
@@ -78,7 +83,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
              * Airplane mode and the low-battery edge remain authoritative. */
             c->policy.radio_allowed=(flags&7u)==PORTABLE_RADIO_WIFI&&!low;
             c->policy.audio_allowed=!low;
-            if(contexts_fingerprint_api(c->api)){
+            if(pqa_preferences_valid(kv)&&contexts_fingerprint_api(c->api)){
                 uint8_t sources=CONTEXTS_ALL;uint32_t size=0;
                 int32_t source_result=kv->get(kv->context,"context_sources",&sources,1,&size);
                 if(source_result==RISC_KEY_VALUE_NOT_FOUND)sources=CONTEXTS_ALL;
@@ -88,8 +93,8 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
                 int32_t timing_result=kv->get(kv->context,"context_timing",&timing,1,&size);
                 c->fingerprint_temporal_only=timing_result==RISC_KEY_VALUE_OK&&size==1&&timing==1;
             }
-            if(!portable_contexts_release_storage(c)){(void)portable_contexts_pause(c);return false;}
-        }
+            if(!portable_contexts_release_storage(c))return false;
+        }else if(!portable_optional_missing(c->runtime,&c->storage)){c->acquisition_uncertain=true;return false;}
         c->loaded=true;c->loaded_at=health.uptime_ms;
     }
     contexts_policy_v1 policy=c->policy;policy.awake=true;
@@ -109,15 +114,16 @@ static inline bool portable_contexts_set_enabled(portable_contexts_client *c,boo
     c->policy=(contexts_policy_v1){.struct_size=sizeof(c->policy)};c->save_failed=true;c->settings_valid=false;
     c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};bool saved=false;
     if(c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage)) {
-        saved=portable_context_enabled_save(c->storage.api,enabled);
+        portable_optional_kv checked;const risc_key_value_v1 *kv=portable_optional_kv_open(&checked,c->storage.api,&c->acquisition_uncertain);
+        saved=portable_context_enabled_save(kv,enabled);
         if(!portable_contexts_release_storage(c))return false;
-    }
+    }else if(!portable_optional_missing(c->runtime,&c->storage)){c->acquisition_uncertain=true;return false;}
     c->save_failed=!saved;c->loaded=false;return saved;
 }
 static inline bool portable_contexts_close(portable_contexts_client *c) {
     if(!portable_contexts_pause(c))return false;
     if(!portable_contexts_release_storage(c))return false;
-    if(c->grant.api&&!c->runtime->release(&c->grant))return false;
+    if(portable_optional_grant_owned(&c->grant)&&!c->runtime->release(&c->grant))return false;
     memset(c,0,sizeof(*c));return true;
 }
 /* Caller claims a confirmed room edge in the service before this function.
@@ -168,21 +174,28 @@ static inline bool portable_contexts_apply_room(portable_contexts_client *c,uint
     if(room->room_entry&&room->room_entry==room->preset_entry)return true;
     portable_context_preset selected;portable_context_preset_init(&selected);unsigned matches=0;bool readable=true;
     c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};
-    if(!c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage))return true;
+    if(!c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage)){
+        if(!portable_optional_missing(c->runtime,&c->storage)){c->acquisition_uncertain=true;return false;}
+        return true;
+    }
+    portable_optional_kv checked;const risc_key_value_v1 *kv=portable_optional_kv_open(&checked,c->storage.api,&c->acquisition_uncertain);
     for(unsigned i=0;i<PORTABLE_CONTEXT_PRESETS;i++) {
-        portable_context_preset p;int32_t result=portable_context_preset_load(c->storage.api,i,&p);
+        portable_context_preset p;int32_t result=portable_context_preset_load(kv,i,&p);
         if(result!=RISC_KEY_VALUE_OK&&result!=RISC_KEY_VALUE_NOT_FOUND){readable=false;break;}
         if(result==RISC_KEY_VALUE_OK&&portable_context_preset_matches(&p,room->source,(unsigned)room->room_slot,room->room_name)) {
             selected=p;matches++;
         }
     }
-    if(!portable_contexts_release_storage(c)){(void)portable_contexts_pause(c);return false;}
+    if(!portable_contexts_release_storage(c))return false;
     if(!readable||matches!=1)return true;
     if(!c->api->claim_preset(c->api->context,room->source,(uint32_t)room->room_slot,room->room_name,room->model_generation))return true;
     if(!portable_contexts_pause(c))return false;
     c->storage=(risc_runtime_capability_v1){.struct_size=sizeof(c->storage)};bool ok=false;
-    if(c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage))
-        ok=portable_contexts_apply_preferences(c->storage.api,&selected,c->low_battery,applied,face_save);
+    if(c->runtime->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&c->storage)) {
+        kv=portable_optional_kv_open(&checked,c->storage.api,&c->acquisition_uncertain);
+        ok=portable_contexts_apply_preferences(kv,&selected,c->low_battery,applied,face_save);
+    }
+    else if(!portable_optional_missing(c->runtime,&c->storage)){c->acquisition_uncertain=true;return false;}
     if(!portable_contexts_release_storage(c))return false;
     return c->api->preset_result(c->api->context,room->source,room->model_generation,
         ok&&*applied==selected.actions?CONTEXTS_PRESET_APPLIED:CONTEXTS_PRESET_PARTIAL);

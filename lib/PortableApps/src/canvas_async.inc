@@ -3,7 +3,7 @@
  * There is at most one submitted token and one replaceable latest image. */
 #ifdef PORTABLE_ASYNC_RGB565
 static uint16_t *canvas_pixels;
-static bool canvas_async,canvas_sealed,canvas_uncertain,canvas_retained;
+static bool canvas_async,canvas_sealed,canvas_uncertain;
 static risc_display_present_token_v1 canvas_token;
 static uint32_t canvas_submitted_at,canvas_pumped_at;
 static bool canvas_pumping;

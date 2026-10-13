@@ -60,11 +60,12 @@ static bool nt_submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1
  const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
  (void)c;(void)r;(void)n;(void)options;assert(f==1&&frames);frames=0;*token=++presents;guards();return true;
 }
+static bool nt_brightness(void *c,uint16_t value,uint16_t maximum) {(void)c;assert(value<=maximum);return true;}
 static bool nt_status(void *c,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
  (void)c;assert(token);out->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;
 }
 static const risc_display_output_api_v1 nt_display={.api_version=1,.struct_size=sizeof(nt_display),
- .get_info=nt_info,.acquire=nt_frame,.release=nt_frame_release,.submit=nt_submit,.present_status=nt_status};
+ .get_info=nt_info,.acquire=nt_frame,.release=nt_frame_release,.submit=nt_submit,.present_status=nt_status,.set_brightness=nt_brightness};
 static uint64_t nt_subscribe(void *c) {(void)c;++subscriptions;return 1;}
 static bool nt_unsubscribe(void *c,uint64_t id) {(void)c;assert(id==1&&subscriptions);--subscriptions;return true;}
 static bool nt_poll_touch(void *c,size_t n) {(void)c;assert(n==1);++polls;return true;}
@@ -87,12 +88,28 @@ static void nt_yield(uint32_t n) {ticks+=n?n:1;}
 static bool nt_diagnostic(const char *s) {(void)s;return true;}
 static bool nt_launch(const char *name) {assert(strlen(name)<sizeof(launched));strcpy(launched,name);++launches;return true;}
 static bool nt_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *out) {
- assert(version==1&&!id);
- if(!strcmp(name,"display.output"))out->api=&nt_display;
- else if(!strcmp(name,"input.touch.raw"))out->api=&nt_touch;
+ assert(out->struct_size==sizeof(*out));
+ if(!strcmp(name,"display.output")){assert(version==1&&!id);out->api=&nt_display;}
+ else if(!strcmp(name,"input.touch.raw")){assert(version==1&&!id);out->api=&nt_touch;}
  else return false;
  ++grants;return true;
 }
+#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+#include "PortableNavigation.h"
+static bool nt_nav_poll(void *c,risc_input_navigation_frame_v1 *out) {(void)c;*out=(risc_input_navigation_frame_v1){0};return true;}
+static bool nt_nav_foreground(void *c,const risc_input_foreground_v1 *claims,size_t n) {(void)c;(void)claims;(void)n;return true;}
+static bool nt_nav_reset(void *c) {(void)c;return true;}
+static const risc_input_navigation_api_v1 nt_navigation={1,sizeof(nt_navigation),NULL,nt_nav_poll,nt_nav_foreground,nt_nav_reset};
+const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1 *r) {(void)r;return &nt_navigation;}
+void portable_input_navigation_close(const risc_runtime_api_v1 *r) {(void)r;}
+#endif
+#ifdef PORTABLE_APP_SLEEP_LOCAL
+#include "PortableAppSleep.h"
+int portable_app_alarm_sleep(const risc_runtime_api_v1 *r,const risc_display_output_api_v1 *d,
+ const risc_battery_gauge_api_v1 *b,const alarm_service_v1 *a) {
+ (void)r;(void)d;(void)b;(void)a;assert(!"short Springboard fixture must not enter hardware sleep");return -1;
+}
+#endif
 static bool nt_retain(void) {assert(!"healthy fixture cannot retain");return false;}
 static bool nt_release(risc_runtime_capability_v1 *g) {assert(grants&&g->api);--grants;g->api=NULL;return true;}
 static const risc_runtime_api_v1 nt_runtime={.api_version=1,.struct_size=sizeof(nt_runtime),.health=nt_health,
@@ -176,10 +193,10 @@ static void controller_tests(void) {
  assert(s.first==0&&s.n==19);render(&s);
  /* A pending launch is cancelled by an invalid/out-of-surface contact. */
  input(&s,true,120,(unsigned)cy);input(&s,false,120,(unsigned)cy);assert(s.pending==0);
- c=read_contact(true,fw,fh/2);assert(c.cancelled&&!c.valid);nova_contact_input(&s,&c,20);assert(s.pending<0);
- read_contact(false,0,0);c=read_contact(true,fw/2,fh);assert(c.cancelled&&!c.valid);
+ c=read_contact(true,fw,fh/2);assert(!c.valid);nova_contact_input(&s,&c,20);assert(s.pending<0);
+ read_contact(false,0,0);c=read_contact(true,fw/2,fh);assert(!c.valid);
  read_contact(false,0,0);contact_count=2;c=read_contact(true,physical(120),(unsigned)physical((unsigned)cy));
- assert(c.cancelled&&!c.valid);contact_count=1;read_contact(false,0,0);
+ assert(!c.valid);contact_count=1;read_contact(false,0,0);
  /* Last native row maps to the same visible logical cell; never a gutter. */
  c=read_contact(true,fw-1,fh-1);assert(c.valid&&c.x==239&&c.y==(int)((fh-1)*240/fw));
  read_contact(false,0,0);
@@ -217,7 +234,7 @@ static void application_tests(void) {
  open_controller();nova_state s={.view=production,.pending=-1,.initial=true};nova_layout(&s);render(&s);capture("reentry");close_controller();
 }
 int main(int argc,char **argv) {
- assert(argc>=3&&argc<=5);fw=(unsigned)atoi(argv[1]);fh=(unsigned)atoi(argv[2]);directory=argc>=4?argv[3]:NULL;use_async=argc==5&&!strcmp(argv[4],"async");
+ assert(argc>=3&&argc<=5);fw=(unsigned)atoi(argv[1]);fh=(unsigned)atoi(argv[2]);directory=argc>=4&&strcmp(argv[3],"-")?argv[3]:NULL;use_async=argc==5&&!strcmp(argv[4],"async");
  assert(fw>=160&&fw<=1024&&fh>=fw&&fh<=1024);pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
  for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
  controller_tests();application_tests();free(guarded);

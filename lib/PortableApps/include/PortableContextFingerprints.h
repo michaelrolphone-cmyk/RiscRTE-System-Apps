@@ -6,7 +6,7 @@
  * copied models only. Source namespaces are the existing Audio@2 and RF@3. */
 static uint8_t portable_fp_bytes[72000];
 static inline bool portable_fp_record(portable_contexts_client*c,unsigned source,bool load){
-    if(c->fingerprint_store.api)return false; /* terminal retained storage fence */
+    if(c->acquisition_uncertain||c->fingerprint_store.api)return false; /* terminal retained storage fence */
     const contexts_fingerprint_service_v1*api=contexts_fingerprint_api(c->api);
     if(!api)return true;
     contexts_fingerprint_status_v1 status={.struct_size=sizeof(status)};
@@ -17,6 +17,7 @@ static inline bool portable_fp_record(portable_contexts_client*c,unsigned source
     if(load&&(status.dirty_sources&source))return true;
     c->fingerprint_store=(risc_runtime_capability_v1){.struct_size=sizeof(c->fingerprint_store)};
     if(!c->runtime->acquire(RISC_SHARED_DATA_CAPABILITY,1,source==CONTEXTS_AUDIO?2:3,&c->fingerprint_store)){
+        if(!portable_optional_missing(c->runtime,&c->fingerprint_store)){c->acquisition_uncertain=true;return false;}
         c->fingerprint_error=RISC_APP_DATA_UNAVAILABLE;if(load)c->fingerprint_unread|=source;return true;
     }
     const risc_app_data_v1*files=c->fingerprint_store.api;
@@ -40,12 +41,12 @@ static inline bool portable_fp_record(portable_contexts_client*c,unsigned source
     }
     if(load){if(rc)c->fingerprint_unread|=source;else c->fingerprint_unread&=~source;}
     if(rc)c->fingerprint_error=rc;
-    if(rc==RISC_APP_DATA_RETAINED)return false;
-    if(!c->runtime->release(&c->fingerprint_store))return false;
+    if(rc==RISC_APP_DATA_RETAINED||rc==RISC_APP_DATA_CONTEXT){c->acquisition_uncertain=true;return false;}
+    if(!c->runtime->release(&c->fingerprint_store)){c->acquisition_uncertain=true;return false;}
     memset(&c->fingerprint_store,0,sizeof(c->fingerprint_store));return true;
 }
 static inline bool portable_fp_checkpoint(portable_contexts_client*c,bool load){
-    if(c->fingerprint_store.api)return false;
+    if(c->acquisition_uncertain||c->fingerprint_store.api)return false;
     if(!contexts_fingerprint_api(c->api))return true;
     c->fingerprint_error=0;
     if(!c->api->pause(c->api->context))return false;

@@ -33,9 +33,17 @@ int main(void){
  write_fail=true;assert(!portable_broadcast_set_enabled(&c,false)&&!live&&!copied.settings_valid);n=reads;now+=10000;assert(portable_broadcast_step(&c,true)&&!live&&reads==n);write_fail=false;assert(portable_broadcast_set_enabled(&c,false)&&!copied.enabled);
  record[3]^=1;assert(portable_broadcast_pause(&c)&&portable_broadcast_step(&c,true)&&!copied.settings_valid&&!live);assert(portable_broadcast_set_enabled(&c,true)&&portable_broadcast_step(&c,true)&&live);
  read_fail=true;now+=1000;assert(portable_broadcast_step(&c,true)&&!live&&!copied.settings_valid);read_fail=false;now+=1000;assert(portable_broadcast_step(&c,true)&&live);
- release_failures=2;now+=1000;assert(!portable_broadcast_step(&c,true)&&!live&&c.storage.api&&grants==2);n=reads;
- assert(!portable_broadcast_step(&c,true)&&reads==n&&!live);assert(portable_broadcast_step(&c,true)&&!c.storage.api&&grants==1&&live);
- health_lost=true;assert(portable_broadcast_step(&c,true)&&!live);health_lost=false;assert(portable_broadcast_step(&c,true)&&live);
  n=pauses;assert(portable_broadcast_close(&c,&rt)&&!grants&&live&&pauses==n);
- puts("Broadcast client: app-only namespace1 policy, paced reads, exact-write reconciliation, disabled restart, radio overrides, corrupt/unread records, failed-save latch, storage-release retry and healthy grant release PASS");
+ portable_broadcast_client lost;assert(portable_broadcast_open(&lost,&rt));
+ health_lost=true;n=pauses;unsigned old_steps=steps,old_reads=reads,old_grants=grants;
+ assert(!portable_broadcast_step(&lost,true)&&lost.acquisition_uncertain);
+ assert(!portable_broadcast_step(&lost,true)&&!portable_broadcast_pause(&lost)&&!portable_broadcast_close(&lost,&rt));
+ assert(pauses==n&&steps==old_steps&&reads==old_reads&&grants==old_grants);health_lost=false;
+ portable_broadcast_client retained;assert(portable_broadcast_open(&retained,&rt));
+ release_failures=1;now+=1000;n=pauses;old_steps=steps;
+ assert(!portable_broadcast_step(&retained,true)&&retained.acquisition_uncertain&&retained.storage.api);
+ old_reads=reads;old_grants=grants;
+ assert(!portable_broadcast_step(&retained,true)&&!portable_broadcast_close(&retained,&rt));
+ assert(reads==old_reads&&grants==old_grants&&steps==old_steps&&pauses==n);
+ puts("Broadcast client: preference policy, healthy grant lifecycle, terminal health/release failure without further I/O PASS");
 }

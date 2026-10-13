@@ -24,17 +24,19 @@ static bool contexts_rules_tick(void){
 #endif
  if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_EVALUATE,&q))return false;
  if(q.result.changed){
-  if(!portable_contexts_pause(&contexts_client))return false;
+  if(!portable_contexts_stop())return false;
   contexts_client.storage=(risc_runtime_capability_v1){.struct_size=sizeof(contexts_client.storage)};
   bool opened=rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&contexts_client.storage),ok=opened;
+  if(!opened&&!portable_optional_missing(rt,&contexts_client.storage)){contexts_client.acquisition_uncertain=true;return false;}
+  portable_optional_kv checked;const risc_key_value_v1 *kv=portable_optional_kv_open(&checked,contexts_client.storage.api,&contexts_client.acquisition_uncertain);
   uint16_t success=0;
   for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.changed&(1u<<f)){
-   bool applied=opened&&portable_context_setting(contexts_client.storage.api,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
+   bool applied=opened&&portable_context_setting(kv,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
   }
   if(!portable_contexts_release_storage(&contexts_client))return false;
   for(unsigned i=0;i<CR_RULES;i++){bool changed=false,complete=true;for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.winners[f]==(int)i&&(q.result.changed&(1u<<f))){changed=true;complete&=(success&(1u<<f))!=0;}if(changed){contexts_workflow_v1 report={.struct_size=sizeof(report),.rule=i,.result=complete?CR_APPLIED:CR_PARTIAL};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&report))return false;}}
 #ifdef PORTABLE_QUICK_ACTIONS
-  if(opened&&(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display)))return false;
+  if(opened&&(!quick_load()||!pqa_session_restore(&quick,display)))return false;
 #ifdef PORTABLE_QUICK_RADIOS
   if(opened&&!pqa_radios_resume(&quick_radios,&quick.ui,rt))return false;
 #endif
@@ -45,10 +47,10 @@ static bool contexts_rules_tick(void){
  contexts_workflow_v1 action={.struct_size=sizeof(action),.claim=true};
  if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&action))return false;
  if(action.available){
-  if(!portable_contexts_pause(&contexts_client))return false;
+  if(!portable_contexts_stop())return false;
   bool ok=false;
   if(action.step.kind==CR_MESSAGE){memcpy(context_message,action.step.text,sizeof(context_message));context_message_open=true;ok=true;}
-  else if(action.step.kind==CR_TIMER){ok=portable_context_timer(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage);if(contexts_client.storage.api)return false;}
+  else if(action.step.kind==CR_TIMER){ok=portable_context_timer_checked(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage,&contexts_client.acquisition_uncertain);if(contexts_client.acquisition_uncertain||portable_optional_grant_owned(&contexts_client.storage))return false;}
   else if(action.step.kind==CR_LAUNCH){
    bool installed=false;for(unsigned i=0;i<portable_catalog_count;i++)if(portable_catalog[i].compatible&&!strcmp(portable_catalog[i].file_name,action.step.text))installed=true;
    if(installed&&app_allows_launch(action.step.text)){
@@ -65,7 +67,7 @@ static bool contexts_rules_tick(void){
  * No application receives the dismiss tap as an unrelated app action. */
 static bool contexts_message_foreground(void){
  if(!context_message_open)return true;
- if(!portable_contexts_pause(&contexts_client))return false;
+ if(!portable_contexts_stop())return false;
  bool painted=false;
  while(context_message_open&&!failed){
   if(!canvas_progress())return false;

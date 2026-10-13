@@ -30,6 +30,13 @@ jobs:
           python scripts/test_watch_native_height.py
           python scripts/test_watch_native_springboard.py
           python scripts/test_watch_native_springboard_transition.py
+      - name: Optional-service startup and terminal authority
+        run: |
+          python scripts/test_optional_service_adapter.py
+          python scripts/test_watch_native_springboard_features.py
+          python scripts/test_context_adapter.py
+          python scripts/test_broadcast_adapter.py
+          python scripts/test_portable_alarm.py
       - name: RTC synchronization and retained interaction regressions
         run: |
           python scripts/test_settings_clock_change.py
