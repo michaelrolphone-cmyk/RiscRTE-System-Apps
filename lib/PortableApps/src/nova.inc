@@ -68,7 +68,13 @@ static void np_begin(void) { clear_color(0);nova_mask_pending=true; }
 static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
   if(radius<1 || radius>64)return;
   for(int j=-radius;j<=radius;++j)for(int i=-radius;i<=radius;++i){
-    int d=(int)np_root((unsigned)(i*i+j*j)*256u);
+    unsigned squared=(unsigned)(i*i+j*j);
+    /* Only the one-pixel antialiased rim needs a square root. */
+    if(squared>=(unsigned)(radius*radius))continue;
+    if(squared<=(unsigned)((radius-1)*(radius-1))) {
+      np_pixel(x+i,y+j,rgb,opacity);continue;
+    }
+    int d=(int)np_root(squared*256u);
     int edge=radius*16-d;
     unsigned a=edge>=16?opacity:edge>0?(unsigned)edge*opacity/16:0;
     np_pixel(x+i,y+j,rgb,a);
@@ -81,27 +87,39 @@ static void np_mask(void) {
   if(!nova_mask_pending || !surface.frame)return;
   nova_mask_pending=false;
 
-  for(int y=0;y<height();++y)for(int x=0;x<width();++x){
-#ifdef PORTABLE_CONTEXTS_RASTER
-    if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
-#endif
-    int lx=x,ly=y;
+  const int physical_width=width(),physical_height=height();
+  const int logical_width=np_width(),logical_height=np_height();
+  for(int y=0;y<physical_height;++y) {
+    int ly=y;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
-    /* Use the same inverse as touch and logical-pixel rasterization. The
-     * original edge feather keeps its proportions on a taller native panel. */
-    lx=(int)((uint32_t)x*WATCH_LAYOUT_WIDTH/native_watch_layout.physical_width);
     ly=(int)((uint32_t)y*WATCH_LAYOUT_WIDTH/native_watch_layout.physical_width);
+    uint32_t logical_x=0,remainder=0;
 #endif
-    int dx=lx<np_width()-lx?lx:np_width()-lx,dy=ly<np_height()-ly?ly:np_height()-ly;
-    unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
+    int dy=ly<logical_height-ly?ly:logical_height-ly;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
-    unsigned a=ax*ay/255;
-    if(a==255)continue;
-    if(dx<22 && dy<22 && (22-dx)*(22-dx)+(22-dy)*(22-dy)>22*22)a=0;
-    uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
-    uint16_t c=(uint16_t)(p[0]|p[1]<<8);
-    c=(uint16_t)((((c>>11)&31)*a/255)<<11|(((c>>5)&63)*a/255)<<5|((c&31)*a/255));
-    p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
+    for(int x=0;x<physical_width;++x){
+#ifdef PORTABLE_CONTEXTS_RASTER
+      if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
+#endif
+      int lx=x;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+      /* Exact inverse mapping by quotient/remainder, with no per-pixel divide. */
+      lx=(int)logical_x;
+      remainder+=WATCH_LAYOUT_WIDTH;
+      while(remainder>=native_watch_layout.physical_width) {
+        remainder-=native_watch_layout.physical_width;++logical_x;
+      }
+#endif
+      int dx=lx<logical_width-lx?lx:logical_width-lx;
+      unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
+      unsigned a=ax*ay/255;
+      if(a==255)continue;
+      if(dx<22 && dy<22 && (22-dx)*(22-dx)+(22-dy)*(22-dy)>22*22)a=0;
+      uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
+      uint16_t c=(uint16_t)(p[0]|p[1]<<8);
+      c=(uint16_t)((((c>>11)&31)*a/255)<<11|(((c>>5)&63)*a/255)<<5|((c&31)*a/255));
+      p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
+    }
   }
 }
 /* One solid backing for the whole text block, including spaces. Six pixels of
