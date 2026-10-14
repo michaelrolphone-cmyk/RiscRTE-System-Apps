@@ -1,0 +1,848 @@
+catalog-and-target-reproduction	Set up job	﻿2026-10-14T14:06:49.1204881Z Current runner version: '2.337.0'
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1232572Z ##[group]Runner Image Provisioner
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1233669Z Hosted Compute Agent
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1234342Z Version: 20261002.596
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1235122Z Commit: c3d12f3313a95f25162a1503be624f3b0617f8c0
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1235965Z Build Date: 2026-10-02T22:28:27Z
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1236745Z Worker ID: {b04d2128-69ca-47d4-a54f-f1081cdb4e04}
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1237579Z Region: westus
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1238198Z Cloud: Azure
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1238832Z ##[endgroup]
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1240590Z ##[group]Operating System
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1241301Z Ubuntu
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1242004Z 24.04.5
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1242818Z LTS
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1243800Z ##[endgroup]
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1244416Z ##[group]Runner Image
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1245091Z Image: ubuntu-24.04
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1245773Z Version: 20261004.327.1
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1246996Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261004.327/images/ubuntu/Ubuntu2404-Readme.md
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1248990Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261004.327
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1250057Z ##[endgroup]
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1251296Z ##[group]GITHUB_TOKEN Permissions
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1253900Z Contents: read
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1254652Z Metadata: read
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1255283Z ##[endgroup]
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1257467Z Secret source: Actions
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1258489Z Cache mode: write
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1259241Z Prepare workflow directory
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1628724Z Prepare all required actions
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.1678696Z Getting action download info
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.5438728Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.6441828Z Download action repository 'actions/setup-python@v5' (SHA:a26af69be951a213d495a4c3e4e4022e16d87065)
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.7241282Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+catalog-and-target-reproduction	Set up job	2026-10-14T14:06:49.9595116Z Complete job name: catalog-and-target-reproduction
+catalog-and-target-reproduction	Run actions/checkout@v4	﻿2026-10-14T14:06:50.0459826Z ##[group]Run actions/checkout@v4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0460773Z with:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0461282Z   ref: 7ba3f1404ffe0ec717854be3cb25863e811a18a4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0461908Z   fetch-depth: 0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0462611Z   persist-credentials: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0463263Z   repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0467471Z   token: ***
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0467915Z   ssh-strict: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0468364Z   ssh-user: git
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0468809Z   clean: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0469263Z   sparse-checkout-cone-mode: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0469949Z   fetch-tags: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0470406Z   show-progress: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0470862Z   lfs: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0471276Z   submodules: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0471731Z   set-safe-directory: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0472384Z   allow-unsafe-pr-checkout: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.0473233Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1542644Z Syncing repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1545551Z ##[group]Getting Git version info
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1546913Z Working directory is '/home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps'
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1548804Z [command]/usr/bin/git version
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1600642Z git version 2.55.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1625868Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1641035Z Temporarily overriding HOME='/home/runner/work/_temp/1ee2f87f-cff1-4b05-a538-8cf3ae56ad8e' before making global git config changes
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1644122Z Adding repository directory to the temporary git global config as a safe directory
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1647134Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1707797Z Deleting the contents of '/home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps'
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1712347Z ##[group]Initializing the repository
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1716544Z [command]/usr/bin/git init /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1865641Z hint: Using 'master' as the name for the initial branch. This default branch name
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1874396Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1877911Z hint: to use in all of your new repositories, which will suppress this warning,
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1879889Z hint: call:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1880991Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1882423Z hint: 	git config --global init.defaultBranch <name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1883948Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1885302Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1887648Z hint: 'development'. The just-created branch can be renamed via this command:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1889220Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1890496Z hint: 	git branch -m <name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1891634Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1893285Z hint: Disable this message with "git config set advice.defaultBranchName false"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1895661Z Initialized empty Git repository in /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.git/
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1901920Z [command]/usr/bin/git remote add origin https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1948265Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1949834Z ##[group]Disabling automatic garbage collection
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1953123Z [command]/usr/bin/git config --local gc.auto 0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1989811Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1991502Z ##[group]Setting up auth
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.1998129Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.2035573Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.2498839Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.2556614Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.2811853Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.2852730Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.3083230Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.3124882Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.3126512Z ##[group]Fetching the repository
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:50.3136865Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3307533Z From https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3312483Z  * [new branch]      checkpoint/scene-014-reconstruction -> origin/checkpoint/scene-014-reconstruction
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3315599Z  * [new branch]      checkpoint/text-012-home-reason -> origin/checkpoint/text-012-home-reason
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3318672Z  * [new branch]      checkpoint/usb-transfer-reconstruction -> origin/checkpoint/usb-transfer-reconstruction
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3321329Z  * [new branch]      checkpoint/watch19-system-integration -> origin/checkpoint/watch19-system-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3324653Z  * [new branch]      checkpoint/x4-points-0617-adapter -> origin/checkpoint/x4-points-0617-adapter
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3328072Z  * [new branch]      checkpoint/x4-usb-transfer-034-source -> origin/checkpoint/x4-usb-transfer-034-source
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3330321Z  * [new branch]      codex/nova7-ota-store-paper -> origin/codex/nova7-ota-store-paper
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3332368Z  * [new branch]      codex/nova7-paper-wifi   -> origin/codex/nova7-paper-wifi
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3334687Z  * [new branch]      codex/portable-launcher  -> origin/codex/portable-launcher
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3337409Z  * [new branch]      codex/portable-raster-snapshot-20261010 -> origin/codex/portable-raster-snapshot-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3340605Z  * [new branch]      codex/raster-union-qualification-20261010 -> origin/codex/raster-union-qualification-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3343790Z  * [new branch]      codex/sparse-clock-adapter -> origin/codex/sparse-clock-adapter
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3346623Z  * [new branch]      codex/universal-ui-phase2-20261010 -> origin/codex/universal-ui-phase2-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3349482Z  * [new branch]      codex/watch-contexts-client -> origin/codex/watch-contexts-client
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3351919Z  * [new branch]      codex/x4-clock-sleep-wake -> origin/codex/x4-clock-sleep-wake
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3354594Z  * [new branch]      codex/x4-portable-timezone-core -> origin/codex/x4-portable-timezone-core
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3357186Z  * [new branch]      dot/t035-springboard-focus -> origin/dot/t035-springboard-focus
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3360525Z  * [new branch]      experimental/wifi-intent-reconcile -> origin/experimental/wifi-intent-reconcile
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3365148Z  * [new branch]      experimental/x4-settings-persistence-20261012 -> origin/experimental/x4-settings-persistence-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3368811Z  * [new branch]      feat/alarm-foreground-integration -> origin/feat/alarm-foreground-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3373087Z  * [new branch]      feat/app-owned-launch-guard -> origin/feat/app-owned-launch-guard
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3376482Z  * [new branch]      feat/checked-set-time-client -> origin/feat/checked-set-time-client
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3379368Z  * [new branch]      feat/contexts-model-client -> origin/feat/contexts-model-client
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3381973Z  * [new branch]      feat/declarative-alarms  -> origin/feat/declarative-alarms
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3384750Z  * [new branch]      feat/direct-peer-network -> origin/feat/direct-peer-network
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3387567Z  * [new branch]      feat/dynamic-installed-packages -> origin/feat/dynamic-installed-packages
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3390880Z  * [new branch]      feat/files-mounted-peer-browser -> origin/feat/files-mounted-peer-browser
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3394042Z  * [new branch]      feat/files-obd-current-20261012 -> origin/feat/files-obd-current-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3397073Z  * [new branch]      feat/files-volume-open-handoff -> origin/feat/files-volume-open-handoff
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3399939Z  * [new branch]      feat/full-cohort-updates -> origin/feat/full-cohort-updates
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3402802Z  * [new branch]      feat/nova-lists-components -> origin/feat/nova-lists-components
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3405800Z  * [new branch]      feat/nova7-epaper-file-browser -> origin/feat/nova7-epaper-file-browser
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3408710Z  * [new branch]      feat/nova7-epaper-layout -> origin/feat/nova7-epaper-layout
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3411325Z  * [new branch]      feat/nova7-paper-clock   -> origin/feat/nova7-paper-clock
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3414078Z  * [new branch]      feat/nova7-quick-controls -> origin/feat/nova7-quick-controls
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3416710Z  * [new branch]      feat/obd-telemetry-scene -> origin/feat/obd-telemetry-scene
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3419692Z  * [new branch]      feat/paper-space-default-entry -> origin/feat/paper-space-default-entry
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3423860Z  * [new branch]      feat/points-alert-labels -> origin/feat/points-alert-labels
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3427245Z  * [new branch]      feat/points-nova7-fidelity -> origin/feat/points-nova7-fidelity
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3431159Z  * [new branch]      feat/points-nova7-fidelity-v2 -> origin/feat/points-nova7-fidelity-v2
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3435007Z  * [new branch]      feat/portable-app-store  -> origin/feat/portable-app-store
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3437724Z  * [new branch]      feat/portable-audio-lifecycle -> origin/feat/portable-audio-lifecycle
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3440819Z  * [new branch]      feat/portable-daily-apps -> origin/feat/portable-daily-apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3443743Z  * [new branch]      feat/portable-deep-desk-clock -> origin/feat/portable-deep-desk-clock
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3446556Z  * [new branch]      feat/portable-desk-clock-faces -> origin/feat/portable-desk-clock-faces
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3449452Z  * [new branch]      feat/portable-desk-clock-policy -> origin/feat/portable-desk-clock-policy
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3452423Z  * [new branch]      feat/portable-firmware-update -> origin/feat/portable-firmware-update
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3455108Z  * [new branch]      feat/portable-power-status -> origin/feat/portable-power-status
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3457656Z  * [new branch]      feat/portable-radio-session -> origin/feat/portable-radio-session
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3460571Z  * [new branch]      feat/portable-update-services -> origin/feat/portable-update-services
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3463362Z  * [new branch]      feat/portable-wifi-settings -> origin/feat/portable-wifi-settings
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3466638Z  * [new branch]      feat/reader-document-components -> origin/feat/reader-document-components
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3469757Z  * [new branch]      feat/reader-nova7-gui    -> origin/feat/reader-nova7-gui
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3472711Z  * [new branch]      feat/saved-files-webdav-checkpoint -> origin/feat/saved-files-webdav-checkpoint
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3475811Z  * [new branch]      feat/settings-tap-calibration -> origin/feat/settings-tap-calibration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3478386Z  * [new branch]      feat/settings-time-format -> origin/feat/settings-time-format
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3481166Z  * [new branch]      feat/settings-time-format-alert-mode -> origin/feat/settings-time-format-alert-mode
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3484323Z  * [new branch]      feat/settings-timezone-opt-in -> origin/feat/settings-timezone-opt-in
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3489134Z  * [new branch]      feat/shared-files-system-782fcbb -> origin/feat/shared-files-system-782fcbb
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3492360Z  * [new branch]      feat/shared-files-webdav-broker -> origin/feat/shared-files-webdav-broker
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3495568Z  * [new branch]      feat/source-bound-update-routes -> origin/feat/source-bound-update-routes
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3498139Z  * [new branch]      feat/spectrum-live-idle  -> origin/feat/spectrum-live-idle
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3500660Z  * [new branch]      feat/t057-scene-landscape -> origin/feat/t057-scene-landscape
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3503410Z  * [new branch]      feat/temporal-fingerprint-fusion -> origin/feat/temporal-fingerprint-fusion
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3506459Z  * [new branch]      feat/temporal-fingerprint-fusion-x4 -> origin/feat/temporal-fingerprint-fusion-x4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3509108Z  * [new branch]      feat/timecard-catalog    -> origin/feat/timecard-catalog
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3511549Z  * [new branch]      feat/watch-1.0.5-integration -> origin/feat/watch-1.0.5-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3582678Z  * [new branch]      feat/watch-broadcast-and-capture -> origin/feat/watch-broadcast-and-capture
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3586126Z  * [new branch]      feat/watch-canvas-catalog -> origin/feat/watch-canvas-catalog
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3588549Z  * [new branch]      feat/watch-file-browser  -> origin/feat/watch-file-browser
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3590922Z  * [new branch]      feat/watch-low-battery-mode -> origin/feat/watch-low-battery-mode
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3593655Z  * [new branch]      feat/wifi-scene-manager  -> origin/feat/wifi-scene-manager
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3596181Z  * [new branch]      feat/x4-auto-provision-20261013 -> origin/feat/x4-auto-provision-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3599067Z  * [new branch]      feat/x4-completed-app-integration -> origin/feat/x4-completed-app-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3602314Z  * [new branch]      feat/x4-deferred-home-radios-20261012 -> origin/feat/x4-deferred-home-radios-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3605140Z  * [new branch]      feat/x4-desk-clock-settings -> origin/feat/x4-desk-clock-settings
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3607828Z  * [new branch]      feat/x4-obd-current-scene-20261012 -> origin/feat/x4-obd-current-scene-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3610767Z  * [new branch]      feat/x4-paper-home-controls -> origin/feat/x4-paper-home-controls
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3613646Z  * [new branch]      feat/x4-reader-clock-parity -> origin/feat/x4-reader-clock-parity
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3616274Z  * [new branch]      feat/x4-visual-alert-settings -> origin/feat/x4-visual-alert-settings
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3619246Z  * [new branch]      feature/files-shared-text-input-20261012 -> origin/feature/files-shared-text-input-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3622446Z  * [new branch]      fix/alarm-countdown-icons -> origin/fix/alarm-countdown-icons
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3624879Z  * [new branch]      fix/audio-tools-integration -> origin/fix/audio-tools-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3627570Z  * [new branch]      fix/capability-display-dimensions -> origin/fix/capability-display-dimensions
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3630260Z  * [new branch]      fix/current-watch-icon-pack -> origin/fix/current-watch-icon-pack
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3632897Z  * [new branch]      fix/entropy-offline-bootstrap -> origin/fix/entropy-offline-bootstrap
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3635555Z  * [new branch]      fix/files-connection-stage-logs -> origin/fix/files-connection-stage-logs
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3638355Z  * [new branch]      fix/files-peer-alarm-lease-20261012 -> origin/fix/files-peer-alarm-lease-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3641008Z  * [new branch]      fix/fini-background-cleanup -> origin/fix/fini-background-cleanup
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3643435Z  * [new branch]      fix/native-crown-exit    -> origin/fix/native-crown-exit
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3645484Z  * [new branch]      fix/nova-shared-ui       -> origin/fix/nova-shared-ui
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3647580Z  * [new branch]      fix/paper-present-wait   -> origin/fix/paper-present-wait
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3649970Z  * [new branch]      fix/quick-controls-async-close -> origin/fix/quick-controls-async-close
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3652808Z  * [new branch]      fix/restored-springboard-drag -> origin/fix/restored-springboard-drag
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3655532Z  * [new branch]      fix/sdr-springboard-catalog-limit -> origin/fix/sdr-springboard-catalog-limit
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3658184Z  * [new branch]      fix/settings-nova-ui     -> origin/fix/settings-nova-ui
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3660963Z  * [new branch]      fix/shared-input-render-decoupling-20261014 -> origin/fix/shared-input-render-decoupling-20261014
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3664442Z  * [new branch]      fix/shared-keyboard-current-20261012 -> origin/fix/shared-keyboard-current-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3666985Z  * [new branch]      fix/shared-settings-sd   -> origin/fix/shared-settings-sd
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3669215Z  * [new branch]      fix/springboard-nova-icons -> origin/fix/springboard-nova-icons
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3671438Z  * [new branch]      fix/t030-waveshare-drag  -> origin/fix/t030-waveshare-drag
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3673675Z  * [new branch]      fix/t046-shared-keyboard -> origin/fix/t046-shared-keyboard
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3676671Z  * [new branch]      fix/t051-watch-wifi-cooperative-progress-20261014 -> origin/fix/t051-watch-wifi-cooperative-progress-20261014
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3680280Z  * [new branch]      fix/t051-wifi-cooperative-progress-20261014 -> origin/fix/t051-wifi-cooperative-progress-20261014
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3683135Z  * [new branch]      fix/t053-usb-portability -> origin/fix/t053-usb-portability
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3685185Z  * [new branch]      fix/t054-persistence     -> origin/fix/t054-persistence
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3687377Z  * [new branch]      fix/t063-wave-catalog-startup -> origin/fix/t063-wave-catalog-startup
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3689711Z  * [new branch]      fix/t064-crash-persistence -> origin/fix/t064-crash-persistence
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3692144Z  * [new branch]      fix/t064-profile-reproduction -> origin/fix/t064-profile-reproduction
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3694743Z  * [new branch]      fix/t064-x4-crash-persistence -> origin/fix/t064-x4-crash-persistence
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3697457Z  * [new branch]      fix/update-capability-api-pairs -> origin/fix/update-capability-api-pairs
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3699853Z  * [new branch]      fix/usb-active-poll-017  -> origin/fix/usb-active-poll-017
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3701950Z  * [new branch]      fix/watch-canvas-crown   -> origin/fix/watch-canvas-crown
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3704655Z  * [new branch]      fix/watch-compact-scene-043-20261012 -> origin/fix/watch-compact-scene-043-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3707343Z  * [new branch]      fix/watch-files-runtime-extent -> origin/fix/watch-files-runtime-extent
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3710153Z  * [new branch]      fix/watch-points-color-profile-20261012 -> origin/fix/watch-points-color-profile-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3713075Z  * [new branch]      fix/watch-raster-cooperation -> origin/fix/watch-raster-cooperation
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3715399Z  * [new branch]      fix/watch-rf-quick-gesture -> origin/fix/watch-rf-quick-gesture
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3717987Z  * [new branch]      fix/watch-rtc-first-attempt-20261012 -> origin/fix/watch-rtc-first-attempt-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3720375Z  * [new branch]      fix/wifi-nova-ui         -> origin/fix/wifi-nova-ui
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3722748Z  * [new branch]      fix/wifi-profile-persistence-078 -> origin/fix/wifi-profile-persistence-078
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3725220Z  * [new branch]      fix/wifi-resident-scan-078 -> origin/fix/wifi-resident-scan-078
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3727640Z  * [new branch]      fix/wifi-scan-profiles-keyboard -> origin/fix/wifi-scan-profiles-keyboard
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3729917Z  * [new branch]      fix/x4-087-lock-wake     -> origin/fix/x4-087-lock-wake
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3732420Z  * [new branch]      fix/x4-alarm-startup-busy-20261012 -> origin/fix/x4-alarm-startup-busy-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3735105Z  * [new branch]      fix/x4-desk-minute-wake-20261012 -> origin/fix/x4-desk-minute-wake-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3737751Z  * [new branch]      fix/x4-home-alarm-progress-20261012 -> origin/fix/x4-home-alarm-progress-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3740246Z  * [new branch]      fix/x4-paper-app-progress -> origin/fix/x4-paper-app-progress
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3743244Z  * [new branch]      fix/x4-points-policy-bridge-20261013 -> origin/fix/x4-points-policy-bridge-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3746043Z  * [new branch]      fix/x4-reader-regressions-20261012 -> origin/fix/x4-reader-regressions-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3748481Z  * [new branch]      fix/x4-render-performance -> origin/fix/x4-render-performance
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3750891Z  * [new branch]      fix/x4-rtc-reconciliation-20261013 -> origin/fix/x4-rtc-reconciliation-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3753751Z  * [new branch]      fix/x4-scanner-modal-policy-20261013 -> origin/fix/x4-scanner-modal-policy-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3756307Z  * [new branch]      fix/x4-touch-report-recovery -> origin/fix/x4-touch-report-recovery
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3758749Z  * [new branch]      fix/x4-wifi-modal-policy-20261013 -> origin/fix/x4-wifi-modal-policy-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3761284Z  * [new branch]      integrate/direct-files-lock-089 -> origin/integrate/direct-files-lock-089
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3763762Z  * [new branch]      integrate/t046-wave-points -> origin/integrate/t046-wave-points
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3766273Z  * [new branch]      integrate/t052-mounted-files-20261014 -> origin/integrate/t052-mounted-files-20261014
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3769014Z  * [new branch]      integrate/t054-product-preferences -> origin/integrate/t054-product-preferences
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3771565Z  * [new branch]      integrate/t054-rgb-preferences -> origin/integrate/t054-rgb-preferences
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3774622Z  * [new branch]      integrate/t069-diagnostics-alarm-progress -> origin/integrate/t069-diagnostics-alarm-progress
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3777572Z  * [new branch]      integrate/watch-x4-recovery-20261011 -> origin/integrate/watch-x4-recovery-20261011
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3780748Z  * [new branch]      integrate/x4-current-clock-reconciliation-20261014 -> origin/integrate/x4-current-clock-reconciliation-20261014
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3784040Z  * [new branch]      integrate/x4-sd-apps-073 -> origin/integrate/x4-sd-apps-073
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3786308Z  * [new branch]      investigate/watch-list-cadence -> origin/investigate/watch-list-cadence
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3788924Z  * [new branch]      investigation/historical-elf-lineage -> origin/investigation/historical-elf-lineage
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3791088Z  * [new branch]      main                     -> origin/main
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3793438Z  * [new branch]      migration/independent-system-app-build -> origin/migration/independent-system-app-build
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3796288Z  * [new branch]      migration/initial-system-app-parity -> origin/migration/initial-system-app-parity
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3798994Z  * [new branch]      migration/system-app-source-parity -> origin/migration/system-app-source-parity
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3801419Z  * [new branch]      parity/file-browser-1.2.0 -> origin/parity/file-browser-1.2.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3803736Z  * [new branch]      parity/file-browser-1.2.0-v2 -> origin/parity/file-browser-1.2.0-v2
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3806043Z  * [new branch]      parity/file-browser-1.2.0-v3 -> origin/parity/file-browser-1.2.0-v3
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3808666Z  * [new branch]      parity/manifest-reconcile-reader-82caa -> origin/parity/manifest-reconcile-reader-82caa
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3811664Z  * [new branch]      parity/provenance-reader-3722a3f-20261002 -> origin/parity/provenance-reader-3722a3f-20261002
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3814784Z  * [new branch]      parity/reader-1e0188c1-system-apps -> origin/parity/reader-1e0188c1-system-apps
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3817618Z  * [new branch]      parity/status-bar-held-confirm-ca66db29 -> origin/parity/status-bar-held-confirm-ca66db29
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3820543Z  * [new branch]      parity/sync-all-reader-manifests-82caa -> origin/parity/sync-all-reader-manifests-82caa
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3823451Z  * [new branch]      parity/system-apps-20260926-2301 -> origin/parity/system-apps-20260926-2301
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3826068Z  * [new branch]      parity/system-apps-audit-20260927 -> origin/parity/system-apps-audit-20260927
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3829173Z  * [new branch]      parity/system-apps-springboard-wifi-20260926 -> origin/parity/system-apps-springboard-wifi-20260926
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3832253Z  * [new branch]      parity/system-apps-time-zone-1.0.0 -> origin/parity/system-apps-time-zone-1.0.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3834883Z  * [new branch]      parity/u1-package-workflows-82caa -> origin/parity/u1-package-workflows-82caa
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3837630Z  * [new branch]      publish/watch-alarm-terminal-retention -> origin/publish/watch-alarm-terminal-retention
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3840424Z  * [new branch]      publish/x4-alarm-terminal-retention -> origin/publish/x4-alarm-terminal-retention
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3842941Z  * [new branch]      recover/x4-wifi-1128-20261013 -> origin/recover/x4-wifi-1128-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3845473Z  * [new branch]      recovery/x4-crash-report-0327-20261010 -> origin/recovery/x4-crash-report-0327-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3848307Z  * [new branch]      recovery/x4-update-routes-015-20261010 -> origin/recovery/x4-update-routes-015-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3850801Z  * [new branch]      release/completed-20261011 -> origin/release/completed-20261011
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3853440Z  * [new branch]      release/watch-1.0.1-component-tags -> origin/release/watch-1.0.1-component-tags
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3856132Z  * [new branch]      release/watch-1.0.1-tag-followthrough -> origin/release/watch-1.0.1-tag-followthrough
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3858820Z  * [new branch]      release/watch-1.0.12-source-snapshot -> origin/release/watch-1.0.12-source-snapshot
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3861405Z  * [new branch]      release/watch-1.0.2-component-tags -> origin/release/watch-1.0.2-component-tags
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3864047Z  * [new branch]      test/gt911-contact-order-0110 -> origin/test/gt911-contact-order-0110
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3866635Z  * [new branch]      test/usb-preparation-ordered-touch-078 -> origin/test/usb-preparation-ordered-touch-078
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3869533Z  * [new branch]      witness/pinned-u1-button-remap -> origin/witness/pinned-u1-button-remap
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3871957Z  * [new branch]      work/files-input-policy-20261012 -> origin/work/files-input-policy-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3874575Z  * [new branch]      work/files-sharing-client -> origin/work/files-sharing-client
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3876861Z  * [new branch]      work/lists-shared-input-20261012 -> origin/work/lists-shared-input-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3879211Z  * [new branch]      work/lora-long-text-20261012 -> origin/work/lora-long-text-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3881935Z  * [new branch]      work/points-local-navigation-policy-20261012 -> origin/work/points-local-navigation-policy-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3885221Z  * [new branch]      work/remote-browser-backend-20261012 -> origin/work/remote-browser-backend-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3887896Z  * [new branch]      work/shared-watch-home-sdk-20261013 -> origin/work/shared-watch-home-sdk-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3890470Z  * [new branch]      work/shared-watch-system-20261013 -> origin/work/shared-watch-system-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3893424Z  * [new branch]      work/timecard-input-policy-20261012 -> origin/work/timecard-input-policy-20261012
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3896332Z  * [new branch]      work/universal-ui-state-recovery-20261010 -> origin/work/universal-ui-state-recovery-20261010
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3899117Z  * [new branch]      work/watch-native-height-20261013 -> origin/work/watch-native-height-20261013
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3901375Z  * [new branch]      work/watch-ui-checkpoint -> origin/work/watch-ui-checkpoint
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3903904Z  * [new branch]      work/webdav-entropy-integration -> origin/work/webdav-entropy-integration
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3905995Z  * [new tag]         app-app_store-v1.1.1     -> app-app_store-v1.1.1
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3907710Z  * [new tag]         app-app_store-v1.1.2     -> app-app_store-v1.1.2
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3909460Z  * [new tag]         app-file_browser-v1.4.0  -> app-file_browser-v1.4.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3911211Z  * [new tag]         app-ota_update-v1.1.1    -> app-ota_update-v1.1.1
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3913278Z  * [new tag]         app-ota_update-v1.1.2    -> app-ota_update-v1.1.2
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3915014Z  * [new tag]         app-settings-v1.2.4      -> app-settings-v1.2.4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3916726Z  * [new tag]         app-settings-v1.2.5      -> app-settings-v1.2.5
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3918447Z  * [new tag]         app-springboard-v1.4.6   -> app-springboard-v1.4.6
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3920203Z  * [new tag]         app-springboard-v1.4.9   -> app-springboard-v1.4.9
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3921942Z  * [new tag]         app-wifi_settings-v1.1.2 -> app-wifi_settings-v1.1.2
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3923999Z  * [new tag]         app-wifi_settings-v1.1.3 -> app-wifi_settings-v1.1.3
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3926131Z  * [new tag]         service-software-update-apps-v0.1.0 -> service-software-update-apps-v0.1.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3928636Z  * [new tag]         service-software-update-apps-v0.1.3 -> service-software-update-apps-v0.1.3
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3931237Z  * [new tag]         service-software-update-firmware-v0.1.0 -> service-software-update-firmware-v0.1.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3934319Z  * [new tag]         service-software-update-firmware-v0.1.3 -> service-software-update-firmware-v0.1.3
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3936503Z  * [new tag]         source-v2026.10.11       -> source-v2026.10.11
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3938167Z  * [new tag]         test-t046-keyboard-0.4.8 -> test-t046-keyboard-0.4.8
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3939984Z  * [new tag]         watch-v1.0.12            -> watch-v1.0.12
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3943793Z [command]/usr/bin/git rev-parse --verify --quiet 7ba3f1404ffe0ec717854be3cb25863e811a18a4^{object}
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3945749Z 7ba3f1404ffe0ec717854be3cb25863e811a18a4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3949222Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3952054Z ##[group]Determining the checkout info
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3954526Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3955773Z [command]/usr/bin/git sparse-checkout disable
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3958677Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3962608Z ##[group]Checking out the ref
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3964707Z [command]/usr/bin/git checkout --progress --force 7ba3f1404ffe0ec717854be3cb25863e811a18a4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3968177Z Note: switching to '7ba3f1404ffe0ec717854be3cb25863e811a18a4'.
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3969358Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3970312Z You are in 'detached HEAD' state. You can look around, make experimental
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3972495Z changes and commit them, and you can discard any commits you make in this
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3974396Z state without impacting any branches by switching back to a branch.
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3975489Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3976250Z If you want to create a new branch to retain commits you create, you may
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3978103Z do so (now or later) by using -c with the switch command. Example:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3979253Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3979728Z   git switch -c <new-branch-name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3980430Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3980889Z Or undo this operation with:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3981534Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3981943Z   git switch -
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3982723Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3983574Z Turn off this advice by setting config variable advice.detachedHead to false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3984773Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3985712Z HEAD is now at 7ba3f14 fix(ci): reconcile T063 current UI reproduction with audited inputs
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.3989218Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4013644Z [command]/usr/bin/git log -1 --format=%H
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4040550Z 7ba3f1404ffe0ec717854be3cb25863e811a18a4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4049883Z ##[group]Removing auth
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4053712Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4088376Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4315514Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4343876Z http.https://github.com/.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4351388Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4388807Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4611345Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4650381Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.4889076Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	﻿2026-10-14T14:06:52.5214430Z ##[group]Run actions/checkout@v4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5215353Z with:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5216192Z   repository: michaelrolphone-cmyk/RiscRTE-Watch
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5217148Z   ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5218055Z   path: .ci-deps/watch-bridge
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5218875Z   persist-credentials: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5222670Z   token: ***
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5223438Z   ssh-strict: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5224173Z   ssh-user: git
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5224911Z   clean: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5225669Z   sparse-checkout-cone-mode: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5226481Z   fetch-depth: 1
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5227222Z   fetch-tags: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5227972Z   show-progress: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5228723Z   lfs: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5229443Z   submodules: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5230203Z   set-safe-directory: true
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5231006Z   allow-unsafe-pr-checkout: false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.5231823Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6143767Z Syncing repository: michaelrolphone-cmyk/RiscRTE-Watch
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6146562Z ##[group]Getting Git version info
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6148941Z Working directory is '/home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.ci-deps/watch-bridge'
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6186064Z [command]/usr/bin/git version
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6236291Z git version 2.55.0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6269584Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6275512Z Temporarily overriding HOME='/home/runner/work/_temp/ce66d916-8dd9-47bc-bab4-82af91e77f10' before making global git config changes
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6283979Z Adding repository directory to the temporary git global config as a safe directory
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6286714Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.ci-deps/watch-bridge
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6320895Z ##[group]Initializing the repository
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6326250Z [command]/usr/bin/git init /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.ci-deps/watch-bridge
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6369684Z hint: Using 'master' as the name for the initial branch. This default branch name
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6372018Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6374461Z hint: to use in all of your new repositories, which will suppress this warning,
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6376331Z hint: call:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6377763Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6379297Z hint: 	git config --global init.defaultBranch <name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6381011Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6382971Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6385343Z hint: 'development'. The just-created branch can be renamed via this command:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6387363Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6388969Z hint: 	git branch -m <name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6390820Z hint:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6392980Z hint: Disable this message with "git config set advice.defaultBranchName false"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6395903Z Initialized empty Git repository in /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.ci-deps/watch-bridge/.git/
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6401139Z [command]/usr/bin/git remote add origin https://github.com/michaelrolphone-cmyk/RiscRTE-Watch
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6424827Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6427154Z ##[group]Disabling automatic garbage collection
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6429079Z [command]/usr/bin/git config --local gc.auto 0
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6507067Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6509165Z ##[group]Setting up auth
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6515489Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6550405Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6806617Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.6884883Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7192550Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7249080Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7489379Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7531565Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7532827Z ##[group]Fetching the repository
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:52.7542785Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4401222Z From https://github.com/michaelrolphone-cmyk/RiscRTE-Watch
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4402352Z  * branch            6e82fdcaec0b73ed700d2104cfb4d94f011c19d4 -> FETCH_HEAD
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4406672Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4407951Z ##[group]Determining the checkout info
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4410219Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4418316Z [command]/usr/bin/git sparse-checkout disable
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4465160Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4504311Z ##[group]Checking out the ref
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4505187Z [command]/usr/bin/git checkout --progress --force 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4789981Z Note: switching to '6e82fdcaec0b73ed700d2104cfb4d94f011c19d4'.
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4790628Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4791107Z You are in 'detached HEAD' state. You can look around, make experimental
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4792567Z changes and commit them, and you can discard any commits you make in this
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4793764Z state without impacting any branches by switching back to a branch.
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4794458Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4795008Z If you want to create a new branch to retain commits you create, you may
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4796121Z do so (now or later) by using -c with the switch command. Example:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4796659Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4796842Z   git switch -c <new-branch-name>
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4797083Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4797251Z Or undo this operation with:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4797485Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4797619Z   git switch -
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4797820Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4798109Z Turn off this advice by setting config variable advice.detachedHead to false
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4798524Z 
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4798918Z HEAD is now at 6e82fdc Generalize app navigation and full-height sleep with retained authority fences
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4801221Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4842707Z [command]/usr/bin/git log -1 --format=%H
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4869196Z 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4879224Z ##[group]Removing auth
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4883728Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.4919221Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5151929Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5178830Z http.https://github.com/.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5186963Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5223276Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5449696Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5481445Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Run actions/checkout@v4	2026-10-14T14:06:53.5705673Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/setup-python@v5	﻿2026-10-14T14:06:53.5913753Z ##[group]Run actions/setup-python@v5
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5914138Z with:
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5914396Z   python-version: 3.11
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5914689Z   check-latest: false
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5917407Z   token: ***
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5917679Z   update-environment: true
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5917985Z   allow-prereleases: false
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5918289Z   freethreaded: false
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.5918567Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.7281555Z ##[group]Installed versions
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.7382372Z (node:2608) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.7384153Z (Use `node --trace-deprecation ...` to show where the warning was created)
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.7385596Z Successfully set up CPython (3.11.17)
+catalog-and-target-reproduction	Run actions/setup-python@v5	2026-10-14T14:06:53.7387174Z ##[endgroup]
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	﻿2026-10-14T14:06:53.7606338Z ##[group]Run python scripts/test_runtime_app_catalog.py
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7607417Z [36;1mpython scripts/test_runtime_app_catalog.py[0m
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7608156Z [36;1mpython scripts/test_runtime_context_catalog.py[0m
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7931879Z shell: /usr/bin/bash -e {0}
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7932673Z env:
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7933242Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7934135Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7935022Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7935791Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7936502Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7937211Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:53.7937812Z ##[endgroup]
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3054955Z empty-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3110892Z one-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3173227Z delivered23-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3232762Z different-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3304970Z maximum128-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3360248Z long-route-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3414861Z identity-collision-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3494202Z nova-stale-controller-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3550040Z nova-startup-recovery-0-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3601195Z nova-startup-recovery-1-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3652627Z nova-startup-recovery-2-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3683938Z fault1-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3693257Z fault2-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3702552Z fault3-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3733952Z fault4-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3765352Z fault5-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3774903Z fault6-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3784266Z fault7-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3815570Z fault8-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3846556Z fault9-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3877457Z fault10-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3909049Z fault11-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3918626Z fault12-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3929757Z fault13-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3962679Z fault14-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.3994137Z fault15-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4026136Z fault16-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4058276Z fault17-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4091300Z fault18-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4124360Z fault19-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4156380Z fault20-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4187857Z fault21-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4219597Z fault22-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4251752Z fault23-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4284110Z fault24-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4339434Z fault25-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4395054Z fault26-240x240-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4481924Z empty-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4644264Z one-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4824051Z delivered23-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.4993680Z different-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.5186137Z maximum128-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.5355622Z long-route-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.5518613Z identity-collision-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.5736749Z nova-stale-controller-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.5901000Z nova-startup-recovery-0-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6054891Z nova-startup-recovery-1-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6210976Z nova-startup-recovery-2-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6295659Z fault1-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6308344Z fault2-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6320589Z fault3-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6408933Z fault4-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6496553Z fault5-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6509052Z fault6-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6521178Z fault7-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6609306Z fault8-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6696663Z fault9-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6784500Z fault10-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6871128Z fault11-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6883169Z fault12-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6895443Z fault13-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.6983527Z fault14-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7070652Z fault15-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7158578Z fault16-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7244565Z fault17-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7329320Z fault18-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7414434Z fault19-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7500339Z fault20-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7587949Z fault21-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7674118Z fault22-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7761299Z fault23-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.7849523Z fault24-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.8011742Z fault25-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:55.8170585Z fault26-410x502-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:56.9649656Z baseline-240x240-sync-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.0411861Z runtime-pixels-240x240-sync-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.1147410Z baseline-240x240-async-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.1901206Z runtime-pixels-240x240-async-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.3883393Z baseline-410x502-sync-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.6228685Z runtime-pixels-410x502-sync-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:57.8578456Z baseline-410x502-async-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:06:58.0929373Z runtime-pixels-410x502-async-san0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.4660747Z empty-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.4841634Z one-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5023765Z delivered23-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5239037Z different-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5457801Z maximum128-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5632712Z long-route-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5778234Z identity-collision-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.5966112Z nova-stale-controller-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6166761Z nova-startup-recovery-0-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6350003Z nova-startup-recovery-1-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6514246Z nova-startup-recovery-2-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6618194Z fault1-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6723288Z fault2-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6781101Z fault3-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6881129Z fault4-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.6993841Z fault5-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7079733Z fault6-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7139028Z fault7-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7249419Z fault8-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7360815Z fault9-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7471119Z fault10-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7572437Z fault11-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7638859Z fault12-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7705253Z fault13-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7798169Z fault14-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.7901379Z fault15-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8019866Z fault16-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8125522Z fault17-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8220901Z fault18-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8326240Z fault19-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8444025Z fault20-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8526794Z fault21-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8663036Z fault22-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8773983Z fault23-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.8888771Z fault24-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.9046570Z fault25-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.9193072Z fault26-240x240-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.9389697Z empty-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:02.9709485Z one-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.0053596Z delivered23-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.0426861Z different-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.0892864Z maximum128-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.1210860Z long-route-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.1571210Z identity-collision-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.2147975Z nova-stale-controller-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.2523185Z nova-startup-recovery-0-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.2897982Z nova-startup-recovery-1-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.3311781Z nova-startup-recovery-2-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.3506732Z fault1-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.3592406Z fault2-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.3660563Z fault3-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.3840442Z fault4-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4030947Z fault5-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4100663Z fault6-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4181312Z fault7-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4360220Z fault8-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4576649Z fault9-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.4815657Z fault10-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5027212Z fault11-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5100300Z fault12-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5167274Z fault13-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5413278Z fault14-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5600144Z fault15-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.5789594Z fault16-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.6019727Z fault17-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.6214388Z fault18-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.6485375Z fault19-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.6670247Z fault20-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.6850262Z fault21-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.7094958Z fault22-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.7282739Z fault23-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.7475639Z fault24-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.7787176Z fault25-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:03.8128514Z fault26-410x502-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:06.3196279Z baseline-240x240-sync-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:06.4353361Z runtime-pixels-240x240-sync-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:06.5519571Z baseline-240x240-async-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:06.6704547Z runtime-pixels-240x240-async-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:06.9774547Z baseline-410x502-sync-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:07.3259797Z runtime-pixels-410x502-sync-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:07.6762361Z baseline-410x502-async-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:08.0282689Z runtime-pixels-410x502-async-san1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:08.7143839Z PASS 164 cases: runtime inventories, 128-entry bound, stale launch fencing, custody faults and unchanged 23-entry pixels
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:11.1131992Z Actual Contexts runtime catalog route resolution mode 0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:11.1147129Z Actual Contexts runtime catalog route resolution mode 1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:11.1162388Z Actual Contexts runtime catalog route resolution mode 2 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:11.1177583Z Actual Contexts runtime catalog route resolution mode 3 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:11.1193073Z Actual Contexts runtime catalog route resolution mode 4 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.3653323Z Actual Contexts runtime catalog route resolution mode 0 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.3736189Z Actual Contexts runtime catalog route resolution mode 1 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.3821265Z Actual Contexts runtime catalog route resolution mode 2 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.3912655Z Actual Contexts runtime catalog route resolution mode 3 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.3989657Z Actual Contexts runtime catalog route resolution mode 4 PASS
+catalog-and-target-reproduction	Catalog, retention, stale launches and Contexts	2026-10-14T14:07:16.4017401Z PASS 10 actual Contexts launch cases: long canonical route via native ID, short route unchanged, unavailable, absent, changed generation
+catalog-and-target-reproduction	Install pinned public compiler	﻿2026-10-14T14:07:16.4139262Z ##[group]Run python -m pip install platformio==6.1.19
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4139817Z [36;1mpython -m pip install platformio==6.1.19[0m
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4140496Z [36;1mpio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'[0m
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4208855Z shell: /usr/bin/bash -e {0}
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4209223Z env:
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4209598Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4210249Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4210879Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4211437Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4211999Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4213012Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:16.4213489Z ##[endgroup]
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.6541426Z Collecting platformio==6.1.19
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7010521Z   Downloading platformio-6.1.19-py3-none-any.whl.metadata (7.2 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7171901Z Collecting bottle==0.13.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7205539Z   Downloading bottle-0.13.4-py2.py3-none-any.whl.metadata (1.6 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7358383Z Collecting click<8.4,>=8.0.4 (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7390524Z   Downloading click-8.3.3-py3-none-any.whl.metadata (2.6 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7520845Z Collecting colorama (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.7552035Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8020695Z Collecting marshmallow==3.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8061942Z   Downloading marshmallow-3.26.2-py3-none-any.whl.metadata (7.3 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8178011Z Collecting pyelftools<1,>=0.27 (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8209550Z   Downloading pyelftools-0.33-py3-none-any.whl.metadata (1.0 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8326810Z Collecting pyserial==3.5.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8358788Z   Downloading pyserial-3.5-py2.py3-none-any.whl.metadata (1.6 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8571207Z Collecting requests==2.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8602639Z   Downloading requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8729569Z Collecting semantic_version==2.10.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8760380Z   Downloading semantic_version-2.10.0-py2.py3-none-any.whl.metadata (9.7 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8877040Z Collecting tabulate==0.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.8909114Z   Downloading tabulate-0.10.0-py3-none-any.whl.metadata (40 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9056962Z Collecting ajsonrpc==1.2.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9105872Z   Downloading ajsonrpc-1.2.0-py3-none-any.whl.metadata (6.9 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9349094Z Collecting starlette<0.53,>=0.19 (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9379819Z   Downloading starlette-0.52.1-py3-none-any.whl.metadata (6.3 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9596459Z Collecting uvicorn<0.41,>=0.16 (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9641452Z   Downloading uvicorn-0.40.0-py3-none-any.whl.metadata (6.7 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9750232Z Collecting wsproto==1.* (from platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9784789Z   Downloading wsproto-1.3.2-py3-none-any.whl.metadata (5.2 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9939155Z Collecting packaging>=17.0 (from marshmallow==3.*->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:17.9976363Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1157452Z Collecting charset_normalizer<4,>=2 (from requests==2.*->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1207925Z   Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl.metadata (46 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1370248Z Collecting idna<4,>=2.5 (from requests==2.*->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1402382Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1595975Z Collecting urllib3<3,>=1.26 (from requests==2.*->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1627178Z   Downloading urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1782857Z Collecting certifi>=2023.5.7 (from requests==2.*->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1814573Z   Downloading certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.1988158Z Collecting anyio<5,>=3.6.2 (from starlette<0.53,>=0.19->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2018409Z   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2163343Z Collecting typing-extensions>=4.10.0 (from starlette<0.53,>=0.19->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2195002Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2338888Z Collecting h11>=0.8 (from uvicorn<0.41,>=0.16->platformio==6.1.19)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2369656Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2474892Z Downloading platformio-6.1.19-py3-none-any.whl (421 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2564325Z Downloading ajsonrpc-1.2.0-py3-none-any.whl (22 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2609515Z Downloading bottle-0.13.4-py2.py3-none-any.whl (103 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2679708Z Downloading click-8.3.3-py3-none-any.whl (110 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2734606Z Downloading marshmallow-3.26.2-py3-none-any.whl (50 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2784125Z Downloading pyelftools-0.33-py3-none-any.whl (201 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2837547Z Downloading pyserial-3.5-py2.py3-none-any.whl (90 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2888544Z Downloading requests-2.34.2-py3-none-any.whl (73 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2939627Z Downloading charset_normalizer-3.5.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.2995597Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3044445Z Downloading semantic_version-2.10.0-py2.py3-none-any.whl (15 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3097629Z Downloading starlette-0.52.1-py3-none-any.whl (74 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3152443Z Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3215020Z Downloading tabulate-0.10.0-py3-none-any.whl (39 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3272294Z Downloading urllib3-2.8.0-py3-none-any.whl (135 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3326972Z Downloading uvicorn-0.40.0-py3-none-any.whl (68 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3379168Z Downloading wsproto-1.3.2-py3-none-any.whl (24 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3429697Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3480174Z Downloading certifi-2026.7.22-py3-none-any.whl (136 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3533297Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3585324Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.3640456Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:18.4977596Z Installing collected packages: pyserial, bottle, urllib3, typing-extensions, tabulate, semantic_version, pyelftools, packaging, idna, h11, colorama, click, charset_normalizer, certifi, ajsonrpc, wsproto, uvicorn, requests, marshmallow, anyio, starlette, platformio
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:19.6702612Z 
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:19.6720683Z Successfully installed ajsonrpc-1.2.0 anyio-4.15.1 bottle-0.13.4 certifi-2026.7.22 charset_normalizer-3.5.2 click-8.3.3 colorama-0.4.6 h11-0.16.0 idna-3.20 marshmallow-3.26.2 packaging-26.3 platformio-6.1.19 pyelftools-0.33 pyserial-3.5 requests-2.34.2 semantic_version-2.10.0 starlette-0.52.1 tabulate-0.10.0 typing-extensions-4.16.0 urllib3-2.8.0 uvicorn-0.40.0 wsproto-1.3.2
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0481686Z ********************************************************************************
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0482676Z If you like PlatformIO, please:
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0483389Z - star it on GitHub > https://github.com/platformio/platformio-core
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0484674Z - follow us on LinkedIn to stay up-to-date on the latest project news > https://www.linkedin.com/company/platformio/
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0485750Z - try PlatformIO IDE for embedded development > https://platformio.org/platformio-ide
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0486686Z ********************************************************************************
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0487016Z 
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:20.0496741Z Tool Manager: Installing espressif/toolchain-xtensa-esp32s3 @ 8.4.0+2021r2-patch5
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:23.2675865Z Downloading 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:25.5701237Z Unpacking 0% 10% 20% 30% 40% 50% 60% 70% 80% 90% 100%
+catalog-and-target-reproduction	Install pinned public compiler	2026-10-14T14:07:25.9068037Z Tool Manager: toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5 has been installed!
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	﻿2026-10-14T14:07:26.5470262Z ##[group]Run python scripts/prove_shared_catalog_target.py \
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5470878Z [36;1mpython scripts/prove_shared_catalog_target.py \[0m
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5471621Z [36;1m  --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" \[0m
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5472729Z [36;1m  --bridges .ci-deps/watch-bridge[0m
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5537955Z shell: /usr/bin/bash -e {0}
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5538341Z env:
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5538758Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5539474Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5540181Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5540813Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5541440Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5542255Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:07:26.5542848Z ##[endgroup]
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2311580Z {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2314146Z   "receipt": "/home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/build/runtime-app-catalog/generic-target/receipt.json",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2315595Z   "apps": [
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2316038Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2316505Z       "cohort": "baseline",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2317084Z       "app": "settings",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2317957Z       "sha256": "4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2318921Z     },
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2319349Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2319794Z       "cohort": "baseline",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2320357Z       "app": "springboard",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2321016Z       "sha256": "f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2321638Z     },
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2321926Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2322486Z       "cohort": "current",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2322868Z       "app": "settings-default",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2323459Z       "sha256": "a752e6d8b40875450d312cf0aaef3503689810844c06f68bf64dd579c8ec0eb6"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2324088Z     },
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2324378Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2324672Z       "cohort": "current",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2325063Z       "app": "settings-atomic",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2325640Z       "sha256": "a8b5e65f2850ed85448a67ec6580187b81298d5084bb5a8c8920dedb84b04132"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2326234Z     },
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2326511Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2326809Z       "cohort": "current",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2327193Z       "app": "springboard-default",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2327799Z       "sha256": "953cfc1f3016f7fbef1db82a2c95f0744d7f7b9fb51eb7a40aa9ef61cdf98a09"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2328420Z     },
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2328705Z     {
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2329010Z       "cohort": "current",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2329389Z       "app": "springboard-atomic",
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2329966Z       "sha256": "319ba6b3e61b5959b5527018e971f5ff3810902c2450b6321f58ba33ef74dd37"
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2330462Z     }
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2330730Z   ]
+catalog-and-target-reproduction	Reproduce pinned baseline and final default/atomic shared UI bytes	2026-10-14T14:08:02.2330994Z }
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	﻿2026-10-14T14:08:02.2544387Z ##[group]Run actions/upload-artifact@v4
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2544760Z with:
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2545129Z   name: runtime-catalog-7ba3f1404ffe0ec717854be3cb25863e811a18a4
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2545851Z   path: build/runtime-app-catalog/result.json
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	build/runtime-app-catalog/generic-target/
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2546494Z   if-no-files-found: error
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2546798Z   retention-days: 14
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2547077Z   compression-level: 6
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2547365Z   overwrite: false
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2547637Z   include-hidden-files: false
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2547937Z env:
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2548256Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2548819Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib/pkgconfig
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2549377Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2549874Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2550373Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.17/x64
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2550910Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.17/x64/lib
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.2551517Z ##[endgroup]
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4299317Z (node:3539) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4300515Z (Use `node --trace-deprecation ...` to show where the warning was created)
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4425401Z Multiple search paths detected. Calculating the least common ancestor of all paths
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4427577Z The least common ancestor is /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/build/runtime-app-catalog. This will be the root directory of the artifact
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4429159Z With the provided path, there will be 8 files uploaded
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4430079Z Artifact name is valid!
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.4430417Z Root directory input is valid!
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.8440035Z Beginning upload of artifact content to blob storage
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:02.9259814Z (node:3539) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.4956712Z Uploaded bytes 707379
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.5665404Z Finished uploading artifact content to blob storage!
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.5666776Z SHA256 digest of uploaded artifact zip is 9f918ffc6483bcaf2b927888fb79528460687843eaa70e0bcf7c46c0461db3cf
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.5669189Z Finalizing artifact upload
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.8608470Z Artifact runtime-catalog-7ba3f1404ffe0ec717854be3cb25863e811a18a4.zip successfully finalized. Artifact ID 11902181093
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.8610850Z Artifact runtime-catalog-7ba3f1404ffe0ec717854be3cb25863e811a18a4 has been successfully uploaded! Final size is 707379 bytes. Artifact ID is 11902181093
+catalog-and-target-reproduction	Run actions/upload-artifact@v4	2026-10-14T14:08:03.8615704Z Artifact download URL: https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38577608777/artifacts/11902181093
+catalog-and-target-reproduction	Post Run actions/setup-python@v5	﻿2026-10-14T14:08:03.8809247Z Post job cleanup.
+catalog-and-target-reproduction	Post Run actions/setup-python@v5	2026-10-14T14:08:04.0054519Z (node:3551) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+catalog-and-target-reproduction	Post Run actions/setup-python@v5	2026-10-14T14:08:04.0055872Z (Use `node --trace-deprecation ...` to show where the warning was created)
+catalog-and-target-reproduction	Post Run actions/checkout@v4	﻿2026-10-14T14:08:04.0256800Z Post job cleanup.
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1263018Z [command]/usr/bin/git version
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1306250Z git version 2.55.0
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1350046Z Temporarily overriding HOME='/home/runner/work/_temp/2a35cd38-f859-458e-b23f-55b8fa94bac9' before making global git config changes
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1351561Z Adding repository directory to the temporary git global config as a safe directory
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1354578Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps/.ci-deps/watch-bridge
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1399769Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1440171Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1719037Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.1759194Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.2056175Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.2099309Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Post Run actions/checkout@v4	﻿2026-10-14T14:08:04.2554933Z Post job cleanup.
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3492830Z [command]/usr/bin/git version
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3532228Z git version 2.55.0
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3571613Z Temporarily overriding HOME='/home/runner/work/_temp/fdf54fcc-3d98-43b5-b311-3e001d6e6db0' before making global git config changes
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3573679Z Adding repository directory to the temporary git global config as a safe directory
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3577097Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/RiscRTE-System-Apps/RiscRTE-System-Apps
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3616171Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3654450Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3922822Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.3963501Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.4253004Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+catalog-and-target-reproduction	Post Run actions/checkout@v4	2026-10-14T14:08:04.4283024Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+catalog-and-target-reproduction	Complete job	﻿2026-10-14T14:08:04.4695505Z Cleaning up orphan processes
+catalog-and-target-reproduction	Complete job	2026-10-14T14:08:04.5050396Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-python@v5, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
