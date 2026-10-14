@@ -152,7 +152,7 @@ static int canvas_sleep_barrier(void) {
  for(unsigned n=0;n<10000u;n++) {
   if(!canvas_progress())return -1;
   if(risc_runtime_exit_requested_v1(rt))return 0;
-  input_service();
+  input_pending=false;input_service();
   if(failed)return -1;
   if((uint32_t)(millis_now()-last_activity)<portable_idle_ms() || navigation_pending ||
      (input_pending && (input_sample.down || input_sample.released)))return 0;

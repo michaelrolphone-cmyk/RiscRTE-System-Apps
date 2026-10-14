@@ -310,7 +310,7 @@ static void settings_view_redraw(void) {
 static void sv_switch(unsigned page) {
   if(failed)return; /* Retained sleep must unwind without provider I/O. */
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
-  input_pending=false;touch.neutral=touch.down=false;
+  input_pending=false;portable_touch_reset(&touch);
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();
 #endif

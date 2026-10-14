@@ -1,0 +1,27 @@
+{
+  "baseline": "26e50931a45cbdfe99b7daeb586677ce53e97940",
+  "utilities": "d03c6564814ff1588bf73af45b3f0288908466c3",
+  "runtime_audit": "26a54ff",
+  "x4_system_unchanged": "8a5ef23480b7711e68fd2d72e9a43cad4a2e2ddc",
+  "reproduction": "Six DOWN/UP taps queued during refresh fail on the baseline at the first began/released assertion.",
+  "fix": "Reuse the existing X4 ordered touch reducer, capture without dispatch during presentation, consume one edge per logical pass, reset modal input through explicit snapshot boundaries, release top-edge reservation after each logical pass.",
+  "tests": {
+    "watch_canvas_normal_ubsan": 194,
+    "watch_current_stopwatch_normal_ubsan": 8,
+    "ordered_touch_reducer_normal_ubsan": "pass",
+    "portable_alarm_normal": 11,
+    "x4_existing_scene_cadence_raster": 75,
+    "shared_signal_library_ubsan": "pass"
+  },
+  "limits": [
+    "Host providers supply events; no hardware input or latency claim.",
+    "No target binary built or delivered by this checkpoint.",
+    "Local ASan is unavailable; dedicated Linux CI runs address and undefined sanitizers.",
+    "Runtime and Utilities sources remain unchanged.",
+    "Bounded provider overflow or invalid streams cancel/fence explicitly; no silent coalescing of accepted keys."
+  ],
+  "sha256": {
+    "lib/PortableApps/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "lib/PortableApps/src/adapter.c": "06dd52fd5f9fa66c06dbedcd50a6b816e3ead021b6e00ef446b317fc33b5df47"
+  }
+}

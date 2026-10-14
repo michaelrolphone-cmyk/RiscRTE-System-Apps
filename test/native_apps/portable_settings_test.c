@@ -94,10 +94,27 @@ static bool frame_status(void *c, risc_display_present_token_v1 token, risc_disp
 }
 static uint64_t touch_subscribe(void *c){(void)c;++subscriptions;return 1;}
 static bool touch_unsubscribe(void *c,uint64_t s){(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
-static bool touch_poll(void *c,size_t n){(void)c;assert(n==1);++polls;return polls!=fail_poll_at;}
-static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){(void)c;(void)s;(void)e;return polls==gap_at?-1:0;}
+static risc_touch_event_v1 touch_edges[RISC_TOUCH_QUEUE_LENGTH];
+static unsigned touch_edge_head,touch_edge_count;
+static uint64_t touch_sequence;
+static risc_touch_snapshot_v1 touch_previous;
+static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out);
+static bool touch_poll(void *c,size_t n){
+ (void)c;assert(n==1);++polls;
+ risc_touch_snapshot_v1 next;touch_snapshot(c,&next);
+ unsigned kind=0;const risc_touch_contact_v1 *point=NULL;
+ if(next.contact_count){point=next.contacts;kind=touch_previous.contact_count?RISC_TOUCH_EVENT_MOVE:RISC_TOUCH_EVENT_DOWN;}
+ else if(touch_previous.contact_count){point=touch_previous.contacts;kind=RISC_TOUCH_EVENT_UP;}
+ if(kind){assert(touch_edge_count<RISC_TOUCH_QUEUE_LENGTH);touch_edges[(touch_edge_head+touch_edge_count++)%RISC_TOUCH_QUEUE_LENGTH]=(risc_touch_event_v1){.sequence=++touch_sequence,.timestamp_ms=ticks,.kind=kind,.id=point->id,.x=point->x,.y=point->y};}
+ touch_previous=next;return polls!=fail_poll_at;
+}
+static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *e){
+ (void)c;(void)s;if(polls==gap_at){touch_edge_head=touch_edge_count=0;return -1;}
+ if(!touch_edge_count)return 0;
+ *e=touch_edges[touch_edge_head];touch_edge_head=(touch_edge_head+1)%RISC_TOUCH_QUEUE_LENGTH;--touch_edge_count;return 1;
+}
 static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out){
-  (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;
+  (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;out->sequence=touch_sequence;out->timestamp_ms=ticks;
   for(size_t i=0;i<input_count;++i)if(input_script[i].poll==polls){
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=polls==replace_at?2:1,.x=input_script[i].x,.y=input_script[i].y};
 #ifdef PORTABLE_NOVA_UI

@@ -6,6 +6,7 @@ presentation ownership is distinct from a mutable provider lease. Failed status
 must fence all later normal I/O and preserve invocation allocations and grants.
 """
 import os
+import sys
 from pathlib import Path
 import shlex
 import subprocess
@@ -15,6 +16,7 @@ OUT = ROOT / 'build/watch-async-canvas'
 CORE = [
     'clock-monotonic', 'clock-missing', 'clock-truncated', 'clock-failure',
     'raster-pump', 'raster-pump-complete', 'raster-pump-failure',
+    'touch-terminal', 'ordered-taps-0', 'ordered-taps-16', 'ordered-taps-2300',
     'canvas-allocation-failure', 'mailbox', 'mid-paint', 'damage', 'fini-pending', 'fini-drawing', 'crown',
     'launch', 'handoff', 'submit-rejected', 'invalid-surface',
     'fallback-no-async', 'fallback-retains-image', 'fallback-no-retain',
@@ -63,8 +65,12 @@ def main():
 
     for sanitized in (False, True):
         tag = 'san' if sanitized else 'normal'
-        san = ['-fsanitize=address,undefined', '-fno-sanitize-recover=all',
-               '-fno-omit-frame-pointer', '-no-pie'] if sanitized else []
+        san = ['-fsanitize=' + os.environ.get('WATCH_TEST_SANITIZERS', 'address,undefined'), '-fno-sanitize-recover=all',
+               '-fno-omit-frame-pointer'] + (['-no-pie'] if sys.platform != 'darwin' else []) if sanitized else []
+        reducer = OUT / f'touch-{tag}'
+        subprocess.run([*common, *san, str(ROOT / 'test/native_apps/portable_touch_ordered_test.c'),
+                        '-o', str(reducer)], check=True, timeout=120)
+        subprocess.run([str(reducer)], check=True, timeout=30, env=sanitizer_env)
         core = OUT / f'core-{tag}'
         subprocess.run([*common, *san, '-DPORTABLE_ASYNC_RGB565',
                         '-DPORTABLE_RETAINED_RGB565_HANDOFF',
@@ -91,7 +97,7 @@ def main():
                     run_case(binary, case, sanitized)
     if failures:
         raise SystemExit(f'{len(failures)}/{runs} async cases failed:\n' + '\n'.join(failures))
-    print(f'Watch async canvas: {runs} real-adapter cases passed in normal/ASan/UBSan modes')
+    print(f"Watch async canvas: {runs} real-adapter cases passed in normal/{os.environ.get('WATCH_TEST_SANITIZERS', 'address,undefined')} modes")
 
 
 if __name__ == '__main__':
