@@ -11,14 +11,18 @@ int32_t feedCancel(void*){
  feedReading=false;return INSTALLED_APPS_OK;
 }
 int32_t feedRefresh(void*,uint64_t utc){
- if(!started||!loaded||retained||inCall||feedReading||installId[0]||removeId[0]||volume||scanner||cacheOperation||savePending||!packageHttp||!INSTALLED_APPS_FEED_URL[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_UNAVAILABLE;
+ if(!started||!loaded||retained||inCall||automaticPhase>=3||feedReading||installId[0]||removeId[0]||volume||scanner||cacheOperation||savePending||!packageHttp||!INSTALLED_APPS_FEED_URL[0]||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_UNAVAILABLE;
  risc_http_request_v1 request{sizeof(request),INSTALLED_APPS_FEED_URL,FeedBytes,30000,utc};
  int rc=packageHttp->open(packageHttp->context,&request,&feedHandle);
  if(rc!=RISC_HTTP_OK){if(feedHandle||rc==RISC_HTTP_RETAINED){retained=true;return INSTALLED_APPS_RETAINED;}return INSTALLED_APPS_UNAVAILABLE;}
  feedSize=0;feedReading=true;return INSTALLED_APPS_OK;
 }
 bool feedParse(){
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+ if(!RuntimePackages::PackageJsonGuard(feedInput,feedSize,160).objectOnly())return false;
+#endif
  JsonDocument doc;if(deserializeJson(doc,feedInput,feedSize,DeserializationOption::NestingLimit(16))||doc["schema"]!="riscrte.native-packages"||doc["version"]!=1||doc["product"]!=INSTALLED_APPS_FEED_PRODUCT||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>FeedMax)return false;
+ if(!bootFeedValid(doc["boot_profiles"]))return false;
  auto rows=doc["apps"].as<JsonArrayConst>();
  // Complete validation before replacing a previously displayed snapshot.
  unsigned index=0;

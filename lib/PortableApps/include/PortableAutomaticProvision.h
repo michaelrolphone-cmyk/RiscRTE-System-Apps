@@ -1,5 +1,5 @@
 #pragma once
-#include "InstalledAppsAutomaticV1.h"
+#include "InstalledAppsBootProfileV1.h"
 #include "PortableNetworkSession.h"
 #include "RiscRuntimeV1.h"
 /* One foreground invocation. Caller polls after first-frame service promotion
@@ -15,7 +15,7 @@ typedef struct {
  risc_runtime_capability_v1 service_grant,wifi_grant,settings_grant,volume_grant;
  const installed_apps_v1*service;const installed_apps_automatic_v1*automatic;
  portable_network_session network;
- unsigned phase;uint32_t retry_at;bool delayed,retained,closing,network_started,lease;
+ unsigned phase;uint32_t retry_at;bool delayed,retained,closing,network_started,lease,pending_boot;
 } portable_automatic_provision;
 void portable_automatic_init(portable_automatic_provision*,const portable_automatic_hooks*);
 int portable_automatic_step(portable_automatic_provision*,uint32_t now_ms);

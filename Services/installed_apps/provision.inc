@@ -60,8 +60,11 @@ bool selectCatalogProviders(JsonDocument&doc){
     if(!upgrade)continue;
    }
    unsigned found=ProviderMax;
-   for(unsigned i=0;i<pool.size();++i)for(JsonObjectConst offer:pool[i]["manifest"]["provides"].as<JsonArrayConst>())
-    if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}
+   for(unsigned i=0;i<pool.size();++i){
+    const JsonArrayConst offers=pool[i]["manifest"]["provides"].as<JsonArrayConst>();
+    for(JsonObjectConst offer:offers)
+     if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}
+   }
    if(found==ProviderMax)return false;
    if(!selected[found]){selected[found]=true;++selectedCount;}
   }

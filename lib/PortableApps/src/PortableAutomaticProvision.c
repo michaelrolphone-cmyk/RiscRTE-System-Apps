@@ -9,6 +9,33 @@ static int acquire(portable_automatic_provision*c,const char*cap,uint64_t instan
  if(!safe(c)||(!ok&&g->api))return retain(c);
  return ok?INSTALLED_APPS_OK:INSTALLED_APPS_UNAVAILABLE;
 }
+/* This read-only adapter checks custody before and after EVERY codec read.
+ * Never borrow network-session internals or expose credentials to a feed. */
+static int32_t profile_get(void*p,const char*key,void*data,uint32_t capacity,uint32_t*size){
+ portable_automatic_provision*c=p;if(size)*size=0;
+ if(!safe(c)){retain(c);return RISC_KEY_VALUE_CONTEXT;}
+ const risc_key_value_v1*kv=c->settings_grant.api;
+ int32_t rc=kv->get(kv->context,key,data,capacity,size);
+ if(!safe(c)){retain(c);return RISC_KEY_VALUE_CONTEXT;}
+ return rc;
+}
+static int32_t profile_no_write(void*p,const char*k,const void*d,uint32_t n){(void)p;(void)k;(void)d;(void)n;return RISC_KEY_VALUE_CONTEXT;}
+static int supply_profile(portable_automatic_provision*c){
+ const installed_apps_boot_profile_v1*boot=installed_apps_boot_profile(c->service);
+ const risc_key_value_v1*kv=c->settings_grant.api;
+ if(!boot||!safe(c)||!portable_wifi_credentials_api_valid(kv))return c->retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
+ risc_key_value_v1 guarded={1,sizeof(guarded),c,profile_get,profile_no_write};
+ portable_wifi_credentials credentials={{0},{0}};
+ int loaded=portable_wifi_profile_load(&guarded,PORTABLE_NETWORK_DEFAULT_PROFILE,&credentials);
+ int rc=INSTALLED_APPS_UNAVAILABLE;
+ if(!safe(c))rc=retain(c);
+ else if(loaded==PORTABLE_WIFI_CREDENTIALS_AGAIN)rc=INSTALLED_APPS_WORKING;
+ else if(loaded==PORTABLE_WIFI_CREDENTIALS_LOADED){
+  rc=boot->supply_wifi(c->service->context,credentials.ssid,credentials.password);
+  if(!safe(c))rc=retain(c);
+ }
+ portable_wifi_credentials_clear(&credentials);return rc;
+}
 void portable_automatic_init(portable_automatic_provision*c,const portable_automatic_hooks*h){memset(c,0,sizeof(*c));c->hooks=*h;}
 int portable_automatic_close(portable_automatic_provision*c){
  if(c->retained)return INSTALLED_APPS_RETAINED;
@@ -72,6 +99,8 @@ int portable_automatic_step(portable_automatic_provision*c,uint32_t now){
   c->phase=4;return INSTALLED_APPS_WORKING;
  }
  rc=c->automatic->step(c->service->context,c->volume_grant.api);
+ if(rc==INSTALLED_APPS_NEEDS_PROFILE_WIFI)rc=supply_profile(c);
+ if(rc==INSTALLED_APPS_PROFILE_QUEUED)c->pending_boot=true;
  if(rc==INSTALLED_APPS_WORKING)return rc;
 finish:
  if(rc==INSTALLED_APPS_RETAINED)return retain(c);

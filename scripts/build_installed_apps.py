@@ -20,10 +20,13 @@ def main():
     parser.add_argument('--runtime-repo', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--internal-packages', action='store_true', help='Explicitly require the native scoped package-volume capability')
+    parser.add_argument('--boot-profiles', action='store_true', help='Select preserving next-boot profiles and optional immutable SD mirrors')
     parser.add_argument('--native-feed', action='store_true', help='Select the product-owned native catalog, separate from firmware release-index')
     parser.add_argument('--feed-url', help='Explicit product-owned HTTPS native-package catalog')
     parser.add_argument('--feed-product', default='xteink-x4-pro', help='Exact feed product identity')
     args = parser.parse_args()
+    if args.boot_profiles and not args.native_feed:
+        parser.error('--boot-profiles requires --native-feed')
     if args.feed_url and not args.native_feed:
         parser.error('--feed-url requires --native-feed')
     if not args.feed_product or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-.' for c in args.feed_product):
@@ -42,6 +45,7 @@ def main():
     if args.native_feed:
         flags += ['-DINSTALLED_APPS_FEED_URL="'+feed_url+'"',
                   '-DINSTALLED_APPS_FEED_PRODUCT="'+args.feed_product+'"']
+    if args.boot_profiles: flags += ['-DINSTALLED_APPS_BOOT_PROFILES=1']
     sources = [ROOT/'Services/installed_apps/service.cpp', ROOT/'lib/InstalledCatalog/src/InstalledCatalog.c']
     objects = [out/'service.o', out/'catalog.o']
     commands = [[cxx, '-std=c++17', '-fno-exceptions', '-fno-rtti', '-DARDUINOJSON_USE_DOUBLE=0', '-DARDUINOJSON_USE_LONG_LONG=0', *flags, '-c', str(sources[0]), '-o', str(objects[0])], [cc, '-std=c11', *flags, '-c', str(sources[1]), '-o', str(objects[1])]]
@@ -58,10 +62,15 @@ def main():
         raise RuntimeError('Unexpected imports: '+repr(sorted(imports-allowed)))
     manifest=json.loads((ROOT/'Services/installed_apps/manifest.json').read_text())
     if args.native_feed: manifest['version']='0.12.0'
+    if args.boot_profiles:
+        manifest['version']='0.13.0'
+        manifest['requires'].append({'capability':'platform.provision-request','api':1})
     if args.internal_packages: manifest['requires'].append({'capability':'platform.package-volume','api':1})
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     headers = [ROOT/'Services/installed_apps/settings.inc', runtime/'src/runtime/packages/InstalledSettingsCheckpoint.h', runtime/'src/runtime/packages/PagedSettingsCheckpoint.h', ROOT/'Services/installed_apps/provision.inc', runtime/'src/runtime/packages/SdPackageDownload.h', ROOT/'Services/installed_apps/providers.inc', ROOT/'Services/installed_apps/install.inc', runtime/'src/runtime/packages/StagedAppInstall.h', runtime/'sdk/driver/RiscStoragePackageAsyncV1.h', runtime/'sdk/driver/RiscBoundAppDataAsyncV1.h', runtime/'sdk/driver/RiscStorageVolumeAsyncV1.h', runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppAsyncDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
     receipt = {'status':'experimental-target-link-only', 'limitations':['No target runtime or hardware execution claimed.', 'Requires the scoped async SD provider; cache persistence and UI integration need separate qualification.'], 'commands':commands, 'imports':sorted(imports), 'sources':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources+headers}, 'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(), 'repositories':{str(p):{'head':subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','-C',str(p),'status','--porcelain'],text=True))} for p in [ROOT,runtime]}}
+    receipt['boot_profiles']=args.boot_profiles
+    receipt['sources'].update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'Services/installed_apps/boot_profile.inc',ROOT/'lib/PortableApps/include/InstalledAppsBootProfileV1.h',ROOT/'lib/PortableApps/include/RiscProvisionRequestV1.h']})
     receipt['native_feed']=args.native_feed
     receipt['feed_url']=feed_url if args.native_feed else None
     receipt['feed_product']=args.feed_product if args.native_feed else None

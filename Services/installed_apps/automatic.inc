@@ -16,6 +16,7 @@ int32_t automaticCancel(void*){
 }
 bool automaticSelect(){
  JsonDocument doc;if(deserializeJson(doc,feedInput,feedSize))return false;
+ if(!bootSelect(doc,automaticProfile))return false;
  auto ids=doc["profiles"][automaticProfile];if(!ids.is<JsonArrayConst>()||ids.size()>FeedMax)return false;
  std::memset(automaticSelected,0,sizeof(automaticSelected));
  for(JsonVariantConst id:ids.as<JsonArrayConst>()){
@@ -88,6 +89,8 @@ int32_t automaticStep(void*,const risc_storage_volume_api_v1*v){
   if(rc!=INSTALLED_APPS_OK){--automaticIndex;return rc;}
   return INSTALLED_APPS_WORKING;
  }
+ int core=bootStep(v,automaticProfile,automaticUtc);
+ if(core!=INSTALLED_APPS_OK)return core;
  automaticPhase=0;automaticUtc=0;return INSTALLED_APPS_OK;
 }
 #else

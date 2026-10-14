@@ -7,6 +7,11 @@
 #include "InstalledAppsV1.h"
 #include "InstalledAppsProvisionV1.h"
 #include "InstalledAppsAutomaticV1.h"
+#include "InstalledAppsBootProfileV1.h"
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+#include "RiscProvisionRequestV1.h"
+#include "runtime/packages/PackageJsonGuard.h"
+#endif
 #include "InstalledCatalog.h"
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include "runtime/packages/StagedAppInstall.h"
@@ -85,6 +90,9 @@ bool started,loaded,requested,retained,inCall,overflow,commitPending,commitRepla
 bool feedReading;
 unsigned scanMedium;bool scanSdComplete,scanAnySuccess;
 int32_t feedCancel(void*);
+int bootCancel();
+bool bootFeedValid(JsonVariantConst);
+extern unsigned automaticPhase;
 const char cacheName[]="installed.apps";
 bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
  if(value.isNull()&&optional){out[0]=0;return true;}
@@ -408,6 +416,7 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
 #include "provision.inc"
 #include "settings.inc"
 int32_t cancel(void*){
+ int bootResult=bootCancel();if(bootResult!=INSTALLED_APPS_OK)return bootResult;
  if(feedCancel(nullptr)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  if(retained)return INSTALLED_APPS_RETAINED;
  int settingsResult=settingsCancel();if(settingsResult!=INSTALLED_APPS_OK)return settingsResult;
@@ -499,11 +508,23 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  validationPending=true;return INSTALLED_APPS_WORKING;
 }
 #include "feed.inc"
+#include "boot_profile.inc"
 extern unsigned automaticPhase;
 bool start(const risc_provider_dependency_v1*d,size_t n){
+ bootReset();
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+ bootRequests=nullptr;
+#endif
  automaticPhase=0;scanMedium=0;scanSdComplete=scanAnySuccess=false;
  feedCount=feedSize=feedGeneration=0;feedHandle=0;feedReading=false;
  native=nullptr;storage=nullptr;packageHttp=nullptr;internalVolume=nullptr;packageUtc=0;for(size_t i=0;i<n;++i){
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+  if(!std::strcmp(d[i].capability_id,RISC_PROVISION_REQUEST_CAPABILITY)&&d[i].api_version==1){
+   auto*p=static_cast<const risc_provision_request_api_v1*>(d[i].api);
+   if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->status||!p->queue)return false;
+   bootRequests=p;
+  }
+#endif
   if(!std::strcmp(d[i].capability_id,RISC_INTERNAL_PACKAGE_VOLUME_CAPABILITY)&&d[i].api_version==1){auto*p=static_cast<const risc_internal_package_volume_v1*>(d[i].api);if(!p||p->struct_size<sizeof(*p)||!p->exit_safe||!risc_storage_volume_download(p->volume))return false;internalVolume=p->volume;}
   if(!std::strcmp(d[i].capability_id,RISC_HTTP_CLIENT_CAPABILITY)&&d[i].api_version==1)packageHttp=static_cast<const risc_http_client_v1*>(d[i].api);
   if(!std::strcmp(d[i].capability_id,RISC_INSTALLATION_CAPABILITY)&&d[i].api_version==1)native=static_cast<const risc_installation_v1*>(d[i].api);
@@ -524,7 +545,12 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
 bool quiesce(){return feedCancel(nullptr)==INSTALLED_APPS_OK&&cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}
 extern const installed_apps_feed_v1 extendedApi;
-const installed_apps_feed_v1 extendedApi={{{1,sizeof(installed_apps_automatic_v1),nullptr,refresh,
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_boot_profile_v1);
+#else
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_automatic_v1);
+#endif
+const installed_apps_feed_v1 extendedApi={{{1,AutomaticApiSize,nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&(current[i].medium==1?internalVolume!=nullptr:catalog.sd_ready)&&settingsReady(current[i]);return true;},step,cancel,
  [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||feedReading||installId[0]||installIntent||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;},
@@ -556,7 +582,12 @@ const installed_apps_feed_v1 extendedApi={{{1,sizeof(installed_apps_automatic_v1
  [](void*,uint32_t i,uint32_t generation)->int32_t{if(feedReading||generation!=feedGeneration||i>=feedCount)return INSTALLED_APPS_INVALID;return extendedApi.base.install_descriptor(nullptr,feedRows[i]);}};
 #include "automatic.inc"
 const installed_apps_automatic_v1 automaticApi={extendedApi,INSTALLED_APPS_AUTOMATIC_TAG,1,automaticBegin,automaticStep,automaticCancel};
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+const installed_apps_boot_profile_v1 bootApi={automaticApi,INSTALLED_APPS_BOOT_PROFILE_TAG,1,bootWifi};
+const installed_apps_v1&api=bootApi.base.base.base.base;
+#else
 const installed_apps_v1&api=automaticApi.base.base.base;
+#endif
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}
