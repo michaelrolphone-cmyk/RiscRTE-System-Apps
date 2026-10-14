@@ -1,0 +1,55 @@
+{
+  "system_source": "a9a43cc1b368cfc1d9766b2439fd0eca8ff7b7ca",
+  "components": {
+    "watch/scene-host": "8aa21ed234201378597f11be74ddad9d261d994e6daf0fc6f30c2a73d35f9253",
+    "watch/text-input-host": "1039b29f3a8a96ab2fa60b40429bd448514e024dfdc2f775fc4f993e06a53f26",
+    "wave/scene-host": "81f404d3f6ffb790a53d8ebb5ad457f110c3e7bf10b33b6e6fda993704c08282",
+    "wave/text-input-host": "1039b29f3a8a96ab2fa60b40429bd448514e024dfdc2f775fc4f993e06a53f26",
+    "x4/scene-host": "6907c4b4e55707fe5f5ed43a6fd897131158b6800bce78850e183fa784aa330e",
+    "x4/text-input-host": "e0d6259ed441e18471d3ed85a8afc0b9b130f7e0767f61adecb793e514bbfb5a"
+  },
+  "typing": {
+    "cases_each": 48,
+    "normal": true,
+    "linux_asan_ubsan": true,
+    "characters_each": 200,
+    "geometries": [
+      [
+        240,
+        240
+      ],
+      [
+        410,
+        502
+      ],
+      [
+        480,
+        800
+      ]
+    ],
+    "period_ms": [
+      200,
+      133
+    ],
+    "display_ms": [
+      0,
+      16,
+      120,
+      2300
+    ],
+    "repeat_same_key": true
+  },
+  "presenter_profile_cases": 197,
+  "continuity_cases_normal_plus_sanitized": 104,
+  "runtime_asan_cases": 172,
+  "text_asan_cases": 143,
+  "unchanged_portrait_cadence_raster_cases": 75,
+  "hardware_tested": false,
+  "physical_keyboard_attached_to_target_verified": false,
+  "delivered_products_have_usb_keyboard_provider": false,
+  "limitations": [
+    "Input edges and USB reports are synthetic; no measured controller, RF or display latency.",
+    "Optional USB dependency manifest remains available; current product cohorts select on-screen fallback because they contain no usb.hid.keyboard provider.",
+    "Full initial images erase internal user data; no flashing performed."
+  ]
+}

@@ -28,5 +28,12 @@ without replacing their executables or unrelated grants. Current Lists,
 Contexts, Timecard and RF callers already use the shared service; old remaining-
 keyboards inventories are historical.
 
-Checkpoint stage: final sanitizer, lifecycle, target ELF and full-cohort package
-qualification are in progress. No hardware validation or flash performed.
+Final source qualification: 197 presenter/profile cases, 48 timed typing cases
+normal and Linux ASan/UBSan, 104 normal/sanitized handoff cases, 75 unchanged
+portrait cadence/raster comparisons, and the complete text/Runtime suites pass.
+See evidence/summary.json for exact counts and source-bound build records.
+All three complete product stores pass Runtime admission. Native firmware and
+all application executables are preserved. Physical hardware validation remains
+pending; no flash performed. These product cohorts have no USB keyboard provider
+and select the on-screen fallback. The same text host accepts an attached HID
+keyboard when composed with its existing optional USB dependency manifest.
