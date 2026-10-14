@@ -1,0 +1,33 @@
+{
+  "verified_on": "2026-10-14",
+  "source_commit": "3d82ceeb18274cdb10e626819d15b6612f002e69",
+  "remote_head_verified": true,
+  "ci": [
+    {
+      "id": 38521218627,
+      "head_sha": "3d82ceeb18274cdb10e626819d15b6612f002e69",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38521218627"
+    },
+    {
+      "id": 38521218843,
+      "head_sha": "3d82ceeb18274cdb10e626819d15b6612f002e69",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38521218843"
+    }
+  ],
+  "baseline_image_sha256": "524a5fc3aa4bba634a373a82bed384969104d26778d192e8e8feca7b9b1407d2",
+  "preserved_image_sha256": "ccb38661dc5535d6447275d5815ad9f5744133f155709c7c71a32a5b0806641d",
+  "store_delta_rechecked": [
+    "cohort.json",
+    "default.elf",
+    "default.json"
+  ],
+  "boot_registration_byte_identical": true,
+  "other_42_internal_elfs_byte_identical": true,
+  "hardware_tested": false,
+  "delivery_hold_utc": "2026-10-14T23:30:00Z",
+  "candidate_d3eb532": "Unrecoverable in prior direct-SHA searches; independently implemented fix, no equivalence claim."
+}

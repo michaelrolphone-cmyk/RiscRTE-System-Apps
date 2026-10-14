@@ -7,3 +7,5 @@ Only the qualified clock patch, regression fixtures, release version and CI rout
 Fresh local verification passes: original 123 realtime scenarios plus reconciliation normally and under UBSan; 20 sparse lifecycle cases and 54 six-face rendered comparisons under UBSan; Wi-Fi workflow normal and UBSan including 15-second scan and 30-second join AGAIN deadlines. Linux CI is enabled for this branch to run ASan/UBSan and Home alarm-loading checks.
 
 Source integration only: no new firmware is built or delivered. Physical sleep/wake testing remains outstanding. The request holds build delivery until 2026-10-14 23:30 UTC.
+
+Final publication check: source checkpoint `3d82ceeb18274cdb10e626819d15b6612f002e69` matches the remote branch. Both Linux CI runs completed successfully (38521218627 and 38521218843), covering RTC reconciliation and preserved alarm progress. Rehashed the held .107 image and compared all 107 store files with .106: only Home ELF, Home manifest and cohort metadata differ; boot registration and the other 42 internal ELFs are byte-identical. See `evidence/current-verification.json`. No build delivery or hardware operation was performed.
