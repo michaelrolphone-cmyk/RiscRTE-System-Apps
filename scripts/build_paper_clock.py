@@ -48,7 +48,7 @@ def build():
  if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
   p.error('--deferred-foreground-services requires the full sparse resident Home/Points/Quick-radio/loading/catalog profile')
  if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<1 or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
- if a.boot_animation and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation requires canonical --relocation-tools')
+ if (a.boot_animation or a.automatic_provision) and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation/--automatic-provision requires canonical --relocation-tools')
  if a.boot_animation and not (a.sparse_start and a.raster_snapshot):p.error('--boot-animation requires --sparse-start and --raster-snapshot')
  if a.resident_loading_catalog and not a.resident_shell_host:p.error('--resident-loading-catalog requires the resident host')
  portable_performance_build.validate(a,p)
@@ -139,8 +139,10 @@ def build():
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
  subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),*map(str,catalog_sources),'-lgcc','-o',str(elf)],check=True)
- if a.automatic_provision:subprocess.run([sys.executable,str(ROOT/'scripts/normalize_home_provision.py'),str(elf)],check=True)
- if a.boot_animation:
+ if a.automatic_provision:
+  shutil.copyfile(elf,out/'default.pre-normalize.elf')
+  subprocess.run([sys.executable,str(ROOT/'scripts/normalize_home_provision.py'),str(elf)],check=True)
+ if a.boot_animation or a.automatic_provision:
   for name in ('normalize_xtensa_relocations.py',):subprocess.run(['python3',str(a.relocation_tools/name),str(elf)],check=True)
  symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
  imports={s.split()[-1] for s in symbols.splitlines() if ' U ' in ' '+s};actual={s.split()[-1] for s in symbols.splitlines() if len(s.split())>=3 and s.split()[-2] in ('T','D','B','R')}
@@ -296,7 +298,7 @@ def build():
    if a.boot_animation:paths.extend(['Apps/paper_boot_animation.inc','lib/PortableApps/boot_logo/RiscRteBootAnimation.h','lib/PortableApps/boot_logo/StartupScreen.reference.cpp','lib/PortableApps/boot_logo/ANIMATION-SOURCES.json'])
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
    record['desk_sources'].update({path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths})
- if a.automatic_provision:record['provisioning_link']={'sections':True,'gc_sections':True,'normalizer_sha256':hashlib.sha256((ROOT/'scripts/normalize_home_provision.py').read_bytes()).hexdigest(),'pattern':'one all-zero record before four checked RTLD records; canonical normalizer removes trailing no-op'}
+ if a.automatic_provision:record['provisioning_link']={'sections':True,'gc_sections':True,'normalizer_sha256':hashlib.sha256((ROOT/'scripts/normalize_home_provision.py').read_bytes()).hexdigest(),'pre_normalize_sha256':hashlib.sha256((out/'default.pre-normalize.elf').read_bytes()).hexdigest(),'pattern':'one all-zero record before or after four checked RTLD records; canonical normalizer removes trailing no-op'}
  if a.boot_animation:record['boot_animation']={'source':'aac8c06d3221139084acd0cfc64f7b0ba194a97a','mode':'sliced-cold-boot-only','relocation_tools':{str((a.relocation_tools/n).resolve()):hashlib.sha256((a.relocation_tools/n).read_bytes()).hexdigest() for n in ('normalize_xtensa_relocations.py',)}}
  portable_idle_build.record(a,record,flags)
  if loading:record['app_loading']=loading;record['build_defines']=flags
