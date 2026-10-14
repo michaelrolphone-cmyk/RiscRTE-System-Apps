@@ -1,4 +1,8 @@
 #pragma once
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC push_options
+#pragma GCC optimize ("no-inline-small-functions", "no-inline-functions-called-once")
+#endif
 #include <RiscRuntimeV1.h>
 #include "FailureEvidenceReport.h"
 #include "CrashReportSpool.h"
@@ -143,3 +147,7 @@ static inline bool crash_session_checkpoint(crash_report_session *s) {
  s->spool.api=NULL;
  return true;
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC pop_options
+#endif
