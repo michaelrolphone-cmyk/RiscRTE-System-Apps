@@ -1,7 +1,7 @@
 #pragma once
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC push_options
-#pragma GCC optimize ("no-inline-small-functions", "no-inline-functions-called-once")
+#pragma GCC optimize ("no-inline")
 #endif
 #include <RiscRuntimeV1.h>
 #include "FailureEvidenceReport.h"
