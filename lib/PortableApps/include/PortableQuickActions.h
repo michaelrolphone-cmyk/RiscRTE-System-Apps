@@ -38,6 +38,7 @@ typedef struct {
     /* Controller scratch/proposed values; adapter owns persisted preferences.
      * Levels are 0..100 percent, sliders choose ten-point steps. Brightness
      * user choices have a 10% floor. Unknown values never become fake states. */
+    uint16_t logical_height; /* Zero preserves the 240px canvas. */
     uint8_t brightness, volume, last_nonzero_volume;
 #ifdef PORTABLE_PAPER_TRANSITIONS
     uint8_t last_nonzero_brightness, applied_brightness;
@@ -76,6 +77,9 @@ typedef struct {
     bool handle_pressed, moved;
 } pqa_state;
 
+static inline unsigned pqa_height(const pqa_state *s) {return s&&s->logical_height>=240&&s->logical_height<=2048?s->logical_height:240u;}
+static inline int32_t pqa_open_q8(const pqa_state *s) {return (int32_t)pqa_height(s)*256;}
+bool pqa_set_height(pqa_state *s,unsigned logical_height);
 void pqa_init(pqa_state *s);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y);
@@ -94,7 +98,8 @@ void pqa_set_levels(pqa_state *s, bool brightness_valid, unsigned brightness,
  * adapter must replay start_{ms,id,x,y} as a down before this sample if it held
  * it; on a top-edge tap's release this preserves the ordinary app tap.
  * Once an outside-area app contact starts it can never open the panel.
- * Input coordinates are screen pixels, even while the panel moves.
+ * Input coordinates are 240-wide logical pixels, even while the panel moves.
+ * Native-height adapters uniformly map both axes from their provider width.
  * Pending actions remain until pqa_take_action; inspect action_* snapshots.
  */
 bool pqa_input(pqa_state *s, uint32_t now_ms, bool valid, unsigned count,

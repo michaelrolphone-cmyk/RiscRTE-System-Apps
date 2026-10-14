@@ -214,7 +214,7 @@ static bool paper_light_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const
 }
 #endif
 static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *alerts_changed) {
- *alerts_changed=false;
+ (void)rt;*alerts_changed=false;
 #if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  if(s->retained)return false;
 #endif

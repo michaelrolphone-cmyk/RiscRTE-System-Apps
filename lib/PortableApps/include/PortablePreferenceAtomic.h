@@ -32,7 +32,7 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
   (s->flags&3u)==(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC);
 }
 static inline bool portable_preference_atomic_key(const char *key) {
- static const char *const allowed[]={"time_format","time_zone","desk_clock_face","desk_direction",
+ static const char *const allowed[]={"watch_face","time_format","time_zone","desk_clock_face","desk_direction",
   "reader_flip_ui","reader_language","sleep_idle","sleep_deep","sleep_mode","alert_mode","rtc_basis",
   "brightness","alarm_volume","frontlight_tone","alert_dnd","contexts_on","quick_radio",
   "ble_broadcast","context_sources","context_timing"};
