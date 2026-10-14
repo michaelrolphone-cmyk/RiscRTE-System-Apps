@@ -46,7 +46,7 @@ int32_t settingsStep(const risc_storage_volume_api_v1*v){
     std::snprintf(sharedOwner,sizeof(sharedOwner),"shared-%08x",unsigned(ns));slot=candidate;owner=sharedOwner;
    }else{
     const auto&p=current[i-shared];if(!p.settingsNeeded||!p.namespaceSlot||!settingsPending(p.namespaceSlot))continue;
-    slot=p.namespaceSlot;owner=p.view.id;
+    slot=p.namespaceSlot;owner=p.view.id;v=selectedVolume(p.medium,v);
    }
    settingsCursor=(i+1)%total;break;
   }

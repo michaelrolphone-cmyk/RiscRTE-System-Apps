@@ -31,9 +31,9 @@ bool provisionRecord(JsonVariantConst row,Download::Record&record,CachedProvider
  record.size=row["size"];record.driver=true;return true;
 }
 int32_t checkProvisionGraph(bool check){
- risc_install_provider_v1 rows[ProviderMax]{};
- for(unsigned i=0;i<nextProviderCount;++i)rows[i]={nextProviders[i].manifest,nextProviders[i].path,nextProviders[i].instance};
- return native->providers(native->context,rows,nextProviderCount,check);
+ risc_install_provider_v1 rows[ProviderMax]{};uint32_t media[ProviderMax]{};
+ for(unsigned i=0;i<nextProviderCount;++i){rows[i]={nextProviders[i].manifest,nextProviders[i].path,nextProviders[i].instance};media[i]=nextProviders[i].medium;}
+ return mediaApi()?mediaApi()->providers_media(native->context,rows,media,nextProviderCount,check):native->providers(native->context,rows,nextProviderCount,check);
 }
 bool selectCatalogProviders(JsonDocument&doc){
  auto pool=doc["provider_catalog"];
@@ -82,7 +82,7 @@ bool prepareProvision(const char*json,bool resume){
   for(unsigned j=0;j<i;++j)if(rows[i]["manifest"]["id"]==rows[j]["manifest"]["id"]&&rows[i]["instance"]==rows[j]["instance"])return false;
   unsigned slot=0;for(;slot<nextProviderCount;++slot){JsonDocument old;if(deserializeJson(old,nextProviders[slot].manifest))return false;if(old["id"]==rows[i]["manifest"]["id"]&&nextProviders[slot].instance==entry.instance)break;}
   if(slot==nextProviderCount){if(nextProviderCount==ProviderMax)return false;++nextProviderCount;}
-  nextProviders[slot]=entry;
+  entry.medium=installMedium;nextProviders[slot]=entry;
  }
  if(nextProviderCount&&(!providerApi()||nextProviderCount>native->provider_capacity))return false;
  // Admission is repeated at publication to account for an intervening live
@@ -95,15 +95,18 @@ bool prepareProvision(const char*json,bool resume){
 }
 void saveProvision(JsonDocument&doc){
  if(!provisionJson[0])return;
- JsonDocument plan;if(!deserializeJson(plan,provisionJson))doc["provision"]=plan.as<JsonVariantConst>();
+ JsonDocument plan;if(!deserializeJson(plan,provisionJson)){doc["provision"]=plan.as<JsonVariantConst>();doc["provision"]["medium"]=installMedium;}
 }
 bool loadProvision(JsonVariantConst value){
  if(value.isNull()||installIntent){provisionJson[0]=0;provisionResume=false;return true;}
  if(!value.is<JsonObjectConst>()||measureJson(value)>ManifestMax||!value["manifest"]["id"].is<const char*>())return false;
+ if(!readMedium(value["medium"],installMedium))return false;
+ installMediumSelected=true;
  serializeJson(value,provisionJson,sizeof(provisionJson));
  char source[193];int n=std::snprintf(source,sizeof(source),"Apps/%s/install.json",value["manifest"]["id"].as<const char*>());
  if(n<=0||size_t(n)>=sizeof(source)||!prepareProvision(provisionJson,true)||
     !descriptor(source,provisionJson,installCandidate,&installRecord)||!namespaceFor(installCandidate,false))return false;
+ installCandidate.medium=installMedium;
  std::strcpy(installId,installCandidate.view.id);std::strcpy(installVersion,installCandidate.view.version);std::strcpy(installDescriptor,source);
  installPaused=installResume=false;installPhase=InstallPhase::Idle;return true;
 }

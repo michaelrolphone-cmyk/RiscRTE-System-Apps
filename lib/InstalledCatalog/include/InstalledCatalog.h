@@ -25,6 +25,7 @@ typedef struct { uint32_t generation; char id[96]; } installed_selection;
 /* Caller owns allocation (PSRAM on target) and serialized access. No method
  * does filesystem I/O, calls a provider, hashes an ELF or executes a package. */
 void installed_catalog_init(installed_catalog*);
+bool installed_catalog_begin_all(installed_catalog*);
 bool installed_catalog_begin(installed_catalog*,uint8_t medium);
 bool installed_catalog_offer(installed_catalog*,const installed_record*);
 /* Publish only after complete enumeration, successful admission and checked
