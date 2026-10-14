@@ -1,0 +1,11 @@
+Actual Contexts runtime catalog route resolution mode 0 PASS
+Actual Contexts runtime catalog route resolution mode 1 PASS
+Actual Contexts runtime catalog route resolution mode 2 PASS
+Actual Contexts runtime catalog route resolution mode 3 PASS
+Actual Contexts runtime catalog route resolution mode 4 PASS
+Actual Contexts runtime catalog route resolution mode 0 PASS
+Actual Contexts runtime catalog route resolution mode 1 PASS
+Actual Contexts runtime catalog route resolution mode 2 PASS
+Actual Contexts runtime catalog route resolution mode 3 PASS
+Actual Contexts runtime catalog route resolution mode 4 PASS
+PASS 10 actual Contexts launch cases: long canonical route via native ID, short route unchanged, unavailable, absent, changed generation

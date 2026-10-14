@@ -20,3 +20,11 @@ typedef struct {
 const springboard_presentation *springboard_presentation_get(void);
 /* App-local optional redraw request; weak false in the shared app. */
 bool springboard_transition_active(void);
+/* App-local failure detail copied from the catalog client. Reading it performs
+ * no provider or Runtime callback; legacy hosts use the weak unavailable hook. */
+typedef struct {
+    const char *stage;
+    int32_t result;
+    uint32_t index;
+} springboard_catalog_failure;
+bool springboard_catalog_failure_get(springboard_catalog_failure *out);

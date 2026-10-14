@@ -1,0 +1,17 @@
+{
+  "baseline_system": "285f2e4417c19d7abad4a031d2130a339d410892",
+  "native_runtime": "c258c4ba144247b6eaa4c6f28675ffccec582fe1",
+  "hardware_reported_failure": "Waveshare 0.1.39 opens Springboard but Apps unavailable",
+  "hardware_root_cause_verified": false,
+  "diagnostic_only": true,
+  "catalog_normal_sanitized_cases": 184,
+  "hardware_tested": false,
+  "native_client_lifecycle_integration": "normal and ASan/UBSan passed",
+  "baseline_compact_springboard_sha256": "dad1a3ee9bbf7d88061e1a77b9ac81ba9fc7a584ed31fe423a56e57f0f3f4427",
+  "full_feature_springboard_cases": 72,
+  "optional_service_normal_sanitized_cases": 276,
+  "navigation_retention_normal_sanitized_cases": 20,
+  "native_client_lifecycle_scenarios": 16,
+  "context_catalog_cases": 10,
+  "terminal_failure_no_redraw": true
+}

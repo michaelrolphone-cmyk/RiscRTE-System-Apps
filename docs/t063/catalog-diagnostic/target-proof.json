@@ -1,0 +1,50 @@
+{
+  "baseline_system_revision": "72f435fcee376ec62d17ece6180753385ea547d9",
+  "current_fixture_sha256": "2c05e9d862b960319d364e1f0088fda8c9e64991aca3af992ecca0f2e76e119d",
+  "shared_bridge": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+    "revision": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4"
+  },
+  "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+  "recipe_sha256": "7f1f28667d5f49f90a475e395b68d8486315c614a8c8fb2b43b503567545650e",
+  "hardware_qualified": false,
+  "runtime_capability": "app.catalog@1",
+  "results": [
+    {
+      "cohort": "baseline",
+      "app": "settings",
+      "sha256": "4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385",
+      "inventory_independent": true
+    },
+    {
+      "cohort": "baseline",
+      "app": "springboard",
+      "sha256": "f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17",
+      "inventory_independent": true
+    },
+    {
+      "cohort": "current",
+      "app": "settings-default",
+      "sha256": "d169eabb5d3c29bdc627f390736d1b26a85e21accdff8f3b83ddac43cef567c2",
+      "inventory_independent": true
+    },
+    {
+      "cohort": "current",
+      "app": "settings-atomic",
+      "sha256": "2c1869ab03b700f5d321ee8fa41a2c6840fb6920f22da488a0f98829065b6719",
+      "inventory_independent": true
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-default",
+      "sha256": "1862dbf44220a9744e042bb79ac8963208eb62cfeaf9c9af143eefe7702e0064",
+      "inventory_independent": true
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-atomic",
+      "sha256": "066eb6b25a9a5c95efb2d0c2d915cb4b1d98ff4bad1f7272de0bd6cbcb3e7eb8",
+      "inventory_independent": true
+    }
+  ]
+}

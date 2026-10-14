@@ -38,10 +38,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: c258c4ba144247b6eaa4c6f28675ffccec582fe1
+          path: .ci-deps/catalog-native
+          persist-credentials: false
       - name: Catalog, retention, stale launches and Contexts
         run: |
           python scripts/test_runtime_app_catalog.py
           python scripts/test_runtime_context_catalog.py
+          python scripts/test_catalog_native_integration.py --runtime .ci-deps/catalog-native
       - name: Install pinned public compiler
         run: |
           python -m pip install platformio==6.1.19

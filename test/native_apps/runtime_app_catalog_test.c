@@ -121,6 +121,7 @@ static void load_inventory(const char *path) {
 }
 static void no_more_callbacks(const t5_app_api_v1 *client) {
  unsigned before=runtime_calls+catalog_calls;
+ springboard_catalog_failure detail;assert(!springboard_catalog_failure_get(&detail));
  t5_app_manifest_t entry;t5_app_input_t input;
  assert(!client->installed_apps_refresh());assert(!client->installed_apps_count());
  assert(!client->installed_apps_get(0,&entry));assert(!client->request_app_launch(0));
@@ -139,17 +140,23 @@ static void observe_text(int32_t x,int32_t y,const char *text) {record_message(t
 static void observe_label(int32_t x,int32_t y,int32_t width,const char *text) {record_message(text);original_api.draw_label(x,y,width,text);}
 static void observe_caption(int y,const char *text,bool clock,uint32_t color) {record_message(text);original_presentation->caption(y,text,clock,color);}
 static void check_status_text(const t5_app_api_v1 *client,bool available) {
+ springboard_catalog_failure detail;
+ bool has_detail=springboard_catalog_failure_get(&detail);
+ if(available)assert(!has_detail);
  api=client;assert(springboard_watch_open());original_api=*api;observed_api=original_api;
  observed_api.draw_text=observe_text;observed_api.draw_label=observe_label;api=&observed_api;
  catalog_available=available;count=client->installed_apps_count();selected=0;layout();
  if(!count) {
   messages[0]=0;raster_page(NULL);api->present(false);
   assert(strstr(messages,available?"No installed apps found.":"Installed apps unavailable."));
+  if(!available && has_detail){char expected[48];snprintf(expected,sizeof(expected),"result %ld, index %lu",(long)detail.result,(unsigned long)detail.index);assert(strstr(messages,detail.stage)&&strstr(messages,expected));}
   assert(!strstr(messages,"SD"));
   original_presentation=springboard_presentation_get();assert(original_presentation);
   observed_presentation=*original_presentation;observed_presentation.caption=observe_caption;
   nova_state state={.view=&observed_presentation,.pending=-1};nova_layout(&state);
   messages[0]=0;nova_render(&state);assert(strstr(messages,available?"NO APPS":"APPS UNAVAILABLE"));
+  if(!available && has_detail){char expected[48];snprintf(expected,sizeof(expected),"result %ld, index %lu",(long)detail.result,(unsigned long)detail.index);assert(strstr(messages,detail.stage)&&strstr(messages,expected));
+   if(getenv("CATALOG_CAPTURE_DIR")){directory=getenv("CATALOG_CAPTURE_DIR");state.view=original_presentation;render(&state);capture(detail.stage);}}
  } else {
   original_presentation=springboard_presentation_get();assert(original_presentation);
   nova_state state={.view=original_presentation,.pending=-1};nova_layout(&state);
@@ -222,8 +229,11 @@ static void exercise(unsigned width,unsigned height) {
   assert(!retained);
   const char *stage=fault==1?"stage=acquire result=0":fault==4?"stage=interface":fault<=10?"stage=snapshot":fault==11?"stage=generation-mismatch":fault==19?"stage=duplicate-row":fault==27?"stage=allocation-failed":"stage=row";
   assert(strstr(catalog_diagnostics,stage));
-  if(fault==27){assert(strstr(catalog_diagnostics,"bytes=")&&!strstr(catalog_diagnostics,"bytes=0"));fault=0;assert(client->installed_apps_refresh());assert(client->installed_apps_count()==inventory_count);}
-  check_status_text(client,false);app_module_fini();assert(!grants&&!subscriptions&&!frames);free(guarded);return;
+  springboard_catalog_failure detail;assert(springboard_catalog_failure_get(&detail));
+  assert(!springboard_catalog_failure_get(NULL));
+  unsigned before=runtime_calls+catalog_calls;check_status_text(client,false);assert(runtime_calls+catalog_calls==before);
+  if(fault==27){assert(strstr(catalog_diagnostics,"bytes=")&&!strstr(catalog_diagnostics,"bytes=0"));fault=0;assert(client->installed_apps_refresh());assert(client->installed_apps_count()==inventory_count);assert(!springboard_catalog_failure_get(&detail));}
+  app_module_fini();assert(!grants&&!subscriptions&&!frames);assert(!springboard_catalog_failure_get(&detail));free(guarded);return;
  }
  assert(refreshed && client->installed_apps_count()==inventory_count);
  check_status_text(client,true);
@@ -285,10 +295,35 @@ static void exercise_delayed_catalog(unsigned width,unsigned height,bool launch)
  assert(ticks>=delayed_until&&launches==before+(launch?1u:0u));
  app_module_fini();assert(!grants&&!subscriptions&&!frames);guards();free(guarded);
 }
+static void exercise_failure_changes(unsigned width,unsigned height) {
+ fw=width;fh=height;pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
+ for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
+ use_async=true;assert(app_module_init()==0);api=t5_app_get_api(1);assert(api&&springboard_watch_open());
+ fault=1;catalog_available=api->installed_apps_refresh();assert(!catalog_available);count=0;catalog_retry_at=0;
+ fault=5;ticks=1001;assert(retry_unavailable_catalog(ticks));
+ springboard_catalog_failure detail;assert(springboard_catalog_failure_get(&detail)&&!strcmp(detail.stage,"snapshot")&&detail.result==-2);
+ ticks+=1001;assert(!retry_unavailable_catalog(ticks)); /* Identical failure needs no redraw. */
+ fault=14;ticks+=1001;assert(retry_unavailable_catalog(ticks));
+ assert(springboard_catalog_failure_get(&detail)&&!strcmp(detail.stage,"row")&&detail.result==-1);
+ fault=0;ticks+=1001;assert(retry_unavailable_catalog(ticks));
+ assert(catalog_available&&count==inventory_count&&!springboard_catalog_failure_get(&detail));
+ app_module_fini();assert(!grants&&!subscriptions&&!frames);guards();free(guarded);
+}
+static void exercise_terminal_redraw(unsigned width,unsigned height) {
+ fw=width;fh=height;pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
+ for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
+ use_async=true;assert(app_module_init()==0);api=t5_app_get_api(1);assert(api&&springboard_watch_open());
+ const t5_app_api_v1 *client=api;
+ fault=5;catalog_available=api->installed_apps_refresh();assert(!catalog_available);count=0;catalog_retry_at=0;
+ fault=7;ticks=1001;assert(!retry_unavailable_catalog(ticks));
+ assert(retained&&!t5_app_get_api(1));no_more_callbacks(client);
+}
 int main(int argc,char **argv) {
  assert(argc>=5);load_inventory(argv[2]);
  owned_display=nt_display;owned_display.present_status=inventory_present_status;
  owned_catalog=(risc_app_catalog_v1){1,sizeof(owned_catalog),NULL,inventory_snapshot,inventory_get};
+ if(!strcmp(argv[1],"failure-changes")){exercise_failure_changes((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]));puts("Catalog failure screen follows changed stages and clears after recovery PASS");return 0;}
+ if(!strcmp(argv[1],"terminal-redraw")){exercise_terminal_redraw((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]));puts("Terminal catalog custody never requests a diagnostic redraw PASS");return 0;}
  if(!strcmp(argv[1],"delayed-refresh")||!strcmp(argv[1],"delayed-launch")){
   exercise_delayed_catalog((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]),!strcmp(argv[1],"delayed-launch"));
   puts("Active display transfer completed cooperatively before native catalog access PASS");return 0;

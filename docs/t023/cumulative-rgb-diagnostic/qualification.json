@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "base_source": "8a18063337b7683d6017f4e04aecb28bf0ac0016",
+  "diagnostic_source": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+  "catalog_cases": 184,
+  "contexts_cases": 10,
+  "full_feature_discovery_cases": 72,
+  "normal_and_asan_ubsan": true,
+  "successful_screen_pixels_unchanged": true,
+  "package_discovery_preserved": true,
+  "terminal_custody_no_redraw": true,
+  "back_before_retry": true,
+  "target_proof": {
+    "baseline_system_revision": "72f435fcee376ec62d17ece6180753385ea547d9",
+    "current_fixture_sha256": "d25188b4ff8f6d0af5418d15d2f5015f19d99cdf02cfdba1a252ae54714ad725",
+    "shared_bridge": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "revision": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4"
+    },
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "recipe_sha256": "7f1f28667d5f49f90a475e395b68d8486315c614a8c8fb2b43b503567545650e",
+    "hardware_qualified": false
+  },
+  "target_profiles": [
+    {
+      "cohort": "baseline",
+      "app": "settings",
+      "sha256": "4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "80efb298c9ca8d0f62f9a31840c9e51d380b40f6"
+    },
+    {
+      "cohort": "baseline",
+      "app": "springboard",
+      "sha256": "f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+    },
+    {
+      "cohort": "current",
+      "app": "settings-default",
+      "sha256": "b65b40676a4204fad4b7c16cce1234bd914aa721f6b2228e9678d2d4b63f0931",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "80efb298c9ca8d0f62f9a31840c9e51d380b40f6"
+    },
+    {
+      "cohort": "current",
+      "app": "settings-atomic",
+      "sha256": "6850a21cb8796d4050f2123125f118e3ffbcde321030f3c2b3781ce79c6018af",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "80efb298c9ca8d0f62f9a31840c9e51d380b40f6"
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-default",
+      "sha256": "acd05db36fe628d4c325b84d18e7dd56e02f4e2b6bec869a0106254661ba8bfe",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-atomic",
+      "sha256": "6e7a35c786a08c69fcca77d246da5df17778b0542b4aa91d20196b428974ca86",
+      "inventory_independent": true,
+      "product_service_utilities_revision": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+    }
+  ],
+  "production_wave": {
+    "sha256": "e76e5e832f62973398700a2b36e5b6deedd814d6cc8ea58b832862ff87da351d",
+    "bytes": 261916,
+    "imports": [
+      "free",
+      "malloc",
+      "memchr",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf",
+      "strcmp",
+      "strcpy",
+      "strlen",
+      "strncmp"
+    ],
+    "exports": [
+      "app_main",
+      "app_module_fini",
+      "app_module_init"
+    ],
+    "atomic_preferences": true,
+    "package_discovery": true,
+    "compiler_sha256": "732bebd44b70a21687ffa3ac5da55edc9b555080ad21cfd74503b2288a143d3f"
+  },
+  "logs": {
+    "discovery-lifecycle.log": "344162b18a83e7a8e3ae315e108dbb09cba7a0c6f37e953141dafaa64307767d",
+    "catalog.log": "4f734738ccf2ad3c0d964905c8af511413c6f30826a0008c4ab97e91fdfb8ff8",
+    "contexts.log": "11695adbce95c2c28c5621c84861c97129c781fd084f47b7ffad02d3b2f8f759"
+  },
+  "hardware_qualified": false,
+  "final_store_admission_pending": true
+}
