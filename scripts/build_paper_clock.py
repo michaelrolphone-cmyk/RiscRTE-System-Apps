@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Build the explicit wall-time Nova7 default.elf profile. No hardware access."""
-import argparse,hashlib,json,os,shutil,subprocess
+import argparse,hashlib,json,os,shutil,subprocess,sys
 from pathlib import Path
 import portable_quick_build
 import portable_idle_build
@@ -109,7 +109,7 @@ def build():
  else:catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports=portable_quick_build.exports(a,{'app_main','app_module_init','app_module_fini'});mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
- if a.automatic_provision:flags+=['-DPORTABLE_HOME_PROVISION']
+ if a.automatic_provision:flags+=['-DPORTABLE_HOME_PROVISION','-ffunction-sections','-fdata-sections','-Wl,--gc-sections']
  if a.deferred_foreground_services:flags+=['-DPORTABLE_DESK_DEFER_RADIOS']
  if a.installed_catalog_volume_instance is not None:flags+=['-DPORTABLE_INSTALLED_CATALOG','-DPORTABLE_INSTALLED_CATALOG_HOST','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='+str(a.installed_catalog_volume_instance)+'ULL']
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
@@ -139,6 +139,7 @@ def build():
  sparse_sources=[ROOT/'lib/PortableApps/src'/name for name in ('PortableRealtimeClient.c','PortableTimeZone.c','PortableTimeZoneCatalog.c','PortableTimeZonePreference.c')] if a.sparse_start else []
  elf=out/'default.elf'
  subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'Apps/paper_clock.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(catalog),*map(str,quick_sources),*([str(ROOT/'lib/PortableApps/src/desk_clock_faces.c')] if a.desk_clock else []),*([str(a.local_sleep_source)] if a.local_sleep_source else []),*map(str,sparse_sources),*map(str,catalog_sources),'-lgcc','-o',str(elf)],check=True)
+ if a.automatic_provision:subprocess.run([sys.executable,str(ROOT/'scripts/normalize_home_provision.py'),str(elf)],check=True)
  if a.boot_animation:
   for name in ('normalize_xtensa_relocations.py',):subprocess.run(['python3',str(a.relocation_tools/name),str(elf)],check=True)
  symbols=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True)
@@ -295,6 +296,7 @@ def build():
    if a.boot_animation:paths.extend(['Apps/paper_boot_animation.inc','lib/PortableApps/boot_logo/RiscRteBootAnimation.h','lib/PortableApps/boot_logo/StartupScreen.reference.cpp','lib/PortableApps/boot_logo/ANIMATION-SOURCES.json'])
    paths.extend(str(path.relative_to(ROOT)) for path in sparse_sources)
    record['desk_sources'].update({path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in paths})
+ if a.automatic_provision:record['provisioning_link']={'sections':True,'gc_sections':True,'normalizer_sha256':hashlib.sha256((ROOT/'scripts/normalize_home_provision.py').read_bytes()).hexdigest(),'pattern':'one all-zero record before four checked RTLD records; canonical normalizer removes trailing no-op'}
  if a.boot_animation:record['boot_animation']={'source':'aac8c06d3221139084acd0cfc64f7b0ba194a97a','mode':'sliced-cold-boot-only','relocation_tools':{str((a.relocation_tools/n).resolve()):hashlib.sha256((a.relocation_tools/n).read_bytes()).hexdigest() for n in ('normalize_xtensa_relocations.py',)}}
  portable_idle_build.record(a,record,flags)
  if loading:record['app_loading']=loading;record['build_defines']=flags
