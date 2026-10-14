@@ -2,7 +2,7 @@
 """Qualify the real original honeycomb on both Watch geometries.
 
 One native executable is invoked with runtime 240x240 and 410x502 dimensions.
-The 240 output is compared pixel-for-pixel with the original 1476260 controller
+The 240 output is compared pixel-for-pixel with the restored 72f435f controller
 and presenter, compiled from an isolated git archive. Both variants run normally
 and under ASan/UBSan, with synchronous and asynchronous provider capabilities.
 Unknown timing preserves this presentation without claiming fast transition
@@ -20,7 +20,7 @@ import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "build/watch-native-springboard"
-BASELINE = "14762601b3fa7bbeeac5ed565a6825534bf74dca"
+BASELINE = "72f435fcee376ec62d17ece6180753385ea547d9"
 CATALOG = ROOT / "test/native_apps/fixtures/watch_springboard_catalog_23.c"
 OUT.mkdir(parents=True, exist_ok=True)
 CC = os.environ.get("CC", "cc")
