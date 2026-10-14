@@ -108,10 +108,10 @@ static int32_t keyboard_step(void){
      * ring overflow explicitly through next() == -1. Preserve every valid
      * edge, including same-key DOWN/UP pairs at the exact queue boundary. */
     keyboard_pending=count==RISC_USB_INPUT_QUEUE_LENGTH;
-    draining=keyboard_pending&&(discard||!was_neutral);
     bool before=connected;
     if(!snapshot(discard||!was_neutral,&held))return retain();
     if(before!=connected)discard=true;
+    draining=keyboard_pending&&(discard||!was_neutral);
     if(discard||!was_neutral){neutral=!held;if(neutral)checkpoint_neutralizing=false;return RISC_TEXT_ENTRY_OK;}
     for(unsigned i=0;i<count&&state.state==RISC_TEXT_ENTRY_EDITING;i++){
         const risc_usb_keyboard_event_v1 *e=&events[i];

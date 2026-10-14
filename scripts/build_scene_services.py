@@ -15,11 +15,12 @@ ROOT=Path(__file__).resolve().parents[1]
 HOST_PROFILE_FLAGS = {
     'full': [],
     'watch-compact': ['-DSCENE_HOST_TELEMETRY=0','-DSCENE_HOST_WATCH_240=1'],
+    'color-dynamic': ['-DSCENE_HOST_TELEMETRY=0'],
 }
 
 def host_manifest(profile):
     if profile not in HOST_PROFILE_FLAGS:raise ValueError('Unknown scene host profile: '+profile)
-    name='manifest-watch-compact.json' if profile=='watch-compact' else 'manifest.json'
+    name='manifest-watch-compact.json' if profile in ('watch-compact','color-dynamic') else 'manifest.json'
     host=json.loads((ROOT/'Services/scene_host'/name).read_text())
     return host
 
