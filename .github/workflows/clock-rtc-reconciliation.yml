@@ -7,7 +7,13 @@ on:
       - 'Apps/paper_sparse_clock.inc'
       - 'lib/PortableApps/src/PortableRealtimeClient.c'
       - 'lib/PortableApps/src/adapter.c'
+      - 'lib/PortableApps/src/alarm.inc'
       - 'test/native_apps/*reconcile*'
+      - 'test/native_apps/alarm_frame_progress_test.c'
+      - 'test/native_apps/portable_alarm_v2_adapter_test.c'
+      - 'test/native_apps/portable_native_toolbar_test.c'
+      - 'scripts/test_alarm_frame_progress.py'
+      - 'scripts/test_alarm_busy_adapter.py'
       - 'scripts/test_sparse_rtc_reconcile.py'
       - '.github/workflows/clock-rtc-reconciliation.yml'
   workflow_dispatch:
