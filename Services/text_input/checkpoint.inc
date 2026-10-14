@@ -27,7 +27,7 @@ static int32_t checkpoint_snapshot(void *c,uint64_t s,risc_text_entry_checkpoint
     if(r!=RISC_SCENE_OK)return retain();
     if(flags&RISC_SCENE_ACTIVITY)checkpoint_activity=true;
     uint32_t report=(flags&RISC_SCENE_PRESENTING)?RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING:0;
-    if((flags&(RISC_SCENE_INPUT_BUSY|RISC_SCENE_CLOSING))||checkpoint_usb_held||draining||(keyboard&&!neutral))report|=RISC_TEXT_ENTRY_CHECKPOINT_INPUT_BUSY;
+    if((flags&(RISC_SCENE_INPUT_BUSY|RISC_SCENE_CLOSING))||checkpoint_usb_held||draining||keyboard_pending||(keyboard&&!neutral))report|=RISC_TEXT_ENTRY_CHECKPOINT_INPUT_BUSY;
     if(checkpoint_activity)report|=RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY;
     *out=(risc_text_entry_checkpoint_state_v1){sizeof(*out),report};checkpoint_activity=false;
     return RISC_TEXT_ENTRY_OK;

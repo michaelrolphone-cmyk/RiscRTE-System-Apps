@@ -72,7 +72,9 @@ static void keyboard_visibility(void){
     assert(!api->update(NULL,session,&doc));visibility_tap();expect_key(RISC_SCENE_KEY_VISIBILITY);
     doc.nodes[0].flags&=~RISC_SCENE_KEYBOARD_REVEALED;strcpy(doc.nodes[0].text,"***********");++doc.revision;
     assert(!api->update(NULL,session,&doc));allow_complete=true;settle();
-    doc.nodes[0].flags=0;acknowledge();visibility_tap();assert(tick(&e)==RISC_SCENE_IDLE);
+    doc.nodes[0].flags=0;acknowledge();visibility_tap();
+    if(logical_height()<logical_width()*3u/2u){expect_key(RISC_SCENE_KEY_CLEAR);acknowledge();}
+    else assert(tick(&e)==RISC_SCENE_IDLE);
     /* Leave an actual revealed draft in the frozen model for the close-time
      * private-storage probe; it must not survive successful teardown. */
     doc.nodes[0].flags=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_KEYBOARD_REVEALED;
@@ -197,6 +199,7 @@ static void assert_no_grid(void){
 }
 #include "../../Services/scene_host/glyphs.inc"
 #include "../../Services/scene_host/fonts/text.inc"
+#include "../../Services/scene_host/fonts/components.inc"
 static void keyboard_raster(const char *output){
     settle();
     assert(!memcmp(glyphs[0],(uint8_t[5]){0},5));
@@ -206,7 +209,7 @@ static void keyboard_raster(const char *output){
     }
     for(unsigned c=32;c<=126;c++){
         doc.nodes[0].text[0]=(char)c;doc.nodes[0].text[1]=0;acknowledge();
-        unsigned x=prof.padding,y=prof.font_scale*7+prof.padding*2+8+prof.font_scale*8+4;
+        unsigned x=20,y=63; /* compact reference field: x16+4, baseline42+(32+10)/2 */
         if(logical_height()!=240){
             const pc_glyph *g=&PCF_O900_46.glyphs[c-32];
             for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
@@ -215,9 +218,10 @@ static void keyboard_raster(const char *output){
             }
             continue;
         }
-        for(unsigned col=0;col<5;col++)for(unsigned row=0;row<7;row++){
-            bool ink=(glyphs[c-32][col]&(1u<<row))!=0;
-            assert((pixel_level(x+col*prof.font_scale,y+row*prof.font_scale)!=background_level())==ink);
+        const pc_glyph *g=&nova_title_1.glyphs[c-32];
+        for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
+            unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
+            assert((pixel_level(x+g->left+col,y+g->top+row)!=background_level())==ink);
         }
     }
     strcpy(doc.nodes[0].text,"Aa !? @# $% &* () [] {} ~^");doc.nodes[0].value=2;acknowledge();
@@ -347,16 +351,23 @@ static unsigned installed_pixel_level(unsigned x,unsigned y){
 static void packaged_orientation(void){
     assert(prof.touch_rotation==0);
     strcpy(doc.nodes[0].text,"Fq");acknowledge();
-    unsigned x=prof.padding,y=prof.font_scale*7+prof.padding*2+8+prof.font_scale*8+4;
+    unsigned x=20,y=63; /* compact reference field: x16+4, baseline42+(32+10)/2 */
     if(w==800){
         const pc_glyph *g=&PCF_O900_46.glyphs['F'-32];
         for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
             unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
             assert((installed_pixel_level(48+g->left+col,208+g->top+row)!=background_level())==ink);
         }
-    }else for(unsigned c=0;c<2;c++)for(unsigned col=0;col<5;col++)for(unsigned row=0;row<7;row++){
-        bool ink=(glyphs[(unsigned char)doc.nodes[0].text[c]-32][col]&(1u<<row))!=0;
-        assert((installed_pixel_level(x+(c*6+col)*prof.font_scale,y+row*prof.font_scale)!=background_level())==ink);
+    }else {
+        unsigned pen=0;
+        for(unsigned c=0;c<2;c++){
+            const pc_glyph *g=&nova_title_1.glyphs[(unsigned char)doc.nodes[0].text[c]-32];
+            for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
+                unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
+                assert((installed_pixel_level(x+(pen+32)/64+g->left+col,y+g->top+row)!=background_level())==ink);
+            }
+            pen+=g->advance;
+        }
     }
     /* The border of the displayed Q tile is at the same physical position as
      * the raw touch that selects Q, including the far side of the panel. */

@@ -17,7 +17,7 @@ static risc_scene_document_v1 document;
 static risc_text_entry_state_v1_long state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
 static uint32_t capacity,page,request_flags;
-static bool started,active,closing,retained,connected,neutral,caps,changed,draining,revealed;
+static bool started,active,closing,retained,connected,neutral,caps,changed,draining,keyboard_pending,revealed;
 static bool checkpoint_enabled,checkpoint_paused,checkpoint_pausing,checkpoint_activity,checkpoint_usb_held,checkpoint_neutralizing,checkpoint_full_pause;
 static const risc_scene_checkpoint_api_v1 *checkpoint_scene;
 
@@ -104,8 +104,11 @@ static int32_t keyboard_step(void){
         if(checkpoint_enabled)checkpoint_activity=true;
         if(e.kind==1||e.kind==2)discard=true;
     }
-    draining=count==RISC_USB_INPUT_QUEUE_LENGTH;
-    if(draining)discard=true;
+    /* A full bounded batch is not a gap: the keyboard provider reports actual
+     * ring overflow explicitly through next() == -1. Preserve every valid
+     * edge, including same-key DOWN/UP pairs at the exact queue boundary. */
+    keyboard_pending=count==RISC_USB_INPUT_QUEUE_LENGTH;
+    draining=keyboard_pending&&(discard||!was_neutral);
     bool before=connected;
     if(!snapshot(discard||!was_neutral,&held))return retain();
     if(before!=connected)discard=true;
@@ -161,7 +164,7 @@ static int32_t close_owned(void){
         if(r!=RISC_SCENE_OK)return retain();
         scene_session=0;
     }
-    active=closing=connected=neutral=caps=changed=draining=revealed=false;session=0;
+    active=closing=connected=neutral=caps=changed=draining=keyboard_pending=revealed=false;session=0;
     checkpoint_enabled=checkpoint_paused=checkpoint_pausing=checkpoint_activity=checkpoint_usb_held=checkpoint_neutralizing=checkpoint_full_pause=false;checkpoint_scene=NULL;
     memset(&state,0,sizeof(state));memset(&document,0,sizeof(document));return RISC_TEXT_ENTRY_OK;
 }
@@ -170,7 +173,7 @@ static int32_t open_checked(const char *label,const char *text,uint32_t limit,ui
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
     state=(risc_text_entry_state_v1_long){.struct_size=sizeof(state),.revision=1};
     memcpy(state.text,text,strlen(text)+1);
-    capacity=limit;request_flags=flags;page=0;last_sequence=0;connected=caps=closing=changed=draining=revealed=false;neutral=true;
+    capacity=limit;request_flags=flags;page=0;last_sequence=0;connected=caps=closing=changed=draining=keyboard_pending=revealed=false;neutral=true;
     checkpoint_enabled=checkpoint_paused=checkpoint_pausing=checkpoint_activity=checkpoint_usb_held=checkpoint_neutralizing=checkpoint_full_pause=false;checkpoint_scene=NULL;
     active=true;session=++serial;
     if(keyboard){

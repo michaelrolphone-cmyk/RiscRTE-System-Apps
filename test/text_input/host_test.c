@@ -145,6 +145,12 @@ int main(int argc,char**argv){
   assert(doc.nodes[0].flags==RISC_SCENE_KEYBOARD_PASSWORD&&!strcmp(doc.nodes[0].text,"*********"));finish();
   assert(driver->start(deps,1));requested_flags=0;open_text("plain",16);
   scene_key(RISC_SCENE_KEY_VISIBILITY);tick();assert(!doc.nodes[0].flags&&!strcmp(doc.nodes[0].text,"plain"));finish();
+ }else if(!strcmp(mode,"full-batch")){
+  attached=true;open_text("",65);pending=true;
+  for(unsigned i=0;i<16;i++){key(4,0);keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,4,4,0,0};}
+  assert(key_count==RISC_USB_INPUT_QUEUE_LENGTH);
+  risc_text_entry_state_v1 value=tick();assert(!strcmp(value.text,"aaaaaaaaaaaaaaaa"));
+  flush();key(4,0);assert(!strcmp(tick().text,"aaaaaaaaaaaaaaaaa"));pending=false;finish();
  }else if(!strcmp(mode,"plain")){
   open_text("old",8);scene_key('a');assert(!strcmp(tick().text,"olda"));scene_key(129);assert(!strcmp(tick().text,"old"));scene_key(128);tick();assert(doc.nodes[0].value==1);
   scene_key('!');assert(!strcmp(tick().text,"old!"));scene_key(133);assert(!strcmp(tick().text,""));scene_key(133);assert(!strcmp(tick().text,""));scene_key(132);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);
@@ -163,7 +169,7 @@ int main(int argc,char**argv){
    attached=true;keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,1,0,0,0};key(4,0);assert((tick().flags&RISC_TEXT_ENTRY_HARDWARE)&&!tick().text[0]);flush();assert(doc.nodes[0].flags&RISC_SCENE_DISABLED);
    if(!strcmp(mode,"attach-detach")){key(4,0);assert(!strcmp(tick().text,"a"));flush();scene_key('Q');assert(!strcmp(tick().text,"a"));attached=false;keys[key_count++]=(risc_usb_keyboard_event_v1){++sequence,7,2,0,0,0};key(5,0);assert(!(tick().flags&RISC_TEXT_ENTRY_HARDWARE));flush();scene_key('Q');assert(!strcmp(tick().text,"aQ"));}
    else if(!strcmp(mode,"gap")||!strcmp(mode,"transient")){key(4,0);if(!strcmp(mode,"gap"))keys[key_count++]=(risc_usb_keyboard_event_v1){.kind=98};else bad_poll=true;assert(!tick().text[0]);flush();bad_poll=false;key(5,0);assert(!strcmp(tick().text,"b"));}
-   else if(!strcmp(mode,"drain")){for(unsigned i=0;i<34;i++)key(4,0);assert(!tick().text[0]);assert(!tick().text[0]);flush();key(5,0);assert(!strcmp(tick().text,"b"));}
+   else if(!strcmp(mode,"drain")){keys[key_count++]=(risc_usb_keyboard_event_v1){.kind=98};for(unsigned i=0;i<34;i++)key(4,0);assert(!tick().text[0]);assert(!tick().text[0]);flush();key(5,0);assert(!strcmp(tick().text,"b"));}
    else if(!strcmp(mode,"ascii")){key(4,0);key(5,2);key(30,2);key(31,0);key(32,0);assert(!strcmp(tick().text,"aB!2"));flush();key(0x2a,0);assert(!strcmp(tick().text,"aB!"));flush();key(0x39,0);key(6,0);assert(!strcmp(tick().text,"aB!C"));flush();key(0x28,0);assert(tick().state==RISC_TEXT_ENTRY_ACCEPTED);}
    else if(!strcmp(mode,"shortcuts")){key(4,1);key(0x28,1);assert(!tick().text[0]&&tick().state==RISC_TEXT_ENTRY_EDITING);flush();key(0x29,0);assert(tick().state==RISC_TEXT_ENTRY_CANCELLED);}
    else assert(0);

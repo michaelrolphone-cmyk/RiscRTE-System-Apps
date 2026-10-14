@@ -724,51 +724,7 @@ static void button(int x,int y,int w,int h,const char *label,uint32_t kind,const
     if(!disabled)add_hit(x,y,w,h,kind,n?n->id:0,n?n->target:0,value);
 }
 #include "keyboard_paper.inc"
-static void draw_keyboard(const risc_scene_node_v1 *n,int y,int h){
-    int pad=(int)profile->padding,w=(int)width-2*pad;
-    unsigned scale=profile->font_scale;uint16_t fg=(uint16_t)profile->foreground_rgb565;
-    uint16_t bg=(uint16_t)profile->background_rgb565,accent=(uint16_t)profile->accent_rgb565;
-    int label_y=y+2,text_y=label_y+(int)(8u*scale)+2;
-    text(pad,label_y,w,n->label,scale,fg);
-    /* Keep the insertion end visible in the small viewport, without changing
-     * the provider-owned draft or introducing input-format variants. */
-    keyboard_key visibility;bool password=keyboard_visibility_bounds(n,&visibility);
-    int field_width=password?visibility.x-pad-8:w;
-    unsigned columns=(unsigned)field_width/(6u*scale);size_t length=strlen(n->text);
-    const char *tail=n->text+(length>columns?length-columns:0);
-    text(pad,text_y,field_width,tail,scale,fg);
-    if(password){
-        bool selected=n->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
-        int border=selected?3:1;const char *caption=keyboard_visibility_caption(n);
-        fill(visibility.x,visibility.y,visibility.w,visibility.h,accent);
-        fill(visibility.x+border,visibility.y+border,visibility.w-2*border,visibility.h-2*border,bg);
-        unsigned vs=scale;while(vs>1&&strlen(caption)*6u*vs>(unsigned)(visibility.w-4))--vs;
-        int tw=(int)(strlen(caption)*6u*vs)-(int)vs;
-        text(visibility.x+(visibility.w-tw)/2,visibility.y+(visibility.h-(int)(7u*vs))/2,visibility.w,caption,vs,fg);
-        add_hit(visibility.x,visibility.y,visibility.w,visibility.h,HIT_VALUE,n->id,0,RISC_SCENE_KEY_VISIBILITY);
-    }
-    if(n->flags&RISC_SCENE_DISABLED){
-        int guide_y=password?visibility.y+visibility.h+4:text_y+(int)(10u*scale);
-        const char *guidance[]={"Hardware keyboard","Type to edit","ENTER done","ESC cancel"};
-        for(unsigned i=0;i<4;i++){
-            if(guide_y+(int)(7u*scale)>y+h)break;
-            text(pad,guide_y,w,guidance[i],scale,fg);guide_y+=(int)(9u*scale);
-        }
-        return;
-    }
-    for(unsigned i=0;;i++){
-        keyboard_key key;if(!keyboard_bounds((unsigned)n->value,i,&key))break;
-        char ch[2];const char *caption=keyboard_caption((unsigned)n->value,key.key,ch);
-        unsigned ks=scale;while(ks>1&&strlen(caption)*6u*ks>(unsigned)(key.w>4?key.w-4:0))--ks;
-        bool selected=n->id==path.focus[path.depth-1]&&focus_part==i;
-        fill(key.x,key.y,key.w,key.h,accent);
-        int border=selected?3:1;
-        fill(key.x+border,key.y+border,key.w-2*border,key.h-2*border,bg);
-        int tw=(int)(strlen(caption)*6u*ks)- (int)ks;
-        text(key.x+(key.w-tw)/2,key.y+(key.h-(int)(7u*ks))/2,key.w,caption,ks,fg);
-        add_hit(key.x,key.y,key.w,key.h,HIT_VALUE,n->id,0,(int32_t)key.key);
-    }
-}
+static void draw_keyboard(const risc_scene_node_v1 *n,int y,int h);
 static void draw_node(const risc_scene_node_v1 *n,int y,int h){
     if(n->kind==RISC_SCENE_KEYBOARD_NODE){draw_keyboard(n,y,h);return;}
     int pad=(int)profile->padding,x=pad,w=(int)width-2*pad;
@@ -810,6 +766,7 @@ static bool valid_surface(void){
 #include "telemetry_disabled.inc"
 #endif
 #include "components.inc"
+#include "keyboard_compact.inc"
 #include "page.inc"
 #include "reading.inc"
 #if SCENE_HOST_TELEMETRY
@@ -825,7 +782,8 @@ static void draw_scene(void){
     int header_button=(int)(profile->font_scale*30u+8u);
     const risc_scene_node_v1 *keyboard=current_keyboard();
     bool paper_keys=keyboard&&height>=width*3u/2u;
-    if(!paper_keys){
+    if(keyboard&&!paper_keys)compact_keyboard_header();
+    if(!keyboard){
     button(pad,3,header_button,top-6,"BACK",HIT_BACK,NULL,0);
     button((int)width-pad-header_button,3,header_button,top-6,"HOME",HIT_HOME,NULL,0);
     int r=route_index(&document,current_route());
