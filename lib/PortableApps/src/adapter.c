@@ -422,6 +422,7 @@ static bool alarm_failure(void);
 #include "native_custody_adapter.inc"
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #define PORTABLE_CONTEXTS_CUSTODY_SAFE() (!native_custody_retained)
+#define PORTABLE_CONTEXTS_LIVE() (!native_custody_retained)
 #define PORTABLE_CONTEXTS_PAUSE_POLICY_READS
 uint16_t portable_contexts_action_mask(void);
 #define PORTABLE_CONTEXTS_ACTION_MASK() portable_contexts_action_mask()
@@ -2406,6 +2407,7 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+  if(native_custody_retained)return false;
   // Native exit precedes every modal and shared keyboard branch. This only
   // requests existing orderly app cleanup; host owns the deadline/ack.
   if(risc_runtime_exit_requested_v1(rt)) {
