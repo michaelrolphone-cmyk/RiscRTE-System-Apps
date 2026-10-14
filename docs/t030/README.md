@@ -76,3 +76,28 @@ Final firmware assembly belongs to the waterfall diagnostics thread
 3d82cee. Supply only the rebuilt Springboard component and versioned manifest;
 this branch is based on the actual deployed launcher lineage, not the divergent
 current generic System branch. Do not replace the full product with this tree.
+
+## Qualified component
+
+Source implementation checkpoint: a1fcfa7fbbbfec839f27ae208734ce9fe1d76cd5.
+Springboard 1.7.12 ELF: 147756 bytes, SHA-256
+`c9c762a8ae501dd25e606320d5c97bd206f770d11f47f2de0546f737481525be`.
+Normal + ASan/UBSan pixel/native-geometry/full-feature/transition suites pass;
+194 real-adapter async cases pass. Full 60-ELF .31 cohort admission succeeds,
+with zero hardware/storage calls and no target instruction execution.
+
+Rebuild in the existing qualified workspace using Python with pyelftools:
+
+```
+python scripts/build_t030_springboard.py \
+  --recipe ../Waveshare-input-product/integration/ordered-input/springboard-command.json \
+  --elf-tools /tmp/waveshare-generic-bridges/scripts \
+  --validator ../../task-2/target-providers/validate-elf \
+  --output ../t030-build
+```
+
+The recipe retains its original deployment helper/header/map paths; it requires
+that qualified workspace. The builder replaces only the System source root and
+output path. Build command, manifest, structural validation and native admission
+receipts are preserved under evidence. Target code is unchanged by this final
+build-script/evidence checkpoint.
