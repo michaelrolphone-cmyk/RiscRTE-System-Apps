@@ -6,7 +6,7 @@
 #include "RiscBoundAppDataAsyncV1.h"
 #include "InstalledAppsV1.h"
 #include "InstalledAppsProvisionV1.h"
-#include "InstalledAppsFeedV1.h"
+#include "InstalledAppsAutomaticV1.h"
 #include "InstalledCatalog.h"
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include "runtime/packages/StagedAppInstall.h"
@@ -83,6 +83,7 @@ char removeSource[205],removeVersion[64];int32_t removeOutcome;bool removeIntent
 risc_storage_async_result_v1 removeResult;
 bool started,loaded,requested,retained,inCall,overflow,commitPending,commitReplace,validationPending;
 bool feedReading;
+unsigned scanMedium;bool scanSdComplete,scanAnySuccess;
 int32_t feedCancel(void*);
 const char cacheName[]="installed.apps";
 bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
@@ -115,7 +116,8 @@ bool parse(Package&out,const char*path,const char*json){
 bool offer(void*,const char*path,const char*json){
  if(pendingCount==Max){overflow=true;return false;}
  Package row{};if(!parse(row,path,json))return false;
- for(unsigned i=0;i<pendingCount;++i)if(!std::strcmp(row.view.id,pending[i].view.id)){if(pending[i].medium==1)return true;overflow=true;return false;}
+ if(scanner)row.medium=scanMedium;
+ for(unsigned i=0;i<pendingCount;++i)if(!std::strcmp(row.view.id,pending[i].view.id)){if(pending[i].medium!=row.medium)return true;overflow=true;return false;}
  pending[pendingCount++]=row;return true;
 }
 bool needsNamespace(const Package&p){
@@ -439,6 +441,7 @@ int32_t refresh(void*){if(!started||retained||inCall||feedReading)return INSTALL
  if(!settingsCheckpoint)settingsCursor=0;
  if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  if(installPhase!=InstallPhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
+ if(!scanner){scanMedium=0;scanSdComplete=scanAnySuccess=false;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
 int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(!started||retained||inCall||feedReading)return retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
@@ -450,26 +453,55 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(installId[0]||installIntent||installer)return installStep(v);
  if(!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
- if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
   int32_t rc=removeStep(v);return rc==INSTALLED_APPS_OK?INSTALLED_APPS_WORKING:rc;
  }
- if(!scanner){volume=v;pendingCount=stagedPendingCount=0;for(unsigned i=0;i<currentCount;++i)if(current[i].medium==1)pending[pendingCount++]=current[i];overflow=false;scanner=new(scannerMemory)Scan();
-  if(!scanner->start(v,offer,nullptr,offerStaged)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
+ const auto*sd=v;
+ if(!scanner&&!scanMedium&&(!sd||!risc_storage_volume_async(sd))){
+  installed_catalog_media(&catalog,false);scanMedium=1;
+ }
+ v=scanMedium?internalVolume:sd;
+ if(!v||!risc_storage_volume_async(v)){
+  requested=false;
+  if(!scanAnySuccess)return INSTALLED_APPS_UNAVAILABLE;
+  validationPending=true;return INSTALLED_APPS_WORKING;
+ }
+ if(!scanner){
+  volume=v;overflow=false;
+  if(!scanMedium){
+   pendingCount=stagedPendingCount=0;
+   for(unsigned i=0;i<currentCount;++i)if(current[i].medium==1)pending[pendingCount++]=current[i];
+  }else {
+   if(!scanSdComplete){pendingCount=0;preserveStaged();for(unsigned i=0;i<currentCount;++i)if(!current[i].medium)pending[pendingCount++]=current[i];}
+   else {unsigned count=0;for(unsigned i=0;i<pendingCount;++i)if(!pending[i].medium)pending[count++]=pending[i];pendingCount=count;}
+  }
+  scanner=new(scannerMemory)Scan();
+  if(!scanner->start(v,offer,nullptr,scanMedium?nullptr:offerStaged)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
   return INSTALLED_APPS_WORKING;
  }
  if(volume!=v)return INSTALLED_APPS_INVALID;
  scanner->step();auto state=scanner->state();
- if(scanner->ready())installed_catalog_media(&catalog,true);
+ if(!scanMedium&&scanner->ready())installed_catalog_media(&catalog,true);
  if(state==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
  if(state!=Scan::State::Complete&&state!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
- if(state==Scan::State::Failed&&!scanner->ready())installed_catalog_media(&catalog,false);
- scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;
- if(state==Scan::State::Failed||overflow)return INSTALLED_APPS_UNAVAILABLE;
+ bool failed=state==Scan::State::Failed||overflow;
+ if(!scanMedium&&state==Scan::State::Failed&&!scanner->ready())installed_catalog_media(&catalog,false);
+ scanner->~Scan();scanner=nullptr;volume=nullptr;
+ if(failed){
+  // Never turn an incomplete directory enumeration into removals.
+  unsigned count=0;for(unsigned i=0;i<pendingCount;++i)if(pending[i].medium!=scanMedium)pending[count++]=pending[i];pendingCount=count;
+  for(unsigned i=0;i<currentCount;++i)if(current[i].medium==scanMedium&&pendingCount<Max)pending[pendingCount++]=current[i];
+  if(!scanMedium)preserveStaged();
+ }else scanAnySuccess=true;
+ if(!scanMedium&&internalVolume){scanMedium=1;scanSdComplete=true;return INSTALLED_APPS_WORKING;}
+ requested=false;
+ if(!scanAnySuccess)return INSTALLED_APPS_UNAVAILABLE;
  validationPending=true;return INSTALLED_APPS_WORKING;
 }
 #include "feed.inc"
+extern unsigned automaticPhase;
 bool start(const risc_provider_dependency_v1*d,size_t n){
+ automaticPhase=0;scanMedium=0;scanSdComplete=scanAnySuccess=false;
  feedCount=feedSize=feedGeneration=0;feedHandle=0;feedReading=false;
  native=nullptr;storage=nullptr;packageHttp=nullptr;internalVolume=nullptr;packageUtc=0;for(size_t i=0;i<n;++i){
   if(!std::strcmp(d[i].capability_id,RISC_INTERNAL_PACKAGE_VOLUME_CAPABILITY)&&d[i].api_version==1){auto*p=static_cast<const risc_internal_package_volume_v1*>(d[i].api);if(!p||p->struct_size<sizeof(*p)||!p->exit_safe||!risc_storage_volume_download(p->volume))return false;internalVolume=p->volume;}
@@ -492,7 +524,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
 bool quiesce(){return feedCancel(nullptr)==INSTALLED_APPS_OK&&cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}
 extern const installed_apps_feed_v1 extendedApi;
-const installed_apps_feed_v1 extendedApi={{{1,sizeof(extendedApi),nullptr,refresh,
+const installed_apps_feed_v1 extendedApi={{{1,sizeof(installed_apps_automatic_v1),nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&(current[i].medium==1?internalVolume!=nullptr:catalog.sd_ready)&&settingsReady(current[i]);return true;},step,cancel,
  [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||feedReading||installId[0]||installIntent||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;},
@@ -522,7 +554,9 @@ const installed_apps_feed_v1 extendedApi={{{1,sizeof(extendedApi),nullptr,refres
  }},INSTALLED_APPS_FEED_TAG,1,feedRefresh,feedStep,feedCancel,
  [](void*){return feedGeneration;},[](void*){return feedCount;},feedGet,
  [](void*,uint32_t i,uint32_t generation)->int32_t{if(feedReading||generation!=feedGeneration||i>=feedCount)return INSTALLED_APPS_INVALID;return extendedApi.base.install_descriptor(nullptr,feedRows[i]);}};
-const installed_apps_v1&api=extendedApi.base.base;
+#include "automatic.inc"
+const installed_apps_automatic_v1 automaticApi={extendedApi,INSTALLED_APPS_AUTOMATIC_TAG,1,automaticBegin,automaticStep,automaticCancel};
+const installed_apps_v1&api=automaticApi.base.base.base;
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

@@ -46,7 +46,19 @@ bool selectCatalogProviders(JsonDocument&doc){
    if(!need["capability"].is<const char*>()||!need["api"].is<uint32_t>())return false;
    const char*cap=need["capability"];uint32_t api=need["api"];
    if(!std::strcmp(cap,"storage.key-value")||!std::strcmp(cap,"storage.app-data"))continue;
-   if(native->available(native->context,cap,api,!std::strcmp(cap,"hardware.device")?instance:0))continue;
+   bool available=native->available(native->context,cap,api,!std::strcmp(cap,"hardware.device")?instance:0);
+   if(available){
+    // Native/bootstrap providers remain protected. Only a provider already
+    // owned by this catalog may be selected for an independent update.
+    bool upgrade=false;
+    for(unsigned j=0;j<providerCount;++j){JsonDocument old;if(deserializeJson(old,providers[j].manifest))return false;
+     for(JsonObjectConst candidate:pool.as<JsonArrayConst>())if(candidate["manifest"]["id"]==old["id"]&&candidate["instance"]==providers[j].instance){
+      if(!candidate["manifest"]["version"].is<const char*>()||!old["version"].is<const char*>())return false;
+      for(JsonObjectConst offer:candidate["manifest"]["provides"].as<JsonArrayConst>())if(offer["capability"]==cap&&offer["api"]==api&&newer(candidate["manifest"]["version"],old["version"]))upgrade=true;
+     }
+    }
+    if(!upgrade)continue;
+   }
    unsigned found=ProviderMax;
    for(unsigned i=0;i<pool.size();++i)for(JsonObjectConst offer:pool[i]["manifest"]["provides"].as<JsonArrayConst>())
     if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}

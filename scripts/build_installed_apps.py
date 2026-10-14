@@ -21,7 +21,18 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--internal-packages', action='store_true', help='Explicitly require the native scoped package-volume capability')
     parser.add_argument('--native-feed', action='store_true', help='Select the product-owned native catalog, separate from firmware release-index')
+    parser.add_argument('--feed-url', help='Explicit product-owned HTTPS native-package catalog')
+    parser.add_argument('--feed-product', default='xteink-x4-pro', help='Exact feed product identity')
     args = parser.parse_args()
+    if args.feed_url and not args.native_feed:
+        parser.error('--feed-url requires --native-feed')
+    if not args.feed_product or any(c not in 'abcdefghijklmnopqrstuvwxyz0123456789-.' for c in args.feed_product):
+        parser.error('Invalid feed product identity')
+    feed_url = args.feed_url or 'https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/native-packages-v1.json'
+    if not feed_url.startswith('https://') or any(c in feed_url for c in '\"\\\n\r'):
+        parser.error('Feed URL must be an HTTPS URL without compiler quoting characters')
+    if args.native_feed and args.feed_product != 'xteink-x4-pro' and not args.feed_url:
+        parser.error('A different product requires its own explicit feed URL')
     runtime, out = args.runtime_repo.resolve(), args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc') or str(Path.home()/'.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
@@ -29,7 +40,8 @@ def main():
     includes = [runtime/'sdk/app', runtime/'sdk/driver', runtime/'sdk/hardware', runtime/'src', runtime/'lib/ArduinoJson/src', ROOT/'lib/InstalledCatalog/include', ROOT/'lib/PortableApps/include']
     flags = ['-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls', '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-Wall', '-Wextra', '-Werror'] + ['-I'+str(i) for i in includes]
     if args.native_feed:
-        flags.append('-DINSTALLED_APPS_FEED_URL=\"https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/native-packages-v1.json\"')
+        flags += ['-DINSTALLED_APPS_FEED_URL="'+feed_url+'"',
+                  '-DINSTALLED_APPS_FEED_PRODUCT="'+args.feed_product+'"']
     sources = [ROOT/'Services/installed_apps/service.cpp', ROOT/'lib/InstalledCatalog/src/InstalledCatalog.c']
     objects = [out/'service.o', out/'catalog.o']
     commands = [[cxx, '-std=c++17', '-fno-exceptions', '-fno-rtti', '-DARDUINOJSON_USE_DOUBLE=0', '-DARDUINOJSON_USE_LONG_LONG=0', *flags, '-c', str(sources[0]), '-o', str(objects[0])], [cc, '-std=c11', *flags, '-c', str(sources[1]), '-o', str(objects[1])]]
@@ -45,15 +57,17 @@ def main():
     if imports - allowed:
         raise RuntimeError('Unexpected imports: '+repr(sorted(imports-allowed)))
     manifest=json.loads((ROOT/'Services/installed_apps/manifest.json').read_text())
-    if args.native_feed: manifest['version']='0.11.0'
+    if args.native_feed: manifest['version']='0.12.0'
     if args.internal_packages: manifest['requires'].append({'capability':'platform.package-volume','api':1})
     (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
     headers = [ROOT/'Services/installed_apps/settings.inc', runtime/'src/runtime/packages/InstalledSettingsCheckpoint.h', runtime/'src/runtime/packages/PagedSettingsCheckpoint.h', ROOT/'Services/installed_apps/provision.inc', runtime/'src/runtime/packages/SdPackageDownload.h', ROOT/'Services/installed_apps/providers.inc', ROOT/'Services/installed_apps/install.inc', runtime/'src/runtime/packages/StagedAppInstall.h', runtime/'sdk/driver/RiscStoragePackageAsyncV1.h', runtime/'sdk/driver/RiscBoundAppDataAsyncV1.h', runtime/'sdk/driver/RiscStorageVolumeAsyncV1.h', runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppAsyncDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
     receipt = {'status':'experimental-target-link-only', 'limitations':['No target runtime or hardware execution claimed.', 'Requires the scoped async SD provider; cache persistence and UI integration need separate qualification.'], 'commands':commands, 'imports':sorted(imports), 'sources':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources+headers}, 'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(), 'repositories':{str(p):{'head':subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','-C',str(p),'status','--porcelain'],text=True))} for p in [ROOT,runtime]}}
     receipt['native_feed']=args.native_feed
+    receipt['feed_url']=feed_url if args.native_feed else None
+    receipt['feed_product']=args.feed_product if args.native_feed else None
     receipt['sources'][str(ROOT/'Services/installed_apps/feed.inc')]=hashlib.sha256((ROOT/'Services/installed_apps/feed.inc').read_bytes()).hexdigest()
     receipt['internal_packages']=args.internal_packages
-    receipt['sources'].update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'Services/installed_apps/media.inc',ROOT/'lib/PortableApps/include/InstalledAppsFeedV1.h',ROOT/'lib/PortableApps/include/InstalledAppsProvisionV1.h',runtime/'sdk/driver/RiscInstallationMediaV1.h',runtime/'sdk/driver/RiscInternalPackageVolumeV1.h']})
+    receipt['sources'].update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'Services/installed_apps/media.inc',ROOT/'Services/installed_apps/automatic.inc',ROOT/'lib/PortableApps/include/InstalledAppsAutomaticV1.h',ROOT/'lib/PortableApps/include/InstalledAppsFeedV1.h',ROOT/'lib/PortableApps/include/InstalledAppsProvisionV1.h',runtime/'sdk/driver/RiscInstallationMediaV1.h',runtime/'sdk/driver/RiscInternalPackageVolumeV1.h']})
     receipt.update({'service_version': manifest['version'],
                     'shared_settings_sd': '#define RISC_INSTALLATION_SHARED_SETTINGS_SIZE' in (runtime/'sdk/driver/RiscInstallationV1.h').read_text(),
                     'shared_settings_root': '/RTECFG', 'idle_settings_maintenance': 'settings_pending-v1'})

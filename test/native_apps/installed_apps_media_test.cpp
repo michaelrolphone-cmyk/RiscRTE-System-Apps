@@ -61,7 +61,7 @@ int main(){using namespace media_fixture;media_fixture::setup();
   if(!installId[0]&&!api.count(nullptr)){fixture::present=false;assert(installed_apps_provision(&api)->install_descriptor(nullptr,descriptor.c_str())==0);}
   assert(media_fixture::finish()==0);installed_app_v1 row{};assert(api.get(nullptr,0,&row)&&row.available&&publishedMedium==1&&providerMedium==1);
   assert(fs::exists(directory+"/Apps/new-after-build/manifest.json")&&fs::exists(directory+"/Drivers/late-provider/image-"+std::string(64,'a')+".elf"));assert(staged_fixture::disk.empty());
-  media_fixture::stop();media_fixture::begin();assert(api.refresh(nullptr)==0);fixture::present=false;assert(api.get(nullptr,0,&row)&&row.available);assert(media_fixture::finish()==INSTALLED_APPS_UNAVAILABLE);assert(api.get(nullptr,0,&row)&&row.available);
+  media_fixture::stop();media_fixture::begin();assert(api.refresh(nullptr)==0);fixture::present=false;assert(api.get(nullptr,0,&row)&&row.available);assert(media_fixture::finish()==INSTALLED_APPS_OK);assert(api.get(nullptr,0,&row)&&row.available);
   // Internal update retains private namespace and destination while SD is ready.
   assert(api.cancel(nullptr)==0);fixture::present=true;auto update=plan("1.0.1",true);assert(installed_apps_provision(&api)->install_descriptor(nullptr,update.c_str())==0);assert(media_fixture::finish()==0);assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.0.1")&&current[0].namespaceSlot==1&&current[0].medium==1);
   // A changed profile may update a dependency without rebuilding the app.
@@ -82,6 +82,17 @@ int main(){using namespace media_fixture;media_fixture::setup();
   JsonDocument graph;assert(!deserializeJson(graph,providers[0].manifest));assert(graph["version"]=="1.0.2");
   assert(installed_apps_provision(&api)->install_descriptor(nullptr,update.c_str())==INSTALLED_APPS_INVALID);
   assert(installed_apps_provision(&api)->install_descriptor(nullptr,driverPlan.c_str())==INSTALLED_APPS_INVALID);
+  if(cut==0){
+   // Simulate a new package copied into internal Apps while the UI is open.
+   JsonDocument added;assert(!deserializeJson(added,appBefore));added["id"]="appeared-later";
+   fs::create_directories(directory+"/Apps/appeared-later");
+   std::string text;serializeJson(added,text);{std::ofstream f(directory+"/Apps/appeared-later/manifest.json");f<<text;}
+   fs::copy_file(directory+"/Apps/new-after-build/"+std::string(added["file_name"].as<const char*>()),directory+"/Apps/appeared-later/"+std::string(added["file_name"].as<const char*>()));
+   present=false;unsigned oldIo=io;assert(api.refresh(nullptr)==0&&api.count(nullptr)==1&&io==oldIo);
+   assert(media_fixture::finish()==0&&api.count(nullptr)==2);
+   bool found=false;for(unsigned j=0;j<currentCount;++j)if(!strcmp(current[j].view.id,"appeared-later")){found=true;assert(current[j].medium==1&&current[j].namespaceSlot==2);}
+   assert(found);assert(api.remove(nullptr,"appeared-later")==0);assert(media_fixture::finish()==0&&api.count(nullptr)==1);
+  }
   assert(api.remove(nullptr,row.id)==0);assert(media_fixture::finish()==0);assert(!api.count(nullptr)&&!fs::exists(directory+"/Apps/new-after-build/manifest.json"));media_fixture::stop();fs::remove_all(directory);
  }
 

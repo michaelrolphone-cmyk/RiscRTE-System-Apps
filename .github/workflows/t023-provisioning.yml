@@ -1,0 +1,41 @@
+name: T023 automatic profiles and cached discovery
+on:
+  workflow_dispatch:
+  push:
+    branches: [fix/t023-automatic-provisioning]
+    paths: ['Services/installed_apps/**', 'lib/PortableApps/**', 'scripts/**', 'test/native_apps/**', '.github/workflows/t023-provisioning.yml']
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        sanitize: ['0', '1']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: c258c4ba144247b6eaa4c6f28675ffccec582fe1
+          path: .ci-runtime
+      - name: Verify real coordinator and copied worker paths
+        env:
+          SANITIZE: ${{ matrix.sanitize }}
+          SANITIZERS: address,undefined
+        run: |
+          mkdir -p build/t023 host-bin
+          # Existing pinned Runtime compact statements warn on recent GCC.
+          # Keep diagnostics visible without changing its frozen production code.
+          printf '#!/bin/sh\nexec /usr/bin/g++ -Wno-error=misleading-indentation "$@"\n' > host-bin/c++
+          chmod +x host-bin/c++
+          export PATH="$PWD/host-bin:$PATH" RUNTIME_REPO="$PWD/.ci-runtime"
+          for suite in installed_apps_automatic installed_apps_media installed_apps_install installed_apps_feed installed_apps_service installed_catalog_client; do
+            bash "scripts/test_$suite.sh" 2>&1 | tee "build/t023/$suite.log"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t023-regressions-${{ matrix.sanitize }}
+          path: build/t023

@@ -105,6 +105,14 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
   }
  }
  if(!c->service)return INSTALLED_APPS_OK;
+ if(!c->requested&&c->rescan_clock&&r->health){
+  risc_runtime_health_v1 h={.struct_size=sizeof(h)};
+  if(r->health(&h)&&(int32_t)(h.uptime_ms-c->rescan_at)>=0){
+   c->rescan_clock=false;int refreshed=c->service->refresh(c->service->context);
+   if(refreshed==INSTALLED_APPS_RETAINED){c->retained=true;return refreshed;}
+   c->requested=c->wanted=true;
+  }
+ }
  if(!c->requested){
   if(maintenance_wait(c,r))return INSTALLED_APPS_OK;
   /* Poll only the append-only RAM query. Old providers remain scan-only. */
@@ -113,7 +121,9 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  }
  if(!c->volume_grant.api){
   c->volume_grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->volume_grant)};
-  if(!r->acquire("storage.volume",1,instance,&c->volume_grant)){c->requested=false;maintenance_delay(c,r);return INSTALLED_APPS_UNAVAILABLE;}
+  if(!r->acquire("storage.volume",1,instance,&c->volume_grant)&&c->volume_grant.api){c->retained=true;return INSTALLED_APPS_RETAINED;}
+  /* A missing SD grant is not proof that the configured internal package
+   * volume is absent. The service may scan it without borrowing an SD lease. */
  }
  int rc=c->service->step(c->service->context,c->volume_grant.api);
  snapshot(c,base,n);
@@ -124,6 +134,8 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  if(ended==INSTALLED_APPS_WORKING)return ended;
  if(ended!=INSTALLED_APPS_OK){c->retained=true;return INSTALLED_APPS_RETAINED;}
  if(rc==INSTALLED_APPS_OK){c->wanted=false;c->maintenance_backoff=false;}else maintenance_delay(c,r);
+ risc_runtime_health_v1 h={.struct_size=sizeof(h)};
+ c->rescan_clock=r->health&&r->health(&h);if(c->rescan_clock)c->rescan_at=h.uptime_ms+30000u;
  c->requested=false;if(release_volume(c,r)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  return rc;
 }

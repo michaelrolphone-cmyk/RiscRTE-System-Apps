@@ -1,3 +1,6 @@
+#ifndef INSTALLED_APPS_FEED_PRODUCT
+#define INSTALLED_APPS_FEED_PRODUCT "xteink-x4-pro"
+#endif
 #ifdef INSTALLED_APPS_FEED_URL
 constexpr unsigned FeedMax=32,FeedBytes=65536;
 char feedInput[FeedBytes+1],feedRows[FeedMax][ManifestMax+1];
@@ -15,7 +18,7 @@ int32_t feedRefresh(void*,uint64_t utc){
  feedSize=0;feedReading=true;return INSTALLED_APPS_OK;
 }
 bool feedParse(){
- JsonDocument doc;if(deserializeJson(doc,feedInput,feedSize,DeserializationOption::NestingLimit(16))||doc["schema"]!="riscrte.native-packages"||doc["version"]!=1||doc["product"]!="xteink-x4-pro"||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>FeedMax)return false;
+ JsonDocument doc;if(deserializeJson(doc,feedInput,feedSize,DeserializationOption::NestingLimit(16))||doc["schema"]!="riscrte.native-packages"||doc["version"]!=1||doc["product"]!=INSTALLED_APPS_FEED_PRODUCT||!doc["apps"].is<JsonArrayConst>()||doc["apps"].size()>FeedMax)return false;
  auto rows=doc["apps"].as<JsonArrayConst>();
  // Complete validation before replacing a previously displayed snapshot.
  unsigned index=0;

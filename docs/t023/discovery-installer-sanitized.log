@@ -1,0 +1,67 @@
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::path(const char*, char*, size_t)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:3: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |   ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:15: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |               ^
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘uint32_t RiscStorage::PackageFiles::open(const char*, bool, uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |                  ^~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:37: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |                                     ^~~~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::freeBytes(uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:16: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |                ^~~~
+Automatic profiles: first-start download, idempotent restart, changed versions/new core app, preserve deselected apps, unknown-profile and downgrade rejection PASS
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::path(const char*, char*, size_t)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:3: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |   ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:15: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |               ^
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘uint32_t RiscStorage::PackageFiles::open(const char*, bool, uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |                  ^~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:37: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |                                     ^~~~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::freeBytes(uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:16: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |                ^~~~
+Dependency-only updates: 180 restart cuts, unchanged app bytes and namespace, no provider downgrade or same-version replacement PASS
+SD-first capacity: sufficient SD, full SD fallback, both full fail closed, legacy SD fallback PASS
+Live internal package storage: 180 app+driver restart cuts, absent SD, durable media despite inserted SD, cache replay, real immutable files/activation, internal update/private namespace and removal PASS
+Installed catalog client: cache-first snapshot, preserved icons, unknown app, 1000 polls, cancellation and retained lease PASS
+Installed catalog client: cache-first snapshot, preserved icons, unknown app, 1000 polls, cancellation and retained lease PASS
+Installed resident controls: 1000 BUSY retries preserve one gesture; dispatch after cleanup; dismissal rearms discovery PASS
+SD settings catalog/worker: warm-before-available, 65 interruption/restart points, exact checkpoint before journal cleanup, export exclusion and removed-media retry PASS
+Provider provisioning: 110 interrupted owner ticks, checked cancellation, restart/resume and unavailable-media retry PASS
+Provider provisioning: durable intent before I/O, missing image HTTPS, whole graph publication, zero-SD restart and offline journal recovery PASS
+Actual installed provider: staged discovery, cache-first restart, confirmed image admission, journal-before-publication, two recovery boundaries, update/private identity, stale descriptor and corrupt image rejection PASS
+Paged SD checkpoint: 153 interruption boundaries; 98 existing values including 2048-byte opaque value, copied-worker I/O, cold recovery, export exclusion, native delta replay and immutable page verification PASS
+Application HTTPS provisioning: 160 interruption/restart cuts, durable selected URL, descriptor removal, immutable image validation, cache-first replay and refreshed catalog PASS
