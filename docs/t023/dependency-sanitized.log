@@ -1,0 +1,30 @@
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::path(const char*, char*, size_t)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:3: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |   ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:25:15: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   25 |   if(!e)break;s=e+1;if(!*s)return false;
+      |               ^
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘uint32_t RiscStorage::PackageFiles::open(const char*, bool, uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:50:18: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   50 |  if(size)*size=0;Call call(*this);char full[512];if(!call.ok||file_||!path(p,full,sizeof(full))||(write&&!mutation(p))||serial_==UINT32_MAX)return 0;
+      |                  ^~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:55:37: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   55 |  if(size)*size=uint64_t(st.st_size);return file_;
+      |                                     ^~~~~~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp: In member function ‘bool RiscStorage::PackageFiles::freeBytes(uint64_t*)’:
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:2: warning: this ‘if’ clause does not guard... [-Wmisleading-indentation]
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |  ^~
+/tmp/Runtime-wave-t054/src/runtime/storage/PackageFiles.cpp:66:16: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘if’
+   66 |  if(out)*out=0;Call call(*this);if(!call.ok||!out||file_||directory_)return false;
+      |                ^~~~
+Dependency-only updates: 180 restart cuts, unchanged app bytes and namespace, no provider downgrade or same-version replacement PASS
+SD-first capacity: sufficient SD, full SD fallback, both full fail closed, legacy SD fallback PASS
+Live internal package storage: 180 app+driver restart cuts, absent SD, durable media despite inserted SD, cache replay, real immutable files/activation, internal update/private namespace and removal PASS

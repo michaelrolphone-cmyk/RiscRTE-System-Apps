@@ -64,6 +64,24 @@ int main(){using namespace media_fixture;media_fixture::setup();
   media_fixture::stop();media_fixture::begin();assert(api.refresh(nullptr)==0);fixture::present=false;assert(api.get(nullptr,0,&row)&&row.available);assert(media_fixture::finish()==INSTALLED_APPS_UNAVAILABLE);assert(api.get(nullptr,0,&row)&&row.available);
   // Internal update retains private namespace and destination while SD is ready.
   assert(api.cancel(nullptr)==0);fixture::present=true;auto update=plan("1.0.1",true);assert(installed_apps_provision(&api)->install_descriptor(nullptr,update.c_str())==0);assert(media_fixture::finish()==0);assert(api.get(nullptr,0,&row)&&!strcmp(row.version,"1.0.1")&&current[0].namespaceSlot==1&&current[0].medium==1);
+  // A changed profile may update a dependency without rebuilding the app.
+  const std::string appBefore=current[0].json;
+  JsonDocument driverUpdate;assert(!deserializeJson(driverUpdate,update));
+  driverUpdate["providers"][0]["manifest"]["version"]="1.0.2";
+  std::string driverPlan;serializeJson(driverUpdate,driverPlan);
+  assert(installed_apps_provision(&api)->install_descriptor(nullptr,driverPlan.c_str())==0);
+  for(unsigned i=0;i<cut;++i){int rc=media_fixture::tick();if(rc==INSTALLED_APPS_NEEDS_NETWORK){assert(api.network_ready(nullptr,1800000000)==0);continue;}assert(rc==0||rc==INSTALLED_APPS_WORKING);if(!rc)break;}
+  auto driverCache=fixture::saved;std::map<std::string,std::string> driverFiles;
+  for(const auto&e:fs::recursive_directory_iterator(directory))if(e.is_regular_file()){std::ifstream f(e.path(),std::ios::binary);driverFiles[e.path().lexically_relative(directory).string()]=std::string(std::istreambuf_iterator<char>(f),{});}
+  media_fixture::stop();fs::remove_all(directory);fs::create_directory(directory);
+  for(const auto&e:driverFiles){auto p=fs::path(directory)/e.first;fs::create_directories(p.parent_path());std::ofstream f(p,std::ios::binary);f<<e.second;}
+  fixture::saved=driverCache;++fixture::revision;media_fixture::begin();assert(api.refresh(nullptr)==0);
+  if(!installId[0]){JsonDocument graph;assert(!deserializeJson(graph,providers[0].manifest));if(graph["version"]!="1.0.2")assert(installed_apps_provision(&api)->install_descriptor(nullptr,driverPlan.c_str())==0);}
+  if(installId[0])assert(media_fixture::finish()==0);
+  assert(current[0].json==appBefore&&current[0].namespaceSlot==1&&current[0].medium==1);
+  JsonDocument graph;assert(!deserializeJson(graph,providers[0].manifest));assert(graph["version"]=="1.0.2");
+  assert(installed_apps_provision(&api)->install_descriptor(nullptr,update.c_str())==INSTALLED_APPS_INVALID);
+  assert(installed_apps_provision(&api)->install_descriptor(nullptr,driverPlan.c_str())==INSTALLED_APPS_INVALID);
   assert(api.remove(nullptr,row.id)==0);assert(media_fixture::finish()==0);assert(!api.count(nullptr)&&!fs::exists(directory+"/Apps/new-after-build/manifest.json"));media_fixture::stop();fs::remove_all(directory);
  }
 
@@ -82,6 +100,7 @@ int main(){using namespace media_fixture;media_fixture::setup();
   assert(staged_fixture::disk.empty());media_fixture::stop();fs::remove_all(directory);
  }
  downloadVolume.download_version=2;
+ puts("Dependency-only updates: 180 restart cuts, unchanged app bytes and namespace, no provider downgrade or same-version replacement PASS");
  puts("SD-first capacity: sufficient SD, full SD fallback, both full fail closed, legacy SD fallback PASS");
  puts("Live internal package storage: 180 app+driver restart cuts, absent SD, durable media despite inserted SD, cache replay, real immutable files/activation, internal update/private namespace and removal PASS");
 }

@@ -67,7 +67,11 @@ bool prepareProvision(const char*json,bool resume){
  if(downloader)return false;
  JsonDocument doc;if(deserializeJson(doc,json)||!selectCatalogProviders(doc))return false;
  auto rows=doc["providers"];
- provisionAppImage=!doc["url"].isNull();
+ provisionOnly=false;
+ const Package*owned=loaded?current:pending;unsigned ownedCount=loaded?currentCount:pendingCount;
+ doc["manifest"].remove("description");
+ for(unsigned i=0;i<ownedCount;++i){JsonDocument old;if(!deserializeJson(old,owned[i].json)&&old.as<JsonVariantConst>()==doc["manifest"])provisionOnly=true;}
+ provisionAppImage=!provisionOnly&&!doc["url"].isNull();
  if(provisionAppImage){
   if(!copy(downloadRecord.url,sizeof(downloadRecord.url),doc["url"])||
      std::strncmp(downloadRecord.url,"https://",8))return false;
@@ -76,14 +80,29 @@ bool prepareProvision(const char*json,bool resume){
  if(!rows.is<JsonArrayConst>()||rows.size()>ProviderMax||std::strlen(json)>ManifestMax)return false;
  if(!rows.size()&&!provisionAppImage){provisionJson[0]=0;provisionPhase=ProvisionPhase::Done;provisionResume=false;return true;}
  if(rows.size()&&!providerApi())return false;
+ bool changed=false;
  nextProviderCount=providerCount;for(unsigned i=0;i<providerCount;++i)nextProviders[i]=providers[i];
  for(unsigned i=0;i<rows.size();++i){
   CachedProvider entry;if(!provisionRecord(rows[i],downloadRecord,entry))return false;
   for(unsigned j=0;j<i;++j)if(rows[i]["manifest"]["id"]==rows[j]["manifest"]["id"]&&rows[i]["instance"]==rows[j]["instance"])return false;
   unsigned slot=0;for(;slot<nextProviderCount;++slot){JsonDocument old;if(deserializeJson(old,nextProviders[slot].manifest))return false;if(old["id"]==rows[i]["manifest"]["id"]&&nextProviders[slot].instance==entry.instance)break;}
   if(slot==nextProviderCount){if(nextProviderCount==ProviderMax)return false;++nextProviderCount;}
-  entry.medium=installMedium;nextProviders[slot]=entry;
+  if(slot<providerCount){
+   // A dependency-only update must advance an already installed provider's
+   // version. Equal versions require exact immutable manifest identity.
+   JsonDocument old;if(deserializeJson(old,nextProviders[slot].manifest))return false;
+   if(std::strcmp(nextProviders[slot].manifest,entry.manifest)){
+    if(!old["version"].is<const char*>()||!rows[i]["manifest"]["version"].is<const char*>()||
+       !newer(rows[i]["manifest"]["version"],old["version"]))return false;
+    changed=true;
+   }
+   entry.medium=nextProviders[slot].medium;
+   // A transaction cannot move or split its owned provider closure.
+   if(installMediumSelected&&entry.medium!=installMedium)return false;
+  }else {entry.medium=installMedium;changed=true;}
+  nextProviders[slot]=entry;
  }
+ if(provisionOnly&&!changed&&!resume)return false;
  if(nextProviderCount&&(!providerApi()||nextProviderCount>native->provider_capacity))return false;
  // Admission is repeated at publication to account for an intervening live
  // consumer. BUSY never grants permission to replace an active provider.
@@ -104,8 +123,8 @@ bool loadProvision(JsonVariantConst value){
  installMediumSelected=true;
  serializeJson(value,provisionJson,sizeof(provisionJson));
  char source[193];int n=std::snprintf(source,sizeof(source),"Apps/%s/install.json",value["manifest"]["id"].as<const char*>());
- if(n<=0||size_t(n)>=sizeof(source)||!prepareProvision(provisionJson,true)||
-    !descriptor(source,provisionJson,installCandidate,&installRecord)||!namespaceFor(installCandidate,false))return false;
+ if(n<=0||size_t(n)>=sizeof(source)||!descriptor(source,provisionJson,installCandidate,&installRecord)||
+    !prepareProvision(provisionJson,true)||!namespaceFor(installCandidate,false))return false;
  installCandidate.medium=installMedium;
  std::strcpy(installId,installCandidate.view.id);std::strcpy(installVersion,installCandidate.view.version);std::strcpy(installDescriptor,source);
  installPaused=installResume=false;installPhase=InstallPhase::Idle;return true;
