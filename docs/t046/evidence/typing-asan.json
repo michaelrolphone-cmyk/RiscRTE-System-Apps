@@ -57,8 +57,8 @@
   "sources": {
     "Services/scene_host/host.c": "2aff03f2e56b8812c66120e4dd411ee160ce7d5512de118ce47d41efff0d630b",
     "Services/scene_host/keyboard.inc": "0f86d52efbfa570a7be7c3bd6aa313d0fc811284aae69d4f371a26e0ded5bc04",
-    "Services/scene_host/keyboard_compact.inc": "5e5ae948a8efda4483f5350dde96105a5de8307758f1828b27880bf0299ef0a9",
+    "Services/scene_host/keyboard_compact.inc": "0388c5605ab8a6a15895caf44faa210e1e7c6539c0920fea757c7d03fb11da20",
     "Services/text_input/host.c": "c99c61bf39b9268a23e661deee7fc32142e99533f318e170836ac45b7793500e",
-    "test/text_input/typing_test.c": "ca7c5cd9ac29bbc847adaba0efd334c97297166bd0d3800091ba5ecc20618779"
+    "test/text_input/typing_test.c": "ab2e644714763839005444ba9095749be7c435fb047618d901e42a0007cf6b57"
   }
 }

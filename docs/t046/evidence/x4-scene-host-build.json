@@ -116,8 +116,8 @@
     "TWatchHardwareV1.h": "ca48ca21a944565ae185f7c4e8cc0e73bcc18871d79b966f7e7da916e7ab2c99",
     "TWatchPlatformV1.h": "88457c6cd36a8d2550c964ede1060b4006b72be5d290cff7cd108087bacc16dd"
   },
-  "sha256": "6907c4b4e55707fe5f5ed43a6fd897131158b6800bce78850e183fa784aa330e",
-  "size_bytes": 468404,
+  "sha256": "8f841c721085de220e16460e07b2751be3673487838ab4c6915bf7d5405d3122",
+  "size_bytes": 471156,
   "source_sha256": {
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/components.inc": "bb00df4a95f42af73b4263b34fd5b70351c036a015009c25d4ca6312e6854102",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/fonts/components.inc": "28b6fd58ac4ccd2a923f441862f80d3eb6d80284e50fe1b00ef88d367a979774",
@@ -128,7 +128,7 @@
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/glyphs.inc": "5f3e8fa90c8852b241f16dd4aad5957392bad468f7aa31b61b5445ea05fe5760",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/host.c": "2aff03f2e56b8812c66120e4dd411ee160ce7d5512de118ce47d41efff0d630b",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/keyboard.inc": "0f86d52efbfa570a7be7c3bd6aa313d0fc811284aae69d4f371a26e0ded5bc04",
-    "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/keyboard_compact.inc": "5e5ae948a8efda4483f5350dde96105a5de8307758f1828b27880bf0299ef0a9",
+    "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/keyboard_compact.inc": "0388c5605ab8a6a15895caf44faa210e1e7c6539c0920fea757c7d03fb11da20",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/keyboard_paper.inc": "c748627b4ecc595b59ff2d28b86a25846266d7f9436aff0ca2ad712ab969c8c7",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/page.inc": "f3bc81c58261cd3028efc6089867ce5c8c7dbbc69d99b8f4e71a3a354556ca53",
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/reading.inc": "77880b5ba0763e0b1f95c8b432755ef2e7ca6b47670179647ac54c9dac0b0ec8",
@@ -137,6 +137,7 @@
     "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-t046/Services/scene_host/telemetry_draw.inc": "9c65969119425d5956b350e501323820d1b353004939a725c8a79b7e658ce78f"
   },
   "version": "0.4.8",
-  "system_source": "a9a43cc1b368cfc1d9766b2439fd0eca8ff7b7ca",
-  "runtime_sdk": "a91edf3fada6a559ec107186dd163d0c8da10d29"
+  "system_source": "c88523a0bf72ff6b3f159a66bb7e504c86e1b41a",
+  "runtime_sdk": "a91edf3fada6a559ec107186dd163d0c8da10d29",
+  "target": "x4"
 }
