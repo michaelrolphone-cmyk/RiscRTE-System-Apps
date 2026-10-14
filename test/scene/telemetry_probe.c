@@ -21,3 +21,14 @@ int telemetry_test_target(unsigned action_id,int value,int*x,int*y){
 }
 /* Deliberately test-only inspection of copied state, not application inputs. */
 uint32_t telemetry_test_digest(void){const unsigned char*p=(const void*)&model->telemetry;uint32_t h=2166136261u;for(unsigned i=0;i<sizeof(model->telemetry);i++)h=(h^p[i])*16777619u;return h;}
+/* Orientation test hook: renderer and touch mapping are inverse transforms. */
+
+#include <assert.h>
+void telemetry_test_orientation(unsigned expected_w,unsigned expected_h,unsigned rotation){
+ assert(width==expected_w&&height==expected_h&&session_display_rotation==rotation);
+ for(unsigned y=0;y<height;y+=37)for(unsigned x=0;x<width;x+=41){
+  unsigned px=x,py=y;
+  switch(rotation){case 90:px=info.width-1-y;py=x;break;case 180:px=info.width-1-x;py=info.height-1-y;break;case 270:px=y;py=info.height-1-x;break;default:break;}
+  int tx,ty;assert(touch_point((uint16_t)px,(uint16_t)py,&tx,&ty));assert(tx==(int)x&&ty==(int)y);
+ }
+}

@@ -588,7 +588,7 @@ static bool component_valid(const risc_components_document_v1 *d){
     if(d->flags&RISC_COMPONENTS_TELEMETRY)return false;
     for(unsigned i=0;i<d->node_count;i++)if(tm_kind(d->nodes[i].kind)||d->details[i].symbol>=RISC_SYMBOL_GAUGE)return false;
 #endif
-    if(!d->screen_key||d->flags&~31u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
+    if(!d->screen_key||d->flags&~63u||(d->flags&3u)==3u||((d->flags&3u)&&(d->flags&4u))||!terminated(d->subtitle,sizeof(d->subtitle))||!terminated(d->toast,sizeof(d->toast))||(((d->flags&3u)!=0)!=(d->cancel_action!=0)))return false;
     bool cancel=!(d->flags&3u);unsigned headers=0,modal_actions=0,modal_texts=0,tabs=0,tiles=0;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];const risc_component_detail_v1 *a=&d->details[i];

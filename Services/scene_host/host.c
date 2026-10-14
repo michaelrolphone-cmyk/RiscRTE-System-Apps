@@ -35,6 +35,7 @@ static const risc_input_navigation_api_v1 *navigation;
 static const risc_platform_clock_api_v1 *clock_api;
 static const risc_scene_profile_v1 *profile;
 static risc_display_info_v1 info;
+static unsigned session_display_rotation,session_touch_rotation;
 static risc_display_surface_v1 surface;
 static risc_display_present_token_v1 present_token;
 /* Logical state is owned by input/application work. Rasterization owns an
@@ -349,7 +350,7 @@ static bool touch_point(uint16_t raw_x,uint16_t raw_y,int *x,int *y){
     uint32_t w=touch_state.width,h=touch_state.height,rx=raw_x,ry=raw_y;
     if(rx>=w||ry>=h)return false;
     uint32_t tx=rx,ty=ry,tw=w,th=h;
-    switch(profile->touch_rotation){
+    switch(session_touch_rotation){
     case 90:tx=h-1-ry;ty=rx;tw=h;th=w;break;
     case 180:tx=w-1-rx;ty=h-1-ry;break;
     case 270:tx=ry;ty=w-1-rx;tw=h;th=w;break;
@@ -666,7 +667,7 @@ static void pixel(int x,int y,uint16_t color){
     if(layout_only||x<0||y<0||(unsigned)x>=width||(unsigned)y>=height||
        (unsigned)y<clip_top||(unsigned)y>=clip_bottom)return;
     unsigned px=(unsigned)x,py=(unsigned)y;
-    switch(profile->display_rotation){
+    switch(session_display_rotation){
     case 90:px=surface.width-1-(unsigned)y;py=(unsigned)x;break;
     case 180:px=surface.width-1-(unsigned)x;py=surface.height-1-(unsigned)y;break;
     case 270:px=(unsigned)y;py=surface.height-1-(unsigned)x;break;
@@ -989,8 +990,14 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
 #if SCENE_HOST_WATCH_240
     if(info.width!=240||info.height!=240||info.preferred_format!=RISC_DISPLAY_FORMAT_RGB565||profile->preferred_format!=RISC_DISPLAY_FORMAT_RGB565)return RISC_SCENE_UNAVAILABLE;
 #endif
+    session_display_rotation=profile->display_rotation;session_touch_rotation=profile->touch_rotation;
     width=info.width;height=info.height;
-    if(profile->display_rotation==90||profile->display_rotation==270){width=info.height;height=info.width;}
+    if(session_display_rotation==90||session_display_rotation==270){width=info.height;height=info.width;}
+    if((d->flags&RISC_COMPONENTS_LANDSCAPE)&&height>width){
+        unsigned swap=width;width=height;height=swap;
+        session_display_rotation=(session_display_rotation+90)%360;
+        session_touch_rotation=(session_touch_rotation+270)%360;
+    }
     if(height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
     model->scroll=0;model->wheel_node=-1;model->toast_until=0;
     document=*d;path=(risc_scene_navigation_v1){.api_version=1,.struct_size=sizeof(path),.depth=1,.routes={d->root}};
@@ -1021,6 +1028,7 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
     risc_scene_navigation_v1 next_path=path;
     if(model->components)for(unsigned i=0;i<next_path.depth;i++)if(node_index(d,next_path.focus[i])<0)next_path.focus[i]=0;
     if(!valid_path(d,&next_path))return RISC_SCENE_INVALID;
+    if((d->flags^document.flags)&RISC_COMPONENTS_LANDSCAPE)return RISC_SCENE_INVALID;
     if(d->revision<=document.revision)return RISC_SCENE_STALE;
     path=next_path;
     const risc_scene_node_v1 *old=current_keyboard();
@@ -1186,7 +1194,7 @@ static const risc_scene_reading_links_api_v1 api=
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
     RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked}
 #if SCENE_HOST_TELEMETRY
-,RISC_SCENE_TELEMETRY_TAG,1,telemetry_present}
+,RISC_SCENE_TELEMETRY_TAG,2,telemetry_present}
 #endif
 ;
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){

@@ -41,6 +41,9 @@ enum { RISC_TONE_DEFAULT, RISC_TONE_ACCENT, RISC_TONE_SUCCESS, RISC_TONE_WARNING
 #define RISC_COMPONENTS_DOCUMENT 8u
 /* Compact instruments and plots; sizes still belong to the presenter. */
 #define RISC_COMPONENTS_TELEMETRY 16u
+/* Optional landscape session; requires telemetry version >=2. Set at open.
+ * Updates cannot rotate an active session. Close/reopen fences input/frames. */
+#define RISC_COMPONENTS_LANDSCAPE 32u
 /* Added copied-value kinds: PROGRESS_CARD uses label/title, text/body, choices/
  * secondary status and value/maximum. MEDIA_ROW adds an outlined marker cover.
  * STATS uses label/text as two values and choices as their two pipe-separated

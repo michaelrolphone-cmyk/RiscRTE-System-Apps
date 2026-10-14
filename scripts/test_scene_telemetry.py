@@ -11,7 +11,8 @@ def run(runtime):
    exe=out/('sanitized' if sanitized else 'plain')
    flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-I'+str(inc)]
    if sanitized:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
-   subprocess.run([os.environ.get('CC','cc'),*flags,str(ROOT/'test/scene/telemetry_probe.c'),str(ROOT/'test/scene/telemetry_test.c'),'-o',str(exe)],check=True)
-   subprocess.run([str(exe)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'),timeout=60)
+   for test in ('telemetry_test.c','landscape_test.c'):
+    subprocess.run([os.environ.get('CC','cc'),*flags,str(ROOT/'test/scene/telemetry_probe.c'),str(ROOT/'test/scene'/test),'-o',str(exe)],check=True)
+    subprocess.run([str(exe)],check=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'),timeout=60)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--runtime',required=True,type=Path);a=p.parse_args();run(a.runtime.resolve())

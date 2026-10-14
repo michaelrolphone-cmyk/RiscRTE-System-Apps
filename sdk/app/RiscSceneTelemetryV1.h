@@ -23,5 +23,5 @@ typedef struct {
 static inline const risc_scene_telemetry_api_v1 *risc_scene_telemetry_get_v1(const risc_scene_api_v1*b){
  if(!risc_scene_reading_links_get_v1(b)||b->struct_size<sizeof(risc_scene_telemetry_api_v1))return NULL;
  const risc_scene_telemetry_api_v1*p=(const risc_scene_telemetry_api_v1*)b;
- return p->telemetry_tag==RISC_SCENE_TELEMETRY_TAG&&p->telemetry_version==1&&p->present?p:NULL;
+ return p->telemetry_tag==RISC_SCENE_TELEMETRY_TAG&&(p->telemetry_version==1||p->telemetry_version==2)&&p->present?p:NULL;
 }
