@@ -64,8 +64,38 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
 #if defined(PORTABLE_RESIDENT_LOADING) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
 #error "App loading presentation belongs to the resident host"
 #endif
+#if defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES) && !defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
+#error "Atomic Home automatic preferences require atomic Quick"
+#endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#if !defined(PORTABLE_QUICK_ACTIONS) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Atomic Quick preferences require Quick Actions and checked native custody"
+#endif
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+static bool home_automatic_owned(void);
+static bool home_automatic_close(void);
+#endif
+static bool quick_atomic_running;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+#define home_automatic_input_busy() home_automatic_owned()
+#else
+#define home_automatic_input_busy() false
+#endif
+static unsigned quick_atomic_contact;
+static bool quick_atomic_owned(void);
+static bool quick_atomic_close(void);
+static void quick_atomic_enqueue(void);
+static void quick_atomic_discard(void);
+#endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+static bool settings_atomic_owned(void);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+static bool settings_availability_editing(void);
+static bool settings_availability_filter(t5_app_input_t *);
+#endif
+#endif
 #include "PortablePerformance.h"
 #include "PortableStageLog.h"
 #include "PortableTouch.h"
@@ -726,13 +756,22 @@ static void input_dispatch(void) {
  if(!alarm_modal) {
   int quick_x=next.x,quick_y=next.y;bool quick_native=false;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
-  if(!quick.ui.paper&&info.width&&info.height){quick_x=(uint32_t)next.x*240u/info.width;quick_y=(uint32_t)next.y*240u/info.width;quick_native=true;}
+  if(!quick.ui.paper&&info.width&&info.height){quick_x=(uint32_t)next.x*240u/info.width;quick_y=(uint32_t)next.y*240u/info.height;quick_native=true;}
 #endif
-  bool reserved=pqa_input(&quick.ui,input_delivered_at,next.valid&&!next.cancelled,
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running&&!home_automatic_input_busy())++quick_atomic_contact;
+  bool reserved=quick_atomic_running||home_automatic_input_busy()||pqa_input(&quick.ui,
+#else
+  bool reserved=pqa_input(&quick.ui,
+#endif
+      input_delivered_at,next.valid&&!next.cancelled,
       next.down?1u:0u,next.contact_id,
       quick.ui.paper?(int)next.x*480/(int)(paper_rotated?info.height:info.width):quick_x,
       quick.ui.paper?(int)next.y*800/(int)(paper_rotated?info.width:info.height):quick_y,
       next.tap_eligible&&(quick.ui.paper || quick_native || (info.width==240&&info.height==240)));
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!quick_atomic_running&&!home_automatic_input_busy())quick_atomic_enqueue();
+#endif
   if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
      !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
   if(reserved) {
@@ -2954,6 +2993,15 @@ static int initialize(void) {
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
   quick_restore_pending=quick_restoring=false;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  quick_atomic_running=false;quick_atomic_contact=0;quick_atomic_attempted=false;quick_atomic_revision=0;
+  quick_atomic_grant=(risc_runtime_capability_v1){0};quick_atomic_edit=(portable_preference_atomic){0};
+  quick_atomic_discard();
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  home_automatic_grant=(risc_runtime_capability_v1){0};home_automatic=(portable_preference_automatic){0};
+#endif
+  quick.save_user=quick_atomic_save;
+#endif
 #ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
   quick_open_requested=false;
 #endif
@@ -3160,6 +3208,16 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  if(rt&&!home_automatic_close()) {if(!native_custody_retained)portable_adapter_retain();return;}
+#endif
+  /* Collect/cancel before any unrelated teardown or provider operation. */
+  if(rt&&!quick_atomic_close()){
+   if(!native_custody_retained)portable_adapter_retain();
+   return;
+  }
+#endif
 #ifdef PORTABLE_FILE_SETUP
   /* Do not drain displays, read policy, reset input or yield before this
    * fence. Keep all dependencies until the checked close finishes. */

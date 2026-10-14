@@ -26,12 +26,25 @@ static bool contexts_rules_tick(void){
  if(q.result.changed){
   if(!portable_contexts_pause(&contexts_client))return false;
   contexts_client.storage=(risc_runtime_capability_v1){.struct_size=sizeof(contexts_client.storage)};
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  bool opened=home_automatic_begin(PORTABLE_AUTOMATIC_HOME_RULES),ok=opened;
+  const risc_key_value_v1 *settings=&home_automatic.view;
+#else
   bool opened=rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&contexts_client.storage),ok=opened;
+#endif
   uint16_t success=0;
   for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.changed&(1u<<f)){
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+   bool applied=opened&&portable_context_setting(settings,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
+#else
    bool applied=opened&&portable_context_setting(contexts_client.storage.api,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
+#endif
   }
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  if(!home_automatic_close()){portable_adapter_retain();return false;}
+#else
   if(!portable_contexts_release_storage(&contexts_client))return false;
+#endif
   for(unsigned i=0;i<CR_RULES;i++){bool changed=false,complete=true;for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.winners[f]==(int)i&&(q.result.changed&(1u<<f))){changed=true;complete&=(success&(1u<<f))!=0;}if(changed){contexts_workflow_v1 report={.struct_size=sizeof(report),.rule=i,.result=complete?CR_APPLIED:CR_PARTIAL};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&report))return false;}}
 #ifdef PORTABLE_QUICK_ACTIONS
   if(opened&&(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display)))return false;

@@ -45,6 +45,11 @@ void pqa_init(pqa_state *s) {
     s->last_nonzero_volume = 50;
     s->pressed_tile = -1;
 }
+bool pqa_set_height(pqa_state *s,unsigned logical_height) {
+    if(!s || logical_height<240 || logical_height>2048 || pqa_visible(s) ||
+       s->gesture!=PQA_IDLE)return false;
+    s->logical_height=(uint16_t)logical_height;return true;
+}
 void pqa_set_levels(pqa_state *s, bool bv, unsigned b, bool vv, unsigned v) {
     if (!s) return;
     s->brightness_valid = bv;
@@ -220,25 +225,25 @@ static void release_panel(pqa_state *s, uint32_t now) {
 #ifdef PORTABLE_PAPER_TRANSITIONS
         const int distance=s->last_y-s->start_y;
         const bool open=s->start_position_q8==0?distance>=32:distance>-64;
-        s->target_q8=open?PQA_OPEN_Q8:0;s->velocity_q8=0;
+        s->target_q8=open?pqa_open_q8(s):0;s->velocity_q8=0;
 #else
         s->position_q8=s->target_q8;
 #endif
         return;
     }
     int velocity = (now - s->last_ms > 100u) ? 0 : s->release_velocity_q8;
-    bool open = s->position_q8 > PQA_OPEN_Q8 / 2 ? velocity > -384 : velocity > 512;
-    s->target_q8 = open ? PQA_OPEN_Q8 : 0;
+    bool open = s->position_q8 > pqa_open_q8(s) / 2 ? velocity > -384 : velocity > 512;
+    s->target_q8 = open ? pqa_open_q8(s) : 0;
     s->velocity_q8 = velocity / 2;
 }
 bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                uint32_t id, int x, int y, bool allow_open) {
     if (!s) return false;
     /* Bound hostile/raw coordinates before subtraction or Q8 conversion. */
-    x = clampi(x, -1024, 1024); y = clampi(y, -1024, 1024);
+    x = clampi(x, -1024, 1024); y = clampi(y, -2048, 2048);
     if (!valid || count > 1u) {
         if (s->gesture == PQA_PANEL_DRAG)
-            s->target_q8 = s->position_q8 >= PQA_OPEN_Q8 / 2 ? PQA_OPEN_Q8 : 0;
+            s->target_q8 = s->position_q8 >= pqa_open_q8(s) / 2 ? pqa_open_q8(s) : 0;
         pqa_cancel_input(s);
         return route(s, PQA_CONSUMED);
     }
@@ -325,8 +330,8 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             else s->gesture = PQA_PASS_THROUGH;
         } else {
             /* Moving panels are draggable but never activate controls. */
-            int local_y = y + (PQA_OPEN_Q8 - s->position_q8) / 256;
-            bool settled = s->position_q8 == PQA_OPEN_Q8 && s->target_q8 == PQA_OPEN_Q8;
+            int local_y = y + (pqa_open_q8(s) - s->position_q8) / 256;
+            bool settled = s->position_q8 == pqa_open_q8(s) && s->target_q8 == pqa_open_q8(s);
             if (settled && s->brightness_valid && (s->paper ?
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
                 paper_slider_at(s,0,x,y)
@@ -365,7 +370,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                         y>=640 && y<714
 #endif
 #endif
-                        : x>=76 && x<164 && local_y>=(s->contexts_controls?222:207) && local_y<239;
+                        : x>=76 && x<164 && local_y>=(int)pqa_height(s)-(s->contexts_controls?18:33) && local_y<(int)pqa_height(s)-1;
                 }
             }
         }
@@ -379,7 +384,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         if (dy > (s->paper?24:6) && dy > absi(dx)) {
             s->gesture = PQA_PANEL_DRAG;
 #ifndef PORTABLE_PAPER_TRANSITIONS
-            if(s->paper)s->position_q8=s->target_q8=PQA_OPEN_Q8;
+            if(s->paper)s->position_q8=s->target_q8=pqa_open_q8(s);
 #endif
         }
         else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
@@ -392,7 +397,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
     if (s->gesture == PQA_PANEL_DRAG) {
         if(s->paper) {
 #ifdef PORTABLE_PAPER_TRANSITIONS
-            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*PQA_OPEN_Q8/800,0,PQA_OPEN_Q8);
+            s->position_q8=clampi(s->start_position_q8+(int32_t)dy*pqa_open_q8(s)/800,0,pqa_open_q8(s));
             s->target_q8=s->position_q8;s->velocity_q8=0;
 #else
             if(s->start_position_q8 && dy < -32)s->position_q8=s->target_q8=0;
@@ -400,7 +405,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             s->last_x=(int16_t)x;s->last_y=(int16_t)y;s->last_ms=now;
             return route(s,PQA_CONSUMED);
         }
-        s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, PQA_OPEN_Q8);
+        s->position_q8 = clampi(s->start_position_q8 + dy * 256, 0, pqa_open_q8(s));
         uint32_t elapsed = now - s->last_ms;
         if (elapsed) s->release_velocity_q8 = clampi((y - s->last_y) * 2048 / (int)(elapsed > 1000u ? 1000u : elapsed), -8192, 8192);
         s->velocity_q8 = 0;
@@ -430,12 +435,12 @@ bool pqa_animate(pqa_state *s, uint32_t now) {
     while (steps--) {
         int delta = s->target_q8 - s->position_q8;
         s->velocity_q8 = (s->velocity_q8 + delta / 18) * 3 / 4;
-        s->position_q8 = clampi(s->position_q8 + s->velocity_q8, 0, PQA_OPEN_Q8);
+        s->position_q8 = clampi(s->position_q8 + s->velocity_q8, 0, pqa_open_q8(s));
         if (absi(delta) < 64 && absi(s->velocity_q8) < 64) {
             s->position_q8 = s->target_q8; s->velocity_q8 = 0;
         }
         if ((s->position_q8 == 0 && s->velocity_q8 < 0) ||
-            (s->position_q8 == PQA_OPEN_Q8 && s->velocity_q8 > 0)) s->velocity_q8 = 0;
+            (s->position_q8 == pqa_open_q8(s) && s->velocity_q8 > 0)) s->velocity_q8 = 0;
     }
     return s->position_q8 != before;
 }

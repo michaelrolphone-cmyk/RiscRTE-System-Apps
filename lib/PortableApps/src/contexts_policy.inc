@@ -131,7 +131,11 @@ static bool contexts_tick(void) {
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
   contexts_policy_io=true;
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  ok=contexts_client.rules_available?contexts_rules_tick():portable_contexts_apply_room_using(&contexts_client,&applied,contexts_face_save,home_automatic_preset);
+#else
   ok=contexts_client.rules_available?contexts_rules_tick():portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save);
+#endif
   contexts_policy_io=false;
   if(!ok||native_custody_retained){portable_adapter_retain();return false;}
 

@@ -1,6 +1,7 @@
 #include "PortableQuickRender.h"
 #include <stddef.h>
 #include <string.h>
+#include "WatchLayout.h"
 
 typedef struct { uint8_t code; int8_t left,top; uint8_t width,height; uint16_t advance_q8; uint32_t offset; } pqa_glyph;
 typedef struct { uint8_t width,height; uint32_t offset; } pqa_icon;
@@ -131,55 +132,57 @@ static void panel_row(pqa_row *r,const pqa_state *s,const char *time,bool bv,uns
         center_text(r,GLYPHS(label),s->contexts_valid?"OFF":"?",160,205,on?MUTED:RGB(255,255,255),256);
         center_text(r,GLYPHS(label),"ON",192,205,on?RGB(0,20,24):MUTED,256);
     }
-    rect(r,104,s->contexts_controls?227:216,32,4,2,CYAN,128);
+    rect(r,104,(int)pqa_height(s)-(s->contexts_controls?13:24),32,4,2,CYAN,128);
     if(s->error_flags&PQA_ERROR_SAVE)
-        center_text(r,GLYPHS(caption),"SAVE UNCONFIRMED",120,231,RGB(255,135,65),256);
+        center_text(r,GLYPHS(caption),"SAVE UNCONFIRMED",120,(int)pqa_height(s)-9,RGB(255,135,65),256);
 }
 static uint16_t read_pixel(const uint8_t *p) { return (uint16_t)(p[0]|((uint16_t)p[1]<<8)); }
 static void write_pixel(uint8_t *p,uint16_t v) {p[0]=(uint8_t)v;p[1]=(uint8_t)(v>>8);}
-static unsigned torch_edge(int v) {
-    int d=v<120?v:239-v;
+static unsigned torch_edge(int v,int extent) {
+    int d=v<extent/2?v:extent-1-v;
     if(d>=46)return 256;
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
 static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
-    if(!f || first>f->height || count>f->height-first)return false;
-    if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565 ||
-       !f->width || !f->height || f->width>2048 || f->height>2048 || f->stride_bytes<f->width*2u)return false;
-#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
-    if(f->width!=240 || f->height!=240)return false;
+    if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
+    watch_layout layout;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    if(!watch_layout_open(&layout,f->width,f->height,NULL) || layout.height!=pqa_height(s))return false;
+#else
+    if(f->width!=240 || f->height!=240 || !watch_layout_open(&layout,240,240,NULL))return false;
 #endif
-    uint64_t span=(uint64_t)(f->height-1)*f->stride_bytes+f->width*2u;
+    if(first>f->height || count>f->height-first)return false;
+    if(layout.height!=pqa_height(s) || f->stride_bytes<(uint32_t)f->width*2u)return false;
+    uint64_t span=(uint64_t)(f->height-1)*f->stride_bytes+(uint32_t)f->width*2u;
     if(span>f->size_bytes)return false;
     if(!pqa_visible(s))return true;
     bv=bv && bp<=100;
-    int position=s->position_q8<0?0:s->position_q8>PQA_OPEN_Q8?PQA_OPEN_Q8:s->position_q8;
+    const int logical_height=(int)layout.height,open=pqa_open_q8(s);
+    int position=s->position_q8<0?0:s->position_q8>open?open:s->position_q8;
     pqa_row row;
     if(s->torch) {
         for(unsigned py=first;py<first+count;++py) {
-            int y=(int)(py*240u/f->width);
-            row.y=y;
+            int y=(int)(py*240u/f->width);row.y=y;
             for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);
-            center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,210,RGB(106,90,48),256);
+            center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,logical_height-30,RGB(106,90,48),256);
             uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
             for(unsigned px=0;px<f->width;++px) {
-                int x=(int)(px*240u/f->width);
-                unsigned a=torch_edge(x)*torch_edge(y<240?y:239)/256u;
-                /* Fade to black, not potentially bright underlying app pixels. */
+                unsigned x=px*240u/f->width;
+                unsigned a=torch_edge((int)x,240)*torch_edge(y,logical_height)/256u;
                 write_pixel(dst+2*px,mix(0,row.pixels[x],a));
             }
         }
         return true;
     }
-    int offset=(position-PQA_OPEN_Q8)/256;
+    int offset=(position-open)/256;
     unsigned face_alpha=(unsigned)(position>=190*256?0:256-position/190);
     for(unsigned py=first;py<first+count;++py) {
-            int y=(int)(py*240u/f->width);
+        int y=(int)(py*240u/f->width);
         uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
         int local=y-offset;
-        bool in_panel=local>=0 && local<240;
-        unsigned a=in_panel?(local<218?256u:(unsigned)(240-local)*256u/22u):0;
+        bool in_panel=local>=0 && local<logical_height;
+        unsigned a=in_panel?(local<logical_height-22?256u:(unsigned)(logical_height-local)*256u/22u):0;
         if(in_panel){memset(row.pixels,0,sizeof(row.pixels));row.y=local;panel_row(&row,s,time,bv,bp);}
         for(unsigned px=0;px<f->width;++px) {
             unsigned x=px*240u/f->width;
@@ -191,11 +194,11 @@ static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char
 }
 
 bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
-    return render_rows(f,s,time,bv,bp,0,f?f->height:0);
+ return f&&render_rows(f,s,time,bv,bp,0,f->height);
 }
 #ifdef PORTABLE_RASTER_SNAPSHOT
 bool pqa_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
-    return render_rows(f,s,time,bv,bp,first,count);
+ return render_rows(f,s,time,bv,bp,first,count);
 }
 #endif
 

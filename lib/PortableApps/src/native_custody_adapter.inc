@@ -51,7 +51,7 @@ void portable_adapter_retain(void) {
 }
 void portable_adapter_retain_silent(void) {portable_adapter_retain_inner(false);}
 #endif
-#if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+#if defined(PORTABLE_NATIVE_CUSTODY_FENCE) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 bool portable_adapter_retained(void) {return native_custody_retained;}
 #endif
 #if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
@@ -154,6 +154,13 @@ static bool custody_acquire_for(const char *name,uint32_t version,uint64_t insta
   bool ok=native_custody_runtime->acquire(name,version,instance,grant);
   if(native_custody_retained)return false;
   if(!ok) {
+#if defined(PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
+    if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
+       grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
+      if(risc_runtime_get_api(1)!=native_custody_runtime)portable_adapter_retain();
+      return false;
+    }
+#endif
 #ifdef PORTABLE_FILE_SETUP
     if(custody_setup_unavailable(name,version,instance,grant)) {
       /* Empty refusal is optional unavailability only while this invocation
