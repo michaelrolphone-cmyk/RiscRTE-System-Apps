@@ -14,7 +14,7 @@ static bool alarm_cancel_input(void) {
     if(quick_modal)pqa_cancel_input(&quick.ui);
 #endif
     input_pending=false;input_sample=(portable_touch_sample){0};navigation_pending=0;
-    touch.neutral=touch.down=false;
+    portable_touch_reset(&touch);
 #ifdef PORTABLE_INPUT_NAVIGATION
     input_navigation_reset();
 #endif

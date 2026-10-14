@@ -1,0 +1,13 @@
+Actual Contexts runtime catalog route resolution mode 0 PASS
+Actual Contexts runtime catalog route resolution mode 1 PASS
+Actual Contexts runtime catalog route resolution mode 2 PASS
+Actual Contexts runtime catalog route resolution mode 3 PASS
+Actual Contexts runtime catalog route resolution mode 4 PASS
+Actual Contexts runtime catalog route resolution mode 0 PASS
+Actual Contexts runtime catalog route resolution mode 1 PASS
+Actual Contexts runtime catalog route resolution mode 2 PASS
+Actual Contexts runtime catalog route resolution mode 3 PASS
+Actual Contexts runtime catalog route resolution mode 4 PASS
+PASS 10 actual Contexts launch cases: long canonical route via native ID, short route unchanged, unavailable, absent, changed generation
+{"width": 240, "height": 240, "frames": 240, "clear_us": 92.456, "circles_us": 78.006, "icons_us": 29.807, "mask_captions_us": 171.631, "submit_copy_us": 8.675, "input_poll_us": 0.234, "ui_update_us": 0.1, "render_us": 383.802, "pixels_hash": "24902b5212efc8f4"}
+{"width": 410, "height": 502, "frames": 240, "clear_us": 327.854, "circles_us": 177.799, "icons_us": 51.277, "mask_captions_us": 442.018, "submit_copy_us": 23.149, "input_poll_us": 0.229, "ui_update_us": 0.097, "render_us": 1025.487, "pixels_hash": "b2cd577875b052e6"}

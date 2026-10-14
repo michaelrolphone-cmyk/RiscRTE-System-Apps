@@ -1,0 +1,35 @@
+name: Shared ordered input and asynchronous presentation
+on:
+  push:
+    branches: [fix/shared-input-render-decoupling-20261014]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ordered-input:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: d03c6564814ff1588bf73af45b3f0288908466c3
+          path: utilities
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ordered taps, latest image, modal ownership and current Stopwatch
+        env:
+          UTILITIES_SOURCE: ${{ github.workspace }}/utilities
+          ASAN_OPTIONS: detect_leaks=0
+        run: |
+          mkdir -p results
+          set -o pipefail
+          python scripts/test_watch_async_canvas.py 2>&1 | tee results/canvas.log
+          python scripts/test_watch_async_stopwatch.py 2>&1 | tee results/stopwatch.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-input-results
+          path: results

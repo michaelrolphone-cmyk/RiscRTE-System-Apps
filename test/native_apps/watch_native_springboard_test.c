@@ -80,17 +80,42 @@ static const risc_display_output_api_v1 nt_display={.api_version=1,.struct_size=
  .get_info=nt_info,.acquire=nt_frame,.release=nt_frame_release,.submit=nt_submit,.present_status=nt_status,.set_brightness=nt_brightness};
 static uint64_t nt_subscribe(void *c) {(void)c;++subscriptions;return 1;}
 static bool nt_unsubscribe(void *c,uint64_t id) {(void)c;assert(id==1&&subscriptions);--subscriptions;return true;}
-static bool nt_poll_touch(void *c,size_t n) {(void)c;assert(n==1);++polls;return true;}
-static int32_t nt_next(void *c,uint64_t id,risc_touch_event_v1 *e) {(void)c;(void)id;(void)e;return 0;}
+static risc_touch_event_v1 touch_events[32];
+static unsigned event_head,event_count;
+static uint64_t touch_sequence;
+static risc_touch_snapshot_v1 reported_touch;
+static bool nt_snapshot(void *,risc_touch_snapshot_v1 *);
+static void nt_edge(unsigned kind,const risc_touch_contact_v1 *contact) {
+ assert(event_count<32);
+ touch_events[(event_head+event_count++)%32]=(risc_touch_event_v1){++touch_sequence,ticks,(uint8_t)kind,contact->id,contact->x,contact->y};
+}
+static bool nt_poll_touch(void *c,size_t n) {
+ (void)c;assert(n==1);++polls;risc_touch_snapshot_v1 next;nt_snapshot(NULL,&next);
+ for(unsigned i=0;i<reported_touch.contact_count;i++) {
+  const risc_touch_contact_v1 *old=&reported_touch.contacts[i];bool found=false;
+  for(unsigned j=0;j<next.contact_count;j++)if(next.contacts[j].id==old->id)found=true;
+  if(!found)nt_edge(RISC_TOUCH_EVENT_UP,old);
+ }
+ for(unsigned i=0;i<next.contact_count;i++) {
+  const risc_touch_contact_v1 *v=&next.contacts[i],*old=NULL;
+  for(unsigned j=0;j<reported_touch.contact_count;j++)if(reported_touch.contacts[j].id==v->id)old=&reported_touch.contacts[j];
+  if(!old)nt_edge(RISC_TOUCH_EVENT_DOWN,v);
+  else if(old->x!=v->x||old->y!=v->y)nt_edge(RISC_TOUCH_EVENT_MOVE,v);
+ }
+ reported_touch=next;return true;
+}
+static int32_t nt_next(void *c,uint64_t id,risc_touch_event_v1 *e) {
+ (void)c;(void)id;if(!event_count)return 0;*e=touch_events[event_head];event_head=(event_head+1)%32;--event_count;return 1;
+}
 static bool nt_snapshot(void *c,risc_touch_snapshot_v1 *out) {
- (void)c;*out=(risc_touch_snapshot_v1){.width=fw,.height=fh};
+ (void)c;*out=(risc_touch_snapshot_v1){.width=fw,.height=fh,.sequence=touch_sequence,.timestamp_ms=ticks};
  bool down=contact_down;unsigned x=contact_x,y=contact_y;
  if(full_run) {
   down=full_run==5?false:full_run==3?polls<=3:polls>=2&&polls<=4;
   x=physical(full_run==2?20u:120u);y=physical(full_run==2?20u:(unsigned)logical_height()/2);
   if(full_run==4 && polls>=3){x=physical(120u+(polls-2)*15u);y=physical((unsigned)logical_height()/2+(polls-2)*12u);}
  }
- if(down){out->contact_count=contact_count;out->contacts[0]=(risc_touch_contact_v1){.id=contact_id,.x=x,.y=y};}
+ if(down){out->contact_count=contact_count;out->contacts[0]=(risc_touch_contact_v1){.id=contact_id,.x=x,.y=y};if(contact_count>1)out->contacts[1]=(risc_touch_contact_v1){.id=(uint8_t)(contact_id+1),.x=x,.y=y};}
  return true;
 }
 static const risc_touch_api_v1 nt_touch={1,sizeof(nt_touch),NULL,nt_subscribe,nt_unsubscribe,nt_poll_touch,nt_next,nt_snapshot};
@@ -140,7 +165,7 @@ static void capture(const char *name) {
  assert(!fclose(f));
 }
 static void open_controller(void) {
- ticks=polls=launches=0;launched[0]=0;contact_down=false;contact_count=1;contact_id=0;
+ ticks=polls=launches=0;event_head=event_count=0;touch_sequence=0;reported_touch=(risc_touch_snapshot_v1){0};launched[0]=0;contact_down=false;contact_count=1;contact_id=0;
  assert(app_module_init()==0);api=t5_app_get_api(T5_APP_ABI_VERSION);assert(has_required_app_api());
  assert(api->screen_width()==(int)fw && api->screen_height()==(int)fh);
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
@@ -161,7 +186,13 @@ static void close_controller(void) {
 }
 static springboard_contact read_contact(bool down,unsigned x,unsigned y) {
  contact_down=down;contact_x=x;contact_y=y;t5_app_input_t in={0};assert(api->poll(&in,20));
- springboard_contact c={0};production->contact(&c);return c;
+ /* Multi-contact cancellation drains one ordered edge per app poll. Retain
+  * the observed cancellation while reaching the neutral stream boundary. */
+ springboard_contact c={0};production->contact(&c);bool cancelled=!c.valid||c.cancelled;
+ bool drained=false;unsigned limit=32;
+ while(event_count && limit--){assert(api->poll(&in,20));production->contact(&c);cancelled|=!c.valid||c.cancelled;drained=true;}
+ assert(!event_count);if(drained){assert(api->poll(&in,20));production->contact(&c);}
+ if(cancelled){c.valid=false;c.cancelled=true;}return c;
 }
 static springboard_contact input(nova_state *s,bool down,unsigned x,unsigned y) {
  springboard_contact c=read_contact(down,physical(x),physical(y));

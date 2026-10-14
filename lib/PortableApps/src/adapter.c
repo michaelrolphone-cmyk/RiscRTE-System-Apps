@@ -288,9 +288,8 @@ static uint32_t millis_now(void) {
   }
   return h.uptime_ms;
 }
-/* Sample while a physical presentation is draining, rather than freezing
- * input for a whole frame. Keep only current movement and one completed tap;
- * overlapping unconsumed gestures cancel safely instead of replaying a backlog. */
+/* Capture raw edges during rendering; reduce one edge per logical pass.
+ * The provider subscription preserves ordered actions without a second FIFO. */
 static portable_touch_sample input_sample;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
@@ -383,12 +382,20 @@ static bool home_automatic_input_busy(void);
 static void quick_atomic_enqueue(void);
 static bool rgb_atomic_finish(void);
 #endif
-static void input_service(void) {
+static void input_capture(void) {
  if(!canvas_progress())return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(!contexts_capture_checkpoint())return;
 #endif
- portable_touch_sample next;portable_touch_read(&touch,&next);
+ (void)portable_touch_collect(&touch);
+ if(touch.terminal){optional_services_retain();return;}
+ input_sampled_at=millis_now();
+}
+static void input_service(void) {
+ input_capture();
+ if(failed || input_pending)return;
+ portable_touch_sample next;(void)portable_touch_next(&touch,&next);
+ if(touch.terminal){optional_services_retain();return;}
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
  if(next.valid && !watch_layout_touch(&native_watch_layout,next.x,next.y,&next.x,&next.y))
    next=(portable_touch_sample){.cancelled=true};
@@ -433,15 +440,7 @@ static void input_service(void) {
   if(reserved)next=(portable_touch_sample){0};
  }
 #endif
- if(input_pending && input_sample.released && next.down) {
-  input_sample=(portable_touch_sample){.cancelled=true};touch.neutral=touch.down=false;
- } else if(!(input_pending && input_sample.released && next.valid && !next.down)) {
-  if(input_pending && input_sample.down && next.down) {
-   next.began|=input_sample.began;next.moved|=input_sample.moved;
-   next.tap_eligible&=input_sample.tap_eligible;
-  }
-  input_sample=next;
- }
+ input_sample=next;
  input_pending=true;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
@@ -763,7 +762,7 @@ static void present(bool full) {
       failed = true;
       break;
     }
-    if((uint32_t)(millis_now()-input_sampled_at)>=16)input_service();
+    if((uint32_t)(millis_now()-input_sampled_at)>=16)input_capture();
     if(failed)return;
     rt->yield_ms(1);
   }
@@ -926,9 +925,23 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(foreground_frame_ready() && !broadcast_tick()){failed=true;return false;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
-#ifdef PORTABLE_CONTEXTS_CLIENT
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_ASYNC_RGB565)
   uint32_t remaining=spent<wait?wait-spent:1;
-  while(remaining){uint32_t slice=remaining>8?8:remaining;rt->yield_ms(slice);remaining-=slice;if(!canvas_progress() || !contexts_capture_checkpoint())return false;}
+  while(remaining) {
+    uint32_t slice=remaining;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(slice>8)slice=8;
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+    /* An active cooperative display needs owner-task visits to send rows.
+     * A long sleep between visits throttles a tall panel even when painting
+     * is cheap. Keep the same bounded wait and input reduction cadence, but
+     * service an outstanding token once per millisecond of requested wait. */
+    if(canvas_async && canvas_token)slice=1;
+#endif
+    rt->yield_ms(slice);remaining-=slice;
+    if(!canvas_progress() || !contexts_capture_checkpoint())return false;
+  }
 #else
   rt->yield_ms(spent<wait?wait-spent:1);
 #endif

@@ -54,9 +54,20 @@ static bool launch(const char*s){(void)s;assert(!"no launch allowed");return fal
 static bool retain(void){assert(!"healthy probe cannot retain");return false;}
 static uint64_t subscribe(void*c){(void)c;return 1;}
 static bool unsubscribe(void*c,uint64_t n){(void)c;return n==1;}
-static bool touch_poll(void*c,size_t n){(void)c;(void)n;++raw_polls;return true;}
-static int32_t touch_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;(void)e;return 0;}
-static bool touch_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240};unsigned ms=(unsigned)(now_us/1000);if(ms>=200 && ms<3800){unsigned phase=(ms-200)%1200;unsigned x=phase<600?50+phase/5:170-(phase-600)/5;s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=120};}return true;}
+static risc_touch_snapshot_v1 touch_report;
+static risc_touch_event_v1 touch_events[32];static unsigned touch_head,touch_count;static uint64_t touch_seq;
+static bool touch_snapshot(void*,risc_touch_snapshot_v1*);
+static bool touch_poll(void*c,size_t n){
+ (void)c;(void)n;++raw_polls;risc_touch_snapshot_v1 next;touch_snapshot(NULL,&next);
+ unsigned kind=0;const risc_touch_contact_v1 *v=&next.contacts[0];
+ if(next.contact_count&&!touch_report.contact_count)kind=RISC_TOUCH_EVENT_DOWN;
+ else if(!next.contact_count&&touch_report.contact_count){kind=RISC_TOUCH_EVENT_UP;v=&touch_report.contacts[0];}
+ else if(next.contact_count&&(v->x!=touch_report.contacts[0].x||v->y!=touch_report.contacts[0].y))kind=RISC_TOUCH_EVENT_MOVE;
+ if(kind){assert(touch_count<32);touch_events[(touch_head+touch_count++)%32]=(risc_touch_event_v1){++touch_seq,now_us/1000,(uint8_t)kind,v->id,v->x,v->y};}
+ touch_report=next;return true;
+}
+static int32_t touch_next(void*c,uint64_t n,risc_touch_event_v1*e){(void)c;(void)n;if(!touch_count)return 0;*e=touch_events[touch_head];touch_head=(touch_head+1)%32;--touch_count;return 1;}
+static bool touch_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=(risc_touch_snapshot_v1){.width=240,.height=240,.sequence=touch_seq,.timestamp_ms=now_us/1000};unsigned ms=(unsigned)(now_us/1000);if(ms>=200 && ms<3800){unsigned phase=(ms-200)%1200;unsigned x=phase<600?50+phase/5:170-(phase-600)/5;s->contact_count=1;s->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=120};}return true;}
 static const risc_touch_api_v1 touch_api={1,sizeof(touch_api),NULL,subscribe,unsubscribe,touch_poll,touch_next,touch_snapshot};
 static bool runtime_acquire(const char*s,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){(void)v;(void)id;if(!strcmp(s,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;else if(!strcmp(s,"display.output"))g->api=&output;else if(!strcmp(s,"input.touch.raw"))g->api=&touch_api;else return false;return true;}
 static bool runtime_release(risc_runtime_capability_v1*g){g->api=NULL;return true;}

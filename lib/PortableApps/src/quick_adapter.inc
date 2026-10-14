@@ -139,7 +139,7 @@ static bool quick_foreground(bool *consumed) {
   * Ordinary tab/gear taps must replay without suspending RF or loading
   * controls storage before a pull gesture actually commits. */
  if(quick.ui.gesture==PQA_TOP_PENDING && !pqa_visible(&quick.ui)) {
-  *consumed=true;return true;
+  input_pending=false;*consumed=true;return true;
  }
  /* A gate after close needs only a neutral sample, never a blocking modal. */
  if(quick.ui.neutral_gate && !pqa_visible(&quick.ui))return true;
@@ -200,7 +200,7 @@ static bool quick_foreground(bool *consumed) {
    present(true);painted=true;*consumed=true;
   }
   if(!pqa_visible(&quick.ui) && (quick.ui.neutral_gate || quick.ui.gesture==PQA_IDLE || quick.ui.gesture==PQA_PASS_THROUGH))break;
-  rt->yield_ms(8);input_service();
+  rt->yield_ms(8);input_pending=false;input_service();
  }
  if(native_sleep_retained)return false;
  if(risc_runtime_exit_requested_v1(rt)) {
@@ -225,7 +225,7 @@ static bool quick_foreground(bool *consumed) {
  if(!quick_atomic_close())return false;
 #endif
  quick_modal=false;free(quick_background);quick_background=NULL;
- if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};touch.neutral=touch.down=false;}
+ if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};portable_touch_reset(&touch);}
  if(wifi && !failed && !risc_runtime_exit_requested_v1(rt) && app_allows_launch("wifi_settings.elf")) {
 #ifdef PORTABLE_FILE_BROWSER_APP
   if(!portable_file_browser_close())return false;

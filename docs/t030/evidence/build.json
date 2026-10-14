@@ -1,0 +1,26 @@
+{
+  "system_source": "a1fcfa7fbbbfec839f27ae208734ce9fe1d76cd5",
+  "sha256": "c9c762a8ae501dd25e606320d5c97bd206f770d11f47f2de0546f737481525be",
+  "bytes": 147756,
+  "version": "1.7.12",
+  "compaction": {
+    "profile": "loader-metadata-v3",
+    "before_bytes": 230740,
+    "after_bytes": 147756,
+    "before_sha256": "95542690be12366755370d50df9c13051f4d24aac3e03aadf7c9267b60fa25f8",
+    "after_sha256": "c9c762a8ae501dd25e606320d5c97bd206f770d11f47f2de0546f737481525be",
+    "removed_sections": [
+      ".xt.lit",
+      ".xt.prop"
+    ],
+    "retained_loader_sections_symbols_relocations_unchanged": true,
+    "original_elf_retained": true,
+    "tool": "GNU objcopy (crosstool-NG esp-2021r2-patch5) 2.35.1.20201223",
+    "options": [
+      "--remove-section=.xt.lit",
+      "--remove-section=.xt.prop",
+      "--discard-all"
+    ]
+  },
+  "recipe_sha256": "26680a815493d3cc68663b551a42f17d76be2802c2670f3ee018190ca69b3f31"
+}

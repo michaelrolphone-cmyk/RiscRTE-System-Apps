@@ -74,8 +74,11 @@ static bool present_status(void*c,risc_display_present_token_v1 token,risc_displ
 static uint64_t subscribe(void*c){(void)c;normal_io();++subscriptions;return 1;}
 static bool unsubscribe(void*c,uint64_t s){(void)c;normal_io();assert(s==1&&subscriptions);--subscriptions;return true;}
 static bool poll_touch(void*c,size_t n){(void)c;normal_io();assert(n==1&&!leases&&!status_error);++inputs;return true;}
-static int32_t next_touch(void*c,uint64_t s,risc_touch_event_v1*out){(void)c;(void)s;(void)out;normal_io();return 0;}
-static bool snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;normal_io();*out=(risc_touch_snapshot_v1){.width=240,.height=240};return true;}
+static risc_touch_event_v1 edges[12];
+static unsigned edge_at,edge_count;
+static bool touch_terminal;
+static int32_t next_touch(void*c,uint64_t s,risc_touch_event_v1*out){(void)c;(void)s;normal_io();if(touch_terminal)return -2;if(edge_at<edge_count){*out=edges[edge_at++];return 1;}return 0;}
+static bool snapshot(void*c,risc_touch_snapshot_v1*out){(void)c;normal_io();*out=(risc_touch_snapshot_v1){.width=240,.height=240,.sequence=edge_count,.timestamp_ms=edge_count};return true;}
 static const risc_display_output_api_v1 provider={.api_version=1,.struct_size=sizeof(provider),.get_info=get_info,.acquire=acquire_frame,.release=release_frame,.submit=submit_frame,.present_status=present_status};
 static const risc_touch_api_v1 touch_provider={1,sizeof(touch_provider),NULL,subscribe,unsubscribe,poll_touch,next_touch,snapshot};
 static bool acquire(const char*name,uint32_t version,uint64_t instance,risc_runtime_capability_v1*g){normal_io();assert(version==1&&!instance);if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY))g->api=&fixture_catalog_api;else if(!strcmp(name,"display.output"))g->api=&provider;else if(!strcmp(name,"input.touch.raw"))g->api=&touch_provider;else return false;++grants;return true;}
@@ -155,6 +158,26 @@ int main(int argc,char**argv){
    fill(0,0,240,240,0x4444);assert(yields==before+1);
    present(false);finish();assert(submits==2);check_color(0x4444);
   }
+ }else if(!strcmp(test,"touch-terminal")){
+  paint(0x1111);touch_terminal=true;
+  portable_touch_sample sample;input_take(&sample);
+  assert(failed&&optional_services_retained&&canvas_retained&&retains==1);
+  unsigned old_grants=grants,old_frees=frees;app_module_fini();
+  assert(grants==old_grants&&frees==old_frees&&provider_busy);
+ }else if(!strncmp(test,"ordered-taps-",13)){
+  latency=(unsigned)atoi(test+13);paint(0x1111);
+  for(unsigned i=0;i<12;i++)edges[i]=(risc_touch_event_v1){.sequence=i+1,.timestamp_ms=i+1,.kind=i%2?RISC_TOUCH_EVENT_UP:RISC_TOUCH_EVENT_DOWN,.id=0,.x=60,.y=80};
+  edge_count=12;
+  /* Capturing while the submitted frame drains cannot consume logical keys. */
+  for(unsigned i=0;i<8;i++)input_capture();
+  for(unsigned i=0;i<12;i++){
+   portable_touch_sample sample;input_take(&sample);
+   assert(sample.valid&&!sample.cancelled&&sample.tap_eligible);
+   assert(i%2?sample.released:sample.began);
+   assert(sample.x==60&&sample.y==80);
+   paint((uint16_t)(0x2220+i));
+  }
+  finish();check_color(0x222b);
  }else if(!strcmp(test,"damage")){
   paint(0x1234);finish_now=true;assert(canvas_progress());draw(0x1234);fill(0,10,240,3,0x5678);present(false);
   assert(submits==2&&damage_count==1&&last_damage.x==0&&last_damage.y==10&&last_damage.width==240&&last_damage.height==3);finish();

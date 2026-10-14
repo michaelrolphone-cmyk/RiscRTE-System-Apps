@@ -1,6 +1,9 @@
 /* Explicit controllers on the deployed RGB adapter. Preserve its optional
  * service/canvas retention fence and its settled foreground lifecycle. */
 static void rgb_atomic_dispatch(void) {
+ /* The copied wait owns each delivered sample; do not leave a foreground
+  * sample pending and stall the ordered raw-input queue on the next yield. */
+ input_pending=false;input_sample=(portable_touch_sample){0};
  if(risc_runtime_exit_requested_v1(rt))navigation_pending|=T5_APP_BUTTON_BACK;
 }
 #define native_custody_retained app_invocation_retained()

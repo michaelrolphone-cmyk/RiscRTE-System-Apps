@@ -4,12 +4,13 @@
 Reads immutable Git objects only; never modifies the Utilities checkout.
 """
 import os
+import sys
 from pathlib import Path
 import shlex
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-PIN = 'fc0bdbbbc600ce891e60c44d091fce0586ade7d8'
+PIN = 'd03c6564814ff1588bf73af45b3f0288908466c3'
 
 
 def main():
@@ -34,7 +35,7 @@ def main():
     env = os.environ.copy()
     count = 0
     for sanitized in (False, True):
-        flags = ['-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-no-pie'] if sanitized else []
+        flags = ['-fsanitize=' + os.environ.get('WATCH_TEST_SANITIZERS', 'address,undefined'), '-fno-sanitize-recover=all', '-fno-omit-frame-pointer'] + (['-no-pie'] if sys.platform != 'darwin' else []) if sanitized else []
         app = out / f'stopwatch-{int(sanitized)}.o'
         subprocess.run([*common, *flags, '-DPORTABLE_ALARM_CLIENT', '-Dapp_main=watch_test_stopwatch_main',
                         '-Drisc_runtime_get_api=watch_test_runtime_get_api', '-c', str(source / 'stopwatch.c'), '-o', str(app)], check=True, timeout=120)

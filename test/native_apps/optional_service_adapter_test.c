@@ -130,7 +130,7 @@ static bool startup_display_info(void*c,risc_display_info_v1*out){
 static void configure(void){
  scenario=100;alarm_fake.state=ALARM_STATE_READY;
  quick_display_api=display_api;quick_display_api.get_info=startup_display_info;quick_display_api.present_status=startup_present_status;quick_display_api.set_brightness=quick_brightness;
- quick_touch_api=touch_api;quick_touch_api.next=quick_next;
+ quick_touch_api=touch_api;quick_touch_api.next=touch_next;
  quick_alarm_api=service_api;quick_alarm_api.step=quick_step;
  startup_alarm=quick_alarm_api;startup_context=ctx_api;
  startup_fp=(contexts_fingerprint_service_v1){.base=ctx_api,.fingerprint_abi=0x31504643u,.fingerprint=startup_fingerprint};startup_fp.base.struct_size=sizeof(startup_fp);

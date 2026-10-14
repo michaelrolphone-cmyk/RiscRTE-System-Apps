@@ -14,7 +14,6 @@ static const char *capture_directory;
 static risc_display_output_api_v1 quick_display_api;
 static alarm_service_v1 quick_alarm_api;
 static risc_touch_api_v1 quick_touch_api;
-static unsigned emitted_up_poll;
 static risc_runtime_api_v1 quick_runtime;
 static int pref_index(const char *key) {
  if(!strcmp(key,PQA_BRIGHTNESS_KEY))return 0;
@@ -100,21 +99,6 @@ static bool quick_launch(const char *path) {
  if(!strcmp(path,"wifi_settings.elf")){wifi_launches++;return true;}
  return test_launch(path);
 }
-static int32_t quick_next(void *c,uint64_t subscription,risc_touch_event_v1 *event) {
- if(polls==gap_at)return touch_next(c,subscription,event);
- bool current=false;const contact *last=NULL;
- for(size_t i=0;i<input_count;i++) {
-  if(input_script[i].poll==polls)current=true;
-  if(input_script[i].poll+1==polls)last=input_script+i;
- }
- if(!current && last && emitted_up_poll!=polls) {
-  emitted_up_poll=polls;
-  *event=(risc_touch_event_v1){.kind=RISC_TOUCH_EVENT_UP,.id=1,.x=last->x,.y=last->y};
-fixture_point(&event->x,&event->y);
-  return 1;
- }
- return 0;
-}
 #ifdef RGB_ATOMIC_FIXTURE
 #include "rgb_atomic_provider.inc"
 #endif
@@ -154,7 +138,7 @@ static void setup(void) {
  scenario=100;alarm_scenario=0;
  quick_display_api=display_api;quick_display_api.set_brightness=quick_brightness;quick_display_api.submit=capture_submit;
  quick_alarm_api=service_api;quick_alarm_api.step=quick_step;
- quick_touch_api=touch_api;quick_touch_api.next=quick_next;
+ quick_touch_api=touch_api;
  quick_runtime=runtime_api;quick_runtime.acquire=quick_acquire;quick_runtime.health=quick_health;quick_runtime.request_launch=quick_launch;
  rt=&quick_runtime;display_settled=true;failed=false;
  dg.struct_size=sizeof(dg);bg.struct_size=sizeof(bg);

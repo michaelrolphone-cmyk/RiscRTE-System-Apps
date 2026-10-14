@@ -46,7 +46,7 @@ jobs:
         run: |
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
-      - name: Reproduce exact shared UI bytes using public inputs only
+      - name: Reproduce pinned baseline and final default/atomic shared UI bytes
         run: |
           python scripts/prove_shared_catalog_target.py \
             --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" \
