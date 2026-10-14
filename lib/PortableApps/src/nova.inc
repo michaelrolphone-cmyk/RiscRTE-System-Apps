@@ -218,7 +218,10 @@ static void np_poll(t5_app_input_t *out);
 #endif
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565)return NULL;
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(width()>=400 && height()>=400)return NULL;
+#endif
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
