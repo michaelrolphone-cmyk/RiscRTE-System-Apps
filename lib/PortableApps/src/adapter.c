@@ -2407,7 +2407,9 @@ replay_input:
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
 static bool poll(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(native_custody_retained)return false;
+#endif
   // Native exit precedes every modal and shared keyboard branch. This only
   // requests existing orderly app cleanup; host owns the deadline/ack.
   if(risc_runtime_exit_requested_v1(rt)) {
