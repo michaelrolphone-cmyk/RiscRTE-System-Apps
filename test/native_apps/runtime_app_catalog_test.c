@@ -11,6 +11,15 @@ static uint32_t inventory_count;
 static uint64_t inventory_generation=1;
 static unsigned fault,catalog_calls,catalog_acquires,catalog_releases,runtime_calls,snapshot_calls;
 static bool retained,mutate_guard,mutate_drain;
+static bool fail_catalog_allocation;
+void *__real_malloc(size_t size);
+void *__wrap_malloc(size_t size){if(fail_catalog_allocation){fail_catalog_allocation=false;return NULL;}return __real_malloc(size);}
+static char catalog_diagnostics[4096];
+static bool inventory_diagnostic(const char *text){
+ assert(!retained);
+ if(strstr(text,"APP_CATALOG")){size_t n=strlen(catalog_diagnostics);snprintf(catalog_diagnostics+n,sizeof(catalog_diagnostics)-n,"%s\n",text);}
+ return true;
+}
 /* Match native providerStorageSafe: catalog storage is forbidden while the
  * display owns a transfer. Completion requires cooperative owner-task yields. */
 static bool delayed_pending;
@@ -88,7 +97,7 @@ static bool inventory_launch(const char *name) {assert(!retained);runtime_calls+
 static bool inventory_retain(void) {assert(!retained);retained=true;return true;}
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version) {
  static risc_runtime_api_v1 runtime;
- runtime=nt_runtime;runtime.acquire=inventory_acquire;runtime.release=inventory_release;
+ runtime=nt_runtime;runtime.diagnostic=inventory_diagnostic;runtime.acquire=inventory_acquire;runtime.release=inventory_release;
  runtime.health=inventory_health;runtime.request_launch=inventory_launch;runtime.retain_invocation=inventory_retain;
  return version==1?&runtime:NULL;
 }
@@ -203,13 +212,18 @@ static void exercise(unsigned width,unsigned height) {
  use_async=true;assert(app_module_init()==0);assert(!catalog_acquires);
  const t5_app_api_v1 *client=t5_app_get_api(1);assert(client);
  if(fault==4)owned_catalog.struct_size--;
+ if(fault==27)fail_catalog_allocation=true;
  bool refreshed=client->installed_apps_refresh();
- if(fault && fault<25) {
+ if((fault && fault<25)||fault==27) {
   assert(!refreshed);assert(client->installed_apps_count()==0);
   if(fault==2 || fault==3 || fault==6 || fault==7 || fault==12 || fault==13) {
    assert(retained);no_more_callbacks(client);return;
   }
-  assert(!retained);check_status_text(client,false);app_module_fini();assert(!grants&&!subscriptions&&!frames);free(guarded);return;
+  assert(!retained);
+  const char *stage=fault==1?"stage=acquire result=0":fault==4?"stage=interface":fault<=10?"stage=snapshot":fault==11?"stage=generation-mismatch":fault==19?"stage=duplicate-row":fault==27?"stage=allocation-failed":"stage=row";
+  assert(strstr(catalog_diagnostics,stage));
+  if(fault==27){assert(strstr(catalog_diagnostics,"bytes=")&&!strstr(catalog_diagnostics,"bytes=0"));fault=0;assert(client->installed_apps_refresh());assert(client->installed_apps_count()==inventory_count);}
+  check_status_text(client,false);app_module_fini();assert(!grants&&!subscriptions&&!frames);free(guarded);return;
  }
  assert(refreshed && client->installed_apps_count()==inventory_count);
  check_status_text(client,true);

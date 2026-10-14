@@ -1,5 +1,5 @@
 {
-  "passed": 172,
+  "passed": 176,
   "checks": [
     "delayed-refresh-240x240-san0",
     "delayed-launch-240x240-san0",
@@ -40,6 +40,7 @@
     "fault24-240x240-san0",
     "fault25-240x240-san0",
     "fault26-240x240-san0",
+    "fault27-240x240-san0",
     "delayed-refresh-410x502-san0",
     "delayed-launch-410x502-san0",
     "empty-410x502-san0",
@@ -79,6 +80,7 @@
     "fault24-410x502-san0",
     "fault25-410x502-san0",
     "fault26-410x502-san0",
+    "fault27-410x502-san0",
     "baseline-240x240-sync-san0",
     "runtime-pixels-240x240-sync-san0",
     "baseline-240x240-async-san0",
@@ -126,6 +128,7 @@
     "fault24-240x240-san1",
     "fault25-240x240-san1",
     "fault26-240x240-san1",
+    "fault27-240x240-san1",
     "delayed-refresh-410x502-san1",
     "delayed-launch-410x502-san1",
     "empty-410x502-san1",
@@ -165,6 +168,7 @@
     "fault24-410x502-san1",
     "fault25-410x502-san1",
     "fault26-410x502-san1",
+    "fault27-410x502-san1",
     "baseline-240x240-sync-san1",
     "runtime-pixels-240x240-sync-san1",
     "baseline-240x240-async-san1",

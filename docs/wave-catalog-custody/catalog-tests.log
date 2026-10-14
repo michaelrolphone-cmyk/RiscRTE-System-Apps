@@ -37,6 +37,7 @@ fault23-240x240-san0 PASS
 fault24-240x240-san0 PASS
 fault25-240x240-san0 PASS
 fault26-240x240-san0 PASS
+fault27-240x240-san0 PASS
 delayed-refresh-410x502-san0 PASS
 delayed-launch-410x502-san0 PASS
 empty-410x502-san0 PASS
@@ -76,6 +77,7 @@ fault23-410x502-san0 PASS
 fault24-410x502-san0 PASS
 fault25-410x502-san0 PASS
 fault26-410x502-san0 PASS
+fault27-410x502-san0 PASS
 baseline-240x240-sync-san0 PASS
 runtime-pixels-240x240-sync-san0 PASS
 baseline-240x240-async-san0 PASS
@@ -123,6 +125,7 @@ fault23-240x240-san1 PASS
 fault24-240x240-san1 PASS
 fault25-240x240-san1 PASS
 fault26-240x240-san1 PASS
+fault27-240x240-san1 PASS
 delayed-refresh-410x502-san1 PASS
 delayed-launch-410x502-san1 PASS
 empty-410x502-san1 PASS
@@ -162,6 +165,7 @@ fault23-410x502-san1 PASS
 fault24-410x502-san1 PASS
 fault25-410x502-san1 PASS
 fault26-410x502-san1 PASS
+fault27-410x502-san1 PASS
 baseline-240x240-sync-san1 PASS
 runtime-pixels-240x240-sync-san1 PASS
 baseline-240x240-async-san1 PASS
@@ -170,4 +174,4 @@ baseline-410x502-sync-san1 PASS
 runtime-pixels-410x502-sync-san1 PASS
 baseline-410x502-async-san1 PASS
 runtime-pixels-410x502-async-san1 PASS
-PASS 172 cases: runtime inventories, 128-entry bound, stale launch fencing, custody faults and unchanged 23-entry pixels
+PASS 176 cases: runtime inventories, 128-entry bound, stale launch fencing, custody faults and unchanged 23-entry pixels
