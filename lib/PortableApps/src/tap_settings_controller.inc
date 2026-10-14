@@ -74,7 +74,13 @@ static uint8_t settings_tap_activate(void){
         else tap_draft.bma456h=(uint8_t)tap_calibration.value;
         tap_draft.measured|=(uint8_t)(1u<<(tap_info.profile-1));
         /* Calibrating while Off does not implicitly enable tap wake. */
-        if(portable_tap_save(settings_store,&tap_draft)){tap_unconfirmed=false;result=T5_APP_SETTING_UPDATED;tap_message="Measured setting saved";break;}
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+          settings_atomic_tap(&tap_draft,&tap_message)
+#else
+          portable_tap_save(settings_store,&tap_draft)
+#endif
+        ){tap_unconfirmed=false;result=T5_APP_SETTING_UPDATED;tap_message="Measured setting saved";break;}
         tap_unconfirmed=true;tap_message="Save unconfirmed - retry";sv_switch(SV_TAP);
       }
       continue;
@@ -90,7 +96,13 @@ static uint8_t settings_tap_activate(void){
     }
     if(confirm){
       if(tap_cleanup_pending){(void)settings_tap_close();settings_view_redraw();continue;}
-      if(portable_tap_save(settings_store,&tap_draft)){tap_unconfirmed=false;result=T5_APP_SETTING_UPDATED;tap_message="Tap wake saved";break;}
+      if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+          settings_atomic_tap(&tap_draft,&tap_message)
+#else
+          portable_tap_save(settings_store,&tap_draft)
+#endif
+        ){tap_unconfirmed=false;result=T5_APP_SETTING_UPDATED;tap_message="Tap wake saved";break;}
       tap_unconfirmed=true;tap_message="Save unconfirmed - retry";
     }
     if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT)){

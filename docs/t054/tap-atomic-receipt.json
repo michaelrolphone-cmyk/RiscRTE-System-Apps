@@ -1,0 +1,1125 @@
+{
+  "hardware_tested": false,
+  "runs": [
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 0,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 0, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 0,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 0, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 1,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 1, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 1,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 1, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 2,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 2, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 2,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 2, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 3,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 3, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 3,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 3, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 4,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 4, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 4,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 4, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 5,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 5, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 5,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 5, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 6,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 6, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 6,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 6, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 7,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 7, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 7,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 7, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 8,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 8, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 8,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 8, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 9,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 9, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 9,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 9, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 10,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 10, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 10,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 10, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 11,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 11, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 11,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 11, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 12,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 12, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 12,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 12, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 13,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 13, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 13,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 13, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 14,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 14, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 14,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 14, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 15,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 15, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 15,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 15, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 16,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 16, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 16,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 16, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 17,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 17, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 17,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 17, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 18,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 18, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 18,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 18, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 19,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 19, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": false,
+      "case": 19,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 19, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 0,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 0, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 0,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 0, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 1,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 1, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 1,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 1, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 2,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 2, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 2,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 2, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 3,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 3, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 3,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 3, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 4,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 4, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 4,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 4, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 5,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 5, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 5,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 5, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 6,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 6, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 6,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 6, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 7,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 7, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 7,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 7, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 8,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 8, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 8,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 8, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 9,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 9, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 9,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 9, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 10,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 10, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 10,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 10, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 11,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 11, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 11,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 11, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 12,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 12, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 12,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 12, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 13,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 13, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 13,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 13, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 14,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 14, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 14,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 14, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 15,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 15, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 15,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 15, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 16,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 16, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 16,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 16, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 17,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 17, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 17,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 17, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 18,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 18, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 18,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 18, profile 2 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 19,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 19, profile 1 PASS"
+    },
+    {
+      "rotation": 0,
+      "native": true,
+      "case": 19,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 19, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 0,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 0, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 0,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 0, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 1,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 1, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 1,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 1, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 2,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 2, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 2,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 2, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 3,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 3, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 3,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 3, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 4,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 4, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 4,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 4, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 5,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 5, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 5,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 5, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 6,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 6, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 6,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 6, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 7,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 7, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 7,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 7, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 8,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 8, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 8,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 8, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 9,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 9, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 9,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 9, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 10,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 10, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 10,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 10, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 11,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 11, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 11,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 11, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 12,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 12, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 12,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 12, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 13,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 13, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 13,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 13, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 14,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 14, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 14,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 14, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 15,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 15, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 15,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 15, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 16,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 16, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 16,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 16, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 17,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 17, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 17,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 17, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 18,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 18, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 18,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 18, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 19,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 19, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": false,
+      "case": 19,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 19, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 0,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 0, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 0,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 0, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 1,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 1, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 1,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 1, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 2,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 2, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 2,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 2, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 3,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 3, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 3,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 3, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 4,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 4, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 4,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 4, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 5,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 5, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 5,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 5, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 6,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 6, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 6,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 6, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 7,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 7, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 7,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 7, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 8,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 8, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 8,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 8, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 9,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 9, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 9,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 9, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 10,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 10, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 10,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 10, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 11,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 11, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 11,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 11, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 12,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 12, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 12,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 12, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 13,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 13, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 13,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 13, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 14,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 14, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 14,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 14, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 15,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 15, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 15,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 15, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 16,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 16, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 16,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 16, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 17,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 17, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 17,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 17, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 18,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 18, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 18,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 18, profile 2 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 19,
+      "sensor_profile": 1,
+      "result": "Tap Settings production UI case 19, profile 1 PASS"
+    },
+    {
+      "rotation": 180,
+      "native": true,
+      "case": 19,
+      "sensor_profile": 2,
+      "result": "Tap Settings production UI case 19, profile 2 PASS"
+    }
+  ]
+}

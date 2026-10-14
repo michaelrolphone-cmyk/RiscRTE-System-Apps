@@ -1,0 +1,4 @@
+Actual tap atomic UI rotation=0 native=False: 40 ASan/UBSan cases PASS
+Actual tap atomic UI rotation=0 native=True: 40 ASan/UBSan cases PASS
+Actual tap atomic UI rotation=180 native=False: 40 ASan/UBSan cases PASS
+Actual tap atomic UI rotation=180 native=True: 40 ASan/UBSan cases PASS

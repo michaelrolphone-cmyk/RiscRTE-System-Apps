@@ -372,6 +372,10 @@ static void input_navigation_close(void) {
  navigation=NULL;navigation_pending=0;
 }
 #endif
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+static bool settings_atomic_busy(void);
+static bool settings_atomic_finish(void);
+#endif
 static void input_service(void) {
  if(!canvas_progress())return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -387,7 +391,11 @@ static void input_service(void) {
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
- if(!alarm_modal) {
+ if(!alarm_modal
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    && !settings_atomic_busy()
+#endif
+ ) {
   bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
       next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
@@ -695,7 +703,11 @@ static void present(bool full) {
                                                    RISC_DISPLAY_QUEUE_FIFO, 0};
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
-  if(!alarm_modal) {
+  if(!alarm_modal
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    && !settings_atomic_busy()
+#endif
+ ) {
     alarm_pixels_valid=false;
     for(unsigned y=0;y<info.height;y++)memcpy(alarm_pixels+(size_t)y*info.width,
       (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2);
@@ -907,16 +919,26 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   }
 #endif
 #ifdef PORTABLE_LOW_BATTERY
+  #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_busy())
+#endif
   if(!low_battery_poll()){failed=true;return false;}
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
+  #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_busy())
+#endif
   if(foreground_frame_ready()&&!contexts_tick()){failed=true;return false;}
 #endif
 #ifdef PORTABLE_AUDIO_CONTINUOUS_CAPTURE
   portable_audio_capture_resume();
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-  if(!failed && portable_idle_ms() && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
+  if(!failed &&
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+     !settings_atomic_busy() &&
+#endif
+     portable_idle_ms() && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
 #ifdef PORTABLE_TAP_SETTINGS
      !settings_motion_active &&
 #endif
@@ -933,6 +955,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
+  #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_busy())
+#endif
   if(!quick_foreground(&quick_consumed))return false;
   if(quick_consumed){
 #ifdef PORTABLE_TAP_SETTINGS
@@ -1058,6 +1083,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
   returning|=!!(out->buttons&T5_APP_BUTTON_BACK);
 #endif
   if(ok && returning
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+     && !settings_atomic_busy()
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
      && !quick_launch_pending
 #endif
@@ -1200,7 +1228,17 @@ static int32_t prev(int32_t i, uint32_t n) {
   return n ? (i > 0 ? i - 1 : (int32_t)n - 1) : 0;
 }
 #ifdef PORTABLE_SETTINGS_APP
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#define native_custody_retained app_invocation_retained()
+#define portable_adapter_retain optional_services_retain
+#endif
 #include "settings.inc"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#undef native_custody_retained
+#undef portable_adapter_retain
+static bool settings_atomic_busy(void){return settings_atomic_owned();}
+static bool settings_atomic_finish(void){return settings_atomic_close();}
+#endif
 #endif
 static const t5_app_api_v1 app = {.abi_version = 1,
                                   .struct_size = sizeof(app),
@@ -1398,6 +1436,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
   if(app_invocation_retained())return;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_finish()){optional_services_retain();return;}
+#endif
 #ifdef PORTABLE_ASYNC_RGB565
   if(canvas_retained)return;
 #endif

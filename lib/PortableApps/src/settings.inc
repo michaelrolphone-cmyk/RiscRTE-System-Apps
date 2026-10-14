@@ -13,6 +13,9 @@ static const char *editor_message = "";
 static unsigned editor_field;
 static risc_runtime_capability_v1 settings_grant;
 static const risc_key_value_v1 *settings_store;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#include "settings_atomic.inc"
+#endif
 static unsigned time_format_mode, time_format_choice;
 static int time_format_status;
 static const char *time_format_message;
@@ -223,6 +226,17 @@ static void editor_step(bool forward) {
 }
 static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
 #include "settings_view.inc"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#include "settings_atomic_save.inc"
+#ifdef PORTABLE_TAP_SETTINGS
+static bool settings_atomic_tap(const portable_tap_settings *value,const char **message) {
+ if(!portable_tap_settings_valid(value)){*message="Invalid tap setting";return false;}
+ uint8_t bytes[8]={0x57,1,value->enabled,value->bma423,value->bma456h,value->measured,0,0};
+ uint16_t crc=portable_tap_checksum(bytes);bytes[6]=(uint8_t)crc;bytes[7]=(uint8_t)(crc>>8);
+ return settings_atomic_save(PORTABLE_TAP_KEY,bytes,sizeof(bytes),message);
+}
+#endif
+#endif
 #ifdef PORTABLE_TAP_SETTINGS
 #include "tap_settings_controller.inc"
 #endif
@@ -294,11 +308,19 @@ static bool editor_try_save(void) {
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
   if(category || index>=SETTINGS_ROW_COUNT)return T5_APP_SETTING_ERROR;
   #ifdef PORTABLE_TAP_SETTINGS
-  if(index==SETTINGS_TAP_ROW)return settings_tap_activate();
+  if(index==SETTINGS_TAP_ROW){
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!settings_atomic_begin(PORTABLE_TAP_KEY))return T5_APP_SETTING_NO_CHANGE;
+#endif
+    return settings_tap_activate();
+  }
   #endif
 #ifdef PORTABLE_LOW_BATTERY
   if(index>=SETTINGS_TIMER_ROW) {
     timer_deep=index==SETTINGS_TIMER_ROW+1u;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!settings_atomic_begin(timer_deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY))return T5_APP_SETTING_NO_CHANGE;
+#endif
     int loaded=portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
     timer_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":loaded==PORTABLE_SLEEP_INVALID?"Invalid: default shown":"";
     sv_switch(SV_TIMER);bool armed=false;t5_app_input_t input;uint8_t result=T5_APP_SETTING_NO_CHANGE;
@@ -318,12 +340,20 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
             (timer_choice>=3600000u-step?3600000u:timer_choice+step);
       }
       if(save) {
-        if(portable_sleep_timer_save(settings_store,timer_deep,timer_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+            settings_atomic_timer(timer_deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY,timer_choice,&timer_message)
+#else
+            portable_sleep_timer_save(settings_store,timer_deep,timer_choice)
+#endif
+          ) {
           if(!pqa_session_load(&quick,rt)){failed=true;break;}
           result=T5_APP_SETTING_UPDATED;break;
         }
         (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         timer_message="Save unconfirmed - retry";
+#endif
       }
       settings_view_redraw();
     }
@@ -332,6 +362,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   }
 #endif
   if(index==2) {
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!settings_atomic_begin(PORTABLE_TIME_FORMAT_KEY))return T5_APP_SETTING_NO_CHANGE;
+#endif
     settings_time_format_load();time_format_choice=time_format_mode;
     time_format_message=time_format_status==PORTABLE_TIME_FORMAT_UNAVAILABLE?"Storage unavailable":
                         time_format_status==PORTABLE_TIME_FORMAT_INVALID?"Invalid: 12-hour default":"";
@@ -347,12 +380,20 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,76,184,32))time_format_choice=PORTABLE_TIME_FORMAT_12;
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,124,184,32))time_format_choice=PORTABLE_TIME_FORMAT_24;
       if(save) {
-        if(portable_time_format_save(settings_store,time_format_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+            settings_atomic_choice(PORTABLE_TIME_FORMAT_KEY,0x54,time_format_choice,2,&time_format_message)
+#else
+            portable_time_format_save(settings_store,time_format_choice)
+#endif
+          ) {
           time_format_mode=time_format_choice;time_format_status=PORTABLE_TIME_FORMAT_LOADED;
           result=T5_APP_SETTING_UPDATED;break;
         }
         time_format_choice=time_format_mode;
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         time_format_message="Save unconfirmed - retry";
+#endif
       }
       settings_view_redraw();
     }
@@ -361,6 +402,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   }
 #ifdef PORTABLE_SLEEP_SETTINGS
   if(index==4) {
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!settings_atomic_begin(PORTABLE_SLEEP_KEY))return T5_APP_SETTING_NO_CHANGE;
+#endif
     int loaded=portable_sleep_load(settings_store,&sleep_choice);
     sleep_message=loaded==PORTABLE_SLEEP_UNAVAILABLE?"Storage unavailable":
                   loaded==PORTABLE_SLEEP_INVALID?"Invalid: Hybrid default":"";
@@ -377,11 +421,19 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,104,184,30))sleep_choice=PORTABLE_SLEEP_DEEP;
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,142,184,30))sleep_choice=PORTABLE_SLEEP_HYBRID;
       if(save) {
-        if(portable_sleep_save(settings_store,sleep_choice)) {result=T5_APP_SETTING_UPDATED;break;}
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+            settings_atomic_choice(PORTABLE_SLEEP_KEY,0x53,sleep_choice,3,&sleep_message)
+#else
+            portable_sleep_save(settings_store,sleep_choice)
+#endif
+          ) {result=T5_APP_SETTING_UPDATED;break;}
         /* A failed commit may or may not have persisted. Re-read rather than
          * claim the old mode or display a false Saved confirmation. */
         (void)portable_sleep_load(settings_store,&sleep_choice);
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         sleep_message="Save unconfirmed - retry";
+#endif
       }
       settings_view_redraw();
     }
@@ -391,6 +443,10 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 #endif
 #ifdef PORTABLE_ALARM_SETTINGS
   if(index==SETTINGS_ALERT_ROW) {
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(!settings_atomic_begin(PORTABLE_ALERT_KEY))return T5_APP_SETTING_NO_CHANGE;
+#endif
+
     if(!alert_unconfirmed) {
       int loaded=portable_alert_load(alert_store,&alert_choice);
       alert_message=loaded==PORTABLE_ALERT_UNAVAILABLE?"Storage unavailable":
@@ -414,7 +470,13 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(save) {
         if(alert_choice<PORTABLE_ALERT_VIBRATE || alert_choice>PORTABLE_ALERT_BOTH)
           alert_message="Choose an alert mode";
-        else if(portable_alert_save(alert_store,alert_choice)) {
+        else if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+            settings_atomic_save(PORTABLE_ALERT_KEY,(uint8_t[]){(uint8_t)alert_choice},1,&alert_message)
+#else
+            portable_alert_save(alert_store,alert_choice)
+#endif
+          ) {
           alert_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
         } else {
           /* Keep the selected draft for explicit retry. Neither an IO return
@@ -503,9 +565,13 @@ static bool settings_open(void) {
   sv_active=false;sv_need_neutral=true;sv_page=SV_ROOT;
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_open())return false;
+#else
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {
     if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
   }
+#endif
   settings_time_format_load();
 #ifdef PORTABLE_TAP_SETTINGS
   tap_message="";tap_unconfirmed=tap_cleanup_pending=false;tap_motion=NULL;settings_motion_active=false;

@@ -163,7 +163,9 @@ static bool release(risc_runtime_capability_v1 *grant) {
   --grants;grant->api=NULL;return true;
 }
 static const risc_runtime_api_v1 runtime_api={.api_version=1,.struct_size=sizeof(runtime_api),.health=health,.yield_ms=yield_ms,.diagnostic=diagnostic,.request_launch=request_launch,.acquire=acquire,.release=release};
+#ifndef PORTABLE_SETTINGS_RUNTIME_OVERRIDE
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version) {return version==1?&runtime_api:NULL;}
+#endif
 static void helper_checks(void) {
   unsigned mode=9;
   assert(portable_alert_load(NULL,&mode)==PORTABLE_ALERT_UNAVAILABLE && mode==0);

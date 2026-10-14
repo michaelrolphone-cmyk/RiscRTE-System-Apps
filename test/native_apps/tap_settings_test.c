@@ -10,6 +10,9 @@ static unsigned sleep_calls;
 static unsigned test_case,profile,expected_value,motion_grants,motion_releases,begins,ends,observations,tap_writes;
 static bool sensor_live,fail_restore,record_exists,write_error,verify_error,io_error;
 static uint8_t tap_record[8];
+#ifdef TAP_ATOMIC_FIXTURE
+static bool tap_atomic_active,tap_atomic_publishing;
+#endif
 int portable_app_sleep(const risc_runtime_api_v1 *runtime,const risc_display_output_api_v1 *display_api,const risc_battery_gauge_api_v1 *gauge_api){
  (void)runtime;(void)display_api;(void)gauge_api;assert(!sensor_live);sleep_calls++;return 0;
 }
@@ -23,7 +26,11 @@ static int32_t tap_get(void*c,const char*key,void*data,uint32_t cap,uint32_t*siz
  *size=8;memcpy(data,tap_record,8);return RISC_KEY_VALUE_OK;
 }
 static int32_t tap_put(void*c,const char*key,const void*data,uint32_t size){
- (void)c;assert(!strcmp(key,PORTABLE_TAP_KEY)&&size==8);tap_writes++;
+ (void)c;assert(!strcmp(key,PORTABLE_TAP_KEY)&&size==8);
+#ifdef TAP_ATOMIC_FIXTURE
+ assert(!tap_atomic_active||tap_atomic_publishing);
+#endif
+ tap_writes++;
  if(write_error)return RISC_KEY_VALUE_IO;
  memcpy(tap_record,data,8);record_exists=true;return RISC_KEY_VALUE_OK;
 }
@@ -59,7 +66,7 @@ static bool test_release(risc_runtime_capability_v1*g){
  assert(!sensor_live);motion_releases++;g->api=NULL;return true;
 }
 static bool test_snapshot(void*c,risc_touch_snapshot_v1*out){
- (void)c;memset(out,0,sizeof(*out));out->width=out->height=240;
+ (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;
  if(gesture_page!=sv_page || gesture_phase!=tap_calibration.phase){gesture_page=sv_page;gesture_phase=tap_calibration.phase;gesture_at=polls;gesture_step=0;}
  unsigned elapsed=polls-gesture_at,x=0,y=0;bool down=false;
  if(sv_page==SV_TAP){
@@ -76,9 +83,13 @@ static bool test_snapshot(void*c,risc_touch_snapshot_v1*out){
   if(tap_calibration.phase==TAP_CAL_READY && elapsed==3){x=170;y=210;down=true;}
  }
  if(down){
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(y>=207)y+=(SETTINGS_FIXTURE_HEIGHT*240u+SETTINGS_FIXTURE_WIDTH-1u)/SETTINGS_FIXTURE_WIDTH-240u;
+  x=(x*SETTINGS_FIXTURE_WIDTH+239u)/240u;y=(y*SETTINGS_FIXTURE_WIDTH+239u)/240u;
+#endif
   out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=x,.y=y};
 #if PORTABLE_TOUCH_ROTATION == 180
-  out->contacts[0].x=239-x;out->contacts[0].y=239-y;
+  out->contacts[0].x=SETTINGS_FIXTURE_WIDTH-1-x;out->contacts[0].y=SETTINGS_FIXTURE_HEIGHT-1-y;
 #endif
  }
  return true;
@@ -93,7 +104,7 @@ static bool evidence_submit(void*c,risc_display_frame_v1 frame,const risc_displa
  }
  return ok;
 }
-int main(int argc,char**argv){
+int tap_fixture_main(int argc,char**argv){
  assert(argc==3);test_case=(unsigned)atoi(argv[1]);profile=(unsigned)atoi(argv[2]);assert(test_case<=19 && (profile==1 || profile==2));
  expected_value=profile==1?5:13;scenario=0;kv_api.get=tap_get;kv_api.put=tap_put;
  assert(app_module_init()==0);
@@ -106,17 +117,28 @@ int main(int argc,char**argv){
  if(test_case==12)verify_error=true;
  if(test_case==15){portable_tap_settings p=portable_tap_defaults();p.enabled=0;assert(portable_tap_save(&kv_api,&p));tap_writes=0;}
  gesture_page=gesture_phase=999;settings_render(0,SETTINGS_TAP_ROW+1);
+#ifdef TAP_ATOMIC_FIXTURE
+ tap_atomic_active=true;
+#endif
  uint8_t result=settings_activate(0,SETTINGS_TAP_ROW);
  assert((sv_page==SV_ROOT || ((test_case==16 || test_case==19) && failed)) && !settings_motion_active && !sensor_live && !tap_cleanup_pending);
  bool saved=test_case==0 || test_case==2 || test_case==15 || test_case==17;
+#ifdef TAP_ATOMIC_FIXTURE
+ saved|=test_case==12; /* Terminal atomic receipt proves the commit, independent of a later legacy read failure. */
+ if(test_case==12)assert(portable_tap_load(&kv_api,&(portable_tap_settings){0})==PORTABLE_TAP_UNAVAILABLE);
+#endif
  assert(result==(saved?T5_APP_SETTING_UPDATED:T5_APP_SETTING_NO_CHANGE));
  assert(tap_writes==((saved || test_case==11 || test_case==12)?1u:0u));
  assert(motion_grants==motion_releases);
- if(saved){portable_tap_settings p;assert(portable_tap_load(&kv_api,&p)==PORTABLE_TAP_LOADED);
+ if(saved && test_case!=12){portable_tap_settings p;assert(portable_tap_load(&kv_api,&p)==PORTABLE_TAP_LOADED);
   if(test_case==0 || test_case==17)assert(!p.enabled && !motion_grants && p.bma423==3 && p.bma456h==12);
   else {assert((profile==1?p.bma423:p.bma456h)==expected_value && p.measured==(1u<<(profile-1)));assert(p.enabled==(test_case!=15));assert(begins==3);}
  }
  if(test_case==1)assert(!record_exists && !motion_grants);
  assert(!rtc_writes && !kv_writes && !sleep_calls);app_module_fini();assert(!grants && !subscriptions);
- printf("Tap Settings production UI case %u, profile %u PASS\n",test_case,profile);
+ printf("Tap Settings production UI case %u, profile %u PASS\n",test_case,profile);return 0;
 }
+
+#ifndef TAP_ATOMIC_FIXTURE
+int main(int argc,char**argv){return tap_fixture_main(argc,argv);}
+#endif

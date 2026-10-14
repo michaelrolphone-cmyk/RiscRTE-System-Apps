@@ -1,0 +1,9 @@
+# T054 deployed RGB Settings source checkpoint
+
+Preserves the actual Settings 1.3.24 source b580e32d5821d4a80e80c896bf7c085214f2b590 and its native-height layout, RTC/alarm clock control and tap calibration. The existing product recipe reproduces the recorded linked ELF SHA-256 4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385. Every allocated section, address, flag, alignment and byte matches the deployed compact ELF 932384fe0c7432e073b999e2220876204254bc8b72466da4af19dfa655c26202; current compaction differs only in non-allocated packaging metadata.
+
+Explicit modal capture and Save use the qualified T054 USER transport from System ce77aa646d06b430d78ee192b823b240f6d57d30. No legacy put is upgraded. The read-only Settings view fences legacy writes. Tap calibration adds its exact eight-byte tap_wake record only after sensor restoration; stale/busy/error outcomes never recapture or replay as a new USER edit. Pending saves suppress automatic settings work, nested Quick execution, native sleep and launch; cancellation input remains live. Finalization closes atomic custody before other teardown.
+
+Validation: 12 ordinary Settings controller executions (normal plus ASan/UBSan) and 160 actual tap controller/calibration ASan/UBSan cases (both sensor profiles, 240x240 and 410x502, rotations 0/180). The production Settings recipe compiles with explicit atomic saves selected. A successful copied receipt remains authoritative when a subsequent legacy read fails. The tap fixture asserts that selected UI writes only arrive through atomic publication. No hardware qualification.
+
+This is a source checkpoint. Quick and automatic writers in this RGB source lineage still require integration; product namespace activation and firmware release are not yet selected. Extended timer-controller and full-cohort tests remain required before release.
