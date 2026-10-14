@@ -75,6 +75,8 @@ def record(args,root,record,manifest,defines):
         expected='1.5.0'
     if getattr(args,'catalog_url',None) and getattr(args,'product',None)=='x4' and manifest['id'] in ('ota_update','app_store'):
         expected='1.2.15' if manifest['id']=='ota_update' else '1.5.1' if getattr(args,'installed_catalog',False) else '1.4.1'
+    if manifest['id']=='app_store' and getattr(args,'native_package_feed',False):
+        expected='1.6.0'
     if manifest['version']!=expected or manifest['requires'].count(CAPABILITY)!=1:
         raise ValueError('Telemetry manifest/version differs from selected builder')
     if not set(DEFINES)<=set(defines) or '-DPORTABLE_NATIVE_CUSTODY_FENCE' not in defines or '-DALARM_SERVICE_TAGGED_V2' not in defines:

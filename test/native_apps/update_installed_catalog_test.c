@@ -11,7 +11,8 @@ static const software_update_v1 *us;
 #include "../../Apps/update_installed_catalog.inc"
 static unsigned refreshes,begins,releases,release_rows=1;
 static bool fail_release;
-static bool status(void*c,software_update_status_v1*out){(void)c;*out=(software_update_status_v1){.struct_size=sizeof(*out),.state=SOFTWARE_UPDATE_LIST,.count=release_rows};return true;}
+static uint32_t release_state=SOFTWARE_UPDATE_LIST;
+static bool status(void*c,software_update_status_v1*out){(void)c;*out=(software_update_status_v1){.struct_size=sizeof(*out),.state=release_state,.count=release_rows};return true;}
 static bool get(void*c,uint32_t i,software_update_row_v1*out){(void)c;assert(i<release_rows);*out=(software_update_row_v1){.struct_size=sizeof(*out),.availability=SOFTWARE_UPDATE_AVAILABLE};strcpy(out->id,"release");return true;}
 static bool begin(void*c,uint32_t i,uint64_t utc){(void)c;assert(i<release_rows&&utc==1);++begins;return true;}
 static bool yes(void*c){(void)c;return true;}

@@ -71,7 +71,9 @@ static bool inventory_status(void*c,software_update_status_v1*out){
  if(extra>INSTALLED_APPS_MAX)return false;
  unsigned staged=installed_inventory&&installed_inventory->staged_count?installed_inventory->staged_count(installed_inventory->context):0;
  if(staged>INSTALLED_APPS_MAX)return false;extra+=staged;
- if(inventory_feed)extra+=inventory_feed->count(inventory_feed->base.base.context);
+ if(inventory_feed){extra+=inventory_feed->count(inventory_feed->base.base.context);
+  if(!out->resources_open&&(out->state==SOFTWARE_UPDATE_IDLE||out->state==SOFTWARE_UPDATE_LIST||out->state==SOFTWARE_UPDATE_ERROR)){out->state=SOFTWARE_UPDATE_LIST;out->error=0;out->done=out->total=0;}
+ }
  unsigned room=SOFTWARE_UPDATE_ROWS_MAX-out->count;
  out->count+=extra<room?extra:room;
 #ifdef PORTABLE_APP_STORE_ACTIONS
@@ -108,6 +110,7 @@ static bool inventory_refresh(void*c,uint64_t utc){(void)c;
 #ifdef PORTABLE_APP_STORE_ACTIONS
  inventory_result=NULL;
 #endif
+ if(inventory_feed_checking)return false;
  if(inventory_feed){int rc=inventory_feed->refresh(inventory_feed->base.base.context,utc);inventory_feed_checking=rc==INSTALLED_APPS_OK;return inventory_feed_checking;}
  return release_service->refresh(release_service->context,utc);}
 static bool inventory_step(void*c){(void)c;
@@ -125,7 +128,11 @@ static bool inventory_step(void*c){(void)c;
 #endif
  return release_service->step(release_service->context);
 }
-static bool inventory_cancel(void*c){(void)c;return release_service->cancel(release_service->context);}
+static bool inventory_cancel(void*c){(void)c;
+#ifdef PORTABLE_APP_STORE_ACTIONS
+ if(!inventory_drain())return false;
+#endif
+ return release_service->cancel(release_service->context);}
 static bool inventory_activate(void*c){(void)c;return release_service->activate(release_service->context);}
 static bool inventory_restart(void*c){(void)c;return release_service->restart(release_service->context);}
 static const software_update_v1 inventory_view={1,sizeof(inventory_view),NULL,inventory_refresh,inventory_step,inventory_status,inventory_get,inventory_begin,inventory_cancel,inventory_activate,inventory_restart};
