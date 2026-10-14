@@ -124,11 +124,25 @@ static bool nt_monotonic(uint32_t *out) {*out=ticks;return !full_run||polls<200;
 static void nt_yield(uint32_t n) {ticks+=n?n:1;}
 static bool nt_diagnostic(const char *s) {(void)s;return true;}
 static bool nt_launch(const char *name) {assert(strlen(name)<sizeof(launched));strcpy(launched,name);++launches;return true;}
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+#include "InstalledAppsV1.h"
+static unsigned discovery_refreshes,discovery_steps,discovery_cancels;
+static int32_t discovery_refresh(void*p){(void)p;assert(presents);discovery_refreshes++;return 0;}
+static uint32_t discovery_count(void*p){(void)p;return 0;}
+static bool discovery_get(void*p,uint32_t i,installed_app_v1*out){(void)p;(void)i;(void)out;return false;}
+static uint32_t discovery_generation(void*p){(void)p;return 1;}
+static int32_t discovery_step(void*p,const risc_storage_volume_api_v1*v){(void)p;assert(presents&&!v);discovery_steps++;return 0;}
+static int32_t discovery_cancel(void*p){(void)p;discovery_cancels++;return 0;}
+static const installed_apps_v1 discovery_api={.api_version=1,.struct_size=sizeof(discovery_api),.refresh=discovery_refresh,.count=discovery_count,.get=discovery_get,.generation=discovery_generation,.step=discovery_step,.cancel=discovery_cancel};
+#endif
 static bool nt_acquire(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *out) {
  assert(out->struct_size==sizeof(*out));
  if(!strcmp(name,RISC_APP_CATALOG_CAPABILITY)){assert(version==1&&!id);out->api=&fixture_catalog_api;}
  else if(!strcmp(name,"display.output")){assert(version==1&&!id);out->api=&nt_display;}
  else if(!strcmp(name,"input.touch.raw")){assert(version==1&&!id);out->api=&nt_touch;}
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+ else if(!strcmp(name,INSTALLED_APPS_CAPABILITY)){assert(version==1&&!id);out->api=&discovery_api;}
+#endif
  else return false;
  ++grants;return true;
 }
@@ -304,6 +318,10 @@ int main(int argc,char **argv) {
  assert(fw>=160&&fw<=1024&&fh>=fw&&fh<=1024);pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
  for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
  if(expect_presentation){controller_tests();application_tests();}else fallback_tests();
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+ assert(discovery_refreshes&&discovery_steps&&discovery_cancels);
+ puts("Package discovery: first-frame-before-scan, missing SD/internal path and clean launch/return teardown PASS");
+#endif
  free(guarded);
  printf("Springboard %ux%u %s: %s; exact provider metadata, transition policy and guards passed\n",fw,fh,metadata_profile,
   expect_presentation?"original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry":"known-ineligible metadata keeps generic grid");

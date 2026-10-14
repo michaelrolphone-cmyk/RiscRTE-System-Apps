@@ -19,9 +19,11 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 OUT = ROOT / "build/watch-native-springboard"
 parser = argparse.ArgumentParser()
 parser.add_argument("recipe", nargs="?", type=pathlib.Path, default=ROOT / "test/native_apps/fixtures/watch_springboard_features.json")
+parser.add_argument("--package-discovery",action="store_true")
 args = parser.parse_args()
 command = json.loads(args.recipe.read_text())["command"]
 features = [part for part in command if part.startswith("-D")]
+if args.package_discovery:features += ["-DPORTABLE_PACKAGE_DISCOVERY","-DPORTABLE_PACKAGE_VOLUME=12"]
 forced = [str(pathlib.Path(command[i + 1]) if pathlib.Path(command[i + 1]).is_absolute() else ROOT / command[i + 1]) for i, part in enumerate(command) if part == "-include"]
 required = {"PORTABLE_ALARM_CLIENT", "PORTABLE_BLE_BROADCAST", "PORTABLE_CONTEXTS_CLIENT",
             "PORTABLE_QUICK_ACTIONS", "PORTABLE_QUICK_RADIOS", "PORTABLE_LOW_BATTERY",
@@ -43,7 +45,7 @@ for sanitized in (False, True):
                     str(ROOT / "test/native_apps/watch_native_springboard_test.c"),
                     str(ROOT / "test/native_apps/fixtures/watch_springboard_catalog_23.c"),
                     *[str(ROOT / "lib/PortableApps/src" / name) for name in
-                      ("adapter.c", "quick_actions.c", "quick_session.c", "quick_render.c", "quick_radios.c")],
+                      ("adapter.c", "quick_actions.c", "quick_session.c", "quick_render.c", "quick_radios.c")+( ("PortableInstalledCatalog.c",) if args.package_discovery else ())],
                     "-o", str(binary)], check=True)
     for width, height in ((240, 240), (410, 502)):
         for provider in ("sync", "async"):

@@ -162,13 +162,21 @@ static int canvas_sleep_barrier(void) {
  (void)canvas_retain();return -1;
 }
 #endif
-static bool canvas_exit_barrier(void) {
+static bool canvas_catalog_barrier(void) {
  if(canvas_drain())return true;
  if(canvas_token || canvas_uncertain)return canvas_retain();
  return false;
 }
 #else
-static inline bool canvas_exit_barrier(void) {return !failed;}
+static inline bool canvas_catalog_barrier(void) {return !failed;}
+#endif
+static bool canvas_exit_barrier(void) {
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+ if(!package_discovery_close())return false;
+#endif
+ return canvas_catalog_barrier();
+}
+#ifndef PORTABLE_ASYNC_RGB565
 static bool canvas_progress(void) {return !failed;}
 #endif
 #ifdef PORTABLE_ALARM_CLIENT

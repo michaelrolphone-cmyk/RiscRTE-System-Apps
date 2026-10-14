@@ -1,0 +1,12 @@
+[
+  {
+    "device": "wave",
+    "bytes": 167524,
+    "sha256": "8705f255b82db21b738920ecc1937596f126ed3e2307cb2c39e4d96144a2c457"
+  },
+  {
+    "device": "watch",
+    "bytes": 152548,
+    "sha256": "e841de67c3047aae30b32f8690a0f8b217778187d4f6e5c1de7e4ad84df02a91"
+  }
+]

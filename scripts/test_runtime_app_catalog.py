@@ -49,13 +49,14 @@ with tempfile.TemporaryDirectory(prefix='runtime-app-catalog-') as directory:
   san=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if sanitizer else []
   binary=temp/'shared'
   subprocess.run([CC,*common,*san,*includes,str(ROOT/'test/native_apps/runtime_app_catalog_test.c'),
-   str(ROOT/'lib/PortableApps/src/adapter.c'),str(fixture),'-o',str(binary)],check=True)
+   str(ROOT/'lib/PortableApps/src/adapter.c'),str(fixture),'-Wl,--wrap=malloc','-o',str(binary)],check=True)
   shared_hash=hashlib.sha256(binary.read_bytes()).hexdigest()
   for width,height in ((240,240),(410,502)):
+   for mode in ('delayed-refresh','delayed-launch'):run(binary,[mode,files[2],width,height],f'{mode}-{width}x{height}-san{int(sanitizer)}')
    for inv in files:run(binary,['inventory',inv,width,height],f'{inv.stem}-{width}x{height}-san{int(sanitizer)}')
    run(binary,['controller',files[2],width,height],f'nova-stale-controller-{width}x{height}-san{int(sanitizer)}')
    for mode in range(3):run(binary,['startup-recovery',files[2],width,height,mode],f'nova-startup-recovery-{mode}-{width}x{height}-san{int(sanitizer)}')
-   for fault in range(1,27):run(binary,['inventory',files[3],width,height,fault],f'fault{fault}-{width}x{height}-san{int(sanitizer)}')
+   for fault in range(1,28):run(binary,['inventory',files[3],width,height,fault],f'fault{fault}-{width}x{height}-san{int(sanitizer)}')
   assert hashlib.sha256(binary.read_bytes()).hexdigest()==shared_hash
   legacy=temp/'legacy';legacy.mkdir(exist_ok=True)
   (legacy/'adapter.c').write_bytes(subprocess.check_output(['git','show',BASELINE+':lib/PortableApps/src/adapter.c'],cwd=ROOT))

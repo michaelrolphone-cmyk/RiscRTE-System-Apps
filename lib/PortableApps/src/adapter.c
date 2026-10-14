@@ -75,8 +75,10 @@ static bool catalog_checked(bool result) {
   if(installed_catalog.uncertain){optional_services_retain();return false;}
   return result;
 }
+static bool canvas_catalog_barrier(void);
 static bool refresh(void) {
   if(!rt || failed || app_invocation_retained())return false;
+  if(!canvas_catalog_barrier() || failed || app_invocation_retained())return false;
   bool result=catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
   if(!result && !app_invocation_retained())rt->diagnostic(installed_catalog.api?
       "APP_CATALOG refresh=unavailable stage=publication":"APP_CATALOG refresh=unavailable stage=acquire-or-interface");
@@ -486,7 +488,11 @@ static void handoff_finish(void) {
  free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
 }
 #endif
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+static bool package_discovery_close(void);
+#endif
 #include "canvas_async.inc"
+#include "package_discovery.inc"
 static int32_t width(void) { return info.width; }
 static int32_t height(void) { return info.height; }
 static void fill(int x, int y, int w, int h, uint16_t color) {
@@ -673,6 +679,9 @@ static void present(bool full) {
   (void)full;
   if (failed || !surface.frame)
     return;
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+  package_frame_submitted=true;
+#endif
   risc_display_present_token_v1 token = 0;
   risc_display_rect_v1 damage={0};size_t damage_count=0;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -773,6 +782,9 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+  if(!package_discovery_close())return false;
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   if(!rgb_atomic_finish()){optional_services_retain();return false;}
 #endif
@@ -1116,6 +1128,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
   /* Native cancellation wins before modals and never queues a return app.
    * It remains latched in Runtime through the unchanged app/fini cleanup. */
   if(native_exit_input(out))return !failed;
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+  if(!package_discovery_step())return false;
+#endif
   bool ok=poll_input(out,wait);
 #ifdef PORTABLE_ALARM_CLIENT
   if(!ok){(void)canvas_exit_barrier();return alarm_failure();}
@@ -1186,6 +1201,7 @@ static bool launch(uint32_t i) {
   /* Guards and presentation drain may yield and replace the publication. Pin
    * a copied identity and revalidate after them, immediately before launch. */
   portable_app_catalog_launch destination;
+  if(!canvas_catalog_barrier() || failed || app_invocation_retained())return false;
   if(!catalog_checked(portable_catalog_launch_prepare(&installed_catalog,i,&destination)) ||
      !app_allows_launch(destination.route) || !canvas_exit_barrier() || failed || app_invocation_retained())return false;
   return catalog_checked(portable_catalog_launch_valid(&installed_catalog,&destination)) &&
@@ -1355,6 +1371,9 @@ static int initialize(void) {
   bg.struct_size = sizeof(bg);
   failed = false;
   installed_catalog=(portable_app_catalog){0};
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+  package_discovery=(portable_installed_catalog){0};package_discovery_started=package_frame_submitted=false;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
   alarm_error_seen=alarm_failed_cleaned=false;memset(&alarms,0,sizeof(alarms));
@@ -1501,6 +1520,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #ifdef PORTABLE_ASYNC_RGB565
   (void)canvas_exit_barrier();
   if(canvas_retained)return;
+#endif
+#ifdef PORTABLE_PACKAGE_DISCOVERY
+  if(!package_discovery_close())return;
 #endif
   if(!catalog_checked(portable_catalog_close(&installed_catalog,rt)))return;
 #ifdef PORTABLE_CONTEXTS_CLIENT

@@ -3,6 +3,7 @@
 #include "RiscAppCatalogV1.h"
 #include "T5AppApi.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 /* One native publication, copied without granting update or filesystem access.
  * Only rows obtained from the owner are visible. Failed refreshes clear stale
@@ -19,6 +20,17 @@ typedef struct {
     uint32_t count;
     bool initialized, uncertain;
 } portable_app_catalog;
+/* Emit only with established custody. CONTEXT/RETAINED must not cause another
+ * runtime callback; those cases keep the existing terminal retention fence. */
+static inline void portable_catalog_diagnostic(const portable_app_catalog *c,const risc_runtime_api_v1 *rt,
+        const char *stage,int32_t result,uint32_t index,size_t bytes,uint64_t expected,uint64_t actual) {
+    if(c->uncertain || !rt->diagnostic)return;
+    char line[224];
+    snprintf(line,sizeof(line),"APP_CATALOG stage=%s result=%ld index=%lu bytes=%lu expected=%llu actual=%llu",
+        stage,(long)result,(unsigned long)index,(unsigned long)bytes,
+        (unsigned long long)expected,(unsigned long long)actual);
+    rt->diagnostic(line);
+}
 static inline bool portable_catalog_result(portable_app_catalog *c,int32_t result) {
     if(result==RISC_APP_CATALOG_CONTEXT || result==RISC_APP_CATALOG_RETAINED)c->uncertain=true;
     return result==RISC_APP_CATALOG_OK;
@@ -75,9 +87,12 @@ static inline bool portable_catalog_open(portable_app_catalog *c,const risc_runt
     if(c->api)return true;
     c->grant=(risc_runtime_capability_v1){.struct_size=sizeof(c->grant)};
     bool unavailable=false;
-    if(!portable_optional_acquire(rt,RISC_APP_CATALOG_CAPABILITY,&c->grant,&unavailable,&c->uncertain))return false;
+    if(!portable_optional_acquire(rt,RISC_APP_CATALOG_CAPABILITY,&c->grant,&unavailable,&c->uncertain)) {
+        portable_catalog_diagnostic(c,rt,"acquire",0,0,0,0,unavailable);return false;
+    }
     const risc_app_catalog_v1 *api=c->grant.api;
     if(!api || api->api_version!=1 || api->struct_size<sizeof(*api) || !api->snapshot || !api->get) {
+        portable_catalog_diagnostic(c,rt,"interface",-1,0,0,0,0);
         (void)portable_catalog_close(c,rt);return false;
     }
     c->api=api;return true;
@@ -87,22 +102,36 @@ static inline bool portable_catalog_refresh(portable_app_catalog *c,const risc_r
     c->initialized=true;
     if(!portable_catalog_open(c,rt)){c->initialized=true;portable_catalog_clear(c);return false;}
     risc_app_catalog_snapshot_v1 snapshot={.struct_size=sizeof(snapshot)};
-    if(!portable_catalog_result(c,c->api->snapshot(c->api->context,&snapshot)) ||
-       snapshot.struct_size<sizeof(snapshot) || !snapshot.generation || snapshot.count>RISC_APP_CATALOG_MAX)goto invalid;
+    int32_t result=c->api->snapshot(c->api->context,&snapshot);
+    if(!portable_catalog_result(c,result) || snapshot.struct_size<sizeof(snapshot) ||
+       !snapshot.generation || snapshot.count>RISC_APP_CATALOG_MAX) {
+        portable_catalog_diagnostic(c,rt,"snapshot",result,snapshot.count,snapshot.struct_size,0,snapshot.generation);goto invalid;
+    }
     if(snapshot.count) {
-        c->staging=malloc((size_t)snapshot.count*sizeof(*c->staging));if(!c->staging)goto invalid;
+        size_t bytes=(size_t)snapshot.count*sizeof(*c->staging);
+        c->staging=malloc(bytes);
+        if(!c->staging){portable_catalog_diagnostic(c,rt,"allocation-failed",-1,0,bytes,0,0);goto invalid;}
         memset(c->staging,0,(size_t)snapshot.count*sizeof(*c->staging));
         for(uint32_t i=0;i<snapshot.count;i++) {
             risc_app_catalog_entry_v1 entry={.struct_size=sizeof(entry)};
-            if(!portable_catalog_result(c,c->api->get(c->api->context,snapshot.generation,i,&entry)) ||
-               !portable_catalog_entry(&entry,&c->staging[i]))goto invalid;
+            result=c->api->get(c->api->context,snapshot.generation,i,&entry);
+            if(!portable_catalog_result(c,result) || !portable_catalog_entry(&entry,&c->staging[i])) {
+                portable_catalog_diagnostic(c,rt,"row",result,i,0,snapshot.generation,0);goto invalid;
+            }
             for(uint32_t j=0;j<i;j++)if(!strcmp(c->staging[j].manifest.file_name,c->staging[i].manifest.file_name) ||
-                !strcmp(c->staging[j].route,c->staging[i].route))goto invalid;
+                !strcmp(c->staging[j].route,c->staging[i].route)) {
+                portable_catalog_diagnostic(c,rt,"duplicate-row",-1,i,0,j,0);goto invalid;
+            }
         }
     }
     risc_app_catalog_snapshot_v1 after={.struct_size=sizeof(after)};
-    if(!portable_catalog_result(c,c->api->snapshot(c->api->context,&after)) || after.struct_size<sizeof(after) ||
-       after.generation!=snapshot.generation || after.count!=snapshot.count)goto invalid;
+    result=c->api->snapshot(c->api->context,&after);
+    if(!portable_catalog_result(c,result) || after.struct_size<sizeof(after)) {
+        portable_catalog_diagnostic(c,rt,"snapshot-after",result,after.count,after.struct_size,snapshot.generation,after.generation);goto invalid;
+    }
+    if(after.generation!=snapshot.generation || after.count!=snapshot.count) {
+        portable_catalog_diagnostic(c,rt,"generation-mismatch",result,after.count,snapshot.count,snapshot.generation,after.generation);goto invalid;
+    }
     free(c->entries);c->entries=c->staging;c->staging=NULL;c->count=snapshot.count;c->generation=snapshot.generation;
     return true;
 invalid:
