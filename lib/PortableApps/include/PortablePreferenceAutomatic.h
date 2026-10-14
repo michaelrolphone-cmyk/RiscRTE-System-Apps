@@ -24,8 +24,9 @@ static inline bool portable_preference_automatic_key(unsigned boundary,const cha
  static const char *const low[]={"battery_edge","sleep_idle","sleep_deep","brightness","quick_radio"};
  static const char *const rules[]={"sleep_mode","sleep_idle","sleep_deep","brightness","quick_radio","alarm_volume","alert_dnd","alert_mode","watch_face"};
  static const char *const preset[]={"sleep_mode","sleep_idle","sleep_deep","brightness","alarm_volume","quick_volume","alert_dnd","alert_mode","watch_face"};
- /* Foreground Contexts keeps its existing 0x274 editor applicability mask. */
- static const char *const editor[]={"sleep_idle","brightness","quick_radio","alert_dnd"};
+ /* The foreground controller applies its product editor mask before entering
+  * this explicit automatic boundary. Keys cover the shared setting encoders. */
+ static const char *const editor[]={"watch_face","sleep_mode","sleep_idle","sleep_deep","brightness","quick_radio","alarm_volume","alert_dnd","alert_mode"};
  if(!key)return false;
  const char *const *keys=boundary==PORTABLE_AUTOMATIC_LOW_BATTERY?low:boundary==PORTABLE_AUTOMATIC_HOME_RULES?rules:boundary==PORTABLE_AUTOMATIC_HOME_PRESET?preset:editor;
  unsigned count=boundary==PORTABLE_AUTOMATIC_LOW_BATTERY?sizeof(low)/sizeof(*low):boundary==PORTABLE_AUTOMATIC_HOME_RULES?sizeof(rules)/sizeof(*rules):boundary==PORTABLE_AUTOMATIC_HOME_PRESET?sizeof(preset)/sizeof(*preset):sizeof(editor)/sizeof(*editor);

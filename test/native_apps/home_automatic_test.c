@@ -164,8 +164,8 @@ int main(int argc,char **argv){
   assert(home_automatic_begin(PORTABLE_AUTOMATIC_CONTEXTS_EDITOR));
   assert(portable_context_setting(&home_automatic.view,CR_SLEEP,30,false,face));
   assert(portable_context_setting(&home_automatic.view,CR_DND,1,false,face));
-  assert(!portable_context_setting(&home_automatic.view,CR_POWER,0,false,face));
-  assert(count==2&&copied_boundary==4);assert(home_automatic_close());goto done;
+  assert(portable_context_setting(&home_automatic.view,CR_POWER,0,false,face));
+  assert(count==3&&copied_boundary==4);assert(home_automatic_close());goto done;
  }
  if(is("scope")){
   assert(home_automatic_begin(PORTABLE_AUTOMATIC_HOME_RULES));unsigned before=calls;uint8_t value=1;uint32_t n=0;

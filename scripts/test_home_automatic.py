@@ -3,8 +3,8 @@
 from pathlib import Path
 import argparse,hashlib,json,os,shutil,subprocess
 r=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',type=Path,required=True);p.add_argument('--sanitize',action='store_true');p.add_argument('--output',type=Path,default=r/'build/home-automatic');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
-inc=a.output/'include';receipt=json.loads((a.target/'build-evidence.json').read_text());shutil.copytree(receipt['paper_transition']['compiled_include_directory'],inc,dirs_exist_ok=True)
+p=argparse.ArgumentParser(description=__doc__);inputs=p.add_mutually_exclusive_group(required=True);inputs.add_argument('--target',type=Path);inputs.add_argument('--sdk',type=Path);p.add_argument('--sanitize',action='store_true');p.add_argument('--output',type=Path,default=r/'build/home-automatic');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+inc=a.output/'include';source_sdk=a.sdk if a.sdk else Path(json.loads((a.target/'build-evidence.json').read_text())['paper_transition']['compiled_include_directory']);shutil.copytree(source_sdk,inc,dirs_exist_ok=True)
 for header in (r/'lib/PortableApps/include').glob('*.h'):
  if not header.name.startswith(('Risc','AlarmService')):shutil.copyfile(header,inc/header.name)
 cases='source-conflict conflict preset-no-callback editor-origin scope same-controls rearm-failed edge-readback stale-after-edge cancel-busy normal off same-timers invalid-sample partial uncertain edge-failed missing wrong-namespace state-busy read-io stale submit-io busy dirty-submit collect-io bad-receipt release-failed dirty-acquire cancel cancel-race cancel-error preset preset-partial preset-low preset-mask preset-alert rules-order rules-partial rules-low rules-notify'.split()
