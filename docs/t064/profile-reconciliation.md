@@ -1,0 +1,7 @@
+# T063 source reproduction reconciled for cumulative T064
+
+The failure was a stale current-source fixture, not compiler nondeterminism. T063 changed the common adapter catalog diagnostics and Springboard retry paths without refreshing t054-current.json. Settings therefore changed through its shared adapter even though settings.c was unchanged.
+
+The exact reported Settings hash was reproduced locally with the pinned GCC 8.4 package. Full dependency comparison found only adapter.c changed for both Settings profiles, and adapter.c, springboard.c, springboard_nova.inc for both Springboard profiles. All arguments, bridge revision, compiler identity and other transitive input hashes were unchanged. Both immutable historical baseline builds retain their original byte expectations. Each current default/atomic profile was rebuilt twice under different inventories and then verified without record mode.
+
+The current-source fixture is deliberately refreshed to the reviewed T063 inputs. Future failures now identify changed transitive inputs before testing the output digest. This repair changes no production app code or product image bytes. Cumulative T064 products preserve their exact published baseline Settings/Springboard ELFs; their full Runtime admissions and byte-preservation proofs remain independent of this generic source reproduction profile. Do not replace the shipped components merely to match current-source fixture hashes.

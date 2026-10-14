@@ -1,0 +1,47 @@
+{
+  "failed_commit": "9f44a61feb72ccb4cc8587e794ad582941ff5adb",
+  "failed_run": 38568803211,
+  "baseline_recipe_unchanged": true,
+  "results": [
+    {
+      "profile": "settings-default",
+      "before": "a41b2be62598d11e9c454702804ea704cca51d9bdda9e333c4fa9f032c9edaab",
+      "after": "a752e6d8b40875450d312cf0aaef3503689810844c06f68bf64dd579c8ec0eb6",
+      "changed_transitive_inputs": [
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "arguments_unchanged": true
+    },
+    {
+      "profile": "settings-atomic",
+      "before": "203e3abc542c17cd45f38ee732370e016b4b42d091387fdf3a2ed71691aec97d",
+      "after": "a8b5e65f2850ed85448a67ec6580187b81298d5084bb5a8c8920dedb84b04132",
+      "changed_transitive_inputs": [
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "arguments_unchanged": true
+    },
+    {
+      "profile": "springboard-default",
+      "before": "76949ff5540fd5184e802bca2c93235d806bbc98949e41b8e662e8ed29a5fc2e",
+      "after": "953cfc1f3016f7fbef1db82a2c95f0744d7f7b9fb51eb7a40aa9ef61cdf98a09",
+      "changed_transitive_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "arguments_unchanged": true
+    },
+    {
+      "profile": "springboard-atomic",
+      "before": "06b7c204f6cfda8c7188d9adfed58567d0eabff5b5dfb1b6a1d0adb256193bfa",
+      "after": "319ba6b3e61b5959b5527018e971f5ff3810902c2450b6321f58ba33ef74dd37",
+      "changed_transitive_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "arguments_unchanged": true
+    }
+  ]
+}

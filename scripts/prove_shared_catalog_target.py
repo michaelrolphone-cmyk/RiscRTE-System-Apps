@@ -102,9 +102,6 @@ def main():
                 binary = out / (app + '.elf')
                 subprocess.run([*command, '-o', str(binary)], check=True, timeout=180)
                 digest = sha256(binary)
-                if cohort == 'baseline' or not args.record_current:
-                    assert digest == expected['expected_sha256'], (cohort, label, digest, expected['expected_sha256'])
-                    assert binary.stat().st_size == expected['expected_size_bytes']
                 all_symbols = subprocess.check_output([nm, str(binary)], text=True)
                 assert not any(line.split()[-1] in ('portable_catalog', 'portable_catalog_count')
                                for line in all_symbols.splitlines() if line.split())
@@ -119,7 +116,12 @@ def main():
                          if not token.endswith(':') and Path(token).is_file()}
                 inputs = {normalized_path(path, roots): sha256(path) for path in sorted(paths)}
                 if cohort == 'baseline' or not args.record_current:
-                    assert inputs == expected['expected_source_sha256'], (cohort, label, 'transitive source inputs differ')
+                    expected_inputs = expected['expected_source_sha256']
+                    changed_inputs = sorted(key for key in inputs.keys() | expected_inputs.keys()
+                                            if inputs.get(key) != expected_inputs.get(key))
+                    assert not changed_inputs, (cohort, label, 'review source changes before recording current expectations', changed_inputs)
+                    assert digest == expected['expected_sha256'], (cohort, label, digest, expected['expected_sha256'])
+                    assert binary.stat().st_size == expected['expected_size_bytes']
                 builds.append({'inventory': inventory, 'sha256': digest, 'size_bytes': binary.stat().st_size,
                                'imports': imports, 'exports': exports, 'arguments': profile['arguments'],
                                'source_sha256': inputs})

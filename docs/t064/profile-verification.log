@@ -1,0 +1,35 @@
+{
+  "receipt": "/Users/micahelbyrns/Documents/Codex/2026-10-13/task/System-profile-t064/build/runtime-app-catalog/generic-target/receipt.json",
+  "apps": [
+    {
+      "cohort": "baseline",
+      "app": "settings",
+      "sha256": "4ee26705175a325f62af18e6dc98edc9e28aa51b9bf239bc946d8908cbce1385"
+    },
+    {
+      "cohort": "baseline",
+      "app": "springboard",
+      "sha256": "f33ff27719ffd1faa1fb5f671579ada881aac29c9bd4c4673779798064470b17"
+    },
+    {
+      "cohort": "current",
+      "app": "settings-default",
+      "sha256": "a752e6d8b40875450d312cf0aaef3503689810844c06f68bf64dd579c8ec0eb6"
+    },
+    {
+      "cohort": "current",
+      "app": "settings-atomic",
+      "sha256": "a8b5e65f2850ed85448a67ec6580187b81298d5084bb5a8c8920dedb84b04132"
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-default",
+      "sha256": "953cfc1f3016f7fbef1db82a2c95f0744d7f7b9fb51eb7a40aa9ef61cdf98a09"
+    },
+    {
+      "cohort": "current",
+      "app": "springboard-atomic",
+      "sha256": "319ba6b3e61b5959b5527018e971f5ff3810902c2450b6321f58ba33ef74dd37"
+    }
+  ]
+}
