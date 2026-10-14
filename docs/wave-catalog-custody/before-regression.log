@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/tmp/System-wave-custody/scripts/test_runtime_app_catalog.py", line 55, in <module>
+    for mode in ('delayed-refresh','delayed-launch'):run(binary,[mode,files[2],width,height],f'{mode}-{width}x{height}-san{int(sanitizer)}')
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/System-wave-custody/scripts/test_runtime_app_catalog.py", line 37, in run
+    if result.returncode:raise RuntimeError(label+'\n'+result.stdout+result.stderr)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: delayed-refresh-240x240-san0
+shared: /tmp/System-wave-custody/test/native_apps/runtime_app_catalog_test.c:269: exercise_delayed_catalog: Assertion `launch?client->request_app_launch(0):client->installed_apps_refresh()' failed.
+

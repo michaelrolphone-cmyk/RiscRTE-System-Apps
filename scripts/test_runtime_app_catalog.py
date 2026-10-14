@@ -52,6 +52,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-app-catalog-') as directory:
    str(ROOT/'lib/PortableApps/src/adapter.c'),str(fixture),'-o',str(binary)],check=True)
   shared_hash=hashlib.sha256(binary.read_bytes()).hexdigest()
   for width,height in ((240,240),(410,502)):
+   for mode in ('delayed-refresh','delayed-launch'):run(binary,[mode,files[2],width,height],f'{mode}-{width}x{height}-san{int(sanitizer)}')
    for inv in files:run(binary,['inventory',inv,width,height],f'{inv.stem}-{width}x{height}-san{int(sanitizer)}')
    run(binary,['controller',files[2],width,height],f'nova-stale-controller-{width}x{height}-san{int(sanitizer)}')
    for mode in range(3):run(binary,['startup-recovery',files[2],width,height,mode],f'nova-startup-recovery-{mode}-{width}x{height}-san{int(sanitizer)}')

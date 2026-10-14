@@ -75,8 +75,10 @@ static bool catalog_checked(bool result) {
   if(installed_catalog.uncertain){optional_services_retain();return false;}
   return result;
 }
+static bool canvas_exit_barrier(void);
 static bool refresh(void) {
   if(!rt || failed || app_invocation_retained())return false;
+  if(!canvas_exit_barrier() || failed || app_invocation_retained())return false;
   bool result=catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
   if(!result && !app_invocation_retained())rt->diagnostic(installed_catalog.api?
       "APP_CATALOG refresh=unavailable stage=publication":"APP_CATALOG refresh=unavailable stage=acquire-or-interface");
@@ -1186,6 +1188,7 @@ static bool launch(uint32_t i) {
   /* Guards and presentation drain may yield and replace the publication. Pin
    * a copied identity and revalidate after them, immediately before launch. */
   portable_app_catalog_launch destination;
+  if(!canvas_exit_barrier() || failed || app_invocation_retained())return false;
   if(!catalog_checked(portable_catalog_launch_prepare(&installed_catalog,i,&destination)) ||
      !app_allows_launch(destination.route) || !canvas_exit_barrier() || failed || app_invocation_retained())return false;
   return catalog_checked(portable_catalog_launch_valid(&installed_catalog,&destination)) &&

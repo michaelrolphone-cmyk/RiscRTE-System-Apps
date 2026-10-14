@@ -11,11 +11,15 @@ static uint32_t inventory_count;
 static uint64_t inventory_generation=1;
 static unsigned fault,catalog_calls,catalog_acquires,catalog_releases,runtime_calls,snapshot_calls;
 static bool retained,mutate_guard,mutate_drain;
+/* Match native providerStorageSafe: catalog storage is forbidden while the
+ * display owns a transfer. Completion requires cooperative owner-task yields. */
+static bool delayed_pending;
+static unsigned delayed_until,delayed_status_calls,delayed_unsafe_calls;
 static unsigned recover_catalog_at, retry_fault;
 static risc_display_output_api_v1 owned_display;
 static risc_app_catalog_v1 owned_catalog;
 static int32_t inventory_snapshot(void *context,risc_app_catalog_snapshot_v1 *out) {
- (void)context;assert(!retained);catalog_calls++;snapshot_calls++;
+ (void)context;assert(!retained);if(delayed_pending){delayed_unsafe_calls++;return RISC_APP_CATALOG_RETAINED;}catalog_calls++;snapshot_calls++;
  if(fault==5 && recover_catalog_at && ticks>=recover_catalog_at)fault=retry_fault;
  if(fault==5)return RISC_APP_CATALOG_UNAVAILABLE;
  if(fault==6)return RISC_APP_CATALOG_CONTEXT;
@@ -28,7 +32,7 @@ static int32_t inventory_snapshot(void *context,risc_app_catalog_snapshot_v1 *ou
  return RISC_APP_CATALOG_OK;
 }
 static int32_t inventory_get(void *context,uint64_t generation,uint32_t index,risc_app_catalog_entry_v1 *out) {
- (void)context;assert(!retained);catalog_calls++;
+ (void)context;assert(!retained);if(delayed_pending){delayed_unsafe_calls++;return RISC_APP_CATALOG_RETAINED;}catalog_calls++;
  if(fault==12)return RISC_APP_CATALOG_CONTEXT;
  if(fault==13)return RISC_APP_CATALOG_RETAINED;
  if(fault==14)return RISC_APP_CATALOG_INVALID;
@@ -54,6 +58,11 @@ bool portable_app_before_launch(const char *destination) {
 }
 static bool inventory_present_status(void *context,risc_display_present_token_v1 token,risc_display_present_status_v1 *out) {
  assert(!retained);
+ if(delayed_pending){
+  delayed_status_calls++;
+  if(ticks<delayed_until){out->state=RISC_DISPLAY_PRESENT_ACTIVE;return true;}
+  delayed_pending=false;
+ }
  if(mutate_drain){mutate_drain=false;inventory_generation++;}
  return nt_status(context,token,out);
 }
@@ -248,10 +257,28 @@ static void exercise_startup_recovery(unsigned width,unsigned height,unsigned mo
  assert(snapshot_calls>=3&&snapshot_calls<=6); /* initial + one/second, then stable */
  app_module_fini();assert(!grants&&!subscriptions&&!frames);guards();free(guarded);
 }
+static void exercise_delayed_catalog(unsigned width,unsigned height,bool launch) {
+ fw=width;fh=height;pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
+ for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
+ use_async=true;assert(app_module_init()==0);
+ const t5_app_api_v1 *client=t5_app_get_api(T5_APP_ABI_VERSION);
+ assert(client->installed_apps_refresh());
+ client->clear();client->present(false);
+ delayed_pending=true;delayed_until=ticks+20;
+ unsigned before=launches;
+ assert(launch?client->request_app_launch(0):client->installed_apps_refresh());
+ assert(!retained&&!delayed_pending&&!delayed_unsafe_calls&&delayed_status_calls>1);
+ assert(ticks>=delayed_until&&launches==before+(launch?1u:0u));
+ app_module_fini();assert(!grants&&!subscriptions&&!frames);guards();free(guarded);
+}
 int main(int argc,char **argv) {
  assert(argc>=5);load_inventory(argv[2]);
  owned_display=nt_display;owned_display.present_status=inventory_present_status;
  owned_catalog=(risc_app_catalog_v1){1,sizeof(owned_catalog),NULL,inventory_snapshot,inventory_get};
+ if(!strcmp(argv[1],"delayed-refresh")||!strcmp(argv[1],"delayed-launch")){
+  exercise_delayed_catalog((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]),!strcmp(argv[1],"delayed-launch"));
+  puts("Active display transfer completed cooperatively before native catalog access PASS");return 0;
+ }
  if(!strcmp(argv[1],"parity"))return previous_watch_main(argc-2,argv+2);
  if(!strcmp(argv[1],"startup-recovery")){exercise_startup_recovery((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]),argc==6?(unsigned)atoi(argv[5]):0);puts("Actual launcher recovers a delayed native catalog without stale launch PASS");return 0;}
  if(!strcmp(argv[1],"controller")){exercise_controller((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]));puts("Actual Nova stale publication recovery PASS");return 0;}
