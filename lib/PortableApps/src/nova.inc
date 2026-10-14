@@ -57,7 +57,7 @@ static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   color=np_rgb((r<<16)|(g<<8)|b);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);
 }
 static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
-  if(!name || size<1 || size>96)return false;
+  if(!name || size<1 || size>256)return false;
   const rpi_glyph *g=NULL;
   for(unsigned i=0;i<sizeof(rpi_icons)/sizeof(rpi_icons[0]);++i)
     if(!strcmp(rpi_icons[i].name,name)){g=&rpi_icons[i];break;}
@@ -88,7 +88,7 @@ static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NP_CIRCLE,(int32_t[8]){x,y,radius,(int32_t)rgb,opacity},NULL))return;
 #endif
-  if(radius<1 || radius>64)return;
+  if(radius<1 || radius>256)return;
   int row_first=-radius,row_end=radius+1;
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(y,&row_first,&row_end);
@@ -111,9 +111,12 @@ static void np_mask(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(0,&row_first,&row_end);
 #endif
-  for(int y=row_first;y<row_end;++y)for(int x=0;x<width();++x){
+  const int screen_w=width(),screen_h=height();
+  for(int y=row_first;y<row_end;++y)for(int x=0;x<screen_w;++x){
+    /* Fully opaque interior needs no per-pixel work. */
+    if(y>=46 && y<=screen_h-46 && x==46 && screen_w>92)x=screen_w-46;
     if(!x && !(y&7) && !raster_checkpoint())return;
-    int dx=x<width()-x?x:width()-x,dy=y<height()-y?y:height()-y;
+    int dx=x<screen_w-x?x:screen_w-x,dy=y<screen_h-y?y:screen_h-y;
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
     unsigned a=ax*ay/255;
@@ -218,7 +221,7 @@ static void np_poll(t5_app_input_t *out);
 #endif
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || width()<160 || height()<160 || width()>1024 || height()>1024)return NULL;
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)

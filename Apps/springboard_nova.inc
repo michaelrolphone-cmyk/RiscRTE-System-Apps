@@ -29,6 +29,8 @@ static unsigned nova_root(unsigned n) {
     return result;
 }
 static int nova_distance(int x, int y) { return (int)nova_root((unsigned)(x*x + y*y)); }
+static int nova_pixels(int value) { return value*api->screen_width()/240; }
+static int nova_logical(int value) { return value*240/api->screen_width(); }
 static int nova_limit(int n, int limit) { return n < -limit ? -limit : n > limit ? limit : n; }
 static void nova_layout(nova_state *s) {
     unsigned n = 0;
@@ -91,10 +93,10 @@ static void nova_render(nova_state *s) {
             int triangle=s->pulse <= 160 ? s->pulse : 320-s->pulse;
             scale += scale*triangle*22/(160*100);
         }
-        int x=cx+dx/16, y=cy+dy/16;
+        int x=cx+nova_pixels(dx)/16, y=cy+nova_pixels(dy)/16;
         if (x < -32 || y < -32 || x > api->screen_width()+32 || y > api->screen_height()+32) continue;
-        s->view->circle(x,y,22*scale/256,nova_color(s->points[i]),255);
-        if (!s->view->icon(x,y,24*scale/256,app.icon,255))
+        s->view->circle(x,y,nova_pixels(22*scale)/256,nova_color(s->points[i]),255);
+        if (!s->view->icon(x,y,nova_pixels(24*scale)/256,app.icon,255))
             unavailable_icon=true;
     }
     char clock[16];
@@ -116,12 +118,12 @@ static void nova_render(nova_state *s) {
 }
 static int nova_hit(nova_state *s,int x,int y) {
     int best=-1, nearest=10000;
-    x-=api->screen_width()/2;y-=api->screen_height()/2;
+    x=nova_logical(x-api->screen_width()/2);y=nova_logical(y-api->screen_height()/2);
     for (unsigned i=0;i<s->n;++i) {
         int dx=s->points[i].x+(int)(s->motion.x*16),dy=s->points[i].y+(int)(s->motion.y*16);
         int scale=nova_scale(abs(dx)>abs(dy)?abs(dx):abs(dy));
         int d=nova_distance(x-dx/16,y-dy/16);
-        if (nova_alpha(api->screen_width()/2+dx/16,api->screen_height()/2+dy/16)<32) continue;
+        if (nova_alpha(api->screen_width()/2+nova_pixels(dx)/16,api->screen_height()/2+nova_pixels(dy)/16)<32) continue;
         if (d<24*(scale<128?128:scale)/256 && d<nearest) {best=(int)i;nearest=d;}
     }
     return best;
@@ -147,7 +149,7 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
             s->last_x=c->x;s->last_y=c->y;s->moved=0;
             sb_motion_begin(&s->motion);s->pending=-1;s->pulse=0;
         } else {
-            int dx=nova_limit(c->x-s->last_x,256),dy=nova_limit(c->y-s->last_y,256);
+            int dx=nova_limit(nova_logical(c->x)-nova_logical(s->last_x),256),dy=nova_limit(nova_logical(c->y)-nova_logical(s->last_y),256);
             s->last_x=c->x;s->last_y=c->y;
             unsigned travel=(unsigned)(abs(dx)+abs(dy));
             s->moved=s->moved+travel>1024?1024:s->moved+travel;
@@ -196,7 +198,7 @@ static void nova_tick(nova_state *s,uint32_t elapsed) {
 }
 static bool nova_run(void) {
     const springboard_presentation *v=springboard_presentation_get();
-    if (!compact || !v || v->struct_size<sizeof(*v) || !v->begin || !v->circle ||
+    if (!v || v->struct_size<sizeof(*v) || !v->begin || !v->circle ||
         !v->icon || !v->caption || !v->contact || !v->clock) return false;
     nova_state s={.view=v,.initial=true,.pending=-1};
     nova_layout(&s);
