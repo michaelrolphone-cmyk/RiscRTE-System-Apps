@@ -4,7 +4,9 @@
 #if defined(PORTABLE_RTC_UTC8_DENVER) && defined(PORTABLE_RTC_WALL_TIME)
 #error "Select exactly one explicit RTC policy"
 #endif
-#ifdef PORTABLE_WATCH_FROZEN_ICONS
+#if defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+#include "../fonts/watch-native-icons.inc"
+#elif defined(PORTABLE_WATCH_FROZEN_ICONS)
 /* Product-selected icon bytes from the delivered Watch contract. */
 #include "../fonts/watch-240-icons.inc"
 #else
@@ -56,6 +58,11 @@ static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   g=(g*(255-a)+((rgb>>8)&255)*a)/255;b=(b*(255-a)+(rgb&255)*a)/255;
   color=np_rgb((r<<16)|(g<<8)|b);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);
 }
+static unsigned np_coverage(const rpi_glyph *g,int x,int y) {
+  if(x<0||y<0||x>=g->width||y>=g->height)return 0;
+  unsigned n=(unsigned)y*g->width+(unsigned)x;
+  return (g->bits[n/4]>>(6-2*(n%4)))&3;
+}
 static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   if(!name || size<1 || size>256)return false;
   const rpi_glyph *g=NULL;
@@ -77,9 +84,14 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   raster_rows((int64_t)y-h/2,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;++j)for(int i=0;i<w;++i){
-    unsigned n=(unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
-    unsigned coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
-    np_pixel(x-w/2+i,y-h/2+j,0xffffff,coverage*opacity/3);
+    /* Pixel-center bilinear coverage avoids blocky nearest-neighbor scaling. */
+    int u=((2*i+1)*g->width*128/w)-128,v=((2*j+1)*g->height*128/h)-128;
+    int sx=u>=0?u/256:-1,sy=v>=0?v/256:-1;
+    unsigned fx=(unsigned)(u-sx*256),fy=(unsigned)(v-sy*256);
+    unsigned top=np_coverage(g,sx,sy)*(256-fx)+np_coverage(g,sx+1,sy)*fx;
+    unsigned bottom=np_coverage(g,sx,sy+1)*(256-fx)+np_coverage(g,sx+1,sy+1)*fx;
+    unsigned coverage=top*(256-fy)+bottom*fy;
+    np_pixel(x-w/2+i,y-h/2+j,0xffffff,(coverage*opacity+98304u)/196608u);
   }
   return true;
 }
@@ -94,9 +106,13 @@ static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
   raster_rows(y,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;++j)for(int i=-radius;i<=radius;++i){
-    int d=(int)np_root((unsigned)(i*i+j*j)*256u);
-    int edge=radius*16-d;
-    unsigned a=edge>=16?opacity:edge>0?(unsigned)edge*opacity/16:0;
+    unsigned d2=(unsigned)(i*i+j*j);
+    if(d2>=(unsigned)(radius*radius))continue;
+    unsigned a=opacity;
+    if(d2>(unsigned)((radius-1)*(radius-1))) {
+      int edge=radius*16-(int)np_root(d2*256u);
+      a=(unsigned)edge*opacity/16;
+    }
     np_pixel(x+i,y+j,rgb,a);
   }
 }

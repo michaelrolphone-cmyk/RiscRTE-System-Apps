@@ -1,0 +1,117 @@
+[
+  {
+    "file_name": "alarms.elf",
+    "display_name": "Alarms",
+    "icon": "solid:f0f3"
+  },
+  {
+    "file_name": "app_store.elf",
+    "display_name": "App Store",
+    "icon": "solid:f00a"
+  },
+  {
+    "file_name": "audio_spectrum.elf",
+    "display_name": "Audio Spectrum",
+    "icon": "solid:f130"
+  },
+  {
+    "file_name": "battery.elf",
+    "display_name": "Battery",
+    "icon": "solid:f240"
+  },
+  {
+    "file_name": "ble_buttons.elf",
+    "display_name": "BLE Buttons",
+    "icon": "solid:f11c"
+  },
+  {
+    "file_name": "ble_scanner.elf",
+    "display_name": "BLE Scanner",
+    "icon": "solid:f7c0"
+  },
+  {
+    "file_name": "ble_touchpad.elf",
+    "display_name": "BLE Touchpad",
+    "icon": "solid:f245"
+  },
+  {
+    "file_name": "calculator.elf",
+    "display_name": "Calculator",
+    "icon": "solid:f1ec"
+  },
+  {
+    "file_name": "clock.elf",
+    "display_name": "Clock",
+    "icon": "solid:f017"
+  },
+  {
+    "file_name": "contexts.elf",
+    "display_name": "Contexts",
+    "icon": "solid:f015"
+  },
+  {
+    "file_name": "countdown.elf",
+    "display_name": "Countdown",
+    "icon": "solid:f254"
+  },
+  {
+    "file_name": "file_browser.elf",
+    "display_name": "Files",
+    "icon": "solid:f07c"
+  },
+  {
+    "file_name": "frequency_generator.elf",
+    "display_name": "Frequency Generator",
+    "icon": "solid:f028"
+  },
+  {
+    "file_name": "lists.elf",
+    "display_name": "Lists",
+    "icon": "solid:f274"
+  },
+  {
+    "file_name": "lora_messages.elf",
+    "display_name": "LoRa Messages",
+    "icon": "solid:f27a"
+  },
+  {
+    "file_name": "model_viewer.elf",
+    "display_name": "3D Viewer",
+    "icon": "regular:f03e"
+  },
+  {
+    "file_name": "ota_update.elf",
+    "display_name": "Firmware Update",
+    "icon": "solid:f019"
+  },
+  {
+    "file_name": "points_in_time.elf",
+    "display_name": "Points in Time",
+    "icon": "solid:f783"
+  },
+  {
+    "file_name": "settings.elf",
+    "display_name": "Settings",
+    "icon": "solid:f013"
+  },
+  {
+    "file_name": "stopwatch.elf",
+    "display_name": "Stopwatch",
+    "icon": "solid:f2f2"
+  },
+  {
+    "file_name": "timecard.elf",
+    "display_name": "Timecard",
+    "icon": "solid:f274"
+  },
+  {
+    "file_name": "waterfall.elf",
+    "display_name": "Waterfall",
+    "icon": "solid:f0ec"
+  },
+  {
+    "file_name": "wifi_settings.elf",
+    "display_name": "Wi-Fi",
+    "icon": "solid:f1eb"
+  }
+]
