@@ -17,7 +17,7 @@ int main(int argc,char **argv){
  const risc_text_entry_api_v1_long *longtext=risc_text_entry_long(text);assert(longtext);
  risc_provider_dependency_v1 dep={"ui.scene",1,api};assert(td->start(&dep,1));
  risc_text_entry_request_v1_long q={.api_version=1,.struct_size=sizeof(q),.capacity=256,.label="SENSOR NAME"};
- if(!strcmp(argv[5],"style")){strcpy(q.text,"Coffee 42");count=0;}
+ if(!strcmp(argv[5],"style")){strcpy(q.text,"Coffee^42");count=0;}
  uint64_t token;assert(!longtext->open_long(NULL,&q,&token));
  unsigned received=0;char expected[256]={0};risc_text_entry_state_v1_long result={0};
  unsigned lw=w==800?480:w,lh=w==800?800:h;

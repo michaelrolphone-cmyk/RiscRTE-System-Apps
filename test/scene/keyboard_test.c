@@ -218,7 +218,7 @@ static void keyboard_raster(const char *output){
             }
             continue;
         }
-        const pc_glyph *g=&nova_title_1.glyphs[c-32];
+        const pc_glyph *g=&(c=='^'?nova_body_1:nova_title_1).glyphs[c-32];
         for(unsigned col=0;col<g->width;col++)for(unsigned row=0;row<g->height;row++){
             unsigned bit=row*g->width+col;bool ink=(g->bits[bit/8]&(128u>>(bit%8)))!=0;
             assert((pixel_level(x+g->left+col,y+g->top+row)!=background_level())==ink);
