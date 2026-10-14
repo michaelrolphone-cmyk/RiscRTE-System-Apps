@@ -9,3 +9,5 @@ Preserve Windows host safe eject, CSW completion before teardown, explicit cable
 ## Presentation verification
 
 All 31 USB lifecycle cases pass normally and under ASan/UBSan for paper and 410x502 RGB565. RGB preview exposed clipped copy; the USB-only profile now honors the existing PAPER_TEXT_FIT flag. Other app rendering profiles are unchanged.
+
+The explicit --touch-only profile omits input.navigation and uses visible on-screen controls for products without that provider. All 31 RGB lifecycle cases pass normal/ASan/UBSan; touch Back returns to Apps and safe eject returns Home. The X4 default remains the existing navigation/resident profile.

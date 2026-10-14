@@ -19,6 +19,7 @@ def build(args):
     cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
     if not cc:cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     flags=list(FLAGS)
+    if args.touch_only: flags.remove("-DPORTABLE_INPUT_NAVIGATION")
     if args.resident_shell_host:raise ValueError('USB transfer is a foreground client, never a resident host')
     args.alarm_client=args.resident_shell_client
     if args.resident_shell_client:
@@ -44,6 +45,7 @@ def build(args):
     subprocess.run([str(validator),str(elf)],check=True)
     manifest=json.loads((ROOT/'Apps/native/usb_sd_transfer.json').read_text())
     manifest['version']=portable_quick_build.version(args,'usb_sd_transfer',manifest['version'])
+    if args.touch_only: manifest['requires']=[r for r in manifest['requires'] if r['capability']!='input.navigation']
     if args.resident_shell_client:
         manifest['requires'].append({'capability':'alarm.service','api':2})
     (out/'usb_sd_transfer.json').write_text(json.dumps(manifest,indent=2)+'\n')
@@ -61,4 +63,4 @@ def build(args):
         if source.exists():shutil.copyfile(source,target/source.name)
     print('USB SD Transfer: Xtensa ELF, loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);portable_quick_build.options(p);portable_alarm_build.options(p);p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/usb-transfer');build(p.parse_args())
+    p=argparse.ArgumentParser(description=__doc__);portable_quick_build.options(p);portable_alarm_build.options(p);p.add_argument('--touch-only',action='store_true',help='Use on-screen controls without an input.navigation provider');p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/usb-transfer');build(p.parse_args())

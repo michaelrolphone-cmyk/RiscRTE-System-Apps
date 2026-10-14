@@ -151,6 +151,9 @@ static bool usb_touch_desired(void*c,risc_touch_snapshot_v1*out){
   if(steps==20||steps==40||steps==50||(test_case==4&&steps==65))down=true;
   if(steps==30){down=true;y=735;}
  }
+ #ifndef PORTABLE_INPUT_NAVIGATION
+ if(steps==80){down=true;y=735;}
+#endif
  if(down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=USB_TEST_X(240),.y=USB_TEST_Y(y)};}
  return true;
 }
@@ -247,7 +250,12 @@ int USB_TRANSFER_TEST_MAIN(int argc,char**argv){
  }
  assert(app_module_init()==0);app_main();app_module_fini();
  assert(!frames&&!grants&&!subs&&!session&&!portable_usb_transfer_owned());if(test_case<13||test_case>=17)assert(begins&&usb_steps);else assert(!begins&&!usb_steps&&!prepare_count&&usb_releases==1);
+ #ifdef PORTABLE_INPUT_NAVIGATION
  assert(launches==1&&!strcmp(launched,"default.elf"));
+#else
+ /* Touch Back returns to Apps; automatic safe eject returns to Home. */
+ assert(launches==1&&(!strcmp(launched,"springboard.elf")||!strcmp(launched,"default.elf")));
+#endif
  if(test_case==0)assert(ends==1&&cancel_ends==1&&!confirmed_ends);
  if(test_case==1||test_case==5||test_case==7)assert(ends==1&&!confirmed_ends);
  if(test_case==2||test_case==3)assert(cancel_ends==2&&confirmed_ends==1);

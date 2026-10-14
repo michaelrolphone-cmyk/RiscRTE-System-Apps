@@ -4,9 +4,10 @@ import argparse,os,subprocess,sys
 from PIL import Image
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser();p.add_argument('--rgb',action='store_true');p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'build/usb-transfer');a=p.parse_args();a.output_dir.mkdir(parents=True,exist_ok=True)
+p=argparse.ArgumentParser();p.add_argument('--rgb',action='store_true');p.add_argument('--touch-only',action='store_true');p.add_argument('--msc-sdk',type=Path,required=True);p.add_argument('--output-dir',type=Path,default=ROOT/'build/usb-transfer');a=p.parse_args();a.output_dir.mkdir(parents=True,exist_ok=True)
 sys.path.insert(0,str(ROOT/'scripts'))
 from build_portable_usb_transfer import FLAGS
+if a.touch_only: FLAGS=[f for f in FLAGS if f!="-DPORTABLE_INPUT_NAVIGATION"]
 for san in (False,True):
  target=a.output_dir/f'usb-transfer-{int(san)}'
  flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer',*(['-no-pie'] if sys.platform!='darwin' else [])] if san else []
