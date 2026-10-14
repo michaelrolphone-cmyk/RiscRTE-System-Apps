@@ -1,0 +1,1 @@
+Automatic foreground: cache/discovery before networking, no-SD internal path, 1000 pending cleanup polls, network drain before grant release, UTC fence, wrap-safe retry, sticky retention PASS

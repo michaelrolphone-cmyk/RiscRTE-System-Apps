@@ -31,7 +31,7 @@ jobs:
           printf '#!/bin/sh\nexec /usr/bin/g++ -Wno-error=misleading-indentation "$@"\n' > host-bin/c++
           chmod +x host-bin/c++
           export PATH="$PWD/host-bin:$PATH" RUNTIME_REPO="$PWD/.ci-runtime"
-          for suite in installed_apps_automatic installed_apps_media installed_apps_install installed_apps_feed installed_apps_service installed_catalog_client; do
+          for suite in automatic_foreground installed_apps_automatic installed_apps_media installed_apps_install installed_apps_feed installed_apps_service installed_catalog_client; do
             bash "scripts/test_$suite.sh" 2>&1 | tee "build/t023/$suite.log"
           done
       - uses: actions/upload-artifact@v4
