@@ -1,0 +1,47 @@
+{
+  "source_head": "285f2e4417c19d7abad4a031d2130a339d410892",
+  "failed_run": 38591024466,
+  "reason": "Current-source expectations predate catalog diagnostics and display custody correction; settings compiles shared adapter. Immutable baseline and recipe remain unchanged.",
+  "profiles": {
+    "settings-default": {
+      "previous_sha256": "a41b2be62598d11e9c454702804ea704cca51d9bdda9e333c4fa9f032c9edaab",
+      "sha256": "cbc6cfe17994df7ffa13745904304e524085cda02b150a577596769707c93c65",
+      "changed_inputs": [
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "recipe_unchanged": true
+    },
+    "settings-atomic": {
+      "previous_sha256": "203e3abc542c17cd45f38ee732370e016b4b42d091387fdf3a2ed71691aec97d",
+      "sha256": "432c0dabbae8f4d3ca4a193f8fc433e0f8df81671f925c47d1fef3e3c995a2ae",
+      "changed_inputs": [
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "recipe_unchanged": true
+    },
+    "springboard-default": {
+      "previous_sha256": "76949ff5540fd5184e802bca2c93235d806bbc98949e41b8e662e8ed29a5fc2e",
+      "sha256": "2c1c2e04208e7b607d2f0dee29d0599f5babaf9c4fa01ca964a6becfb916756c",
+      "changed_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "recipe_unchanged": true
+    },
+    "springboard-atomic": {
+      "previous_sha256": "06b7c204f6cfda8c7188d9adfed58567d0eabff5b5dfb1b6a1d0adb256193bfa",
+      "sha256": "a36e4e9214367ae8e96d66b14f38c16abb8b0b9f11025ca35c817c385706e8af",
+      "changed_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c"
+      ],
+      "recipe_unchanged": true
+    }
+  }
+}
