@@ -37,6 +37,13 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  makeCatalog("1.0.1",true);assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&api.count(nullptr)==2);
  assert(!strcmp(current[0].view.version,"1.0.1"));
  makeCatalog("1.0.1");assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&api.count(nullptr)==2); // preserve deselected/user apps
+ // Firmware-managed products may have no additional automatic packages yet.
+ // An explicit empty profile must preserve all existing/user-managed apps.
+ {JsonDocument empty;empty["schema"]="riscrte.native-packages";empty["version"]=1;empty["product"]=INSTALLED_APPS_FEED_PRODUCT;
+  empty["apps"].to<JsonArray>();empty["profiles"]["core"].to<JsonArray>();feedBody.clear();serializeJson(empty,feedBody);
+  downloads=staged_fixture::httpOpens;assert(a->begin(nullptr,"core",1800000000)==0);
+  assert(driveAutomatic()==0&&api.count(nullptr)==2&&staged_fixture::httpOpens==downloads);
+ }
  assert(a->begin(nullptr,"unknown",1800000000)==0);assert(driveAutomatic()==INSTALLED_APPS_INVALID);assert(a->cancel(nullptr)==0);
  assert(api.refresh(nullptr)==0);makeCatalog("1.0.0");assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==INSTALLED_APPS_INVALID);assert(a->cancel(nullptr)==0);
  assert(t5_driver_get(2)->quiesce());t5_driver_get(2)->stop();

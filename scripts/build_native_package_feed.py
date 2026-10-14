@@ -28,8 +28,8 @@ def build(plan_path, asset_base, output, product):
         raise ValueError('Assets require a fixed HTTPS base URL')
     plan = json.loads(plan_path.read_text())
     apps = plan.get('apps')
-    if not isinstance(apps, list) or not 1 <= len(apps) <= 32:
-        raise ValueError('Expected 1..32 apps')
+    if not isinstance(apps, list) or not 0 <= len(apps) <= 32:
+        raise ValueError('Expected 0..32 apps')
     assets = {}
 
     def package(row, kind):
