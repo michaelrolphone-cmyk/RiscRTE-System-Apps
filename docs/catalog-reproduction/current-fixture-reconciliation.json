@@ -1,0 +1,55 @@
+{
+  "source_head": "9dfd1b00a351f626a09a2a44f38f06e563f905cb",
+  "failed_run": 38591028587,
+  "reason": "Current-source expectations predate catalog diagnostics and display custody correction; settings compiles shared adapter. Immutable baseline and recipe remain unchanged.",
+  "profiles": {
+    "settings-default": {
+      "previous_sha256": "a41b2be62598d11e9c454702804ea704cca51d9bdda9e333c4fa9f032c9edaab",
+      "sha256": "e015e7aaaa237a84f937d26048f35a0c244a8522d199f6cff0048361252b3f8c",
+      "changed_inputs": [
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c",
+        "System/lib/PortableApps/src/canvas_async.inc",
+        "System/lib/PortableApps/src/package_discovery.inc"
+      ],
+      "recipe_unchanged": true
+    },
+    "settings-atomic": {
+      "previous_sha256": "203e3abc542c17cd45f38ee732370e016b4b42d091387fdf3a2ed71691aec97d",
+      "sha256": "8204380c825f41f285e45acf12edc5de103fc4a475374dcf45207aa920c740bc",
+      "changed_inputs": [
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c",
+        "System/lib/PortableApps/src/canvas_async.inc",
+        "System/lib/PortableApps/src/package_discovery.inc"
+      ],
+      "recipe_unchanged": true
+    },
+    "springboard-default": {
+      "previous_sha256": "76949ff5540fd5184e802bca2c93235d806bbc98949e41b8e662e8ed29a5fc2e",
+      "sha256": "ae8f5165dc7d45d980ec8e87d0db1d369377c75605c9d7eb6a6897942af5ce11",
+      "changed_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c",
+        "System/lib/PortableApps/src/canvas_async.inc",
+        "System/lib/PortableApps/src/package_discovery.inc"
+      ],
+      "recipe_unchanged": true
+    },
+    "springboard-atomic": {
+      "previous_sha256": "06b7c204f6cfda8c7188d9adfed58567d0eabff5b5dfb1b6a1d0adb256193bfa",
+      "sha256": "d632ffa569b0278200abf4dd465e80dd8b66fd71f04d51af9c8d9007ffd57709",
+      "changed_inputs": [
+        "System/Apps/springboard.c",
+        "System/Apps/springboard_nova.inc",
+        "System/lib/PortableApps/include/PortableAppCatalog.h",
+        "System/lib/PortableApps/src/adapter.c",
+        "System/lib/PortableApps/src/canvas_async.inc",
+        "System/lib/PortableApps/src/package_discovery.inc"
+      ],
+      "recipe_unchanged": true
+    }
+  }
+}
