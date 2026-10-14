@@ -19,12 +19,17 @@ typedef struct {
     uint64_t generation;
     uint32_t count;
     bool initialized, uncertain;
+    const char *failure_stage;
+    int32_t failure_result;
+    uint32_t failure_index;
 } portable_app_catalog;
 /* Emit only with established custody. CONTEXT/RETAINED must not cause another
  * runtime callback; those cases keep the existing terminal retention fence. */
-static inline void portable_catalog_diagnostic(const portable_app_catalog *c,const risc_runtime_api_v1 *rt,
+static inline void portable_catalog_diagnostic(portable_app_catalog *c,const risc_runtime_api_v1 *rt,
         const char *stage,int32_t result,uint32_t index,size_t bytes,uint64_t expected,uint64_t actual) {
-    if(c->uncertain || !rt->diagnostic)return;
+    if(c->uncertain)return;
+    c->failure_stage=stage;c->failure_result=result;c->failure_index=index;
+    if(!rt->diagnostic)return;
     char line[224];
     snprintf(line,sizeof(line),"APP_CATALOG stage=%s result=%ld index=%lu bytes=%lu expected=%llu actual=%llu",
         stage,(long)result,(unsigned long)index,(unsigned long)bytes,
@@ -92,8 +97,8 @@ static inline bool portable_catalog_open(portable_app_catalog *c,const risc_runt
     }
     const risc_app_catalog_v1 *api=c->grant.api;
     if(!api || api->api_version!=1 || api->struct_size<sizeof(*api) || !api->snapshot || !api->get) {
-        portable_catalog_diagnostic(c,rt,"interface",-1,0,0,0,0);
-        (void)portable_catalog_close(c,rt);return false;
+        (void)portable_catalog_close(c,rt);
+        portable_catalog_diagnostic(c,rt,"interface",-1,0,0,0,0);return false;
     }
     c->api=api;return true;
 }
@@ -133,6 +138,7 @@ static inline bool portable_catalog_refresh(portable_app_catalog *c,const risc_r
         portable_catalog_diagnostic(c,rt,"generation-mismatch",result,after.count,snapshot.count,snapshot.generation,after.generation);goto invalid;
     }
     free(c->entries);c->entries=c->staging;c->staging=NULL;c->count=snapshot.count;c->generation=snapshot.generation;
+    c->failure_stage=NULL;c->failure_result=0;c->failure_index=0;
     return true;
 invalid:
     portable_catalog_clear(c);return false;

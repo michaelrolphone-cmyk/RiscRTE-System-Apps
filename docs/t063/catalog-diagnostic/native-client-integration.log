@@ -1,0 +1,19 @@
+Real native owner + actual catalog client; native settings lifecycle enabled; sanitized=False
+app.catalog normal: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog unauthorized: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog empty: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog normalized_metadata: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog long_path: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog retained: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog acquire_retained: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog acquire_lost_owner: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+Real native owner + actual catalog client; native settings lifecycle enabled; sanitized=True
+app.catalog normal: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog unauthorized: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog empty: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog normalized_metadata: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog long_path: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog retained: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog acquire_retained: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+app.catalog acquire_lost_owner: real native grant, admitted inventory, fencing and zero catalog I/O PASS
+PASS 16 native ownership scenarios with actual client integration, normal and ASan/UBSan; hardware unverified

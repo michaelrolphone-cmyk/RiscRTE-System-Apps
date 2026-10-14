@@ -23,6 +23,7 @@ static int columns, rows, page_size, cell_w, cell_h, grid_top;
 static bool compact;
 __attribute__((weak)) const springboard_presentation *springboard_presentation_get(void) { return NULL; }
 __attribute__((weak)) bool springboard_transition_active(void) { return false; }
+__attribute__((weak)) bool springboard_catalog_failure_get(springboard_catalog_failure *out) { (void)out;return false; }
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
 #include "WatchLayout.h"
 /* Only this controller sees logical watch coordinates. The adapter/provider
@@ -293,6 +294,14 @@ static void raster_page(const char *status) {
     if (!count) {
         api->draw_text(24, 120, catalog_available ? "No installed apps found." : "Installed apps unavailable.");
         if (catalog_available) api->draw_text(24, 160, "Installed apps appear here.");
+        else {
+            springboard_catalog_failure failure;
+            if(springboard_catalog_failure_get(&failure)) {
+                char detail[48];snprintf(detail,sizeof(detail),"result %ld, index %lu",(long)failure.result,(unsigned long)failure.index);
+                api->draw_label(24,152,api->screen_width()-48,failure.stage);
+                api->draw_label(24,176,api->screen_width()-48,detail);
+            }
+        }
     }
     for (int cell = 0; cell < page_size && first + cell < count; ++cell) {
         t5_app_manifest_t app;
@@ -403,8 +412,16 @@ static bool refresh_changed_catalog(void) {
 static bool retry_unavailable_catalog(uint32_t now) {
     if(catalog_available || (uint32_t)(now-catalog_retry_at)<1000u)return false;
     catalog_retry_at=now;
+    springboard_catalog_failure before={0},after={0};
+    const bool had_failure=springboard_catalog_failure_get(&before);
     catalog_available=api->installed_apps_refresh();
-    if(!catalog_available)return false;
+    if(!catalog_available) {
+        if(!t5_app_get_api(T5_APP_ABI_VERSION))return false;
+        const bool has_failure=springboard_catalog_failure_get(&after);
+        return had_failure!=has_failure || (has_failure &&
+            (before.result!=after.result || before.index!=after.index ||
+             !before.stage || strcmp(before.stage,after.stage)));
+    }
     count=api->installed_apps_count();if(count>MAX_HOME_APPS)count=MAX_HOME_APPS;
     selected=0;selection_visible=false;load_home_pins();layout();return true;
 }
@@ -473,7 +490,7 @@ __attribute__((visibility("default"))) void app_main(void) {
     bool confirm_hold_handled = false;
 
     while (api->poll(&input, sv_enabled ? 5 : 20)) {
-        if (input.exit_requested || sv_fatal) break;
+        if (input.exit_requested || sv_fatal || (!catalog_available && (input.buttons&T5_APP_BUTTON_BACK))) break;
         if(retry_unavailable_catalog(api->millis())){previous_buttons=input.buttons;draw(0);continue;}
         if(!catalog_available && !t5_app_get_api(T5_APP_ABI_VERSION))break;
         t5_app_swipe_t swipe={0};

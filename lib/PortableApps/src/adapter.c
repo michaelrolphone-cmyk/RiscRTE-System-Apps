@@ -5,6 +5,7 @@
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
 #include "PortableAppCatalog.h"
+#include "../../../Apps/SpringboardPresentation.h"
 #include "PortableTouch.h"
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
@@ -71,6 +72,11 @@ static bool app_invocation_retained(void) {
   return false;
 }
 static portable_app_catalog installed_catalog;
+bool springboard_catalog_failure_get(springboard_catalog_failure *out) {
+  if(!out || app_invocation_retained() || !installed_catalog.failure_stage)return false;
+  *out=(springboard_catalog_failure){installed_catalog.failure_stage,installed_catalog.failure_result,installed_catalog.failure_index};
+  return true;
+}
 static bool catalog_checked(bool result) {
   if(installed_catalog.uncertain){optional_services_retain();return false;}
   return result;

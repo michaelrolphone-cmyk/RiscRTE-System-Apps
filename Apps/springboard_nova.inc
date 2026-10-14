@@ -109,7 +109,16 @@ static void nova_render(nova_state *s) {
         t5_app_manifest_t app;
         if (api->installed_apps_get(s->first+s->focus,&app))
             s->view->caption(api->screen_height()-43,app.display_name,false,0xffffff);
-    } else s->view->caption(api->screen_height()/2,catalog_available?"NO APPS":"APPS UNAVAILABLE",false,0xffffff);
+    } else {
+        const int center=api->screen_height()/2;
+        s->view->caption(center,catalog_available?"NO APPS":"APPS UNAVAILABLE",false,0xffffff);
+        springboard_catalog_failure failure;
+        if(!catalog_available && springboard_catalog_failure_get(&failure)) {
+            char detail[48];snprintf(detail,sizeof(detail),"result %ld, index %lu",(long)failure.result,(unsigned long)failure.index);
+            s->view->caption(center+24,failure.stage,false,0xaab7ba);
+            s->view->caption(center+44,detail,false,0xaab7ba);
+        }
+    }
     if (unavailable_icon) s->view->caption(api->screen_height()-16,"ICON UNAVAILABLE",false,0x7d8c90);
     else if (count>NOVA_PAGE_APPS) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
