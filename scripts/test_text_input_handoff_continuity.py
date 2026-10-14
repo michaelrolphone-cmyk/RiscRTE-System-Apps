@@ -9,16 +9,12 @@ def main():
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,required=True);p.add_argument('--sanitize',action='store_true');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True);results=[]
  with tempfile.TemporaryDirectory(prefix='review-continuity-') as td:
   temp=pathlib.Path(td);inc=stage_sdk(a.runtime,ROOT,temp/'sdk')
-  generated=temp/'font-generation';font_dir=generated/'Services/scene_host/fonts';font_dir.mkdir(parents=True);(generated/'scripts').mkdir()
-  for source in (ROOT/'Services/scene_host/fonts').glob('*.ttf'):shutil.copyfile(source,font_dir/source.name)
-  generator=generated/'scripts/generate_telemetry_fonts.py';shutil.copyfile(ROOT/'scripts/generate_telemetry_fonts.py',generator);subprocess.run([sys.executable,str(generator)],check=True)
-  assert hashlib.sha256((font_dir/'telemetry.inc').read_bytes()).hexdigest()=='2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1'
+  assert (ROOT/'Services/scene_host/fonts/telemetry.inc').is_file(), 'Use the committed delivered font assets'
   for sanitized in ([False,True] if a.sanitize else [False]):
    for profile in ('watch','paper'):
     flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-I'+str(inc),'-I'+str(ROOT/'sdk/app'),'-I'+str(ROOT/'Services/text_input'),'-I'+str(ROOT/'test/scene')]
     if sanitized:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
     if profile=='watch':flags+=['-DSCENE_HOST_TELEMETRY=0','-DSCENE_HOST_WATCH_240=1']
-    else:flags+=['-I'+str(generated/'Services/scene_host')]
     obj=temp/'text.o';subprocess.run([os.environ.get('CC','cc'),*flags,'-Dt5_driver_get=review_text_driver_get','-c',str(ROOT/'Services/text_input/host.c'),'-o',str(obj)],check=True)
     exe=temp/'probe';subprocess.run([os.environ.get('CC','cc'),*flags,'-DSCENE_HOST_SOURCE="'+str(ROOT/'Services/scene_host/host.c')+'"',str(ROOT/'test/text_input/review_checkpoint_handoff_test.c'),str(ROOT/'test/text_input/review_checkpoint_handoff_probe.c'),str(obj),'-o',str(exe)],check=True)
     for mode in MODES:
