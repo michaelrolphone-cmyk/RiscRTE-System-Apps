@@ -458,35 +458,16 @@ static void test_final_verify_before_remove(void) {
  assert(f.deletion_serial>f.verified_serial && !native_custody_retained);assert_idle_grants();pass();
 }
 static void test_full_queue_and_drop_history(void) {
- test_name="eight-report bound keeps oldest seven plus newest; drop identity/counter survive drain and restart";
+ test_name="full queue preserves all reports and defers native ack until export frees space";
  reset();f.sd_available=false;
- for(unsigned n=1;n<=10;++n){assert(capture(n));finish_presentation();}
- assert(disk_count()==8 && failure_archive_drops==2 && f.acks==10);
- assert(failure_archive_spool.dropped_count==2 && failure_archive_spool.last_dropped_identity.captured_sequence==9);
- for(unsigned n=0;n<8;++n) {
-  crash_report_spool_view view;assert(crash_report_spool_peek(&failure_archive_spool,n,&view)==CRASH_REPORT_SPOOL_OK);
-  assert(view.identity.captured_sequence==(n<7?n+1:10));
- }
- failure_evidence_layout status={{0},0};failure_archive_report_status(&status);
- assert(strstr(status.text,"2 unsaved report(s) dropped"));
- reset_lifecycle();f.sd_available=true;
- for(unsigned n=0;n<8;++n) {
-  unsigned before=disk_count();assert(failure_archive_checkpoint());assert(disk_count()==before-1);
-  assert_final(n<7?n+1:10); /* Exactly one transaction per checkpoint. */
- }
- assert(crash_report_spool_u32(f.data.bytes+20)==2 && failure_archive_drops==2);
- reset_lifecycle();assert(failure_archive_checkpoint());assert(failure_archive_drops==2 && !failure_archive_backlog);
- assert_idle_grants();
- /* A valid persisted near-saturated counter must never wrap on new drops. */
- reset();for(unsigned n=1;n<=8;++n){assert(capture(n));finish_presentation();}
- memcpy(f.data.bytes+24,f.data.bytes+failure_archive_spool.offsets[7],40);
- crash_report_spool_put32(f.data.bytes+20,UINT32_MAX-1);
- crash_report_spool_put32(f.data.bytes+76,crash_report_spool_crc(f.data.bytes,f.data.size));
- assert(capture(9));finish_presentation();assert(failure_archive_drops==UINT32_MAX);
- assert(capture(10));finish_presentation();assert(failure_archive_drops==UINT32_MAX);
- assert(failure_archive_spool.last_dropped_identity.captured_sequence==9);
- reset_lifecycle();f.sd_available=false;assert(failure_archive_checkpoint());
- assert(failure_archive_drops==UINT32_MAX && disk_count()==8);assert_idle_grants();pass();
+ for(unsigned n=1;n<=8;++n){assert(capture(n));finish_presentation();}
+ unsigned writes=f.data.replacements;assert(capture(9));finish_presentation();
+ assert(disk_count()==8 && !failure_archive_drops && f.acks==8 && f.native_pending);
+ for(unsigned n=0;n<8;++n){crash_report_spool_view v;assert(crash_report_spool_peek(&failure_archive_spool,n,&v)==CRASH_REPORT_SPOOL_OK);assert(v.identity.captured_sequence==n+1);}
+ assert(f.data.replacements==writes);
+ f.sd_available=true;assert(failure_archive_checkpoint());assert(disk_count()==7 && f.native_pending);
+ ticks+=30000;assert(failure_archive_checkpoint());assert(f.acks==9 && !f.native_pending);
+ assert_idle_grants();pass();
 }
 static void test_corrupt_io_and_ambiguous_commit(void) {
  test_name="corrupt/IO/COMMIT_UNKNOWN fail closed; only exact readback resolves ambiguous commit";
