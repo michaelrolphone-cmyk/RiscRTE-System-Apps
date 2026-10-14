@@ -8,6 +8,8 @@
 #include "InstalledAppsProvisionV1.h"
 #include "InstalledAppsAutomaticV1.h"
 #include "InstalledAppsBootProfileV1.h"
+#include "InstalledAppsAutomaticTimeV1.h"
+#include "RiscHttpTimeV1.h"
 #ifdef INSTALLED_APPS_BOOT_PROFILES
 #include "RiscProvisionRequestV1.h"
 #include "runtime/packages/PackageJsonGuard.h"
@@ -72,7 +74,7 @@ void saveProvision(JsonDocument&);
 bool prepareProvision(const char*,bool);
 int32_t provisionStep(const risc_storage_volume_api_v1*);
 int32_t provisionCancel();
-const risc_http_client_v1*packageHttp;uint64_t packageUtc;
+const risc_http_client_v1*packageHttp;uint64_t packageUtc;bool automaticFreshTime;
 char provisionJson[ManifestMax+1];bool provisionResume,providerSavePending,provisionOnly;
 CachedProvider nextProviders[ProviderMax];unsigned nextProviderCount;
 const risc_bound_app_data_v1*storage;const risc_bound_app_data_async_v1*asyncStorage;
@@ -413,9 +415,10 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
 #include "providers.inc"
 #include "media.inc"
 #include "install.inc"
+#include "http_time.inc"
 #include "provision.inc"
 #include "settings.inc"
-int32_t cancel(void*){
+int32_t cancelWork(){
  int bootResult=bootCancel();if(bootResult!=INSTALLED_APPS_OK)return bootResult;
  if(feedCancel(nullptr)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  if(retained)return INSTALLED_APPS_RETAINED;
@@ -445,6 +448,13 @@ int32_t cancel(void*){
   scanner->~Scan();scanner=nullptr;
  }
  volume=nullptr;requested=validationPending=false;return INSTALLED_APPS_OK;
+}
+int32_t cancel(void*){
+ const int32_t rc=cancelWork();
+ // Every successful whole-service cancel ends the explicit mode, including
+ // base-API consumers and provider quiesce. Pending/uncertain custody pins it.
+ if(rc==INSTALLED_APPS_OK){automaticPhase=0;automaticFreshTime=false;}
+ return rc;
 }
 int32_t refresh(void*){if(!started||retained||inCall||feedReading)return INSTALLED_APPS_UNAVAILABLE;
  if(!settingsCheckpoint)settingsCursor=0;
@@ -515,7 +525,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
 #ifdef INSTALLED_APPS_BOOT_PROFILES
  bootRequests=nullptr;
 #endif
- automaticPhase=0;scanMedium=0;scanSdComplete=scanAnySuccess=false;
+ automaticPhase=0;automaticFreshTime=false;scanMedium=0;scanSdComplete=scanAnySuccess=false;
  feedCount=feedSize=feedGeneration=0;feedHandle=0;feedReading=false;
  native=nullptr;storage=nullptr;packageHttp=nullptr;internalVolume=nullptr;packageUtc=0;for(size_t i=0;i<n;++i){
 #ifdef INSTALLED_APPS_BOOT_PROFILES
@@ -545,7 +555,9 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
 bool quiesce(){return feedCancel(nullptr)==INSTALLED_APPS_OK&&cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}
 extern const installed_apps_feed_v1 extendedApi;
-#ifdef INSTALLED_APPS_BOOT_PROFILES
+#ifdef INSTALLED_APPS_TIME_SERVER
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_automatic_time_v1);
+#elif defined(INSTALLED_APPS_BOOT_PROFILES)
 constexpr unsigned AutomaticApiSize=sizeof(installed_apps_boot_profile_v1);
 #else
 constexpr unsigned AutomaticApiSize=sizeof(installed_apps_automatic_v1);
@@ -584,7 +596,12 @@ const installed_apps_feed_v1 extendedApi={{{1,AutomaticApiSize,nullptr,refresh,
 const installed_apps_automatic_v1 automaticApi={extendedApi,INSTALLED_APPS_AUTOMATIC_TAG,1,automaticBegin,automaticStep,automaticCancel};
 #ifdef INSTALLED_APPS_BOOT_PROFILES
 const installed_apps_boot_profile_v1 bootApi={automaticApi,INSTALLED_APPS_BOOT_PROFILE_TAG,1,bootWifi};
+#ifdef INSTALLED_APPS_TIME_SERVER
+const installed_apps_automatic_time_v1 timeApi={bootApi,INSTALLED_APPS_AUTOMATIC_TIME_TAG,1,automaticBeginWithTime};
+const installed_apps_v1&api=timeApi.base.base.base.base.base;
+#else
 const installed_apps_v1&api=bootApi.base.base.base.base;
+#endif
 #else
 const installed_apps_v1&api=automaticApi.base.base.base;
 #endif

@@ -12,6 +12,34 @@ static const risc_http_client_v1 feedHttp={1,sizeof(feedHttp),nullptr,
  [](void*,uint64_t h)->int32_t{if(h!=99)return staged_fixture::http.close(nullptr,h);assert(h==99&&feedOpen);if(closeFail)return RISC_HTTP_RETAINED;feedOpen=false;return 0;}};
 
 
+#ifdef TEST_AUTOMATIC_FRESH_TIME
+static unsigned freshHttpOpens;
+static risc_http_client_time_v1 timeHttp={feedHttp,RISC_HTTP_TIME_TAG_V1,RISC_HTTP_TIME_VERSION_V1,
+ [](void*,const risc_http_request_v1*q,const char*server,uint64_t*h)->int32_t{
+  assert(q->utc_seconds==0&&!strcmp(server,"time.cloudflare.com")&&freshTimeActive());++freshHttpOpens;
+  // Transport double only: production owns its private sample and never
+  // returns it to the service. Existing payload doubles expect this UTC.
+  auto request=*q;request.utc_seconds=1800000000;return feedHttp.open(nullptr,&request,h);
+ }};
+static void selectHttp(){timeHttp.base.struct_size=sizeof(timeHttp);packageHttp=&timeHttp.base;}
+static int selectedBegin(const char*profile){
+ assert(automaticApi.begin(nullptr,profile,0)==INSTALLED_APPS_INVALID);
+ assert(feedRefresh(nullptr,0)==INSTALLED_APPS_UNAVAILABLE);
+ assert(api.network_ready(nullptr,0)==INSTALLED_APPS_INVALID);
+ // Explicit product selection is separate from generic bounded hostname syntax.
+ for(const char*host:{"time.cloudflare.com","time.example","NTP-1.example","localhost"})assert(explicitTimeHostname(host));
+ for(const char*host:{"",".example","time..example","time.example.","-time.example","time-.example","https://time.cloudflare.com","time.example:123","time_1.example","time.example\n"})assert(!explicitTimeHostname(host));
+ assert(!explicitTimeHostname(nullptr));
+ auto maxHost=std::string(63,'a')+"."+std::string(63,'a')+"."+std::string(63,'a')+"."+std::string(61,'a');
+ assert(explicitTimeHostname(maxHost.c_str()));maxHost+='a';assert(!explicitTimeHostname(maxHost.c_str()));
+ assert(!explicitTimeHostname((std::string(64,'a')+".example").c_str()));
+ const auto*time=installed_apps_automatic_time(&api);assert(time);return time->begin_with_time(nullptr,profile);
+}
+#else
+static void selectHttp(){packageHttp=&feedHttp;}
+static int selectedBegin(const char*profile){return automaticApi.begin(nullptr,profile,1800000000);}
+#endif
+
 static risc_provision_request_status_v1 requestStatus;
 static unsigned queueCalls;static int queueResult,statusResult;static std::string wantedSsid="saved default";
 static const risc_provision_request_api_v1 requests={1,sizeof(requests),nullptr,
@@ -41,11 +69,46 @@ static void makeCore(bool mirror=false){
 static void tick(){executing=true;worker.workerStep();cacheWorker.workerStep();executing=false;}
 static void closeCore(){for(unsigned i=0;;++i){assert(i<2000);int rc=automaticApi.cancel(nullptr);if(rc==0)break;assert(rc==INSTALLED_APPS_WORKING);tick();}}
 static int driveCore(const risc_storage_volume_api_v1*v){for(unsigned i=0;i<3000;++i){unsigned before=io;int rc=automaticApi.step(nullptr,v);assert(before==io);tick();if(rc!=INSTALLED_APPS_WORKING)return rc;}assert(false);return -99;}
-static void beginCore(){bootRequests=&requests;packageHttp=&feedHttp;assert(automaticApi.begin(nullptr,"core",1800000000)==0);}
+static void beginCore(){bootRequests=&requests;selectHttp();assert(selectedBegin("core")==0);}
 static bool parseBody(){assert(feedBody.size()<sizeof(feedInput));memcpy(feedInput,feedBody.data(),feedBody.size());feedSize=unsigned(feedBody.size());feedInput[feedSize]=0;return feedParse();}
 static void statusReset(){requestStatus={};requestStatus.struct_size=sizeof(requestStatus);requestStatus.store_abi=3;requestStatus.firmware_size=123;strcpy(requestStatus.layout,"watch-expanded");strcpy(requestStatus.runtime_version,"0.2.24");memset(requestStatus.firmware_sha256,0x11,32);memset(requestStatus.active_store_sha256,0x22,32);}
 int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nullptr)==0);statusReset();
- auto*b=installed_apps_boot_profile(&api);assert(b);makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI&&queueCalls==0);
+ auto*b=installed_apps_boot_profile(&api);assert(b);
+#ifdef TEST_AUTOMATIC_FRESH_TIME
+ // Explicit product selection is separate from generic bounded hostname syntax.
+ for(const char*host:{"time.cloudflare.com","time.example","NTP-1.example","localhost"})assert(explicitTimeHostname(host));
+ for(const char*host:{"",".example","time..example","time.example.","-time.example","time-.example","https://time.cloudflare.com","time.example:123","time_1.example","time.example\n"})assert(!explicitTimeHostname(host));
+ assert(!explicitTimeHostname(nullptr));
+ auto maxHost=std::string(63,'a')+"."+std::string(63,'a')+"."+std::string(63,'a')+"."+std::string(61,'a');
+ assert(explicitTimeHostname(maxHost.c_str()));maxHost+='a';assert(!explicitTimeHostname(maxHost.c_str()));
+ assert(!explicitTimeHostname((std::string(64,'a')+".example").c_str()));
+ const auto*time=installed_apps_automatic_time(&api);assert(time);
+ // Runtime without the complete suffix cannot start even a partial exchange.
+ packageHttp=&feedHttp;
+ assert(time->begin_with_time(nullptr,"core")==INSTALLED_APPS_UNAVAILABLE&&!automaticPhase&&!automaticFreshTime&&!freshHttpOpens);
+ selectHttp();
+ for(unsigned mutation=0;mutation<5;++mutation){
+  auto original=timeHttp;
+  if(mutation==0)timeHttp.base.struct_size=sizeof(timeHttp)-1;
+  if(mutation==1)timeHttp.time_tag^=1;
+  if(mutation==2)timeHttp.time_version=2;
+  if(mutation==3)timeHttp.open_with_time=nullptr;
+  if(mutation==4)timeHttp.base.read=nullptr;
+  assert(time->begin_with_time(nullptr,"core")==INSTALLED_APPS_UNAVAILABLE&&!automaticPhase&&!automaticFreshTime&&!freshHttpOpens);
+  timeHttp=original;
+ }
+ // Zero in the old public APIs remains invalid even with full new support.
+ assert(automaticApi.begin(nullptr,"core",0)==INSTALLED_APPS_INVALID);
+ assert(feedRefresh(nullptr,0)==INSTALLED_APPS_UNAVAILABLE);
+ strcpy(installId,"network-zero-test");assert(api.network_ready(nullptr,0)==INSTALLED_APPS_INVALID);installId[0]=0;
+ // The suffix does not force sampling for a caller using the original API.
+ makeCore();assert(automaticApi.begin(nullptr,"core",1800000000)==0);
+ assert(driveCore(nullptr)==INSTALLED_APPS_INVALID); // No request provider bound yet.
+ assert(!freshHttpOpens);closeCore();
+#else
+ assert(!installed_apps_automatic_time(&api));
+#endif
+ makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI&&queueCalls==0);
  assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_PROFILE_QUEUED&&queueCalls==1);
  for(char c:bootProfile)assert(!c);
  assert(driveCore(nullptr)==INSTALLED_APPS_PROFILE_QUEUED&&queueCalls==1);closeCore();
@@ -76,7 +139,7 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  // immutable file and never publishes a partial profile or app manifest.
  for(unsigned cut=0;cut<100;++cut){staged_fixture::disk.clear();makeCore(true);beginCore();
   for(unsigned n=0;n<cut;++n){int rc=automaticApi.step(nullptr,staged_fixture::volume);tick();assert(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_NEEDS_PROFILE_WIFI);if(rc==INSTALLED_APPS_NEEDS_PROFILE_WIFI)break;}
-  closeCore();assert(queueCalls==1&&!feedOpen&&!staged_fixture::httpOpen&&staged_fixture::opened.empty());
+  closeCore();assert(queueCalls==1&&!feedOpen&&!staged_fixture::httpOpen&&staged_fixture::opened.empty()&&!automaticFreshTime);
   beginCore();assert(driveCore(staged_fixture::volume)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);assert(staged_fixture::disk.at(path)=="IMAGE");closeCore();
  }
  // Ambiguous native persistence is not blindly retried in this invocation.
@@ -115,7 +178,9 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  statusReset();staged_fixture::disk.clear();makeCore(true);beginCore();
  staged_fixture::packageVolume.base.begin=[](void*,uint64_t*t)->int32_t{*t=0;return RISC_STORAGE_ASYNC_RETAINED;};
  assert(driveCore(staged_fixture::volume)==INSTALLED_APPS_RETAINED&&queueCalls==4&&mirrorDownload);
+ const bool retainedFresh=automaticFreshTime;const unsigned retainedPhase=automaticPhase;
  assert(automaticApi.cancel(nullptr)==INSTALLED_APPS_RETAINED&&mirrorDownload);
+ assert(automaticFreshTime==retainedFresh&&automaticPhase==retainedPhase);
 
  puts("Core profile service: first-start credential handoff, matching pending/active target, native binding, public-profile rejection, SD mirrors/internal fallback, 160-file bound, 100 interruption retries, changed profile, restart-required UNKNOWN across 9 refreshes and retained-media fences PASS");
 }

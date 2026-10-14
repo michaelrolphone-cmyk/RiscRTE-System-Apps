@@ -1,5 +1,5 @@
 #pragma once
-#include "InstalledAppsBootProfileV1.h"
+#include "InstalledAppsAutomaticTimeV1.h"
 #include "PortableNetworkSession.h"
 #include "RiscRuntimeV1.h"
 /* One foreground invocation. Caller polls after first-frame service promotion
@@ -7,6 +7,9 @@
  * work occurs from initialization, interrupts or timer-only wake paths. */
 typedef struct {
  const risc_runtime_api_v1*runtime;void*context;
+ /* utc returns a configured epoch or the private zero token for a strictly
+  * validated UNSET snapshot. Zero routes only to the explicit time suffix.
+  * false is a read/ownership/validity refusal, never an implicit fallback. */
  bool(*network_allowed)(void*);bool(*safe)(void*);bool(*prepare)(void*);bool(*utc)(void*,uint64_t*);void(*retain)(void*);
  const char*profile;uint64_t wifi_instance,settings_namespace,volume_instance;bool sd_enabled;
 } portable_automatic_hooks;

@@ -8,8 +8,8 @@ ProvisionPhase provisionPhase;unsigned provisionIndex,provisionCount;
 bool provisionAppImage;
 const risc_http_client_v1 packageProxy={1,sizeof(packageProxy),nullptr,
  [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{
-  if(!packageHttp||!packageUtc)return RISC_HTTP_NETWORK;
-  auto request=*q;request.utc_seconds=packageUtc;return packageHttp->open(packageHttp->context,&request,h);
+  if(!packageHttp||(!packageUtc&&!freshTimeActive()))return RISC_HTTP_NETWORK;
+  auto request=*q;request.utc_seconds=packageUtc;return transportOpen(&request,h,freshTimeActive());
  },[](void*,uint64_t h,void*p,uint32_t n,uint32_t*out)->int32_t{return packageHttp->read(packageHttp->context,h,p,n,out);},
  [](void*,uint64_t h,risc_http_response_v1*out)->int32_t{return packageHttp->info(packageHttp->context,h,out);},
  [](void*,uint64_t h)->int32_t{return packageHttp->close(packageHttp->context,h);}};
@@ -169,7 +169,7 @@ int32_t provisionStep(const risc_storage_volume_api_v1*v){
    downloader=new(downloadMemory)Download();
    if(!downloader->start(v,&packageProxy,downloadRecord,packageUtc,true)){downloader->~Download();downloader=nullptr;return INSTALLED_APPS_UNAVAILABLE;}
   }
-  if(downloader->state()==Download::State::OpenHttp&&!packageUtc)return INSTALLED_APPS_NEEDS_NETWORK;
+  if(downloader->state()==Download::State::OpenHttp&&!packageUtc&&!freshTimeActive())return INSTALLED_APPS_NEEDS_NETWORK;
   downloader->step();auto state=downloader->state();
   if(state==Download::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
   if(state==Download::State::Failed||state==Download::State::Cancelled)return INSTALLED_APPS_UNAVAILABLE;

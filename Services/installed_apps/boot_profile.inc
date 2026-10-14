@@ -97,7 +97,7 @@ int bootStep(const risc_storage_volume_api_v1*sd,const char*profile,uint64_t utc
     mirrorDownload=new(mirrorMemory)Download();mirrorVolume=sd;
     // No application policy is published by a mirror. Interrupted .part files
     // cannot be selected by boot; retry validates immutable final bytes anew.
-    if(!mirrorDownload->start(sd,packageHttp,mirrorRecord,utc,true)){mirrorDownload->~Download();mirrorDownload=nullptr;mirrorVolume=nullptr;bootMirrorsDone=true;}
+    if(!mirrorDownload->start(sd,&automaticHttp,mirrorRecord,utc,true)){mirrorDownload->~Download();mirrorDownload=nullptr;mirrorVolume=nullptr;bootMirrorsDone=true;}
    }
    if(mirrorDownload){
     if(mirrorVolume!=sd)return INSTALLED_APPS_INVALID;

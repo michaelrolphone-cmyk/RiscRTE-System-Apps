@@ -80,6 +80,8 @@ int portable_automatic_step(portable_automatic_provision*c,uint32_t now){
  if(c->phase==2){
   if(c->hooks.network_allowed&&!c->hooks.network_allowed(c->hooks.context)){rc=INSTALLED_APPS_UNAVAILABLE;goto finish;}
   uint64_t utc=0;if(!c->hooks.utc||!c->hooks.utc(c->hooks.context,&utc)){rc=INSTALLED_APPS_UNAVAILABLE;goto finish;}
+  if(!safe(c))return retain(c);
+  if(!utc&&!installed_apps_automatic_time(c->service)){rc=INSTALLED_APPS_UNAVAILABLE;goto finish;}
   rc=acquire(c,"net.wifi",c->hooks.wifi_instance,&c->wifi_grant);if(rc!=INSTALLED_APPS_OK)goto finish;
   rc=acquire(c,"storage.key-value",c->hooks.settings_namespace,&c->settings_grant);if(rc!=INSTALLED_APPS_OK)goto finish;
   portable_network_session_init(&c->network,c->wifi_grant.api,c->settings_grant.api,safe,c);c->network_started=true;
@@ -95,7 +97,14 @@ int portable_automatic_step(portable_automatic_provision*c,uint32_t now){
   if(lease!=PORTABLE_NETWORK_SERVICE_OK)return retain(c);
   c->lease=true;
   uint64_t utc=0;if(!c->hooks.utc(c->hooks.context,&utc)){rc=INSTALLED_APPS_UNAVAILABLE;goto finish;}
-  rc=c->automatic->begin(c->service->context,c->hooks.profile,utc);if(rc!=INSTALLED_APPS_OK)goto finish;
+  if(!safe(c))return retain(c);
+  if(utc)rc=c->automatic->begin(c->service->context,c->hooks.profile,utc);
+  else {
+   const installed_apps_automatic_time_v1*time=installed_apps_automatic_time(c->service);
+   rc=time?time->begin_with_time(c->service->context,c->hooks.profile):INSTALLED_APPS_UNAVAILABLE;
+  }
+  if(!safe(c))return retain(c);
+  if(rc!=INSTALLED_APPS_OK)goto finish;
   c->phase=4;return INSTALLED_APPS_WORKING;
  }
  rc=c->automatic->step(c->service->context,c->volume_grant.api);

@@ -4,15 +4,20 @@
 #ifdef INSTALLED_APPS_FEED_URL
 char automaticProfile[64];uint64_t automaticUtc;
 unsigned automaticPhase,automaticIndex;bool automaticSelected[FeedMax];
-int32_t automaticBegin(void*,const char*profile,uint64_t utc){
+int32_t automaticStart(const char*profile,uint64_t utc,bool fresh){
  if(!started||!loaded||retained||inCall||automaticPhase||feedReading||!profile||!profile[0]||
-    std::strlen(profile)>=sizeof(automaticProfile)||utc<1704067200ULL||utc>4102444799ULL)return INSTALLED_APPS_INVALID;
+    std::strlen(profile)>=sizeof(automaticProfile)||(!fresh&&(utc<1704067200ULL||utc>4102444799ULL)))return INSTALLED_APPS_INVALID;
  for(const char*p=profile;*p;++p)if(!((*p>='a'&&*p<='z')||(*p>='0'&&*p<='9')||*p=='-'||*p=='.'))return INSTALLED_APPS_INVALID;
- std::strcpy(automaticProfile,profile);automaticUtc=utc;automaticIndex=0;automaticPhase=1;return INSTALLED_APPS_OK;
+ if(fresh&&!freshTimeAvailable())return INSTALLED_APPS_UNAVAILABLE;
+ std::strcpy(automaticProfile,profile);automaticFreshTime=fresh;automaticUtc=utc;automaticIndex=0;automaticPhase=1;return INSTALLED_APPS_OK;
 }
+int32_t automaticBegin(void*,const char*profile,uint64_t utc){return automaticStart(profile,utc,false);}
+#ifdef INSTALLED_APPS_TIME_SERVER
+int32_t automaticBeginWithTime(void*,const char*profile){return automaticStart(profile,0,true);}
+#endif
 int32_t automaticCancel(void*){
  int rc=cancel(nullptr);if(rc!=INSTALLED_APPS_OK)return rc;
- automaticPhase=0;automaticUtc=0;automaticProfile[0]=0;return INSTALLED_APPS_OK;
+ automaticPhase=0;automaticFreshTime=false;automaticUtc=0;automaticProfile[0]=0;return INSTALLED_APPS_OK;
 }
 bool automaticSelect(){
  JsonDocument doc;if(deserializeJson(doc,feedInput,feedSize))return false;
@@ -72,7 +77,7 @@ int32_t automaticStep(void*,const risc_storage_volume_api_v1*v){
  if(automaticPhase==1){
   // Finish/cancel discovery and recover durable work before starting HTTP.
   if(scanner||cacheOperation||savePending||commitPending||settingsCheckpoint||removeId[0]||removeIntent){int rc=step(nullptr,v);return rc==INSTALLED_APPS_OK?INSTALLED_APPS_WORKING:rc;}
-  int rc=feedRefresh(nullptr,automaticUtc);if(rc!=INSTALLED_APPS_OK)return rc;
+  int rc=feedStart(automaticUtc,freshTimeActive());if(rc!=INSTALLED_APPS_OK)return rc;
   automaticPhase=2;return INSTALLED_APPS_WORKING;
  }
  if(automaticPhase==2){
@@ -91,7 +96,7 @@ int32_t automaticStep(void*,const risc_storage_volume_api_v1*v){
  }
  int core=bootStep(v,automaticProfile,automaticUtc);
  if(core!=INSTALLED_APPS_OK)return core;
- automaticPhase=0;automaticUtc=0;return INSTALLED_APPS_OK;
+ automaticPhase=0;automaticFreshTime=false;automaticUtc=0;return INSTALLED_APPS_OK;
 }
 #else
 unsigned automaticPhase;
