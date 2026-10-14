@@ -13,6 +13,9 @@ void portable_automatic_init(portable_automatic_provision*c,const portable_autom
 int portable_automatic_close(portable_automatic_provision*c){
  if(c->retained)return INSTALLED_APPS_RETAINED;
  c->closing=true;
+ if(!c->service_grant.api&&!c->wifi_grant.api&&!c->settings_grant.api&&!c->volume_grant.api&&!c->network_started&&!c->lease){
+  c->service=NULL;c->automatic=NULL;c->phase=0;c->closing=false;return INSTALLED_APPS_OK;
+ }
  if(!safe(c))return retain(c);
  if(c->automatic){int rc=c->automatic->cancel(c->service->context);if(rc==INSTALLED_APPS_WORKING)return rc;if(rc!=INSTALLED_APPS_OK)return retain(c);}
  else if(c->service){int rc=c->service->cancel(c->service->context);if(rc==INSTALLED_APPS_WORKING)return rc;if(rc!=INSTALLED_APPS_OK)return retain(c);}
@@ -28,10 +31,12 @@ int portable_automatic_step(portable_automatic_provision*c,uint32_t now){
  if(c->delayed&&(int32_t)(now-c->retry_at)<0)return INSTALLED_APPS_OK;
  c->delayed=false;int rc=INSTALLED_APPS_OK;
  if(!c->phase){
+  if(!c->service){
+   rc=acquire(c,INSTALLED_APPS_CAPABILITY,0,&c->service_grant);if(rc!=INSTALLED_APPS_OK)goto finish;
+   c->service=c->service_grant.api;c->automatic=installed_apps_automatic(c->service);
+   if(!c->automatic){c->service=NULL;rc=INSTALLED_APPS_INVALID;goto finish;}
+  }
   if(!c->hooks.prepare||!c->hooks.prepare(c->hooks.context))return safe(c)?INSTALLED_APPS_WORKING:retain(c);
-  rc=acquire(c,INSTALLED_APPS_CAPABILITY,0,&c->service_grant);if(rc!=INSTALLED_APPS_OK)goto finish;
-  c->service=c->service_grant.api;c->automatic=installed_apps_automatic(c->service);
-  if(!c->automatic){c->service=NULL;rc=INSTALLED_APPS_INVALID;goto finish;}
   rc=c->service->refresh(c->service->context);if(rc!=INSTALLED_APPS_OK&&rc!=INSTALLED_APPS_WORKING)goto finish;
   if(c->hooks.sd_enabled){rc=acquire(c,"storage.volume",c->hooks.volume_instance,&c->volume_grant);if(rc==INSTALLED_APPS_RETAINED)return rc;}
   c->phase=1;return INSTALLED_APPS_WORKING;
