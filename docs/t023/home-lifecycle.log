@@ -1,0 +1,63 @@
+normal: clock-sync: actual Clock Home completion precedes one policy load; 25 later neutral polls PASS
+normal: clock-async: actual Clock Home completion precedes one policy load; 25 later neutral polls PASS
+normal: settled-once: actual adapter lifecycle and clean release PASS
+normal: blocked-frames: actual adapter lifecycle and clean release PASS
+normal: timer-never: actual adapter lifecycle and clean release PASS
+normal: force-quick: actual adapter lifecycle and clean release PASS
+normal: force-sleep: policy loaded before product sleep boundary PASS
+normal: force-launch: actual adapter lifecycle and clean release PASS
+normal: force-resident: actual adapter lifecycle and clean release PASS
+normal: force-continuation: actual adapter lifecycle and clean release PASS
+normal: empty-continuation: actual adapter lifecycle and clean release PASS
+normal: force-pending-frame: actual adapter lifecycle and clean release PASS
+normal: alarm-cue-defers: actual adapter lifecycle and clean release PASS
+normal: alarm-modal-defers: actual adapter lifecycle and clean release PASS
+normal: force-navigation: actual adapter lifecycle and clean release PASS
+normal: low-battery-pending: actual adapter lifecycle and clean release PASS
+normal: retained-before-ready: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failed-pending-frame: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-kv-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-kv-context: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-wifi-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-ble-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-wifi-off: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-wifi-status: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-ble-enable: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-ble-status: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-kv-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-wifi-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: failure-ble-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+normal: provision-gates: actual Home first-frame/radio/display gates and cooperative pending cleanup PASS
+normal: provision-close: actual Home first-frame/radio/display gates and cooperative pending cleanup PASS
+asan-ubsan: clock-sync: actual Clock Home completion precedes one policy load; 25 later neutral polls PASS
+asan-ubsan: clock-async: actual Clock Home completion precedes one policy load; 25 later neutral polls PASS
+asan-ubsan: settled-once: actual adapter lifecycle and clean release PASS
+asan-ubsan: blocked-frames: actual adapter lifecycle and clean release PASS
+asan-ubsan: timer-never: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-quick: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-sleep: policy loaded before product sleep boundary PASS
+asan-ubsan: force-launch: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-resident: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-continuation: actual adapter lifecycle and clean release PASS
+asan-ubsan: empty-continuation: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-pending-frame: actual adapter lifecycle and clean release PASS
+asan-ubsan: alarm-cue-defers: actual adapter lifecycle and clean release PASS
+asan-ubsan: alarm-modal-defers: actual adapter lifecycle and clean release PASS
+asan-ubsan: force-navigation: actual adapter lifecycle and clean release PASS
+asan-ubsan: low-battery-pending: actual adapter lifecycle and clean release PASS
+asan-ubsan: retained-before-ready: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failed-pending-frame: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-kv-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-kv-context: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-wifi-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-ble-acquire: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-wifi-off: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-wifi-status: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-ble-enable: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-ble-status: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-kv-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-wifi-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: failure-ble-release: retained once, live grants pinned, no later provider/cleanup calls PASS
+asan-ubsan: provision-gates: actual Home first-frame/radio/display gates and cooperative pending cleanup PASS
+asan-ubsan: provision-close: actual Home first-frame/radio/display gates and cooperative pending cleanup PASS
+62 deferred Home Quick radio cases PASS

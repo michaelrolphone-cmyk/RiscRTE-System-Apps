@@ -318,6 +318,10 @@ static bool paper_async_frames;
 static risc_display_present_token_v1 paper_token;
 #ifdef PORTABLE_INSTALLED_CATALOG
 #include "PortableInstalledCatalog.h"
+#ifdef PORTABLE_HOME_PROVISION
+static bool home_provision_busy;
+static int home_provision_close(void);
+#endif
 int portable_installed_prepare_launch(void);
 static bool installed_first_frame_submitted;
 #if defined(PORTABLE_INSTALLED_CATALOG_HOST) && defined(PORTABLE_APP_SLEEP_LOCAL)
@@ -2914,6 +2918,9 @@ static int initialize(void) {
   installed_first_frame_submitted=false;
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
   installed_home_started=false;
+#ifdef PORTABLE_HOME_PROVISION
+  home_provision_busy=false;
+#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   installed_deferred_sleep=false;
 #endif
@@ -3182,7 +3189,15 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
 #endif
 #ifdef PORTABLE_INSTALLED_CATALOG
+#ifdef PORTABLE_HOME_PROVISION
+  /* Cancellation may need owner-task progress before grants can be released. */
+  unsigned provision_cleanup=0;int provision_rc;
+  while((provision_rc=portable_installed_prepare_launch())==INSTALLED_APPS_WORKING && provision_cleanup++<10000u)
+    rt->yield_ms(1);
+  if(provision_rc!=INSTALLED_APPS_OK){if(!native_custody_retained)portable_adapter_retain();return;}
+#else
   if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK){portable_adapter_retain();return;}
+#endif
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;

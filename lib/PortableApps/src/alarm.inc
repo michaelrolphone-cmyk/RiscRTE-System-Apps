@@ -344,6 +344,10 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
+#ifdef PORTABLE_HOME_PROVISION
+            int rc=home_provision_close();
+            if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
+#endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
             if(!portable_background_stop())return false;
 #endif

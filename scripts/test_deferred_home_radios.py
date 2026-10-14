@@ -15,6 +15,7 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--automatic-provision',action='store_true')
 p.add_argument('--candidate', type=Path, required=True)
 p.add_argument('--runtime-sdk', type=Path, required=True)
 p.add_argument('--sleep-source', type=Path, required=True)
@@ -36,6 +37,7 @@ for name in ('RiscRuntimeV1.h', 'RiscResidentShellV1.h', 'RiscFailureEvidenceV1.
         shutil.copyfile(sdk / name, include / name)
 shutil.copytree(ROOT / 'lib/PortableApps/time', out / 'time', dirs_exist_ok=True)
 flags = [f for f in receipt['build_defines'] if f.startswith('-D')]
+if a.automatic_provision:flags.append('-DPORTABLE_HOME_PROVISION')
 for feature in ('PORTABLE_DESK_DEFER_RADIOS', 'TEST_NATIVE_LANDSCAPE'):
     flag = '-D' + feature
     if flag not in flags:
@@ -76,6 +78,10 @@ bool deferred_test_submit(void) {
 bool deferred_test_quick(void) { bool consumed=false;return quick_foreground(&consumed); }
 bool deferred_test_alarm(void) { bool consumed=false;return alarm_foreground(&consumed); }
 bool deferred_test_launch(void) { return desk_guard_launch("settings.elf"); }
+#ifdef PORTABLE_HOME_PROVISION
+void deferred_test_provision(void){home_provision_progress();}
+void deferred_test_neutral(void){(void)pqa_input(&quick.ui,millis_now(),true,0,0,0,0,true);}
+#endif
 ''')
 names = ('desk_clock_faces.c', 'PortableRealtimeClient.c', 'PortableTimeZone.c',
          'PortableTimeZoneCatalog.c', 'PortableTimeZonePreference.c', 'quick_actions.c',
@@ -86,6 +92,8 @@ sources = [ROOT / 'Apps/paper_clock.c', wrapper,
            ROOT / 'test/native_apps/deferred_home_radios_test.c']
 if '-DPORTABLE_INSTALLED_CATALOG' in flags:
     sources.append(ROOT / 'lib/PortableApps/src/PortableInstalledCatalog.c')
+if a.automatic_provision:
+    sources += [ROOT/'lib/PortableApps/src/PortableAutomaticProvision.c',ROOT/'lib/PortableApps/src/PortableNetworkSession.c']
 incs = ['-I' + str(include), '-I' + str(ROOT / 'lib/NativeApps/include'),
         '-I' + str(a.sleep_source.parent.parent / 'drivers/x4pro_power')]
 cases = ['clock-sync', 'clock-async', 'settled-once', 'blocked-frames', 'timer-never',
@@ -95,6 +103,7 @@ cases = ['clock-sync', 'clock-async', 'settled-once', 'blocked-frames', 'timer-n
 failures = ['kv-acquire', 'kv-context', 'wifi-acquire', 'ble-acquire', 'wifi-off', 'wifi-status', 'ble-enable',
             'ble-status', 'kv-release', 'wifi-release', 'ble-release']
 cases += ['failure-' + failure for failure in failures]
+if a.automatic_provision:cases += ['provision-gates','provision-close']
 runs = []
 for sanitized in (False, True):
     label = 'asan-ubsan' if sanitized else 'normal'

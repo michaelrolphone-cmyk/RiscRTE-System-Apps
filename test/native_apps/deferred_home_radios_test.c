@@ -8,7 +8,15 @@
 #include "RiscResidentShellV1.h"
 bool portable_paper_quick_open(void);
 #include "InstalledAppsV1.h"
+#ifdef PORTABLE_HOME_PROVISION
+#include "InstalledAppsAutomaticV1.h"
+extern void deferred_test_provision(void);
+extern void deferred_test_neutral(void);
+static unsigned provision_acquires,provision_refreshes,provision_cancels;
+static installed_apps_automatic_v1 automatic;
+#endif
 #include "RiscAppDataV1.h"
+#include "RiscKeyValueAvailabilityV1.h"
 
 extern bool deferred_test_ready(bool force);
 extern bool deferred_test_loaded(void);
@@ -105,6 +113,14 @@ static bool deferred_ble_status(void *c,uint8_t *out) {
  (void)c;policy_boundary();ble_status_calls++;
  *out=fail_at("ble-status")?PORTABLE_BLUETOOTH_ON:PORTABLE_BLUETOOTH_OFF;return true;
 }
+#ifdef PORTABLE_HOME_PROVISION
+static int32_t provision_refresh(void*c){(void)c;safe();++provision_refreshes;return INSTALLED_APPS_OK;}
+static int32_t provision_cancel(void*c){(void)c;safe();++provision_cancels;return is_case("provision-close")&&provision_cancels<4?INSTALLED_APPS_WORKING:INSTALLED_APPS_OK;}
+static int32_t provision_begin(void*c,const char*p,uint64_t u){(void)c;(void)p;(void)u;assert(0);return -1;}
+static int32_t feed_start(void*c,uint64_t u){(void)c;(void)u;assert(0);return -1;}
+static int32_t feed_install(void*c,uint32_t i,uint32_t g){(void)c;(void)i;(void)g;assert(0);return -1;}
+static int32_t provision_descriptor(void*c,const char*p){(void)c;(void)p;assert(0);return -1;}
+#endif
 static int32_t installed_ok(void *c){(void)c;safe();return INSTALLED_APPS_OK;}
 static uint32_t installed_zero(void *c){(void)c;safe();return 0;}
 static bool installed_get(void *c,uint32_t i,installed_app_v1 *out){(void)c;(void)i;(void)out;assert(0);return false;}
@@ -130,6 +146,11 @@ static int32_t deferred_alarm_step(void *c) {
  }
  return step_alarm(c);
 }
+static int32_t deferred_availability(void*c,risc_key_value_availability_state_v1*out){
+ (void)c;safe();assert(out->struct_size==sizeof(*out));
+ *out=(risc_key_value_availability_state_v1){.struct_size=sizeof(*out),.namespace_id=1,.availability=RISC_KEY_VALUE_AVAILABLE,.generation=1};return RISC_KEY_VALUE_AVAILABILITY_OK;
+}
+static const risc_key_value_availability_v1 deferred_available={1,sizeof(deferred_available),NULL,deferred_availability};
 static bool deferred_obtain(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *g) {
  safe();assert(grants<16&&g->struct_size==sizeof(*g));
  const void *api=NULL;
@@ -153,10 +174,19 @@ static bool deferred_obtain(const char *name,uint32_t version,uint64_t id,risc_r
   assert(promoted&&version==1);
   if(policy_active&&fail_at("kv-acquire"))return false;
   api=&deferred_kv;
+ } else if(!strcmp(name,"storage.key-value.atomic")) {
+  assert(promoted&&version==1&&id==1);return false; /* Optional provider absent; separate atomic suite covers it. */
+ } else if(!strcmp(name,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)) {
+  assert(promoted&&version==1&&id==1);api=&deferred_available;
  } else if(!strcmp(name,INSTALLED_APPS_CAPABILITY)) {
   assert(promoted&&version==1&&!id);api=&installed;
+#ifdef PORTABLE_HOME_PROVISION
+  ++provision_acquires;api=&automatic;
+#endif
  } else if(!strcmp(name,RISC_APP_DATA_CAPABILITY)) {
   assert(promoted&&version==1&&id==62);api=&empty_data;
+ } else if(!strcmp(name,"storage.volume")) {
+  assert(promoted&&version==1&&id==9);api=&sd;
  } else if(!strcmp(name,"contexts.service")) {
   /* RF Contexts is optional; an explicitly empty unavailable response is the
    * production adapter's checked, non-retaining compatibility path. */
@@ -257,6 +287,10 @@ int __wrap_portable_app_idle_sleep(const risc_runtime_api_v1 *rt,
  return __wrap_portable_app_alarm_sleep(rt,display,gauge,alarm);
 }
 static void configure(void) {
+#ifdef PORTABLE_HOME_PROVISION
+ automatic=(installed_apps_automatic_v1){.base={.base={.base=installed,.provision_tag=INSTALLED_APPS_PROVISION_TAG,.provision_version=1,.install_descriptor=provision_descriptor},.feed_tag=INSTALLED_APPS_FEED_TAG,.feed_version=1,.refresh=feed_start,.step=installed_ok,.cancel=installed_ok,.generation=installed_zero,.count=installed_zero,.get=installed_get,.install=feed_install},.automatic_tag=INSTALLED_APPS_AUTOMATIC_TAG,.automatic_version=1,.begin=provision_begin,.step=installed_step,.cancel=provision_cancel};
+ automatic.base.base.base.struct_size=sizeof(automatic);automatic.base.base.base.refresh=provision_refresh;
+#endif
  test=clock_run?"cold":"foreground";state_path="/unused-deferred-radio-fixture";
  native_valid=true;in_main=true;start_ms=ms;
  runtime.acquire=deferred_acquire;runtime.release=deferred_drop;runtime.health=deferred_health;
@@ -300,6 +334,17 @@ int main(int argc,char **argv) {
  bool timer=is_case("timer-never");
  assert(portable_desk_adapter_start(timer?PORTABLE_DESK_START_TIMER:PORTABLE_DESK_START_FOREGROUND)==1);
  assert(!radio_calls()&&!deferred_test_loaded());
+#ifdef PORTABLE_HOME_PROVISION
+ if(is_case("provision-gates")||is_case("provision-close")) {
+  deferred_test_provision();assert(!provision_acquires);
+  portable_desk_adapter_home_submitted();deferred_test_provision();assert(!provision_acquires);
+  assert(deferred_test_ready(false));deferred_test_busy(1);deferred_test_provision();assert(!provision_acquires);
+  deferred_test_busy(0);deferred_test_provision();assert(!provision_acquires);
+  deferred_test_neutral();deferred_test_provision();assert(provision_acquires==1&&provision_refreshes==1);
+  app_module_fini();assert(!grants&&!terminal&&provision_cancels==(is_case("provision-close")?4u:1u));
+  printf("%s: actual Home first-frame/radio/display gates and cooperative pending cleanup PASS\n",deferred_case);return 0;
+ }
+#endif
  if(timer) {
   for(unsigned i=0;i<10;i++){assert(deferred_test_ready(false));assert(deferred_test_ready(true));portable_desk_adapter_home_submitted();}
   assert(!radio_calls()&&!deferred_test_loaded()&&!deferred_test_home());
@@ -341,8 +386,13 @@ int main(int argc,char **argv) {
  } else if(is_case("low-battery-pending")) {
   assert(deferred_test_submit()&&deferred_test_queue_token());
   assert(raw_present_pending&&!completed_frame&&!home_markers&&!radio_calls());
-  assert(deferred_test_low_battery());once_loaded();
-  assert(raw_present_pending&&!completed_frame&&!home_markers&&written_count>=4);
+  assert(deferred_test_low_battery());
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  assert(!radio_calls()&&!written_count); /* Missing atomic provider cannot persist low-battery defaults. */
+#else
+  once_loaded();assert(written_count>=4);
+#endif
+  assert(raw_present_pending&&!completed_frame&&!home_markers);
   unsigned before=radio_calls();assert(deferred_test_low_battery()&&radio_calls()==before);
  } else if(is_case("force-navigation")) {
   const t5_app_api_v1 *app=t5_app_get_api(1);assert(app);t5_app_input_t input={0};

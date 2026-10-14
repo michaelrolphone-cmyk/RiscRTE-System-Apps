@@ -98,6 +98,13 @@ static int desk_sample(bool recover,risc_realtime_snapshot_v1 *out) {
  if(closed!=PORTABLE_REALTIME_OK)return desk_fence();
  return status==PORTABLE_REALTIME_RECOVERED?PORTABLE_REALTIME_OK:status;
 }
+#ifdef PORTABLE_HOME_PROVISION
+bool portable_desk_clock_utc(uint64_t*out){
+ risc_realtime_snapshot_v1 sample;
+ if(!out||!desk_promoted||!desk_rtc_check.checked||desk_sample(false,&sample)!=PORTABLE_REALTIME_OK||sample.validity!=RISC_REALTIME_VALID||sample.epoch_seconds<0)return false;
+ *out=(uint64_t)sample.epoch_seconds;return true;
+}
+#endif
 static bool desk_local(const portable_desk_config *config,int64_t utc,twatch_rtc_time_v1 *out) {
  portable_timezone_rule rule;portable_timezone_civil local;
  if(portable_timezone_resolve(config->time_zone,sizeof(config->time_zone),&rule)!=PORTABLE_TIMEZONE_OK ||
