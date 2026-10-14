@@ -11,12 +11,15 @@
     "ordered_touch_reducer_normal_ubsan": "pass",
     "portable_alarm_normal": 11,
     "x4_existing_scene_cadence_raster": 75,
-    "shared_signal_library_ubsan": "pass"
+    "shared_signal_library_ubsan": "pass",
+    "runtime_retained_yield_normal": 8,
+    "runtime_host_flags": "Apple clang only: -Wno-unused-private-field -Wno-unused-but-set-variable; no runtime source edits",
+    "spectrum_shared_input_ubsan": "pass: capture/analysis continuity, no presenter overlap, redraw-independent targets, draft/custody handling"
   },
   "limits": [
     "Host providers supply events; no hardware input or latency claim.",
     "No target binary built or delivered by this checkpoint.",
-    "Local ASan is unavailable; dedicated Linux CI runs address and undefined sanitizers.",
+    "Local checks used UBSan; Linux CI passed address and undefined sanitizers.",
     "Runtime and Utilities sources remain unchanged.",
     "Bounded provider overflow or invalid streams cancel/fence explicitly; no silent coalescing of accepted keys."
   ],
@@ -34,5 +37,32 @@
       "Cleared consumed top-edge reservation each logical pass so subsequent edges can advance."
     ],
     "status": "Resolved before source checkpoint ae45093; final 194/194 pass."
+  },
+  "ci": {
+    "run": 38511813356,
+    "commit": "189d22dd5c22dd05a48bb516e60562d14bdf5b48",
+    "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38511813356",
+    "result": "success",
+    "checks": "194 canvas/modal cases, ordered touch reducer and 8 current Stopwatch cases in normal and ASan+UBSan modes"
+  },
+  "preserved_panel": {
+    "version": "0.1.12",
+    "elf_sha256": "3fe67b0b8b22b739b4cee6cb5d8e5da9536883ae567b6d61b142de5da50181d4"
+  },
+  "audit_scope": {
+    "x4_scene_keyboard": "Existing ordered stream and logical hit-map already decoupled; 75 baseline cadence/raster tests pass, no source change.",
+    "watch_adapter": "Fixed proven collapse of successive captured contacts and preserved modal reset semantics.",
+    "runtime": "Owner-task provider polling and retained-yield fences reviewed; 8 runtime regressions pass, no demonstrated Runtime defect.",
+    "utilities": "Pinned latest d03c656, current Stopwatch tested, shared signal processing regression passed; no application source edits.",
+    "remaining": "Hardware timing/physical input qualification and broader product integration are pending; no universal hardware-performance claim."
+  },
+  "spectrum_test_sdk": {
+    "source": "X4 System 8a5ef23480b7711e68fd2d72e9a43cad4a2e2ddc",
+    "method": "Staged only the missing text-client SDK headers alongside the Watch headers; no conflicting Runtime headers and no source checkout edits.",
+    "sha256": {
+      "RiscTextEntryV1.h": "a5733f06b1d8caf86f21d730abcd9ff833b603807c8b028a49544c997b6cdba3",
+      "PortableTextInputHandoff.h": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+      "PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f"
+    }
   }
 }
