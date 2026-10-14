@@ -116,7 +116,13 @@ const paper_presentation *paper_presentation_get(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
   if(failed || native_custody_retained)return NULL;
 #endif
-  if(!pp_enabled())return NULL;
+  if(!pp_enabled()
+#ifdef PORTABLE_USB_TRANSFER_APP
+     /* This awake utility uses the same scalable presentation on RGB panels. */
+     && !(width()>=240 && height()>=240 &&
+          (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
+#endif
+     )return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);
   if(!np_rtc_grant.api && rt->acquire("rtc.clock",TWATCH_RTC_API_V1,0,&np_rtc_grant)) {

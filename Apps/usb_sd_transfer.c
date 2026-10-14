@@ -360,8 +360,8 @@ static void render(void) {
             button(32,612,416,"START TRANSFER");
         }
         if(detail[0])wrap(440,detail);
-        text(544,"Copy x4-boot.log and x4-boot.previous.log",false);
-        text(576,"from the USB drive to get device logs.",false);
+        text(544,"Use the computer to copy files on the SD card.",false);
+        text(576,"Safely eject the drive when finished.",false);
         button(32,704,416,portable_usb_transfer_owned()?"HOME LOCKED DURING TRANSFER":"BACK TO APPS");
     }
     app->present(false);
