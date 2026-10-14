@@ -107,6 +107,13 @@ byte-for-byte in the frozen image. The inventory has at most 160 files, and
 Runtime's SPIFFS path/size/capacity bounds remain enforced. Inputs are reread
 before creating output; feed and assets are verified after writing.
 
+Compiled native images may also contain a standalone NUL-terminated
+`RISC_RUNTIME_VERSION:` or `RISC_PAIRED_STORE_ABI:` scan-prefix literal. Only
+these exactly empty literals are ignored. Each field must still have at least
+one genuine marker, and every nonempty occurrence must match the cohort value
+exactly, including its terminating NUL. Conflicting, malformed or truncated
+occurrences fail even when another matching marker is present.
+
 These custody checks do not replace native board, graph, grant, manifest or ELF
 admission. A matching firmware hash alone does not prove a firmware image is
 executable or qualified. Continue to use the product's independent admission and
@@ -172,3 +179,10 @@ all supported layouts, native/cohort mismatch, physical/decoded image corruption
 credential fields, unsafe paths/URLs, required time input, source-only policy
 preservation, mirror limits, 161-file overflow, input mutation, interruption
 cleanup and successful retry. The test runner performs no network activity.
+
+To include the known Wave 0.3.4 and Watch 0.2.24 CI firmware binaries in the
+marker regression suite, additionally set `BOOT_PROFILE_WAVE_FIRMWARE` and
+`BOOT_PROFILE_WATCH_FIRMWARE` to those exact local `firmware.bin` paths. The tests
+read and hash these real binaries without modifying them or creating a candidate.
+Both must contain ABI 3 and their respective genuine version marker; the empty
+Runtime scan literal is explicitly checked to reproduce the prior rejection.

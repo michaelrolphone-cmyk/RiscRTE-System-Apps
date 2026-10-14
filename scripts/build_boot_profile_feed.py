@@ -105,6 +105,24 @@ def time_input(p, servers):
     return value
 
 
+def compiled_marker(firmware, prefix, expected):
+    """Require every nonempty marker to be exactly expected and NUL-terminated.
+
+    NativeBankStore links its scan prefix as a standalone C string. Ignore
+    only that empty parser literal, never a missing value or truncated string.
+    At least one genuine marker is still required for each identity field.
+    """
+    found = False
+    for marker in re.finditer(re.escape(prefix), firmware):
+        start = marker.end()
+        if firmware[start:start + 1] == b'\0':
+            continue
+        require(firmware[start:start + len(expected) + 1] == expected + b'\0',
+                'native compiled version or ABI mismatch')
+        found = True
+    require(found, 'native compiled version or ABI mismatch')
+
+
 def native_identity(p, cohort, firmware, product):
     require(isinstance(cohort, dict) and set(cohort) == COHORT_KEYS, 'exact cohort fields required')
     require(cohort['schema'] == 'riscrte.cohort' and
@@ -128,8 +146,7 @@ def native_identity(p, cohort, firmware, product):
             cohort['firmware_sha256'] == p.sha(firmware), 'cohort firmware binding mismatch')
     for prefix, expected in ((b'RISC_RUNTIME_VERSION:', cohort['runtime_version'].encode()),
                              (b'RISC_PAIRED_STORE_ABI:', str(cohort['store_abi']).encode())):
-        require(set(re.findall(re.escape(prefix) + rb'([^\0]*)\0', firmware)) == {expected},
-                'native compiled version or ABI mismatch')
+        compiled_marker(firmware, prefix, expected)
     return {key: cohort[key] for key in sorted(NATIVE_KEYS)}
 
 

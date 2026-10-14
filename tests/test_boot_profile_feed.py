@@ -276,6 +276,18 @@ class BootProfileFeed(unittest.TestCase):
             self.edit_json('cohort.json', lambda data: data.update(firmware_size=len(change), firmware_sha256=sha(change)))
             self.reject('compiled version or ABI mismatch')
 
+    def test_native_parser_literals_preserve_exact_firmware_binding(self):
+        self.firmware += (b'RISC_RUNTIME_VERSION:\0RISC_PAIRED_STORE_ABI:\0'
+                          b'RISC_RUNTIME_VERSION:0.2.24\0RISC_PAIRED_STORE_ABI:3\0')
+        self.edit_json('cohort.json', lambda data: data.update(
+            firmware_size=len(self.firmware), firmware_sha256=sha(self.firmware)))
+        self.build()
+        native = self.read_feed()['boot_profiles']['core']['native']
+        self.assertEqual(native['firmware_size'], len(self.firmware))
+        self.assertEqual(native['firmware_sha256'], sha(self.firmware))
+        self.assertEqual(native['runtime_version'], '0.2.24')
+        self.assertEqual(native['store_abi'], 3)
+
     def test_credentials_duplicate_json_and_missing_manifest_rejected(self):
         original = dict(self.files)
         for key in ('wifi', 'SSID', 'password', 'passphrase', 'PSK', 'credentials', 'private-key', 'api_key', 'access_token', 'refresh_token'):
@@ -493,6 +505,54 @@ class BootProfileFeed(unittest.TestCase):
         self.assertEqual(rejected.returncode, 1)
         self.assertNotIn('secret-marker', rejected.stdout + rejected.stderr)
         self.assertFalse((self.root / 'out').exists())
+
+
+class CompiledNativeMarkers(unittest.TestCase):
+    def test_empty_literals_require_a_genuine_exact_marker(self):
+        for prefix, value in ((b'RISC_RUNTIME_VERSION:', b'0.2.24'),
+                              (b'RISC_PAIRED_STORE_ABI:', b'3')):
+            literal = prefix + b'\0'
+            real = prefix + value + b'\0'
+            for valid in (real, literal + real, real + literal,
+                          literal + real + literal + real):
+                with self.subTest(prefix=prefix, valid=valid):
+                    feed.compiled_marker(valid, prefix, value)
+            for invalid in (b'', literal, literal * 2):
+                with self.subTest(prefix=prefix, invalid=invalid):
+                    self.assertRaisesRegex(ValueError, 'compiled version or ABI mismatch',
+                                           feed.compiled_marker, invalid, prefix, value)
+
+    def test_conflicting_malformed_and_truncated_markers_are_not_ignored(self):
+        for prefix, value in ((b'RISC_RUNTIME_VERSION:', b'0.2.24'),
+                              (b'RISC_PAIRED_STORE_ABI:', b'3')):
+            real = prefix + value + b'\0'
+            for suffix in (b'', value, value[:-1], value[:-1] + b'\0',
+                           value + b'x\0', b'999\0', b' invalid\0', b'\xff\0'):
+                if suffix == b'\0':
+                    # The ABI's empty C literal is intentionally the sole
+                    # exception. Bare/truncated prefixes still fail.
+                    continue
+                for invalid in (prefix + suffix, real + prefix + suffix,
+                                prefix + suffix + real):
+                    with self.subTest(prefix=prefix, suffix=suffix, invalid=invalid):
+                        self.assertRaisesRegex(ValueError, 'compiled version or ABI mismatch',
+                                               feed.compiled_marker, invalid, prefix, value)
+
+    def test_explicit_real_ci_binaries(self):
+        cases = (('BOOT_PROFILE_WAVE_FIRMWARE', b'0.3.4'),
+                 ('BOOT_PROFILE_WATCH_FIRMWARE', b'0.2.24'))
+        if not all(os.environ.get(key) for key, _ in cases):
+            self.skipTest('Set both explicit real CI firmware paths to run binary marker validation')
+        for key, version in cases:
+            with self.subTest(binary=key):
+                data = Path(os.environ[key]).read_bytes()
+                self.assertGreater(len(data), 1024 * 1024)
+                # Reproduce the linked standalone parser literal that the old
+                # marker-set comparison rejected in both actual CI outputs.
+                self.assertIn(b'RISC_RUNTIME_VERSION:\0', data)
+                feed.compiled_marker(data, b'RISC_RUNTIME_VERSION:', version)
+                feed.compiled_marker(data, b'RISC_PAIRED_STORE_ABI:', b'3')
+                print(f'Real CI marker validation: {key}, {len(data)} bytes, sha256={sha(data)}')
 
 
 if __name__ == '__main__':
