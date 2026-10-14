@@ -1,0 +1,55 @@
+{
+  "baselines": {
+    "x4_system": "8a5ef23480b7711e68fd2d72e9a43cad4a2e2ddc",
+    "watch_system": "088c88bd2ffee0c38fd3b07631a1713c5ca85146",
+    "runtime_local": "84ff77ff459ae80134f07ebf7514a1aab8b3b856",
+    "runtime_public_tree_equivalent": "1790560"
+  },
+  "reproduction": [
+    {
+      "case": 29,
+      "exit": -6,
+      "output": "Assertion failed: (wifi_stopping&&async_cancels==1&&wifi_operation&&!cleanup_pending), function main, file wifi_workflow_test.c, line 81.\n"
+    },
+    {
+      "case": 30,
+      "exit": -6,
+      "output": "Assertion failed: (wifi_stopping&&async_cancels==1&&wifi_operation&&!cleanup_pending), function main, file wifi_workflow_test.c, line 82.\n"
+    },
+    {
+      "case": 31,
+      "exit": 0,
+      "output": "Wi-Fi shared keyboard/profiles/async workflow 31 PASS\n"
+    },
+    {
+      "case": 32,
+      "exit": 0,
+      "output": "Wi-Fi shared keyboard/profiles/async workflow 32 PASS\n"
+    }
+  ],
+  "patch": "Honor accepted scan/join deadlines when radio poll returns AGAIN; cancel without releasing custody; completed scans and connected links remain intact.",
+  "version": "1.1.30",
+  "scope": "Source changes and target development artifacts only; no product firmware integration or hardware access.",
+  "storage": "Namespace 6 existing capabilities preserved. Internal NVS cold-process persistence and native atomic codec bridge verified. Existing checked SD replica transport tested separately; this does not prove selected product SD-first routing. No app-level device/storage branching added.",
+  "logs": {
+    "x4-target.log": "330d9f6e69a32fa35a64bb838cb46a2926b5a2097c25ed5b4faa64fa316d81ef",
+    "workflow-ubsan.log": "dc11e5756e470b4f134b6dcb6b710367409c663fc62cbf2bbc41ce5918d761af",
+    "workflow-undefined.log": "04b8f8b5065a8f854d96c8632c6ab69776b1a35e8c738fccb1a2d6e88a249ed3",
+    "workflow.log": "04b8f8b5065a8f854d96c8632c6ab69776b1a35e8c738fccb1a2d6e88a249ed3",
+    "modal.log": "2a8f65e5ced559347d5124aee724956ed0ad2bf50e6cfe9941fd1bf2c576c1ae",
+    "modal-ubsan.log": "93374c96e1046024de313ab2afdd2c6202073fb09740465fb11014e591f1a191",
+    "atomic-bridge.log": "5c67290f744a9e10e3a01232fb9f6ba416a7141c3da730f014f027e5f01a8e42",
+    "persistence.log": "cbe27d873d1d9c8e1978cf186c111518b2f131d51844f22ca9f34333732d6491",
+    "availability-paper.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "atomic-bridge-final.log": "5c67290f744a9e10e3a01232fb9f6ba416a7141c3da730f014f027e5f01a8e42",
+    "availability.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "watch-workflow-undefined.log": "04b8f8b5065a8f854d96c8632c6ab69776b1a35e8c738fccb1a2d6e88a249ed3",
+    "atomic.log": "fc84bb76000878c9e10352982254f38a043b0f775244fcfd33d9a75fd393d59a",
+    "sd-provider-ubsan.log": "fb4b175d282850f6f70bc32b583ec45048daca2e324212e5e7f08d0594087d8b",
+    "watch-workflow.log": "04b8f8b5065a8f854d96c8632c6ab69776b1a35e8c738fccb1a2d6e88a249ed3",
+    "watch-workflow-ubsan.log": "0a00cd41c65a1711817395da1919bcb7adfe78716f55dd7e29f91a6a1a57b794",
+    "watch-target.log": "330d9f6e69a32fa35a64bb838cb46a2926b5a2097c25ed5b4faa64fa316d81ef",
+    "sd-provider.log": "fb4b175d282850f6f70bc32b583ec45048daca2e324212e5e7f08d0594087d8b",
+    "portable.log": "dedf21d32b54b63e6ea79673f7103c3a482e8baf836220aaf83d63ff532776da"
+  }
+}

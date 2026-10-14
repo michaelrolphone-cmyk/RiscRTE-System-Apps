@@ -68,7 +68,7 @@ def build(args, parser=None):
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version']
     flags+=portable_broadcast_build.flags(args)
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
-    if policy: version='1.1.29'
+    if policy: version='1.1.30'
     if native_receipt:native_receipt['version']=version
     flags.append('-DPORTABLE_WIFI_VERSION=\"'+version+'\"')
     quick_flags, quick_sources = portable_quick_build.configure(args,parser,ROOT,out,includes)
@@ -107,7 +107,7 @@ def build(args, parser=None):
     if native_receipt:native_receipt['version']=portable_broadcast_build.version(args,'wifi_settings',native_receipt['version'])
     version=native_receipt['version'] if native_receipt else json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version']
     version=portable_quick_build.version(args,'wifi_settings',portable_idle_build.version(args,'wifi_settings',version))
-    if policy: version='1.1.29'
+    if policy: version='1.1.30'
     if native_receipt:native_receipt['version']=version
     manifest={'type':'application','id':'wifi_settings','version':version,'architecture':'xtensa-esp32s3',
         'file_name':'wifi_settings.elf','entry':'app_main','requires':[

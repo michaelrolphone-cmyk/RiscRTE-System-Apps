@@ -17,10 +17,11 @@ static risc_text_entry_api_v1_masked texts={{{1,sizeof(texts),NULL,text_open,tex
 static const risc_text_entry_api_v1 *offered_text=&texts.base.base;
 static risc_radio_progress_v1 progress;
 static risc_radio_request_v1 copied_request;
+static bool poll_again;
 static unsigned async_starts,async_polls,async_cancels,automatic_cleanup_at;
 static uint32_t async_serial;static unsigned begin_again;static bool begin_unavailable;
 static int32_t async_begin(void*c,const risc_radio_request_v1*q,uint32_t*out){(void)c;assert(!native_active&&q->struct_size==sizeof(*q));if(begin_again){--begin_again;*out=0;return RISC_RADIO_AGAIN;}if(begin_unavailable){*out=0;return RISC_RADIO_UNAVAILABLE;}copied_request=*q;native_active=true;++async_starts;*out=++async_serial;progress=(risc_radio_progress_v1){.struct_size=sizeof(progress),.operation_id=*out,.phase=RISC_RADIO_STARTING,.owned=1,.scan={.struct_size=sizeof(progress.scan)}};return RISC_RADIO_ACCEPTED;}
-static int32_t async_poll(void*c,uint32_t id,risc_radio_progress_v1*out){(void)c;assert(id==progress.operation_id);++async_polls;if(automatic_cleanup_at&&async_polls>=automatic_cleanup_at){progress.phase=RISC_RADIO_IDLE;progress.owned=0;progress.quiescent=1;native_active=false;}*out=progress;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
+static int32_t async_poll(void*c,uint32_t id,risc_radio_progress_v1*out){(void)c;assert(id==progress.operation_id);++async_polls;if(poll_again)return RISC_RADIO_AGAIN;if(automatic_cleanup_at&&async_polls>=automatic_cleanup_at){progress.phase=RISC_RADIO_IDLE;progress.owned=0;progress.quiescent=1;native_active=false;}*out=progress;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
 static int32_t async_cancel(void*c,uint32_t id){(void)c;assert(id==progress.operation_id);++async_cancels;return progress.quiescent?RISC_RADIO_QUIESCENT:RISC_RADIO_PENDING;}
 static bool service_busy,service_live;static unsigned service_begins,service_ends;
 static int32_t service_begin(void*c,uint32_t*out){(void)c;assert(!service_live);*out=0;++service_begins;if(service_busy)return RISC_RADIO_BUSY;service_live=true;*out=31;return RISC_RADIO_ACCEPTED;}
@@ -77,6 +78,10 @@ int main(int argc,char**argv){
 #endif
  else if(which==27){wifi_scan_start();progress.phase=RISC_RADIO_RESULTS;progress.scan.state=GARDEN_RADIO_SCAN_DONE;progress.scan.count=1;strcpy(progress.scan.entries[0].ssid,"Selected AP");progress.scan.entries[0].auth=GARDEN_RADIO_AUTH_OPEN;tick(250);wifi_scan_start();begin_again=1;stopped();assert(!wifi_operation&&wifi_next_request.kind&&async_starts==1&&page==WP_SCAN);wifi_activate(0);search_done();assert(!wifi_next_request.kind&&!wifi_operation&&!strcmp(credentials.ssid,"Selected AP"));tick(250);assert(async_starts==1&&page==WP_ROOT);}
  else if(which==28){begin_unavailable=true;wifi_connect();assert(!wifi_operation&&!async_starts&&!connects&&wifi_async&&!cleanup_pending&&!wifi_next_request.kind);begin_unavailable=false;wifi_connect();assert(wifi_operation&&async_starts==1&&!connects);assert(!wifi_disconnect());stopped();}
+ else if(which==29){wifi_scan_start();poll_again=true;tick(15000);assert(wifi_stopping&&async_cancels==1&&wifi_operation&&!cleanup_pending);poll_again=false;stopped();}
+ else if(which==30){wifi_connect();poll_again=true;tick(30000);assert(wifi_stopping&&async_cancels==1&&wifi_operation&&!cleanup_pending);poll_again=false;stopped();}
+ else if(which==31){wifi_scan_start();poll_again=true;tick(14750);assert(!wifi_stopping&&!async_cancels);poll_again=false;progress.phase=RISC_RADIO_RESULTS;progress.scan.state=GARDEN_RADIO_SCAN_DONE;tick(250);assert(!scanning&&!wifi_stopping&&!async_cancels);poll_again=true;tick(60000);assert(!wifi_stopping&&!async_cancels);poll_again=false;assert(!wifi_cancel_scan());stopped();}
+ else if(which==32){wifi_connect();progress.phase=RISC_RADIO_CONNECTED;progress.station_state=WIFI_LINK_UP;tick(250);assert(!joining&&link_state==WIFI_LINK_UP);poll_again=true;tick(60000);assert(!wifi_stopping&&!async_cancels);poll_again=false;assert(!wifi_disconnect());stopped();}
  else assert(!"unknown workflow");
  assert(!wifi_operation&&!text_live);finish();printf("Wi-Fi shared keyboard/profiles/async workflow %u PASS\n",which);return 0;
 }

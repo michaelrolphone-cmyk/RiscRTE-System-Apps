@@ -1,0 +1,26 @@
+name: T051 Wi-Fi cooperative timeout
+on:
+  push:
+    branches: [fix/t051-wifi-cooperative-progress-20261014, fix/t051-watch-wifi-cooperative-progress-20261014]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  workflow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Controller, shared password entry and multi-network regressions
+        run: |
+          python scripts/test_wifi_workflow.py --output build/t051/normal
+          python scripts/test_wifi_workflow.py --output build/t051/sanitized --sanitize
+          python scripts/test_portable_wifi.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: t051-wifi-regressions
+          path: build/t051
