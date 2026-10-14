@@ -21,8 +21,8 @@ After first-frame promotion, the existing foreground owner acquires its normal
 network/settings grants and service lease. The additive API requests the saved
 network-tool default profile only when a changed core store needs a native
 request. It checks ownership before and after every credential read, never
-writes settings, and wipes all credential buffers. The service also wipes its
-merged JSON allocations and bounded native request buffer. It does not log or
+writes settings, and wipes all credential buffers. The service escapes all credential control bytes directly into its bounded
+native request buffer and wipes that buffer after queueing, without heap copies. It does not log or
 include credentials in feeds, build receipts or public status.
 
 Native owns persistence and admission. The service queues against the exact

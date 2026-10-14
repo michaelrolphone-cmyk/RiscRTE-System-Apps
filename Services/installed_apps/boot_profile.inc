@@ -118,24 +118,32 @@ int bootStep(const risc_storage_volume_api_v1*sd,const char*profile,uint64_t utc
  if(bootStatus.state==RISC_PROVISION_REQUEST_BLOCKED)return INSTALLED_APPS_UNAVAILABLE;
  bootWaitingWifi=true;return INSTALLED_APPS_NEEDS_PROFILE_WIFI;
 }
-// ArduinoJson may allocate strings while merging. Wipe every owned byte on
-// free/reallocation as well as the bounded serialized profile after queue().
-class BootClearingAllocator final:public ArduinoJson::Allocator {
- struct alignas(std::max_align_t) Header{size_t n;};
- public:void*allocate(size_t n)override{if(n>SIZE_MAX-sizeof(Header))return nullptr;auto*h=static_cast<Header*>(malloc(sizeof(Header)+n));if(!h)return nullptr;h->n=n;return h+1;}
- void deallocate(void*p)override{if(!p)return;auto*h=static_cast<Header*>(p)-1;bootWipe(p,h->n);free(h);}
- void*reallocate(void*p,size_t n)override{if(!p)return allocate(n);if(!n){deallocate(p);return nullptr;}void*q=allocate(n);if(!q)return nullptr;auto*h=static_cast<Header*>(p)-1;std::memcpy(q,p,n<h->n?n:h->n);deallocate(p);return q;}
-};
+// Append credentials directly into the already validated bounded public JSON.
+// Escape every control byte; ArduinoJson only escapes named controls. This
+// avoids credential heap copies and preserves valid control-bearing SSIDs.
+bool bootAppend(size_t&used,const char*text){size_t n=std::strlen(text);if(n>RISC_PROVISION_REQUEST_PROFILE_MAX-used)return false;std::memcpy(bootProfile+used,text,n+1);used+=n;return true;}
+bool bootQuote(size_t&used,const char*value){
+ if(!bootAppend(used,"\""))return false;
+ static const char hex[]="0123456789abcdef";
+ for(const unsigned char*p=reinterpret_cast<const unsigned char*>(value);*p;++p){
+  char escaped[7]={char(*p),0,0,0,0,0,0};
+  if(*p<32){escaped[0]='\\';escaped[1]='u';escaped[2]='0';escaped[3]='0';escaped[4]=hex[*p>>4];escaped[5]=hex[*p&15];}
+  else if(*p=='"'||*p=='\\'){escaped[0]='\\';escaped[1]=char(*p);}
+  bool good=bootAppend(used,escaped);bootWipe(escaped,sizeof(escaped));if(!good)return false;
+ }
+ return bootAppend(used,"\"");
+}
 int32_t bootWifi(void*,const char*ssid,const char*password){
  if(!started||retained||!bootSelected||!bootWaitingWifi||!bootRequests||!ssid||!password||
   bootLength(ssid,33)>32||!ssid[0]||bootLength(password,64)>63)return INSTALLED_APPS_INVALID;
  const size_t passwordSize=std::strlen(password);if(passwordSize&&passwordSize<8)return INSTALLED_APPS_INVALID;
  for(size_t i=0;i<passwordSize;++i)if(static_cast<unsigned char>(password[i])<32||static_cast<unsigned char>(password[i])>126)return INSTALLED_APPS_INVALID;
- BootClearingAllocator allocator;JsonDocument profile(&allocator);
- if(deserializeJson(profile,static_cast<const char*>(bootProfile)))return INSTALLED_APPS_INVALID;
- profile["wifi"]["ssid"]=ssid;profile["wifi"]["password"]=password;
- size_t size=measureJson(profile);if(!size||size>RISC_PROVISION_REQUEST_PROFILE_MAX)return INSTALLED_APPS_INVALID;
- serializeJson(profile,bootProfile,sizeof(bootProfile));
+ size_t size=std::strlen(bootProfile);
+ if(!size||bootProfile[size-1]!='}')return INSTALLED_APPS_INVALID;
+ bootProfile[--size]=0;
+ if(!bootAppend(size,",\"wifi\":{\"ssid\":")||!bootQuote(size,ssid)||!bootAppend(size,",\"password\":")||!bootQuote(size,password)||!bootAppend(size,"}}")){
+  bootWipe(bootProfile,sizeof(bootProfile));bootWaitingWifi=false;return INSTALLED_APPS_INVALID;
+ }
  risc_provision_request_v1 request{};request.struct_size=sizeof(request);request.profile_json=bootProfile;request.profile_size=uint32_t(size);
  request.time_json=bootTime;request.time_size=uint32_t(std::strlen(bootTime));std::memcpy(request.expected_active_store_sha256,bootStatus.active_store_sha256,32);
  uint8_t digest[32]{};int rc=bootRequests->queue(bootRequests->context,&request,digest);

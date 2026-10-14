@@ -13,14 +13,15 @@ static const risc_http_client_v1 feedHttp={1,sizeof(feedHttp),nullptr,
 
 
 static risc_provision_request_status_v1 requestStatus;
-static unsigned queueCalls;static int queueResult;
+static unsigned queueCalls;static int queueResult;static std::string wantedSsid="saved default";
 static const risc_provision_request_api_v1 requests={1,sizeof(requests),nullptr,
  [](void*,risc_provision_request_status_v1*out)->int32_t{assert(out->struct_size==sizeof(*out));*out=requestStatus;return 0;},
  [](void*,const risc_provision_request_v1*q,uint8_t*out)->int32_t{
   ++queueCalls;assert(q->struct_size==sizeof(*q)&&q->profile_size<16384&&q->time_size<384);
   assert(!memcmp(q->expected_active_store_sha256,requestStatus.active_store_sha256,32));
   JsonDocument d,t;assert(!deserializeJson(d,q->profile_json,q->profile_size)&&!deserializeJson(t,q->time_json,q->time_size));
-  assert(d["schema"]=="riscrte.provisioning"&&d["wifi"]["ssid"]=="saved default"&&d["wifi"]["password"]=="saved-password");
+  assert(RuntimePackages::PackageJsonGuard(static_cast<const char*>(q->profile_json),q->profile_size,160).objectOnly());
+  assert(d["schema"]=="riscrte.provisioning"&&!strcmp(d["wifi"]["ssid"].as<const char*>(),wantedSsid.c_str())&&d["wifi"]["password"]=="saved-password");
   assert(t["servers"][0]=="time.example.org");memset(out,0x99,32);
   if(queueResult==0){requestStatus.state=RISC_PROVISION_REQUEST_PENDING;assert(bootDigest(d["image"]["sha256"],requestStatus.target_store_sha256));}
   return queueResult;}};
@@ -82,16 +83,22 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);queueResult=RISC_PROVISION_REQUEST_UNKNOWN;
  assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_UNAVAILABLE&&queueCalls==2);
  assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_INVALID&&queueCalls==2);for(char c:bootProfile)assert(!c);closeCore();
+ // All ASCII control bytes in saved SSIDs are escaped, not serialized as
+ // invalid raw JSON. The decoded request retains those exact bytes.
+ queueResult=0;statusReset();makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);
+ wantedSsid=std::string(32,'\x01');assert(b->supply_wifi(nullptr,wantedSsid.c_str(),"saved-password")==INSTALLED_APPS_PROFILE_QUEUED&&queueCalls==3);
+ for(char c:bootProfile)assert(!c);
+ closeCore();wantedSsid="saved default";
  // Once a prior profile is consumed, a changed desired profile queues
  // against that precise active-store identity, without firmware redeployment.
  queueResult=0;requestStatus.state=RISC_PROVISION_REQUEST_CONSUMED;memset(requestStatus.active_store_sha256,0x33,32);
  makeCore();assert(!deserializeJson(d,feedBody));d["boot_profiles"]["core"]["profile"]["image"]["sha256"]=std::string(64,'4');feedBody.clear();serializeJson(d,feedBody);
  beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);
- assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_PROFILE_QUEUED&&queueCalls==3);closeCore();
+ assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_PROFILE_QUEUED&&queueCalls==4);closeCore();
  // Retained ownership during SD session acquisition fences fallback/queue.
  statusReset();staged_fixture::disk.clear();makeCore(true);beginCore();
  staged_fixture::packageVolume.base.begin=[](void*,uint64_t*t)->int32_t{*t=0;return RISC_STORAGE_ASYNC_RETAINED;};
- assert(driveCore(staged_fixture::volume)==INSTALLED_APPS_RETAINED&&queueCalls==3&&mirrorDownload);
+ assert(driveCore(staged_fixture::volume)==INSTALLED_APPS_RETAINED&&queueCalls==4&&mirrorDownload);
  assert(automaticApi.cancel(nullptr)==INSTALLED_APPS_RETAINED&&mirrorDownload);
 
  puts("Core profile service: first-start credential handoff, matching pending/active target, native binding, public-profile rejection, SD mirrors/internal fallback, 160-file bound, 100 interruption retries, changed profile, ambiguous queue and retained-media fences PASS");
