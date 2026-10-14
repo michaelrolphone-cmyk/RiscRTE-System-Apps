@@ -1,7 +1,7 @@
 name: T051 Wi-Fi cooperative timeout
 on:
   push:
-    branches: [fix/t051-wifi-cooperative-progress-20261014, fix/t051-watch-wifi-cooperative-progress-20261014]
+    branches: [fix/t051-wifi-cooperative-progress-20261014, fix/t051-watch-wifi-cooperative-progress-20261014, integrate/x4-current-clock-reconciliation-20261014]
   workflow_dispatch:
 permissions:
   contents: read

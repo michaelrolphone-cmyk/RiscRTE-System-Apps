@@ -1,7 +1,7 @@
 name: Sparse Clock RTC reconciliation
 on:
   push:
-    branches: [fix/x4-rtc-reconciliation-20261013]
+    branches: [fix/x4-rtc-reconciliation-20261013, integrate/x4-current-clock-reconciliation-20261014]
   pull_request:
     paths:
       - 'Apps/paper_sparse_clock.inc'
