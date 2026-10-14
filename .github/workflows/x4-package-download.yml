@@ -29,6 +29,7 @@ jobs:
           mkdir -p results
           bash scripts/test_installed_catalog.sh 2>&1 | tee results/catalog.log
           bash scripts/test_installed_apps_service.sh 2>&1 | tee results/service.log
+          bash scripts/test_installed_apps_feed.sh 2>&1 | tee results/feed.log
           bash scripts/test_installed_apps_install.sh 2>&1 | tee results/install.log
           bash scripts/test_installed_apps_media.sh 2>&1 | tee results/internal-media.log
           bash runtime/test/run_package_files_test.sh 2>&1 | tee results/package-files.log

@@ -73,5 +73,5 @@ int main(void){ur=&runtime;us=&original;assert(inventory_open()&&us==&inventory_
 #else
  2
 #endif
- &&!retained);puts("App Store cached inventory: installed rows, offline state, unchanged release authority, 1000 memory-only lookups and checked release PASS");
+ &&!retained);puts("App Store cached inventory: installed rows, offline state, unchanged release authority, 1000 memory-only lookups and checked release PASS");return 0;
 }

@@ -16,3 +16,6 @@ cc "${flags[@]}" -DTEST_IDLE_ELIGIBILITY -DPORTABLE_UPDATE_FIRMWARE=0 -DPORTABLE
 "$build/remove-controller" 53
 "$build/remove-controller" 54
 printf '%s\n' 'App Store installed inventory: 38 existing controller cases plus cached installed-list interaction PASS (UBSan)'
+
+cc "${flags[@]}" "$root/test/native_apps/update_native_feed_test.c" -o "$build/native-feed"
+"$build/native-feed"

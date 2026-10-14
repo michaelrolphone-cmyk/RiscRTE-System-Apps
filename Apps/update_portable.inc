@@ -154,7 +154,7 @@ static bool connect_saved(bool install) {
 #ifdef PORTABLE_BLE_BROADCAST
  if(!portable_broadcast_stop())return false;
 #endif
-#ifdef PORTABLE_UPDATE_FEED_DISABLED
+#if defined(PORTABLE_UPDATE_FEED_DISABLED) && !defined(PORTABLE_NATIVE_PACKAGE_FEED)
 #ifdef PORTABLE_APP_STORE_ACTIONS
  if(!inventory_need_network){
 #endif
@@ -328,7 +328,7 @@ static bool open_update(void) {
 #else
  if(!us||!uk)message="Update service or saved network unavailable";
 #endif
-#ifdef PORTABLE_UPDATE_FEED_DISABLED
+#if defined(PORTABLE_UPDATE_FEED_DISABLED) && !defined(PORTABLE_NATIVE_PACKAGE_FEED)
  if(us)message="No available update; X4 feed not configured";
 #endif
  return true;
