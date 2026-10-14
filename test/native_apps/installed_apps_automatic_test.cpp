@@ -27,6 +27,13 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  auto*a=installed_apps_automatic(&api);assert(a);makeCatalog("1.0.0");
  assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&api.count(nullptr)==1);
  unsigned downloads=staged_fixture::httpOpens;assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&staged_fixture::httpOpens==downloads);
+ // A preserved legacy package with the same immutable metadata must not be
+ // redownloaded just because the feed names its identical version by hash.
+ std::string original=current[0].json;JsonDocument legacy;assert(!deserializeJson(legacy,original));legacy["file_name"]="legacy.elf";serializeJson(legacy,current[0].json,sizeof(current[0].json));
+ assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&staged_fixture::httpOpens==downloads);
+ legacy["name"]="conflicting metadata";serializeJson(legacy,current[0].json,sizeof(current[0].json));
+ assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==INSTALLED_APPS_INVALID);assert(a->cancel(nullptr)==0);
+ std::strcpy(current[0].json,original.c_str());
  makeCatalog("1.0.1",true);assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&api.count(nullptr)==2);
  assert(!strcmp(current[0].view.version,"1.0.1"));
  makeCatalog("1.0.1");assert(a->begin(nullptr,"core",1800000000)==0);assert(driveAutomatic()==0&&api.count(nullptr)==2); // preserve deselected/user apps

@@ -34,7 +34,18 @@ int automaticNeeded(unsigned index){
  if(at==currentCount)return 1;
  if(newer(feedViews[index].version,current[at].view.version))return 1;
  JsonDocument app;if(deserializeJson(app,current[at].json))return -1;
- plan["manifest"].remove("description");if(app.as<JsonVariantConst>()!=plan["manifest"])return -1;
+ plan["manifest"].remove("description");bool legacyName=false;
+ if(app.as<JsonVariantConst>()!=plan["manifest"]){
+  // Discovery may own a preserved legacy filename, while a feed uses immutable
+  // image-<hash>.elf names. An equal-version naming-only difference requires no
+  // write. Keep its exact bytes and namespace; never overwrite a same-version
+  // image, or treat any other manifest difference as current.
+  const char*oldName=app["file_name"]|"";
+  if(!oldName[0]||!std::strncmp(oldName,"image-",6))return -1;
+  app["file_name"]=plan["manifest"]["file_name"];
+  if(app.as<JsonVariantConst>()!=plan["manifest"])return -1;
+  legacyName=true;
+ }
  bool changed=false;
  for(JsonObjectConst row:plan["providers"].as<JsonArrayConst>()){
   Download::Record record;CachedProvider wanted;if(!provisionRecord(row,record,wanted))return -1;
@@ -47,7 +58,7 @@ int automaticNeeded(unsigned index){
    }
   }if(j==providerCount)changed=true;
  }
- return changed?1:0;
+ return changed?(legacyName?-1:1):0;
 }
 int32_t automaticStep(void*,const risc_storage_volume_api_v1*v){
  if(retained)return INSTALLED_APPS_RETAINED;
