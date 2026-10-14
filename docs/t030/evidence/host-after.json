@@ -1,0 +1,30 @@
+[
+  {
+    "width": 240,
+    "height": 240,
+    "frames": 240,
+    "clear_us": 29.733,
+    "circles_us": 85.0,
+    "icons_us": 30.925,
+    "mask_captions_us": 153.45,
+    "submit_copy_us": 4.817,
+    "input_poll_us": 0.163,
+    "ui_update_us": 0.054,
+    "render_us": 306.488,
+    "pixels_hash": "24902b5212efc8f4"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "frames": 240,
+    "clear_us": 69.525,
+    "circles_us": 121.037,
+    "icons_us": 36.696,
+    "mask_captions_us": 255.521,
+    "submit_copy_us": 10.358,
+    "input_poll_us": 0.142,
+    "ui_update_us": 0.067,
+    "render_us": 494.775,
+    "pixels_hash": "b2cd577875b052e6"
+  }
+]

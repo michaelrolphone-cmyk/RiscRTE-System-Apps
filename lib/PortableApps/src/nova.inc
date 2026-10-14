@@ -89,6 +89,14 @@ static void np_mask(void) {
 
   const int physical_width=width(),physical_height=height();
   const int logical_width=np_width(),logical_height=np_height();
+  /* The opaque center is unchanged by this mask. Map its half-open span
+   * with the same ceil boundaries as logical pixels, preserving the right
+   * edge's inclusive distance=46 sample at fractional native scales. */
+  int center_first=46,center_end=logical_width-45;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  center_first=(46*physical_width+239)/240;
+  center_end=((logical_width-45)*physical_width+239)/240;
+#endif
   for(int y=0;y<physical_height;++y) {
     int ly=y;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
@@ -98,25 +106,34 @@ static void np_mask(void) {
     int dy=ly<logical_height-ly?ly:logical_height-ly;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
     for(int x=0;x<physical_width;++x){
+      if(ay==255 && x==center_first && center_end>center_first) {
+        x=center_end;
+        if(x>=physical_width)break;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+        logical_x=(uint32_t)x*WATCH_LAYOUT_WIDTH/(uint32_t)physical_width;
+        remainder=(uint32_t)x*WATCH_LAYOUT_WIDTH%(uint32_t)physical_width;
+#endif
+      }
 #ifdef PORTABLE_CONTEXTS_RASTER
       if(failed||(!(++contexts_pixels&511u)&&!contexts_capture_checkpoint()))return;
 #endif
       int lx=x;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
-      /* Exact inverse mapping by quotient/remainder, with no per-pixel divide. */
       lx=(int)logical_x;
       remainder+=WATCH_LAYOUT_WIDTH;
       while(remainder>=native_watch_layout.physical_width) {
         remainder-=native_watch_layout.physical_width;++logical_x;
       }
 #endif
+      uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
+      uint16_t c=(uint16_t)(p[0]|p[1]<<8);
+      /* Clear background stays black at every opacity; avoid blending it. */
+      if(!c)continue;
       int dx=lx<logical_width-lx?lx:logical_width-lx;
       unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
       unsigned a=ax*ay/255;
       if(a==255)continue;
       if(dx<22 && dy<22 && (22-dx)*(22-dx)+(22-dy)*(22-dy)>22*22)a=0;
-      uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+x*2;
-      uint16_t c=(uint16_t)(p[0]|p[1]<<8);
       c=(uint16_t)((((c>>11)&31)*a/255)<<11|(((c>>5)&63)*a/255)<<5|((c&31)*a/255));
       p[0]=(uint8_t)c;p[1]=(uint8_t)(c>>8);
     }

@@ -883,9 +883,23 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(foreground_frame_ready() && !broadcast_tick()){failed=true;return false;}
 #endif
   uint32_t now=millis_now(),spent=now-last_poll_at;
-#ifdef PORTABLE_CONTEXTS_CLIENT
+#if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_ASYNC_RGB565)
   uint32_t remaining=spent<wait?wait-spent:1;
-  while(remaining){uint32_t slice=remaining>8?8:remaining;rt->yield_ms(slice);remaining-=slice;if(!canvas_progress() || !contexts_capture_checkpoint())return false;}
+  while(remaining) {
+    uint32_t slice=remaining;
+#ifdef PORTABLE_CONTEXTS_CLIENT
+    if(slice>8)slice=8;
+#endif
+#ifdef PORTABLE_ASYNC_RGB565
+    /* An active cooperative display needs owner-task visits to send rows.
+     * A long sleep between visits throttles a tall panel even when painting
+     * is cheap. Keep the same bounded wait and input reduction cadence, but
+     * service an outstanding token once per millisecond of requested wait. */
+    if(canvas_async && canvas_token)slice=1;
+#endif
+    rt->yield_ms(slice);remaining-=slice;
+    if(!canvas_progress() || !contexts_capture_checkpoint())return false;
+  }
 #else
   rt->yield_ms(spent<wait?wait-spent:1);
 #endif
