@@ -1,0 +1,111 @@
+{
+  "system_commit": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+  "runtime_commit": "c258c4ba144247b6eaa4c6f28675ffccec582fe1",
+  "geometry": [
+    410,
+    502
+  ],
+  "publication_rows": 24,
+  "catalog_client_allocation_bytes": 12888,
+  "catalog_first_live_grant_count": 8,
+  "slot_model_capacity": 16,
+  "slot_model": "free-slot and generation validated, test-owned; actual Runtime separately covered by existing native integration",
+  "healthy_apis": [
+    "contexts.service with fingerprint suffix",
+    "telemetry.broadcast",
+    "alarm.service",
+    "board.battery",
+    "storage.key-value",
+    "storage.key-value.atomic",
+    "net.wifi",
+    "bluetooth.hci",
+    "rtc.clock",
+    "input.power-key",
+    "display.output",
+    "input.touch.raw",
+    "app.catalog"
+  ],
+  "intentional_policy_denial": [
+    "storage.shared-data (not granted to Springboard by actual boot policy)"
+  ],
+  "cases": [
+    {
+      "live_grants": 0,
+      "peak_grants": 11,
+      "live_allocations": 0,
+      "peak_allocations": 5,
+      "peak_tracked_bytes": 1662464,
+      "binary": "probe24",
+      "display": "sync",
+      "pass_": true
+    },
+    {
+      "live_grants": 0,
+      "peak_grants": 11,
+      "live_allocations": 0,
+      "peak_allocations": 6,
+      "peak_tracked_bytes": 2074104,
+      "binary": "probe24",
+      "display": "async",
+      "pass_": true
+    },
+    {
+      "live_grants": 0,
+      "peak_grants": 11,
+      "live_allocations": 0,
+      "peak_allocations": 5,
+      "peak_tracked_bytes": 1662464,
+      "binary": "probe24-sanitized",
+      "display": "sync",
+      "pass_": true
+    },
+    {
+      "live_grants": 0,
+      "peak_grants": 11,
+      "live_allocations": 0,
+      "peak_allocations": 6,
+      "peak_tracked_bytes": 2074104,
+      "binary": "probe24-sanitized",
+      "display": "async",
+      "pass_": true
+    }
+  ],
+  "native_memory_tests": {
+    "normal": [
+      "repeated child/overlay ownership PASS",
+      "terminal retention PASS"
+    ],
+    "asan_ubsan": [
+      "repeated child/overlay ownership PASS",
+      "terminal retention PASS"
+    ]
+  },
+  "hardware_qualified": false,
+  "production_source_changed": false,
+  "metadata_fixture_source": "Published Waveshare 0.1.39 paired-store boot.json and selected 24 app manifests",
+  "limitations": [
+    "Native provider implementations and real heap pressure are not executed by this host controller fixture.",
+    "The metadata owner supplies actual 24-row descriptive strings and routes with available flags set; full native store admission and availability were checked separately.",
+    "The fixture display buffer contributes 414656 bytes and one block to allocation peaks.",
+    "Legacy fixture health-expiry was replaced with clean native exit_requested cancellation at the same 200-poll stopping boundary.",
+    "Target-specific sleep is not entered.",
+    "ASAN_OPTIONS=detect_leaks=0; tracked malloc/free final ownership is zero."
+  ],
+  "file_sha256": {
+    "README.md": "be1862e56ea0842fe3b7d608ad7726ee79f04f8fdeab3c509c762bd17d58696c",
+    "catalog24.c": "c265701f483f8aacf50a90f9a2bdea285d5dc35201d756a4b637c607f11c9ea1",
+    "command24-sanitized.json": "5e57716388f41e80dcda8089e3e1c900078f62cb0eafc7f6a7454699ac29b67b",
+    "command24.json": "f258ff6fa9a9289837ef71e2dcbfb335af002ebb5490488095fab6248cd8d61b",
+    "probe24-async.log": "853008f83285da8bd9d9920fb10841e7ef1bb035a6180a13c007b554bb2863a5",
+    "probe24-sanitized-async.log": "853008f83285da8bd9d9920fb10841e7ef1bb035a6180a13c007b554bb2863a5",
+    "probe24-sanitized-sync.log": "b46b2d22c7fbc7052f16d34f8b712503dcf0c5284cd54b8f8d9a2f2201175901",
+    "probe24-sync.log": "b46b2d22c7fbc7052f16d34f8b712503dcf0c5284cd54b8f8d9a2f2201175901",
+    "probe24.c": "8d8d02e156af100a6c0143c961cd6fbb38e3536ba62ddf1776943a8f29e86296",
+    "reproduce.py": "d9fbc0b90db26cd48f6ef58511a8bcf52677e7f09eb1dd08888ca92ef16ebae1",
+    "target-abi-probe.c": "01b309fec88c3075907344398397d031f2f768d91eb383c211addb8dd8a62f61",
+    "target-catalog-abi.json": "b3b361837978cefa3d2b8d06a544d43d073273751d023ad0ab903663f703f6af",
+    "verify_target_abi.py": "ebd092faf3e7303a1b23da7478d247b0e026104de13d1e3a1151326d26aa6871"
+  },
+  "bridge_commit": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4",
+  "relocatable_rerun_logs_match": true
+}

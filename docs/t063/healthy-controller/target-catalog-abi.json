@@ -1,0 +1,37 @@
+{
+  "target": "xtensa-esp32s3",
+  "same_layout": true,
+  "fields": [
+    "snapshot_size",
+    "generation_offset",
+    "entry_size",
+    "id_offset",
+    "api_size",
+    "context_offset",
+    "snapshot_offset",
+    "get_offset"
+  ],
+  "values": {
+    "client": [
+      16,
+      8,
+      512,
+      416,
+      20,
+      8,
+      12,
+      16
+    ],
+    "native": [
+      16,
+      8,
+      512,
+      416,
+      20,
+      8,
+      12,
+      16
+    ]
+  },
+  "hardware_executed": false
+}
