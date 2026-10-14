@@ -149,8 +149,9 @@ int32_t bootWifi(void*,const char*ssid,const char*password){
  uint8_t digest[32]{};int rc=bootRequests->queue(bootRequests->context,&request,digest);
  bootWipe(bootProfile,sizeof(bootProfile));bootWaitingWifi=false;
  if(rc==RISC_PROVISION_REQUEST_OK){bootQueued=true;return INSTALLED_APPS_PROFILE_QUEUED;}
- // UNKNOWN is reconciled only through status on a subsequent refresh. No
-// retry of this write, cancellation of the queued intent, or reboot occurs.
+ // UNKNOWN remains native-owned. A later status UNKNOWN cannot authorize
+ // resubmission or imply PENDING/CONSUMED; the native queue may require the
+ // next ordinary boot before reconciliation. No retry or reboot occurs here.
  return rc==RISC_PROVISION_REQUEST_INVALID?INSTALLED_APPS_INVALID:INSTALLED_APPS_UNAVAILABLE;
 }
 #else

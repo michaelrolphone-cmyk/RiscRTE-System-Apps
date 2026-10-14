@@ -13,9 +13,9 @@ static const risc_http_client_v1 feedHttp={1,sizeof(feedHttp),nullptr,
 
 
 static risc_provision_request_status_v1 requestStatus;
-static unsigned queueCalls;static int queueResult;static std::string wantedSsid="saved default";
+static unsigned queueCalls;static int queueResult,statusResult;static std::string wantedSsid="saved default";
 static const risc_provision_request_api_v1 requests={1,sizeof(requests),nullptr,
- [](void*,risc_provision_request_status_v1*out)->int32_t{assert(out->struct_size==sizeof(*out));*out=requestStatus;return 0;},
+ [](void*,risc_provision_request_status_v1*out)->int32_t{assert(out->struct_size==sizeof(*out));*out=requestStatus;return statusResult;},
  [](void*,const risc_provision_request_v1*q,uint8_t*out)->int32_t{
   ++queueCalls;assert(q->struct_size==sizeof(*q)&&q->profile_size<16384&&q->time_size<384);
   assert(!memcmp(q->expected_active_store_sha256,requestStatus.active_store_sha256,32));
@@ -83,6 +83,22 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);queueResult=RISC_PROVISION_REQUEST_UNKNOWN;
  assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_UNAVAILABLE&&queueCalls==2);
  assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_INVALID&&queueCalls==2);for(char c:bootProfile)assert(!c);closeCore();
+ // Native ambiguity remains restart-required for this boot. A refresh must
+ // honor UNKNOWN even if output bytes contain an apparently useful old state.
+ statusResult=RISC_PROVISION_REQUEST_UNKNOWN;
+ for(uint32_t state:{RISC_PROVISION_REQUEST_NONE,RISC_PROVISION_REQUEST_PENDING,RISC_PROVISION_REQUEST_CONSUMED}){
+  requestStatus.state=state;
+  for(unsigned refresh=0;refresh<3;++refresh){
+   makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_INVALID);
+   assert(!bootSelected&&!bootQueued&&!bootWaitingWifi&&queueCalls==2);
+   assert(b->supply_wifi(nullptr,"saved default","saved-password")==INSTALLED_APPS_INVALID&&queueCalls==2);
+   for(char c:bootProfile)assert(!c);
+   closeCore();assert(!feedOpen&&!staged_fixture::httpOpen);
+  }
+ }
+ // A fresh native boot is represented explicitly by resetting the fixture;
+ // no service refresh above cleared the native UNKNOWN result.
+ statusResult=RISC_PROVISION_REQUEST_OK;
  // All ASCII control bytes in saved SSIDs are escaped, not serialized as
  // invalid raw JSON. The decoded request retains those exact bytes.
  queueResult=0;statusReset();makeCore();beginCore();assert(driveCore(nullptr)==INSTALLED_APPS_NEEDS_PROFILE_WIFI);
@@ -101,5 +117,5 @@ int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nu
  assert(driveCore(staged_fixture::volume)==INSTALLED_APPS_RETAINED&&queueCalls==4&&mirrorDownload);
  assert(automaticApi.cancel(nullptr)==INSTALLED_APPS_RETAINED&&mirrorDownload);
 
- puts("Core profile service: first-start credential handoff, matching pending/active target, native binding, public-profile rejection, SD mirrors/internal fallback, 160-file bound, 100 interruption retries, changed profile, ambiguous queue and retained-media fences PASS");
+ puts("Core profile service: first-start credential handoff, matching pending/active target, native binding, public-profile rejection, SD mirrors/internal fallback, 160-file bound, 100 interruption retries, changed profile, restart-required UNKNOWN across 9 refreshes and retained-media fences PASS");
 }
