@@ -1,0 +1,70 @@
+{
+  "hardware_tested": false,
+  "scope": "Real included failure_archive.inc, shared formatter, AppData spool and SD exporter; in-memory host capability boundaries with strict lifetimes and operation ordering",
+  "excluded": "Physical OSD page completion and native Runtime/AppData broker; tested separately",
+  "runtime_sdk": "/tmp/Runtime-wave-t054/sdk/app",
+  "sdk_sha256": {
+    "RiscRuntimeV1.h": "80198965ebe3dda4d9cadbb5a6d64a44016041e8c2f610a6f636d915c6851831",
+    "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+    "RiscAppDataV1.h": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "source_sha256": {
+    "test/native_apps/failure_archive_lifecycle_test.c": "ea5669a208d134349e77d9dce607683a422c24c40050976e144f9b83dc4ef7b8",
+    "scripts/test_failure_archive_lifecycle.py": "aaa4dd10e907b7fba1dd4022798cba66c4c41cb03de5bc691796335baabdc534",
+    "lib/PortableApps/src/failure_archive.inc": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+    "lib/PortableApps/include/FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+    "lib/PortableApps/include/CrashReportSpool.h": "d5b87876ffb05eb0eeb813658495b02b95cdfe6e5013bf303be81e5383f54554",
+    "lib/PortableApps/include/CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+    "lib/PortableApps/include/RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "lib/PortableApps/include/RiscStorageExportV1.h": "4ba5a0cec6bd9514dd5f77982f1b94c22aeca72bf94d0c79b11f1f5b689189a2",
+    "lib/PortableApps/include/RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1"
+  },
+  "runs": [
+    {
+      "mode": "normal",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-pedantic",
+        "-I/tmp/Runtime-wave-t054/sdk/app",
+        "-I/tmp/System-t054/lib/PortableApps/include",
+        "/tmp/System-t054/test/native_apps/failure_archive_lifecycle_test.c",
+        "-o",
+        "/tmp/t064-archive/failure-archive-lifecycle-normal"
+      ],
+      "exit_code": 0,
+      "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+      "log": "/tmp/t064-archive/normal.log"
+    },
+    {
+      "mode": "sanitized",
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-pedantic",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-I/tmp/Runtime-wave-t054/sdk/app",
+        "-I/tmp/System-t054/lib/PortableApps/include",
+        "/tmp/System-t054/test/native_apps/failure_archive_lifecycle_test.c",
+        "-o",
+        "/tmp/t064-archive/failure-archive-lifecycle-sanitized"
+      ],
+      "exit_code": 0,
+      "summary": "Failure archive lifecycle: 15 integrated scenarios PASS (host capability boundaries; no hardware)",
+      "log": "/tmp/t064-archive/sanitized.log"
+    }
+  ]
+}
