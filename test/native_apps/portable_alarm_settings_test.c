@@ -74,9 +74,31 @@ static bool frame_status(void *c,risc_display_present_token_v1 token,risc_displa
 }
 static uint64_t touch_subscribe(void *c) {(void)c;++subscriptions;return 1;}
 static bool touch_unsubscribe(void *c,uint64_t s) {(void)c;assert(s==1 && subscriptions);--subscriptions;return true;}
-static bool touch_poll(void *c,size_t n) {(void)c;assert(n==1);++polls;return true;}
-static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {(void)c;(void)s;(void)out;return 0;}
+static risc_touch_snapshot_v1 touch_state;
+static risc_touch_event_v1 touch_event;
+static bool touch_event_pending;
+static bool touch_report(void *c,risc_touch_snapshot_v1 *out);
+static bool touch_poll(void *c,size_t n) {
+  assert(n==1);++polls;risc_touch_snapshot_v1 next;touch_report(c,&next);
+  bool had=touch_state.contact_count!=0,has=next.contact_count!=0;
+  bool changed=had!=has || (has && (next.contacts[0].x!=touch_state.contacts[0].x || next.contacts[0].y!=touch_state.contacts[0].y));
+  next.sequence=touch_state.sequence;next.timestamp_ms=ticks;
+  if(changed){
+    assert(!touch_event_pending);++next.sequence;
+    risc_touch_contact_v1 point=has?next.contacts[0]:touch_state.contacts[0];
+    touch_event=(risc_touch_event_v1){.sequence=next.sequence,.timestamp_ms=ticks,
+      .kind=has?(had?RISC_TOUCH_EVENT_MOVE:RISC_TOUCH_EVENT_DOWN):RISC_TOUCH_EVENT_UP,
+      .id=point.id,.x=point.x,.y=point.y};touch_event_pending=true;
+  }
+  touch_state=next;return true;
+}
+static int32_t touch_next(void *c,uint64_t s,risc_touch_event_v1 *out) {
+  (void)c;assert(s==1);if(!touch_event_pending)return 0;*out=touch_event;touch_event_pending=false;return 1;
+}
 static bool touch_snapshot(void *c,risc_touch_snapshot_v1 *out) {
+  (void)c;*out=touch_state;out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;return true;
+}
+static bool touch_report(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=SETTINGS_FIXTURE_WIDTH;out->height=SETTINGS_FIXTURE_HEIGHT;
   for(unsigned i=0;i<contact_count;++i)if(contacts[i].poll==polls) {
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=contacts[i].x,.y=contacts[i].y};
