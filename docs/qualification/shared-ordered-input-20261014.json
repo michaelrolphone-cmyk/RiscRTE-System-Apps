@@ -23,5 +23,16 @@
   "sha256": {
     "lib/PortableApps/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
     "lib/PortableApps/src/adapter.c": "06dd52fd5f9fa66c06dbedcd50a6b816e3ead021b6e00ef446b317fc33b5df47"
+  },
+  "checkpoint_kind": "working branch only; not a release candidate",
+  "intermediate_failures": {
+    "count": 16,
+    "matrix": "controls-settings, controls-save, alarm, wifi-handoff x rotations 0/180 x normal/UBSan",
+    "cause_and_repair": [
+      "Replaced snapshot-only fixture events with sequence-numbered DOWN/MOVE/UP events.",
+      "Replaced direct neutral/down edits with explicit reducer modal reset boundaries.",
+      "Cleared consumed top-edge reservation each logical pass so subsequent edges can advance."
+    ],
+    "status": "Resolved before source checkpoint ae45093; final 194/194 pass."
   }
 }
