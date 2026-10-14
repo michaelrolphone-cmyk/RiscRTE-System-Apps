@@ -1,7 +1,7 @@
 #include "RiscRuntimeHostControlV1.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
-#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) || !defined(PORTABLE_RESIDENT_SHELL_CLIENT) || !defined(PORTABLE_RESIDENT_POLICY) || !defined(PORTABLE_SETTINGS_HOME_DESK_LOCK) || defined(PORTABLE_ALARM_SETTINGS)
-#error "Atomic Settings requires the selected X4 resident Settings controller profile"
+#if !defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Atomic Settings requires the Settings controller and checked native custody"
 #endif
 #endif
 #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))

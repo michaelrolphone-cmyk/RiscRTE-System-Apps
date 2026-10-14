@@ -583,7 +583,7 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(save) {
         if(
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
-           settings_atomic_timer(timer_choice,&timer_message)
+           settings_atomic_timer(timer_deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY,timer_choice,&timer_message)
 #else
            portable_sleep_timer_save(settings_store,timer_deep,timer_choice)
 #endif
@@ -673,7 +673,13 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped)for(unsigned row=0;row<settings_sleep_count();++row)
         if(sv_inside(input.touch_x,input.touch_y,28,66+(int)row*38,184,30))sleep_choice=settings_sleep_at(row);
       if(save) {
-        if(portable_sleep_save_profile(settings_store,SETTINGS_SLEEP_MODES,sleep_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(PORTABLE_SLEEP_KEY,0x53,sleep_choice,3,&sleep_message)
+#else
+           portable_sleep_save_profile(settings_store,SETTINGS_SLEEP_MODES,sleep_choice)
+#endif
+        ) {
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
           sleep_unconfirmed=false;
 #endif
@@ -723,7 +729,13 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(save) {
         if(alert_choice<PORTABLE_ALERT_VIBRATE || alert_choice>PORTABLE_ALERT_BOTH)
           alert_message="Choose an alert mode";
-        else if(portable_alert_save(alert_store,alert_choice)) {
+        else if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+                settings_atomic_save(PORTABLE_ALERT_KEY,(uint8_t[]){(uint8_t)alert_choice},1,&alert_message)
+#else
+                portable_alert_save(alert_store,alert_choice)
+#endif
+        ) {
           alert_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
         } else {
           /* Keep the selected draft for explicit retry. Neither an IO return
@@ -957,18 +969,43 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
   if(index==SETTINGS_STORAGE_ROW)return settings_availability_activate();
 #endif
-  const char *key=index==0?"rtc_basis":index==1?"time_zone":index==2?"time_format":
-    index==SETTINGS_FACE_ROW?"desk_clock_face":index==SETTINGS_DESK_DIRECTION_ROW?"desk_direction":
-    index==SETTINGS_FLIP_ROW?"reader_flip_ui":index==SETTINGS_LANGUAGE_ROW?"reader_language":
-    index==SETTINGS_TIMER_ROW?"sleep_idle":NULL;
+  const char *key=index==2?"time_format":NULL;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(index==0)key="rtc_basis";
+#endif
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(index==1)key="time_zone";
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(index==SETTINGS_FACE_ROW)key="desk_clock_face";
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  if(index==SETTINGS_DESK_DIRECTION_ROW)key="desk_direction";
+#endif
+  if(index==SETTINGS_FLIP_ROW)key="reader_flip_ui";
+  if(index==SETTINGS_LANGUAGE_ROW)key="reader_language";
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  if(index==SETTINGS_TIMER_ROW)key=PORTABLE_SLEEP_IDLE_KEY;
+  if(index==SETTINGS_TIMER_ROW+1u)key=PORTABLE_SLEEP_DEEP_KEY;
+#endif
+#if defined(PORTABLE_SLEEP_SETTINGS) && !defined(PORTABLE_SETTINGS_HOME_DESK_LOCK)
+  if(index==4)key=PORTABLE_SLEEP_KEY;
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  if(index==SETTINGS_ALERT_ROW)key=PORTABLE_ALERT_KEY;
+#endif
   if(key&&!settings_atomic_begin(key))return T5_APP_SETTING_ERROR;
   uint8_t result=settings_activate_inner(category,index);
   if(settings_atomic_edit.token){settings_atomic_result(RISC_ATOMIC_RETAINED);return T5_APP_SETTING_ERROR;}
   if(key&&settings_atomic_status!=PORTABLE_PREFERENCE_READY)settings_message=settings_atomic_status==RISC_ATOMIC_OK?
     "Saved locally; SD backup not confirmed":settings_atomic_message(settings_atomic_status);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
   if(index==SETTINGS_FLIP_ROW&&settings_atomic_status==RISC_ATOMIC_OK&&reader_unconfirmed[0])
     settings_message="Preference saved; display flip unconfirmed";
+#endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
   if(index==0&&snt_result_available)settings_message=snt_status_text;
+#endif
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
   settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
   if(!portable_settings_availability_available(&settings_availability))

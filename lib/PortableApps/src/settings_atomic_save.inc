@@ -44,9 +44,9 @@ static bool settings_atomic_choice(const char *key,uint8_t tag,unsigned value,un
  const uint8_t bytes[]={tag,1,(uint8_t)value,(uint8_t)(value^0xa5u)};
  return settings_atomic_save(key,bytes,sizeof(bytes),message);
 }
-static bool settings_atomic_timer(uint32_t milliseconds,const char **message) {
+static bool settings_atomic_timer(const char *key,uint32_t milliseconds,const char **message) {
  if(milliseconds<5000u||milliseconds>3600000u||milliseconds%1000u){*message="Invalid timer";return false;}
  unsigned seconds=milliseconds/1000u;
  const uint8_t bytes[]={0x54,1,(uint8_t)seconds,(uint8_t)(seconds>>8),(uint8_t)(seconds^(seconds>>8)^0xa5u)};
- return settings_atomic_save(PORTABLE_SLEEP_IDLE_KEY,bytes,sizeof(bytes),message);
+ return settings_atomic_save(key,bytes,sizeof(bytes),message);
 }

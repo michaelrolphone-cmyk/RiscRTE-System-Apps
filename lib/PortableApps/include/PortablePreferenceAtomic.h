@@ -33,7 +33,7 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
 }
 static inline bool portable_preference_atomic_key(const char *key) {
  static const char *const allowed[]={"time_format","time_zone","desk_clock_face","desk_direction",
-  "reader_flip_ui","reader_language","sleep_idle","rtc_basis",
+  "reader_flip_ui","reader_language","sleep_idle","sleep_deep","sleep_mode","alert_mode","rtc_basis",
   "brightness","frontlight_tone","alert_dnd","contexts_on","quick_radio",
   "ble_broadcast","context_sources","context_timing"};
  if(!key)return false;
