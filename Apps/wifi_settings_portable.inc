@@ -455,7 +455,16 @@ static void wifi_async_tick(void) {
   }
   risc_radio_progress_v1 progress={.struct_size=sizeof(progress)};
   int rc=wifi_async->poll(wifi->context,wifi_operation,&progress);
-  if(PORTABLE_APP_RETAINED()||rc==RISC_RADIO_AGAIN)return;
+  if(PORTABLE_APP_RETAINED())return;
+  if(rc==RISC_RADIO_AGAIN){
+    /* No progress snapshot was returned, but the accepted operation's deadline
+     * still advances. Keep custody until cancel/poll confirms quiescence; an
+     * established link or retained scan results have no startup deadline. */
+    uint32_t elapsed=(uint32_t)(wa->millis()-operation_started);
+    if(!wifi_stopping&&((scanning&&elapsed>=15000u)||(joining&&elapsed>=30000u)))
+      (void)wifi_async_stop();
+    return;
+  }
   if(rc==RISC_RADIO_RETAINED){wifi_async_failed();return;}
   if((rc!=RISC_RADIO_PENDING&&rc!=RISC_RADIO_QUIESCENT)||progress.struct_size!=sizeof(progress)||progress.operation_id!=wifi_operation||
       progress.phase<RISC_RADIO_QUEUED||progress.phase>RISC_RADIO_IDLE||progress.failure>RISC_RADIO_FAILURE_CANCELLED||
