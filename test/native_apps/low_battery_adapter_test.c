@@ -20,7 +20,10 @@ static uint8_t timer_choose(unsigned row,bool add,bool cancel){
  tap(7,cancel?60:170,210);tap(8,cancel?60:170,210);tap(12,60,210);
  settings_render(0,(int32_t)row+1);return settings_activate(0,row);
 }
-int main(int argc,char **argv){
+#ifndef LOW_BATTERY_FIXTURE_MAIN
+#define LOW_BATTERY_FIXTURE_MAIN main
+#endif
+int LOW_BATTERY_FIXTURE_MAIN(int argc,char **argv){
  assert(argc>=2);if(argc>2)capture_directory=argv[2];unsigned test=(unsigned)atoi(argv[1]);setup();gauge=&low_gauge;
  assert(quick.idle_ms==60000&&quick.deep_ms==300000&&portable_idle_ms()==60000);
  if(test==0){
@@ -88,5 +91,5 @@ int main(int argc,char **argv){
   timer_deep=false;timer_choice=20000;sv_switch(SV_TIMER);capture_frame("sleep-timer");
   timer_deep=true;timer_choice=60000;sv_switch(SV_TIMER);capture_frame("deep-sleep-timer");
  }else assert(!"unknown test");
- gauge=NULL;cleanup();puts("Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed");
+ gauge=NULL;cleanup();puts("Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed");return 0;
 }

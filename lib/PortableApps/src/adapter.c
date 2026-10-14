@@ -376,6 +376,13 @@ static void input_navigation_close(void) {
 static bool settings_atomic_busy(void);
 static bool settings_atomic_finish(void);
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+static bool quick_atomic_running;
+static unsigned quick_atomic_contact;
+static bool home_automatic_input_busy(void);
+static void quick_atomic_enqueue(void);
+static bool rgb_atomic_finish(void);
+#endif
 static void input_service(void) {
  if(!canvas_progress())return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -396,7 +403,12 @@ static void input_service(void) {
     && !settings_atomic_busy()
 #endif
  ) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running&&!home_automatic_input_busy())++quick_atomic_contact;
+  bool reserved=quick_atomic_running||home_automatic_input_busy()||pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
+#else
   bool reserved=pqa_input(&quick.ui,input_sampled_at,next.valid&&!next.cancelled,
+#endif
       next.down?1u:0u,touch.contact_id,next.x,next.y,next.tap_eligible
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
       && native_watch_layout.height>=240
@@ -404,6 +416,9 @@ static void input_service(void) {
       &&info.width==240&&info.height==240
 #endif
       );
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!quick_atomic_running&&!home_automatic_input_busy())quick_atomic_enqueue();
+#endif
   if(reserved) {
    input_pending=false;input_sample=(portable_touch_sample){0};
 #if defined(PORTABLE_NOVA_UI) && !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -756,6 +771,9 @@ static void present(bool full) {
 }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!rgb_atomic_finish()){optional_services_retain();return false;}
+#endif
   /* Existing app stack, editor draft and private storage grants stay live.
    * No handoff, unload or settings grant is introduced by idle sleeping. */
   if(surface.frame)return true;
@@ -824,6 +842,9 @@ static bool idle_sleep(void) {
 }
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#include "rgb_atomic.inc"
+#endif
 #include "quick_adapter.inc"
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -843,6 +864,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 #include "contexts_rules_adapter.inc"
 static bool contexts_tick(void) {
   if(!contexts_ready())return false;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(quick_atomic_running||home_automatic_input_busy())return true;
+#endif
   if(contexts_client.unavailable)return true;
   if(!quick_storage_safe()||quick_modal||alarm_modal)return contexts_checked(portable_contexts_pause(&contexts_client));
   bool audio_allowed=true,radio_allowed=true;
@@ -856,7 +880,13 @@ static bool contexts_tick(void) {
 #if !defined(PORTABLE_AUDIO_SESSION) && !defined(PORTABLE_RADIO_SESSION) && !defined(PORTABLE_WIFI_SETTINGS_APP) && !defined(PORTABLE_UPDATE_APP) && !defined(PORTABLE_BLE_FOREGROUND) && !defined(PORTABLE_CONTEXTS_EDITOR)
   uint16_t applied=0;
   if(contexts_client.rules_available){if(!contexts_checked(contexts_rules_tick()))return false;}
-  else if(!contexts_checked(portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save)))return false;
+  else if(!contexts_checked(
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+    portable_contexts_apply_room_using(&contexts_client,&applied,contexts_face_save,home_automatic_preset)
+#else
+    portable_contexts_apply_room(&contexts_client,&applied,contexts_face_save)
+#endif
+  ))return false;
   if(applied) {
     if(!quick_load()||!pqa_session_restore(&quick,display))return false;
     const alarm_service_v1 *service=alarm_sleep_api();
@@ -1317,7 +1347,11 @@ static int initialize(void) {
 #ifdef PORTABLE_LOW_BATTERY
   low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
 #endif
-  pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
+  pqa_session_init(&quick);
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  quick.save_user=rgb_atomic_save;quick.save_context=NULL;
+#endif
+ quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=false;
 #endif
   nova_mode = false;
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
@@ -1436,6 +1470,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (!rt)
     return;
   if(app_invocation_retained())return;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!rgb_atomic_finish()){optional_services_retain();return;}
+#endif
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
   if(!settings_atomic_finish()){optional_services_retain();return;}
 #endif

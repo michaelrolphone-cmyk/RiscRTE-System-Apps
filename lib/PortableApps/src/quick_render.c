@@ -144,7 +144,7 @@ static unsigned torch_edge(int v,int extent) {
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
-bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
     watch_layout layout;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
@@ -152,6 +152,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
 #else
     if(f->width!=240 || f->height!=240 || !watch_layout_open(&layout,240,240,NULL))return false;
 #endif
+    if(first>f->height || count>f->height-first)return false;
     if(layout.height!=pqa_height(s) || f->stride_bytes<(uint32_t)f->width*2u)return false;
     uint64_t span=(uint64_t)(f->height-1)*f->stride_bytes+(uint32_t)f->width*2u;
     if(span>f->size_bytes)return false;
@@ -161,7 +162,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     int position=s->position_q8<0?0:s->position_q8>open?open:s->position_q8;
     pqa_row row;
     if(s->torch) {
-        for(unsigned py=0;py<f->height;++py) {
+        for(unsigned py=first;py<first+count;++py) {
             int y=(int)(py*240u/f->width);row.y=y;
             for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);
             center_text(&row,GLYPHS(torch),"TAP TO TURN OFF",120,logical_height-30,RGB(106,90,48),256);
@@ -176,7 +177,7 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
     }
     int offset=(position-open)/256;
     unsigned face_alpha=(unsigned)(position>=190*256?0:256-position/190);
-    for(unsigned py=0;py<f->height;++py) {
+    for(unsigned py=first;py<first+count;++py) {
         int y=(int)(py*240u/f->width);
         uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
         int local=y-offset;
@@ -190,4 +191,25 @@ bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,b
         }
     }
     return true;
+}
+
+bool pqa_render(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp) {
+ return f&&render_rows(f,s,time,bv,bp,0,f->height);
+}
+#ifdef PORTABLE_RASTER_SNAPSHOT
+bool pqa_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
+ return render_rows(f,s,time,bv,bp,first,count);
+}
+#endif
+
+void pqa_paper_icon(unsigned index,int x,int y,int size,bool black,
+                    void (*draw)(int,int,uint32_t,unsigned)) {
+    const pqa_icon *const icons[]={&pqa_icon_silent,&pqa_icon_dnd,&pqa_icon_airplane,
+      &pqa_icon_wifi,&pqa_icon_bluetooth,&pqa_icon_torch,&pqa_icon_sun,&pqa_icon_volume};
+    if(index>=sizeof(icons)/sizeof(icons[0]) || !draw || size<1 || size>64)return;
+    const pqa_icon *ic=icons[index];int largest=ic->width>ic->height?ic->width:ic->height;
+    int w=ic->width*size/largest,h=ic->height*size/largest;
+    for(int j=0;j<h;j++)for(int i=0;i<w;i++)
+      if(pqa_alpha[ic->offset+(unsigned)(j*ic->height/h)*ic->width+(unsigned)(i*ic->width/w)]>=128)
+        draw(x+(size-w)/2+i,y+(size-h)/2+j,black?0:0xffffff,255);
 }

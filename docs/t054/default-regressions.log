@@ -1,0 +1,342 @@
+quick actions: all controller, animation, surface and fuzz tests passed
+quick actions: all controller, animation, surface and fuzz tests passed
+quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed
+quick session: corruption, defaults, uncertain writes, readback, silent restore and transient hardware passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+RF tap replay, committed modal pause and guarded Wi-Fi refusal/retry PASS
+RF tap replay, committed modal pause and guarded Wi-Fi refusal/retry PASS
+RF tap replay, committed modal pause and guarded Wi-Fi refusal/retry PASS
+RF tap replay, committed modal pause and guarded Wi-Fi refusal/retry PASS
+Quick actions: 2 pure-core + 2 session + 108 real-adapter normal/sanitizer/rotation executions passed
+Low battery: crossing/reboot/manual overrides/charging/unknown/error and shared settings parity passed
+Low battery: crossing/reboot/manual overrides/charging/unknown/error and shared settings parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery adapter: exact 20-second idle boundary retains native failure
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low battery: unconfirmed owned-radio cleanup stops before hardware refresh
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery adapter: exact 20-second idle boundary retains native failure
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low battery: unconfirmed owned-radio cleanup stops before hardware refresh
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery adapter: exact 20-second idle boundary retains native failure
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low battery: unconfirmed owned-radio cleanup stops before hardware refresh
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low-battery adapter: exact 20-second idle boundary retains native failure
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+Low battery: unconfirmed owned-radio cleanup stops before hardware refresh
+Low-battery real adapter/Settings: persisted crossing, actual hardware controls and manual timer parity passed
+quick-pixel-guard-san0 PASS
+240-golden-0-san0 PASS
+240-golden-1-san0 PASS
+settings-240x240-r0-san0 PASS
+quick-240x240-r0-san0-0 PASS
+quick-240x240-r0-san0-1 PASS
+quick-240x240-r0-san0-2 PASS
+quick-240x240-r0-san0-3 PASS
+quick-240x240-r0-san0-4 PASS
+quick-240x240-r0-san0-5 PASS
+quick-240x240-r0-san0-6 PASS
+quick-240x240-r0-san0-7 PASS
+quick-240x240-r0-san0-8 PASS
+quick-240x240-r0-san0-9 PASS
+quick-240x240-r0-san0-10 PASS
+quick-240x240-r0-san0-11 PASS
+quick-240x240-r0-san0-12 PASS
+async-240x240-r0-san0-controls PASS
+async-240x240-r0-san0-controls-settings PASS
+async-240x240-r0-san0-controls-save PASS
+async-240x240-r0-san0-torch-alarm PASS
+async-240x240-r0-san0-alarm PASS
+async-240x240-r0-san0-crown-controls PASS
+async-240x240-r0-san0-crown-alarm PASS
+async-240x240-r0-san0-failure-controls PASS
+async-240x240-r0-san0-failure-alarm PASS
+settings-240x240-r180-san0 PASS
+quick-240x240-r180-san0-0 PASS
+quick-240x240-r180-san0-1 PASS
+quick-240x240-r180-san0-2 PASS
+quick-240x240-r180-san0-3 PASS
+quick-240x240-r180-san0-4 PASS
+quick-240x240-r180-san0-5 PASS
+quick-240x240-r180-san0-6 PASS
+quick-240x240-r180-san0-7 PASS
+quick-240x240-r180-san0-8 PASS
+quick-240x240-r180-san0-9 PASS
+quick-240x240-r180-san0-10 PASS
+quick-240x240-r180-san0-11 PASS
+quick-240x240-r180-san0-12 PASS
+async-240x240-r180-san0-controls PASS
+async-240x240-r180-san0-controls-settings PASS
+async-240x240-r180-san0-controls-save PASS
+async-240x240-r180-san0-torch-alarm PASS
+async-240x240-r180-san0-alarm PASS
+async-240x240-r180-san0-crown-controls PASS
+async-240x240-r180-san0-crown-alarm PASS
+async-240x240-r180-san0-failure-controls PASS
+async-240x240-r180-san0-failure-alarm PASS
+settings-410x502-r0-san0 PASS
+quick-410x502-r0-san0-0 PASS
+quick-410x502-r0-san0-1 PASS
+quick-410x502-r0-san0-2 PASS
+quick-410x502-r0-san0-3 PASS
+quick-410x502-r0-san0-4 PASS
+quick-410x502-r0-san0-5 PASS
+quick-410x502-r0-san0-6 PASS
+quick-410x502-r0-san0-7 PASS
+quick-410x502-r0-san0-8 PASS
+quick-410x502-r0-san0-9 PASS
+quick-410x502-r0-san0-10 PASS
+quick-410x502-r0-san0-11 PASS
+quick-410x502-r0-san0-12 PASS
+async-410x502-r0-san0-controls PASS
+async-410x502-r0-san0-controls-settings PASS
+async-410x502-r0-san0-controls-save PASS
+async-410x502-r0-san0-torch-alarm PASS
+async-410x502-r0-san0-alarm PASS
+async-410x502-r0-san0-crown-controls PASS
+async-410x502-r0-san0-crown-alarm PASS
+async-410x502-r0-san0-failure-controls PASS
+async-410x502-r0-san0-failure-alarm PASS
+settings-410x502-r180-san0 PASS
+quick-410x502-r180-san0-0 PASS
+quick-410x502-r180-san0-1 PASS
+quick-410x502-r180-san0-2 PASS
+quick-410x502-r180-san0-3 PASS
+quick-410x502-r180-san0-4 PASS
+quick-410x502-r180-san0-5 PASS
+quick-410x502-r180-san0-6 PASS
+quick-410x502-r180-san0-7 PASS
+quick-410x502-r180-san0-8 PASS
+quick-410x502-r180-san0-9 PASS
+quick-410x502-r180-san0-10 PASS
+quick-410x502-r180-san0-11 PASS
+quick-410x502-r180-san0-12 PASS
+async-410x502-r180-san0-controls PASS
+async-410x502-r180-san0-controls-settings PASS
+async-410x502-r180-san0-controls-save PASS
+async-410x502-r180-san0-torch-alarm PASS
+async-410x502-r180-san0-alarm PASS
+async-410x502-r180-san0-crown-controls PASS
+async-410x502-r180-san0-crown-alarm PASS
+async-410x502-r180-san0-failure-controls PASS
+async-410x502-r180-san0-failure-alarm PASS
+quick-pixel-guard-san1 PASS
+240-golden-0-san1 PASS
+240-golden-1-san1 PASS
+settings-240x240-r0-san1 PASS
+quick-240x240-r0-san1-0 PASS
+quick-240x240-r0-san1-1 PASS
+quick-240x240-r0-san1-2 PASS
+quick-240x240-r0-san1-3 PASS
+quick-240x240-r0-san1-4 PASS
+quick-240x240-r0-san1-5 PASS
+quick-240x240-r0-san1-6 PASS
+quick-240x240-r0-san1-7 PASS
+quick-240x240-r0-san1-8 PASS
+quick-240x240-r0-san1-9 PASS
+quick-240x240-r0-san1-10 PASS
+quick-240x240-r0-san1-11 PASS
+quick-240x240-r0-san1-12 PASS
+async-240x240-r0-san1-controls PASS
+async-240x240-r0-san1-controls-settings PASS
+async-240x240-r0-san1-controls-save PASS
+async-240x240-r0-san1-torch-alarm PASS
+async-240x240-r0-san1-alarm PASS
+async-240x240-r0-san1-crown-controls PASS
+async-240x240-r0-san1-crown-alarm PASS
+async-240x240-r0-san1-failure-controls PASS
+async-240x240-r0-san1-failure-alarm PASS
+settings-240x240-r180-san1 PASS
+quick-240x240-r180-san1-0 PASS
+quick-240x240-r180-san1-1 PASS
+quick-240x240-r180-san1-2 PASS
+quick-240x240-r180-san1-3 PASS
+quick-240x240-r180-san1-4 PASS
+quick-240x240-r180-san1-5 PASS
+quick-240x240-r180-san1-6 PASS
+quick-240x240-r180-san1-7 PASS
+quick-240x240-r180-san1-8 PASS
+quick-240x240-r180-san1-9 PASS
+quick-240x240-r180-san1-10 PASS
+quick-240x240-r180-san1-11 PASS
+quick-240x240-r180-san1-12 PASS
+async-240x240-r180-san1-controls PASS
+async-240x240-r180-san1-controls-settings PASS
+async-240x240-r180-san1-controls-save PASS
+async-240x240-r180-san1-torch-alarm PASS
+async-240x240-r180-san1-alarm PASS
+async-240x240-r180-san1-crown-controls PASS
+async-240x240-r180-san1-crown-alarm PASS
+async-240x240-r180-san1-failure-controls PASS
+async-240x240-r180-san1-failure-alarm PASS
+settings-410x502-r0-san1 PASS
+quick-410x502-r0-san1-0 PASS
+quick-410x502-r0-san1-1 PASS
+quick-410x502-r0-san1-2 PASS
+quick-410x502-r0-san1-3 PASS
+quick-410x502-r0-san1-4 PASS
+quick-410x502-r0-san1-5 PASS
+quick-410x502-r0-san1-6 PASS
+quick-410x502-r0-san1-7 PASS
+quick-410x502-r0-san1-8 PASS
+quick-410x502-r0-san1-9 PASS
+quick-410x502-r0-san1-10 PASS
+quick-410x502-r0-san1-11 PASS
+quick-410x502-r0-san1-12 PASS
+async-410x502-r0-san1-controls PASS
+async-410x502-r0-san1-controls-settings PASS
+async-410x502-r0-san1-controls-save PASS
+async-410x502-r0-san1-torch-alarm PASS
+async-410x502-r0-san1-alarm PASS
+async-410x502-r0-san1-crown-controls PASS
+async-410x502-r0-san1-crown-alarm PASS
+async-410x502-r0-san1-failure-controls PASS
+async-410x502-r0-san1-failure-alarm PASS
+settings-410x502-r180-san1 PASS
+quick-410x502-r180-san1-0 PASS
+quick-410x502-r180-san1-1 PASS
+quick-410x502-r180-san1-2 PASS
+quick-410x502-r180-san1-3 PASS
+quick-410x502-r180-san1-4 PASS
+quick-410x502-r180-san1-5 PASS
+quick-410x502-r180-san1-6 PASS
+quick-410x502-r180-san1-7 PASS
+quick-410x502-r180-san1-8 PASS
+quick-410x502-r180-san1-9 PASS
+quick-410x502-r180-san1-10 PASS
+quick-410x502-r180-san1-11 PASS
+quick-410x502-r180-san1-12 PASS
+async-410x502-r180-san1-controls PASS
+async-410x502-r180-san1-controls-settings PASS
+async-410x502-r180-san1-controls-save PASS
+async-410x502-r180-san1-torch-alarm PASS
+async-410x502-r180-san1-alarm PASS
+async-410x502-r180-san1-crown-controls PASS
+async-410x502-r180-san1-crown-alarm PASS
+async-410x502-r180-san1-failure-controls PASS
+async-410x502-r180-san1-failure-alarm PASS
+Native-height Watch Settings/Quick: 190 real-controller and surface cases passed; original 240 frames pixel-identical.

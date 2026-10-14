@@ -59,8 +59,14 @@ static int32_t quick_get(void *c,const char *key,void *data,uint32_t capacity,ui
  *size=1;if(capacity<1)return RISC_KEY_VALUE_BUFFER_SMALL;
  *(uint8_t*)data=pref_value[index];return RISC_KEY_VALUE_OK;
 }
+#ifdef RGB_ATOMIC_FIXTURE
+static bool rgb_publishing;
+#endif
 static int32_t quick_put(void *c,const char *key,const void *data,uint32_t size) {
  assert(fixture_foreground_frame_safe());
+#ifdef RGB_ATOMIC_FIXTURE
+ assert(rgb_publishing);
+#endif
 #ifdef PORTABLE_LOW_BATTERY
  int low_index=low_key(key);
  if(low_index>=0){assert(size<=5);low_writes[low_index]++;if(low_write_fail==low_index)return RISC_KEY_VALUE_IO;low_sizes[low_index]=size;memcpy(low_records[low_index],data,size);return RISC_KEY_VALUE_OK;}
@@ -109,7 +115,13 @@ fixture_point(&event->x,&event->y);
  }
  return 0;
 }
+#ifdef RGB_ATOMIC_FIXTURE
+#include "rgb_atomic_provider.inc"
+#endif
 static bool quick_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
+#ifdef RGB_ATOMIC_FIXTURE
+ if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)){assert(version==1&&instance==1);grant->api=&rgb_api;grant->slot=1;grant->generation=1;grants++;return true;}
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
  if(!strcmp(name,"net.wifi")){assert(version==1&&instance==15);grant->api=&radio_wifi;grants++;return true;}
  if(!strcmp(name,"bluetooth.hci")){assert(version==1&&instance==16);grant->api=&radio_ble;grants++;return true;}
@@ -155,6 +167,9 @@ static void setup(void) {
  alarm_fake.state=ALARM_STATE_READY;
  assert(settings_open());
  pqa_session_init(&quick);
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick.save_user=rgb_atomic_save;quick.save_context=NULL;
+#endif
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
  assert(pqa_set_height(&quick.ui,native_watch_layout.height));
 #endif

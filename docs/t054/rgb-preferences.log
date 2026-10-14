@@ -1,0 +1,8 @@
+rgb_preferences_test rotation=0 native=False: 4 ASan/UBSan cases PASS
+quick_adapter_test rotation=0 native=False: 13 ASan/UBSan cases PASS
+rgb_preferences_test rotation=0 native=True: 4 ASan/UBSan cases PASS
+quick_adapter_test rotation=0 native=True: 13 ASan/UBSan cases PASS
+rgb_preferences_test rotation=180 native=False: 4 ASan/UBSan cases PASS
+quick_adapter_test rotation=180 native=False: 13 ASan/UBSan cases PASS
+rgb_preferences_test rotation=180 native=True: 4 ASan/UBSan cases PASS
+quick_adapter_test rotation=180 native=True: 13 ASan/UBSan cases PASS
