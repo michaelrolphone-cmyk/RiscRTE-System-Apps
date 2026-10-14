@@ -213,6 +213,12 @@ static bool nova_run(void) {
     while(api->poll(&in,20)) {
         if(in.exit_requested || (in.buttons&T5_APP_BUTTON_BACK)) break;
         uint32_t now=api->millis(),elapsed=now-s.last_motion;
+        if(retry_unavailable_catalog(now)){
+            s=(nova_state){.view=v,.initial=true,.pending=-1};nova_layout(&s);
+            s.last_frame=s.last_clock=s.last_input=s.last_motion=now;
+            buttons_armed=false;previous=in.buttons;nova_render(&s);continue;
+        }
+        if(!catalog_available && !t5_app_get_api(T5_APP_ABI_VERSION))return true;
         /* A slow valid display frame is not an input cancellation. Keep a
          * deliberate pending launch, while bounding only physics integration. */
         if(elapsed>250)elapsed=250;

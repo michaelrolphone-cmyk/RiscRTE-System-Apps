@@ -11,10 +11,12 @@ static uint32_t inventory_count;
 static uint64_t inventory_generation=1;
 static unsigned fault,catalog_calls,catalog_acquires,catalog_releases,runtime_calls,snapshot_calls;
 static bool retained,mutate_guard,mutate_drain;
+static unsigned recover_catalog_at, retry_fault;
 static risc_display_output_api_v1 owned_display;
 static risc_app_catalog_v1 owned_catalog;
 static int32_t inventory_snapshot(void *context,risc_app_catalog_snapshot_v1 *out) {
  (void)context;assert(!retained);catalog_calls++;snapshot_calls++;
+ if(fault==5 && recover_catalog_at && ticks>=recover_catalog_at)fault=retry_fault;
  if(fault==5)return RISC_APP_CATALOG_UNAVAILABLE;
  if(fault==6)return RISC_APP_CATALOG_CONTEXT;
  if(fault==7)return RISC_APP_CATALOG_RETAINED;
@@ -236,11 +238,22 @@ static void exercise(unsigned width,unsigned height) {
  }
  app_module_fini();assert(!retained&&!grants&&!subscriptions&&!frames);guards();free(guarded);
 }
+static void exercise_startup_recovery(unsigned width,unsigned height,unsigned mode) {
+ fw=width;fh=height;pitch=fw+3;guarded=malloc((fh*pitch+2)*2);assert(guarded);pixels=guarded+1;
+ for(unsigned i=0;i<fh*pitch+2;i++)guarded[i]=0xa55a;
+ use_async=true;contact_count=1;assert(app_module_init()==0);full_run=5;fault=5;recover_catalog_at=mode==1?0:1500;retry_fault=mode==2?7:0;
+ const t5_app_api_v1 *client=t5_app_get_api(T5_APP_ABI_VERSION);app_main();assert(!launches);
+ if(mode==2){assert(retained);no_more_callbacks(client);return;}
+ assert(!retained);assert(mode==1?(!catalog_available&&!count):(catalog_available&&count==inventory_count));
+ assert(snapshot_calls>=3&&snapshot_calls<=6); /* initial + one/second, then stable */
+ app_module_fini();assert(!grants&&!subscriptions&&!frames);guards();free(guarded);
+}
 int main(int argc,char **argv) {
  assert(argc>=5);load_inventory(argv[2]);
  owned_display=nt_display;owned_display.present_status=inventory_present_status;
  owned_catalog=(risc_app_catalog_v1){1,sizeof(owned_catalog),NULL,inventory_snapshot,inventory_get};
  if(!strcmp(argv[1],"parity"))return previous_watch_main(argc-2,argv+2);
+ if(!strcmp(argv[1],"startup-recovery")){exercise_startup_recovery((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]),argc==6?(unsigned)atoi(argv[5]):0);puts("Actual launcher recovers a delayed native catalog without stale launch PASS");return 0;}
  if(!strcmp(argv[1],"controller")){exercise_controller((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]));puts("Actual Nova stale publication recovery PASS");return 0;}
  assert(!strcmp(argv[1],"inventory") && (argc==5 || argc==6));fault=argc==6?(unsigned)atoi(argv[5]):0;
  exercise((unsigned)atoi(argv[3]),(unsigned)atoi(argv[4]));

@@ -46,6 +46,7 @@ static bool springboard_watch_open(void) {
 #endif
 static bool missing_icons;
 static bool catalog_available;
+static uint32_t catalog_retry_at;
 static bool edit_mode;
 static bool selection_visible;
 static bool home_pinned[MAX_HOME_APPS];
@@ -397,6 +398,17 @@ static bool refresh_changed_catalog(void) {
     return true;
 }
 
+/* A temporarily unpublished catalog must not strand an empty launcher.
+ * Retry once per second; never reuse stale rows or launch an old index. */
+static bool retry_unavailable_catalog(uint32_t now) {
+    if(catalog_available || (uint32_t)(now-catalog_retry_at)<1000u)return false;
+    catalog_retry_at=now;
+    catalog_available=api->installed_apps_refresh();
+    if(!catalog_available)return false;
+    count=api->installed_apps_count();if(count>MAX_HOME_APPS)count=MAX_HOME_APPS;
+    selected=0;selection_visible=false;load_home_pins();layout();return true;
+}
+
 static bool launch(void) {
     t5_app_manifest_t app;
     if (!count || !api->installed_apps_get(selected, &app)) return false;
@@ -437,6 +449,7 @@ __attribute__((visibility("default"))) void app_main(void) {
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
     if (!springboard_watch_open()) return;
 #endif
+    catalog_retry_at=api->millis();
     catalog_available = api->installed_apps_refresh();
     /* A terminal native custody fence invalidates the bridge; no presentation
      * or clock provider may be entered after that failure. */
@@ -461,6 +474,8 @@ __attribute__((visibility("default"))) void app_main(void) {
 
     while (api->poll(&input, sv_enabled ? 5 : 20)) {
         if (input.exit_requested || sv_fatal) break;
+        if(retry_unavailable_catalog(api->millis())){previous_buttons=input.buttons;draw(0);continue;}
+        if(!catalog_available && !t5_app_get_api(T5_APP_ABI_VERSION))break;
         t5_app_swipe_t swipe={0};
         const size_t swipe_api_size=offsetof(t5_app_api_v1,take_touch_swipe)+sizeof(api->take_touch_swipe);
         const bool swiped=api->struct_size>=swipe_api_size && api->take_touch_swipe && api->take_touch_swipe(&swipe);

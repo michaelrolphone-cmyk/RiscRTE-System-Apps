@@ -76,8 +76,11 @@ static bool catalog_checked(bool result) {
   return result;
 }
 static bool refresh(void) {
-  return rt && !failed && !app_invocation_retained() &&
-      catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
+  if(!rt || failed || app_invocation_retained())return false;
+  bool result=catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
+  if(!result && !app_invocation_retained())rt->diagnostic(installed_catalog.api?
+      "APP_CATALOG refresh=unavailable stage=publication":"APP_CATALOG refresh=unavailable stage=acquire-or-interface");
+  return result;
 }
 static uint32_t count(void) {
   if(!rt || failed || app_invocation_retained())return 0;
