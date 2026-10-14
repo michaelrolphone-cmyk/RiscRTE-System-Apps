@@ -15,5 +15,9 @@ the profile orientation. Other applications retain their previous rendering.
 Run scripts/test_scene_telemetry.py --runtime RUNTIME for existing telemetry and
 four-rotation landscape tests, normally and with ASan/UBSan. Run
 scripts/test_scene_decoupling.py --runtime RUNTIME --baseline BASELINE --output OUT
-for unchanged raster/cadence checks. Generate telemetry fonts in both sources.
+for unchanged raster/cadence checks. Use the committed telemetry glyphs for the X4 build. They are recovered from
+the qualified .114 ELF by scripts/recover_telemetry_fonts.py (SHA-pinned input);
+rebuilding the unchanged provider with these glyphs exactly reproduces its
+delivered SHA-256. Host FreeType regeneration produced different glyph metrics
+and was rejected. The recovered arrays retain the existing OFL font license.
 The host tests do not establish physical device timing or touch performance.
