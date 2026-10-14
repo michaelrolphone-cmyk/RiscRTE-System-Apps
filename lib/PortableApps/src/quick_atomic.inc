@@ -1,4 +1,4 @@
-/* Explicit Home controller only. Capture before the modal draft is loaded,
+/* Explicit Quick controller. Capture before the modal draft is loaded,
  * including taps whose preview/release are coalesced. Retain it through Save,
  * never recapture on stale/busy or infer an intent from an automatic KV put. */
 #include "PortablePreferenceAtomic.h"
@@ -25,7 +25,12 @@ static void quick_atomic_discard(void) {
 static void quick_atomic_enqueue(void) {
  uint32_t actions=pqa_take_action(&quick.ui);if(!actions)return;
  if(quick_atomic_queue_overflow){quick.ui.error_flags|=PQA_ERROR_SAVE;return;}
- quick_atomic_action next={actions,quick_atomic_contact,quick.ui.action_brightness,quick.ui.action_tone,
+ quick_atomic_action next={actions,quick_atomic_contact,quick.ui.action_brightness,
+#ifdef PORTABLE_FRONTLIGHT_TONE
+  quick.ui.action_tone,
+#else
+  0,
+#endif
   quick.ui.action_volume,quick.ui.torch,quick.ui.action_torch,quick.ui.action_dnd,quick.ui.action_contexts};
  /* Consecutive previews of the same contact may collapse; commits and
   * distinct controls never do. There is no provider call at this boundary. */
@@ -45,7 +50,11 @@ static uint32_t quick_atomic_take_action(void) {
  quick_atomic_enqueue();if(quick_atomic_queue_overflow)quick.ui.error_flags|=PQA_ERROR_SAVE;
  if(!quick_atomic_queue_count)return 0;
  const quick_atomic_action *a=&quick_atomic_queue[quick_atomic_queue_head];
- quick.ui.action_brightness=a->brightness;quick.ui.action_tone=a->tone;quick.ui.action_volume=a->volume;
+ quick.ui.action_brightness=a->brightness;
+#ifdef PORTABLE_FRONTLIGHT_TONE
+ quick.ui.action_tone=a->tone;
+#endif
+ quick.ui.action_volume=a->volume;
  quick.ui.torch=a->torch;quick.ui.action_torch=a->action_torch;quick.ui.action_dnd=a->dnd;quick.ui.action_contexts=a->contexts;
  quick_atomic_delivered_contact=a->contact;quick_atomic_delivering=true;uint32_t actions=a->actions;
  quick_atomic_queue_head=(quick_atomic_queue_head+1)%QUICK_ATOMIC_QUEUE_CAPACITY;--quick_atomic_queue_count;
@@ -104,10 +113,15 @@ static bool quick_atomic_modal_begin(void) {
 }
 static const char *quick_atomic_action_key(uint32_t actions) {
  if(actions&(PQA_BRIGHTNESS_PREVIEW|PQA_BRIGHTNESS_COMMIT))return PQA_BRIGHTNESS_KEY;
+#ifdef PORTABLE_FRONTLIGHT_TONE
  if(actions&(PQA_TONE_PREVIEW|PQA_TONE_COMMIT))return PQA_TONE_KEY;
+#endif
+ if(actions&(PQA_VOLUME_COMMIT|PQA_SILENT))return PQA_VOLUME_KEY;
  if(actions&PQA_DND)return PQA_DND_KEY;
  if(actions&PQA_CONTEXTS)return PORTABLE_CONTEXT_ENABLED_KEY;
+#ifdef PORTABLE_QUICK_RADIOS
  if(actions&(PQA_WIFI|PQA_BLUETOOTH|PQA_AIRPLANE))return PORTABLE_RADIO_KEY;
+#endif
  return NULL;
 }
 /* Reject a draft whose displayed base no longer matches the captured Core.
@@ -117,8 +131,12 @@ static bool quick_atomic_matches_display(void) {
  if(!s->valid)return false;
  if(!strcmp(s->key,PQA_BRIGHTNESS_KEY))return s->present?
   s->expected_size==1&&s->expected[0]==quick.brightness:quick.brightness==PQA_BRIGHTNESS_DEFAULT;
+#ifdef PORTABLE_FRONTLIGHT_TONE
  if(!strcmp(s->key,PQA_TONE_KEY))return s->present?
   s->expected_size==1&&s->expected[0]==quick.tone:quick.tone==PQA_TONE_DEFAULT;
+#endif
+ if(!strcmp(s->key,PQA_VOLUME_KEY))return s->present?
+  s->expected_size==1&&s->expected[0]==quick.volume:quick.volume==PQA_VOLUME_DEFAULT;
  if(!strcmp(s->key,PQA_DND_KEY))return s->present?
   s->expected_size==1&&s->expected[0]==(uint8_t)quick.dnd_enabled:!quick.dnd_enabled;
  if(!strcmp(s->key,PORTABLE_CONTEXT_ENABLED_KEY)) {
@@ -126,10 +144,12 @@ static bool quick_atomic_matches_display(void) {
   const uint8_t b[]={'C',1,e,(uint8_t)(e^0xa5u)};
   return s->present?s->expected_size==4&&!memcmp(s->expected,b,4):!e;
  }
+#ifdef PORTABLE_QUICK_RADIOS
  if(!strcmp(s->key,PORTABLE_RADIO_KEY)) {
   uint8_t flags=0;return s->present?portable_radio_decode(s->expected,s->expected_size,&flags)&&flags==quick_radios.flags:
    quick_radios.flags==PORTABLE_RADIO_WIFI;
  }
+#endif
  return false;
 }
 static bool quick_atomic_capture(uint32_t actions) {
@@ -154,7 +174,8 @@ static bool quick_atomic_save(void *unused,const char *key,const void *value,uin
  if(!portable_home_settings_available())return false;
 #endif
  if(!quick_atomic_guard(NULL)||!quick_atomic_attempted||strcmp(key,quick_atomic_key))return false;
- int rc=restore?portable_preference_atomic_prepare_brightness_off(&quick_atomic_edit,value,size,*restore):
+ int rc=restore?(!strcmp(key,PQA_VOLUME_KEY)?portable_preference_atomic_prepare_volume_off(&quick_atomic_edit,value,size,*restore):
+  portable_preference_atomic_prepare_brightness_off(&quick_atomic_edit,value,size,*restore)):
   portable_preference_atomic_prepare(&quick_atomic_edit,value,size);
  if(rc!=PORTABLE_PREFERENCE_READY){quick_atomic_result(rc);return false;}
  quick_atomic_running=true;bool cancel=false;

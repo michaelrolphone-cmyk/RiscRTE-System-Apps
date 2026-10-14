@@ -73,8 +73,8 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
 #error "Atomic Home automatic preferences require atomic Quick"
 #endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
-#if !defined(PORTABLE_RESIDENT_SHELL_HOST) || !defined(PORTABLE_DESK_CLOCK_SPARSE_START) || !defined(PORTABLE_FRONTLIGHT_TONE) || !defined(PORTABLE_PAPER_TRANSITIONS)
-#error "Atomic Quick preferences require the selected X4 sparse resident Home"
+#if !defined(PORTABLE_QUICK_ACTIONS) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Atomic Quick preferences require Quick Actions and checked native custody"
 #endif
 #ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
 #if !defined(PORTABLE_X4_IDLE_POLICY) || !defined(PORTABLE_CONTEXTS_CLOCK_RF_ONLY)

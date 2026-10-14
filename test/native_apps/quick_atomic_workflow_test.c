@@ -21,17 +21,17 @@ static unsigned tick,brightness=40,tone=50,ble_state;
 static bool cancel_requested,refuse_release,hidden;
 static uint64_t revision=7,owned_token;
 static const char *test;
-static uint8_t records[6][64],pending_values[2][64],intent_copy[176];
-static uint32_t sizes[6],pending_sizes[2],pending_count;
+static uint8_t records[8][64],pending_values[2][64],intent_copy[176];
+static uint32_t sizes[8],pending_sizes[2],pending_count;
 static int pending_indices[2];
-static const char *const keys[]={"brightness","quick_bright","frontlight_tone","alert_dnd","contexts_on","quick_radio"};
+static const char *const keys[]={"brightness","quick_bright","frontlight_tone","alert_dnd","contexts_on","quick_radio","alarm_volume","quick_volume"};
 static bool which(const char *name){return !strcmp(test,name);}
 static void io(void){assert(!hidden);}
 static void portable_adapter_retain(void){++retains;hidden=true;native_custody_retained=failed=true;}
-static void input_service(void){io();if(which("cancel")||which("cancel-race")||which("cancel-error"))navigation_pending=T5_APP_BUTTON_BACK;}
+static void input_service(void){io();if(which("cancel")||which("cancel-race")||which("cancel-error")||which("rgb-mute-cancel"))navigation_pending=T5_APP_BUTTON_BACK;}
 static void input_dispatch(void){io();}
 #include "../../lib/PortableApps/src/quick_atomic.inc"
-static int index_of(const char *key){for(unsigned i=0;i<6;++i)if(!strcmp(keys[i],key))return (int)i;return -1;}
+static int index_of(const char *key){for(unsigned i=0;i<8;++i)if(!strcmp(keys[i],key))return (int)i;return -1;}
 static int32_t get_record(void *c,const char *key,void *out,uint32_t cap,uint32_t *size){
  (void)c;io();int i=index_of(key);*size=i<0?0:sizes[i];if(!*size)return RISC_KEY_VALUE_NOT_FOUND;
  if(cap<*size)return RISC_KEY_VALUE_BUFFER_SMALL;memcpy(out,records[i],*size);return RISC_KEY_VALUE_OK;
@@ -69,7 +69,7 @@ static int32_t atomic_submit(void *c,uint64_t rev,const risc_key_value_atomic_mu
  assert(word(intent_copy+172)==portable_preference_crc(intent_copy,172));
  pending_count=count;
  for(unsigned i=0;i<count;++i){pending_indices[i]=index_of(m[i].key);assert(pending_indices[i]>=0&&m[i].kind==RISC_ATOMIC_PUT);pending_sizes[i]=m[i].size;memcpy(pending_values[i],m[i].value,m[i].size);}
- if(count==2)assert(primary==0&&pending_indices[1]==1&&m[0].size==1&&pending_values[0][0]==0&&m[1].size==1);
+ if(count==2)assert(((primary==0&&pending_indices[1]==1)||(primary==6&&pending_indices[1]==7))&&m[0].size==1&&pending_values[0][0]==0&&m[1].size==1);
  *token=owned_token=81;tick=0;
  return which("dirty-submit")?RISC_ATOMIC_IO:RISC_ATOMIC_OK;
 }
@@ -78,7 +78,7 @@ static int32_t atomic_collect(void *c,uint64_t token,risc_key_value_atomic_recei
  if(which("collect-io"))return RISC_ATOMIC_IO;
  if(which("close-pending"))return RISC_ATOMIC_PENDING;
  if(++tick<3)return RISC_ATOMIC_PENDING;
- int status=which("uncertain")?RISC_ATOMIC_UNCERTAIN:which("capacity")?RISC_ATOMIC_CAPACITY:
+ int status=which("rgb-mute-io")?RISC_ATOMIC_IO:which("uncertain")?RISC_ATOMIC_UNCERTAIN:which("capacity")?RISC_ATOMIC_CAPACITY:
   which("conflict")?RISC_ATOMIC_CONFLICT:cancel_requested&&!which("cancel-race")?RISC_ATOMIC_CANCELLED:RISC_ATOMIC_OK;
  if(status==RISC_ATOMIC_OK){for(unsigned i=0;i<pending_count;++i){sizes[pending_indices[i]]=pending_sizes[i];memcpy(records[pending_indices[i]],pending_values[i],pending_sizes[i]);}++revision;}
  *receipt=(risc_key_value_atomic_receipt_v1){sizeof(*receipt),status,revision,status==RISC_ATOMIC_OK?123:0};owned_token=0;
@@ -158,6 +158,29 @@ int main(int argc,char **argv){
   assert(pqa_session_restore(&quick,&display_api.snapshot.metrics.power.history.base));assert(!atomic_acquires&&!submits&&!legacy_puts);puts("quick torch restore PASS");return 0;
  }
  assert(quick_atomic_modal_begin());
+ if(!strncmp(test,"rgb-",4)) {
+  quick.ui.paper=false;quick.ui.audio_controls=true;quick.ui.volume_valid=true;
+  bool volume=!which("rgb-brightness"),mute=strstr(test,"mute")!=NULL;
+  unsigned action=volume?(mute?PQA_SILENT:PQA_VOLUME_COMMIT):PQA_BRIGHTNESS_COMMIT;
+  quick.ui.action_volume=mute?0:80;quick.ui.action_brightness=70;
+  if(which("rgb-mute-already")){quick.volume=0;quick.restore_volume=60;sizes[6]=sizes[7]=1;records[6][0]=0;records[7][0]=60;}
+  if(which("rgb-mute-restore-stale")){quick.volume=0;quick.restore_volume=50;sizes[6]=sizes[7]=1;records[6][0]=0;records[7][0]=60;}
+  assert(quick_atomic_capture(action));
+  if(which("rgb-volume-stale"))++revision;
+  assert(apply(action));
+  bool rejected=which("rgb-volume-stale")||which("rgb-mute-restore-stale")||which("rgb-mute-io")||which("rgb-mute-cancel");
+  if(which("rgb-mute-io")||which("rgb-mute-cancel"))assert(!sizes[6]&&!sizes[7]&&quick.volume==50);
+  if(rejected)assert(quick.ui.error_flags&PQA_ERROR_SAVE);
+  else {
+   assert(submits==1&&sizes[volume?6:0]==1&&records[volume?6:0][0]==(volume?(mute?0:80):70));
+   if(mute)assert(pending_count==2&&sizes[7]==1&&records[7][0]==(which("rgb-mute-already")?60:50));
+   assert(!(quick.ui.error_flags&PQA_ERROR_SAVE));
+  }
+  assert(!legacy_puts&&quick_atomic_close());
+  assert(pqa_session_load(&quick,rt));
+  if(!rejected)assert(volume?quick.volume==(mute?0:80):quick.brightness==70);
+  printf("quick %s USER save and reload PASS\n",test);return 0;
+ }
  if(which("queued-controls")||which("queue-overflow")) {
   quick.ui.position_q8=quick.ui.target_q8=PQA_OPEN_Q8;quick.ui.audio_controls=false;quick.ui.tone_controls=true;
   quick.ui.radio_controls=quick.ui.radios_valid=true;quick.ui.wifi_enabled=true;

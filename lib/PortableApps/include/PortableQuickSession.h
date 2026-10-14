@@ -22,6 +22,8 @@ typedef struct {
 #endif
 #ifdef PORTABLE_FRONTLIGHT_TONE
  unsigned tone; /* Last confirmed namespace-1 preference, including virtual default. */
+#endif
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  bool retained; /* A terminal provider/release failure forbids later session I/O. */
 #endif
  bool loaded,hour_24,dnd_enabled;

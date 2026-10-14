@@ -26,7 +26,7 @@ static bool acquire(const risc_runtime_api_v1 *rt,risc_runtime_capability_v1 *g,
  return *kv && pqa_preferences_valid(*kv);
 }
 bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  if(s->retained)return false;
 #endif
  risc_runtime_capability_v1 g;const risc_key_value_v1 *kv;
@@ -60,7 +60,7 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  (void)portable_sleep_timer_load(kv,true,&s->deep_ms);
 #endif
  if(g.api && !rt->release(&g)) {
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
   s->retained=true;
 #endif
   return false;
@@ -84,7 +84,7 @@ bool pqa_session_load(pqa_session *s,const risc_runtime_api_v1 *rt) {
  s->loaded=true;return true;
 }
 bool pqa_session_restore(const pqa_session *s,const risc_display_output_api_v1 *d) {
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  if(s->retained)return false;
 #endif
  return d && d->set_brightness && d->set_brightness(d->context,(uint16_t)s->brightness,100);
@@ -189,7 +189,7 @@ static bool paper_light_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const
   (void)rt;const uint8_t byte=(uint8_t)wanted,back=(uint8_t)restore;
   bool saved=(wanted==0||wanted>=10)&&wanted<=100&&restore>=10&&restore<=100&&
    s->save_user&&s->save_user(s->save_context,PQA_BRIGHTNESS_KEY,&byte,1,wanted?NULL:&back);
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
   if(s->retained)return false;
 #endif
 #else
@@ -215,8 +215,10 @@ static bool paper_light_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const
 #endif
 static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *alerts_changed) {
  *alerts_changed=false;
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  if(s->retained)return false;
+#endif
+#ifdef PORTABLE_FRONTLIGHT_TONE
  if(!paper_tone_apply(s,rt,d,actions))return false;
 #endif
  uint32_t storage_actions=actions;
@@ -225,8 +227,22 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
 #endif
  if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT|PQA_DND|PQA_CONTEXTS)) {
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
-  /* This route is X4 visual-only. Unsupported audio actions fail closed. */
-  if(storage_actions&(PQA_BRIGHTNESS_COMMIT|PQA_VOLUME_COMMIT|PQA_SILENT))s->ui.error_flags|=PQA_ERROR_SAVE;
+  if(storage_actions&PQA_BRIGHTNESS_COMMIT) {
+   const uint8_t wanted=s->ui.action_brightness;
+   if(wanted>=10&&wanted<=100&&s->save_user&&s->save_user(s->save_context,PQA_BRIGHTNESS_KEY,&wanted,1,NULL)) {
+    s->brightness=wanted;s->ui.brightness_valid=true;s->ui.error_flags&=~(PQA_ERROR_BRIGHTNESS|PQA_ERROR_SAVE);
+   }else{s->ui.brightness=(uint8_t)s->brightness;s->ui.error_flags|=PQA_ERROR_SAVE;}
+   if(s->retained)return false;
+  }
+  if(actions&(PQA_VOLUME_COMMIT|PQA_SILENT)) {
+   const uint8_t wanted=s->ui.action_volume,restore=(uint8_t)(s->volume?s->volume:s->restore_volume);
+   if(wanted<=100&&s->save_user&&s->save_user(s->save_context,PQA_VOLUME_KEY,&wanted,1,wanted?NULL:&restore)) {
+    if(s->volume)s->restore_volume=s->volume;
+    s->volume=wanted;if(wanted)s->restore_volume=wanted;
+    s->ui.volume_valid=true;s->ui.error_flags&=~(PQA_ERROR_VOLUME|PQA_ERROR_SAVE);*alerts_changed=true;
+   }else{s->ui.volume=(uint8_t)s->volume;s->ui.last_nonzero_volume=(uint8_t)s->restore_volume;s->ui.error_flags|=PQA_ERROR_SAVE;}
+   if(s->retained)return false;
+  }
   if((actions&PQA_CONTEXTS)&&s->ui.contexts_controls) {
    uint8_t enabled=s->ui.action_contexts?1:0;
    const uint8_t bytes[]={'C',1,enabled,(uint8_t)(enabled^0xa5u)};
@@ -243,7 +259,7 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
     s->ui.error_flags&=~(PQA_ERROR_DND|PQA_ERROR_SAVE);
    }else{s->ui.dnd_enabled=s->dnd_enabled;s->ui.dnd_valid=false;s->ui.error_flags|=PQA_ERROR_DND|PQA_ERROR_SAVE;}
   }
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
   if(s->retained)return false;
 #endif
 #else
@@ -300,7 +316,7 @@ static bool session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const ris
 }
 bool pqa_session_apply(pqa_session *s,const risc_runtime_api_v1 *rt,const risc_display_output_api_v1 *d,uint32_t actions,bool *alerts_changed) {
  bool ok=session_apply(s,rt,d,actions,alerts_changed);
-#ifdef PORTABLE_FRONTLIGHT_TONE
+#if defined(PORTABLE_FRONTLIGHT_TONE) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
  if(!ok)s->retained=true;
 #endif
  return ok;
