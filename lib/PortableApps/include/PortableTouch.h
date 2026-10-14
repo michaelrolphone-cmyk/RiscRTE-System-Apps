@@ -50,9 +50,7 @@ typedef struct {
   /* App-local metadata, not part of the provider ABI. */
   uint8_t contact_id;
   uint64_t timestamp_ms;
-#ifdef PORTABLE_TOUCH_SCROLL
   bool release_position_valid;
-#endif
 } portable_touch_sample;
 
 static inline void portable_touch_terminal(portable_touch *t,const char *op,int status) {
@@ -295,9 +293,7 @@ static inline bool portable_touch_next(portable_touch *t,portable_touch_sample *
     bool released=t->down && e.id==t->contact_id;
     if(released)portable_touch_move(t,e.x,e.y);
     portable_touch_level(t,out);out->down=false;out->released=released;
-#ifdef PORTABLE_TOUCH_SCROLL
     out->release_position_valid=released;
-#endif
     if(released)t->down=false;
     for(unsigned i=(unsigned)at+1u;i<t->contact_count;++i)t->contacts[i-1u]=t->contacts[i];
     if(!--t->contact_count) {t->neutral=true;PORTABLE_TOUCH_ISSUE(NULL,0,0);}
