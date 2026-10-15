@@ -71,6 +71,23 @@ jobs:
             --utilities-root .deps/shared-custody-utilities \
             --output build/shared-custody-ci/baseline --baseline \
             | tee build/shared-custody-ci/baseline.log
+      - name: Verify first-completed-frame brightness and reproduce dark launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_shared_initial_brightness.py \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-fixed \
+            | tee build/shared-custody-ci/brightness-fixed.log
+          python3 scripts/test_shared_initial_brightness.py \
+            --source-root .deps/shared-custody-baseline \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-baseline --baseline \
+            | tee build/shared-custody-ci/brightness-baseline.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
