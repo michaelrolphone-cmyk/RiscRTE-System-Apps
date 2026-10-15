@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "repositories": {
+    "r0": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "b8086d45ffa8259f982acac5974e7d6e4a6aa88b"
+    },
+    "r1": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "commit": "d493ca3ede561d410a858440ee2db9073c963426"
+    },
+    "r2": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "b0ecc165a6a175495964d8bf25568835ae5de232"
+    },
+    "r3": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "commit": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4"
+    },
+    "r4": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "927fe99c30c3f34ab6505d561acaa9a1e6e9893b"
+    },
+    "r5": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "d03c6564814ff1588bf73af45b3f0288908466c3"
+    },
+    "r6": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "commit": "d493ca3ede561d410a858440ee2db9073c963426"
+    },
+    "r7": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+      "commit": "164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75"
+    },
+    "r8": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+      "commit": "4c8e0282f63c7b791536f48dc2653fc5de1462fb"
+    },
+    "r9": {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "commit": "a91edf3fada6a559ec107186dd163d0c8da10d29"
+    },
+    "r10": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "710eddc913c6dea5bf6e5b5325a824d32f63429c"
+    },
+    "r11": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+      "commit": "cd91a8f35e0ed85efdce179a1c5820f1c256d29f"
+    },
+    "r12": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "ca7fe82f43adc4ad8a8fa477a5336c8f5c693770"
+    },
+    "r13": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "bc60efe2e3936d5821ea89a2349a4d09438ebc93"
+    },
+    "r14": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "12352fc46067c32e18f254562d0ec7819f3478ac"
+    }
+  },
+  "helpers": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+    "commit": "1164e3e5f02b79738cc26619d9884fdcc9f29eb1",
+    "id": "helpers"
+  },
+  "helper_files": {
+    "normalize_xtensa_relocations.py": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "commit": "1164e3e5f02b79738cc26619d9884fdcc9f29eb1",
+      "path": "scripts/normalize_xtensa_relocations.py",
+      "sha256": "f71d9ca3b267166bc69d0e4853463774a8dde5384924132e1aca0e0c2f3a965f"
+    },
+    "compact_current_elf.py": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "commit": "1164e3e5f02b79738cc26619d9884fdcc9f29eb1",
+      "path": "scripts/compact_current_elf.py",
+      "sha256": "07936b7ccbc53809ef8d907b19d434b047e4b7e4a2a8501bd32bd9465f691d55"
+    },
+    "compact_cohort_elf.py": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+      "commit": "3144e43d22c84b9ea222a523909bfb544b6c315f",
+      "path": "scripts/compact_cohort_elf.py",
+      "sha256": "14d642ce96785e1d3875d1053aec1ed07a41a6f53c802dda7f922bc64da29882"
+    }
+  },
+  "objects": [
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavCore.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavCore.o"
+      ],
+      "sha256": "713ef26f53fe933bc923d002bf80b4bb70fe432af5c0025716e799698c089d8d"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavVolume.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavVolume.o"
+      ],
+      "sha256": "2da98534c1122a00ca6fbf4ef4c8067de1f18ddd9f77bb9da56324cb1b64f442"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavProperties.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavProperties.o"
+      ],
+      "sha256": "0cf2050a5a0e00db9352d07b38fe8a458478f466c2807658e90bad9feb202f26"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavSession.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavSession.o"
+      ],
+      "sha256": "e7ba6aa9a52ecef7bd5cddf1a81fe9fda1bf5873fa6c77258155ccec7a500bd0"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavDigest.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavDigest.o"
+      ],
+      "sha256": "fc27e240071dad8a1451b19834d87b40748da448df9fbd68940d791fa4aaf46b"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavSharing.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavSharing.o"
+      ],
+      "sha256": "5d23a9bc91d890add864ca92407ca03ec3f8d29fcd2fae8bc3263f94b4eee255"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/PortableFileSharing.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/PortableFileSharing.o"
+      ],
+      "sha256": "57aa6c22cc68f42919b83f737349aec1fcb0201727d143e75860666c2e622157"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavClient.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavClient.o"
+      ],
+      "sha256": "c5a701565e9b6a8c1edff1c99a776af0c65c0296c20f5bfb76d262d02dcdea2e"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/WebDavRemoteVolume.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/WebDavRemoteVolume.o"
+      ],
+      "sha256": "41a31d6006c133626c97a81b8c4e219c49a8e90f8c9c7bc3e9c4dce6447429d8"
+    },
+    {
+      "command": [
+        "@cxx@",
+        "-std=c++17",
+        "-fno-exceptions",
+        "-fno-rtti",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/PortablePeerFiles.cpp",
+        "-o",
+        "@work@/target-remaining/sharing-objects/PortablePeerFiles.o"
+      ],
+      "sha256": "1ce2bd6f6a57f7aba3221316f157733ef7e10055f3d99f2cd8feca03d4860123"
+    },
+    {
+      "command": [
+        "@cc@",
+        "-std=c11",
+        "-Os",
+        "-fPIC",
+        "-mtext-section-literals",
+        "-mlongcalls",
+        "-fvisibility=hidden",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I@r14@/lib/PortableApps/include",
+        "-c",
+        "@r14@/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c",
+        "-o",
+        "@work@/target-remaining/sharing-objects/sha2.o"
+      ],
+      "sha256": "4be0f41435d8931956088175d875f13cc5b2ef74b8793c8eb19d439b04fbb45e"
+    }
+  ],
+  "qualification": "Exact input hashes, public commit bytes, compiler flags and final ELF digest; no hardware execution",
+  "input_parts": [
+    "inputs-00.json",
+    "inputs-01.json",
+    "inputs-02.json",
+    "inputs-03.json",
+    "inputs-04.json",
+    "inputs-05.json",
+    "inputs-06.json",
+    "inputs-07.json",
+    "inputs-08.json"
+  ]
+}

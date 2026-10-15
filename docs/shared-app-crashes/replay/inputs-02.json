@@ -1,0 +1,318 @@
+{
+  "@r4@/Apps/spectrum_controls.inc": {
+    "sha256": "06aaedc7d4a3af7e01c223dc8a0a6b1fb745a6cffa2596129094699347a121e0"
+  },
+  "@r4@/Apps/spectrum_dsp.h": {
+    "sha256": "6f8c9d47562b91dcc00e37b7130bddcdd26327c4697532de9ea8d7d0b2610f98"
+  },
+  "@r4@/Apps/spectrum_neural.h": {
+    "sha256": "fd6bbc9f05d373c0ddfe760c18247781e4d757cdf2374a7d0ca7d87b9e34ea2e"
+  },
+  "@r4@/Apps/spectrum_neural_store.h": {
+    "sha256": "110f44e7eba53811d84f2f6ed53ae5ff0f4644d6749881b71a1ae51d2bddebd0"
+  },
+  "@r4@/Apps/spectrum_signature_app.inc": {
+    "sha256": "b96c825d8c532921a2d8d314cc05575ec9234242be3c6f463b64607b61f2b84e"
+  },
+  "@r4@/Apps/spectrum_signature_store.h": {
+    "sha256": "1852a24485b4b0032ca0bc165bd8ea69ca4c80a86e6d7a2806f594ecf323a8f2"
+  },
+  "@r4@/Apps/spectrum_signatures.h": {
+    "sha256": "4b7079f5d53f81b3b64bfe4335397d1151897ee91cf2a6983288fe7df814f741"
+  },
+  "@r4@/Apps/spectrum_speech.h": {
+    "sha256": "9ae0a4937ac3b665239164f09a3a7f2ad07dc3f7d4ce12feffc259f1a9aeb668"
+  },
+  "@r4@/Apps/spectrum_stage_trace.h": {
+    "sha256": "382357ee736c96743345ad895793842d39de53d7de47eb82bba705db73a4eccb"
+  },
+  "@r4@/Apps/spectrum_store.h": {
+    "sha256": "e42809c8b7c9cf4319824fa11e344100dc55fcbbf6b7d35bc5acf5fee31631c9"
+  },
+  "@r4@/Apps/spectrum_temporal.h": {
+    "sha256": "facdf3dda0e4efafc801ab60512edf6923681a86074edc0e2b319594c9a86591"
+  },
+  "@r4@/Apps/spectrum_temporal_app.inc": {
+    "sha256": "c92f3435bca31532a227652f9dccf7c90c43da0db67211e6290f27b39c0a8876"
+  },
+  "@r4@/Apps/spectrum_temporal_files.h": {
+    "sha256": "3c686b0b52385d8704bf17a78179ccdd6864116b372edf3b2b51fda0220fffd6"
+  },
+  "@r4@/Apps/spectrum_temporal_store.h": {
+    "sha256": "a91e8b044214395f6e3714fd9ba7375179dc9f81b8e0d62d6dbe9091d11b3014"
+  },
+  "@r4@/Apps/spectrum_vad_impl.inc": {
+    "sha256": "e845a0b4940ede3f911b447531c1422986a58dc22dffb265808d29f0e98fc106"
+  },
+  "@r4@/Apps/utility_frame.h": {
+    "sha256": "14ecb24a5b999024d247decbd3e78499b1fa1c36749bd9bfa8b4b8a087cecbc7"
+  },
+  "@work@/target-spectrum/fixed/audio_spectrum.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/NativeApps/src/SingleFloatDivisionCompat.c": {
+    "sha256": "e7e54837bbbd6c99be51367729a03b09d6df0553b635e692fad9b4264442befb"
+  },
+  "@r0@/lib/PortableApps/include/PortableBroadcastAppData.h": {
+    "sha256": "39623ec4ebb2a1c576398b60be8cceef084ff7d0809d4f8903aaa6b7873bd30d"
+  },
+  "@work@/target-spectrum/fixed/rf-presentation.h": {
+    "sha256": "0c3c5f5d3fa7d8b0d769c4a93dd368cf0cc51b0e2893b821d47d8534b471c1c2",
+    "text": "#include \"@r0@/Apps/PaperPresentation.h\"\n#define RF_PRESENTATION_H\n",
+    "template_sha256": "85e3b1d772570318f9290ee3eb4fd37e2b1902635ab972f298acb0cfb027e4be"
+  },
+  "@r5@/lib/ContextFingerprint/include/ContextFingerprint.h": {
+    "sha256": "7e451353d42a60685abcdf092755c062d51f6479cfc3880b379d24199640ea58"
+  },
+  "@r5@/lib/ContextFingerprint/include/ContextFingerprintStore.h": {
+    "sha256": "59f20d1bcd2b213f74db4cd88f4f2d57fae0d880eeff4f3ace677670ceed2350"
+  },
+  "@r5@/Apps/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r5@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r5@/Apps/context_fingerprint_app.inc": {
+    "sha256": "a89827c35fdcdb590ad6c93a8f74186e13c7ecec710b5555a191b052b418cf6a"
+  },
+  "@r5@/Apps/context_signal_library.inc": {
+    "sha256": "d19380adfc76870d05c9d2da82ee09fe1fd52b8ba563b6b65efab8b777d63d4a"
+  },
+  "@r5@/Apps/daily_draw.h": {
+    "sha256": "756a39ba654efb82eb9a7e66b6c28105d30247143c424f258ded60910104b413"
+  },
+  "@r5@/Apps/radio_iq_v1.h": {
+    "sha256": "a39169b522f123ad66b70dd392d9d060a9ee47342eccd9c21c76dae11d33f3b9"
+  },
+  "@r5@/Apps/rf_app_data_scope.h": {
+    "sha256": "5b21f23b2505f12ef38ed1fc0e90b3c665066f639f2ccd8ca90e3b8073f69010"
+  },
+  "@r5@/Apps/rf_application.inc": {
+    "sha256": "0e971e27ca468fc1a8abd99cad5e1a1e17db75bb3eb09da43e2169d848f3513a"
+  },
+  "@r5@/Apps/rf_background.h": {
+    "sha256": "6792af20634225de59fdc4c176a471bcbbd6d9f4ff06e9de964261d1f9668cb0"
+  },
+  "@r5@/Apps/rf_controls.inc": {
+    "sha256": "fd52d7deae54b348ab9c3fbe50b410b049102e38baaaa6db52b135da213f05ee"
+  },
+  "@r5@/Apps/rf_dsp.h": {
+    "sha256": "71dad410511bba28991f0e99cb88f2931c6262cabc01dbb5d9659e33a3eeee7c"
+  },
+  "@r5@/Apps/rf_identity.h": {
+    "sha256": "068428308352e542f0494afd389f3601e867571c3fd9057c4aec693d70abcb57"
+  },
+  "@r5@/Apps/rf_math.h": {
+    "sha256": "bc5723aa8206249f23e5809d3911009582ba83891b9db597cc15a200bb6d3fc8"
+  },
+  "@r5@/Apps/rf_neural.h": {
+    "sha256": "b4c22ab1d48bb1c742dc1e88f0de018a79fdb09fa780262a12f91dfb36680799"
+  },
+  "@r5@/Apps/rf_neural_store.h": {
+    "sha256": "306a42bd54d6e162e6acae03bdb9b99942040d0f303ba053b2bc0b2bddd39769"
+  },
+  "@r5@/Apps/rf_presentation.h": {
+    "sha256": "d9989eae6813ae1c5b461d5d77b9d28ed35c6797817e8b06250073dd5fca4c6f"
+  },
+  "@r5@/Apps/rf_signature_app.inc": {
+    "sha256": "cfed71bff2620e6ba36a6bd047b6f6e8e6d3bd403f97de40e6046ffed1a12b59"
+  },
+  "@r5@/Apps/rf_signature_store.h": {
+    "sha256": "2347b304c85eb2618dfd4b819e4acc372d554ba381ad7e3b9b89fdbaddac5a06"
+  },
+  "@r5@/Apps/rf_signatures.h": {
+    "sha256": "32cad5efb47468682cabdc0fdb263ecb1c27b701434f691489b1b339b49e9825"
+  },
+  "@r5@/Apps/rf_store.h": {
+    "sha256": "faff7237d5873e234bd116e931c5398ed4147fc1a5b05a1b696172bcf1d62e44"
+  },
+  "@r5@/Apps/rf_temporal.h": {
+    "sha256": "4f5e42b6928d9af5b49fa5a0455c0c5d8866f2f04410a9432131104a43aa277d"
+  },
+  "@r5@/Apps/rf_temporal_app.inc": {
+    "sha256": "1178e9c3a34512dc5a7c8e9023f08ce81765fc4efc0c67e0ab93a45eea3ffc82"
+  },
+  "@r5@/Apps/rf_temporal_files.h": {
+    "sha256": "6efeee51858e2d0b6cbeb5b30cddaea7ebc1ca81293b35cacf31a43665d558fe"
+  },
+  "@r5@/Apps/rf_temporal_store.h": {
+    "sha256": "0d76c52c8831879799c4774daae742d99b8a59e1e7d5996bb71aceb602206370"
+  },
+  "@r5@/Apps/utility_frame.h": {
+    "sha256": "14ecb24a5b999024d247decbd3e78499b1fa1c36749bd9bfa8b4b8a087cecbc7"
+  },
+  "@r5@/Apps/waterfall.c": {
+    "sha256": "ba04b1499f8de2aeb202664581e86ed39f69a48f85b0efdc87d0999269b8611a"
+  },
+  "@work@/target-spectrum/fixed/waterfall.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/Apps/PaperFrame.h": {
+    "sha256": "8c7952e8e43cc404ec485dd5b6cbf1e8200b2b4f88409c903ecf1fd0667e2d5b"
+  },
+  "@r0@/Apps/app_store.c": {
+    "sha256": "a208f627059af485ae41c83fa1624534a7092c2be4854d5031ad00cce3270d97"
+  },
+  "@r0@/Apps/update_paper.inc": {
+    "sha256": "4f0b5aae766f6f5284756a069159d2f0271321146eb5c25bd086d95dd7f4bb46"
+  },
+  "@r0@/Apps/update_portable.inc": {
+    "sha256": "17b0a8c83a7489f6fdee2e68bf0040e3a69082f1de5afdb0bec67c22aaf1ca02"
+  },
+  "@r0@/lib/PortableApps/include/PortableAppCustody.h": {
+    "sha256": "82f6fd94881499646be4bfa491fec9338bf99ad0d50adfaadbe876db7da9600c"
+  },
+  "@r0@/lib/PortableApps/include/PortableUpdate.h": {
+    "sha256": "344344762bfc0430285ecf8a781b64fb3789949cca7a517ad0b0684bf7fa6b76"
+  },
+  "@r0@/lib/PortableApps/include/PortableWatchKeyboard.h": {
+    "sha256": "f006ff13fe70236433ec6c37fb8cf5c4efe018d24393a9035c446e1f3554f4dd"
+  },
+  "@r0@/lib/PortableApps/include/PortableWifiCredentials.h": {
+    "sha256": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29"
+  },
+  "@r0@/lib/PortableApps/include/PortableWifiSavedNetwork.h": {
+    "sha256": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea"
+  },
+  "@r0@/lib/PortableApps/include/PortableWifiView.h": {
+    "sha256": "7f7d2d3cf484fc5a903457057a195e43abed9e13eff12adbf343384efc2f2ce9"
+  },
+  "@r0@/lib/PortableApps/include/SoftwareUpdateV1.h": {
+    "sha256": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca"
+  },
+  "@r0@/lib/PortableApps/include/WatchViewLayout.h": {
+    "sha256": "3585c799dc39eeb451e6669d6b07cc86fe6633456935407cb81dd29e0534ded2"
+  },
+  "@r0@/lib/PortableApps/src/wifi_nova.inc": {
+    "sha256": "56f5eaa194bc867aa30a0073ae26c652ebcfe4f515056d709a35b85bab2ba323"
+  },
+  "@r0@/lib/PortableApps/src/wifi_paper.inc": {
+    "sha256": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f"
+  },
+  "@r0@/lib/PortableApps/src/wifi_view.inc": {
+    "sha256": "4914294432aeb7141f3d8ffaa911b17070cae78a91e2648a67c70b1b910389ed"
+  },
+  "@r6@/sdk/app/RiscRealtimeV1.h": {
+    "sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d"
+  },
+  "@work@/target-updaters/input-fixtures/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "text": "#ifndef UTILITIES_ALARM_SERVICE_V1_H\n#define UTILITIES_ALARM_SERVICE_V1_H\n/* Utilities-owned, opaque-to-Runtime ordinary provider capability. */\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdint.h>\n#define ALARM_SERVICE_CAPABILITY \"alarm.service\"\n#define ALARM_SERVICE_API_V1 1u\n#define ALARM_STATUS_CUE_SUPPORTED 1u\n#define ALARM_KIND_ALARM 1u\n#define ALARM_KIND_COUNTDOWN 2u\n#define ALARM_MODE_VIBRATE 1u\n#define ALARM_MODE_SOUND 2u\n#define ALARM_MODE_BOTH 3u\nenum { ALARM_OK=0, ALARM_PENDING=1, ALARM_BUSY=-1, ALARM_INVALID=-2,\n       ALARM_STALE=-3, ALARM_STORAGE=-4, ALARM_RTC=-5, ALARM_OUTPUT=-6,\n       ALARM_EXHAUSTED=-7, ALARM_FOREGROUND=-8 };\nenum { ALARM_STATE_LOADING, ALARM_STATE_READY, ALARM_STATE_ALERT,\n       ALARM_STATE_DISMISSING, ALARM_STATE_BLOCKED,\n       /* Additive copied status: non-modal output reservation, before open and\n        * through cleanup. Updated clients must drain it without painting an\n        * alarm overlay. Earlier clients reject unknown states safely. */\n       ALARM_STATE_CUE };\nenum { ALARM_SCHEDULE_OFF, ALARM_SCHEDULE_ARMED, ALARM_SCHEDULE_DUE,\n       ALARM_SCHEDULE_DISMISSED, ALARM_SCHEDULE_EXPIRED };\ntypedef struct {\n    uint32_t kind, revision, deadline, generation;\n} alarm_token_v1;\ntypedef struct {\n    uint32_t revision, deadline, state;\n} alarm_schedule_status_v1;\ntypedef struct {\n    uint32_t api_version, struct_size, state;\n    int32_t error;\n    uint32_t snapshot, rtc_seconds, mode, output_uncertain;\n    alarm_schedule_status_v1 schedules[2];\n    alarm_token_v1 occurrence;\n    uint32_t recovery_until, remaining_ms;\n    char label[24];\n} alarm_status_v1;\ntypedef struct {\n    uint32_t struct_size, snapshot, rtc_seconds, deadline;\n    /* deadline=0 means no schedule. Decision is consumed immediately by the\n       serialized caller, with no intervening service/writer call. */\n} alarm_sleep_v1;\ntypedef struct {\n    uint32_t api_version, struct_size;\n    void *context;\n    /* Memory-only copied values; caller sets struct_size. No retained pointers. */\n    int32_t (*status)(void *, alarm_status_v1 *);\n    /* One cooperative phase, at most two dependency calls (three with the DND\n       preflight enabled). Explicit foreground\n       safe point only; synchronous\n       NVS has no hard latency guarantee. Never invoke from provider poll. */\n    int32_t (*step)(void *);\n    /* Memory-only hint; does not prove a writer commit. Also retries blocked\n       storage/RTC reconciliation, without silently acknowledging an alert. */\n    int32_t (*refresh)(void *);\n    /* Queues exact-current dismissal. Fully dismissed only after status READY,\n       matching schedule DISMISSED, safe output stop and verified durable ACK. */\n    int32_t (*acknowledge)(void *, const alarm_token_v1 *);\n    /* Starts/finishes a fresh reconciliation. PENDING means call step and retry.\n       No suppression flag or retained sleep lease; service has no I/O poll. */\n    int32_t (*prepare_sleep)(void *, alarm_sleep_v1 *);\n    /* Failure-only cleanup while a foreground presentation is not settled.\n       One stop/silence/close operation per call, no storage or output start.\n       OK proves both outputs stopped, but does NOT acknowledge an occurrence.\n       OUTPUT means retain the invocation/resources; no normal handoff. */\n    int32_t (*stop_only)(void *);\n} alarm_service_v1;\n/* Optional append-only suffix. The original table remains an unchanged prefix,\n   so existing clients and providers keep their source and binary layouts. */\n#define ALARM_SERVICE_SLEEP_RESUME_SUPPORTED 1u\ntypedef struct {\n    alarm_service_v1 base;\n    /* Only the serialized sleep owner may call this, exactly once after native\n       Light sleep returns OK, before another mutating service/writer call.\n       Pass the unchanged successful prepare_sleep decision. A refusal must not\n       call it. One RTC read rejects invalid/backward time, then reanchors the\n       independent awake monotonic clock and starts full reconciliation. OK\n       confirms this boundary only; due work still requires normal steps.\n       STALE rejects a wrong, reused or invalidated decision without I/O. */\n    int32_t (*resume_sleep)(void *, const alarm_sleep_v1 *);\n} alarm_service_sleep_v1;\n#define ALARM_SERVICE_SLEEP_V1_SIZE ((uint32_t)sizeof(alarm_service_sleep_v1))\n#if defined(__cplusplus)\n#define ALARM_STATIC_ASSERT static_assert\n#else\n#define ALARM_STATIC_ASSERT _Static_assert\n#endif\nALARM_STATIC_ASSERT(sizeof(alarm_token_v1)==16,\"alarm occurrence token ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_status_v1)==104,\"alarm copied status ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_sleep_v1)==16,\"alarm sleep decision ABI\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,base)==0,\"alarm sleep base prefix\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,resume_sleep)==sizeof(alarm_service_v1),\"alarm sleep suffix offset\");\n#if UINTPTR_MAX == UINT32_MAX\nALARM_STATIC_ASSERT(sizeof(alarm_service_v1)==36,\"alarm service target ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_service_sleep_v1)==40,\"alarm sleep service target ABI\");\n#endif\n#undef ALARM_STATIC_ASSERT\n#endif\n",
+    "template_sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@work@/target-updaters/input-fixtures/empty_catalog.c": {
+    "sha256": "b777404301a5286ce19a95f4099bac47d93a46d3f86190b51b6c78665bbce23c",
+    "text": "#include \"PortableApps.h\"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n",
+    "template_sha256": "b777404301a5286ce19a95f4099bac47d93a46d3f86190b51b6c78665bbce23c"
+  },
+  "@work@/target-updaters/input-fixtures/watch-alarm-profile.h": {
+    "sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb",
+    "text": "#include \"AlarmServiceV1.h\"\n#define ALARM_MODE_VISUAL 0u\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1*s){return s?ALARM_MODE_BOTH:ALARM_MODE_VISUAL;}\n",
+    "template_sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb"
+  },
+  "@work@/target-updaters/fixed/app_store.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/Apps/ota_update.c": {
+    "sha256": "741c5619e0ec86f2f9341a22a996ed7f419670b126023ca12524dee567cdbc6a"
+  },
+  "@work@/target-updaters/fixed/ota_update.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/Apps/file_browser.c": {
+    "sha256": "e805e56dee233e0e267b8984527f292a441eba3e2776b6774f2009b0383d79ad"
+  },
+  "@r0@/Apps/file_browser_direct.inc": {
+    "sha256": "091deabe82fa0718b7f09bdc0fa1a84da971fe297ab37d6568f8de5c92d69181"
+  },
+  "@r0@/Apps/file_browser_mount.inc": {
+    "sha256": "f6b0f0479251fead850fe541eae770037b612a2cbc9c03255176ed1748eba7db"
+  },
+  "@r0@/Apps/file_browser_native_layout.inc": {
+    "sha256": "b091f0a7784405a3f87d2b704992362bcaffbfc203547c9169f80f291735464b"
+  },
+  "@r0@/Apps/file_browser_operations.inc": {
+    "sha256": "24c1518edc072798a47c083473eb60297a56c570b5851fbf6d1ce827486dab12"
+  },
+  "@r0@/Apps/file_browser_paper.inc": {
+    "sha256": "e4d56e426db4672359d53a577c79563226d02e5a2466f11053b54707d7f1ec9c"
+  },
+  "@r0@/Apps/file_browser_peer.inc": {
+    "sha256": "c5349528ffcc574e0de4aefa20f1844e80b636b1df7faa01d30a883494911afb"
+  },
+  "@r0@/Apps/file_browser_portable.inc": {
+    "sha256": "3b2e35a37d6d884c810ac1a6596db738fe1730d09669bf16207b8572a53f9aa0"
+  },
+  "@r0@/Apps/file_browser_rgb_operations.inc": {
+    "sha256": "909ccfdb0b277daad1983df95531acd3407dfacdde90c403f7fd58b91e323ae1"
+  },
+  "@r0@/Apps/file_browser_setup.inc": {
+    "sha256": "09f23c804a89d722bccb981ab98f47448d07f1d0033c4602975c8d1bbcd5c23c"
+  },
+  "@r0@/Apps/file_browser_shared_input.inc": {
+    "sha256": "6d4ddb3ef601aa6b016b9957784f3183b1ea86ba83121111396e2f8522b62489"
+  },
+  "@r0@/Apps/file_browser_sharing.inc": {
+    "sha256": "8a987b67380841fd43b4ddf678936e465cd7200334f07b208f0195612cca515a"
+  },
+  "@r0@/Apps/file_browser_source.inc": {
+    "sha256": "1938e8e49226d7bfb3a3e7ce8a739c2faa62870473b662d2ecab150fbae83cec"
+  },
+  "@r0@/lib/NativeApps/include/FileBrowserModel.h": {
+    "sha256": "67e60d2df09ca3f7e85d1dbed83a1c4ebc028b0d62ca7e0529a20caabb9c55bd"
+  },
+  "@r0@/lib/NativeApps/include/T5FileOpenApi.h": {
+    "sha256": "c1b873e364dba81ce39d8c8a62668db618735407a6291dca87b9795ce4accc30"
+  },
+  "@r0@/lib/PortableApps/include/PortableFileBrowser.h": {
+    "sha256": "ba52e70f3dd1ac3f705d29155eaeb5885550cb2b33cf459cfd15ddbe09bbccd3"
+  },
+  "@r0@/lib/PortableApps/include/PortableFileSetup.h": {
+    "sha256": "19b833d0d31276a620a008ea4e49e1681616788c960e31edcf4f1d064feb27d3"
+  },
+  "@r0@/lib/PortableApps/include/PortableFileSharing.h": {
+    "sha256": "454ef57abeea736a143ad7eeca52724bdafd1c7dfdfbf0062a3629f9527d30ec"
+  },
+  "@r0@/lib/PortableApps/include/PortableNetworkSession.h": {
+    "sha256": "7e573c3148c10bb3e0c50babea7714478ae9cd1265f7f97a91e574134f2cb5c2"
+  },
+  "@r0@/lib/PortableApps/include/PortablePeerFiles.h": {
+    "sha256": "7498674fe9cb2cf6f139c501d46307296927c4978d01867146d46258a6935ee6"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputExtendedClient.h": {
+    "sha256": "c466d3143c160ec19ece4b1b073070cb0f953ab3820e8ebe6f12be813025f4cc"
+  },
+  "@r0@/lib/PortableApps/include/PortableWifiProfiles.h": {
+    "sha256": "3201c58bfb48fee81b05a27d7199c1cf6f6f49d4fa83422d0c0098c842de92d5"
+  },
+  "@r0@/lib/PortableApps/include/RiscAppDataExportV1.h": {
+    "sha256": "56f9afd075f0fe3d8e7e8cdbec2d34813018dfe6cb3de3f18b326c4de948cddd"
+  },
+  "@r0@/lib/PortableApps/include/RiscBluetoothSessionSetupV1.h": {
+    "sha256": "8cc14caeb548f11f0045811bfc7ac66c007ddd3419b5b8db6947dc7362725b9f"
+  },
+  "@r0@/lib/PortableApps/include/RiscEntropySourceV1.h": {
+    "sha256": "042b367b5c766b4a79d887c3bc573fdd2c90b6b231510bd8b20d0b5c3d7796a7"
+  },
+  "@r0@/lib/PortableApps/include/RiscFileOpenSourceV1.h": {
+    "sha256": "6f4592ea20f26262125e9a1a1ae030aa13bbc08d06eb319c7d7f09417598ad02"
+  },
+  "@r0@/lib/PortableApps/include/RiscProtectedSettingsPath.h": {
+    "sha256": "b3f07e89f570beba1e2e770052292bde027120d8cbc886e8bee6ef876aa1b1c7"
+  },
+  "@r0@/lib/PortableApps/include/RiscStorageExportV1.h": {
+    "sha256": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a"
+  },
+  "@r0@/lib/PortableApps/include/RiscStorageVolumeStateV1.h": {
+    "sha256": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1"
+  }
+}
