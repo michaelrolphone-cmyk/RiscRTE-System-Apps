@@ -130,7 +130,7 @@ static inline bool portable_contexts_step(portable_contexts_client *c,bool audio
     const contexts_fingerprint_service_v1*fp=contexts_fingerprint_api(c->api);
     if(fp){
         contexts_fingerprint_config_v1 cfg={.struct_size=sizeof(cfg),.sources=c->fingerprint_sources&PORTABLE_CONTEXTS_SOURCE_MASK,.temporal_only=c->fingerprint_temporal_only};
-        if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg))return false;
+        if(!portable_contexts_callback(fp->fingerprint(fp->base.context,CONTEXTS_FP_CONFIG,&cfg)))return false;
         if((uint32_t)(health.uptime_ms-c->fingerprint_checkpoint_at)>=60000u){if(!portable_fp_checkpoint(c,false))return false;c->fingerprint_checkpoint_at=health.uptime_ms;}
     }
     return c->api->step(c->api->context,&policy);

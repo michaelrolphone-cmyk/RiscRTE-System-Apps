@@ -170,6 +170,20 @@ static bool custody_acquire_for(const char *name,uint32_t version,uint64_t insta
     }
 #endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
+    /* Fingerprint banks and rules are optional app-side persistence. Most
+     * foreground manifests deliberately grant neither Audio/RF shared data nor
+     * Contexts rules. A clean policy refusal owns no storage; preserve the
+     * reader's unavailable result instead of retaining the whole invocation.
+     * A changed grant or revoked Runtime is still terminal. */
+    if(!strcmp(name,"storage.shared-data") && version==1 &&
+       instance>=2 && instance<=4 && grant->struct_size==sizeof(*grant) &&
+       !grant->api && !grant->slot && !grant->generation) {
+      risc_runtime_health_v1 health={.struct_size=sizeof(health)};
+      if(risc_runtime_get_api(1)!=native_custody_runtime ||
+         !native_custody_runtime->health || !native_custody_runtime->health(&health))
+        portable_adapter_retain();
+      return false;
+    }
     /* This optional app client can show a clean missing service. No token,
      * altered record or other provider refusal is covered by this exception. */
     if(!strcmp(name,CONTEXTS_SERVICE_CAPABILITY)&&version==1&&instance==0&&

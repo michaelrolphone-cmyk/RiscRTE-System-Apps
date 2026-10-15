@@ -1,0 +1,79 @@
+[
+  {
+    "repo": "System-t054",
+    "head": "ce77aa646d06b430d78ee192b823b240f6d57d30",
+    "branch": "fix/t054-persistence",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Runtime-wave-t054",
+    "head": "c258c4ba144247b6eaa4c6f28675ffccec582fe1",
+    "branch": "integrate/t054-wave-persistence",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Runtime-x4-t054",
+    "head": "f734d91780cdb4f1ba36fe82dcbd8fa28f25bb2b",
+    "branch": "fix/t054-settings-fallback",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Utilities-t054",
+    "head": "cc56de34f2a1c6efa9761b28d92ed1cb8e8240e5",
+    "branch": "integrate/t054-portable-preferences",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Shared-t054",
+    "head": "1164e3e5f02b79738cc26619d9884fdcc9f29eb1",
+    "branch": "integrate/t054-preferences",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-Watch.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "System-rgb-t054",
+    "head": "7e986063dd03e7639c64614564bdbd88c7bb6c5e",
+    "branch": "integrate/t054-rgb-preferences",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "System-product-t054",
+    "head": "ffe0295eff869f0d33d56f98548f9b435975d584",
+    "branch": "integrate/t054-product-preferences",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Utilities-rgb-t054",
+    "head": "b0ecc165a6a175495964d8bf25568835ae5de232",
+    "branch": "integrate/t054-contexts-catalog-preferences",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Wave-t054",
+    "head": "cdae292206d4bcb77a290378c33561ba41dc3f7f",
+    "branch": "integrate/t054-persistence",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "X4-t054",
+    "head": "103af54683b4977cbaca4e210dc819b944170d67",
+    "branch": "integrate/t054-persistence",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO.git",
+    "remote_verified": true
+  },
+  {
+    "repo": "Watch-t054",
+    "head": "91f4c2ddc67d4a7d5cdab83e25c9ae603481ec6a",
+    "branch": "integrate/t054-persistence",
+    "remote": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3.git",
+    "remote_verified": true
+  }
+]
