@@ -1,8 +1,8 @@
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
 #include "PortableNativeCustody.h"
 #endif
-/* The computer is the USB host. This app exports the local SD through the
- * generic owner-task capability, without chip, GPIO, USB-stack or SD access. */
+/* The computer is the USB host. This app exports provisioned block storage through the
+ * generic owner-task capability, without chip, GPIO, USB-stack or physical-media access. */
 #include "T5AppApi.h"
 #include "PaperPresentation.h"
 #include "PortableAppLaunchGuard.h"
@@ -64,7 +64,7 @@ static const char *command_name(uint32_t opcode) {
     }
 }
 /* The provider only copies owner-task RAM here. Diagnostic output uses the
- * existing Runtime logger, which buffers while USB owns the PHY/SD. No file
+ * existing Runtime logger, which buffers while USB owns the PHY/storage. No file
  * write or console recovery is attempted from this app. Log commands, never
  * individual USB packets or mouse/touch samples. */
 static void read_protocol(void) {
@@ -257,11 +257,11 @@ static void start(void) {
     protocol_api=risc_usb_device_msc_diagnostics(usb);
 #endif
     token=0;log_result("begin requested",0);int32_t result=usb->begin(usb->context,&token);
-    if(result==RISC_USB_MSC_OK && token) {state=RISC_USB_MSC_PREPARING;dirty=true;log_result("SD lease acquired",result);return;}
+    if(result==RISC_USB_MSC_OK && token) {state=RISC_USB_MSC_PREPARING;dirty=true;log_result("Storage lease acquired",result);return;}
     unknown_custody=(result==RISC_USB_MSC_RETAINED || result==RISC_USB_MSC_OK) && !token;
     if(token || unknown_custody){state=RISC_USB_MSC_FAULT_RETAINED;preparation_blocked=true;}
     else state=RISC_USB_MSC_MEDIA_UNAVAILABLE;
-    error_text("Close local files and retry with an inserted SD card.");
+    error_text("Close local files and retry when storage is available.");
     log_result("begin failed",result);
     if(!token && !unknown_custody)release_grant();
 }
@@ -313,9 +313,9 @@ static void button(int x,int y,int w,const char *label) {
 }
 static const char *status_name(void) {
     switch(state) {
-    case RISC_USB_MSC_PREPARING:return "PREPARING SD";
+    case RISC_USB_MSC_PREPARING:return "PREPARING STORAGE";
     case RISC_USB_MSC_WAITING:return "WAITING FOR USB";
-    case RISC_USB_MSC_CONNECTED:return host_reads || host_writes ? "SD ACCESS CONFIRMED" : "USB CONFIGURED";
+    case RISC_USB_MSC_CONNECTED:return host_reads || host_writes ? "STORAGE ACCESS CONFIRMED" : "USB CONFIGURED";
     case RISC_USB_MSC_SUSPENDED:return "USB SUSPENDED";
     case RISC_USB_MSC_EJECTED:return "SAFELY EJECTED";
     case RISC_USB_MSC_DISCONNECTED:return "DISCONNECTED";
@@ -327,11 +327,11 @@ static const char *status_name(void) {
 static void render(void) {
     /* Clear before drawing: servicing a display wait may set dirty again. */
     const uint32_t painted_state=state;
-    dirty=false;paper->begin();text(28,"USB SD TRANSFER",true);
+    dirty=false;paper->begin();text(28,"USB FILE TRANSFER",true);
     app->fill_rect(sx(32),sy(82),sx(416),3,true);
     text(116,status_name(),true);
     if(confirm_removed) {
-        text(202,"Eject the SD drive on your computer.",false);
+        text(202,"Eject the drive on your computer.",false);
         text(252,"If eject is unavailable, stop all copies",false);
         text(294,"and physically unplug the USB cable.",false);
         text(364,"CABLE REMOVED?",true);
@@ -341,26 +341,26 @@ static void render(void) {
     } else {
         if(state==RISC_USB_MSC_PREPARING) {
             text(202,"Finishing pending device log writes.",false);
-            text(252,"The SD drive appears when preparation ends.",false);
+            text(252,"The drive appears when preparation ends.",false);
             text(294,"Keep this screen open, or cancel below.",false);
             button(32,612,416,"CANCEL PREPARATION");
         } else if(portable_usb_transfer_owned()) {
-            text(202,state==RISC_USB_MSC_FAULT_RETAINED?"SD remains reserved until cleanup succeeds.":state==RISC_USB_MSC_WAITING?"Connect the USB data cable to a computer.":(host_reads || host_writes)?"The computer has accessed SD sectors.":"Waiting for computer disk commands.",false);
+            text(202,state==RISC_USB_MSC_FAULT_RETAINED?"Storage remains reserved until cleanup succeeds.":state==RISC_USB_MSC_WAITING?"Connect the USB data cable to a computer.":(host_reads || host_writes)?"The computer has accessed storage blocks.":"Waiting for computer disk commands.",false);
             text(252,"Eject the drive after any copies finish.",false);
             text(294,"Keep this screen open during transfer.",false);
-            if(state==RISC_USB_MSC_SUSPENDED)text(356,"SD is still shared. Wake your computer.",false);
+            if(state==RISC_USB_MSC_SUSPENDED)text(356,"Storage is still shared. Wake your computer.",false);
             if(state==RISC_USB_MSC_FAULT_RETAINED)text(356,"Retry Stop. If it fails, restart the device.",false);
             button(32,612,416,"STOP TRANSFER");
         } else {
             text(202,"Connect a USB data cable to a computer.",false);
-            text(252,"Tap Start to share this device's SD card.",false);
+            text(252,"Tap Start to share the configured storage.",false);
             text(294,"Eject the drive before disconnecting.",false);
-            if(state==RISC_USB_MSC_MEDIA_UNAVAILABLE)text(356,"Check the card and retry Start.",false);
-            else if(terminal(state))text(356,local_ready?"Transfer ended. SD is available locally.":"Transfer ended. USB ownership released.",false);
+            if(state==RISC_USB_MSC_MEDIA_UNAVAILABLE)text(356,"Storage unavailable. Retry Start.",false);
+            else if(terminal(state))text(356,local_ready?"Transfer ended. Files are available locally.":"Transfer ended. USB ownership released.",false);
             button(32,612,416,"START TRANSFER");
         }
         if(detail[0])wrap(440,detail);
-        text(544,"Use the computer to copy files on the SD card.",false);
+        text(544,"Use the computer to copy files on the shared drive.",false);
         text(576,"Safely eject the drive when finished.",false);
         button(32,704,416,portable_usb_transfer_owned()?"HOME LOCKED DURING TRANSFER":"BACK TO APPS");
     }
@@ -421,7 +421,7 @@ void app_main(void) {
 
         if(in.exit_requested && !portable_usb_transfer_owned())break;
         /* A completed Cancel tap captured during the preparing frame must
-         * win before the first SD transaction, even while Start is gated. */
+         * win before the first storage transaction, even while Start is gated. */
         if(state==RISC_USB_MSC_PREPARING && hit(&in,612)) {
             action_gate=true;end_session(RISC_USB_MSC_END_CANCEL_WAITING,false);dirty=true;continue;
         }
