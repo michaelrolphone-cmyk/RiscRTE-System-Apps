@@ -6,6 +6,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include "RiscKeyValueAtomicV1.h"
+#ifdef PORTABLE_PREFERENCE_STORE
+#include "RiscPreferenceStoreV1.h"
+#define PORTABLE_PREFERENCE_CAPABILITY RISC_PREFERENCE_STORE_CAPABILITY
+#else
+#define PORTABLE_PREFERENCE_CAPABILITY RISC_KEY_VALUE_ATOMIC_CAPABILITY
+#endif
 #define PORTABLE_PREFERENCE_ATOMIC_BYTES 64u
 #define PORTABLE_PREFERENCE_INTENT_BYTES 176u
 #define PORTABLE_PREFERENCE_NAMESPACE 1u
@@ -29,7 +35,11 @@ static inline bool portable_preference_atomic_state_valid(const risc_key_value_a
  return s->struct_size>=sizeof(*s)&&s->namespace_id==PORTABLE_PREFERENCE_NAMESPACE&&s->revision&&
   s->max_mutations>=1&&s->max_value_bytes>=64&&s->max_group_bytes>=512&&
   s->max_intent_bytes>=PORTABLE_PREFERENCE_INTENT_BYTES&&
+#ifdef PORTABLE_PREFERENCE_STORE
+  (s->flags&RISC_PREFERENCE_STORE_COPIED_INPUT)!=0;
+#else
   (s->flags&3u)==(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC);
+#endif
 }
 static inline bool portable_preference_atomic_key(const char *key) {
  static const char *const allowed[]={"watch_face","time_format","time_zone","desk_clock_face","desk_direction",
@@ -177,6 +187,14 @@ static inline int portable_preference_atomic_submit(portable_preference_atomic *
  if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
  risc_key_value_atomic_mutation_v1 mutations[2]={{s->key,RISC_ATOMIC_PUT,s->desired,s->desired_size},
   {s->volume_off?"quick_volume":"quick_bright",RISC_ATOMIC_PUT,s->volume_off?&s->restore_volume:&s->restore_brightness,1}};
+#ifdef PORTABLE_PREFERENCE_STORE
+ /* Preserve the last usable level before committing OFF. Atomic providers
+  * publish the pair together; sequential providers retain the old controller's
+  * safe write order without requiring any backend choice in the application. */
+ if(s->brightness_off||s->volume_off) {
+  risc_key_value_atomic_mutation_v1 first=mutations[0];mutations[0]=mutations[1];mutations[1]=first;
+ }
+#endif
  uint64_t token=0;int rc=s->api->submit(s->api->context,s->revision,mutations,(s->brightness_off||s->volume_off)?2:1,s->intent,sizeof(s->intent),&token);
  /* Keep ANY returned token, even a contract violation. Never release custody
   * or lose an accepted/ambiguous operation by resetting the app staging. */

@@ -41,7 +41,7 @@ static bool home_automatic_begin(unsigned boundary) {
  if(!portable_home_settings_poll()||!portable_home_settings_available())return false;
 #endif
  home_automatic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(home_automatic_grant)};
- bool opened=rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,1,&home_automatic_grant);
+ bool opened=rt->acquire(PORTABLE_PREFERENCE_CAPABILITY,1,1,&home_automatic_grant);
  if(!home_automatic_guard(NULL))return false;
  if(!opened) {
   if(home_automatic_grant.struct_size!=sizeof(home_automatic_grant)||home_automatic_grant.api||home_automatic_grant.slot||home_automatic_grant.generation)portable_adapter_retain();
