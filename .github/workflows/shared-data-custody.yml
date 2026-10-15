@@ -2,7 +2,7 @@ name: Shared app custody regression
 on:
   pull_request:
   push:
-    branches: [main, 'fix/shared-app-custody-*']
+    branches: [main, 'fix/shared-app-custody-*', 'fix/shared-launch-brightness-*']
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,6 +32,18 @@ jobs:
           repository: michaelrolphone-cmyk/RiscRTE-System-Apps
           ref: ffe0295eff869f0d33d56f98548f9b435975d584
           path: .deps/shared-custody-baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: f31f89636304d202c49884e2e9b2e0b2ec5fb891
+          path: .deps/preserved-springboard
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: .deps/watch-bridges
           persist-credentials: false
       - name: Recreate and verify the qualified SDK inputs
         shell: bash
@@ -71,6 +83,32 @@ jobs:
             --utilities-root .deps/shared-custody-utilities \
             --output build/shared-custody-ci/baseline --baseline \
             | tee build/shared-custody-ci/baseline.log
+      - name: Verify first-completed-frame brightness and reproduce dark launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_shared_initial_brightness.py \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-fixed \
+            | tee build/shared-custody-ci/brightness-fixed.log
+          python3 scripts/test_shared_initial_brightness.py \
+            --source-root .deps/shared-custody-baseline \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-baseline --baseline \
+            | tee build/shared-custody-ci/brightness-baseline.log
+      - name: Verify preserved Springboard controller through repeated launches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_springboard_launch_brightness.py \
+            --springboard-root .deps/preserved-springboard \
+            --bridges .deps/watch-bridges \
+            --output build/shared-custody-ci/springboard --sanitize \
+            | tee build/shared-custody-ci/springboard.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -78,6 +116,8 @@ jobs:
           path: |
             build/shared-custody-ci/**/*.log
             build/shared-custody-ci/**/receipt.json
+            build/shared-custody-ci/**/results.json
+            build/shared-custody-ci/**/source.json
             build/shared-custody-ci/*.sha256
             build/shared-custody-ci/*.txt
           if-no-files-found: error

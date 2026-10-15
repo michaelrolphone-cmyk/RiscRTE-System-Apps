@@ -110,6 +110,8 @@
 #ifdef PORTABLE_QUICK_ACTIONS
   quick.ui.paper=pp_enabled();
   if(!pqa_session_load(&quick,rt))return -1;
+  initial_brightness_pending=surface_format==RISC_DISPLAY_FORMAT_RGB565 &&
+    (info.flags&RISC_DISPLAY_INFO_BRIGHTNESS)!=0;
   quick_paper_capabilities();
 #ifdef PORTABLE_FRONTLIGHT_TONE
   if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){

@@ -394,6 +394,7 @@ static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending,quick_replay_delivery;
 static bool quick_restore_pending,quick_restoring;
+static bool initial_brightness_pending;
 static bool quick_restore_step(void);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 static bool quick_clean_present,resident_failure_present;
@@ -982,6 +983,30 @@ static void display_callback_failure(const char *detail) {
 #endif
   display_failure(detail);
 }
+/* An unpromoted app handoff may reopen a colour provider with its output dark.
+ * Apply this invocation's current Quick selection only after a completed frame.
+ * Paper's intentional cold/timer-wake light policy is independent. */
+static bool initial_frame_visible(void) {
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(initial_brightness_pending) {
+    if(failed)return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(native_custody_retained)return false;
+#endif
+    unsigned level=quick.ui.torch?100u:quick.ui.brightness;
+    if(!display->set_brightness ||
+       !display->set_brightness(display->context,(uint16_t)level,100)) {
+      display_callback_failure("PORTABLE_APP error=initial-brightness");return false;
+    }
+    if(failed)return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(native_custody_retained)return false;
+#endif
+    initial_brightness_pending=false;
+  }
+#endif
+  return !failed;
+}
 /* Acquire the same checked surface for either painting or complete image copy. */
 static bool acquire_surface(void) {
 #ifdef PORTABLE_FILE_SETUP
@@ -1301,6 +1326,7 @@ static bool paper_token_progress(void) {
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
   paper_token=0;paper_token_clean=false;
+  if(!initial_frame_visible())return false;
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_orientation_dirty=false;
 #endif
@@ -1567,6 +1593,7 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+      if(!initial_frame_visible())return;
 #ifdef PORTABLE_FILE_SETUP
       file_setup_present_pending=false;
 #endif
@@ -2992,6 +3019,7 @@ static int initialize(void) {
   quick_deferred_actions=0;quick_deferred_destination=NULL;
 #endif
   pqa_session_init(&quick);quick_background=NULL;quick_modal=quick_launch_pending=quick_replay_pending=quick_replay_delivery=false;
+  initial_brightness_pending=false;
   quick_restore_pending=quick_restoring=false;
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   quick_atomic_running=false;quick_atomic_contact=0;quick_atomic_attempted=false;quick_atomic_revision=0;
