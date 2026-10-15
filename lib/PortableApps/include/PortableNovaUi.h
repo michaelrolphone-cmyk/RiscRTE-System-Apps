@@ -27,3 +27,11 @@ bool portable_nova_hit(int x,int y,int left,int top,int width,int height);
 /* Returns true only if the entire bounded string fitted. A shortened last line
  * always ends with a visible ellipsis; stored text is never changed. */
 bool portable_nova_wrap(unsigned face,int x,int y,int width,int line_height,unsigned max_lines,const char *text,uint32_t color);
+
+#ifdef PORTABLE_RF_NATIVE_CANVAS
+/* Opt-in native canvas: coordinates and glyph pixels use capability-reported
+ * screen dimensions. Legacy width-scaled Nova remains unchanged. */
+void portable_nova_native_fill(int x,int y,int width,int height,uint32_t color);
+void portable_nova_native_round(int x,int y,int width,int height,int radius,uint32_t color);
+void portable_nova_native_text(unsigned face,int x,int y,int width,const char *text,uint32_t color);
+#endif
