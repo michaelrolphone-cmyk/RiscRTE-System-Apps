@@ -89,6 +89,10 @@
       "commit": "3144e43d22c84b9ea222a523909bfb544b6c315f",
       "path": "scripts/compact_cohort_elf.py",
       "sha256": "14d642ce96785e1d3875d1053aec1ed07a41a6f53c802dda7f922bc64da29882"
+    },
+    "checked_xtensa_link.py": {
+      "source": "same producer commit as replay driver",
+      "sha256": "7d433b3b3d56788f842b2456df1fe6bc7a27c6be941cf424fff21aa306fd1256"
     }
   },
   "objects": [

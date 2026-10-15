@@ -28,7 +28,7 @@ source. That migration requires the retained-invocation Runtime ABI already
 present in 4107eae; it does not add boot grants. The product's complete admission,
 manifest-policy and SPIFFS reserve/readback gates remain mandatory.
 
-Helper files are copied without modification from their pinned public sources;
+Normalization and compaction helpers are copied unchanged from pinned public sources;
 repository, commit, path and SHA-256 are recorded in inputs.json. v3 is selected
 for Wave and T-Watch basic apps. The inherited v4 metadata-only compaction is
 selected for the T-Watch updater and Spectrum/Waterfall profiles and both LoRa delivery profiles.
@@ -40,3 +40,19 @@ pragma-once behavior; copied SDK headers retain their qualified copy layout.
 The `wave-media` product supplies LoRa at its existing explicit SD-card path; it
 does not add LoRa to the internal Wave cohort or alter boot policy. See
 [LORA.md](LORA.md) for exact predecessor proof and source migration qualification.
+
+The source-owned `checked_xtensa_link.py` helper allows at most six attempts of
+an identical application compiler command, only when the failed output consists
+of the exact collect2 signal-6 abort, `compilation terminated.`, and
+`double free or corruption (out)` diagnostics. Partial signatures, additional
+errors and ordinary failures stop immediately. This handles the observed
+intermittent pinned-toolchain failure without identifying its underlying cause.
+Every attempt preserves its combined stdout/stderr and SHA-256 in a distinct
+`APP-link-attempts` directory; existing attempt directories are never overwritten.
+Stale or failed ELF outputs are removed before reuse. Exhaustion fails the replay.
+The existing final digest, size and symbol gates remain mandatory after success.
+Run the focused host checks with:
+
+```sh
+python3 docs/shared-app-crashes/replay/test_checked_xtensa_link.py
+```
