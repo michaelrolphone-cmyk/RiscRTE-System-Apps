@@ -60,6 +60,10 @@
     "r14": {
       "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
       "commit": "12352fc46067c32e18f254562d0ec7819f3478ac"
+    },
+    "r15": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "40cb8ee6cebe86469044745651a47b7201016136"
     }
   },
   "helpers": {
@@ -361,6 +365,7 @@
     "inputs-05.json",
     "inputs-06.json",
     "inputs-07.json",
-    "inputs-08.json"
+    "inputs-08.json",
+    "inputs-09.json"
   ]
 }

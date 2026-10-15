@@ -2,7 +2,7 @@
 
 Use `scripts/replay_shared_crash_apps.py` with Python3 plus pyelftools and the
 official Xtensa ESP32-S3 GCC8.4.0 toolchain. Specify `--product wave` or
-`--product twatch`, `--compiler /path/to/xtensa-esp32s3-elf-gcc`, and a fresh
+`--product twatch`, or `--product wave-media`, `--compiler /path/to/xtensa-esp32s3-elf-gcc`, and a fresh
 `--output /path/to/output`. No local source layout is required.
 
 The driver fetches immutable public source commits, verifies every qualified
@@ -14,7 +14,8 @@ The output receipt binds driver, every spec/helper file and compiler hashes.
 `--source-cache` is an optional map from repository IDs to local Git object
 stores; it extracts the exact pinned commit, never the local working tree.
 `--apps` selects a diagnostic subset; an unrestricted product run requires all
-17 recipes. Qualification covers source reproducibility, target compilation and structural
+17 internal Wave recipes, 18 T-Watch recipes, or the single external-media
+LoRa recipe, respectively. Qualification covers source reproducibility, target compilation and structural
 ELF validation.
 
 All repaired application adapters are pinned to b8086d45ffa8259f982acac5974e7d6e4a6aa88b,
@@ -30,8 +31,12 @@ manifest-policy and SPIFFS reserve/readback gates remain mandatory.
 Helper files are copied without modification from their pinned public sources;
 repository, commit, path and SHA-256 are recorded in inputs.json. v3 is selected
 for Wave and T-Watch basic apps. The inherited v4 metadata-only compaction is
-selected for the T-Watch updater and Spectrum/Waterfall profiles.
+selected for the T-Watch updater and Spectrum/Waterfall profiles and both LoRa delivery profiles.
 
 The original Wave SDK aliases are recreated as symlinks to their canonical
 source files. This preserves header identity and include precedence, including
 pragma-once behavior; copied SDK headers retain their qualified copy layout.
+
+The `wave-media` product supplies LoRa at its existing explicit SD-card path; it
+does not add LoRa to the internal Wave cohort or alter boot policy. See
+[LORA.md](LORA.md) for exact predecessor proof and source migration qualification.

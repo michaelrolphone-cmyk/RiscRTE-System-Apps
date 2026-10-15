@@ -7,7 +7,7 @@ import argparse,hashlib,importlib.util,io,json,shutil,subprocess,sys,tarfile
 from pathlib import Path
 from elftools.elf.elffile import ELFFile
 p=argparse.ArgumentParser(description=__doc__)
-p.add_argument('--product',choices=['wave','twatch'],required=True)
+p.add_argument('--product',choices=['wave','twatch','wave-media'],required=True)
 p.add_argument('--compiler',type=Path,required=True)
 p.add_argument('--output',type=Path,required=True)
 p.add_argument('--spec-dir',type=Path,default=Path(__file__).resolve().parents[1]/'docs/shared-app-crashes/replay')
@@ -17,7 +17,9 @@ a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);sp
 spec['inputs']={}
 for part in spec['input_parts']:spec['inputs'].update(json.loads((a.spec_dir/part).read_text()))
 if a.apps:apps={n:apps[n] for n in a.apps}
-else:assert len(apps)==17, 'Complete product replay requires all17 app recipes'
+else:
+ expected={'wave':17,'twatch':18,'wave-media':1}[a.product]
+ assert len(apps)==expected, f'Complete {a.product} replay requires all {expected} app recipes'
 sha=lambda b:hashlib.sha256(b).hexdigest()
 cc=a.compiler.resolve();assert cc.is_file()
 version=subprocess.check_output([cc,'--version'],text=True).splitlines()[0]
