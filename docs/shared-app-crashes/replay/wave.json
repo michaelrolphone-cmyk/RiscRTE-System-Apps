@@ -950,6 +950,7 @@
   "waterfall": {
     "command": [
       "@cc@",
+      "-DPORTABLE_RF_NATIVE_CANVAS",
       "-I@r0@/lib/PortableApps/include",
       "-I@r0@/Apps",
       "-flto-partition=one",
@@ -1035,8 +1036,8 @@
       "-DPORTABLE_QUICK_ATOMIC_PREFERENCES",
       "-DPORTABLE_HOME_AUTOMATIC_PREFERENCES"
     ],
-    "sha256": "9315f912ac41b24e29e6c86b98b3d505fe7c494ee8740ff1db56e84b5f95af17",
-    "bytes": 251648,
+    "sha256": "a3f9e4f2ba63b5b035da6696a33c9b5bd3e3ecafd3dc86fc97ec096a0e21189a",
+    "bytes": 252240,
     "symbols": {
       "imports": [
         "free",

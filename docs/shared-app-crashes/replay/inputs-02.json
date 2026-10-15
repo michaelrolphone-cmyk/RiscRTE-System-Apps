@@ -91,13 +91,13 @@
     "sha256": "5b21f23b2505f12ef38ed1fc0e90b3c665066f639f2ccd8ca90e3b8073f69010"
   },
   "@r5@/Apps/rf_application.inc": {
-    "sha256": "0e971e27ca468fc1a8abd99cad5e1a1e17db75bb3eb09da43e2169d848f3513a"
+    "sha256": "47dc925d171317e9113caa19e75786f85fa11817600c383390fe0e8f33fa5b23"
   },
   "@r5@/Apps/rf_background.h": {
     "sha256": "6792af20634225de59fdc4c176a471bcbbd6d9f4ff06e9de964261d1f9668cb0"
   },
   "@r5@/Apps/rf_controls.inc": {
-    "sha256": "fd52d7deae54b348ab9c3fbe50b410b049102e38baaaa6db52b135da213f05ee"
+    "sha256": "dc1e97c90ba3134ec3c661318aa103b247b42b6b320980c1fddc4d743711532c"
   },
   "@r5@/Apps/rf_dsp.h": {
     "sha256": "71dad410511bba28991f0e99cb88f2931c6262cabc01dbb5d9659e33a3eeee7c"

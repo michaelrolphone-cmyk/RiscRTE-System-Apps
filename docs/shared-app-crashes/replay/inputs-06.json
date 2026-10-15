@@ -83,7 +83,7 @@
     "copy": "@r0@/lib/PortableApps/include/PortableContextRules.h"
   },
   "@work@/target-twatch-spectrum/fixed/sdk/include/PortableNovaUi.h": {
-    "sha256": "7301c01a0bdeee5888b518bfb19aefeec65403caf52c589b41eb4e1dfc628291",
+    "sha256": "c171d7b14d6fb6bca53fa500b9ce9e34daa17b6eed62ae9fd2452ed1ef0d5c5c",
     "copy": "@r0@/lib/PortableApps/include/PortableNovaUi.h"
   },
   "@r6@/sdk/driver/RiscBoundAppDataV1.h": {

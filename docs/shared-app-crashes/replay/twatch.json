@@ -906,6 +906,7 @@
   "waterfall": {
     "command": [
       "@cc@",
+      "-DPORTABLE_RF_NATIVE_CANVAS",
       "-flto-partition=one",
       "-I@work@/target-twatch-spectrum/fixed/sdk/include",
       "-I@r0@/lib/NativeApps/include",
@@ -987,8 +988,8 @@
       "-o",
       "@work@/target-twatch-spectrum/fixed/waterfall.elf"
     ],
-    "sha256": "cbe62f1f81e1780b46ee88a312e56f81f9bf3c9228b04ebe12234df12655c61a",
-    "bytes": 238912,
+    "sha256": "62c25516e32c7c5e3ff878dd90b52df6a2987fd97cdbfe27ce55390f8c7df86e",
+    "bytes": 243016,
     "symbols": {
       "imports": [
         "free",

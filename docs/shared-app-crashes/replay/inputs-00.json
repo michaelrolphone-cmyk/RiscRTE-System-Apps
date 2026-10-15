@@ -87,7 +87,7 @@
     "sha256": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d"
   },
   "@r0@/lib/PortableApps/include/PortableNovaUi.h": {
-    "sha256": "7301c01a0bdeee5888b518bfb19aefeec65403caf52c589b41eb4e1dfc628291"
+    "sha256": "c171d7b14d6fb6bca53fa500b9ce9e34daa17b6eed62ae9fd2452ed1ef0d5c5c"
   },
   "@r0@/lib/PortableApps/include/PortableOptionalService.h": {
     "sha256": "e8731e97933bd07a27e90cce29eb09566c7f4db0c7af5fd30faf2c7364c9460a"
@@ -237,7 +237,7 @@
     "sha256": "1f5ed1e29109d9e53ce53389d290b43f97e5b81d5d015993ca3e9c85b571245c"
   },
   "@r0@/lib/PortableApps/src/foreground_adapter_open.inc": {
-    "sha256": "d2f258dc85f03ead713d2d98451117f161652b4c04067c71d6de5dc4c45de505"
+    "sha256": "3601883381d516f39505c3d4abde84aa7bf37b36820e8e636041eb8f4940c7fb"
   },
   "@r0@/lib/PortableApps/src/home_automatic.inc": {
     "sha256": "c650e54f03754434697a9aed7482b14dc82da58c2cbf1a0f3047516f91c19182"
@@ -252,7 +252,7 @@
     "sha256": "fdf01a3d48083dd13365065cc324d6e4fc1b3b021170da9b0f44b31e00afe497"
   },
   "@r0@/lib/PortableApps/src/nova_ui.inc": {
-    "sha256": "0375d6798a0124a4d159d7cb41bf6782cc20fe231899a91943056be53fdea0ff"
+    "sha256": "48a16b7c17f6cf7bfcd8eb115e68c679c126ff1a8e26319509a00ba2a8a55379"
   },
   "@r0@/lib/PortableApps/src/paper.inc": {
     "sha256": "15ff86a7bbc307b8c20c1d7ece8aabecfbb2f80b439bea217f8b889f1e4aa3fb"
@@ -304,5 +304,14 @@
   },
   "@r1@/sdk/app/RiscRealtimeV1.h": {
     "sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d"
+  },
+  "@r0@/lib/PortableApps/src/nova_native.inc": {
+    "sha256": "b256e3f2be6ec3b09ef275f17d34b8a071a3359db0585b1c7b819de17418eb26"
+  },
+  "@r0@/lib/PortableApps/src/raster_snapshot_replay.inc": {
+    "sha256": "21141f2cd4891eb23754530f403769c91df0aa89c43e1d3117a154dd07f53115"
+  },
+  "@r0@/lib/PortableApps/src/raster_snapshot_state.inc": {
+    "sha256": "6e57833f7e61b7a4675b0f214cbdfe46dd312a33fccac63c9e80998caf3b0986"
   }
 }
