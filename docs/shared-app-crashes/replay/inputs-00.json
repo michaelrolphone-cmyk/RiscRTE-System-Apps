@@ -219,7 +219,7 @@
     "sha256": "8453a3f7c123799354a0ff4246dba420de2a612f421d6d9de9bf4c976073b449"
   },
   "@r0@/lib/PortableApps/src/adapter.c": {
-    "sha256": "3d57c143c32169c0ecf1205b52f666328a8f183b30a7f90d6a13ce4fc9f9844a"
+    "sha256": "98f705ebcbe3ea7fdcb270354d93108555b0d96b95eb86c54281d5f35318b249"
   },
   "@r0@/lib/PortableApps/src/alarm.inc": {
     "sha256": "69162d4e5e68717a6973978126d935c2cb656f23c84a0ce5918c2a68996aa597"
@@ -237,7 +237,7 @@
     "sha256": "1f5ed1e29109d9e53ce53389d290b43f97e5b81d5d015993ca3e9c85b571245c"
   },
   "@r0@/lib/PortableApps/src/foreground_adapter_open.inc": {
-    "sha256": "3601883381d516f39505c3d4abde84aa7bf37b36820e8e636041eb8f4940c7fb"
+    "sha256": "d2b45ef71179cd3fb0337c9f03066818e54544ee33e5b53b54b52ceb05853ba7"
   },
   "@r0@/lib/PortableApps/src/home_automatic.inc": {
     "sha256": "c650e54f03754434697a9aed7482b14dc82da58c2cbf1a0f3047516f91c19182"

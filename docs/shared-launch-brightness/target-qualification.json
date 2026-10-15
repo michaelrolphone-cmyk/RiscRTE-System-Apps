@@ -1,0 +1,1277 @@
+{
+  "source_commit": "96742a20af660808cae6cd3a36eadd12a83a460f",
+  "hardware_tested": false,
+  "target_count": 36,
+  "qualification": {
+    "wave": {
+      "apps": {
+        "battery": {
+          "sha256": "175ed277dea6149f97457a4d44fdf7ab87a63f9024e36e0a2a50553864d19d8c",
+          "bytes": 153440,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/battery.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/battery-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "calculator": {
+          "sha256": "d78c5996376b1980ae9a2491b202c1a5ee414f135de03c161f96becc161e392f",
+          "bytes": 145576,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/calculator.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/calculator-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "stopwatch": {
+          "sha256": "fe7226763463b6f82f06abaee8dc7394cb182ffcd341de8311567322ecda78e4",
+          "bytes": 149236,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/stopwatch.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/stopwatch-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "frequency_generator": {
+          "sha256": "d14c37dc9c0ec736a61fa14ae846dec47525b46da9ad1bb21266d48a663fc87c",
+          "bytes": 137924,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/frequency_generator.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/frequency_generator-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "alarms": {
+          "sha256": "7f5cb21cff86d3f993a42dc1e254aa568590aa6488c5217acd6bd899b67b3862",
+          "bytes": 153428,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/alarms.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/alarms-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "countdown": {
+          "sha256": "220aff0aedb28dfe4a50d6e57cc49d521381018cc8d0ceaca7bda60efd92b548",
+          "bytes": 149284,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/countdown.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/countdown-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_touchpad": {
+          "sha256": "a6518bf99d966b4bfefae02fd3f55a214f0ddc4ca9518090c34ee8506f80778e",
+          "bytes": 153972,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/ble_touchpad.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/ble_touchpad-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_buttons": {
+          "sha256": "b3f4633d8bc0d0612d6410eae3f41d8c66a0586025f076a26dd0f277cac7232d",
+          "bytes": 154028,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/ble_buttons.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/ble_buttons-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "audio_spectrum": {
+          "sha256": "40739fbad6fd30a4f3576e87fc6c59de3e56ca1cf03da9a9ff1f3e5a6febd557",
+          "bytes": 243380,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/audio_spectrum.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave/audio_spectrum-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "app_store": {
+          "sha256": "88ad0a2cbe8f701c97bb7ae1aabf003a6a1d9463a5d12638381938d2ec99cf6c",
+          "bytes": 133652,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/app_store.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/app_store-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ota_update": {
+          "sha256": "45f09839daf9de92bea24bca5c7d8575ffb6eb59d5b29027e092d33b7a18bec9",
+          "bytes": 133664,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/ota_update.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/ota_update-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "file_browser": {
+          "sha256": "252f8add6830bd0d84f0ebe0c8ae71bb87a5b50a2e4c9b3fed12e0dd5e7a74f3",
+          "bytes": 288112,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strchr",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp",
+              "strrchr",
+              "strstr"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/file_browser.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/file_browser-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "timecard": {
+          "sha256": "bc94c5e4cda24b725e43f7e860bf43a6ebc4387459e06e8c97c7ef41c740667a",
+          "bytes": 169824,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/timecard.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/timecard-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_scanner": {
+          "sha256": "f35588453de3bd03a778fe362625af49e57f7d2efde7d890e8ab10ef778a8b01",
+          "bytes": 157520,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/ble_scanner.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/ble_scanner-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "wifi_settings": {
+          "sha256": "7bb9d98ace7cb783e6f85368c0dfd29360b96a635766c6f3f637b6901ae0d6c8",
+          "bytes": 169460,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/wifi_settings.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/wifi_settings-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "points_in_time": {
+          "sha256": "16b1cd9bfd84b22adcdfc924ae46f591b1c146dddab82437770ff2d33f87f8aa",
+          "bytes": 175928,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/points_in_time.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-wave-rest/points_in_time-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "waterfall": {
+          "sha256": "5543af60434887b0d3b63ba0560c6ccc3445cfe4bd9713d154bbb7897e621b5c",
+          "bytes": 252492,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/memory-wave/waterfall.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/memory-wave/waterfall-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        }
+      },
+      "receipts": [
+        {
+          "receipt": "candidate-wave/receipt.json",
+          "sha256": "574615e337d5a1017b5ec63722c1ecf85a936399e035f6eb15ad0c1a265c4335"
+        },
+        {
+          "receipt": "candidate-wave-rest/receipt.json",
+          "sha256": "91294a785b9cc6e91f8915a2a367b9d5f28fdd6ee95a02dd7087e4557904c554"
+        },
+        {
+          "receipt": "memory-wave/receipt.json",
+          "sha256": "1aa5f3f13f38f370cc3a8b3b2c30477da647414837df8f26ac76c55072fecf5f"
+        }
+      ]
+    },
+    "twatch": {
+      "apps": {
+        "battery": {
+          "sha256": "fdcb36ebee771f968c6febe53e1817a712276cd5c54752ad8250b8ecf32c1c6c",
+          "bytes": 155448,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/battery.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/battery-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "calculator": {
+          "sha256": "443fcf1396e5d4919ff67a8d45a86371bf3cf3386510ddc7758f19370b3ca985",
+          "bytes": 151420,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/calculator.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/calculator-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "stopwatch": {
+          "sha256": "32647b984e87b1f10dac6a0c8d7ba2fc0f79ab967c3cbb67065f2ad1bda05915",
+          "bytes": 151352,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/stopwatch.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/stopwatch-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "frequency_generator": {
+          "sha256": "e787608d77eccece1086b41754131609d33a6cd720ddce55c7ebeafe0f6ff5fa",
+          "bytes": 143124,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/frequency_generator.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/frequency_generator-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "alarms": {
+          "sha256": "c2c0294e0e3abb196215c91d508a2b23a2588d4ec6f0f03e31635a2f7ac758a2",
+          "bytes": 159616,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/alarms.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/alarms-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "countdown": {
+          "sha256": "999b92b831125fe5772022113f0330cb8b2f1d2da7079484c8b3e28130c17160",
+          "bytes": 151376,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/countdown.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/countdown-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_touchpad": {
+          "sha256": "592da9c9f1c5a666dd9be187e93dbcd30612207611bd6068107134612264a0b3",
+          "bytes": 155748,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_touchpad.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_touchpad-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_buttons": {
+          "sha256": "1572c24d52d7e68af5acf6e921f02b2941e7e4302e3f33bc167299dfcac37277",
+          "bytes": 157296,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_buttons.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_buttons-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "audio_spectrum": {
+          "sha256": "914eb41db2494643a903f2af55a100f11f9866c6f668ff835602588ef17d0a31",
+          "bytes": 230644,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/audio_spectrum.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/audio_spectrum-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "waterfall": {
+          "sha256": "2ea64e7e52452ffa5a94cf31a70f3d8ac951da272a1e8c730c48322196c4a479",
+          "bytes": 243016,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/memory-twatch/waterfall.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/memory-twatch/waterfall-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "app_store": {
+          "sha256": "9f8df97f5bda7c86ff77f0e0a03f84016c65b079f1f3648cf612c408738e28da",
+          "bytes": 140376,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/app_store.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/app_store-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ota_update": {
+          "sha256": "d8117c690a5b9c866a7cdf6397b7c125e4fef398302231c62d0a30478a60eaef",
+          "bytes": 140388,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ota_update.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ota_update-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "file_browser": {
+          "sha256": "23ad4e1bce90d2616b710240eeda7aa1c44f6a5a44bf7ea437a4888f6e8a3b7c",
+          "bytes": 280924,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strchr",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp",
+              "strrchr",
+              "strstr"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/file_browser.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/file_browser-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "timecard": {
+          "sha256": "8c71c8fe6c45a4582a7f1c3d881fa4e4189b5dfd7d0be35cba81d0f374e6d3ad",
+          "bytes": 157436,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/timecard.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/timecard-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "ble_scanner": {
+          "sha256": "fad13e4863ab34be7a7aca6f3b020a6e5c33766b78d48299e6ba6712f899787b",
+          "bytes": 159528,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_scanner.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/ble_scanner-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "wifi_settings": {
+          "sha256": "9d44fa73b99dad6fc2c58b82cd75838ae917d4a9caae19eca56a7b1e677c18b6",
+          "bytes": 148744,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/wifi_settings.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/wifi_settings-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "points_in_time": {
+          "sha256": "f9995e275e2d13b145016fc4def6e2eb65349a1cdb3ad22a6eb5297aa525255c",
+          "bytes": 159164,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strlen",
+              "strncmp"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/points_in_time.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/points_in_time-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        },
+        "lora_messages": {
+          "sha256": "4b653784cd5c932d9c444e2ac2b5def35928cdc1a12cabfc14b5434fab60e5a1",
+          "bytes": 136960,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/lora_messages.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-twatch/lora_messages-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        }
+      },
+      "receipts": [
+        {
+          "receipt": "candidate-twatch/receipt.json",
+          "sha256": "76b46095dad77521283c2c80a1c563b276169a631710fff748c21130a8de807a"
+        },
+        {
+          "receipt": "memory-twatch/receipt.json",
+          "sha256": "1588f62c6d6f8a12203d4edf3c93cfc22e8e9bd5bbbe7a7482e4a0ebbdb39b70"
+        }
+      ]
+    },
+    "wave-media": {
+      "apps": {
+        "lora_messages": {
+          "sha256": "4b653784cd5c932d9c444e2ac2b5def35928cdc1a12cabfc14b5434fab60e5a1",
+          "bytes": 136960,
+          "symbols": {
+            "imports": [
+              "free",
+              "malloc",
+              "memchr",
+              "memcmp",
+              "memcpy",
+              "memset",
+              "risc_runtime_get_api",
+              "snprintf",
+              "strcmp",
+              "strcpy",
+              "strlen"
+            ],
+            "exports": [
+              "app_main",
+              "app_module_fini",
+              "app_module_init"
+            ]
+          },
+          "file": "/workspace/shared/watch-launch-brightness-20261015/candidate-media/lora_messages.elf",
+          "link_attempts": [
+            {
+              "attempt": 1,
+              "returncode": 0,
+              "log": "/workspace/shared/watch-launch-brightness-20261015/candidate-media/lora_messages-link-attempts/attempt-01.log",
+              "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+              "recognized_linker_abort": false
+            }
+          ]
+        }
+      },
+      "receipts": [
+        {
+          "receipt": "candidate-media/receipt.json",
+          "sha256": "683714cf9001500932adef4b41287169e367a4bc03ecc67e71f57421c499c520"
+        }
+      ]
+    }
+  }
+}

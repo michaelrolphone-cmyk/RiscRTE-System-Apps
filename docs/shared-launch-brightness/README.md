@@ -10,7 +10,9 @@ non-Quick builds retain their existing behavior.
 
 The cumulative source also preserves native SDR rendering and its unobscured
 status strip from System e49bded and the exact replay metadata from 2b954689.
-The replay inputs are updated separately only after target qualification.
+All 36 target recipes bind that cumulative source and preserve native SDR.
+The Waterfall recipes use the measured [lower-memory linker option](linker/README.md).
+Each final ELF retains its pre-existing import/export interface.
 
 ## Source qualification
 
@@ -29,6 +31,14 @@ The complete cumulative-source tests passed:
 `qualification.json` records the case outcomes and source hashes. Address and
 undefined-behavior checks are enabled; leak detection is disabled for the host
 execution environment. Host tests do not prove physical display behavior.
+
+## Target qualification
+
+Fresh strict replays passed all 17 Waveshare, 18 T-Watch and one external-media
+LoRa recipes against source 96742a20. Every transitive input, final ELF hash,
+size and symbol inventory is checked. `strict-replay.json` records the results.
+This qualifies target bytes; final product composition/admission, catalog
+publication and physical acceptance remain separate.
 
 ## Preserved Springboard investigation
 

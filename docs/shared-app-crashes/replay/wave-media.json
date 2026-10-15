@@ -83,7 +83,7 @@
       "-DPORTABLE_WATCH_NATIVE_HEIGHT",
       "-DPORTABLE_RUNTIME_APP_CATALOG"
     ],
-    "sha256": "81877ba548ae0c45f4ebbbe71c53753159a4b3a28282ac9ce3c5ef63ad90c0f5",
+    "sha256": "4b653784cd5c932d9c444e2ac2b5def35928cdc1a12cabfc14b5434fab60e5a1",
     "bytes": 136960,
     "symbols": {
       "imports": [
