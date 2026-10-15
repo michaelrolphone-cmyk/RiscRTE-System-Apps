@@ -33,7 +33,9 @@ static bool canvas_token_status(void) {
  risc_display_present_status_v1 status={0};
  if(!display->present_status(display->context,canvas_token,&status))failed=true;
  else if(status.state==RISC_DISPLAY_PRESENT_COMPLETE) {
+  stage_profile_complete(canvas_submitted_at);
   canvas_token=0;previous_valid=!failed && previous_pixels;
+  if(!initial_frame_visible())return false;
  } else if(status.state!=RISC_DISPLAY_PRESENT_QUEUED && status.state!=RISC_DISPLAY_PRESENT_ACTIVE)failed=true;
  if(failed && canvas_token)return canvas_retain();
  if(canvas_token && (uint32_t)(millis_now()-canvas_submitted_at)>=10000u)failed=true;
@@ -88,6 +90,7 @@ static bool canvas_progress(void) {
   /* Successful submission transfers the real lease to the provider. */
   canvas_sealed=false;canvas_submitted_at=canvas_pumped_at=millis_now();previous_valid=false;
   if(!canvas_token)return canvas_retain();
+  stage_profile_submit();
   if(previous_pixels)memcpy(previous_pixels,canvas_pixels,(size_t)info.width*info.height*2u);
  }
 settled:

@@ -1,0 +1,20 @@
+{
+  "product_43": "9db48cef5bdb11206ff7f3601178cc2f32d326b8",
+  "runtime_43": "a2c2c9fa692b0b36f9750d44fac807c9149b9434",
+  "system_43": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+  "home_source": "87b17a368b32abe50a21787242f94616b2b26983",
+  "home_system_dependency": "99c62a065b8e3c5c14000bbaf2fb44e9222f1efb",
+  "home_utilities_dependency": "cc56de34f2a1c6efa9761b28d92ed1cb8e8240e5",
+  "home_elf_sha256": "b805ddcfb80d90983eabb03022c84fc633f9529924c1bffda363825d4ad88b1d",
+  "home_elf_byte_identical": true,
+  "shared_fast_wake_import": "e49a3da30682eef7bf55716fa8223ac615eebb02",
+  "shared_import_source_twatch": "fb01359770f457e410efe8cf7c7e0de5f3a43ebf",
+  "native_import_commit": "fe20777f374a7a93bc8e44019ebcb851c5584bb9",
+  "native_wake_import_source": "267aab6d9382ce4921a1536fab1620749b2f5301",
+  "hardware_tested": false,
+  "confirmed_failures": [
+    "Missing product retained-wake requirement/grant makes genuine deep wakes take Home cold intro",
+    "Fresh dark display remains at brightness0 through completed Springboard frames before repair"
+  ],
+  "hardware_blackout_attribution": "Not yet established from hardware reset/wake logs"
+}

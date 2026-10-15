@@ -1,0 +1,22 @@
+diff --git a/tests/fast_wake_clock_test.c b/tests/fast_wake_clock_test.c
+index d0b121c..4cb1da6 100644
+--- a/tests/fast_wake_clock_test.c
++++ b/tests/fast_wake_clock_test.c
+@@ -530,6 +530,17 @@ static int regression_main(void){
+ }
+ 
+ int main(void){
++ /* Reproduce the released Waveshare policy: the shared Home binary requests
++  * retained-wake, but .43 does not grant it. A real deep wake then remains
++  * classified as RESET inside Home and takes the cold intro branch. */
++ for(unsigned cause=RISC_BOOT_DEEP_TIMER;cause<=RISC_BOOT_DEEP_OTHER;cause++) {
++  reset_case();initial_default_entry=true;boot_cause=cause;
++  fail_capability=RISC_RETAINED_WAKE_CAPABILITY;
++  app_main();check_clean();
++  assert(first_seen&&first_frames>10&&first_at>2000);
++  assert(native_clock.cause==RISC_BOOT_RESET&&!native_clock.wake_live&&!native_clock.resume);
++ }
++ puts("Released .43 missing retained-wake grant: deep timer/GPIO/other replay cold intro REPRODUCED");
+  for(unsigned cause=0;cause<=RISC_BOOT_DEEP_OTHER;cause++) {
+   reset_case();initial_default_entry=true;boot_cause=cause;app_main();check_clean();
+   if(cause<RISC_BOOT_DEEP_TIMER){assert(first_seen&&first_frames>10&&first_at>2000);}

@@ -1,0 +1,13 @@
+{
+  "production_files_frozen": true,
+  "files_sha256": {
+    "lib/PortableApps/src/adapter.c": "10be637bf50ada091256cc4a9c3b30fa20e5006b75dba88d658a472d0947cc15",
+    "lib/PortableApps/src/canvas_async.inc": "7caef5e5b7528ae55e3eff4544cf3dd78b2f2bbd6358ef55d8e84215f36c9035",
+    "scripts/test_initial_frame_brightness.py": "7ef359c2fa2f1acdbf5e8c78e75245349515f17984fe6649cf044330402bbdcf",
+    "test/native_apps/initial_brightness_checks.inc": "11d47e35a30b7bea92049811b15047469c273866c955d72c7dd493aaf516c85e",
+    ".github/workflows/watch-native-ui.yml": "9298ec1dc1877b3a6d7328832888cba7b144cc9f5f41bcff815b7e1983c97f54"
+  },
+  "focused_case_executions": 128,
+  "async_aggregate_cases": 206,
+  "hardware_tested": false
+}

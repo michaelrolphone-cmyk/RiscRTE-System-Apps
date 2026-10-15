@@ -1,0 +1,24 @@
+{
+  "source_message_id": "Sentinel_0ab9330f3b6c8191b81e2d17cc18d365",
+  "source_kind": "User-provided SDR serial evidence relayed by parent",
+  "reset": 6,
+  "wake": 0,
+  "classification": "Watchdog cold crash reboot; not a deep-wake sample",
+  "manifest_prepare": {
+    "begin_us": 722558,
+    "end_us": 4851868,
+    "elapsed_us": 4129310
+  },
+  "metadata_elapsed_us": 4583782,
+  "home_elf_load_elapsed_us": 620383,
+  "display_provider_elapsed_us": 737412,
+  "panel_start_elapsed_us": 577327,
+  "earlier_home_trace": {
+    "first_frame_elapsed_ms": 4376,
+    "services_ready_elapsed_ms": 6595
+  },
+  "provider_activation": "Deferred provider mode present",
+  "retained_wake": "Unavailable",
+  "attribution_limit": "Do not attribute this SDR reset to watch-face swipe or deep wake. Nested intervals and separate trace origins must not be added.",
+  "sdr_work_status": "Queued by parent; not investigated in this wake/launch repair"
+}

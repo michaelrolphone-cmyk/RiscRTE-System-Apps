@@ -1,0 +1,128 @@
+name: Native Springboard geometry and cadence
+on:
+  push:
+    branches: [fix/t030-native-ui-0.1.44]
+  pull_request:
+    paths:
+      - 'Apps/springboard*'
+      - 'lib/PortableApps/**'
+      - 'scripts/test_springboard_native_raster.py'
+      - 'scripts/test_springboard_native_vectors.py'
+      - 'scripts/generate_springboard_native_vectors.py'
+      - 'scripts/profile_springboard_*.py'
+      - 'scripts/test_watch_native_*.py'
+      - 'scripts/test_initial_frame_brightness.py'
+      - 'test/native_apps/**'
+      - '.github/workflows/watch-native-ui.yml'
+permissions:
+  contents: read
+concurrency:
+  group: native-springboard-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  geometry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native controller, raster and all deployment features
+        run: |
+          python -m pip install fonttools==4.61.1 brotli==1.1.0
+          python scripts/generate_springboard_native_vectors.py
+          git diff --exit-code -- lib/PortableApps/fonts/native_vectors.inc
+          python scripts/test_springboard_native_vectors.py
+          python scripts/test_watch_native_springboard.py
+          python scripts/test_watch_native_springboard_features.py
+          python scripts/test_watch_native_springboard_transition.py
+          python scripts/test_springboard_nova.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-springboard-geometry
+          path: |
+            build/watch-native-springboard
+            build/t064-render/native-raster
+            build/t030-native-vectors
+            build/nova
+          if-no-files-found: error
+  custody:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: .deps/bridges
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Ordered input, canvas, controls and terminal authority
+        run: |
+          python scripts/test_initial_frame_brightness.py --bridges .deps/bridges --output build/initial-brightness --stage-profile
+          python scripts/test_initial_frame_brightness.py --bridges .deps/bridges --output build/initial-brightness-sanitized --stage-profile --sanitize
+          python scripts/test_watch_async_canvas.py
+          python scripts/test_watch_native_input.py
+          python scripts/test_watch_native_fallback.py
+          python scripts/test_watch_canvas_crown_exit.py
+          python scripts/test_optional_service_adapter.py
+          python scripts/test_navigation_retention_adapter.py
+          python scripts/test_context_adapter.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-springboard-first-frame-brightness
+          path: |
+            build/initial-brightness
+            build/initial-brightness-sanitized
+          if-no-files-found: error
+  cadence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: .deps/bridges
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: 9db48cef5bdb11206ff7f3601178cc2f32d326b8
+          path: .deps/wave
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Native replacement full-feature correctness and timed-provider model
+        run: |
+          python scripts/profile_springboard_full.py --bridges .deps/bridges --output build/native-full --verify --stage-profile
+          python scripts/profile_springboard_full.py --bridges .deps/bridges --output build/native-full-sanitized --verify --sanitize --stage-profile
+          python scripts/profile_springboard_full.py --bridges .deps/bridges --output build/native-profile --instrument --repeats 5 --stage-profile
+          python scripts/profile_springboard_cadence.py --bridges .deps/bridges --wave .deps/wave --output build/native-cadence --stage-profile
+          python scripts/profile_springboard_cadence.py --bridges .deps/bridges --wave .deps/wave --output build/native-cadence-sanitized --sanitize --stage-profile
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-springboard-cadence
+          path: |
+            build/native-full
+            build/native-full-sanitized
+            build/native-profile
+            build/native-cadence
+            build/native-cadence-sanitized
+          if-no-files-found: error

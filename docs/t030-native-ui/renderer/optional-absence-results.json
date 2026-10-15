@@ -1,0 +1,606 @@
+{
+  "features": [
+    "-DPORTABLE_LOW_BATTERY",
+    "-DPORTABLE_BLE_BROADCAST",
+    "-DPORTABLE_TOUCH_ROTATION=0",
+    "-DPORTABLE_RTC_UTC8_DENVER",
+    "-DPORTABLE_FORCE_FULL_FRAMES",
+    "-DPORTABLE_INPUT_NAVIGATION",
+    "-DPORTABLE_INPUT_NAVIGATION_LOCAL",
+    "-DPORTABLE_APP_SLEEP_LOCAL",
+    "-DPORTABLE_ALARM_CLIENT",
+    "-DPORTABLE_QUICK_ACTIONS",
+    "-DPORTABLE_QUICK_RADIOS",
+    "-DPORTABLE_MOTION_WAKE",
+    "-DWATCH_ALARM_SLEEP_RESUME",
+    "-DPORTABLE_NOVA_UI",
+    "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+    "-DPORTABLE_HANDOFF_EAGER_MS=60",
+    "-DPORTABLE_RETURN_APP=\"clock.elf\"",
+    "-DPORTABLE_CONTEXTS_CLIENT",
+    "-DPORTABLE_CATALOG_LIMIT=23",
+    "-DPORTABLE_ASYNC_RGB565"
+  ],
+  "forced_includes": [
+    "/workspace/shared/watch-apps-unavailable-20261014/system/test/native_apps/fixtures/watch_profile/ContextsFaces.h",
+    "/workspace/shared/watch-apps-unavailable-20261014/system/test/native_apps/fixtures/watch_profile/watch-alarm-profile.h"
+  ],
+  "checks": [
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible",
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible",
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "retains-image",
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible",
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible",
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "retains-image",
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible",
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible",
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "retains-image",
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible",
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible",
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "retains-image",
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "full-features-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    }
+  ]
+}

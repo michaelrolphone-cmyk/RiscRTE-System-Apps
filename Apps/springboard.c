@@ -25,24 +25,11 @@ __attribute__((weak)) const springboard_presentation *springboard_presentation_g
 __attribute__((weak)) bool springboard_transition_active(void) { return false; }
 __attribute__((weak)) bool springboard_catalog_failure_get(springboard_catalog_failure *out) { (void)out;return false; }
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
-#include "WatchLayout.h"
-/* Only this controller sees logical watch coordinates. The adapter/provider
- * API remains physical for surfaces, lifecycle and generic app clients. */
-static watch_layout springboard_watch_layout;
-static t5_app_api_v1 springboard_watch_api;
-static int32_t springboard_watch_width(void) { return (int32_t)springboard_watch_layout.width; }
-static int32_t springboard_watch_height(void) { return (int32_t)springboard_watch_layout.height; }
+/* Native geometry is the app contract. The presentation rasterizes directly
+ * into this reported surface; no 240-wide proxy API or completed-view scaling. */
 static bool springboard_watch_open(void) {
-    if (!watch_layout_open(&springboard_watch_layout, (uint32_t)api->screen_width(),
-            (uint32_t)api->screen_height(), NULL)) return false;
-    size_t bytes = api->struct_size < sizeof(springboard_watch_api) ? api->struct_size : sizeof(springboard_watch_api);
-    memset(&springboard_watch_api, 0, sizeof(springboard_watch_api));
-    memcpy(&springboard_watch_api, api, bytes);
-    springboard_watch_api.struct_size = (uint32_t)bytes;
-    springboard_watch_api.screen_width = springboard_watch_width;
-    springboard_watch_api.screen_height = springboard_watch_height;
-    api = &springboard_watch_api;
-    return true;
+    return api->screen_width()>0 && api->screen_height()>0 &&
+           api->screen_width()<=2048 && api->screen_height()<=2048;
 }
 #endif
 static bool missing_icons;
@@ -204,6 +191,9 @@ static bool save_home_pins(void) {
 static void layout(void) {
     int w = api->screen_width(), h = api->screen_height();
     compact = w < 400 || h < 400;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    compact = true;
+#endif
     grid_top = compact ? 56 : 80;
     columns = compact ? (w >= 200 ? 2 : 1) : (w >= 700 ? 4 : 3);
     rows = compact ? (h - 110) / 94 : (h - 180) / 150;

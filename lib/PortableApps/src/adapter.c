@@ -71,6 +71,7 @@ static bool app_invocation_retained(void) {
 #endif
   return false;
 }
+#include "stage_profile.inc"
 static portable_app_catalog installed_catalog;
 bool springboard_catalog_failure_get(springboard_catalog_failure *out) {
   if(!out || app_invocation_retained() || !installed_catalog.failure_stage)return false;
@@ -85,7 +86,9 @@ static bool canvas_exit_barrier(void);
 static bool refresh(void) {
   if(!rt || failed || app_invocation_retained())return false;
   if(!canvas_exit_barrier() || failed || app_invocation_retained())return false;
+  uint32_t profiled_at=stage_profile_start();
   bool result=catalog_checked(portable_catalog_refresh(&installed_catalog,rt));
+  stage_profile_finish(STAGE_CATALOG,profiled_at);
   if(!result && !app_invocation_retained())rt->diagnostic(installed_catalog.api?
       "APP_CATALOG refresh=unavailable stage=publication":"APP_CATALOG refresh=unavailable stage=acquire-or-interface");
   return result;
@@ -234,6 +237,7 @@ static pqa_radios quick_radios;
 #endif
 static uint16_t *quick_background;
 static bool quick_modal,quick_launch_pending,quick_replay_pending;
+static bool initial_brightness_pending;
 static bool quick_foreground(bool *consumed);
 static bool quick_interrupt(void);
 unsigned portable_quick_brightness(void) {return quick.brightness;}
@@ -248,6 +252,24 @@ static bool low_battery_sampled;
 uint32_t portable_quick_sleep_light_ms(void) {return quick.deep_ms;}
 #endif
 #endif
+/* A provider reopened during an unpromoted app handoff can start dark. Restore
+ * the application's selected level only after its first completed frame. The
+ * UI level includes any already-accepted preview, while torch remains at 100.
+ * No settings write, sleep transition, or provider-retention change is needed. */
+static bool initial_frame_visible(void) {
+#ifdef PORTABLE_QUICK_ACTIONS
+  if(initial_brightness_pending) {
+    if(failed || app_invocation_retained())return false;
+    unsigned level=quick.ui.torch?100u:quick.ui.brightness;
+    if(!display->set_brightness ||
+       !display->set_brightness(display->context,(uint16_t)level,100)) {
+      failed=true;return false;
+    }
+    initial_brightness_pending=false;
+  }
+#endif
+  return !failed;
+}
 #ifdef PORTABLE_ALARM_CLIENT
 #include "AlarmServiceV1.h"
 static bool display_settled,alarm_pixels_valid,alarm_modal;
@@ -302,6 +324,13 @@ static uint32_t millis_now(void) {
 /* Capture raw edges during rendering; reduce one edge per logical pass.
  * The provider subscription preserves ordered actions without a second FIFO. */
 static portable_touch_sample input_sample;
+/* Coordinates for the same reduced event, before legacy Watch UI mapping.
+ * No second event queue or independent reducer is introduced. */
+static uint16_t input_native_x,input_native_y;
+static uint16_t input_native_start_x,input_native_start_y;
+/* The Springboard controller keeps physical geometry even when metadata
+ * selects its static fallback. Other shared UI clients retain their mapping. */
+static bool springboard_native_input;
 static bool input_pending;
 static uint32_t input_sampled_at,last_poll_at;
 static uint32_t navigation_pending;
@@ -405,13 +434,18 @@ static void input_capture(void) {
 static void input_service(void) {
  input_capture();
  if(failed || input_pending)return;
+ uint64_t previous_sequence=touch.sequence;
  portable_touch_sample next;(void)portable_touch_next(&touch,&next);
  if(touch.terminal){optional_services_retain();return;}
+ input_native_x=next.x;input_native_y=next.y;
+ if(next.began){input_native_start_x=next.x;input_native_start_y=next.y;}
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
  if(next.valid && !watch_layout_touch(&native_watch_layout,next.x,next.y,&next.x,&next.y))
    next=(portable_touch_sample){.cancelled=true};
 #endif
  input_sampled_at=millis_now();
+ if(next.valid && touch.sequence!=previous_sequence)stage_profile_value(STAGE_INPUT,input_sampled_at-(uint32_t)next.timestamp_ms);
+ (void)previous_sequence;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
 #endif
@@ -474,6 +508,10 @@ static void input_take(portable_touch_sample *out) {
  if(!input_pending)input_service();
  *out=input_sample;input_pending=false;
 }
+static inline void input_take_native(portable_touch_sample *out) {
+ input_take(out);
+ if(out->valid){out->x=input_native_x;out->y=input_native_y;}
+}
 static void input_navigation_take(t5_app_input_t*out) {
  out->buttons|=navigation_pending & (T5_APP_BUTTON_BACK|T5_APP_BUTTON_CONFIRM|T5_APP_BUTTON_LEFT|T5_APP_BUTTON_RIGHT|T5_APP_BUTTON_UP|T5_APP_BUTTON_DOWN);
  navigation_pending=0;
@@ -520,6 +558,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
 static void clear_color(uint16_t color) {
   if (failed)
     return;
+  stage_profile_render_begin();
   if (surface.frame) {
 #ifdef PORTABLE_ASYNC_RGB565
     if(!canvas_async)
@@ -658,29 +697,16 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
 #include "nova_ui.inc"
 #endif
 static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool black) {
-  /* Preserve the existing call contract; genuine glyph raster, no handmade FA IDs. */
-  if (black) {
-    /* np_icon normally draws white; invert its bounded output on a white tile. */
-    if (!name || size < 1 || size > 96) return false;
-    const rpi_glyph *g = NULL;
-    for (unsigned i = 0; i < sizeof(rpi_icons)/sizeof(rpi_icons[0]); ++i)
-      if (!strcmp(rpi_icons[i].name, name)) { g = &rpi_icons[i]; break; }
-    if (!g) return false;
-    int max = g->width > g->height ? g->width : g->height;
-    int w = g->width*size/max, h = g->height*size/max;
-    for (int j = 0; j < h; ++j) for (int i = 0; i < w; ++i) {
-      unsigned n = (unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
-      unsigned a = (g->bits[n/4] >> (6-2*(n%4))) & 3;
-      np_pixel(x+(size-w)/2+i, y+(size-h)/2+j, 0, a*85);
-    }
-    return true;
-  }
-  return np_icon(x+size/2,y+size/2,size,name,255);
+  /* Keep the top-left tile contract; sample the original outline at native
+   * glyph pixels for both light and dark foregrounds. */
+  if (!name || size < 1 || size > 96) return false;
+  return np_icon_color(x+size/2,y+size/2,size,name,255,black?0:0xffffff);
 }
 static void present(bool full) {
   (void)full;
   if (failed || !surface.frame)
     return;
+  stage_profile_render_end();
   risc_display_present_token_v1 token = 0;
   risc_display_rect_v1 damage={0};size_t damage_count=0;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -760,6 +786,7 @@ static void present(bool full) {
       break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
+      if(!initial_frame_visible())return;
 #ifdef PORTABLE_ALARM_CLIENT
       display_settled=true;if(!alarm_modal)alarm_pixels_valid=true;
 #endif
@@ -909,7 +936,7 @@ static bool contexts_tick(void) {
   return true;
 }
 #endif
-static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+static bool poll_input_body(t5_app_input_t *out, uint32_t wait) {
   memset(out, 0, sizeof(*out));
   if(!canvas_progress())return false;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -938,6 +965,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   uint32_t now=millis_now(),spent=now-last_poll_at;
 #if defined(PORTABLE_CONTEXTS_CLIENT) || defined(PORTABLE_ASYNC_RGB565)
   uint32_t remaining=spent<wait?wait-spent:1;
+  const uint32_t budget=remaining,started=now;
   while(remaining) {
     uint32_t slice=remaining;
 #ifdef PORTABLE_CONTEXTS_CLIENT
@@ -952,6 +980,14 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
     rt->yield_ms(slice);remaining-=slice;
     if(!canvas_progress() || !contexts_capture_checkpoint())return false;
+    /* Runtime performs bounded provider work before its delay. Count that
+     * work against this poll's wait budget, rather than adding the requested
+     * sleep to every display-transfer visit. Keep the requested-slice bound
+     * as well, so a coarse/stalled clock cannot extend the loop. */
+    uint32_t elapsed=millis_now()-started;
+    if(failed)return false;
+    if(elapsed>=budget)remaining=0;
+    else if(remaining>budget-elapsed)remaining=budget-elapsed;
   }
 #else
   rt->yield_ms(spent<wait?wait-spent:1);
@@ -1026,7 +1062,8 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
   input_navigation_take(out);
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
-  portable_touch_sample sample;input_take(&sample);
+  portable_touch_sample sample;
+  if(springboard_native_input)input_take_native(&sample);else input_take(&sample);
   uint16_t x=sample.x,y=sample.y;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
   if(sample.valid && !sample.cancelled && sample.tap_eligible && sample.down && x<info.width && y<info.height)
@@ -1036,7 +1073,10 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   if(sample.cancelled || !sample.valid)nu_gesture=false;
   if(sample.began){nu_gesture=true;nu_start_x=x;nu_start_y=y;
 #ifdef PORTABLE_QUICK_ACTIONS
-   if(quick_replay_pending){nu_start_x=quick.ui.start_x;nu_start_y=quick.ui.start_y;}
+   if(quick_replay_pending){
+    nu_start_x=springboard_native_input?input_native_start_x:quick.ui.start_x;
+    nu_start_y=springboard_native_input?input_native_start_y:quick.ui.start_y;
+   }
 #endif
   }
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -1102,6 +1142,13 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 /* Explicit deployment return destination. Queue only a deliberate root exit,
  * while this invocation is active; nested Settings Back remains app-owned.
  * Launch requests and error/health exits never acquire a synthetic return. */
+static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+  uint32_t profiled_at=stage_profile_start();
+  bool result=poll_input_body(out,wait);
+  stage_profile_finish(STAGE_POLL,profiled_at);
+  stage_profile_boundary(false);
+  return result;
+}
 static bool native_exit_input(t5_app_input_t *out) {
   if(app_invocation_retained())return false;
   if(!risc_runtime_exit_requested_v1(rt))return false;
@@ -1363,6 +1410,7 @@ static int initialize(void) {
   dg.struct_size = sizeof(dg);
   bg.struct_size = sizeof(bg);
   failed = false;
+  stage_profile_reset();
   installed_catalog=(portable_app_catalog){0};
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=true;alarm_pixels_valid=alarm_modal=native_sleep_retained=false;alarm_pixels=NULL;
@@ -1373,6 +1421,7 @@ static int initialize(void) {
   low_battery=(portable_low_battery){0};low_battery_sampled=false;low_battery_sampled_at=0;
 #endif
   pqa_session_init(&quick);
+  initial_brightness_pending=false;
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   quick.save_user=rgb_atomic_save;quick.save_context=NULL;
 #endif
@@ -1389,6 +1438,8 @@ static int initialize(void) {
   nu_gesture=false;
 #endif
   list_mode = false;input_pending=false;navigation_pending=0;previous_valid=false;
+  input_sample=(portable_touch_sample){0};input_native_x=input_native_y=0;
+  input_native_start_x=input_native_start_y=0;springboard_native_input=false;
   input_sampled_at=last_poll_at=0;previous_pixels=NULL;
 #ifdef PORTABLE_ASYNC_RGB565
   canvas_pixels=NULL;canvas_async=canvas_sealed=canvas_uncertain=canvas_retained=false;canvas_token=0;canvas_submitted_at=canvas_pumped_at=0;canvas_pumping=false;
@@ -1479,6 +1530,7 @@ static int initialize(void) {
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   if(!quick_load())return -1;
+  initial_brightness_pending=(info.flags&RISC_DISPLAY_INFO_BRIGHTNESS)!=0;
 #ifdef PORTABLE_QUICK_RADIOS
   if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return -1;
 #endif
@@ -1511,6 +1563,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   (void)canvas_exit_barrier();
   if(canvas_retained)return;
 #endif
+  stage_profile_boundary(true);
   if(!catalog_checked(portable_catalog_close(&installed_catalog,rt)))return;
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!portable_contexts_pause(&contexts_client)){optional_services_retain();return;}

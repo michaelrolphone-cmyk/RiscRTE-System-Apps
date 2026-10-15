@@ -1,0 +1,429 @@
+{
+  "schema": "watch.native-ui-coverage-summary.v1",
+  "task": "T030",
+  "baseline": {
+    "baseline_version": "0.1.43",
+    "factory_sha256": "1a67657a58254e26f99f674e71a5d9742fb023633e16b7e412b4a0f13a73754a",
+    "official_hash_inventory_verified": true,
+    "store_file_count": 128,
+    "app_manifests": 27,
+    "internal_app_elfs": 26
+  },
+  "status_counts": {
+    "legacy_portable_migration_required": 18,
+    "diagnostic_fixed_viewport_needs_migration": 1,
+    "route_alias_no_own_raster": 1,
+    "semantic_scene_native_path_needs_qualification": 2,
+    "legacy_viewport_migration_required": 1,
+    "external_media_legacy_path_needs_migration": 1,
+    "capability_canvas_native_path_needs_qualification": 1,
+    "native_candidate_in_progress": 1,
+    "shipped_color_source_closure_unverified": 1
+  },
+  "apps": [
+    {
+      "id": "alarms",
+      "version": "0.2.4",
+      "elf_present": true,
+      "elf_sha256": "3f648d893df11c77d0b0abd7c4a9c954a8f5e53d90159eb24f46944c12bad68c",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/alarms.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "app_store",
+      "version": "1.1.7",
+      "elf_present": true,
+      "elf_sha256": "469a1110c7e57e5db960f069c09989d4c7cf4d903391b153d7c6aefba8758bb4",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+        "path": "Apps/app_store.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+      }
+    },
+    {
+      "id": "audio_spectrum",
+      "version": "0.5.8",
+      "elf_present": true,
+      "elf_sha256": "8b7286c712d785042f7207fe697d9b23a4710bc10a653a839808cedc1847fec5",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "b1b2ba9466cc7243570471c0f9e728367dd4bafe",
+        "path": "Apps/audio_spectrum.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/b1b2ba9466cc7243570471c0f9e728367dd4bafe/Apps/audio_spectrum.c"
+      }
+    },
+    {
+      "id": "battery",
+      "version": "1.1.2",
+      "elf_present": true,
+      "elf_sha256": "450e49f07d7820980a7c815fc042a7e9cad20312baa88ce0d8ee404e9eaa4c5d",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/battery.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "ble_buttons",
+      "version": "0.1.27",
+      "elf_present": true,
+      "elf_sha256": "07c7fefd6b26f391cdcfabafe819a8524f0db752d9913899ba15df83285b9c7f",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/ble_buttons.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "ble_scanner",
+      "version": "0.2.6",
+      "elf_present": true,
+      "elf_sha256": "21effc63d83a99d94e295358bf89656605880fadf6cbc07d2696951c4c81a492",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "3385d634db829066e3f7f0d84474df5ed54bf143",
+        "path": "Apps/ble_scanner.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/3385d634db829066e3f7f0d84474df5ed54bf143/Apps/ble_scanner.c"
+      }
+    },
+    {
+      "id": "ble_touchpad",
+      "version": "0.1.16",
+      "elf_present": true,
+      "elf_sha256": "2ad0ebb4906e7e31cc962d1ca3f8b1c1151f2a80e4f9c37052433af5cd3eba3d",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/ble_touchpad.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "bringup",
+      "version": "0.1.0",
+      "elf_present": true,
+      "elf_sha256": "ca2e30237ceee4b218faf8ec94ca9286fd97cf7be09d0fce3ca8a2eab88c6216",
+      "source_review_status": "diagnostic_fixed_viewport_needs_migration",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+        "commit": "2d3df3d50647578987eb209bf7e2b8d722715d00",
+        "path": "apps/bringup/main.c",
+        "scope": "pinned diagnostic_shared in wave/scripts/build_boot_test.py"
+      }
+    },
+    {
+      "id": "calculator",
+      "version": "0.1.8",
+      "elf_present": true,
+      "elf_sha256": "4b70994e42e89684f1694b624f80c0f7e15af1a3feb970ef7b3a7ba633dd2d66",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/calculator.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "clock",
+      "version": "0.15.0",
+      "elf_present": true,
+      "elf_sha256": "cfd7de71d1949e415ba6662862feba4733e384258670ec73760425436d3fcde1",
+      "source_review_status": "route_alias_no_own_raster",
+      "source_attribution_status": "exact_payload_receipt_match",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+        "commit": "ec768c7fae6fdb484fef28c6ec87f129b0a7f585",
+        "path": "apps/clock/return_to_default.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Watch/blob/ec768c7fae6fdb484fef28c6ec87f129b0a7f585/apps/clock/return_to_default.c"
+      }
+    },
+    {
+      "id": "contexts",
+      "version": "0.4.6",
+      "elf_present": true,
+      "elf_sha256": "a3b4b678eeee6a1d5ebc4a605b6c7d8ee176d806bd8ad059815bb4d979a56410",
+      "source_review_status": "semantic_scene_native_path_needs_qualification",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/contexts.c",
+        "scope": "available semantic source lineage; exact .43 closure unverified"
+      }
+    },
+    {
+      "id": "countdown",
+      "version": "0.1.7",
+      "elf_present": true,
+      "elf_sha256": "2d8feee57141250f1c03530748c46999bd0eed70ab6813605e7a29ad4068a915",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/countdown.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "default",
+      "version": "0.15.4",
+      "elf_present": true,
+      "elf_sha256": "b805ddcfb80d90983eabb03022c84fc633f9529924c1bffda363825d4ad88b1d",
+      "source_review_status": "legacy_viewport_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+        "commit": "87b17a368b32abe50a21787242f94616b2b26983",
+        "path": "apps/clock/main.c",
+        "scope": "Home source in .38 source-pins; .43 inherited payload closure not freshly rebuilt"
+      }
+    },
+    {
+      "id": "file_browser",
+      "version": "1.5.39",
+      "elf_present": true,
+      "elf_sha256": "51c498f306e12530417ccec6a22d1e7504df5d70278290dcc67628ca778c7c58",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "66282802bb498590fcbab4eba871ff40cc3ddafd",
+        "path": "Apps/file_browser.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/66282802bb498590fcbab4eba871ff40cc3ddafd/Apps/file_browser.c"
+      }
+    },
+    {
+      "id": "frequency_generator",
+      "version": "0.1.6",
+      "elf_present": true,
+      "elf_sha256": "c443797f137d959a55eeb20e77d3b703ebdfb41fbb5ed7f34b2fa547b30f307d",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/frequency_generator.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "lists",
+      "version": "0.1.2",
+      "elf_present": true,
+      "elf_sha256": "cfbb592836763f80a98904aa3aaf6a04c9cb1214f447a42e9df2739f5e259f48",
+      "source_review_status": "semantic_scene_native_path_needs_qualification",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+        "commit": "f83d79a0753c2a451730000d2f553aa21fda7830",
+        "path": "Apps/lists_scene.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/f83d79a0753c2a451730000d2f553aa21fda7830/Apps/lists_scene.c"
+      }
+    },
+    {
+      "id": "lora_messages",
+      "version": "0.1.16",
+      "elf_present": false,
+      "elf_sha256": null,
+      "source_review_status": "external_media_legacy_path_needs_migration",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "4cfe21248f1f81339072c39eba44dbaea3a444b6",
+        "path": "Apps/lora_messages.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/4cfe21248f1f81339072c39eba44dbaea3a444b6/Apps/lora_messages.c"
+      }
+    },
+    {
+      "id": "model_viewer",
+      "version": "1.3.1",
+      "elf_present": true,
+      "elf_sha256": "8b4cb6c789afcaa9c6bb6a4d348f9b7b2618baeca70831fd25819f275c1c874d",
+      "source_review_status": "capability_canvas_native_path_needs_qualification",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "c310854418f920340257c61af62c202f7ff4ca12",
+        "path": "Apps/model_viewer.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/blob/c310854418f920340257c61af62c202f7ff4ca12/Apps/model_viewer.c"
+      }
+    },
+    {
+      "id": "ota_update",
+      "version": "1.1.7",
+      "elf_present": true,
+      "elf_sha256": "3557d080b673f070b88a6a0398fb8d54473b5d887015582235fb6de485505545",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+        "path": "Apps/ota_update.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+      }
+    },
+    {
+      "id": "points_in_time",
+      "version": "0.6.20",
+      "elf_present": true,
+      "elf_sha256": "14b82e1cbe1161b0896632677427b949ccc96521c7dff5b28a58dda59269197f",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+        "commit": "519dba53fbfd498da0443f516445450e864c7bc3",
+        "path": "Apps/points_in_time.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/519dba53fbfd498da0443f516445450e864c7bc3/Apps/points_in_time.c"
+      }
+    },
+    {
+      "id": "settings",
+      "version": "1.3.25",
+      "elf_present": true,
+      "elf_sha256": "a7558b3bd2cd0c2a0edee95e4a8a69477a63772e8300e33e8e7332a2558f8d41",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "b580e32d5821d4a80e80c896bf7c085214f2b590",
+        "path": "Apps/settings.c",
+        "scope": "native-height shared-ui source predecessor; exact .43 byte closure unverified"
+      }
+    },
+    {
+      "id": "springboard",
+      "version": "1.7.16",
+      "elf_present": true,
+      "elf_sha256": "f0dd72760ece4c9102aa316281663ddd4d90eeabc54ca39f326766ce521f05a7",
+      "source_review_status": "native_candidate_in_progress",
+      "source_attribution_status": "exact_43_release_source_pin",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+        "path": "Apps/springboard.c",
+        "evidence": "official .43 release.json system_revision + springboard_sha256"
+      }
+    },
+    {
+      "id": "stopwatch",
+      "version": "0.1.8",
+      "elf_present": true,
+      "elf_sha256": "fe2ded6556c1733dc308152fdf6f49f1226a6a7a48e5744b595bffe27c81abfc",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/stopwatch.c",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+      }
+    },
+    {
+      "id": "timecard",
+      "version": "0.2.15",
+      "elf_present": true,
+      "elf_sha256": "0639799e0793fc1421c74a562127e4fef63be185b828193569055b4314df1d58",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+        "commit": "164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75",
+        "path": "Apps/timecard_portable.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75/Apps/timecard_portable.c"
+      }
+    },
+    {
+      "id": "usb_sd_transfer",
+      "version": "0.1.11",
+      "elf_present": true,
+      "elf_sha256": "6cfbd343633677a2498456d2a6664632ed83f2c7e6f966c7cba4349bfbc28e86",
+      "source_review_status": "shipped_color_source_closure_unverified",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified"
+    },
+    {
+      "id": "waterfall",
+      "version": "0.3.7",
+      "elf_present": true,
+      "elf_sha256": "999abfce25e39bdd5eb440d6e7bd6bd69f54e1e88edc78901ed00b01f25599d1",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "4beb9778d300ec9f6b18448e1ec86317e063c98c",
+        "path": "Apps/waterfall.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/4beb9778d300ec9f6b18448e1ec86317e063c98c/Apps/waterfall.c"
+      }
+    },
+    {
+      "id": "wifi_settings",
+      "version": "1.1.31",
+      "elf_present": true,
+      "elf_sha256": "19d6dc5fde5d25b3c0808c0dcb500a011469350bebfc66a74556369b90c975ba",
+      "source_review_status": "legacy_portable_migration_required",
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "source": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3",
+        "path": "Apps/wifi_settings.c",
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3/Apps/wifi_settings.c"
+      }
+    }
+  ],
+  "blocking_dependencies": [
+    {
+      "id": "portable_layout_raster",
+      "finding": "A physical-size framebuffer does not remove 240-wide logical pixel expansion. Native-sized primitives, text, icons and coordinates must be coherent."
+    },
+    {
+      "id": "shared_controls",
+      "finding": "Quick uses 240-wide raster rows and logical height >=240. Adapter bounds are 160..1024 on both physical axes and the native-height path rejects logical height <240. 480\u00d7320 derives logical 240\u00d7160 and fails full-app opening even if the new Springboard renderer alone handles it."
+    },
+    {
+      "id": "surface_ownership",
+      "finding": "Preserve padded native strides, minimum sizes, overflow checks, single submit token, cancellation and retained/uncertain-provider ownership. Native layout does not authorize simplifying service/lifecycle rules."
+    },
+    {
+      "id": "scene_host_profile_text",
+      "finding": "Native capability geometry is present in the reviewed host, but exact shipped host/profile/text-input closure and bitmap font quality need qualification. Reviewed host bounds are 160..2048; font scale 1..4 and fixed glyph bitmaps remain."
+    },
+    {
+      "id": "viewer_canvas",
+      "finding": "Viewer canvas is capability-sized within 160..1200 bounds; rotation and monochrome working/snapshot copies do not imply reduced-resolution scaling. Verify kind==CANVAS_VIEWER and exact .43 build."
+    },
+    {
+      "id": "font_icon_sources",
+      "finding": "Frozen font/icon atlases and 5\u00d77 bitmap expansion need independent review. Springboard-only native font work does not migrate other apps or shared Quick assets."
+    },
+    {
+      "id": "source_identity",
+      "finding": "Recover/bind exact package source + dependencies + defines + normalization/compaction against .43 hashes before migration. Older retained-50 receipts are source lineage, not proof of this product payload when hashes differ."
+    }
+  ],
+  "detailed_inventory": "inventory.json",
+  "review": "REVIEW.md"
+}

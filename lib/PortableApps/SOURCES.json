@@ -45,9 +45,9 @@
   },
   "RiscKeyValueV1.h": {
     "repository": "michaelrolphone-cmyk/RiscRTE",
-    "commit": "bd73f918bd2392693e4ee7719f289da7531da4b1",
+    "commit": "a2c2c9fa692b0b36f9750d44fac807c9149b9434",
     "path": "sdk/app/RiscKeyValueV1.h",
-    "sha256": "5d5524ffd27b164f31505c5f538f528b39b35e356922e03e2eb59a9c68677b56"
+    "sha256": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179"
   },
   "WifiApi.h": {
     "repository": "RiscRTE-T-Watch-S3",

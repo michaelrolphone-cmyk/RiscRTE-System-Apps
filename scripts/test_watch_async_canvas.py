@@ -15,6 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/watch-async-canvas'
 CORE = [
     'clock-monotonic', 'clock-missing', 'clock-truncated', 'clock-failure',
+    'stage-profile-bounded', 'stage-profile-short', 'stage-profile-retained', 'stage-profile-clock-failure',
+    'poll-wait-provider-cost', 'poll-wait-provider-cost-wrap',
     'raster-pump', 'raster-pump-complete', 'raster-pump-failure',
     'touch-terminal', 'ordered-taps-0', 'ordered-taps-16', 'ordered-taps-2300',
     'canvas-allocation-failure', 'mailbox', 'mid-paint', 'damage', 'fini-pending', 'fini-drawing', 'crown',
@@ -72,7 +74,7 @@ def main():
                         '-o', str(reducer)], check=True, timeout=120)
         subprocess.run([str(reducer)], check=True, timeout=30, env=sanitizer_env)
         core = OUT / f'core-{tag}'
-        subprocess.run([*common, *san, '-DPORTABLE_ASYNC_RGB565',
+        subprocess.run([*common, *san, '-DPORTABLE_ASYNC_RGB565', '-DPORTABLE_STAGE_PROFILE',
                         '-DPORTABLE_RETAINED_RGB565_HANDOFF',
                         str(ROOT / 'test/native_apps/watch_async_canvas_test.c'),
                         '-o', str(core)], check=True, timeout=120)

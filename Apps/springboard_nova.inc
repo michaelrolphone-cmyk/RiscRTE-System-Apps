@@ -3,7 +3,7 @@
 #include <limits.h>
 #define NOVA_PAGE_APPS 19u
 #define NOVA_FRAME_MS 40u
-typedef struct { int16_t x, y; } nova_point;
+typedef struct { int16_t x, y; uint8_t color; } nova_point;
 typedef struct {
     const springboard_presentation *view;
     nova_point points[NOVA_PAGE_APPS];
@@ -18,6 +18,11 @@ typedef struct {
     bool time_known;
     char status[48];
 } nova_state;
+/* Dimensionless design measures become native pixels once, before raster. */
+static int nova_extent(void) {
+    int w=api->screen_width(),h=api->screen_height();return w<h?w:h;
+}
+static int nova_px(int value) { return (value*nova_extent()+120)/240; }
 static unsigned nova_root(unsigned n) {
     unsigned result = 0, bit = 1u << 30;
     while (bit > n) bit >>= 2;
@@ -31,37 +36,42 @@ static unsigned nova_root(unsigned n) {
 static int nova_distance(int x, int y) { return (int)nova_root((unsigned)(x*x + y*y)); }
 static int nova_limit(int n, int limit) { return n < -limit ? -limit : n > limit ? limit : n; }
 static void nova_layout(nova_state *s) {
-    unsigned n = 0;
+    unsigned n = 0,rank[NOVA_PAGE_APPS];
     /* Exact prototype axial spacing (54, 54*.866), stable radial order. */
     for (int q = -2; q <= 2; ++q) for (int r = -2; r <= 2; ++r) {
         if (abs(q+r) > 2) continue;
-        nova_point p = {(int16_t)(864*q + 432*r), (int16_t)(748*r)};
-        unsigned j = n++;
-        while (j && nova_distance(s->points[j-1].x,s->points[j-1].y) > nova_distance(p.x,p.y)) {
-            s->points[j] = s->points[j-1]; --j;
+        int color=(2*q+3*r)%7;
+        nova_point p = {(int16_t)((864*q + 432*r)*nova_extent()/240),
+                        (int16_t)(748*r*nova_extent()/240),
+                        (uint8_t)(color<0?color+7:color)};
+        unsigned j = n++,distance=(unsigned)nova_distance(864*q+432*r,748*r);
+        while (j && rank[j-1] > distance) {
+            s->points[j] = s->points[j-1];rank[j]=rank[j-1];--j;
         }
-        s->points[j] = p;
+        s->points[j] = p;rank[j]=distance;
     }
     s->n = count - s->first;
     if (s->n > NOVA_PAGE_APPS) s->n = NOVA_PAGE_APPS;
     sb_point p[NOVA_PAGE_APPS];
     for (unsigned i=0;i<s->n;++i) p[i]=(sb_point){-(float)s->points[i].x/16.0f,-(float)s->points[i].y/16.0f};
     sb_motion_init(&s->motion,p,s->n);
+    s->motion.scale=(float)nova_extent()/240.0f;
     s->focus=0;s->pending=-1;s->pulse=0;
     s->dirty = true;
 }
 static unsigned nova_nearest(nova_state *s) { return sb_nearest(&s->motion); }
 static int nova_scale(int distance) {
     /* Q8 approximation of 1.14 - .95*(max-axis/130)^1.5, clamped .2..1.12. */
-    int ratio = distance * 256 / (130*16);
+    int ratio = distance * 256 / nova_px(130*16);
     int scale = 292 - 243 * ratio * (int)nova_root((unsigned)ratio*256) / 65536;
     return scale < 51 ? 51 : scale > 287 ? 287 : scale;
 }
 static int nova_axis_alpha(int p,int extent) {
     int d=p<extent-p?p:extent-p;
     if(d<=0)return 0;
-    if(d<14)return d*102/14;
-    if(d<46)return 102+(d-14)*153/32;
+    int inner=nova_px(14),outer=nova_px(46);
+    if(d<inner)return d*102/inner;
+    if(d<outer)return 102+(d-inner)*153/(outer-inner);
     return 255;
 }
 static int nova_alpha(int x,int y) {
@@ -73,9 +83,7 @@ static uint32_t nova_color(nova_point p) {
      * when several catalog entries share a glyph. Panning never recolors it. */
     static const uint32_t palette[]={0x0891b2,0xf08c22,0x22b45a,0x8b5cf6,
                                      0xed4f54,0x3978e8,0xe448a4};
-    int r=p.y/748,q=(p.x-432*r)/864;
-    int color=(2*q+3*r)%7;
-    return palette[color<0?color+7:color];
+    return palette[p.color];
 }
 static void nova_render(nova_state *s) {
     s->view->begin();
@@ -95,34 +103,34 @@ static void nova_render(nova_state *s) {
             scale += scale*triangle*22/(160*100);
         }
         int x=cx+dx/16, y=cy+dy/16;
-        if (x < -32 || y < -32 || x > api->screen_width()+32 || y > api->screen_height()+32) continue;
-        s->view->circle(x,y,22*scale/256,nova_color(s->points[i]),255);
-        if (!s->view->icon(x,y,24*scale/256,app.icon,255))
+        if (x < -nova_px(32) || y < -nova_px(32) || x > api->screen_width()+nova_px(32) || y > api->screen_height()+nova_px(32)) continue;
+        s->view->circle(x,y,nova_px(22)*scale/256,nova_color(s->points[i]),255);
+        if (!s->view->icon(x,y,nova_px(24)*scale/256,app.icon,255))
             unavailable_icon=true;
     }
     char clock[16];
     if (s->time_known) snprintf(clock,sizeof(clock),"%u:%02u %s",s->hour%12?s->hour%12:12,s->minute,s->hour<12?"AM":"PM");
     else strcpy(clock,"--:--");
-    s->view->caption(16,clock,true,0xffffff);
-    if (s->status[0]) s->view->caption(api->screen_height()-43,s->status,false,0xffffff);
+    s->view->caption(nova_px(16),clock,true,0xffffff);
+    if (s->status[0]) s->view->caption(api->screen_height()-nova_px(43),s->status,false,0xffffff);
     else if (s->n) {
         t5_app_manifest_t app;
         if (api->installed_apps_get(s->first+s->focus,&app))
-            s->view->caption(api->screen_height()-43,app.display_name,false,0xffffff);
+            s->view->caption(api->screen_height()-nova_px(43),app.display_name,false,0xffffff);
     } else {
         const int center=api->screen_height()/2;
         s->view->caption(center,catalog_available?"NO APPS":"APPS UNAVAILABLE",false,0xffffff);
         springboard_catalog_failure failure;
         if(!catalog_available && springboard_catalog_failure_get(&failure)) {
             char detail[48];snprintf(detail,sizeof(detail),"result %ld, index %lu",(long)failure.result,(unsigned long)failure.index);
-            s->view->caption(center+24,failure.stage,false,0xaab7ba);
-            s->view->caption(center+44,detail,false,0xaab7ba);
+            s->view->caption(center+nova_px(24),failure.stage,false,0xaab7ba);
+            s->view->caption(center+nova_px(44),detail,false,0xaab7ba);
         }
     }
-    if (unavailable_icon) s->view->caption(api->screen_height()-16,"ICON UNAVAILABLE",false,0x7d8c90);
+    if (unavailable_icon) s->view->caption(api->screen_height()-nova_px(16),"ICON UNAVAILABLE",false,0x7d8c90);
     else if (count>NOVA_PAGE_APPS) {
         char page[24];snprintf(page,sizeof(page),"%u / %u",s->first/NOVA_PAGE_APPS+1,(unsigned)((count+NOVA_PAGE_APPS-1)/NOVA_PAGE_APPS));
-        s->view->caption(api->screen_height()-16,page,true,0x7d8c90);
+        s->view->caption(api->screen_height()-nova_px(16),page,true,0x7d8c90);
     }
     api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;
 }
@@ -134,7 +142,7 @@ static int nova_hit(nova_state *s,int x,int y) {
         int scale=nova_scale(abs(dx)>abs(dy)?abs(dx):abs(dy));
         int d=nova_distance(x-dx/16,y-dy/16);
         if (nova_alpha(api->screen_width()/2+dx/16,api->screen_height()/2+dy/16)<32) continue;
-        if (d<24*(scale<128?128:scale)/256 && d<nearest) {best=(int)i;nearest=d;}
+        if (d<nova_px(24)*(scale<128?128:scale)/256 && d<nearest) {best=(int)i;nearest=d;}
     }
     return best;
 }
@@ -159,7 +167,7 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
             s->last_x=c->x;s->last_y=c->y;s->moved=0;
             sb_motion_begin(&s->motion);s->pending=-1;s->pulse=0;
         } else {
-            int dx=nova_limit(c->x-s->last_x,256),dy=nova_limit(c->y-s->last_y,256);
+            int dx=nova_limit(c->x-s->last_x,nova_px(256)),dy=nova_limit(c->y-s->last_y,nova_px(256));
             s->last_x=c->x;s->last_y=c->y;
             unsigned travel=(unsigned)(abs(dx)+abs(dy));
             s->moved=s->moved+travel>1024?1024:s->moved+travel;
@@ -168,23 +176,24 @@ static void nova_contact_input(nova_state *s,const springboard_contact *c,uint32
     } else {
         s->initial=false;
         if (c->released) {
-            bool tap=(!s->down || (s->tap && s->moved<6)) && c->tap_eligible;
+            bool tap=(!s->down || (s->tap && s->moved<(unsigned)nova_px(6))) && c->tap_eligible;
             s->down=false;sb_motion_release(&s->motion);
             if (tap) {
                 int hit=nova_hit(s,c->x,c->y);
                 if (hit>=0) {
-                    unsigned center=0;int nearest=INT_MAX;
+                    unsigned center=0,nearest=UINT_MAX;
                     for(unsigned i=0;i<s->n;i++) {
-                        int x=s->points[i].x+s->visible_x,y=s->points[i].y+s->visible_y,d=x*x+y*y;
+                        int x=s->points[i].x+s->visible_x,y=s->points[i].y+s->visible_y;
+                        unsigned d=(unsigned)(x*x)+(unsigned)(y*y);
                         if(d<nearest){nearest=d;center=i;}
                     }
                     int dx=s->points[hit].x-s->points[center].x,dy=s->points[hit].y-s->points[center].y;
-                    bool first_ring=dx*dx+dy*dy<=896*896; /* center plus one54px hex ring */
+                    bool first_ring=dx*dx+dy*dy<=nova_px(896)*nova_px(896); /* center plus one54px hex ring */
                     sb_motion_target(&s->motion,(unsigned)hit);s->pending=-1;s->pulse=0;
                     if(first_ring)nova_prepare_launch(s,(unsigned)hit,160);
                     s->status[0]=0;s->dirty=true;
                 }
-                else if (count>NOVA_PAGE_APPS && c->y>=api->screen_height()-24) {
+                else if (count>NOVA_PAGE_APPS && c->y>=api->screen_height()-nova_px(24)) {
                     s->first=(s->first+NOVA_PAGE_APPS<count)?s->first+NOVA_PAGE_APPS:0;nova_layout(s);
                 }
             }

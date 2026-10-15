@@ -58,21 +58,17 @@ with tempfile.TemporaryDirectory(prefix='runtime-app-catalog-') as directory:
    for mode in range(3):run(binary,['startup-recovery',files[2],width,height,mode],f'nova-startup-recovery-{mode}-{width}x{height}-san{int(sanitizer)}')
    for fault in range(1,28):run(binary,['inventory',files[3],width,height,fault],f'fault{fault}-{width}x{height}-san{int(sanitizer)}')
   assert hashlib.sha256(binary.read_bytes()).hexdigest()==shared_hash
-  legacy=temp/'legacy';legacy.mkdir(exist_ok=True)
-  (legacy/'adapter.c').write_bytes(subprocess.check_output(['git','show',BASELINE+':lib/PortableApps/src/adapter.c'],cwd=ROOT))
-  (legacy/'PortableApps.h').write_bytes(subprocess.check_output(['git','show',BASELINE+':lib/PortableApps/include/PortableApps.h'],cwd=ROOT))
-  (legacy/'Apps').mkdir(exist_ok=True)
-  for path in subprocess.check_output(['git','ls-tree','-r','--name-only',BASELINE,'Apps'],cwd=ROOT,text=True).splitlines():
-   if Path(path).name.startswith('springboard') or Path(path).name=='SpringboardPresentation.h':
-    (legacy/path).write_bytes(subprocess.check_output(['git','show',BASELINE+':'+path],cwd=ROOT))
-  old=temp/'old'
-  subprocess.run([CC,*[flag for flag in common if flag!='-DPORTABLE_APP_LAUNCH_GUARD'],*san,'-DSPRINGBOARD_SOURCE="'+str(legacy/'Apps/springboard.c')+'"','-I'+str(legacy),*includes,
-   str(ROOT/'test/native_apps/watch_native_springboard_test.c'),str(legacy/'adapter.c'),str(fixture),'-o',str(old)],check=True)
+  # Inventory publication must not change native pixels. Compare with the
+  # current fixed-inventory controller, not a partial old adapter linked to
+  # current includes (which is neither a valid historical nor current build).
+  fixed=temp/'fixed'
+  subprocess.run([CC,*[flag for flag in common if flag!='-DPORTABLE_APP_LAUNCH_GUARD'],*san,*includes,
+   str(ROOT/'test/native_apps/watch_native_springboard_test.c'),str(ROOT/'lib/PortableApps/src/adapter.c'),str(fixture),'-o',str(fixed)],check=True)
   captures=temp/'captures';captures.mkdir(exist_ok=True)
   for width,height in ((240,240),(410,502)):
    for provider in ('sync','async'):
-    run(old,[width,height,captures,provider],f'baseline-{width}x{height}-{provider}-san{int(sanitizer)}')
-    expected=frames(captures,f'baseline-{width}x{height}-{provider}-san{int(sanitizer)}')
+    run(fixed,[width,height,captures,provider],f'fixed-inventory-{width}x{height}-{provider}-san{int(sanitizer)}')
+    expected=frames(captures,f'fixed-inventory-{width}x{height}-{provider}-san{int(sanitizer)}')
     run(binary,['parity',files[2],width,height,captures,provider],f'runtime-pixels-{width}x{height}-{provider}-san{int(sanitizer)}')
     actual=frames(captures,f'runtime-{width}x{height}-{provider}-san{int(sanitizer)}');assert actual==expected,(actual,expected)
     parity.append({'width':width,'height':height,'provider':provider,'sanitized':sanitizer,'frames':actual})
@@ -82,7 +78,7 @@ with tempfile.TemporaryDirectory(prefix='runtime-app-catalog-') as directory:
   assert not re.search(r'\bportable_catalog(?:_count)?\b',symbols)
 report={'passed':len(results),'checks':results,'geometry':[[240,240],[410,502]],
  'same_executable_different_inventories':True,'frame_parity':parity,'compiled_inventory_dependency':False,
- 'baseline':BASELINE,'full_23_entry_pixels_identical':True,'asan_ubsan':True,
+ 'historical_baseline':BASELINE,'pixel_oracle':'current fixed-inventory native renderer','full_23_entry_pixels_identical':True,'asan_ubsan':True,
  'native_directory_admission':'Separate Runtime tests required','hardware_qualified':False}
 (OUT/'result.json').write_text(json.dumps(report,indent=2)+'\n')
 print(f'PASS {len(results)} cases: runtime inventories, 128-entry bound, stale launch fencing, custody faults and unchanged 23-entry pixels')

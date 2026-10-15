@@ -1,0 +1,19 @@
+{
+  "baseline": "0.1.43",
+  "changed_store_files": [
+    "boot.json",
+    "default.json"
+  ],
+  "home_elf_unchanged": true,
+  "home_elf_sha256": "b805ddcfb80d90983eabb03022c84fc633f9529924c1bffda363825d4ad88b1d",
+  "default_requires": 21,
+  "default_grants": 24,
+  "bytes_added": 110,
+  "policy": {
+    "capability": "runtime.retained-wake",
+    "api": 1,
+    "instance_id": 0
+  },
+  "native_revision": "a2c2c9fa692b0b36f9750d44fac807c9149b9434",
+  "hardware_tested": false
+}

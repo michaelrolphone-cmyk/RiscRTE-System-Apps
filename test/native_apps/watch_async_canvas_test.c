@@ -32,16 +32,26 @@ static uint16_t provider_pixels[240*243],owned_snapshot[240*243],outgoing[240*24
 static unsigned now_ms,flags=RISC_DISPLAY_INFO_ASYNC_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;
 static unsigned grants,subscriptions,leases,acquires,releases,submits,statuses,inputs,launches,retains;
 static unsigned yields,health_reads,clock_reads;
+static unsigned provider_yield_ms;
+
 static bool clock_failed;
 static unsigned latency=40,submitted_at,status_error,damage_count;
 static risc_display_rect_v1 last_damage;
 static bool provider_busy,finish_now,reject_submit,zero_token,bad_surface,exit_pending,fail_after_yield;
 static bool retain_ok=true,retention_seen;
+#ifdef PORTABLE_STAGE_PROFILE
+static unsigned trace_calls,trace_phases[9];
+static uint32_t trace_stage(uint32_t id,uint32_t phase,uint32_t value) {
+ no_call_after_refusal();assert(!retention_seen && id==0 && phase>=4 && phase<=8);
+ if(phase==8)assert((value>>24)>=0x40u && (value>>24)<=0x4eu);
+ trace_calls++;trace_phases[phase]++;return 0;
+}
+#endif
 static void immutable(void) {if(provider_busy)assert(!memcmp(provider_pixels,owned_snapshot,sizeof(provider_pixels)));}
 static void normal_io(void) {no_call_after_refusal();assert(!retention_seen);immutable();}
 static bool health(risc_runtime_health_v1 *h){no_call_after_refusal();assert(!retention_seen);++health_reads;h->uptime_ms=now_ms;return true;}
 static bool monotonic(uint32_t*out){no_call_after_refusal();assert(!retention_seen);++clock_reads;*out=now_ms;return !clock_failed;}
-static void yield_ms(uint32_t ms){no_call_after_refusal();immutable();++yields;now_ms+=ms;if(fail_after_yield)status_error=RISC_DISPLAY_PRESENT_FAILED;}
+static void yield_ms(uint32_t ms){no_call_after_refusal();immutable();++yields;now_ms+=ms+provider_yield_ms;if(fail_after_yield)status_error=RISC_DISPLAY_PRESENT_FAILED;}
 static bool diagnostic(const char *s){no_call_after_refusal();assert(s);return true;}
 static bool native_exit(void){no_call_after_refusal();return exit_pending;}
 static bool retain(void){
@@ -119,7 +129,27 @@ int main(int argc,char**argv){
   fail_allocation=1;assert(app_module_init()!=0);assert(allocation_attempts==1&&!allocations&&!frees&&!grants&&!subscriptions&&!leases&&!acquires&&!submits&&!canvas_pixels);
   puts("Async canvas: canvas-allocation-failure PASS");return 0;
  }
+#ifdef PORTABLE_STAGE_PROFILE
+ if(!strncmp(test,"stage-profile-",14)){runtime.monotonic_ms=monotonic;runtime.trace=trace_stage;}
+#endif
  init();
+#ifdef PORTABLE_STAGE_PROFILE
+ if(!strcmp(test,"stage-profile-bounded")){
+  for(unsigned i=0;i<128;i++){now_ms+=40;paint((uint16_t)(i+1));finish_now=true;assert(canvas_progress());}
+  assert(trace_calls==33 && trace_phases[4]==1 && trace_phases[5]==1 && trace_phases[6]==1 && trace_phases[8]==30);finish();assert(trace_phases[8]==45);
+ }else if(!strcmp(test,"stage-profile-short")){
+  paint(0x1234);finish_now=true;assert(canvas_progress());assert(trace_phases[8]==0);
+  now_ms=2100;t5_app_input_t in={0};assert(poll_input(&in,1));
+  assert(trace_phases[8]==15);finish();
+ }else if(!strcmp(test,"stage-profile-retained")){
+  paint(0x1234);status_error=RISC_DISPLAY_PRESENT_FAILED;assert(!canvas_progress());
+  unsigned before=trace_calls;stage_profile_render_begin();stage_profile_finish(STAGE_POLL,0);
+  check_retained();assert(trace_calls==before);
+ }else if(!strcmp(test,"stage-profile-clock-failure")){
+  assert(stage_profile.enabled);clock_failed=true;stage_profile_finish(STAGE_POLL,0);
+  assert(!stage_profile.enabled && !failed);clock_failed=false;finish();
+ }else
+#endif
  if(!strncmp(test,"clock-",6)){
   assert(canvas_async);health_reads=clock_reads=0;
   paint(0x1111);
@@ -130,6 +160,18 @@ int main(int argc,char**argv){
    if(!strcmp(test,"clock-monotonic"))assert(clock_reads&&!health_reads);
    else assert(health_reads&&!clock_reads);
   }
+ }
+ else if(!strcmp(test,"poll-wait-provider-cost") || !strcmp(test,"poll-wait-provider-cost-wrap")){
+  /* Exact owner-task semantics: a provider step precedes the requested sleep.
+   * Its 2ms synthetic cost is separate from the 1ms requested scheduler tick. */
+  if(!strcmp(test,"poll-wait-provider-cost-wrap"))now_ms=UINT32_MAX-10u;
+  runtime.monotonic_ms=monotonic;latency=1000;paint(0x1234);
+  provider_yield_ms=2;last_poll_at=now_ms;
+  unsigned start=now_ms,before=yields;t5_app_input_t in={0};
+  assert(poll_input(&in,20));
+  assert(now_ms-start==21 && yields-before==7);
+  assert(inputs==1 && canvas_token && provider_busy);
+  provider_yield_ms=0;finish_now=true;finish();
  }
  else if(!strncmp(test,"fallback-",9)){assert(!canvas_async&&!canvas_pixels);paint(0x1234);assert(!provider_busy&&submits==1&&now_ms>=latency);finish();}
  else if(!strcmp(test,"mailbox")){

@@ -1,0 +1,5 @@
+baseline default/app/default/app/default: opens=5 stats=5 seeks=0 reads=5 bytes=12792 parses=5 relocations=5 publications=5 read_yields=0
+cached default/app/default/app/default: opens=2 stats=2 seeks=0 reads=2 bytes=5084 parses=2 relocations=5 publications=5 read_yields=0
+PASS: exact-path/session custody, independent mappings, allocation fallback, failed relocation, bounded LRU entries/bytes, malformed/missing and oversized images
+baseline default/app/default/app/default: opens=5 stats=5 seeks=0 reads=5 bytes=12792 parses=5 relocations=5 publications=5 read_yields=0
+PASS: non-PSRAM target refuses cache allocation and preserves ordinary loading

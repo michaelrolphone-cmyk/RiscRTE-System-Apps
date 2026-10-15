@@ -1,0 +1,1106 @@
+{
+  "watch_layout": {
+    "path": "lib/PortableApps/include/WatchLayout.h",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "e622bcf52e40ad7fd343f4c209dfa1dfe2ed87db979558cce26c39bfd6752b63",
+    "matches": [
+      {
+        "line": 3,
+        "text": " * Both axes use physical_width / 240. Extra height is layout space, never a"
+      },
+      {
+        "line": 10,
+        "text": "#define WATCH_LAYOUT_WIDTH 240u"
+      },
+      {
+        "line": 16,
+        "text": "    uint32_t physical_width, physical_height;"
+      },
+      {
+        "line": 36,
+        "text": "    uint32_t logical_height = watch_layout_ceil(height * WATCH_LAYOUT_WIDTH, width);"
+      },
+      {
+        "line": 37,
+        "text": "    if (!logical_height || logical_height > WATCH_LAYOUT_MAX_SIDE) return false;"
+      },
+      {
+        "line": 38,
+        "text": "    uint32_t left = watch_layout_ceil(s->left * WATCH_LAYOUT_WIDTH, width);"
+      },
+      {
+        "line": 39,
+        "text": "    uint32_t top = watch_layout_ceil(s->top * WATCH_LAYOUT_WIDTH, width);"
+      },
+      {
+        "line": 40,
+        "text": "    uint32_t right = (width - s->right) * WATCH_LAYOUT_WIDTH / width;"
+      },
+      {
+        "line": 43,
+        "text": "    uint32_t bottom = s->bottom ? (height - s->bottom) * WATCH_LAYOUT_WIDTH / width : logical_height;"
+      },
+      {
+        "line": 45,
+        "text": "    watch_layout value = {width, height, WATCH_LAYOUT_WIDTH, logical_height,"
+      },
+      {
+        "line": 52,
+        "text": "    return l && l->physical_width && l->physical_width <= WATCH_LAYOUT_MAX_SIDE &&"
+      },
+      {
+        "line": 54,
+        "text": "        l->width == WATCH_LAYOUT_WIDTH && l->height && l->height <= WATCH_LAYOUT_MAX_SIDE &&"
+      },
+      {
+        "line": 55,
+        "text": "        l->height == watch_layout_ceil(l->physical_height * WATCH_LAYOUT_WIDTH, l->physical_width);"
+      },
+      {
+        "line": 61,
+        "text": "        uint16_t *logical_x, uint16_t *logical_y) {"
+      }
+    ]
+  },
+  "legacy_pixel_expansion": {
+    "path": "lib/PortableApps/src/watch_native_layout.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "6812bbd679cb7d094e5c1ba941a33adda8176713224413a7764a503589e4f1a4",
+    "matches": [
+      {
+        "line": 15,
+        "text": "  uint32_t scale=native_watch_layout.physical_width;"
+      },
+      {
+        "line": 16,
+        "text": "  uint32_t x0=((uint32_t)x*scale+239u)/240u;"
+      },
+      {
+        "line": 17,
+        "text": "  uint32_t x1=((uint32_t)(x+1)*scale+239u)/240u;"
+      },
+      {
+        "line": 18,
+        "text": "  uint32_t y0=((uint32_t)y*scale+239u)/240u;"
+      },
+      {
+        "line": 19,
+        "text": "  uint32_t y1=((uint32_t)(y+1)*scale+239u)/240u;"
+      },
+      {
+        "line": 20,
+        "text": "  if(y1>native_watch_layout.physical_height)y1=native_watch_layout.physical_height;"
+      },
+      {
+        "line": 23,
+        "text": "  for(int py=physical.y;py<physical.y+(int)physical.height;++py)"
+      },
+      {
+        "line": 24,
+        "text": "    for(int px=physical.x;px<physical.x+(int)physical.width;++px) {"
+      }
+    ]
+  },
+  "adapter_bounds": {
+    "path": "lib/PortableApps/src/adapter.c",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "0b2d3358943b7799865e3673d5e93cd7d42445e15f8c18cebba3864ed0ae50be",
+    "matches": [
+      {
+        "line": 1427,
+        "text": "  if (!display->get_info(display->context, &info) || info.width < 160 ||"
+      },
+      {
+        "line": 1428,
+        "text": "      info.height < 160 || info.width > 1024 || info.height > 1024 ||"
+      },
+      {
+        "line": 1434,
+        "text": "     native_watch_layout.height<240)return -1;"
+      },
+      {
+        "line": 1436,
+        "text": "  if(!pqa_set_height(&quick.ui,native_watch_layout.height))return -1;"
+      }
+    ]
+  },
+  "legacy_nova_raster": {
+    "path": "lib/PortableApps/src/nova_ui.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "ecb1fb78d7eda9c548a2a37f7f421553f4572f44139aa678097289e2701727de",
+    "matches": [
+      {
+        "line": 5,
+        "text": "static int nu_height(void) {"
+      },
+      {
+        "line": 17,
+        "text": "  native_watch_pixel(x,y,rgb,alpha);return;"
+      },
+      {
+        "line": 30,
+        "text": "  if(w<=0 || h<=0 || w>240 || h>nu_height())return;"
+      },
+      {
+        "line": 36,
+        "text": "  for(unsigned i=0;i<96 && s[i];i++){unsigned c=(unsigned char)s[i];if(c<32 || c>126)c='?';n+=(int)(rps_text[source*95+c-32].advance_q4*scale/256u);}"
+      },
+      {
+        "line": 44,
+        "text": "    unsigned c=(unsigned char)s[k];if(c<32 || c>126)c='?';const rps_glyph *g=&rps_text[source*95+c-32];"
+      },
+      {
+        "line": 51,
+        "text": "      unsigned sx=(unsigned)i*256u/scale,sy=(unsigned)j*256u/scale;"
+      },
+      {
+        "line": 53,
+        "text": "      unsigned n=sy*g->width+sx,a=(g->bits[n/4]>>(6-2*(n%4)))&3;"
+      },
+      {
+        "line": 72,
+        "text": "  if(w<=0||h<=0||w>240||h>nu_height())return;"
+      },
+      {
+        "line": 84,
+        "text": "  if(w<1 || h<1 || w>240 || h>nu_height())return;"
+      }
+    ]
+  },
+  "quick_row_scaling": {
+    "path": "lib/PortableApps/src/quick_render.c",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "a4e729f3e66240815c3614c602647777951fbbf2fba6fb06809eb914b72b3387",
+    "matches": [
+      {
+        "line": 9,
+        "text": "typedef struct { uint16_t pixels[240]; int y; } pqa_row;"
+      },
+      {
+        "line": 23,
+        "text": "    if(x>=0 && x<240) r->pixels[x]=mix(r->pixels[x],color,alpha);"
+      },
+      {
+        "line": 151,
+        "text": "    if(!watch_layout_open(&layout,f->width,f->height,NULL) || layout.height!=pqa_height(s))return false;"
+      },
+      {
+        "line": 153,
+        "text": "    if(f->width!=240 || f->height!=240 || !watch_layout_open(&layout,240,240,NULL))return false;"
+      },
+      {
+        "line": 166,
+        "text": "            int y=(int)(py*240u/f->width);row.y=y;"
+      },
+      {
+        "line": 167,
+        "text": "            for(int x=0;x<240;++x)row.pixels[x]=RGB(255,243,214);"
+      },
+      {
+        "line": 171,
+        "text": "                unsigned x=px*240u/f->width;"
+      },
+      {
+        "line": 181,
+        "text": "        int y=(int)(py*240u/f->width);"
+      },
+      {
+        "line": 188,
+        "text": "            unsigned x=px*240u/f->width;"
+      }
+    ]
+  },
+  "quick_height_bounds": {
+    "path": "lib/PortableApps/src/quick_actions.c",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "eae925bc7ba6041310531a62458d9ca77a20f4e5be3346c4c5f7aad7775d6994",
+    "matches": [
+      {
+        "line": 48,
+        "text": "bool pqa_set_height(pqa_state *s,unsigned logical_height) {"
+      },
+      {
+        "line": 49,
+        "text": "    if(!s || logical_height<240 || logical_height>2048 || pqa_visible(s) ||"
+      },
+      {
+        "line": 328,
+        "text": "            if (allow_open && y >= 0 && y < (s->paper?72:PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:240))"
+      }
+    ]
+  },
+  "async_native_surface": {
+    "path": "lib/PortableApps/src/canvas_async.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "d5f0e767a2ecb7ea36335a7a990ed56b3bfc39d76d12a71d51b9828acf41042d",
+    "matches": [
+      {
+        "line": 27,
+        "text": " return s->frame && s->pixels && s->width==info.width && s->height==info.height &&"
+      },
+      {
+        "line": 28,
+        "text": "  s->pixel_format==RISC_DISPLAY_FORMAT_RGB565 && s->stride_bytes>=info.width*2u &&"
+      },
+      {
+        "line": 29,
+        "text": "  s->stride_bytes<=UINT32_MAX/info.height && s->size_bytes>=s->stride_bytes*info.height;"
+      },
+      {
+        "line": 69,
+        "text": "       canvas_pixels+(size_t)y*info.width,info.width*2u)) {"
+      },
+      {
+        "line": 82,
+        "text": "  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)lease.pixels+(size_t)y*lease.stride_bytes,"
+      },
+      {
+        "line": 83,
+        "text": "    canvas_pixels+(size_t)y*info.width,info.width*2u);"
+      },
+      {
+        "line": 108,
+        "text": "  else for(unsigned y=0;y<info.height;y++)memcpy(canvas_pixels+(size_t)y*info.width,"
+      },
+      {
+        "line": 109,
+        "text": "    (uint8_t*)lease.pixels+(size_t)y*lease.stride_bytes,info.width*2u);"
+      }
+    ]
+  },
+  "settings_height": {
+    "path": "lib/PortableApps/src/settings_view.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "cc21581ec86fdc3009c78b55b6f12170834dde536f98d469c01a127bf412fe1c",
+    "matches": [
+      {
+        "line": 1,
+        "text": "/* Compact app-local presentation, following the supplied 240x240 Settings"
+      },
+      {
+        "line": 18,
+        "text": "#ifdef PORTABLE_WATCH_NATIVE_HEIGHT"
+      },
+      {
+        "line": 19,
+        "text": "  return native_watch_height();"
+      },
+      {
+        "line": 21,
+        "text": "  return 240;"
+      },
+      {
+        "line": 24,
+        "text": "static int sv_bottom(int y) { return y+sv_height()-240; }"
+      },
+      {
+        "line": 27,
+        "text": "#ifdef PORTABLE_WATCH_NATIVE_HEIGHT"
+      },
+      {
+        "line": 33,
+        "text": "  if (!surface.frame || x < 0 || x >= 240 || y < 0 || y >= 240 || !alpha) return;"
+      },
+      {
+        "line": 34,
+        "text": "  x += (width() - 240) / 2; y += (height() - 240) / 2;"
+      },
+      {
+        "line": 70,
+        "text": "  sv_text(face,(240-sv_measure(face,s,spacing))/2,y,s,color,spacing);"
+      },
+      {
+        "line": 77,
+        "text": "#define SV_MESSAGE_Y sv_bottom(172)"
+      },
+      {
+        "line": 78,
+        "text": "#define SV_FIELD_BOTTOM sv_bottom(166)"
+      },
+      {
+        "line": 80,
+        "text": "  if(*h==26 && (*y==192 || *y==200)){*y=sv_bottom(188);*h=44;}"
+      },
+      {
+        "line": 112,
+        "text": "    for(int x=0;x<240;++x)sv_pixel(x,y,0,255-opacity);"
+      },
+      {
+        "line": 122,
+        "text": "  int maximum=(sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144))-(sv_height()-240);"
+      }
+    ]
+  },
+  "file_browser_geometry": {
+    "path": "Apps/file_browser_portable.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "be3645e3c7e6135ce37b6a3b930f79d6a55675bc8e70474e54ab2ec4fbfc4788",
+    "matches": [
+      {
+        "line": 17,
+        "text": "#ifndef PORTABLE_FILE_BROWSER_CAPABILITY"
+      },
+      {
+        "line": 18,
+        "text": "#define PORTABLE_FILE_BROWSER_CAPABILITY \"storage.installed-files\""
+      },
+      {
+        "line": 20,
+        "text": "#define FB_PAGE_ROWS 2u"
+      },
+      {
+        "line": 22,
+        "text": "#ifndef PORTABLE_FILE_BROWSER_INSTANCE"
+      },
+      {
+        "line": 23,
+        "text": "#define PORTABLE_FILE_BROWSER_INSTANCE 0u"
+      },
+      {
+        "line": 25,
+        "text": "#ifndef FILE_BROWSER_RETURN_APP"
+      },
+      {
+        "line": 26,
+        "text": "#define FILE_BROWSER_RETURN_APP \"springboard.elf\""
+      },
+      {
+        "line": 35,
+        "text": "static risc_storage_dirent_v1 fb_rows[FB_PAGE_ROWS],fb_selected;"
+      },
+      {
+        "line": 51,
+        "text": " if(!fb_runtime->acquire(PORTABLE_FILE_BROWSER_CAPABILITY,1,PORTABLE_FILE_BROWSER_INSTANCE,&fb_grant))return false;"
+      },
+      {
+        "line": 101,
+        "text": "  if(pos<FB_PAGE_ROWS) {"
+      },
+      {
+        "line": 102,
+        "text": "   if(fb_count<FB_PAGE_ROWS)++fb_count;else fb_more=true;"
+      },
+      {
+        "line": 179,
+        "text": " if(!fb_runtime->request_launch(FILE_BROWSER_RETURN_APP)){fb_message(\"Return failed. Retry Back.\");return false;}"
+      },
+      {
+        "line": 216,
+        "text": "  portable_nova_text(3,18,216,204,fb_status,NOVA_CAP);"
+      },
+      {
+        "line": 259,
+        "text": " if(x<0 || y<0 || x>=240 || y>=240)return false;"
+      }
+    ]
+  },
+  "wifi_geometry": {
+    "path": "Apps/wifi_settings_portable.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "e448462feb1dbe8a74c99319a76e9087715be6e2efc7ee24368606293a3b5f1f",
+    "matches": [
+      {
+        "line": 328,
+        "text": "  if(!wa || !wa->poll || !wa->millis || !wa->screen_width || !wa->screen_height ||"
+      },
+      {
+        "line": 329,
+        "text": "     wa->screen_width()<240 || wa->screen_height()<240 || !wr || wr->api_version!=1 ||"
+      },
+      {
+        "line": 372,
+        "text": "      int x=input.touch_x-(wa->screen_width()-240)/2,y=input.touch_y-(wa->screen_height()-240)/2;"
+      },
+      {
+        "line": 382,
+        "text": "        else if(x>=164 && x<228)input.buttons=T5_APP_BUTTON_DOWN;"
+      }
+    ]
+  },
+  "update_geometry": {
+    "path": "Apps/update_portable.inc",
+    "repository_path": "/workspace/shared/watch-apps-unavailable-20261014/system",
+    "revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "sha256": "de0f7d83005f4ccf6e814d25ba73b9805f9618812e0ec778d94237b6763c2f1d",
+    "matches": [
+      {
+        "line": 165,
+        "text": " if(!ua||!ua->poll||!ua->millis||!ua->screen_width||!ua->screen_height||ua->screen_width()<240||ua->screen_height()<240||!ur||ur->api_version!=1||ur->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!ur->acquire||!ur->release||!ur->yield_ms||!ur->diagnostic)return false;"
+      },
+      {
+        "line": 198,
+        "text": "  if(input.tapped){int x=input.touch_x-(ua->screen_width()-240)/2,y=input.touch_y-(ua->screen_height()-240)/2;"
+      },
+      {
+        "line": 202,
+        "text": "   if(y>=212&&y<238){if(x>=12&&x<76)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=164&&x<228)input.buttons=T5_APP_BUTTON_DOWN;}"
+      }
+    ]
+  },
+  "home_viewport": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/watch/apps/clock/viewport.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "5378fa5d5d1f58ec5df9380e085231ac121ea45d1f9e4c70ef269e61c64d1e22",
+    "matches": [
+      {
+        "line": 32,
+        "text": "    if(!v->scaled){*out=s;return true;}"
+      },
+      {
+        "line": 36,
+        "text": "        unsigned yy=watch_layout_ceil(y*v->width,WATCH_CANVAS_SIDE);"
+      },
+      {
+        "line": 39,
+        "text": "        for(unsigned x=0;x<WATCH_CANVAS_SIDE;x++) {"
+      },
+      {
+        "line": 40,
+        "text": "            unsigned xx=watch_layout_ceil(x*v->width,WATCH_CANVAS_SIDE);"
+      },
+      {
+        "line": 42,
+        "text": "            v->canvas[y*WATCH_CANVAS_SIDE+x]=row[xx];"
+      },
+      {
+        "line": 45,
+        "text": "    *out=(risc_display_surface_v1){s.frame,v->canvas,WATCH_CANVAS_SIDE,v->layout.height,"
+      },
+      {
+        "line": 46,
+        "text": "        WATCH_CANVAS_SIDE*2u,WATCH_CANVAS_SIDE*v->layout.height*2u,RISC_DISPLAY_FORMAT_RGB565};"
+      },
+      {
+        "line": 60,
+        "text": "        if(r->x<0 || r->y<0 || (uint32_t)r->x>=WATCH_CANVAS_SIDE || (uint32_t)r->y>=v->layout.height ||"
+      },
+      {
+        "line": 61,
+        "text": "           !r->width || !r->height || r->width>WATCH_CANVAS_SIDE-(uint32_t)r->x ||"
+      },
+      {
+        "line": 64,
+        "text": "    if(v->scaled) {"
+      },
+      {
+        "line": 67,
+        "text": "            const uint16_t *source=v->canvas+(y*WATCH_CANVAS_SIDE/v->width)*WATCH_CANVAS_SIDE;"
+      },
+      {
+        "line": 68,
+        "text": "            for(unsigned x=0;x<v->width;x++)row[x]=source[v->columns[x]];"
+      },
+      {
+        "line": 73,
+        "text": "    if(!v->native->submit(v->native->context,frame,v->scaled?NULL:rects,v->scaled?0:count,options,token))return false;"
+      },
+      {
+        "line": 93,
+        "text": "    v->scaled=i.width!=WATCH_CANVAS_SIDE || i.height!=WATCH_CANVAS_SIDE;"
+      },
+      {
+        "line": 94,
+        "text": "    if(v->scaled) {"
+      },
+      {
+        "line": 95,
+        "text": "        v->canvas=malloc(WATCH_CANVAS_SIDE*v->layout.height*sizeof(uint16_t));"
+      }
+    ]
+  },
+  "home_faces": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/watch/apps/clock/render.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "e3c64b25bc11410e4d211aaceab32af6771ad9dd4008194df0d6258eb8a6eae9",
+    "matches": [
+      {
+        "line": 32,
+        "text": "    if (x < s->width && y < s->height) {"
+      },
+      {
+        "line": 38,
+        "text": "                  unsigned scale, uint16_t color) {"
+      },
+      {
+        "line": 40,
+        "text": "    unsigned width=length*6*scale-scale;"
+      },
+      {
+        "line": 41,
+        "text": "    unsigned x=width<s->width?(s->width-width)/2:0;"
+      },
+      {
+        "line": 44,
+        "text": "            for(unsigned dy=0;dy<scale;dy++)for(unsigned dx=0;dx<scale;dx++)"
+      },
+      {
+        "line": 45,
+        "text": "                pixel(s,x+(k*6+col)*scale+dx,y+row*scale+dy,color);"
+      },
+      {
+        "line": 51,
+        "text": "       s->width!=240 || s->height!=240 || s->stride_bytes<480 ||"
+      },
+      {
+        "line": 52,
+        "text": "       s->stride_bytes>UINT32_MAX/240 || s->size_bytes<s->stride_bytes*240) return false;"
+      }
+    ]
+  },
+  "alarm_fixed_layout": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/utilities/Apps/alarm_nova.inc",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "a406fb9e299a1317c9f7c982d315673c38045c2f1ddafe046b30eac25ab9a313",
+    "matches": [
+      {
+        "line": 236,
+        "text": "        if(portable_nova_hit(x,y,184,4,48,44)){if(!alert)alarm_retry();return true;}"
+      },
+      {
+        "line": 238,
+        "text": "        if(portable_nova_hit(x,y,16,184,100,44)) {"
+      },
+      {
+        "line": 240,
+        "text": "        } else if(portable_nova_hit(x,y,124,184,100,44)) {if(!alert)save_action(true);}"
+      },
+      {
+        "line": 241,
+        "text": "        else if(portable_nova_hit(x,y,16,116,208,"
+      },
+      {
+        "line": 251,
+        "text": "        else if(portable_nova_hit(x,y,16,56,208,54) && !alert && !writer.uncertain){alarm_page=1;editing=true;notice=\"Draft only - not saved\";}"
+      },
+      {
+        "line": 254,
+        "text": "        for(unsigned i=0;i<(DAILY_ALARM_KIND==1?2u:3u);i++)if(portable_nova_hit(x,y,20,58+(int)i*50,200,44)){alarm_field=i;alarm_page=2;return true;}"
+      },
+      {
+        "line": 258,
+        "text": "        if(!volume_uncertain && portable_nova_hit(x,y,16,94,48,48)){volume_choice=volume_choice>=10?volume_choice-10:0;volume_valid=true;volume_message=\"Draft only - use Save\";}"
+      },
+      {
+        "line": 259,
+        "text": "        else if(!volume_uncertain && portable_nova_hit(x,y,176,94,48,48)){volume_choice=volume_choice<=90?volume_choice+10:100;volume_valid=true;volume_message=\"Draft only - use Save\";}"
+      }
+    ]
+  },
+  "calculator_fixed_layout": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/utilities/Apps/calculator_nova.inc",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "c6ab0c997782afc3f141b75bd347a3c0f02616dee129831dc171522e6e6977f9",
+    "matches": [
+      {
+        "line": 39,
+        "text": "        for(unsigned i=0;i<16;i++)portable_nova_button(16+(int)(i%4)*53,52+(int)(i/4)*46,49,44,calculator_labels[i],calculator_selected==i);"
+      },
+      {
+        "line": 48,
+        "text": "    else for(unsigned i=0;i<16;i++)if(portable_nova_hit(x,y,16+(int)(i%4)*53,52+(int)(i/4)*46,49,44))return (int)i;"
+      },
+      {
+        "line": 57,
+        "text": "    if(!utility_paper && (calculator_api->screen_width()!=240 || calculator_api->screen_height()!=240))return;"
+      },
+      {
+        "line": 59,
+        "text": "    if(calculator_api->screen_width()!=240 || calculator_api->screen_height()!=240)return;"
+      }
+    ]
+  },
+  "hid_fixed_layout": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/utilities/Apps/ble_hid_app.inc",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "5cb9cfcc7350d4c2723e0d7f4e3110026a0044ab3203dc925e606cd8353bfaa7",
+    "matches": [
+      {
+        "line": 50,
+        "text": "static int hid_width(void){return paper?480:240;}"
+      },
+      {
+        "line": 51,
+        "text": "static int hid_height(void){return paper?800:240;}"
+      },
+      {
+        "line": 138,
+        "text": " if(!subscription||!raw->snapshot(raw->context,&s)||s.width!=hid_width()||s.height!=hid_height()||s.contact_count>RISC_TOUCH_MAX_CONTACTS){message=\"Raw touch start failed\";return false;}"
+      },
+      {
+        "line": 303,
+        "text": " if(!raw->snapshot(raw->context,&sample)||sample.width!=hid_width()||sample.height!=hid_height()||sample.contact_count>RISC_TOUCH_MAX_CONTACTS){stop_session(\"Touch unavailable - reconnect\");return;}"
+      },
+      {
+        "line": 436,
+        "text": " if(app->screen_width()!=hid_width()||app->screen_height()!=hid_height())return;"
+      }
+    ]
+  },
+  "spectrum_fixed_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/utilities/Apps/audio_spectrum.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "9505a3619f83fcaa012675a75972facc6c8f5f6f4324ac43f9f8cc487ef8022f",
+    "matches": [
+      {
+        "line": 31,
+        "text": "#define PLOT_X 6"
+      },
+      {
+        "line": 32,
+        "text": "#define PLOT_Y 46"
+      },
+      {
+        "line": 33,
+        "text": "#define PLOT_W 228"
+      },
+      {
+        "line": 34,
+        "text": "#define PLOT_H 166"
+      },
+      {
+        "line": 80,
+        "text": " x+=(app->screen_width()-240)/2;y+=(app->screen_height()-240)/2;"
+      },
+      {
+        "line": 103,
+        "text": " (void)face;(void)c;char clipped[40];unsigned n=(unsigned)(w/6);if(n>=sizeof(clipped))n=sizeof(clipped)-1;unsigned k=0;for(;k<n&&s[k];k++)clipped[k]=s[k];clipped[k]=0;daily_draw_text(app,x+(app->screen_width()-240)/2,y+(app->screen_height()-240)/2,clipped,1);"
+      },
+      {
+        "line": 524,
+        "text": " int x=contact.x-(app->screen_width()-240)/2,y=contact.y-(app->screen_height()-240)/2;"
+      },
+      {
+        "line": 543,
+        "text": " if(x<0||y<0||x>=240||y>=240)return false;"
+      },
+      {
+        "line": 564,
+        "text": " if(app->screen_width()<240||app->screen_width()>1024||app->screen_height()<240||app->screen_height()>1024)return;"
+      },
+      {
+        "line": 597,
+        "text": "  if(input.tapped&&!consumed&&tap_action(input.touch_x-(app->screen_width()-240)/2,input.touch_y-(app->screen_height()-240)/2,&toggle_requested,&freeze_requested))break;"
+      }
+    ]
+  },
+  "waterfall_fixed_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/utilities/Apps/rf_application.inc",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "952f9ba098a24171ddc0511d03afc50e6889770c2c7ebe7755a489212d5bfe62",
+    "matches": [
+      {
+        "line": 30,
+        "text": "#define PLOT_X 6"
+      },
+      {
+        "line": 31,
+        "text": "#define PLOT_Y 46"
+      },
+      {
+        "line": 32,
+        "text": "#define PLOT_W 228"
+      },
+      {
+        "line": 33,
+        "text": "#define PLOT_H (ui_height-74)"
+      },
+      {
+        "line": 34,
+        "text": "#define RF_PLOT_MAX_H 438"
+      },
+      {
+        "line": 35,
+        "text": "static int ui_height=240;"
+      },
+      {
+        "line": 83,
+        "text": " uint8_t history[PLOT_W][RF_PLOT_MAX_H];"
+      },
+      {
+        "line": 118,
+        "text": "static uint16_t spec_levels[PLOT_W],fall_levels[RF_PLOT_MAX_H],peak_levels[PLOT_W];"
+      },
+      {
+        "line": 119,
+        "text": "static int16_t spec_db[PLOT_W],fall_db[RF_PLOT_MAX_H];"
+      },
+      {
+        "line": 141,
+        "text": "static int ui_scale(void){return paper?app->screen_width()/240:1;}"
+      },
+      {
+        "line": 142,
+        "text": "static int ui_x(int x){return x*ui_scale()+(paper?0:(app->screen_width()-240)/2);}"
+      },
+      {
+        "line": 143,
+        "text": "static int ui_y(int y){return paper?(ui_stretched()?y*app->screen_height()/240:y*ui_scale()):y+(app->screen_height()-240)/2;}"
+      }
+    ]
+  },
+  "timecard_fixed_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/productivity/Apps/timecard_portable.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "f802ed29c893549b170adaf6b0b21ba52214011f01288b175139f157f4fa6697",
+    "matches": [
+      {
+        "line": 97,
+        "text": "#define TCP_TOP 82"
+      },
+      {
+        "line": 98,
+        "text": "#define TCP_BOTTOM 180"
+      },
+      {
+        "line": 129,
+        "text": "static int tcp_origin_x(void) { return app->screen_width?(app->screen_width()-240)/2:0; }"
+      },
+      {
+        "line": 130,
+        "text": "static int tcp_origin_y(void) { return app->screen_height?(app->screen_height()-240)/2:0; }"
+      },
+      {
+        "line": 133,
+        "text": "    return *x>=0 && *x<240 && *y>=0 && *y<240;"
+      },
+      {
+        "line": 240,
+        "text": "    portable_nova_fill(0,0,240,TCP_TOP,0);portable_nova_fill(0,TCP_BOTTOM,240,240-TCP_BOTTOM,0);"
+      },
+      {
+        "line": 253,
+        "text": "    int max=(int)(n*row_height)-(TCP_BOTTOM-TCP_TOP);if(max<0)max=0;"
+      },
+      {
+        "line": 268,
+        "text": "        int y=TCP_TOP+(int)i*TCP_ROW_HEIGHT-tcp_scroll;"
+      },
+      {
+        "line": 269,
+        "text": "        if(y+TCP_ROW_HEIGHT<=TCP_TOP || y>=TCP_BOTTOM)continue;"
+      },
+      {
+        "line": 285,
+        "text": "        int y=TCP_TOP+(int)i*TCP_TABLE_HEIGHT-tcp_scroll;"
+      }
+    ]
+  },
+  "points_fixed_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/productivity/Apps/points_in_time.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "54697a17d5283ec1e9d201cca20ecf38eea1ea87abb881abd9c2fb0634a0ab23",
+    "matches": [
+      {
+        "line": 129,
+        "text": "/* The shared adapter provides this private presentation on the 240x240 watch."
+      },
+      {
+        "line": 315,
+        "text": "static void line(int y) { app->fill_rect(8,y,224,1,true); }"
+      },
+      {
+        "line": 329,
+        "text": "        label(8,76,224,\"Service / RTC / storage\");label(8,101,224,\"could not be opened.\");"
+      },
+      {
+        "line": 330,
+        "text": "        button(8,180,224,\"Retry\");"
+      },
+      {
+        "line": 334,
+        "text": "        label(8,65,224,service_state.label);label(8,104,224,\"Dismiss to continue\");button(8,176,224,\"Dismiss\");"
+      },
+      {
+        "line": 338,
+        "text": "        label(8,54,224,\"Save may have committed.\");label(8,79,224,\"Edits locked until retry.\");"
+      },
+      {
+        "line": 339,
+        "text": "        label(8,111,224,\"Retry writes the same data.\");button(8,177,224,\"Retry save\");"
+      },
+      {
+        "line": 341,
+        "text": "        label(8,69,224,\"Saved data is unavailable\");label(8,96,224,\"or invalid. No defaults saved.\");button(8,177,224,\"Retry storage\");"
+      }
+    ]
+  },
+  "lora_fixed_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/utilities/Apps/lora_messages.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "a49b5134d4c28794e5558834b791ee6431c72b3857ee58c5de86120a71c50bc4",
+    "matches": [
+      {
+        "line": 264,
+        "text": " int x=in->touch_x-(app->screen_width()-240)/2,y=in->touch_y-(app->screen_height()-240)/2;"
+      },
+      {
+        "line": 315,
+        "text": " if(app->screen_width()<240 || app->screen_height()<240)return;"
+      }
+    ]
+  },
+  "semantic_lists": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/productivity/Apps/ListsScene.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "ba5c6d0cff142119c58de48434100dcf0fefc9196e68b250e26a1d1f32cab26c",
+    "matches": [
+      {
+        "line": 1,
+        "text": "/* Application semantics only. No display API, dimensions, glyphs or hit boxes. */"
+      },
+      {
+        "line": 19,
+        "text": "    risc_components_document_v1 *d=&u->document;if(d->node_count==RISC_COMPONENTS_MAX_NODES)return NULL;"
+      },
+      {
+        "line": 41,
+        "text": "    risc_components_document_v1 *d=&u->document;memset(d,0,sizeof(*d));memset(u->refs,0,sizeof(u->refs));"
+      },
+      {
+        "line": 42,
+        "text": "    *d=(risc_components_document_v1){.api_version=1,.struct_size=sizeof(*d),.revision=++u->revision,.root=1,.route_count=1,.screen_key=u->page*65536u+(u->page==LISTS_TASK?u->task:u->page==LISTS_VIEW?u->view:0)};"
+      },
+      {
+        "line": 51,
+        "text": "        risc_scene_node_v1 *n=node(u,RISC_COMPONENT_ROW,\"TODAY\",u->today<0?\"Set the device clock\":\"Due today\",LA_TODAY,0);detail(u,n)->symbol=RISC_SYMBOL_TODAY;"
+      }
+    ]
+  },
+  "semantic_contexts": {
+    "path": "/workspace/shared/watch-reset-ui-20261013/sources/utilities/Apps/contexts_scene_view.inc",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "6a640ba3988376668b7da3ce6e8ac18fb23fd3f24aa0f8b019785aaac47087c0",
+    "matches": [
+      {
+        "line": 1,
+        "text": "/* Declarative Contexts presentation. All geometry, fonts, scrolling and hit"
+      },
+      {
+        "line": 4,
+        "text": "static risc_components_document_v1 cs_document;"
+      },
+      {
+        "line": 9,
+        "text": "static risc_scene_node_v1*cs_node(unsigned kind,const char*label,const char*text,unsigned action){"
+      },
+      {
+        "line": 10,
+        "text": " unsigned i=cs_document.node_count++;risc_scene_node_v1*n=&cs_document.nodes[i];"
+      },
+      {
+        "line": 11,
+        "text": " *n=(risc_scene_node_v1){.id=i+1,.route=1,.kind=kind,.action=action};"
+      },
+      {
+        "line": 14,
+        "text": "static risc_component_detail_v1*cs_detail(risc_scene_node_v1*n){return &cs_document.details[n->id-1];}"
+      },
+      {
+        "line": 16,
+        "text": "static risc_scene_node_v1*cs_row(const char*label,const char*text,const char*value,unsigned action,unsigned symbol){risc_scene_node_v1*n=cs_node(RISC_COMPONENT_STAT_ROW,label,text,action);cs_detail(n)->symbol=symbol;cs_copy(cs_detail(n)->badge,sizeof(cs_detail(n)->badge),value);return n;}"
+      }
+    ]
+  },
+  "scene_native": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/modern-system/Services/scene_host/host.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "5577f20c15a3d587c01571c2d4a833894e38068a40a3114aa99a6c1b9c081cb1",
+    "matches": [
+      {
+        "line": 178,
+        "text": "    unsigned scale=profile->font_scale,w=width-2u*profile->padding,needed=0;"
+      },
+      {
+        "line": 188,
+        "text": "static unsigned top_height(void){return profile->font_scale*7u+profile->padding*2u+8u;}"
+      },
+      {
+        "line": 189,
+        "text": "static unsigned bottom_height(void){return profile->font_scale*7u+profile->padding*2u+8u;}"
+      },
+      {
+        "line": 641,
+        "text": "/* Bounded rasterization directly into a provider-owned surface. */"
+      },
+      {
+        "line": 675,
+        "text": "            unsigned bits=c>=32&&c<=126?glyphs[c-32][col]:glyphs['?'-32][col];"
+      },
+      {
+        "line": 695,
+        "text": "    bool disabled=n&&(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN));unsigned scale=profile->font_scale;"
+      },
+      {
+        "line": 706,
+        "text": "    unsigned scale=profile->font_scale;uint16_t fg=(uint16_t)profile->foreground_rgb565;"
+      },
+      {
+        "line": 740,
+        "text": "    unsigned scale=profile->font_scale;uint16_t fg=(uint16_t)profile->foreground_rgb565;"
+      },
+      {
+        "line": 765,
+        "text": "    if(!surface.frame||!surface.pixels||surface.width!=info.width||surface.height!=info.height)return false;"
+      },
+      {
+        "line": 782,
+        "text": "    int header_button=(int)(profile->font_scale*30u+8u);"
+      },
+      {
+        "line": 789,
+        "text": "    if(r>=0)text(pad+header_button+6,(top-(int)(7*profile->font_scale))/2,"
+      },
+      {
+        "line": 790,
+        "text": "                 (int)width-2*(pad+header_button+6),document.routes[r].title,profile->font_scale,(uint16_t)profile->foreground_rgb565);"
+      }
+    ]
+  },
+  "model_native": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/viewer-utilities/lib/CanvasApp/canvas.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "de38169fe84c3be4b1bc02816bb95d7e01c4f96d98144f4c9bf1e450bf2d9454",
+    "matches": [
+      {
+        "line": 149,
+        "text": "  unsigned sy=y*height/out_h;"
+      },
+      {
+        "line": 150,
+        "text": "  for(unsigned x=0;x<out_w;x++){unsigned sx=x*width/out_w;bool black=(snapshot[(size_t)sy*stride+sx/8]&(0x80u>>(sx&7)))!=0;put_output(x+out_x,y+out_y,black);}"
+      },
+      {
+        "line": 323,
+        "text": " if(info.width<160||info.height<160||info.width>1200||info.height>1200)goto bad;"
+      },
+      {
+        "line": 327,
+        "text": " rotated=kind==CANVAS_GAME?info.width<info.height:info.width>info.height;"
+      },
+      {
+        "line": 328,
+        "text": " logical_out_w=rotated?info.height:info.width;logical_out_h=rotated?info.width:info.height;"
+      },
+      {
+        "line": 329,
+        "text": " width=kind==CANVAS_GAME?960:logical_out_w;height=kind==CANVAS_GAME?540:logical_out_h;stride=(width+7)/8;"
+      },
+      {
+        "line": 330,
+        "text": " out_w=logical_out_w;out_h=out_w*height/width;if(out_h>logical_out_h){out_h=logical_out_h;out_w=out_h*width/height;}out_x=(logical_out_w-out_w)/2;out_y=(logical_out_h-out_h)/2;"
+      },
+      {
+        "line": 331,
+        "text": " working=calloc(stride,height);snapshot=calloc(stride,height);if(!working||!snapshot)goto bad;"
+      }
+    ]
+  },
+  "model_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/viewer-utilities/Apps/model_viewer.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "9891aaa548f6eead4016a57ea600bbe20afe9002d5576fdc55fa2e7c225b3f65",
+    "matches": [
+      {
+        "line": 22,
+        "text": "#define MV_LOGICAL_W ((int)canvas_width())"
+      },
+      {
+        "line": 23,
+        "text": "#define MV_LOGICAL_H ((int)canvas_height())"
+      },
+      {
+        "line": 25,
+        "text": "#define MV_VIEW_BOTTOM (MV_LOGICAL_H-(canvas_compact()?54:90))"
+      },
+      {
+        "line": 27,
+        "text": "#define MV_SHADE_RIGHT (MV_LOGICAL_W - 12)"
+      },
+      {
+        "line": 30,
+        "text": "#define MV_DEPTH_COUNT (((size_t)(MV_LOGICAL_W-8)*(MV_VIEW_BOTTOM-MV_VIEW_TOP+1)>65536u)?(size_t)(MV_LOGICAL_W-8)*(MV_VIEW_BOTTOM-MV_VIEW_TOP+1):65536u)"
+      },
+      {
+        "line": 686,
+        "text": "    else if (x >= MV_LOGICAL_W - 4) code |= MV_CLIP_RIGHT;"
+      },
+      {
+        "line": 688,
+        "text": "    else if (y > MV_VIEW_BOTTOM) code |= MV_CLIP_BOTTOM;"
+      }
+    ]
+  },
+  "usb_reference_layout": {
+    "path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/modern-system/Apps/usb_sd_transfer.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "2fb8c9ae0cb276ba674143695235c6535b69d45de44515afccebed051b8dc34c",
+    "matches": [
+      {
+        "line": 7,
+        "text": "#include \"PaperPresentation.h\""
+      },
+      {
+        "line": 292,
+        "text": "static int sx(int x){return x*app->screen_width()/480;}"
+      },
+      {
+        "line": 293,
+        "text": "static int sy(int y){return y*app->screen_height()/800;}"
+      },
+      {
+        "line": 294,
+        "text": "static void text(int y,const char *s,bool heading) {paper->text(sx(32),sy(y),sx(416),s,(heading?2u:1u)|PAPER_TEXT_FIT,heading,true);}"
+      },
+      {
+        "line": 312,
+        "text": "    paper->text(sx(x+12),sy(y+22),sx(w-24),label,1|PAPER_TEXT_FIT,false,true);"
+      }
+    ]
+  },
+  "bringup_reference_layout": {
+    "path": "/workspace/shared/watch-t023-feeds-20261014/shared/apps/bringup/main.c",
+    "repository_path": null,
+    "revision": null,
+    "sha256": "fa54999a873b84b02792b6488e198206eb87d290ab509311464e19a7a9a70756",
+    "matches": [
+      {
+        "line": 42,
+        "text": " if(!s||!s->pixels||s->width!=240||s->height!=240||s->pixel_format!=RISC_DISPLAY_FORMAT_RGB565||"
+      },
+      {
+        "line": 70,
+        "text": " live[0]=get(rt,\"display.output\",1,&g[0]);if(!live[0]||!watch_viewport_open(&v,g[0].api))goto cleanup;"
+      },
+      {
+        "line": 90,
+        "text": "   tx=e.x;ty=e.y;uint16_t x=tx,y=ty;if(!watch_viewport_map(&v,&x,&y)){down=false;continue;}dirty=true;"
+      }
+    ]
+  }
+}

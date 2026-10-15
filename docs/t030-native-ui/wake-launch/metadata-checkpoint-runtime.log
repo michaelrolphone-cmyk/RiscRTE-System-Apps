@@ -1,0 +1,4 @@
+JSON checkpoints: short/partial/EOF/exact-bound/64KiB reads; byte/time and consecutive-file fairness PASS
+JSON checkpoints: deadline during I/O/wait, exact bound, oversize, corruption, read/OOM/open/close failure and sticky retention PASS
+JSON checkpoints: short/partial/EOF/exact-bound/64KiB reads; byte/time and consecutive-file fairness PASS
+JSON checkpoints: deadline during I/O/wait, exact bound, oversize, corruption, read/OOM/open/close failure and sticky retention PASS

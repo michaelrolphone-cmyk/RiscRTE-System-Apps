@@ -1,0 +1,3451 @@
+{
+  "schema": "watch.native-ui-coverage.v1",
+  "task": "T030",
+  "generated_utc": "2026-10-14T23:23:44.035526+00:00",
+  "scope": "Read-only source and exact released-store audit. No application migrations, release/device actions, or Workboard mutations.",
+  "baseline": {
+    "baseline_version": "0.1.43",
+    "factory_sha256": "1a67657a58254e26f99f674e71a5d9742fb023633e16b7e412b4a0f13a73754a",
+    "official_hash_inventory_verified": true,
+    "store_file_count": 128,
+    "app_manifests": 27,
+    "internal_app_elfs": 26
+  },
+  "release_pins": {
+    "all_store_payloads_unchanged": true,
+    "baseline_product": "2ca19b420f51f1e22f94feb364f91d701a7eab74",
+    "baseline_runtime": "c258c4ba144247b6eaa4c6f28675ffccec582fe1",
+    "baseline_sha256": "a2477ed0a921b847a3d02e27b3e57ca1d21758021e5af891c46f9a901db5f349",
+    "baseline_tag": "test-catalog-diagnostic-0.1.41",
+    "baseline_version": "0.1.41",
+    "candidate_sha256": "1a67657a58254e26f99f674e71a5d9742fb023633e16b7e412b4a0f13a73754a",
+    "device_accessed": false,
+    "factory_erases_saved_data": true,
+    "hardware_tested": false,
+    "image_helper_revision": "55f3f379b4c2ec7e18412fb2fc887d301bf6e3c0",
+    "includes_t023_provisioning": false,
+    "native_elf_sha256": "c2bb3f7447c40b581e7b3b3f43e05d0fba836a31e66c549ccf748dd7f882503a",
+    "native_sha256": "ee25fe658bd72ddb771fc13ca0bbf03fab20ad1df325f15cac195b0b3e819af1",
+    "release_tag": "test-catalog-acquire-0.1.43",
+    "runtime_revision": "a2c2c9fa692b0b36f9750d44fac807c9149b9434",
+    "sd_unchanged": true,
+    "source_revision": "9db48cef5bdb11206ff7f3601178cc2f32d326b8",
+    "springboard_sha256": "f0dd72760ece4c9102aa316281663ddd4d90eeabc54ca39f326766ce521f05a7",
+    "system_revision": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+    "system_unchanged": true,
+    "vendor_revision": "b099739ad0e33b34e5fbaae77f02bd84805d79a3",
+    "verified_hardware_fix": false,
+    "version": "0.1.43"
+  },
+  "current_system_audited_head": "9f2f53cb3d8dfd99d5e85661a00442d6b7779c2e",
+  "current_springboard_edits_excluded_from_release_claims": true,
+  "summary_counts": {
+    "legacy_portable_migration_required": 18,
+    "diagnostic_fixed_viewport_needs_migration": 1,
+    "route_alias_no_own_raster": 1,
+    "semantic_scene_native_path_needs_qualification": 2,
+    "legacy_viewport_migration_required": 1,
+    "external_media_legacy_path_needs_migration": 1,
+    "capability_canvas_native_path_needs_qualification": 1,
+    "native_candidate_in_progress": 1,
+    "shipped_color_source_closure_unverified": 1
+  },
+  "apps": [
+    {
+      "id": "alarms",
+      "display_name": "Alarms",
+      "version": "0.2.4",
+      "manifest_path": "alarms.json",
+      "elf_file": "alarms.elf",
+      "elf_present": true,
+      "elf_sha256": "3f648d893df11c77d0b0abd7c4a9c954a8f5e53d90159eb24f46944c12bad68c",
+      "elf_bytes": 153428,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Fixed watch editor coordinates in alarm_nova.inc; native-height adapter enlarges logical pixels.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "alarm_fixed_layout",
+        "legacy_pixel_expansion"
+      ],
+      "preserve_features": [
+        "Alarm editing and persistence",
+        "Countdown lifecycle",
+        "Alarm/Quick/sleep interruption and volume"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/alarms.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/alarms.json",
+        "receipt_elf_sha256": "8a4b0487652642f33f8979e714c7b52829edc8649c263e2ebd31e698815e6cc3",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "app_store",
+      "display_name": "App Store",
+      "version": "1.1.7",
+      "manifest_path": "app_store.json",
+      "elf_file": "app_store.elf",
+      "elf_present": true,
+      "elf_sha256": "469a1110c7e57e5db960f069c09989d4c7cf4d903391b153d7c6aefba8758bb4",
+      "elf_bytes": 133148,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "software.update.apps"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Shared updater layout/text/control path remains portable NOVA with fixed watch coordinates.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "update_geometry",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Update authorization and progress",
+        "Paired bank/cohort rules",
+        "Cancellation, failures and cleanup"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+          "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+          "path": "Apps/app_store.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/app_store.json",
+        "receipt_elf_sha256": "98dbf0078a3288e66b5517b99b38709b4e5739f041cbeaf0ea87a1d0e9941c4f",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "audio_spectrum",
+      "display_name": "Audio Spectrum",
+      "version": "0.5.8",
+      "manifest_path": "audio_spectrum.json",
+      "elf_file": "audio_spectrum.elf",
+      "elf_present": true,
+      "elf_sha256": "8b7286c712d785042f7207fe697d9b23a4710bc10a653a839808cedc1847fec5",
+      "elf_bytes": 243380,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "storage.app-data"
+        },
+        {
+          "api": 2,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "audio.input"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Spectrum/RF color presentation uses fixed plots/control regions and the common NOVA raster; source/version changes after older retained receipts must be preserved.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "spectrum_fixed_layout",
+        "waterfall_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Live capture and plot history",
+        "Playback/freeze/cursor",
+        "Shared editor",
+        "Signature/model storage",
+        "Capture/alarm/radio custody"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "b1b2ba9466cc7243570471c0f9e728367dd4bafe",
+          "path": "Apps/audio_spectrum.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/b1b2ba9466cc7243570471c0f9e728367dd4bafe/Apps/audio_spectrum.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/audio_spectrum.elf.json",
+        "receipt_elf_sha256": "11ba92394f26ac529bd4687694710b3edd5680e1eb643b1a54be23b8297077e5",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "fd4b1e52fe2a49c3c4c22f9ccd4c98a91f88afa0"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "b1b2ba9466cc7243570471c0f9e728367dd4bafe"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "battery",
+      "display_name": "Battery",
+      "version": "1.1.2",
+      "manifest_path": "battery.json",
+      "elf_file": "battery.elf",
+      "elf_present": true,
+      "elf_sha256": "450e49f07d7820980a7c815fc042a7e9cad20312baa88ce0d8ee404e9eaa4c5d",
+      "elf_bytes": 153440,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Portable list/optional power presentation depends on shared NOVA raster and coordinate contract.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "legacy_nova_raster",
+        "watch_layout"
+      ],
+      "preserve_features": [
+        "Battery telemetry",
+        "Charging status",
+        "Refresh/unavailable states"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/battery.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/battery.json",
+        "receipt_elf_sha256": "5ac9fc4aff75b5d8431a4f312863c18a75de0236c783a208b08c663ebbf9173c",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "ble_buttons",
+      "display_name": "BLE Buttons",
+      "version": "0.1.27",
+      "manifest_path": "ble_buttons.json",
+      "elf_file": "ble_buttons.elf",
+      "elf_present": true,
+      "elf_sha256": "07c7fefd6b26f391cdcfabafe819a8524f0db752d9913899ba15df83285b9c7f",
+      "elf_bytes": 154004,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hid"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Reviewed shared HID controller expects 240\u00d7240 watch or 480\u00d7800 paper contacts and uses matching fixed controls.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "hid_fixed_layout",
+        "legacy_pixel_expansion"
+      ],
+      "preserve_features": [
+        "Pairing",
+        "HID modifiers and button mappings",
+        "Multi-contact gestures and scroll",
+        "Session cleanup"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/ble_buttons.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/ble_buttons.json",
+        "receipt_elf_sha256": "d661beb925257bfa1e39a77a1026fc49ce66d1907ed53bded8e5fbec83f3b2e9",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "ble_scanner",
+      "display_name": "BLE Scanner",
+      "version": "0.2.6",
+      "manifest_path": "ble_scanner.json",
+      "elf_file": "ble_scanner.elf",
+      "elf_present": true,
+      "elf_sha256": "21effc63d83a99d94e295358bf89656605880fadf6cbc07d2696951c4c81a492",
+      "elf_bytes": 157520,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.sensors"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Shared scanner owns touch chrome but remains a portable NOVA consumer; source lineage needs rebinding to .43 bytes before final implementation.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "legacy_nova_raster",
+        "watch_layout"
+      ],
+      "preserve_features": [
+        "Scanning and detail rows",
+        "Sensor naming/shared text input",
+        "Radio session custody"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "3385d634db829066e3f7f0d84474df5ed54bf143",
+          "path": "Apps/ble_scanner.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/3385d634db829066e3f7f0d84474df5ed54bf143/Apps/ble_scanner.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/ble_scanner.elf.json",
+        "receipt_elf_sha256": "07eb058652eaaf6ccd5da59e21bf3548354b2e6b61418e874afed367e3cd8b57",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "3385d634db829066e3f7f0d84474df5ed54bf143"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "267aab6d9382ce4921a1536fab1620749b2f5301"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "ble_touchpad",
+      "display_name": "BLE Touchpad",
+      "version": "0.1.16",
+      "manifest_path": "ble_touchpad.json",
+      "elf_file": "ble_touchpad.elf",
+      "elf_present": true,
+      "elf_sha256": "2ad0ebb4906e7e31cc962d1ca3f8b1c1151f2a80e4f9c37052433af5cd3eba3d",
+      "elf_bytes": 153972,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hid"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Reviewed shared HID controller expects 240\u00d7240 watch or 480\u00d7800 paper contacts and uses matching fixed controls.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "hid_fixed_layout",
+        "legacy_pixel_expansion"
+      ],
+      "preserve_features": [
+        "Pairing",
+        "HID modifiers and button mappings",
+        "Multi-contact gestures and scroll",
+        "Session cleanup"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/ble_touchpad.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/ble_touchpad.json",
+        "receipt_elf_sha256": "d0f9545d7b439ea174f45b8eabf234920b96b966cd8a460bcd942d95f0209630",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "bringup",
+      "display_name": "bringup",
+      "version": "0.1.0",
+      "manifest_path": "bringup.json",
+      "elf_file": "bringup.elf",
+      "elf_present": true,
+      "elf_sha256": "ca2e30237ceee4b218faf8ec94ca9286fd97cf7be09d0fce3ca8a2eab88c6216",
+      "elf_bytes": 9052,
+      "launcher_visible": false,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        }
+      ],
+      "optional": [
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "haptic.effect"
+        }
+      ],
+      "source_review_status": "diagnostic_fixed_viewport_needs_migration",
+      "geometry_finding": "Hidden diagnostic source requires a 240\u00d7240 raster and uses WatchViewport; production recipe separately pins diagnostic_shared.",
+      "remaining_work": "Keep distinct from launcher/Home. Audit the exact diagnostic pin and replace fixed raster/viewport only if included in all-app scope.",
+      "evidence_ids": [
+        "bringup_reference_layout",
+        "home_viewport"
+      ],
+      "preserve_features": [
+        "Diagnostics",
+        "Optional-device failure tolerance",
+        "Back to Home"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "additional_source_pin": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+        "commit": "2d3df3d50647578987eb209bf7e2b8d722715d00",
+        "path": "apps/bringup/main.c",
+        "scope": "pinned diagnostic_shared in wave/scripts/build_boot_test.py"
+      },
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "calculator",
+      "display_name": "Calculator",
+      "version": "0.1.8",
+      "manifest_path": "calculator.json",
+      "elf_file": "calculator.elf",
+      "elf_present": true,
+      "elf_sha256": "4b70994e42e89684f1694b624f80c0f7e15af1a3feb970ef7b3a7ba633dd2d66",
+      "elf_bytes": 145204,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Reviewed NOVA controller requires exactly 240\u00d7240 and uses fixed key rectangles; arbitrary geometry cannot be inferred from its generic non-NOVA branch.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "calculator_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Calculator operations",
+        "History/menu",
+        "Key hit boxes"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/calculator.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/calculator.json",
+        "receipt_elf_sha256": "eebc9869ab16c7ec63b3b67226cb8e38de10c465d6a417b153179304311525df",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "clock",
+      "display_name": "Clock",
+      "version": "0.15.0",
+      "manifest_path": "clock.json",
+      "elf_file": "clock.elf",
+      "elf_present": true,
+      "elf_sha256": "cfd7de71d1949e415ba6662862feba4733e384258670ec73760425436d3fcde1",
+      "elf_bytes": 1232,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [],
+      "optional": [],
+      "source_review_status": "route_alias_no_own_raster",
+      "geometry_finding": "clock.elf is a small return-to-default route, not an independent face renderer. Exact older clock receipt matches .43 bytes.",
+      "remaining_work": "Validate route and native Home handoff; do not create a separate Clock renderer.",
+      "evidence_ids": [],
+      "preserve_features": [
+        "Return to Home/default"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+          "commit": "ec768c7fae6fdb484fef28c6ec87f129b0a7f585",
+          "path": "apps/clock/return_to_default.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Watch/blob/ec768c7fae6fdb484fef28c6ec87f129b0a7f585/apps/clock/return_to_default.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/clock.json",
+        "receipt_elf_sha256": "cfd7de71d1949e415ba6662862feba4733e384258670ec73760425436d3fcde1",
+        "dependency_pins": {}
+      },
+      "historical_receipt_matches_43_elf": true,
+      "source_attribution_status": "exact_payload_receipt_match",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "contexts",
+      "display_name": "Contexts",
+      "version": "0.4.6",
+      "manifest_path": "contexts.json",
+      "elf_file": "contexts.elf",
+      "elf_present": true,
+      "elf_sha256": "a3b4b678eeee6a1d5ebc4a605b6c7d8ee176d806bd8ad059815bb4d979a56410",
+      "elf_bytes": 63840,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "ui.scene"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "api": 1,
+          "capability": "time.civil"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        }
+      ],
+      "source_review_status": "semantic_scene_native_path_needs_qualification",
+      "geometry_finding": "Application documents contain semantic nodes; reviewed ui.scene host derives width/height from display capabilities and rasterizes directly into provider surfaces.",
+      "remaining_work": "Keep semantic applications; qualify exact shipped ui.scene/profile/text-input closure at 240\u00d7240, 410\u00d7502 and representative other geometries. Review font/icon raster quality and minimum sizes.",
+      "evidence_ids": [
+        "semantic_lists",
+        "semantic_contexts",
+        "scene_native"
+      ],
+      "preserve_features": [
+        "List/Context data and actions",
+        "Scrolling and selection",
+        "Shared text entry",
+        "Lifecycle and storage failures"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "additional_source_pin": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+        "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+        "path": "Apps/contexts.c",
+        "scope": "available semantic source lineage; exact .43 closure unverified"
+      },
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "countdown",
+      "display_name": "Countdown",
+      "version": "0.1.7",
+      "manifest_path": "countdown.json",
+      "elf_file": "countdown.elf",
+      "elf_present": true,
+      "elf_sha256": "2d8feee57141250f1c03530748c46999bd0eed70ab6813605e7a29ad4068a915",
+      "elf_bytes": 149284,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Fixed watch editor coordinates in alarm_nova.inc; native-height adapter enlarges logical pixels.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "alarm_fixed_layout",
+        "legacy_pixel_expansion"
+      ],
+      "preserve_features": [
+        "Alarm editing and persistence",
+        "Countdown lifecycle",
+        "Alarm/Quick/sleep interruption and volume"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/countdown.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/countdown.json",
+        "receipt_elf_sha256": "335431931522c5ea40658404c1c3ae80f9614ac2a43dcc566eb14a2f0600dc73",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "default",
+      "display_name": "default",
+      "version": "0.15.4",
+      "manifest_path": "default.json",
+      "elf_file": "default.elf",
+      "elf_present": true,
+      "elf_sha256": "b805ddcfb80d90983eabb03022c84fc633f9529924c1bffda363825d4ad88b1d",
+      "elf_bytes": 654300,
+      "launcher_visible": false,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "runtime.realtime-control"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "runtime.provider-promotion"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        },
+        {
+          "capability": "storage.app-data",
+          "api": 1
+        },
+        {
+          "capability": "storage.volume",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_viewport_migration_required",
+      "geometry_finding": "Home exposes a logical 240-wide surface and scales the completed canvas into the physical provider frame; input is inversely mapped.",
+      "remaining_work": "Migrate Home/watch faces/transitions and app-return capture to native geometry and rasterization; preserve each face, style, Quick, alarms, sleep and launch behavior.",
+      "evidence_ids": [
+        "home_viewport",
+        "home_faces",
+        "quick_row_scaling"
+      ],
+      "preserve_features": [
+        "Watch faces and transitions",
+        "Wake/sleep and brightness",
+        "App-return snapshots",
+        "Alarms/Contexts/Quick",
+        "Crash reporting"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "additional_source_pin": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+        "commit": "87b17a368b32abe50a21787242f94616b2b26983",
+        "path": "apps/clock/main.c",
+        "scope": "Home source in .38 source-pins; .43 inherited payload closure not freshly rebuilt"
+      },
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "file_browser",
+      "display_name": "Files",
+      "version": "1.5.39",
+      "manifest_path": "file_browser.json",
+      "elf_file": "file_browser.elf",
+      "elf_present": true,
+      "elf_sha256": "51c498f306e12530417ccec6a22d1e7504df5d70278290dcc67628ca778c7c58",
+      "elf_bytes": 287640,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 1,
+          "capability": "storage.installed-files"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "api": 1,
+          "capability": "storage.app-data.export"
+        },
+        {
+          "api": 1,
+          "capability": "network.tcp.listener"
+        },
+        {
+          "api": 1,
+          "capability": "crypto.entropy"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.session-setup"
+        },
+        {
+          "api": 1,
+          "capability": "file.open"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "file.open.source"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [
+        {
+          "api": 1,
+          "capability": "storage.volume"
+        }
+      ],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Portable browser has fixed watch chrome/row coordinates and shared NOVA raster dependencies.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "file_browser_geometry",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Mounted and absent media",
+        "Sharing/Nearby",
+        "File-source handoff",
+        "Text input",
+        "Storage retention and failure handling"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+          "commit": "66282802bb498590fcbab4eba871ff40cc3ddafd",
+          "path": "Apps/file_browser.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/66282802bb498590fcbab4eba871ff40cc3ddafd/Apps/file_browser.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/file_browser.elf.json",
+        "receipt_elf_sha256": "915779e0a7098a8df3238b33648a6703e3958eddf736a1acd20169eb01062c47",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "66282802bb498590fcbab4eba871ff40cc3ddafd"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "e0b43ef70f312cc512861926109ebe99f41c964d"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "frequency_generator",
+      "display_name": "Frequency Generator",
+      "version": "0.1.6",
+      "manifest_path": "frequency_generator.json",
+      "elf_file": "frequency_generator.elf",
+      "elf_present": true,
+      "elf_sha256": "c443797f137d959a55eeb20e77d3b703ebdfb41fbb5ed7f34b2fa547b30f307d",
+      "elf_bytes": 137360,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "audio.output"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Some controller extents use screen_width()/screen_height(), but shared watch drawing and Quick remain 240-wide. Capability-aware placement is not native raster proof.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "legacy_nova_raster",
+        "quick_row_scaling"
+      ],
+      "preserve_features": [
+        "Timing/RTC and persistent stopwatch state",
+        "Tone settings, audio stream custody",
+        "Alarm/sleep interactions"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/frequency_generator.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/frequency_generator.json",
+        "receipt_elf_sha256": "b0d6b3a83280b694a1987f815df962c4e358c9b9ece41ff5ce858c4c8df15b20",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "lists",
+      "display_name": "Lists",
+      "version": "0.1.2",
+      "manifest_path": "lists.json",
+      "elf_file": "lists.elf",
+      "elf_present": true,
+      "elf_sha256": "cfbb592836763f80a98904aa3aaf6a04c9cb1214f447a42e9df2739f5e259f48",
+      "elf_bytes": 26352,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "ui.scene"
+        },
+        {
+          "api": 1,
+          "capability": "storage.app-data"
+        },
+        {
+          "api": 1,
+          "capability": "time.civil"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        }
+      ],
+      "optional": [],
+      "source_review_status": "semantic_scene_native_path_needs_qualification",
+      "geometry_finding": "Application documents contain semantic nodes; reviewed ui.scene host derives width/height from display capabilities and rasterizes directly into provider surfaces.",
+      "remaining_work": "Keep semantic applications; qualify exact shipped ui.scene/profile/text-input closure at 240\u00d7240, 410\u00d7502 and representative other geometries. Review font/icon raster quality and minimum sizes.",
+      "evidence_ids": [
+        "semantic_lists",
+        "semantic_contexts",
+        "scene_native"
+      ],
+      "preserve_features": [
+        "List/Context data and actions",
+        "Scrolling and selection",
+        "Shared text entry",
+        "Lifecycle and storage failures"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+          "commit": "f83d79a0753c2a451730000d2f553aa21fda7830",
+          "path": "Apps/lists_scene.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/f83d79a0753c2a451730000d2f553aa21fda7830/Apps/lists_scene.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/lists.elf.json",
+        "receipt_elf_sha256": "31be400bcf3dfa6b4c27501c2938316375f3c2b82fdadddbecd426d1f7f049b6",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "f4b30f8ebcc6d8cb905c8e90c91b1691acbe8165"
+          },
+          "productivity": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+            "commit": "f83d79a0753c2a451730000d2f553aa21fda7830"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "lora_messages",
+      "display_name": "LoRa Messages",
+      "version": "0.1.16",
+      "manifest_path": "lora_messages.json",
+      "elf_file": "lora_messages.elf",
+      "elf_present": false,
+      "elf_sha256": null,
+      "elf_bytes": null,
+      "launcher_visible": true,
+      "image_source": {
+        "path": "Apps/lora_messages/lora_messages.elf",
+        "volume_instance": 12
+      },
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        }
+      ],
+      "optional": [
+        {
+          "api": 2,
+          "capability": "radio.lora"
+        }
+      ],
+      "source_review_status": "external_media_legacy_path_needs_migration",
+      "geometry_finding": "Manifest is admitted but .43 stores no LoRa ELF; boot policy names SD Apps/lora_messages/lora_messages.elf. Reviewed controller centers fixed 240 geometry.",
+      "remaining_work": "Verify the installed card payload separately; retain unavailable-radio and unavailable-media states, then migrate the same shared app when its owner stage is authorized.",
+      "evidence_ids": [
+        "lora_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Message history",
+        "Radio settings",
+        "Shared editor",
+        "Unavailable radio/media behavior"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "4cfe21248f1f81339072c39eba44dbaea3a444b6",
+          "path": "Apps/lora_messages.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/4cfe21248f1f81339072c39eba44dbaea3a444b6/Apps/lora_messages.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/lora_messages.elf.json",
+        "receipt_elf_sha256": "c223ae04595f8b288d7084bb3804eb30252d6b9ecc0eb0cd4095c006ebc8b14b",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "fd4b1e52fe2a49c3c4c22f9ccd4c98a91f88afa0"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "4cfe21248f1f81339072c39eba44dbaea3a444b6"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "model_viewer",
+      "display_name": "3D Viewer",
+      "version": "1.3.1",
+      "manifest_path": "model_viewer.json",
+      "elf_file": "model_viewer.elf",
+      "elf_present": true,
+      "elf_sha256": "8b4cb6c789afcaa9c6bb6a4d348f9b7b2618baeca70831fd25819f275c1c874d",
+      "elf_bytes": 43068,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 1,
+          "capability": "storage.app-data"
+        },
+        {
+          "api": 1,
+          "capability": "file.open.source"
+        }
+      ],
+      "optional": [
+        {
+          "api": 1,
+          "capability": "storage.volume"
+        }
+      ],
+      "source_review_status": "capability_canvas_native_path_needs_qualification",
+      "geometry_finding": "CANVAS_VIEWER chooses canvas width/height from capability dimensions (after rotation), unlike CANVAS_GAME fixed 960\u00d7540. The output map is 1:1 for viewer geometry.",
+      "remaining_work": "Qualify the exact .43 Viewer/CanvasApp source and presentation at all required sizes, padding/rotation and bounds; preserve geometry rasterization, dithering and input.",
+      "evidence_ids": [
+        "model_native",
+        "model_layout"
+      ],
+      "preserve_features": [
+        "3D rendering and transforms",
+        "File-source handoff",
+        "Touch/rotation",
+        "Snapshot/inflight custody"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "c310854418f920340257c61af62c202f7ff4ca12",
+          "path": "Apps/model_viewer.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/blob/c310854418f920340257c61af62c202f7ff4ca12/Apps/model_viewer.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/model_viewer.json",
+        "receipt_elf_sha256": "33b9b63affa83d4489769c13f5c20d244accb42adb69efbee0b7dfa38c5a9050",
+        "dependency_pins": {
+          "product_compactor": {
+            "commit": "87cae1c689bab8ada37f94f0d075e8c47f39a315",
+            "path": "scripts/compact_current_elf.py",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3"
+          },
+          "runtime": {
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9",
+            "repository": "michaelrolphone-cmyk/RiscRTE"
+          },
+          "system": {
+            "commit": "54d25603c3e9610f5e82dab5472e3ece76ab242e",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps"
+          },
+          "utilities": {
+            "commit": "c310854418f920340257c61af62c202f7ff4ca12",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "ota_update",
+      "display_name": "Firmware Update",
+      "version": "1.1.7",
+      "manifest_path": "ota_update.json",
+      "elf_file": "ota_update.elf",
+      "elf_present": true,
+      "elf_sha256": "3557d080b673f070b88a6a0398fb8d54473b5d887015582235fb6de485505545",
+      "elf_bytes": 133160,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "software.update.firmware"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Shared updater layout/text/control path remains portable NOVA with fixed watch coordinates.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "update_geometry",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Update authorization and progress",
+        "Paired bank/cohort rules",
+        "Cancellation, failures and cleanup"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+          "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+          "path": "Apps/ota_update.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/ota_update.json",
+        "receipt_elf_sha256": "73c4989e43d2a66d7b7595672ce903ce11f43c454fa4cdf97486e99c52e49919",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "points_in_time",
+      "display_name": "Points in Time",
+      "version": "0.6.20",
+      "manifest_path": "points_in_time.json",
+      "elf_file": "points_in_time.elf",
+      "elf_present": true,
+      "elf_sha256": "14b82e1cbe1161b0896632677427b949ccc96521c7dff5b28a58dda59269197f",
+      "elf_bytes": 175928,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Points watch controller and picker contain fixed 240-oriented hit rectangles.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "points_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "All scheduling modes",
+        "Shared text/pickers",
+        "Alarm service policy",
+        "Storage failures and editor state"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+          "commit": "519dba53fbfd498da0443f516445450e864c7bc3",
+          "path": "Apps/points_in_time.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/519dba53fbfd498da0443f516445450e864c7bc3/Apps/points_in_time.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/points_in_time.elf.json",
+        "receipt_elf_sha256": "4ee1c06b8eb191980afdd0522c5f1f2b1c05c1eeb38c8fa18e9c10cb382205b5",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "9550949bab67e820aa19984ef7bc20322756feb3"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "3385d634db829066e3f7f0d84474df5ed54bf143"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "267aab6d9382ce4921a1536fab1620749b2f5301"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          },
+          "productivity": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+            "commit": "519dba53fbfd498da0443f516445450e864c7bc3"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "settings",
+      "display_name": "Settings",
+      "version": "1.3.25",
+      "manifest_path": "settings.json",
+      "elf_file": "settings.elf",
+      "elf_present": true,
+      "elf_sha256": "a7558b3bd2cd0c2a0edee95e4a8a69477a63772e8300e33e8e7332a2558f8d41",
+      "elf_bytes": 157124,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Native-height layout derives more rows/footer space, but pixels, text and touches still pass through a 240-wide transform.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "settings_height",
+        "legacy_pixel_expansion",
+        "adapter_bounds",
+        "quick_row_scaling"
+      ],
+      "preserve_features": [
+        "All settings pages",
+        "Time/alarm synchronization",
+        "Quick controls",
+        "Radio, motion and sleep settings"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "additional_source_pin": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "b580e32d5821d4a80e80c896bf7c085214f2b590",
+        "path": "Apps/settings.c",
+        "scope": "native-height shared-ui source predecessor; exact .43 byte closure unverified"
+      },
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "springboard",
+      "display_name": "springboard",
+      "version": "1.7.16",
+      "manifest_path": "springboard.json",
+      "elf_file": "springboard.elf",
+      "elf_present": true,
+      "elf_sha256": "f0dd72760ece4c9102aa316281663ddd4d90eeabc54ca39f326766ce521f05a7",
+      "elf_bytes": 161716,
+      "launcher_visible": false,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "native_candidate_in_progress",
+      "geometry_finding": "Official .43 remains the old logical path. The separate active Springboard-only replacement is not treated as released or fully qualified by this audit.",
+      "remaining_work": "Complete the active native Springboard renderer/controller and cadence work first; full-app arbitrary geometry still depends on Quick and adapter bounds.",
+      "evidence_ids": [
+        "adapter_bounds",
+        "quick_row_scaling",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Catalog admission",
+        "Drag, selection and launching",
+        "Styles, labels and icons",
+        "Quick/alarms/sleep",
+        "Failed provider retention"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "exact_43_release_source_pin",
+      "release_source_pin": {
+        "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+        "commit": "326396614def41f4a3b11c8c193c3ac1bbb75ab0",
+        "path": "Apps/springboard.c",
+        "evidence": "official .43 release.json system_revision + springboard_sha256"
+      },
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "stopwatch",
+      "display_name": "Stopwatch",
+      "version": "0.1.8",
+      "manifest_path": "stopwatch.json",
+      "elf_file": "stopwatch.elf",
+      "elf_present": true,
+      "elf_sha256": "fe2ded6556c1733dc308152fdf6f49f1226a6a7a48e5744b595bffe27c81abfc",
+      "elf_bytes": 146440,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Some controller extents use screen_width()/screen_height(), but shared watch drawing and Quick remain 240-wide. Capability-aware placement is not native raster proof.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "legacy_nova_raster",
+        "quick_row_scaling"
+      ],
+      "preserve_features": [
+        "Timing/RTC and persistent stopwatch state",
+        "Tone settings, audio stream custody",
+        "Alarm/sleep interactions"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+          "path": "Apps/stopwatch.c",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/base-apps/per-file/stopwatch.json",
+        "receipt_elf_sha256": "e3c729575a527be64cc3a905a8a699312a461392e0c02fd759b86adfbb6dfb0a",
+        "dependency_pins": {
+          "system-apps": {
+            "commit": "14762601b3fa7bbeeac5ed565a6825534bf74dca",
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/14762601b3fa7bbeeac5ed565a6825534bf74dca"
+          },
+          "utilities": {
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/commit/fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "watch": {
+            "commit": "089868395268b696c05651c33816345bfe0425df",
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/commit/089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "timecard",
+      "display_name": "Timecard",
+      "version": "0.2.15",
+      "manifest_path": "timecard.json",
+      "elf_file": "timecard.elf",
+      "elf_present": true,
+      "elf_sha256": "0639799e0793fc1421c74a562127e4fef63be185b828193569055b4314df1d58",
+      "elf_bytes": 169824,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "storage.app-data"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Reviewed portable Timecard centers a 240\u00d7240 controller and uses fixed header/footer/hit regions.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "timecard_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Punches/week/day views",
+        "Editing and persistence",
+        "Shared keyboard",
+        "Interrupted sessions"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+          "commit": "164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75",
+          "path": "Apps/timecard_portable.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Productivity/164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75/Apps/timecard_portable.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/timecard.elf.json",
+        "receipt_elf_sha256": "78323df48ff4fc5a3d1abaaa70c34808159c746cce3fe838d362b6a03537c1a3",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "fd4b1e52fe2a49c3c4c22f9ccd4c98a91f88afa0"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "4beb9778d300ec9f6b18448e1ec86317e063c98c"
+          },
+          "productivity": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+            "commit": "164ea8c4f8bace10148bcfd9b9dcdd97e9fc8e75"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "usb_sd_transfer",
+      "display_name": "usb_sd_transfer",
+      "version": "0.1.11",
+      "manifest_path": "usb_sd_transfer.json",
+      "elf_file": "usb_sd_transfer.elf",
+      "elf_present": true,
+      "elf_sha256": "6cfbd343633677a2498456d2a6664632ed83f2c7e6f966c7cba4349bfbc28e86",
+      "elf_bytes": 64808,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "capability": "display.output",
+          "api": 1
+        },
+        {
+          "capability": "input.touch.raw",
+          "api": 1
+        },
+        {
+          "capability": "usb.device.msc",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "shipped_color_source_closure_unverified",
+      "geometry_finding": "The located System source uses a 480\u00d7800 paper reference layout scaled into primitives; it is not sufficient evidence for the shipped 0.1.11 color app.",
+      "remaining_work": "Recover the exact 0.1.11 color recipe/source/presenter; inspect native drawing and hit testing before classifying migration coverage.",
+      "evidence_ids": [
+        "usb_reference_layout"
+      ],
+      "preserve_features": [
+        "MSC ownership",
+        "Host eject/CSW completion",
+        "Cancel and cable-removed confirmation",
+        "SD remount",
+        "Retained I/O cleanup"
+      ],
+      "historical_receipt_matches_43_elf": null,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "waterfall",
+      "display_name": "Waterfall",
+      "version": "0.3.7",
+      "manifest_path": "waterfall.json",
+      "elf_file": "waterfall.elf",
+      "elf_present": true,
+      "elf_sha256": "999abfce25e39bdd5eb440d6e7bd6bd69f54e1e88edc78901ed00b01f25599d1",
+      "elf_bytes": 251648,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "storage.app-data"
+        },
+        {
+          "api": 2,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "api": 1,
+          "capability": "radio.iq"
+        },
+        {
+          "api": 1,
+          "capability": "app.catalog"
+        },
+        {
+          "api": 1,
+          "capability": "ui.text-input"
+        },
+        {
+          "api": 1,
+          "capability": "storage.shared-data"
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Spectrum/RF color presentation uses fixed plots/control regions and the common NOVA raster; source/version changes after older retained receipts must be preserved.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "spectrum_fixed_layout",
+        "waterfall_fixed_layout",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Live capture and plot history",
+        "Playback/freeze/cursor",
+        "Shared editor",
+        "Signature/model storage",
+        "Capture/alarm/radio custody"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+          "commit": "4beb9778d300ec9f6b18448e1ec86317e063c98c",
+          "path": "Apps/waterfall.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-Utilities/4beb9778d300ec9f6b18448e1ec86317e063c98c/Apps/waterfall.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/waterfall.elf.json",
+        "receipt_elf_sha256": "c0612e63664bfcb25f2bb3ea79286e97b36c6f62eb95a4ddb1c719868890bd05",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "7fb13b09b4dac275a8111b224784f8a472f39264"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "4beb9778d300ec9f6b18448e1ec86317e063c98c"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    },
+    {
+      "id": "wifi_settings",
+      "display_name": "Wi-Fi",
+      "version": "1.1.31",
+      "manifest_path": "wifi_settings.json",
+      "elf_file": "wifi_settings.elf",
+      "elf_present": true,
+      "elf_sha256": "19d6dc5fde5d25b3c0808c0dcb500a011469350bebfc66a74556369b90c975ba",
+      "elf_bytes": 169460,
+      "launcher_visible": true,
+      "image_source": null,
+      "requires": [
+        {
+          "api": 1,
+          "capability": "display.output"
+        },
+        {
+          "api": 1,
+          "capability": "input.touch.raw"
+        },
+        {
+          "api": 2,
+          "capability": "rtc.clock"
+        },
+        {
+          "api": 1,
+          "capability": "storage.key-value"
+        },
+        {
+          "api": 1,
+          "capability": "alarm.service"
+        },
+        {
+          "api": 1,
+          "capability": "telemetry.broadcast"
+        },
+        {
+          "api": 1,
+          "capability": "contexts.service"
+        },
+        {
+          "api": 1,
+          "capability": "input.power-key"
+        },
+        {
+          "api": 1,
+          "capability": "power.sleep"
+        },
+        {
+          "api": 1,
+          "capability": "display.power"
+        },
+        {
+          "api": 1,
+          "capability": "board.battery"
+        },
+        {
+          "api": 1,
+          "capability": "net.wifi"
+        },
+        {
+          "api": 1,
+          "capability": "bluetooth.hci"
+        },
+        {
+          "api": 1,
+          "capability": "motion.accel"
+        },
+        {
+          "capability": "ui.text-input",
+          "api": 1
+        },
+        {
+          "capability": "app.catalog",
+          "api": 1
+        },
+        {
+          "capability": "storage.key-value.atomic",
+          "api": 1
+        },
+        {
+          "capability": "storage.key-value.availability",
+          "api": 1
+        }
+      ],
+      "optional": [],
+      "source_review_status": "legacy_portable_migration_required",
+      "geometry_finding": "Portable Wi-Fi presentation remains on shared logical watch layout; current network/storage policy must stay intact.",
+      "remaining_work": "Replace the 240-wide logical/raster path with capability-sized layout, coordinate hit testing, primitives and native font/icon rasterization; retain the complete feature recipe. Qualify interruption, repeated entry, async ownership and landscape.",
+      "evidence_ids": [
+        "wifi_geometry",
+        "legacy_nova_raster"
+      ],
+      "preserve_features": [
+        "Scan/connect/disconnect",
+        "Password editor",
+        "Persistence availability",
+        "Retry and retained cleanup"
+      ],
+      "historical_source_record": {
+        "source": {
+          "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+          "commit": "9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3",
+          "path": "Apps/wifi_settings.c",
+          "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3/Apps/wifi_settings.c"
+        },
+        "receipt_path": "/workspace/shared/watch-retained-provenance-20261013/specialized-apps/per-file/wifi_settings.elf.json",
+        "receipt_elf_sha256": "e39c23a8c287fa61eecedef89fea40d85e1b99fbef302c0ad3f2b71d3ef5a4fb",
+        "dependency_pins": {
+          "system-apps": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+            "commit": "9c0ad2faa4b3aa73daf1c92cc343e0f83c2a5af3"
+          },
+          "utilities": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+            "commit": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8"
+          },
+          "runtime": {
+            "repository": "michaelrolphone-cmyk/RiscRTE",
+            "commit": "267aab6d9382ce4921a1536fab1620749b2f5301"
+          },
+          "watch": {
+            "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+            "commit": "089868395268b696c05651c33816345bfe0425df"
+          }
+        }
+      },
+      "historical_receipt_matches_43_elf": false,
+      "source_attribution_status": "lineage_only_exact_43_build_closure_unverified",
+      "qualification": {
+        "source_audit_only": true,
+        "exact_43_host_geometry_execution_in_this_audit": false,
+        "native_240x240_verified": false,
+        "native_410x502_verified": false,
+        "arbitrary_capability_sizes_verified": false,
+        "hardware_verified": false
+      }
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "portable_layout_raster",
+      "apps": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "waterfall",
+        "wifi_settings",
+        "lora_messages"
+      ],
+      "evidence_ids": [
+        "watch_layout",
+        "legacy_pixel_expansion",
+        "legacy_nova_raster"
+      ],
+      "finding": "A physical-size framebuffer does not remove 240-wide logical pixel expansion. Native-sized primitives, text, icons and coordinates must be coherent."
+    },
+    {
+      "id": "shared_controls",
+      "apps": [
+        "default",
+        "springboard",
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "countdown",
+        "file_browser",
+        "frequency_generator",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "stopwatch",
+        "timecard",
+        "waterfall",
+        "wifi_settings"
+      ],
+      "evidence_ids": [
+        "quick_row_scaling",
+        "quick_height_bounds",
+        "adapter_bounds"
+      ],
+      "finding": "Quick uses 240-wide raster rows and logical height >=240. Adapter bounds are 160..1024 on both physical axes and the native-height path rejects logical height <240. 480\u00d7320 derives logical 240\u00d7160 and fails full-app opening even if the new Springboard renderer alone handles it."
+    },
+    {
+      "id": "surface_ownership",
+      "apps": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "calculator",
+        "contexts",
+        "countdown",
+        "default",
+        "file_browser",
+        "frequency_generator",
+        "lists",
+        "lora_messages",
+        "model_viewer",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "usb_sd_transfer",
+        "waterfall",
+        "wifi_settings"
+      ],
+      "evidence_ids": [
+        "async_native_surface"
+      ],
+      "finding": "Preserve padded native strides, minimum sizes, overflow checks, single submit token, cancellation and retained/uncertain-provider ownership. Native layout does not authorize simplifying service/lifecycle rules."
+    },
+    {
+      "id": "scene_host_profile_text",
+      "apps": [
+        "lists",
+        "contexts"
+      ],
+      "evidence_ids": [
+        "scene_native",
+        "semantic_lists",
+        "semantic_contexts"
+      ],
+      "finding": "Native capability geometry is present in the reviewed host, but exact shipped host/profile/text-input closure and bitmap font quality need qualification. Reviewed host bounds are 160..2048; font scale 1..4 and fixed glyph bitmaps remain."
+    },
+    {
+      "id": "viewer_canvas",
+      "apps": [
+        "model_viewer"
+      ],
+      "evidence_ids": [
+        "model_native",
+        "model_layout"
+      ],
+      "finding": "Viewer canvas is capability-sized within 160..1200 bounds; rotation and monochrome working/snapshot copies do not imply reduced-resolution scaling. Verify kind==CANVAS_VIEWER and exact .43 build."
+    },
+    {
+      "id": "font_icon_sources",
+      "apps": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "bringup",
+        "calculator",
+        "contexts",
+        "countdown",
+        "default",
+        "file_browser",
+        "frequency_generator",
+        "lists",
+        "lora_messages",
+        "model_viewer",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "springboard",
+        "stopwatch",
+        "timecard",
+        "usb_sd_transfer",
+        "waterfall",
+        "wifi_settings"
+      ],
+      "evidence_ids": [
+        "legacy_nova_raster",
+        "quick_row_scaling",
+        "scene_native"
+      ],
+      "finding": "Frozen font/icon atlases and 5\u00d77 bitmap expansion need independent review. Springboard-only native font work does not migrate other apps or shared Quick assets."
+    },
+    {
+      "id": "source_identity",
+      "apps": [
+        "alarms",
+        "app_store",
+        "audio_spectrum",
+        "battery",
+        "ble_buttons",
+        "ble_scanner",
+        "ble_touchpad",
+        "bringup",
+        "calculator",
+        "contexts",
+        "countdown",
+        "default",
+        "file_browser",
+        "frequency_generator",
+        "lists",
+        "lora_messages",
+        "model_viewer",
+        "ota_update",
+        "points_in_time",
+        "settings",
+        "stopwatch",
+        "timecard",
+        "usb_sd_transfer",
+        "waterfall",
+        "wifi_settings"
+      ],
+      "evidence_ids": [],
+      "finding": "Recover/bind exact package source + dependencies + defines + normalization/compaction against .43 hashes before migration. Older retained-50 receipts are source lineage, not proof of this product payload when hashes differ."
+    }
+  ],
+  "evidence_file": "source-evidence.json",
+  "scope_limits": [
+    "Source review demonstrates implementation structure, not target execution.",
+    "All full-app native rendering qualification flags remain false unless a separate final report supplies evidence.",
+    "No device-specific shared application branches are proposed.",
+    "Any capability size requires checked resource/ABI limits and explicit handling outside the supported envelope, not a universal allocation promise."
+  ]
+}

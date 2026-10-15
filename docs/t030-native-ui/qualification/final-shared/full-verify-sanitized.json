@@ -1,0 +1,44 @@
+[
+  {
+    "width": 160,
+    "height": 160,
+    "result": "NATIVE_PASS 160x160 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 239,
+    "height": 293,
+    "result": "NATIVE_PASS 239x293 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "result": "NATIVE_PASS 240x240 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 320,
+    "height": 320,
+    "result": "NATIVE_PASS 320x320 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 320,
+    "height": 390,
+    "result": "NATIVE_PASS 320x390 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "result": "NATIVE_PASS 410x502 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  },
+  {
+    "width": 800,
+    "height": 1000,
+    "result": "NATIVE_PASS 800x1000 metadata=unknown-timing catalog=24 physical_contact=exact features=full lifecycle=clean",
+    "repetition": 0
+  }
+]

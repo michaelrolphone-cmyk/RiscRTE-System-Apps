@@ -1,0 +1,32 @@
+PASS native motion:28 scaled drag/friction/overscroll/settle paths preserve normalized trajectory within0.3 design units
+PASS native controller/raster 1x1: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 64x64: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 128x128: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 160x160: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 239x293: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native vectors:1512 glyph-size checks, repeated-output equality, negative clipping, edge high-water 432/512
+PASS native controller/raster 240x240: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x160: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 480x320: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x320: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x390: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 410x502: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 800x1000: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 1024x1024: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 2048x2048: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native motion:28 scaled drag/friction/overscroll/settle paths preserve normalized trajectory within0.3 design units
+PASS native controller/raster 1x1: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 64x64: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 128x128: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 160x160: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 239x293: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native vectors:1512 glyph-size checks, repeated-output equality, negative clipping, edge high-water 432/512
+PASS native controller/raster 240x240: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x160: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 480x320: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x320: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 320x390: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 410x502: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 800x1000: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 1024x1024: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately
+PASS native controller/raster 2048x2048: physical canvas, exact circle oracle, clipping and row guards; adapter admission tested separately

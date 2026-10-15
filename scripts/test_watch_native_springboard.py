@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Qualify the real original honeycomb on both Watch geometries.
+"""Qualify native honeycomb geometry, pixels, contacts and lifecycle.
 
-One native executable is invoked with runtime 240x240 and 410x502 dimensions.
-The 240 output is compared pixel-for-pixel with the restored 72f435f controller
-and presenter, compiled from an isolated git archive. Both variants run normally
-and under ASan/UBSan, with synchronous and asynchronous provider capabilities.
-Unknown timing preserves this presentation without claiming fast transition
-capability; known-ineligible timing and retained-image metadata still fall back.
+The previous240-pixel parity oracle is intentionally replaced: native glyph
+sampling is a requested image-quality change. Same-binary metadata variants
+must still produce identical final pixels, and all behavioral/custody/stride
+checks remain. Direct raster tests cover independent primitive pixel equality.
 """
 import hashlib
 import json
@@ -81,38 +79,27 @@ def run(binary, width, height, provider, metadata="eligible"):
     return hashes
 
 
-with tempfile.TemporaryDirectory(prefix="springboard-legacy-", dir=OUT) as temp:
-    legacy = pathlib.Path(temp)
-    archive = legacy / "source.tar"
-    with archive.open("wb") as stream:
-        subprocess.run(["git", "archive", BASELINE, "Apps", "lib"],
-                       cwd=ROOT, stdout=stream, check=True)
-    with tarfile.open(archive) as source:
-        source.extractall(legacy, filter="data")
-    for sanitized in (False, True):
-        suffix = "sanitized" if sanitized else "normal"
-        original = compile_test(legacy, "original-" + suffix, sanitized, False)
-        native = compile_test(ROOT, "native-" + suffix, sanitized, True)
-        for provider in ("sync", "async"):
-            expected = run(original, 240, 240, provider)
-            actual = run(native, 240, 240, provider)
-            assert actual == expected, (suffix, provider, expected, actual)
-            expected_native = {(240, 240): actual}
-            for width, height in ((410, 502), (320, 400)):
-                # The extra geometry rejects accidental model-specific constants.
-                expected_native[width, height] = run(native, width, height, provider)
-            for width, height in expected_native:
-                for metadata in ("unknown-refresh", "unknown-timing", "eligible-threshold"):
-                    rendered = run(native, width, height, provider, metadata)
-                    assert rendered == expected_native[width, height], (metadata, rendered, expected_native[width, height])
-                for metadata in ("slow-refresh", "slow-latency", "retains-image",
-                                 "unknown-slow-latency", "unknown-retains-image"):
-                    run(native, width, height, provider, metadata)
+for sanitized in (False, True):
+    suffix = "sanitized" if sanitized else "normal"
+    native = compile_test(ROOT, "native-" + suffix, sanitized, True)
+    for provider in ("sync", "async"):
+        expected_native = {}
+        for width, height in ((240, 240), (410, 502), (320, 400)):
+            expected_native[width, height] = run(native, width, height, provider)
+        for width, height in expected_native:
+            for metadata in ("unknown-refresh", "unknown-timing", "eligible-threshold"):
+                rendered = run(native, width, height, provider, metadata)
+                assert rendered == expected_native[width, height], (metadata, rendered, expected_native[width, height])
+            for metadata in ("slow-refresh", "slow-latency", "retains-image",
+                             "unknown-slow-latency", "unknown-retains-image"):
+                run(native, width, height, provider, metadata)
 
 report = {"baseline": BASELINE, "catalog_sha256": hashlib.sha256(CATALOG.read_bytes()).hexdigest(),
-          "checks": results, "240_pixel_parity": True, "same_binary_both_displays": True,
+          "checks": results, "240_pixel_parity": False, "pixel_change": "intentional native glyph sampling; no completed-view scaling", "same_binary_both_displays": True,
           "unknown_timing_preserves_honeycomb": True, "known_ineligible_preserves_fallback": True,
           "provider_metadata_unchanged": True, "unknown_refresh_skips_retained_transition": True,
           "leak_sanitizer": "disabled: executor ptrace restriction; resource counters and guards checked"}
 (OUT / "results.json").write_text(json.dumps(report, indent=2) + "\n")
-print("PASS: original 240 frames identical; unknown timing preserves full-height honeycomb; known-ineligible fallback, metadata identity, touch/lifecycle and conservative transitions passed normal + ASan/UBSan")
+print("PASS: capability-native geometry/raster; unknown timing preserves full-height honeycomb; known-ineligible fallback, metadata identity, touch/lifecycle and conservative transitions passed normal + ASan/UBSan")
+
+subprocess.run([sys.executable,str(ROOT / "scripts/test_springboard_native_raster.py")],check=True)

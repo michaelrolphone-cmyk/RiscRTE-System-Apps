@@ -1,0 +1,30 @@
+Crown policy: threshold, release, bounce, ambiguity, boot/wake gaps, wrap, independent consumers and single reset PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep-wake gesture boundary PASS
+Native deep preparation preserves pending and held keys PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown task: non-yielding foreground, legacy ACK isolation, threshold/release/fault, sleep and reset diagnostics PASS
+Native crown start refuses missing task/wrong chip PASS
+Native crown start refuses missing task/wrong chip PASS
+GPIO crown debounce, boot release, five-second hold and sample gap PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS
+Native GPIO crown supervisor PASS

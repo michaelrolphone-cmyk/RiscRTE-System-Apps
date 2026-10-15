@@ -1,0 +1,1522 @@
+{
+  "baseline": "72f435fcee376ec62d17ece6180753385ea547d9",
+  "catalog_sha256": "0f00645d5834dc582197aeea4caec4d9a797dfc14dda3c2cfbe2d32d38da3b4b",
+  "checks": [
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-normal",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "sync",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "eligible",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "f7d3de6f5287cf6101ac67556eede531b70f956614e52a9dd3a714f344af0853",
+        "initial.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "launch-complete.ppm": "655f2aaad593ea8b662a5cc1b43280e4ea4c9a37b1bda9c75adb9174ddeb4441",
+        "page-0.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70",
+        "page-1.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "page-touch.ppm": "7dc3137386224e49085b453a8e14c174e679f3a5c74185e8999d2f668cefc814",
+        "reentry.ppm": "5aac56796dcaec3d385220b5aa6c85fd9bb4f1a86515378b2ad832447298de70"
+      },
+      "result": "Springboard 240x240 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 240,
+      "height": 240,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "61786af78fdf236b5e27868f226770f444df6c49c0f374ecdd8e9744b7f80445"
+      },
+      "result": "Springboard 240x240 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "b686bdec3ec108d7c1f3fa9df9fb1f85ceef825ba84ee81e78ab0b2d7a7e46a2",
+        "initial.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "launch-complete.ppm": "a00c60dba455a0a3a15eca623281a9afc5299f350bbb4bf8a476171a0a221a1f",
+        "lower-honeycomb.ppm": "2bc6b1e8605aa23d66d3c1e9af5376846e5523c6a17193025fb8debd9e3f7007",
+        "page-0.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f",
+        "page-1.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "page-touch.ppm": "32bf5b8d73ee4d9ac51b9b8fd8cf81a93a64f0ea85abea17eebddad505976204",
+        "reentry.ppm": "1b46cce48a1b329efa98eeffa3aa3d7d1a26fade7a37c524c980b4b810fe284f"
+      },
+      "result": "Springboard 410x502 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 410,
+      "height": 502,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "89708a5324b2bf342db6fe6d4e59daa5d618f989bdd179683af366a1c1839f6e"
+      },
+      "result": "Springboard 410x502 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-refresh",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-refresh: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-timing",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 unknown-timing: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "eligible-threshold",
+      "frames": {
+        "after-drag.ppm": "d32005e8e12f9830ff0645a2a63839ad4c546e07e8fe187123fc86a1839d92ee",
+        "initial.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "launch-complete.ppm": "af9e0373a71b2cd80215fcfee732a43643d250961a5bc49cfb3aaf62fbc86bc3",
+        "lower-honeycomb.ppm": "0656020866928b3dd75a2ec5eacf827cfe550f79a2c96f96c18edba6872b890a",
+        "page-0.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd",
+        "page-1.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "page-touch.ppm": "3eed195d6cee2eeb878daa6d138150efc68a3416e89d59db6f804b06eeff83bb",
+        "reentry.ppm": "9ad4e80f69f4c46a5d82286bc0e7331ae2f726a8e062ea23c80494926b67efcd"
+      },
+      "result": "Springboard 320x400 eligible-threshold: original honeycomb, 23 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "slow-refresh",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-refresh: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-slow-latency",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-slow-latency: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    },
+    {
+      "binary": "native-sanitized",
+      "width": 320,
+      "height": 400,
+      "provider": "async",
+      "metadata": "unknown-retains-image",
+      "frames": {
+        "generic-grid.ppm": "927deaab4fd32d9b5e9500745b5dd3b7d1a53ae93a2f5105244bba8d0f1f7617"
+      },
+      "result": "Springboard 320x400 unknown-retains-image: known-ineligible metadata keeps generic grid; exact provider metadata, transition policy and guards passed"
+    }
+  ],
+  "240_pixel_parity": false,
+  "pixel_change": "intentional native glyph sampling; no completed-view scaling",
+  "same_binary_both_displays": true,
+  "unknown_timing_preserves_honeycomb": true,
+  "known_ineligible_preserves_fallback": true,
+  "provider_metadata_unchanged": true,
+  "unknown_refresh_skips_retained_transition": true,
+  "leak_sanitizer": "disabled: executor ptrace restriction; resource counters and guards checked"
+}

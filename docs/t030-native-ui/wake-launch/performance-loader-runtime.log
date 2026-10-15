@@ -1,0 +1,12 @@
+ELF size query: regular fstat avoids both seeks; unsupported/nonregular fallback, seek failures and existing size limits PASS
+PASS: production loader phase order, bytes, read/yield timing, parse rejection, short read, timeout, relocation/allocation/scope/publication failures
+Cold 256 KiB read cost=0 ticks/chunk: reads=64 forced_yields=8 max_bytes_between_yields=32768
+Cold 256 KiB read cost=1 ticks/chunk: reads=64 forced_yields=32 max_bytes_between_yields=8192
+Cold 256 KiB read cost=3 ticks/chunk: reads=64 forced_yields=64 max_bytes_between_yields=4096
+PASS: cold-reader byte/time checkpoints, slow-I/O/yield deadline and tick wrap
+ELF size query: regular fstat avoids both seeks; unsupported/nonregular fallback, seek failures and existing size limits PASS
+PASS: production loader reads/relocates/fails safely with absent weak trace hook
+Cold 256 KiB read cost=0 ticks/chunk: reads=64 forced_yields=8 max_bytes_between_yields=32768
+Cold 256 KiB read cost=1 ticks/chunk: reads=64 forced_yields=32 max_bytes_between_yields=8192
+Cold 256 KiB read cost=3 ticks/chunk: reads=64 forced_yields=64 max_bytes_between_yields=4096
+PASS: cold-reader byte/time checkpoints, slow-I/O/yield deadline and tick wrap

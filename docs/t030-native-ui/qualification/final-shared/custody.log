@@ -1,0 +1,413 @@
+=== test_watch_native_input.py ===
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: replay/release, reset, Controls dismissal, native drag and fallback replay origin PASS
+Native input: 8 native/rotation/sanitizer cases PASS
+=== test_watch_native_fallback.py ===
+Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback: 24 full-app cases, each verifies launch/edit/page, PASS
+=== test_watch_canvas_crown_exit.py ===
+Watch canvas native crown exit: pending PASS
+Watch canvas native crown exit: alarm PASS
+Watch canvas native crown exit: controls PASS
+Watch canvas native crown exit: settings PASS
+Watch canvas native crown exit: controls-open PASS
+Watch canvas native crown exit: torch-open PASS
+Watch canvas native crown exit: slider-open PASS
+Watch canvas native crown exit: short-capabilities PASS
+Watch canvas native crown exit: short-monotonic PASS
+Watch canvas native crown exit: missing-hook PASS
+Watch canvas native crown exit: legacy-back PASS
+Watch canvas native crown exit: pending PASS
+Watch canvas native crown exit: alarm PASS
+Watch canvas native crown exit: controls PASS
+Watch canvas native crown exit: settings PASS
+Watch canvas native crown exit: controls-open PASS
+Watch canvas native crown exit: torch-open PASS
+Watch canvas native crown exit: slider-open PASS
+Watch canvas native crown exit: short-capabilities PASS
+Watch canvas native crown exit: short-monotonic PASS
+Watch canvas native crown exit: missing-hook PASS
+Watch canvas native crown exit: legacy-back PASS
+Watch canvas native crown exit: pending PASS
+Watch canvas native crown exit: alarm PASS
+Watch canvas native crown exit: controls PASS
+Watch canvas native crown exit: settings PASS
+Watch canvas native crown exit: controls-open PASS
+Watch canvas native crown exit: torch-open PASS
+Watch canvas native crown exit: slider-open PASS
+Watch canvas native crown exit: short-capabilities PASS
+Watch canvas native crown exit: short-monotonic PASS
+Watch canvas native crown exit: missing-hook PASS
+Watch canvas native crown exit: legacy-back PASS
+Watch canvas native crown exit: pending PASS
+Watch canvas native crown exit: alarm PASS
+Watch canvas native crown exit: controls PASS
+Watch canvas native crown exit: settings PASS
+Watch canvas native crown exit: controls-open PASS
+Watch canvas native crown exit: torch-open PASS
+Watch canvas native crown exit: slider-open PASS
+Watch canvas native crown exit: short-capabilities PASS
+Watch canvas native crown exit: short-monotonic PASS
+Watch canvas native crown exit: missing-hook PASS
+Watch canvas native crown exit: legacy-back PASS
+Watch canvas crown exit: 44 real-adapter cases passed in normal/ASan/UBSan modes
+=== test_optional_service_adapter.py ===
+Actual optional-service adapter missing=0 target=0 fault=0 PASS
+Actual optional-service adapter missing=1 target=0 fault=0 PASS
+Actual optional-service adapter missing=2 target=0 fault=0 PASS
+Actual optional-service adapter missing=3 target=0 fault=0 PASS
+Actual optional-service adapter missing=4 target=0 fault=0 PASS
+Actual optional-service adapter missing=5 target=0 fault=0 PASS
+Actual optional-service adapter missing=6 target=0 fault=0 PASS
+Actual optional-service adapter missing=7 target=0 fault=0 PASS
+Actual optional-service adapter missing=0 target=1 fault=2 PASS
+Actual optional-service adapter missing=0 target=1 fault=3 PASS
+Actual optional-service adapter missing=0 target=1 fault=4 PASS
+Actual optional-service adapter missing=0 target=1 fault=5 PASS
+Actual optional-service adapter missing=0 target=1 fault=6 PASS
+Actual optional-service adapter missing=0 target=1 fault=7 PASS
+Actual optional-service adapter missing=0 target=1 fault=9 PASS
+Actual optional-service adapter missing=0 target=1 fault=10 PASS
+Actual optional-service adapter missing=0 target=2 fault=2 PASS
+Actual optional-service adapter missing=0 target=2 fault=3 PASS
+Actual optional-service adapter missing=0 target=2 fault=4 PASS
+Actual optional-service adapter missing=0 target=2 fault=5 PASS
+Actual optional-service adapter missing=0 target=2 fault=6 PASS
+Actual optional-service adapter missing=0 target=2 fault=7 PASS
+Actual optional-service adapter missing=0 target=2 fault=9 PASS
+Actual optional-service adapter missing=0 target=2 fault=10 PASS
+Actual optional-service adapter missing=0 target=3 fault=2 PASS
+Actual optional-service adapter missing=0 target=3 fault=3 PASS
+Actual optional-service adapter missing=0 target=3 fault=4 PASS
+Actual optional-service adapter missing=0 target=3 fault=5 PASS
+Actual optional-service adapter missing=0 target=3 fault=6 PASS
+Actual optional-service adapter missing=0 target=3 fault=7 PASS
+Actual optional-service adapter missing=0 target=3 fault=9 PASS
+Actual optional-service adapter missing=0 target=3 fault=10 PASS
+Actual optional-service adapter missing=0 target=1 fault=11 PASS
+Actual optional-service adapter missing=0 target=1 fault=12 PASS
+Actual optional-service adapter missing=0 target=1 fault=13 PASS
+Actual optional-service adapter missing=0 target=1 fault=14 PASS
+Actual optional-service adapter missing=0 target=1 fault=15 PASS
+Actual optional-service adapter missing=0 target=1 fault=16 PASS
+Actual optional-service adapter missing=0 target=1 fault=18 PASS
+Actual optional-service adapter missing=0 target=1 fault=19 PASS
+Actual optional-service adapter missing=0 target=1 fault=20 PASS
+Actual optional-service adapter missing=0 target=1 fault=21 PASS
+Actual optional-service adapter missing=0 target=1 fault=22 PASS
+Actual optional-service adapter missing=0 target=1 fault=23 PASS
+Actual optional-service adapter missing=0 target=1 fault=24 PASS
+Actual optional-service adapter missing=0 target=1 fault=25 PASS
+Actual optional-service adapter missing=0 target=1 fault=27 PASS
+Actual optional-service adapter missing=0 target=2 fault=22 PASS
+Actual optional-service adapter missing=0 target=2 fault=23 PASS
+Actual optional-service adapter missing=0 target=2 fault=24 PASS
+Actual optional-service adapter missing=0 target=2 fault=25 PASS
+Actual optional-service adapter missing=0 target=2 fault=27 PASS
+Actual optional-service adapter missing=0 target=1 fault=30 PASS
+Actual optional-service adapter missing=0 target=1 fault=31 PASS
+Actual optional-service adapter missing=0 target=1 fault=32 PASS
+Actual optional-service adapter missing=0 target=1 fault=33 PASS
+Actual optional-service adapter missing=0 target=1 fault=34 PASS
+Actual optional-service adapter missing=0 target=1 fault=35 PASS
+Actual optional-service adapter missing=0 target=1 fault=36 PASS
+Actual optional-service adapter missing=0 target=1 fault=37 PASS
+Actual optional-service adapter missing=0 target=1 fault=38 PASS
+Actual optional-service adapter missing=0 target=1 fault=40 PASS
+Actual optional-service adapter missing=0 target=1 fault=41 PASS
+Actual optional-service adapter missing=0 target=2 fault=40 PASS
+Actual optional-service adapter missing=0 target=2 fault=41 PASS
+Actual optional-service adapter missing=0 target=1 fault=50 PASS
+Actual optional-service adapter missing=0 target=1 fault=51 PASS
+Actual optional-service adapter missing=0 target=1 fault=52 PASS
+Actual optional-service adapter missing=0 target=1 fault=53 PASS
+Actual optional-service adapter missing=0 target=0 fault=0 PASS
+Actual optional-service adapter missing=1 target=0 fault=0 PASS
+Actual optional-service adapter missing=2 target=0 fault=0 PASS
+Actual optional-service adapter missing=3 target=0 fault=0 PASS
+Actual optional-service adapter missing=4 target=0 fault=0 PASS
+Actual optional-service adapter missing=5 target=0 fault=0 PASS
+Actual optional-service adapter missing=6 target=0 fault=0 PASS
+Actual optional-service adapter missing=7 target=0 fault=0 PASS
+Actual optional-service adapter missing=0 target=1 fault=2 PASS
+Actual optional-service adapter missing=0 target=1 fault=3 PASS
+Actual optional-service adapter missing=0 target=1 fault=4 PASS
+Actual optional-service adapter missing=0 target=1 fault=5 PASS
+Actual optional-service adapter missing=0 target=1 fault=6 PASS
+Actual optional-service adapter missing=0 target=1 fault=7 PASS
+Actual optional-service adapter missing=0 target=1 fault=9 PASS
+Actual optional-service adapter missing=0 target=1 fault=10 PASS
+Actual optional-service adapter missing=0 target=2 fault=2 PASS
+Actual optional-service adapter missing=0 target=2 fault=3 PASS
+Actual optional-service adapter missing=0 target=2 fault=4 PASS
+Actual optional-service adapter missing=0 target=2 fault=5 PASS
+Actual optional-service adapter missing=0 target=2 fault=6 PASS
+Actual optional-service adapter missing=0 target=2 fault=7 PASS
+Actual optional-service adapter missing=0 target=2 fault=9 PASS
+Actual optional-service adapter missing=0 target=2 fault=10 PASS
+Actual optional-service adapter missing=0 target=3 fault=2 PASS
+Actual optional-service adapter missing=0 target=3 fault=3 PASS
+Actual optional-service adapter missing=0 target=3 fault=4 PASS
+Actual optional-service adapter missing=0 target=3 fault=5 PASS
+Actual optional-service adapter missing=0 target=3 fault=6 PASS
+Actual optional-service adapter missing=0 target=3 fault=7 PASS
+Actual optional-service adapter missing=0 target=3 fault=9 PASS
+Actual optional-service adapter missing=0 target=3 fault=10 PASS
+Actual optional-service adapter missing=0 target=1 fault=11 PASS
+Actual optional-service adapter missing=0 target=1 fault=12 PASS
+Actual optional-service adapter missing=0 target=1 fault=13 PASS
+Actual optional-service adapter missing=0 target=1 fault=14 PASS
+Actual optional-service adapter missing=0 target=1 fault=15 PASS
+Actual optional-service adapter missing=0 target=1 fault=16 PASS
+Actual optional-service adapter missing=0 target=1 fault=18 PASS
+Actual optional-service adapter missing=0 target=1 fault=19 PASS
+Actual optional-service adapter missing=0 target=1 fault=20 PASS
+Actual optional-service adapter missing=0 target=1 fault=21 PASS
+Actual optional-service adapter missing=0 target=1 fault=22 PASS
+Actual optional-service adapter missing=0 target=1 fault=23 PASS
+Actual optional-service adapter missing=0 target=1 fault=24 PASS
+Actual optional-service adapter missing=0 target=1 fault=25 PASS
+Actual optional-service adapter missing=0 target=1 fault=27 PASS
+Actual optional-service adapter missing=0 target=2 fault=22 PASS
+Actual optional-service adapter missing=0 target=2 fault=23 PASS
+Actual optional-service adapter missing=0 target=2 fault=24 PASS
+Actual optional-service adapter missing=0 target=2 fault=25 PASS
+Actual optional-service adapter missing=0 target=2 fault=27 PASS
+Actual optional-service adapter missing=0 target=1 fault=30 PASS
+Actual optional-service adapter missing=0 target=1 fault=31 PASS
+Actual optional-service adapter missing=0 target=1 fault=32 PASS
+Actual optional-service adapter missing=0 target=1 fault=33 PASS
+Actual optional-service adapter missing=0 target=1 fault=34 PASS
+Actual optional-service adapter missing=0 target=1 fault=35 PASS
+Actual optional-service adapter missing=0 target=1 fault=36 PASS
+Actual optional-service adapter missing=0 target=1 fault=37 PASS
+Actual optional-service adapter missing=0 target=1 fault=38 PASS
+Actual optional-service adapter missing=0 target=1 fault=40 PASS
+Actual optional-service adapter missing=0 target=1 fault=41 PASS
+Actual optional-service adapter missing=0 target=2 fault=40 PASS
+Actual optional-service adapter missing=0 target=2 fault=41 PASS
+Actual optional-service adapter missing=0 target=1 fault=50 PASS
+Actual optional-service adapter missing=0 target=1 fault=51 PASS
+Actual optional-service adapter missing=0 target=1 fault=52 PASS
+Actual optional-service adapter missing=0 target=1 fault=53 PASS
+Actual optional-service adapter missing=0 target=0 fault=0 PASS
+Actual optional-service adapter missing=1 target=0 fault=0 PASS
+Actual optional-service adapter missing=2 target=0 fault=0 PASS
+Actual optional-service adapter missing=3 target=0 fault=0 PASS
+Actual optional-service adapter missing=4 target=0 fault=0 PASS
+Actual optional-service adapter missing=5 target=0 fault=0 PASS
+Actual optional-service adapter missing=6 target=0 fault=0 PASS
+Actual optional-service adapter missing=7 target=0 fault=0 PASS
+Actual optional-service adapter missing=0 target=1 fault=2 PASS
+Actual optional-service adapter missing=0 target=1 fault=3 PASS
+Actual optional-service adapter missing=0 target=1 fault=4 PASS
+Actual optional-service adapter missing=0 target=1 fault=5 PASS
+Actual optional-service adapter missing=0 target=1 fault=6 PASS
+Actual optional-service adapter missing=0 target=1 fault=7 PASS
+Actual optional-service adapter missing=0 target=1 fault=9 PASS
+Actual optional-service adapter missing=0 target=1 fault=10 PASS
+Actual optional-service adapter missing=0 target=2 fault=2 PASS
+Actual optional-service adapter missing=0 target=2 fault=3 PASS
+Actual optional-service adapter missing=0 target=2 fault=4 PASS
+Actual optional-service adapter missing=0 target=2 fault=5 PASS
+Actual optional-service adapter missing=0 target=2 fault=6 PASS
+Actual optional-service adapter missing=0 target=2 fault=7 PASS
+Actual optional-service adapter missing=0 target=2 fault=9 PASS
+Actual optional-service adapter missing=0 target=2 fault=10 PASS
+Actual optional-service adapter missing=0 target=3 fault=2 PASS
+Actual optional-service adapter missing=0 target=3 fault=3 PASS
+Actual optional-service adapter missing=0 target=3 fault=4 PASS
+Actual optional-service adapter missing=0 target=3 fault=5 PASS
+Actual optional-service adapter missing=0 target=3 fault=6 PASS
+Actual optional-service adapter missing=0 target=3 fault=7 PASS
+Actual optional-service adapter missing=0 target=3 fault=9 PASS
+Actual optional-service adapter missing=0 target=3 fault=10 PASS
+Actual optional-service adapter missing=0 target=1 fault=11 PASS
+Actual optional-service adapter missing=0 target=1 fault=12 PASS
+Actual optional-service adapter missing=0 target=1 fault=13 PASS
+Actual optional-service adapter missing=0 target=1 fault=14 PASS
+Actual optional-service adapter missing=0 target=1 fault=15 PASS
+Actual optional-service adapter missing=0 target=1 fault=16 PASS
+Actual optional-service adapter missing=0 target=1 fault=18 PASS
+Actual optional-service adapter missing=0 target=1 fault=19 PASS
+Actual optional-service adapter missing=0 target=1 fault=20 PASS
+Actual optional-service adapter missing=0 target=1 fault=21 PASS
+Actual optional-service adapter missing=0 target=1 fault=22 PASS
+Actual optional-service adapter missing=0 target=1 fault=23 PASS
+Actual optional-service adapter missing=0 target=1 fault=24 PASS
+Actual optional-service adapter missing=0 target=1 fault=25 PASS
+Actual optional-service adapter missing=0 target=1 fault=27 PASS
+Actual optional-service adapter missing=0 target=2 fault=22 PASS
+Actual optional-service adapter missing=0 target=2 fault=23 PASS
+Actual optional-service adapter missing=0 target=2 fault=24 PASS
+Actual optional-service adapter missing=0 target=2 fault=25 PASS
+Actual optional-service adapter missing=0 target=2 fault=27 PASS
+Actual optional-service adapter missing=0 target=1 fault=30 PASS
+Actual optional-service adapter missing=0 target=1 fault=31 PASS
+Actual optional-service adapter missing=0 target=1 fault=32 PASS
+Actual optional-service adapter missing=0 target=1 fault=33 PASS
+Actual optional-service adapter missing=0 target=1 fault=34 PASS
+Actual optional-service adapter missing=0 target=1 fault=35 PASS
+Actual optional-service adapter missing=0 target=1 fault=36 PASS
+Actual optional-service adapter missing=0 target=1 fault=37 PASS
+Actual optional-service adapter missing=0 target=1 fault=38 PASS
+Actual optional-service adapter missing=0 target=1 fault=40 PASS
+Actual optional-service adapter missing=0 target=1 fault=41 PASS
+Actual optional-service adapter missing=0 target=2 fault=40 PASS
+Actual optional-service adapter missing=0 target=2 fault=41 PASS
+Actual optional-service adapter missing=0 target=1 fault=50 PASS
+Actual optional-service adapter missing=0 target=1 fault=51 PASS
+Actual optional-service adapter missing=0 target=1 fault=52 PASS
+Actual optional-service adapter missing=0 target=1 fault=53 PASS
+Actual optional-service adapter missing=0 target=0 fault=0 PASS
+Actual optional-service adapter missing=1 target=0 fault=0 PASS
+Actual optional-service adapter missing=2 target=0 fault=0 PASS
+Actual optional-service adapter missing=3 target=0 fault=0 PASS
+Actual optional-service adapter missing=4 target=0 fault=0 PASS
+Actual optional-service adapter missing=5 target=0 fault=0 PASS
+Actual optional-service adapter missing=6 target=0 fault=0 PASS
+Actual optional-service adapter missing=7 target=0 fault=0 PASS
+Actual optional-service adapter missing=0 target=1 fault=2 PASS
+Actual optional-service adapter missing=0 target=1 fault=3 PASS
+Actual optional-service adapter missing=0 target=1 fault=4 PASS
+Actual optional-service adapter missing=0 target=1 fault=5 PASS
+Actual optional-service adapter missing=0 target=1 fault=6 PASS
+Actual optional-service adapter missing=0 target=1 fault=7 PASS
+Actual optional-service adapter missing=0 target=1 fault=9 PASS
+Actual optional-service adapter missing=0 target=1 fault=10 PASS
+Actual optional-service adapter missing=0 target=2 fault=2 PASS
+Actual optional-service adapter missing=0 target=2 fault=3 PASS
+Actual optional-service adapter missing=0 target=2 fault=4 PASS
+Actual optional-service adapter missing=0 target=2 fault=5 PASS
+Actual optional-service adapter missing=0 target=2 fault=6 PASS
+Actual optional-service adapter missing=0 target=2 fault=7 PASS
+Actual optional-service adapter missing=0 target=2 fault=9 PASS
+Actual optional-service adapter missing=0 target=2 fault=10 PASS
+Actual optional-service adapter missing=0 target=3 fault=2 PASS
+Actual optional-service adapter missing=0 target=3 fault=3 PASS
+Actual optional-service adapter missing=0 target=3 fault=4 PASS
+Actual optional-service adapter missing=0 target=3 fault=5 PASS
+Actual optional-service adapter missing=0 target=3 fault=6 PASS
+Actual optional-service adapter missing=0 target=3 fault=7 PASS
+Actual optional-service adapter missing=0 target=3 fault=9 PASS
+Actual optional-service adapter missing=0 target=3 fault=10 PASS
+Actual optional-service adapter missing=0 target=1 fault=11 PASS
+Actual optional-service adapter missing=0 target=1 fault=12 PASS
+Actual optional-service adapter missing=0 target=1 fault=13 PASS
+Actual optional-service adapter missing=0 target=1 fault=14 PASS
+Actual optional-service adapter missing=0 target=1 fault=15 PASS
+Actual optional-service adapter missing=0 target=1 fault=16 PASS
+Actual optional-service adapter missing=0 target=1 fault=18 PASS
+Actual optional-service adapter missing=0 target=1 fault=19 PASS
+Actual optional-service adapter missing=0 target=1 fault=20 PASS
+Actual optional-service adapter missing=0 target=1 fault=21 PASS
+Actual optional-service adapter missing=0 target=1 fault=22 PASS
+Actual optional-service adapter missing=0 target=1 fault=23 PASS
+Actual optional-service adapter missing=0 target=1 fault=24 PASS
+Actual optional-service adapter missing=0 target=1 fault=25 PASS
+Actual optional-service adapter missing=0 target=1 fault=27 PASS
+Actual optional-service adapter missing=0 target=2 fault=22 PASS
+Actual optional-service adapter missing=0 target=2 fault=23 PASS
+Actual optional-service adapter missing=0 target=2 fault=24 PASS
+Actual optional-service adapter missing=0 target=2 fault=25 PASS
+Actual optional-service adapter missing=0 target=2 fault=27 PASS
+Actual optional-service adapter missing=0 target=1 fault=30 PASS
+Actual optional-service adapter missing=0 target=1 fault=31 PASS
+Actual optional-service adapter missing=0 target=1 fault=32 PASS
+Actual optional-service adapter missing=0 target=1 fault=33 PASS
+Actual optional-service adapter missing=0 target=1 fault=34 PASS
+Actual optional-service adapter missing=0 target=1 fault=35 PASS
+Actual optional-service adapter missing=0 target=1 fault=36 PASS
+Actual optional-service adapter missing=0 target=1 fault=37 PASS
+Actual optional-service adapter missing=0 target=1 fault=38 PASS
+Actual optional-service adapter missing=0 target=1 fault=40 PASS
+Actual optional-service adapter missing=0 target=1 fault=41 PASS
+Actual optional-service adapter missing=0 target=2 fault=40 PASS
+Actual optional-service adapter missing=0 target=2 fault=41 PASS
+Actual optional-service adapter missing=0 target=1 fault=50 PASS
+Actual optional-service adapter missing=0 target=1 fault=51 PASS
+Actual optional-service adapter missing=0 target=1 fault=52 PASS
+Actual optional-service adapter missing=0 target=1 fault=53 PASS
+Optional service adapter: 276 normal + ASan/UBSan cases PASS
+=== test_navigation_retention_adapter.py ===
+Local navigation retained-query adapter boundary 0 PASS
+Local navigation retained-query adapter boundary 1 PASS
+Local navigation retained-query adapter boundary 2 PASS
+Local navigation retained-query adapter boundary 3 PASS
+Local navigation retained-query adapter boundary 4 PASS
+Local navigation retained-query adapter boundary 5 PASS
+Local navigation retained-query adapter boundary 6 PASS
+Local navigation retained-query adapter boundary 7 PASS
+Local navigation retained-query adapter boundary 8 PASS
+Local navigation retained-query adapter boundary 9 PASS
+Local navigation retained-query adapter boundary 0 PASS
+Local navigation retained-query adapter boundary 1 PASS
+Local navigation retained-query adapter boundary 2 PASS
+Local navigation retained-query adapter boundary 3 PASS
+Local navigation retained-query adapter boundary 4 PASS
+Local navigation retained-query adapter boundary 5 PASS
+Local navigation retained-query adapter boundary 6 PASS
+Local navigation retained-query adapter boundary 7 PASS
+Local navigation retained-query adapter boundary 8 PASS
+Local navigation retained-query adapter boundary 9 PASS
+Local navigation retained-query adapter: 20 normal + ASan/UBSan boundary cases PASS
+=== test_context_adapter.py ===
+Contexts actual adapter lifecycle case 0 PASS
+Contexts actual adapter lifecycle case 1 PASS
+Contexts actual adapter lifecycle case 2 PASS
+Contexts paused before retained native sleep PASS
+Contexts actual adapter lifecycle case 4 PASS
+Contexts actual adapter lifecycle case 5 PASS
+Contexts ordinary app exit stops its capture and releases grant PASS
+Contexts actual adapter lifecycle case 7 PASS
+Background Contexts does not inhibit ordinary idle sleep PASS
+Contexts actual adapter lifecycle case 9 PASS
+Contexts actual adapter lifecycle case 10 PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Contexts actual adapter lifecycle case 0 PASS
+Contexts actual adapter lifecycle case 1 PASS
+Contexts actual adapter lifecycle case 2 PASS
+Contexts paused before retained native sleep PASS
+Contexts actual adapter lifecycle case 4 PASS
+Contexts actual adapter lifecycle case 5 PASS
+Contexts ordinary app exit stops its capture and releases grant PASS
+Contexts actual adapter lifecycle case 7 PASS
+Background Contexts does not inhibit ordinary idle sleep PASS
+Contexts actual adapter lifecycle case 9 PASS
+Contexts actual adapter lifecycle case 10 PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS
+Capture cleanup refusal retains invocation and suppresses display/input/service/fini PASS

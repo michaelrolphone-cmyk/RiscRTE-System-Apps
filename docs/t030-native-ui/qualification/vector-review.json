@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "scope": "Exact embedded corpus, analytic winding and malformed bounds",
+  "checks": [
+    {
+      "variant": "normal",
+      "glyphs": 168,
+      "draws": 12096,
+      "widths": [
+        1,
+        2,
+        7,
+        13,
+        32,
+        64,
+        96,
+        128
+      ],
+      "height_modes": [
+        "square",
+        "one_pixel",
+        "128_pixels"
+      ],
+      "repeat_equal": true,
+      "negative_clipping_exact": true,
+      "winding_cases": 2,
+      "malformed_cases": 9,
+      "max_edges": 432,
+      "edge_capacity": 512,
+      "max_edge_glyph": 13,
+      "max_active_intersections": 12,
+      "max_coordinate_product": 8684544
+    },
+    {
+      "variant": "sanitized",
+      "glyphs": 168,
+      "draws": 12096,
+      "widths": [
+        1,
+        2,
+        7,
+        13,
+        32,
+        64,
+        96,
+        128
+      ],
+      "height_modes": [
+        "square",
+        "one_pixel",
+        "128_pixels"
+      ],
+      "repeat_equal": true,
+      "negative_clipping_exact": true,
+      "winding_cases": 2,
+      "malformed_cases": 9,
+      "max_edges": 432,
+      "edge_capacity": 512,
+      "max_edge_glyph": 13,
+      "max_active_intersections": 12,
+      "max_coordinate_product": 8684544
+    }
+  ],
+  "recursion_depth_limit": 8,
+  "max_live_curve_frames": 9,
+  "host_stack_frames": {
+    "np_vector_unpack": {
+      "bytes": 40,
+      "kind": "static"
+    },
+    "np_vector_line.part.0": {
+      "bytes": 24,
+      "kind": "static"
+    },
+    "np_vector_quad": {
+      "bytes": 96,
+      "kind": "dynamic,bounded"
+    },
+    "np_vector_cubic": {
+      "bytes": 128,
+      "kind": "dynamic,bounded"
+    },
+    "np_vector_draw.constprop": {
+      "bytes": 224,
+      "kind": "dynamic,bounded"
+    }
+  },
+  "target_stack": {
+    "status": "checked",
+    "elf_sha256": "81bac643447c27553aa1e2162cb4179edc534866fc7ec51d490374a9cf3767c4",
+    "frames_bytes": {
+      "np_icon_color$part$77$lto_priv$319": 64,
+      "np_vector_read": 32,
+      "np_vector_line": 48,
+      "np_vector_cubic": 64,
+      "np_vector_quad": 64,
+      "np_icon$lto_priv$339": 32,
+      "np_vector_draw$lto_priv$205": 144,
+      "nova_render": 384,
+      "nova_run": 928,
+      "app_main": 112
+    },
+    "max_curve_frame_bytes": 64,
+    "scope": "Linked Xtensa prologues; not total task stack high-water",
+    "max_live_curve_frame_bytes": 576
+  },
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "source_sha256": {
+    "test/native_apps/springboard_vector_review_test.c": "de2d2a00fd5be59c958ec124b165ffe8e1a9a39df3c44fb545cda5924e4e0bce",
+    "lib/PortableApps/src/nova_vector.inc": "d7a233e53a72fe48d0f1af1a0588bb2d6f0870828e36a28ffc4538fb178911dd",
+    "lib/PortableApps/fonts/native_vectors.inc": "c92f38d1e71ca63af841dcab39204ee3b3301835e2c91601ca54f16b4fe2c816",
+    "lib/PortableApps/fonts/native_vectors_sources.json": "4b788fe65bc628a5a96abe9eaa4a9389925138e476b3431549fda070c0e5ec1d",
+    "scripts/test_springboard_native_vectors.py": "0021e0fe94a67cf1a130538fad3fbbba92b5068ac245656427be6b98b5952ba1"
+  }
+}

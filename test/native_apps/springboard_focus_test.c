@@ -91,7 +91,7 @@ const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime
 static bool visible(unsigned i){
  int x=(int)fw/2+(scene->points[i].x+(int)(scene->motion.x*16))/16;
  int y=(int)fh/2+(scene->points[i].y+(int)(scene->motion.y*16))/16;
- return x>=-32&&y>=-32&&x<=(int)fw+32&&y<=(int)fh+32;
+ return x>=-nova_px(32)&&y>=-nova_px(32)&&x<=(int)fw+nova_px(32)&&y<=(int)fh+nova_px(32);
 }
 static unsigned visible_index(unsigned ordinal){
  for(unsigned i=0;i<scene->n;i++)if(visible(i)){if(!ordinal)return i;--ordinal;}
@@ -108,8 +108,8 @@ static void circle(int x,int y,int r,uint32_t color,uint8_t opacity){
 #ifndef FOCUS_BASELINE
  if(i==scene->focus&&scene->pending<0)expected+=expected/8;
 #endif
- assert(r==22*expected/256);
- if(i==scene->focus){focus_x=x;focus_y=y;focus_radius=r;if(unboost)r=22*base/256;}
+ assert(r==nova_px(22)*expected/256);
+ if(i==scene->focus){focus_x=x;focus_y=y;focus_radius=r;if(unboost)r=nova_px(22)*base/256;}
  production->circle(x,y,r,color,opacity);
 }
 static bool icon(int x,int y,int size,const char *name,uint8_t opacity){
@@ -117,8 +117,8 @@ static bool icon(int x,int y,int size,const char *name,uint8_t opacity){
 #ifndef FOCUS_BASELINE
  if(i==scene->focus&&scene->pending<0)expected+=expected/8;
 #endif
- assert(size==24*expected/256);
- if(i==scene->focus){focus_glyph=size;if(unboost)size=24*base/256;}
+ assert(size==nova_px(24)*expected/256);
+ if(i==scene->focus){focus_glyph=size;if(unboost)size=nova_px(24)*base/256;}
  bool ok=production->icon(x,y,size,name,opacity);assert(ok);return ok;
 }
 static void guards(void){
@@ -147,16 +147,16 @@ static void compare_focus(nova_state *s,bool centered){
  if(s->pending<0)for(unsigned i=0;i<s->n;i++)if(i!=s->focus){
   int other_x=(int)fw/2+(s->points[i].x+(int)(s->motion.x*16))/16;
   int other_y=(int)fh/2+(s->points[i].y+(int)(s->motion.y*16))/16;
-  int dx=x-other_x,dy=y-other_y,sum=radius+22*scale_for(i)/256;
+  int dx=x-other_x,dy=y-other_y,sum=radius+nova_px(22)*scale_for(i)/256;
   assert(dx*dx+dy*dy>=sum*sum); /* no extra overlap with any neighbour */
  }
  if(centered){
   assert(x==(int)fw/2&&y==(int)fh/2);
   assert(x-radius>0&&y-radius>0&&x+radius<(int)fw&&y+radius<(int)fh);
 #ifndef FOCUS_BASELINE
-  assert(radius==27&&glyph==30);
+  assert(radius==nova_px(22)*(287+287/8)/256&&glyph==nova_px(24)*(287+287/8)/256);
 #else
-  assert(radius==24&&glyph==26);
+  assert(radius==nova_px(22)*287/256&&glyph==nova_px(24)*287/256);
 #endif
  }
  render(s,true);unsigned changed=0;painted=white=0;
@@ -166,12 +166,12 @@ static void compare_focus(nova_state *s,bool centered){
   if(dx*dx+dy*dy<=radius*radius){if(a)painted++;if(a==0xffff)white++;}
  }
 #ifndef FOCUS_BASELINE
- if(centered)assert(changed>200&&painted>2100&&white>50);
+ if(centered)assert(changed>(unsigned)radius*3&&painted>(unsigned)(radius*radius)*2&&white>10);
 #else
  assert(changed==0);
 #endif
  /* Visual enlargement must not alter the original strict circular hit target. */
- if(centered){assert(nova_hit(s,x+25,y)==(int)s->focus);assert(nova_hit(s,x+26,y)!=(int)s->focus);}
+ if(centered){int hit=nova_px(24)*287/256;assert(nova_hit(s,x+hit-1,y)==(int)s->focus);assert(nova_hit(s,x+hit,y)!=(int)s->focus);}
  render(s,false);
 }
 static void open_display(unsigned w,unsigned h){

@@ -1,0 +1,194 @@
+[
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "slow-refresh",
+    "sanitized": false,
+    "result": "Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "slow-latency",
+    "sanitized": false,
+    "result": "Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "retains-image",
+    "sanitized": false,
+    "result": "Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "slow-refresh",
+    "sanitized": false,
+    "result": "Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "slow-latency",
+    "sanitized": false,
+    "result": "Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "retains-image",
+    "sanitized": false,
+    "result": "Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "slow-refresh",
+    "sanitized": false,
+    "result": "Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "slow-latency",
+    "sanitized": false,
+    "result": "Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "retains-image",
+    "sanitized": false,
+    "result": "Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "slow-refresh",
+    "sanitized": false,
+    "result": "Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "slow-latency",
+    "sanitized": false,
+    "result": "Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "retains-image",
+    "sanitized": false,
+    "result": "Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "slow-refresh",
+    "sanitized": true,
+    "result": "Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "slow-latency",
+    "sanitized": true,
+    "result": "Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "sync",
+    "metadata": "retains-image",
+    "sanitized": true,
+    "result": "Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "slow-refresh",
+    "sanitized": true,
+    "result": "Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "slow-latency",
+    "sanitized": true,
+    "result": "Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 240,
+    "height": 240,
+    "provider": "async",
+    "metadata": "retains-image",
+    "sanitized": true,
+    "result": "Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "slow-refresh",
+    "sanitized": true,
+    "result": "Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "slow-latency",
+    "sanitized": true,
+    "result": "Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "sync",
+    "metadata": "retains-image",
+    "sanitized": true,
+    "result": "Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "slow-refresh",
+    "sanitized": true,
+    "result": "Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "slow-latency",
+    "sanitized": true,
+    "result": "Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "provider": "async",
+    "metadata": "retains-image",
+    "sanitized": true,
+    "result": "Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS"
+  }
+]

@@ -1,0 +1,10 @@
+[
+  {
+    "binary": "native-transition-normal",
+    "result": "RGB565 transition: 12128 frames, independent two-pass clamped reference, exact endpoints, strides, canaries and 182 non-mutating rejections passed"
+  },
+  {
+    "binary": "native-transition-sanitized",
+    "result": "RGB565 transition: 12128 frames, independent two-pass clamped reference, exact endpoints, strides, canaries and 182 non-mutating rejections passed"
+  }
+]

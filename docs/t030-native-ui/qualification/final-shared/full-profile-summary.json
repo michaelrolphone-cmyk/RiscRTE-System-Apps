@@ -1,0 +1,140 @@
+[
+  {
+    "width": 240,
+    "height": 240,
+    "repetitions": 5,
+    "frames_per_repetition": 240,
+    "timing_basis": "host CLOCK_THREAD_CPUTIME_ID; full-feature provider model; not hardware latency or FPS",
+    "measurements": {
+      "clear_us_per_frame": {
+        "median": 72.591,
+        "min": 61.832,
+        "max": 86.614
+      },
+      "circles_us_per_frame": {
+        "median": 91.725,
+        "min": 79.816,
+        "max": 96.981
+      },
+      "icons_us_per_frame": {
+        "median": 283.169,
+        "min": 256.878,
+        "max": 304.955
+      },
+      "mask_captions_us_per_frame": {
+        "median": 320.903,
+        "min": 284.27,
+        "max": 348.506
+      },
+      "submit_copy_us_per_frame": {
+        "median": 13.629,
+        "min": 12.555,
+        "max": 20.203
+      },
+      "input_poll_us_per_frame": {
+        "median": 2.933,
+        "min": 2.514,
+        "max": 4.619
+      },
+      "motion_us_per_frame": {
+        "median": 0.479,
+        "min": 0.457,
+        "max": 0.639
+      },
+      "render_us_per_frame": {
+        "median": 803.876,
+        "min": 719.075,
+        "max": 846.856
+      }
+    },
+    "pixels_hash": "4b0ce027bf61e4f4",
+    "state_hash": "1f96719fd4298b94",
+    "instrument_calls": [
+      58211,
+      239,
+      1925,
+      242,
+      241,
+      1747387,
+      0,
+      298699,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "width": 410,
+    "height": 502,
+    "repetitions": 5,
+    "frames_per_repetition": 240,
+    "timing_basis": "host CLOCK_THREAD_CPUTIME_ID; full-feature provider model; not hardware latency or FPS",
+    "measurements": {
+      "clear_us_per_frame": {
+        "median": 264.18,
+        "min": 208.402,
+        "max": 272.271
+      },
+      "circles_us_per_frame": {
+        "median": 223.251,
+        "min": 181.62,
+        "max": 989.893
+      },
+      "icons_us_per_frame": {
+        "median": 625.428,
+        "min": 508.58,
+        "max": 1911.721
+      },
+      "mask_captions_us_per_frame": {
+        "median": 829.484,
+        "min": 691.472,
+        "max": 1270.762
+      },
+      "submit_copy_us_per_frame": {
+        "median": 72.127,
+        "min": 48.32,
+        "max": 211.236
+      },
+      "input_poll_us_per_frame": {
+        "median": 10.239,
+        "min": 4.914,
+        "max": 26.326
+      },
+      "motion_us_per_frame": {
+        "median": 0.837,
+        "min": 0.626,
+        "max": 2.328
+      },
+      "render_us_per_frame": {
+        "median": 2121.767,
+        "min": 1666.399,
+        "max": 4697.475
+      }
+    },
+    "pixels_hash": "e8dedbe1469be8cf",
+    "state_hash": "bd48004dfb9c237e",
+    "instrument_calls": [
+      138955,
+      239,
+      1925,
+      242,
+      241,
+      4761174,
+      0,
+      536875,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+]

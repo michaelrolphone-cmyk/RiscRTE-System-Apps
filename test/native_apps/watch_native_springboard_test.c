@@ -171,7 +171,11 @@ static void open_controller(void) {
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
  assert(springboard_watch_open());
 #endif
+ #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+ assert(api->screen_width()==(int)fw && api->screen_height()==(int)fh);
+#else
  assert(api->screen_width()==240 && api->screen_height()==logical_height());
+#endif
  count=api->installed_apps_count();assert(count==23 && portable_catalog_count==23);selected=0;layout();assert(compact);
  production=springboard_presentation_get();assert(!!production==expect_presentation);guards();
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
@@ -194,10 +198,12 @@ static springboard_contact read_contact(bool down,unsigned x,unsigned y) {
  assert(!event_count);if(drained){assert(api->poll(&in,20));production->contact(&c);}
  if(cancelled){c.valid=false;c.cancelled=true;}return c;
 }
+#ifndef PORTABLE_WATCH_NATIVE_HEIGHT
 static springboard_contact input(nova_state *s,bool down,unsigned x,unsigned y) {
  springboard_contact c=read_contact(down,physical(x),physical(y));
  nova_contact_input(s,&c,20);return c;
 }
+#endif
 static void render(nova_state *s) {
  nova_render(s);guards();
  if(expect_transition) {assert(springboard_transition_active());expect_transition=false;}
@@ -207,6 +213,9 @@ static void render(nova_state *s) {
  while(springboard_transition_active()&&remaining--){ticks+=40;nova_render(s);guards();}
  assert(!springboard_transition_active());
 }
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "springboard_native_checks.inc"
+#else
 static void controller_tests(void) {
  open_controller();nova_state s={.view=production,.pending=-1,.initial=true};nova_layout(&s);
  assert(s.n==19);render(&s);capture("initial");
@@ -262,6 +271,7 @@ static void controller_tests(void) {
  }
  close_controller();
 }
+#endif
 static void application_tests(void) {
  for(unsigned mode=1;mode<=4;mode++) {
   full_run=mode;open_controller();

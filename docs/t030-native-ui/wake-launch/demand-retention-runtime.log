@@ -1,0 +1,3 @@
+Demand retention before-release       loads=4 starts=4 acquires=3 calls=1 fini=1 retained=0 PASS
+Demand retention handoff              loads=2 starts=2 acquires=6 calls=3 fini=3 retained=0 PASS
+Demand retention late                 loads=3 starts=3 acquires=9 calls=3 fini=3 retained=0 PASS

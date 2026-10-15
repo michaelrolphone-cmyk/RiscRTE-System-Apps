@@ -10,7 +10,7 @@ const t5_app_manifest_t portable_catalog[]={{.display_name="Stopwatch",.icon="so
 const unsigned portable_catalog_count=1;
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){(void)version;return NULL;}
 static uint16_t pixels[240*243];
-static unsigned char coverage[240*240];
+static uint16_t coverage[240*240];
 static void reset_pixels(uint16_t color){
  info.width=info.height=240;
  surface=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,
@@ -31,11 +31,14 @@ static void save_frame(const char *name){
 }
 static void caption_pixels(const char *s,bool clock,int y){
  /* Independently reconstruct only text positions/coverage, without using the
-  * production backing helper. The black interior includes interletter space. */
- int total=0,length=0,spacing=clock?21:34;
+  * production caption/backing helpers. Glyph coverage comes from separately
+  * tested vector primitives. The black interior includes interletter space. */
+ int total=0,length=0,spacing=clock?21:34,font=clock?11:15;
+ reset_pixels(0);
  while(length<95 && s[length]){
   unsigned c=(unsigned char)s[length];if(c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
-  int next=total+rpt_text[(clock?0:95)+c-32].advance_q4+(length?spacing:0);
+  const np_vector_glyph *g=&np_vector_glyphs[np_vector_text[(clock?0:95)+c-32]];
+  int next=total+(int)g->advance*font*16/g->units+(length?spacing:0);
   if(next>224*16)break;
   total=next;length++;
  }
@@ -43,20 +46,19 @@ static void caption_pixels(const char *s,bool clock,int y){
  memset(coverage,0,sizeof(coverage));
  for(int k=0;k<length;k++){
   unsigned c=(unsigned char)s[k];if(c>='a'&&c<='z')c-=32;if(c<32||c>126)c='?';
-  const rpt_glyph *g=&rpt_text[(clock?0:95)+c-32];
-  if(g->width&&g->height){
-   int gx=x/16+g->left,gy=y+g->top;
+  const np_vector_glyph *g=&np_vector_glyphs[np_vector_text[(clock?0:95)+c-32]];
+  if(g->length){
+   int gw=((g->right-g->left)*font+g->units-1)/g->units,gh=((g->top-g->bottom)*font+g->units-1)/g->units;
+   int gx=x/16+g->left*font/g->units,gy=y+(g->ascent*font+g->units-1)/g->units-(g->top*font+g->units-1)/g->units;
    if(gx<l)l=gx;
    if(gy<t)t=gy;
-   if(gx+g->width-1>r)r=gx+g->width-1;
-   if(gy+g->height-1>b)b=gy+g->height-1;
-   for(unsigned j=0;j<g->height;j++)for(unsigned i=0;i<g->width;i++){
-    unsigned n=j*g->width+i,a=(g->bits[n/4]>>(6-2*(n%4)))&3;
-    if(gx+(int)i>=0&&gx+(int)i<240&&gy+(int)j>=0&&gy+(int)j<240)coverage[(gy+j)*240+gx+i]=(unsigned char)(a*85);
-   }
+   if(gx+gw-1>r)r=gx+gw-1;
+   if(gy+gh-1>b)b=gy+gh-1;
+   assert(np_vector_draw(gx,gy,gw,gh,g,0xffffff,255));
   }
-  x+=g->advance_q4+spacing;
+  x+=(int)g->advance*font*16/g->units+spacing;
  }
+ for(unsigned yy=0;yy<240;yy++)for(unsigned xx=0;xx<240;xx++)coverage[yy*240+xx]=pixels[yy*243+xx];
  reset_pixels(0xffff);np_caption(y,s,clock,0xffffff);guards();
  if(r<l){for(unsigned yy=0;yy<240;yy++)for(unsigned xx=0;xx<240;xx++)assert(pixels[yy*243+xx]==0xffff);return;}
  l-=2;r+=2;t-=2;b+=2;
@@ -64,8 +66,8 @@ static void caption_pixels(const char *s,bool clock,int y){
  for(int yy=0;yy<240;yy++)for(int xx=0;xx<240;xx++){
   uint16_t pixel=pixels[yy*243+xx];unsigned a=coverage[yy*240+xx];
   if(xx>=l&&xx<=r&&yy>=t&&yy<=b){
-   assert(pixel==np_rgb(a*0x010101u));
-   if(a==255)whites++;
+   assert(pixel==a);
+   if(a==0xffff)whites++;
    if(a==0)space++;
   }else{
    int dx=xx<l?l-xx:xx>r?xx-r:0,dy=yy<t?t-yy:yy>b?yy-b:0;

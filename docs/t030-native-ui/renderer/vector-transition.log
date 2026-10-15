@@ -1,0 +1,3 @@
+RGB565 transition: 12128 frames, independent two-pass clamped reference, exact endpoints, strides, canaries and 182 non-mutating rejections passed
+RGB565 transition: 12128 frames, independent two-pass clamped reference, exact endpoints, strides, canaries and 182 non-mutating rejections passed
+PASS: native 410x502/512x512 retained transition matches the independent RGB565 oracle

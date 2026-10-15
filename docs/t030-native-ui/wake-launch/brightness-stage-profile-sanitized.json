@@ -1,0 +1,130 @@
+[
+  {
+    "case": "240x240-sync-dark-open",
+    "result": "Initial brightness 240x240 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-sync-retained-lit",
+    "result": "Initial brightness 240x240 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-sync-preview-before",
+    "result": "Initial brightness 240x240 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-sync-torch-before",
+    "result": "Initial brightness 240x240 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-sync-unsupported",
+    "result": "Initial brightness 240x240 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-sync-submit-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "240x240-sync-completion-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "240x240-sync-brightness-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "240x240-async-dark-open",
+    "result": "Initial brightness 240x240 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-async-retained-lit",
+    "result": "Initial brightness 240x240 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-async-preview-before",
+    "result": "Initial brightness 240x240 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-async-torch-before",
+    "result": "Initial brightness 240x240 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-async-unsupported",
+    "result": "Initial brightness 240x240 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "240x240-async-submit-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "240x240-async-completion-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "240x240-async-brightness-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-sync-dark-open",
+    "result": "Initial brightness 410x502 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-sync-retained-lit",
+    "result": "Initial brightness 410x502 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-sync-preview-before",
+    "result": "Initial brightness 410x502 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-sync-torch-before",
+    "result": "Initial brightness 410x502 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-sync-unsupported",
+    "result": "Initial brightness 410x502 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-sync-submit-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-sync-completion-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-sync-brightness-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-async-dark-open",
+    "result": "Initial brightness 410x502 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-async-retained-lit",
+    "result": "Initial brightness 410x502 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-async-preview-before",
+    "result": "Initial brightness 410x502 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-async-torch-before",
+    "result": "Initial brightness 410x502 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-async-unsupported",
+    "result": "Initial brightness 410x502 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+  },
+  {
+    "case": "410x502-async-submit-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-async-completion-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  },
+  {
+    "case": "410x502-async-brightness-failed",
+    "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+  }
+]

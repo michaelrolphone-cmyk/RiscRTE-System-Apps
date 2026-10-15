@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "observed_at": "2026-10-15T00:08:52Z",
+  "hardware_qualified": false,
+  "stage_profile_defined": true,
+  "full_feature_geometries": 7,
+  "full_feature_normal_and_sanitized": true,
+  "native_profiles_repeats_per_dimension": 5,
+  "provider_cadence_scenarios_per_variant": 6,
+  "catalog_work_during_gestures": 0,
+  "final_custody_scripts": [
+    "test_watch_native_input.py",
+    "test_watch_native_fallback.py",
+    "test_watch_canvas_crown_exit.py",
+    "test_optional_service_adapter.py",
+    "test_navigation_retention_adapter.py",
+    "test_context_adapter.py"
+  ],
+  "sanitizers": "ASan and UBSan enabled. LeakSanitizer thread enumeration is unsupported in this ptrace-supervised executor; detect_leaks=0 matches existing runners. Fixtures assert allocation/grant/frame cleanup.",
+  "production_sha256": {
+    "Apps/springboard.c": "ed7ce4025e5c8819eb252517287205c53c94765134d17109857f86ce44a6b6e9",
+    "Apps/springboard_nova.inc": "bae2a315f8f941a9f69c6a5c0fbd502b4128392e6bbd13b0ff1d40962cdd7fbe",
+    "Apps/springboard_motion.h": "2d9bba0d123d47475ecba64a2cf0221ca2d485d2ad4a13422bfd98a238315a0f",
+    "lib/PortableApps/src/adapter.c": "10be637bf50ada091256cc4a9c3b30fa20e5006b75dba88d658a472d0947cc15",
+    "lib/PortableApps/src/canvas_async.inc": "7caef5e5b7528ae55e3eff4544cf3dd78b2f2bbd6358ef55d8e84215f36c9035",
+    "lib/PortableApps/src/nova.inc": "657e780a7993916a808742fd70652164488ca28f6bdcfaed4603af3357c40de1",
+    "lib/PortableApps/src/nova_native.inc": "156eec2cbdbebbeafb82bbbf8f4462506ac3b1ca01a3618713f500e2a1a7a246",
+    "lib/PortableApps/src/nova_vector.inc": "d7a233e53a72fe48d0f1af1a0588bb2d6f0870828e36a28ffc4538fb178911dd",
+    "lib/PortableApps/src/stage_profile.inc": "edd8d41b913d6648d48bb59cb89666c8ea64c7300c2122995fb72727c2355aeb",
+    "lib/PortableApps/fonts/native_vectors.inc": "c92f38d1e71ca63af841dcab39204ee3b3301835e2c91601ca54f16b4fe2c816"
+  }
+}

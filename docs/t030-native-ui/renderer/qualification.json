@@ -1,0 +1,157 @@
+{
+  "schema": "native-springboard-render-qualification-v1",
+  "hardware_qualified": false,
+  "controller_minimum_frame_interval_ms": 40,
+  "maximum_controller_fps": 25,
+  "physical_resolution": [
+    410,
+    502
+  ],
+  "direct_raster_geometries": [
+    [
+      1,
+      1
+    ],
+    [
+      64,
+      64
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      160,
+      160
+    ],
+    [
+      239,
+      293
+    ],
+    [
+      240,
+      240
+    ],
+    [
+      320,
+      160
+    ],
+    [
+      480,
+      320
+    ],
+    [
+      320,
+      320
+    ],
+    [
+      320,
+      390
+    ],
+    [
+      410,
+      502
+    ],
+    [
+      800,
+      1000
+    ],
+    [
+      1024,
+      1024
+    ],
+    [
+      2048,
+      2048
+    ]
+  ],
+  "full_feature_geometries": [
+    [
+      160,
+      160
+    ],
+    [
+      239,
+      293
+    ],
+    [
+      240,
+      240
+    ],
+    [
+      320,
+      320
+    ],
+    [
+      320,
+      390
+    ],
+    [
+      410,
+      502
+    ],
+    [
+      800,
+      1000
+    ]
+  ],
+  "limits": [
+    "Standalone direct renderer/controller admits 1..2048 in each axis; UI readability is not guaranteed at tiny dimensions.",
+    "Complete native-height adapter still requires width and height 160..1024 and legacy Quick Controls logical height >=240 (square/portrait).",
+    "Known-ineligible metadata retains generic grid typography and control dimensions; native input and vector icons are corrected.",
+    "Other delivered applications and Quick Controls are not claimed to be native-resolution migrated."
+  ],
+  "checks": {
+    "native_metadata_controller_cases": 108,
+    "optional_service_absence_cases": 72,
+    "full_feature_cases": 14,
+    "native_glyph_size_cases_per_sanitizer": 1512,
+    "maximum_glyph_edges": 432,
+    "glyph_edge_capacity": 512,
+    "motion_normalization_trajectories": 28,
+    "legacy_controller_randomized_trajectories": 19000,
+    "runtime_catalog_cases": 184,
+    "generic_fallback_cases": 24,
+    "transition_frames_per_variant": 12128,
+    "normal_and_asan_ubsan": true
+  },
+  "native_raster": {
+    "glyph_count": 168,
+    "packed_outline_bytes": 12348,
+    "decoded_outline_bytes": 19741,
+    "heap_allocations": 0,
+    "maximum_glyph_raster_width": 128,
+    "maximum_glyph_raster_height": 128,
+    "controller_icon_pixel_cap": 96,
+    "font_design_extent_cap": 960,
+    "vertical_coverage_samples": 4,
+    "maximum_curve_depth": 8,
+    "checkpoint_rows": 4,
+    "maximum_edge_visits_between_row_checkpoints": 8192
+  },
+  "input_and_scaling": {
+    "physical_contact_coordinates": true,
+    "completed_view_scaling": false,
+    "native_watch_pixel_calls_per_240_frames": 0
+  },
+  "screenshots": {
+    "after-native-410x502.png": "a394d508289ff86efdd9df5b828f7a0fa0c9447403c7249dda105defe090b171",
+    "before43-410x502.png": "6bd9efeedc75302e8dc5b7f883d04b0e6d9f7604ecc551af5083854a8ae68e94",
+    "native-128x128.png": "405d713fc419d7b41ffa36a4de1f076184090cccc6a73c34d5b4c32da8952a84",
+    "native-2048x2048.png": "c668c8fb42d67ffdafd9f56fdbb71949995abcc105595f75f7d2d7170a29ccf1",
+    "native-240x240.png": "d49e654d3709838b85555fca96f078ca6f86fb9c4e79e1a67d3fd3f7e6c62106",
+    "native-320x160.png": "656c8afd3b454dc9ec46649948235c9c53c151106dd638213bc48e29e71870e8",
+    "native-320x320.png": "6cc069bcb57eef840b21da998a2741c69b8ced78ab6b51dd032e0819d69623a6",
+    "native-410x502.png": "a394d508289ff86efdd9df5b828f7a0fa0c9447403c7249dda105defe090b171",
+    "native-800x1000.png": "9973d39521f2c24f557137c86ab292b719a45594a6754347da3d793a038887d4"
+  },
+  "source_sha256": {
+    "Apps/springboard.c": "ed7ce4025e5c8819eb252517287205c53c94765134d17109857f86ce44a6b6e9",
+    "Apps/springboard_nova.inc": "bae2a315f8f941a9f69c6a5c0fbd502b4128392e6bbd13b0ff1d40962cdd7fbe",
+    "Apps/springboard_motion.h": "2d9bba0d123d47475ecba64a2cf0221ca2d485d2ad4a13422bfd98a238315a0f",
+    "lib/PortableApps/src/nova.inc": "657e780a7993916a808742fd70652164488ca28f6bdcfaed4603af3357c40de1",
+    "lib/PortableApps/src/nova_native.inc": "156eec2cbdbebbeafb82bbbf8f4462506ac3b1ca01a3618713f500e2a1a7a246",
+    "lib/PortableApps/src/nova_vector.inc": "d7a233e53a72fe48d0f1af1a0588bb2d6f0870828e36a28ffc4538fb178911dd",
+    "lib/PortableApps/fonts/native_vectors.inc": "c92f38d1e71ca63af841dcab39204ee3b3301835e2c91601ca54f16b4fe2c816"
+  }
+}

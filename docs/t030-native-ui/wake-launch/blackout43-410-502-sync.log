@@ -1,0 +1,38 @@
+MALLOC bytes=414656 live=1 total=414656
+ACQUIRE contexts.service         live=1
+ACQUIRE rtc.clock                live=2
+MISSING storage.shared-data
+MISSING storage.shared-data
+MISSING storage.shared-data
+ACQUIRE rtc.clock                live=2
+ACQUIRE telemetry.broadcast      live=2
+ACQUIRE display.output           live=3
+MALLOC bytes=411640 live=2 total=826296
+ACQUIRE alarm.service            live=4
+ACQUIRE input.touch.raw          live=5
+ACQUIRE input.power-key          live=6
+ACQUIRE board.battery            live=7
+ACQUIRE storage.key-value        live=8
+ACQUIRE storage.key-value        live=8
+ACQUIRE net.wifi                 live=8
+ACQUIRE bluetooth.hci            live=9
+ACQUIRE storage.key-value        live=8
+ACQUIRE storage.key-value        live=8
+ACQUIRE app.catalog              live=8
+MALLOC bytes=12888 live=3 total=839184
+ACQUIRE rtc.clock                live=9
+MALLOC bytes=12888 live=4 total=852072
+MALLOC bytes=411640 live=4 total=1250824
+MALLOC bytes=411640 live=5 total=1662464
+ACQUIRE storage.key-value.atomic live=10
+ACQUIRE rtc.clock                live=11
+ACQUIRE rtc.clock                live=11
+ACQUIRE rtc.clock                live=11
+ACQUIRE rtc.clock                live=11
+ACQUIRE storage.key-value        live=10
+ACQUIRE storage.key-value        live=10
+BLACKOUT_REPRODUCED completed_frames=6 brightness=0 brightness_calls=0
+ACQUIRE rtc.clock                live=9
+ACQUIRE rtc.clock                live=4
+HEALTHY FINAL live_grants=0 peak_grants=11 live_allocations=0 peak_allocations=5 peak_bytes=1662464
+Springboard 410x502 eligible: original honeycomb, 24 apps, two pages, actual mapped touch, pan, lower hits, launch/return/re-entry; exact provider metadata, transition policy and guards passed

@@ -1,0 +1,27 @@
+{
+  "sources": {
+    "fa-solid-900.woff2": "82304d961ee43d49efa1227fc5d893ba77a69f2148bea7c1381d0f447793d760",
+    "fa-regular-400.woff2": "1a2b6b9e20a6fb9d763b204d64f1a219058b70fee0a6190bb382990b57b9ab0c",
+    "Orbitron-500.ttf": "e1dd2875a4cf1711615b7bc7eb2ae8d05bef3861f87a7fdd847a78199169b458",
+    "Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144"
+  },
+  "fontawesome_commit": "14c65a3747d0f3b751f15831fc719236aea8729d",
+  "text_source_repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+  "text_source_commit": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4",
+  "text_source_path": "apps/clock/nova/fonts",
+  "generator": {
+    "fonttools": "4.61.1",
+    "python": "3.12.14",
+    "brotli": {
+      "implementation": "libbrotlidec",
+      "version": "1.1.0"
+    }
+  },
+  "glyphs": 168,
+  "raw_bytes": 19741,
+  "packed_bytes": 12348,
+  "encoding": "delta-varint vector commands; LZSS4096/18",
+  "raw_sha256": "b501b1b10e73b4bf3438130878f95cf8cae27f21df59e1bd5fe264195817477a",
+  "packed_sha256": "fc6c55ddad45ba25eae4493a6170bda987f371f4c17181d6d3184bd4760744d7",
+  "source_sha256": "c92f38d1e71ca63af841dcab39204ee3b3301835e2c91601ca54f16b4fe2c816"
+}

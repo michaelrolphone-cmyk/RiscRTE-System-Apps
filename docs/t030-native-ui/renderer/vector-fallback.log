@@ -1,0 +1,25 @@
+Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 240x240 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 sync retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-refresh: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async slow-latency: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback 410x502 async retains-image: physical right-column launch, edit/pin/done and page-dot launch PASS
+Native fallback: 24 full-app cases, each verifies launch/edit/page, PASS

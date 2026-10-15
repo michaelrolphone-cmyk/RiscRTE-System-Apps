@@ -28,6 +28,19 @@ const unsigned portable_catalog_count=CATALOG_COUNT;
 static unsigned event_index,present_started,last_touch_ms,max_touch_gap;
 static unsigned ms,polls,subs,grants,frames,presents,scenario,launches,last_present,max_presents;
 static uint16_t pixels[240*240];static char launched[128];
+/* A real provider preserves ordered edges and a monotonic snapshot watermark.
+ * Snapshot-only fixture changes are intentionally not a substitute for input. */
+static risc_touch_event_v1 queued[64];
+static unsigned queue_head,queue_count;
+static uint64_t touch_sequence;
+static risc_touch_snapshot_v1 reported_touch;
+static bool snapshot(void *,risc_touch_snapshot_v1 *);
+static void queue_edge(unsigned kind,const risc_touch_contact_v1 *contact) {
+ assert(queue_count<64);
+ queued[(queue_head+queue_count++)%64]=(risc_touch_event_v1){
+  .sequence=++touch_sequence,.timestamp_ms=ms,.kind=(uint8_t)kind,
+  .id=contact->id,.x=contact->x,.y=contact->y};
+}
 static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return polls<350;}
 static void yield_ms(uint32_t n){ms+=scenario==23?8:scenario==24?33:n;if((scenario==19||scenario==30) && polls==6)ms+=1000;}
 static bool diagnostic(const char *s){(void)s;return true;}
@@ -42,9 +55,29 @@ static void save_frame(void){
 }
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){(void)c;(void)r;(void)n;(void)o;assert(f==1&&frames);if(scenario==9||(scenario==34&&polls>=6))return false;frames=0;if(presents && scenario!=22)assert(ms-last_present>=40);last_present=ms;*token=++presents;present_started=ms;save_frame();return true;}
 static bool present_status(void *c,risc_display_present_token_v1 t,risc_display_present_status_v1 *s){(void)c;(void)t;s->state=(scenario==36||scenario==37)&&presents>1&&ms-present_started<(scenario==36?120u:600u)?RISC_DISPLAY_PRESENT_ACTIVE:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
-static uint64_t subscribe(void *c){(void)c;++subs;return 1;}
+static uint64_t subscribe(void *c){(void)c;++subs;assert(snapshot(NULL,&reported_touch));return 1;}
 static bool unsubscribe(void *c,uint64_t n){(void)c;assert(n==1&&subs);--subs;return true;}
-static bool poll_touch(void *c,size_t n){(void)c;assert(n==1);++polls;if(last_touch_ms&&ms-last_touch_ms>max_touch_gap)max_touch_gap=ms-last_touch_ms;last_touch_ms=ms;event_index=0;return !(scenario==17&&polls==3);}
+static bool poll_touch(void *c,size_t n){
+ (void)c;assert(n==1);++polls;
+ if(last_touch_ms&&ms-last_touch_ms>max_touch_gap)max_touch_gap=ms-last_touch_ms;
+ last_touch_ms=ms;event_index=0;
+ risc_touch_snapshot_v1 next;assert(snapshot(NULL,&next));
+ for(unsigned i=0;i<next.contact_count;i++) {
+  const risc_touch_contact_v1 *v=&next.contacts[i],*old=NULL;
+  for(unsigned j=0;j<reported_touch.contact_count;j++)if(reported_touch.contacts[j].id==v->id)old=&reported_touch.contacts[j];
+  if(!old)queue_edge(RISC_TOUCH_EVENT_DOWN,v);
+  else if(old->x!=v->x||old->y!=v->y)queue_edge(RISC_TOUCH_EVENT_MOVE,v);
+ }
+ /* A changed contact ID in one held report is a replacement, not an
+  * independent neutral tap: publish the new DOWN before retiring the old ID. */
+ for(unsigned i=0;i<reported_touch.contact_count;i++) {
+  const risc_touch_contact_v1 *old=&reported_touch.contacts[i];bool found=false;
+  for(unsigned j=0;j<next.contact_count;j++)if(next.contacts[j].id==old->id)found=true;
+  if(!found)queue_edge(RISC_TOUCH_EVENT_UP,old);
+ }
+ reported_touch=next;
+ return !(scenario==17&&polls==3);
+}
 static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){
  (void)c;(void)n;
  if((scenario==3||scenario==18)&&polls==3)return -1;
@@ -59,10 +92,11 @@ static int32_t next_touch(void *c,uint64_t n,risc_touch_event_v1 *e){
  if(polls==3 && !event_index && (scenario==29||scenario==31)){
   *e=(risc_touch_event_v1){.id=0,.kind=RISC_TOUCH_EVENT_UP,.x=scenario==29?260:200,.y=120};++event_index;return 1;
  }
- return 0;
+ if(!queue_count)return 0;
+ *e=queued[queue_head];queue_head=(queue_head+1)%64;--queue_count;return 1;
 }
 static bool snapshot(void *c,risc_touch_snapshot_v1 *s){
- (void)c;memset(s,0,sizeof(*s));s->width=s->height=240;int x=120,y=120;bool down=false;
+ (void)c;memset(s,0,sizeof(*s));s->width=s->height=240;s->sequence=touch_sequence;s->timestamp_ms=ms;int x=120,y=120;bool down=false;
  if(scenario==1||scenario==2||scenario==16){down=polls<=3;if(scenario==2){x=120+(int)polls*20;y=120+(int)polls*10;}}
  else if(scenario==6||scenario==7||scenario==14||scenario==15||scenario==23||scenario==24){down=polls>=2&&polls<=6;if(polls>=3){x=120+(int)(polls-2)*20;y=120+(int)(polls-2)*12;}}
  else if(scenario==18){down=polls>=2&&polls<=6;x=120+(int)(polls>3?polls-3:0)*20;}
@@ -75,7 +109,7 @@ static bool snapshot(void *c,risc_touch_snapshot_v1 *s){
  if(scenario==22){down=polls==2;x=160;y=100;}
  if(scenario==12){x=20;y=20;}
  if(scenario==4&&polls==3){down=true;s->contacts[0].id=2;}
- if(scenario==5&&polls==3){down=true;s->contact_count=2;}
+ if(scenario==5&&polls==3){down=true;s->contact_count=2;s->contacts[1]=(risc_touch_contact_v1){.id=1,.x=(uint16_t)x,.y=(uint16_t)y};}
  if(down){if(!s->contact_count)s->contact_count=1;s->contacts[0].x=(uint16_t)x;s->contacts[0].y=(uint16_t)y;
 #ifdef TEST_ROTATION_180
  s->contacts[0].x=(uint16_t)(239-s->contacts[0].x);s->contacts[0].y=(uint16_t)(239-s->contacts[0].y);
