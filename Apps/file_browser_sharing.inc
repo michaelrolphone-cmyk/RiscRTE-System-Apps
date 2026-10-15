@@ -203,13 +203,6 @@ static bool fsh_close(void){
  if(!fsh_release(&fsh_wifi_grant)||!fsh_release(&fsh_store_grant))return false;
  fsh_phase=FSH_OFF;fsh_url[0]=0;fb_dirty=true;return true;
 }
-static bool fsh_volume_share(void){
-#ifdef PORTABLE_FILE_SHARING_SELECTED_VOLUME
- return !strcmp(fb_storage_index?PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY:PORTABLE_FILE_BROWSER_CAPABILITY,"storage.volume");
-#else
- return false;
-#endif
-}
 static void fsh_start(void){
  if(fsh_phase!=FSH_OFF)return;
  if(!portable_background_stop()){fsh_retain();return;}
@@ -320,11 +313,8 @@ static void fsh_tick(void){
   if(!fsh_client){fsh_error("Not enough memory to share files");fsh_phase=FSH_STOPPING;return;}
   portable_file_sharing_config config={PORTABLE_FILE_SHARING_EXPORT_INSTANCE,PORTABLE_FILE_SHARING_TCP_INSTANCE,PORTABLE_FILE_SHARING_ENTROPY_INSTANCE,{0},8080,FB_SHARE_LIFETIME_MS,true,false};
 #ifdef PORTABLE_FILE_SHARING_SELECTED_VOLUME
-  config.storage_volume=fsh_volume_share();
-  config.files_instance=config.storage_volume?PORTABLE_FILE_BROWSER_INSTANCE:PORTABLE_FILE_SHARING_EXPORT_INSTANCE;
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
-  if(config.storage_volume&&fb_storage_index)config.files_instance=PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
-#endif
+
+  config.files_instance=fb_root_instance(fb_storage_index);
 #endif
   memcpy(config.address,fsh_link.ipv4.address,sizeof(config.address));
   snprintf(fsh_url,sizeof(fsh_url),"http://%u.%u.%u.%u:%u/",config.address[0],config.address[1],config.address[2],config.address[3],config.port);

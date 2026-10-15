@@ -1,7 +1,7 @@
 #include "PortableFileSharing.h"
 #include "WebDavSharing.h"
 #include "RiscEntropySourceV1.h"
-#include <RiscStorageVolumeStateV1.h>
+#include "PortableFilesVolume.h"
 #include <cstring>
 #include <new>
 using namespace RiscWebDav;
@@ -14,6 +14,7 @@ struct portable_file_sharing {
  risc_runtime_api_v1 runtime{};portable_file_sharing_hooks hooks{};
  portable_file_sharing_config config{};portable_file_sharing_status view{};
  risc_runtime_capability_v1 grants[3]{};
+ portable_files_volume files_view{};
  const risc_storage_volume_api_v1 *files=nullptr;
  const risc_tcp_connection_v1 *tcp=nullptr;
  const risc_entropy_source_v1 *entropy=nullptr;
@@ -55,13 +56,13 @@ extern "C" void portable_file_sharing_tick(portable_file_sharing*p,uint64_t now)
  if(p->step!=Step::Stop&&p->step!=Step::Release){if(now<p->now)p->stop(ClockChanged);else if(now>=p->view.expires_ms)p->stop();}p->now=now;
  if(p->step==Step::Files||p->step==Step::Tcp||p->step==Step::Entropy){
   unsigned index=p->step==Step::Files?0:p->step==Step::Tcp?1:2;
-  const char* names[]={p->config.storage_volume?"storage.volume":RISC_APP_DATA_EXPORT_CAPABILITY,RISC_TCP_CONNECTION_CAPABILITY,RISC_ENTROPY_SOURCE_CAPABILITY};
+  const char* names[]={RISC_STORAGE_FILES_CAPABILITY,RISC_TCP_CONNECTION_CAPABILITY,RISC_ENTROPY_SOURCE_CAPABILITY};
   const uint64_t instances[]={p->config.files_instance,p->config.tcp_instance,p->config.entropy_instance};
   auto &grant=p->grants[index];grant={};grant.struct_size=sizeof(grant);
   bool ok=p->runtime.acquire(names[index],1,instances[index],&grant);if(!p->owned())return;
   if(!ok){if(grant.api)p->retain(InvalidContract);else p->stop(MissingCapability);return;}
   if(!grant.api){p->retain(InvalidContract);return;}
-  if(!index){p->files=static_cast<const risc_storage_volume_api_v1*>(grant.api);if(p->config.storage_volume?!risc_storage_volume_state(p->files):!risc_app_data_export_catalog(p->files)){p->stop(InvalidContract);return;}p->step=Step::Tcp;}
+  if(!index){if(!portable_files_volume_init(&p->files_view,static_cast<const risc_storage_files_v1*>(grant.api),"Shared files")){p->stop(InvalidContract);return;}p->files=portable_files_volume_api(&p->files_view);p->step=Step::Tcp;}
   else if(index==1){p->tcp=static_cast<const risc_tcp_connection_v1*>(grant.api);auto*t=p->tcp;if(t->api_version!=1||t->struct_size<RISC_TCP_CONNECTION_LISTENER_SIZE||!t->context||!t->listen||!t->accept||!t->read||!t->write||!t->close){p->stop(InvalidContract);return;}p->step=Step::Entropy;}
   else {p->entropy=static_cast<const risc_entropy_source_v1*>(grant.api);auto*e=p->entropy;if(e->api_version!=1||e->struct_size<sizeof(*e)||!e->context||!e->fill){p->stop(InvalidContract);return;}p->step=Step::Random;}
   return;

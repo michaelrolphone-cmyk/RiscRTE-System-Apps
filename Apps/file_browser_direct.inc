@@ -54,10 +54,7 @@ static void fsh_direct_tick(uint64_t now){
   if(!fsh_client||!portable_file_sharing_defer_network(fsh_client,true)){fsh_direct_fail("Cannot prepare private sharing");return;}
   portable_file_sharing_config config={PORTABLE_FILE_SHARING_EXPORT_INSTANCE,PORTABLE_FILE_SHARING_TCP_INSTANCE,PORTABLE_FILE_SHARING_ENTROPY_INSTANCE,{0},8080,FB_SHARE_LIFETIME_MS,true,false};
 #ifdef PORTABLE_FILE_SHARING_SELECTED_VOLUME
-  config.storage_volume=fsh_volume_share();config.files_instance=config.storage_volume?PORTABLE_FILE_BROWSER_INSTANCE:PORTABLE_FILE_SHARING_EXPORT_INSTANCE;
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
-  if(config.storage_volume)config.files_instance=fb_root_instance(fb_storage_index);
-#endif
+  config.files_instance=fb_root_instance(fb_storage_index);
 #endif
   if(!portable_file_sharing_start(fsh_client,&config,now)){fsh_direct_fail("Cannot prepare private sharing");return;}
   fsh_phase=FSH_ACTIVE;fsh_direct_stage=5;return;

@@ -56,10 +56,7 @@ static bool fbx_select_local_scoped(unsigned index){
  risc_runtime_capability_v1 *grant=&fb_root_grants[index];
  if(!fb_root_volumes[index]){
   if(grant->api){if(!fb_runtime->release(grant)){fb_message("Volume release failed");return false;}memset(grant,0,sizeof(*grant));}
-  *grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};
-  if(!fb_runtime->acquire(fb_root_capability(index),1,fb_root_instance(index),grant))return false;
-  if(!fb_api_valid(grant->api)){PORTABLE_APP_RETAIN();if(!PORTABLE_APP_RETAINED()&&fb_runtime->release(grant))memset(grant,0,sizeof(*grant));fb_message("Volume has an invalid interface");return false;}
-  fb_root_volumes[index]=grant->api;
+  if(!fb_bind_root(index,grant,&fb_root_volumes[index]))return false;
  }
  fb_root_volumes[fb_storage_index]=fb_volume;fb_root_grants[fb_storage_index]=fb_grant;
  fb_volume=fb_root_volumes[index];fb_grant=*grant;fb_storage_index=index;

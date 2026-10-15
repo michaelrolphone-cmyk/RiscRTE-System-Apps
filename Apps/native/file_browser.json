@@ -15,7 +15,11 @@
       "api": 1
     },
     {
-      "capability": "storage.installed-files",
+      "capability": "storage.files.catalog",
+      "api": 1
+    },
+    {
+      "capability": "storage.files",
       "api": 1
     }
   ],

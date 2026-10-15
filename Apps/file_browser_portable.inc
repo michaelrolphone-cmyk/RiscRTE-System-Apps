@@ -1,12 +1,13 @@
 #ifdef PORTABLE_BLE_BROADCAST
 #include "PortableBroadcastClient.h"
 #endif
-/* Portable NOVA-7 File Browser. Uses the existing volume ABI and shared model;
- * the provider owns its filesystem, authority and mutation semantics. */
+/* Portable NOVA-7 File Browser. Discover authorized logical namespaces and
+ * use only storage.files CRUD. Providers own implementation and lifecycle. */
 #include "T5AppApi.h"
 #include "RiscRuntimeV1.h"
 #include "PortableAppCustody.h"
-#include "RiscStorageVolumeV1.h"
+#include "PortableFilesVolume.h"
+#include "RiscStorageFilesCatalogV1.h"
 #include "RiscAppDataExportV1.h"
 #include "FileBrowserModel.h"
 #include "PortableNovaUi.h"
@@ -38,21 +39,12 @@
 #include <stdio.h>
 #include <string.h>
 #define FB_PATH_CAP 512u
-#ifndef PORTABLE_FILE_BROWSER_CAPABILITY
-#define PORTABLE_FILE_BROWSER_CAPABILITY "storage.installed-files"
-#endif
-#ifndef PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY
-#define PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY "storage.volume"
-#endif
 #ifdef PORTABLE_TOUCH_SCROLL
 #define FB_MAX_PAGE_ROWS 16u
 #else
 #define FB_MAX_PAGE_ROWS 6u
 #endif
 #define FB_PREVIEW_BYTES 192u
-#ifndef PORTABLE_FILE_BROWSER_INSTANCE
-#define PORTABLE_FILE_BROWSER_INSTANCE 0u
-#endif
 #ifndef FILE_BROWSER_RETURN_APP
 #define FILE_BROWSER_RETURN_APP "springboard.elf"
 #endif
@@ -68,19 +60,15 @@ static risc_runtime_capability_v1 fb_grant;
 static risc_storage_file_t fb_retained_file;
 typedef struct {const risc_storage_volume_api_v1 *api;uint32_t handle;bool directory,commit;} fb_owned_handle;
 static fb_owned_handle fb_owned[4];
-#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
-#ifndef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
-#error A third root requires a configured second root
-#endif
-#define FB_LOCAL_ROOT_COUNT 3u
-#elif defined(PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE)
-#define FB_LOCAL_ROOT_COUNT 2u
-#else
-#define FB_LOCAL_ROOT_COUNT 1u
-#endif
-#define FB_REMOTE_ROOT (FB_LOCAL_ROOT_COUNT<2u?2u:FB_LOCAL_ROOT_COUNT)
-static risc_runtime_capability_v1 fb_root_grants[FB_LOCAL_ROOT_COUNT],fb_handler_grant;
-static const risc_storage_volume_api_v1 *fb_root_volumes[FB_LOCAL_ROOT_COUNT];
+#define FB_LOCAL_ROOT_MAX 16u
+static unsigned fb_root_count;
+#define FB_LOCAL_ROOT_COUNT fb_root_count
+#define FB_REMOTE_ROOT FB_LOCAL_ROOT_MAX
+static risc_runtime_capability_v1 fb_root_grants[FB_LOCAL_ROOT_MAX],fb_handler_grant;
+static const risc_storage_volume_api_v1 *fb_root_volumes[FB_LOCAL_ROOT_MAX];
+static portable_files_volume fb_files_views[FB_LOCAL_ROOT_MAX];
+static risc_storage_files_namespace_v1 fb_namespaces[FB_LOCAL_ROOT_MAX];
+static bool fb_catalog_loaded;
 static const t5_file_open_api_v1 *fb_handler_api;
 static unsigned fb_storage_index,fb_source_index,fb_list_choice,fb_action_page,fb_handler_offset,fb_handler_count,fb_notice_return,fbp_key_page;
 static bool fb_manage,fb_terminal,fb_publication_unknown;
@@ -260,42 +248,61 @@ static bool fb_api_valid(const risc_storage_volume_api_v1 *p) {
 #endif
  return true;
 }
-/* Probe only configured, granted generic roots. A present capability remains
- * selectable when its media is absent; ready/refresh report that state. */
-static const char *fb_root_capability(unsigned index){
- (void)index;
-#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
- if(index==2)return PORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY;
-#endif
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
- if(index==1)return PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY;
-#endif
- return PORTABLE_FILE_BROWSER_CAPABILITY;
+/* Catalog discovery never mounts a device. No storage capability is required
+ * by applications which do not use files; absence is a clean unavailable UI. */
+static bool fb_discover(void){
+ if(fb_catalog_loaded)return true;
+ risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
+ if(!fb_runtime->acquire(RISC_STORAGE_FILES_CATALOG_CAPABILITY,1,0,&grant)){
+  if(grant.api)PORTABLE_APP_RETAIN();
+  fb_message("File namespaces unavailable");return false;
+ }
+ const risc_storage_files_catalog_v1*c=grant.api;
+ bool valid=c&&c->api_version==1&&c->struct_size>=sizeof(*c)&&c->snapshot&&c->get;
+ risc_storage_files_catalog_snapshot_v1 snapshot={.struct_size=sizeof(snapshot)};
+ int32_t rc=valid?c->snapshot(c->context,&snapshot):RISC_FILES_INVALID;
+ unsigned count=0;
+ if(!rc&&snapshot.count<=FB_LOCAL_ROOT_MAX){
+  for(;count<snapshot.count;count++){
+   risc_storage_files_namespace_v1*n=&fb_namespaces[count];memset(n,0,sizeof(*n));n->struct_size=sizeof(*n);
+   rc=c->get(c->context,snapshot.revision,count,n);
+   if(rc)break;
+   if(!n->namespace_id||!memchr(n->label,0,sizeof(n->label))){rc=RISC_FILES_INVALID;break;}
+   for(unsigned i=0;i<count;i++)if(fb_namespaces[i].namespace_id==n->namespace_id)rc=RISC_FILES_INVALID;
+   if(rc)break;
+  }
+ }else if(!rc)rc=RISC_FILES_INVALID;
+ if(rc==RISC_FILES_RETAINED||rc==RISC_FILES_CONTEXT){PORTABLE_APP_RETAIN();return false;}
+ if(!fb_runtime->release(&grant)){PORTABLE_APP_RETAIN();return false;}
+ if(rc){fb_message("File namespace discovery failed; retry");return false;}
+ fb_root_count=count;fb_catalog_loaded=true;
+ if(!count)fb_message("No file namespaces granted");
+ return true;
 }
-static uint64_t fb_root_instance(unsigned index){
- (void)index;
-#ifdef PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE
- if(index==2)return PORTABLE_FILE_BROWSER_TERTIARY_INSTANCE;
-#endif
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
- if(index==1)return PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE;
-#endif
- return PORTABLE_FILE_BROWSER_INSTANCE;
-}
+static uint64_t fb_root_instance(unsigned index){return index<fb_root_count?fb_namespaces[index].namespace_id:0;}
 static const risc_storage_volume_api_v1 *fb_local_volume(unsigned index){
  if(index>=FB_LOCAL_ROOT_COUNT)return NULL;
  return index==fb_storage_index?fb_volume:fb_root_volumes[index];
 }
+static bool fb_bind_root(unsigned index,risc_runtime_capability_v1*grant,const risc_storage_volume_api_v1**view){
+ if(index>=fb_root_count)return false;
+ *grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};
+ if(!fb_runtime->acquire(RISC_STORAGE_FILES_CAPABILITY,1,fb_root_instance(index),grant)){
+  if(grant->api)PORTABLE_APP_RETAIN();
+  return false;
+ }
+ if(!portable_files_volume_init(&fb_files_views[index],grant->api,fb_namespaces[index].label)){
+  if(!fb_runtime->release(grant))PORTABLE_APP_RETAIN();else memset(grant,0,sizeof(*grant));
+  fb_message("Files service has an invalid interface");return false;
+ }
+ *view=portable_files_volume_api(&fb_files_views[index]);return fb_api_valid(*view);
+}
 static bool fb_acquire(void) {
  if(PORTABLE_APP_RETAINED())return false;
  if(fb_volume)return true;
+ if(!fb_discover()||!fb_root_count)return false;
  if(fb_grant.api){if(!fb_runtime->release(&fb_grant))return false;memset(&fb_grant,0,sizeof(fb_grant));}
- fb_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_grant)};
- const char *capability=fb_root_capability(fb_storage_index);
- uint64_t instance=fb_root_instance(fb_storage_index);
- if(!fb_runtime->acquire(capability,1,instance,&fb_grant))return false;
- if(!fb_api_valid(fb_grant.api)){PORTABLE_APP_RETAIN();return false;}
- fb_volume=fb_grant.api;return true;
+ return fb_bind_root(fb_storage_index,&fb_grant,&fb_volume);
 }
 bool portable_file_browser_safe(void) {
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
@@ -336,7 +343,7 @@ bool portable_file_browser_close(void) {
  }
  if(fb_handler_grant.api && !fb_runtime->release(&fb_handler_grant))return false;
  memset(&fb_handler_grant,0,sizeof(fb_handler_grant));fb_handler_api=NULL;
- for(unsigned i=0;i<FB_LOCAL_ROOT_COUNT;i++){
+ for(unsigned i=0;i<FB_LOCAL_ROOT_MAX;i++){
   if(fb_root_grants[i].api&&!fb_runtime->release(&fb_root_grants[i]))return false;
   memset(&fb_root_grants[i],0,sizeof(fb_root_grants[i]));fb_root_volumes[i]=NULL;
  }
@@ -575,11 +582,7 @@ static unsigned fb_option_count(void){
 #ifdef PORTABLE_FILE_SHARING
  return 7;
 #endif
-#ifdef PORTABLE_FILE_BROWSER_SECONDARY_INSTANCE
- return 6; /* A read-only primary still needs access to the second volume. */
-#else
- return fb_manage?6:4;
-#endif
+ return fb_manage||fb_root_count>1?6:4;
 }
 static void fbx_actions(void);
 static void fbx_switch(void);
@@ -800,6 +803,7 @@ static bool fb_open(void) {
  fb_text_active=fb_text_closing=fb_text_home=fb_text_invalidated=false;
 #endif
  fbp_key_page=0;fbp_clean=true;fbp_last_mode=0;fbp_contact_down=false;fb_publication_unknown=false;
+ fb_catalog_loaded=false;fb_root_count=0;memset(fb_files_views,0,sizeof(fb_files_views));memset(fb_namespaces,0,sizeof(fb_namespaces));
  memset(&fb_grant,0,sizeof(fb_grant));memset(fb_root_grants,0,sizeof(fb_root_grants));memset(fb_root_volumes,0,sizeof(fb_root_volumes));memset(&fb_handler_grant,0,sizeof(fb_handler_grant));memset(fb_owned,0,sizeof(fb_owned));fb_handler_api=NULL;fb_storage_index=0;fb_terminal=false;fb_manage=false;fb_volume=NULL;fb_retained_file=0;fb_count=fb_choice=fb_page=fb_mode=0;fb_offset=0;fb_hidden=fb_hex=fb_loaded=fb_contact=fb_drag=false;fb_armed=false;fb_dirty=true;fb_query[0]=fb_editor[0]=fb_label[0]=0;strcpy(fb_path,"/");
  if(fb_app->set_back_exits_app)fb_app->set_back_exits_app(false);
 #ifdef PORTABLE_BLE_BROADCAST
