@@ -1,4 +1,5 @@
 #include "PortableQuickActions.h"
+#include "PortableQuickLayout.h"
 #include <string.h>
 
 static int clampi(int v, int lo, int hi) { return v < lo ? lo : v > hi ? hi : v; }
@@ -48,7 +49,12 @@ void pqa_init(pqa_state *s) {
 bool pqa_set_height(pqa_state *s,unsigned logical_height) {
     if(!s || logical_height<240 || logical_height>2048 || pqa_visible(s) ||
        s->gesture!=PQA_IDLE)return false;
-    s->logical_height=(uint16_t)logical_height;return true;
+    s->logical_height=(uint16_t)logical_height;s->native_width=0;return true;
+}
+bool pqa_set_dimensions(pqa_state *s,unsigned width,unsigned height) {
+    if(!s || !width || !height || width>2048 || height>2048 || s->paper ||
+       pqa_visible(s) || s->gesture!=PQA_IDLE)return false;
+    s->native_width=(uint16_t)width;s->logical_height=(uint16_t)height;return true;
 }
 void pqa_set_levels(pqa_state *s, bool bv, unsigned b, bool vv, unsigned v) {
     if (!s) return;
@@ -150,6 +156,12 @@ bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y) {
 }
 #endif
 static int tile_at(const pqa_state *s,int x, int y) {
+    if(s->native_width) {
+        pqa_layout l=pqa_layout_for(s);
+        if(s->contexts_controls&&pqa_rect_contains(l.contexts,x,y))return 9;
+        for(int i=0;i<6;++i)if(pqa_rect_contains(l.tiles[i],x,y))return i;
+        return -1;
+    }
     if(s->paper) {
 #ifdef PORTABLE_QUICK_USB_TRANSFER
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
@@ -184,6 +196,12 @@ static unsigned slider_value(int x, unsigned minimum) {
     int value = ((clampi(x, 44, 182) - 44) * 10 + 69) / 138;
     return (unsigned)clampi(value * 10, (int)minimum, 100);
 }
+static unsigned native_slider_value(const pqa_state *s,int x,unsigned minimum) {
+    pqa_layout l=pqa_layout_for(s);int span=l.slider_right-l.slider_left;
+    if(span<1)return minimum;
+    int value=((clampi(x,l.slider_left,l.slider_right)-l.slider_left)*10+span/2)/span;
+    return (unsigned)clampi(value*10,(int)minimum,100);
+}
 static void slide(pqa_state *s, int x) {
 #ifdef PORTABLE_FRONTLIGHT_TONE
     if(s->gesture==PQA_TONE_DRAG){
@@ -193,10 +211,10 @@ static void slide(pqa_state *s, int x) {
     }
 #endif
     if (s->gesture == PQA_BRIGHTNESS_DRAG) {
-        unsigned b = slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
+        unsigned b = s->native_width?native_slider_value(s,x,10):slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 10);
         if (b != s->brightness) { s->brightness = (uint8_t)b; emit_brightness(s, false); }
     } else {
-        s->volume = (uint8_t)slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0);
+        s->volume = (uint8_t)(s->native_width?native_slider_value(s,x,0):slider_value(s->paper?44+(clampi(x,88,364)-88)/2:x, 0));
     }
 }
 static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y) {
@@ -240,7 +258,9 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                uint32_t id, int x, int y, bool allow_open) {
     if (!s) return false;
     /* Bound hostile/raw coordinates before subtraction or Q8 conversion. */
-    x = clampi(x, -1024, 1024); y = clampi(y, -2048, 2048);
+    x = clampi(x, -2048, 2048); y = clampi(y, -2048, 2048);
+    pqa_layout native={0};if(s->native_width)native=pqa_layout_for(s);
+    int threshold=s->native_width?pqa_layout_size(&native,6):6;
     if (!valid || count > 1u) {
         if (s->gesture == PQA_PANEL_DRAG)
             s->target_q8 = s->position_q8 >= pqa_open_q8(s) / 2 ? pqa_open_q8(s) : 0;
@@ -325,7 +345,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
         begin_contact(s, now, id, x, y);
         if (s->torch) s->gesture = PQA_TORCH_TAP;
         else if (!pqa_visible(s)) {
-            if (allow_open && y >= 0 && y < (s->paper?72:PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:240))
+            if (allow_open && y >= 0 && y < (s->paper?72:s->native_width?pqa_layout_size(&native,PQA_TOP_EDGE):PQA_TOP_EDGE) && x >= 0 && x < (s->paper?480:(int)pqa_width(s)))
                 s->gesture = PQA_TOP_PENDING;
             else s->gesture = PQA_PASS_THROUGH;
         } else {
@@ -338,7 +358,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
 #else
                 x>=32 && x<448 && y>=120 && y<180
 #endif
-                : x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
+                : s->native_width?pqa_rect_contains(native.slider_hit[0],x,local_y):x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
 #ifdef PORTABLE_FRONTLIGHT_TONE
             else if(settled && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
@@ -354,7 +374,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
 #else
                 x>=32 && x<448 && y>=214 && y<274
 #endif
-                : x>=16 && x<224 && local_y>=(s->contexts_controls?54:78) && local_y<(s->contexts_controls?83:107)))
+                : s->native_width?pqa_rect_contains(native.slider_hit[1],x,local_y):x>=16 && x<224 && local_y>=(s->contexts_controls?54:78) && local_y<(s->contexts_controls?83:107)))
                 s->gesture = PQA_VOLUME_DRAG;
             else {
                 s->gesture = PQA_PANEL_PENDING;
@@ -370,7 +390,7 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                         y>=640 && y<714
 #endif
 #endif
-                        : x>=76 && x<164 && local_y>=(int)pqa_height(s)-(s->contexts_controls?18:33) && local_y<(int)pqa_height(s)-1;
+                        : s->native_width?pqa_rect_contains(native.handle,x,local_y):x>=76 && x<164 && local_y>=(int)pqa_height(s)-(s->contexts_controls?18:33) && local_y<(int)pqa_height(s)-1;
                 }
             }
         }
@@ -379,19 +399,19 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                        s->gesture == PQA_TOP_PENDING ? PQA_RESERVED : PQA_CONSUMED);
     }
     int dx = x - s->start_x, dy = y - s->start_y;
-    if (absi(dx) > 6 || absi(dy) > 6) s->moved = true;
+    if (absi(dx) > threshold || absi(dy) > threshold) s->moved = true;
     if (s->gesture == PQA_TOP_PENDING) {
-        if (dy > (s->paper?24:6) && dy > absi(dx)) {
+        if (dy > (s->paper?24:threshold) && dy > absi(dx)) {
             s->gesture = PQA_PANEL_DRAG;
 #ifndef PORTABLE_PAPER_TRANSITIONS
             if(s->paper)s->position_q8=s->target_q8=pqa_open_q8(s);
 #endif
         }
-        else if (absi(dx) > (s->paper?24:6) || dy < -(s->paper?24:6)) {
+        else if (absi(dx) > (s->paper?24:threshold) || dy < -(s->paper?24:threshold)) {
             s->gesture = PQA_PASS_THROUGH;
             return route(s, PQA_REPLAY);
         } else return route(s, PQA_RESERVED);
-    } else if (s->gesture == PQA_PANEL_PENDING && absi(dy) > 6 && absi(dy) > absi(dx)) {
+    } else if (s->gesture == PQA_PANEL_PENDING && absi(dy) > threshold && absi(dy) > absi(dx)) {
         s->gesture = PQA_PANEL_DRAG;
     }
     if (s->gesture == PQA_PANEL_DRAG) {

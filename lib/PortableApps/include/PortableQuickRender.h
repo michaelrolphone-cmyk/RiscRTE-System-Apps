@@ -5,12 +5,17 @@
 extern "C" {
 #endif
 /* Overlay on a fresh complete app image every frame. No retained pixels.
- * 240x240 RGB565 little endian only. Tight and padded/unaligned surfaces work;
- * active rows need stride>=480 and size>=(239*stride+480), with overflow checks.
+ * RGB565 little endian. Legacy callers retain 240x240; with the existing
+ * PORTABLE_WATCH_NATIVE_HEIGHT build flag, pqa_set_dimensions opts into native
+ * scanlines and shared native control geometry. Other apps omit native assets.
+ * Tight and padded/unaligned surfaces work; active rows need stride>=width*2
+ * and size>=((height-1)*stride+width*2), with overflow checks.
  * A valid closed controller is a no-op. Time is a bounded caller-owned label
  * (up to eight ASCII characters); NULL shows --:--. Battery 0 is valid.
  * Panels move in Q8 and have the source's 22px bottom fade; compositing uses
- * one 480-byte scanline, not a second full-frame buffer. */
+ * one scanline (480 bytes for legacy, at most 4096 native), never a second
+ * full-frame buffer or a scaled final image. Native typography uses separately
+ * rasterized 2x licensed masks and per-glyph antialiasing. */
 bool pqa_render(risc_display_surface_v1 *surface, const pqa_state *state,
                 const char *time_label, bool battery_valid, uint8_t battery_percent);
 #ifdef PORTABLE_RASTER_SNAPSHOT

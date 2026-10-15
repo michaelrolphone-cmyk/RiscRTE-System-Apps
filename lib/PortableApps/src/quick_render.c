@@ -2,11 +2,15 @@
 #include <stddef.h>
 #include <string.h>
 #include "WatchLayout.h"
+#include "PortableQuickLayout.h"
 
 typedef struct { uint8_t code; int8_t left,top; uint8_t width,height; uint16_t advance_q8; uint32_t offset; } pqa_glyph;
 typedef struct { uint8_t width,height; uint32_t offset; } pqa_icon;
 #include "quick_actions_assets.inc"
-typedef struct { uint16_t pixels[240]; int y; } pqa_row;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "quick_native_fonts.inc"
+#endif
+typedef struct { uint16_t *pixels; int y,width; } pqa_row;
 #define RGB(r,g,b) (uint16_t)((((r)>>3)<<11)|(((g)>>2)<<5)|((b)>>3))
 #define CYAN RGB(25,227,255)
 #define MUTED RGB(138,164,170)
@@ -20,7 +24,7 @@ static uint16_t mix(uint16_t a,uint16_t b,unsigned n) {
         (((a&31u)*m+(b&31u)*n+128u)>>8));
 }
 static void pixel(pqa_row *r,int x,uint16_t color,unsigned alpha) {
-    if(x>=0 && x<240) r->pixels[x]=mix(r->pixels[x],color,alpha);
+    if(x>=0 && x<r->width) r->pixels[x]=mix(r->pixels[x],color,alpha);
 }
 static void rect(pqa_row *r,int x,int y,int w,int h,int radius,uint16_t color,unsigned alpha) {
     if(r->y<y || r->y>=y+h) return;
@@ -144,8 +148,15 @@ static unsigned torch_edge(int v,int extent) {
     if(d<14)return (unsigned)d*102u/14u;
     return 102u+(unsigned)(d-14)*154u/32u;
 }
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "quick_native_render.inc"
+#endif
 static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
     if(!f || !s || !f->pixels || f->pixel_format!=RISC_DISPLAY_FORMAT_RGB565)return false;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    if(s->native_width && (s->native_width!=240 || s->logical_height!=240))
+        return native_render_rows(f,s,time,bv,bp,first,count);
+#endif
     watch_layout layout;
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
     if(!watch_layout_open(&layout,f->width,f->height,NULL) || layout.height!=pqa_height(s))return false;
@@ -160,7 +171,7 @@ static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char
     bv=bv && bp<=100;
     const int logical_height=(int)layout.height,open=pqa_open_q8(s);
     int position=s->position_q8<0?0:s->position_q8>open?open:s->position_q8;
-    pqa_row row;
+    uint16_t pixels[240];pqa_row row={pixels,0,240};
     if(s->torch) {
         for(unsigned py=first;py<first+count;++py) {
             int y=(int)(py*240u/f->width);row.y=y;
@@ -183,7 +194,7 @@ static bool render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char
         int local=y-offset;
         bool in_panel=local>=0 && local<logical_height;
         unsigned a=in_panel?(local<logical_height-22?256u:(unsigned)(logical_height-local)*256u/22u):0;
-        if(in_panel){memset(row.pixels,0,sizeof(row.pixels));row.y=local;panel_row(&row,s,time,bv,bp);}
+        if(in_panel){memset(pixels,0,sizeof(pixels));row.y=local;panel_row(&row,s,time,bv,bp);}
         for(unsigned px=0;px<f->width;++px) {
             unsigned x=px*240u/f->width;
             uint16_t behind=mix(0,read_pixel(dst+2*px),face_alpha);

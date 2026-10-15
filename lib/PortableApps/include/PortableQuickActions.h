@@ -39,6 +39,7 @@ typedef struct {
      * Levels are 0..100 percent, sliders choose ten-point steps. Brightness
      * user choices have a 10% floor. Unknown values never become fake states. */
     uint16_t logical_height; /* Zero preserves the 240px canvas. */
+    uint16_t native_width; /* Nonzero opts into native geometry and input. */
     uint8_t brightness, volume, last_nonzero_volume;
 #ifdef PORTABLE_PAPER_TRANSITIONS
     uint8_t last_nonzero_brightness, applied_brightness;
@@ -77,9 +78,14 @@ typedef struct {
     bool handle_pressed, moved;
 } pqa_state;
 
-static inline unsigned pqa_height(const pqa_state *s) {return s&&s->logical_height>=240&&s->logical_height<=2048?s->logical_height:240u;}
+static inline unsigned pqa_width(const pqa_state *s) {return s&&s->native_width&&s->native_width<=2048?s->native_width:240u;}
+static inline unsigned pqa_height(const pqa_state *s) {return s&&s->logical_height>=(s->native_width?1:240)&&s->logical_height<=2048?s->logical_height:240u;}
 static inline int32_t pqa_open_q8(const pqa_state *s) {return (int32_t)pqa_height(s)*256;}
 bool pqa_set_height(pqa_state *s,unsigned logical_height);
+/* Opt-in native RGB controls: provider dimensions and touch coordinates, each
+ * 1..2048. Set only while closed/idle, before drawing or receiving contacts.
+ * Legacy 240-wide and paper clients keep their existing geometry. */
+bool pqa_set_dimensions(pqa_state *s,unsigned width,unsigned height);
 void pqa_init(pqa_state *s);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y);
@@ -100,6 +106,7 @@ void pqa_set_levels(pqa_state *s, bool brightness_valid, unsigned brightness,
  * Once an outside-area app contact starts it can never open the panel.
  * Input coordinates are 240-wide logical pixels, even while the panel moves.
  * Native-height adapters uniformly map both axes from their provider width.
+ * After pqa_set_dimensions, pass native coordinates without scaling either axis.
  * Pending actions remain until pqa_take_action; inspect action_* snapshots.
  */
 bool pqa_input(pqa_state *s, uint32_t now_ms, bool valid, unsigned count,

@@ -34,6 +34,7 @@ jobs:
           python scripts/test_nova_ui.py
           python scripts/test_nova_settings.py
           python scripts/test_quick_actions.py
+          python scripts/test_quick_native.py
           python scripts/test_quick_radios.py
           python scripts/test_portable_audio.py
           python scripts/test_portable_radio.py
@@ -77,6 +78,7 @@ jobs:
           name: system-app-development-${{ github.sha }}
           path: |
             build/quick-actions/
+            build/quick-native/
             dist/apps/
             dist/portable/
             dist/portable-denver/
