@@ -1,0 +1,75 @@
+{
+  "parent_commit": "8c2534935626c11c8706910b4133c0cd418a51de",
+  "failing_ci": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38757390400",
+  "cause": "Recovered and generated telemetry fonts have identical glyph declarations but different first-line provenance comments; the original generated SHA256 succeeds and git diff rejects only that comment.",
+  "repair": "Validate both complete pinned files, compare every byte after their first-line comments, and restore the unchanged qualified file before the full git diff gate. No production source or raster changes.",
+  "qualified_font_sha256": "928e6c01d863767a2fbb641963a8c9f63e76243c95d52208caaa62961909f7a6",
+  "generated_font_sha256": "2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1",
+  "glyph_declarations_byte_equal": true,
+  "pillow": "12.3.0",
+  "runtime": "a9587bec00015ad56c302192a8359b6d70cde01a",
+  "results": [
+    {
+      "label": "scene-host",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_scene_host.py",
+        "--runtime",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-runtime"
+      ],
+      "exit": 0,
+      "log_sha256": "9d88aaf6c5241c685f774b9ee0ddff0720c633d7bb191ccb3f698e0fbc5ca817"
+    },
+    {
+      "label": "scene-components",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_scene_components.py",
+        "--runtime",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-runtime"
+      ],
+      "exit": 0,
+      "log_sha256": "60a78de14354bcd3b5ba794c13fe394bcf9d79fa7a26338628cc85714842c578"
+    },
+    {
+      "label": "civil-clock",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_civil_clock.py",
+        "--runtime",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-runtime"
+      ],
+      "exit": 0,
+      "log_sha256": "ba402e9baa67f012b540e694ae5b979fcc73f6135f3d7d1ffc008c6ccf1a2fa1"
+    },
+    {
+      "label": "scene-build",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/build_scene_services.py",
+        "--runtime",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-runtime",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-ci/scene"
+      ],
+      "exit": 0,
+      "log_sha256": "4853eeea67e5ca84878955ea09384fea851e1dc6fd75aa133b66496d852d8d48"
+    },
+    {
+      "label": "civil-build",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/build_civil_clock.py",
+        "--runtime",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-runtime",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-scene-ci/civil"
+      ],
+      "exit": 0,
+      "log_sha256": "20598bf62bf2bebef322d1ed6c1d6d6172432df758ffd025b2db39f7618c0f92"
+    }
+  ],
+  "presenter_profile_executions": 197,
+  "main_build_ci_passed": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38757390405",
+  "custody_ci_passed": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/38757390763"
+}
