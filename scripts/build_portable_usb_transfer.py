@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build the dedicated USB-device SD transfer app without a whole app cohort."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse, hashlib, json, os, shutil, subprocess
 import portable_quick_build
 import portable_alarm_build
@@ -16,8 +17,7 @@ def build(args):
     out=args.output_dir.resolve();out.mkdir(parents=True,exist_ok=True)
     includes=out/'include';shutil.copytree(ROOT/'lib/PortableApps/include',includes,dirs_exist_ok=True)
     shutil.copyfile(header,includes/header.name)
-    cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     flags=list(FLAGS)
     if args.touch_only: flags.remove("-DPORTABLE_INPUT_NAVIGATION")
     if args.resident_shell_host:raise ValueError('USB transfer is a foreground client, never a resident host')

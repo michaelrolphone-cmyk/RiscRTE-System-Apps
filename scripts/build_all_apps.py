@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build/validate repository-owned apps; emit development evidence, never release."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -84,9 +85,7 @@ def main():
                         'manifest_blob': git_blob(source.with_suffix('.json').read_bytes()),
                         'additional_source_blobs': {item['path']: git_blob((ROOT / item['path']).read_bytes())
                                                     for item in app.get('additional_sources', [])}})
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        cc = str(pathlib.Path(os.environ.get('PLATFORMIO_CORE_DIR', pathlib.Path.home() / '.platformio')) / 'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     report = {'schema': 1, 'purpose': 'development-build-evidence-not-install-catalog',
               'sdk_commit': sdk['source_commit'],
               'repository_commit': subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),

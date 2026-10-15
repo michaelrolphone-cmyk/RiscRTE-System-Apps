@@ -178,6 +178,7 @@ class PerformanceBuildProfiles(unittest.TestCase):
                     if display_on:
                         args += ['--performance-display-sdk', str(display)]
                     with mock.patch.object(module, 'ROOT', root), \
+                            mock.patch.object(module, 'resolve_compiler', return_value='xtensa-esp32s3-elf-gcc'), \
                             mock.patch.object(performance, 'read', return_value=source), \
                             mock.patch.object(subprocess, 'run', side_effect=run), \
                             mock.patch.object(subprocess, 'check_output', side_effect=output), \

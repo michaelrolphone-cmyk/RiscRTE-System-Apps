@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Measure selected Settings caller frames; this is not a complete stack budget."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,json,os,shutil,subprocess
 from pathlib import Path
 import build_portable_settings as builder
@@ -10,10 +11,7 @@ a=p.parse_args();a.target=a.target.resolve();a.output=a.output.resolve();a.outpu
 r=json.loads((a.target/'settings-build-record.json').read_text())
 assert r.get('atomic_settings',{}).get('namespace')==1
 includes=a.target/'native-time-sdk/include'
-cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-if not cc:
- core=Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))
- cc=str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+cc = resolve_compiler()
 sources=['Apps/settings_native_entry.c','lib/PortableApps/src/adapter.c',*builder.NATIVE_TIME_SOURCES]
 for src in sources:
  subprocess.run([cc,'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden',

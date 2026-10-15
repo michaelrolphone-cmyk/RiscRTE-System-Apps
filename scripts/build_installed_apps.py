@@ -5,6 +5,7 @@ The metadata/admission provider is target-link qualified by this command. It req
 volume asynchronous suffix; SD discovery never calls the synchronous volume on
 the owner. Cache replacement requires the copied native bound app-data async suffix.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -24,15 +25,22 @@ def main():
     args = parser.parse_args()
     runtime, out = args.runtime_repo.resolve(), args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc') or str(Path.home()/'.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     cxx = cc.removesuffix('gcc')+'g++'
+    # GCC15 distinguishes hosted C++ library declarations from its new
+    # freestanding subset. This provider deliberately imports malloc/free
+    # through the bounded ordinary ABI; it does not link a hosted runtime.
+    # Keep the existing no-startfiles/no-stdlib link and exact import audit.
+    native_compiler = subprocess.check_output(
+        [cc, '-dumpmachine'], text=True).strip() == 'xtensa-esp-elf'
     includes = [runtime/'sdk/app', runtime/'sdk/driver', runtime/'sdk/hardware', runtime/'src', runtime/'lib/ArduinoJson/src', ROOT/'lib/InstalledCatalog/include', ROOT/'lib/PortableApps/include']
     flags = ['-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls', '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-Wall', '-Wextra', '-Werror'] + ['-I'+str(i) for i in includes]
     if args.native_feed:
         flags.append('-DINSTALLED_APPS_FEED_URL=\"https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/native-packages-v1.json\"')
     sources = [ROOT/'Services/installed_apps/service.cpp', ROOT/'lib/InstalledCatalog/src/InstalledCatalog.c']
     objects = [out/'service.o', out/'catalog.o']
-    commands = [[cxx, '-std=c++17', '-fno-exceptions', '-fno-rtti', '-DARDUINOJSON_USE_DOUBLE=0', '-DARDUINOJSON_USE_LONG_LONG=0', *flags, '-c', str(sources[0]), '-o', str(objects[0])], [cc, '-std=c11', *flags, '-c', str(sources[1]), '-o', str(objects[1])]]
+    cxx_flags = [flag for flag in flags if not (native_compiler and flag == '-ffreestanding')]
+    commands = [[cxx, '-std=c++17', '-fno-exceptions', '-fno-rtti', '-DARDUINOJSON_USE_DOUBLE=0', '-DARDUINOJSON_USE_LONG_LONG=0', *cxx_flags, '-c', str(sources[0]), '-o', str(objects[0])], [cc, '-std=c11', *flags, '-c', str(sources[1]), '-o', str(objects[1])]]
     mapping = out/'exports.map'
     mapping.write_text('{ global: t5_driver_get; local: *; };\n')
     elf = out/'driver.elf'

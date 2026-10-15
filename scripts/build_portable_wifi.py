@@ -4,6 +4,7 @@
 Development artifact only. The deployment supplies display.output@1,
 input.touch.raw@1, net.wifi@1 and namespace-6 storage.key-value@1 grants; no additional runtime exports.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -37,10 +38,7 @@ def build(args, parser=None):
     shared_text=getattr(args,'shared_text_input',False) or args.resident_shell_client
     if scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
         parser.error('--touch-scrolling requires --time-profile x4-native-time and --paper-transitions')
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
-        cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     out = args.output_dir or ROOT/'dist/portable/wifi'
     flags=['-DPORTABLE_WIFI_SETTINGS_APP', '-DPORTABLE_WIFI_INSTANCE='+str(args.wifi_instance), '-DPORTABLE_WIFI_STORAGE_INSTANCE=6']
     if args.resident_shell_client: flags.append('-DPORTABLE_WIFI_REMEMBER_CONNECTED')

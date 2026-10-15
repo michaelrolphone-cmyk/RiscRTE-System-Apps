@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build the capability-only NOVA-7 File Browser. No firmware filesystem/UI ABI."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,hashlib,json,os,re,shutil,subprocess
 from pathlib import Path
 import portable_broadcast_build
@@ -48,9 +49,7 @@ def build(args,parser=None):
     if not re.fullmatch(r'[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*\.elf',args.return_app) or any(part in ('.','..') for part in args.return_app.split('/')):raise ValueError('Return app must be a normalized installed relative ELF path')
     if args.storage_capability=='storage.installed-files' and args.storage_instance:
         parser.error('storage.installed-files is a Runtime service at instance 0; SD requires --storage-capability storage.volume')
-    cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     out=args.output_dir or ROOT/'dist/portable/file-browser';out.mkdir(parents=True,exist_ok=True)
     flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
     flags+=storage_flags+operation_options(args)

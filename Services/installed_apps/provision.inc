@@ -48,8 +48,11 @@ bool selectCatalogProviders(JsonDocument&doc){
    if(!std::strcmp(cap,"storage.key-value")||!std::strcmp(cap,"storage.app-data"))continue;
    if(native->available(native->context,cap,api,!std::strcmp(cap,"hardware.device")?instance:0))continue;
    unsigned found=ProviderMax;
-   for(unsigned i=0;i<pool.size();++i)for(JsonObjectConst offer:pool[i]["manifest"]["provides"].as<JsonArrayConst>())
-    if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}
+   for(unsigned i=0;i<pool.size();++i){
+    JsonArrayConst offers=pool[i]["manifest"]["provides"].as<JsonArrayConst>();
+    for(JsonObjectConst offer:offers)
+     if(offer["capability"]==cap&&offer["api"]==api){if(found!=ProviderMax&&found!=i)return false;found=i;}
+   }
    if(found==ProviderMax)return false;
    if(!selected[found]){selected[found]=true;++selectedCount;}
   }
@@ -87,7 +90,7 @@ bool prepareProvision(const char*json,bool resume){
  if(nextProviderCount&&(!providerApi()||nextProviderCount>native->provider_capacity))return false;
  // Admission is repeated at publication to account for an intervening live
  // consumer. BUSY never grants permission to replace an active provider.
- int rc=rows.size()?checkProvisionGraph(true):RISC_INSTALL_OK;if(rc!=RISC_INSTALL_OK&&rc!=RISC_INSTALL_BUSY)return false;
+ int rc=rows.size()?checkProvisionGraph(true):int(RISC_INSTALL_OK);if(rc!=RISC_INSTALL_OK&&rc!=RISC_INSTALL_BUSY)return false;
  if(measureJson(doc)>ManifestMax)return false;
  serializeJson(doc,provisionJson,sizeof(provisionJson));provisionCount=rows.size();provisionIndex=0;
  provisionCount+=provisionAppImage?1:0;
@@ -114,7 +117,7 @@ int32_t provisionStep(const risc_storage_volume_api_v1*v){
  if(!provisionJson[0]||provisionPhase==ProvisionPhase::Done)return INSTALLED_APPS_OK;
  if(provisionPhase==ProvisionPhase::Journal){
   if(!namespaceFor(installCandidate,true))return INSTALLED_APPS_INVALID;
-  int rc=nextProviderCount?checkProvisionGraph(true):RISC_INSTALL_OK;if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;if(rc!=RISC_INSTALL_OK)return INSTALLED_APPS_INVALID;
+  int rc=nextProviderCount?checkProvisionGraph(true):int(RISC_INSTALL_OK);if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;if(rc!=RISC_INSTALL_OK)return INSTALLED_APPS_INVALID;
   currentPending();rc=save();if(rc!=INSTALLED_APPS_OK)return rc;
   provisionResume=true;provisionPhase=ProvisionPhase::Download;return INSTALLED_APPS_WORKING;
  }

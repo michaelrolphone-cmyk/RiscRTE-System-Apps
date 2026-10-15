@@ -4,6 +4,7 @@
 Development artifact only. The deployment supplies display.output@1,
 input.touch.raw@1, rtc.clock@2 and namespace-1 storage.key-value@1 grants; no additional runtime exports.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -62,10 +63,6 @@ def stage_native_time_sdk(out, sdk):
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
     portable_performance_build.validate(args,parser)
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
-        cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
@@ -156,6 +153,7 @@ def build(args,parser=None):
         version='1.3.18'
     version=portable_quick_build.version(args,'settings',version)
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
+    cc = resolve_compiler()
     out.mkdir(parents=True, exist_ok=True)
     if performance_source:
         includes,performance=portable_performance_build.stage(ROOT,out,performance_source,

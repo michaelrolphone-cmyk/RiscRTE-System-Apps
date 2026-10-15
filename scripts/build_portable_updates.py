@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build ordinary update providers and existing shared apps; no publication."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,sys,hashlib,json,os,shutil,subprocess,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -45,9 +46,7 @@ def build(args,parser=None):
  service_flags,policy=product_policy(args,parser)
  if not portable_native_toolbar_build.selected(args) and not args.services_only and args.rtc_utc_offset_seconds is None:parser.error('Watch apps require --rtc-utc-offset-seconds')
  if portable_native_toolbar_build.selected(args) and args.rtc_utc_offset_seconds is not None:parser.error('Native UTC cannot use an RTC offset')
- cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
- if not cc:
-  cc=str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+ cc = resolve_compiler()
  cxx=cc.removesuffix('gcc')+'g++';nm=cc.removesuffix('gcc')+'nm'
  out=args.output_dir;out.mkdir(parents=True,exist_ok=True)
  quick_flags,quick_sources=([],[]) if (portable_idle_build.selected(args) or args.resident_shell_client) else portable_quick_build.configure(args,parser or argparse.ArgumentParser(),ROOT,out)

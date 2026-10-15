@@ -1,0 +1,61 @@
+name: Native SDK 6.1 shared components
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-components:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PLATFORMIO_CORE_DIR: ${{ runner.temp }}/unused-platformio
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install SDK 6.1 compiler only, without Arduino or PlatformIO
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ESP-IDF fff9895c82d744c7237be8847347bdd1b07c6643 tools/tools.json.
+          archive="$RUNNER_TEMP/xtensa-esp-elf.tar.xz"
+          curl --fail --location --retry 3 -o "$archive" https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/native-sdk61"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/native-sdk61"
+          echo "$RUNNER_TEMP/native-sdk61/xtensa-esp-elf/bin" >> "$GITHUB_PATH"
+      - name: Verify target frontend and exact compiler
+        shell: bash
+        run: |
+          set -euo pipefail
+          xtensa-esp32s3-elf-gcc --version | grep 'esp-15.2.0_20251204'
+          xtensa-esp32s3-elf-gcc -dM -E -xc /dev/null > "$RUNNER_TEMP/target-macros"
+          grep -Fx '#define __XTENSA_EL__ 1' "$RUNNER_TEMP/target-macros"
+          grep -Fx '#define __XCHAL_HAVE_FP 1' "$RUNNER_TEMP/target-macros"
+      - name: Test compiler and source build contracts
+        run: python -m unittest discover -s tests -v
+      - name: Build and loader-validate shared applications and services
+        run: |
+          python scripts/build_all_apps.py
+          python scripts/build_portable_settings.py
+          python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15
+          python scripts/build_portable_file_browser.py --alarm-client --navigation
+          python scripts/build_portable_springboard.py
+          python scripts/build_portable_updates.py --services-only --rtc-utc-offset-seconds 28800
+          python scripts/build_entropy_service.py
+          python scripts/build_tcp_listener_service.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: system-apps-sdk61-development-${{ github.sha }}
+          path: |
+            dist/apps/
+            dist/portable/
+          if-no-files-found: error
+          retention-days: 7

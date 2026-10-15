@@ -655,7 +655,7 @@ static void fb_draw(void) {
    portable_nova_text(3,26,y+35,188,fb_rows[i].is_directory?"FOLDER":size,NOVA_CYAN);
   }
   if(!fb_count)portable_nova_wrap(1,24,82,192,20,3,fb_status,NOVA_CAP);
-  else {char status[64];snprintf(status,sizeof(status),"%u-%u of %u%s",fb_page*2+1,fb_page*2+fb_count,fb_matched,fb_query[0]?" matches":" items");portable_nova_text(3,18,175,204,fb_feedback?fb_status:status,NOVA_CAP);}
+  else {char status[64];snprintf(status,sizeof(status),"%u-%u of %u%s",fb_page*2+1,fb_page*2+fb_count,(unsigned)fb_matched,fb_query[0]?" matches":" items");portable_nova_text(3,18,175,204,fb_feedback?fb_status:status,NOVA_CAP);}
  } else if(fb_mode==FB_OPTIONS) {
   portable_nova_text(3,18,47,204,fb_label,NOVA_CAP);
   for(unsigned j=0;j<2;j++){unsigned i=fb_choice/2*2+j;if(i>=fb_option_count())break;portable_nova_row(16,62+(int)j*58,208,54,fb_options[i],i==2?(fb_hidden?"On":"Off"):"",i==fb_choice);}

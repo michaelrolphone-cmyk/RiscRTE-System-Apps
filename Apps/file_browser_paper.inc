@@ -103,7 +103,7 @@ static void fbp_draw(void) {
     fb_app->fill_rect(32,y+FBP_ROW-3,fbp_w()-64,3,true);
    }
    if(!fb_count)fbp_wrap(32,150,fbp_w()-64,4,fb_status,true);
-   else {char status[64];snprintf(status,sizeof(status),"%u-%u OF %u%s",fb_page*fb_page_rows+1,fb_page*fb_page_rows+fb_count,fb_matched,fb_query[0]?" MATCHES":" ITEMS");fbp_text(32,fbp_h()-146,fbp_w()-64,fb_feedback?fb_status:status,false,true,false);}
+   else {char status[64];snprintf(status,sizeof(status),"%u-%u OF %u%s",fb_page*fb_page_rows+1,fb_page*fb_page_rows+fb_count,(unsigned)fb_matched,fb_query[0]?" MATCHES":" ITEMS");fbp_text(32,fbp_h()-146,fbp_w()-64,fb_feedback?fb_status:status,false,true,false);}
   } else if(fb_mode==FB_OPTIONS) {
    unsigned first=0,visible=fb_option_count();
 #ifdef PORTABLE_FILE_SHARING

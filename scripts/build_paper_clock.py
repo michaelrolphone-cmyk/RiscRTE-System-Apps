@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build the explicit wall-time Nova7 default.elf profile. No hardware access."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,hashlib,json,os,shutil,subprocess
 from pathlib import Path
 import portable_quick_build
@@ -73,7 +74,7 @@ def build():
  if not a.launcher_app.endswith('.elf') or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.' for c in a.launcher_app):p.error('Invalid launcher filename')
  performance_source=portable_performance_build.read(a,p) if portable_performance_build.selected(a) else None
  performance=None
- cc=os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc') or str(Path(os.environ.get('PLATFORMIO_CORE_DIR',Path.home()/'.platformio'))/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+ cc = resolve_compiler()
  out=a.output_dir;out.mkdir(parents=True,exist_ok=True)
  includes=ROOT/'lib/PortableApps/include'
  if a.desk_clock:

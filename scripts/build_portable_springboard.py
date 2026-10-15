@@ -4,6 +4,7 @@
 Development artifact only. The deployment supplies display.output@1,
 input.touch.raw@1 grants; RTC requires an explicitly selected deployment policy; no additional runtime exports.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse
 import hashlib
 import json
@@ -105,10 +106,7 @@ def build():
     if args.alarm_client: flags.append("-DPORTABLE_ALARM_CLIENT")
     if args.full_frames: flags.append("-DPORTABLE_FORCE_FULL_FRAMES")
     if args.retained_rgb565_handoff: flags.append("-DPORTABLE_RETAINED_RGB565_HANDOFF")
-    cc = os.environ.get('NATIVE_APP_CC') or shutil.which('xtensa-esp32s3-elf-gcc')
-    if not cc:
-        core = Path(os.environ.get('PLATFORMIO_CORE_DIR', Path.home()/'.platformio'))
-        cc = str(core/'packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+    cc = resolve_compiler()
     out = args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     notices=out/'licenses/portable-apps';notices.mkdir(parents=True,exist_ok=True)

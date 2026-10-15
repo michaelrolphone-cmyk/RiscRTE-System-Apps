@@ -3,6 +3,7 @@
 Does not assemble firmware or alter a baseline store. Product admission remains
 an explicit integrator step using the emitted immutable authority requirements.
 """
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,hashlib,json,os,shutil,subprocess,sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,7 +22,7 @@ watch=a.watch.resolve();utilities=a.utilities.resolve();runtime=a.runtime.resolv
 sys.path.insert(0,str(watch/'scripts'))
 from build_current_apps import application_inputs
 from build_contexts_cohort import definitions
-cc=os.environ.get('NATIVE_APP_CC') or str(Path.home()/'.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+cc = resolve_compiler()
 manifest=json.loads((a.baseline/'file_browser.json').read_text())
 assert manifest['id']=='file_browser'
 boot=json.loads((a.baseline/'boot.json').read_text())

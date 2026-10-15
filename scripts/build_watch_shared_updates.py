@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Build shared native-height update applications with inherited Watch features."""
+from native_toolchain import compiler_path as resolve_compiler
 import argparse,hashlib,json,subprocess,sys
 from pathlib import Path
 r=Path(__file__).resolve().parents[1]
@@ -9,7 +10,7 @@ a=p.parse_args();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
 from build_contexts_cohort import definitions
 from build_current_apps import application_inputs
 from compact_current_elf import compact
-cc=str(Path.home()/'.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc')
+cc=resolve_compiler()
 watch=a.watch.resolve();util=a.utilities.resolve();runtime=a.runtime.resolve()
 assert subprocess.check_output(['git','-C',str(watch),'rev-parse','HEAD'],text=True).strip()=='6e82fdcaec0b73ed700d2104cfb4d94f011c19d4'
 (out/'empty_catalog.c').write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
