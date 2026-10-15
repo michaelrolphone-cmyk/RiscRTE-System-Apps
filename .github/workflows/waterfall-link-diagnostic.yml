@@ -1,0 +1,36 @@
+name: Isolated Waterfall linker diagnosis
+on:
+  push:
+    branches: ['diagnose/waterfall-ubuntu24-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.12.14'
+      - name: Install the same pinned compiler package
+        run: |
+          python -m pip install platformio==6.1.19 pyelftools==0.32
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Capture host and repeat identical Waterfall commands
+        run: |
+          python scripts/diagnose_waterfall_link.py \
+            --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" \
+            --stage /tmp/crash-sdr-replay-kf_sdktp/replay/apps \
+            --output build/waterfall-diagnostic --attempts 6
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: waterfall-link-diagnostic-${{ github.sha }}
+          path: build/waterfall-diagnostic
+          if-no-files-found: error
+          retention-days: 14
