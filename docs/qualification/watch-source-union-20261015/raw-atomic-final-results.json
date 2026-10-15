@@ -1,0 +1,38 @@
+{
+  "environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1",
+    "RISC_RUNTIME_SDK": "/workspace/shared/watch-sdr-native-release-20261015/wave-source/runtime/sdk/app",
+    "CPATH": "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities/Apps:/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities/lib/Alarm/include"
+  },
+  "files_runtime_revision": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9",
+  "results": [
+    {
+      "label": "quick_atomic-normal-final-v7",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_quick_atomic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-atomic-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-normal-final-v7"
+      ],
+      "exit": 0,
+      "log_sha256": "709791bbd8e5e8ea54a50c9a6c4293abf7af8560768c3df0c0ceeb6bc4192917"
+    },
+    {
+      "label": "quick_atomic-sanitized-final-v7",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_quick_atomic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-atomic-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-sanitized-final-v7",
+        "--sanitize"
+      ],
+      "exit": 0,
+      "log_sha256": "709791bbd8e5e8ea54a50c9a6c4293abf7af8560768c3df0c0ceeb6bc4192917"
+    }
+  ]
+}

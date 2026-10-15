@@ -38,7 +38,7 @@ bool offerStaged(void*,const char*path,const char*json){
 void saveActivation(JsonDocument&doc){
  if(!installIntent)return;
  JsonDocument m;if(deserializeJson(m,installRecord.manifest))return;
- auto a=doc["activation"].to<JsonObject>();a["manifest"]=m.as<JsonObjectConst>();a["size"]=installRecord.imageSize;a["sha256"]=installDigest;
+ auto a=doc["activation"].to<JsonObject>();a["manifest"]=m.as<JsonObjectConst>();a["size"]=installRecord.imageSize;a["sha256"]=installDigest;a["medium"]=installMedium;
  if(installRecord.previousPresent)a["previous"]=installRecord.previous;else a["previous"]=nullptr;
 }
 bool loadActivation(JsonVariantConst value){
@@ -47,6 +47,8 @@ bool loadActivation(JsonVariantConst value){
  if(removeIntent||!value.is<JsonObjectConst>()||!value["manifest"]["id"].is<const char*>())return false;
  char source[193];int n=std::snprintf(source,sizeof(source),"Apps/%s/install.json",value["manifest"]["id"].as<const char*>());
  if(n<=0||size_t(n)>=sizeof(source))return false;
+ if(!readMedium(value["medium"],installMedium))return false;
+ installMediumSelected=true;
  JsonDocument d;d["manifest"]=value["manifest"];d["size"]=value["size"];d["sha256"]=value["sha256"];
  if(measureJson(d)>ManifestMax)return false;
  serializeJson(d,manifestScratch,sizeof(manifestScratch));
@@ -55,6 +57,7 @@ bool loadActivation(JsonVariantConst value){
   if(!copy(installRecord.previous,sizeof(installRecord.previous),value["previous"]))return false;
   installRecord.previousPresent=true;
  }
+ installCandidate.medium=installMedium;
  std::strcpy(installId,installCandidate.view.id);std::strcpy(installVersion,installCandidate.view.version);std::strcpy(installDescriptor,source);
  installIntent=installResume=true;installPaused=false;return true;
 }
@@ -67,9 +70,10 @@ bool candidatePending(){
 }
 int32_t installStep(const risc_storage_volume_api_v1*v){
  if(installPaused)return INSTALLED_APPS_UNAVAILABLE;
+ const auto*sd=v;if(installMediumSelected)v=selectedVolume(installMedium,sd);
  const auto*pkg=v?risc_storage_volume_packages(v):nullptr;
- if(!pkg)return INSTALLED_APPS_UNAVAILABLE;
- const auto*a=&pkg->base;
+ if(!pkg&&installPhase!=InstallPhase::Select)return INSTALLED_APPS_UNAVAILABLE;
+ const auto*a=pkg?&pkg->base:nullptr;
  if(installPhase==InstallPhase::Idle){
   if(scanner){scanner->cancel();scanner->step();if(scanner->state()==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
    if(scanner->state()!=Scan::State::Complete&&scanner->state()!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
@@ -84,7 +88,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
    installOutcome=INSTALLED_APPS_WORKING;installPhase=InstallPhase::FetchRefresh;
   }
  }
- if(volume!=v)return INSTALLED_APPS_INVALID;
+ if(installPhase!=InstallPhase::Select&&volume!=v)return INSTALLED_APPS_INVALID;
  if(installPhase==InstallPhase::FetchRefresh||installPhase==InstallPhase::FetchRead){
   if(!installOperation){
    risc_storage_async_request_v1 q{};q.operation=installPhase==InstallPhase::FetchRefresh?RISC_STORAGE_ASYNC_REFRESH:RISC_STORAGE_ASYNC_READ_SMALL_FILE;
@@ -107,6 +111,13 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
   int rc=a->end(v->context,installSession);if(rc==RISC_STORAGE_ASYNC_PENDING||rc==RISC_STORAGE_ASYNC_BUSY)return INSTALLED_APPS_WORKING;
   if(rc!=RISC_STORAGE_ASYNC_OK){retained=true;return INSTALLED_APPS_RETAINED;}installSession=0;
   if(installOutcome!=INSTALLED_APPS_OK){installPaused=true;return installOutcome;}
+  volume=nullptr;installPhase=InstallPhase::Select;
+ }
+ if(installPhase==InstallPhase::Select){
+  int rc=selectMedium(sd);if(rc!=INSTALLED_APPS_OK)return rc;
+  installCandidate.medium=installMedium;v=selectedVolume(installMedium,sd);volume=v;
+  // Rebuild provider source rows with the durable selection before journaling.
+  if(provisionJson[0]&&!prepareProvision(provisionJson,false))return INSTALLED_APPS_INVALID;
   installPhase=InstallPhase::Provision;
  }
  if(installPhase==InstallPhase::Provision){
@@ -115,7 +126,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
  if(installPhase==InstallPhase::Admit){
   if(!namespaceFor(installCandidate,!installResume)||!candidatePending()){installPaused=true;return INSTALLED_APPS_INVALID;}
   for(unsigned i=0;i<pendingCount;++i){candidates[i]={pending[i].path,pending[i].json};namespaceSlots[i]=pending[i].namespaceSlot;}
-  int rc=native->namespaced(native->context,candidates,namespaceSlots,pendingCount,admissionResults,true,true);
+  int rc=admitPackages(pendingCount,true,true);
   if(rc==RISC_INSTALL_BUSY)return INSTALLED_APPS_WORKING;
   bool accepted=rc==RISC_INSTALL_OK;for(unsigned i=0;i<pendingCount;++i)accepted&=admissionResults[i].status==RISC_INSTALL_OK;
   if(!accepted){installPaused=true;return INSTALLED_APPS_INVALID;}
@@ -148,7 +159,7 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
  }
  if(installPhase==InstallPhase::Publish){
   int rc=publish(true);if(rc!=INSTALLED_APPS_OK)return rc;
-  installer->~Install();installer=nullptr;installId[0]=0;installIntent=installResume=false;installPhase=InstallPhase::Idle;volume=nullptr;requested=true;return INSTALLED_APPS_OK;
+  installer->~Install();installer=nullptr;installId[0]=0;installIntent=installResume=false;installMediumSelected=false;installPhase=InstallPhase::Idle;volume=nullptr;requested=true;return INSTALLED_APPS_OK;
  }
  if(installPhase==InstallPhase::Abort){installer->step();if(installer->state()==Install::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
   if(installer->state()!=Install::State::Cancelled)return INSTALLED_APPS_WORKING;
@@ -170,5 +181,5 @@ int32_t installCancel(){
  }
  if(cacheOperation){int rc=save();if(rc==INSTALLED_APPS_WORKING||rc==INSTALLED_APPS_RETAINED)return rc;}
  if(installer){installer->~Install();installer=nullptr;}
- loaded=false;installIntent=installResume=installPaused=false;installPhase=InstallPhase::Idle;installId[0]=0;volume=nullptr;requested=false;return INSTALLED_APPS_OK;
+ loaded=false;installIntent=installResume=installPaused=false;mediaProbeStarted=false;installMediumSelected=false;installPhase=InstallPhase::Idle;installId[0]=0;volume=nullptr;requested=false;return INSTALLED_APPS_OK;
 }

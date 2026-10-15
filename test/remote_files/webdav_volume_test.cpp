@@ -43,6 +43,39 @@ struct Fixture {
 };
 Fixture*Fixture::active=nullptr;size_t Fixture::maximumPeak=0;
 int main(){
+ // OPTIONS and method admission must reflect the actual optional callbacks.
+ for(unsigned missing=0;missing<7;++missing){Fixture f;
+  if(missing==0||missing==6)f.base().file_open_write=nullptr;
+  if(missing==1||missing==6)f.base().file_write=nullptr;
+  if(missing==2||missing==6)f.ext().file_sync=nullptr;
+  if(missing==3||missing==6)f.ext().rename=nullptr;
+  if(missing==4||missing==6)f.base().remove=nullptr;
+  if(missing==5||missing==6)f.ext().mkdir=nullptr;
+  assert(f.run("OPTIONS","/")==200);const std::string allow=f.response;
+  bool writable=missing==5,remove=missing!=4&&missing!=6,mkdir=missing!=5&&missing!=6,move=missing!=3&&missing!=6;
+  for(auto method:{"PUT","DELETE","MKCOL","MOVE","COPY"}){bool supported=!strcmp(method,"PUT")||!strcmp(method,"COPY")?writable:!strcmp(method,"DELETE")?remove:!strcmp(method,"MKCOL")?mkdir:move;
+   assert((allow.find(std::string(", ")+method)!=std::string::npos)==supported);
+   if(!supported){unsigned before=f.calls;assert(f.run(method,!strcmp(method,"DELETE")||!strcmp(method,"MOVE")||!strcmp(method,"COPY")?"/file.txt":"/new","Destination: /other\r\n")==405);assert(f.calls==before);}
+  }
+ }
+
+ // Reserved settings are never exposed, even through FAT aliases or URL encoding.
+ for(const char*path:{"/RTECFG","/rtecfg/00000001/settings.index","/%52tEcFg./x","/rtecfg%20/x","/folder/RTECFG/x"}){
+  for(const char*method:{"GET","HEAD","PROPFIND","PUT","DELETE","MKCOL","MOVE","COPY"}){
+   Fixture f;assert(f.run(method,path)==403);assert(f.calls==0);
+  }
+  for(const char*method:{"MOVE","COPY"}){Fixture f;std::string h=std::string("Destination: ")+path+"\r\n";assert(f.run(method,"/file.txt",h.c_str())==403&&f.calls==0);}
+ }
+ {Fixture f;f.nodes["/RTECFG"]={"",true};f.nodes["/rTeCfG. "]={"",true};f.nodes["/RTECFG.txt"]={"visible",false};
+  assert(f.run("PROPFIND","/","Depth: 1\r\n")==207);assert(f.response.find("/RTECFG/")==std::string::npos&&f.response.find("rTeCfG")==std::string::npos&&f.response.find("RTECFG.txt")!=std::string::npos);}
+ for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.nodes["/folder/RtEcFg"]={"",true};f.nodes["/folder/RtEcFg/checkpoint"]={"opaque-test-value",false};f.nodes["/folder/000-safe.txt"]={"preserve me",false};
+  assert(f.run(method,"/folder","Destination: /elsewhere\r\n")==409);
+  assert(f.nodes.at("/folder/RtEcFg/checkpoint").data=="opaque-test-value");
+  assert(f.nodes.count("/folder/000-safe.txt")&&f.nodes.at("/folder/000-safe.txt").data=="preserve me"&&!f.nodes.count("/elsewhere"));
+  assert(!f.nodes.count("/elsewhere/RtEcFg")&&!f.nodes.count("/elsewhere/RtEcFg/checkpoint"));}
+
+ // Without position-safe traversal, refuse folder mutation before any write.
+ for(const char*method:{"COPY","MOVE","DELETE"}){Fixture f;f.fs.fs_tag=0;f.nodes["/folder/a"]={"preserved",false};assert(f.run(method,"/folder","Destination: /elsewhere\r\n")==405);assert(f.nodes.at("/folder/a").data=="preserved"&&!f.nodes.count("/elsewhere"));}
  {Fixture f;assert(f.run("GET","/file.txt")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)=="old");assert(f.run("HEAD","/file.txt")==200);assert(f.response.find("Content-Length: 3")!=std::string::npos);}
  {Fixture f;assert(f.run("PUT","/large-upload","",std::string(1024*1024,'u'))==201);assert(f.nodes["/large-upload"].data==std::string(1024*1024,'u'));}
  {Fixture f;f.nodes["/big"]={std::string(2*1024*1024,'x'),false};assert(f.run("GET","/big")==200);assert(f.response.substr(f.response.find("\r\n\r\n")+4)==f.nodes["/big"].data);assert(f.run("COPY","/big","Destination: http://watch.local/copy\r\nOverwrite: F\r\n")==201);assert(f.nodes["/copy"].data==f.nodes["/big"].data);}

@@ -1,0 +1,17 @@
+{"command": ["bash", "scripts/test_file_browser_source.sh"], "cwd": "/workspace/shared/x4-settings-system-101-20261012", "environment": {"SANITIZE": "1", "OUTPUT_DIR": "/workspace/shared/x4-settings-points-union-evidence-20261012/file_browser_source-asan-ubsan"}}
+General source Files controller local: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller local-short: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller choose: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller full: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller unavailable: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller unsupported: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller begin-busy: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller cancel: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller busy-cancel: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote-short: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote-cancel: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote-full: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote-interrupted: existing handler/action UI, bounded staging and checked cleanup PASS
+General source Files controller remote-reopen: existing handler/action UI, bounded staging and checked cleanup PASS
+mkdir: cannot create directory ‘/workspace/shared/x4-settings-points-union-evidence-20261012/file_browser_source-asan-ubsan/paper-local’: No space left on device

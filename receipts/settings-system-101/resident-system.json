@@ -1,0 +1,715 @@
+{
+  "runtime_commit": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70",
+  "hardware_tested": false,
+  "runtime_mocked": false,
+  "sdk_sha256": {
+    "PortableRadioPolicy.h": "560cf6d492bcf3453b2ee260e6e4dfa102afece7fb1d406a77f2fa32465d1ae3",
+    "PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "PortableFingerprintClock.h": "7e133d788602d27b9332cecda8cc9cf8ee27bd30257f3d7570c886c675aa729b",
+    "FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
+    "PortableFileSetup.h": "19b833d0d31276a620a008ea4e49e1681616788c960e31edcf4f1d064feb27d3",
+    "SoftwareUpdateV1.h": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca",
+    "RiscPlatformClockV1.h": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
+    "RiscKeyValueAtomicV1.h": "552b0be1890eced2c688700671832bbd1ec15b3663801d59ae946173f94313c5",
+    "PortableApps.h": "d8fc1fae3669c439fda7af94568a93bc1d1f35ddc6fe05615eac1cb41ea4a78e",
+    "PortableTextInputHandoff.h": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
+    "RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "PortableDeskClockApp.h": "cdf7fdbacf6fd1ff8e8f080936082aafbe01af1c81cc7710d7d362fb69870b6c",
+    "AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004",
+    "PortableNativeCustody.h": "9dc7d0fb89bbab8304d829fa63e5baed3c6c348fdf37cc4166f5e8117a2594b6",
+    "RiscRadioScanV1.h": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
+    "RiscDisplayOutputSnapshotV1.h": "b835fd1a3600551d54efb2806cbe8dd3ecc512a538572dc853aaf11f4e2490b6",
+    "PortableUpdate.h": "344344762bfc0430285ecf8a781b64fb3789949cca7a517ad0b0684bf7fa6b76",
+    "PortableRaster.h": "0cded4d7c7d288f5f7a9b20114810aee209302e042d9cfead2cd8316866afc2e",
+    "PortableAppSleep.h": "027f70965663bc86e7f3bbf2733002870e2254ec92d39037def5f42c52fedc62",
+    "PortableAudioSession.h": "2f3d9cdd59005d44201f52005c7c88c8a9b2d9e816853338e4254196fad36f47",
+    "PortableNetworkSession.h": "7e573c3148c10bb3e0c50babea7714478ae9cd1265f7f97a91e574134f2cb5c2",
+    "PortableResidentShell.h": "d92e6cc59adb9f38139b3b1693990e6494fa327cc81747a7a591c9cbfd8a3696",
+    "PortableWifiAtomic.h": "e3d6f411a9ccae3f19f9b20b3d91fe4e99dc8e4746661210213a0c135abdc9fa",
+    "RiscBluetoothSessionSetupV1.h": "8cc14caeb548f11f0045811bfc7ac66c007ddd3419b5b8db6947dc7362725b9f",
+    "RiscHttpClientV1.h": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
+    "PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
+    "PortablePointsState.h": "69dd5c45cea14991a06b397b800de7006aee8509d6ffa905a905f40d8a40baaa",
+    "PortablePaperTransition.h": "2f1b60dddeeae8111287fc0aa13d0d15fcc37fcdaa5da3ae6fb96edb85847328",
+    "RiscAppDataExportV1.h": "56f9afd075f0fe3d8e7e8cdbec2d34813018dfe6cb3de3f18b326c4de948cddd",
+    "PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "RiscTcpConnectionV1.h": "484ca863b82b44b7a26c4915a240be95b12a92817eb497def3c0d99eb68179c3",
+    "RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
+    "RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "RiscProtectedSettingsPath.h": "b3f07e89f570beba1e2e770052292bde027120d8cbc886e8bee6ef876aa1b1c7",
+    "PortableDeskPointsSnapshot.h": "7d3a6816c86d029b9900e7af56e878cea814ed94d637a031031cc8fe928157eb",
+    "RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "PortableAlarmClient.h": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1",
+    "RiscBluetoothTelemetryV1.h": "f98aaff4165ee3816846cfe9ba110e8bafce403342a870162eb1089a03d935a6",
+    "CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
+    "CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
+    "PortableAppLaunchGuard.h": "a7da58c80c62ef35cdf4e76aff0d2f66768b66963457c3a00f5e9890ca357558",
+    "PortablePowerStatus.h": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4",
+    "PortableQuickUserPreference.h": "cef595ee29659622dc8be0f5d841d40fa9ed18f6a082bd0140fde7c67e563f42",
+    "PortableTransition.h": "627e00b7c8143d946556f67a61803a56335f747dd8f6489bbfcabaef015542d2",
+    "RiscInputNavigationV1.h": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+    "PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "RiscUsbDeviceMscV1.h": "d55a9340c3ff64e8679c4d9332812f073c30b8aa08ae3e3fb04f9010cf517ed6",
+    "AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+    "PortablePreferenceAutomatic.h": "ccb82ae80dcfed3dc81594efea70f0bd6b1b7c46bd4ff4f6169e525b324e22bc",
+    "RiscTextEntryV1.h": "bee01a5a912fe12a3a4fa8124967117cdf1a395c46e50ab2c77175da04d781a7",
+    "RiscDisplayOutputPowerV1.h": "e9c7d3bd3ddf9bce128503aafb5669734db09424149f45b3a6f735cd5a7c8667",
+    "PortableTimeZonePreference.h": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0",
+    "RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
+    "RiscDisplayOutputV1.h": "99b682ba34f07e7868dec8e78dfb816c067fdc184e647033bc6ed8d489b9c9a2",
+    "RiscStorageExportV1.h": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
+    "PortableInstalledCatalog.h": "ead6bf9af9226d8e644bc257a7b7a3eb61d746bd14f10bd6ddbd57b309684e30",
+    "PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "PortableRasterLayer.h": "6bfac32a8582a41d447bd8121dc76fdd147c2761f3d75ff458b556339c4f2ff9",
+    "PortableContextFingerprints.h": "76bfffa6336aa1caa10a0c479c6d67f6792847083a32da6b2910c3ec675d381c",
+    "PortableLowBattery.h": "c83b663b1d5676c7eb7a8ec59157f0efc561802cfe2a3b6eb63937e28b0acca3",
+    "PortableContextsClient.h": "d4f184419ed407f4359099df03ce5ae8386720c754bbe33216d58500fb6004b3",
+    "PortableSpringboardCatalog.h": "c5d0ef941090cb68a3d355989d6fedb27546a7d8b1fe16d30c702c326f3056ef",
+    "PortableRealtimeClient.h": "9a366511975762ab7124931e9124756319acfe586ba9f3881a9f710129290b0a",
+    "PortableQuickActions.h": "e96642f2d3a2056ec6022ef3f03806e5d2a2dfb582d8116480e32696a34c7883",
+    "InstalledAppsV1.h": "0575bfdc3d54ca9430cc9689ca536384013a0e40b24c9002c28abfe2cc3f5d00",
+    "PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "WifiApi.h": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
+    "RiscEntropySourceV1.h": "042b367b5c766b4a79d887c3bc573fdd2c90b6b231510bd8b20d0b5c3d7796a7",
+    "PortableHomePointsCatalog.h": "d3c46fef226e626c0732c190108d016caf7bfbdfa0ac15c120e3ce281ca9181b",
+    "PortableSetTime.h": "52bff55873d1e29ece9da91e26e4840fa4035daad858f1f5618281b5ba985457",
+    "RiscDiagnosticCheckpointV1.h": "2c41504823df54a43e383baafa07f45191869f6ea5de4adaaf2651c2d78af017",
+    "PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "RiscBankStoreV1.h": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
+    "PortableAppCustody.h": "820c05033c78cb29d8b0ca42c6b633966f7123ae4179ef9f0d4e8aca1655bb1b",
+    "PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
+    "PortableNovaKeyboard.h": "388cdc97e48b6e3378f1cf80b1b5dc3b0e116dd1e30a061697ae56bfb15ec0eb",
+    "RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "PortableQuickSession.h": "bd407bf49ef64615ead02d865d267adc5ed422c9ebb7936384638d20f5a0afde",
+    "PortablePreferenceRollback.h": "9b2f63ba5752a93a8bb269a77aef29dfe0f0d4dc1a946ab16cfa5b341de7f92a",
+    "ContextsServiceV1.h": "ade2f40d01c7c384c6a71b4ee2a3b077c140ac6af06d7cc69350f02f7be6643d",
+    "PortablePeerFiles.h": "7498674fe9cb2cf6f139c501d46307296927c4978d01867146d46258a6935ee6",
+    "ContextsRules.h": "e890b236dd7a969f25db9642fcd8eea25eaed68f3dcb41820ffaacc95c159c89",
+    "PortableBroadcastAppData.h": "39623ec4ebb2a1c576398b60be8cceef084ff7d0809d4f8903aaa6b7873bd30d",
+    "PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
+    "RiscRadioAsyncV1.h": "2b5a916cfe9e1fb6520043c2b8f3e8c13ea8e022166fcbdfa6b50ce691ebfe48",
+    "PortableWifiProfiles.h": "3201c58bfb48fee81b05a27d7199c1cf6f6f49d4fa83422d0c0098c842de92d5",
+    "PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f",
+    "RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "PortableWifiCredentials.h": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
+    "PortableNovaUi.h": "7301c01a0bdeee5888b518bfb19aefeec65403caf52c589b41eb4e1dfc628291",
+    "PortableBluetoothControl.h": "777f0c7f92092d05a428c04255b6df1b3e9510a36c7425fc95092b3321e67a2c",
+    "PortableUsbTransfer.h": "f1351bb4ca5d5af029f6427e814e77c2eca4baa410ca00e9be51a5bce794a2b3",
+    "PortableAlarmTerminalClient.h": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635",
+    "PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
+    "RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "PortableWatchKeyboard.h": "f006ff13fe70236433ec6c37fb8cf5c4efe018d24393a9035c446e1f3554f4dd",
+    "PortableDeskClock.h": "603609b28ee7d891de2743d0f86417c3b00ca4201be28eb42ac257194e594bb4",
+    "PortableFileBrowser.h": "ba52e70f3dd1ac3f705d29155eaeb5885550cb2b33cf459cfd15ddbe09bbccd3",
+    "RiscStorageVolumeFsV1.h": "e487352157e3c3d5c10a28a16fdfcce76db693bf45c612ff4e2f31ee83e9a329",
+    "PortableQuickRender.h": "a442eff258880584976d81407cef82aac66e86b91d68ee919f477e92f5bef36a",
+    "TelemetryBroadcastV1.h": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5",
+    "PortableRadioSession.h": "8b09b402a8235dbf48826b890a04dbcabe2f7ac6c600b90b42f71ac5997356b2",
+    "PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "RiscResidentShellV1.h": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
+    "PortablePointsCatalogView.h": "0350a2d42d1befc07b838ef4386458d876cabc0820a2b773d9eb1b383dd2bead",
+    "PortablePaperScroll.h": "6575d6618628f5e195b06d9034acea20be9a5d84cee1210c1c248546c27d4347",
+    "RiscDisplayOutputMetricsV1.h": "5be17adbae2ec26a855894e0d6443ac29572002c21efe53b2a913a5a0f0c642d",
+    "PortableNavigation.h": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d",
+    "RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1",
+    "PortableBroadcastClient.h": "deb4ef3b3259ea813e4822da46a17c8f9c2dd88f920596b1900b1d2cfd821687",
+    "PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "RiscAppDataV1.h": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e",
+    "PortablePreferenceAtomic.h": "0b3a6fcf086c8fb9924e4054510398ac353d1255aef29209af1b47b7bb103983",
+    "PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "PortableDeskClockFaces.h": "6864b07c69edcdc20e473d9716db2d9ce19edf2fbfafc379566c1990c78ac5a2",
+    "PortableQuickRadios.h": "32fa2d45a164507d975acb7cd2f1eb41100b01020d7fa91537d0923e244763f5",
+    "PortableReaderPreferences.h": "3f0b7b12b1ddf6bf9c45c9598dab5488feadde0e9f5879b5e12c9f4eff8d4eda",
+    "ContextFingerprintService.h": "edbd70bd1542824f58ddd487cf22d7b59ced4bb762361288210a489a01c4f0b7",
+    "PortableWifiView.h": "7f7d2d3cf484fc5a903457057a195e43abed9e13eff12adbf343384efc2f2ce9",
+    "PortableWifiSavedNetwork.h": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
+    "T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "PortableContextRules.h": "c5dc73ff50bdd59b2011a61a3a04a0f6949287cd8ec051bc4b898aeafef3f3cf",
+    "RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "PortableContextActions.h": "9ebea2abc377b880fed7ab8537b93fa123eb58ea11d35f53aa96bcf4fd0dbb0c",
+    "PortableFileSharing.h": "454ef57abeea736a143ad7eeca52724bdafd1c7dfdfbf0062a3629f9527d30ec",
+    "RiscTelemetryV1.h": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
+    "PortableDeskClockSettings.h": "ca26111d67474f7664d9fac748708c25f0bc0454c0ffe647e6199d689059af0d",
+    "RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387"
+  },
+  "system_commit": "d21aade84b6bc34ba4dddde90872bde011b6c099",
+  "boundary": "Production Runtime/Graph and separate host/client/provider ELFs; seeded actual controller models, explicit adapter checkpoints, normal controller Home loops, synthetic provider callbacks.",
+  "runs": [
+    {
+      "app": "files",
+      "case": "overlay",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "cleanup",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "cleanup-terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "files",
+      "case": "terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "files",
+      "case": "poll",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "capture",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "file-open",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: file-open models=2 overlays=2 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "scroll-policy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: scroll-policy models=2 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "overlay",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "cleanup",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "cleanup-terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "poll",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "capture",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "policy-busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "overlay",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "cleanup",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "cleanup-terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "poll",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "capture",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "policy-busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "overlay",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "cleanup",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "cleanup-terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "poll",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "capture",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "policy-busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "overlay",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "busy",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "cleanup",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=1/1 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "terminal",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "poll",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "eject",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: eject models=0 overlays=0 home-polls=0 usb=1/1 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "release-retained",
+      "sanitized": false,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: release-retained models=0 overlays=0 home-polls=0 usb=1/1 retained=1 PASS"
+    },
+    {
+      "app": "files",
+      "case": "overlay",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "cleanup",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "cleanup-terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "files",
+      "case": "terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "files",
+      "case": "poll",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "capture",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "file-open",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: file-open models=2 overlays=2 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "files",
+      "case": "scroll-policy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: scroll-policy models=2 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "overlay",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "cleanup",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "cleanup-terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "poll",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "capture",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "wifi",
+      "case": "policy-busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "overlay",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "cleanup",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "cleanup-terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "poll",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "capture",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "apps",
+      "case": "policy-busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "overlay",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "cleanup",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "cleanup-terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup-terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "poll",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "capture",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: capture models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "ota",
+      "case": "policy-busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: policy-busy models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "overlay",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: overlay models=1 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "busy",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: busy models=2 overlays=1 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "cleanup",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: cleanup models=2 overlays=1 home-polls=3 usb=1/1 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "terminal",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: terminal models=0 overlays=0 home-polls=0 usb=0/0 retained=1 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "poll",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: poll models=1 overlays=0 home-polls=3 usb=0/0 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "eject",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: eject models=0 overlays=0 home-polls=0 usb=1/1 retained=0 PASS"
+    },
+    {
+      "app": "usb",
+      "case": "release-retained",
+      "sanitized": true,
+      "result": "Actual System controller + adapter + Runtime/Graph ELFs: release-retained models=0 overlays=0 home-polls=0 usb=1/1 retained=1 PASS"
+    }
+  ],
+  "process_cases": 80,
+  "source_sha256": {
+    "scripts/test_resident_system_clients.py": "86d2250692b91291a338b2f39a310c9d92edf21b1b52dab7849d7f9700675d14",
+    "test/native_apps/resident_system_app.c": "2a4ad5914aea6d769bbbd8831bee7a2188170f4ef5ec416337a0537b32e65c99",
+    "test/native_apps/resident_system_runtime.cpp": "37267283510030de7ca4fc2943c9096a3749d53cdaeb34c62f48440b1547bc54",
+    "test/native_apps/resident_system_adapter.c": "0497588fccb666c6a9161721a14fb0abcd08714f8a2e1b3f1d04f3013cce8665",
+    "test/native_apps/resident_system_file_receiver.c": "a817e875f847490295328f37a7e7a54e54a39f49f12c350933131a3bc07933f2",
+    "test/native_apps/resident_system_test.c": "96b967a65183f036f49c3de5465d7a70552a346155dfac595832e87d912443cc",
+    "Apps/file_browser_setup.inc": "09f23c804a89d722bccb981ab98f47448d07f1d0033c4602975c8d1bbcd5c23c",
+    "Apps/file_browser_scroll_model.inc": "9d7234cd52723b48103c992a11093b1926317456c051f9452992816190e63796",
+    "Apps/file_browser_operations.inc": "ed2290bc6eb630a94209b3abcf430918342e6359968392e5b9cd79cbafda9bec",
+    "Apps/file_browser_portable.inc": "9506952cd1731ac928f259639d23cb60abffe5e2e8b21040620b1b8302294476",
+    "Apps/file_browser_scroll_view.inc": "29e5cfb62cafd6468a028215e12fa683363c1c5da819ef720f470339e8893ec0",
+    "Apps/file_browser.json": "34d23483d144a3455c3fe28dc6b94291071faff0503c86615230774c627532c7",
+    "Apps/file_browser_paper.inc": "622954bd2f6fe00834a77710e4e46a762004c001161f725f25f5af4abab487cc",
+    "Apps/file_browser_peer.inc": "c5349528ffcc574e0de4aefa20f1844e80b636b1df7faa01d30a883494911afb",
+    "Apps/file_browser_direct.inc": "86eb753e537366f5f29f9dcda92d867d1098b55213469ace14f4c697dc469a06",
+    "Apps/file_browser_rgb_operations.inc": "909ccfdb0b277daad1983df95531acd3407dfacdde90c403f7fd58b91e323ae1",
+    "Apps/file_browser_sharing.inc": "8a987b67380841fd43b4ddf678936e465cd7200334f07b208f0195612cca515a",
+    "Apps/file_browser_mount.inc": "20ef07aa79c01db90fe166d0091abb63f5705b0372a301c2f5f0d94a892765dd",
+    "Apps/file_browser.c": "e805e56dee233e0e267b8984527f292a441eba3e2776b6774f2009b0383d79ad",
+    "Apps/wifi_settings.c": "c1468a6c8ea559e3b32f6a309bf5a77578550109f0b071a7ec9e0bb95f613205",
+    "Apps/wifi_settings.json": "50402a1a7974e49a57be09d4163b4fdff36ed5ce1fa22c24ee8f4dc59845b08b",
+    "Apps/wifi_settings_portable.inc": "8974d3362c380b115a53304e8ca219352523d191d13bacf1b7593230b4b22f46",
+    "Apps/update_paper.inc": "4f0b5aae766f6f5284756a069159d2f0271321146eb5c25bd086d95dd7f4bb46",
+    "Apps/update_scroll.inc": "8701c86d141ec3a13e28269d0c36aba0c35d456586095c0aa36a8cbaa4c2717e",
+    "Apps/update_installed_catalog.inc": "df4336837aa48a5d5a0829722dcc6d8c60ee4e0e325a29af72496620a995f579",
+    "Apps/update_portable.inc": "7031268b61c90c364f987c502a815cc4800a54aa5ca26c60697ae22099beb042",
+    "Apps/usb_sd_transfer.c": "2fb8c9ae0cb276ba674143695235c6535b69d45de44515afccebed051b8dc34c",
+    "lib/PortableApps/src/quick_render.c": "d5b02fc2fd6a9eb2e9b2ccfc9848cb786fb2cf9da613d0514eb529c3375337dc",
+    "lib/PortableApps/src/home_automatic.inc": "a67f6df0bbbc4de57d0204feb79c54abca809e278f7c2ce450c8a47a236e7e8e",
+    "lib/PortableApps/src/raster_snapshot_replay.inc": "cc87e7c47d4928eb495cfe62ea0516fb3a07e00426c09d3c301f3255c4302c9a",
+    "lib/PortableApps/src/settings_paper_scroll.inc": "f7ece784fe993f166e92b49120b3517e192e65730f0d8e4c1b277228b14a3c15",
+    "lib/PortableApps/src/paper.inc": "0c961540912e0f42b1a9bb9bb95086d8a1296a48b5d1aa1e96da28c624888939",
+    "lib/PortableApps/src/settings_paper.inc": "a63617b0d66b4e749fb4af0986f82b96ed0abfd11aa0227eb5b1bc3297445f0f",
+    "lib/PortableApps/src/wifi_view.inc": "4914294432aeb7141f3d8ffaa911b17070cae78a91e2648a67c70b1b910389ed",
+    "lib/PortableApps/src/contexts_clock.inc": "85fa81404b037fee3bd605721c8658395e5f42584b3d64619d4896dc7ff7993b",
+    "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28",
+    "lib/PortableApps/src/settings_view.inc": "1f598007ba03413fc3e62c63572040164308bc16870383fb575809e9e240bd1b",
+    "lib/PortableApps/src/desk_clock_faces.c": "f76843e4e7d5607205328e491fdb5f0d21121728607b894d2a1c266630e19fc7",
+    "lib/PortableApps/src/PortableInstalledCatalog.c": "a4b9f7c7f894cf71d7479b43dad63ad7edfba0013c379d1ac28c7269531630a6",
+    "lib/PortableApps/src/raster_layers.inc": "37d11bf454fc73bc49de5a4723ccad058c00d244b80af511f2a9656d20afd357",
+    "lib/PortableApps/src/adapter.c": "c97d47aa0f1971a4a19755bb8c3d05cab38f05b9d99b99e744a5755b9b91ec1f",
+    "lib/PortableApps/src/PortableRealtimeClient.c": "a8115817eb490bb51f3e338fde4dce2542cb82dceefe476beae21a91c14ceade",
+    "lib/PortableApps/src/contexts_rules_adapter.inc": "ee6549cb1f1597df0f874aacfa18dad130344bd1419ee96a7bc6990ee15b7143",
+    "lib/PortableApps/src/resident_shell.inc": "ccc4fab35ae26ea9a26af24b64e356320a1fa2391eac7366bb1f29daee2c4034",
+    "lib/PortableApps/src/PortableNetworkSession.c": "acaa29ebc74d3c874efffa98a23290ba9dc0681f6bf1aa5034070312ad1e0ed5",
+    "lib/PortableApps/src/broadcast_adapter.inc": "a4dd913081ff3e15fc312a525b58c73270b00a83d6d39bab7ea7fc756333ce89",
+    "lib/PortableApps/src/PortableFileSetup.c": "1ca0ae0964a0d16dbe05904dbff52486ec8eef59aa1d5da55418e796c7a0ab1f",
+    "lib/PortableApps/src/resident_sleep.inc": "882fe0ea2afccf446ffa5997d98e022999ee89ed59e63b1fb2cb730ce3c70c6b",
+    "lib/PortableApps/src/nova_ui.inc": "5c153fdb3809c64089532811285a35a69648e4521a9b9100c8fba8acd7d60a2f",
+    "lib/PortableApps/src/nova.inc": "6b4905d8840537ff6e8e82196b090b104dae1149a22a449d350778de762da07d",
+    "lib/PortableApps/src/PortableNativeTimeSource.c": "a53ea9fd489493dfc459c7b18e739da388013849be6639a3e0f62fa353d5be10",
+    "lib/PortableApps/src/alarm.inc": "42295ec01b114235bbd3205b7fca6bf4e9ae56718fb7e27cd361668768a754da",
+    "lib/PortableApps/src/quick_actions_assets.inc": "6e0eadad1387eee501f4524d3b21d86fac61e9051822c368070468b9c41d896c",
+    "lib/PortableApps/src/quick_atomic.inc": "c2de15c9d5b72c220201ed4abed742888c332c86037561c4dc2c71dc47e43289",
+    "lib/PortableApps/src/settings_native_time.inc": "5cb2785ca9a1da6a8f6c0b14c206757eb04694f19053d0197fc10ab2572b3b7c",
+    "lib/PortableApps/src/wifi_scroll.inc": "afd681056c5aa0c8020117f96ce28a7630d61d7fad9463d77932ccac50fe7159",
+    "lib/PortableApps/src/raster_snapshot_state.inc": "9ac68f97f4dbc60b2ff1c9b227da7aa6abe6a1c28a450a7a46fe7053fc7eefaa",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/settings_atomic.inc": "80483d09c9cfbd39d27c246bedac84b7ffdd60d9656480685f651002a85041fe",
+    "lib/PortableApps/src/settings_atomic_save.inc": "b044ed156d6515adbe63124155d88d42a5c4ebef8a02957bd97053659fd4d97e",
+    "lib/PortableApps/src/text_input_handoff.inc": "28c60c75741c8c09f17dfa5b032748a4198f8075b684d027c56607ea26ebe02f",
+    "lib/PortableApps/src/quick_adapter.inc": "1359b46df86267c27abe5c3a7107ab314c9f943aedcbdb4dfa31b3b257d72ada",
+    "lib/PortableApps/src/quick_reference.inc": "e1482082ea2f03082f49fbd416590f6f22370fa93e3a6e4de5a542b3eb3efdbe",
+    "lib/PortableApps/src/settings.inc": "5169b8c61681b1bc9e5e363eab90f5a897c297ba9633b657a8a682abdcce77a7",
+    "lib/PortableApps/src/wifi_nova.inc": "689a868d8cfbd18835d907f9817784c2f3401d3a134580492ad7bf755a89a804",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "46c9c5cc5f978fb3178c1df91b87bcbfb3429e3c0c641797bef993c2f4904871",
+    "lib/PortableApps/src/contexts_adapter.inc": "09772b7aee76f3ff735bf394d10de940979714fc8f1c68f077232e18a30dc84a",
+    "lib/PortableApps/src/resident_failure.inc": "7ba48431a9b1db8448abfbfcd7687034d865370d84fbee62785c3fbb0897bae1",
+    "lib/PortableApps/src/sparse_clock_adapter.inc": "db3ed9fee2b4d54e2c6c4c80a2b84a304f113890d1107eb6d204719abe4d93c3",
+    "lib/PortableApps/src/resident_adapter.inc": "db0c5d2b2423a7cd0f948af816234b51db489ea73cf43ca050e7ef1b7ec5a514",
+    "lib/PortableApps/src/paper_transition.inc": "1dd29653b9effbf277591cebe6d634cb5dff816159962f6005c78605212ca4fc",
+    "lib/PortableApps/src/quick_actions.c": "5eb885a4940edceefc1d96b8cce977bdfaf7dfaf46a0efca6bf5ea382262f7d8",
+    "lib/PortableApps/src/resident_policy.inc": "f3b9b7cc33ec243dd64c664589c96179940dc30dbaa0683025460ed00a15e319",
+    "lib/PortableApps/src/native_toolbar.inc": "0ecab2af95aab850734d9a13482a9e3177d4a6cddf5499435ae746fe7a21151f",
+    "lib/PortableApps/src/springboard_header_replay.inc": "dd38361906f63c1667cd24a280769b707d43b50805cace5ae25a3f00d7b4a94e",
+    "lib/PortableApps/src/quick_paper.inc": "f3bfacb674b2a0960419a472418e0a18660e0723a3c333d9dfa9b92cb08ee25b",
+    "lib/PortableApps/src/PortableTimeZonePreference.c": "b54e455d587ba2ecda8f59dd899b59b767214aee807b92d79d18c5e9d30b6bb7",
+    "lib/PortableApps/src/failure_archive.inc": "d70d5ab3f217ceed7e8ae26156d1856d95473eeb3dafc8d7b1b105115e7d72c2",
+    "lib/PortableApps/src/failure_evidence.inc": "e3fe25694d5fea76681831cd90ba0a4ed3aa102acb2cd0d64fbafe41facfe5ce",
+    "lib/PortableApps/src/home_points_catalog_adapter.inc": "3da35f5e6651a5224fa96696ec152ce4084d2c78d16e1ba1bc4f5d916553ccf9",
+    "lib/PortableApps/src/PortableSetTime.c": "f5a017c35a9acda0f0b1031023333914ab3099b882df16a5b78312c7b11b6390",
+    "lib/PortableApps/src/contexts_policy.inc": "943afb45c3e9c887f937d3ed064baa23f5d3b9fd104836651889223702df58d5",
+    "lib/PortableApps/src/native_custody_adapter.inc": "fd2ed71774cb0869ce7db8cd484352e4c04af4decff2131f81b136586381bb39",
+    "lib/PortableApps/src/performance.inc": "547a1f1902f60b816b8dc25a28821fb0a4c84c21e219c460a6dbb760a8c71db9",
+    "lib/PortableApps/src/settings_timezone.inc": "7a484b8a192599db71b56625db8f22db55fa7052a959c25694e17a5d9383a9c4",
+    "lib/PortableApps/src/quick_session.c": "2ad92a09a6ebc818fd0e39e4220d8e64c5f6f67509750d65a46394694e9092c9",
+    "lib/PortableApps/src/resident_loading.inc": "9f16e692c6bd0aa4740e83d3048ced4be85246adce82b956c0935086eb013f09",
+    "lib/PortableApps/src/wifi_paper.inc": "fad0f5a5be96abb9ef7f2d5dd376334bb4f26c1b93ffde06333b64bdb079399f",
+    "lib/PortableApps/src/PortableTimeZoneCatalog.c": "29d4c86037f7554c94a4404d5e39e28091430a1f9c23b5e35224aed3df826f20",
+    "lib/PortableApps/src/installed_catalog_adapter.inc": "76aabb6052b96cd2925d03d7f5648a1d4d295a08f0f8e108f9334bd314409d4b",
+    "lib/PortableApps/src/settings_timezone_view.inc": "1960449ab6a51fd8ecb3ff9b064a2932bc57bc3429211eba32729a6c5085badd"
+  }
+}

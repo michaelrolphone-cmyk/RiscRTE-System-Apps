@@ -19,6 +19,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime-repo', type=Path, required=True)
     parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--internal-packages', action='store_true', help='Explicitly require the native scoped package-volume capability')
+    parser.add_argument('--native-feed', action='store_true', help='Select the product-owned native catalog, separate from firmware release-index')
     args = parser.parse_args()
     runtime, out = args.runtime_repo.resolve(), args.output_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
@@ -26,6 +28,8 @@ def main():
     cxx = cc.removesuffix('gcc')+'g++'
     includes = [runtime/'sdk/app', runtime/'sdk/driver', runtime/'sdk/hardware', runtime/'src', runtime/'lib/ArduinoJson/src', ROOT/'lib/InstalledCatalog/include', ROOT/'lib/PortableApps/include']
     flags = ['-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls', '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-Wall', '-Wextra', '-Werror'] + ['-I'+str(i) for i in includes]
+    if args.native_feed:
+        flags.append('-DINSTALLED_APPS_FEED_URL=\"https://raw.githubusercontent.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/release-index/native-packages-v1.json\"')
     sources = [ROOT/'Services/installed_apps/service.cpp', ROOT/'lib/InstalledCatalog/src/InstalledCatalog.c']
     objects = [out/'service.o', out/'catalog.o']
     commands = [[cxx, '-std=c++17', '-fno-exceptions', '-fno-rtti', '-DARDUINOJSON_USE_DOUBLE=0', '-DARDUINOJSON_USE_LONG_LONG=0', *flags, '-c', str(sources[0]), '-o', str(objects[0])], [cc, '-std=c11', *flags, '-c', str(sources[1]), '-o', str(objects[1])]]
@@ -40,9 +44,19 @@ def main():
     allowed = {'malloc', 'realloc', 'free', 'memcpy', 'memmove', 'memset', 'memcmp', 'strlen', 'strcmp', 'strncmp', 'strcpy', 'strcat', 'strchr', 'strrchr', 'snprintf', 'strncpy', 'strtoul', 'strtol', 'strtod', 'memchr', 'strstr'}
     if imports - allowed:
         raise RuntimeError('Unexpected imports: '+repr(sorted(imports-allowed)))
-    shutil.copyfile(ROOT/'Services/installed_apps/manifest.json', out/'manifest.json')
-    headers = [ROOT/'Services/installed_apps/settings.inc', runtime/'src/runtime/packages/InstalledSettingsCheckpoint.h', ROOT/'Services/installed_apps/provision.inc', runtime/'src/runtime/packages/SdPackageDownload.h', ROOT/'Services/installed_apps/providers.inc', ROOT/'Services/installed_apps/install.inc', runtime/'src/runtime/packages/StagedAppInstall.h', runtime/'sdk/driver/RiscStoragePackageAsyncV1.h', runtime/'sdk/driver/RiscBoundAppDataAsyncV1.h', runtime/'sdk/driver/RiscStorageVolumeAsyncV1.h', runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppAsyncDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
+    manifest=json.loads((ROOT/'Services/installed_apps/manifest.json').read_text())
+    if args.native_feed: manifest['version']='0.11.0'
+    if args.internal_packages: manifest['requires'].append({'capability':'platform.package-volume','api':1})
+    (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+    headers = [ROOT/'Services/installed_apps/settings.inc', runtime/'src/runtime/packages/InstalledSettingsCheckpoint.h', runtime/'src/runtime/packages/PagedSettingsCheckpoint.h', ROOT/'Services/installed_apps/provision.inc', runtime/'src/runtime/packages/SdPackageDownload.h', ROOT/'Services/installed_apps/providers.inc', ROOT/'Services/installed_apps/install.inc', runtime/'src/runtime/packages/StagedAppInstall.h', runtime/'sdk/driver/RiscStoragePackageAsyncV1.h', runtime/'sdk/driver/RiscBoundAppDataAsyncV1.h', runtime/'sdk/driver/RiscStorageVolumeAsyncV1.h', runtime/'sdk/driver/RiscInstallationV1.h', runtime/'src/runtime/packages/InstalledAppAsyncDiscovery.h', ROOT/'lib/InstalledCatalog/include/InstalledCatalog.h', ROOT/'lib/PortableApps/include/InstalledAppsV1.h']
     receipt = {'status':'experimental-target-link-only', 'limitations':['No target runtime or hardware execution claimed.', 'Requires the scoped async SD provider; cache persistence and UI integration need separate qualification.'], 'commands':commands, 'imports':sorted(imports), 'sources':{str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources+headers}, 'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(), 'repositories':{str(p):{'head':subprocess.check_output(['git','-C',str(p),'rev-parse','HEAD'],text=True).strip(),'dirty':bool(subprocess.check_output(['git','-C',str(p),'status','--porcelain'],text=True))} for p in [ROOT,runtime]}}
+    receipt['native_feed']=args.native_feed
+    receipt['sources'][str(ROOT/'Services/installed_apps/feed.inc')]=hashlib.sha256((ROOT/'Services/installed_apps/feed.inc').read_bytes()).hexdigest()
+    receipt['internal_packages']=args.internal_packages
+    receipt['sources'].update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'Services/installed_apps/media.inc',ROOT/'lib/PortableApps/include/InstalledAppsFeedV1.h',ROOT/'lib/PortableApps/include/InstalledAppsProvisionV1.h',runtime/'sdk/driver/RiscInstallationMediaV1.h',runtime/'sdk/driver/RiscInternalPackageVolumeV1.h']})
+    receipt.update({'service_version': manifest['version'],
+                    'shared_settings_sd': '#define RISC_INSTALLATION_SHARED_SETTINGS_SIZE' in (runtime/'sdk/driver/RiscInstallationV1.h').read_text(),
+                    'shared_settings_root': '/RTECFG', 'idle_settings_maintenance': 'settings_pending-v1'})
     (out/'build.json').write_text(json.dumps(receipt, indent=2)+'\n')
     print(json.dumps({'elf':str(elf),'bytes':elf.stat().st_size,'imports':sorted(imports),'status':receipt['status']}))
 

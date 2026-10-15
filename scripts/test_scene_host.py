@@ -17,8 +17,8 @@ MODES = ('behavior', 'inflight', 'stale-frame', 'gap', 'transient', 'held',
          'native-poll-nav_poll', 'native-poll-acquire', 'native-poll-submit',
          'native-poll-status', 'native-close-status', 'native-close-unsubscribe',
          'native-close-foreground', 'native-close-reset')
-KEYBOARD_MODES = ('keyboard-fast', 'keyboard-overflow', 'keyboard-press', 'keyboard-touch', 'keyboard-navigation', 'keyboard-pending',
-                  'keyboard-stale', 'keyboard-hardware', 'keyboard-invalid', 'keyboard-gesture',
+KEYBOARD_MODES = ('keyboard-hide-inflight', 'keyboard-hide-native', 'keyboard-visibility', 'keyboard-fast', 'keyboard-overflow', 'keyboard-press', 'keyboard-touch', 'keyboard-navigation', 'keyboard-pending',
+                  'keyboard-stale', 'keyboard-hardware', 'keyboard-long', 'keyboard-invalid', 'keyboard-gesture',
                   'keyboard-raster', 'keyboard-superseded', 'keyboard-native-snapshot', 'keyboard-native-reset')
 
 LIFECYCLE_MODES = ('lifecycle-discovery', 'lifecycle-activity', 'lifecycle-busy',
@@ -57,6 +57,12 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
             if mode == 'keyboard-raster':
                 command += [str(output/f'{profile}-keyboard.frame')]
             subprocess.run(command, env=env, check=True)
+    privacy_exe = output / 'scene-privacy-test'
+    subprocess.run([compiler, *flags, '-DTEST_SCENE_PRIVACY_PROBE', '-I'+str(include),
+                    str(ROOT/'test/scene/privacy_probe.c'),
+                    str(ROOT/'test/scene/keyboard_test.c'), '-o', str(privacy_exe)], check=True)
+    for profile in ('watch', 'paper', 'gray'):
+        subprocess.run([str(privacy_exe), 'keyboard-visibility', profile], env=env, check=True)
     lifecycle_exe = output / 'scene-lifecycle-test'
     subprocess.run([compiler, *flags, '-I'+str(include),
                     str(ROOT/'Services/scene_host/host.c'),
@@ -87,7 +93,13 @@ def run(runtime: Path, output: Path, sanitize: bool) -> int:
     rejected=subprocess.run([str(bad_exe),'profile-orientation','paper'],env=env,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
     assert rejected.returncode and 'installed_pixel_level' in rejected.stderr,rejected.stderr
     print('Old portrait90 rejected by independent installed physical raster assertion PASS')
-    return (len(MODES)+len(KEYBOARD_MODES)+len(LIFECYCLE_MODES))*3+len(PROFILE_FLAGS)
+    budget_exe=output/'scene-keyboard-budget-test'
+    subprocess.run([compiler,*flags,'-Wno-unused-function','-I'+str(include),
+                    str(ROOT/'Services/scene_host/host.c'),str(ROOT/'test/scene/keyboard_budget_test.c'),
+                    '-o',str(budget_exe)],check=True)
+    for mode in ('1','2','3'):
+        subprocess.run([str(budget_exe),mode],env=env,check=True)
+    return (len(MODES)+len(KEYBOARD_MODES)+len(LIFECYCLE_MODES))*3+len(PROFILE_FLAGS)+6
 
 
 if __name__ == '__main__':

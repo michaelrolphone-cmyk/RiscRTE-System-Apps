@@ -8,6 +8,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 import subprocess
 import tempfile
@@ -73,6 +74,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime-repo', required=True, type=Path,
                         help='Local Runtime Git checkout containing the public pinned SDK commit')
+    parser.add_argument('--sanitizers', choices=('address,undefined','undefined'), default='address,undefined')
+    parser.add_argument('--reconcile', action='store_true', help='Run bounded RTC reconciliation plus original client suite')
     parser.add_argument('--xtensa-cc', help='Pinned 8.4.0+2021r2-patch5 gcc, no implicit substitution')
     parser.add_argument('--evidence', type=Path, help='Optional source-hashed JSON receipt, not product output')
     args = parser.parse_args()
@@ -88,20 +91,22 @@ def main():
     evidence = {'runtime_export_source_sha256': hashlib.sha256(runtime_source).hexdigest(),
                 'runtime_commit': RUNTIME_COMMIT, 'sdk_header_sha256': HEADER_SHA256,
                 'source_sha256': {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in TRACKED}}
+    evidence['reconcile'] = args.reconcile
+    if args.reconcile: evidence['source_sha256']['test/native_apps/portable_realtime_reconcile_test.c'] = hashlib.sha256((ROOT/'test/native_apps/portable_realtime_reconcile_test.c').read_bytes()).hexdigest()
     with tempfile.TemporaryDirectory(prefix='portable-realtime-') as temp:
         directory = Path(temp)
         (directory / 'RiscRealtimeV1.h').write_bytes(header)
         for sanitized in (False, True):
             executable = directory / ('sanitized' if sanitized else 'normal')
-            flags = ['-fsanitize=address,undefined', '-fno-sanitize-recover=all',
-                     '-fno-omit-frame-pointer', '-no-pie'] if sanitized else []
+            flags = ['-fsanitize='+args.sanitizers, '-fno-sanitize-recover=all',
+                     '-fno-omit-frame-pointer', *([] if sys.platform == 'darwin' else ['-no-pie'])] if sanitized else []
             run([os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-Wall', '-Wextra', '-Werror', '-pedantic',
                  *flags, '-I' + str(INCLUDE), '-I' + str(directory), *SOURCES,
-                 ROOT / 'test/native_apps/portable_realtime_client_test.c', '-o', executable])
+                 ROOT / ('test/native_apps/portable_realtime_reconcile_test.c' if args.reconcile else 'test/native_apps/portable_realtime_client_test.c'), '-o', executable])
             completed = run([executable], env=dict(os.environ, ASAN_OPTIONS='detect_leaks=0'),
                             timeout=30, text=True, capture_output=True)
             print(completed.stdout, end='')
-            evidence['host_asan_ubsan' if sanitized else 'host_plain'] = completed.stdout.strip()
+            evidence['host_'+args.sanitizers if sanitized else 'host_plain'] = completed.stdout.strip()
         evidence['xtensa'] = xtensa(args.xtensa_cc, directory, {'risc_runtime_get_api'}) if args.xtensa_cc else 'NOT RUN (supply --xtensa-cc)'
     if args.evidence:
         args.evidence.parent.mkdir(parents=True, exist_ok=True)

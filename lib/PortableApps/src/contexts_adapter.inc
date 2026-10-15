@@ -94,7 +94,12 @@ static bool contexts_capture_checkpoint(void) {
 #ifdef PORTABLE_FILE_SHARING
   if(portable_file_browser_sharing_active())return true;
 #endif
-  if(portable_contexts_capture(&contexts_client))return true;
+  bool captured=portable_contexts_capture(&contexts_client);
+  /* A callback can establish terminal custody even when its operation result
+   * is true. Retention clears the borrowed raster surface; never resume the
+   * caller's row/pixel loop after that boundary. */
+  if(native_custody_retained)return false;
+  if(captured)return true;
   portable_adapter_retain();return false;
 }
 static bool contexts_before_storage(void) {

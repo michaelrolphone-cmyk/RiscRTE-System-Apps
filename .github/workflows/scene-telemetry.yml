@@ -1,0 +1,58 @@
+name: Scene telemetry qualification
+on:
+  push:
+    branches: [feat/x4-obd-current-scene-20261012, feat/files-obd-current-20261012]
+  pull_request:
+    paths: ['Services/scene_host/**', 'sdk/app/**', 'scripts/*telemetry*', 'scripts/scene_sdk.py', 'test/scene/**', '.github/workflows/scene-telemetry.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  telemetry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 6377d498a47b59dac8ad85d930983fffc6c8baa5
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Regenerate exact typography from existing repository sources
+        run: |
+          set -euo pipefail
+          python -m pip install Pillow==12.3.0
+          python scripts/generate_telemetry_fonts.py
+          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+          git diff --exit-code
+      - name: Test actual telemetry presenter and existing Reader/lifecycle behavior
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          python scripts/test_scene_telemetry.py --runtime Runtime 2>&1 | tee evidence/telemetry.log
+          python scripts/test_scene_components.py --runtime Runtime 2>&1 | tee evidence/components.log
+          python scripts/test_scene_host.py --runtime Runtime 2>&1 | tee evidence/lifecycles.log
+      - name: Compile ESP32-S3 scene and verify current-runtime scene component
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python scripts/build_scene_services.py --runtime Runtime --output build/scene 2>&1 | tee evidence/target.log
+          echo '25b12c8e807e1d57684badf8e1d9b3f4b188cd6896a88f4e82f2287e31fbbb6d  build/scene/scene-host/driver.elf' | sha256sum --check
+          git rev-parse HEAD > evidence/published-source.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scene-telemetry-041
+          path: |
+            build/scene/scene-host/driver.elf
+            build/scene/scene-host/manifest.json
+            build/scene/scene-host/build.json
+            build/scene/scene-host/licenses/
+            evidence/
+          retention-days: 14

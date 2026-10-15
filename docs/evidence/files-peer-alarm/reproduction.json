@@ -1,0 +1,129 @@
+{
+  "schema": 1,
+  "date": "2026-10-12",
+  "system_base": "1aaf53e23ca9651a5cf9d1debe44941c9d7d0e58",
+  "utilities_source": "fc0bdbbbc600ce891e60c44d091fce0586ade7d8",
+  "runtime_source": "3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b",
+  "provider_profile": [
+    "ALARM_NATIVE_UTC",
+    "ALARM_SERVICE_TAGGED_V2",
+    "ALARM_VISUAL_ONLY",
+    "ALARM_DND_CONTROL",
+    "POINTS_IN_TIME_SERVICE",
+    "POINTS_CATALOG_SERVICE"
+  ],
+  "delivered_alarm_manifest_version": "0.4.8",
+  "delivered_alarm_sha256": "0aaecfc598711653b2ac59dcba355a89d67c05bbfbeaaa899143e889a2f0c021",
+  "scope": "Host production-source test. Provider is rebuilt from pinned Utilities with the delivered catalog profile; this does not execute or claim byte identity with the delivered Xtensa ELF. Radio, storage, time and final native transport are controlled doubles.",
+  "before": {
+    "rgb": "reproduced",
+    "paper": "reproduced",
+    "peer_join_active": true,
+    "server_network_initialized": false,
+    "alarm_deferred": false,
+    "bound_storage_busy_reads": 1,
+    "rtc_reads": 0,
+    "alarm_state": "ALARM_STATE_BLOCKED",
+    "alarm_error": {
+      "name": "ALARM_STORAGE",
+      "value": -4
+    }
+  },
+  "after_cases": [
+    "guarded JOIN BUSY",
+    "connected BUSY",
+    "borrowed LAN BUSY",
+    "pending lease end without protected-work replay",
+    "retained lease begin",
+    "retained lease end"
+  ],
+  "after_profiles": [
+    "rgb",
+    "paper"
+  ],
+  "unchanged": [
+    "Files 1.5.30 resident native ownership checks",
+    "UI and file actions",
+    "Alarm provider source/error mapping",
+    "Manifests and versions"
+  ],
+  "hardware_verified": false,
+  "source_sha256": {
+    "Apps/file_browser_peer.inc": "8e34bf223a684eae637e559314396cc53bfee133d98e151528cec8fad301c00c",
+    "Apps/file_browser_sharing.inc": "8a987b67380841fd43b4ddf678936e465cd7200334f07b208f0195612cca515a",
+    "lib/PortableApps/include/PortablePeerFiles.h": "7915b6eceb576b1fb549fa0b3009673189d43c2bf333615ddceeb4aab7010ae0",
+    "lib/RemoteFiles/PortablePeerFiles.cpp": "fc3ba88af67c048ff2ba705053141da6c36cea313940cb19ad4178979110ec05",
+    "test/native_apps/file_browser_peer_alarm_provider.c": "848f9f2c2c3385ee7ffc4d9a367e7ed11ff22bf75399a179a6cc8d5a933de8ba",
+    "test/native_apps/file_browser_peer_alarm_test.c": "d2a53293271638284e468dd143e9d3225e05fc1d1909ca8da2412da51d54cb57",
+    "test/remote_files/peer_resident_backend.cpp": "21088fc6dadab4fc81588fc0c559c38af5956f788293444ce8809749f7ecb445",
+    "scripts/test_file_browser_peer_alarm.sh": "c54ad1bcd06da913e582b2f9c9ba31ab2a96723e472664d4a5c8195ebd127611"
+  },
+  "provider_source_sha256": {
+    "Services/alarm_service/service.c": "425a6b1279975fc1ee68356f891d343bd89673750b927be8aefb40e798e25727",
+    "Services/alarm_service/catalog.inc": "351ca8013131b36aa99734185ffee5eeeeff9ff6fa36937435106ae5697be664",
+    "test/native_apps/points_catalog_service_test.c": "70cf3f20d7f58b5d56f5f7bcdd631c76b1875ad1bc3c9ef89d8f42baa624a779"
+  },
+  "validation": {
+    "peer-alarm-catalog-before": {
+      "result": "passed",
+      "log": "peer-alarm-catalog-before.log",
+      "sha256": "143d6916273a79e6ec4aec826eaf04610652a44d582805f8c052ef1c3025ad82",
+      "pass_lines": 0,
+      "reproductions": 2
+    },
+    "peer-alarm-catalog": {
+      "result": "passed",
+      "log": "peer-alarm-catalog.log",
+      "sha256": "c39e020c0151eaf11f3e24a23dd79843790629bba42bcc01575e31fcd00e1177",
+      "pass_lines": 12,
+      "reproductions": 0
+    },
+    "peer-alarm-catalog-sanitized": {
+      "result": "passed",
+      "log": "peer-alarm-catalog-sanitized.log",
+      "sha256": "c39e020c0151eaf11f3e24a23dd79843790629bba42bcc01575e31fcd00e1177",
+      "pass_lines": 12,
+      "reproductions": 0
+    },
+    "resident-sanitized": {
+      "result": "passed",
+      "log": "resident-sanitized.log",
+      "sha256": "4e49ef11e8ccaf744919d5c20c066dae776bdc954331db7c004463d8640394fa",
+      "pass_lines": 12,
+      "reproductions": 0
+    },
+    "webdav-peer": {
+      "result": "passed",
+      "log": "webdav-peer.log",
+      "sha256": "23c762fd7c1de65dfd0a04b001843dbdbd7b9b4a72529ee2fd0198c6f86ce905",
+      "pass_lines": 2,
+      "reproductions": 0
+    },
+    "webdav-peer-sanitized": {
+      "result": "passed",
+      "log": "webdav-peer-sanitized.log",
+      "sha256": "23c762fd7c1de65dfd0a04b001843dbdbd7b9b4a72529ee2fd0198c6f86ce905",
+      "pass_lines": 2,
+      "reproductions": 0
+    },
+    "peer-ui": {
+      "result": "passed",
+      "log": "peer-ui.log",
+      "sha256": "b1c72c8358f4999ea72a33c3744b596a787dc7291b9b94eea69af941236061c6",
+      "pass_lines": 14,
+      "reproductions": 0
+    },
+    "sharing": {
+      "result": "passed",
+      "log": "sharing.log",
+      "sha256": "b12d2a9c716d376172b47146eeef4074c438db98e4f251d49faaa760d771fc09",
+      "pass_lines": 24,
+      "reproductions": 0
+    },
+    "resident-normal": {
+      "result": "passed",
+      "cases": 12,
+      "notes": "All RGB/paper direct, borrowed, borrowed-lease, cancel, lease and retained scenarios passed; console output observed."
+    }
+  }
+}

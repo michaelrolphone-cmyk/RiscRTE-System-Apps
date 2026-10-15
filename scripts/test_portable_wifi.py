@@ -26,6 +26,6 @@ for sanitizer in (False, True):
                             *flags, *(['-DPORTABLE_NOVA_UI'] if nova else []), f'-DPORTABLE_TOUCH_ROTATION={rotation}',
                             '-I'+str(ROOT/'lib/PortableApps/include'), '-I'+str(ROOT/'lib/NativeApps/include'),
                             str(ROOT/'test/native_apps/portable_wifi_test.c'), '-o', str(binary)], check=True, timeout=60)
-            for scenario in range(48):
+            for scenario in [*range(48),62]:
                 subprocess.run([str(binary), str(scenario)], check=True, timeout=10, env=environment)
-print('Portable Wi-Fi: 48 app scenarios x 2 UI profiles x 2 orientations x 2 compiler modes; credential and saved-client fault suites passed')
+print('Portable Wi-Fi: 49 app scenarios x 2 UI profiles x 2 orientations x 2 compiler modes; credential and saved-client fault suites passed')

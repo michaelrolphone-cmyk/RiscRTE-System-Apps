@@ -68,6 +68,12 @@ int portable_set_time_open(portable_set_time_client *,const risc_runtime_api_v1 
  * previous clock assumptions. A clean verification mismatch permits retry. */
 int portable_set_time_apply_confirmed(portable_set_time_client *,
  const portable_set_time_request *,portable_set_time_result *);
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+/* Explicit selected controller only. Confirms RTC and native clock, then
+ * returns with metadata NOT_ATTEMPTED. No namespace-1 grant or legacy write. */
+int portable_set_time_apply_clocks_confirmed(portable_set_time_client *,
+ const portable_set_time_request *,portable_set_time_result *);
+#endif
 int portable_set_time_close(portable_set_time_client *);
 void portable_set_time_stop(portable_set_time_client *,bool retained);
 #ifdef __cplusplus

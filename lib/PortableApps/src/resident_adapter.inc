@@ -109,6 +109,9 @@ static uint32_t resident_policy_flags(void) {
 #endif
  if(blocked)flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
  if(portable_app_ui_active())flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
+#if defined(PORTABLE_FILE_BROWSER_APP) && defined(PORTABLE_TOUCH_SCROLL)
+ if(portable_file_browser_scroll_active())flags|=RISC_RESIDENT_POLL_INHIBIT_POLICY|RISC_RESIDENT_POLL_INHIBIT_IDLE;
+#endif
  if(touch.down || touch.home_down || home_pending || crown_pending || navigation_pending ||
     resident_top_pending || resident_controls_requested || handoff_requested ||
     (input_pending && (input_sample.down || input_sample.released || input_sample.cancelled)))
@@ -122,6 +125,9 @@ static bool resident_policy_ready(void) {
 #endif
 static int resident_checkpoint(uint32_t reason) {
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+ if(settings_atomic_owned())return RISC_RESIDENT_BUSY;
+#endif
 #ifdef PORTABLE_RESIDENT_POLICY
  if(reason==RISC_RESIDENT_CHECKPOINT_POLL && resident_capture_active()) {
   /* Native capture ownership fails Runtime's exit barrier. Keep this local

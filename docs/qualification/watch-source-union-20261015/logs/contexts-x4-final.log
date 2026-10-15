@@ -1,0 +1,13 @@
+Context X4 clean missing provider keeps polling, settings and launch usable, then recovers PASS
+Context X4 dirty-refused preserves terminal custody fence PASS
+Context X4 missing-size preserves terminal custody fence PASS
+Context X4 empty-success preserves terminal custody fence PASS
+Context X4 invalid-api preserves terminal custody fence PASS
+normal: /workspace/shared/watch-launch-brightness-20261015/system-consolidation/test/native_apps/context_x4_adapter_test.c:108: main: Assertion `capture_calls>before+700' failed.
+Traceback (most recent call last):
+  File "/workspace/shared/watch-launch-brightness-20261015/system-consolidation/scripts/test_context_x4_adapter.py", line 23, in <module>
+    for case in (c for c in cases if not editor or c!='mask'):subprocess.run([exe,case],check=True,timeout=20,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',UBSAN_OPTIONS='halt_on_error=1'))
+                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '[PosixPath('/workspace/shared/watch-launch-brightness-20261015/system-consolidation/build/contexts-x4/normal'), 'normal']' died with <Signals.SIGABRT: 6>.

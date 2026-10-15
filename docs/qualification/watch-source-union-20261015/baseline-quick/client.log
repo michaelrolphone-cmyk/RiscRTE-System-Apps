@@ -1,0 +1,1 @@
+client: /workspace/shared/watch-faces-native-20261015/system/test/native_apps/context_client_test.c:93: main: Assertion `portable_contexts_step(&c,true,true)&&!last_policy.radio_allowed' failed.

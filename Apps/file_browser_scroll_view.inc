@@ -174,9 +174,11 @@ static bool fbs_touch(int x,int y) {
  if(fbs_directory_mode()){
   const risc_storage_dirent_v1 *current=&fb_rows[fb_choice];
   char path[FB_PATH_CAP];uint64_t size=0;bool directory=false;
-  if(!fb_ready()||!fb_join(fb_path,current->name,path,sizeof(path))||
-     !fb_volume->stat(fb_volume->context,path,&size,&directory)||
-     directory!=(current->is_directory!=0)||(!directory&&size!=current->size)){
+  if(!fb_ready()||!fb_join(fb_path,current->name,path,sizeof(path)))return false;
+  bool scope=fb_service_local();if(scope&&!fb_service_begin())return false;
+  bool okay=fb_volume->stat(fb_volume->context,path,&size,&directory);
+  if(scope&&!fb_service_end())return false;
+  if(!okay||directory!=(current->is_directory!=0)||(!directory&&size!=current->size)){
    fb_message("Item changed. Choose it again.");return false;
   }
   if(strcmp(current->name,fbs_hit_item.row.name)||current->is_directory!=fbs_hit_item.row.is_directory||current->size!=fbs_hit_item.row.size){fb_message("Folder changed. Choose the item again.");return false;}
@@ -184,8 +186,10 @@ static bool fbs_touch(int x,int y) {
 #ifndef PORTABLE_FILE_BROWSER_READ_COPY_ONLY
  else if(fb_mode==FB_HANDLERS){
   t5_file_handler_t current={0};
-  if(!portable_file_browser_safe()||!fb_handler_api->handler_get(fb_handler_path,row,&current)||
-     memcmp(&current,&fbs_hit_item.handler,sizeof(current))){fb_message("Handlers changed. Choose again.");return false;}
+  if(!portable_file_browser_safe()||!fb_service_begin())return false;
+  bool okay=fbx_handler_get(row,&current);
+  if(!fb_service_end())return false;
+  if(!okay||memcmp(&current,&fbs_hit_item.handler,sizeof(current))){fb_message("Handlers changed. Choose again.");return false;}
  }
 #endif
  if(fb_mode==FB_LIST&&fb_manage&&x>=fbp_w()-96)fbx_actions();else fb_activate();

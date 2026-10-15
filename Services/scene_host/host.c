@@ -1,8 +1,19 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneReadingLinksV1.h"
+#include "RiscSceneTelemetryV1.h"
+/* Explicit source profile: the default remains the complete presenter. */
+#ifndef SCENE_HOST_WATCH_240
+#define SCENE_HOST_WATCH_240 0
+#endif
+#ifndef SCENE_HOST_TELEMETRY
+#define SCENE_HOST_TELEMETRY 1
+#endif
+#if SCENE_HOST_TELEMETRY != 0 && SCENE_HOST_TELEMETRY != 1
+#error "SCENE_HOST_TELEMETRY must be 0 or 1"
+#endif
 #include <stdlib.h>
 #include "RiscProviderV2.h"
 #include "RiscRuntimeV1.h"
+#include "RiscRuntimeHostControlV1.h"
 #include "RiscDisplayOutputV1.h"
 #include "RiscTouchV1.h"
 #include "RiscInputNavigationV1.h"
@@ -24,6 +35,7 @@ static const risc_input_navigation_api_v1 *navigation;
 static const risc_platform_clock_api_v1 *clock_api;
 static const risc_scene_profile_v1 *profile;
 static risc_display_info_v1 info;
+static unsigned session_display_rotation,session_touch_rotation;
 static risc_display_surface_v1 surface;
 static risc_display_present_token_v1 present_token;
 /* Logical state is owned by input/application work. Rasterization owns an
@@ -38,6 +50,7 @@ typedef struct {
     uint32_t preview_node;
     risc_scene_reading_document_v1 reading_document;
     risc_scene_reading_links_v1 reading_links;
+    risc_scene_telemetry_v1 telemetry;
     risc_scene_page_document_v1 page_document;
     int scroll,scroll_limit,drag_scroll;
     int wheel_node,wheel_part,wheel_value,wheel_offset;
@@ -116,11 +129,15 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
     if(route_index(d,d->root)<0)return false;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];
-        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_TEXT_PREVIEW:RISC_SCENE_KEYBOARD_NODE)||
-           n->flags&~15u||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
+        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_CODE_ROW:RISC_SCENE_KEYBOARD_NODE)||
+           n->flags&~(15u|(n->kind==RISC_SCENE_KEYBOARD_NODE?RISC_SCENE_KEYBOARD_EXTENDED:0u))||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
         for(unsigned j=0;j<i;j++)if(d->nodes[j].id==n->id)return false;
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
-            if(!n->action||n->target>=RISC_SCENE_TEXT||n->minimum!=0||n->maximum!=3||n->step!=1||n->value<0||n->value>3)return false;
+            if(n->flags&RISC_SCENE_KEYBOARD_EXTENDED){
+                unsigned limit=n->target&65535u,length=n->target>>16;
+                if(limit>RISC_SCENE_KEYBOARD_LONG_LIMIT||limit<RISC_SCENE_TEXT||length>limit||strlen(n->text)!=(length<RISC_SCENE_TEXT?length:RISC_SCENE_TEXT-1u))return false;
+            }else if(n->target>=RISC_SCENE_TEXT)return false;
+            if(!n->action||n->minimum!=0||n->maximum!=3||n->step!=1||n->value<0||n->value>3)return false;
             for(const unsigned char *p=(const unsigned char*)n->text;*p;p++)if(*p<32||*p>126)return false;
             for(unsigned j=0;j<i;j++)if(d->nodes[j].route==n->route&&d->nodes[j].kind==RISC_SCENE_KEYBOARD_NODE)return false;
         }else if(n->kind>=RISC_SCENE_TIME_OF_DAY&&n->kind<=RISC_SCENE_BOOLEAN){
@@ -249,12 +266,12 @@ static void keyboard_emit(const risc_scene_node_v1 *n,unsigned key){
     if(!keyboard_ready()||closing||retained)return;
     if(key_count==KEY_QUEUE_SIZE||event_serial==UINT64_MAX){(void)fail_retained();return;}
     path.focus[path.depth-1]=n->id;
-    for(unsigned i=0;;i++){keyboard_key bounds;if(!keyboard_bounds((unsigned)n->value,i,&bounds))break;if(bounds.key==key){focus_part=i;break;}}
+    for(unsigned i=0;;i++){keyboard_key bounds;if(!keyboard_focus_bounds(n,i,&bounds))break;if(bounds.key==key){focus_part=i;break;}}
     key_queue[(key_head+key_count++)%KEY_QUEUE_SIZE]=(risc_scene_event_v1){
         sizeof(queued),RISC_SCENE_VALUE_EVENT,document.revision,n->id,n->action,(int32_t)key,++event_serial};
-    /* Later contacts cannot cross a layer or completion boundary. The owner
+    /* Later contacts cannot cross a layer, visibility or completion boundary. The owner
      * must acknowledge this event before a fresh contact can be accepted. */
-    if(key==RISC_SCENE_KEY_LAYER||key==RISC_SCENE_KEY_DONE||key==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+    if(keyboard_boundary(key))key_barrier=true;
     contact=false;
 }
 static void back(void){
@@ -295,7 +312,9 @@ static void activate(const hit *h){
     if(model->components&&component_activate(h))return;
     int i=node_index(&document,h->node);if(i<0)return;
     const risc_scene_node_v1 *n=&document.nodes[i];
-    if(n->route!=current_route()||n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN))return;
+    if(n->route!=current_route()||(n->flags&RISC_SCENE_HIDDEN))return;
+    if((n->flags&RISC_SCENE_DISABLED)&&!(n->kind==RISC_SCENE_KEYBOARD_NODE&&
+       (n->flags&RISC_SCENE_KEYBOARD_PASSWORD)&&h->value==RISC_SCENE_KEY_VISIBILITY))return;
     path.focus[path.depth-1]=n->id;
     if(n->kind==RISC_SCENE_KEYBOARD_NODE){keyboard_emit(n,(unsigned)h->value);return;}
     if(h->kind==HIT_LINK)(void)navigate_impl(RISC_SCENE_PUSH,n->target);
@@ -331,7 +350,7 @@ static bool touch_point(uint16_t raw_x,uint16_t raw_y,int *x,int *y){
     uint32_t w=touch_state.width,h=touch_state.height,rx=raw_x,ry=raw_y;
     if(rx>=w||ry>=h)return false;
     uint32_t tx=rx,ty=ry,tw=w,th=h;
-    switch(profile->touch_rotation){
+    switch(session_touch_rotation){
     case 90:tx=h-1-ry;ty=rx;tw=h;th=w;break;
     case 180:tx=w-1-rx;ty=h-1-ry;break;
     case 270:tx=ry;ty=w-1-rx;tw=h;th=w;break;
@@ -353,7 +372,9 @@ static bool keyboard_contact_key(void){
  * but a later release cannot overtake an earlier press. Other scene gestures
  * keep their single-contact cancellation policy. No visual epoch participates. */
 typedef struct { uint8_t id; bool ready,accepted; uint64_t at; uint32_t epoch; hit bounds; int x,y; } key_contact;
-static key_contact contacts[RISC_TOUCH_MAX_CONTACTS];
+/* Released presses may await an earlier finger. Their hardware IDs can be
+ * reused immediately, and their count is not the active-contact limit. */
+static key_contact contacts[KEY_QUEUE_SIZE];
 static unsigned contacts_count;
 static void cancel_contacts(void){contacts_count=0;}
 static void finish_contacts(void){
@@ -374,7 +395,7 @@ static bool key_contact_event(const risc_touch_event_v1 *e,int x,int y){
     const risc_scene_node_v1 *keyboard=current_keyboard();
     if(!keyboard)return false;
     unsigned at=contacts_count;
-    for(unsigned i=0;i<contacts_count;i++)if(contacts[i].id==e->id){at=i;break;}
+    for(unsigned i=0;i<contacts_count;i++)if(!contacts[i].ready&&contacts[i].id==e->id){at=i;break;}
     if(e->kind==RISC_TOUCH_EVENT_DOWN){
         if(at<contacts_count){cancel_contacts();contact=false;neutral=false;return true;}
         if(!keyboard_ready()||(!neutral&&!contacts_count)||have_event||handoff_waiting)return true;
@@ -384,7 +405,7 @@ static bool key_contact_event(const risc_touch_event_v1 *e,int x,int y){
             if(x>=candidate->x&&y>=candidate->y&&x<candidate->x+candidate->w&&y<candidate->y+candidate->h){h=candidate;break;}
         }
         if(!h||h->kind!=HIT_VALUE||h->node!=keyboard->id)return false;
-        if(contacts_count==RISC_TOUCH_MAX_CONTACTS){(void)fail_retained();return true;}
+        if(contacts_count==KEY_QUEUE_SIZE){(void)fail_retained();return true;}
         contacts[contacts_count++]=(key_contact){e->id,false,true,e->timestamp_ms,epoch,*h,x,y};
         contact=true;moved=false;down_x=x;down_y=y;dirty=true;return true;
     }
@@ -561,16 +582,17 @@ static void move_focus(int direction){
 }
 static void keyboard_move(const risc_scene_node_v1 *n,uint32_t pressed){
     keyboard_key from,key;unsigned count=0;
-    while(keyboard_bounds((unsigned)n->value,count,&key))++count;
+    while(keyboard_focus_bounds(n,count,&key))++count;
     if(!count)return;
     if(focus_part>=count)focus_part=0;
     unsigned next=focus_part;
     if(pressed&RISC_NAV_LEFT)next=(focus_part+count-1)%count;
     else if(pressed&RISC_NAV_RIGHT)next=(focus_part+1)%count;
     else {
-        (void)keyboard_bounds((unsigned)n->value,focus_part,&from);
-        unsigned row=(from.row+(pressed&RISC_NAV_UP?3u:1u))%4u;int distance=INT_MAX;
-        for(unsigned i=0;keyboard_bounds((unsigned)n->value,i,&key);i++)if(key.row==row){
+        (void)keyboard_focus_bounds(n,focus_part,&from);
+        unsigned rows=n->flags&RISC_SCENE_KEYBOARD_PASSWORD?5u:4u;
+        unsigned row=(from.row+(pressed&RISC_NAV_UP?rows-1:1u))%rows;int distance=INT_MAX;
+        for(unsigned i=0;keyboard_focus_bounds(n,i,&key);i++)if(key.row==row){
             int delta=key.center-from.center;if(delta<0)delta=-delta;
             if(delta<distance){distance=delta;next=i;}
         }
@@ -593,11 +615,13 @@ static int32_t poll_navigation(void){
         if(!keyboard_ready())return RISC_SCENE_OK;
         if(f.pressed&RISC_NAV_BACK)keyboard_emit(keyboard,RISC_SCENE_KEY_CANCEL);
         else if(keyboard->flags&RISC_SCENE_DISABLED){
-            if(f.pressed&RISC_NAV_CONFIRM)keyboard_emit(keyboard,RISC_SCENE_KEY_DONE);
+            if((keyboard->flags&RISC_SCENE_KEYBOARD_PASSWORD)&&
+               (f.pressed&(RISC_NAV_PAGE_BACK|RISC_NAV_PAGE_FORWARD)))keyboard_emit(keyboard,RISC_SCENE_KEY_VISIBILITY);
+            else if(f.pressed&RISC_NAV_CONFIRM)keyboard_emit(keyboard,RISC_SCENE_KEY_DONE);
         }else if(f.pressed&(RISC_NAV_LEFT|RISC_NAV_RIGHT|RISC_NAV_UP|RISC_NAV_DOWN))keyboard_move(keyboard,f.pressed);
         else if(f.pressed&(RISC_NAV_PAGE_BACK|RISC_NAV_PAGE_FORWARD))keyboard_emit(keyboard,RISC_SCENE_KEY_LAYER);
         else if(f.pressed&RISC_NAV_CONFIRM){
-            keyboard_key key;if(keyboard_bounds((unsigned)keyboard->value,focus_part,&key))keyboard_emit(keyboard,key.key);
+            keyboard_key key;if(keyboard_focus_bounds(keyboard,focus_part,&key))keyboard_emit(keyboard,key.key);
         }
         return RISC_SCENE_OK;
     }
@@ -643,7 +667,7 @@ static void pixel(int x,int y,uint16_t color){
     if(layout_only||x<0||y<0||(unsigned)x>=width||(unsigned)y>=height||
        (unsigned)y<clip_top||(unsigned)y>=clip_bottom)return;
     unsigned px=(unsigned)x,py=(unsigned)y;
-    switch(profile->display_rotation){
+    switch(session_display_rotation){
     case 90:px=surface.width-1-(unsigned)y;py=(unsigned)x;break;
     case 180:px=surface.width-1-(unsigned)x;py=surface.height-1-(unsigned)y;break;
     case 270:px=(unsigned)y;py=surface.height-1-(unsigned)x;break;
@@ -666,7 +690,7 @@ static void fill(int x,int y,int w,int h,uint16_t c){
     for(int yy=y1;yy<y2;yy++)for(int xx=x1;xx<x2;xx++)pixel(xx,yy,c);
 }
 static void text(int x,int y,int w,const char *s,unsigned scale,uint16_t color){
-    if(layout_only||!scale)return;
+    if(layout_only||!scale||y>=(int)clip_bottom||y+(int)(7u*scale)<=(int)clip_top)return;
     int maximum=w/(int)(6u*scale);if(maximum>72)maximum=72;
     for(int k=0;k<maximum&&s[k];k++){
         unsigned char c=(unsigned char)s[k];
@@ -700,39 +724,7 @@ static void button(int x,int y,int w,int h,const char *label,uint32_t kind,const
     if(!disabled)add_hit(x,y,w,h,kind,n?n->id:0,n?n->target:0,value);
 }
 #include "keyboard_paper.inc"
-static void draw_keyboard(const risc_scene_node_v1 *n,int y,int h){
-    int pad=(int)profile->padding,w=(int)width-2*pad;
-    unsigned scale=profile->font_scale;uint16_t fg=(uint16_t)profile->foreground_rgb565;
-    uint16_t bg=(uint16_t)profile->background_rgb565,accent=(uint16_t)profile->accent_rgb565;
-    int label_y=y+2,text_y=label_y+(int)(8u*scale)+2;
-    text(pad,label_y,w,n->label,scale,fg);
-    /* Keep the insertion end visible in the small viewport, without changing
-     * the provider-owned draft or introducing input-format variants. */
-    unsigned columns=(unsigned)w/(6u*scale);size_t length=strlen(n->text);
-    const char *tail=n->text+(length>columns?length-columns:0);
-    text(pad,text_y,w,tail,scale,fg);
-    if(n->flags&RISC_SCENE_DISABLED){
-        int guide_y=text_y+(int)(10u*scale);
-        const char *guidance[]={"Hardware keyboard","Type to edit","ENTER done","ESC cancel"};
-        for(unsigned i=0;i<4;i++){
-            if(guide_y+(int)(7u*scale)>y+h)break;
-            text(pad,guide_y,w,guidance[i],scale,fg);guide_y+=(int)(9u*scale);
-        }
-        return;
-    }
-    for(unsigned i=0;;i++){
-        keyboard_key key;if(!keyboard_bounds((unsigned)n->value,i,&key))break;
-        char ch[2];const char *caption=keyboard_caption((unsigned)n->value,key.key,ch);
-        unsigned ks=scale;while(ks>1&&strlen(caption)*6u*ks>(unsigned)(key.w>4?key.w-4:0))--ks;
-        bool selected=n->id==path.focus[path.depth-1]&&focus_part==i;
-        fill(key.x,key.y,key.w,key.h,accent);
-        int border=selected?3:1;
-        fill(key.x+border,key.y+border,key.w-2*border,key.h-2*border,bg);
-        int tw=(int)(strlen(caption)*6u*ks)- (int)ks;
-        text(key.x+(key.w-tw)/2,key.y+(key.h-(int)(7u*ks))/2,key.w,caption,ks,fg);
-        add_hit(key.x,key.y,key.w,key.h,HIT_VALUE,n->id,0,(int32_t)key.key);
-    }
-}
+static void draw_keyboard(const risc_scene_node_v1 *n,int y,int h);
 static void draw_node(const risc_scene_node_v1 *n,int y,int h){
     if(n->kind==RISC_SCENE_KEYBOARD_NODE){draw_keyboard(n,y,h);return;}
     int pad=(int)profile->padding,x=pad,w=(int)width-2*pad;
@@ -768,9 +760,18 @@ static bool valid_surface(void){
     return surface.stride_bytes>=row&&(uint64_t)surface.stride_bytes*surface.height<=surface.size_bytes;
 }
 
+#if SCENE_HOST_TELEMETRY
+#include "telemetry.inc"
+#else
+#include "telemetry_disabled.inc"
+#endif
 #include "components.inc"
+#include "keyboard_compact.inc"
 #include "page.inc"
 #include "reading.inc"
+#if SCENE_HOST_TELEMETRY
+#include "telemetry_draw.inc"
+#endif
 
 static void draw_scene(void){
     if(model->page_view){if(model->reading_view)reading_draw();else page_draw();return;}
@@ -781,7 +782,8 @@ static void draw_scene(void){
     int header_button=(int)(profile->font_scale*30u+8u);
     const risc_scene_node_v1 *keyboard=current_keyboard();
     bool paper_keys=keyboard&&height>=width*3u/2u;
-    if(!paper_keys){
+    if(keyboard&&!paper_keys)compact_keyboard_header();
+    if(!keyboard){
     button(pad,3,header_button,top-6,"BACK",HIT_BACK,NULL,0);
     button((int)width-pad-header_button,3,header_button,top-6,"HOME",HIT_HOME,NULL,0);
     int r=route_index(&document,current_route());
@@ -821,12 +823,28 @@ static int32_t paint(void){
         frame_model=logical_model;if(frame_model.page_view||frame_model.preview_view)memcpy(page_frozen,page_live,page_capacity);
         logical_model.page_clean=false;raster_row=0;rasterizing=true;dirty=false;
     }
-    /* A bounded logical-row slice works for every pixel format and rotation.
-     * No provider callbacks or reentrant dispatch occur with the frozen model
-     * installed. The caller services physical input between every slice. */
-    model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+8;
-    if(clip_bottom>height)clip_bottom=height;
-    draw_scene();raster_row=clip_bottom;model=&logical_model;
+    /* Input capture has its own cadence, including while the immutable frame
+     * is being drawn. Never wait for an eight/32-row raster batch to sample a
+     * short release between repeated keys. Provider calls run only after the
+     * logical model is restored. The caller captures immediately after this
+     * bounded batch, before yielding; neither operation changes the frame. */
+    const unsigned rows=surface.pixel_format==RISC_DISPLAY_FORMAT_RGB565?32u:8u;
+    if(!current_keyboard()){
+        model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+rows;
+        if(clip_bottom>height)clip_bottom=height;
+        draw_scene();raster_row=clip_bottom;model=&logical_model;
+    }else{
+        uint64_t began=clock_api->monotonic_ms(clock_api->context);
+        if(!alive()||began==UINT64_MAX)return fail_retained();
+        for(unsigned row=0;row<rows&&raster_row<height;row++){
+            model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+1;
+            draw_scene();raster_row=clip_bottom;model=&logical_model;
+            uint64_t now=clock_api->monotonic_ms(clock_api->context);
+            if(!alive()||now==UINT64_MAX||now<began)return fail_retained();
+            /* Resume this same frame after input, regardless of text revisions. */
+            if(now-began>=2u)break;
+        }
+    }
     if(raster_row<height)return RISC_SCENE_AGAIN;
     risc_display_present_options_v1 options={RISC_DISPLAY_PRESENT_DEFAULT,RISC_DISPLAY_QUEUE_FIFO,0};
     if(frame_model.page_view&&frame_model.page_clean){
@@ -859,7 +877,9 @@ static int32_t complete_frame(void){
     return RISC_SCENE_OK;
 }
 static int32_t detach_owned(bool preserve){
-    pausing=true;have_event=false;key_count=raw_count=0;cancel_contacts();contact=false;top_pending=false;neutral=false;handoff_waiting=true;
+    bool continuity=preserve&&lifecycle_enabled&&(lifecycle_features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY);
+    pausing=true;
+    if(!continuity){have_event=false;key_count=raw_count=0;cancel_contacts();contact=false;top_pending=false;neutral=false;handoff_waiting=true;}
     if(rasterizing){
         display->release(display->context,surface.frame);
         if(!alive())return fail_retained();
@@ -867,8 +887,8 @@ static int32_t detach_owned(bool preserve){
         surface=(risc_display_surface_v1){0};rasterizing=false;
     }
     int32_t r=complete_frame();if(r!=RISC_SCENE_OK)return r;
-    if(subscription){bool ok=touch->unsubscribe(touch->context,subscription);if(!alive()||!ok)return fail_retained();subscription=0;}
-    if(nav_claimed){
+    if(subscription&&!continuity){bool ok=touch->unsubscribe(touch->context,subscription);if(!alive()||!ok)return fail_retained();subscription=0;}
+    if(nav_claimed&&!continuity){
         bool ok=navigation->foreground(navigation->context,NULL,0);if(!alive()||!ok)return fail_retained();
         ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();
         nav_claimed=false;
@@ -883,18 +903,23 @@ static int32_t scene_pause(void *c,uint64_t s){
 }
 static int32_t scene_resume(void *c,uint64_t s,uint32_t flags){
     (void)c;int32_t r=check(s);if(r)return r;
-    if(flags&~(RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_CLEAN) ||
+    if(flags&~(RISC_SCENE_RESUME_REDRAW|RISC_SCENE_RESUME_CLEAN|RISC_SCENE_RESUME_FOCUS_CHANGED) ||
        ((flags&RISC_SCENE_RESUME_CLEAN)&&(!(flags&RISC_SCENE_RESUME_REDRAW)||!model->page_view)))return RISC_SCENE_INVALID;
     if(closing||pausing||!paused)return RISC_SCENE_BUSY;
-    subscription=touch->subscribe(touch->context);
-    if(!alive()||!subscription||!synchronize_touch())return fail_retained();
-    if(navigation){
+    bool continuity=lifecycle_enabled&&(lifecycle_features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY);
+    bool neutralize=!continuity||(flags&RISC_SCENE_RESUME_FOCUS_CHANGED);
+    if(!continuity){subscription=touch->subscribe(touch->context);if(!alive()||!subscription)return fail_retained();}
+    else if(!subscription)return fail_retained();
+    if(neutralize&&!synchronize_touch())return fail_retained();
+    if(navigation&&(neutralize||!nav_claimed)){
         const risc_input_foreground_v1 claims[]={{"input.touch.raw",1}};nav_claimed=true;
         bool ok=navigation->foreground(navigation->context,claims,1);if(!alive()||!ok)return fail_retained();
-        ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();
+        if(neutralize){ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();}
     }
-    activity_pending=false;input_unsynchronized=true;navigation_buttons=0;
-    have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
+    if(neutralize){
+        activity_pending=false;input_unsynchronized=true;navigation_buttons=0;
+        have_event=false;handoff_waiting=false;key_head=key_count=0;key_barrier=keyboard_waiting=false;
+    }
     paused=false;
     if(flags&RISC_SCENE_RESUME_REDRAW){dirty=true;if(flags&RISC_SCENE_RESUME_CLEAN)model->page_clean=true;}
     return RISC_SCENE_OK;
@@ -903,7 +928,10 @@ static int32_t close_owned(void){
     closing=true;int32_t r=detach_owned(false);if(r)return r;
     free(page_live);free(page_frozen);page_live=page_frozen=NULL;page_capacity=0;model->page_view=false;model->reading_view=false;model->preview_view=false;
     active=false;closing=paused=pausing=false;session=0;dirty=false;lifecycle_enabled=false;activity_pending=false;input_unsynchronized=false;navigation_buttons=0;lifecycle_features=0;handoff_waiting=false;visible=(hit_map){0};upload=(hit_map){0};
-    memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));return RISC_SCENE_OK;
+    memset(&document,0,sizeof(document));memset(&path,0,sizeof(path));
+    /* A revealed password was copied into the immutable raster model. Detach
+     * has returned custody, so neither owned document may outlive the session. */
+    memset(&frame_model,0,sizeof(frame_model));return RISC_SCENE_OK;
 }
 static int32_t open_document(void *c,const risc_components_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
     (void)c;if(!alive())return RISC_SCENE_RETAINED;
@@ -917,8 +945,17 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
        info.width<160||info.height<160||info.width>2048||info.height>2048||
        info.preferred_format<1||info.preferred_format>5||
        !(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(info.preferred_format)))return RISC_SCENE_UNAVAILABLE;
+#if SCENE_HOST_WATCH_240
+    if(info.width!=240||info.height!=240||info.preferred_format!=RISC_DISPLAY_FORMAT_RGB565||profile->preferred_format!=RISC_DISPLAY_FORMAT_RGB565)return RISC_SCENE_UNAVAILABLE;
+#endif
+    session_display_rotation=profile->display_rotation;session_touch_rotation=profile->touch_rotation;
     width=info.width;height=info.height;
-    if(profile->display_rotation==90||profile->display_rotation==270){width=info.height;height=info.width;}
+    if(session_display_rotation==90||session_display_rotation==270){width=info.height;height=info.width;}
+    if((d->flags&RISC_COMPONENTS_LANDSCAPE)&&height>width){
+        unsigned swap=width;width=height;height=swap;
+        session_display_rotation=(session_display_rotation+90)%360;
+        session_touch_rotation=(session_touch_rotation+270)%360;
+    }
     if(height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
     model->scroll=0;model->wheel_node=-1;model->toast_until=0;
     document=*d;path=(risc_scene_navigation_v1){.api_version=1,.struct_size=sizeof(path),.depth=1,.routes={d->root}};
@@ -949,12 +986,16 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
     risc_scene_navigation_v1 next_path=path;
     if(model->components)for(unsigned i=0;i<next_path.depth;i++)if(node_index(d,next_path.focus[i])<0)next_path.focus[i]=0;
     if(!valid_path(d,&next_path))return RISC_SCENE_INVALID;
+    if((d->flags^document.flags)&RISC_COMPONENTS_LANDSCAPE)return RISC_SCENE_INVALID;
     if(d->revision<=document.revision)return RISC_SCENE_STALE;
     path=next_path;
     const risc_scene_node_v1 *old=current_keyboard();
-    bool attachment_changed=false;
+    bool attachment_changed=false,hide_password=false;
     if(old){
         int next=node_index(d,old->id);
+        unsigned privacy=RISC_SCENE_KEYBOARD_PASSWORD|RISC_SCENE_KEYBOARD_REVEALED;
+        hide_password=(old->flags&privacy)==privacy&&
+            (next<0||d->nodes[next].kind!=old->kind||(d->nodes[next].flags&privacy)!=privacy);
         attachment_changed=next>=0&&((old->flags^d->nodes[next].flags)&RISC_SCENE_DISABLED);
         if(next<0||d->nodes[next].kind!=old->kind||d->nodes[next].value!=old->value||d->nodes[next].flags!=old->flags)focus_part=0;
     }
@@ -967,7 +1008,11 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
             !memcmp(document.routes,d->routes,sizeof(document.routes));
         for(unsigned i=0;same&&i<RISC_COMPONENTS_MAX_NODES;i++){
             risc_scene_node_v1 previous=document.nodes[i];
-            if((int)i==at)memcpy(previous.text,d->nodes[i].text,sizeof(previous.text));
+            if((int)i==at){
+                memcpy(previous.text,d->nodes[i].text,sizeof(previous.text));
+                if((previous.flags&RISC_SCENE_KEYBOARD_EXTENDED)&&
+                   (previous.target&65535u)==(d->nodes[i].target&65535u))previous.target=d->nodes[i].target;
+            }
             same=!memcmp(&previous,&d->nodes[i],sizeof(previous));
         }
     }
@@ -975,12 +1020,23 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
         if(document.screen_key!=d->screen_key){model->scroll=0;path.focus[path.depth-1]=0;}
         if(d->toast_token!=document.toast_token){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;model->toast_until=now+4000;}
     }
+    if(hide_password){
+        /* Hide must not newly submit an older revealed raster. Only an owned,
+         * unsubmitted frame can be cancelled; submitted display tokens retain
+         * their existing completion/custody path. */
+        if(rasterizing){
+            display->release(display->context,surface.frame);
+            if(!alive())return fail_retained();
+            surface=(risc_display_surface_v1){0};rasterizing=false;
+        }
+        memset(&frame_model,0,sizeof(frame_model));
+    }
     document=*d;keyboard_waiting=false;
     if(same){
         dirty=true;key_barrier=false;
         for(unsigned i=0;i<key_count;i++){
             int value=key_queue[(key_head+i)%KEY_QUEUE_SIZE].value;
-            if(value==RISC_SCENE_KEY_LAYER||value==RISC_SCENE_KEY_DONE||value==RISC_SCENE_KEY_CANCEL)key_barrier=true;
+            if(keyboard_boundary((unsigned)value))key_barrier=true;
         }
     }
     else invalidate_view();
@@ -997,6 +1053,13 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!event||event->struct_size!=sizeof(*event))return RISC_SCENE_INVALID;
     if(closing||paused||pausing)return RISC_SCENE_BUSY;
+    if(risc_runtime_exit_requested_v1(risc_runtime_get_api(1))){
+        // Native requests cannot sit behind touch/keyboard/render queues.
+        cancel_contacts();raw_count=key_count=0;have_event=false;
+        *event=(risc_scene_event_v1){.struct_size=sizeof(*event),.kind=RISC_SCENE_SUSPEND_EVENT,
+            .sequence=++event_serial,.document_revision=document.revision};
+        return RISC_SCENE_OK;
+    }
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
     r=poll_touch();if(r<0)return r;
@@ -1036,7 +1099,12 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
 static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
-    if(features&~RISC_SCENE_FEATURE_SHARED_CONTROLS)return RISC_SCENE_INVALID;
+    if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
+    if(lifecycle_enabled&&
+       (((features^lifecycle_features)==RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY)||
+        (features==lifecycle_features&&(features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY)))){
+        lifecycle_features=features;return RISC_SCENE_OK;
+    }
     if(!synchronize_touch())return fail_retained();
     if(navigation){bool ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();}
     if(!lifecycle_enabled)activity_pending=false;
@@ -1068,16 +1136,25 @@ static int32_t components_open(void *c,const risc_components_document_v1 *d,cons
     if(!alive())return RISC_SCENE_RETAINED;
     if(!valid_document(d,true)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
     if(active)return RISC_SCENE_BUSY;
-    model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
+    model->telemetry.count=0;model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
     if(!model->components)return RISC_SCENE_INVALID;
-    int32_t rc=update_document(c,s,d);if(!rc){model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
+    int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-static const risc_scene_reading_links_api_v1 api={{{ { { {
+#if SCENE_HOST_TELEMETRY
+static const risc_scene_telemetry_api_v1 api={
+#else
+static const risc_scene_reading_links_api_v1 api=
+#endif
+{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
-    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked};
+    RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked}
+#if SCENE_HOST_TELEMETRY
+,RISC_SCENE_TELEMETRY_TAG,2,telemetry_present}
+#endif
+;
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;

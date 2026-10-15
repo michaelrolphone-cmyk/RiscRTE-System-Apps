@@ -1,0 +1,2747 @@
+{
+  "brightness": {
+    "cases": 126,
+    "passed": true,
+    "source_commit": "e2aad98b4b67a5742bb36510c9475c75d35732b3",
+    "results": [
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb240-normal-sync-retained-lit.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb240-normal-sync-saved-level.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb240-normal-sync-preview-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb240-normal-sync-torch-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb240-normal-sync-unsupported.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb240-normal-sync-missing-callback.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb240-normal-sync-submit-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb240-normal-sync-status-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb240-normal-sync-completion-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb240-normal-sync-superseded.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb240-normal-sync-timeout.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb240-normal-sync-status-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb240-normal-sync-brightness-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb240-normal-sync-brightness-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb240-normal-async-retained-lit.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb240-normal-async-saved-level.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb240-normal-async-preview-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb240-normal-async-torch-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb240-normal-async-unsupported.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb240-normal-async-missing-callback.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb240-normal-async-submit-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb240-normal-async-status-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb240-normal-async-completion-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb240-normal-async-superseded.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb240-normal-async-timeout.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb240-normal-async-status-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb240-normal-async-brightness-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb240-normal-async-brightness-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-retained-lit.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-saved-level.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-preview-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-torch-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-unsupported.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-missing-callback.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-submit-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-status-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-completion-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-superseded.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-timeout.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-status-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-brightness-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-brightness-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-retained-lit.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-saved-level.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-preview-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-torch-before.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-unsupported.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-missing-callback.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-submit-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-status-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-completion-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-superseded.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-timeout.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-status-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-brightness-failed.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-brightness-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb410-normal-sync-retained-lit.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb410-normal-sync-saved-level.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb410-normal-sync-preview-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb410-normal-sync-torch-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb410-normal-sync-unsupported.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb410-normal-sync-missing-callback.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb410-normal-sync-submit-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb410-normal-sync-status-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb410-normal-sync-completion-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb410-normal-sync-superseded.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb410-normal-sync-timeout.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb410-normal-sync-status-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb410-normal-sync-brightness-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb410-normal-sync-brightness-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb410-normal-async-retained-lit.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb410-normal-async-saved-level.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb410-normal-async-preview-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb410-normal-async-torch-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb410-normal-async-unsupported.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb410-normal-async-missing-callback.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb410-normal-async-submit-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb410-normal-async-status-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb410-normal-async-completion-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb410-normal-async-superseded.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb410-normal-async-timeout.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb410-normal-async-status-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb410-normal-async-brightness-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb410-normal-async-brightness-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-retained-lit.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-saved-level.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-preview-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-torch-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-unsupported.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-missing-callback.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-submit-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-status-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-completion-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-superseded.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-timeout.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-status-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-brightness-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-brightness-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "retained-lit",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-retained-lit.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "saved-level",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-saved-level.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "preview-before",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-preview-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "torch-before",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-torch-before.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "unsupported",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-unsupported.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "missing-callback",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-missing-callback.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "submit-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-submit-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "status-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-status-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "completion-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-completion-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "superseded",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-superseded.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "timeout",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-timeout.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "status-retained",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-status-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "brightness-failed",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-brightness-failed.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "brightness-retained",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-brightness-retained.log"
+      },
+      {
+        "profile": "paper",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "paper-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "paper",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "paper-normal-async-dark-open.log"
+      },
+      {
+        "profile": "paper",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "paper-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "paper",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "paper-sanitized-async-dark-open.log"
+      },
+      {
+        "profile": "noquick",
+        "mode": "normal",
+        "exit": 0,
+        "log": "noquick-normal.log"
+      },
+      {
+        "profile": "noquick",
+        "mode": "sanitized",
+        "exit": 0,
+        "log": "noquick-sanitized.log"
+      }
+    ]
+  },
+  "custody": {
+    "cases": 192,
+    "passed": true,
+    "source_commit": "e2aad98b4b67a5742bb36510c9475c75d35732b3",
+    "results": [
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-first-poll.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-clean-2.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-clean-3.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-clean-4.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-dirty-1.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-dirty-2.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-dirty-3.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-dirty-4.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-dirty-5.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-bad-version.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-bad-namespace-1.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-bad-namespace-5.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-revoked-identity.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-revoked-health.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-missing-health.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-failed-release.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-capture-raster-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-capture-input-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-capture-present-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-step-caller-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-normal-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-first-poll.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-clean-2.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-clean-3.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-clean-4.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-dirty-1.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-dirty-2.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-dirty-3.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-dirty-4.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-dirty-5.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-bad-version.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-bad-namespace-1.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-bad-namespace-5.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-revoked-identity.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-revoked-health.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-missing-health.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-failed-release.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-capture-raster-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-capture-input-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-capture-present-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-step-caller-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-async-sanitized-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-first-poll.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-clean-2.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-clean-3.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-clean-4.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-dirty-1.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-dirty-2.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-dirty-3.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-dirty-4.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-dirty-5.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-bad-version.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-bad-namespace-1.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-bad-namespace-5.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-revoked-identity.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-revoked-health.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-missing-health.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-failed-release.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-capture-raster-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-capture-input-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-capture-present-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-step-caller-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-normal-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-first-poll.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-clean-2.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-clean-3.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-clean-4.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-dirty-1.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-dirty-2.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-dirty-3.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-dirty-4.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-dirty-5.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-bad-version.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-bad-namespace-1.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-bad-namespace-5.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-revoked-identity.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-revoked-health.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-missing-health.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-failed-release.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-capture-raster-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-capture-input-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-capture-present-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-step-caller-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/paper-sync-sanitized-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-first-poll.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-clean-2.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-clean-3.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-clean-4.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-dirty-1.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-dirty-2.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-dirty-3.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-dirty-4.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-dirty-5.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-bad-version.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-bad-namespace-1.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-bad-namespace-5.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-revoked-identity.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-revoked-health.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-missing-health.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-failed-release.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-capture-raster-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-capture-input-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-capture-present-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-step-caller-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-normal-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-first-poll.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-clean-2.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-clean-3.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-clean-4.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-dirty-1.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-dirty-2.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-dirty-3.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-dirty-4.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-dirty-5.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-bad-version.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-bad-namespace-1.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-bad-namespace-5.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-revoked-identity.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-revoked-health.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-missing-health.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-failed-release.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-capture-raster-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-capture-input-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-capture-present-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-step-caller-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb240-sanitized-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-first-poll.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-clean-2.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-clean-3.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-clean-4.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-dirty-1.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-dirty-2.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-dirty-3.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-dirty-4.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-dirty-5.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-bad-version.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-bad-namespace-1.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-bad-namespace-5.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-revoked-identity.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-revoked-health.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-missing-health.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-failed-release.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-capture-raster-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-capture-input-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-capture-present-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-step-caller-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-normal-fingerprint-checkpoint-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-first-poll.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "clean-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-clean-2.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "clean-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-clean-3.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "clean-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-clean-4.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "dirty-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-dirty-1.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "dirty-2",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-dirty-2.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "dirty-3",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-dirty-3.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "dirty-4",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-dirty-4.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "dirty-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-dirty-5.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "bad-version",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-bad-version.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "bad-namespace-1",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-bad-namespace-1.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "bad-namespace-5",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-bad-namespace-5.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "revoked-identity",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-revoked-identity.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "revoked-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-revoked-health.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "missing-health",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-missing-health.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "failed-release",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-failed-release.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "capture-raster-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-capture-raster-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "capture-input-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-capture-input-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "capture-present-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-capture-present-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "step-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-step-caller-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "fingerprint-caller-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-fingerprint-caller-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "fingerprint-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-fingerprint-open-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "fingerprint-generic-open-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-fingerprint-generic-open-retained.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "fingerprint-checkpoint-retained",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/integrated-custody/rgb410-sanitized-fingerprint-checkpoint-retained.log"
+      }
+    ]
+  },
+  "deployed_brightness_baseline": {
+    "cases": 8,
+    "passed": true,
+    "source_commit": "fe238022814c89e3c7cafb3df60a3997e34caf7b",
+    "results": [
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-dark-open.log"
+      }
+    ]
+  },
+  "ci_brightness_baseline": {
+    "cases": 8,
+    "passed": true,
+    "source_commit": "ffe0295eff869f0d33d56f98548f9b435975d584",
+    "results": [
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb240-sanitized-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-normal-async-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "sync",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-sync-dark-open.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "timing": "async",
+        "case": "dark-open",
+        "exit": 0,
+        "log": "rgb410-sanitized-async-dark-open.log"
+      }
+    ]
+  },
+  "ci_custody_baseline": {
+    "cases": 8,
+    "passed": true,
+    "source_commit": "ffe0295eff869f0d33d56f98548f9b435975d584",
+    "results": [
+      {
+        "profile": "paper-async",
+        "mode": "normal",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/paper-async-normal-baseline-first-poll.log"
+      },
+      {
+        "profile": "paper-async",
+        "mode": "sanitized",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/paper-async-sanitized-baseline-first-poll.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "normal",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/paper-sync-normal-baseline-first-poll.log"
+      },
+      {
+        "profile": "paper-sync",
+        "mode": "sanitized",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/paper-sync-sanitized-baseline-first-poll.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "normal",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/rgb240-normal-baseline-first-poll.log"
+      },
+      {
+        "profile": "rgb240",
+        "mode": "sanitized",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/rgb240-sanitized-baseline-first-poll.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "normal",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/rgb410-normal-baseline-first-poll.log"
+      },
+      {
+        "profile": "rgb410",
+        "mode": "sanitized",
+        "case": "baseline-first-poll",
+        "exit": 0,
+        "log": "/workspace/shared/watch-launch-brightness-20261015/tests/ci-custody-baseline/rgb410-sanitized-baseline-first-poll.log"
+      }
+    ]
+  },
+  "source_sha256": {
+    "scripts/test_shared_initial_brightness.py": "8a4b5fd33eab5c95317b51763f9f2e5172131d0a18fbb84bc774481a1231e4a8",
+    "scripts/test_shared_data_custody.py": "92d4067af7a4482bca21a09c16e89f5568a074947926685ea635022618f57199",
+    "scripts/test_springboard_launch_brightness.py": "47d60afc5778b34bd1603410e109307cac410aed9e649212964045a05955982e",
+    "lib/PortableApps/src/adapter.c": "98f705ebcbe3ea7fdcb270354d93108555b0d96b95eb86c54281d5f35318b249",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "d2b45ef71179cd3fb0337c9f03066818e54544ee33e5b53b54b52ceb05853ba7",
+    "lib/PortableApps/src/nova_native.inc": "b256e3f2be6ec3b09ef275f17d34b8a071a3359db0585b1c7b819de17418eb26",
+    ".github/workflows/shared-data-custody.yml": "2559d226879af8e39df7c279a0a0cc0f7ac880e895f38cca97351af02dbe9b60"
+  },
+  "springboard": {
+    "source_commit": "f31f89636304d202c49884e2e9b2e0b2ec5fb891",
+    "mode": "ASan/UBSan",
+    "cases": 40,
+    "controller_cases": 8,
+    "invocations_per_controller_case": 3,
+    "results": [
+      {
+        "case": "240x240-sync-dark-open",
+        "result": "Initial brightness 240x240 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-sync-retained-lit",
+        "result": "Initial brightness 240x240 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-sync-preview-before",
+        "result": "Initial brightness 240x240 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-sync-torch-before",
+        "result": "Initial brightness 240x240 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-sync-unsupported",
+        "result": "Initial brightness 240x240 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-sync-submit-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-sync-completion-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-sync-brightness-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-sync-application-dark",
+        "result": "Application brightness 240x240 sync application-dark: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "240x240-sync-application-retained",
+        "result": "Application brightness 240x240 sync application-retained: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "240x240-async-dark-open",
+        "result": "Initial brightness 240x240 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-async-retained-lit",
+        "result": "Initial brightness 240x240 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-async-preview-before",
+        "result": "Initial brightness 240x240 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-async-torch-before",
+        "result": "Initial brightness 240x240 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-async-unsupported",
+        "result": "Initial brightness 240x240 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "240x240-async-submit-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-async-completion-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-async-brightness-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "240x240-async-application-dark",
+        "result": "Application brightness 240x240 async application-dark: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "240x240-async-application-retained",
+        "result": "Application brightness 240x240 async application-retained: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "410x502-sync-dark-open",
+        "result": "Initial brightness 410x502 sync dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-sync-retained-lit",
+        "result": "Initial brightness 410x502 sync retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-sync-preview-before",
+        "result": "Initial brightness 410x502 sync preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-sync-torch-before",
+        "result": "Initial brightness 410x502 sync torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-sync-unsupported",
+        "result": "Initial brightness 410x502 sync unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-sync-submit-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-sync-completion-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-sync-brightness-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-sync-application-dark",
+        "result": "Application brightness 410x502 sync application-dark: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "410x502-sync-application-retained",
+        "result": "Application brightness 410x502 sync application-retained: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "410x502-async-dark-open",
+        "result": "Initial brightness 410x502 async dark-open: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-async-retained-lit",
+        "result": "Initial brightness 410x502 async retained-lit: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-async-preview-before",
+        "result": "Initial brightness 410x502 async preview-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-async-torch-before",
+        "result": "Initial brightness 410x502 async torch-before: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-async-unsupported",
+        "result": "Initial brightness 410x502 async unsupported: first completed frame only, once per invocation, Quick preview/torch preserved PASS"
+      },
+      {
+        "case": "410x502-async-submit-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-async-completion-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-async-brightness-failed",
+        "result": "Initial brightness: failed submit/completion/unblank never falsely exposes a frame PASS"
+      },
+      {
+        "case": "410x502-async-application-dark",
+        "result": "Application brightness 410x502 async application-dark: real controller, visible pixels, three clean invocations PASS"
+      },
+      {
+        "case": "410x502-async-application-retained",
+        "result": "Application brightness 410x502 async application-retained: real controller, visible pixels, three clean invocations PASS"
+      }
+    ]
+  }
+}

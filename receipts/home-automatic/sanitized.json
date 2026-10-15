@@ -1,0 +1,222 @@
+{
+  "sanitized": true,
+  "provider_double": true,
+  "hardware_tested": false,
+  "compile_command": [
+    "cc",
+    "-std=c11",
+    "-O1",
+    "-g",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-Wno-misleading-indentation",
+    "-Ibuild/home-automatic-san/include",
+    "-fsanitize=address,undefined",
+    "-fno-sanitize-recover=all",
+    "-fno-omit-frame-pointer",
+    "-no-pie",
+    "/workspace/shared/x4-system-home-automatic-20261012/test/native_apps/home_automatic_test.c",
+    "-o",
+    "build/home-automatic-san/home-automatic"
+  ],
+  "cases": [
+    {
+      "case": "source-conflict",
+      "result": "Home automatic: source-conflict passed (0 copied puts, 3 provider calls)"
+    },
+    {
+      "case": "conflict",
+      "result": "Home automatic: conflict passed (1 copied puts, 14 provider calls)"
+    },
+    {
+      "case": "preset-no-callback",
+      "result": "Home automatic: preset-no-callback passed (0 copied puts, 0 provider calls)"
+    },
+    {
+      "case": "editor-origin",
+      "result": "Home automatic: editor-origin passed (2 copied puts, 27 provider calls)"
+    },
+    {
+      "case": "scope",
+      "result": "Home automatic: scope passed (0 copied puts, 3 provider calls)"
+    },
+    {
+      "case": "same-controls",
+      "result": "Home automatic: same-controls passed (2 copied puts, 25 provider calls)"
+    },
+    {
+      "case": "rearm-failed",
+      "result": "Home automatic: rearm-failed passed (1 copied puts, 21 provider calls)"
+    },
+    {
+      "case": "edge-readback",
+      "result": "Home automatic: edge-readback passed (1 copied puts, 15 provider calls)"
+    },
+    {
+      "case": "stale-after-edge",
+      "result": "Home automatic: stale-after-edge passed (1 copied puts, 22 provider calls)"
+    },
+    {
+      "case": "cancel-busy",
+      "result": "Home automatic: cancel-busy passed (0 copied puts, 10 provider calls)"
+    },
+    {
+      "case": "normal",
+      "result": "Home automatic: normal passed (9 copied puts, 135 provider calls)"
+    },
+    {
+      "case": "off",
+      "result": "Home automatic: off passed (4 copied puts, 57 provider calls)"
+    },
+    {
+      "case": "same-timers",
+      "result": "Home automatic: same-timers passed (3 copied puts, 46 provider calls)"
+    },
+    {
+      "case": "invalid-sample",
+      "result": "Home automatic: invalid-sample passed (0 copied puts, 0 provider calls)"
+    },
+    {
+      "case": "partial",
+      "result": "Home automatic: partial passed (5 copied puts, 68 provider calls)"
+    },
+    {
+      "case": "uncertain",
+      "result": "Home automatic: uncertain passed (5 copied puts, 66 provider calls)"
+    },
+    {
+      "case": "edge-failed",
+      "result": "Home automatic: edge-failed passed (1 copied puts, 16 provider calls)"
+    },
+    {
+      "case": "missing",
+      "result": "Home automatic: missing passed (0 copied puts, 1 provider calls)"
+    },
+    {
+      "case": "wrong-namespace",
+      "result": "Home automatic: wrong-namespace passed (0 copied puts, 3 provider calls)"
+    },
+    {
+      "case": "state-busy",
+      "result": "Home automatic: state-busy passed (0 copied puts, 3 provider calls)"
+    },
+    {
+      "case": "read-io",
+      "result": "Home automatic: read-io passed (0 copied puts, 4 provider calls)"
+    },
+    {
+      "case": "stale",
+      "result": "Home automatic: stale passed (0 copied puts, 8 provider calls)"
+    },
+    {
+      "case": "submit-io",
+      "result": "Home automatic: submit-io passed (1 copied puts, 10 provider calls)"
+    },
+    {
+      "case": "busy",
+      "result": "Home automatic: busy passed (5 copied puts, 77 provider calls)"
+    },
+    {
+      "case": "dirty-submit",
+      "result": "Home automatic: dirty-submit passed (1 copied puts, 7 provider calls)"
+    },
+    {
+      "case": "collect-io",
+      "result": "Home automatic: collect-io passed (1 copied puts, 10 provider calls)"
+    },
+    {
+      "case": "bad-receipt",
+      "result": "Home automatic: bad-receipt passed (1 copied puts, 13 provider calls)"
+    },
+    {
+      "case": "release-failed",
+      "result": "Home automatic: release-failed passed (5 copied puts, 68 provider calls)"
+    },
+    {
+      "case": "dirty-acquire",
+      "result": "Home automatic: dirty-acquire passed (0 copied puts, 1 provider calls)"
+    },
+    {
+      "case": "cancel",
+      "result": "Home automatic: cancel passed (1 copied puts, 15 provider calls)"
+    },
+    {
+      "case": "cancel-race",
+      "result": "Home automatic: cancel-race passed (1 copied puts, 25 provider calls)"
+    },
+    {
+      "case": "cancel-error",
+      "result": "Home automatic: cancel-error passed (1 copied puts, 10 provider calls)"
+    },
+    {
+      "case": "preset",
+      "result": "Home automatic: preset passed (9 copied puts, 123 provider calls)"
+    },
+    {
+      "case": "preset-partial",
+      "result": "Home automatic: preset-partial passed (3 copied puts, 57 provider calls)"
+    },
+    {
+      "case": "preset-low",
+      "result": "Home automatic: preset-low passed (5 copied puts, 73 provider calls)"
+    },
+    {
+      "case": "preset-mask",
+      "result": "Home automatic: preset-mask passed (3 copied puts, 53 provider calls)"
+    },
+    {
+      "case": "preset-alert",
+      "result": "Home automatic: preset-alert passed (8 copied puts, 112 provider calls)"
+    },
+    {
+      "case": "rules-order",
+      "result": "Home automatic: rules-order passed (11 copied puts, 132 provider calls)"
+    },
+    {
+      "case": "rules-partial",
+      "result": "Home automatic: rules-partial passed (11 copied puts, 132 provider calls)"
+    },
+    {
+      "case": "rules-low",
+      "result": "Home automatic: rules-low passed (7 copied puts, 82 provider calls)"
+    },
+    {
+      "case": "rules-notify",
+      "result": "Home automatic: rules-notify passed (1 copied puts, 14 provider calls)"
+    },
+    {
+      "case": "rule-loop",
+      "result": "Home rules controller: rule-loop passed (10 puts; consumed once; reports preserved)"
+    },
+    {
+      "case": "rule-loop-partial",
+      "result": "Home rules controller: rule-loop-partial passed (10 puts; consumed once; reports preserved)"
+    },
+    {
+      "case": "rule-loop-low",
+      "result": "Home rules controller: rule-loop-low passed (6 puts; consumed once; reports preserved)"
+    },
+    {
+      "case": "rule-loop-message",
+      "result": "Home rules controller: rule-loop-message passed (10 puts; consumed once; reports preserved)"
+    },
+    {
+      "case": "rule-loop-launch",
+      "result": "Home rules controller: rule-loop-launch passed (10 puts; consumed once; reports preserved)"
+    },
+    {
+      "case": "rule-loop-timer",
+      "result": "Home rules controller: rule-loop-timer passed (10 puts; consumed once; reports preserved)"
+    }
+  ],
+  "sha256": {
+    "test/native_apps/home_automatic_rules_test.c": "5b488eee36056f2698b7ab9165f260da0d6a2b9318c1655262f8629a65cde00d",
+    "lib/PortableApps/src/contexts_rules_adapter.inc": "ee6549cb1f1597df0f874aacfa18dad130344bd1419ee96a7bc6990ee15b7143",
+    "lib/PortableApps/include/PortablePreferenceAutomatic.h": "ccb82ae80dcfed3dc81594efea70f0bd6b1b7c46bd4ff4f6169e525b324e22bc",
+    "lib/PortableApps/src/home_automatic.inc": "a67f6df0bbbc4de57d0204feb79c54abca809e278f7c2ce450c8a47a236e7e8e",
+    "lib/PortableApps/include/PortableContextsClient.h": "d4f184419ed407f4359099df03ce5ae8386720c754bbe33216d58500fb6004b3",
+    "test/native_apps/home_automatic_test.c": "15c089e77d9fb40239c97d9c966e45474311b6a8a52892081144d04d5cd8c46c",
+    "scripts/test_home_automatic.py": "493734a6f97842202bf780a65d23025f86acdd3c1ed26ceef39c969cb6875b18"
+  }
+}

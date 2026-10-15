@@ -116,9 +116,17 @@ static void quick_paper_render(const char *time,bool battery_valid,unsigned batt
  qp_tile(32,612,416,64,true);qp_tile(36,616,408,56,false);
  qp_text(74,632,360,"USB SD TRANSFER",false,true);
  qp_text(74,695,360,"SWIPE UP TO CLOSE",false,true);
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ if(!portable_home_settings_available())qp_text(52,726,400,portable_home_settings_notice(),false,true);
+ else
+#endif
  if(quick.ui.error_flags)qp_text(52,726,400,"CHANGE UNCONFIRMED",false,true);
 #else
  qp_rect(32,640,416,3,true);qp_text(74,665,360,"SWIPE UP TO CLOSE",false,true);
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ if(!portable_home_settings_available())qp_text(52,708,400,portable_home_settings_notice(),false,true);
+ else
+#endif
  if(quick.ui.error_flags)qp_text(52,708,400,"CHANGE UNCONFIRMED",false,true);
 #endif
  qp_text(32,756,70,"BATT",false,true);

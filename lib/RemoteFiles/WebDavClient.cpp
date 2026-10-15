@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstddef>
+#include <algorithm>
 namespace RiscWebDav { namespace {
 void erase(void*p,size_t n){volatile uint8_t*b=static_cast<volatile uint8_t*>(p);
 while(n--)*b++=0;
@@ -33,6 +34,19 @@ if(y>='A'&&y<='Z')y+=32;
 if(x!=y)return false;
 }return !*a&&!*b;
 }
+uint32_t methodCapability(const char*s,size_t n){
+ struct Method {const char*name;uint32_t bit;};
+ static const Method methods[]={{"PROPFIND",Client::List},{"GET",Client::Read},{"HEAD",Client::Head},{"PUT",Client::Put},{"DELETE",Client::Delete},{"MKCOL",Client::Mkcol},{"MOVE",Client::Move},{"COPY",Client::Copy}};
+ for(const auto&m:methods)if(strlen(m.name)==n&&!memcmp(s,m.name,n))return m.bit;
+ return 0;
+}
+bool parseAllow(const char*s,uint32_t&bits){
+ while(*s){while(*s==' '||*s=='\t'||*s==',')++s;const char*first=s;
+ while(*s&&*s!=','&&*s!=' '&&*s!='\t'){unsigned char c=*s;if(!((c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||strchr("!#$%&'*+-.^_`|~",c)))return false;++s;}
+ bits|=methodCapability(first,size_t(s-first));while(*s==' '||*s=='\t')++s;if(*s&&*s!=',')return false;
+ }
+ return true;
+}
 bool number(const char*s,uint64_t&n){n=0;
 if(!*s)return false;
 for(;*s;s++){if(*s<'0'||*s>'9'||n>(UINT64_MAX-9)/10)return false;
@@ -46,6 +60,7 @@ erase(nonce_,sizeof(nonce_));
 erase(cnonce_,sizeof(cnonce_));
 erase(header_,sizeof(header_));
 authenticated_=false;
+capabilities_=pendingCapabilities_=0;
 }
 bool Client::encodePath(const char*s,char*out,size_t cap){
  if(!s||s[0]!='/'||!memchr(s,0,513))return false;
@@ -102,6 +117,7 @@ nonceCount_=0;
 expiry_=now+d.remaining_lifetime_ms;
 lastNow_=now;
 ending_=false;
+retryConnect_=false;
 handshake_=true;
 authenticated_=false;
 state_=State::Ready;
@@ -117,9 +133,11 @@ return false;
 }lastNow_=now;
 return true;
 }
-bool Client::request(const char*m,const char*p,const char*d,uint64_t size,const Io&io,uint64_t now,const char*match){
+bool Client::request(const char*m,const char*p,const char*d,uint64_t size,const Io&io,uint64_t now,const char*match,size_t readLimit,PutMode putMode){
  if(state_!=State::Ready||(!authenticated_&&!handshake_)||!live(now)||!m||!io.owner||!io.owner(io.context)||!encodePath(p,path_,sizeof(path_)))return false;
  if(strcmp(m,"OPTIONS")&&strcmp(m,"PROPFIND")&&strcmp(m,"GET")&&strcmp(m,"HEAD")&&strcmp(m,"PUT")&&strcmp(m,"DELETE")&&strcmp(m,"MKCOL")&&strcmp(m,"MOVE")&&strcmp(m,"COPY"))return false;
+ if(readLimit&&strcmp(m,"GET"))return false;
+ if(putMode!=PutMode::CreateOnly&&(putMode!=PutMode::ConfirmedReplacement||strcmp(m,"PUT")||match))return false;
  if(size>64u*1024u*1024u||(size&&!io.source)||(!strcmp(m,"PUT")?false:size!=0))return false;
  destination_[0]=0;
 if(d&&!encodePath(d,destination_,sizeof(destination_)))return false;
@@ -131,11 +149,13 @@ for(size_t i=1;i+1<n;i++)if(match[i]<33||match[i]>126||match[i]=='"')return fals
 strcpy(match_,match);
 }
  strcpy(method_,m);
+putMode_=putMode;
 io_=io;
 mutating_=!strcmp(m,"PUT")||!strcmp(m,"DELETE")||!strcmp(m,"MKCOL")||!strcmp(m,"MOVE")||!strcmp(m,"COPY");
 uncertain_=false;
 error_=None;
 status_=0;
+pendingCapabilities_=0;readLimit_=readLimit;
 uploadSize_=size;
 sent_=received_=responseSize_=0;
 replySize_=bufferSize_=bufferAt_=headerAt_=0;
@@ -179,6 +199,7 @@ if(z<0||size_t(z)>=sizeof(dest))return false;
 }
  char condition[128]{};
  if(!strcmp(method_,"PUT")){if(match_[0])snprintf(condition,sizeof(condition),"If-Match: %s\r\n",match_);
+else if(putMode_==PutMode::ConfirmedReplacement)strcpy(condition,"If-Match: *\r\n");
 else strcpy(condition,"If-None-Match: *\r\n");
 }
  int n=snprintf(header_,sizeof(header_),"%s %s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\nContent-Length: %llu\r\n%s%s%s%s\r\n",method_,path_,host_,static_cast<unsigned long long>(uploadSize_),auth,!strcmp(method_,"PROPFIND")?"Depth: 1\r\n":"",condition,dest);
@@ -237,7 +258,7 @@ if(!line)return false;
 *line=0;
  if(strncmp(reply_,"HTTP/1.1 ",9)||strlen(reply_)<12||reply_[9]<'1'||reply_[9]>'5'||reply_[10]<'0'||reply_[10]>'9'||reply_[11]<'0'||reply_[11]>'9')return false;
 status_=unsigned(reply_[9]-'0')*100+unsigned(reply_[10]-'0')*10+unsigned(reply_[11]-'0');
-bool length=false,auth=false;
+bool length=false,auth=false,tag=false;
  for(char*p=line+2;*p;){char*end=strstr(p,"\r\n");
 if(!end)return false;
 if(end==p)break;
@@ -250,8 +271,10 @@ while(*v==' ')v++;
  if(equal(p,"Content-Length")){if(length||!number(v,responseSize_)||responseSize_>64u*1024u*1024u)return false;
 length=true;
 }
+ else if(equal(p,"Allow")&&!handshake_&&!strcmp(method_,"OPTIONS")&&status_>=200&&status_<300){if(!parseAllow(v,pendingCapabilities_))return false;}
  else if(equal(p,"Transfer-Encoding"))return false;
- else if(equal(p,"ETag")){if(etag_[0]||strlen(v)>=sizeof(etag_))return false;
+ else if(equal(p,"ETag")){if(tag||!*v||strlen(v)>=sizeof(etag_))return false;
+tag=true;
 strcpy(etag_,v);
 }
  else if(equal(p,"WWW-Authenticate")){if(auth||status_!=401||(handshake_&&!challenge(v)))return false;
@@ -267,11 +290,17 @@ wipe();
 if(!strcmp(method_,"HEAD")||status_==204||status_==304)responseSize_=0;
  return true;
 }
-void Client::fail(Error e){error_=e;
+void Client::fail(Error e){
+// A private AP can become addressable just before its listener is ready.
+// Retry only the initial connect, before any HTTP byte; never retry a write.
+retryConnect_=e==Transport&&handshake_&&!headerAt_&&!ending_&&
+ (state_==State::Connect||state_==State::Connecting)&&lastNow_+250<deadline_&&lastNow_+250<expiry_;
+retryAt_=lastNow_+250;
+error_=e;
 if(mutating_&&headerAt_){uncertain_=true;
 if(e==Transport)e=Uncertain;
 error_=e;
-}state_=handle_?State::Closing:State::Error;
+}state_=handle_?State::Closing:retryConnect_?State::ConnectWait:State::Error;
 }
 bool Client::result(int32_t rc){if(rc==RISC_TCP_CONNECTION_CONTEXT||rc==RISC_TCP_CONNECTION_RETAINED){state_=State::Retained;
 error_=Transport;
@@ -283,10 +312,12 @@ return false;
 }
 bool Client::consume(const void*p,size_t n){if(n>responseSize_-received_){fail(Protocol);
 return false;
-}if(!handshake_&&status_>=200&&status_<300&&io_.sink&&!io_.sink(io_.context,p,n)){fail(Storage);
+}const bool bounded=!handshake_&&status_>=200&&status_<300&&readLimit_;
+size_t accepted=bounded?size_t(std::min<uint64_t>(n,readLimit_>received_?readLimit_-received_:0)):n;
+if(!handshake_&&status_>=200&&status_<300&&io_.sink&&accepted&&!io_.sink(io_.context,p,accepted)){fail(Storage);
 return false;
-}received_+=n;
-if(received_==responseSize_)state_=State::Closing;
+}received_+=accepted;
+if(received_==responseSize_||(bounded&&received_>=readLimit_))state_=State::Closing;
 return true;
 }
 Client::State Client::tick(uint64_t now){
@@ -304,6 +335,7 @@ return state_;
  int32_t rc=0;
 uint32_t n=0;
  switch(state_){
+ case State::ConnectWait:if(now>=retryAt_){retryConnect_=false;error_=None;state_=State::Connect;}break;
  case State::Connect:rc=tcp_.connect(tcp_.context,&endpoint_,&handle_);
 if(result(rc)){if(rc||!handle_){fail(Transport);
 break;
@@ -334,10 +366,10 @@ sent_+=n;
 if(bufferAt_==bufferSize_)state_=sent_==uploadSize_?State::Reply:State::UploadRead;
 }else if(rc!=1||n)fail(Protocol);
 break;
- case State::Reply:case State::Body:{rc=tcp_.read(tcp_.context,handle_,buffer_,sizeof(buffer_),&n);
+ case State::Reply:case State::Body:{const uint32_t capacity=uint32_t(io_.responseChunk&&io_.responseChunk<sizeof(buffer_)?io_.responseChunk:sizeof(buffer_));rc=tcp_.read(tcp_.context,handle_,buffer_,capacity,&n);
 if(!result(rc))break;
 if(rc==1&&!n)break;
-if(rc||!n||n>sizeof(buffer_)){fail(Protocol);
+if(rc||!n||n>capacity){fail(Protocol);
 break;
 }size_t i=0;
 if(state_==State::Reply){for(;i<n;i++){if(replySize_+1>=sizeof(reply_)){fail(Protocol);
@@ -357,18 +389,25 @@ error_=Transport;
 wipe();
 break;
 }handle_=0;
-}erase(header_,sizeof(header_));
+}if(retryConnect_&&!ending_){state_=State::ConnectWait;break;}
+erase(header_,sizeof(header_));
 erase(buffer_,sizeof(buffer_));
 if(ending_){wipe();
 state_=State::Off;
-}else if(error_){state_=State::Error;
+}else if(error_){state_=error_==Cancelled&&authenticated_?State::Ready:State::Error;
 }else{if(handshake_){handshake_=false;
 authenticated_=true;
-}state_=State::Ready;
+}else if(!strcmp(method_,"OPTIONS")&&status_>=200&&status_<300)capabilities_=pendingCapabilities_;
+state_=State::Ready;
 }break;
  default:break;
 }
  return state_;
+}
+void Client::cancelRequest(){
+ if(state_==State::Retained||state_==State::Off||state_==State::Ready||state_==State::Error)return;
+ fail(Cancelled);
+ if(!handle_&&authenticated_)state_=State::Ready;
 }
 void Client::cancel(){if(state_==State::Retained||state_==State::Off)return;
 ending_=true;

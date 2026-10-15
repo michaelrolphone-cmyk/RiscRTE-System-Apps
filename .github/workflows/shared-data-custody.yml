@@ -1,0 +1,124 @@
+name: Shared app custody regression
+on:
+  pull_request:
+  push:
+    branches: [main, 'fix/shared-app-custody-*', 'fix/shared-launch-brightness-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  custody:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 4107eaeedd8c801eeaf7deb1c7bc4a943cd27342
+          path: .deps/shared-custody-runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: cc56de34f2a1c6efa9761b28d92ed1cb8e8240e5
+          path: .deps/shared-custody-utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: ffe0295eff869f0d33d56f98548f9b435975d584
+          path: .deps/shared-custody-baseline
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: f31f89636304d202c49884e2e9b2e0b2ec5fb891
+          path: .deps/preserved-springboard
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: .deps/watch-bridges
+          persist-credentials: false
+      - name: Recreate and verify the qualified SDK inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p build/shared-custody-sdk build/shared-custody-ci
+          cp .deps/shared-custody-runtime/sdk/app/{RiscRuntimeV1.h,RiscRealtimeV1.h,RiscAppDataV1.h} build/shared-custody-sdk/
+          cp .deps/shared-custody-utilities/lib/Alarm/include/{AlarmServiceV1.h,AlarmServiceV2.h} build/shared-custody-sdk/
+          cat > build/shared-custody-ci/sdk.sha256 <<'HASHES'
+          80198965ebe3dda4d9cadbb5a6d64a44016041e8c2f610a6f636d915c6851831  build/shared-custody-sdk/RiscRuntimeV1.h
+          639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d  build/shared-custody-sdk/RiscRealtimeV1.h
+          9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e  build/shared-custody-sdk/RiscAppDataV1.h
+          c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5  build/shared-custody-sdk/AlarmServiceV1.h
+          d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1  build/shared-custody-sdk/AlarmServiceV2.h
+          HASHES
+          sha256sum --check build/shared-custody-ci/sdk.sha256
+          { git rev-parse HEAD; git -C .deps/shared-custody-runtime rev-parse HEAD; git -C .deps/shared-custody-utilities rev-parse HEAD; git -C .deps/shared-custody-baseline rev-parse HEAD; } > build/shared-custody-ci/source-pins.txt
+      - name: Run 24 cases on paper and Watch RGB in normal and sanitizer modes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_shared_data_custody.py \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/fixed --callback-audit \
+            | tee build/shared-custody-ci/fixed.log
+      - name: Reproduce first-poll retention on unchanged deployed source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_shared_data_custody.py \
+            --source-root .deps/shared-custody-baseline \
+            --test-source test/native_apps/shared_data_custody_test.c \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/baseline --baseline \
+            | tee build/shared-custody-ci/baseline.log
+      - name: Verify first-completed-frame brightness and reproduce dark launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_shared_initial_brightness.py \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-fixed \
+            | tee build/shared-custody-ci/brightness-fixed.log
+          python3 scripts/test_shared_initial_brightness.py \
+            --source-root .deps/shared-custody-baseline \
+            --sdk-include build/shared-custody-sdk \
+            --app-data-sdk build/shared-custody-sdk \
+            --utilities-root .deps/shared-custody-utilities \
+            --output build/shared-custody-ci/brightness-baseline --baseline \
+            | tee build/shared-custody-ci/brightness-baseline.log
+      - name: Verify preserved Springboard controller through repeated launches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/test_springboard_launch_brightness.py \
+            --springboard-root .deps/preserved-springboard \
+            --bridges .deps/watch-bridges \
+            --output build/shared-custody-ci/springboard --sanitize \
+            | tee build/shared-custody-ci/springboard.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-custody-${{ github.sha }}
+          path: |
+            build/shared-custody-ci/**/*.log
+            build/shared-custody-ci/**/receipt.json
+            build/shared-custody-ci/**/results.json
+            build/shared-custody-ci/**/source.json
+            build/shared-custody-ci/*.sha256
+            build/shared-custody-ci/*.txt
+          if-no-files-found: error
+          retention-days: 14

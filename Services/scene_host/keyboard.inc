@@ -33,3 +33,29 @@ static const char *keyboard_caption(unsigned layer,unsigned key,char ch[2]){
     return key==RISC_SCENE_KEY_LAYER?layers[layer]:key==RISC_SCENE_KEY_BACKSPACE?"DEL":
         key==RISC_SCENE_KEY_SPACE?"SPACE":key==RISC_SCENE_KEY_DONE?"DONE":ch;
 }
+
+/* A password-only control above the grid. Grid key geometry and indices stay
+ * unchanged, so ordinary text entry and existing navigation keep their ABI. */
+enum { KEYBOARD_VISIBILITY_INDEX=32 };
+static bool keyboard_visibility_bounds(const risc_scene_node_v1 *n,keyboard_key *out){
+    if(!(n->flags&RISC_SCENE_KEYBOARD_PASSWORD))return false;
+    bool portrait=height>=width*3u/2u;
+    int x=portrait?32:320,y=portrait?248:42,w=portrait?416:128,h=portrait?60:32;
+    *out=(keyboard_key){x*(int)width/480,y*(int)height/(portrait?800:240),
+        w*(int)width/480,h*(int)height/(portrait?800:240),2*x+w,
+        RISC_SCENE_KEY_VISIBILITY,0,KEYBOARD_VISIBILITY_INDEX};
+    return true;
+}
+static const char *keyboard_visibility_caption(const risc_scene_node_v1 *n){
+    return n->flags&RISC_SCENE_KEYBOARD_REVEALED?"HIDE":"SHOW";
+}
+static bool keyboard_focus_bounds(const risc_scene_node_v1 *n,unsigned index,keyboard_key *out){
+    if(index==KEYBOARD_VISIBILITY_INDEX)return keyboard_visibility_bounds(n,out);
+    bool found=keyboard_bounds((unsigned)n->value,index,out);
+    if(found&&(n->flags&RISC_SCENE_KEYBOARD_PASSWORD))++out->row;
+    return found;
+}
+static bool keyboard_boundary(unsigned key){
+    return key==RISC_SCENE_KEY_LAYER||key==RISC_SCENE_KEY_DONE||
+        key==RISC_SCENE_KEY_CANCEL||key==RISC_SCENE_KEY_VISIBILITY;
+}

@@ -57,6 +57,27 @@ bool portable_broadcast_enable(bool enabled) {
   }
   return broadcast_release() && ok;
 }
+#ifdef PORTABLE_BROADCAST_RESULT_ONLY
+/* The controller already owns the native storage receipt. Apply exactly the
+ * existing post-save service policy without issuing another preference write.
+ * In particular, failed Disable must remain paused until explicit retry. */
+bool portable_broadcast_preference_result(bool enabled,bool saved) {
+  if(!broadcast_open())return false;
+  if(!portable_broadcast_pause(&broadcast_client)||!portable_broadcast_release_storage(&broadcast_client)) {
+    portable_adapter_retain();return false;
+  }
+  broadcast_client.policy=(telemetry_broadcast_policy_v1){.struct_size=sizeof(broadcast_client.policy)};
+  broadcast_client.save_failed=!saved;broadcast_client.loaded=false;
+  broadcast_client.policy.enabled=saved&&enabled;broadcast_client.policy.settings_valid=saved;
+  bool safe=broadcast_client.api->step(broadcast_client.api->context,false,&broadcast_client.policy);
+  if(native_custody_retained)return false;
+  telemetry_broadcast_status_v1 state={.struct_size=sizeof(state)};
+  if(!broadcast_client.api->status(broadcast_client.api->context,&state)||state.cleanup_pending) {
+    portable_adapter_retain();return false;
+  }
+  return broadcast_release()&&saved&&safe;
+}
+#endif
 static bool broadcast_tick(void) {
   if(native_custody_retained)return false;
 #ifdef PORTABLE_WIFI_SESSION_APP

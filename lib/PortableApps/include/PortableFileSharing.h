@@ -48,6 +48,9 @@ typedef struct {
  * separate bounded steps. Ordinary tick performs at most one capability call. */
 portable_file_sharing *portable_file_sharing_create(const risc_runtime_api_v1 *,const portable_file_sharing_hooks *);
 bool portable_file_sharing_start(portable_file_sharing *,const portable_file_sharing_config *,uint64_t now);
+/* Defer native listener until a private network is ready. During preparation,
+ * status may expose generated credentials for the authenticated BLE offer. */
+bool portable_file_sharing_defer_network(portable_file_sharing*,bool);
 void portable_file_sharing_tick(portable_file_sharing *,uint64_t now);
 void portable_file_sharing_stop(portable_file_sharing *);
 void portable_file_sharing_get_status(const portable_file_sharing *,portable_file_sharing_status *);

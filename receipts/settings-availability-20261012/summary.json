@@ -1,0 +1,72 @@
+{
+  "scope": "Default-off development source; no hardware, product activation or publication",
+  "base_commit": "0805f765",
+  "runtime_contract": "storage.key-value.availability@1 namespace1, exact explicit grant",
+  "draft_policy": "Back/Home opens Keep/Discard. Unavailable or pending drafts cannot save or merge; failed/cancelled save keeps the draft. Explicit clean Reload closes Settings data grant before observing/reacquiring source. No forced provider release. Timezone touch Cancel and date-field Cancel use the same explicit confirmation.",
+  "reconciliation_limit": "A bound provider or other live namespace1 data grant can keep recovered authority pending. Finish other drafts, then clean Runtime graph restart is the smallest honest fallback.",
+  "tests": {
+    "actual_settings_availability_cases_normal": 17,
+    "actual_settings_availability_cases_asan_ubsan": 17,
+    "existing_atomic_workflows_normal": 47,
+    "existing_atomic_workflows_asan_ubsan": 47,
+    "profile_selection_tests": 7,
+    "selected_target_elf_validated": true,
+    "default_watch_target_elf_validated": true,
+    "default_has_no_availability_requirement_or_string": true,
+    "visual_inspection": [
+      "discard dialog",
+      "pending storage status/reload screen"
+    ]
+  },
+  "sanitizers": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1",
+    "note": "LeakSanitizer unavailable under executor ptrace; ASan and UBSan active"
+  },
+  "target_command": [
+    "python3",
+    "scripts/build_portable_settings.py",
+    "--experimental-settings-availability",
+    "--experimental-atomic-settings",
+    "--settings-profile",
+    "x4-native-time",
+    "--native-time-runtime-repo",
+    "/workspace/shared/x4-settings-unavailable-20261012",
+    "--resident-shell-client",
+    "--resident-runtime-sdk",
+    "/workspace/shared/x4-settings-unavailable-20261012/sdk/app",
+    "--resident-policy",
+    "--home-desk-lock",
+    "--touch-scrolling",
+    "--settings-list-scrolling",
+    "--alarm-client",
+    "--return-app",
+    "default.elf",
+    "--home-app",
+    "default.elf",
+    "--output-dir",
+    ".build/availability/settings-selected-target"
+  ],
+  "compiler": "/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc",
+  "target_elf_sha256": "d4a4517dd1874ca4866c16bbbac36ab5c60e493bfa23f74df1ec668c26ffaf09",
+  "target_elf_bytes": 225448,
+  "default_elf_sha256": "bbb4f971f7ff16e92edac98eca9c8763e5f1f50bdfa206e919bcb9abbc62baa2",
+  "source_sha256": {
+    "lib/PortableApps/src/adapter.c": "7f3b8f65024dd1ed29b96af0691196fe0e58594484e8665a4c23a5a447a594bb",
+    "lib/PortableApps/src/settings.inc": "b5ef501ecf682cd77ff3639094bb8fbfe49d07fdcc7b62eb804c782d2d946329",
+    "lib/PortableApps/src/settings_atomic.inc": "07336fd568716141b4144d779560b70a3ced1dda26cf408450abfe2f4d125be9",
+    "lib/PortableApps/src/settings_atomic_save.inc": "b385dba6e2566004b4786ee340ccbfb73a39db80867a98bba8f90d94ad7f687e",
+    "lib/PortableApps/src/settings_native_time.inc": "8edf00e795f1364f643ae62e692c91e8e546dd8274b10fa8c0f8c159170813d3",
+    "lib/PortableApps/src/settings_paper.inc": "e754257cd76e07656df92f34566c4b5edba8a831cb3097fba4d966b28e510006",
+    "lib/PortableApps/src/settings_view.inc": "a034f82a25ab0e4845cb342aaeece3c8546ceaae53a2d77d8982bba7b3662c13",
+    "lib/PortableApps/src/settings_availability.inc": "e98e391f285bc363e5f2bf77fcc9136db69babbd3a6e2d414a7058f58ec7daed",
+    "scripts/build_portable_settings.py": "d7a2d406779e19c1314d65590a53868a0ffd5f73596125c3d79028599037717d",
+    "scripts/test_settings_availability.py": "03891fa42bc1d734cb1a60ca1108339e0860d1e6968b1afab046c14a758e15b6",
+    "test/native_apps/settings_atomic_workflow_test.c": "d70b9dbcbbbad1b435f26edaa3b24aa004702fd32e852119c168bd227cc65de5",
+    "test/native_apps/settings_availability_workflow_test.c": "38f8240da025567f48878fe8d46ad6678525df7e409b2c0ea1a65813fd22ffd6",
+    "tests/test_settings_availability_build_profiles.py": "f366dbd76cc04959420c9957b7d4e1b1620030b69a8de149279720d38fa04160",
+    "lib/PortableApps/include/PortableSettingsAvailability.h": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
+    "lib/PortableApps/include/RiscKeyValueAvailabilityV1.h": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976",
+    "lib/PortableApps/src/settings_timezone.inc": "3c57fdde3d6bf16bc7d26a072174ccadb1f8d4e855e4f044df73582286ce1ec9"
+  }
+}

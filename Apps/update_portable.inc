@@ -12,6 +12,9 @@
 #include "PortableNativeTimeToolbar.h"
 #endif
 #include "PortableUpdate.h"
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "WatchViewLayout.h"
+#endif
 #include "SoftwareUpdateV1.h"
 #include "RiscRuntimeV1.h"
 #include "PortableAppCustody.h"
@@ -66,7 +69,7 @@ static bool update_radio_close(void) {
  if(uwg.api&&!ur->release(&uwg)){cleanup_pending=true;message="Wi-Fi release failed; retry Back";dirty=true;return false;}
  memset(&uwg,0,sizeof(uwg));uw=NULL;connecting=false;cleanup_pending=false;radio_owned=false;return true;
 }
-#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
+#if defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_POLICY) || defined(TEST_IDLE_ELIGIBILITY)
 bool portable_update_idle_ready(void) {
  if(PORTABLE_APP_RETAINED())return false;
  return !opened || (!connecting && !cleanup_pending && !confirming && !install_after_connect &&
@@ -154,7 +157,7 @@ static bool connect_saved(bool install) {
 #ifdef PORTABLE_BLE_BROADCAST
  if(!portable_broadcast_stop())return false;
 #endif
-#ifdef PORTABLE_UPDATE_FEED_DISABLED
+#if defined(PORTABLE_UPDATE_FEED_DISABLED) && !defined(PORTABLE_NATIVE_PACKAGE_FEED)
 #ifdef PORTABLE_APP_STORE_ACTIONS
  if(!inventory_need_network){
 #endif
@@ -328,7 +331,7 @@ static bool open_update(void) {
 #else
  if(!us||!uk)message="Update service or saved network unavailable";
 #endif
-#ifdef PORTABLE_UPDATE_FEED_DISABLED
+#if defined(PORTABLE_UPDATE_FEED_DISABLED) && !defined(PORTABLE_NATIVE_PACKAGE_FEED)
  if(us)message="No available update; X4 feed not configured";
 #endif
  return true;
@@ -388,7 +391,12 @@ void app_main(void) {
     if(hit<uv.count){if(confirming)confirm_choice=hit;else if(!connecting&&(ust.state==SOFTWARE_UPDATE_LIST||ust.state==SOFTWARE_UPDATE_IDLE))selected=selected/16*16+hit;dirty=true;}
    }continue;
   }
-  if(input.tapped){int x=input.touch_x-(ua->screen_width()-240)/2,y=input.touch_y-(ua->screen_height()-240)/2;
+  if(input.tapped){int x=input.touch_x,y=input.touch_y;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+   if(!watch_view_touch(ua->screen_width(),ua->screen_height(),false,&x,&y))continue;
+#else
+   x-=(ua->screen_width()-240)/2;y-=(ua->screen_height()-240)/2;
+#endif
 #ifdef PORTABLE_NOVA_UI
    if(y>=188&&y<232){if(x>=16&&x<80)input.buttons=T5_APP_BUTTON_UP;else if(x>=88&&x<152)input.buttons=T5_APP_BUTTON_CONFIRM;else if(x>=160&&x<224)input.buttons=T5_APP_BUTTON_DOWN;}
 #else

@@ -1,0 +1,66 @@
+name: Sparse Clock RTC reconciliation
+on:
+  push:
+    branches: [fix/x4-rtc-reconciliation-20261013, integrate/x4-current-clock-reconciliation-20261014]
+  pull_request:
+    paths:
+      - 'Apps/paper_sparse_clock.inc'
+      - 'lib/PortableApps/src/PortableRealtimeClient.c'
+      - 'lib/PortableApps/src/adapter.c'
+      - 'lib/PortableApps/src/alarm.inc'
+      - 'test/native_apps/*reconcile*'
+      - 'test/native_apps/alarm_frame_progress_test.c'
+      - 'test/native_apps/portable_alarm_v2_adapter_test.c'
+      - 'test/native_apps/portable_native_toolbar_test.c'
+      - 'scripts/test_alarm_frame_progress.py'
+      - 'scripts/test_alarm_busy_adapter.py'
+      - 'scripts/test_sparse_rtc_reconcile.py'
+      - '.github/workflows/clock-rtc-reconciliation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: system
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          fetch-depth: 0
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
+          ref: 8dba3205f63dcb9558d80890b9bf5c4aed16f230
+          path: x4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 5c6698dcd1d874e7c57f0b0e6b1ee0dec0803165
+          path: utilities
+          persist-credentials: false
+      - name: Client original and reconciliation normal plus ASan/UBSan
+        run: python system/scripts/test_portable_realtime.py --runtime-repo runtime --reconcile --evidence out/client.json
+      - name: Production sparse Clock lifecycle and pixels
+        run: |
+          python system/scripts/test_sparse_rtc_reconcile.py --runtime runtime --x4 x4 --sdk reader/sdk/driver
+          python system/scripts/test_sparse_rtc_reconcile.py --runtime runtime --x4 x4 --sdk reader/sdk/driver --sanitizer address,undefined
+      - name: Preserved Home startup and alarm BUSY progress
+        run: |
+          python system/scripts/test_alarm_frame_progress.py --runtime runtime --utilities utilities --output out/progress
+          python system/scripts/test_alarm_busy_adapter.py --runtime runtime --utilities utilities --output out/busy

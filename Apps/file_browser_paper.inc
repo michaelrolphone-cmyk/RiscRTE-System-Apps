@@ -22,6 +22,7 @@ static void fbp_wrap(int x,int y,int width,unsigned lines,const char *text,bool 
   fbp_text(x,y+(int)row*28,width,line,false,black,true);at+=n;
  }
 }
+#ifndef PORTABLE_FILE_BROWSER_SHARED_INPUT
 static unsigned fbp_keys(void){unsigned rows=(unsigned)(fbp_h()-448)/88;return (rows?rows:1)*5;}
 static void fbp_keyboard(void) {
  fbp_text(32,28,fbp_w()-64,fb_mode==FB_RENAME?"RENAME":"FIND FILE",true,true,false);
@@ -34,13 +35,14 @@ static void fbp_keyboard(void) {
  fbp_button(32,fbp_h()-216,half,88,"NEXT KEYS",NULL,false);fbp_button(fbp_w()/2+8,fbp_h()-216,half,88,"DELETE",NULL,false);
  fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,false);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,"DONE",NULL,true);
 }
+#endif
 static void fbp_footer(void) {
  const char *names[]={"BACK","PREV",fb_mode==FB_PREVIEW?(fb_hex?"TEXT":"HEX"):fb_mode==FB_DETAIL?"READ":"OPEN","NEXT"};
  const char *icons[]={"solid:f053","solid:f053",NULL,"solid:f054"};int width=(fbp_w()-88)/4;
  for(unsigned i=0;i<4;i++)fbp_button(32+(int)i*(width+8),fbp_h()-112,width,88,names[i],icons[i],i==2);
 }
 static void fbp_management(void) {
- fbp_text(32,28,fbp_w()-152,fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_DELETE?"DELETE ITEM":fb_mode==FB_HANDLERS?"OPEN WITH":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS",true,true,false);
+ fbp_text(32,28,fbp_w()-152,fb_mode==FB_DESTINATION?(fb_moving?"MOVE TO":"COPY TO"):fb_mode==FB_REPLACE?"REPLACE FILE":fb_mode==FB_DELETE?"DELETE ITEM":fb_mode==FB_HANDLERS?"OPEN WITH":fb_mode==FB_NOTICE?"FILE STATUS":"FILE ACTIONS",true,true,false);
  fbp_text(32,72,fbp_w()-64,fb_mode==FB_DESTINATION?fb_path:fb_selected.name,false,true,true);fb_app->fill_rect(32,106,fbp_w()-64,3,true);
  if(fb_mode==FB_ACTIONS||fb_mode==FB_HANDLERS){
   unsigned start=fb_mode==FB_ACTIONS?fb_action_page*fb_page_rows:0,total=fb_mode==FB_ACTIONS?FBX_ACTION_COUNT:fb_handler_count-fb_handler_offset;
@@ -58,15 +60,15 @@ static void fbp_management(void) {
   fbp_text(32,fbp_h()-146,fbp_w()-64,fb_status,false,true,false);
   const char *labels[]={"CANCEL","UP","HERE","NEXT"};int w=(fbp_w()-88)/4;
   for(unsigned i=0;i<4;i++)fbp_button(32+(int)i*(w+8),fbp_h()-112,w,88,labels[i],NULL,i==2);
- }else if(fb_mode==FB_DELETE){
-  fbp_wrap(32,144,fbp_w()-64,4,fb_selected.is_directory?"Permanently delete this folder and all of its contents?":"Permanently delete this file?",true);
+ }else if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){
+  fbp_wrap(32,144,fbp_w()-64,4,fb_mode==FB_REPLACE?"Replace the existing destination file? Its current revision will be checked.":fb_selected.is_directory?"Permanently delete this folder and all of its contents?":"Permanently delete this file?",true);
 #ifdef PORTABLE_TOUCH_SCROLL
   fbp_wrap(32,fbp_h()<700?272:320,fbp_w()-64,fbp_h()<700?3:5,fb_selected.name,true);
   fbp_wrap(32,fbp_h()-160,fbp_w()-64,1,"This cannot be undone.",true);
 #else
   fbp_wrap(32,320,fbp_w()-64,5,fb_selected.name,true);fbp_wrap(32,512,fbp_w()-64,3,"This cannot be undone.",true);
 #endif
-  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,fb_choice==0);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,"DELETE",NULL,fb_choice==1);
+  int half=(fbp_w()-80)/2;fbp_button(32,fbp_h()-112,half,88,"CANCEL",NULL,fb_choice==0);fbp_button(fbp_w()/2+8,fbp_h()-112,half,88,fb_mode==FB_REPLACE?"REPLACE":"DELETE",NULL,fb_choice==1);
  }else {fbp_wrap(32,144,fbp_w()-64,12,fb_status,true);fbp_button(32,fbp_h()-112,fbp_w()-64,88,"BACK",NULL,false);}
 }
 #ifdef PORTABLE_TOUCH_SCROLL
@@ -81,8 +83,11 @@ static void fbp_draw(void) {
  if(fbs_list_mode()){fbs_draw();return;}
 #endif
  fb_paper->begin();
+#ifndef PORTABLE_FILE_BROWSER_SHARED_INPUT
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME)fbp_keyboard();
- else if(fb_mode>=FB_ACTIONS)fbp_management();
+ else
+#endif
+ if(fb_mode>=FB_ACTIONS)fbp_management();
  else {
   fbp_text(32,28,fbp_w()-152,fb_mode==FB_PREVIEW?"PREVIEW":fb_mode==FB_OPTIONS?"FILE OPTIONS":"FILES",true,true,false);
   fbp_text(32,72,fbp_w()-160,fb_path,false,true,true);fb_app->fill_rect(32,106,fbp_w()-64,3,true);
@@ -132,6 +137,12 @@ static void fbp_draw(void) {
 #endif
 }
 static bool fbp_touch(int x,int y) {
+#ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
+ if(fsource_busy()){if(x>=32&&x<fbp_w()-32&&y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
+#endif
+#ifdef PORTABLE_FILE_PEER
+ if(fbm_mounted&&fbm_busy()){if(x>=32&&x<32+(fbp_w()-88)/4&&y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
+#endif
 #ifdef PORTABLE_FILE_SHARING
  if(fb_mode==FB_SHARING)return fsh_touch(x,y);
 #endif
@@ -141,14 +152,18 @@ static bool fbp_touch(int x,int y) {
 #endif
  if(x<32||x>=fbp_w()-32||y<0||y>=fbp_h())return false;
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME) {
+#ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
+  if(y>=fbp_h()-112&&y<fbp_h()-24){if(x<fbp_w()/2)return fb_back();(void)fb_text_begin(fb_mode,fb_mode==FB_FILTER?"Find file":"Edit name");}
+#else
   if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;if(x<fbp_w()/2)return fb_back();fb_filter_key(PWK_DONE);return false;}
   if(y>=fbp_h()-216&&y<fbp_h()-128){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;if(x<fbp_w()/2){fbp_key_page=(fbp_key_page+1)%((95+fbp_keys()-1)/fbp_keys());fb_dirty=true;}else fb_filter_key(PWK_DELETE);return false;}
   unsigned keys=fbp_keys();int width=(fbp_w()-64)/5;
   if(y>=208&&y<208+(int)(keys/5)*88){unsigned col=(unsigned)(x-32)/(unsigned)width,key=(unsigned)(y-208)/88*5+col,c=32+fbp_key_page*keys+key;
    if(col<5&&(x-32)%width<width-3&&key<keys&&c<=126){fb_key_page=(c-32)/32;fb_filter_key((c-32)%32);}}
+ #endif
   return false;
  }
- if(fb_mode==FB_DELETE){if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;fb_choice=x<fbp_w()/2?0:1;fbx_activate();fb_dirty=true;}return false;}
+ if(fb_mode==FB_DELETE||fb_mode==FB_REPLACE){if(y>=fbp_h()-112&&y<fbp_h()-24){if(x>=fbp_w()/2-8&&x<fbp_w()/2+8)return false;fb_choice=x<fbp_w()/2?0:1;fbx_activate();fb_dirty=true;}return false;}
  if(fb_mode==FB_NOTICE){if(y>=fbp_h()-112&&y<fbp_h()-24)return fb_back();return false;}
  if(fb_mode==FB_DESTINATION){
   if(!fb_moving&&x>=fbp_w()-120&&y>=8&&y<96){if(fbx_swap()){strcpy(fb_path,"/");(void)fb_load(0);}return false;}

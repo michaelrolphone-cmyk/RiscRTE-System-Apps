@@ -1,4 +1,7 @@
 /* Settings-only model/controller, reusing Apps/settings.c and the compact view. */
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && (!defined(PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL) || !defined(PORTABLE_SETTINGS_NATIVE_TIME))
+#error "Settings availability requires the selected X4 native atomic profile"
+#endif
 #include <stdio.h>
 #include "PortableTime.h"
 #include "PortableTimeFormat.h"
@@ -20,6 +23,9 @@ static const char *editor_message = "";
 static unsigned editor_field;
 static risc_runtime_capability_v1 settings_grant;
 static const risc_key_value_v1 *settings_store;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#include "settings_atomic.inc"
+#endif
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
 #include "PortableTimeZonePreference.h"
 static unsigned stz_choice,stz_region,stz_selected,stz_first;
@@ -139,15 +145,21 @@ static bool face_unconfirmed;
 #define PORTABLE_SETTINGS_SLEEP_TIMER
 #define SETTINGS_TIMER_ROW SETTINGS_CORE_ROW_COUNT
 #if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
+#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
 #else
-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
+#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
 #endif
 static bool timer_deep;
 static uint32_t timer_choice;
 static const char *timer_message="";
 #else
-#define SETTINGS_ROW_COUNT SETTINGS_CORE_ROW_COUNT
+#define SETTINGS_ORDINARY_ROW_COUNT SETTINGS_CORE_ROW_COUNT
+#endif
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#define SETTINGS_STORAGE_ROW SETTINGS_ORDINARY_ROW_COUNT
+#define SETTINGS_ROW_COUNT (SETTINGS_ORDINARY_ROW_COUNT+1u)
+#else
+#define SETTINGS_ROW_COUNT SETTINGS_ORDINARY_ROW_COUNT
 #endif
 static twatch_rtc_time_v1 settings_draft;
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
@@ -209,6 +221,16 @@ static uint32_t settings_count(uint32_t category) { return category?0:SETTINGS_R
 static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out) {
   if(category || index>=SETTINGS_ROW_COUNT || !out)return false;
   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(index==SETTINGS_STORAGE_ROW) {
+    if(!settings_availability_refresh())return false;
+    strcpy(out->label,"Settings storage");out->type=T5_APP_SETTING_ACTION;
+    strcpy(out->value,settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE?"Available locally":
+      settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"Recovered; reload needed":
+      settings_availability.state.availability==RISC_KEY_VALUE_CONFLICT?"Source conflict":"Unavailable; temporary defaults");
+    return true;
+  }
+#endif
   static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
 #ifdef PORTABLE_SLEEP_SETTINGS
 #ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
@@ -399,7 +421,18 @@ static void editor_step(bool forward) {
 }
 static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
 #include "settings_view.inc"
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#include "settings_atomic_save.inc"
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "settings_availability.inc"
+#endif
+#endif
 static void settings_render(uint32_t category,int32_t selected) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(!settings_availability_refresh())return;
+  if(!portable_settings_availability_available(&settings_availability))
+    settings_message=portable_settings_availability_message(&settings_availability);
+#endif
   if(handoff_requested)return;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
@@ -433,8 +466,18 @@ static void settings_render(uint32_t category,int32_t selected) {
 /* Exactly one write per explicit Save/choice. Verification stays in raw RTC
  * coordinates and tolerates one ticking second/date boundary within250ms. */
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+#ifndef PORTABLE_ALARM_CLIENT
+#error "Clock-change Settings requires its foreground alarm client"
+#endif
+#include "AlarmClockChangeV1.h"
+#endif
 static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
   if(!calendar_valid(value)){editor_message="Invalid date or time";return false;}
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+  const alarm_clock_change_v1 *clock_control=alarm_clock_change_control(alarms.api);
+  if(!clock_control){editor_message="Alarm service update required";return false;}
+#endif
   uint32_t start=millis_now();if(failed)return false;
   if(!rtc->write(rtc->context,value)){editor_message="Write failed - check RTC";return false;}
   for(unsigned attempt=0;attempt<4;++attempt) {
@@ -442,7 +485,15 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
     uint32_t elapsed=millis_now()-start;if(failed || elapsed>250)break;
     if(read && calendar_valid(&actual) && actual.weekday==calendar_weekday(&actual)) {
       uint32_t wanted=calendar_seconds(value),got=calendar_seconds(&actual);
-      if(got>=wanted && got-wanted<=elapsed/1000+1)return true;
+      if(got>=wanted && got-wanted<=elapsed/1000+1) {
+#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
+        int32_t result=clock_control->clock_changed(alarms.api->context,got);
+        if(result!=ALARM_PENDING && result!=ALARM_OK) {
+          editor_message="RTC saved; alarm sync failed";return false;
+        }
+#endif
+        return true;
+      }
     }
     if(attempt!=3)rt->yield_ms(20);
   }
@@ -491,7 +542,11 @@ static bool editor_try_save(void) {
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
 #include "settings_timezone.inc"
 #endif
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+static uint8_t settings_activate_inner(uint32_t category,uint32_t index) {
+#else
 static uint8_t settings_activate(uint32_t category,uint32_t index) {
+#endif
   portable_perf_action(PORTABLE_PERF_SETTINGS_ACTION,false);
   portable_stage_log(rt,"action","name=settings-activate");
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -526,14 +581,26 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
             (timer_choice>=3600000u-step?3600000u:timer_choice+step);
       }
       if(save) {
-        if(portable_sleep_timer_save(settings_store,timer_deep,timer_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_timer(timer_deep?PORTABLE_SLEEP_DEEP_KEY:PORTABLE_SLEEP_IDLE_KEY,timer_choice,&timer_message)
+#else
+           portable_sleep_timer_save(settings_store,timer_deep,timer_choice)
+#endif
+        ) {
 #ifdef PORTABLE_LOW_BATTERY
           if(!pqa_session_load(&quick,rt)){failed=true;break;}
 #endif
           result=T5_APP_SETTING_UPDATED;break;
         }
+#ifndef PORTABLE_SETTINGS_AVAILABILITY
         (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
+#endif
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         timer_message="Save unconfirmed - retry";
+#else
+        if(settings_atomic_exit)break;
+#endif
       }
       settings_view_redraw();
     }
@@ -557,12 +624,24 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,76,184,32))time_format_choice=PORTABLE_TIME_FORMAT_12;
       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,124,184,32))time_format_choice=PORTABLE_TIME_FORMAT_24;
       if(save) {
-        if(portable_time_format_save(settings_store,time_format_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(PORTABLE_TIME_FORMAT_KEY,0x54,time_format_choice,2,&time_format_message)
+#else
+           portable_time_format_save(settings_store,time_format_choice)
+#endif
+        ) {
           time_format_mode=time_format_choice;time_format_status=PORTABLE_TIME_FORMAT_LOADED;
           result=T5_APP_SETTING_UPDATED;break;
         }
+#ifndef PORTABLE_SETTINGS_AVAILABILITY
         time_format_choice=time_format_mode;
+#endif
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
         time_format_message="Save unconfirmed - retry";
+#else
+        if(settings_atomic_exit)break;
+#endif
       }
       settings_view_redraw();
     }
@@ -594,7 +673,13 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped)for(unsigned row=0;row<settings_sleep_count();++row)
         if(sv_inside(input.touch_x,input.touch_y,28,66+(int)row*38,184,30))sleep_choice=settings_sleep_at(row);
       if(save) {
-        if(portable_sleep_save_profile(settings_store,SETTINGS_SLEEP_MODES,sleep_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(PORTABLE_SLEEP_KEY,0x53,sleep_choice,3,&sleep_message)
+#else
+           portable_sleep_save_profile(settings_store,SETTINGS_SLEEP_MODES,sleep_choice)
+#endif
+        ) {
 #ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
           sleep_unconfirmed=false;
 #endif
@@ -644,7 +729,13 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(save) {
         if(alert_choice<PORTABLE_ALERT_VIBRATE || alert_choice>PORTABLE_ALERT_BOTH)
           alert_message="Choose an alert mode";
-        else if(portable_alert_save(alert_store,alert_choice)) {
+        else if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+                settings_atomic_save(PORTABLE_ALERT_KEY,(uint8_t[]){(uint8_t)alert_choice},1,&alert_message)
+#else
+                portable_alert_save(alert_store,alert_choice)
+#endif
+        ) {
           alert_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
         } else {
           /* Keep the selected draft for explicit retry. Neither an IO return
@@ -681,10 +772,21 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
         else if(sv_inside(input.touch_x,input.touch_y,28,124,184,32))desk_direction_choice=1;
       }
       if(save) {
-        if(portable_desk_direction_save(settings_store,desk_direction_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(PORTABLE_DESK_DIRECTION_KEY,0x44,desk_direction_choice,2,&desk_direction_message)
+#else
+           portable_desk_direction_save(settings_store,desk_direction_choice)
+#endif
+        ) {
           desk_direction_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
         }
-        desk_direction_unconfirmed=true;desk_direction_message="Save unconfirmed - retry";
+        desk_direction_unconfirmed=true;
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+        desk_direction_message="Save unconfirmed - retry";
+#else
+        if(settings_atomic_exit)break;
+#endif
       }
       settings_view_redraw();
     }
@@ -710,11 +812,22 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))reader_choice=(reader_choice+1u)%count;
       else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))reader_choice=(reader_choice+count-1u)%count;
       if(save) {
-        if(portable_reader_preference_save(settings_store,language,reader_choice) &&
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(language?PORTABLE_READER_LANGUAGE_KEY:PORTABLE_READER_FLIP_KEY,language?0x4c:0x52,reader_choice,count,&reader_message)
+#else
+           portable_reader_preference_save(settings_store,language,reader_choice)
+#endif
+           &&
            (language || paper_apply_flip(reader_choice))) {
           reader_unconfirmed[language]=false;result=T5_APP_SETTING_UPDATED;break;
         }
-        reader_unconfirmed[language]=true;reader_message="Save unconfirmed - retry";
+        reader_unconfirmed[language]=true;
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+        reader_message="Save unconfirmed - retry";
+#else
+        if(settings_atomic_exit)break;
+#endif
       }
       settings_view_redraw();
     }
@@ -741,10 +854,21 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
       else if(input.tapped)for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i)
         if(sv_inside(input.touch_x,input.touch_y,20+(int)(i%2)*104,62+(int)(i/2)*36,96,30))face_choice=i;
       if(save) {
-        if(portable_desk_face_save(settings_store,face_choice)) {
+        if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+           settings_atomic_choice(PORTABLE_DESK_FACE_KEY,0x46,face_choice,PORTABLE_DESK_FACE_COUNT,&face_message)
+#else
+           portable_desk_face_save(settings_store,face_choice)
+#endif
+        ) {
           face_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
         }
-        face_unconfirmed=true;face_message="Save unconfirmed - retry";
+        face_unconfirmed=true;
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+        face_message="Save unconfirmed - retry";
+#else
+        if(settings_atomic_exit)break;
+#endif
       }
       settings_view_redraw();
     }
@@ -781,6 +905,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
   uint8_t result=T5_APP_SETTING_NO_CHANGE;bool armed=false;t5_app_input_t input;
   while(poll(&input,20)) {
     if(input.exit_requested)break;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+    if(settings_atomic_exit)break;
+#endif
     if(!input.buttons && !input.tapped){armed=true;continue;}
     if(!armed)continue;
     armed=false;
@@ -836,6 +963,59 @@ T5_APP_SETTING_UPDATED;break;}
 #endif
   sv_switch(SV_ROOT);return result;
 }
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+static uint8_t settings_activate(uint32_t category,uint32_t index) {
+  if(category||index>=SETTINGS_ROW_COUNT||failed)return T5_APP_SETTING_ERROR;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(index==SETTINGS_STORAGE_ROW)return settings_availability_activate();
+#endif
+  const char *key=index==2?"time_format":NULL;
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(index==0)key="rtc_basis";
+#endif
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if(index==1)key="time_zone";
+#endif
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(index==SETTINGS_FACE_ROW)key="desk_clock_face";
+#ifdef PORTABLE_SETTINGS_DESK_DIRECTION
+  if(index==SETTINGS_DESK_DIRECTION_ROW)key="desk_direction";
+#endif
+  if(index==SETTINGS_FLIP_ROW)key="reader_flip_ui";
+  if(index==SETTINGS_LANGUAGE_ROW)key="reader_language";
+#endif
+#ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+  if(index==SETTINGS_TIMER_ROW)key=PORTABLE_SLEEP_IDLE_KEY;
+  if(index==SETTINGS_TIMER_ROW+1u)key=PORTABLE_SLEEP_DEEP_KEY;
+#endif
+#if defined(PORTABLE_SLEEP_SETTINGS) && !defined(PORTABLE_SETTINGS_HOME_DESK_LOCK)
+  if(index==4)key=PORTABLE_SLEEP_KEY;
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+  if(index==SETTINGS_ALERT_ROW)key=PORTABLE_ALERT_KEY;
+#endif
+  if(key&&!settings_atomic_begin(key))return T5_APP_SETTING_ERROR;
+  uint8_t result=settings_activate_inner(category,index);
+  if(settings_atomic_edit.token){settings_atomic_result(RISC_ATOMIC_RETAINED);return T5_APP_SETTING_ERROR;}
+  if(key&&settings_atomic_status!=PORTABLE_PREFERENCE_READY)settings_message=settings_atomic_status==RISC_ATOMIC_OK?
+    "Saved locally; SD backup not confirmed":settings_atomic_message(settings_atomic_status);
+#ifdef PORTABLE_SETTINGS_X4_DESK_CLOCK
+  if(index==SETTINGS_FLIP_ROW&&settings_atomic_status==RISC_ATOMIC_OK&&reader_unconfirmed[0])
+    settings_message="Preference saved; display flip unconfirmed";
+#endif
+#ifdef PORTABLE_SETTINGS_NATIVE_TIME
+  if(index==0&&snt_result_available)settings_message=snt_status_text;
+#endif
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
+  if(!portable_settings_availability_available(&settings_availability))
+    settings_message=portable_settings_availability_message(&settings_availability);
+#endif
+  settings_atomic_edit.valid=false;
+  if(!native_custody_retained)settings_view_redraw();
+  return result;
+}
+#endif
 static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
   if(pp_enabled()) {
 #ifdef PORTABLE_SETTINGS_LIST_SCROLL
@@ -867,9 +1047,13 @@ static bool settings_open(void) {
 #endif
   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  if(!settings_atomic_open())return false;
+#else
   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {
     if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
   }
+#endif
   settings_time_format_load();
 #ifdef PORTABLE_SETTINGS_TIME_ZONE
   stz_choice=stz_region=stz_selected=stz_first=0;stz_unconfirmed=false;stz_message="";
@@ -910,7 +1094,7 @@ static bool settings_open(void) {
 #endif
   return true;
 }
-#ifndef PORTABLE_SETTINGS_NATIVE_TIME
+#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
 static void settings_close(void) {
   sv_active=false;
 #ifdef PORTABLE_ALARM_SETTINGS

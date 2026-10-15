@@ -21,13 +21,13 @@ int main(void){
  saved_volume=test_volume;static risc_runtime_api_v1 runtime;runtime=test_runtime;runtime.acquire=selection_acquire;runtime.release=selection_release;fb_runtime=&runtime;
  fb_manage=false;assert(fb_option_count()==6);
  fb_volume=&test_volume;fb_grant=(risc_runtime_capability_v1){.struct_size=sizeof(fb_grant),.api=&test_volume};fb_storage_index=0;
- deny_export=true;assert(!fbx_swap()&&fb_volume==&test_volume&&fb_storage_index==0&&!fb_other_grant.api);
+ deny_export=true;assert(!fbx_swap()&&fb_volume==&test_volume&&fb_storage_index==0&&!fb_root_grants[fb_storage_index^1u].api);
  deny_export=false;assert(fbx_swap()&&fb_volume==&saved_volume&&fb_storage_index==1&&requested==2);
  assert(fbx_swap()&&fb_volume==&test_volume&&fb_storage_index==0&&requested==2);
  assert(portable_file_browser_close()&&released==2);
  /* Closing releases both selectors but preserves the selected index. Actual
   * refresh/acquisition must use that selector, rather than storage.volume. */
- assert(!fb_volume&&!fb_grant.api&&!fb_other_grant.api);
+ assert(!fb_volume&&!fb_grant.api&&!fb_root_grants[fb_storage_index^1u].api);
  assert(fb_acquire()&&fb_volume==&test_volume&&installed_requested==1);
  assert(portable_file_browser_close()&&released==3);
  fb_storage_index=1;deny_export=true;

@@ -88,7 +88,27 @@ static void sp_redraw(void) {
 #endif
 #endif
     sv_page==SV_TIME_FORMAT?"TIME FORMAT":sv_page==SV_FOLD?"REPEATED TIME":sv_page==SV_SLEEP?"SLEEP MODE":sv_page==SV_ALERT?"ALARM ALERTS":"ABOUT";
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(sv_page==SV_STORAGE)title="SETTINGS STORAGE";
+  if(sv_page==SV_DISCARD)title="UNSAVED DRAFT";
+#endif
   sp_header(title);
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(sv_page==SV_STORAGE||sv_page==SV_DISCARD) {
+    const char *state=settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE?"SETTINGS AVAILABLE LOCALLY":
+      settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"RECOVERED SETTINGS PENDING":
+      settings_availability.state.availability==RISC_KEY_VALUE_CONFLICT?"SETTINGS SOURCE CONFLICT":"SETTINGS UNAVAILABLE";
+    sp_text(32,144,width()-64,state,false,true);
+    sp_text(32,204,width()-64,sv_page==SV_DISCARD?"Keep editing this RAM draft?":portable_settings_availability_available(&settings_availability)?"Native settings loaded locally":"Temporary defaults; saves disabled",false,true);
+    sp_text(32,252,width()-64,sv_page==SV_DISCARD?"Or discard it without saving?":"Reload after saving/discarding drafts.",false,true);
+    if(sv_page==SV_STORAGE) {
+      sp_text(32,320,width()-64,"Still pending? Finish other edits,",false,true);
+      sp_text(32,360,width()-64,"then cleanly restart Runtime.",false,true);
+    }
+    sp_button(32,height()-112,(width()-80)/2,88,sv_page==SV_DISCARD?"KEEP":"BACK",false);
+    sp_button(width()/2+8,height()-112,(width()-80)/2,88,sv_page==SV_DISCARD?"DISCARD":"RELOAD",false);
+  } else
+#endif
   if(sv_page==SV_ROOT) {
     unsigned rows=sp_rows();if(sp_first>=SETTINGS_ROW_COUNT)sp_first=0;
 #ifdef PORTABLE_SETTINGS_LIST_SCROLL
@@ -306,6 +326,13 @@ static bool sp_poll(t5_app_input_t *out) {
   }
 #endif
   int x=s.x,y=s.y;
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(sv_page==SV_STORAGE||sv_page==SV_DISCARD) {
+    if(y>=height()-112&&y<height()-24&&x>=32&&x<width()-32)
+      out->buttons=x<width()/2?T5_APP_BUTTON_BACK:T5_APP_BUTTON_CONFIRM;
+    return true;
+  }
+#endif
   bool editable=
 #ifdef PORTABLE_SETTINGS_SLEEP_TIMER
     sv_page==SV_TIMER ||

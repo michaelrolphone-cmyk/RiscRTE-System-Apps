@@ -1,0 +1,90 @@
+name: Shared settings SD safety
+on:
+  pull_request:
+  workflow_dispatch:
+env:
+  PLATFORMIO_SETTING_ENABLE_TELEMETRY: "no"
+permissions:
+  contents: read
+jobs:
+  shared-settings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 3b90cd11cf0ff4e8116bb54d2d9eb9c7c67a148b
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO
+          ref: 241e792e67bf904c9fb9303d4b80d2157d7c5732
+          path: x4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          path: utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: aac8c06d3221139084acd0cfc64f7b0ba194a97a
+          path: reader
+          sparse-checkout: sdk
+          persist-credentials: false
+      - name: Shared checkpoint, ABI and cancellation fixtures
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/runtime
+        run: |
+          bash scripts/test_shared_settings.sh
+          SANITIZE=1 bash scripts/test_shared_settings.sh
+          bash scripts/test_installed_apps_service.sh
+          SANITIZE=1 bash scripts/test_installed_apps_install.sh
+          SANITIZE=1 bash scripts/test_installed_catalog_client.sh
+      - name: Files and WebDAV reserved-path regression
+        if: always() && !cancelled()
+        run: |
+          SANITIZE=1 bash scripts/test_protected_settings.sh
+          python scripts/test_file_browser_operations.py
+          SANITIZE=1 bash scripts/test_webdav_volume.sh
+          SANITIZE=1 bash scripts/test_webdav_core.sh
+          SANITIZE=1 bash scripts/test_webdav_peer.sh
+      - name: Touch-scroll protected aliases
+        if: always() && !cancelled()
+        run: |
+          mkdir -p build/shared-sdk
+          cp ../runtime/sdk/app/RiscRuntimeV1.h ../runtime/sdk/app/RiscRealtimeV1.h build/shared-sdk/
+          cp ../utilities/lib/Alarm/include/AlarmServiceV1.h ../utilities/lib/Alarm/include/AlarmServiceV2.h build/shared-sdk/
+          python scripts/test_touch_scroll_files.py --sdk build/shared-sdk --case protected --output-dir build/protected-scroll
+      - name: Shared preference BUSY hydration
+        if: always() && !cancelled()
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/runtime
+          X4_REPO: ${{ github.workspace }}/x4
+          READER_REPO: ${{ github.workspace }}/reader
+          UTILITIES_REPO: ${{ github.workspace }}/utilities
+        run: python scripts/test_shared_settings_hydration.py
+      - name: Install pinned public compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Build provider and record composition evidence
+        run: python scripts/build_installed_apps.py --runtime-repo ../runtime --output-dir build/shared-settings-provider
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-settings-source-validation-${{ github.sha }}
+          path: source/build/shared-settings-provider
+          if-no-files-found: error
+          retention-days: 7

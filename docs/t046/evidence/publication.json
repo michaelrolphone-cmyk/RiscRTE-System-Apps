@@ -1,0 +1,151 @@
+{
+  "source_checkpoints": {
+    "System-t046": {
+      "commit": "ec0fb1d46d8c1310770c96d931c5aa09e0f7eecc",
+      "branch": "fix/t046-shared-keyboard",
+      "remote_verified": true,
+      "clean": true
+    },
+    "System-wave-points-t046": {
+      "commit": "5f353a046be8aa71da5c1801fd616de1c61da060",
+      "branch": "integrate/t046-wave-points",
+      "remote_verified": true,
+      "clean": true
+    },
+    "Productivity-t046": {
+      "commit": "4c8e0282f63c7b791536f48dc2653fc5de1462fb",
+      "branch": "integrate/t046-points-caller",
+      "remote_verified": true,
+      "clean": true
+    },
+    "Watch-t046": {
+      "commit": "5253d91cd48c38aba8104ac3aadcadbb77514b0a",
+      "branch": "integrate/t046-shared-keyboard",
+      "remote_verified": true,
+      "clean": true
+    },
+    "Wave-t046": {
+      "commit": "5ffe51c42e77a62ff221e2f6e0fea13f10caee41",
+      "branch": "integrate/t046-shared-keyboard",
+      "remote_verified": true,
+      "clean": true
+    },
+    "X4-t046": {
+      "commit": "37f6aabad7e3c934c7421b422d1d27f43cb3022d",
+      "branch": "integrate/t046-shared-keyboard",
+      "remote_verified": true,
+      "clean": true
+    }
+  },
+  "assets": {
+    "components-release": [
+      {
+        "file": "SHA256SUMS",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/test-t046-keyboard-0.4.8/SHA256SUMS",
+        "sha256": "5d8b1611cb0d2d5456e87e5b7625caf6529a4f653f57f4956934cb5aea2c8283",
+        "download_verified": true,
+        "publication_commit": "ec0fb1d46d8c1310770c96d931c5aa09e0f7eecc"
+      },
+      {
+        "file": "T046-Shared-Keyboard-Components.zip",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/releases/download/test-t046-keyboard-0.4.8/T046-Shared-Keyboard-Components.zip",
+        "sha256": "64e27bb34600a18ac891398f80053a6163be4941c6be896b9a442d4c8ebf9274",
+        "download_verified": true,
+        "publication_commit": "ec0fb1d46d8c1310770c96d931c5aa09e0f7eecc"
+      }
+    ],
+    "watch": [
+      {
+        "file": "SHA256SUMS",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/releases/download/test-t046-keyboard-1.1.30/SHA256SUMS",
+        "sha256": "7d0fae116add7796f287a68bc59faca2c06618d13996299044f3f79ffcdc5307",
+        "download_verified": true,
+        "publication_commit": "5253d91cd48c38aba8104ac3aadcadbb77514b0a"
+      },
+      {
+        "file": "T046-Qualification.zip",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/releases/download/test-t046-keyboard-1.1.30/T046-Qualification.zip",
+        "sha256": "ff65b6057ff9b02bae727595e5014ba43f0ba2f07b55a87baba43233f2932ab5",
+        "download_verified": true,
+        "publication_commit": "5253d91cd48c38aba8104ac3aadcadbb77514b0a"
+      },
+      {
+        "file": "TWatch-1.1.30-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/releases/download/test-t046-keyboard-1.1.30/TWatch-1.1.30-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "sha256": "49ed4a8dd160950cfa23518093ce90968c2ac4509f28645ef505f57f1491438a",
+        "download_verified": true,
+        "publication_commit": "5253d91cd48c38aba8104ac3aadcadbb77514b0a"
+      }
+    ],
+    "wave": [
+      {
+        "file": "SHA256SUMS",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/releases/download/test-t046-keyboard-0.1.33/SHA256SUMS",
+        "sha256": "ed7c68b916c994aa1fdd970577cfe8540fca597d8cfc2c5f1578f2a8031317b1",
+        "download_verified": true,
+        "publication_commit": "5ffe51c42e77a62ff221e2f6e0fea13f10caee41"
+      },
+      {
+        "file": "T046-Qualification.zip",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/releases/download/test-t046-keyboard-0.1.33/T046-Qualification.zip",
+        "sha256": "b3335b416b634e78b660b2b7c874e845b4744bda3c57da5447b5a30bd7e7fd83",
+        "download_verified": true,
+        "publication_commit": "5ffe51c42e77a62ff221e2f6e0fea13f10caee41"
+      },
+      {
+        "file": "Waveshare-0.1.33-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/releases/download/test-t046-keyboard-0.1.33/Waveshare-0.1.33-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "sha256": "fe68fc15ff5e10edaa89d6d12cec10017fd968a0c868cd8a3d279473dc88aec6",
+        "download_verified": true,
+        "publication_commit": "5ffe51c42e77a62ff221e2f6e0fea13f10caee41"
+      }
+    ],
+    "x4": [
+      {
+        "file": "SHA256SUMS",
+        "url": "https://github.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/releases/download/test-t046-keyboard-0.1.116/SHA256SUMS",
+        "sha256": "b5c5c81ea3222181c282dfd97a852e8e83e8906bf5537d3ed81d5485ef07ce06",
+        "download_verified": true,
+        "publication_commit": "37f6aabad7e3c934c7421b422d1d27f43cb3022d"
+      },
+      {
+        "file": "T046-Qualification.zip",
+        "url": "https://github.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/releases/download/test-t046-keyboard-0.1.116/T046-Qualification.zip",
+        "sha256": "81ddf109c614ca694cad841b48968f905805a769adcccaed00682d9ad3eac37d",
+        "download_verified": true,
+        "publication_commit": "37f6aabad7e3c934c7421b422d1d27f43cb3022d"
+      },
+      {
+        "file": "X4-0.1.116-Cumulative-Changed-SD-Keep-Existing.zip",
+        "url": "https://github.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/releases/download/test-t046-keyboard-0.1.116/X4-0.1.116-Cumulative-Changed-SD-Keep-Existing.zip",
+        "sha256": "ad6aeed029d4c08ecdb0c0c75b8bb39dec413f08a04f734abc1454ec83a957c6",
+        "download_verified": true,
+        "publication_commit": "37f6aabad7e3c934c7421b422d1d27f43cb3022d"
+      },
+      {
+        "file": "X4-0.1.116-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "url": "https://github.com/michaelrolphone-cmyk/RiskRTE-XTEINK-X4-PRO/releases/download/test-t046-keyboard-0.1.116/X4-0.1.116-T046-Shared-Keyboard-factory-erases-data-0x0.bin",
+        "sha256": "f08b1a9c956ebdb6a26bed066449c7980f325983acd8f85abdc961fbf459e667",
+        "download_verified": true,
+        "publication_commit": "37f6aabad7e3c934c7421b422d1d27f43cb3022d"
+      }
+    ]
+  },
+  "qualification": {
+    "presenter_profile": 197,
+    "text_host_client": 143,
+    "real_runtime": 172,
+    "handoff_normal_and_sanitized": 104,
+    "typing_each_normal_and_sanitized": 48,
+    "points_watch_normal_and_sanitized": 92,
+    "points_wave_normal_and_sanitized": 88,
+    "portrait_preserved": 75,
+    "final_admission_elf_counts": {
+      "watch": 59,
+      "wave": 60,
+      "x4_internal": 43
+    },
+    "hardware_tested": false
+  },
+  "publication_blockers": []
+}

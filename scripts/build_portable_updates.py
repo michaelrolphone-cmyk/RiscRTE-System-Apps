@@ -15,6 +15,12 @@ def native_update_manifest(name):
  return manifest
 
 def product_policy(args, parser):
+ header=getattr(args,'product_policy_header',None)
+ if header:
+  if not args.services_only or getattr(args,'catalog_url',None):parser.error('--product-policy-header requires --services-only and owns its feed configuration')
+  header=Path(header).resolve()
+  if not header.is_file():parser.error('Product policy header does not exist')
+  return ['-DUPDATE_PRODUCT_POLICY_HEADER="'+str(header)+'"'],{'selection':'external-provider-only','header':str(header),'header_sha256':hashlib.sha256(header.read_bytes()).hexdigest()}
  product=getattr(args,'product','watch')
  url=getattr(args,'catalog_url',None)
  if product=='watch':
@@ -132,9 +138,13 @@ def build(args,parser=None):
   manifest['requires']=list({(r['capability'],r['api']):r for r in manifest['requires']}.values())
   portable_native_toolbar_build.requirements(args,manifest['requires'])
   portable_broadcast_build.requirements(args,manifest['requires'])
+  if args.native_package_feed and name=='app_store':
+   if args.product!='x4' or not args.installed_catalog:parser.error('Native package feed requires X4 installed catalog')
+   flags.append('-DPORTABLE_NATIVE_PACKAGE_FEED=1');manifest['version']='1.6.0'
+   if native_receipt:native_receipt['version']=manifest['version']
   compile_artifact(name,cc,[ROOT/'Apps'/(name+'.c'),ROOT/'lib/PortableApps/src/adapter.c',catalog,*quick_sources,*native_sources],flags,portable_quick_build.exports(args,{'app_main','app_module_init','app_module_fini'}),manifest,includes,native_receipt)
   licenses=out/name/'licenses';licenses.mkdir(exist_ok=True)
   for source in [ROOT/'LICENSE',*[p for group in ('settings_fonts','paper_fonts','fonts') for p in (ROOT/'lib/PortableApps'/group).glob('LICENSE-*')]]:shutil.copyfile(source,licenses/source.name)
  print('Portable update target ELFs, bounded imports/exports and structural validator passed')
 if __name__=='__main__':
- p=argparse.ArgumentParser(description=__doc__);parser=p;p.add_argument("--installed-catalog",action="store_true",help="Include cached installed SD apps alongside release rows");p.add_argument("--touch-scrolling",action="store_true",help="Select paper touch/momentum update catalogs with exact release confirmation");portable_broadcast_build.options(p);portable_quick_build.options(p);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');group=p.add_mutually_exclusive_group();group.add_argument('--services-only',action='store_true');group.add_argument('--apps-only',action='store_true',help='Build application ELFs without rebuilding update provider modules');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int);p.add_argument('--product',choices=['watch','x4'],default='watch');p.add_argument('--catalog-url');portable_native_toolbar_build.options(p);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--display-rotation',type=int,choices=[0,90],default=None);p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args(),p)
+ p=argparse.ArgumentParser(description=__doc__);parser=p;p.add_argument("--product-policy-header",type=Path,help="Explicit provider-only product policy; never alters shared app builds");p.add_argument("--installed-catalog",action="store_true",help="Include cached installed SD apps alongside release rows");p.add_argument("--touch-scrolling",action="store_true",help="Select paper touch/momentum update catalogs with exact release confirmation");portable_broadcast_build.options(p);portable_quick_build.options(p);p.add_argument('--output-dir',type=Path,default=ROOT/'dist/portable/updates');group=p.add_mutually_exclusive_group();group.add_argument('--services-only',action='store_true');group.add_argument('--apps-only',action='store_true',help='Build application ELFs without rebuilding update provider modules');p.add_argument('--nova-ui',action='store_true');p.add_argument('--app',choices=['ota_update','app_store']);p.add_argument('--wifi-instance',type=int,default=0);p.add_argument('--rtc-utc-offset-seconds',type=int);p.add_argument('--product',choices=['watch','x4'],default='watch');p.add_argument('--catalog-url');p.add_argument('--native-package-feed',action='store_true');portable_native_toolbar_build.options(p);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--full-frames',action='store_true');p.add_argument('--display-rotation',type=int,choices=[0,90],default=None);p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);build(p.parse_args(),p)

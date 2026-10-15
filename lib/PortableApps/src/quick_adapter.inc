@@ -5,7 +5,17 @@
 #endif
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
+#ifndef PORTABLE_WATCH_COLOR_ONLY
 #include "quick_paper.inc"
+#else
+#ifdef ALARM_SERVICE_TAGGED_V2
+#define quick_alarm_output_modes() alarm_output_modes()
+#else
+#define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
+#endif
+#define quick_paper_capabilities() ((void)0)
+#define quick_paper_changed(a,b) ((void)(a),(void)(b),false)
+#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
 /* Copied explicit intent survives checked shutdown and policy/UI reloads. */
 static uint32_t quick_deferred_actions;
@@ -39,6 +49,18 @@ static bool quick_storage_safe(void) {
 #endif
  return true;
 }
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+#include "home_settings_availability.inc"
+#endif
+#include "quick_atomic.inc"
+#define quick_take_action() quick_atomic_take_action()
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+#include "home_automatic.inc"
+#endif
+#else
+#define quick_take_action() pqa_take_action(&quick.ui)
+#endif
 #ifdef PORTABLE_X4_IDLE_POLICY
 static bool automatic_idle_interaction_ready(void) {
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
@@ -91,7 +113,11 @@ static bool low_battery_poll_inner(void) {
   return !failed && !native_sleep_retained;
  }
 #endif
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+ unsigned result=home_automatic_low_battery(&sample);
+#else
  unsigned result=portable_low_battery_update(&low_battery,rt,&sample);
+#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
  if(native_sleep_retained || !portable_wifi_services_end())return false;
  low_battery_transition_pending=false;
@@ -108,6 +134,9 @@ static bool low_battery_poll_inner(void) {
 #endif
  /* Cancel stale preview/pending actions before reloading confirmed settings.
   * A later new gesture is a manual override and remains authoritative. */
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_discard();
+#endif
  pqa_cancel(&quick.ui);(void)pqa_take_action(&quick.ui);
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(!portable_wifi_suspend())return false;
@@ -136,6 +165,9 @@ static bool low_battery_poll(void) {
 }
 #endif
 static bool quick_apply(uint32_t actions) {
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ actions=home_settings_filter_actions(actions);
+#endif
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
@@ -172,13 +204,19 @@ static bool quick_apply(uint32_t actions) {
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if(!portable_background_stop())return false;
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_storage_safe()||!quick_atomic_capture(actions))return false;
+ quick.save_user=quick_atomic_save;
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
 #if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
  if(((actions&PQA_AIRPLANE)&&!quick.ui.airplane)||((actions&PQA_WIFI)&&quick.ui.wifi_enabled)) {
   if(!portable_wifi_suspend())return false;
  }
 #endif
-#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!pqa_radios_apply_user(&quick_radios,&quick.ui,rt,actions,quick_atomic_save,NULL,quick_atomic_guard)){portable_adapter_retain();return false;}
+#elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
  if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions)){portable_adapter_retain();return false;}
 #else
  if(!pqa_radios_apply(&quick_radios,&quick.ui,rt,actions))return false;
@@ -212,6 +250,9 @@ static bool quick_apply(uint32_t actions) {
  if(changed && service)(void)service->refresh(service->context);
 #endif
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_show_queue_error();
+#endif
  return true;
 }
 static bool quick_copy_background(void) {
@@ -226,6 +267,35 @@ static bool quick_copy_background(void) {
  if(!quick_background)return false;
  size_t bytes=quick_row_bytes();
  for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,(uint8_t*)quick_background+y*bytes,bytes);
+ return true;
+}
+/* Finish a logical close through the ordinary nonblocking frame mailbox.
+ * The foreground is already live. Its later paint may replace this underlay
+ * once prepared, while raw input continues to reduce in normal app polls. */
+static bool quick_restore_step(void) {
+ if(!quick_restore_pending)return !failed;
+ if(failed)return false;
+ quick_restoring=true;
+ bool ready=portable_paper_frame_ready();
+ quick_restoring=false;
+ if(!ready)return !failed;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_begin_pixels_owned(quick_background,(unsigned)quick_row_bytes(),true)) {
+  if(failed)return false;
+  if(!raster_recording||!raster_tail||raster_tail->kind!=RS_BITMAP||
+     raster_tail->pixels!=quick_background) {
+   display_failure("QUICK restore capture-invalid");return false;
+  }
+  /* Transfer the existing allocation, rather than copying another full image.
+   * The command owner releases it after replay, replacement or teardown. */
+  raster_tail->borrowed=false;quick_background=NULL;
+ } else
+#endif
+ if(!quick_copy_background())return false;
+ quick_restore_pending=false;
+ present(!quick.ui.paper);
+ if(failed)return false;
+ free(quick_background);quick_background=NULL;
  return true;
 }
 static bool quick_render_watch(const char *time,bool battery_valid,uint8_t battery) {
@@ -255,6 +325,9 @@ static bool quick_interrupt(void) {
  if(failed || native_custody_retained)return false;
 #endif
  if(!quick_modal)return true;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ quick_atomic_discard();
+#endif
  pqa_cancel(&quick.ui);quick.ui.pending&=~(uint32_t)PQA_WIFI;
  if(!quick_apply(pqa_take_action(&quick.ui)))return false;
  /* Alarm's saved restoration frame is the app, never the torch/controls. */
@@ -352,6 +425,7 @@ static bool quick_dispatch_destination(const char *quick_destination) {
 }
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
+ if(!quick_restore_step())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;
 #endif
@@ -408,6 +482,9 @@ static bool quick_foreground(bool *consumed) {
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
  if(!portable_background_stop())return false;
 #endif
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_atomic_modal_begin())return false;
+#endif
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
 #ifdef PORTABLE_PAPER_TRANSITIONS
@@ -424,8 +501,16 @@ static bool quick_foreground(bool *consumed) {
 #ifdef PORTABLE_QUICK_RADIOS
  if(!pqa_radios_load(&quick_radios,&quick.ui,rt))return false;
 #endif
+#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
+ home_settings_readonly_controls();
+#endif
  quick_background=malloc(quick_frame_bytes());
- if(!quick_background){pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;}
+ if(!quick_background){
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!quick_atomic_close())return false;
+#endif
+  pqa_cancel(&quick.ui);rt->diagnostic("QUICK unavailable=memory");return true;
+ }
  memcpy(quick_background,alarm_pixels,quick_frame_bytes());quick_modal=true;
  portable_stage_log(rt,"action","name=quick-controls-open");
  bool painted=false,wifi=false;
@@ -438,7 +523,11 @@ static bool quick_foreground(bool *consumed) {
  uint32_t began=millis_now(),telemetry_at=began-1000u;
  char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
  pqa_state painted_state={0};uint8_t painted_battery=0;
- while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui))) {
+ while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui)
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+     ||quick_atomic_queue_count
+#endif
+     )) {
   input_service();input_dispatch();
   if(failed)break;
   uint32_t now=millis_now();bool alarm_consumed=false;
@@ -453,7 +542,7 @@ static bool quick_foreground(bool *consumed) {
    * Keep the existing idle policy for the animated Watch sheet. */
   if(!quick.ui.paper && (uint32_t)(now-last_activity)>=portable_idle_ms())pqa_cancel(&quick.ui);
 #endif
-  uint32_t actions=pqa_take_action(&quick.ui);
+  uint32_t actions=quick_take_action();
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   clean_pending|=quick.ui.clean_refresh_valid&&!!(actions&PQA_CLEAN_REFRESH);
   actions&=~PQA_CLEAN_REFRESH;
@@ -479,8 +568,11 @@ static bool quick_foreground(bool *consumed) {
 #endif
        strcmp(time,painted_time) || battery_valid!=painted_battery_valid || (battery_valid&&battery.percent!=painted_battery);
    if(dirty && portable_paper_frame_ready()) {
+#ifndef PORTABLE_WATCH_COLOR_ONLY
     if(quick.ui.paper)quick_paper_render(time,battery_valid,battery.percent);
-    else if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
+    else
+#endif
+    if(!quick_copy_background() || !quick_render_watch(time,battery_valid,(uint8_t)battery.percent)){failed=true;break;}
     /* Present can sample input while the panel is busy. Record only the state
      * rendered above; newer input must remain dirty for the next frame. */
     painted_state=quick.ui;
@@ -506,9 +598,27 @@ static bool quick_foreground(bool *consumed) {
  }
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ while(!failed) {uint32_t actions=quick_take_action();if(!actions)break;if(!quick_apply(actions))failed=true;}
+#else
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
+#endif
+ /* The modal's release has already been reduced. Cancel only a still-held
+  * logical gesture; never adopt a newer physical snapshot watermark here. */
+ if(*consumed) {
+  input_pending=false;input_sample=(portable_touch_sample){0};
+  if(touch.down)portable_touch_cancel_gesture(&touch);
+ }
  if(painted && !failed) {
-  if(!portable_paper_frame_drain() || !quick_copy_background())failed=true;
+  if(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) {
+   /* Alarm restoration follows logical ownership, not a stale overlay image. */
+   if(quick_background&&alarm_pixels){memcpy(alarm_pixels,quick_background,quick_frame_bytes());alarm_pixels_valid=true;}
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   if(raster_sealed)raster_saved_app_frame=false;
+#endif
+   quick_restore_pending=true;
+  }
+  else if(!portable_paper_frame_drain() || !quick_copy_background())failed=true;
   else {present(!quick.ui.paper);if(!portable_paper_frame_drain())failed=true;}
  }
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -517,9 +627,13 @@ static bool quick_foreground(bool *consumed) {
  #if defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_PAPER_TRANSITIONS) && defined(PORTABLE_RESIDENT_SHELL_HOST)
  portable_layer_release(&quick_sheet_layer);
 #endif
- quick_modal=false;free(quick_background);quick_background=NULL;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(!quick_atomic_close())return false;
+#endif
+ quick_modal=false;
+ if(!quick_restore_pending){free(quick_background);quick_background=NULL;}
  portable_stage_log(rt,"action","name=quick-controls-close");
- if(*consumed){input_pending=false;input_sample=(portable_touch_sample){0};input_reset();}
+ if(!failed&&!quick_restore_step())return false;
  const char *quick_destination=wifi?"wifi_settings.elf":NULL;
 #ifdef PORTABLE_QUICK_USB_TRANSFER
  if(usb_transfer)quick_destination="usb_sd_transfer.elf";

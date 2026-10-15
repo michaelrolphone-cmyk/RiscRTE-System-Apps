@@ -1,0 +1,552 @@
+{
+  "source_sha256": {
+    "Services/scene_host/host.c": "2aff03f2e56b8812c66120e4dd411ee160ce7d5512de118ce47d41efff0d630b",
+    "Services/scene_host/components.inc": "bb00df4a95f42af73b4263b34fd5b70351c036a015009c25d4ca6312e6854102",
+    "Services/scene_host/keyboard_paper.inc": "c748627b4ecc595b59ff2d28b86a25846266d7f9436aff0ca2ad712ab969c8c7",
+    "test/scene/decoupling_test.c": "8ec8ad647bff97f686bfd93d8c471466bb98bb106c9d96f86164d5307ca832ac"
+  },
+  "sanitized": false,
+  "cases": [
+    {
+      "kind": "raster",
+      "format": 1,
+      "rotation": 0,
+      "sha256": "166e8dfc0d4efa69e3b91acfcea05e144d6c19ffb750724ad3a9979729fad3e3"
+    },
+    {
+      "kind": "raster",
+      "format": 1,
+      "rotation": 90,
+      "sha256": "686d16e25d8b4ff1ac6a47a819c80d85d5bcd54735e7c26db494873c1acc012d"
+    },
+    {
+      "kind": "raster",
+      "format": 1,
+      "rotation": 180,
+      "sha256": "54d84c71dd19017f6519aea18787c9602eb52faef6b468d06098d1741facce10"
+    },
+    {
+      "kind": "raster",
+      "format": 1,
+      "rotation": 270,
+      "sha256": "0f947c4502b0483ebca793f1909246177737af9425a839bd2d11b03c50ac6481"
+    },
+    {
+      "kind": "raster",
+      "format": 2,
+      "rotation": 0,
+      "sha256": "d7091fb5ee1b067f2d855c09cbfd288c478813df85fd1462483df3c85c7f233f"
+    },
+    {
+      "kind": "raster",
+      "format": 2,
+      "rotation": 90,
+      "sha256": "d1780299886bf61b732ac60df4090dc56ba8bb91c9579c36652819e7676d7b61"
+    },
+    {
+      "kind": "raster",
+      "format": 2,
+      "rotation": 180,
+      "sha256": "be0a67c53f4e634ce6eaf5789098424cc1ca9d8d8db620f81f27ceb6fa63635c"
+    },
+    {
+      "kind": "raster",
+      "format": 2,
+      "rotation": 270,
+      "sha256": "5b8c6211ec6ecc6b396db3147ef26530ed7fa6aa5c9ca123baf747f945d4a29e"
+    },
+    {
+      "kind": "raster",
+      "format": 3,
+      "rotation": 0,
+      "sha256": "1003fcf7494099aca77b53bff4760d447305c6942003c44cc4363f8358af1897"
+    },
+    {
+      "kind": "raster",
+      "format": 3,
+      "rotation": 90,
+      "sha256": "c1f6ae08e4098c75667d67c083ff61ab575f9d3b0f5e23d2a527dc13027f212a"
+    },
+    {
+      "kind": "raster",
+      "format": 3,
+      "rotation": 180,
+      "sha256": "733a398c526a04a6270158044b2af1c7f3771b6e2bede82aa3cb612a8fb62b5e"
+    },
+    {
+      "kind": "raster",
+      "format": 3,
+      "rotation": 270,
+      "sha256": "52ccbfecb654caa3af555ca1e8c378d209fa06167479b46e24af642328d4cc97"
+    },
+    {
+      "kind": "raster",
+      "format": 4,
+      "rotation": 0,
+      "sha256": "96b32291ce6c8b087830628ad2e1495cdf7e48e113b18c3606c545d2886d7bdc"
+    },
+    {
+      "kind": "raster",
+      "format": 4,
+      "rotation": 90,
+      "sha256": "1906e348fabcd3c7e540725243d7e6f076dd8665aa5d18a99bd24951de10a3cb"
+    },
+    {
+      "kind": "raster",
+      "format": 4,
+      "rotation": 180,
+      "sha256": "fc34272082e4bc0b977f820cd0f3b300c2998787fca360a4ef6fcd61cdb40b36"
+    },
+    {
+      "kind": "raster",
+      "format": 4,
+      "rotation": 270,
+      "sha256": "1beef19f6f43a4f7cf3bb32a42c31567d60fa7e013396af6bd634de0ef69bbb7"
+    },
+    {
+      "kind": "raster",
+      "format": 5,
+      "rotation": 0,
+      "sha256": "c52d8456ae2a7627f9a5afcb9b1bf626047848044ba88d58122c7a63e817f36c"
+    },
+    {
+      "kind": "raster",
+      "format": 5,
+      "rotation": 90,
+      "sha256": "44c919832d67fc6224039c771b801402f1187fad9d815b0eea1aff86ad36cfe3"
+    },
+    {
+      "kind": "raster",
+      "format": 5,
+      "rotation": 180,
+      "sha256": "f9cf11c3f1dfdc29aa6ada99120ef8a4569647550a1a180fa4e3a06f43575e6e"
+    },
+    {
+      "kind": "raster",
+      "format": 5,
+      "rotation": 270,
+      "sha256": "e6edbebb91e5ca648ac3621d5c32a50f19888aa089b0dff2567e0ae71374f960"
+    },
+    {
+      "kind": "nova7-layer",
+      "layer": 0,
+      "sha256": "0f947c4502b0483ebca793f1909246177737af9425a839bd2d11b03c50ac6481"
+    },
+    {
+      "kind": "nova7-layer",
+      "layer": 1,
+      "sha256": "6fe218f55c1e9f10e9d764411e184e5693016635d44a21950a983ccd198aa850"
+    },
+    {
+      "kind": "nova7-layer",
+      "layer": 2,
+      "sha256": "6127f5d32c4e3c9132de716c51e1d01565247864a9f21aa65afa1568767c10e4"
+    },
+    {
+      "kind": "nova7-layer",
+      "layer": 3,
+      "sha256": "a6e5e2c8b2e38424458d02dd2784df605d349046acc64f5cc8be3c6b15ba6836"
+    },
+    {
+      "kind": "overlap-layer-gap-home",
+      "format": 1
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 0,
+      "output": "cadence period=200 count=600 panel=0 digest=0e17b4b463d501bd raster=54eeccc0b3e69d2b frames=1173"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 16,
+      "output": "cadence period=200 count=600 panel=16 digest=0e17b4b463d501bd raster=54eeccc0b3e69d2b frames=901"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 120,
+      "output": "cadence period=200 count=600 panel=120 digest=0e17b4b463d501bd raster=54eeccc0b3e69d2b frames=548"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 2300,
+      "output": "cadence period=200 count=600 panel=2300 digest=0e17b4b463d501bd raster=54eeccc0b3e69d2b frames=52"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=133 count=120 panel=0 digest=1a147eae0ed4dd1c raster=ebf05c88d2aedf75 frames=159"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=133 count=120 panel=16 digest=1a147eae0ed4dd1c raster=ebf05c88d2aedf75 frames=139"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=133 count=120 panel=120 digest=1a147eae0ed4dd1c raster=ebf05c88d2aedf75 frames=75"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=133 count=120 panel=2300 digest=1a147eae0ed4dd1c raster=ebf05c88d2aedf75 frames=9"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=80 count=120 panel=0 digest=c875e4668cfd2318 raster=ebf05c88d2aedf75 frames=97"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=80 count=120 panel=16 digest=c875e4668cfd2318 raster=ebf05c88d2aedf75 frames=85"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=80 count=120 panel=120 digest=c875e4668cfd2318 raster=ebf05c88d2aedf75 frames=46"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=80 count=120 panel=2300 digest=c875e4668cfd2318 raster=ebf05c88d2aedf75 frames=6"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=60 count=120 panel=0 digest=a322865363ae830f raster=ebf05c88d2aedf75 frames=73"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=60 count=120 panel=16 digest=a322865363ae830f raster=ebf05c88d2aedf75 frames=64"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=60 count=120 panel=120 digest=a322865363ae830f raster=ebf05c88d2aedf75 frames=35"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 1,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=60 count=120 panel=2300 digest=a322865363ae830f raster=ebf05c88d2aedf75 frames=5"
+    },
+    {
+      "kind": "overlap-layer-gap-home",
+      "format": 3
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 0,
+      "output": "cadence period=200 count=600 panel=0 digest=0e17b4b463d501bd raster=9ef4d7fd4cc1f47e frames=1173"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 16,
+      "output": "cadence period=200 count=600 panel=16 digest=0e17b4b463d501bd raster=9ef4d7fd4cc1f47e frames=901"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 120,
+      "output": "cadence period=200 count=600 panel=120 digest=0e17b4b463d501bd raster=9ef4d7fd4cc1f47e frames=548"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 2300,
+      "output": "cadence period=200 count=600 panel=2300 digest=0e17b4b463d501bd raster=9ef4d7fd4cc1f47e frames=52"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=133 count=120 panel=0 digest=1a147eae0ed4dd1c raster=bb434a60e86ed062 frames=159"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=133 count=120 panel=16 digest=1a147eae0ed4dd1c raster=bb434a60e86ed062 frames=139"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=133 count=120 panel=120 digest=1a147eae0ed4dd1c raster=bb434a60e86ed062 frames=75"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=133 count=120 panel=2300 digest=1a147eae0ed4dd1c raster=bb434a60e86ed062 frames=9"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=80 count=120 panel=0 digest=c875e4668cfd2318 raster=bb434a60e86ed062 frames=97"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=80 count=120 panel=16 digest=c875e4668cfd2318 raster=bb434a60e86ed062 frames=85"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=80 count=120 panel=120 digest=c875e4668cfd2318 raster=bb434a60e86ed062 frames=46"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=80 count=120 panel=2300 digest=c875e4668cfd2318 raster=bb434a60e86ed062 frames=6"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=60 count=120 panel=0 digest=a322865363ae830f raster=bb434a60e86ed062 frames=73"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=60 count=120 panel=16 digest=a322865363ae830f raster=bb434a60e86ed062 frames=64"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=60 count=120 panel=120 digest=a322865363ae830f raster=bb434a60e86ed062 frames=35"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 3,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=60 count=120 panel=2300 digest=a322865363ae830f raster=bb434a60e86ed062 frames=5"
+    },
+    {
+      "kind": "overlap-layer-gap-home",
+      "format": 5
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 0,
+      "output": "cadence period=200 count=600 panel=0 digest=0e17b4b463d501bd raster=89a661336ae25255 frames=1201"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 16,
+      "output": "cadence period=200 count=600 panel=16 digest=0e17b4b463d501bd raster=89a661336ae25255 frames=1201"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 120,
+      "output": "cadence period=200 count=600 panel=120 digest=0e17b4b463d501bd raster=89a661336ae25255 frames=801"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 200,
+      "count": 600,
+      "panel_ms": 2300,
+      "output": "cadence period=200 count=600 panel=2300 digest=0e17b4b463d501bd raster=89a661336ae25255 frames=54"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=133 count=120 panel=0 digest=1a147eae0ed4dd1c raster=a7fa3cbd9268c24b frames=241"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=133 count=120 panel=16 digest=1a147eae0ed4dd1c raster=a7fa3cbd9268c24b frames=241"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=133 count=120 panel=120 digest=1a147eae0ed4dd1c raster=a7fa3cbd9268c24b frames=112"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 133,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=133 count=120 panel=2300 digest=1a147eae0ed4dd1c raster=a7fa3cbd9268c24b frames=9"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=80 count=120 panel=0 digest=c875e4668cfd2318 raster=a7fa3cbd9268c24b frames=241"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=80 count=120 panel=16 digest=c875e4668cfd2318 raster=a7fa3cbd9268c24b frames=236"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=80 count=120 panel=120 digest=c875e4668cfd2318 raster=a7fa3cbd9268c24b frames=69"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 80,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=80 count=120 panel=2300 digest=c875e4668cfd2318 raster=a7fa3cbd9268c24b frames=7"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 0,
+      "output": "cadence period=60 count=120 panel=0 digest=a322865363ae830f raster=a7fa3cbd9268c24b frames=241"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 16,
+      "output": "cadence period=60 count=120 panel=16 digest=a322865363ae830f raster=a7fa3cbd9268c24b frames=180"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 120,
+      "output": "cadence period=60 count=120 panel=120 digest=a322865363ae830f raster=a7fa3cbd9268c24b frames=52"
+    },
+    {
+      "kind": "logical-cadence",
+      "format": 5,
+      "period_ms": 60,
+      "count": 120,
+      "panel_ms": 2300,
+      "output": "cadence period=60 count=120 panel=2300 digest=a322865363ae830f raster=a7fa3cbd9268c24b frames=6"
+    }
+  ],
+  "limits": [
+    "Physical edges supplied to provider fixture; exact GT911 register-level Runtime proof is a separate runner.",
+    "No measured device latency or hardware qualification.",
+    "Logical cadence equality is independent of presentation; CPU/transport physical cadence remains a separate qualification."
+  ]
+}

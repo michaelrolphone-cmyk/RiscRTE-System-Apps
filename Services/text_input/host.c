@@ -3,6 +3,7 @@
 #include "RiscTextEntryV1.h"
 #include "RiscRuntimeV1.h"
 #include "RiscSceneV1.h"
+#include "RiscSceneCheckpointV1.h"
 #include "SceneKeyboardV1.h"
 #include "RiscProviderV2.h"
 #include "RiscUsbHidV1.h"
@@ -13,10 +14,12 @@
 static const risc_scene_api_v1 *scene;
 static const risc_usb_keyboard_api_v1 *keyboard;
 static risc_scene_document_v1 document;
-static risc_text_entry_state_v1 state;
+static risc_text_entry_state_v1_long state;
 static uint64_t serial,session,scene_session,subscription,last_sequence;
 static uint32_t capacity,page,request_flags;
-static bool started,active,closing,retained,connected,neutral,caps,changed,draining;
+static bool started,active,closing,retained,connected,neutral,caps,changed,draining,keyboard_pending,revealed;
+static bool checkpoint_enabled,checkpoint_paused,checkpoint_pausing,checkpoint_activity,checkpoint_usb_held,checkpoint_neutralizing,checkpoint_full_pause;
+static const risc_scene_checkpoint_api_v1 *checkpoint_scene;
 
 static int32_t retain(void){retained=true;return RISC_TEXT_ENTRY_RETAINED;}
 static bool live(void){if(retained)return false;if(!risc_runtime_get_api(1)){retain();return false;}return true;}
@@ -27,6 +30,10 @@ static int32_t check(uint64_t s){
 }
 static bool ascii(const char *s,size_t bytes){
     for(size_t i=0;i<bytes;i++){unsigned char c=(unsigned char)s[i];if(!c)return true;if(c<32||c>126)return false;}
+    return false;
+}
+static bool filename_bytes(const char *s,size_t bytes){
+    for(size_t i=0;i<bytes;i++){unsigned char c=(unsigned char)s[i];if(!c)return true;if(c<32)return false;}
     return false;
 }
 static bool changed_state(void){
@@ -48,11 +55,15 @@ static unsigned character(uint8_t key,uint8_t mods){
 }
 static void apply(unsigned key){
     if(state.state!=RISC_TEXT_ENTRY_EDITING)return;
-    if(key==RISC_SCENE_KEY_DONE){state.state=RISC_TEXT_ENTRY_ACCEPTED;(void)changed_state();return;}
-    if(key==RISC_SCENE_KEY_CANCEL){state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_DONE){revealed=false;state.state=RISC_TEXT_ENTRY_ACCEPTED;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_CANCEL){revealed=false;state.state=RISC_TEXT_ENTRY_CANCELLED;(void)changed_state();return;}
     if(key==RISC_SCENE_KEY_LAYER){page=(page+1)%4;(void)changed_state();return;}
+    if(key==RISC_SCENE_KEY_VISIBILITY){
+        if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED){revealed=!revealed;(void)changed_state();}
+        return;
+    }
     size_t n=strlen(state.text);
-    if(key==RISC_SCENE_KEY_CLEAR){if(n){state.text[0]=0;(void)changed_state();}return;}
+    if(key==RISC_SCENE_KEY_CLEAR){if(n){memset(state.text,0,sizeof(state.text));(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_BACKSPACE){if(n){state.text[n-1]=0;(void)changed_state();}return;}
     if(key==RISC_SCENE_KEY_SPACE)key=' ';
     if(key>=32&&key<=126&&n+1<capacity){state.text[n]=(char)key;state.text[n+1]=0;(void)changed_state();}
@@ -71,8 +82,9 @@ static bool snapshot(bool reset,bool *held){
         attached=true;*held|=items[i].modifiers!=0;
         for(unsigned k=0;k<6;k++)*held|=items[i].keys[k]!=0;
     }
-    if(attached!=connected){connected=attached;state.flags=attached?RISC_TEXT_ENTRY_HARDWARE:0;if(!changed_state())return false;reset=true;}
-    if(reset){neutral=!*held;caps=false;}
+    if(attached!=connected){if(checkpoint_enabled)caps=false;connected=attached;state.flags=attached?RISC_TEXT_ENTRY_HARDWARE:0;if(!changed_state())return false;reset=true;}
+    if(checkpoint_enabled)checkpoint_usb_held=*held;
+    if(reset){neutral=!*held;if(!checkpoint_neutralizing)caps=false;}
     return true;
 }
 static int32_t keyboard_step(void){
@@ -89,14 +101,18 @@ static int32_t keyboard_step(void){
         if(r==-1||e.kind==5){discard=true;continue;}
         if(r!=1||e.kind<1||e.kind>4||e.reserved||!e.sequence||e.sequence<=last_sequence)return retain();
         last_sequence=e.sequence;events[count]=e;
+        if(checkpoint_enabled)checkpoint_activity=true;
         if(e.kind==1||e.kind==2)discard=true;
     }
-    draining=count==RISC_USB_INPUT_QUEUE_LENGTH;
-    if(draining)discard=true;
+    /* A full bounded batch is not a gap: the keyboard provider reports actual
+     * ring overflow explicitly through next() == -1. Preserve every valid
+     * edge, including same-key DOWN/UP pairs at the exact queue boundary. */
+    keyboard_pending=count==RISC_USB_INPUT_QUEUE_LENGTH;
     bool before=connected;
     if(!snapshot(discard||!was_neutral,&held))return retain();
     if(before!=connected)discard=true;
-    if(discard||!was_neutral){neutral=!held;return RISC_TEXT_ENTRY_OK;}
+    draining=keyboard_pending&&(discard||!was_neutral);
+    if(discard||!was_neutral){neutral=!held;if(neutral)checkpoint_neutralizing=false;return RISC_TEXT_ENTRY_OK;}
     for(unsigned i=0;i<count&&state.state==RISC_TEXT_ENTRY_EDITING;i++){
         const risc_usb_keyboard_event_v1 *e=&events[i];
         if(!connected||e->kind!=3)continue;
@@ -107,14 +123,26 @@ static int32_t keyboard_step(void){
 }
 static void copy_display_text(void){
     memset(document.nodes[0].text,0,sizeof(document.nodes[0].text));
-    if(request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)
-        memset(document.nodes[0].text,'*',strlen(state.text));
-    else memcpy(document.nodes[0].text,state.text,sizeof(state.text));
+    size_t length=strlen(state.text),offset=length<sizeof(document.nodes[0].text)?0:length-sizeof(document.nodes[0].text)+1;
+    if((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)&&!revealed)
+        memset(document.nodes[0].text,'*',length-offset);
+    else for(size_t i=offset;i<length;i++){
+        unsigned char ch=(unsigned char)state.text[i];
+        document.nodes[0].text[i-offset]=(char)(ch>=32&&ch<=126?ch:'?');
+    }
+    document.nodes[0].target=capacity-1;
+    if(capacity>RISC_TEXT_ENTRY_BYTES)document.nodes[0].target|=(uint32_t)length<<16;
+}
+static uint32_t display_flags(void){
+    return (connected?RISC_SCENE_DISABLED:0)|
+        ((request_flags&RISC_TEXT_ENTRY_REQUEST_MASKED)?RISC_SCENE_KEYBOARD_PASSWORD:0)|
+        (revealed?RISC_SCENE_KEYBOARD_REVEALED:0)|
+        (capacity>RISC_TEXT_ENTRY_BYTES?RISC_SCENE_KEYBOARD_EXTENDED:0);
 }
 static int32_t update_scene(void){
     document.revision=state.revision;
     document.nodes[0].value=(int32_t)page;
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
+    document.nodes[0].flags=display_flags();
     copy_display_text();
     int32_t r=scene->update(scene->context,scene_session,&document);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
@@ -136,19 +164,17 @@ static int32_t close_owned(void){
         if(r!=RISC_SCENE_OK)return retain();
         scene_session=0;
     }
-    active=closing=connected=neutral=caps=changed=draining=false;session=0;
+    active=closing=connected=neutral=caps=changed=draining=keyboard_pending=revealed=false;session=0;
+    checkpoint_enabled=checkpoint_paused=checkpoint_pausing=checkpoint_activity=checkpoint_usb_held=checkpoint_neutralizing=checkpoint_full_pause=false;checkpoint_scene=NULL;
     memset(&state,0,sizeof(state));memset(&document,0,sizeof(document));return RISC_TEXT_ENTRY_OK;
 }
-static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,uint64_t *out){
-    (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
-    if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
-       (request->reserved&~(RISC_TEXT_ENTRY_REQUEST_HOME_REASON|RISC_TEXT_ENTRY_REQUEST_MASKED))||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
-       !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
+static int32_t open_checked(const char *label,const char *text,uint32_t limit,uint32_t flags,uint64_t *out){
     if(active)return RISC_TEXT_ENTRY_BUSY;
     if(serial==UINT64_MAX)return RISC_TEXT_ENTRY_UNAVAILABLE;
-    state=(risc_text_entry_state_v1){.struct_size=sizeof(state),.revision=1};
-    memcpy(state.text,request->text,strlen(request->text)+1);
-    capacity=request->capacity;request_flags=request->reserved;page=0;last_sequence=0;connected=caps=closing=changed=draining=false;neutral=true;
+    state=(risc_text_entry_state_v1_long){.struct_size=sizeof(state),.revision=1};
+    memcpy(state.text,text,strlen(text)+1);
+    capacity=limit;request_flags=flags;page=0;last_sequence=0;connected=caps=closing=changed=draining=keyboard_pending=revealed=false;neutral=true;
+    checkpoint_enabled=checkpoint_paused=checkpoint_pausing=checkpoint_activity=checkpoint_usb_held=checkpoint_neutralizing=checkpoint_full_pause=false;checkpoint_scene=NULL;
     active=true;session=++serial;
     if(keyboard){
         subscription=keyboard->subscribe(keyboard->context,0);
@@ -159,11 +185,10 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     document=(risc_scene_document_v1){.api_version=1,.struct_size=sizeof(document),.revision=state.revision,
         .root=1,.route_count=1,.node_count=1,.routes={{.id=1,.back_action=2}},
         .nodes={{.id=1,.route=1,.kind=RISC_SCENE_KEYBOARD_NODE,.action=1,.minimum=0,.maximum=3,.step=1}}};
-    memcpy(document.routes[0].title,request->label,sizeof(request->label));
-    memcpy(document.nodes[0].label,request->label,sizeof(request->label));
+    memcpy(document.routes[0].title,label,RISC_TEXT_ENTRY_LABEL);
+    memcpy(document.nodes[0].label,label,RISC_TEXT_ENTRY_LABEL);
     copy_display_text();
-    document.nodes[0].flags=connected?RISC_SCENE_DISABLED:0;
-    document.nodes[0].target=capacity-1;
+    document.nodes[0].flags=display_flags();
     int32_t r=scene->open(scene->context,&document,NULL,&scene_session);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(r==RISC_SCENE_RETAINED)return retain();
@@ -171,10 +196,30 @@ static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,ui
     if(!scene_session)return retain();
     changed=false;*out=session;return RISC_TEXT_ENTRY_OK;
 }
-static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
-    (void)c;int32_t r=check(s);if(r)return r;
-    if(!out||out->struct_size!=sizeof(*out))return RISC_TEXT_ENTRY_INVALID;
-    if(closing)return RISC_TEXT_ENTRY_BUSY;
+static int32_t open_session(void *c,const risc_text_entry_request_v1 *request,uint64_t *out){
+    (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
+    if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
+       (request->reserved&~(RISC_TEXT_ENTRY_REQUEST_HOME_REASON|RISC_TEXT_ENTRY_REQUEST_MASKED))||!request->capacity||request->capacity>RISC_TEXT_ENTRY_BYTES||
+       !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
+    return open_checked(request->label,request->text,request->capacity,request->reserved,out);
+}
+static int32_t open_extended(void *c,const risc_text_entry_request_v1_extended *request,uint64_t *out){
+    (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
+    if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
+       (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_EXTENDED_BYTES||
+       !filename_bytes(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
+    return open_checked(request->label,request->text,request->capacity,request->reserved,out);
+}
+static int32_t open_long(void *c,const risc_text_entry_request_v1_long *request,uint64_t *out){
+    (void)c;if(!live())return RISC_TEXT_ENTRY_RETAINED;
+    if(!started||!out||!request||request->api_version!=1||request->struct_size!=sizeof(*request)||
+       (request->reserved&~RISC_TEXT_ENTRY_REQUEST_HOME_REASON)||!request->capacity||request->capacity>RISC_TEXT_ENTRY_LONG_BYTES||
+       !ascii(request->text,request->capacity)||!ascii(request->label,sizeof(request->label)))return RISC_TEXT_ENTRY_INVALID;
+    return open_checked(request->label,request->text,request->capacity,request->reserved,out);
+}
+static int32_t poll_checked(uint32_t *presentation){
+    if(checkpoint_paused||checkpoint_pausing)return RISC_TEXT_ENTRY_BUSY;
+    int32_t r;
     if(state.state==RISC_TEXT_ENTRY_EDITING){
         r=keyboard_step();if(r)return r;
         if(changed){r=update_scene();if(r)return r;}
@@ -188,7 +233,7 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
                     apply(RISC_SCENE_KEY_CANCEL);
                 }else if(event.kind==RISC_SCENE_ACTION_EVENT&&event.action==2)apply(RISC_SCENE_KEY_CANCEL);
                 else if(event.kind==RISC_SCENE_VALUE_EVENT&&event.node==1&&event.action==1&&
-                    (!connected||event.value==RISC_SCENE_KEY_DONE||event.value==RISC_SCENE_KEY_CANCEL)){
+                    (!connected||event.value==RISC_SCENE_KEY_DONE||event.value==RISC_SCENE_KEY_CANCEL||event.value==RISC_SCENE_KEY_VISIBILITY)){
                     apply((unsigned)event.value);if(!changed&&!changed_state())return RISC_TEXT_ENTRY_RETAINED;
                 }
             }
@@ -200,13 +245,42 @@ static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
     r=scene->snapshot(scene->context,scene_session,&path,&flags);
     if(!live())return RISC_TEXT_ENTRY_RETAINED;
     if(r!=RISC_SCENE_OK)return retain();
-    *out=state;if(flags&RISC_SCENE_PRESENTING)out->flags|=RISC_TEXT_ENTRY_PRESENTING;return RISC_TEXT_ENTRY_OK;
+    if(checkpoint_enabled&&(flags&RISC_SCENE_ACTIVITY))checkpoint_activity=true;
+    *presentation=flags&RISC_SCENE_PRESENTING?RISC_TEXT_ENTRY_PRESENTING:0;return RISC_TEXT_ENTRY_OK;
+}
+static int32_t poll_session(void *c,uint64_t s,risc_text_entry_state_v1 *out){
+    (void)c;int32_t r=check(s);if(r)return r;
+    if(!out||out->struct_size!=sizeof(*out)||capacity>RISC_TEXT_ENTRY_BYTES)return RISC_TEXT_ENTRY_INVALID;
+    if(closing)return RISC_TEXT_ENTRY_BUSY;
+    uint32_t presentation=0;r=poll_checked(&presentation);if(r)return r;
+    *out=(risc_text_entry_state_v1){.struct_size=sizeof(*out),.state=state.state,.flags=state.flags|presentation,.revision=state.revision};
+    memcpy(out->text,state.text,sizeof(out->text));return RISC_TEXT_ENTRY_OK;
+}
+static int32_t poll_extended(void *c,uint64_t s,risc_text_entry_state_v1_extended *out){
+    (void)c;int32_t r=check(s);if(r)return r;
+    if(!out||out->struct_size!=sizeof(*out)||capacity>RISC_TEXT_ENTRY_EXTENDED_BYTES)return RISC_TEXT_ENTRY_INVALID;
+    if(closing)return RISC_TEXT_ENTRY_BUSY;
+    uint32_t presentation=0;r=poll_checked(&presentation);if(r)return r;
+    *out=(risc_text_entry_state_v1_extended){.struct_size=sizeof(*out),.state=state.state,.flags=state.flags|presentation,.revision=state.revision};
+    memcpy(out->text,state.text,sizeof(out->text));return RISC_TEXT_ENTRY_OK;
+}
+static int32_t poll_long(void *c,uint64_t s,risc_text_entry_state_v1_long *out){
+    (void)c;int32_t r=check(s);if(r)return r;
+    if(!out||out->struct_size!=sizeof(*out))return RISC_TEXT_ENTRY_INVALID;
+    if(closing)return RISC_TEXT_ENTRY_BUSY;
+    uint32_t presentation=0;r=poll_checked(&presentation);if(r)return r;
+    *out=state;out->flags|=presentation;return RISC_TEXT_ENTRY_OK;
 }
 static int32_t close_session(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
-static const risc_text_entry_api_v1_masked api={
-    {{1,sizeof(api),NULL,open_session,poll_session,close_session},
-     RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION},
-    RISC_TEXT_ENTRY_MASKED_TAG,RISC_TEXT_ENTRY_MASKED_VERSION};
+#include "checkpoint.inc"
+static const risc_text_entry_api_v1_checkpoint api={.base={
+    {{{{1,sizeof(api),NULL,open_session,poll_session,close_session},
+       RISC_TEXT_ENTRY_HOME_REASON_TAG,RISC_TEXT_ENTRY_HOME_REASON_VERSION},
+      RISC_TEXT_ENTRY_MASKED_TAG,RISC_TEXT_ENTRY_MASKED_VERSION},
+     RISC_TEXT_ENTRY_EXTENDED_TAG,RISC_TEXT_ENTRY_EXTENDED_VERSION,open_extended,poll_extended},
+    RISC_TEXT_ENTRY_LONG_TAG,RISC_TEXT_ENTRY_LONG_VERSION,open_long,poll_long},
+    .checkpoint_tag=RISC_TEXT_ENTRY_CHECKPOINT_TAG,.checkpoint_version=RISC_TEXT_ENTRY_CHECKPOINT_VERSION,
+    .checkpoint_enable=checkpoint_enable,.checkpoint_snapshot=checkpoint_snapshot,.pause=checkpoint_pause,.resume=checkpoint_resume,.pause_for_focus_change=checkpoint_pause_for_focus_change};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||!deps||!count||count>2)return false;
     scene=NULL;keyboard=NULL;

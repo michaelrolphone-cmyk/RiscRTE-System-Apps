@@ -3,8 +3,15 @@
 #include "PortableWifiView.h"
 #include <stdio.h>
 #include "PortableWatchKeyboard.h"
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#include "WatchViewLayout.h"
+#endif
 int portable_wifi_hit(const portable_wifi_view *v,int x,int y) {
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+  if(!watch_view_touch(width(),height(),v->keyboard,&x,&y))return -1;
+#else
   x-=(width()-240)/2;y-=(height()-240)/2;
+#endif
   if(v->keyboard) {
     return portable_watch_key_hit(x,y);
   } else {
@@ -37,8 +44,12 @@ void portable_wifi_render(const portable_wifi_view *v) {
       (void)portable_nova_wrap(1,28,y+4,184,15,1,v->rows[i],NOVA_WHITE);
       (void)portable_nova_wrap(3,28,y+25,184,11,2,v->values[i],NOVA_CYAN);
     }
-    portable_nova_text(3,18,175,204,v->message,NOVA_CAP);
-    portable_nova_button(16,188,64,44,"Prev",false);portable_nova_button(88,188,64,44,"Select",false);portable_nova_button(160,188,64,44,"Next",false);
+    int footer=0;
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+    footer=watch_view_footer_offset(width(),height());
+#endif
+    portable_nova_text(3,18,175+footer,204,v->message,NOVA_CAP);
+    portable_nova_button(16,188+footer,64,44,"Prev",false);portable_nova_button(88,188+footer,64,44,"Select",false);portable_nova_button(160,188+footer,64,44,"Next",false);
   }
   present(false);
 }

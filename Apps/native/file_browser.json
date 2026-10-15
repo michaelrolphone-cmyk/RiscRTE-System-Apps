@@ -18,5 +18,7 @@
       "capability": "storage.installed-files",
       "api": 1
     }
-  ]
+  ],
+  "display_name": "Files",
+  "icon": "solid:f07c"
 }

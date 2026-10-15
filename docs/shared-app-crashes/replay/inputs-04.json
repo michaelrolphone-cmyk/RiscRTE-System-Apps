@@ -1,0 +1,337 @@
+{
+  "@r12@/Apps/countdown.c": {
+    "sha256": "ce8bd99601b488a09b5c150584fa713e65472dadfb00d9430ef9beeb593dcc5d"
+  },
+  "@work@/target-twatch-basic/fixed/countdown.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r12@/Apps/ble_hid_app.inc": {
+    "sha256": "9052e5f6341e3cfc839170a95b5580b56f24757cf442fe41cf31036e3e72a1f9"
+  },
+  "@r12@/Apps/ble_hid_model.h": {
+    "sha256": "f106d4cdd9f4301c4e20646f4015d646b9e00590b6b1b1978472ac230371fae6"
+  },
+  "@r12@/Apps/ble_touchpad.c": {
+    "sha256": "5ad5711190894599547fe4091e97b859395ff484fbc5359d9b3fd1ed6243ed14"
+  },
+  "@r12@/Apps/ble_touchpad_gesture.h": {
+    "sha256": "9a69a37ee4b1c9db96d3ba43ad775eefb297d129652e4f43f6e07bc73542ee73"
+  },
+  "@r12@/lib/Bluetooth/include/RiscBluetoothHidV1.h": {
+    "sha256": "24cabbace06d6817eea9f67e1ade21b06a4cece2a265fc730f246fb6cb485cb9"
+  },
+  "@work@/target-twatch-basic/fixed/ble_touchpad.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r13@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r13@/Apps/ble_buttons.c": {
+    "sha256": "8ec2eb9c3c45f88472de8eb81ed559dd82a1d4500e952d271fc5b67a148bc009"
+  },
+  "@r13@/Apps/ble_hid_app.inc": {
+    "sha256": "dee760318e0daedb86d923fd36b2b44b6f1aeb5bb4f3464f2226b128775bf639"
+  },
+  "@r13@/Apps/ble_hid_model.h": {
+    "sha256": "f106d4cdd9f4301c4e20646f4015d646b9e00590b6b1b1978472ac230371fae6"
+  },
+  "@r13@/Apps/ble_touchpad_gesture.h": {
+    "sha256": "9a69a37ee4b1c9db96d3ba43ad775eefb297d129652e4f43f6e07bc73542ee73"
+  },
+  "@r13@/Apps/utility_frame.h": {
+    "sha256": "14ecb24a5b999024d247decbd3e78499b1fa1c36749bd9bfa8b4b8a087cecbc7"
+  },
+  "@r13@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r13@/lib/Alarm/include/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@r13@/lib/Bluetooth/include/RiscBluetoothHidV1.h": {
+    "sha256": "24cabbace06d6817eea9f67e1ade21b06a4cece2a265fc730f246fb6cb485cb9"
+  },
+  "@work@/target-twatch-basic/fixed/ble_buttons.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r6@/sdk/app/RiscResidentShellV1.h": {
+    "sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd"
+  },
+  "@r12@/lib/ContextFingerprint/include/ContextFingerprint.h": {
+    "sha256": "7e451353d42a60685abcdf092755c062d51f6479cfc3880b379d24199640ea58"
+  },
+  "@r12@/lib/ContextFingerprint/include/ContextFingerprintStore.h": {
+    "sha256": "59f20d1bcd2b213f74db4cd88f4f2d57fae0d880eeff4f3ace677670ceed2350"
+  },
+  "@r12@/lib/VoiceActivity/src/common.h": {
+    "sha256": "51e288d6c371e605142a738c2aa95161f4f1834afa71cb6f00f7511e6eb4f3b1"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/division_operations.c": {
+    "sha256": "fb57461a7bcbfffecc3e4a8c641c4183e2ab427685cb3b3ad7d737dda3cb6d56"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/energy.c": {
+    "sha256": "fef67abfc5708274799f5a3fdb3df4fa91a950dd6a98ffdaf9738b32fccfef1a"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/get_scaling_square.c": {
+    "sha256": "edbd3619857bc3aa9ddfcbf1201a6c907a61bece038fce41afe3589c1a4bc277"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/resample_48khz.c": {
+    "sha256": "65f9c0333bfa40c197486a4e63c9d444be8f0089d6e041b6d42d3fcbb6390f5c"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/resample_by_2_internal.c": {
+    "sha256": "f7ab177a112a5f4093abde5b483973da5338a0913b7347bcff10eb5c731503ac"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/resample_by_2_internal.h": {
+    "sha256": "1b4b66058aa8a64601a0beb01bf8fc112387b3c6a2db9ec1e9fadc37096b982b"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/resample_fractional.c": {
+    "sha256": "ed4ac3498d41e3ad466f25cf291f23a57a29a5c4c248ccc9312407f32eff26be"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/signal_processing_library.h": {
+    "sha256": "806fc377bf6486bca6f9df366f68421801d377d025c87af13348d2a383b9ecbd"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/spl_inl.c": {
+    "sha256": "6f17afe654639115b46197ffc03f30af5e8297701025039e5b3623f2e3608835"
+  },
+  "@r12@/lib/VoiceActivity/src/signal_processing/spl_inl.h": {
+    "sha256": "56125f099bf55b2bb64a6fc2182936c6d897a6ffc6926134db9033ae061e5acd"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_core.c": {
+    "sha256": "2955707938836676767215bde217884b58e76cc820d20fa3cb2d53678c5a10a4"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_core.h": {
+    "sha256": "6dd5d59939033333822cb60bcd6adeb86e7e6e8afa60643894ea9ed424f7965d"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_filterbank.c": {
+    "sha256": "c44eb10c2a70810cef6720a7846ea3638e933cf1ed85affaac2dba0e6927210d"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_filterbank.h": {
+    "sha256": "3c0704f9d917fabd927a228175edefd4934351ab8229292969b54217a30ab793"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_gmm.c": {
+    "sha256": "f45eeafdbea7491301e7eb57a7cbb2a720dc43f9e256e3f8fa944f0d3f0e6067"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_gmm.h": {
+    "sha256": "a9c51c01dae8eed13b17507b9f2e1a6ec248297f4372124f0b59ace88f46d16f"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_sp.c": {
+    "sha256": "9b7718a283c04c13caeb1c4174d63cc6de9a7c02dad05c65d2cbc5df2686a059"
+  },
+  "@r12@/lib/VoiceActivity/src/vad/vad_sp.h": {
+    "sha256": "5de6fc001a838f8cd9acab67c082695a8ed37c8f905bf3abac122c5edb17f041"
+  },
+  "@r12@/Apps/AudioInputV1.h": {
+    "sha256": "c64c27cf421033074a96e90ee6ac3287050304c5ef47d82a51dcbc48ce73b494"
+  },
+  "@r12@/Apps/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r12@/Apps/audio_spectrum.c": {
+    "sha256": "12323c54d9175aba4fa885853677de2f3e4eb3e55af4b86e213a2239093b402e"
+  },
+  "@r12@/Apps/context_fingerprint_app.inc": {
+    "sha256": "757ac801d2c2ae66f2f45b9810aec8f52c8f155811d37966bd077c1a7b47b3f1"
+  },
+  "@r12@/Apps/context_signal_library.inc": {
+    "sha256": "d19380adfc76870d05c9d2da82ee09fe1fd52b8ba563b6b65efab8b777d63d4a"
+  },
+  "@r12@/Apps/rf_app_data_scope.h": {
+    "sha256": "5b21f23b2505f12ef38ed1fc0e90b3c665066f639f2ccd8ca90e3b8073f69010"
+  },
+  "@r12@/Apps/spectrum_background.h": {
+    "sha256": "891e283010ddd8c9870a7ccb569208140ace08499518a266eee4d3bb8e4aeeff"
+  },
+  "@r12@/Apps/spectrum_controls.inc": {
+    "sha256": "06aaedc7d4a3af7e01c223dc8a0a6b1fb745a6cffa2596129094699347a121e0"
+  },
+  "@r12@/Apps/spectrum_dsp.h": {
+    "sha256": "6f8c9d47562b91dcc00e37b7130bddcdd26327c4697532de9ea8d7d0b2610f98"
+  },
+  "@r12@/Apps/spectrum_neural.h": {
+    "sha256": "fd6bbc9f05d373c0ddfe760c18247781e4d757cdf2374a7d0ca7d87b9e34ea2e"
+  },
+  "@r12@/Apps/spectrum_neural_store.h": {
+    "sha256": "110f44e7eba53811d84f2f6ed53ae5ff0f4644d6749881b71a1ae51d2bddebd0"
+  },
+  "@r12@/Apps/spectrum_signature_app.inc": {
+    "sha256": "b96c825d8c532921a2d8d314cc05575ec9234242be3c6f463b64607b61f2b84e"
+  },
+  "@r12@/Apps/spectrum_signature_store.h": {
+    "sha256": "1852a24485b4b0032ca0bc165bd8ea69ca4c80a86e6d7a2806f594ecf323a8f2"
+  },
+  "@r12@/Apps/spectrum_signatures.h": {
+    "sha256": "4b7079f5d53f81b3b64bfe4335397d1151897ee91cf2a6983288fe7df814f741"
+  },
+  "@r12@/Apps/spectrum_speech.h": {
+    "sha256": "9ae0a4937ac3b665239164f09a3a7f2ad07dc3f7d4ce12feffc259f1a9aeb668"
+  },
+  "@r12@/Apps/spectrum_store.h": {
+    "sha256": "e42809c8b7c9cf4319824fa11e344100dc55fcbbf6b7d35bc5acf5fee31631c9"
+  },
+  "@r12@/Apps/spectrum_temporal.h": {
+    "sha256": "facdf3dda0e4efafc801ab60512edf6923681a86074edc0e2b319594c9a86591"
+  },
+  "@r12@/Apps/spectrum_temporal_app.inc": {
+    "sha256": "c92f3435bca31532a227652f9dccf7c90c43da0db67211e6290f27b39c0a8876"
+  },
+  "@r12@/Apps/spectrum_temporal_files.h": {
+    "sha256": "3c686b0b52385d8704bf17a78179ccdd6864116b372edf3b2b51fda0220fffd6"
+  },
+  "@r12@/Apps/spectrum_temporal_store.h": {
+    "sha256": "a91e8b044214395f6e3714fd9ba7375179dc9f81b8e0d62d6dbe9091d11b3014"
+  },
+  "@r12@/Apps/spectrum_vad_impl.inc": {
+    "sha256": "e845a0b4940ede3f911b447531c1422986a58dc22dffb265808d29f0e98fc106"
+  },
+  "@work@/target-twatch-spectrum/fixed/audio_spectrum.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-twatch-spectrum/fixed/rf-presentation.h": {
+    "sha256": "0c3c5f5d3fa7d8b0d769c4a93dd368cf0cc51b0e2893b821d47d8534b471c1c2",
+    "text": "#include \"@r0@/Apps/PaperPresentation.h\"\n#define RF_PRESENTATION_H\n",
+    "template_sha256": "85e3b1d772570318f9290ee3eb4fd37e2b1902635ab972f298acb0cfb027e4be"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/time/denver/display_time.h": {
+    "sha256": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "copy": "@r0@/lib/PortableApps/time/denver/display_time.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/time/denver/twatch_calendar.h": {
+    "sha256": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "copy": "@r0@/lib/PortableApps/time/denver/twatch_calendar.h"
+  },
+  "@work@/target-twatch-spectrum/fixed/sdk/time/denver/twatch_caps.h": {
+    "sha256": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e",
+    "copy": "@r0@/lib/PortableApps/time/denver/twatch_caps.h"
+  },
+  "@r5@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r6@/sdk/app/RiscAppCatalogV1.h": {
+    "sha256": "34550d01d90513459ff7f3284681c4c108af9e64d5c20af6ae4696a1c051b0c5"
+  },
+  "@r6@/sdk/app/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r3@/sdk/driver/RiscBatteryGaugeV1.h": {
+    "sha256": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86"
+  },
+  "@r3@/sdk/driver/RiscDisplayOutputV1.h": {
+    "sha256": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726"
+  },
+  "@r3@/sdk/driver/RiscInputNavigationV1.h": {
+    "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+  },
+  "@r6@/sdk/app/RiscKeyValueV1.h": {
+    "sha256": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179"
+  },
+  "@r6@/sdk/driver/RiscProviderV2.h": {
+    "sha256": "62478822fa8943ddfd1607f8923de52d7b5b6fc8a0db2df6ca07c65c95c62d41"
+  },
+  "@r6@/sdk/driver/RiscRadioAsyncV1.h": {
+    "sha256": "2b5a916cfe9e1fb6520043c2b8f3e8c13ea8e022166fcbdfa6b50ce691ebfe48"
+  },
+  "@r3@/sdk/driver/RiscRadioScanV1.h": {
+    "sha256": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b"
+  },
+  "@r6@/sdk/app/RiscRuntimeHostControlV1.h": {
+    "sha256": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815"
+  },
+  "@r6@/sdk/app/RiscRuntimeV1.h": {
+    "sha256": "80198965ebe3dda4d9cadbb5a6d64a44016041e8c2f610a6f636d915c6851831"
+  },
+  "@r3@/sdk/driver/RiscStreamProviderV1.h": {
+    "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  },
+  "@r0@/sdk/app/RiscTextEntryV1.h": {
+    "sha256": "a5733f06b1d8caf86f21d730abcd9ff833b603807c8b028a49544c997b6cdba3"
+  },
+  "@r3@/sdk/driver/RiscTouchV1.h": {
+    "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d"
+  },
+  "@work@/target-twatch-spectrum/fixed/waterfall.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-twatch-updaters/input-fixtures/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "text": "#ifndef UTILITIES_ALARM_SERVICE_V1_H\n#define UTILITIES_ALARM_SERVICE_V1_H\n/* Utilities-owned, opaque-to-Runtime ordinary provider capability. */\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdint.h>\n#define ALARM_SERVICE_CAPABILITY \"alarm.service\"\n#define ALARM_SERVICE_API_V1 1u\n#define ALARM_STATUS_CUE_SUPPORTED 1u\n#define ALARM_KIND_ALARM 1u\n#define ALARM_KIND_COUNTDOWN 2u\n#define ALARM_MODE_VIBRATE 1u\n#define ALARM_MODE_SOUND 2u\n#define ALARM_MODE_BOTH 3u\nenum { ALARM_OK=0, ALARM_PENDING=1, ALARM_BUSY=-1, ALARM_INVALID=-2,\n       ALARM_STALE=-3, ALARM_STORAGE=-4, ALARM_RTC=-5, ALARM_OUTPUT=-6,\n       ALARM_EXHAUSTED=-7, ALARM_FOREGROUND=-8 };\nenum { ALARM_STATE_LOADING, ALARM_STATE_READY, ALARM_STATE_ALERT,\n       ALARM_STATE_DISMISSING, ALARM_STATE_BLOCKED,\n       /* Additive copied status: non-modal output reservation, before open and\n        * through cleanup. Updated clients must drain it without painting an\n        * alarm overlay. Earlier clients reject unknown states safely. */\n       ALARM_STATE_CUE };\nenum { ALARM_SCHEDULE_OFF, ALARM_SCHEDULE_ARMED, ALARM_SCHEDULE_DUE,\n       ALARM_SCHEDULE_DISMISSED, ALARM_SCHEDULE_EXPIRED };\ntypedef struct {\n    uint32_t kind, revision, deadline, generation;\n} alarm_token_v1;\ntypedef struct {\n    uint32_t revision, deadline, state;\n} alarm_schedule_status_v1;\ntypedef struct {\n    uint32_t api_version, struct_size, state;\n    int32_t error;\n    uint32_t snapshot, rtc_seconds, mode, output_uncertain;\n    alarm_schedule_status_v1 schedules[2];\n    alarm_token_v1 occurrence;\n    uint32_t recovery_until, remaining_ms;\n    char label[24];\n} alarm_status_v1;\ntypedef struct {\n    uint32_t struct_size, snapshot, rtc_seconds, deadline;\n    /* deadline=0 means no schedule. Decision is consumed immediately by the\n       serialized caller, with no intervening service/writer call. */\n} alarm_sleep_v1;\ntypedef struct {\n    uint32_t api_version, struct_size;\n    void *context;\n    /* Memory-only copied values; caller sets struct_size. No retained pointers. */\n    int32_t (*status)(void *, alarm_status_v1 *);\n    /* One cooperative phase, at most two dependency calls (three with the DND\n       preflight enabled). Explicit foreground\n       safe point only; synchronous\n       NVS has no hard latency guarantee. Never invoke from provider poll. */\n    int32_t (*step)(void *);\n    /* Memory-only hint; does not prove a writer commit. Also retries blocked\n       storage/RTC reconciliation, without silently acknowledging an alert. */\n    int32_t (*refresh)(void *);\n    /* Queues exact-current dismissal. Fully dismissed only after status READY,\n       matching schedule DISMISSED, safe output stop and verified durable ACK. */\n    int32_t (*acknowledge)(void *, const alarm_token_v1 *);\n    /* Starts/finishes a fresh reconciliation. PENDING means call step and retry.\n       No suppression flag or retained sleep lease; service has no I/O poll. */\n    int32_t (*prepare_sleep)(void *, alarm_sleep_v1 *);\n    /* Failure-only cleanup while a foreground presentation is not settled.\n       One stop/silence/close operation per call, no storage or output start.\n       OK proves both outputs stopped, but does NOT acknowledge an occurrence.\n       OUTPUT means retain the invocation/resources; no normal handoff. */\n    int32_t (*stop_only)(void *);\n} alarm_service_v1;\n/* Optional append-only suffix. The original table remains an unchanged prefix,\n   so existing clients and providers keep their source and binary layouts. */\n#define ALARM_SERVICE_SLEEP_RESUME_SUPPORTED 1u\ntypedef struct {\n    alarm_service_v1 base;\n    /* Only the serialized sleep owner may call this, exactly once after native\n       Light sleep returns OK, before another mutating service/writer call.\n       Pass the unchanged successful prepare_sleep decision. A refusal must not\n       call it. One RTC read rejects invalid/backward time, then reanchors the\n       independent awake monotonic clock and starts full reconciliation. OK\n       confirms this boundary only; due work still requires normal steps.\n       STALE rejects a wrong, reused or invalidated decision without I/O. */\n    int32_t (*resume_sleep)(void *, const alarm_sleep_v1 *);\n} alarm_service_sleep_v1;\n#define ALARM_SERVICE_SLEEP_V1_SIZE ((uint32_t)sizeof(alarm_service_sleep_v1))\n#if defined(__cplusplus)\n#define ALARM_STATIC_ASSERT static_assert\n#else\n#define ALARM_STATIC_ASSERT _Static_assert\n#endif\nALARM_STATIC_ASSERT(sizeof(alarm_token_v1)==16,\"alarm occurrence token ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_status_v1)==104,\"alarm copied status ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_sleep_v1)==16,\"alarm sleep decision ABI\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,base)==0,\"alarm sleep base prefix\");\nALARM_STATIC_ASSERT(offsetof(alarm_service_sleep_v1,resume_sleep)==sizeof(alarm_service_v1),\"alarm sleep suffix offset\");\n#if UINTPTR_MAX == UINT32_MAX\nALARM_STATIC_ASSERT(sizeof(alarm_service_v1)==36,\"alarm service target ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_service_sleep_v1)==40,\"alarm sleep service target ABI\");\n#endif\n#undef ALARM_STATIC_ASSERT\n#endif\n",
+    "template_sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@work@/target-twatch-updaters/input-fixtures/empty_catalog.c": {
+    "sha256": "b777404301a5286ce19a95f4099bac47d93a46d3f86190b51b6c78665bbce23c",
+    "text": "#include \"PortableApps.h\"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n",
+    "template_sha256": "b777404301a5286ce19a95f4099bac47d93a46d3f86190b51b6c78665bbce23c"
+  },
+  "@work@/target-twatch-updaters/input-fixtures/watch-alarm-profile.h": {
+    "sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb",
+    "text": "#include \"AlarmServiceV1.h\"\n#define ALARM_MODE_VISUAL 0u\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1*s){return s?ALARM_MODE_BOTH:ALARM_MODE_VISUAL;}\n",
+    "template_sha256": "a72e241ceaf4dc6cc9833ed9b219c5869aaea1b3d12fec2990ef9f1fd91d14cb"
+  },
+  "@work@/target-twatch-updaters/fixed/app_store.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-twatch-updaters/fixed/ota_update.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-remaining/twatch-final/file_browser.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-remaining/twatch-final/timecard.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-remaining/twatch-final/ble_scanner.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@work@/target-twatch-more/fixed/wifi_settings/exports.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/fonts/watch-240-icons.inc": {
+    "sha256": "df8c293fd11b3f9f55a0627fad79863d26d7e98944f17fa8113d8f6068d5c920"
+  },
+  "@work@/target-twatch-more/fixed/points_in_time/exports.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r14@/lib/RemoteFiles/WebDavCore.cpp": {
+    "sha256": "f179416932f2935f380fe920e5fb53712b47a55f299829a0e24b95cc773c3a9a"
+  },
+  "@r14@/lib/RemoteFiles/WebDavCore.h": {
+    "sha256": "56be56d2147d9a25916622bc3d445f43fa78246b02f36b4042da25efc1fb9da6"
+  },
+  "@r14@/lib/PortableApps/include/RiscAppDataExportV1.h": {
+    "sha256": "56f9afd075f0fe3d8e7e8cdbec2d34813018dfe6cb3de3f18b326c4de948cddd"
+  },
+  "@r14@/lib/PortableApps/include/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r14@/lib/PortableApps/include/RiscStorageVolumeV1.h": {
+    "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5"
+  },
+  "@r14@/lib/RemoteFiles/WebDavProperties.h": {
+    "sha256": "a0a629af4662d5886315221445502476ba3c5f61917b9017e0ea8d55e6965b52"
+  },
+  "@r14@/lib/PortableApps/include/RiscProtectedSettingsPath.h": {
+    "sha256": "b3f07e89f570beba1e2e770052292bde027120d8cbc886e8bee6ef876aa1b1c7"
+  }
+}

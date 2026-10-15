@@ -38,6 +38,9 @@ def build(args,parser=None):
     portable_file_sharing_build.validate(args,parser)
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
+    text_policy=getattr(args,'shared_text_policy',False)
+    if text_policy and not (getattr(args,'shared_text_input',False) and getattr(args,'webdav_sharing',False)):
+        parser.error('--shared-text-policy requires --shared-text-input and --webdav-sharing')
     scrolling=getattr(args,'touch_scrolling',False)
     if scrolling and (not portable_native_toolbar_build.selected(args) or (not args.paper_transitions and not args.resident_shell_client)):
         parser.error('--touch-scrolling requires --time-profile x4-native-time and --paper-transitions')
@@ -51,8 +54,13 @@ def build(args,parser=None):
     out=args.output_dir or ROOT/'dist/portable/file-browser';out.mkdir(parents=True,exist_ok=True)
     flags=['-DPORTABLE_FILE_BROWSER_APP','-DPORTABLE_NOVA_UI','-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_FORCE_FULL_FRAMES',f'-DPORTABLE_TOUCH_ROTATION={args.touch_rotation}',f'-DPORTABLE_DISPLAY_ROTATION={args.display_rotation}',f'-DFILE_BROWSER_RETURN_APP=\"{args.return_app}\"']
     flags+=storage_flags+operation_options(args)
+    if getattr(args,'shared_text_input',False):flags+=['-DPORTABLE_FILE_BROWSER_SHARED_INPUT','-DPORTABLE_TEXT_INPUT_CLIENT']
+    if text_policy:flags.append('-DPORTABLE_TEXT_INPUT_POLICY')
     if scrolling:flags.append('-DPORTABLE_TOUCH_SCROLL')
     if args.file_handlers:flags.append('-DPORTABLE_FILE_BROWSER_HANDLERS')
+    if getattr(args,'source_handoff',False):
+        if not args.file_handlers:parser.error('--source-handoff requires --file-handlers')
+        flags.append('-DPORTABLE_FILE_BROWSER_SOURCE_HANDOFF')
     if args.alarm_client:flags.append('-DPORTABLE_ALARM_CLIENT')
     if args.navigation:flags.append('-DPORTABLE_INPUT_NAVIGATION')
     if args.quick_controls:
@@ -94,6 +102,7 @@ def build(args,parser=None):
         if requirement['capability']=='storage.installed-files':requirement['capability']=args.storage_capability
     for capability in storage_capabilities[1:]:manifest['requires'].append({'capability':capability,'api':1})
     if args.file_handlers:manifest['requires'].append({'capability':'file.open','api':1})
+    if getattr(args,'source_handoff',False):manifest['requires'].append({'capability':'file.open.source','api':1})
     if args.alarm_client:manifest['requires'].append({'capability':'alarm.service','api':1})
     if args.navigation:manifest['requires'].append({'capability':'input.navigation','api':1})
     portable_quick_build.requirements(args,manifest['requires'])
@@ -102,15 +111,22 @@ def build(args,parser=None):
     portable_file_sharing_build.requirements(args,manifest['requires'])
     if native_receipt:manifest['version']=native_receipt['version']
     manifest['version']=portable_quick_build.version(args,'file_browser',portable_idle_build.version(args,'file_browser',manifest['version']))
-    if getattr(args,'webdav_sharing',False):manifest['version']=portable_file_sharing_build.selected_version(args)
+    if getattr(args,'webdav_sharing',False) or getattr(args,'source_handoff',False):manifest['version']=portable_file_sharing_build.selected_version(args)
+    if getattr(args,'shared_text_input',False):
+        manifest['version']='1.5.35' if text_policy else '1.5.34';manifest['requires'].append({'capability':'ui.text-input','api':1})
     if native_receipt:native_receipt['version']=manifest['version']
     (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n')
     files=[ROOT/'Apps/file_browser.c',ROOT/'Apps/file_browser_portable.inc',ROOT/'Apps/file_browser_paper.inc',ROOT/'Apps/file_browser_operations.inc',ROOT/'Apps/file_browser_rgb_operations.inc',ROOT/'Apps/PaperPresentation.h',ROOT/'Apps/PaperFrame.h',ROOT/'lib/NativeApps/include/T5FileOpenApi.h',ROOT/'Apps/native/file_browser.json',ROOT/'lib/NativeApps/include/FileBrowserModel.h',Path(__file__)]
     files+=sharing_files
+    if getattr(args,'shared_text_input',False):files.append(ROOT/'Apps/file_browser_shared_input.inc')
+    if getattr(args,'source_handoff',False):files.append(ROOT/'Apps/file_browser_source.inc')
     if scrolling:files += [ROOT/'Apps/file_browser_scroll_model.inc',ROOT/'Apps/file_browser_scroll_view.inc']
     files += [p for p in (ROOT/'lib/PortableApps').rglob('*') if p.is_file()]
     if args.paper_transitions:files.append(ROOT/'scripts/portable_paper_build.py')
     record={'schema':1,'version':manifest['version'],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'defines':flags,'imports':sorted(imports),'exports':sorted(exports),'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'source_sha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(set(files))}}
+    record['protected_settings']={'root':'/RTECFG','component_match':'case-insensitive-fat-aliases','listing_open_mutation_copy':True,'helper_sha256':hashlib.sha256((ROOT/'lib/PortableApps/include/RiscProtectedSettingsPath.h').read_bytes()).hexdigest(),'hardware_qualified':False}
+    record['source_sha256']['lib/PortableApps/include/RiscProtectedSettingsPath.h']=record['protected_settings']['helper_sha256']
+    if text_policy:record['shared_text_policy']={'enabled':True,'checkpoint_required':True,'sharing_idle_guard':True,'network_owned_resident_guard':True}
     record['touch_scrolling']=scrolling
     portable_native_toolbar_build.record(args,record,manifest,native_receipt)
     record['storage_selection']={'primary':{'capability':args.storage_capability,'api':1,'instance_id':args.storage_instance},
@@ -135,4 +151,4 @@ def build(args,parser=None):
         if source.exists():shutil.copyfile(source,destination/source.name)
     print('Portable File Browser: Xtensa ELF, real loader validation and exact imports/exports passed')
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);portable_file_sharing_build.options(p);build(p.parse_args(),p)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--shared-text-policy',action='store_true',help='Preserve modal lifecycle with the checked shared input host');p.add_argument('--shared-text-input',action='store_true',help='Shared plaintext host for all Files drafts, preserving 128-byte names');p.add_argument('--touch-scrolling',action='store_true',help='Selected paper lists with bounded touch momentum');p.add_argument('--output-dir',type=Path);p.add_argument('--display-rotation',type=int,choices=[0,90,180,270],default=None);p.add_argument('--storage-capability',default='storage.installed-files');p.add_argument('--storage-instance',type=int,default=0);p.add_argument('--secondary-storage-instance',type=int);p.add_argument('--secondary-storage-capability',default='storage.volume');p.add_argument('--read-copy-only',action='store_true',help='Read/preview/copy profile for volumes with no remove/rename/mkdir and no declared file handlers');p.add_argument('--rgb-only',action='store_true',help='Explicit color-only presentation; retains all volume operations');p.add_argument('--return-app',default='springboard.elf');p.add_argument('--file-handlers',action='store_true');p.add_argument('--source-handoff',action='store_true',help='Explicit Runtime disk-backed non-SD file source handoff');p.add_argument('--touch-rotation',type=int,choices=[0,180],default=0);p.add_argument('--alarm-client',action='store_true');p.add_argument('--navigation',action='store_true');p.add_argument('--quick-controls',action='store_true',help='Legacy Watch radio+Denver profile');p.add_argument('--wall-time',action='store_true');portable_quick_build.options(p);portable_broadcast_build.options(p);portable_native_toolbar_build.options(p);portable_file_sharing_build.options(p);build(p.parse_args(),p)

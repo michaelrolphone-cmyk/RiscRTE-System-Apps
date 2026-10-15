@@ -3,6 +3,8 @@
 #include "PortableResidentShell.h"
 static bool resident_registered,resident_child_active,resident_dispatching,resident_sleep_pending;
 static const char *resident_launch_pending;
+static bool resident_launch_busy;
+bool portable_resident_launch_busy(void){return resident_launch_busy;}
 static bool resident_queue_launch(const char *path) {
  if(native_custody_retained || !path || resident_launch_pending)return false;
  if(resident_dispatching) {
@@ -46,6 +48,9 @@ static bool resident_touch_open(void) {
 static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *request,risc_resident_reply_v1 *reply) {
  (void)context;
  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ if(quick_atomic_owned()||home_automatic_input_busy())return RISC_RESIDENT_BUSY;
+#endif
  if(!resident_child_active || resident_dispatching || !request || request->struct_size<sizeof(*request) ||
     !reply || reply->struct_size<sizeof(*reply))return RISC_RESIDENT_INVALID;
  reply->flags=0;
@@ -122,6 +127,7 @@ static int resident_launch_refused(void) {
  return 0;
 }
 int portable_resident_run_foreground(const char *path) {
+ resident_launch_busy=false;
  if(native_custody_retained)return -1;
  if(resident_child_active || resident_dispatching)return 0;
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
@@ -165,7 +171,7 @@ int portable_resident_run_foreground(const char *path) {
  do {
   resident_launch_pending=NULL;resident_child_active=true;
 #ifdef PORTABLE_RESIDENT_POLICY
-  resident_policy_requested=false;last_activity=millis_now();
+  resident_policy_requested=resident_policy_input_continuity=false;last_activity=millis_now();
   quick_launch_pending=handoff_requested=false;
   if(native_custody_retained)return -1;
 #endif
@@ -195,6 +201,7 @@ int portable_resident_run_foreground(const char *path) {
     * an earlier invocation's app or the unrelated previous-reset record. */
    if(outcome.failure.status==status && outcome.failure.invocation==outcome.invocation)
     (void)resident_failure_copy(&launch_failure,&outcome.failure);
+   resident_launch_busy=status==RISC_RESIDENT_BUSY;
    result=0;resident_launch_pending=NULL;resident_sleep_pending=false;break;
   }
   path=resident_launch_pending;

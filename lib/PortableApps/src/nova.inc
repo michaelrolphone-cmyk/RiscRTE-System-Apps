@@ -4,7 +4,14 @@
 #if defined(PORTABLE_RTC_UTC8_DENVER) && defined(PORTABLE_RTC_WALL_TIME)
 #error "Select exactly one explicit RTC policy"
 #endif
+#if defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+#include "../fonts/watch-native-icons.inc"
+#elif defined(PORTABLE_WATCH_FROZEN_ICONS)
+/* Product-selected icon bytes from the delivered Watch contract. */
+#include "../fonts/watch-240-icons.inc"
+#else
 #include "../fonts/icons.inc"
+#endif
 #if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
 #include "../fonts/springboard_gamepad.inc"
 #endif
@@ -51,8 +58,13 @@ static void np_pixel(int x,int y,uint32_t rgb,unsigned a) {
   g=(g*(255-a)+((rgb>>8)&255)*a)/255;b=(b*(255-a)+(rgb&255)*a)/255;
   color=np_rgb((r<<16)|(g<<8)|b);p[0]=(uint8_t)color;p[1]=(uint8_t)(color>>8);
 }
+static unsigned np_coverage(const rpi_glyph *g,int x,int y) {
+  if(x<0||y<0||x>=g->width||y>=g->height)return 0;
+  unsigned n=(unsigned)y*g->width+(unsigned)x;
+  return (g->bits[n/4]>>(6-2*(n%4)))&3;
+}
 static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
-  if(!name || size<1 || size>96)return false;
+  if(!name || size<1 || size>256)return false;
   const rpi_glyph *g=NULL;
   for(unsigned i=0;i<sizeof(rpi_icons)/sizeof(rpi_icons[0]);++i)
     if(!strcmp(rpi_icons[i].name,name)){g=&rpi_icons[i];break;}
@@ -72,9 +84,14 @@ static bool np_icon(int x,int y,int size,const char *name,uint8_t opacity) {
   raster_rows((int64_t)y-h/2,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;++j)for(int i=0;i<w;++i){
-    unsigned n=(unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
-    unsigned coverage=(g->bits[n/4]>>(6-2*(n%4)))&3;
-    np_pixel(x-w/2+i,y-h/2+j,0xffffff,coverage*opacity/3);
+    /* Pixel-center bilinear coverage avoids blocky nearest-neighbor scaling. */
+    int u=((2*i+1)*g->width*128/w)-128,v=((2*j+1)*g->height*128/h)-128;
+    int sx=u>=0?u/256:-1,sy=v>=0?v/256:-1;
+    unsigned fx=(unsigned)(u-sx*256),fy=(unsigned)(v-sy*256);
+    unsigned top=np_coverage(g,sx,sy)*(256-fx)+np_coverage(g,sx+1,sy)*fx;
+    unsigned bottom=np_coverage(g,sx,sy+1)*(256-fx)+np_coverage(g,sx+1,sy+1)*fx;
+    unsigned coverage=top*(256-fy)+bottom*fy;
+    np_pixel(x-w/2+i,y-h/2+j,0xffffff,(coverage*opacity+98304u)/196608u);
   }
   return true;
 }
@@ -83,15 +100,19 @@ static void np_circle(int x,int y,int radius,uint32_t rgb,uint8_t opacity) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_NP_CIRCLE,(int32_t[8]){x,y,radius,(int32_t)rgb,opacity},NULL))return;
 #endif
-  if(radius<1 || radius>64)return;
+  if(radius<1 || radius>256)return;
   int row_first=-radius,row_end=radius+1;
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(y,&row_first,&row_end);
 #endif
   for(int j=row_first;j<row_end;++j)for(int i=-radius;i<=radius;++i){
-    int d=(int)np_root((unsigned)(i*i+j*j)*256u);
-    int edge=radius*16-d;
-    unsigned a=edge>=16?opacity:edge>0?(unsigned)edge*opacity/16:0;
+    unsigned d2=(unsigned)(i*i+j*j);
+    if(d2>=(unsigned)(radius*radius))continue;
+    unsigned a=opacity;
+    if(d2>(unsigned)((radius-1)*(radius-1))) {
+      int edge=radius*16-(int)np_root(d2*256u);
+      a=(unsigned)edge*opacity/16;
+    }
     np_pixel(x+i,y+j,rgb,a);
   }
 }
@@ -106,9 +127,12 @@ static void np_mask(void) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(0,&row_first,&row_end);
 #endif
-  for(int y=row_first;y<row_end;++y)for(int x=0;x<width();++x){
+  const int screen_w=width(),screen_h=height();
+  for(int y=row_first;y<row_end;++y)for(int x=0;x<screen_w;++x){
+    /* Fully opaque interior needs no per-pixel work. */
+    if(y>=46 && y<=screen_h-46 && x==46 && screen_w>92)x=screen_w-46;
     if(!x && !(y&7) && !raster_checkpoint())return;
-    int dx=x<width()-x?x:width()-x,dy=y<height()-y?y:height()-y;
+    int dx=x<screen_w-x?x:screen_w-x,dy=y<screen_h-y?y:screen_h-y;
     unsigned ax=dx<=0?0:dx<14?(unsigned)dx*102/14:dx<46?102+(unsigned)(dx-14)*153/32:255;
     unsigned ay=dy<=0?0:dy<14?(unsigned)dy*102/14:dy<46?102+(unsigned)(dy-14)*153/32:255;
     unsigned a=ax*ay/255;
@@ -213,7 +237,7 @@ static void np_poll(t5_app_input_t *out);
 #endif
 static const springboard_presentation np_view={sizeof(np_view),np_begin,np_circle,np_icon,np_caption,np_contact,np_clock};
 const springboard_presentation *springboard_presentation_get(void) {
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || (width()>=400 && height()>=400))return NULL;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || width()<160 || height()<160 || width()>1024 || height()>1024)return NULL;
   if(info.nominal_refresh_millihz<20000 ||
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) || info.typical_present_latency_us>50000)return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)

@@ -1,0 +1,54 @@
+{
+  "commands": [
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/System-t054/lib/PortableApps/include",
+      "-I/tmp/t054-quick-baseline/lib/PortableApps/src",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "-Dpqa_render=baseline_pqa_render",
+      "-Dpqa_paper_icon=baseline_pqa_paper_icon",
+      "-c",
+      "/tmp/t054-quick-baseline/lib/PortableApps/src/quick_render.c",
+      "-o",
+      "/tmp/t054-quick-height-oracle/baseline.o"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/System-t054/lib/PortableApps/include",
+      "-I/tmp/t054-quick-baseline/lib/PortableApps/src",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-no-pie",
+      "-DPORTABLE_RASTER_SNAPSHOT",
+      "/tmp/System-t054/lib/PortableApps/src/quick_actions.c",
+      "/tmp/System-t054/lib/PortableApps/src/quick_render.c",
+      "/tmp/System-t054/test/native_apps/quick_rows_test.c",
+      "/tmp/t054-quick-height-oracle/baseline.o",
+      "-o",
+      "/tmp/t054-quick-height-oracle/test"
+    ]
+  ],
+  "sanitized": true,
+  "result": "Quick row renderer: 271 complete-byte baseline/sliced cases passed; max one-row host CPU 0.012000 ms, max full host CPU 1.150000 ms\n",
+  "baseline_sha256": "02a014bcf46064a17c37dbcf336b9e019d3dac756df819367cbd3899d2839f7f",
+  "source_sha256": {
+    "lib/PortableApps/src/quick_render.c": "a4e729f3e66240815c3614c602647777951fbbf2fba6fb06809eb914b72b3387",
+    "test/native_apps/quick_rows_test.c": "0ea5b91514efcdcac453912e0e3aeafd0fafc68277822a07614c8436769d5849"
+  }
+}

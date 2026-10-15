@@ -1,0 +1,101 @@
+{
+  "environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1",
+    "RISC_RUNTIME_SDK": "/workspace/shared/watch-sdr-native-release-20261015/wave-source/runtime/sdk/app",
+    "CPATH": "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities/Apps:/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities/lib/Alarm/include"
+  },
+  "files_runtime_revision": "64c8e52e46fd91e8fdafd636db04eed88f0c51a9",
+  "results": [
+    {
+      "label": "springboard-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_springboard_nova.py"
+      ],
+      "exit": 0,
+      "log_sha256": "8d8b0f8b1846c7cc8e4c5fb94a54ff55c6b56bb55c40229240e2ad79d2b75eb2"
+    },
+    {
+      "label": "contexts-x4-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_context_x4_adapter.py",
+        "--sdk-include",
+        "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+        "--app-data-sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk"
+      ],
+      "exit": 1,
+      "log_sha256": "4dc1ab3bbb31c5244edf3843eb0e8b08326435411198416cd95c795056171ca1"
+    },
+    {
+      "label": "file-policy-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_file_browser_policy.py",
+        "--utilities",
+        "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/file-policy-final",
+        "--legacy"
+      ],
+      "exit": 0,
+      "log_sha256": "846a65136facbb62e624353564b4632c48861acfa23e61638e404c56718d8cd2"
+    },
+    {
+      "label": "quick_atomic-normal-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_quick_atomic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-normal-final"
+      ],
+      "exit": 1,
+      "log_sha256": "15703b8a51cfd778b58aa180c66fd044ccd5c341bdbcfa1fca280460d079b3af"
+    },
+    {
+      "label": "quick_atomic-sanitized-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_quick_atomic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-sanitized-final",
+        "--sanitize"
+      ],
+      "exit": 1,
+      "log_sha256": "6f1c47361eb3f5d20c9f5ba2002271135f04eddc46ee9675ae87689586e6f8b1"
+    },
+    {
+      "label": "home_automatic-normal-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_home_automatic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/home_automatic-normal-final"
+      ],
+      "exit": 0,
+      "log_sha256": "e3c850606c8f17e94bada7aa561b51a87634a16c5706a76dbb86ccc06f15f431"
+    },
+    {
+      "label": "home_automatic-sanitized-final",
+      "command": [
+        "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+        "scripts/test_home_automatic.py",
+        "--sdk",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+        "--output",
+        "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/home_automatic-sanitized-final",
+        "--sanitize"
+      ],
+      "exit": 0,
+      "log_sha256": "e3c850606c8f17e94bada7aa561b51a87634a16c5706a76dbb86ccc06f15f431"
+    }
+  ]
+}

@@ -11,6 +11,10 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--experimental-settings-availability',action='store_true',help='Default-off Home temporary settings status and safe reload; requires atomic Home automatic')
+ p.add_argument('--experimental-atomic-home-automatic',action='store_true',help='Default-off X4 Home automatic origins; requires atomic Quick and RF contexts')
+ p.add_argument('--experimental-atomic-quick',action='store_true',help='Default-off X4 Home explicit namespace-1 atomic preference intents; no production activation')
+ p.add_argument('--deferred-foreground-services',action='store_true',help='X4 sparse Home: apply Quick radio policy after first completed Home frame or before an explicit lifecycle transition')
  p.add_argument('--installed-catalog-volume-instance',type=int,help='Hydrate cached apps and scan SD after first Home frame')
  p.add_argument('--display-rotation',type=int,choices=[0,90],default=90)
  p.add_argument('--relocation-tools',type=Path,help='Canonical Reader scripts for Xtensa relocation normalization')
@@ -34,6 +38,14 @@ def build():
  portable_performance_build.options(p)
  portable_paper_build.options(p)
  a=p.parse_args()
+ if a.experimental_settings_availability and not a.experimental_atomic_home_automatic:
+  p.error('--experimental-settings-availability requires --experimental-atomic-home-automatic')
+ if a.experimental_atomic_home_automatic and not (a.experimental_atomic_quick and a.contexts_rf_only and portable_idle_build.selected(a)):
+  p.error('--experimental-atomic-home-automatic requires atomic Quick, RF contexts and checked X4 idle')
+ if a.experimental_atomic_quick and not (a.sparse_start and a.resident_shell_host and a.frontlight_tone and a.quick_radios and a.paper_transitions):
+  p.error('--experimental-atomic-quick requires X4 sparse resident Home, frontlight tone, radios and paper transitions')
+ if a.deferred_foreground_services and not (a.sparse_start and a.quick_actions and a.quick_radios and a.resident_shell_host and a.resident_loading_catalog and a.installed_catalog_volume_instance is not None and a.desk_points_face):
+  p.error('--deferred-foreground-services requires the full sparse resident Home/Points/Quick-radio/loading/catalog profile')
  if a.installed_catalog_volume_instance is not None and (a.installed_catalog_volume_instance<1 or not a.sparse_start or not a.resident_shell_host):p.error('Home catalog requires sparse resident host and positive SD instance')
  if a.boot_animation and (not a.relocation_tools or any(not (a.relocation_tools/n).is_file() for n in ('normalize_xtensa_relocations.py',))):p.error('--boot-animation requires canonical --relocation-tools')
  if a.boot_animation and not (a.sparse_start and a.raster_snapshot):p.error('--boot-animation requires --sparse-start and --raster-snapshot')
@@ -94,9 +106,13 @@ def build():
  else:catalog.write_text('#include "PortableApps.h"\nconst t5_app_manifest_t portable_catalog[1]={{.compatible=false}};\nconst unsigned portable_catalog_count=0;\n')
  exports=portable_quick_build.exports(a,{'app_main','app_module_init','app_module_fini'});mapping=out/'exports.map';mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
  flags=['-DPORTABLE_APP_OWNS_TOUCH_CHROME','-DPORTABLE_RTC_WALL_TIME','-DPORTABLE_DISPLAY_ROTATION='+str(a.display_rotation),'-DPAPER_CLOCK_LAUNCHER="'+a.launcher_app+'"']
+ if a.deferred_foreground_services:flags+=['-DPORTABLE_DESK_DEFER_RADIOS']
  if a.installed_catalog_volume_instance is not None:flags+=['-DPORTABLE_INSTALLED_CATALOG','-DPORTABLE_INSTALLED_CATALOG_HOST','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='+str(a.installed_catalog_volume_instance)+'ULL']
  if a.boot_animation:flags+=['-DPORTABLE_BOOT_ANIMATION','-Wl,--no-relax']
  flags+=paper_flags
+ if a.experimental_atomic_quick:flags+=['-DPORTABLE_QUICK_ATOMIC_PREFERENCES']
+ if a.experimental_settings_availability:flags+=['-DPORTABLE_SETTINGS_AVAILABILITY']
+ if a.experimental_atomic_home_automatic:flags+=['-DPORTABLE_HOME_AUTOMATIC_PREFERENCES']
  if a.ble_broadcast:flags += ["-DPORTABLE_BLE_BROADCAST","-DPORTABLE_BLE_BROADCAST_DEFAULT_OFF"]
  if a.desk_points_face:flags+=['-DPORTABLE_DESK_POINTS_FACE','-DPORTABLE_DESK_POINTS_SNAPSHOT']
  if a.desk_lock_home:flags+=['-DPORTABLE_DESK_LOCK_HOME']
@@ -142,13 +158,17 @@ def build():
  if a.desk_points_face:version='0.3.17'
  version=portable_quick_build.version(a,'paper_clock',version)
  if a.boot_animation:version='0.4.7'
- if a.installed_catalog_volume_instance is not None:version='0.4.10'
+ if a.installed_catalog_volume_instance is not None:version='0.4.11'
+ if a.deferred_foreground_services:version='0.4.13'
+ if a.sparse_start:version='0.4.18' # bounded foreground RTC reconciliation
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
  if a.desk_clock:needs.extend([{'capability':'runtime.retained-wake','api':1},{'capability':'storage.volume','api':1}])
  if a.alarm_client:needs.append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
  portable_quick_build.requirements(a,needs)
+ if a.experimental_atomic_quick:needs.append({'capability':'storage.key-value.atomic','api':1})
+ if a.experimental_settings_availability:needs.append({'capability':'storage.key-value.availability','api':1})
  if a.desk_clock:
   for name in ('net.wifi','bluetooth.hci'):
    requirement={'capability':name,'api':1}
@@ -156,11 +176,48 @@ def build():
   if a.sparse_start:needs.extend([{'capability':'runtime.realtime-control','api':1},{'capability':'runtime.provider-promotion','api':1}])
   if a.ble_broadcast:needs.append({"capability":"telemetry.broadcast","api":1})
   if a.contexts_rf_only:needs.extend([{'capability':'contexts.service','api':1},{'capability':'storage.shared-data','api':1}])
-  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)):raise ValueError('Desk clock grant count mismatch')
+  if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)+int(a.experimental_atomic_quick)+int(a.experimental_settings_availability)):raise ValueError('Desk clock grant count mismatch')
  if a.installed_catalog_volume_instance is not None:needs.append({'capability':'software.installed-apps','api':1})
  (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
+ if a.experimental_atomic_quick:
+  record['atomic_quick']={'experimental':True,'default_selected':False,'namespace':1,
+   'capability':'storage.key-value.atomic@1','intent':'PFI0001','subordinate_off_key':'quick_bright',
+   'legacy_put_fallback':False,'automatic_policy_migrated':False,'sd_acknowledged':False,
+   'activation_gate':'automatic context/low-battery writers and source-conflict policy unresolved'}
+  record['atomic_quick']['source_sha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+   'lib/PortableApps/include/PortablePreferenceAtomic.h','lib/PortableApps/include/PortableQuickUserPreference.h',
+   'lib/PortableApps/include/PortableQuickSession.h','lib/PortableApps/include/PortableQuickRadios.h',
+   'lib/PortableApps/src/quick_atomic.inc','lib/PortableApps/src/quick_adapter.inc',
+   'lib/PortableApps/src/quick_session.c','lib/PortableApps/src/quick_radios.c',
+   'lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/resident_shell.inc')}
+  record['atomic_quick']['sdk_sha256']=hashlib.sha256((includes/'RiscKeyValueAtomicV1.h').read_bytes()).hexdigest()
+  record.setdefault('grant_bindings',{})['storage.key-value.atomic']=[1]
+ if a.experimental_settings_availability:
+  record['settings_availability']={'experimental':True,'default_selected':False,'namespace':1,
+   'capability':'storage.key-value.availability@1','temporary_defaults_only':True,
+   'unavailable_quick_preferences':'read-only','automatic_writes':'refused until authoritative',
+   'reconciliation':'clean foreground generation reload; provider-held pending needs clean Runtime restart',
+   'retained_timer_changed':False,'sdk_sha256':hashlib.sha256((includes/'RiscKeyValueAvailabilityV1.h').read_bytes()).hexdigest()}
+  record['settings_availability']['source_sha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+   'lib/PortableApps/include/PortableSettingsAvailability.h','lib/PortableApps/include/RiscKeyValueAvailabilityV1.h',
+   'lib/PortableApps/src/home_settings_availability.inc','lib/PortableApps/src/home_automatic.inc',
+   'lib/PortableApps/src/quick_atomic.inc','lib/PortableApps/src/quick_adapter.inc','lib/PortableApps/src/quick_paper.inc',
+   'Apps/paper_clock.c','Apps/paper_sparse_clock.inc')}
+  record.setdefault('grant_bindings',{})['storage.key-value.availability']=[1]
+ if a.experimental_atomic_home_automatic:
+  record['atomic_home_automatic']={'experimental':True,'default_selected':False,'namespace':1,
+   'intent':'PFA0001','origin':'AUTOMATIC','boundaries':['low-battery','Home-rules','claimed-room-preset'],
+   'legacy_put_fallback':False,'partial_failure_replay':False,'editor_mask_applied_to_home_rules':False,
+   'sd_acknowledged':False,'activation_gate':'foreign/conflicting sources remain unresolved; Utilities automatic rules remain separate',
+   'source_sha256':{name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in (
+    'lib/PortableApps/include/PortablePreferenceAutomatic.h','lib/PortableApps/src/home_automatic.inc',
+    'lib/PortableApps/include/PortableLowBattery.h','lib/PortableApps/include/PortableContextActions.h',
+    'lib/PortableApps/include/PortableContextsClient.h','lib/PortableApps/src/contexts_rules_adapter.inc',
+    'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/quick_adapter.inc','lib/PortableApps/src/adapter.c')}}
+  record['atomic_quick']['automatic_policy_migrated']=True
+  record['atomic_quick']['activation_gate']='foreign/conflicting sources and Utilities automatic rules remain unresolved'
  if a.ble_broadcast:record['ble_broadcast']={'enabled':True,'default':'off','grant_lifetime':'transient','timer_only':False,'shared_preferences_instance':1};record['build_defines']=flags
  if a.contexts_rf_only:
   record['contexts']={'profile':'rf-only','supported_sources':2,'owner':'waterfall.elf','service_api':1,
@@ -174,7 +231,9 @@ def build():
     'lib/PortableApps/src/contexts_adapter.inc',
     'lib/PortableApps/src/contexts_policy.inc','lib/PortableApps/src/contexts_clock.inc')}}
   record['build_defines']=flags
- if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
+ if a.deferred_foreground_services:record['deferred_foreground_services']=True;record['deferred_radio_policy']={'completion':'first completed Home frame','forced_before':['user-input','quick-controls','sleep','launch','resident-loading'],'broadcast_cleanup':'unchanged','alarm_priority':'existing cue/modal completes before deferred policy','low_battery_policy':'existing immediate safety override','timer_radio_loads':0}
+ if a.deferred_foreground_services:record['deferred_foreground_sources']={n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['Apps/paper_clock.c','lib/PortableApps/include/PortableDeskClockApp.h','lib/PortableApps/src/adapter.c','lib/PortableApps/src/sparse_clock_adapter.inc','lib/PortableApps/src/alarm.inc','lib/PortableApps/src/resident_loading.inc','scripts/build_paper_clock.py']}
+ if a.installed_catalog_volume_instance is not None:record['installed_catalog']={'volume_instance':a.installed_catalog_volume_instance,'startup':'after-first-submitted-frame','cached_hydration':True,'idle_settings_maintenance':'settings_pending-v1','settings_retry_ms':2000,'shared_preferences_retry':'foreground-250ms-no-timer-kv','alarm_reconcile_waits_for_shared_preferences':True,'source_sha256':{n:hashlib.sha256((ROOT/n).read_bytes()).hexdigest() for n in ['lib/PortableApps/src/PortableInstalledCatalog.c','lib/PortableApps/src/installed_catalog_adapter.inc','lib/PortableApps/src/resident_shell.inc','lib/PortableApps/include/InstalledAppsV1.h']}}
  if a.ble_broadcast:
   record['ble_broadcast']['source_sha256']={path:hashlib.sha256((ROOT/path).read_bytes()).hexdigest() for path in (
    'lib/PortableApps/include/PortableBroadcastClient.h','lib/PortableApps/include/PortableBroadcastAppData.h',

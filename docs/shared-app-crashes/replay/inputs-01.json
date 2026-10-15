@@ -1,0 +1,326 @@
+{
+  "@r2@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r2@/Apps/battery.c": {
+    "sha256": "7cda56add5ce749138d86cd135e9f6b02042bd81f358b0d9a194aa593165d9c2"
+  },
+  "@r2@/Apps/battery_power.inc": {
+    "sha256": "30370c1f17a6102178e5f5fb848ff588083281f7183ea6d6870256cbd2f44279"
+  },
+  "@r2@/Apps/utility_frame.h": {
+    "sha256": "14ecb24a5b999024d247decbd3e78499b1fa1c36749bd9bfa8b4b8a087cecbc7"
+  },
+  "@r2@/Apps/utility_preference_atomic.h": {
+    "sha256": "cddb06858f736ae88801e6faab2d95c223269d73dbd0a015715b0bceeb6c747d"
+  },
+  "@r2@/lib/Alarm/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@r2@/lib/Alarm/include/AlarmServiceV1.h": {
+    "sha256": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5"
+  },
+  "@r3@/apps/clock/PortableSleepPolicy.h": {
+    "sha256": "15e94bdeabe34ac8a3e0b836a7cc59b00b9c4b3c22f3b2592919ce347ce3bbb1"
+  },
+  "@r3@/apps/clock/faces/ContextsFaces.h": {
+    "sha256": "e75de6b17b85e1d7fa2ebc4b89514ac7345f671027c3b15dfdbd98f9b06b5ea2"
+  },
+  "@r3@/apps/clock/faces/names.h": {
+    "sha256": "fd911f147817f540b231871f8c5ae03737786c9e6eee9a9aef389caf22630c16"
+  },
+  "@r3@/apps/clock/portable_navigation.c": {
+    "sha256": "b9c143f6156676352418d7fb0947b96e31b7188aaa0e3ee574f09ca8791a2b04"
+  },
+  "@r3@/apps/clock/portable_sleep.c": {
+    "sha256": "173c09eafb77c9c1d1e5901cc232bbec71bef16ba74a93907d6e09673a8a0019"
+  },
+  "@r3@/apps/clock/watch_alarm_sleep.h": {
+    "sha256": "dd6af853ed30e33a2eab519b58b354dbb7b31addd72feefa17a3c232a97fe96c"
+  },
+  "@r3@/apps/clock/watch_motion_client.h": {
+    "sha256": "853f28d1ccd20d987e49e9479b5e43cfb53003c557d2ac9198f4f4030ede4c34"
+  },
+  "@r3@/apps/clock/watch_sleep.h": {
+    "sha256": "7c2f1f329df4e382cce4f34c91aefd07555cadf161cee19e4af2c4631b828c75"
+  },
+  "@r3@/include/PortableMotionTap.h": {
+    "sha256": "73fe7e58159860dab4ed1b2bf9a2a5e85b0a94c7bef39718a15e04a5d49cfc50"
+  },
+  "@r3@/include/PortableTapSettings.h": {
+    "sha256": "f6ff75e400224f2285f131d2088bd32985f9d18feefac64aa408f8b63c764132"
+  },
+  "@r3@/include/WatchPortableBridgeGuard.h": {
+    "sha256": "1a81267b1173edad567c97f8752de89d5932b8efabdb8944d1b2cfb17685dd10"
+  },
+  "@r3@/include/WatchTapPolicy.h": {
+    "sha256": "7ad285d44f25be75c0b16f9dfddecd607a28a82bef21591b4048d4a8e8dffef1"
+  },
+  "@r3@/include/twatch_caps.h": {
+    "sha256": "86ef4a9c1d92cc6ed9c4d8d18f4d09d9bebf148419852f63eb6e9c963cd60d32"
+  },
+  "@r3@/sdk/driver/RiscDeepSleepV1.h": {
+    "sha256": "0949cf9591ef0f07b61c1306897287ea2eb1533755b5e569bfe1cb2c9b236161"
+  },
+  "@r3@/sdk/driver/RiscDisplayPowerV1.h": {
+    "sha256": "4ba5303d82c1b9a97ba1abada14456f882e449331bc04bf9caa70ded23d1560b"
+  },
+  "@r3@/sdk/driver/RiscLightSleepV1.h": {
+    "sha256": "43cbd671265959ec2db7904bf6185e97a87c4cde9d389cdccf6fbb7c916f3b94"
+  },
+  "@r3@/sdk/driver/RiscPowerKeyV1.h": {
+    "sha256": "65acb08b7527a7597ea24a6adae6d70e7182413705b957cdb88e27e2a985e75f"
+  },
+  "@r3@/sdk/driver/RiscPowerSleepV1.h": {
+    "sha256": "2ca96de4ddb76b511c2b9d23571a060e19efff3ebf793714324c5ac012c5179c"
+  },
+  "@r3@/sdk/driver/RiscTimedSleepV1.h": {
+    "sha256": "475ba9bfaf6c7497ace7baeb93f2bd9a6abe1e3a91f62eed24862a88d60dbf34"
+  },
+  "@work@/target-basic/fixed/battery.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r2@/Apps/calculator.c": {
+    "sha256": "40d552fc8ed24f10c0eb8df27e9d0584a8f4a8d41334a5dd831cc4d378254cc7"
+  },
+  "@r2@/Apps/calculator_core.h": {
+    "sha256": "4305637776ed430867b35f88c21f63a330fcc7a641c3efb878a348af12430e7b"
+  },
+  "@r2@/Apps/calculator_nova.inc": {
+    "sha256": "76c27a970c42b323f73c261801ba2f98b0774a56f15d03c7a47704f85289c699"
+  },
+  "@work@/target-basic/fixed/calculator.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r2@/Apps/daily_draw.h": {
+    "sha256": "756a39ba654efb82eb9a7e66b6c28105d30247143c424f258ded60910104b413"
+  },
+  "@r2@/Apps/stopwatch.c": {
+    "sha256": "033c048f93beb943bba671a79ee23cab678cb1741b614c1edea287621e639ca7"
+  },
+  "@r2@/Apps/stopwatch_core.h": {
+    "sha256": "d6a5172101b5da60ab516c2fd6094d20b50f5309dd3fd70d0e4381284e9b51b3"
+  },
+  "@work@/target-basic/fixed/stopwatch.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/include/PortableAudioSession.h": {
+    "sha256": "2f3d9cdd59005d44201f52005c7c88c8a9b2d9e816853338e4254196fad36f47"
+  },
+  "@r2@/Apps/frequency_generator.c": {
+    "sha256": "464bd1c9d2765b970f7c86250c34e06ad41da1de2bdcdb9f4511688850fb99ba"
+  },
+  "@r2@/Apps/tone_core.h": {
+    "sha256": "b24e9062523a3d9ac2901d4540f5407403eb598385548a9f81199144f0a1c554"
+  },
+  "@r2@/lib/Alarm/include/AlarmOutputV1.h": {
+    "sha256": "b19cbe20602aa4fd3b184910e781e944c28fe30e72dcf919701d9b8eeab750c2"
+  },
+  "@work@/target-basic/fixed/frequency_generator.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r2@/Apps/alarm_app_shared.h": {
+    "sha256": "cc85ece58b71448c7480527931978ad12338f67869faf7359a7b88ac02441ee3"
+  },
+  "@r2@/Apps/alarm_nova.inc": {
+    "sha256": "950fe7590109962c025422264e1b16c6bde4cf7c0a5650f1bcdffd3e6b41f729"
+  },
+  "@r2@/Apps/alarms.c": {
+    "sha256": "e2c0218f36c9b9dac6d9e6e826aceb44b79cd101a9124d5f6a334df00a667072"
+  },
+  "@r2@/lib/Alarm/include/AlarmVolume.h": {
+    "sha256": "7010a97ce2b2d21ac35d50e52e1f419e14c46e06fe9c73151efb7c4ae651fdf6"
+  },
+  "@work@/target-basic/fixed/alarms.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r2@/Apps/countdown.c": {
+    "sha256": "ce8bd99601b488a09b5c150584fa713e65472dadfb00d9430ef9beeb593dcc5d"
+  },
+  "@work@/target-basic/fixed/countdown.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/include/PortableRadioSession.h": {
+    "sha256": "8b09b402a8235dbf48826b890a04dbcabe2f7ac6c600b90b42f71ac5997356b2"
+  },
+  "@r2@/Apps/ble_hid_app.inc": {
+    "sha256": "dee760318e0daedb86d923fd36b2b44b6f1aeb5bb4f3464f2226b128775bf639"
+  },
+  "@r2@/Apps/ble_hid_model.h": {
+    "sha256": "f106d4cdd9f4301c4e20646f4015d646b9e00590b6b1b1978472ac230371fae6"
+  },
+  "@r2@/Apps/ble_touchpad.c": {
+    "sha256": "5ad5711190894599547fe4091e97b859395ff484fbc5359d9b3fd1ed6243ed14"
+  },
+  "@r2@/Apps/ble_touchpad_gesture.h": {
+    "sha256": "9a69a37ee4b1c9db96d3ba43ad775eefb297d129652e4f43f6e07bc73542ee73"
+  },
+  "@r2@/lib/Bluetooth/include/RiscBluetoothHidV1.h": {
+    "sha256": "24cabbace06d6817eea9f67e1ade21b06a4cece2a265fc730f246fb6cb485cb9"
+  },
+  "@work@/target-basic/fixed/ble_touchpad.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r2@/Apps/ble_buttons.c": {
+    "sha256": "8ec2eb9c3c45f88472de8eb81ed559dd82a1d4500e952d271fc5b67a148bc009"
+  },
+  "@work@/target-basic/fixed/ble_buttons.map": {
+    "sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8",
+    "text": "{ global: app_main; app_module_init; app_module_fini; local: *; };\n",
+    "template_sha256": "c0bb7dbfa94b46f3664b1e0038767bec04593064152e2825b79aab29d6930dc8"
+  },
+  "@r0@/lib/PortableApps/include/PortableAlarmTerminalClient.h": {
+    "sha256": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635"
+  },
+  "@r0@/lib/PortableApps/include/PortableAppLaunchGuard.h": {
+    "sha256": "a7da58c80c62ef35cdf4e76aff0d2f66768b66963457c3a00f5e9890ca357558"
+  },
+  "@r0@/lib/PortableApps/include/PortableResidentPolicyInput.h": {
+    "sha256": "58063d5b10c848c09a1340e297c6aeb8fc7b9b4d7aed32e813d6c1904fbc5c0e"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputCheckpointClient.h": {
+    "sha256": "1c5c1dd7c1e47cc9844d1838e85c09fdd8949c9c43006e99205d0cc4f2059de0"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputClient.h": {
+    "sha256": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputHandoff.h": {
+    "sha256": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36"
+  },
+  "@r0@/lib/PortableApps/include/PortableTextInputPolicy.h": {
+    "sha256": "9fdb91deac3cd4df86818f3bb2a14b718b366f50af6eb7b6c8b97d76e829a4f4"
+  },
+  "@r0@/lib/PortableApps/include/RiscDiagnosticCheckpointV1.h": {
+    "sha256": "2c41504823df54a43e383baafa07f45191869f6ea5de4adaaf2651c2d78af017"
+  },
+  "@r0@/lib/PortableApps/include/RiscTextEntryV1.h": {
+    "sha256": "a5733f06b1d8caf86f21d730abcd9ff833b603807c8b028a49544c997b6cdba3"
+  },
+  "@r0@/lib/PortableApps/src/text_input_handoff.inc": {
+    "sha256": "7523186af035fcfecc7d62859ea583feabc53a4293c32fb5e635b59c5138a1ca"
+  },
+  "@r0@/lib/PortableApps/src/text_input_policy.inc": {
+    "sha256": "e71f1630245184bb56432a10eed12503de2835da7a4f4b00d9ce37870675a492"
+  },
+  "@work@/target-spectrum/sdk/include/AlarmRecords.h": {
+    "sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066",
+    "text": "#ifndef UTILITIES_ALARM_RECORDS_H\n#define UTILITIES_ALARM_RECORDS_H\n#include \"AlarmServiceV1.h\"\n#include <stddef.h>\n#include <string.h>\n#define ALARM_RECORD_SIZE 32u\n#ifdef ALARM_NATIVE_UTC\n/* UTC seconds since 2000; native signed Unix seconds stop in January 2038. */\n#define ALARM_RTC_MAX (2147483647u-946684800u)\n#else\n#define ALARM_RTC_MAX 3155759999u\n#endif\n#define ALARM_COUNTDOWN_MAX 359999u /* 99:59:59 */\n#define ALARM_RECOVERY_SECONDS 60u\n#define ALARM_INVOCATION_MS 20000u\n#ifdef ALARM_NATIVE_UTC\n#define ALARM_CONFIG_KEY \"alarm_utc_cfg\"\n#define ALARM_TIMER_KEY \"timer_utc_cfg\"\n#define ALARM_OCCURRENCE_KEY \"alarm_utc_occ\"\n#define ALARM_TIMER_OCCURRENCE_KEY \"timer_utc_occ\"\n#else\n#define ALARM_CONFIG_KEY \"alarm_cfg\"\n#define ALARM_TIMER_KEY \"timer_cfg\"\n#define ALARM_OCCURRENCE_KEY \"alarm_occ\"\n#define ALARM_TIMER_OCCURRENCE_KEY \"timer_occ\"\n#endif\n#define ALARM_MODE_KEY \"alert_mode\"\nenum { ALARM_OCC_NONE, ALARM_OCC_PENDING, ALARM_OCC_ACKED, ALARM_OCC_EXPIRED };\ntypedef struct { uint32_t revision, deadline, created, duration; uint8_t kind, enabled; } alarm_config;\ntypedef struct { uint32_t revision, deadline, generation, recovery_until; uint8_t kind, state, mode, silenced; } alarm_occurrence;\nstatic inline uint32_t alarm_read32(const uint8_t *p) {\n    return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);\n}\nstatic inline void alarm_write32(uint8_t *p,uint32_t n) { for(unsigned i=0;i<4;i++){p[i]=(uint8_t)n;n>>=8;} }\nstatic inline uint32_t alarm_checksum(const uint8_t *p) {\n    uint32_t h=2166136261u;for(unsigned i=0;i<28;i++)h=(h^p[i])*16777619u;return h;\n}\nstatic inline bool alarm_config_valid(const alarm_config *r) {\n    return r && r->kind>=1 && r->kind<=2 && r->enabled<=1 && r->revision &&\n        r->created<=ALARM_RTC_MAX && r->deadline<=ALARM_RTC_MAX-ALARM_RECOVERY_SECONDS &&\n        ((!r->enabled&&!r->deadline&&!r->duration) || (r->enabled && r->deadline>r->created &&\n        (r->kind==ALARM_KIND_ALARM ? r->duration==0 : r->duration && r->duration<=ALARM_COUNTDOWN_MAX && r->deadline-r->created==r->duration)));\n}\nstatic inline void alarm_config_encode(const alarm_config *r,uint8_t b[ALARM_RECORD_SIZE]) {\n    memset(b,0,ALARM_RECORD_SIZE);memcpy(b,\"SAC1\",4);b[4]=r->kind;b[5]=r->enabled;\n    alarm_write32(b+8,r->revision);alarm_write32(b+12,r->deadline);alarm_write32(b+16,r->created);\n    alarm_write32(b+20,r->duration);alarm_write32(b+28,alarm_checksum(b));\n}\nstatic inline bool alarm_config_decode(alarm_config *r,const uint8_t *b,uint32_t n,uint8_t kind) {\n    if(!r||!b||n!=ALARM_RECORD_SIZE||memcmp(b,\"SAC1\",4)||b[4]!=kind||b[6]||b[7]||alarm_read32(b+24)||alarm_read32(b+28)!=alarm_checksum(b))return false;\n    alarm_config v={alarm_read32(b+8),alarm_read32(b+12),alarm_read32(b+16),alarm_read32(b+20),b[4],b[5]};\n    if(!alarm_config_valid(&v))return false;\n    *r=v;return true;\n}\nstatic inline bool alarm_occurrence_valid(const alarm_occurrence *r) {\n    return r&&r->kind>=1&&r->kind<=2&&r->state>=ALARM_OCC_PENDING&&r->state<=ALARM_OCC_EXPIRED&&\n        r->mode>=1&&r->mode<=3&&r->silenced<=1&&r->revision&&r->generation&&r->deadline&&r->deadline<=ALARM_RTC_MAX-ALARM_RECOVERY_SECONDS&&\n        r->recovery_until==r->deadline+ALARM_RECOVERY_SECONDS;\n}\nstatic inline void alarm_occurrence_encode(const alarm_occurrence *r,uint8_t b[ALARM_RECORD_SIZE]) {\n    memset(b,0,ALARM_RECORD_SIZE);memcpy(b,r->silenced?\"SAO2\":\"SAO1\",4);b[4]=r->kind;b[5]=r->state;b[6]=r->mode;b[7]=r->silenced;\n    alarm_write32(b+8,r->revision);alarm_write32(b+12,r->deadline);alarm_write32(b+16,r->generation);\n    alarm_write32(b+20,r->recovery_until);alarm_write32(b+28,alarm_checksum(b));\n}\nstatic inline bool alarm_occurrence_decode(alarm_occurrence *r,const uint8_t *b,uint32_t n,uint8_t kind) {\n    if(!r||!b||n!=ALARM_RECORD_SIZE||b[4]!=kind||alarm_read32(b+24)||alarm_read32(b+28)!=alarm_checksum(b))return false;\n    if(!memcmp(b,\"SAO1\",4)?b[7]!=0:memcmp(b,\"SAO2\",4)||b[7]!=1)return false;\n    alarm_occurrence v={alarm_read32(b+8),alarm_read32(b+12),alarm_read32(b+16),alarm_read32(b+20),b[4],b[5],b[6],b[7]};\n    if(!alarm_occurrence_valid(&v))return false;\n    *r=v;return true;\n}\nstatic inline bool alarm_calendar_seconds(uint16_t y,uint8_t m,uint8_t d,uint8_t h,uint8_t min,uint8_t s,uint32_t *out) {\n    static const uint8_t days[]={31,28,31,30,31,30,31,31,30,31,30,31};\n    if(!out||y<2000||y>2099||m<1||m>12||d<1||d>days[m-1]+(m==2&&y%4==0)||h>23||min>59||s>59)return false;\n    uint32_t total=(uint32_t)(y-2000)*365u+(y-2000+3u)/4u;\n    for(unsigned i=1;i<m;i++)total+=days[i-1]+(i==2&&y%4==0);\n    *out=((total+d-1)*24u+h)*3600u+(uint32_t)min*60u+s;return true;\n}\nstatic inline bool alarm_same_occurrence(const alarm_occurrence *o,const alarm_config *c) {\n    return o->state&&o->kind==c->kind&&o->revision==c->revision&&o->deadline==c->deadline;\n}\nstatic inline bool alarm_token_equal(const alarm_token_v1 *a,const alarm_token_v1 *b) {\n    return a&&b&&a->kind==b->kind&&a->revision==b->revision&&a->deadline==b->deadline&&a->generation==b->generation;\n}\n#endif\n",
+    "template_sha256": "e04d9cfa6c32a70125ef618b85d048936afad2204fb97d459cda8c36fd0b2066"
+  },
+  "@work@/target-spectrum/sdk/include/AlarmServiceV1.h": {
+    "sha256": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b",
+    "text": "#ifndef UTILITIES_ALARM_SERVICE_V1_H\n#define UTILITIES_ALARM_SERVICE_V1_H\n/* Utilities-owned, opaque-to-Runtime ordinary provider capability. */\n#include <stdbool.h>\n#include <stdint.h>\n#define ALARM_SERVICE_CAPABILITY \"alarm.service\"\n#define ALARM_SERVICE_API_V1 1u\n#define ALARM_STATUS_CUE_SUPPORTED 1u\n#define ALARM_KIND_ALARM 1u\n#define ALARM_KIND_COUNTDOWN 2u\n#define ALARM_MODE_VISUAL 0u /* Copied effective mode; never a persisted preference. */\n#define ALARM_MODE_VIBRATE 1u\n#define ALARM_MODE_SOUND 2u\n#define ALARM_MODE_BOTH 3u\nenum { ALARM_OK=0, ALARM_PENDING=1, ALARM_BUSY=-1, ALARM_INVALID=-2,\n       ALARM_STALE=-3, ALARM_STORAGE=-4, ALARM_RTC=-5, ALARM_OUTPUT=-6,\n       ALARM_EXHAUSTED=-7, ALARM_FOREGROUND=-8 };\nenum { ALARM_STATE_LOADING, ALARM_STATE_READY, ALARM_STATE_ALERT,\n       ALARM_STATE_DISMISSING, ALARM_STATE_BLOCKED,\n       /* Additive copied status: non-modal output reservation, before open and\n        * through cleanup. Updated clients must drain it without painting an\n        * alarm overlay. Earlier clients reject unknown states safely. */\n       ALARM_STATE_CUE };\nenum { ALARM_SCHEDULE_OFF, ALARM_SCHEDULE_ARMED, ALARM_SCHEDULE_DUE,\n       ALARM_SCHEDULE_DISMISSED, ALARM_SCHEDULE_EXPIRED };\ntypedef struct {\n    uint32_t kind, revision, deadline, generation;\n} alarm_token_v1;\ntypedef struct {\n    uint32_t revision, deadline, state;\n} alarm_schedule_status_v1;\ntypedef struct {\n    uint32_t api_version, struct_size, state;\n    int32_t error;\n    uint32_t snapshot, rtc_seconds, mode, output_uncertain;\n    alarm_schedule_status_v1 schedules[2];\n    alarm_token_v1 occurrence;\n    uint32_t recovery_until, remaining_ms;\n    char label[24];\n} alarm_status_v1;\ntypedef struct {\n    uint32_t struct_size, snapshot, rtc_seconds, deadline;\n    /* deadline=0 means no schedule. Decision is consumed immediately by the\n       serialized caller, with no intervening service/writer call. */\n} alarm_sleep_v1;\ntypedef struct {\n    uint32_t api_version, struct_size;\n    void *context;\n    /* Memory-only copied values; caller sets struct_size. No retained pointers. */\n    int32_t (*status)(void *, alarm_status_v1 *);\n    /* One cooperative phase, at most two dependency calls (three with the DND\n       preflight enabled). Explicit foreground\n       safe point only; synchronous\n       NVS has no hard latency guarantee. Never invoke from provider poll. */\n    int32_t (*step)(void *);\n    /* Memory-only hint; does not prove a writer commit. Also retries blocked\n       storage/RTC reconciliation, without silently acknowledging an alert. */\n    int32_t (*refresh)(void *);\n    /* Queues exact-current dismissal. Fully dismissed only after status READY,\n       matching schedule DISMISSED, safe output stop and verified durable ACK. */\n    int32_t (*acknowledge)(void *, const alarm_token_v1 *);\n    /* Starts/finishes a fresh reconciliation. PENDING means call step and retry.\n       No suppression flag or retained sleep lease; service has no I/O poll. */\n    int32_t (*prepare_sleep)(void *, alarm_sleep_v1 *);\n    /* Failure-only cleanup while a foreground presentation is not settled.\n       One stop/silence/close operation per call, no storage or output start.\n       OK proves both outputs stopped, but does NOT acknowledge an occurrence.\n       OUTPUT means retain the invocation/resources; no normal handoff. */\n    int32_t (*stop_only)(void *);\n} alarm_service_v1;\n/* Optional append-only descriptor. The v1 function table/status layouts stay\n * unchanged. Legacy providers require both physical outputs; a visual-only\n * provider advertises zero and never resolves audio/haptic dependencies. */\ntypedef struct {\n    alarm_service_v1 service;\n    uint32_t output_modes; /* ALARM_MODE_VIBRATE | ALARM_MODE_SOUND, or zero. */\n} alarm_service_outputs_v1;\nstatic inline uint32_t alarm_service_output_modes(const alarm_service_v1 *service) {\n    if(!service || service->api_version!=ALARM_SERVICE_API_V1 ||\n       service->struct_size<sizeof(*service))return ALARM_MODE_VISUAL;\n    if(service->struct_size<sizeof(alarm_service_outputs_v1))return ALARM_MODE_BOTH;\n    return ((const alarm_service_outputs_v1 *)service)->output_modes&ALARM_MODE_BOTH;\n}\n#if defined(__cplusplus)\n#define ALARM_STATIC_ASSERT static_assert\n#else\n#define ALARM_STATIC_ASSERT _Static_assert\n#endif\nALARM_STATIC_ASSERT(sizeof(alarm_token_v1)==16,\"alarm occurrence token ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_status_v1)==104,\"alarm copied status ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_sleep_v1)==16,\"alarm sleep decision ABI\");\n#if UINTPTR_MAX == UINT32_MAX\nALARM_STATIC_ASSERT(sizeof(alarm_service_v1)==36,\"alarm service target ABI\");\nALARM_STATIC_ASSERT(sizeof(alarm_service_outputs_v1)==40,\"alarm output descriptor target ABI\");\n#endif\n#undef ALARM_STATIC_ASSERT\n#endif\n",
+    "template_sha256": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b"
+  },
+  "@work@/target-spectrum/sdk/include/RiscRealtimeV1.h": {
+    "sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "text": "#pragma once\n#include <stdint.h>\n#define RISC_REALTIME_CAPABILITY \"runtime.realtime\"\n#define RISC_REALTIME_API_V1 1u\n#define RISC_REALTIME_CONTROL_CAPABILITY \"runtime.realtime-control\"\n#ifdef __cplusplus\nextern \"C\" {\n#endif\nenum { RISC_REALTIME_OK=0, RISC_REALTIME_INVALID=-1,\n       RISC_REALTIME_CONTEXT=-2, RISC_REALTIME_IO=-3 };\nenum { RISC_REALTIME_UNSET=0, RISC_REALTIME_VALID=1 };\n/* UTC Unix epoch (no leap-second or timezone conversion). Nanoseconds are in\n * [0,999999999]; native ESP-IDF resolution is microseconds. VALID means seeded,\n * not authenticated or accurate. UNSET returns zero epoch/fraction.\n * The realtime sample was taken between monotonic_before_us and\n * monotonic_after_us, both boot-local esp_timer values. These reset after deep\n * sleep: never subtract monotonic values from different boots. */\ntypedef struct risc_realtime_snapshot_v1 {\n uint32_t struct_size, validity;\n int64_t epoch_seconds;\n uint32_t nanoseconds, reserved;\n uint64_t monotonic_before_us, monotonic_after_us;\n} risc_realtime_snapshot_v1;\ntypedef struct risc_realtime_api_v1 {\n uint32_t api_version, struct_size;\n void* context;\n /* Exact snapshot size required. Output is unchanged on any negative status.\n  * Owner task, active app entry and live grant required on every call.\n  * No set/seed operation is available to a reader. */\n int32_t (*read)(void*,risc_realtime_snapshot_v1*);\n} risc_realtime_api_v1;\n/* Separate explicit authority. Includes read; no second read grant is needed.\n * seed accepts epoch seconds 0..2147483647 and nanoseconds divisible by 1000.\n * Caller owns source trust and timezone policy. INVALID/CONTEXT does not mutate\n * time; IO after a set attempt invalidates time until another successful seed.\n * No synchronization, networking or persistence beyond deep sleep is implied. */\ntypedef struct risc_realtime_control_api_v1 {\n uint32_t api_version, struct_size;\n void* context;\n int32_t (*read)(void*,risc_realtime_snapshot_v1*);\n int32_t (*seed)(void*,int64_t epoch_seconds,uint32_t nanoseconds);\n} risc_realtime_control_api_v1;\n#ifdef __cplusplus\n}\n#endif\n",
+    "template_sha256": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d"
+  },
+  "@work@/target-spectrum/sdk/include/RiscResidentShellV1.h": {
+    "sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
+    "text": "#pragma once\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdint.h>\n#ifdef __cplusplus\nextern \"C\" {\n#endif\n#define RISC_RESIDENT_SHELL_API_V1 1u\n#define RISC_RESIDENT_ROLE_HOST 1u\n#define RISC_RESIDENT_ROLE_FOREGROUND 2u\n#define RISC_RESIDENT_DESCRIPTOR_SYMBOL \"risc_resident_app_descriptor_v1\"\n/* Export this literal data object, with default visibility, from converted\n * applications. The owner boot policy must independently select the role. */\ntypedef struct {\n  uint32_t api_version, struct_size, role, reserved;\n} risc_resident_app_descriptor_v1_t;\nenum {\n  RISC_RESIDENT_OK=0, RISC_RESIDENT_BUSY=1, RISC_RESIDENT_EXIT=2,\n  RISC_RESIDENT_HANDOFF=3, RISC_RESIDENT_NO_PENDING=4,\n  RISC_RESIDENT_DENIED=-1, RISC_RESIDENT_INVALID=-2,\n  RISC_RESIDENT_INCOMPATIBLE=-3, RISC_RESIDENT_FAILED=-4,\n  RISC_RESIDENT_RETAINED=-5\n};\nenum {\n  RISC_RESIDENT_CHECKPOINT_POLL=1, RISC_RESIDENT_CHECKPOINT_CONTROLS=2,\n  RISC_RESIDENT_CHECKPOINT_ALARM=3, RISC_RESIDENT_CHECKPOINT_USB=4,\n  RISC_RESIDENT_CHECKPOINT_SLEEP=5, RISC_RESIDENT_CHECKPOINT_EXIT=6,\n  RISC_RESIDENT_CHECKPOINT_POLICY=7\n};\n#define RISC_RESIDENT_POLL_ACTIVITY 1u\n#define RISC_RESIDENT_POLL_INHIBIT_IDLE 2u\n#define RISC_RESIDENT_POLL_INHIBIT_POLICY 4u\n#define RISC_RESIDENT_REPLY_REDRAW 1u\n#define RISC_RESIDENT_REPLY_CONFIGURATION_CHANGED 2u\n#define RISC_RESIDENT_REPLY_POLICY_REQUEST 4u\n/* Request flags are valid only for POLL. ACTIVITY is latched physical input;\n * INHIBIT_IDLE suppresses inactivity handling; INHIBIT_POLICY prevents policy\n * work while capture or another app-owned operation is live. A lightweight\n * POLL preserves child input/focus. Clear latched activity only after OK;\n * BUSY leaves pending client state intact. Unknown/non-POLL flags are invalid.\n * A successful non-INHIBIT_POLICY POLL may reply POLICY_REQUEST. Before the\n * corresponding zero-flag POLICY checkpoint, settle writable/borrowed buffers,\n * capture, input and app-owned operations, pause background work and close\n * child touch/focus. Defer the call while unsafe. Runtime requires a pending\n * invocation-bound request; BUSY preserves it. OK POLICY, EXIT or teardown\n * consumes it; OK POLL with INHIBIT_POLICY cancels it. POLICY_REQUEST on a\n * non-POLL, inhibited or non-OK reply is an invalid host response. After clean\n * POLICY OK/BUSY, restore child input/focus and neutralize inherited input.\n * Retention allows no further provider calls. Deep sleep still requires clean\n * foreground exit; POLICY grants no terminal sleep/reset authority. */\ntypedef struct {\n  uint32_t struct_size, reason, flags, reserved;\n} risc_resident_request_v1;\ntypedef struct {\n  uint32_t struct_size, flags;\n} risc_resident_reply_v1;\nenum {\n  RISC_RESIDENT_FAILURE_NONE=0, RISC_RESIDENT_FAILURE_LOAD=1,\n  RISC_RESIDENT_FAILURE_ABI=2, RISC_RESIDENT_FAILURE_INIT=3,\n  RISC_RESIDENT_FAILURE_CLEANUP=4, RISC_RESIDENT_FAILURE_RETAINED=5,\n  RISC_RESIDENT_FAILURE_PRIOR_RESET=6, RISC_RESIDENT_FAILURE_ALLOCATION=7\n};\ntypedef struct {\n  uint32_t struct_size, kind;\n  int32_t status;\n  uint32_t native_reason;\n  uint64_t invocation;\n  char application[193], detail[192];\n} risc_resident_failure_v1;\ntypedef struct {\n  uint32_t struct_size;\n  int32_t status;\n  uint64_t invocation;\n  risc_resident_failure_v1 failure;\n} risc_resident_result_v1;\ntypedef struct {\n  uint32_t api_version, struct_size;\n  void* context;\n  /* Runs only at an explicit, settled foreground checkpoint, under host\n   * authority. Complete presentation/restoration and neutralize consumed input\n   * before returning OK. BUSY means no focus/state change was committed.\n   * EXIT requests clean foreground return. Any uncertain cleanup must call\n   * retain_invocation and return RETAINED; no further UI/provider work is safe. */\n  int32_t (*dispatch)(void*,const risc_resident_request_v1*,risc_resident_reply_v1*);\n  /* Optional notification after a failed child has been completely cleaned up.\n   * Terminal retention never invokes this callback. */\n  void (*failed)(void*,const risc_resident_failure_v1*);\n  /* Optional complete suffix. Runs before each admitted foreground load or\n   * destructive legacy handoff, after the previous child has fully unloaded,\n   * under the live host's authority. relative_path is a copied NUL-terminated\n   * boot-store path (at most 192 bytes), borrowed only for this call. Present\n   * and settle the complete loading frame before OK; Runtime supplies no\n   * percentage or first-frame completion signal. BUSY refuses this load cleanly\n   * without a failed callback and discards pending chain/file-open state.\n   * RETAINED (or any other result) fences both invocations\n   * and prevents further loading/UI/provider calls. No recursive launch, exit\n   * request or terminal sleep is permitted in this callback. */\n  int32_t (*loading)(void*,const char* relative_path);\n} risc_resident_callbacks_v1;\n#define RISC_RESIDENT_CALLBACKS_V1_SIZE offsetof(risc_resident_callbacks_v1, loading)\n#define RISC_RESIDENT_CALLBACKS_LOADING_V1_SIZE (offsetof(risc_resident_callbacks_v1, loading) + sizeof(((risc_resident_callbacks_v1*)0)->loading))\ntypedef struct risc_resident_client_v1 {\n  uint32_t api_version, struct_size;\n  uint64_t invocation;\n  uint32_t role, reserved;\n  int32_t (*register_shell)(uint64_t,const risc_resident_callbacks_v1*);\n  /* Host entry only; one synchronous admitted foreground chain. Foreground\n   * descriptors are required and host memory remains live. No recursive launch\n   * from dispatch. An explicitly admitted resident_shell.legacy path instead\n   * queues a destructive handoff and returns HANDOFF after clean child cleanup:\n   * return app_main promptly, without restoring focus/rendering. Only after\n   * successful host fini/grant/memory/unload does the legacy ELF start.\n   * On fresh host entry, pass NULL after register_shell to resume a copied\n   * foreground/file.open continuation from a legacy invocation. NO_PENDING\n   * means no continuation (invocation=0); otherwise ordinary results apply.\n   * Retention always returns RETAINED, never HANDOFF. */\n  int32_t (*run_foreground)(uint64_t,const char*,risc_resident_result_v1*);\n  /* Foreground entry only. Call after releasing writable frames and borrowed\n   * buffers and settling app/provider operations; never from arbitrary yield.\n   * Runtime cannot inspect opaque provider-owned surfaces. */\n  int32_t (*checkpoint)(uint64_t,const risc_resident_request_v1*,risc_resident_reply_v1*);\n  /* Host dispatch only. The foreground must return at the next checkpoint;\n   * this is cooperative and does not terminate a native stack. */\n  int32_t (*request_foreground_exit)(uint64_t);\n  /* Copies the most recent current-session failure, or a read-only prior-reset\n   * record from the native port. Never causes cleanup, I/O, reboot or recovery.\n   * Available to the current host even after terminal retention. */\n  bool (*last_failure)(uint64_t,risc_resident_failure_v1*);\n} risc_resident_client_v1;\n#ifdef __cplusplus\n}\n#endif\n",
+    "template_sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd"
+  },
+  "@r4@/lib/ContextFingerprint/include/ContextFingerprint.h": {
+    "sha256": "7e451353d42a60685abcdf092755c062d51f6479cfc3880b379d24199640ea58"
+  },
+  "@r4@/lib/ContextFingerprint/include/ContextFingerprintStore.h": {
+    "sha256": "59f20d1bcd2b213f74db4cd88f4f2d57fae0d880eeff4f3ace677670ceed2350"
+  },
+  "@r4@/lib/VoiceActivity/src/common.h": {
+    "sha256": "51e288d6c371e605142a738c2aa95161f4f1834afa71cb6f00f7511e6eb4f3b1"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/division_operations.c": {
+    "sha256": "fb57461a7bcbfffecc3e4a8c641c4183e2ab427685cb3b3ad7d737dda3cb6d56"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/energy.c": {
+    "sha256": "fef67abfc5708274799f5a3fdb3df4fa91a950dd6a98ffdaf9738b32fccfef1a"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/get_scaling_square.c": {
+    "sha256": "edbd3619857bc3aa9ddfcbf1201a6c907a61bece038fce41afe3589c1a4bc277"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/resample_48khz.c": {
+    "sha256": "65f9c0333bfa40c197486a4e63c9d444be8f0089d6e041b6d42d3fcbb6390f5c"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/resample_by_2_internal.c": {
+    "sha256": "f7ab177a112a5f4093abde5b483973da5338a0913b7347bcff10eb5c731503ac"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/resample_by_2_internal.h": {
+    "sha256": "1b4b66058aa8a64601a0beb01bf8fc112387b3c6a2db9ec1e9fadc37096b982b"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/resample_fractional.c": {
+    "sha256": "ed4ac3498d41e3ad466f25cf291f23a57a29a5c4c248ccc9312407f32eff26be"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/signal_processing_library.h": {
+    "sha256": "806fc377bf6486bca6f9df366f68421801d377d025c87af13348d2a383b9ecbd"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/spl_inl.c": {
+    "sha256": "6f17afe654639115b46197ffc03f30af5e8297701025039e5b3623f2e3608835"
+  },
+  "@r4@/lib/VoiceActivity/src/signal_processing/spl_inl.h": {
+    "sha256": "56125f099bf55b2bb64a6fc2182936c6d897a6ffc6926134db9033ae061e5acd"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_core.c": {
+    "sha256": "2955707938836676767215bde217884b58e76cc820d20fa3cb2d53678c5a10a4"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_core.h": {
+    "sha256": "6dd5d59939033333822cb60bcd6adeb86e7e6e8afa60643894ea9ed424f7965d"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_filterbank.c": {
+    "sha256": "c44eb10c2a70810cef6720a7846ea3638e933cf1ed85affaac2dba0e6927210d"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_filterbank.h": {
+    "sha256": "3c0704f9d917fabd927a228175edefd4934351ab8229292969b54217a30ab793"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_gmm.c": {
+    "sha256": "f45eeafdbea7491301e7eb57a7cbb2a720dc43f9e256e3f8fa944f0d3f0e6067"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_gmm.h": {
+    "sha256": "a9c51c01dae8eed13b17507b9f2e1a6ec248297f4372124f0b59ace88f46d16f"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_sp.c": {
+    "sha256": "9b7718a283c04c13caeb1c4174d63cc6de9a7c02dad05c65d2cbc5df2686a059"
+  },
+  "@r4@/lib/VoiceActivity/src/vad/vad_sp.h": {
+    "sha256": "5de6fc001a838f8cd9acab67c082695a8ed37c8f905bf3abac122c5edb17f041"
+  },
+  "@r4@/Apps/AudioInputV1.h": {
+    "sha256": "c64c27cf421033074a96e90ee6ac3287050304c5ef47d82a51dcbc48ce73b494"
+  },
+  "@r4@/Apps/RiscAppDataV1.h": {
+    "sha256": "9eb18840ea691f88e85cca6ede3de4833467745ec29225a51a58cb84c0aac84e"
+  },
+  "@r4@/Apps/alarm_writer.h": {
+    "sha256": "6a28cd9955cbd099fe778777c63ebcb2c606ee48bab206fece6f45c644138ba0"
+  },
+  "@r4@/Apps/audio_spectrum.c": {
+    "sha256": "baa58ef2c45d946e2ef810a4d4152b4f543ce2c1ead09570a4d2fd2ad3568aac"
+  },
+  "@r4@/Apps/context_fingerprint_app.inc": {
+    "sha256": "757ac801d2c2ae66f2f45b9810aec8f52c8f155811d37966bd077c1a7b47b3f1"
+  },
+  "@r4@/Apps/context_signal_library.inc": {
+    "sha256": "d19380adfc76870d05c9d2da82ee09fe1fd52b8ba563b6b65efab8b777d63d4a"
+  },
+  "@r4@/Apps/rf_app_data_scope.h": {
+    "sha256": "5b21f23b2505f12ef38ed1fc0e90b3c665066f639f2ccd8ca90e3b8073f69010"
+  },
+  "@r4@/Apps/spectrum_background.h": {
+    "sha256": "891e283010ddd8c9870a7ccb569208140ace08499518a266eee4d3bb8e4aeeff"
+  }
+}

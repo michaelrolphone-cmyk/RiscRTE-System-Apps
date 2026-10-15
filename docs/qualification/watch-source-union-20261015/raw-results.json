@@ -1,0 +1,405 @@
+[
+  {
+    "label": "unittests",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "exit": 1,
+    "log_sha256": "aa9dd541bc67327eda5ad104bd1492541d5f061e3453918b55179ce454a465c8"
+  },
+  {
+    "label": "custody",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_shared_data_custody.py",
+      "--sdk-include",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+      "--app-data-sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+      "--utilities-root",
+      "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities",
+      "--callback-audit",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/custody"
+    ],
+    "exit": 0,
+    "log_sha256": "0392d1fbf7693c58956c2e41a647fb6921336ea40e2cb91f585f4a247a58f9b1"
+  },
+  {
+    "label": "brightness",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_shared_initial_brightness.py",
+      "--sdk-include",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+      "--app-data-sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+      "--utilities-root",
+      "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/brightness"
+    ],
+    "exit": 0,
+    "log_sha256": "e6d3812e113762fb45489cc652403f6553f65123c8782394c3a7431d6b13f9dc"
+  },
+  {
+    "label": "rf-native",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_rf_native_raster.py",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/rf-native"
+    ],
+    "exit": 0,
+    "log_sha256": "f370b59c61c7abd0af976c970687d86ed38a63caea5a7cc5044bceacd14db22d"
+  },
+  {
+    "label": "test_apps",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_apps.py"
+    ],
+    "exit": 0,
+    "log_sha256": "dc67cb6074c8ac01d56d05eef4a0417d7b022458db45e51c20fdcbd484c3cfff"
+  },
+  {
+    "label": "test_portable_apps",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_apps.py"
+    ],
+    "exit": 0,
+    "log_sha256": "b825bec961382758d07c547e2514c6255bbf93c6765cacab2c138f150e5901e6"
+  },
+  {
+    "label": "test_portable_wifi",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_wifi.py"
+    ],
+    "exit": 0,
+    "log_sha256": "dedf21d32b54b63e6ea79673f7103c3a482e8baf836220aaf83d63ff532776da"
+  },
+  {
+    "label": "test_portable_file_browser",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_file_browser.py"
+    ],
+    "exit": 0,
+    "log_sha256": "2b14e413ffb934c7f42854cb9ae4ca7520c8021710b4001949247213f7e7a051"
+  },
+  {
+    "label": "test_file_browser_paper",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_file_browser_paper.py"
+    ],
+    "exit": 0,
+    "log_sha256": "cccb6c0ef657a5da1edb66b2e75a032923ca68f602ba2dd178f3c8d5f76ba057"
+  },
+  {
+    "label": "test_file_browser_operations",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_file_browser_operations.py"
+    ],
+    "exit": 0,
+    "log_sha256": "a4fdd9f2b11983a3141113bec2b21658a98aca66110e9a9425d02db18334fc37"
+  },
+  {
+    "label": "test_file_browser_appdata_export",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_file_browser_appdata_export.py"
+    ],
+    "exit": 0,
+    "log_sha256": "ce2efedc343d16fb4dfdd9c4eae301f25d209739ca5b6063c8ebe8ebc16eda58"
+  },
+  {
+    "label": "test_portable_update",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_update.py"
+    ],
+    "exit": 0,
+    "log_sha256": "8fbb81a77cf0db9f604ae6d3400784f89f7b772765d0c8f4af8c0edb5fd63612"
+  },
+  {
+    "label": "test_portable_alarm",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_alarm.py"
+    ],
+    "exit": 0,
+    "log_sha256": "6b6ba9ddab548dcaed5ee74e9961defcf31b25179d5986a7e842174f62100148"
+  },
+  {
+    "label": "test_nova_ui",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_nova_ui.py"
+    ],
+    "exit": 0,
+    "log_sha256": "d568121a7c9e720a3e4b70604d8d53f25e44c558850baf8c659039122695d0a5"
+  },
+  {
+    "label": "test_nova_settings",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_nova_settings.py"
+    ],
+    "exit": 0,
+    "log_sha256": "d4287fa3504ae3ceb163d89e3b3fdf3a16fe4af10e148b87dd787789c8ba7712"
+  },
+  {
+    "label": "test_quick_actions",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_actions.py"
+    ],
+    "exit": 0,
+    "log_sha256": "da6ede5cd68c8a556fdb1c5420f8ccb904aa957a74afb27c5b63dc262ece0cf1"
+  },
+  {
+    "label": "test_quick_native",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_native.py"
+    ],
+    "exit": 0,
+    "log_sha256": "97831ad47cd8c329edacaa908069bc0e312dccb91b20a44425356b0a2977c8d7"
+  },
+  {
+    "label": "test_quick_radios",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_radios.py"
+    ],
+    "exit": 0,
+    "log_sha256": "6eb6d78f253a6ff41c52c0a1fcb637ed4391b9769c35b28310ec0536bd654883"
+  },
+  {
+    "label": "test_portable_audio",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_audio.py"
+    ],
+    "exit": 0,
+    "log_sha256": "bd26fc4bdf64c21fc7b2fb12b3192f5a61a44c832b64187e282276346f508987"
+  },
+  {
+    "label": "test_portable_radio",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_radio.py"
+    ],
+    "exit": 0,
+    "log_sha256": "102e76a8462853f05e62ca5eb00049af527913ddb2c58b05f8e05a8d4f7d385a"
+  },
+  {
+    "label": "test_portable_alarm_settings",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_alarm_settings.py"
+    ],
+    "exit": 0,
+    "log_sha256": "42f05bdbe8b10fa136a78629f825bb75f8d9899e71d51744ab6a867d011f8e5a"
+  },
+  {
+    "label": "test_springboard_nova",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_springboard_nova.py"
+    ],
+    "exit": 1,
+    "log_sha256": "71a182fd940aa206d55991cb6435e1a1a14d6e291d035df86c4a1c2107d3ecd9"
+  },
+  {
+    "label": "test_springboard_paper",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_springboard_paper.py"
+    ],
+    "exit": 0,
+    "log_sha256": "5bf59d853ce41a73ea517921ba04b3e21931ce74c97666a7d6154286ee3748d7"
+  },
+  {
+    "label": "test_settings_paper",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_settings_paper.py"
+    ],
+    "exit": 0,
+    "log_sha256": "015a8bbbad2c024cc09b999fa540081403b3183b26f9de8415f979be78c427aa"
+  },
+  {
+    "label": "test_nova_launcher",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_nova_launcher.py"
+    ],
+    "exit": 0,
+    "log_sha256": "f30acf61f8f8bffff44924d263d1c8644beba2603f2b3fb5c5619e9ab5c7882e"
+  },
+  {
+    "label": "test_portable_transition",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_portable_transition.py"
+    ],
+    "exit": 0,
+    "log_sha256": "2d9a4d30612ea611f576a0dd4daa7151e51a75f93d7c237ace34bc6f409ca77b"
+  },
+  {
+    "label": "test_paper_quick_actions",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_paper_quick_actions.py"
+    ],
+    "exit": 0,
+    "log_sha256": "7f8018e86773d4060e010bb288727cd5c16a69ef6c948a1c528f86631797a169"
+  },
+  {
+    "label": "oversize-usb",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "test/native_apps/file_browser_oversize_usb_handle_runtime_test.py"
+    ],
+    "exit": 0,
+    "log_sha256": "da5f9a521210198a20e90133b2028b76167cf7074c1d084f6da0082fbb372b80"
+  },
+  {
+    "label": "quick-raster-parity",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_raster_rows.py",
+      "--baseline",
+      "/workspace/shared/watch-launch-brightness-20261015/system-quick-baseline",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick-parity",
+      "--sanitize"
+    ],
+    "exit": 0,
+    "log_sha256": "7a0ec80c1a4dd627a251dd0b1c715dbcc7ae94c67dbf0eedfadf3a4342ab0951"
+  },
+  {
+    "label": "test_context_client",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_context_client.py"
+    ],
+    "exit": 1,
+    "log_sha256": "33fdd2a33bfaabd478332e718745c3f11251ad79d2b21006ddff39b5367849dd"
+  },
+  {
+    "label": "test_context_preferences",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_context_preferences.py"
+    ],
+    "exit": 0,
+    "log_sha256": "4874b38fe744869ac7b09a3dbd921e29f817b7a9b9e82dd777c2d1fe49b90c16"
+  },
+  {
+    "label": "contexts-x4",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_context_x4_adapter.py",
+      "--sdk-include",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk",
+      "--app-data-sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/wave-source-qualification/sdk"
+    ],
+    "exit": 1,
+    "log_sha256": "a9c9090e461c7b87280068880dff76311f1516cfaa1aaf97de1f3420c9a87812"
+  },
+  {
+    "label": "file-policy",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_file_browser_policy.py",
+      "--utilities",
+      "/workspace/shared/watch-sdr-native-release-20261015/wave-source/utilities",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/file-policy",
+      "--legacy"
+    ],
+    "exit": 1,
+    "log_sha256": "458c83978417cca01bd1a75dfa508970b8acd0ca281951580ef475b24a3c38da"
+  },
+  {
+    "label": "text-continuity",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_text_input_handoff_continuity.py",
+      "--runtime",
+      "/workspace/shared/watch-sdr-native-release-20261015/wave-source/runtime",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/text-continuity",
+      "--sanitize"
+    ],
+    "exit": 0,
+    "log_sha256": "0e9a65051df339d275f411147b8b359e5b144b6031bd55c4984dba106e513a0a"
+  },
+  {
+    "label": "quick_atomic-normal",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_atomic.py",
+      "--sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-normal"
+    ],
+    "exit": 1,
+    "log_sha256": "41b529bbdb9e2c1a79c7e6965c27c5fbd30359bdfa9495a2595da8f7b3d2ad26"
+  },
+  {
+    "label": "quick_atomic-sanitized",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_quick_atomic.py",
+      "--sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/quick_atomic-sanitized",
+      "--sanitize"
+    ],
+    "exit": 1,
+    "log_sha256": "efa62b88487f00b84cbbf78105863d2d951e1561f129ecf293eeb09000fee818"
+  },
+  {
+    "label": "home_automatic-normal",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_home_automatic.py",
+      "--sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/home_automatic-normal"
+    ],
+    "exit": 1,
+    "log_sha256": "854941446e6e9a6eabe0a64c1f00433e152fbe6a946254a95bf693e941212ce3"
+  },
+  {
+    "label": "home_automatic-sanitized",
+    "command": [
+      "/workspace/scratch/c744abbbbd60/watch-build-tools/python/bin/python",
+      "scripts/test_home_automatic.py",
+      "--sdk",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-sdk",
+      "--output",
+      "/workspace/shared/watch-launch-brightness-20261015/system-union-qualification/home_automatic-sanitized",
+      "--sanitize"
+    ],
+    "exit": 1,
+    "log_sha256": "6f27482673c4f5836ba13865397f7ea323bf77cb733cc5049acb4f04fb35a298"
+  }
+]

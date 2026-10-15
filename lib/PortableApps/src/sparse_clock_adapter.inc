@@ -44,10 +44,18 @@ static bool desk_guard_diagnostic(const char *line) {
 static bool desk_guard_launch(const char *path) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
  if(native_sleep_retained || !portable_paper_frame_drain())return false;
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ if(!desk_radio_policy_ready(true))return false;
+#endif
  if(!contexts_suspend())return false;
  return desk_runtime->request_launch(path);
 #else
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ return !native_sleep_retained && portable_paper_frame_drain() &&
+        desk_radio_policy_ready(true) && desk_runtime->request_launch(path);
+#else
  return !native_sleep_retained && portable_paper_frame_drain() && desk_runtime->request_launch(path);
+#endif
 #endif
 }
 #ifdef PORTABLE_QUICK_RADIOS
@@ -117,6 +125,13 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
  if(!desk_runtime->acquire(name,version,instance,grant)) {
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+  if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
+     grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
+   if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
+   return false;
+  }
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!strcmp(name,CONTEXTS_SERVICE_CAPABILITY) && version==1 && instance==0 &&
      grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation)return false;
@@ -165,20 +180,35 @@ static bool desk_quick_acquire(const char *name,uint32_t version,uint64_t instan
  * the deployment-local sleep hook and all other app-local clients. */
 #undef pqa_radios_load
 #undef pqa_radios_apply
+#undef pqa_radios_apply_user
 #undef pqa_radios_suspend
 #undef pqa_radios_resume
 static bool desk_radios_load(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;
  if(!pqa_radios_load(state,ui,&desk_quick_runtime)){portable_desk_adapter_retain();return false;}
+#ifdef PORTABLE_DESK_DEFER_RADIOS
+ /* The ordinary settled Quick modal reload also completes deferred policy. */
+ if(state==&quick_radios && !native_sleep_retained)desk_radios_loaded=true;
+#endif
  return !native_sleep_retained;
 }
+#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+static bool desk_radios_apply_user(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime,uint32_t actions,
+ pqa_user_preference_save save,void *context,bool(*safe)(void*)) {
+ (void)runtime;
+ if(native_sleep_retained)return false;
+ if(!pqa_radios_apply_user(state,ui,&desk_quick_runtime,actions,save,context,safe)){portable_desk_adapter_retain();return false;}
+ return !native_sleep_retained;
+}
+#else
 static bool desk_radios_apply(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime,uint32_t actions) {
  (void)runtime;
  if(native_sleep_retained)return false;
  if(!pqa_radios_apply(state,ui,&desk_quick_runtime,actions)){portable_desk_adapter_retain();return false;}
  return !native_sleep_retained;
 }
+#endif
 static bool desk_radios_suspend(const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;
@@ -254,7 +284,7 @@ static int desk_open_foreground(void) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
-#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_QUICK_RADIOS) && !defined(PORTABLE_DESK_DEFER_RADIOS)
  if(!desk_radios_load(&quick_radios,&quick.ui,rt) || native_sleep_retained) {
   portable_desk_adapter_retain();return desk_start_error();
  }

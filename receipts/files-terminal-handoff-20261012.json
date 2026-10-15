@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "date": "2026-10-12",
+  "files_version": "1.5.32",
+  "baseline_commit": "48a5d089e3bfdc0ced266f00c88d66856d269b59",
+  "fix_commit": "f0a2f240aceb5e46eb95af9c3a264d9eede6467b",
+  "regression": "Successful file.open request sets fb_terminal; final app_main display drain falsely retains an already-clean Files invocation.",
+  "baseline_failure": {
+    "assertion": "!retains&&\"Completed file.open handoff must not retain during app_main drain\"",
+    "preceding_assertions": "handler_launches==1 && fb_terminal && !fpeer && !owned",
+    "log_sha256": "fe8a9ac85bde9637dd9ced7646178141bdb2703d1df9d6b0e88b21117cc5cce4"
+  },
+  "passed": {
+    "handoff_peer_ubsan": {
+      "cases": 36,
+      "log_sha256": "0d8a6684b8d378ad398acebab83e97bf1cf2e25f97fd027e9c74b608d3ff03f8"
+    },
+    "setup_frontend_asan_ubsan": {
+      "cases": 16,
+      "log_sha256": "e8e6b8937844f33118ebbdf33c8203d309ef30aeb9287a5804acb6edf8f9f245"
+    },
+    "setup_adapter_asan_ubsan": {
+      "cases": 27,
+      "log_sha256": "a0bde4cf60a1ea9c1e1452d93f0fea84dcf9d934b94cbbacaa3ee1f49d45c732"
+    },
+    "setup_helper_asan_ubsan": {
+      "cases": 93,
+      "log_sha256": "54614ada4fb5dcb9662253a01a35b817a2c8f36ef9a899b7709e77fd164b49d9"
+    }
+  },
+  "source_sha256": {
+    "Apps/file_browser_setup.inc": "09f23c804a89d722bccb981ab98f47448d07f1d0033c4602975c8d1bbcd5c23c",
+    "test/native_apps/file_browser_peer_test.c": "0d1e850947c55bf8dc3deff6ff460213b56de682ee5c21aae4c540639d2d665e",
+    "scripts/test_file_browser_peer.sh": "c7e3bd779b1acb7d5a82f0683d899803f182fcfc3ddea1b5759b3cb624643d19"
+  },
+  "target": {
+    "repository_commit": "f0a2f240aceb5e46eb95af9c3a264d9eede6467b",
+    "working_tree_dirty": false,
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "size_bytes": 484024,
+    "sha256": "6a28d9745c7212740e641874142abad899dcef2559960c190abe954d82128c41",
+    "build_record_sha256": "a90b130ffef667da76b946fa0bddb4a7c74730a06c4b286eaf18ae94465f9140",
+    "metadata_sha256": "c774428564b32e296365b26348fc72b2737548c992372e162ec4f43a0846cefa",
+    "grant_count": 16,
+    "deployed_1_5_31_invariants_equal": [
+      "defines",
+      "build_defines",
+      "imports",
+      "exports",
+      "required_grants",
+      "requested_capabilities",
+      "grant_count",
+      "grant_bindings",
+      "storage_selection",
+      "file_sharing",
+      "touch_scrolling",
+      "raster_snapshot"
+    ],
+    "deployed_ble_profile_settings_equal": true,
+    "validation": "Native ELF structural and real loader validation; exact imports/exports passed"
+  },
+  "qualification_limits": [
+    "Deterministic host providers, actual Files app_main/controller/adapter/helper; no physical X4 test or full product Reader entry test.",
+    "Peer display fixture assumes immediate raster; new raster snapshot profile qualifies local actual app_main handoff only.",
+    "ASan leak detector disabled because executor is traced; address and undefined behavior checks enabled."
+  ],
+  "publication": "Parent owns publication and product integration"
+}

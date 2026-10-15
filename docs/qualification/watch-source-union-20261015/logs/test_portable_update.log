@@ -1,0 +1,819 @@
+Pinned Watch catalog, actual Spectrum API pairs, authority, paired cohort metadata, truncation, duplicates and cancellation passed
+paired cohort service scenario 0 passed
+paired cohort service scenario 1 passed
+paired cohort service scenario 2 passed
+paired cohort service scenario 3 passed
+paired cohort service scenario 4 passed
+paired cohort service scenario 5 passed
+paired cohort service scenario 6 passed
+paired cohort service scenario 7 passed
+paired cohort service scenario 8 passed
+paired cohort service scenario 9 passed
+paired cohort service scenario 10 passed
+paired cohort service scenario 11 passed
+paired cohort service scenario 12 passed
+paired cohort service scenario 13 passed
+paired cohort service scenario 14 passed
+paired cohort service scenario 15 passed
+paired cohort service scenario 16 passed
+paired cohort service scenario 17 passed
+paired cohort service scenario 18 passed
+paired cohort service scenario 19 passed
+paired cohort service scenario 20 passed
+paired cohort service scenario 21 passed
+paired cohort service scenario 22 passed
+paired cohort service scenario 23 passed
+paired cohort service scenario 24 passed
+paired cohort service scenario 25 passed
+paired cohort service scenario 26 passed
+paired cohort service scenario 27 passed
+paired cohort service scenario 28 passed
+paired cohort service scenario 29 passed
+paired cohort service scenario 30 passed
+paired cohort service scenario 31 passed
+paired cohort service scenario 32 passed
+paired cohort service scenario 33 passed
+paired cohort service scenario 34 passed
+paired cohort service scenario 35 passed
+paired cohort service scenario 36 passed
+paired cohort service scenario 37 passed
+paired cohort service scenario 38 passed
+paired cohort service scenario 39 passed
+paired cohort service scenario 40 passed
+paired cohort service scenario 41 passed
+paired cohort service scenario 42 passed
+paired cohort service scenario 43 passed
+paired cohort service scenario 44 passed
+paired cohort service scenario 45 passed
+update service kind 0 scenario 0 passed
+update service kind 0 scenario 1 passed
+update service kind 0 scenario 2 passed
+update service kind 0 scenario 3 passed
+update service kind 0 scenario 4 passed
+update service kind 0 scenario 5 passed
+update service kind 0 scenario 6 passed
+update service kind 0 scenario 7 passed
+update service kind 0 scenario 8 passed
+update service kind 0 scenario 9 passed
+update service kind 0 scenario 10 passed
+update service kind 0 scenario 11 passed
+update service kind 0 scenario 12 passed
+update service kind 0 scenario 13 passed
+update service kind 0 scenario 14 passed
+update service kind 0 scenario 15 passed
+update service kind 0 scenario 16 passed
+update service kind 0 scenario 17 passed
+update service kind 0 scenario 18 passed
+update service kind 0 scenario 19 passed
+update service kind 0 scenario 20 passed
+update service kind 0 scenario 21 passed
+update service kind 0 scenario 22 passed
+update service kind 0 scenario 23 passed
+update service kind 0 scenario 24 passed
+update service kind 0 scenario 25 passed
+update service kind 0 scenario 26 passed
+update service kind 0 scenario 27 passed
+update service kind 0 scenario 28 passed
+update service kind 1 scenario 0 passed
+update service kind 1 scenario 1 passed
+update service kind 1 scenario 2 passed
+update service kind 1 scenario 3 passed
+update service kind 1 scenario 4 passed
+update service kind 1 scenario 5 passed
+update service kind 1 scenario 6 passed
+update service kind 1 scenario 7 passed
+update service kind 1 scenario 8 passed
+update service kind 1 scenario 9 passed
+update service kind 1 scenario 10 passed
+update service kind 1 scenario 11 passed
+update service kind 1 scenario 12 passed
+update service kind 1 scenario 13 passed
+update service kind 1 scenario 14 passed
+update service kind 1 scenario 15 passed
+update service kind 1 scenario 16 passed
+update service kind 1 scenario 17 passed
+update service kind 1 scenario 18 passed
+update service kind 1 scenario 19 passed
+update service kind 1 scenario 20 passed
+update service kind 1 scenario 21 passed
+update service kind 1 scenario 22 passed
+update service kind 1 scenario 23 passed
+update service kind 1 scenario 24 passed
+update service kind 1 scenario 25 passed
+update service kind 1 scenario 26 passed
+update service kind 1 scenario 27 passed
+update service kind 1 scenario 28 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Pinned Watch catalog, actual Spectrum API pairs, authority, paired cohort metadata, truncation, duplicates and cancellation passed
+paired cohort service scenario 0 passed
+paired cohort service scenario 1 passed
+paired cohort service scenario 2 passed
+paired cohort service scenario 3 passed
+paired cohort service scenario 4 passed
+paired cohort service scenario 5 passed
+paired cohort service scenario 6 passed
+paired cohort service scenario 7 passed
+paired cohort service scenario 8 passed
+paired cohort service scenario 9 passed
+paired cohort service scenario 10 passed
+paired cohort service scenario 11 passed
+paired cohort service scenario 12 passed
+paired cohort service scenario 13 passed
+paired cohort service scenario 14 passed
+paired cohort service scenario 15 passed
+paired cohort service scenario 16 passed
+paired cohort service scenario 17 passed
+paired cohort service scenario 18 passed
+paired cohort service scenario 19 passed
+paired cohort service scenario 20 passed
+paired cohort service scenario 21 passed
+paired cohort service scenario 22 passed
+paired cohort service scenario 23 passed
+paired cohort service scenario 24 passed
+paired cohort service scenario 25 passed
+paired cohort service scenario 26 passed
+paired cohort service scenario 27 passed
+paired cohort service scenario 28 passed
+paired cohort service scenario 29 passed
+paired cohort service scenario 30 passed
+paired cohort service scenario 31 passed
+paired cohort service scenario 32 passed
+paired cohort service scenario 33 passed
+paired cohort service scenario 34 passed
+paired cohort service scenario 35 passed
+paired cohort service scenario 36 passed
+paired cohort service scenario 37 passed
+paired cohort service scenario 38 passed
+paired cohort service scenario 39 passed
+paired cohort service scenario 40 passed
+paired cohort service scenario 41 passed
+paired cohort service scenario 42 passed
+paired cohort service scenario 43 passed
+paired cohort service scenario 44 passed
+paired cohort service scenario 45 passed
+update service kind 0 scenario 0 passed
+update service kind 0 scenario 1 passed
+update service kind 0 scenario 2 passed
+update service kind 0 scenario 3 passed
+update service kind 0 scenario 4 passed
+update service kind 0 scenario 5 passed
+update service kind 0 scenario 6 passed
+update service kind 0 scenario 7 passed
+update service kind 0 scenario 8 passed
+update service kind 0 scenario 9 passed
+update service kind 0 scenario 10 passed
+update service kind 0 scenario 11 passed
+update service kind 0 scenario 12 passed
+update service kind 0 scenario 13 passed
+update service kind 0 scenario 14 passed
+update service kind 0 scenario 15 passed
+update service kind 0 scenario 16 passed
+update service kind 0 scenario 17 passed
+update service kind 0 scenario 18 passed
+update service kind 0 scenario 19 passed
+update service kind 0 scenario 20 passed
+update service kind 0 scenario 21 passed
+update service kind 0 scenario 22 passed
+update service kind 0 scenario 23 passed
+update service kind 0 scenario 24 passed
+update service kind 0 scenario 25 passed
+update service kind 0 scenario 26 passed
+update service kind 0 scenario 27 passed
+update service kind 0 scenario 28 passed
+update service kind 1 scenario 0 passed
+update service kind 1 scenario 1 passed
+update service kind 1 scenario 2 passed
+update service kind 1 scenario 3 passed
+update service kind 1 scenario 4 passed
+update service kind 1 scenario 5 passed
+update service kind 1 scenario 6 passed
+update service kind 1 scenario 7 passed
+update service kind 1 scenario 8 passed
+update service kind 1 scenario 9 passed
+update service kind 1 scenario 10 passed
+update service kind 1 scenario 11 passed
+update service kind 1 scenario 12 passed
+update service kind 1 scenario 13 passed
+update service kind 1 scenario 14 passed
+update service kind 1 scenario 15 passed
+update service kind 1 scenario 16 passed
+update service kind 1 scenario 17 passed
+update service kind 1 scenario 18 passed
+update service kind 1 scenario 19 passed
+update service kind 1 scenario 20 passed
+update service kind 1 scenario 21 passed
+update service kind 1 scenario 22 passed
+update service kind 1 scenario 23 passed
+update service kind 1 scenario 24 passed
+update service kind 1 scenario 25 passed
+update service kind 1 scenario 26 passed
+update service kind 1 scenario 27 passed
+update service kind 1 scenario 28 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable update UI scenario 0 passed
+Portable update UI scenario 1 passed
+Portable update UI scenario 2 passed
+Portable update UI scenario 3 passed
+Portable update UI scenario 4 passed
+Portable update UI scenario 5 passed
+Portable update UI scenario 6 passed
+Portable update UI scenario 7 passed
+Portable update UI scenario 8 passed
+Portable update UI scenario 9 passed
+Portable update UI scenario 10 passed
+Portable update UI scenario 11 passed
+Portable update UI scenario 12 passed
+Portable update UI scenario 13 passed
+Portable update UI scenario 14 passed
+Portable update UI scenario 15 passed
+Portable update UI scenario 16 passed
+Portable update UI scenario 17 passed
+Portable update UI scenario 18 passed
+Portable update UI scenario 19 passed
+Portable update UI scenario 20 passed
+Portable update UI scenario 21 passed
+Portable update UI scenario 22 passed
+Portable update UI scenario 23 passed
+Portable update UI scenario 24 passed
+Portable update UI scenario 25 passed
+Portable update UI scenario 26 passed
+Portable update UI scenario 27 passed
+Portable update UI scenario 28 passed
+Portable update UI scenario 29 passed
+Portable update UI scenario 30 passed
+Portable update UI scenario 31 passed
+Portable update UI scenario 32 passed
+Portable update UI scenario 33 passed
+Portable update UI scenario 34 passed
+Portable update UI scenario 35 passed
+Portable update UI scenario 36 passed
+Portable update UI scenario 37 passed
+Portable updates: catalog mutations; 46 paired cohort scenarios x 2 modes; 29 service scenarios x 2 kinds x 2 modes; 38 UI scenarios x 2 kinds x 2 orientations x 2 views x 2 modes passed

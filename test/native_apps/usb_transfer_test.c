@@ -129,8 +129,19 @@ static bool nav_poll(void*c,risc_input_navigation_frame_v1*out){
 static bool nav_foreground(void*c,const risc_input_foreground_v1*x,size_t n){(void)c;(void)x;(void)n;return true;}
 static bool nav_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 nav={1,sizeof(nav),NULL,nav_poll,nav_foreground,nav_reset};
+#ifdef TEST_USB_RGB
+#define USB_TEST_WIDTH 410
+#define USB_TEST_HEIGHT 502
+#define USB_TEST_X(x) ((x)*410/480)
+#define USB_TEST_Y(y) ((y)*502/800)
+#else
+#define USB_TEST_WIDTH 480
+#define USB_TEST_HEIGHT 800
+#define USB_TEST_X(x) (x)
+#define USB_TEST_Y(y) (y)
+#endif
 static bool usb_touch_desired(void*c,risc_touch_snapshot_v1*out){
- (void)c;*out=(risc_touch_snapshot_v1){.width=480,.height=800};
+ (void)c;*out=(risc_touch_snapshot_v1){.width=USB_TEST_WIDTH,.height=USB_TEST_HEIGHT};
  bool down=steps==2;unsigned y=644;
  /* Case17 injects its queued-frame Cancel in usb_touch_poll below. */
  if((test_case==0||test_case==10||test_case==11||test_case==12) && steps==20)down=true;
@@ -140,11 +151,14 @@ static bool usb_touch_desired(void*c,risc_touch_snapshot_v1*out){
   if(steps==20||steps==40||steps==50||(test_case==4&&steps==65))down=true;
   if(steps==30){down=true;y=735;}
  }
- if(down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=240,.y=y};}
+ #ifndef PORTABLE_INPUT_NAVIGATION
+ if(steps==80){down=true;y=735;}
+#endif
+ if(down){out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=USB_TEST_X(240),.y=USB_TEST_Y(y)};}
  return true;
 }
 /* Raw fixture obeys the ordered event/snapshot contract. */
-static risc_touch_snapshot_v1 usb_touch_state={.width=480,.height=800};
+static risc_touch_snapshot_v1 usb_touch_state={.width=USB_TEST_WIDTH,.height=USB_TEST_HEIGHT};
 static risc_touch_event_v1 usb_touch_events[32];
 static unsigned usb_touch_head,usb_touch_tail,cancel_reports;
 static bool usb_touch_poll(void*c,size_t n) {
@@ -153,7 +167,7 @@ static bool usb_touch_poll(void*c,size_t n) {
   * The unchanged case17 assertion requires zero SD prepare calls. */
  if(test_case==17 && preparing_frames && cancel_reports<2) {
   assert(ms<=queued_until);next.contact_count=cancel_reports++==0;
-  next.contacts[0]=(risc_touch_contact_v1){.id=1,.x=240,.y=644};
+  next.contacts[0]=(risc_touch_contact_v1){.id=1,.x=USB_TEST_X(240),.y=USB_TEST_Y(644)};
  }
  bool was=usb_touch_state.contact_count!=0,down=next.contact_count!=0;
  if(was!=down) {
@@ -173,7 +187,11 @@ static int32_t usb_touch_next(void*c,uint64_t subscription,risc_touch_event_v1*o
 static bool usb_touch(void*c,risc_touch_snapshot_v1*out){(void)c;*out=usb_touch_state;return true;}
 static bool usb_submit(void*c,risc_display_frame_v1 frame,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*key){
  (void)c;(void)r;(void)n;(void)o;assert(frame==1&&frames);frames=0;if(session&&preparing)preparing_frames++;*key=++presents;queued_until=ms+24;
+ #ifdef TEST_USB_RGB
+ if(capture){char name[512];snprintf(name,sizeof(name),"%s/frame-%02u.ppm",capture,presents);FILE*f=fopen(name,"wb");assert(f);fprintf(f,"P6\n%u %u\n255\n",PANEL_WIDTH,PANEL_HEIGHT);for(unsigned i=0;i<PANEL_WIDTH*PANEL_HEIGHT;i++){uint16_t v=((uint16_t*)pixels)[i];uint8_t rgb[]={(uint8_t)((v>>11)*255/31),(uint8_t)(((v>>5)&63)*255/63),(uint8_t)((v&31)*255/31)};assert(fwrite(rgb,1,3,f)==3);}fclose(f);}
+#else
  if(capture){char name[512];snprintf(name,sizeof(name),"%s/frame-%02u.pbm",capture,presents);FILE*f=fopen(name,"wb");assert(f);fprintf(f,"P4\n%u %u\n",PANEL_WIDTH,PANEL_HEIGHT);assert(fwrite(pixels,1,sizeof(pixels),f)==sizeof(pixels));fclose(f);}
+ #endif
  return true;
 }
 static bool usb_present(void*c,risc_display_present_token_v1 key,risc_display_present_status_v1*out){(void)c;(void)key;out->state=ms<queued_until?RISC_DISPLAY_PRESENT_QUEUED:RISC_DISPLAY_PRESENT_COMPLETE;return true;}
@@ -232,7 +250,12 @@ int USB_TRANSFER_TEST_MAIN(int argc,char**argv){
  }
  assert(app_module_init()==0);app_main();app_module_fini();
  assert(!frames&&!grants&&!subs&&!session&&!portable_usb_transfer_owned());if(test_case<13||test_case>=17)assert(begins&&usb_steps);else assert(!begins&&!usb_steps&&!prepare_count&&usb_releases==1);
+ #ifdef PORTABLE_INPUT_NAVIGATION
  assert(launches==1&&!strcmp(launched,"default.elf"));
+#else
+ /* Touch Back returns to Apps; automatic safe eject returns to Home. */
+ assert(launches==1&&(!strcmp(launched,"springboard.elf")||!strcmp(launched,"default.elf")));
+#endif
  if(test_case==0)assert(ends==1&&cancel_ends==1&&!confirmed_ends);
  if(test_case==1||test_case==5||test_case==7)assert(ends==1&&!confirmed_ends);
  if(test_case==2||test_case==3)assert(cancel_ends==2&&confirmed_ends==1);

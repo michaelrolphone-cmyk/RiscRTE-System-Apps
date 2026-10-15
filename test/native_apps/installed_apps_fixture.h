@@ -29,11 +29,11 @@ void settingsApiSetup(){
  installation.settings_ack=[](void*,uint32_t slot,uint64_t generation)->int32_t{assert(slot==1&&opened.empty());return Kv::acknowledge(kvState,kvWorkspace,kvBackend,3000,generation);};
  packageVolume.base.begin=[](void*,uint64_t*t){return exported?RISC_STORAGE_ASYNC_BUSY:risc_storage_async_begin(&bridge,t);};
 }
-std::string digest(64,'0');unsigned httpOffset,httpOpens,httpCloses;bool httpOpen;
+std::string digest(64,'0');unsigned httpOffset,httpOpens,httpCloses;bool httpOpen;std::string httpBody="DRIVER";
 const risc_http_client_v1 http={1,sizeof(http),nullptr,
- [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{assert(!httpOpen&&q->utc_seconds==1800000000&&strstr(q->url,"late-provider"));httpOpen=true;httpOffset=0;++httpOpens;*h=1;return RISC_HTTP_OK;},
- [](void*,uint64_t,void*p,uint32_t n,uint32_t*out)->int32_t{assert(httpOpen&&n>=5);if(httpOffset){*out=0;return RISC_HTTP_EOF;}memcpy(p,"DRIVER",6);*out=httpOffset=6;return RISC_HTTP_OK;},
- [](void*,uint64_t,risc_http_response_v1*out)->int32_t{*out={sizeof(*out),200,6,6};return RISC_HTTP_OK;},
+ [](void*,const risc_http_request_v1*q,uint64_t*h)->int32_t{assert(!httpOpen&&q->utc_seconds==1800000000&&(strstr(q->url,"late-provider")||strstr(q->url,"app-image")));httpBody=strstr(q->url,"app-image")?"IMAGE":"DRIVER";httpOpen=true;httpOffset=0;++httpOpens;*h=1;return RISC_HTTP_OK;},
+ [](void*,uint64_t,void*p,uint32_t n,uint32_t*out)->int32_t{assert(httpOpen&&n>=5);if(httpOffset){*out=0;return RISC_HTTP_EOF;}assert(n>=httpBody.size());memcpy(p,httpBody.data(),httpBody.size());*out=httpOffset=unsigned(httpBody.size());return RISC_HTTP_OK;},
+ [](void*,uint64_t,risc_http_response_v1*out)->int32_t{*out={sizeof(*out),200,uint32_t(httpBody.size()),int64_t(httpBody.size())};return RISC_HTTP_OK;},
  [](void*,uint64_t)->int32_t{assert(httpOpen);httpOpen=false;++httpCloses;return RISC_HTTP_OK;}};
 void graphBegin(){const auto*d=t5_driver_get(2);risc_provider_dependency_v1 deps[]={{RISC_INSTALLATION_CAPABILITY,1,&installation},{RISC_BOUND_APP_DATA_CAPABILITY,1,&data},{RISC_HTTP_CLIENT_CAPABILITY,1,&http}};assert(d->start(deps,3));}
 

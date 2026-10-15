@@ -1,0 +1,7 @@
+Production app_main/raw touch: SD absence/removal/reinsert, listing/preview errors, rename/move/delete failures, copy read/write/removal/open failures and retained file/directory cleanup passed
+Files protected settings: listing, aliases, preview, open, copy, rename, parent move and recursive delete PASS
+Paper file operations: rename/move/copy/delete, recursive folders, collision/cancel/close failures, explicit volume selection, handler paging/dispatch/unavailable and SD ELF admission passed
+Production app_main/raw touch: SD absence/removal/reinsert, listing/preview errors, rename/move/delete failures, copy read/write/removal/open failures and retained file/directory cleanup passed
+Files protected settings: listing, aliases, preview, open, copy, rename, parent move and recursive delete PASS
+Paper file operations: rename/move/copy/delete, recursive folders, collision/cancel/close failures, explicit volume selection, handler paging/dispatch/unavailable and SD ELF admission passed
+Paper File Browser: native raster, 513-item bidirectional paging, 95 filter keys, preview/error/close safety and real raw-touch lifecycle pass

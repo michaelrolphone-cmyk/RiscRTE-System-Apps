@@ -42,8 +42,12 @@ typedef struct {
 
  /* App Store owns the Wi-Fi session; transport stays provider-private. */
  int32_t (*network_ready)(void*,uint64_t utc_seconds);
+ /* Optional RAM-only maintenance query. True requests checkpoint progress using
+  * step; it does not request another catalog scan. Cancel still drains custody. */
+ bool (*settings_pending)(void*);
 } installed_apps_v1;
 #define INSTALLED_APPS_LOCAL_PREFIX_SIZE offsetof(installed_apps_v1,network_ready)
+#define INSTALLED_APPS_SETTINGS_PREFIX_SIZE (offsetof(installed_apps_v1,settings_pending)+sizeof(((installed_apps_v1*)0)->settings_pending))
 #ifdef __cplusplus
 }
 #endif

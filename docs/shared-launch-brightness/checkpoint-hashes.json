@@ -1,0 +1,8 @@
+{
+  ".github/workflows/shared-data-custody.yml": "141f617b28000ccec095111ded1c27d75dc548c625f86699c8978533403b45f9",
+  "lib/PortableApps/src/adapter.c": "98f705ebcbe3ea7fdcb270354d93108555b0d96b95eb86c54281d5f35318b249",
+  "lib/PortableApps/src/foreground_adapter_open.inc": "19de34d0d9ccb2b92ade6019cae78cff3701e8070b20e075bf5db1b8d6475de7",
+  "scripts/test_shared_initial_brightness.py": "8a4b5fd33eab5c95317b51763f9f2e5172131d0a18fbb84bc774481a1231e4a8",
+  "test/native_apps/shared_initial_brightness_test.c": "6471a807816a93320da2c2220d7cdcf9623f5cd8a2741cfece02ff4ea9948e0a",
+  "test/native_apps/shared_noquick_brightness_test.c": "7548c1d11e230ccb7271fced940e10ebf5ebc77918ce66d78d0021d8bcebacfc"
+}

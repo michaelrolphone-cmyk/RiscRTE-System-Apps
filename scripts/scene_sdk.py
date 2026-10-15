@@ -23,12 +23,12 @@ def stage_sdk(runtime: Path, system: Path, output: Path) -> Path:
     # Optional provider contracts come from System when not in this Runtime.
     # Test this invocation's sources, not files left by an earlier build: stale
     # headers otherwise silently hide a newly appended provider API suffix.
-    for name in ('RiscSceneV1.h', 'RiscSceneStateV1.h', 'RiscSceneLifecycleV1.h',
+    for name in ('RiscRuntimeHostControlV1.h', 'RiscSceneV1.h', 'RiscSceneStateV1.h', 'RiscSceneLifecycleV1.h',
                  'RiscSceneComponentsV1.h', 'RiscScenePageV1.h',
-                 'RiscSceneCheckpointV1.h', 'RiscSceneReadingV1.h', 'RiscSceneReadingLinksV1.h',
+                 'RiscSceneCheckpointV1.h', 'RiscSceneReadingV1.h', 'RiscSceneReadingLinksV1.h', 'RiscSceneTelemetryV1.h',
                  'RiscCivilClockV1.h', 'RiscSceneResidentV1.h'):
         if name not in sources:
-            canonical(system / 'sdk/app' / name)
+            canonical(system / ('lib/PortableApps/include' if name=='RiscRuntimeHostControlV1.h' else 'sdk/app') / name)
     canonical(system / 'Services/scene_profile/SceneProfileV1.h')
     canonical(system / 'Services/text_input/SceneKeyboardV1.h')
     manifest = include / '.scene-sdk-files.json'

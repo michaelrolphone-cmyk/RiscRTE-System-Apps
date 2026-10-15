@@ -1,0 +1,21 @@
+app_store: host fixture passed
+settings: host fixture passed
+springboard: host fixture passed
+file_browser: host fixture passed
+time_zone: host fixture passed
+wifi_settings: host fixture passed
+Package Manager UI: installed inventory, explicit downgrade, uninstall, refusal and fresh install PASS
+package_manager: host fixture passed
+Driver Manager: generic online/SD ZIP and explicit recovery contract PASS
+driver_manager: host fixture passed
+sd_firmware_update: host fixture passed
+button_remap: host fixture passed
+clear_cache: host fixture passed
+language_settings: host fixture passed
+status_bar_settings: host fixture passed
+ota_update: host fixture passed
+font_manager: host fixture passed
+font_selection: host fixture passed
+file_transfer: host fixture passed
+springboard live drag, eased settle, cancellation, vertical lock, backpressure and cleanup PASS
+springboard_video: host fixture passed

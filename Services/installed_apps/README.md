@@ -111,3 +111,57 @@ cover first-frame ordering, 1000 pending progress/cancel polls, child handoff
 and deferred sleep. No additional display/input rendering path is introduced.
 
 Format-2 native settings use scalable immutable SD pages plus a verified atomic index. The copied worker runs every filesystem operation. Existing NVS migration, v1 compatibility, per-key journal replay and missing-media authority are native responsibilities. A new write does not disappear when an older checkpoint completes. Original private native values are retained only as a migration backup; after the durable SD anchor, they are never fallback defaults.
+
+### 0.9.0 explicitly selected shared settings
+
+The append-only Runtime shared-settings suffix selects namespaces explicitly from
+boot policy. Shared slots follow the private range; the coordinator processes
+them before private package settings or discovery. Owners are `shared-%08x` and
+SD checkpoints live beneath `/RTECFG/%08X`. Existing private paths and namespace
+capacity keep their original meaning. Older Runtime tables remain private-only.
+
+The append-only catalog `settings_pending` callback is RAM-only. Home and
+Springboard poll it after their initial requested refresh finishes, acquire the
+SD grant only for pending maintenance, and drain cancellation before USB/Home
+handoff. Native KV acceptance establishes native-journal durability; Wi-Fi Save
+does not claim that the SD checkpoint is already confirmed.
+
+Files and WebDAV reserve every RTECFG path component, case-insensitively, including
+trailing dot/space aliases. Listing, direct open, mutations, copy sources and
+destinations, recursive traversal, and parent-folder moves are covered. This is
+UI/protocol protection, not encryption or a secure credential vault; physical SD
+access can read the checkpoint. No product profile is enabled by this change.
+
+The build receipt records `shared_settings_sd`, `shared_settings_root` and
+`idle_settings_maintenance` for explicit composition checks. The shared flag is
+false when built with an older Runtime SDK.
+
+### 0.9.1 application image downloads
+
+An optional HTTPS `url` in the existing selected `install.json` descriptor now
+allows the app ELF to be absent. The catalog persists the resolved descriptor,
+URL, expected digest and namespace before starting any download mutation. It
+uses the existing copied-worker `SdPackageDownload` transaction for both
+providers and the application. Only fully validated immutable images proceed to
+the existing activation journal and manifest publication. Network ownership is
+requested through the existing App Store capability flow; cold Home recovery
+never connects Wi-Fi itself. Recovery uses the protected plan even if the public
+descriptor disappears. A matching admitted image permits offline recovery.
+
+`stage_sd_app.py --url HTTPS_URL` emits the descriptor without copying the image;
+the supplied local ELF is still checked and hashed to describe exact bytes.
+Without `--url`, existing local staging is unchanged. This is selected package
+installation, not an online native catalog feed or automatic core inventory.
+
+New host coverage adds 160 interruption/restart points through the real catalog
+coordinator and worker, descriptor removal, missing-media retry, and catalog
+refresh. Existing 110 provider provisioning cuts, 65 private settings cuts,
+153 paged settings cuts, and durable uninstall tests remain passing. HTTP, ELF
+admission and media are boundary fixtures; no hardware qualification is claimed.
+
+Still separate: live placement across SD/internal volumes, a configured native
+core-package feed, and product activation. The selected .111 installation API
+binds one volume (SD 9). Its app-data capability grants only named complete files;
+it is not an internal executable directory. The offline placement planner and
+native boot-time full-store installer cannot safely be treated as a live fallback
+callback. Failed or retained SD custody never triggers a storage switch.

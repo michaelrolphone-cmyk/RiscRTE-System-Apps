@@ -1,4 +1,9 @@
 /* Actual portable controller, adapter and NOVA raster, with a fake volume. */
+#ifdef FILE_BROWSER_RESIDENT_PROFILE
+#define PORTABLE_ALARM_CLIENT
+#define PORTABLE_INPUT_NAVIGATION
+#define PORTABLE_INPUT_NAVIGATION_LOCAL
+#endif
 #ifdef FILE_BROWSER_FULL_PROFILE
 #define PORTABLE_ALARM_CLIENT
 #define PORTABLE_APP_SLEEP_LOCAL
@@ -18,10 +23,22 @@ static const t5_app_api_v1 *test_browser_api(uint32_t);
 #undef t5_app_get_api
 #include <assert.h>
 #include <stdlib.h>
+#ifndef FILE_TEST_WIDTH
+#define FILE_TEST_WIDTH 240u
+#define FILE_TEST_HEIGHT 240u
+#endif
 #ifdef FILE_BROWSER_PAPER_PROFILE
 static uint8_t fb_pixels[100*480];
 #else
-static uint16_t fb_pixels[240*244];
+#ifndef FILE_TEST_WIDTH
+#define FILE_TEST_WIDTH 240u
+#define FILE_TEST_HEIGHT 240u
+#endif
+#define FILE_TEST_STRIDE (FILE_TEST_WIDTH+4u)
+static uint16_t fb_pixels[FILE_TEST_HEIGHT*FILE_TEST_STRIDE];
+#endif
+#ifdef FILE_POLICY_FIXTURE
+static unsigned file_policy_sleep_count;
 #endif
 static unsigned test_grants,test_frames,test_subs,test_presents,test_ticks,test_entry,test_entries=8,test_offset,test_length=577,test_reads,test_closes;
 static unsigned test_polls,test_steps,test_launches,test_script,test_seen_modes,test_wifi_launches;
@@ -46,24 +63,31 @@ static bool test_info(void*c,risc_display_info_v1*s){(void)c;
 #endif
 ,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.damage_x_alignment=8,.damage_width_alignment=8};
 #else
-*s=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+*s=(risc_display_info_v1){.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
 #endif
 return true;}
 static bool test_frame(void*c,uint32_t f,risc_display_surface_v1*s){(void)c;assert(!test_frames);test_frames=1;
 #ifdef FILE_BROWSER_PAPER_PROFILE
 assert(f==RISC_DISPLAY_FORMAT_MONO1);*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=800,.height=480,.stride_bytes=100,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
 #else
-*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=240,.height=240,.stride_bytes=488,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
+*s=(risc_display_surface_v1){.frame=1,.pixels=fb_pixels,.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT,.stride_bytes=FILE_TEST_STRIDE*2,.size_bytes=sizeof(fb_pixels),.pixel_format=f};
 #endif
 return true;}
 static void test_frame_release(void*c,risc_display_frame_v1 f){(void)c;assert(f==1 && test_frames);test_frames=0;}
 static bool test_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*t){(void)c;(void)r;(void)n;(void)o;assert(f==1 && test_frames);test_frames=0;*t=++test_presents;test_seen_modes|=1u<<fb_mode;
 #ifndef FILE_BROWSER_PAPER_PROFILE
- if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n240 240\n255\n");for(unsigned y=0;y<240;y++)for(unsigned x=0;x<244;x++){unsigned v=fb_pixels[y*244+x];if(x<240){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}
+ if(test_directory){char path[512];snprintf(path,sizeof(path),"%s/frame-%02u.ppm",test_directory,test_presents);FILE*out=fopen(path,"wb");assert(out);fprintf(out,"P6\n%u %u\n255\n",FILE_TEST_WIDTH,FILE_TEST_HEIGHT);for(unsigned y=0;y<FILE_TEST_HEIGHT;y++)for(unsigned x=0;x<FILE_TEST_STRIDE;x++){unsigned v=fb_pixels[y*FILE_TEST_STRIDE+x];if(x<FILE_TEST_WIDTH){unsigned char rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,out)==3);}else assert(v==0xa5a5);}assert(!fclose(out));}
 #endif
 return true;}
 static bool test_present(void*c,risc_display_present_token_v1 t,risc_display_present_status_v1*s){(void)c;(void)t;s->state=RISC_DISPLAY_PRESENT_COMPLETE;return true;}
-static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present};
+#ifdef FILE_POLICY_FIXTURE
+static bool policy_display_brightness(void*c,uint16_t level,uint16_t maximum){(void)c;assert(maximum==100&&level<=maximum);return true;}
+#endif
+static const risc_display_output_api_v1 test_display={.api_version=1,.struct_size=sizeof(test_display),.get_info=test_info,.acquire=test_frame,.release=test_frame_release,.submit=test_submit,.present_status=test_present
+#ifdef FILE_POLICY_FIXTURE
+,.set_brightness=policy_display_brightness
+#endif
+};
 /* Script time advances once per app input pass, independently of hardware
  * collection during raster work or idle waits. Snapshots never advance input;
  * every changed report is also published as ordered raw edges. */
@@ -77,7 +101,7 @@ static uint64_t test_sub(void*c){
 #ifdef FILE_BROWSER_PAPER_PROFILE
   .width=480,.height=800
 #else
-  .width=240,.height=240
+  .width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT
 #endif
  };
  return 1;
@@ -93,7 +117,7 @@ static void test_report(risc_touch_snapshot_v1*s){
  if(test_script==5){if(test_steps==5){x=100;y=600;}if(test_steps==6){x=100;y=160;}if(test_steps==13){x=75;y=730;}}
  if(test_script==6){if(test_steps==5){x=420;y=50;}if(test_steps==11){x=100;y=150;}if(test_steps==17){x=100;y=624;}if(test_steps==23){x=321;y=424;}if(test_steps==29){x=100;y=730;}if(test_steps==35){x=75;y=730;}}
 #else
- *s=(risc_touch_snapshot_v1){.width=240,.height=240};
+ *s=(risc_touch_snapshot_v1){.width=FILE_TEST_WIDTH,.height=FILE_TEST_HEIGHT};
 #endif
  if(test_script==1 || test_script==3){if(test_steps==5){x=100;y=82;}if(test_steps==11){x=120;y=207;}if(test_steps==17||test_steps==23||test_steps==29){x=25;y=25;}}
  if(test_script==2){if(test_steps==5){x=100;y=154;}if(test_steps==6){x=100;y=82;}if(test_steps==13){x=25;y=25;}}
@@ -138,7 +162,7 @@ static int32_t test_next(void*c,uint64_t n,risc_touch_event_v1*e){
 }
 static bool test_snapshot(void*c,risc_touch_snapshot_v1*s){(void)c;*s=test_touch_state;return true;}
 static const risc_touch_api_v1 test_touch={1,sizeof(test_touch),NULL,test_sub,test_unsub,test_poll,test_next,test_snapshot};
-#ifdef FILE_BROWSER_FULL_PROFILE
+#if defined(FILE_BROWSER_FULL_PROFILE) || defined(FILE_BROWSER_RESIDENT_PROFILE)
 static int32_t test_alarm_status(void*c,alarm_status_v1*out){(void)c;*out=(alarm_status_v1){.api_version=1,.struct_size=sizeof(*out),.state=ALARM_STATE_READY};return ALARM_OK;}
 static int32_t test_alarm_step(void*c){(void)c;return ALARM_OK;}
 static int32_t test_alarm_ack(void*c,const alarm_token_v1*t){(void)c;(void)t;return ALARM_OK;}
@@ -150,10 +174,15 @@ static bool test_navigation_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 test_nav={1,sizeof(test_nav),NULL,test_navigation,test_foreground,test_navigation_reset};
 const risc_input_navigation_api_v1 *portable_input_navigation_open(const risc_runtime_api_v1*r){(void)r;return &test_nav;}
 void portable_input_navigation_close(const risc_runtime_api_v1*r){(void)r;}
-int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!fb_grant.api);return 1;}
+int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!fb_grant.api);
+#ifdef FILE_POLICY_FIXTURE
+ if(fb_text_active)assert(fb_text_checkpoint.paused&&fb_text_checkpoint.focus_change&&!test_subs);
+ file_policy_sleep_count++;
+#endif
+ return 1;}
 #endif
 static bool test_acquire(const char*n,uint32_t v,uint64_t id,risc_runtime_capability_v1*g){assert(g->struct_size==sizeof(*g));(void)id;if(!strcmp(n,PORTABLE_FILE_BROWSER_CAPABILITY)){assert(v==1);if(test_fail_acquire)return false;g->api=&test_volume;}else if(!strcmp(n,"display.output"))g->api=&test_display;else if(!strcmp(n,"input.touch.raw"))g->api=&test_touch;
-#ifdef FILE_BROWSER_FULL_PROFILE
+#if defined(FILE_BROWSER_FULL_PROFILE) || defined(FILE_BROWSER_RESIDENT_PROFILE)
  else if(!strcmp(n,ALARM_SERVICE_CAPABILITY))g->api=&test_alarm;
 #endif
  else return false;
@@ -162,7 +191,9 @@ static bool test_release(risc_runtime_capability_v1*g){assert(g->api && test_gra
 static const risc_runtime_api_v1 test_runtime={.api_version=1,.struct_size=sizeof(test_runtime),.health=test_health,.yield_ms=test_yield,.diagnostic=test_diag,.request_launch=test_launch,.acquire=test_acquire,.release=test_release};
 static const risc_runtime_api_v1 *test_runtime_override;
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?(test_runtime_override?test_runtime_override:&test_runtime):NULL;}
+static bool (*test_browser_poll_override)(t5_app_input_t*,uint32_t);
 static bool test_browser_poll(t5_app_input_t*out,uint32_t wait){
+ if(test_browser_poll_override)return test_browser_poll_override(out,wait);
  test_steps++;
  bool ok=t5_app_get_api(1)->poll(out,wait);
  if(ok && test_script==3 && test_steps>=17){assert(fb_mode==FB_PREVIEW);assert(test_launch("wifi_settings.elf"));out->exit_requested=true;}
@@ -182,6 +213,7 @@ static size_t test_read(void*c,risc_storage_file_t h,void*out,size_t n){(void)c;
 static bool test_close(void*c,risc_storage_file_t h,bool commit){(void)c;assert(h==2 && commit);test_closes++;return !test_fail_close;}
 static bool test_error_get(void*c,char*out,size_t n){(void)c;snprintf(out,n,"%s",test_error);return true;}
 static void check_model(void){char path[512]="/";assert(fb_name_compare("file2",false,"file10",false)<0);assert(fb_name_compare("z",true,"a",false)<0);assert(fb_join(path,"folder",path,sizeof(path)));assert(!strcmp(path,"/folder"));assert(fb_parent(path) && !strcmp(path,"/"));assert(!fb_parent(path));assert(!fb_join("/","..",path,sizeof(path)));assert(!fb_join("/","../secret",path,sizeof(path)));assert(!fb_join("/","a\\b",path,sizeof(path)));assert(fb_contains("Manifest.JSON","json"));assert(!fb_contains("JSON","jsno"));char longdir[510];memset(longdir,'x',sizeof(longdir));longdir[0]='/';longdir[509]=0;assert(!fb_join(longdir,"long",path,sizeof(path)));}
+#ifndef FILE_SHARED_INPUT_FIXTURE
 int main(int argc,char**argv){
  test_directory=argc>1?argv[1]:NULL;memset(fb_pixels,0xa5,sizeof(fb_pixels));check_model();
  test_volume=(risc_storage_volume_api_v1){1,sizeof(test_volume),NULL,test_ready,test_ready,test_label,test_stat,test_diropen,test_dirnext,test_dirclose,test_open,test_read,NULL,NULL,test_close,NULL,test_error_get};
@@ -214,3 +246,5 @@ int main(int argc,char**argv){
  }
  puts("File Browser: streaming513-item pagination, natural ordering, filter/keyboard, preview boundaries, long names, empty/missing/invalid/failing storage, retry and cleanup passed");return 0;
 }
+
+#endif

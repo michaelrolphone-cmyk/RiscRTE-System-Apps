@@ -8,6 +8,7 @@ static void paper_fill(int x,int y,int w,int h,uint16_t color){
 }
 static void paper_round(int x,int y,int w,int h,int r,uint16_t color){
     if(layout_only)return;
+    if((y+h)*(int)height/800<=(int)clip_top||y*(int)height/800>=(int)clip_bottom)return;
     if(r>w/2)r=w/2;
     if(r>h/2)r=h/2;
     for(int row=0;row<h;row++){
@@ -25,11 +26,14 @@ static void paper_box(int x,int y,int w,int h,int r,bool inverse,int stroke){
 }
 static void paper_disk(int x,int y,int r,uint16_t color){
     if(layout_only)return;
+    if((y+r+1)*(int)height/800<=(int)clip_top||(y-r)*(int)height/800>=(int)clip_bottom)return;
     for(int row=-r;row<=r;row++){int span=0;while((span+1)*(span+1)+row*row<=r*r)++span;paper_fill(x-span,y+row,span*2+1,1,color);}
 }
 static int paper_abs(int a){return a<0?-a:a;}
 static void paper_stroke(int x,int y,int x2,int y2,int stroke,uint16_t color){
     if(layout_only)return;
+    int top=(y<y2?y:y2)-stroke/2,bottom=(y>y2?y:y2)+stroke/2+1;
+    if(bottom*(int)height/800<=(int)clip_top||top*(int)height/800>=(int)clip_bottom)return;
     int dx=paper_abs(x2-x),dy=-paper_abs(y2-y),sx=x<x2?1:-1,sy=y<y2?1:-1,error=dx+dy;
     for(;;){paper_disk(x,y,stroke/2,color);if(x==x2&&y==y2)break;int twice=2*error;if(twice>=dy){error+=dy;x+=sx;}if(twice<=dx){error+=dx;y+=sy;}}
 }
@@ -82,9 +86,11 @@ static void paper_keyboard(const risc_scene_node_v1 *n){
     paper_stroke(415,43,415,58,3,fg);paper_stroke(415,58,433,58,3,fg);paper_stroke(433,58,433,43,3,fg);
     paper_hit(396,18,56,56,HIT_HOME,NULL,0);paper_fill(32,106,416,4,fg);
     char count[24];size_t len=strlen(n->text);
-    if(n->target)snprintf(count,sizeof(count),"%u / %u",(unsigned)len,(unsigned)n->target);
+    if(n->flags&RISC_SCENE_KEYBOARD_EXTENDED)snprintf(count,sizeof(count),"%u / %u",(unsigned)(n->target>>16),(unsigned)(n->target&65535u));
+    else if(n->target)snprintf(count,sizeof(count),"%u / %u",(unsigned)len,(unsigned)n->target);
     else snprintf(count,sizeof(count),"%u",(unsigned)len);
-    paper_text(&PCF_R700_16,32,142,"TEXT",8,0,200,fg);paper_text(&PCF_R700_18,448,142,count,2,2,180,fg);
+    bool password=(n->flags&RISC_SCENE_KEYBOARD_PASSWORD)!=0;
+    paper_text(&PCF_R700_16,32,142,password?"PASSWORD":"TEXT",password?3:8,0,240,fg);paper_text(&PCF_R700_18,448,142,count,2,2,180,fg);
     paper_box(32,152,328,80,10,false,4);
     const pc_font *font=len>10?&PCF_O900_30:len>7?&PCF_O900_38:&PCF_O900_46;
     unsigned size=len>10?30:len>7?38:46;
@@ -95,13 +101,21 @@ static void paper_keyboard(const risc_scene_node_v1 *n){
     int cursor=(paper_measure(font,tail,0)+32)/64;paper_fill(52+cursor,174,5,40,fg);
     paper_box(368,152,80,80,10,false,4);paper_text(&PCF_R700_17,408,199,"CLEAR",2,1,76,fg);
     if(!(n->flags&RISC_SCENE_DISABLED))paper_hit(368,152,80,80,HIT_VALUE,n,RISC_SCENE_KEY_CLEAR);
+    if(password){
+        bool selected=n->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
+        bool pressed=contact&&!moved&&down_x>=32*(int)width/480&&down_x<448*(int)width/480&&
+            down_y>=248*(int)height/800&&down_y<308*(int)height/800;
+        paper_box(32,248,416,60,10,pressed,selected?6:4);
+        paper_text(&PCF_R700_20,240,285,n->flags&RISC_SCENE_KEYBOARD_REVEALED?"HIDE PASSWORD":"SHOW PASSWORD",2,1,396,pressed?bg:fg);
+        paper_hit(32,248,416,60,HIT_VALUE,n,RISC_SCENE_KEY_VISIBILITY);
+    }
     if(n->flags&RISC_SCENE_DISABLED){
-        paper_text(&PCF_R700_20,240,286,"HARDWARE KEYBOARD",3,1,416,fg);
-        paper_text(&PCF_R700_20,240,330,"ENTER done / ESC cancel",1,1,416,fg);return;
+        paper_text(&PCF_R700_20,240,password?338:286,"HARDWARE KEYBOARD",3,1,416,fg);
+        paper_text(&PCF_R700_20,240,password?366:330,"ENTER done / ESC cancel",1,1,416,fg);return;
     }
     static const char *const layers[]={"UPPERCASE","NUMBERS + SYMBOLS","LOWERCASE","MORE SYMBOLS"};
-    paper_text(&PCF_R700_18,240,298,layers[(unsigned)n->value],3,1,416,fg);
-    paper_text(&PCF_R700_18,240,358,"LETTERS - NUMBERS - SYMBOLS",2,1,416,fg);
+    paper_text(&PCF_R700_18,240,password?358:298,layers[(unsigned)n->value],3,1,416,fg);
+    if(!password)paper_text(&PCF_R700_18,240,358,"LETTERS - NUMBERS - SYMBOLS",2,1,416,fg);
     for(unsigned i=0;;i++){
         keyboard_key key;if(!keyboard_bounds((unsigned)n->value,i,&key))break;
         int x=key.x*480/(int)width,y=372+(int)key.row*92,w=key.w*480/(int)width,cx=x+w/2;

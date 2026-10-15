@@ -115,11 +115,37 @@ void app_main(void){
  }
  if(mode("cleanup")) {cleanup_block(true);assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_CONTROLS)==RISC_RESIDENT_BUSY);cleanup_block(false);verify_model();}
  if(mode("capture")) {system_capture(true);assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_BUSY);assert(system_client_pending()&1u);system_capture(false);}
+#ifdef PORTABLE_FILE_BROWSER_APP
+ if(mode("scroll-policy")) {
+  /* The raw provider may already be neutral while Files still owns the
+   * released gesture's kinetic tail. Policy must not close that live owner. */
+  uint32_t now=100;
+  portable_touch_sample sample={.valid=true,.down=true,.began=true,.tap_eligible=true,.x=200,.y=400};
+  portable_scroll_touch(&fbs_scroll,&sample,now);
+  sample.began=false;sample.moved=true;sample.y=300;
+  portable_scroll_touch(&fbs_scroll,&sample,now+=20);
+  sample.down=false;sample.released=true;sample.release_position_valid=true;
+  portable_scroll_touch(&fbs_scroll,&sample,now+=10);
+  assert(!fbs_scroll.contact&&fbs_scroll.velocity_q8>0&&portable_scroll_offset(&fbs_scroll)>0);
+  int released=fbs_scroll.position_q8;
+  unsigned steps=0;
+  while(fbs_scroll.velocity_q8) {
+   assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_OK);
+   assert(!(system_client_pending()&2u));
+   assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLICY)==RISC_RESIDENT_BUSY);
+   int before=fbs_scroll.position_q8;
+   portable_scroll_animate(&fbs_scroll,now+=16);
+   assert(fbs_scroll.position_q8>=before&&++steps<200);
+  }
+  assert(fbs_scroll.position_q8>released);
+  system_event(4,1);
+ }
+#endif
  if(mode("policy-busy")) {
   policy_block(true);assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_OK);assert(!(system_client_pending()&2u));
   assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLICY)==RISC_RESIDENT_BUSY);policy_block(false);
  }
- if(mode("poll")||mode("capture")||mode("policy-busy")) {
+ if(mode("poll")||mode("capture")||mode("policy-busy")||mode("scroll-policy")) {
 #ifdef PORTABLE_USB_TRANSFER_APP
   assert(system_checkpoint(RISC_RESIDENT_CHECKPOINT_POLL)==RISC_RESIDENT_BUSY);assert(system_client_pending()&1u);
 #else

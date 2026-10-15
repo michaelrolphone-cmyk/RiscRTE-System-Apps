@@ -1,0 +1,17 @@
+In file included from test/native_apps/../../Apps/file_browser_peer.inc:8,
+                 from test/native_apps/../../Apps/file_browser_sharing.inc:253,
+                 from test/native_apps/../../Apps/file_browser_portable.inc:433,
+                 from test/native_apps/../../Apps/file_browser.c:2,
+                 from test/native_apps/portable_file_browser_test.c:17,
+                 from test/native_apps/file_browser_sharing_test.c:23,
+                 from test/native_apps/file_browser_mount_test.c:4:
+test/native_apps/../../Apps/file_browser_mount.inc: In function ‘fpeer_tick’:
+test/native_apps/../../Apps/file_browser_mount.inc:72:178: error: ‘snprintf’ output may be truncated before the last format character [-Werror=format-truncation=]
+   72 |    if(completed==FBM_OPEN){if(!fpeer_status.published_path[0]){fb_message("File was not published; cannot open");return;}snprintf(fpeer_launch_path,sizeof(fpeer_launch_path),"%s",fpeer_status.published_path);fpeer_launch=true;fsh_phase=FSH_STOPPING;return;}
+      |                                                                                                                                                                                  ^
+In function ‘fbm_tick’,
+    inlined from ‘fpeer_tick’ at test/native_apps/../../Apps/file_browser_peer.inc:69:2:
+test/native_apps/../../Apps/file_browser_mount.inc:72:122: note: ‘snprintf’ output between 1 and 513 bytes into a destination of size 512
+   72 |    if(completed==FBM_OPEN){if(!fpeer_status.published_path[0]){fb_message("File was not published; cannot open");return;}snprintf(fpeer_launch_path,sizeof(fpeer_launch_path),"%s",fpeer_status.published_path);fpeer_launch=true;fsh_phase=FSH_STOPPING;return;}
+      |                                                                                                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+cc1: all warnings being treated as errors

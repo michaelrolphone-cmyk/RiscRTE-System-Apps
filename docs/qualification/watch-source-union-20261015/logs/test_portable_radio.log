@@ -1,0 +1,59 @@
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+uncertain app audio retains without alarm/storage calls passed
+healthy stream survives idle alarm checks; Back stops before return passed
+Non-modal cue reserves outputs, consumes stale input and keeps frame passed
+Non-modal cue timeout performs bounded cleanup without changing frame passed
+uncertain app audio retains without alarm/storage calls passed
+quick adapter scenario 0 passed
+quick adapter scenario 1 passed
+quick adapter scenario 2 passed
+quick adapter scenario 3 passed
+quick adapter scenario 4 passed
+quick adapter scenario 5 passed
+quick adapter scenario 6 passed
+quick adapter scenario 7 passed
+quick adapter scenario 8 passed
+quick adapter scenario 9 passed
+quick adapter scenario 10 passed
+quick adapter scenario 11 passed
+quick adapter scenario 12 passed
+Radio alarm, cue, retained failure, sleep, handoff and quick-controls lifecycle: 58 executions passed

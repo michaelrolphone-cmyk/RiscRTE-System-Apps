@@ -127,3 +127,26 @@ Reader published release [`app-file_browser-v1.3.2`](https://github.com/michaelr
 This is upstream byte parity evidence, not an independent external publication, install/U1 runtime qualification, or cutover approval.
 
 Reader PR #357 proposes a separate, unmerged 1.3.3 picker fix. That prospective version and code were not copied; this sync ends at current master/released 1.3.2.
+
+### Generic local roots and selected-file sources
+
+A profile can configure `PORTABLE_FILE_BROWSER_CAPABILITY` / `INSTANCE`,
+`PORTABLE_FILE_BROWSER_SECONDARY_CAPABILITY` / `SECONDARY_INSTANCE`, and an
+optional `PORTABLE_FILE_BROWSER_TERTIARY_CAPABILITY` / `TERTIARY_INSTANCE`.
+Selection probes only these generic, explicitly granted capabilities. Unavailable
+capabilities are skipped; an acquired root with absent media remains selectable
+and uses its existing `ready` / `refresh` callbacks. No board or model detection
+is involved. The active root and inactive grants have one owner each; remote
+mount entry parks the local grant and unmount restores it. Copy/cancel restores
+the exact source root even when the user visits two other roots.
+
+With `PORTABLE_FILE_BROWSER_SOURCE_HANDOFF`, every local root and the Nearby
+mount uses the existing `file.open.source@1` token capture path. Primary
+`storage.volume` no longer bypasses it. The legacy `/sd` construction is excluded
+from these Open branches. Receiver support remains explicit and checked;
+unsupported handlers report that they cannot read selected-volume sources.
+
+Host evidence: `scripts/test_file_browser_roots.py`,
+`scripts/test_file_browser_source.sh` (including its three-root profile), and
+`scripts/test_file_browser_mount.sh`. These tests simulate media and transports;
+they do not establish SD-card or display hardware behavior.

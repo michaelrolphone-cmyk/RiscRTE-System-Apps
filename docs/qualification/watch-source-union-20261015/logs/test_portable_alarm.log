@@ -1,0 +1,24 @@
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+Visual-only Settings preserves stored modes and grants; unsupported choices do not write
+Visual-only Settings preserves stored modes and grants; unsupported choices do not write

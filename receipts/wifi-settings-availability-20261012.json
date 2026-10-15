@@ -1,0 +1,168 @@
+{
+  "purpose": "local-default-off-wifi-availability-qualification",
+  "base_commit": "0805f765",
+  "date_utc": "2026-10-12",
+  "experimental": true,
+  "hardware_qualified": false,
+  "publication": "none",
+  "namespace": 6,
+  "selected_define": "PORTABLE_SETTINGS_AVAILABILITY",
+  "target_build_command": "NATIVE_APP_CC=/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc python scripts/build_portable_wifi.py --experimental-settings-availability --experimental-atomic-wifi --time-profile x4-native-time --native-time-runtime-repo /workspace/shared/x4-settings-unavailable-20261012 --tagged-alarm-utilities /workspace/shared/x4-utilities-atomic-intents-20261012 --resident-shell-client --resident-runtime-sdk /workspace/shared/x4-settings-unavailable-20261012/sdk/app --resident-policy --alarm-client --wifi-instance 15 --return-app springboard.elf --home-app default.elf --raster-snapshot --stage-logs --touch-scrolling --output-dir /tmp/wifi-availability-target",
+  "default_build_command": "NATIVE_APP_CC=/workspace/scratch/c744abbbbd60/watch-build-tools/platformio-core/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc python scripts/build_portable_wifi.py --alarm-client --navigation --full-frames --wifi-instance 15 --output-dir /tmp/wifi-availability-default-target",
+  "checks": {
+    "availability_cases": 17,
+    "availability_modes": [
+      "normal",
+      "address+undefined",
+      "paper-normal",
+      "paper-address+undefined"
+    ],
+    "ordinary_wifi_controller_cases": 392,
+    "ordinary_codec_suites": [
+      "credentials",
+      "saved-network-consumer"
+    ],
+    "atomic_controller_cases": 23,
+    "atomic_modes": [
+      "normal",
+      "address+undefined"
+    ],
+    "shared_keyboard_profiles_async_cases_per_mode": 56,
+    "shared_keyboard_modes": [
+      "normal",
+      "address+undefined"
+    ],
+    "python_contract_tests": 9,
+    "default_manifest_contains_availability": false,
+    "default_elf_contains_availability_capability": false,
+    "target_exact_grants": {
+      "storage.key-value.availability": [
+        6
+      ],
+      "storage.key-value.atomic": [
+        6
+      ],
+      "storage.key-value": [
+        1
+      ]
+    },
+    "paper_ui": "pending root banner and keep/discard dialog rendered and inspected",
+    "default_and_selected_target_validation": "ELF structural validation and strict imports/exports passed"
+  },
+  "sanitizer_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "reason": "LeakSanitizer cannot run under ptrace in this executor; AddressSanitizer and UndefinedBehaviorSanitizer remain enabled"
+  },
+  "target": {
+    "sha256": "69065e0518c09bdcc2c3fe87965edfee7d360d20b7dd0e6d4d880abb3ac7b371",
+    "size_bytes": 248428,
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0",
+    "required_grants": [
+      {
+        "capability": "display.output",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "input.touch.raw",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "net.wifi",
+        "api": 1,
+        "instance_id": 15
+      },
+      {
+        "capability": "ui.text-input",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "storage.key-value.atomic",
+        "api": 1,
+        "instance_id": 6
+      },
+      {
+        "capability": "storage.key-value.availability",
+        "api": 1,
+        "instance_id": 6
+      },
+      {
+        "capability": "storage.key-value",
+        "api": 1,
+        "instance_id": 1
+      },
+      {
+        "capability": "input.navigation",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "alarm.service",
+        "api": 2,
+        "instance_id": 0
+      },
+      {
+        "capability": "runtime.realtime",
+        "api": 1,
+        "instance_id": 0
+      },
+      {
+        "capability": "board.battery",
+        "api": 1,
+        "instance_id": 0
+      }
+    ],
+    "shared_availability_helper_sha256_at_build": "9a0ed438ae17a757d0316790f0349e7fdc7589369f8d80153e5d00456fb28eae"
+  },
+  "default": {
+    "sha256": "9194eeb5784318465dbb83178398de57bd1feae766f425c8bd86c7c020398ec7",
+    "size_bytes": 145388,
+    "compiler": "xtensa-esp32s3-elf-gcc (crosstool-NG esp-2021r2-patch5) 8.4.0"
+  },
+  "source_sha256": {
+    "Apps/wifi_atomic.inc": "0a0b06d269b779216bd2760d127c13d164470aa5038918a2a982409a68204691",
+    "Apps/wifi_settings_portable.inc": "74b9e748c1689ba9dd1c4cf3ad33df393e1c72b125cf5dcfa695fb81c559c3e8",
+    "scripts/build_portable_wifi.py": "acf41dd1d0750cf87e4d999ca4ddaca2da73690569012491112912e16ed4a359",
+    "scripts/test_wifi_availability.py": "06f31d02345534a22f08da91c7d00f8a1a99e9db5544d63b7a26dbfb355b9993",
+    "test/native_apps/portable_wifi_test.c": "4db3b814397ae68b42f3f4ba1b56ed93c25a0db263da682caa06453d4fb8e64a",
+    "test/native_apps/wifi_atomic_workflow_test.c": "e68023f6e0f2e6110d01c4a31158c69bdda27a4d792748bc2ee6611ccd9945ca",
+    "test/native_apps/wifi_availability_test.c": "a0fa2f6b4dbe3b5266931a27e62db2b50a1645d63e76af60dc6f8ec2babee3f0",
+    "tests/test_portable_wifi_contract.py": "81ae413cd325d78f4de2dcc09818428feb07aa64030605f952074877aa562a38",
+    "lib/PortableApps/include/PortableSettingsAvailability.h": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
+    "lib/PortableApps/include/RiscKeyValueAvailabilityV1.h": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976"
+  },
+  "log_sha256": {
+    "/tmp/wifi-availability-final-normal.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-sanitized.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-paper.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-paper-sanitized.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-atomic-san.log": "fc84bb76000878c9e10352982254f38a043b0f775244fcfd33d9a75fd393d59a",
+    "/tmp/wifi-default.log": "dedf21d32b54b63e6ea79673f7103c3a482e8baf836220aaf83d63ff532776da",
+    "/tmp/wifi-workflow.log": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f",
+    "/tmp/wifi-workflow-san.log": "e4f6c87562e78ff90e013c564bc9efe36d59be2dd88041f521e6ca48e74d999f",
+    "/tmp/wifi-contract-final.log": "cd06d58b55e06073835841e2e66540127755afae25c49e3070eee2847415716f",
+    "/tmp/wifi-availability-final-release-normal.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-release-sanitized.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-release-paper.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285",
+    "/tmp/wifi-availability-final-release-paper-sanitized.log": "050695a94359b3334f0862ee5f2566960bac9d302f1567f719fb50bc60473285"
+  },
+  "limits": [
+    "No hardware, SD, production Runtime integration, or publication performed.",
+    "Runtime source collection/publication is qualified separately.",
+    "Pending status can remain while a bound provider retains its data grant; UI advises a clean Runtime restart."
+  ],
+  "release_validation_followup": {
+    "helper_sha256": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
+    "cases": 17,
+    "modes": [
+      "normal",
+      "address+undefined",
+      "paper-normal",
+      "paper-address+undefined"
+    ],
+    "result": "passed",
+    "target_rebuild": "not rerun; prior target helper hash recorded separately"
+  }
+}

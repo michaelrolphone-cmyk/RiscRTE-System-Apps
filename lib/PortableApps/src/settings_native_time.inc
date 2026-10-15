@@ -68,6 +68,9 @@ static void snt_describe_result(void) {
   editor_message=snt_status_text;snt_result_available=true;
 }
 static bool snt_save(int fold) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+ if(!settings_availability_save_ready(&editor_message))return false;
+#endif
   if(snt_basis_status!=PORTABLE_RTC_BASIS_LOADED && snt_basis_status!=PORTABLE_RTC_BASIS_MISSING) {
     editor_message=snt_basis_label();return false;
   }
@@ -81,15 +84,45 @@ static bool snt_save(int fold) {
       status==PORTABLE_REALTIME_FOLD?"Choose first or second occurrence":"Invalid date or native 2038 limit";
     return false;
   }
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  status=portable_preference_atomic_check(&settings_atomic_edit);
+  if(status!=RISC_ATOMIC_OK) {
+    settings_atomic_result(status);editor_message=settings_atomic_message(status);return false;
+  }
+#endif
   status=portable_set_time_open(&snt_writer,rt,snt_guard,NULL);
   if(snt_halted(status))return false;
   if(status!=PORTABLE_REALTIME_OK){editor_message="Native time unavailable - not saved";return false;}
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  status=portable_set_time_apply_clocks_confirmed(&snt_writer,&request,&snt_last_result);
+#else
   status=portable_set_time_apply_confirmed(&snt_writer,&request,&snt_last_result);
+#endif
   snt_describe_result();
   if(snt_halted(status))return false;
   int closed=portable_set_time_close(&snt_writer);
   if(snt_halted(closed))return false;
   if(status!=PORTABLE_REALTIME_OK || closed!=PORTABLE_REALTIME_OK)return false;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+  uint8_t bytes[PORTABLE_RTC_BASIS_BYTES]={0x52,0x54,1,(uint8_t)(plan.basis.stores_utc?1:0)};
+  portable_rtc_basis_put_word(bytes+4,(uint32_t)snt_last_result.verified_utc_epoch);
+  portable_rtc_basis_put_word(bytes+8,portable_rtc_basis_check(bytes));
+  snt_last_result.stage=PORTABLE_SET_TIME_KV_WRITE;
+  snt_last_result.metadata_outcome=PORTABLE_SET_TIME_UNCONFIRMED;
+  bool saved=settings_atomic_save(PORTABLE_RTC_BASIS_KEY,bytes,sizeof(bytes),&editor_message);
+  snt_last_result.metadata_write_accepted=settings_atomic_submission_accepted;
+  if(saved){snt_last_result.metadata_outcome=PORTABLE_SET_TIME_CONFIRMED;snt_last_result.stage=PORTABLE_SET_TIME_DONE;}
+  snt_describe_result();
+  if(!saved) {
+    /* Clocks can already have changed while metadata became stale, cancelled,
+     * failed or uncertain. Never roll them back or claim cross-device atomicity. */
+    snprintf(snt_status_text,sizeof(snt_status_text),"RTC verified; Native verified; Basis %s",
+      settings_atomic_status==RISC_ATOMIC_STALE?"stale - reopen":
+      settings_atomic_status==RISC_ATOMIC_CANCELLED?"cancelled":
+      settings_atomic_status==RISC_ATOMIC_RETAINED?"custody unconfirmed":"unconfirmed");
+    return false;
+  }
+#endif
   snt_basis=plan.basis;snt_basis.reference_epoch=(uint32_t)snt_last_result.verified_utc_epoch;
   snt_basis_status=PORTABLE_RTC_BASIS_LOADED;return true;
 }

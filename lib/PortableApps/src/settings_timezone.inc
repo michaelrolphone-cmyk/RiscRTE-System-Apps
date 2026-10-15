@@ -12,7 +12,13 @@ static void stz_back_regions(void) {
   stz_selected=stz_region;stz_visible();sv_switch(SV_TIMEZONE_REGIONS);
 }
 static uint8_t stz_activate(void) {
-  if(!stz_unconfirmed) {
+  if(
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+     true
+#else
+     !stz_unconfirmed
+#endif
+    ) {
     char id[PORTABLE_TIMEZONE_ID_BYTES];int loaded=portable_timezone_preference_load(settings_store,id);
     stz_choice=(unsigned)portable_timezone_find(id,sizeof(id));stz_status=loaded;
     stz_message=loaded==PORTABLE_TIMEZONE_UNAVAILABLE?"Storage unavailable":
@@ -70,11 +76,28 @@ static uint8_t stz_activate(void) {
         }
       }
     }
-    if(cancel)break;
+    if(cancel) {
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+      if(settings_availability_draft) {
+        t5_app_input_t request={.exit_requested=true};
+        (void)settings_availability_filter(&request);continue;
+      }
+#endif
+      break;
+    }
     if(back){if(!cities)break;stz_back_regions();continue;}
     if(confirm) {
       if(!cities){stz_open_cities();continue;}
       const char *id=portable_timezone_get(stz_choice)->id;
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+      uint8_t bytes[PORTABLE_TIMEZONE_RECORD_BYTES]={'T','Z',1,0};
+      memcpy(bytes+4,id,strlen(id));bytes[3]=0xa5;
+      for(unsigned n=0;n<sizeof(bytes);++n)if(n!=3)bytes[3]^=bytes[n];
+      bool confirmed=settings_atomic_save(PORTABLE_TIMEZONE_KEY,bytes,sizeof(bytes),&stz_message);
+      stz_unconfirmed=!confirmed;
+      if(confirmed){result=T5_APP_SETTING_UPDATED;break;}
+      if(settings_atomic_exit||native_custody_retained)break;
+#else
       int saved=portable_timezone_preference_save(settings_store,id,PORTABLE_TIMEZONE_ID_BYTES);
       if(saved>=0) {
         stz_unconfirmed=false;result=T5_APP_SETTING_UPDATED;
@@ -89,6 +112,7 @@ static uint8_t stz_activate(void) {
       } else if(saved==PORTABLE_TIMEZONE_WRITE_FAILED || saved==PORTABLE_TIMEZONE_VERIFY_FAILED) {
         stz_unconfirmed=true;stz_message="Save unconfirmed - retry";
       } else stz_message="Invalid selection";
+#endif
     }
     if(redraw)settings_view_redraw();
   }

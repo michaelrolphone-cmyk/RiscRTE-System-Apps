@@ -1,0 +1,344 @@
+{
+  "results": [
+    {
+      "name": "alarm-busy-adapter",
+      "command": [
+        "python3",
+        "scripts/test_alarm_busy_adapter.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--utilities",
+        "/workspace/shared/first-attempt-time-alarm-utilities-20261012",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/alarm-busy-adapter"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 21.758,
+      "log_sha256": "b4ca64de14a0114a6fdfe4bdcb44cb79c81232479d133deab8d69c6036b8a811"
+    },
+    {
+      "name": "wifi_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/wifi_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.023,
+      "log_sha256": "e38ca5291290a5ef6a232198128d8383069d2050b60f3ce4621c70bb31677fe7"
+    },
+    {
+      "name": "settings_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/settings-fixture-target",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/settings_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 5.319,
+      "log_sha256": "4042de3b47b97aa7490ce05fef8a686f498c0685ec9cb12fcab84eab947f5ed1"
+    },
+    {
+      "name": "quick_atomic-normal",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/quick_atomic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.507,
+      "log_sha256": "f54a89b26ee862631f710632672cecf2daef554e96861aa31436f5be8bfa5203"
+    },
+    {
+      "name": "home_automatic-normal",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/home_automatic-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.872,
+      "log_sha256": "119531c34546e645531d4ee2d4345fddc4dfd35c3952d9b27e5d5dd5d7f21a3e"
+    },
+    {
+      "name": "text_input_host-normal",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/text_input_host-normal"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 1.803,
+      "log_sha256": "59970169c8d33dea0b88c469c818a9e6c1af0a9aba117758c49dad6a4e0cdd10"
+    },
+    {
+      "name": "scene-host-normal",
+      "command": [
+        "python3",
+        "scripts/test_scene_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 41.569,
+      "log_sha256": "d61f2870fd255af891f953af9ceba2a6a3c08aec635e1e77accf443c96ab297e"
+    },
+    {
+      "name": "file_browser_peer-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_peer.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_peer-normal"
+      },
+      "exit_code": 0,
+      "seconds": 22.148,
+      "log_sha256": "3dbf9426e4f923c5c6f6fd28014d29ffb37eb4902587adb57e75217da89d2e18"
+    },
+    {
+      "name": "file_browser_mount-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_mount.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_mount-normal"
+      },
+      "exit_code": 0,
+      "seconds": 21.231,
+      "log_sha256": "b95d111bf364ac1602a63b9d9c185ce9b62b35edff12450a7bad433819b9a7d3"
+    },
+    {
+      "name": "portable_file_setup-normal",
+      "command": [
+        "bash",
+        "scripts/test_portable_file_setup.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/portable_file_setup-normal"
+      },
+      "exit_code": 0,
+      "seconds": 0.5,
+      "log_sha256": "b12bbb067d56dfc60be49b48df7f98fc0fa43d6c5422c098fbff913cee25eb95"
+    },
+    {
+      "name": "file_browser_source-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_source.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_source-normal"
+      },
+      "exit_code": 0,
+      "seconds": 19.113,
+      "log_sha256": "911e75fa347f4738bf4b9941f2bfa8e089ce8d37f42921f07cbd4cda39124530"
+    },
+    {
+      "name": "file_browser_local_scopes-normal",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_local_scopes.sh"
+      ],
+      "environment": {
+        "SANITIZE": "0",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_local_scopes-normal"
+      },
+      "exit_code": 0,
+      "seconds": 17.133,
+      "log_sha256": "b65fe535b714f35d0de688b19ee7b59bed6dc05deebdf754bf227fcfabfc84b7"
+    },
+    {
+      "name": "wifi_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_wifi_atomic.py",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/wifi_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.597,
+      "log_sha256": "d60b5fa1bd7b88dc1714ef9329776a4b762ae81e7aa3002c1d97e51d5551426c"
+    },
+    {
+      "name": "settings_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_settings_atomic.py",
+        "--target",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/settings-fixture-target",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/settings_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 11.17,
+      "log_sha256": "d191cd260dddb70473b6ab6d0069553bf807789a7e0fa5e0c362203c46a94e16"
+    },
+    {
+      "name": "quick_atomic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_quick_atomic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/quick_atomic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 2.572,
+      "log_sha256": "9ddd0937ca0ccca7ef17c4081b94ded7d3a462f87a0a310ad4dd6603f35d3311"
+    },
+    {
+      "name": "home_automatic-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_home_automatic.py",
+        "--target",
+        "/workspace/shared/x4-home-automatic-target-on",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/home_automatic-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 4.714,
+      "log_sha256": "fb83327a5f87567c550475f19259224065a71d4b963931eba2af18492a4a99b7"
+    },
+    {
+      "name": "text_input_host-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_text_input_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--decoupled-attention",
+        "--output",
+        "/workspace/shared/x4-settings-nearby-union-evidence-20261012/text_input_host-asan-ubsan",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 8.464,
+      "log_sha256": "ec86685961645924b11309fc1a2b9cb31d79cc4b41aa54eddcc4c01d4742c539"
+    },
+    {
+      "name": "scene-host-asan-ubsan",
+      "command": [
+        "python3",
+        "scripts/test_scene_host.py",
+        "--runtime",
+        "/workspace/shared/x4-https-099-20261012/runtime",
+        "--sanitize"
+      ],
+      "environment": {},
+      "exit_code": 0,
+      "seconds": 162.075,
+      "log_sha256": "2ceded08bccfd702df6cefcfd0739b0ba7d0ff9d6090e78d9458111ce2873d64"
+    },
+    {
+      "name": "file_browser_peer-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_peer.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_peer-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 44.368,
+      "log_sha256": "e88ece25f15e6e15335bd96814a55091bb4c55b5346cbda8dbf61846ea045eae"
+    },
+    {
+      "name": "file_browser_mount-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_mount.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_mount-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 38.738,
+      "log_sha256": "9b0118482865d7b31dbef821764c6554aee868300ef503a098ad7fd8dbfcff52"
+    },
+    {
+      "name": "portable_file_setup-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_portable_file_setup.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/portable_file_setup-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 0.501,
+      "log_sha256": "42d712869277906fb50f60e8eb4be2e2d4f6eb8fecbcd256b3030afdea875907"
+    },
+    {
+      "name": "file_browser_source-asan-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_source.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_source-asan-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 41.831,
+      "log_sha256": "a64db949c46c62a5050919f90e506f62c876fb7984f45b9d9b487415b2f399ea"
+    },
+    {
+      "name": "file_browser_local_scopes-ubsan",
+      "command": [
+        "bash",
+        "scripts/test_file_browser_local_scopes.sh"
+      ],
+      "environment": {
+        "SANITIZE": "1",
+        "OUTPUT_DIR": "/workspace/shared/x4-settings-nearby-union-evidence-20261012/file_browser_local_scopes-ubsan"
+      },
+      "exit_code": 0,
+      "seconds": 37.134,
+      "log_sha256": "38af2cd3af1d26fb87d4caf285d5c3e6f04a8fcb60a6950de3c162f02e5b60e6"
+    }
+  ],
+  "complete": true,
+  "source_unchanged": true,
+  "hardware_tested": false
+}

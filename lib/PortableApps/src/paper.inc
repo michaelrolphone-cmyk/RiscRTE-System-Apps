@@ -36,7 +36,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
   if(raster_record(RS_PP_TEXT,(int32_t[8]){x,y,max_width,(int32_t)scale,heading,black},s))return;
 #endif
   if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
-#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:(scale&PAPER_TEXT_LARGE)?2:1;
   int total=pp_measure(s,heading)*zoom;
   int fitted=(scale&PAPER_TEXT_FIT)&&total>max_width?max_width:total;
@@ -57,7 +57,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
     if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
     int advance=(int)g->advance_q4*zoom;
-#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
     if(!(scale&PAPER_TEXT_FIT)&&(pen+advance+15)/16>x+max_width)break;
 #else
     if((pen+advance+15)/16>x+max_width)break;
@@ -74,7 +74,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
       if(!(g->bits[n/8]&(0x80u>>(n%8)))){i++;continue;}
       unsigned first=i++;
       while(i<g->width){n=j*g->width+i;if(!(g->bits[n/8]&(0x80u>>(n%8))))break;i++;}
-#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
       int offset=pen/16-x+((int)g->left+(int)first)*zoom;
       int end=pen/16-x+((int)g->left+(int)i)*zoom;
       int left=total?offset*fitted/total:offset;
@@ -96,6 +96,11 @@ static bool pp_battery(uint8_t *percent,bool *charging) {
 }
 static const paper_presentation pp_view={sizeof(pp_view),pp_begin,pp_text,pp_measure,pp_circle,np_contact,np_clock,pp_battery};
 static bool pp_enabled(void) {
+#ifdef PORTABLE_WATCH_COLOR_ONLY
+  /* A product-selected RGB565 Watch cannot expose the separate
+   * portrait Paper presentation. Keep generic builds capability-selected. */
+  return false;
+#else
   return ((width()>=400 && width()<=600 && height()>=600 && height()>width())
 #ifdef PORTABLE_DESK_LOCK_HOME
     /* The selected desk scene rotates the same native X4 surface. It must
@@ -105,12 +110,19 @@ static bool pp_enabled(void) {
     ) &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
+#endif
 }
 const paper_presentation *paper_presentation_get(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
   if(failed || native_custody_retained)return NULL;
 #endif
-  if(!pp_enabled())return NULL;
+  if(!pp_enabled()
+#ifdef PORTABLE_USB_TRANSFER_APP
+     /* This awake utility uses the same scalable presentation on RGB panels. */
+     && !(width()>=240 && height()>=240 &&
+          (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
+#endif
+     )return NULL;
 #if defined(PORTABLE_RTC_UTC8_DENVER) || defined(PORTABLE_RTC_WALL_TIME)
   np_rtc_grant.struct_size=sizeof(np_rtc_grant);
   if(!np_rtc_grant.api && rt->acquire("rtc.clock",TWATCH_RTC_API_V1,0,&np_rtc_grant)) {

@@ -94,6 +94,7 @@ static int bool_result(portable_set_time_client *c,bool ok) {
  int rc=safe(c);if(rc)return rc;
  return ok?0:halt(c,PORTABLE_REALTIME_UNCERTAIN);
 }
+#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 static int kv_result(portable_set_time_client *c,int32_t status) {
  int rc=safe(c);if(rc)return rc;
  if(status==RISC_KEY_VALUE_OK)return 0;
@@ -111,6 +112,7 @@ static int finish_kv(portable_set_time_client *c,portable_set_time_result *r,int
  r->stage=PORTABLE_SET_TIME_KV_RELEASE;r->cleanup=release(c,&c->kv_grant);
  return r->cleanup?r->cleanup:reason;
 }
+#endif
 static bool same_calendar(const twatch_rtc_time_v1 *a,const twatch_rtc_time_v1 *b) {
  return a->year==b->year && a->month==b->month && a->day==b->day && a->weekday==b->weekday &&
         a->hour==b->hour && a->minute==b->minute && a->second==b->second;
@@ -139,7 +141,11 @@ static int rtc_observed(const portable_set_time_request *p,const portable_set_ti
  if(!same_calendar(&one,observed) || !same_calendar(&mapped,observed))return PORTABLE_REALTIME_VERIFY;
  r->verified_utc_epoch=plan->utc_epoch+1;r->rtc_tick_accepted=true;return 0;
 }
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+int portable_set_time_apply_clocks_confirmed(portable_set_time_client *c,
+#else
 int portable_set_time_apply_confirmed(portable_set_time_client *c,
+#endif
  const portable_set_time_request *p,portable_set_time_result *r) {
  if(!r)return PORTABLE_REALTIME_INVALID;
  *r=(portable_set_time_result){0};
@@ -186,6 +192,12 @@ int portable_set_time_apply_confirmed(portable_set_time_client *c,
  rc=safe(c);if(rc)return failed(c,r,rc);
  rc=portable_realtime_seed_confirmed(&c->realtime,r->verified_utc_epoch,p->native_readback_budget_us,&r->native);
  if(rc)return failed(c,r,native_result(c,rc));
+#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+ /* The explicit Settings controller separately submits rtc_basis with its
+  * edit-boundary revision/intent after checked physical/native completion.
+  * Returning OK here confirms clocks only, never metadata or SD custody. */
+ return PORTABLE_REALTIME_OK;
+#else
  r->stage=PORTABLE_SET_TIME_KV_ACQUIRE;
  rc=acquire(c,RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_RTC_BASIS_INSTANCE,&c->kv_grant);
  if(rc)return failed(c,r,rc);
@@ -214,6 +226,7 @@ int portable_set_time_apply_confirmed(portable_set_time_client *c,
  rc=finish_kv(c,r,rc);
  if(!rc)r->stage=PORTABLE_SET_TIME_DONE;
  return rc;
+#endif
 }
 int portable_set_time_close(portable_set_time_client *c) {
  if(!c)return PORTABLE_REALTIME_INVALID;

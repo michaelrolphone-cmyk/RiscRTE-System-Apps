@@ -26,12 +26,25 @@ static bool contexts_rules_tick(void){
  if(q.result.changed){
   if(!portable_contexts_pause(&contexts_client))return false;
   contexts_client.storage=(risc_runtime_capability_v1){.struct_size=sizeof(contexts_client.storage)};
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  bool opened=home_automatic_begin(PORTABLE_AUTOMATIC_HOME_RULES),ok=opened;
+  const risc_key_value_v1 *settings=&home_automatic.view;
+#else
   bool opened=rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&contexts_client.storage),ok=opened;
+#endif
   uint16_t success=0;
   for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.changed&(1u<<f)){
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+   bool applied=opened&&portable_context_setting(settings,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
+#else
    bool applied=opened&&portable_context_setting(contexts_client.storage.api,f,q.result.settings[f],contexts_client.low_battery,contexts_face_save);if(applied)success|=1u<<f;else ok=false;
+#endif
   }
+#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+  if(!home_automatic_close()){portable_adapter_retain();return false;}
+#else
   if(!portable_contexts_release_storage(&contexts_client))return false;
+#endif
   for(unsigned i=0;i<CR_RULES;i++){bool changed=false,complete=true;for(unsigned f=0;f<CR_SETTINGS;f++)if(q.result.winners[f]==(int)i&&(q.result.changed&(1u<<f))){changed=true;complete&=(success&(1u<<f))!=0;}if(changed){contexts_workflow_v1 report={.struct_size=sizeof(report),.rule=i,.result=complete?CR_APPLIED:CR_PARTIAL};if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&report))return false;}}
 #ifdef PORTABLE_QUICK_ACTIONS
   if(opened&&(!pqa_session_load(&quick,rt)||!pqa_session_restore(&quick,display)))return false;
@@ -50,6 +63,14 @@ static bool contexts_rules_tick(void){
   if(action.step.kind==CR_MESSAGE){memcpy(context_message,action.step.text,sizeof(context_message));context_message_open=true;ok=true;}
   else if(action.step.kind==CR_TIMER){ok=portable_context_timer(rt,alarm_sleep_api(),action.step.value,&contexts_client.storage);if(contexts_client.storage.api)return false;}
   else if(action.step.kind==CR_LAUNCH){
+#ifdef PORTABLE_RUNTIME_APP_CATALOG
+   portable_app_catalog_launch destination;
+   bool installed=catalog_launchable_name(action.step.text,&destination);
+   if(native_custody_retained)return false;
+   if(installed && app_allows_launch(destination.route) && portable_paper_frame_drain() && !failed && !native_custody_retained && catalog_checked(portable_catalog_launch_valid(&runtime_catalog,&destination))){
+    ok=rt->request_launch(destination.route);if(ok)context_launch_pending=true;
+   }
+#else
    bool installed=false;for(unsigned i=0;i<portable_catalog_count;i++)if(portable_catalog[i].compatible&&!strcmp(portable_catalog[i].file_name,action.step.text))installed=true;
    if(installed&&app_allows_launch(action.step.text)){
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
@@ -58,6 +79,7 @@ static bool contexts_rules_tick(void){
     ok=rt->request_launch(action.step.text);if(ok)context_launch_pending=true;
 #endif
 }
+#endif
   }
   action.claim=false;action.result=ok?CR_RAN:CR_FAILED;if(!fp->fingerprint(fp->base.context,CONTEXTS_FP_WORKFLOW,&action))return false;
  }

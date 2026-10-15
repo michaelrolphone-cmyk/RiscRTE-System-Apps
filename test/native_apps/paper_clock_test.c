@@ -18,7 +18,10 @@ void app_main(void);int app_module_init(void);void app_module_fini(void);
 #ifndef CATALOG_COUNT
 #define CATALOG_COUNT 5
 #endif
-#ifdef TEST_NATIVE_LANDSCAPE
+#ifdef TEST_USB_RGB
+#define PANEL_WIDTH 410
+#define PANEL_HEIGHT 502
+#elif defined(TEST_NATIVE_LANDSCAPE)
 #define PANEL_WIDTH 800
 #define PANEL_HEIGHT 480
 #else
@@ -43,19 +46,28 @@ static char last_diagnostic[96];
 static unsigned status_reads;
 static bool pending_present;
 #endif
-static uint8_t pixels[60*800];static char launched[128];
+#ifdef TEST_USB_RGB
+static uint8_t pixels[410*502*2];
+#define TEST_PIXEL_FORMAT RISC_DISPLAY_FORMAT_RGB565
+#define TEST_PIXEL_STRIDE (PANEL_WIDTH*2)
+#else
+static uint8_t pixels[60*800];
+#define TEST_PIXEL_FORMAT RISC_DISPLAY_FORMAT_MONO1
+#define TEST_PIXEL_STRIDE (PANEL_WIDTH/8)
+#endif
+static char launched[128];
 /* Report service can drain many times per logical poll. Leave enough elapsed
  * time for the one-second clock check, including blocking display waits. */
 static bool health(risc_runtime_health_v1 *h){h->uptime_ms=ms;return ms<(TEST_DISPLAY_FAILURE==7?20000u:6000u);}
 static void yield_ms(uint32_t n){ms+=n;}
 static bool diagnostic(const char *s){diagnostics++;snprintf(last_diagnostic,sizeof(last_diagnostic),"%s",s);return true;}
 static bool launch_app(const char *s){launches++;if(scenario==9&&launches==1)return false;snprintf(launched,sizeof(launched),"%s",s);return true;}
-static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=PANEL_WIDTH;o->height=PANEL_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1);o->flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;o->damage_x_alignment=o->damage_width_alignment=8;
+static bool get_info(void *c,risc_display_info_v1 *o){(void)c;memset(o,0,sizeof(*o));o->width=PANEL_WIDTH;o->height=PANEL_HEIGHT;o->supported_formats=RISC_DISPLAY_FORMAT_BIT(TEST_PIXEL_FORMAT);o->flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_CLEAN_PRESENT|RISC_DISPLAY_INFO_PARTIAL_DAMAGE;o->damage_x_alignment=o->damage_width_alignment=8;
 #ifdef TEST_ASYNC_PRESENT
  o->flags|=RISC_DISPLAY_INFO_ASYNC_PRESENT;
 #endif
  return true;}
-static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==RISC_DISPLAY_FORMAT_MONO1);if(TEST_DISPLAY_FAILURE==1)return false;assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=PANEL_WIDTH/8,.pixel_format=f};if(TEST_DISPLAY_FAILURE==2)s->stride_bytes=0;return true;}
+static bool acquire_frame(void *c,uint32_t f,risc_display_surface_v1 *s){(void)c;assert(f==TEST_PIXEL_FORMAT);if(TEST_DISPLAY_FAILURE==1)return false;assert(!frames);frames=1;memset(pixels,0xcd,sizeof(pixels));*s=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=PANEL_WIDTH,.height=PANEL_HEIGHT,.size_bytes=sizeof(pixels),.stride_bytes=TEST_PIXEL_STRIDE,.pixel_format=f};if(TEST_DISPLAY_FAILURE==2)s->stride_bytes=0;return true;}
 static void release_frame(void *c,risc_display_frame_v1 f){(void)c;assert(f==1&&frames);frames=0;}
 static bool submit(void *c,risc_display_frame_v1 f,const risc_display_rect_v1 *r,size_t n,const risc_display_present_options_v1 *o,risc_display_present_token_v1 *token){
  (void)c;if(TEST_DISPLAY_FAILURE==3)return false;if(presents){assert(n==1);assert(r&&r->x>=0&&r->y>=0&&r->width&&r->height&&(unsigned)r->x+r->width<=PANEL_WIDTH&&(unsigned)r->y+r->height<=PANEL_HEIGHT);assert(r->x%8==0&&r->width%8==0);}else assert(!n);assert(f==1&&frames);

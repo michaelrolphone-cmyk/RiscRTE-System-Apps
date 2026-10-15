@@ -11,3 +11,4 @@ enum {
 int portable_resident_run_foreground(const char *path);
 const char *portable_resident_take_launch(void);
 bool portable_resident_take_sleep(void);
+bool portable_resident_launch_busy(void);

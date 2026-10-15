@@ -3,6 +3,7 @@ import argparse,contextlib,io,os,subprocess,sys,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'scripts'))
 import portable_broadcast_build as broadcast
+import portable_quick_build as quick
 class BroadcastBuildProfiles(unittest.TestCase):
  def test_legacy_selection_rejected_without_output(self):
   for name in ['settings','springboard','file_browser','wifi','updates']:
@@ -25,12 +26,15 @@ class BroadcastBuildProfiles(unittest.TestCase):
  def test_idle_versions_compose_with_telemetry_custody(self):
   args=argparse.Namespace(ble_broadcast=True,x4_idle_source=Path('/explicit/idle.c'))
   for name in broadcast.VERSIONS:
-   version=broadcast.portable_idle_build.VERSIONS[name]
+   version=quick.version(args,name,broadcast.portable_idle_build.VERSIONS[name])
+   if name=='wifi_settings':self.assertEqual(version,'1.1.30')
    needs=[{'capability':'storage.key-value','api':1},{'capability':'alarm.service','api':2},dict(broadcast.CAPABILITY)]
    record={'required_grants':[dict(r,instance_id=1 if r['capability']=='storage.key-value' else 0) for r in needs]}
    manifest={'id':name,'version':version,'requires':needs}
    broadcast.record(args,ROOT,record,manifest,broadcast.DEFINES+['-DPORTABLE_NATIVE_CUSTODY_FENCE','-DALARM_SERVICE_TAGGED_V2'])
    self.assertEqual(record['ble_broadcast']['instance_id'],0)
+   if name=='wifi_settings':
+    with self.assertRaises(ValueError):broadcast.record(args,ROOT,record,{**manifest,'version':broadcast.portable_idle_build.VERSIONS[name]},record['build_defines'])
    with self.assertRaises(ValueError):broadcast.record(args,ROOT,record,{**manifest,'version':'0.0.1'},record['build_defines'])
 
 if __name__=='__main__':unittest.main()

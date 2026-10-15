@@ -11,8 +11,14 @@ a.output.mkdir(parents=True,exist_ok=True);inc=stage_sdk(a.runtime,provider,a.ou
 flags=['-std=c11','-g','-O1','-Wall','-Wextra','-Werror']
 if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-fno-pie','-no-pie']
 exe=a.output/'test';subprocess.run([os.environ.get('CC','cc'),*flags,'-I'+str(inc),'-I'+str(provider/'sdk/app'),'-I'+str(provider/'Services/text_input'),str(provider/'Services/text_input/host.c'),str(ROOT/'test/text_input/host_test.c'),'-o',str(exe)],check=True)
-for mode in ['invalid','masked','reason-home','reason-back','reason-home-pending','reason-back-pending','reason-legacy-home','plain','pending','scene-fault','close-fault','snapshot-fault','keyboard-fault','held','attach-detach','gap','transient','drain','ascii','shortcuts',*['native-'+site for site in ['subscribe','scene-open','scene-update','scene-next','scene-snapshot','scene-close','unsubscribe','poll','next','snapshot']]]:
+host_modes=['full-batch','invalid','masked','visibility-edit','visibility-hardware','visibility-stale','visibility-home','visibility-back','visibility-close','reason-home','reason-back','reason-home-pending','reason-back-pending','reason-legacy-home','plain','pending','scene-fault','close-fault','snapshot-fault','keyboard-fault','held','attach-detach','gap','transient','drain','ascii','shortcuts',*['native-'+site for site in ['subscribe','scene-open','scene-update','scene-next','scene-snapshot','scene-close','unsubscribe','poll','next','snapshot']]]
+for mode in host_modes:
  subprocess.run([str(exe),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+# Compile the exact old public header in a separate consumer translation unit.
+legacy=a.output/'legacy-host-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-DTEST_LEGACY_TEXT_ENTRY_HEADER','-I'+str(inc),'-I'+str(provider/'sdk/app'),'-I'+str(provider/'Services/text_input'),str(provider/'Services/text_input/host.c'),str(ROOT/'test/text_input/host_test.c'),'-o',str(legacy)],check=True)
+for mode in host_modes:
+ subprocess.run([str(legacy),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
 # Force revision exhaustion through a test-only inclusion of the implementation.
 # No hooks or altered integer widths are compiled into the provider artifact.
 overflow=a.output/'overflow-test'
@@ -28,3 +34,25 @@ client=a.output/'client-test'
 subprocess.run([os.environ.get('CC','cc'),*flags,*(['-DEXPECT_DECOUPLED_ATTENTION=1'] if a.decoupled_attention else []),'-I'+str(inc),'-I'+str(provider/'lib/PortableApps/include'),str(ROOT/'test/text_input/client_test.c'),'-o',str(client)],check=True)
 for mode in ('mask-ok','mask-prefix','mask-home','mask-bad-tag','mask-bad-version','legacy','short','bad-tag','bad-version','future-version','home','back','home-pending','unsolicited','home-editing','home-accepted','release-fault','attention-pending'):
  subprocess.run([str(client),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+privacy=a.output/'privacy-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-DTEST_TEXT_PRIVACY_PROBE',
+ '-I'+str(inc),'-I'+str(provider/'sdk/app'),'-I'+str(provider/'Services/text_input'),
+ str(ROOT/'test/text_input/privacy_probe.c'),str(ROOT/'test/text_input/host_test.c'),'-o',str(privacy)],check=True)
+for mode in ('visibility-edit','visibility-hardware','visibility-home','visibility-back','visibility-close'):
+ subprocess.run([str(privacy),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+extended=a.output/'extended-client-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-I'+str(inc),'-I'+str(provider/'lib/PortableApps/include'),str(ROOT/'test/text_input/extended_client_test.c'),'-o',str(extended)],check=True)
+for mode in ('ok','prefix','home','masked','short','tag','version','open-null','poll-null','home-cancel','bad-text','bad-ascii','bad-size','bad-revision','bad-flags','bad-home'):
+ subprocess.run([str(extended),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+long_host=a.output/'long-host-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-I'+str(inc),'-I'+str(provider/'sdk/app'),'-I'+str(provider/'Services/text_input'),str(provider/'Services/text_input/host.c'),str(ROOT/'test/text_input/long_host_test.c'),'-o',str(long_host)],check=True)
+for mode in ('accept','initial','maximum','home','back','hardware','invalid'):
+ subprocess.run([str(long_host),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+
+long_client=a.output/'long-client-test'
+subprocess.run([os.environ.get('CC','cc'),*flags,'-I'+str(inc),'-I'+str(provider/'lib/PortableApps/include'),str(ROOT/'test/text_input/long_client_test.c'),'-o',str(long_client)],check=True)
+for mode in ('ok','maximum','prefix','home','masked','extended','short','tag','version','open-null','poll-null','home-cancel','bad-text','bad-ascii','bad-high-byte','bad-size','bad-revision','bad-flags','bad-home'):
+ subprocess.run([str(long_client),mode],check=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})

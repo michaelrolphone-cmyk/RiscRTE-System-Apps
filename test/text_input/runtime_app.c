@@ -9,15 +9,99 @@ extern bool text_runtime_arm_retention(void);
 extern const char *text_runtime_mode(void);
 extern void text_runtime_control(unsigned);
 extern unsigned text_runtime_frames(void);
+extern uint64_t text_runtime_preview_hash(void);
 extern void text_runtime_app_event(unsigned,const void*);
 extern void text_runtime_check_token(uint64_t);
+extern void text_runtime_checkpoint_boundary(bool);
 static unsigned witness;
 __attribute__((constructor)) static void load(void){text_runtime_app_event(1,&witness);}
 __attribute__((destructor)) static void unload(void){text_runtime_app_event(2,&witness);}
 static risc_text_entry_state_v1 poll(const risc_text_entry_api_v1*a,uint64_t s){risc_text_entry_state_v1 v={.struct_size=sizeof(v)};assert(a->poll(a->context,s,&v)==0);return v;}
+static risc_text_entry_state_v1 settle_entry(const risc_text_entry_api_v1 *a,uint64_t s){
+ risc_text_entry_state_v1 v;unsigned polls=0;
+ do{v=poll(a,s);assert(++polls<2048);}while(v.flags&RISC_TEXT_ENTRY_PRESENTING);
+ return v;
+}
 static void accepted_pending(const risc_text_entry_api_v1*a,uint64_t s){
  unsigned before=text_runtime_frames(),waits=0;text_runtime_control(4);
  do{risc_text_entry_state_v1 v=poll(a,s);assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);assert(++waits<2048);}while(text_runtime_frames()==before);
+}
+static risc_text_entry_state_v1_extended extended_poll(const risc_text_entry_api_v1 *a,uint64_t session){
+ const risc_text_entry_api_v1_extended *ext=risc_text_entry_extended(a);assert(ext);
+ risc_text_entry_state_v1_extended v={.struct_size=sizeof(v)};assert(ext->poll_extended(a->context,session,&v)==0);return v;
+}
+static void extended_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v1 *grant,unsigned invocation,const char *mode){
+ const risc_text_entry_api_v1 *a=grant->api;const risc_text_entry_api_v1_extended *ext=risc_text_entry_extended(a);assert(ext);
+ risc_text_entry_request_v1_extended q={.api_version=1,.struct_size=sizeof(q),.capacity=128,.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Long file name"};
+ memset(q.text,'a',65);uint64_t token=0;assert(ext->open_extended(a->context,&q,&token)==0&&token);text_runtime_check_token(token);
+ char expected[128]={0};memset(expected,'a',65);memset(&q,0xa5,sizeof(q));
+ unsigned tries=0;while(extended_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING)assert(++tries<2048);
+ unsigned baseline_frames=text_runtime_frames();text_runtime_control(10);strcat(expected,"Q");assert(!strcmp(extended_poll(a,token).text,expected));
+ tries=0;while(text_runtime_frames()==baseline_frames){assert(extended_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING);assert(++tries<2048);}
+ unsigned frames=text_runtime_frames();text_runtime_control(11);
+ const char *burst="QQWEWQ";for(unsigned i=0;i<6;i++){size_t n=strlen(expected);expected[n]=burst[i];expected[n+1]=0;risc_text_entry_state_v1_extended v=extended_poll(a,token);assert(!strcmp(v.text,expected));assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);}
+ for(unsigned i=0;i<55;i++){text_runtime_control(100+i%2);size_t n=strlen(expected);if(n<127){expected[n]=i%2?'W':'Q';expected[n+1]=0;}assert(!strcmp(extended_poll(a,token).text,expected));}
+ assert(strlen(expected)==127&&text_runtime_frames()<=frames+1);
+ text_runtime_control(100);assert(!strcmp(extended_poll(a,token).text,expected));
+ risc_text_entry_state_v1 old={.struct_size=sizeof(old)};assert(a->poll(a->context,token,&old)==RISC_TEXT_ENTRY_INVALID);
+ bool home=strstr(mode,"home")!=NULL,cancel=strstr(mode,"cancel")!=NULL;
+ text_runtime_control(home?7:cancel?6:16);risc_text_entry_state_v1_extended result=extended_poll(a,token);
+ assert(result.state==(home||cancel?RISC_TEXT_ENTRY_CANCELLED:RISC_TEXT_ENTRY_ACCEPTED));assert(!!(result.flags&RISC_TEXT_ENTRY_HOME_CANCEL)==home);
+ assert(!strcmp(result.text,expected));text_runtime_control(100);assert(!strcmp(extended_poll(a,token).text,expected));
+ assert(a->close(a->context,token)==RISC_TEXT_ENTRY_AGAIN);text_runtime_control(5);int rc;tries=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
+ assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
+}
+static risc_text_entry_state_v1_long long_poll(const risc_text_entry_api_v1 *a,uint64_t session){
+ const risc_text_entry_api_v1_long *ext=risc_text_entry_long(a);assert(ext);
+ risc_text_entry_state_v1_long v={.struct_size=sizeof(v)};assert(ext->poll_long(a->context,session,&v)==0);return v;
+}
+static void long_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v1 *grant,unsigned invocation,const char *mode){
+ const risc_text_entry_api_v1 *a=grant->api;const risc_text_entry_api_v1_long *ext=risc_text_entry_long(a);assert(ext);
+ risc_text_entry_request_v1_long q={.api_version=1,.struct_size=sizeof(q),.capacity=241,.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Message"};
+ memset(q.text,'a',65);uint64_t token=0;assert(ext->open_long(a->context,&q,&token)==0&&token);text_runtime_check_token(token);
+ char expected[256]={0};memset(expected,'a',65);memset(&q,0xa5,sizeof(q));
+ unsigned tries=0;while(long_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING)assert(++tries<2048);
+ unsigned baseline_frames=text_runtime_frames();text_runtime_control(10);strcat(expected,"Q");assert(!strcmp(long_poll(a,token).text,expected));
+ tries=0;while(text_runtime_frames()==baseline_frames){assert(long_poll(a,token).flags&RISC_TEXT_ENTRY_PRESENTING);assert(++tries<2048);}
+ unsigned frames=text_runtime_frames();text_runtime_control(11);
+ const char *burst="QQWEWQ";for(unsigned i=0;i<6;i++){size_t n=strlen(expected);expected[n]=burst[i];expected[n+1]=0;risc_text_entry_state_v1_long v=long_poll(a,token);assert(!strcmp(v.text,expected));assert(v.flags&RISC_TEXT_ENTRY_PRESENTING);}
+ for(unsigned i=0;i<168;i++){text_runtime_control(100+i%2);size_t n=strlen(expected);if(n<240){expected[n]=i%2?'W':'Q';expected[n+1]=0;}assert(!strcmp(long_poll(a,token).text,expected));}
+ assert(strlen(expected)==240&&text_runtime_frames()<=frames+1);
+ text_runtime_control(100);assert(!strcmp(long_poll(a,token).text,expected));
+ risc_text_entry_state_v1 old={.struct_size=sizeof(old)};assert(a->poll(a->context,token,&old)==RISC_TEXT_ENTRY_INVALID);
+ risc_text_entry_state_v1_extended prior={.struct_size=sizeof(prior)};assert(ext->base.poll_extended(a->context,token,&prior)==RISC_TEXT_ENTRY_INVALID);
+ bool home=strstr(mode,"home")!=NULL,cancel=strstr(mode,"cancel")!=NULL;
+ text_runtime_control(home?7:cancel?6:16);risc_text_entry_state_v1_long result=long_poll(a,token);
+ assert(result.state==(home||cancel?RISC_TEXT_ENTRY_CANCELLED:RISC_TEXT_ENTRY_ACCEPTED));assert(!!(result.flags&RISC_TEXT_ENTRY_HOME_CANCEL)==home);
+ assert(!strcmp(result.text,expected));text_runtime_control(100);assert(!strcmp(long_poll(a,token).text,expected));
+ assert(a->close(a->context,token)==RISC_TEXT_ENTRY_AGAIN);text_runtime_control(5);int rc;tries=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
+ assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
+}
+static void checkpoint_workflow(const risc_runtime_api_v1 *r,risc_runtime_capability_v1 *grant,unsigned invocation,const char *mode){
+ const risc_text_entry_api_v1 *a=grant->api;const risc_text_entry_api_v1_checkpoint *cp=risc_text_entry_checkpoint(a);assert(cp);
+ risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=25,.reserved=RISC_TEXT_ENTRY_REQUEST_HOME_REASON,.label="Name",.text="DRAFT"};
+ uint64_t token=0;assert(a->open(a->context,&q,&token)==0&&token);text_runtime_check_token(token);
+ assert(cp->checkpoint_enable(a->context,token)==0);
+ bool close_paused=!strcmp(mode,"checkpoint-close"),full=!strcmp(mode,"checkpoint-full");
+ for(unsigned cycle=0;cycle<3;cycle++){
+  risc_text_entry_state_v1 copied=settle_entry(a,token);assert(!strcmp(copied.text,"DRAFT"));
+  risc_text_entry_checkpoint_state_v1 snapshot={.struct_size=sizeof(snapshot)};
+  assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0);
+  int result;unsigned attempts=0;
+  while((result=full?cp->pause_for_focus_change(a->context,token):cp->pause(a->context,token))==RISC_TEXT_ENTRY_BUSY||result==RISC_TEXT_ENTRY_AGAIN){
+   assert(++attempts<2048);
+   if(result==RISC_TEXT_ENTRY_BUSY){(void)settle_entry(a,token);assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0);}
+   else r->yield_ms(1);
+  }
+  assert(result==0);text_runtime_checkpoint_boundary(!full);
+  assert(cp->checkpoint_snapshot(a->context,token,&snapshot)==0&&snapshot.flags==RISC_TEXT_ENTRY_CHECKPOINT_PAUSED);
+  copied.struct_size=sizeof(copied);assert(a->poll(a->context,token,&copied)==RISC_TEXT_ENTRY_BUSY);
+  if(close_paused)break;
+  assert(cp->resume(a->context,token,RISC_TEXT_ENTRY_RESUME_REDRAW)==0);
+  copied=settle_entry(a,token);assert(copied.state==RISC_TEXT_ENTRY_EDITING&&!strcmp(copied.text,"DRAFT"));
+ }
+ int rc;unsigned attempts=0;while((rc=a->close(a->context,token))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++attempts<2048);}assert(rc==0);
+ assert(r->release(grant));if(invocation==1)assert(r->request_launch("child.elf"));
 }
 __attribute__((visibility("default"))) void app_main(void){
  unsigned invocation=text_runtime_entry();if(invocation>2)return;
@@ -31,9 +115,12 @@ __attribute__((visibility("default"))) void app_main(void){
  }
  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};assert(r->acquire(RISC_TEXT_ENTRY_CAPABILITY,1,0,&g));
  const risc_text_entry_api_v1*a=g.api;assert(a&&a->api_version==1&&a->struct_size>=sizeof(*a));
+ if(!strncmp(mode,"checkpoint-",11)){checkpoint_workflow(r,&g,invocation,mode);return;}
+ if(!strncmp(mode,"long",4)){long_workflow(r,&g,invocation,mode);return;}
+ if(!strncmp(mode,"extended",8)){extended_workflow(r,&g,invocation,mode);return;}
  risc_text_entry_request_v1 q={.api_version=1,.struct_size=sizeof(q),.capacity=16,.label="Name"};strcpy(q.text,invocation==1?"first":"fresh");
  if(!strncmp(mode,"fast",4)){q.capacity=72;q.text[0]=0;}
- if(!strcmp(mode,"masked")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}
+ if(!strcmp(mode,"masked")||!strcmp(mode,"visibility")){assert(risc_text_entry_masked(a));q.reserved=RISC_TEXT_ENTRY_REQUEST_MASKED;}
  bool home_reason=!strncmp(mode,"reason-",7);
  if(home_reason){assert(risc_text_entry_home_reason(a));q.reserved=strcmp(mode,"reason-legacy-home")?RISC_TEXT_ENTRY_REQUEST_HOME_REASON:0;}
  uint64_t s=0;int opened=a->open(a->context,&q,&s);
@@ -72,6 +159,25 @@ __attribute__((visibility("default"))) void app_main(void){
   else {text_runtime_control(16);assert(poll(a,s).state==RISC_TEXT_ENTRY_ACCEPTED);}
   text_runtime_control(100);risc_text_entry_state_v1 final=poll(a,s);assert(!strcmp(final.text,expected));
   text_runtime_control(5);int rc;unsigned tries=0;while((rc=a->close(a->context,s))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
+  assert(r->release(&g));if(invocation==1)assert(r->request_launch("child.elf"));return;
+ }
+ if(!strcmp(mode,"visibility")){
+  risc_text_entry_state_v1 before=settle_entry(a,s);uint64_t masked=text_runtime_preview_hash();
+  text_runtime_control(22);risc_text_entry_state_v1 visible=settle_entry(a,s);
+  assert(visible.revision>before.revision&&!strcmp(visible.text,before.text));
+  assert(text_runtime_preview_hash()!=masked);
+  text_runtime_control(22);risc_text_entry_state_v1 hidden=settle_entry(a,s);
+  assert(hidden.revision>visible.revision&&!strcmp(hidden.text,before.text));
+  assert(text_runtime_preview_hash()==masked);
+  /* Toggle still works while hardware owns character entry. */
+  text_runtime_control(1);settle_entry(a,s);
+  text_runtime_control(22);visible=settle_entry(a,s);assert(visible.flags&RISC_TEXT_ENTRY_HARDWARE);
+  assert(text_runtime_preview_hash()!=masked);
+  text_runtime_control(22);hidden=settle_entry(a,s);assert(hidden.flags&RISC_TEXT_ENTRY_HARDWARE);
+  assert(text_runtime_preview_hash()==masked);
+  text_runtime_control(3);settle_entry(a,s);
+  text_runtime_control(6);assert(poll(a,s).state==RISC_TEXT_ENTRY_CANCELLED);
+  int rc;unsigned tries=0;while((rc=a->close(a->context,s))==RISC_TEXT_ENTRY_AGAIN){r->yield_ms(1);assert(++tries<10);}assert(rc==0);
   assert(r->release(&g));if(invocation==1)assert(r->request_launch("child.elf"));return;
  }
  if(!strncmp(mode,"reason-race-",12)){
