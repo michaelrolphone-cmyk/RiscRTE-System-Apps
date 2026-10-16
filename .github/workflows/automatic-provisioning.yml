@@ -12,6 +12,8 @@ on:
       - 'scripts/test_automatic_foreground.sh'
       - 'scripts/test_installed_apps_automatic.sh'
       - 'scripts/test_installed_apps_boot_profile.sh'
+      - 'scripts/build_boot_profile_feed.py'
+      - 'scripts/test_boot_profile_feed.py'
       - 'test/native_apps/**'
       - '.github/workflows/automatic-provisioning.yml'
   push:
@@ -46,7 +48,13 @@ jobs:
         run: |
           bash scripts/test_automatic_foreground.sh
           bash scripts/test_installed_apps_automatic.sh
-          bash scripts/test_installed_apps_boot_profile.sh
+          python3 scripts/test_boot_profile_feed.py --runtime "$RUNTIME_REPO" --output build/boot-feed
+          bash scripts/test_installed_apps_boot_profile.sh build/boot-feed/volume-9.json build/boot-feed/volume-12.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: boot-feed-volume-${{ matrix.sanitize }}
+          path: build/boot-feed/*.json
   home:
     runs-on: ubuntu-24.04
     timeout-minutes: 15

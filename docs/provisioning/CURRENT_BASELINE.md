@@ -103,3 +103,28 @@ SDK6/GCC15 compiled this Home source but its linker aborted with
 provisioning. This does not change the delivered Home compiler selection and is
 not GCC15 Home qualification. Hardware execution, a complete product package and
 published feed activation remain separate product gates.
+
+## Product-owned immutable mirror volume
+
+`build_boot_profile_feed.py --mirror-volume-instance 9` explicitly selects X4's
+already-admitted optional SD volume; another product may explicitly select 12.
+The publisher requires a single matching boot-admitted `storage.volume@1`
+provider and every `internal_fallback: true` image source must name that same
+concrete positive instance. Missing selection, mismatches, multiple mirror
+volumes, absent/ambiguous providers and invalid instances fail before output.
+External-only image policies do not authorize new mirrors. No selection is
+needed when there are no fallback mirrors. Existing boot/grant/manifests and
+SPIFFS image bytes remain exact; the feed's immutable mirror schema is unchanged.
+
+Reproduce the generator and actual service parser checks:
+
+    python3 scripts/test_boot_profile_feed.py --runtime "$RUNTIME_REPO" --output /tmp/boot-feed-test
+    bash scripts/test_installed_apps_boot_profile.sh /tmp/boot-feed-test/volume-9.json /tmp/boot-feed-test/volume-12.json
+
+The generator uses deterministic synthetic inputs with the actual Runtime image
+decoder and capacity checker. It proves volume 9/12 acceptance, 24 rejected
+policies, four no-output build refusals, deterministic content-addressed mirrors
+and unchanged boot/grant bytes. The shell gate runs the full existing service
+matrix and both generated feeds through the production parser, also with the
+explicit first-fetch-time suffix. Repeat with the sanitizer environment above.
+These fixture bytes do not claim product graph, ELF or hardware admission.

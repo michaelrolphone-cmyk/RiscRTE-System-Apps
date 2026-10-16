@@ -72,7 +72,13 @@ static int driveCore(const risc_storage_volume_api_v1*v){for(unsigned i=0;i<3000
 static void beginCore(){bootRequests=&requests;selectHttp();assert(selectedBegin("core")==0);}
 static bool parseBody(){assert(feedBody.size()<sizeof(feedInput));memcpy(feedInput,feedBody.data(),feedBody.size());feedSize=unsigned(feedBody.size());feedInput[feedSize]=0;return feedParse();}
 static void statusReset(){requestStatus={};requestStatus.struct_size=sizeof(requestStatus);requestStatus.store_abi=3;requestStatus.firmware_size=123;strcpy(requestStatus.layout,"watch-expanded");strcpy(requestStatus.runtime_version,"0.2.24");memset(requestStatus.firmware_sha256,0x11,32);memset(requestStatus.active_store_sha256,0x22,32);}
-int main(){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nullptr)==0);statusReset();
+int main(int argc,char**argv){staged_fixture::setup();staged_fixture::begin();assert(api.refresh(nullptr)==0);statusReset();
+ if(argc==2){
+  std::ifstream in(argv[1]);assert(in);feedBody.assign(std::istreambuf_iterator<char>(in),{});
+  assert(parseBody());assert(t5_driver_get(2)->quiesce());
+  puts("Actual generated boot profile and immutable mirrors pass production feed parser PASS");return 0;
+ }
+ assert(argc==1);
  auto*b=installed_apps_boot_profile(&api);assert(b);
 #ifdef TEST_AUTOMATIC_FRESH_TIME
  // Explicit product selection is separate from generic bounded hostname syntax.
