@@ -6,7 +6,14 @@
 #include "RiscBoundAppDataAsyncV1.h"
 #include "InstalledAppsV1.h"
 #include "InstalledAppsProvisionV1.h"
-#include "InstalledAppsFeedV1.h"
+#include "InstalledAppsAutomaticV1.h"
+#include "InstalledAppsBootProfileV1.h"
+#include "InstalledAppsAutomaticTimeV1.h"
+#include "RiscHttpTimeV1.h"
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+#include "RiscProvisionRequestV1.h"
+#include "runtime/packages/PackageJsonGuard.h"
+#endif
 #include "InstalledCatalog.h"
 #include "runtime/packages/InstalledAppAsyncDiscovery.h"
 #include "runtime/packages/StagedAppInstall.h"
@@ -30,7 +37,7 @@ Staged staged[Max],stagedPending[Max];unsigned stagedCount,stagedPendingCount;
 using Install=RiscPackages::StagedAppInstall;
 Install::Record installRecord;Package installCandidate,stagedScratch;
 alignas(Install) unsigned char installMemory[sizeof(Install)];Install*installer;
-enum class InstallPhase {Idle,FetchRefresh,FetchRead,FetchEnd,Select,Provision,Admit,Run,SaveJournal,SaveFinal,Publish,Abort};
+enum class InstallPhase {Idle,FetchRefresh,FetchRead,FetchEnd,Select,Provision,Admit,Run,SaveJournal,SaveFinal,ProviderFinal,Publish,Abort};
 InstallPhase installPhase;bool installIntent,installResume,installPaused;
 char installId[96],installVersion[64],installDescriptor[193],installDigest[65],installExpectedDigest[65];uint32_t installExpectedSize;
 uint32_t installMedium,removeMedium;bool installMediumSelected;
@@ -67,8 +74,8 @@ void saveProvision(JsonDocument&);
 bool prepareProvision(const char*,bool);
 int32_t provisionStep(const risc_storage_volume_api_v1*);
 int32_t provisionCancel();
-const risc_http_client_v1*packageHttp;uint64_t packageUtc;
-char provisionJson[ManifestMax+1];bool provisionResume,providerSavePending;
+const risc_http_client_v1*packageHttp;uint64_t packageUtc;bool automaticFreshTime;
+char provisionJson[ManifestMax+1];bool provisionResume,providerSavePending,provisionOnly;
 CachedProvider nextProviders[ProviderMax];unsigned nextProviderCount;
 const risc_bound_app_data_v1*storage;const risc_bound_app_data_async_v1*asyncStorage;
 uint64_t cacheOperation;size_t pendingPersistedSize;bool savePending,removalCommitPending;
@@ -83,7 +90,11 @@ char removeSource[205],removeVersion[64];int32_t removeOutcome;bool removeIntent
 risc_storage_async_result_v1 removeResult;
 bool started,loaded,requested,retained,inCall,overflow,commitPending,commitReplace,validationPending;
 bool feedReading;
+unsigned scanMedium;bool scanSdComplete,scanAnySuccess;
 int32_t feedCancel(void*);
+int bootCancel();
+bool bootFeedValid(JsonVariantConst);
+extern unsigned automaticPhase;
 const char cacheName[]="installed.apps";
 bool copy(char*out,size_t bound,JsonVariantConst value,bool optional=false){
  if(value.isNull()&&optional){out[0]=0;return true;}
@@ -115,7 +126,8 @@ bool parse(Package&out,const char*path,const char*json){
 bool offer(void*,const char*path,const char*json){
  if(pendingCount==Max){overflow=true;return false;}
  Package row{};if(!parse(row,path,json))return false;
- for(unsigned i=0;i<pendingCount;++i)if(!std::strcmp(row.view.id,pending[i].view.id)){if(pending[i].medium==1)return true;overflow=true;return false;}
+ if(scanner)row.medium=scanMedium;
+ for(unsigned i=0;i<pendingCount;++i)if(!std::strcmp(row.view.id,pending[i].view.id)){if(pending[i].medium!=row.medium)return true;overflow=true;return false;}
  pending[pendingCount++]=row;return true;
 }
 bool needsNamespace(const Package&p){
@@ -403,9 +415,11 @@ int32_t removeStep(const risc_storage_volume_api_v1*v){
 #include "providers.inc"
 #include "media.inc"
 #include "install.inc"
+#include "http_time.inc"
 #include "provision.inc"
 #include "settings.inc"
-int32_t cancel(void*){
+int32_t cancelWork(){
+ int bootResult=bootCancel();if(bootResult!=INSTALLED_APPS_OK)return bootResult;
  if(feedCancel(nullptr)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  if(retained)return INSTALLED_APPS_RETAINED;
  int settingsResult=settingsCancel();if(settingsResult!=INSTALLED_APPS_OK)return settingsResult;
@@ -435,10 +449,18 @@ int32_t cancel(void*){
  }
  volume=nullptr;requested=validationPending=false;return INSTALLED_APPS_OK;
 }
+int32_t cancel(void*){
+ const int32_t rc=cancelWork();
+ // Every successful whole-service cancel ends the explicit mode, including
+ // base-API consumers and provider quiesce. Pending/uncertain custody pins it.
+ if(rc==INSTALLED_APPS_OK){automaticPhase=0;automaticFreshTime=false;}
+ return rc;
+}
 int32_t refresh(void*){if(!started||retained||inCall||feedReading)return INSTALLED_APPS_UNAVAILABLE;
  if(!settingsCheckpoint)settingsCursor=0;
  if(removePhase!=RemovePhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
  if(installPhase!=InstallPhase::Idle){requested=true;return INSTALLED_APPS_WORKING;}
+ if(!scanner){scanMedium=0;scanSdComplete=scanAnySuccess=false;}
  inCall=true;int32_t rc=loaded?INSTALLED_APPS_OK:load();requested=true;inCall=false;return rc;}
 int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(!started||retained||inCall||feedReading)return retained?INSTALLED_APPS_RETAINED:INSTALLED_APPS_UNAVAILABLE;
@@ -450,28 +472,69 @@ int32_t step(void*,const risc_storage_volume_api_v1*v){
  if(installId[0]||installIntent||installer)return installStep(v);
  if(!scanner&&!removeId[0]&&settingsWanted())return settingsStep(v);
  if(!requested&&!removeId[0])return INSTALLED_APPS_OK;
- if(!v||!risc_storage_volume_async(v)){installed_catalog_media(&catalog,false);return INSTALLED_APPS_UNAVAILABLE;}
  if(removeId[0]||removePhase!=RemovePhase::Idle){
   int32_t rc=removeStep(v);return rc==INSTALLED_APPS_OK?INSTALLED_APPS_WORKING:rc;
  }
- if(!scanner){volume=v;pendingCount=stagedPendingCount=0;for(unsigned i=0;i<currentCount;++i)if(current[i].medium==1)pending[pendingCount++]=current[i];overflow=false;scanner=new(scannerMemory)Scan();
-  if(!scanner->start(v,offer,nullptr,offerStaged)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
+ const auto*sd=v;
+ if(!scanner&&!scanMedium&&(!sd||!risc_storage_volume_async(sd))){
+  installed_catalog_media(&catalog,false);scanMedium=1;
+ }
+ v=scanMedium?internalVolume:sd;
+ if(!v||!risc_storage_volume_async(v)){
+  requested=false;
+  if(!scanAnySuccess)return INSTALLED_APPS_UNAVAILABLE;
+  validationPending=true;return INSTALLED_APPS_WORKING;
+ }
+ if(!scanner){
+  volume=v;overflow=false;
+  if(!scanMedium){
+   pendingCount=stagedPendingCount=0;
+   for(unsigned i=0;i<currentCount;++i)if(current[i].medium==1)pending[pendingCount++]=current[i];
+  }else {
+   if(!scanSdComplete){pendingCount=0;preserveStaged();for(unsigned i=0;i<currentCount;++i)if(!current[i].medium)pending[pendingCount++]=current[i];}
+   else {unsigned count=0;for(unsigned i=0;i<pendingCount;++i)if(!pending[i].medium)pending[count++]=pending[i];pendingCount=count;}
+  }
+  scanner=new(scannerMemory)Scan();
+  if(!scanner->start(v,offer,nullptr,scanMedium?nullptr:offerStaged)){scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;return INSTALLED_APPS_UNAVAILABLE;}
   return INSTALLED_APPS_WORKING;
  }
  if(volume!=v)return INSTALLED_APPS_INVALID;
  scanner->step();auto state=scanner->state();
- if(scanner->ready())installed_catalog_media(&catalog,true);
+ if(!scanMedium&&scanner->ready())installed_catalog_media(&catalog,true);
  if(state==Scan::State::Retained){retained=true;return INSTALLED_APPS_RETAINED;}
  if(state!=Scan::State::Complete&&state!=Scan::State::Failed)return INSTALLED_APPS_WORKING;
- if(state==Scan::State::Failed&&!scanner->ready())installed_catalog_media(&catalog,false);
- scanner->~Scan();scanner=nullptr;volume=nullptr;requested=false;
- if(state==Scan::State::Failed||overflow)return INSTALLED_APPS_UNAVAILABLE;
+ bool failed=state==Scan::State::Failed||overflow;
+ if(!scanMedium&&state==Scan::State::Failed&&!scanner->ready())installed_catalog_media(&catalog,false);
+ scanner->~Scan();scanner=nullptr;volume=nullptr;
+ if(failed){
+  // Never turn an incomplete directory enumeration into removals.
+  unsigned count=0;for(unsigned i=0;i<pendingCount;++i)if(pending[i].medium!=scanMedium)pending[count++]=pending[i];pendingCount=count;
+  for(unsigned i=0;i<currentCount;++i)if(current[i].medium==scanMedium&&pendingCount<Max)pending[pendingCount++]=current[i];
+  if(!scanMedium)preserveStaged();
+ }else scanAnySuccess=true;
+ if(!scanMedium&&internalVolume){scanMedium=1;scanSdComplete=true;return INSTALLED_APPS_WORKING;}
+ requested=false;
+ if(!scanAnySuccess)return INSTALLED_APPS_UNAVAILABLE;
  validationPending=true;return INSTALLED_APPS_WORKING;
 }
 #include "feed.inc"
+#include "boot_profile.inc"
+extern unsigned automaticPhase;
 bool start(const risc_provider_dependency_v1*d,size_t n){
+ bootReset();
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+ bootRequests=nullptr;
+#endif
+ automaticPhase=0;automaticFreshTime=false;scanMedium=0;scanSdComplete=scanAnySuccess=false;
  feedCount=feedSize=feedGeneration=0;feedHandle=0;feedReading=false;
  native=nullptr;storage=nullptr;packageHttp=nullptr;internalVolume=nullptr;packageUtc=0;for(size_t i=0;i<n;++i){
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+  if(!std::strcmp(d[i].capability_id,RISC_PROVISION_REQUEST_CAPABILITY)&&d[i].api_version==1){
+   auto*p=static_cast<const risc_provision_request_api_v1*>(d[i].api);
+   if(!p||p->api_version!=1||p->struct_size<sizeof(*p)||!p->status||!p->queue)return false;
+   bootRequests=p;
+  }
+#endif
   if(!std::strcmp(d[i].capability_id,RISC_INTERNAL_PACKAGE_VOLUME_CAPABILITY)&&d[i].api_version==1){auto*p=static_cast<const risc_internal_package_volume_v1*>(d[i].api);if(!p||p->struct_size<sizeof(*p)||!p->exit_safe||!risc_storage_volume_download(p->volume))return false;internalVolume=p->volume;}
   if(!std::strcmp(d[i].capability_id,RISC_HTTP_CLIENT_CAPABILITY)&&d[i].api_version==1)packageHttp=static_cast<const risc_http_client_v1*>(d[i].api);
   if(!std::strcmp(d[i].capability_id,RISC_INSTALLATION_CAPABILITY)&&d[i].api_version==1)native=static_cast<const risc_installation_v1*>(d[i].api);
@@ -480,7 +543,7 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
  if(packageHttp&&(packageHttp->api_version!=1||packageHttp->struct_size<sizeof(*packageHttp)||!packageHttp->open||!packageHttp->read||!packageHttp->info||!packageHttp->close))return false;
  if(!native||native->struct_size<RISC_INSTALLATION_APP_PREFIX_SIZE||!native->commit||!native->forget||!native->check||!native->namespaced||native->namespace_capacity>NamespaceMax||!storage||storage->struct_size<sizeof(*storage)||!storage->stat||!storage->read||!storage->replace)return false;
  settingsCheckpoint=nullptr;settingsCursor=0;
- providerCount=0;provisionJson[0]=0;provisionResume=providerSavePending=false;provisionPhase=ProvisionPhase::Idle;downloader=nullptr;
+ providerCount=0;provisionJson[0]=0;provisionResume=providerSavePending=provisionOnly=false;provisionPhase=ProvisionPhase::Idle;downloader=nullptr;
  mediaProbeStarted=false;mediaProbePhase=0;
  installMedium=removeMedium=0;installMediumSelected=false;
  installRecord={};installCandidate={};installer=nullptr;installPhase=InstallPhase::Idle;installIntent=installResume=installPaused=false;installId[0]=installVersion[0]=installDescriptor[0]=0;installSession=installOperation=0;stagedCount=stagedPendingCount=0;
@@ -492,7 +555,14 @@ bool start(const risc_provider_dependency_v1*d,size_t n){
 bool quiesce(){return feedCancel(nullptr)==INSTALLED_APPS_OK&&cancel(nullptr)==INSTALLED_APPS_OK;}
 void stop(){started=false;native=nullptr;storage=nullptr;}
 extern const installed_apps_feed_v1 extendedApi;
-const installed_apps_feed_v1 extendedApi={{{1,sizeof(extendedApi),nullptr,refresh,
+#ifdef INSTALLED_APPS_TIME_SERVER
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_automatic_time_v1);
+#elif defined(INSTALLED_APPS_BOOT_PROFILES)
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_boot_profile_v1);
+#else
+constexpr unsigned AutomaticApiSize=sizeof(installed_apps_automatic_v1);
+#endif
+const installed_apps_feed_v1 extendedApi={{{1,AutomaticApiSize,nullptr,refresh,
  [](void*)->uint32_t{return catalog.generation;},[](void*)->uint32_t{return currentCount;},
  [](void*,uint32_t i,installed_app_v1*out){if(!out||i>=currentCount)return false;*out=current[i].view;out->available=out->available&&(current[i].medium==1?internalVolume!=nullptr:catalog.sd_ready)&&settingsReady(current[i]);return true;},step,cancel,
  [](void*,const char*id)->int32_t{if(!id||std::strlen(id)>=sizeof(removeId)||retained||feedReading||installId[0]||installIntent||removeId[0]||removePhase!=RemovePhase::Idle)return INSTALLED_APPS_INVALID;std::strcpy(removeId,id);return INSTALLED_APPS_OK;},
@@ -514,7 +584,7 @@ const installed_apps_feed_v1 extendedApi={{{1,sizeof(extendedApi),nullptr,refres
   if(!plan["medium"].isNull())return INSTALLED_APPS_INVALID;
   char source[193];int n=std::snprintf(source,sizeof(source),"Apps/%s/install.json",plan["manifest"]["id"].as<const char*>());
   if(n<=0||size_t(n)>=sizeof(source)||!descriptor(source,json,installCandidate,&installRecord))return INSTALLED_APPS_INVALID;
-  for(unsigned i=0;i<currentCount;++i)if(!std::strcmp(current[i].view.id,installCandidate.view.id)&&!newer(installCandidate.view.version,current[i].view.version))return INSTALLED_APPS_INVALID;
+  for(unsigned i=0;i<currentCount;++i)if(!std::strcmp(current[i].view.id,installCandidate.view.id)&&!newer(installCandidate.view.version,current[i].view.version)&&std::strcmp(installCandidate.json,current[i].json))return INSTALLED_APPS_INVALID;
   installMedium=0;installMediumSelected=false;mediaProbeStarted=false;
   if(!prepareProvision(json,false))return INSTALLED_APPS_INVALID;
   std::strcpy(installId,installCandidate.view.id);std::strcpy(installVersion,installCandidate.view.version);std::strcpy(installDescriptor,source);
@@ -522,7 +592,19 @@ const installed_apps_feed_v1 extendedApi={{{1,sizeof(extendedApi),nullptr,refres
  }},INSTALLED_APPS_FEED_TAG,1,feedRefresh,feedStep,feedCancel,
  [](void*){return feedGeneration;},[](void*){return feedCount;},feedGet,
  [](void*,uint32_t i,uint32_t generation)->int32_t{if(feedReading||generation!=feedGeneration||i>=feedCount)return INSTALLED_APPS_INVALID;return extendedApi.base.install_descriptor(nullptr,feedRows[i]);}};
-const installed_apps_v1&api=extendedApi.base.base;
+#include "automatic.inc"
+const installed_apps_automatic_v1 automaticApi={extendedApi,INSTALLED_APPS_AUTOMATIC_TAG,1,automaticBegin,automaticStep,automaticCancel};
+#ifdef INSTALLED_APPS_BOOT_PROFILES
+const installed_apps_boot_profile_v1 bootApi={automaticApi,INSTALLED_APPS_BOOT_PROFILE_TAG,1,bootWifi};
+#ifdef INSTALLED_APPS_TIME_SERVER
+const installed_apps_automatic_time_v1 timeApi={bootApi,INSTALLED_APPS_AUTOMATIC_TIME_TAG,1,automaticBeginWithTime};
+const installed_apps_v1&api=timeApi.base.base.base.base.base;
+#else
+const installed_apps_v1&api=bootApi.base.base.base.base;
+#endif
+#else
+const installed_apps_v1&api=automaticApi.base.base.base;
+#endif
 const risc_driver_v2 driver={2,sizeof(driver),"installed-apps",INSTALLED_APPS_CAPABILITY,1,&api,start,stop,quiesce};
 }
 extern "C" __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:nullptr;}

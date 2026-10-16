@@ -121,7 +121,18 @@ int32_t installStep(const risc_storage_volume_api_v1*v){
   installPhase=InstallPhase::Provision;
  }
  if(installPhase==InstallPhase::Provision){
-  int rc=provisionStep(v);if(rc!=INSTALLED_APPS_OK)return rc;installPhase=InstallPhase::Admit;
+  int rc=provisionStep(v);if(rc!=INSTALLED_APPS_OK)return rc;
+  if(provisionOnly){
+   // Graph publication is already durable and fully admitted. Keep the app
+   // manifest/image/private namespace byte-identical; clear only its journal.
+   provisionJson[0]=0;provisionResume=false;currentPending();
+   installPhase=InstallPhase::ProviderFinal;
+  }else installPhase=InstallPhase::Admit;
+ }
+ if(installPhase==InstallPhase::ProviderFinal){
+  int rc=save();if(rc!=INSTALLED_APPS_OK)return rc;
+  installId[0]=0;provisionOnly=false;installMediumSelected=false;
+  installPhase=InstallPhase::Idle;volume=nullptr;requested=true;return INSTALLED_APPS_OK;
  }
  if(installPhase==InstallPhase::Admit){
   if(!namespaceFor(installCandidate,!installResume)||!candidatePending()){installPaused=true;return INSTALLED_APPS_INVALID;}
