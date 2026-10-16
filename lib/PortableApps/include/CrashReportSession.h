@@ -6,8 +6,15 @@
 #include <RiscRuntimeV1.h>
 #include "FailureEvidenceReport.h"
 #include "CrashReportSpool.h"
+#ifndef CRASH_REPORT_SESSION_FILES
+#define CRASH_REPORT_SESSION_FILES 0
+#endif
+#if CRASH_REPORT_SESSION_FILES
+#include "CrashReportFiles.h"
+#else
 #include "CrashReportSd.h"
 #include "RiscStorageVolumeStateV1.h"
+#endif
 
 /* Healthy default-app consumer, called only at settled foreground checkpoints.
  * Report text is copied once and is the sole input to both display and storage.
@@ -17,12 +24,21 @@ typedef struct {
  const risc_runtime_api_v1 *runtime;
  bool (*safe)(void *); bool (*prepare_storage)(void *);
  uint64_t (*now)(void *); void (*retain)(void *); void *context;
- uint32_t namespace_id,volume_instance; bool sd_enabled;
+ uint32_t namespace_id;
+#if CRASH_REPORT_SESSION_FILES
+ uint32_t files_instance; bool files_enabled;
+#else
+ uint32_t volume_instance; bool sd_enabled;
+#endif
 } crash_report_session_hooks;
 typedef struct {
  crash_report_session_hooks hooks;
  crash_report_spool spool;
+#if CRASH_REPORT_SESSION_FILES
+ crash_report_files_state files;
+#else
  crash_report_sd_state sd;
+#endif
  risc_failure_evidence_client_v1 client;
  crash_report_spool_identity identity;
  char text[CRASH_REPORT_SPOOL_TEXT_MAX];uint32_t text_size;
@@ -97,6 +113,14 @@ static inline bool crash_session_ack(crash_report_session *s) {
  if(r==RISC_FAILURE_EVIDENCE_OK)s->pending=false;
  return r==RISC_FAILURE_EVIDENCE_OK;
 }
+#if CRASH_REPORT_SESSION_FILES
+static inline bool crash_session_files_safe(void *context) {
+ return crash_session_safe((crash_report_session*)context);
+}
+static inline uint64_t crash_session_files_now(void *context) {
+ crash_report_session *s=context;return s->hooks.now(s->hooks.context);
+}
+#else
 typedef struct {crash_report_session *session;const risc_storage_volume_api_v1_state *state;} crash_session_sd_context;
 static inline bool crash_session_sd_safe(void *context) {
  crash_session_sd_context *c=context;
@@ -107,6 +131,7 @@ static inline bool crash_session_sd_safe(void *context) {
 static inline uint64_t crash_session_sd_now(void *context) {
  crash_report_session *s=((crash_session_sd_context*)context)->session;return s->hooks.now(s->hooks.context);
 }
+#endif
 static inline bool crash_session_checkpoint(crash_report_session *s) {
  if(!crash_session_safe(s))return false;
  if(s->empty && !s->pending)return true;
@@ -114,8 +139,12 @@ static inline bool crash_session_checkpoint(crash_report_session *s) {
  if(s->attempted && now-s->attempted_at<30000)return true;
  s->attempted=true;s->attempted_at=now;
  if(!crash_session_save(s) || !crash_session_ack(s))return false;
+#if CRASH_REPORT_SESSION_FILES
+ if(!s->hooks.files_enabled)return true;
+#else
  if(!s->hooks.sd_enabled)return true;
- risc_runtime_capability_v1 data={0},sd={.struct_size=sizeof(sd)};
+#endif
+ risc_runtime_capability_v1 data={0},destination={.struct_size=sizeof(destination)};
  if(!crash_session_open(s,&data))return crash_session_safe(s);
  crash_report_spool_result r=crash_report_spool_reload(&s->spool);
  if(!crash_session_result(s,r))return false;
@@ -125,21 +154,31 @@ static inline bool crash_session_checkpoint(crash_report_session *s) {
  if(!crash_session_release(s,&data))return false;
  s->spool.api=NULL;
  if(!available)return true;
- if(!s->hooks.runtime->acquire("storage.volume",1,s->hooks.volume_instance,&sd))return crash_session_safe(s);
- const risc_storage_volume_api_v1_ext *volume=risc_storage_volume_extension(sd.api);
- const risc_storage_volume_api_v1_state *state=risc_storage_volume_state(sd.api);
- if(!volume || !state)return crash_session_release(s,&sd);
+ char hash[65];static const char hex[]="0123456789abcdef";
+ for(unsigned i=0;i<32;++i){hash[2*i]=hex[report.identity.firmware_sha256[i]>>4];hash[2*i+1]=hex[report.identity.firmware_sha256[i]&15];}hash[64]=0;
+#if CRASH_REPORT_SESSION_FILES
+ if(!s->hooks.runtime->acquire(RISC_STORAGE_FILES_CAPABILITY,1,s->hooks.files_instance,&destination))return crash_session_safe(s);
+ const risc_storage_files_v1 *files=destination.api;
+ crash_report_files_hooks hooks={.context=s,.monotonic_ms=crash_session_files_now,.safe=crash_session_files_safe,.budget_ms=250};
+ int saved=crash_report_files_export(&s->files,files,hash,report.identity.captured_boot,report.identity.captured_sequence,report.text,report.text_size,&hooks);
+ if(saved==CRASH_REPORT_FILES_RETAINED || !crash_session_safe(s))return crash_session_retain(s);
+ if(!crash_session_release(s,&destination))return false;
+ if(saved!=CRASH_REPORT_FILES_SAVED)return true;
+#else
+ if(!s->hooks.runtime->acquire("storage.volume",1,s->hooks.volume_instance,&destination))return crash_session_safe(s);
+ const risc_storage_volume_api_v1_ext *volume=risc_storage_volume_extension(destination.api);
+ const risc_storage_volume_api_v1_state *state=risc_storage_volume_state(destination.api);
+ if(!volume || !state)return crash_session_release(s,&destination);
  crash_session_sd_context ctx={s,state};
  if(!crash_session_sd_safe(&ctx))return crash_session_retain(s);
  int media=state->observe(volume->base.context);
- if(media!=RISC_STORAGE_STATE_READY)return crash_session_release(s,&sd);
- char hash[65];static const char hex[]="0123456789abcdef";
- for(unsigned i=0;i<32;++i){hash[2*i]=hex[report.identity.firmware_sha256[i]>>4];hash[2*i+1]=hex[report.identity.firmware_sha256[i]&15];}hash[64]=0;
+ if(media!=RISC_STORAGE_STATE_READY)return crash_session_release(s,&destination);
  crash_report_sd_hooks hooks={.context=&ctx,.monotonic_ms=crash_session_sd_now,.safe=crash_session_sd_safe,.budget_ms=250};
  int saved=crash_report_sd_export(&s->sd,volume,hash,report.identity.captured_boot,report.identity.captured_sequence,report.text,report.text_size,&hooks);
  if(saved==CRASH_REPORT_SD_RETAINED || !crash_session_safe(s))return crash_session_retain(s);
- if(!crash_session_release(s,&sd))return false;
+ if(!crash_session_release(s,&destination))return false;
  if(saved!=CRASH_REPORT_SD_SAVED)return true;
+#endif
  if(!crash_session_open(s,&data))return crash_session_safe(s);
  r=crash_report_spool_remove(&s->spool,&report.identity,report.text,report.text_size);
  if(!crash_session_result(s,r))return false;

@@ -94,7 +94,7 @@ static bool quick_atomic_modal_begin(void) {
  if(!portable_home_settings_poll())return false;
 #endif
  quick_atomic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(quick_atomic_grant)};
- if(!rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,1,1,&quick_atomic_grant)) {
+ if(!rt->acquire(PORTABLE_PREFERENCE_CAPABILITY,1,1,&quick_atomic_grant)) {
   quick.ui.error_flags|=PQA_ERROR_SAVE;return quick_atomic_guard(NULL);
  }
  if(!quick_atomic_guard(NULL))return false;
