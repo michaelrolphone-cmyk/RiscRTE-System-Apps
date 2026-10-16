@@ -1,0 +1,2382 @@
+diff --git a/lib/PortableApps/include/PortableBroadcastClient.h b/lib/PortableApps/include/PortableBroadcastClient.h
+index 2431cad..c6bd94a 100644
+--- a/lib/PortableApps/include/PortableBroadcastClient.h
++++ b/lib/PortableApps/include/PortableBroadcastClient.h
+@@ -95,3 +95,10 @@ static inline bool portable_broadcast_close(portable_broadcast_client *c,const r
+ bool portable_broadcast_status(telemetry_broadcast_status_v1 *out);
+ bool portable_broadcast_enable(bool enabled);
+ bool portable_broadcast_stop(void);
++
++#ifdef PORTABLE_BROADCAST_RESULT_ONLY
++/* Explicit external preference controller: report its checked terminal storage
++ * outcome without writing KV. The adapter preserves the ordinary save-failure
++ * pause latch until the next explicit retry. This is not a storage result. */
++bool portable_broadcast_preference_result(bool enabled,bool saved);
++#endif
+diff --git a/lib/PortableApps/include/PortablePreferenceAtomic.h b/lib/PortableApps/include/PortablePreferenceAtomic.h
+new file mode 100644
+index 0000000..d43dbb2
+--- /dev/null
++++ b/lib/PortableApps/include/PortablePreferenceAtomic.h
+@@ -0,0 +1,188 @@
++#ifndef PORTABLE_PREFERENCE_ATOMIC_H
++#define PORTABLE_PREFERENCE_ATOMIC_H
++/* Explicit controller-owned namespace-1 edit. No provider calls from generic
++ * legacy put helpers and no automatic retry/rebase. All captured and submitted
++ * bytes are bounded copies; collect owns the accepted token until terminal. */
++#include <stdbool.h>
++#include <string.h>
++#include "RiscKeyValueAtomicV1.h"
++#define PORTABLE_PREFERENCE_ATOMIC_BYTES 64u
++#define PORTABLE_PREFERENCE_INTENT_BYTES 176u
++#define PORTABLE_PREFERENCE_NAMESPACE 1u
++enum { PORTABLE_PREFERENCE_USER=1,PORTABLE_PREFERENCE_AUTOMATIC=2,
++       PORTABLE_PREFERENCE_ROLLBACK=3,PORTABLE_PREFERENCE_BOOT=4 };
++enum { PORTABLE_PREFERENCE_READY=10 };
++typedef struct portable_preference_atomic {
++ const risc_key_value_atomic_v1 *api;
++ bool (*guard)(void *);void *guard_context;
++ uint64_t revision,token;
++ bool present,cancelled,submitted,valid;
++ bool brightness_off;uint8_t restore_brightness;
++ uint32_t expected_size,desired_size;
++ char key[16];uint8_t expected[64],desired[64],intent[PORTABLE_PREFERENCE_INTENT_BYTES];
++ int status;risc_key_value_atomic_receipt_v1 receipt;
++} portable_preference_atomic;
++static inline bool portable_preference_atomic_api_valid(const risc_key_value_atomic_v1 *api) {
++ return api&&api->api_version==1&&api->struct_size>=sizeof(*api)&&api->state&&api->get&&api->submit&&api->collect&&api->cancel;
++}
++static inline bool portable_preference_atomic_state_valid(const risc_key_value_atomic_state_v1 *s) {
++ return s->struct_size>=sizeof(*s)&&s->namespace_id==PORTABLE_PREFERENCE_NAMESPACE&&s->revision&&
++  s->max_mutations>=1&&s->max_value_bytes>=64&&s->max_group_bytes>=512&&
++  s->max_intent_bytes>=PORTABLE_PREFERENCE_INTENT_BYTES&&
++  (s->flags&3u)==(RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE|RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC);
++}
++static inline bool portable_preference_atomic_key(const char *key) {
++ static const char *const allowed[]={"time_format","time_zone","desk_clock_face","desk_direction",
++  "reader_flip_ui","reader_language","sleep_idle","rtc_basis",
++  "brightness","frontlight_tone","alert_dnd","contexts_on","quick_radio",
++  "ble_broadcast","context_sources","context_timing"};
++ if(!key)return false;
++ /* Explicit BLE alias/tombstone identities only; exactly one address type
++  * digit and twelve canonical lowercase address nibbles. */
++ if(strlen(key)==15&&key[0]=='b'&&key[1]=='s'&&key[2]>='0'&&key[2]<='3'){
++  for(unsigned i=3;i<15;i++)if(!((key[i]>='0'&&key[i]<='9')||(key[i]>='a'&&key[i]<='f')))return false;
++  return true;
++ }
++ for(unsigned i=0;i<sizeof(allowed)/sizeof(*allowed);++i)if(!strcmp(key,allowed[i]))return true;
++ return false;
++}
++static inline int portable_preference_atomic_safe(portable_preference_atomic *s) {
++ return s&&s->guard&&s->guard(s->guard_context)?RISC_ATOMIC_OK:RISC_ATOMIC_RETAINED;
++}
++static inline bool portable_preference_atomic_terminal(int rc) {
++ return rc==RISC_ATOMIC_OK||rc==RISC_ATOMIC_CANCELLED||rc==RISC_ATOMIC_INVALID||
++  rc==RISC_ATOMIC_CAPACITY||rc==RISC_ATOMIC_IO||rc==RISC_ATOMIC_UNCERTAIN||
++  rc==RISC_ATOMIC_CONFLICT||rc==RISC_ATOMIC_STALE;
++}
++/* Called before loading the editor draft, never at Save time. A non-user
++ * origin cannot enter this selected controller route. Future automatic writers
++ * need their own policy and boundary; these enum values confer no authority. */
++static inline int portable_preference_atomic_begin_at(portable_preference_atomic *s,
++ const risc_key_value_atomic_v1 *api,const char *key,unsigned origin,
++ bool (*guard)(void *),void *context,uint64_t captured_revision) {
++ if(!s||s->token)return RISC_ATOMIC_RETAINED;
++ memset(s,0,sizeof(*s));s->api=api;s->guard=guard;s->guard_context=context;
++ if(origin!=PORTABLE_PREFERENCE_USER||!portable_preference_atomic_api_valid(api)||
++    !portable_preference_atomic_key(key))return s->status=RISC_ATOMIC_INVALID;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
++ int rc=api->state(api->context,&state);
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(rc)return s->status=rc;
++ if(!portable_preference_atomic_state_valid(&state))return s->status=RISC_ATOMIC_INVALID;
++ if(captured_revision&&state.revision!=captured_revision)return s->status=RISC_ATOMIC_STALE;
++ s->revision=state.revision;memcpy(s->key,key,strlen(key)+1);
++ rc=api->get(api->context,s->revision,key,s->expected,sizeof(s->expected),&s->expected_size);
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(rc!=RISC_ATOMIC_OK&&rc!=RISC_ATOMIC_NOT_FOUND)return s->status=rc;
++ if((rc==RISC_ATOMIC_OK&&s->expected_size>sizeof(s->expected))||
++    (rc==RISC_ATOMIC_NOT_FOUND&&s->expected_size))return s->status=RISC_ATOMIC_INVALID;
++ s->present=rc==RISC_ATOMIC_OK;s->valid=true;return s->status=PORTABLE_PREFERENCE_READY;
++}
++static inline int portable_preference_atomic_begin(portable_preference_atomic *s,
++ const risc_key_value_atomic_v1 *api,const char *key,unsigned origin,
++ bool (*guard)(void *),void *context) {
++ return portable_preference_atomic_begin_at(s,api,key,origin,guard,context,0);
++}
++static inline void portable_preference_word(uint8_t *p,uint32_t v) {
++ for(unsigned i=0;i<4;++i)p[i]=(uint8_t)(v>>(i*8u));
++}
++static inline uint32_t portable_preference_crc(const uint8_t *p,unsigned size) {
++ uint32_t crc=UINT32_MAX;
++ for(unsigned i=0;i<size;++i){crc^=p[i];for(unsigned b=0;b<8;++b)crc=(crc>>1)^((0u-(crc&1u))&UINT32_C(0xedb88320));}
++ return ~crc;
++}
++/* A controller passes a COMPLETE canonical value, even for a same-value Save.
++ * PFI0001: origin USER; operation PUT; exact expected presence/value; desired
++ * value; key and captured local revision. Zero padding and LE words are fixed. */
++static inline int portable_preference_atomic_prepare(portable_preference_atomic *s,const void *value,uint32_t size) {
++ if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||!value||!size||size>64)return RISC_ATOMIC_INVALID;
++ s->brightness_off=false;memcpy(s->desired,value,size);s->desired_size=size;
++ memset(s->intent,0,sizeof(s->intent));memcpy(s->intent,"PFI0001",7);
++ s->intent[8]=PORTABLE_PREFERENCE_USER;s->intent[9]=RISC_ATOMIC_PUT;s->intent[10]=(uint8_t)s->present;
++ memcpy(s->intent+12,s->key,strlen(s->key));portable_preference_word(s->intent+28,s->expected_size);
++ portable_preference_word(s->intent+32,size);portable_preference_word(s->intent+36,(uint32_t)s->revision);
++ portable_preference_word(s->intent+40,(uint32_t)(s->revision>>32));
++ memcpy(s->intent+44,s->expected,s->expected_size);memcpy(s->intent+108,value,size);
++ portable_preference_word(s->intent+172,portable_preference_crc(s->intent,172));return PORTABLE_PREFERENCE_READY;
++}
++/* Brightness OFF has one semantic intention and one subordinate restore
++ * byte. The copied group publishes both or neither; quick_bright cannot be
++ * selected as an independent USER intention. PFI0001 remains unchanged. */
++static inline int portable_preference_atomic_prepare_brightness_off(portable_preference_atomic *s,
++ const void *value,uint32_t size,uint8_t restore) {
++ if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||strcmp(s->key,"brightness")||!value||size!=1||*(const uint8_t*)value||restore<10||restore>100)return RISC_ATOMIC_INVALID;
++ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
++ int rc=s->api->state(s->api->context,&state);
++ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
++ if(rc)return rc;
++ if(!portable_preference_atomic_state_valid(&state)||state.max_mutations<2)return RISC_ATOMIC_CAPACITY;
++ if(state.revision!=s->revision)return RISC_ATOMIC_STALE;
++ if(s->present&&(s->expected_size!=1||s->expected[0]>100||(s->expected[0]&&s->expected[0]<10)))return RISC_ATOMIC_INVALID;
++ uint8_t prior=s->present?s->expected[0]:40;
++ if(!prior) {
++  uint32_t n=0;uint8_t stored=0;
++  rc=s->api->get(s->api->context,s->revision,"quick_bright",&stored,1,&n);
++  if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
++  if(rc==RISC_ATOMIC_NOT_FOUND&&!n)prior=40;
++  else if(rc==RISC_ATOMIC_OK&&n==1&&stored>=10&&stored<=100)prior=stored;
++  else return rc==RISC_ATOMIC_OK||rc==RISC_ATOMIC_NOT_FOUND?RISC_ATOMIC_INVALID:rc;
++ }
++ if(restore!=prior)return RISC_ATOMIC_STALE;
++ rc=portable_preference_atomic_prepare(s,value,size);
++ if(rc!=PORTABLE_PREFERENCE_READY)return rc;
++ s->brightness_off=true;s->restore_brightness=restore;return rc;
++}
++/* Preflight is useful before irreversible physical clock writes. It detects
++ * known stale drafts; it cannot lock other writers out while hardware runs. */
++static inline int portable_preference_atomic_check(portable_preference_atomic *s) {
++ if(!s||!s->valid||s->submitted||s->token)return RISC_ATOMIC_INVALID;
++ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};int rc=s->api->state(s->api->context,&state);
++ if(portable_preference_atomic_safe(s))return RISC_ATOMIC_RETAINED;
++ if(rc)return rc;
++ if(!portable_preference_atomic_state_valid(&state))return RISC_ATOMIC_INVALID;
++ return state.revision==s->revision?RISC_ATOMIC_OK:RISC_ATOMIC_STALE;
++}
++static inline int portable_preference_atomic_submit(portable_preference_atomic *s) {
++ if(!s||!s->valid||s->submitted||s->token||s->status!=PORTABLE_PREFERENCE_READY||!s->desired_size)return RISC_ATOMIC_INVALID;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_mutation_v1 mutations[2]={{s->key,RISC_ATOMIC_PUT,s->desired,s->desired_size},
++  {"quick_bright",RISC_ATOMIC_PUT,&s->restore_brightness,1}};
++ uint64_t token=0;int rc=s->api->submit(s->api->context,s->revision,mutations,s->brightness_off?2:1,s->intent,sizeof(s->intent),&token);
++ /* Keep ANY returned token, even a contract violation. Never release custody
++  * or lose an accepted/ambiguous operation by resetting the app staging. */
++ s->token=token;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(rc==RISC_ATOMIC_BUSY&&!token)return s->status=PORTABLE_PREFERENCE_READY;
++ s->submitted=true;
++ if(rc!=RISC_ATOMIC_OK||!token)return s->status=token||rc==RISC_ATOMIC_OK?RISC_ATOMIC_RETAINED:
++  portable_preference_atomic_terminal(rc)?rc:RISC_ATOMIC_RETAINED;
++ return s->status=RISC_ATOMIC_PENDING;
++}
++static inline int portable_preference_atomic_collect(portable_preference_atomic *s) {
++ if(!s||!s->token)return RISC_ATOMIC_INVALID;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_receipt_v1 receipt={.struct_size=sizeof(receipt)};
++ int rc=s->api->collect(s->api->context,s->token,&receipt);
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(rc==RISC_ATOMIC_PENDING||rc==RISC_ATOMIC_BUSY)return s->status=RISC_ATOMIC_PENDING;
++ if(rc!=RISC_ATOMIC_OK||receipt.struct_size<sizeof(receipt)||!portable_preference_atomic_terminal(receipt.status)||
++    (receipt.status==RISC_ATOMIC_OK&&(!receipt.operation_id||receipt.revision<=s->revision))||
++    (receipt.status!=RISC_ATOMIC_OK&&receipt.operation_id))return s->status=RISC_ATOMIC_RETAINED;
++ s->receipt=receipt;s->token=0;return s->status=receipt.status;
++}
++static inline int portable_preference_atomic_cancel(portable_preference_atomic *s) {
++ if(!s)return RISC_ATOMIC_INVALID;
++ if(!s->token){s->submitted=true;return s->status=RISC_ATOMIC_CANCELLED;}
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(!s->cancelled){
++  int rc=s->api->cancel(s->api->context,s->token);
++  if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++  if(rc!=RISC_ATOMIC_OK&&rc!=RISC_ATOMIC_PENDING&&rc!=RISC_ATOMIC_CANCELLED)return s->status=RISC_ATOMIC_RETAINED;
++  s->cancelled=true;
++ }
++ return portable_preference_atomic_collect(s);
++}
++#endif
+diff --git a/lib/PortableApps/include/PortablePreferenceRollback.h b/lib/PortableApps/include/PortablePreferenceRollback.h
+new file mode 100644
+index 0000000..518c7bf
+--- /dev/null
++++ b/lib/PortableApps/include/PortablePreferenceRollback.h
+@@ -0,0 +1,58 @@
++#ifndef PORTABLE_PREFERENCE_ROLLBACK_H
++#define PORTABLE_PREFERENCE_ROLLBACK_H
++/* Explicit compensation for one confirmed quick_radio USER operation.
++ * Ordinary PFI0001 USER records are unchanged. PFR0001 binds its expected
++ * local revision/value to the originating committed receipt. No rebase or
++ * automatic retry may overwrite a newer controller/automatic operation. */
++#include "PortablePreferenceAtomic.h"
++#define PORTABLE_PREFERENCE_ROLLBACK_BYTES 192u
++typedef struct {
++ portable_preference_atomic edit;
++ uint8_t intent[PORTABLE_PREFERENCE_ROLLBACK_BYTES];
++ uint32_t kind;
++ uint64_t origin_operation,origin_revision;
++} portable_preference_rollback;
++static inline int portable_preference_rollback_begin(portable_preference_rollback *r,
++ const portable_preference_atomic *origin,bool (*guard)(void *),void *context){
++ if(!r||r->edit.token||!origin||origin->token||origin->status!=RISC_ATOMIC_OK||
++    origin->receipt.status!=RISC_ATOMIC_OK||!origin->receipt.operation_id||
++    origin->receipt.revision<=origin->revision||strcmp(origin->key,"quick_radio")||
++    memcmp(origin->intent,"PFI0001",7)||origin->intent[8]!=PORTABLE_PREFERENCE_USER||
++    origin->desired_size!=4)return RISC_ATOMIC_INVALID;
++ memset(r,0,sizeof(*r));
++ int rc=portable_preference_atomic_begin_at(&r->edit,origin->api,origin->key,PORTABLE_PREFERENCE_USER,guard,context,origin->receipt.revision);
++ if(rc!=PORTABLE_PREFERENCE_READY)return rc;
++ if(!r->edit.present||r->edit.expected_size!=origin->desired_size||memcmp(r->edit.expected,origin->desired,origin->desired_size))return r->edit.status=RISC_ATOMIC_STALE;
++ risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
++ rc=origin->api->state(origin->api->context,&state);
++ if(portable_preference_atomic_safe(&r->edit))return r->edit.status=RISC_ATOMIC_RETAINED;
++ if(rc)return r->edit.status=rc;
++ if(state.revision!=r->edit.revision)return r->edit.status=RISC_ATOMIC_STALE;
++ if(!portable_preference_atomic_state_valid(&state)||state.max_intent_bytes<sizeof(r->intent))return r->edit.status=RISC_ATOMIC_CAPACITY;
++ r->kind=origin->present?RISC_ATOMIC_PUT:RISC_ATOMIC_DELETE;
++ r->edit.desired_size=origin->expected_size;memcpy(r->edit.desired,origin->expected,origin->expected_size);
++ r->origin_operation=origin->receipt.operation_id;r->origin_revision=origin->receipt.revision;
++ memcpy(r->intent,"PFR0001",7);r->intent[8]=PORTABLE_PREFERENCE_ROLLBACK;r->intent[9]=(uint8_t)r->kind;r->intent[10]=1;
++ memcpy(r->intent+12,r->edit.key,strlen(r->edit.key));
++ portable_preference_word(r->intent+28,r->edit.expected_size);portable_preference_word(r->intent+32,r->edit.desired_size);
++ portable_preference_word(r->intent+36,(uint32_t)r->edit.revision);portable_preference_word(r->intent+40,(uint32_t)(r->edit.revision>>32));
++ memcpy(r->intent+44,r->edit.expected,r->edit.expected_size);memcpy(r->intent+108,r->edit.desired,r->edit.desired_size);
++ portable_preference_word(r->intent+172,(uint32_t)r->origin_operation);portable_preference_word(r->intent+176,(uint32_t)(r->origin_operation>>32));
++ portable_preference_word(r->intent+180,(uint32_t)r->origin_revision);portable_preference_word(r->intent+184,(uint32_t)(r->origin_revision>>32));
++ portable_preference_word(r->intent+188,portable_preference_crc(r->intent,188));return PORTABLE_PREFERENCE_READY;
++}
++static inline int portable_preference_rollback_submit(portable_preference_rollback *r){
++ if(!r||!r->origin_operation||!r->edit.valid||r->edit.submitted||r->edit.token||r->edit.status!=PORTABLE_PREFERENCE_READY)return RISC_ATOMIC_INVALID;
++ portable_preference_atomic *s=&r->edit;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ risc_key_value_atomic_mutation_v1 m={s->key,r->kind,r->kind==RISC_ATOMIC_PUT?s->desired:NULL,s->desired_size};
++ uint64_t token=0;int rc=s->api->submit(s->api->context,s->revision,&m,1,r->intent,sizeof(r->intent),&token);
++ s->token=token;
++ if(portable_preference_atomic_safe(s))return s->status=RISC_ATOMIC_RETAINED;
++ if(rc==RISC_ATOMIC_BUSY&&!token)return s->status=PORTABLE_PREFERENCE_READY;
++ s->submitted=true;
++ if(rc!=RISC_ATOMIC_OK||!token)return s->status=token||rc==RISC_ATOMIC_OK?RISC_ATOMIC_RETAINED:
++  portable_preference_atomic_terminal(rc)?rc:RISC_ATOMIC_RETAINED;
++ return s->status=RISC_ATOMIC_PENDING;
++}
++#endif
+diff --git a/lib/PortableApps/include/PortableSetTime.h b/lib/PortableApps/include/PortableSetTime.h
+index 8133153..14b4aff 100644
+--- a/lib/PortableApps/include/PortableSetTime.h
++++ b/lib/PortableApps/include/PortableSetTime.h
+@@ -68,6 +68,12 @@ int portable_set_time_open(portable_set_time_client *,const risc_runtime_api_v1
+  * previous clock assumptions. A clean verification mismatch permits retry. */
+ int portable_set_time_apply_confirmed(portable_set_time_client *,
+  const portable_set_time_request *,portable_set_time_result *);
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++/* Explicit selected controller only. Confirms RTC and native clock, then
++ * returns with metadata NOT_ATTEMPTED. No namespace-1 grant or legacy write. */
++int portable_set_time_apply_clocks_confirmed(portable_set_time_client *,
++ const portable_set_time_request *,portable_set_time_result *);
++#endif
+ int portable_set_time_close(portable_set_time_client *);
+ void portable_set_time_stop(portable_set_time_client *,bool retained);
+ #ifdef __cplusplus
+diff --git a/lib/PortableApps/include/PortableSettingsAvailability.h b/lib/PortableApps/include/PortableSettingsAvailability.h
+new file mode 100644
+index 0000000..ef54e1c
+--- /dev/null
++++ b/lib/PortableApps/include/PortableSettingsAvailability.h
+@@ -0,0 +1,53 @@
++#ifndef PORTABLE_SETTINGS_AVAILABILITY_H
++#define PORTABLE_SETTINGS_AVAILABILITY_H
++/* Explicit read-only status. Data grants and all draft decisions stay with the
++ * caller. A generation change never licenses a merge, reset or grant release. */
++#include <stdbool.h>
++#include <string.h>
++#include "RiscRuntimeV1.h"
++#include "RiscKeyValueAvailabilityV1.h"
++typedef struct PortableSettingsAvailability {
++ risc_runtime_capability_v1 grant;
++ const risc_key_value_availability_v1 *api;
++ risc_key_value_availability_state_v1 state;
++} PortableSettingsAvailability;
++static inline bool portable_settings_availability_refresh(PortableSettingsAvailability *s) {
++ if(!s||!s->api)return false;
++ risc_key_value_availability_state_v1 next={.struct_size=sizeof(next)};
++ int rc=s->api->snapshot(s->api->context,&next);
++ if(rc!=RISC_KEY_VALUE_AVAILABILITY_OK||next.struct_size<sizeof(next)||
++    next.namespace_id!=s->state.namespace_id||next.reserved||!next.generation||
++    next.generation<s->state.generation||
++    (next.generation==s->state.generation&&s->state.availability&&next.availability!=s->state.availability)||next.availability<RISC_KEY_VALUE_UNAVAILABLE||
++    next.availability>RISC_KEY_VALUE_CONFLICT)return false;
++ s->state=next;return true;
++}
++static inline bool portable_settings_availability_open(PortableSettingsAvailability *s,
++ const risc_runtime_api_v1 *rt,uint32_t namespace_id) {
++ if(!s||s->grant.api||!rt||!rt->acquire||!rt->release||(namespace_id!=1&&namespace_id!=6))return false;
++ *s=(PortableSettingsAvailability){.grant={.struct_size=sizeof(s->grant)},
++  .state={.struct_size=sizeof(s->state),.namespace_id=namespace_id}};
++ if(!rt->acquire(RISC_KEY_VALUE_AVAILABILITY_CAPABILITY,1,namespace_id,&s->grant))return false;
++ const risc_key_value_availability_v1 *api=s->grant.api;
++ if(s->grant.struct_size!=sizeof(s->grant)||!s->grant.slot||!s->grant.generation||
++    !api||api->api_version!=1||api->struct_size<sizeof(*api)||!api->snapshot)return false;
++ s->api=api;return portable_settings_availability_refresh(s);
++}
++static inline bool portable_settings_availability_close(PortableSettingsAvailability *s,
++ const risc_runtime_api_v1 *rt) {
++ if(!s||!rt||!rt->release)return false;
++ if(s->grant.api&&(!rt->release(&s->grant)||s->grant.struct_size!=sizeof(s->grant)||
++    s->grant.api||s->grant.slot||s->grant.generation))return false;
++ *s=(PortableSettingsAvailability){0};return true;
++}
++static inline bool portable_settings_availability_available(const PortableSettingsAvailability *s) {
++ return s&&s->api&&s->state.availability==RISC_KEY_VALUE_AVAILABLE;
++}
++static inline const char *portable_settings_availability_message(const PortableSettingsAvailability *s) {
++ if(!s||!s->api)return "Settings status unavailable";
++ return s->state.availability==RISC_KEY_VALUE_AVAILABLE?"Settings available locally":
++  s->state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"Recovered settings waiting for clean reload":
++  s->state.availability==RISC_KEY_VALUE_CONFLICT?"Settings source conflict; nothing overwritten":
++  "Settings unavailable; temporary defaults";
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscKeyValueAtomicV1.h b/lib/PortableApps/include/RiscKeyValueAtomicV1.h
+new file mode 100644
+index 0000000..8882785
+--- /dev/null
++++ b/lib/PortableApps/include/RiscKeyValueAtomicV1.h
+@@ -0,0 +1,41 @@
++#ifndef RISC_KEY_VALUE_ATOMIC_V1_H
++#define RISC_KEY_VALUE_ATOMIC_V1_H
++/* Experimental, explicitly admitted namespace-scoped native operation API.
++ * Independent of storage.key-value@1/@2. No SD acknowledgement is implied.
++ * Owner calls are serialized. Backend I/O runs only on the native worker.
++ * submit copies all inputs before returning OK; zero token on any refusal.
++ * get is revision-checked and Busy whenever the worker owns the core.
++ * cancel requests cancellation; collect is always required and can return a
++ * successful committed receipt when cancellation lost the publication race.
++ * A terminal receipt is consumed once. Never automatically replay Uncertain.
++ */
++#include <stdint.h>
++#define RISC_KEY_VALUE_ATOMIC_CAPABILITY "storage.key-value.atomic"
++#define RISC_KEY_VALUE_ATOMIC_API_V1 1u
++#define RISC_KEY_VALUE_ATOMIC_NATIVE_DURABLE 1u
++#define RISC_KEY_VALUE_ATOMIC_COPIED_ASYNC 2u
++enum { RISC_ATOMIC_OK=0, RISC_ATOMIC_PENDING=1, RISC_ATOMIC_CANCELLED=2,
++ RISC_ATOMIC_NOT_FOUND=-1, RISC_ATOMIC_INVALID=-2, RISC_ATOMIC_CAPACITY=-3,
++ RISC_ATOMIC_IO=-4, RISC_ATOMIC_UNCERTAIN=-5, RISC_ATOMIC_CONFLICT=-6,
++ RISC_ATOMIC_STALE=-7, RISC_ATOMIC_BUFFER_SMALL=-8, RISC_ATOMIC_BUSY=-9,
++ RISC_ATOMIC_RETAINED=-10 };
++enum { RISC_ATOMIC_PUT=1, RISC_ATOMIC_DELETE=2 };
++typedef struct risc_key_value_atomic_state_v1 {
++ uint32_t struct_size,flags,namespace_id,max_mutations,max_value_bytes,max_group_bytes,max_intent_bytes,reserved;
++ uint64_t revision;
++} risc_key_value_atomic_state_v1;
++typedef struct risc_key_value_atomic_mutation_v1 {
++ const char *key;uint32_t kind;const void *value;uint32_t size;
++} risc_key_value_atomic_mutation_v1;
++typedef struct risc_key_value_atomic_receipt_v1 {
++ uint32_t struct_size;int32_t status;uint64_t revision,operation_id;
++} risc_key_value_atomic_receipt_v1;
++typedef struct risc_key_value_atomic_v1 {
++ uint32_t api_version,struct_size;void *context;
++ int32_t (*state)(void*,risc_key_value_atomic_state_v1*);
++ int32_t (*get)(void*,uint64_t,const char*,void*,uint32_t,uint32_t*);
++ int32_t (*submit)(void*,uint64_t,const risc_key_value_atomic_mutation_v1*,uint32_t,const void*,uint32_t,uint64_t*);
++ int32_t (*collect)(void*,uint64_t,risc_key_value_atomic_receipt_v1*);
++ int32_t (*cancel)(void*,uint64_t);
++} risc_key_value_atomic_v1;
++#endif
+diff --git a/lib/PortableApps/include/RiscKeyValueAvailabilityV1.h b/lib/PortableApps/include/RiscKeyValueAvailabilityV1.h
+new file mode 100644
+index 0000000..aff78bb
+--- /dev/null
++++ b/lib/PortableApps/include/RiscKeyValueAvailabilityV1.h
+@@ -0,0 +1,31 @@
++#ifndef RISC_KEY_VALUE_AVAILABILITY_V1_H
++#define RISC_KEY_VALUE_AVAILABILITY_V1_H
++#include <stdint.h>
++#define RISC_KEY_VALUE_AVAILABILITY_CAPABILITY "storage.key-value.availability"
++#define RISC_KEY_VALUE_AVAILABILITY_API_V1 1u
++enum { RISC_KEY_VALUE_AVAILABILITY_OK=0, RISC_KEY_VALUE_AVAILABILITY_INVALID=-1,
++ RISC_KEY_VALUE_AVAILABILITY_CONTEXT=-2 };
++enum { RISC_KEY_VALUE_UNAVAILABLE=1, RISC_KEY_VALUE_RECONCILIATION_PENDING=2,
++ RISC_KEY_VALUE_AVAILABLE=3, RISC_KEY_VALUE_CONFLICT=4 };
++/* Read-only, explicitly granted namespace status. No keys, values, paths or
++ * source identity are disclosed. This capability does not grant KV access.
++ * UNAVAILABLE/CONFLICT reads use temporary app defaults; durable saves are
++ * refused. Never persist defaults as a repair. PENDING means a collected source
++ * is waiting for the owner reconciliation boundary: every data grant/draft for
++ * this namespace must be released before authority can change. A status grant
++ * does not protect a draft. Keep data grants while edits need preservation.
++ * Release them only after an explicit save/discard decision or a clean restart
++ * of the view/invocation. Observe generation, then reacquire data and reload;
++ * never merge or discard edits because a generation changed. Generation is RAM
++ * only and meaningful within this Runtime lifetime. AVAILABLE says native
++ * settings are authoritative; it does not promise an SD checkpoint exists.
++ * Tables and copied callbacks expire at release/revocation. Owner task only. */
++typedef struct risc_key_value_availability_state_v1 {
++ uint32_t struct_size,namespace_id,availability,reserved;
++ uint64_t generation;
++} risc_key_value_availability_state_v1;
++typedef struct risc_key_value_availability_v1 {
++ uint32_t api_version,struct_size;void*context;
++ int32_t (*snapshot)(void*,risc_key_value_availability_state_v1*);
++} risc_key_value_availability_v1;
++#endif
+diff --git a/lib/PortableApps/include/RiscRuntimeHostControlV1.h b/lib/PortableApps/include/RiscRuntimeHostControlV1.h
+new file mode 100644
+index 0000000..7a4429e
+--- /dev/null
++++ b/lib/PortableApps/include/RiscRuntimeHostControlV1.h
+@@ -0,0 +1,19 @@
++#pragma once
++#include "RiscRuntimeV1.h"
++#include <string.h>
++/* Read-only append-only suffix: no write, acknowledgement or clear. Keep
++ * historical SDK prefixes intact and avoid aliasing a different struct. */
++static inline bool risc_runtime_exit_requested_v1(const risc_runtime_api_v1 *api){
++#if defined(RISC_RUNTIME_EXIT_REQUESTED_V1_SIZE)
++  return api && api->struct_size>=RISC_RUNTIME_EXIT_REQUESTED_V1_SIZE &&
++         api->exit_requested && api->exit_requested();
++#elif defined(RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE)
++  bool (*request)(void)=NULL;
++  const size_t offset=RISC_RUNTIME_DIAGNOSTIC_CHECKPOINT_V1_SIZE+sizeof(bool(*)(uint32_t*));
++  if(!api||api->struct_size<offset+sizeof(request))return false;
++  memcpy(&request,(const unsigned char*)api+offset,sizeof(request));
++  return request&&request();
++#else
++  (void)api;return false;
++#endif
++}
+diff --git a/lib/PortableApps/src/PortableSetTime.c b/lib/PortableApps/src/PortableSetTime.c
+index 6134978..42e4ba7 100644
+--- a/lib/PortableApps/src/PortableSetTime.c
++++ b/lib/PortableApps/src/PortableSetTime.c
+@@ -94,6 +94,7 @@ static int bool_result(portable_set_time_client *c,bool ok) {
+  int rc=safe(c);if(rc)return rc;
+  return ok?0:halt(c,PORTABLE_REALTIME_UNCERTAIN);
+ }
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+ static int kv_result(portable_set_time_client *c,int32_t status) {
+  int rc=safe(c);if(rc)return rc;
+  if(status==RISC_KEY_VALUE_OK)return 0;
+@@ -111,6 +112,7 @@ static int finish_kv(portable_set_time_client *c,portable_set_time_result *r,int
+  r->stage=PORTABLE_SET_TIME_KV_RELEASE;r->cleanup=release(c,&c->kv_grant);
+  return r->cleanup?r->cleanup:reason;
+ }
++#endif
+ static bool same_calendar(const twatch_rtc_time_v1 *a,const twatch_rtc_time_v1 *b) {
+  return a->year==b->year && a->month==b->month && a->day==b->day && a->weekday==b->weekday &&
+         a->hour==b->hour && a->minute==b->minute && a->second==b->second;
+@@ -139,7 +141,11 @@ static int rtc_observed(const portable_set_time_request *p,const portable_set_ti
+  if(!same_calendar(&one,observed) || !same_calendar(&mapped,observed))return PORTABLE_REALTIME_VERIFY;
+  r->verified_utc_epoch=plan->utc_epoch+1;r->rtc_tick_accepted=true;return 0;
+ }
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++int portable_set_time_apply_clocks_confirmed(portable_set_time_client *c,
++#else
+ int portable_set_time_apply_confirmed(portable_set_time_client *c,
++#endif
+  const portable_set_time_request *p,portable_set_time_result *r) {
+  if(!r)return PORTABLE_REALTIME_INVALID;
+  *r=(portable_set_time_result){0};
+@@ -186,6 +192,12 @@ int portable_set_time_apply_confirmed(portable_set_time_client *c,
+  rc=safe(c);if(rc)return failed(c,r,rc);
+  rc=portable_realtime_seed_confirmed(&c->realtime,r->verified_utc_epoch,p->native_readback_budget_us,&r->native);
+  if(rc)return failed(c,r,native_result(c,rc));
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++ /* The explicit Settings controller separately submits rtc_basis with its
++  * edit-boundary revision/intent after checked physical/native completion.
++  * Returning OK here confirms clocks only, never metadata or SD custody. */
++ return PORTABLE_REALTIME_OK;
++#else
+  r->stage=PORTABLE_SET_TIME_KV_ACQUIRE;
+  rc=acquire(c,RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_RTC_BASIS_INSTANCE,&c->kv_grant);
+  if(rc)return failed(c,r,rc);
+@@ -214,6 +226,7 @@ int portable_set_time_apply_confirmed(portable_set_time_client *c,
+  rc=finish_kv(c,r,rc);
+  if(!rc)r->stage=PORTABLE_SET_TIME_DONE;
+  return rc;
++#endif
+ }
+ int portable_set_time_close(portable_set_time_client *c) {
+  if(!c)return PORTABLE_REALTIME_INVALID;
+diff --git a/lib/PortableApps/src/adapter.c b/lib/PortableApps/src/adapter.c
+index 48b5306..83082db 100644
+--- a/lib/PortableApps/src/adapter.c
++++ b/lib/PortableApps/src/adapter.c
+@@ -1,3 +1,4 @@
++#include "RiscRuntimeHostControlV1.h"
+ #if defined(PORTABLE_SETTINGS_LIST_SCROLL) && (!defined(PORTABLE_TOUCH_SCROLL) || !defined(PORTABLE_SETTINGS_APP))
+ #error "Settings list scrolling requires selected Settings touch scrolling"
+ #endif
+@@ -65,6 +66,13 @@ __attribute__((visibility("default"))) const risc_resident_app_descriptor_v1_t r
+ #endif
+ /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
+ #include "PortableApps.h"
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++static bool settings_atomic_owned(void);
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++static bool settings_availability_editing(void);
++static bool settings_availability_filter(t5_app_input_t *);
++#endif
++#endif
+ #include "PortablePerformance.h"
+ #include "PortableStageLog.h"
+ #include "PortableTouch.h"
+@@ -1855,13 +1863,16 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+   if(failed)return false;
+   const uint32_t idle_budget=spent<wait?wait-spent:0;
+   uint32_t delay=idle_budget;
++  bool cooperated=false;
+   while(delay && !input_progressed && !navigation_pending && !failed) {
+     uint32_t slice=delay>4u?4u:delay;
++    if(raster_sealed&&!raster_ready_to_submit)slice=1u;
+ #ifdef PORTABLE_USB_TRANSFER_APP
+     if(slice>2u)slice=2u;
+     portable_usb_transfer_service();
+ #endif
+     rt->yield_ms(paper_token?1u:slice);
++    cooperated=true;
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+     if(!contexts_capture_checkpoint())return false;
+ #endif
+@@ -1870,7 +1881,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+     uint32_t elapsed=(uint32_t)(millis_now()-now);
+     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
+   }
+-  if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
++  if(!cooperated || input_progressed || navigation_pending || !wait)rt->yield_ms(1);
+   last_poll_at=millis_now();
+   if(!paper_present_progress() || failed)return false;
+ #ifdef PORTABLE_ALARM_CLIENT
+@@ -1910,7 +1921,8 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+     }
+ #endif
+     if(reason==RISC_RESIDENT_CHECKPOINT_CONTROLS) {
+-      resident_controls_requested=false;return true;
++      if(status!=RISC_RESIDENT_BUSY)resident_controls_requested=false;
++      return true;
+     }
+   }
+ #endif
+@@ -2079,6 +2091,14 @@ replay_input:
+  * while this invocation is active; nested Settings Back remains app-owned.
+  * Launch requests and error/health exits never acquire a synthetic return. */
+ static bool poll(t5_app_input_t *out, uint32_t wait) {
++  if(risc_runtime_exit_requested_v1(rt)
++#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_SETTINGS_APP)
++     && !settings_availability_editing()
++#endif
++    ) {
++    clear_contact_snapshots();memset(out,0,sizeof(*out));
++    out->exit_requested=true;out->buttons=T5_APP_BUTTON_BACK;return true;
++  }
+ #ifdef PORTABLE_TEXT_INPUT_CLIENT
+   if(text_input_suspended || text_input_retained){memset(out,0,sizeof(*out));return false;}
+ #endif
+@@ -2087,6 +2107,9 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
+ #endif
+   if(handoff_requested){clear_contact_snapshots();memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
+   bool ok=poll_input(out,wait);
++#if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_SETTINGS_APP)
++  if(ok && settings_availability_filter(out))return true;
++#endif
+ #ifdef PORTABLE_PERFORMANCE_TRACE
+   if(ok && (out->tapped || out->buttons))portable_perf_event(RISC_PERF_RECOGNIZED,PORTABLE_PERF_INPUT_DELIVERED);
+ #endif
+@@ -2547,6 +2570,7 @@ static int initialize(void) {
+   /* Runtime extensions are optional: never read beyond an older table. */
+   memset(&settings_runtime,0,sizeof(settings_runtime));
+   memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
++  settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
+   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
+   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
+@@ -2556,6 +2580,7 @@ static int initialize(void) {
+   /* Runtime extensions are optional: never read beyond an older table. */
+   memset(&settings_runtime,0,sizeof(settings_runtime));
+   memcpy(&settings_runtime,rt,rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime));
++  settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
+   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
+   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
+@@ -2580,6 +2605,9 @@ static void settings_native_finalize(void) {
+   if(native_custody_retained || !rt || !settings_started)return;
+ #else
+   if(native_custody_retained || !rt)return;
++#endif
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++  if(!settings_atomic_close())return;
+ #endif
+   if(paper_token && !portable_paper_frame_drain())return;
+ #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
+diff --git a/lib/PortableApps/src/broadcast_adapter.inc b/lib/PortableApps/src/broadcast_adapter.inc
+index 36f3efd..3b83555 100644
+--- a/lib/PortableApps/src/broadcast_adapter.inc
++++ b/lib/PortableApps/src/broadcast_adapter.inc
+@@ -26,10 +26,10 @@ static bool broadcast_release(void) {
+   broadcast_client.api=NULL;return true;
+ }
+ bool portable_broadcast_stop(void) {
+-#if defined(PORTABLE_WIFI_SETTINGS_APP)
++#if defined(PORTABLE_WIFI_SESSION_APP)
+   /* Wi-Fi admission pauses advertising before it owns the async operation.
+    * HCI start/stop remains deferred through checked Wi-Fi quiescence. */
+-  if(portable_wifi_async_owned())return !native_custody_retained && broadcast_pause_confirmed;
++  if(wifi_session_interaction_active())return !native_custody_retained && broadcast_pause_confirmed;
+ #endif
+ #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
+   if(desk_phase==DESK_TIMER)return !native_custody_retained;
+@@ -57,12 +57,33 @@ bool portable_broadcast_enable(bool enabled) {
+   }
+   return broadcast_release() && ok;
+ }
++#ifdef PORTABLE_BROADCAST_RESULT_ONLY
++/* The controller already owns the native storage receipt. Apply exactly the
++ * existing post-save service policy without issuing another preference write.
++ * In particular, failed Disable must remain paused until explicit retry. */
++bool portable_broadcast_preference_result(bool enabled,bool saved) {
++  if(!broadcast_open())return false;
++  if(!portable_broadcast_pause(&broadcast_client)||!portable_broadcast_release_storage(&broadcast_client)) {
++    portable_adapter_retain();return false;
++  }
++  broadcast_client.policy=(telemetry_broadcast_policy_v1){.struct_size=sizeof(broadcast_client.policy)};
++  broadcast_client.save_failed=!saved;broadcast_client.loaded=false;
++  broadcast_client.policy.enabled=saved&&enabled;broadcast_client.policy.settings_valid=saved;
++  bool safe=broadcast_client.api->step(broadcast_client.api->context,false,&broadcast_client.policy);
++  if(native_custody_retained)return false;
++  telemetry_broadcast_status_v1 state={.struct_size=sizeof(state)};
++  if(!broadcast_client.api->status(broadcast_client.api->context,&state)||state.cleanup_pending) {
++    portable_adapter_retain();return false;
++  }
++  return broadcast_release()&&saved&&safe;
++}
++#endif
+ static bool broadcast_tick(void) {
+   if(native_custody_retained)return false;
+-#ifdef PORTABLE_WIFI_SETTINGS_APP
++#ifdef PORTABLE_WIFI_SESSION_APP
+   /* Poll completion even while deferring the advertiser, so Cancel progresses. */
+   if(!portable_wifi_services_safe())return !native_custody_retained;
+-  if(portable_wifi_async_owned())return broadcast_pause_confirmed;
++  if(wifi_session_interaction_active())return broadcast_pause_confirmed;
+ #endif
+   bool allow=true;
+ #ifdef PORTABLE_BLE_FOREGROUND
+@@ -80,7 +101,7 @@ static bool broadcast_tick(void) {
+ #ifdef PORTABLE_UPDATE_APP
+   allow=allow && portable_update_broadcast_safe();
+ #endif
+-#if defined(PORTABLE_WIFI_SETTINGS_APP) || defined(PORTABLE_UPDATE_APP)
++#if defined(PORTABLE_WIFI_SESSION_APP) || defined(PORTABLE_UPDATE_APP)
+   allow=allow && portable_wifi_services_safe();
+ #endif
+   if(!broadcast_open())return false;
+@@ -95,11 +116,12 @@ static bool broadcast_tick(void) {
+   return broadcast_release();
+ }
+ 
+-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY)
++#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
+ static bool broadcast_before_storage(void) {
+   if(native_custody_retained)return false;
+   /* The client pauses its own advertiser before policy reads/writes. Avoid
+    * reacquiring/releasing the grant that owns that synchronous operation. */
+   return broadcast_policy_io || portable_broadcast_stop();
+ }
++
+ #endif
+diff --git a/lib/PortableApps/src/native_custody_adapter.inc b/lib/PortableApps/src/native_custody_adapter.inc
+index 8a54cdf..7bd498c 100644
+--- a/lib/PortableApps/src/native_custody_adapter.inc
++++ b/lib/PortableApps/src/native_custody_adapter.inc
+@@ -22,6 +22,11 @@ static void portable_adapter_retain_inner(bool log) {
+ void portable_adapter_retain(void) {
+ #endif
+   if(!native_custody_retained) {
++#ifdef PORTABLE_FILE_SETUP
++    /* Refused setup cleanup excludes diagnostic timestamps as well as normal
++     * providers. The retention barrier itself remains the terminal action. */
++    if(!file_setup_io_allowed())log=false;
++#endif
+ #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+     if(log)
+ #endif
+@@ -49,7 +54,7 @@ void portable_adapter_retain_silent(void) {portable_adapter_retain_inner(false);
+ #if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
+ bool portable_adapter_retained(void) {return native_custody_retained;}
+ #endif
+-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR)
++#if defined(PORTABLE_SETTINGS_NATIVE_TIME) || defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
+ static risc_runtime_api_v1 settings_runtime;
+ #ifdef PORTABLE_SETTINGS_NATIVE_TIME
+ static bool settings_started,settings_initialized;
+@@ -64,10 +69,13 @@ static custody_kv_slot custody_kv_slots[16];
+ static bool broadcast_before_storage(void);
+ #endif
+ static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t size,uint32_t *used) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return RISC_KEY_VALUE_BUSY;
++#endif
+   custody_kv_slot *slot=context;
+   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+-  if(!contexts_before_storage())return RISC_KEY_VALUE_CONTEXT;
++  if(!contexts_before_storage_read())return RISC_KEY_VALUE_CONTEXT;
+ #endif
+ #ifdef PORTABLE_BLE_BROADCAST
+   if(!broadcast_before_storage())return RISC_KEY_VALUE_CONTEXT;
+@@ -81,6 +89,9 @@ static int32_t custody_kv_get(void *context,const char *key,void *data,uint32_t
+   return result;
+ }
+ static int32_t custody_kv_put(void *context,const char *key,const void *data,uint32_t size) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return RISC_KEY_VALUE_BUSY;
++#endif
+   custody_kv_slot *slot=context;
+   if(native_custody_retained || !slot->live)return RISC_KEY_VALUE_CONTEXT;
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+@@ -125,12 +136,38 @@ static bool custody_ble_status(void *context,uint8_t *out) {
+   return true;
+ }
+ #endif
++#ifdef PORTABLE_FILE_SETUP
++static bool custody_setup_unavailable(const char *name,uint32_t version,uint64_t instance,
++    const risc_runtime_capability_v1 *grant) {
++  return !strcmp(name,"bluetooth.session-setup") && version==1 &&
++    instance==PORTABLE_FILE_SHARING_SETUP_INSTANCE && grant &&
++    grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation;
++}
++#endif
+ static bool custody_acquire_for(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant,bool shutdown_radio) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return false;
++#endif
+   (void)shutdown_radio;
+   if(native_custody_retained)return false;
+   bool ok=native_custody_runtime->acquire(name,version,instance,grant);
+   if(native_custody_retained)return false;
+   if(!ok) {
++#if defined(PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL) || defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
++    if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
++       grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
++      if(risc_runtime_get_api(1)!=native_custody_runtime)portable_adapter_retain();
++      return false;
++    }
++#endif
++#ifdef PORTABLE_FILE_SETUP
++    if(custody_setup_unavailable(name,version,instance,grant)) {
++      /* Empty refusal is optional unavailability only while this invocation
++       * still owns the same native Runtime table. Never retry a dirty grant. */
++      if(risc_runtime_get_api(1)!=native_custody_runtime)portable_adapter_retain_silent();
++      return false;
++    }
++#endif
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+     /* This optional app client can show a clean missing service. No token,
+      * altered record or other provider refusal is covered by this exception. */
+@@ -202,12 +239,25 @@ static bool custody_release(risc_runtime_capability_v1 *grant) {
+   *grant=released;if(slot)slot->live=false;return true;
+ }
+ static bool custody_health(risc_runtime_health_v1 *out) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return false;
++#endif
+   if(native_custody_retained)return false;
+   if(!native_custody_runtime->health(out)){portable_adapter_retain();return false;}
+   return true;
+ }
+-static void custody_yield(uint32_t delay) {if(!native_custody_retained)native_custody_runtime->yield_ms(delay);}
+-static bool custody_diagnostic(const char *line) {return !native_custody_retained && native_custody_runtime->diagnostic(line);}
++static void custody_yield(uint32_t delay) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return;
++#endif
++  if(!native_custody_retained)native_custody_runtime->yield_ms(delay);
++}
++static bool custody_diagnostic(const char *line) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return false;
++#endif
++  return !native_custody_retained && native_custody_runtime->diagnostic(line);
++}
+ static bool custody_launch(const char *path) {
+   if(native_custody_retained || !portable_paper_frame_drain())return false;
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+@@ -222,6 +272,9 @@ static bool custody_launch(const char *path) {
+ static risc_runtime_api_v1 app_custody_runtime;
+ static risc_runtime_capability_v1 app_custody_grants[8];
+ static bool app_custody_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *grant) {
++#ifdef PORTABLE_FILE_SETUP
++  if(!file_setup_io_allowed())return false;
++#endif
+   if(native_custody_retained)return false;
+   if(!grant || grant->struct_size<sizeof(*grant) || grant->api || grant->slot || grant->generation) {
+     portable_adapter_retain();return false;
+@@ -230,6 +283,9 @@ static bool app_custody_acquire(const char *name,uint32_t version,uint64_t insta
+   for(unsigned i=0;i<8;++i)if(!app_custody_grants[i].api){owned=&app_custody_grants[i];break;}
+   if(!owned){portable_adapter_retain();return false;}
+   if(!custody_acquire_for(name,version,instance,grant,false)) {
++#ifdef PORTABLE_FILE_SETUP
++    if(!native_custody_retained && custody_setup_unavailable(name,version,instance,grant))return false;
++#endif
+     if(!native_custody_retained)portable_adapter_retain();
+     return false;
+   }
+diff --git a/lib/PortableApps/src/resident_adapter.inc b/lib/PortableApps/src/resident_adapter.inc
+index 7f768de..8c36697 100644
+--- a/lib/PortableApps/src/resident_adapter.inc
++++ b/lib/PortableApps/src/resident_adapter.inc
+@@ -114,6 +114,9 @@ static bool resident_policy_ready(void) {
+ #endif
+ static int resident_checkpoint(uint32_t reason) {
+  if(native_custody_retained)return RISC_RESIDENT_RETAINED;
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++ if(settings_atomic_owned())return RISC_RESIDENT_BUSY;
++#endif
+ #ifdef PORTABLE_RESIDENT_POLICY
+  if(reason==RISC_RESIDENT_CHECKPOINT_POLL && resident_capture_active()) {
+   /* Native capture ownership fails Runtime's exit barrier. Keep this local
+diff --git a/lib/PortableApps/src/settings.inc b/lib/PortableApps/src/settings.inc
+index 10ad508..0a5a97c 100644
+--- a/lib/PortableApps/src/settings.inc
++++ b/lib/PortableApps/src/settings.inc
+@@ -1,4 +1,7 @@
+ /* Settings-only model/controller, reusing Apps/settings.c and the compact view. */
++#if defined(PORTABLE_SETTINGS_AVAILABILITY) && (!defined(PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL) || !defined(PORTABLE_SETTINGS_NATIVE_TIME))
++#error "Settings availability requires the selected X4 native atomic profile"
++#endif
+ #include <stdio.h>
+ #include "PortableTime.h"
+ #include "PortableTimeFormat.h"
+@@ -20,6 +23,9 @@ static const char *editor_message = "";
+ static unsigned editor_field;
+ static risc_runtime_capability_v1 settings_grant;
+ static const risc_key_value_v1 *settings_store;
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++#include "settings_atomic.inc"
++#endif
+ #ifdef PORTABLE_SETTINGS_TIME_ZONE
+ #include "PortableTimeZonePreference.h"
+ static unsigned stz_choice,stz_region,stz_selected,stz_first;
+@@ -139,15 +145,21 @@ static bool face_unconfirmed;
+ #define PORTABLE_SETTINGS_SLEEP_TIMER
+ #define SETTINGS_TIMER_ROW SETTINGS_CORE_ROW_COUNT
+ #if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
++#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+1u)
+ #else
+-#define SETTINGS_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
++#define SETTINGS_ORDINARY_ROW_COUNT (SETTINGS_CORE_ROW_COUNT+2u)
+ #endif
+ static bool timer_deep;
+ static uint32_t timer_choice;
+ static const char *timer_message="";
+ #else
+-#define SETTINGS_ROW_COUNT SETTINGS_CORE_ROW_COUNT
++#define SETTINGS_ORDINARY_ROW_COUNT SETTINGS_CORE_ROW_COUNT
++#endif
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++#define SETTINGS_STORAGE_ROW SETTINGS_ORDINARY_ROW_COUNT
++#define SETTINGS_ROW_COUNT (SETTINGS_ORDINARY_ROW_COUNT+1u)
++#else
++#define SETTINGS_ROW_COUNT SETTINGS_ORDINARY_ROW_COUNT
+ #endif
+ static twatch_rtc_time_v1 settings_draft;
+ #ifndef PORTABLE_SETTINGS_NATIVE_TIME
+@@ -209,6 +221,16 @@ static uint32_t settings_count(uint32_t category) { return category?0:SETTINGS_R
+ static bool settings_get(uint32_t category,uint32_t index,t5_app_setting_t *out) {
+   if(category || index>=SETTINGS_ROW_COUNT || !out)return false;
+   memset(out,0,sizeof(*out));out->type=T5_APP_SETTING_VALUE;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(index==SETTINGS_STORAGE_ROW) {
++    if(!settings_availability_refresh())return false;
++    strcpy(out->label,"Settings storage");out->type=T5_APP_SETTING_ACTION;
++    strcpy(out->value,settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE?"Available locally":
++      settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"Recovered; reload needed":
++      settings_availability.state.availability==RISC_KEY_VALUE_CONFLICT?"Source conflict":"Unavailable; temporary defaults");
++    return true;
++  }
++#endif
+   static const char *const names[]={"Set Time","Time Zone","Time Format","RTC Basis",
+ #ifdef PORTABLE_SLEEP_SETTINGS
+ #ifdef PORTABLE_SETTINGS_HOME_DESK_LOCK
+@@ -399,7 +421,18 @@ static void editor_step(bool forward) {
+ }
+ static void settings_navigation_poll(t5_app_input_t *out) {input_navigation_take(out);}
+ #include "settings_view.inc"
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++#include "settings_atomic_save.inc"
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++#include "settings_availability.inc"
++#endif
++#endif
+ static void settings_render(uint32_t category,int32_t selected) {
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(!settings_availability_refresh())return;
++  if(!portable_settings_availability_available(&settings_availability))
++    settings_message=portable_settings_availability_message(&settings_availability);
++#endif
+   if(handoff_requested)return;
+ #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+   if(failed)return;
+@@ -433,8 +466,18 @@ static void settings_render(uint32_t category,int32_t selected) {
+ /* Exactly one write per explicit Save/choice. Verification stays in raw RTC
+  * coordinates and tolerates one ticking second/date boundary within250ms. */
+ #ifndef PORTABLE_SETTINGS_NATIVE_TIME
++#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
++#ifndef PORTABLE_ALARM_CLIENT
++#error "Clock-change Settings requires its foreground alarm client"
++#endif
++#include "AlarmClockChangeV1.h"
++#endif
+ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
+   if(!calendar_valid(value)){editor_message="Invalid date or time";return false;}
++#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
++  const alarm_clock_change_v1 *clock_control=alarm_clock_change_control(alarms.api);
++  if(!clock_control){editor_message="Alarm service update required";return false;}
++#endif
+   uint32_t start=millis_now();if(failed)return false;
+   if(!rtc->write(rtc->context,value)){editor_message="Write failed - check RTC";return false;}
+   for(unsigned attempt=0;attempt<4;++attempt) {
+@@ -442,7 +485,15 @@ static bool editor_save_raw(const twatch_rtc_time_v1 *value) {
+     uint32_t elapsed=millis_now()-start;if(failed || elapsed>250)break;
+     if(read && calendar_valid(&actual) && actual.weekday==calendar_weekday(&actual)) {
+       uint32_t wanted=calendar_seconds(value),got=calendar_seconds(&actual);
+-      if(got>=wanted && got-wanted<=elapsed/1000+1)return true;
++      if(got>=wanted && got-wanted<=elapsed/1000+1) {
++#ifdef PORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL
++        int32_t result=clock_control->clock_changed(alarms.api->context,got);
++        if(result!=ALARM_PENDING && result!=ALARM_OK) {
++          editor_message="RTC saved; alarm sync failed";return false;
++        }
++#endif
++        return true;
++      }
+     }
+     if(attempt!=3)rt->yield_ms(20);
+   }
+@@ -491,7 +542,11 @@ static bool editor_try_save(void) {
+ #ifdef PORTABLE_SETTINGS_TIME_ZONE
+ #include "settings_timezone.inc"
+ #endif
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++static uint8_t settings_activate_inner(uint32_t category,uint32_t index) {
++#else
+ static uint8_t settings_activate(uint32_t category,uint32_t index) {
++#endif
+   portable_perf_action(PORTABLE_PERF_SETTINGS_ACTION,false);
+   portable_stage_log(rt,"action","name=settings-activate");
+ #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+@@ -526,14 +581,26 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+             (timer_choice>=3600000u-step?3600000u:timer_choice+step);
+       }
+       if(save) {
+-        if(portable_sleep_timer_save(settings_store,timer_deep,timer_choice)) {
++        if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++           settings_atomic_timer(timer_choice,&timer_message)
++#else
++           portable_sleep_timer_save(settings_store,timer_deep,timer_choice)
++#endif
++        ) {
+ #ifdef PORTABLE_LOW_BATTERY
+           if(!pqa_session_load(&quick,rt)){failed=true;break;}
+ #endif
+           result=T5_APP_SETTING_UPDATED;break;
+         }
++#ifndef PORTABLE_SETTINGS_AVAILABILITY
+         (void)portable_sleep_timer_load(settings_store,timer_deep,&timer_choice);
++#endif
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+         timer_message="Save unconfirmed - retry";
++#else
++        if(settings_atomic_exit)break;
++#endif
+       }
+       settings_view_redraw();
+     }
+@@ -557,12 +624,24 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,76,184,32))time_format_choice=PORTABLE_TIME_FORMAT_12;
+       else if(input.tapped && sv_inside(input.touch_x,input.touch_y,28,124,184,32))time_format_choice=PORTABLE_TIME_FORMAT_24;
+       if(save) {
+-        if(portable_time_format_save(settings_store,time_format_choice)) {
++        if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++           settings_atomic_choice(PORTABLE_TIME_FORMAT_KEY,0x54,time_format_choice,2,&time_format_message)
++#else
++           portable_time_format_save(settings_store,time_format_choice)
++#endif
++        ) {
+           time_format_mode=time_format_choice;time_format_status=PORTABLE_TIME_FORMAT_LOADED;
+           result=T5_APP_SETTING_UPDATED;break;
+         }
++#ifndef PORTABLE_SETTINGS_AVAILABILITY
+         time_format_choice=time_format_mode;
++#endif
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+         time_format_message="Save unconfirmed - retry";
++#else
++        if(settings_atomic_exit)break;
++#endif
+       }
+       settings_view_redraw();
+     }
+@@ -681,10 +760,21 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+         else if(sv_inside(input.touch_x,input.touch_y,28,124,184,32))desk_direction_choice=1;
+       }
+       if(save) {
+-        if(portable_desk_direction_save(settings_store,desk_direction_choice)) {
++        if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++           settings_atomic_choice(PORTABLE_DESK_DIRECTION_KEY,0x44,desk_direction_choice,2,&desk_direction_message)
++#else
++           portable_desk_direction_save(settings_store,desk_direction_choice)
++#endif
++        ) {
+           desk_direction_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+         }
+-        desk_direction_unconfirmed=true;desk_direction_message="Save unconfirmed - retry";
++        desk_direction_unconfirmed=true;
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++        desk_direction_message="Save unconfirmed - retry";
++#else
++        if(settings_atomic_exit)break;
++#endif
+       }
+       settings_view_redraw();
+     }
+@@ -710,11 +800,22 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+       if(input.buttons&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT))reader_choice=(reader_choice+1u)%count;
+       else if(input.buttons&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT))reader_choice=(reader_choice+count-1u)%count;
+       if(save) {
+-        if(portable_reader_preference_save(settings_store,language,reader_choice) &&
++        if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++           settings_atomic_choice(language?PORTABLE_READER_LANGUAGE_KEY:PORTABLE_READER_FLIP_KEY,language?0x4c:0x52,reader_choice,count,&reader_message)
++#else
++           portable_reader_preference_save(settings_store,language,reader_choice)
++#endif
++           &&
+            (language || paper_apply_flip(reader_choice))) {
+           reader_unconfirmed[language]=false;result=T5_APP_SETTING_UPDATED;break;
+         }
+-        reader_unconfirmed[language]=true;reader_message="Save unconfirmed - retry";
++        reader_unconfirmed[language]=true;
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++        reader_message="Save unconfirmed - retry";
++#else
++        if(settings_atomic_exit)break;
++#endif
+       }
+       settings_view_redraw();
+     }
+@@ -741,10 +842,21 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+       else if(input.tapped)for(unsigned i=0;i<PORTABLE_DESK_FACE_COUNT;++i)
+         if(sv_inside(input.touch_x,input.touch_y,20+(int)(i%2)*104,62+(int)(i/2)*36,96,30))face_choice=i;
+       if(save) {
+-        if(portable_desk_face_save(settings_store,face_choice)) {
++        if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++           settings_atomic_choice(PORTABLE_DESK_FACE_KEY,0x46,face_choice,PORTABLE_DESK_FACE_COUNT,&face_message)
++#else
++           portable_desk_face_save(settings_store,face_choice)
++#endif
++        ) {
+           face_unconfirmed=false;result=T5_APP_SETTING_UPDATED;break;
+         }
+-        face_unconfirmed=true;face_message="Save unconfirmed - retry";
++        face_unconfirmed=true;
++#ifndef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++        face_message="Save unconfirmed - retry";
++#else
++        if(settings_atomic_exit)break;
++#endif
+       }
+       settings_view_redraw();
+     }
+@@ -781,6 +893,9 @@ static uint8_t settings_activate(uint32_t category,uint32_t index) {
+   uint8_t result=T5_APP_SETTING_NO_CHANGE;bool armed=false;t5_app_input_t input;
+   while(poll(&input,20)) {
+     if(input.exit_requested)break;
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++    if(settings_atomic_exit)break;
++#endif
+     if(!input.buttons && !input.tapped){armed=true;continue;}
+     if(!armed)continue;
+     armed=false;
+@@ -836,6 +951,34 @@ T5_APP_SETTING_UPDATED;break;}
+ #endif
+   sv_switch(SV_ROOT);return result;
+ }
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++static uint8_t settings_activate(uint32_t category,uint32_t index) {
++  if(category||index>=SETTINGS_ROW_COUNT||failed)return T5_APP_SETTING_ERROR;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(index==SETTINGS_STORAGE_ROW)return settings_availability_activate();
++#endif
++  const char *key=index==0?"rtc_basis":index==1?"time_zone":index==2?"time_format":
++    index==SETTINGS_FACE_ROW?"desk_clock_face":index==SETTINGS_DESK_DIRECTION_ROW?"desk_direction":
++    index==SETTINGS_FLIP_ROW?"reader_flip_ui":index==SETTINGS_LANGUAGE_ROW?"reader_language":
++    index==SETTINGS_TIMER_ROW?"sleep_idle":NULL;
++  if(key&&!settings_atomic_begin(key))return T5_APP_SETTING_ERROR;
++  uint8_t result=settings_activate_inner(category,index);
++  if(settings_atomic_edit.token){settings_atomic_result(RISC_ATOMIC_RETAINED);return T5_APP_SETTING_ERROR;}
++  if(key&&settings_atomic_status!=PORTABLE_PREFERENCE_READY)settings_message=settings_atomic_status==RISC_ATOMIC_OK?
++    "Saved locally; SD backup not confirmed":settings_atomic_message(settings_atomic_status);
++  if(index==SETTINGS_FLIP_ROW&&settings_atomic_status==RISC_ATOMIC_OK&&reader_unconfirmed[0])
++    settings_message="Preference saved; display flip unconfirmed";
++  if(index==0&&snt_result_available)settings_message=snt_status_text;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
++  if(!portable_settings_availability_available(&settings_availability))
++    settings_message=portable_settings_availability_message(&settings_availability);
++#endif
++  settings_atomic_edit.valid=false;
++  if(!native_custody_retained)settings_view_redraw();
++  return result;
++}
++#endif
+ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *selected) {
+   if(pp_enabled()) {
+ #ifdef PORTABLE_SETTINGS_LIST_SCROLL
+@@ -867,9 +1010,13 @@ static bool settings_open(void) {
+ #endif
+   settings_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_grant)};
+   settings_store=NULL;time_format_mode=time_format_choice=PORTABLE_TIME_FORMAT_12;time_format_message="";
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++  if(!settings_atomic_open())return false;
++#else
+   if(rt->acquire(RISC_KEY_VALUE_CAPABILITY,RISC_KEY_VALUE_API_V1,PORTABLE_TIME_FORMAT_STORE_INSTANCE,&settings_grant)) {
+     if(portable_time_format_api_valid(settings_grant.api))settings_store=settings_grant.api;
+   }
++#endif
+   settings_time_format_load();
+ #ifdef PORTABLE_SETTINGS_TIME_ZONE
+   stz_choice=stz_region=stz_selected=stz_first=0;stz_unconfirmed=false;stz_message="";
+@@ -910,7 +1057,7 @@ static bool settings_open(void) {
+ #endif
+   return true;
+ }
+-#ifndef PORTABLE_SETTINGS_NATIVE_TIME
++#if !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)
+ static void settings_close(void) {
+   sv_active=false;
+ #ifdef PORTABLE_ALARM_SETTINGS
+diff --git a/lib/PortableApps/src/settings_atomic.inc b/lib/PortableApps/src/settings_atomic.inc
+new file mode 100644
+index 0000000..28f259f
+--- /dev/null
++++ b/lib/PortableApps/src/settings_atomic.inc
+@@ -0,0 +1,146 @@
++/* Only the selected Settings UI owns USER preference intents. settings_store
++ * is a same-Core read view whose put is fenced; it is never a legacy fallback. */
++#include "PortablePreferenceAtomic.h"
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++#include "PortableSettingsAvailability.h"
++static PortableSettingsAvailability settings_availability;
++static bool settings_availability_draft,settings_availability_temporary,settings_availability_discard;
++static bool settings_availability_refresh(void) {
++ uint64_t prior=settings_availability.state.generation;
++ if(!portable_settings_availability_refresh(&settings_availability)||
++    (settings_availability_draft&&prior!=settings_availability.state.generation&&
++     portable_settings_availability_available(&settings_availability))){portable_adapter_retain();return false;}
++ return true;
++}
++static bool settings_availability_save_ready(const char **message) {
++ if(!settings_availability_refresh())return false;
++ if(settings_availability_temporary||!portable_settings_availability_available(&settings_availability)){
++  *message="Draft kept; discard before loading recovered settings";return false;
++ }
++ return true;
++}
++#endif
++static risc_runtime_capability_v1 settings_atomic_grant;
++static const risc_key_value_atomic_v1 *settings_atomic_api;
++static portable_preference_atomic settings_atomic_edit;
++static risc_key_value_v1 settings_atomic_view;
++static bool settings_atomic_running,settings_atomic_exit,settings_atomic_submission_accepted;
++static int settings_atomic_status;
++static bool settings_atomic_guard(void *unused) {
++ (void)unused;return !native_custody_retained&&!failed;
++}
++static bool settings_atomic_owned(void) {
++ return settings_atomic_running||settings_atomic_edit.token!=0
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  ||settings_availability_draft
++#endif
++  ;
++}
++static const char *settings_atomic_message(int rc) {
++ return rc==RISC_ATOMIC_STALE?"Settings changed; reopen editor":
++  rc==RISC_ATOMIC_CANCELLED?"Save cancelled":rc==RISC_ATOMIC_CAPACITY?"Native storage full; not saved":
++  rc==RISC_ATOMIC_UNCERTAIN?"Save uncertain; reopen to inspect":
++  rc==RISC_ATOMIC_CONFLICT?"Preference conflict; not saved":
++  rc==RISC_ATOMIC_RETAINED?"Storage custody unconfirmed":
++  "Atomic storage unavailable; reopen editor";
++}
++static int settings_atomic_result(int rc) {
++ settings_atomic_status=rc;
++ if(rc==RISC_ATOMIC_RETAINED && !native_custody_retained)portable_adapter_retain();
++ return rc;
++}
++static int32_t settings_atomic_get(void *unused,const char *key,void *out,uint32_t cap,uint32_t *size) {
++ (void)unused;if(size)*size=0;
++ if(!settings_atomic_api||!settings_atomic_guard(NULL))return RISC_KEY_VALUE_IO;
++ #ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!settings_availability_refresh())return RISC_KEY_VALUE_CONTEXT;
++ if(!portable_settings_availability_available(&settings_availability))return RISC_KEY_VALUE_NOT_FOUND;
++#endif
++ uint64_t revision=settings_atomic_edit.valid?settings_atomic_edit.revision:0;
++ int rc=RISC_ATOMIC_OK;
++ if(!revision) {
++  risc_key_value_atomic_state_v1 state={.struct_size=sizeof(state)};
++  rc=settings_atomic_api->state(settings_atomic_api->context,&state);
++  if(!settings_atomic_guard(NULL))return RISC_KEY_VALUE_CONTEXT;
++  if(!rc&&!portable_preference_atomic_state_valid(&state))rc=RISC_ATOMIC_INVALID;
++  revision=state.revision;
++ }
++ if(!rc)rc=settings_atomic_api->get(settings_atomic_api->context,revision,key,out,cap,size);
++ if(!settings_atomic_guard(NULL))return RISC_KEY_VALUE_CONTEXT;
++ if(rc==RISC_ATOMIC_RETAINED || (rc>RISC_ATOMIC_CANCELLED||rc<RISC_ATOMIC_RETAINED)) {
++  settings_atomic_result(RISC_ATOMIC_RETAINED);return RISC_KEY_VALUE_CONTEXT;
++ }
++ return rc==RISC_ATOMIC_OK?RISC_KEY_VALUE_OK:rc==RISC_ATOMIC_NOT_FOUND?RISC_KEY_VALUE_NOT_FOUND:
++  rc==RISC_ATOMIC_BUSY||rc==RISC_ATOMIC_STALE?RISC_KEY_VALUE_BUSY:
++  rc==RISC_ATOMIC_BUFFER_SMALL?RISC_KEY_VALUE_BUFFER_SMALL:RISC_KEY_VALUE_IO;
++}
++static int32_t settings_atomic_deny_put(void *c,const char *key,const void *data,uint32_t size) {
++ (void)c;(void)key;(void)data;(void)size;return RISC_KEY_VALUE_CONTEXT;
++}
++static bool settings_atomic_open(void) {
++ #ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!settings_availability.api&&!portable_settings_availability_open(&settings_availability,rt,1)){
++  settings_atomic_result(RISC_ATOMIC_RETAINED);return false;
++ }
++ settings_availability_draft=settings_availability_temporary=settings_availability_discard=false;
++#endif
++ settings_atomic_grant=(risc_runtime_capability_v1){.struct_size=sizeof(settings_atomic_grant)};
++ settings_atomic_api=NULL;settings_atomic_edit=(portable_preference_atomic){0};
++ settings_atomic_running=settings_atomic_exit=false;settings_atomic_status=RISC_ATOMIC_OK;
++ if(!rt->acquire(RISC_KEY_VALUE_ATOMIC_CAPABILITY,RISC_KEY_VALUE_ATOMIC_API_V1,
++   PORTABLE_PREFERENCE_NAMESPACE,&settings_atomic_grant))return !native_custody_retained;
++ if(native_custody_retained)return false;
++ if(settings_atomic_grant.struct_size!=sizeof(settings_atomic_grant)||!settings_atomic_grant.slot||
++    !settings_atomic_grant.generation||!portable_preference_atomic_api_valid(settings_atomic_grant.api)) {
++  settings_atomic_result(RISC_ATOMIC_RETAINED);return false;
++ }
++ settings_atomic_api=settings_atomic_grant.api;
++ settings_atomic_view=(risc_key_value_v1){1,sizeof(settings_atomic_view),NULL,settings_atomic_get,settings_atomic_deny_put};
++ settings_store=&settings_atomic_view;return true;
++}
++static bool settings_atomic_begin(const char *key) {
++ settings_atomic_exit=false;settings_atomic_submission_accepted=false;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!settings_availability_refresh())return false;
++ if(!settings_atomic_api){settings_message="Settings editing unavailable; reopen";return false;}
++ settings_availability_draft=true;settings_availability_discard=false;
++ settings_availability_temporary=!portable_settings_availability_available(&settings_availability);
++ if(settings_availability_temporary) {
++  settings_atomic_edit=(portable_preference_atomic){0};
++  if(!portable_preference_atomic_key(key))return false;
++  memcpy(settings_atomic_edit.key,key,strlen(key)+1);
++  settings_atomic_status=PORTABLE_PREFERENCE_READY;return true;
++ }
++#endif
++ int rc=portable_preference_atomic_begin(&settings_atomic_edit,settings_atomic_api,key,
++  PORTABLE_PREFERENCE_USER,settings_atomic_guard,NULL);
++ settings_atomic_result(rc);
++ if(rc!=PORTABLE_PREFERENCE_READY){settings_message=settings_atomic_message(rc);
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ settings_availability_draft=false;
++#endif
++ return false;}
++ return true;
++}
++static bool settings_atomic_save(const char *key,const void *value,uint32_t size,const char **message);
++/* Called before ANY normal finalizer teardown. A missing terminal receipt or
++ * failed release keeps the grant, token, staging and entire invocation live. */
++static bool settings_atomic_close(void) {
++ if(native_custody_retained)return false;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(settings_availability_draft)return false;
++#endif
++ if(settings_atomic_edit.token) {
++  int rc=portable_preference_atomic_cancel(&settings_atomic_edit);
++  if(rc==RISC_ATOMIC_PENDING || rc==RISC_ATOMIC_RETAINED) {
++   settings_atomic_result(RISC_ATOMIC_RETAINED);return false;
++  }
++ }
++ if(settings_atomic_running){settings_atomic_result(RISC_ATOMIC_RETAINED);return false;}
++ if(settings_atomic_grant.api&&!rt->release(&settings_atomic_grant))return false;
++ if(native_custody_retained)return false;
++ #ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!portable_settings_availability_close(&settings_availability,rt))return false;
++#endif
++ settings_atomic_api=NULL;settings_store=NULL;settings_atomic_edit=(portable_preference_atomic){0};return true;
++}
+diff --git a/lib/PortableApps/src/settings_atomic_save.inc b/lib/PortableApps/src/settings_atomic_save.inc
+new file mode 100644
+index 0000000..2bd1afc
+--- /dev/null
++++ b/lib/PortableApps/src/settings_atomic_save.inc
+@@ -0,0 +1,52 @@
++/* The modal remains an ordinary input/display controller while Native owns
++ * the copied operation. No resident host handoff crosses an owned token. */
++static bool settings_atomic_save(const char *key,const void *value,uint32_t size,const char **message) {
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!settings_availability_save_ready(message)){settings_atomic_status=RISC_ATOMIC_BUSY;return false;}
++#endif
++ int rc=strcmp(key,settings_atomic_edit.key)?RISC_ATOMIC_INVALID:
++  portable_preference_atomic_prepare(&settings_atomic_edit,value,size);
++ if(rc!=PORTABLE_PREFERENCE_READY){*message=settings_atomic_message(rc);return false;}
++ settings_atomic_running=true;*message="Saving locally - Back cancels";settings_view_redraw();
++ bool cancel=false;
++ for(;;) {
++  if(!settings_atomic_guard(NULL)){rc=RISC_ATOMIC_RETAINED;break;}
++  bool accepting=!cancel&&!settings_atomic_edit.token;
++  rc=cancel?portable_preference_atomic_cancel(&settings_atomic_edit):
++    settings_atomic_edit.token?portable_preference_atomic_collect(&settings_atomic_edit):
++    portable_preference_atomic_submit(&settings_atomic_edit);
++  if(accepting&&rc==RISC_ATOMIC_PENDING)settings_atomic_submission_accepted=true;
++  if(rc!=RISC_ATOMIC_PENDING&&rc!=PORTABLE_PREFERENCE_READY)break;
++  if(cancel) {
++   /* poll returns immediately on a host exit request; this checked scheduler
++    * delay lets the native worker finish without replaying normal UI work. */
++   rt->yield_ms(1);continue;
++  }
++  t5_app_input_t input;
++  if(!poll(&input,20)) {
++   if(!settings_atomic_guard(NULL)){rc=RISC_ATOMIC_RETAINED;break;}
++   cancel=true;settings_atomic_exit=true;
++  } else if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK)) {
++   cancel=true;settings_atomic_exit=true;
++  }
++ }
++ settings_atomic_running=false;settings_atomic_result(rc);
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ /* Cancelling a save does not discard the editor's RAM draft. The accepted
++  * attempt cannot be replayed; keep it visible until explicit Discard. */
++ if(rc!=RISC_ATOMIC_RETAINED)settings_atomic_exit=false;
++#endif
++ *message=rc==RISC_ATOMIC_OK?"Saved locally; SD backup not confirmed":settings_atomic_message(rc);
++ return rc==RISC_ATOMIC_OK;
++}
++static bool settings_atomic_choice(const char *key,uint8_t tag,unsigned value,unsigned count,const char **message) {
++ if(value>=count){*message="Invalid selection";return false;}
++ const uint8_t bytes[]={tag,1,(uint8_t)value,(uint8_t)(value^0xa5u)};
++ return settings_atomic_save(key,bytes,sizeof(bytes),message);
++}
++static bool settings_atomic_timer(uint32_t milliseconds,const char **message) {
++ if(milliseconds<5000u||milliseconds>3600000u||milliseconds%1000u){*message="Invalid timer";return false;}
++ unsigned seconds=milliseconds/1000u;
++ const uint8_t bytes[]={0x54,1,(uint8_t)seconds,(uint8_t)(seconds>>8),(uint8_t)(seconds^(seconds>>8)^0xa5u)};
++ return settings_atomic_save(PORTABLE_SLEEP_IDLE_KEY,bytes,sizeof(bytes),message);
++}
+diff --git a/lib/PortableApps/src/settings_availability.inc b/lib/PortableApps/src/settings_availability.inc
+new file mode 100644
+index 0000000..8b31713
+--- /dev/null
++++ b/lib/PortableApps/src/settings_availability.inc
+@@ -0,0 +1,55 @@
++/* A temporary draft is never rebased onto a newly found source. Keep its data
++ * grant until explicit Save or Discard; host handoff is BUSY during the edit. */
++static unsigned settings_availability_return_page;
++static bool settings_availability_editing(void) {return settings_availability_draft;}
++static bool settings_availability_filter(t5_app_input_t *input) {
++ if(!settings_availability_draft||settings_atomic_running||settings_atomic_edit.token)return false;
++ bool leave=input->exit_requested||(input->buttons&T5_APP_BUTTON_BACK)||home_pending||crown_pending||
++  (sv_page==SV_FIELDS&&editor_field==7&&(input->buttons&T5_APP_BUTTON_CONFIRM));
++ if(settings_availability_discard) {
++  bool discard=!!(input->buttons&T5_APP_BUTTON_CONFIRM);
++  bool keep=!!(input->buttons&T5_APP_BUTTON_BACK)||home_pending||crown_pending;
++  home_pending=crown_pending=false;navigation_pending=0;
++  memset(input,0,sizeof(*input));
++  if(discard||keep) {
++   settings_availability_discard=false;
++   if(discard)settings_availability_draft=false;
++   sv_switch(settings_availability_return_page);
++   if(discard){input->buttons=T5_APP_BUTTON_BACK;input->exit_requested=true;}
++  }
++  return true;
++ }
++ /* Back inside the date value selector or time-zone cities is navigation,
++  * not an editor exit. Physical Home still asks before any handoff. */
++ if(!input->exit_requested&&!home_pending&&!crown_pending&&
++    (sv_page==SV_VALUE||sv_page==SV_TIMEZONE_CITIES))return false;
++ if(!leave)return false;
++ settings_availability_return_page=sv_page;settings_availability_discard=true;
++ home_pending=crown_pending=false;navigation_pending=0;memset(input,0,sizeof(*input));
++ sv_switch(SV_DISCARD);return true;
++}
++static uint8_t settings_availability_activate(void) {
++ if(settings_availability_draft||settings_atomic_owned())return T5_APP_SETTING_NO_CHANGE;
++ if(!settings_availability_refresh())return T5_APP_SETTING_ERROR;
++ sv_switch(SV_STORAGE);bool armed=false;t5_app_input_t input;
++ while(poll(&input,20)) {
++  if(input.exit_requested||(input.buttons&T5_APP_BUTTON_BACK))break;
++  if(!input.buttons&&!input.tapped){armed=true;continue;}
++  if(!armed)continue;
++  armed=false;
++  if(input.buttons&T5_APP_BUTTON_CONFIRM) {
++   /* The same explicit zero-draft boundary closes all Settings-owned data.
++    * A provider or resident host may still hold another namespace-1 grant. */
++   if(!settings_atomic_close()){portable_adapter_retain();return T5_APP_SETTING_ERROR;}
++   rt->yield_ms(1);
++   if(native_custody_retained||!settings_atomic_open())return T5_APP_SETTING_ERROR;
++   settings_time_format_load();
++   settings_message=settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?
++     "Still pending: finish other edits, then clean Runtime restart":
++     portable_settings_availability_message(&settings_availability);
++   settings_view_redraw();
++  }
++ }
++ settings_message=portable_settings_availability_message(&settings_availability);
++ sv_switch(SV_ROOT);return T5_APP_SETTING_NO_CHANGE;
++}
+diff --git a/lib/PortableApps/src/settings_native_time.inc b/lib/PortableApps/src/settings_native_time.inc
+index 76ad490..e820f88 100644
+--- a/lib/PortableApps/src/settings_native_time.inc
++++ b/lib/PortableApps/src/settings_native_time.inc
+@@ -68,6 +68,9 @@ static void snt_describe_result(void) {
+   editor_message=snt_status_text;snt_result_available=true;
+ }
+ static bool snt_save(int fold) {
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ if(!settings_availability_save_ready(&editor_message))return false;
++#endif
+   if(snt_basis_status!=PORTABLE_RTC_BASIS_LOADED && snt_basis_status!=PORTABLE_RTC_BASIS_MISSING) {
+     editor_message=snt_basis_label();return false;
+   }
+@@ -81,15 +84,45 @@ static bool snt_save(int fold) {
+       status==PORTABLE_REALTIME_FOLD?"Choose first or second occurrence":"Invalid date or native 2038 limit";
+     return false;
+   }
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++  status=portable_preference_atomic_check(&settings_atomic_edit);
++  if(status!=RISC_ATOMIC_OK) {
++    settings_atomic_result(status);editor_message=settings_atomic_message(status);return false;
++  }
++#endif
+   status=portable_set_time_open(&snt_writer,rt,snt_guard,NULL);
+   if(snt_halted(status))return false;
+   if(status!=PORTABLE_REALTIME_OK){editor_message="Native time unavailable - not saved";return false;}
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++  status=portable_set_time_apply_clocks_confirmed(&snt_writer,&request,&snt_last_result);
++#else
+   status=portable_set_time_apply_confirmed(&snt_writer,&request,&snt_last_result);
++#endif
+   snt_describe_result();
+   if(snt_halted(status))return false;
+   int closed=portable_set_time_close(&snt_writer);
+   if(snt_halted(closed))return false;
+   if(status!=PORTABLE_REALTIME_OK || closed!=PORTABLE_REALTIME_OK)return false;
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++  uint8_t bytes[PORTABLE_RTC_BASIS_BYTES]={0x52,0x54,1,(uint8_t)(plan.basis.stores_utc?1:0)};
++  portable_rtc_basis_put_word(bytes+4,(uint32_t)snt_last_result.verified_utc_epoch);
++  portable_rtc_basis_put_word(bytes+8,portable_rtc_basis_check(bytes));
++  snt_last_result.stage=PORTABLE_SET_TIME_KV_WRITE;
++  snt_last_result.metadata_outcome=PORTABLE_SET_TIME_UNCONFIRMED;
++  bool saved=settings_atomic_save(PORTABLE_RTC_BASIS_KEY,bytes,sizeof(bytes),&editor_message);
++  snt_last_result.metadata_write_accepted=settings_atomic_submission_accepted;
++  if(saved){snt_last_result.metadata_outcome=PORTABLE_SET_TIME_CONFIRMED;snt_last_result.stage=PORTABLE_SET_TIME_DONE;}
++  snt_describe_result();
++  if(!saved) {
++    /* Clocks can already have changed while metadata became stale, cancelled,
++     * failed or uncertain. Never roll them back or claim cross-device atomicity. */
++    snprintf(snt_status_text,sizeof(snt_status_text),"RTC verified; Native verified; Basis %s",
++      settings_atomic_status==RISC_ATOMIC_STALE?"stale - reopen":
++      settings_atomic_status==RISC_ATOMIC_CANCELLED?"cancelled":
++      settings_atomic_status==RISC_ATOMIC_RETAINED?"custody unconfirmed":"unconfirmed");
++    return false;
++  }
++#endif
+   snt_basis=plan.basis;snt_basis.reference_epoch=(uint32_t)snt_last_result.verified_utc_epoch;
+   snt_basis_status=PORTABLE_RTC_BASIS_LOADED;return true;
+ }
+diff --git a/lib/PortableApps/src/settings_paper.inc b/lib/PortableApps/src/settings_paper.inc
+index 5e306d7..0c7703a 100644
+--- a/lib/PortableApps/src/settings_paper.inc
++++ b/lib/PortableApps/src/settings_paper.inc
+@@ -88,7 +88,27 @@ static void sp_redraw(void) {
+ #endif
+ #endif
+     sv_page==SV_TIME_FORMAT?"TIME FORMAT":sv_page==SV_FOLD?"REPEATED TIME":sv_page==SV_SLEEP?"SLEEP MODE":sv_page==SV_ALERT?"ALARM ALERTS":"ABOUT";
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(sv_page==SV_STORAGE)title="SETTINGS STORAGE";
++  if(sv_page==SV_DISCARD)title="UNSAVED DRAFT";
++#endif
+   sp_header(title);
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(sv_page==SV_STORAGE||sv_page==SV_DISCARD) {
++    const char *state=settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE?"SETTINGS AVAILABLE LOCALLY":
++      settings_availability.state.availability==RISC_KEY_VALUE_RECONCILIATION_PENDING?"RECOVERED SETTINGS PENDING":
++      settings_availability.state.availability==RISC_KEY_VALUE_CONFLICT?"SETTINGS SOURCE CONFLICT":"SETTINGS UNAVAILABLE";
++    sp_text(32,144,width()-64,state,false,true);
++    sp_text(32,204,width()-64,sv_page==SV_DISCARD?"Keep editing this RAM draft?":portable_settings_availability_available(&settings_availability)?"Native settings loaded locally":"Temporary defaults; saves disabled",false,true);
++    sp_text(32,252,width()-64,sv_page==SV_DISCARD?"Or discard it without saving?":"Reload after saving/discarding drafts.",false,true);
++    if(sv_page==SV_STORAGE) {
++      sp_text(32,320,width()-64,"Still pending? Finish other edits,",false,true);
++      sp_text(32,360,width()-64,"then cleanly restart Runtime.",false,true);
++    }
++    sp_button(32,height()-112,(width()-80)/2,88,sv_page==SV_DISCARD?"KEEP":"BACK",false);
++    sp_button(width()/2+8,height()-112,(width()-80)/2,88,sv_page==SV_DISCARD?"DISCARD":"RELOAD",false);
++  } else
++#endif
+   if(sv_page==SV_ROOT) {
+     unsigned rows=sp_rows();if(sp_first>=SETTINGS_ROW_COUNT)sp_first=0;
+ #ifdef PORTABLE_SETTINGS_LIST_SCROLL
+@@ -306,6 +326,13 @@ static bool sp_poll(t5_app_input_t *out) {
+   }
+ #endif
+   int x=s.x,y=s.y;
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++  if(sv_page==SV_STORAGE||sv_page==SV_DISCARD) {
++    if(y>=height()-112&&y<height()-24&&x>=32&&x<width()-32)
++      out->buttons=x<width()/2?T5_APP_BUTTON_BACK:T5_APP_BUTTON_CONFIRM;
++    return true;
++  }
++#endif
+   bool editable=
+ #ifdef PORTABLE_SETTINGS_SLEEP_TIMER
+     sv_page==SV_TIMER ||
+diff --git a/lib/PortableApps/src/settings_timezone.inc b/lib/PortableApps/src/settings_timezone.inc
+index 4305d80..ee45fa6 100644
+--- a/lib/PortableApps/src/settings_timezone.inc
++++ b/lib/PortableApps/src/settings_timezone.inc
+@@ -12,7 +12,13 @@ static void stz_back_regions(void) {
+   stz_selected=stz_region;stz_visible();sv_switch(SV_TIMEZONE_REGIONS);
+ }
+ static uint8_t stz_activate(void) {
+-  if(!stz_unconfirmed) {
++  if(
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++     true
++#else
++     !stz_unconfirmed
++#endif
++    ) {
+     char id[PORTABLE_TIMEZONE_ID_BYTES];int loaded=portable_timezone_preference_load(settings_store,id);
+     stz_choice=(unsigned)portable_timezone_find(id,sizeof(id));stz_status=loaded;
+     stz_message=loaded==PORTABLE_TIMEZONE_UNAVAILABLE?"Storage unavailable":
+@@ -70,11 +76,28 @@ static uint8_t stz_activate(void) {
+         }
+       }
+     }
+-    if(cancel)break;
++    if(cancel) {
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++      if(settings_availability_draft) {
++        t5_app_input_t request={.exit_requested=true};
++        (void)settings_availability_filter(&request);continue;
++      }
++#endif
++      break;
++    }
+     if(back){if(!cities)break;stz_back_regions();continue;}
+     if(confirm) {
+       if(!cities){stz_open_cities();continue;}
+       const char *id=portable_timezone_get(stz_choice)->id;
++#ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
++      uint8_t bytes[PORTABLE_TIMEZONE_RECORD_BYTES]={'T','Z',1,0};
++      memcpy(bytes+4,id,strlen(id));bytes[3]=0xa5;
++      for(unsigned n=0;n<sizeof(bytes);++n)if(n!=3)bytes[3]^=bytes[n];
++      bool confirmed=settings_atomic_save(PORTABLE_TIMEZONE_KEY,bytes,sizeof(bytes),&stz_message);
++      stz_unconfirmed=!confirmed;
++      if(confirmed){result=T5_APP_SETTING_UPDATED;break;}
++      if(settings_atomic_exit||native_custody_retained)break;
++#else
+       int saved=portable_timezone_preference_save(settings_store,id,PORTABLE_TIMEZONE_ID_BYTES);
+       if(saved>=0) {
+         stz_unconfirmed=false;result=T5_APP_SETTING_UPDATED;
+@@ -89,6 +112,7 @@ static uint8_t stz_activate(void) {
+       } else if(saved==PORTABLE_TIMEZONE_WRITE_FAILED || saved==PORTABLE_TIMEZONE_VERIFY_FAILED) {
+         stz_unconfirmed=true;stz_message="Save unconfirmed - retry";
+       } else stz_message="Invalid selection";
++#endif
+     }
+     if(redraw)settings_view_redraw();
+   }
+diff --git a/lib/PortableApps/src/settings_view.inc b/lib/PortableApps/src/settings_view.inc
+index 7da7a2d..007922f 100644
+--- a/lib/PortableApps/src/settings_view.inc
++++ b/lib/PortableApps/src/settings_view.inc
+@@ -7,7 +7,13 @@
+ #define SV_LINE 0x12262bu
+ #define SV_CAP 0x6b8288u
+ #define SV_TEXT 0xcfe9eeu
+-enum { SV_ROOT, SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE
++enum {
++#ifdef PORTABLE_SETTINGS_AVAILABILITY
++ SV_STORAGE=30,SV_DISCARD=31,SV_ROOT=0,
++#else
++ SV_ROOT,
++#endif
++ SV_FIELDS, SV_VALUE, SV_FOLD, SV_ABOUT, SV_SLEEP, SV_ALERT, SV_TIME_FORMAT, SV_DESK_FACE, SV_FLIP, SV_LANGUAGE
+ #ifdef PORTABLE_SETTINGS_TIME_ZONE
+   ,SV_TIMEZONE_REGIONS,SV_TIMEZONE_CITIES
+ #endif
+diff --git a/scripts/build_portable_settings.py b/scripts/build_portable_settings.py
+index cb8c878..74024ee 100644
+--- a/scripts/build_portable_settings.py
++++ b/scripts/build_portable_settings.py
+@@ -69,6 +69,13 @@ def build(args,parser=None):
+     out = args.output_dir or ROOT/'dist/portable'
+     profile=getattr(args,'settings_profile','default')
+     native_time=profile=='x4-native-time'
++    atomic=getattr(args,'experimental_atomic_settings',False)
++    availability=getattr(args,'experimental_settings_availability',False)
++    if availability and not atomic:
++        parser.error('--experimental-settings-availability requires --experimental-atomic-settings')
++    if atomic and (not native_time or not args.resident_shell_client or not args.resident_policy or
++                   not args.home_desk_lock or args.alarm_settings):
++        parser.error('--experimental-atomic-settings requires X4 native-time resident policy, home-desk-lock and no alarm-settings')
+     portable_broadcast_build.validate(args,parser,native_time)
+     scrolling=getattr(args,'touch_scrolling',False)
+     home_desk_lock=getattr(args,'home_desk_lock',False)
+@@ -106,6 +113,8 @@ def build(args,parser=None):
+     elif getattr(args,'native_time_runtime_repo',None):
+         parser.error('--native-time-runtime-repo requires --settings-profile x4-native-time')
+     flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
++    if atomic: flags.append('-DPORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL')
++    if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
+     if args.return_app:
+         if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]*\.elf',args.return_app):
+             raise ValueError('Return app must be a plain .elf filename')
+@@ -193,6 +202,8 @@ def build(args,parser=None):
+             {'capability':'rtc.clock','api':2}]}
+     if args.alarm_client: manifest['requires'].append({'capability':'alarm.service','api':2 if tagged_alarm else 1})
+     manifest['requires'].append({'capability':'storage.key-value','api':1})
++    if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
++    if availability: manifest['requires'].append({'capability':'storage.key-value.availability','api':1})
+     if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
+                                               {'capability':'board.battery','api':1}]
+     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
+@@ -267,7 +278,7 @@ def build(args,parser=None):
+             native_time_control_instance=0,rtc_access='explicit-save-only',
+             grant_count=len(manifest['requires']),
+             required_grants=[dict(requirement,instance_id={'storage.key-value':1,'net.wifi':15,
+-                'bluetooth.hci':16}.get(requirement['capability'],0)) for requirement in manifest['requires']],
++                'bluetooth.hci':16,'storage.key-value.atomic':1,'storage.key-value.availability':1}.get(requirement['capability'],0)) for requirement in manifest['requires']],
+             mode_capabilities={'foreground_settings':True,'native_realtime_read':True,
+                 'explicit_checked_set_time':True,'timezone_preference_only':True,
+                 'sleep_preference_modes':['light','deep'],'sleep_backend':False,
+@@ -292,15 +303,32 @@ def build(args,parser=None):
+                            'readonly':True,'activation':'no-change','sleep_preference':'preserved; not read or written by this row'})
+         record['mode_capabilities']['sleep_preference_modes']=[]
+         record['mode_capabilities']['sleep_preference_editable']=False
++    if atomic:
++        record['atomic_settings']={'experimental':True,'capability':'storage.key-value.atomic@1',
++            'namespace':1,'intent_format':'PFI0001','origin':'explicit-user',
++            'keys':['time_format','time_zone','desk_clock_face','desk_direction','reader_flip_ui',
++                    'reader_language','sleep_idle','rtc_basis'],
++            'revision_capture':'editor-entry before draft reads','legacy_put_fallback':False,
++            'native_map_and_intent_atomic':True,'physical_clocks_atomic':False,
++            'sd_checkpoint_confirmed':False,'production_activation':False}
+     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
+     portable_idle_build.record(args,record,flags)
+     portable_quick_build.record(args,record)
++    if availability:
++        record['settings_availability']={'experimental':True,'default_selected':False,'namespace':1,
++            'capability':'storage.key-value.availability@1','temporary_defaults_only':True,
++            'reconciliation':'explicit no-draft reload; boot-pinned providers require clean Runtime restart',
++            'draft_policy':'explicit save or discard; no automatic merge',
++            'sdk_sha256':hashlib.sha256((includes/'RiscKeyValueAvailabilityV1.h').read_bytes()).hexdigest()}
++        record.setdefault('grant_bindings',{})['storage.key-value.availability']=[1]
+     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
+     portable_broadcast_build.write_settings_admission(args,ROOT,out,includes,manifest,record)
+     print('Portable Settings: target layout, ELF validator, import/export checks passed')
+ 
+ def argument_parser():
+     parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off unavailable-state UI; requires explicit X4 atomic Settings')
++    parser.add_argument('--experimental-atomic-settings',action='store_true',help='Default-off X4 Settings explicit namespace-1 atomic preference intents; no production activation')
+     parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
+     parser.add_argument('--native-time-runtime-repo',type=Path,help='Local Runtime Git checkout containing canonical '+NATIVE_TIME_RUNTIME_COMMIT+' SDK; x4-native-time only')
+     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None,help='Default: 90 for x4-native-time, otherwise 0')
+diff --git a/scripts/test_retained_rtc.py b/scripts/test_retained_rtc.py
+new file mode 100644
+index 0000000..9b9d162
+--- /dev/null
++++ b/scripts/test_retained_rtc.py
+@@ -0,0 +1,27 @@
++#!/usr/bin/env python3
++"""Retained X4 Settings RTC/save-core regression."""
++import argparse,json,os,subprocess,hashlib
++from pathlib import Path
++import build_portable_settings as builder
++ROOT=Path(__file__).resolve().parents[1]
++p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',required=True,type=Path);p.add_argument('--output',required=True,type=Path);p.add_argument('--sanitize',action='store_true');p.add_argument('--case',action='append');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
++r=json.loads((a.target/'settings-build-record.json').read_text())
++for name in r['source_sha256']:
++ assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==r['source_sha256'][name],name
++sdk_manifest=json.loads((ROOT/'test/native_apps/retained_rtc_sdk_hashes.json').read_text())
++staged=a.target/'native-time-sdk'
++for name,want in sdk_manifest.items():
++ assert hashlib.sha256((staged/name).read_bytes()).hexdigest()==want,'effective SDK '+name
++fixture=set('PORTABLE_SETTINGS_APP PORTABLE_SETTINGS_NATIVE_TIME PORTABLE_SETTINGS_TIME_ZONE PORTABLE_SETTINGS_X4_DESK_CLOCK PORTABLE_SLEEP_SETTINGS PORTABLE_INPUT_NAVIGATION PORTABLE_ALARM_CLIENT'.split())
++flags=[f for f in r['build_defines'] if f[2:] not in fixture]+['-DTEST_NATIVE_SETTINGS_ALARMS']
++if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
++sources=[ROOT/'test/native_apps/retained_rtc_save_test.c',ROOT/'Apps/settings_native_entry.c',*[ROOT/s for s in builder.NATIVE_TIME_SOURCES]]
++exe=a.output/'retained-rtc';cmd=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function',*flags,'-I'+str(a.target.resolve()/'native-time-sdk/include'),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-Wl,--wrap=free','-o',str(exe)]
++subprocess.run(cmd,check=True)
++results=[]
++for case in a.case or '''save-local save-utc missing-basis save-edited rtc-tick fold-first fold-second fold-second-utc gap range rtc-acquire-false rtc-write-false rtc-read-false rtc-release-false rtc-mismatch native-control-absent native-seed-io native-seed-context native-readback-io native-readback-mismatch native-release-false stale-time-before stale-time-during atomic-cancelled atomic-uncertain atomic-io atomic-capacity collect-error collect-retained submit-dirty-refusal availability-unavailable availability-pending availability-conflict'''.split():
++ result=subprocess.run([str(exe),case],check=False,timeout=20,text=True,capture_output=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0','UBSAN_OPTIONS':'halt_on_error=1:print_stacktrace=1'})
++ print(result.stdout,end='');
++ if result.returncode: print(result.stderr);result.check_returncode()
++ results.append(result.stdout.strip())
++(a.output/'results.json').write_text(json.dumps({'cases':results,'sanitized':a.sanitize,'build_defines':r['build_defines'],'source_sha256':r['source_sha256'],'effective_sdk_sha256':sdk_manifest},indent=2)+'\n')
+diff --git a/scripts/test_settings_availability.py b/scripts/test_settings_availability.py
+new file mode 100644
+index 0000000..afc1ae0
+--- /dev/null
++++ b/scripts/test_settings_availability.py
+@@ -0,0 +1,17 @@
++#!/usr/bin/env python3
++"""Opt-in Settings availability and draft boundaries, actual portable controller."""
++import argparse,json,os,subprocess,shutil
++from pathlib import Path
++import build_portable_settings as builder
++ROOT=Path(__file__).resolve().parents[1]
++p=argparse.ArgumentParser(description=__doc__);p.add_argument('--target',required=True,type=Path);p.add_argument('--output',required=True,type=Path);p.add_argument('--sanitize',action='store_true');a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
++r=json.loads((a.target/'settings-build-record.json').read_text())
++includes=a.output.resolve()/'sdk/include';shutil.copytree(a.target/'native-time-sdk/include',includes,dirs_exist_ok=True);shutil.copytree(ROOT/'lib/PortableApps/time',includes.parent/'time',dirs_exist_ok=True)
++for name in ('PortableSettingsAvailability.h','RiscKeyValueAvailabilityV1.h'):shutil.copyfile(ROOT/'lib/PortableApps/include'/name,includes/name)
++fixture=set('PORTABLE_SETTINGS_APP PORTABLE_SETTINGS_NATIVE_TIME PORTABLE_SETTINGS_TIME_ZONE PORTABLE_SETTINGS_X4_DESK_CLOCK PORTABLE_SLEEP_SETTINGS PORTABLE_INPUT_NAVIGATION PORTABLE_ALARM_CLIENT'.split())
++flags=[f for f in r['build_defines'] if f[2:] not in fixture]+['-DTEST_NATIVE_SETTINGS_ALARMS','-DPORTABLE_SETTINGS_AVAILABILITY']
++if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
++sources=[ROOT/'test/native_apps/settings_availability_workflow_test.c',ROOT/'Apps/settings_native_entry.c',*[ROOT/s for s in builder.NATIVE_TIME_SOURCES]]
++exe=a.output/'settings-availability';cmd=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function',*flags,'-I'+str(includes),'-I'+str(ROOT/'lib/NativeApps/include'),*map(str,sources),'-Wl,--wrap=free','-o',str(exe)]
++subprocess.run(cmd,check=True)
++for case in 'zone-touch-cancel date-discard storage-unavailable storage-pending storage-conflict reload-modal unavailable unavailable-modal failed-save-draft conflict draft-pending reload provider-pending available-save malformed status-release-fails invalid-publication'.split():subprocess.run([str(exe),case],check=True,timeout=20,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0','UBSAN_OPTIONS':'halt_on_error=1:print_stacktrace=1'})
+diff --git a/test/native_apps/portable_native_time_settings_test.c b/test/native_apps/portable_native_time_settings_test.c
+index 5e0376c..4800884 100644
+--- a/test/native_apps/portable_native_time_settings_test.c
++++ b/test/native_apps/portable_native_time_settings_test.c
+@@ -453,7 +453,15 @@ static int32_t alarm_status(void *ctx,alarm_status_v1 *out) {
+   *out=alarm_state;return ALARM_OK;
+ }
+ static int32_t alarm_step(void *ctx) {
+-  (void)ctx;io();assert(display_settled&&!surface.frame&&!frames);++alarm_steps;
++  (void)ctx;io();
++#ifdef PORTABLE_RASTER_SNAPSHOT
++  /* A sealed CPU snapshot owns no mutable display frame. The retained
++   * raster profile permits service progress before that snapshot is shown. */
++  assert((display_settled||raster_sealed||paper_token)&&!raster_lease_mutable()&&!surface.frame&&!frames);
++#else
++  assert(display_settled&&!surface.frame&&!frames);
++#endif
++  ++alarm_steps;
+   if(which("alarm-step-retained")&&alarm_fault_ready()){hidden=true;return -9;}
+   if(which("alarm-refresh-retained")&&alarm_fault_ready()) {
+     alarm_state.state=ALARM_STATE_BLOCKED;alarm_state.error=ALARM_STORAGE;alarm_state.snapshot=2;
+diff --git a/test/native_apps/retained_rtc_save_test.c b/test/native_apps/retained_rtc_save_test.c
+new file mode 100644
+index 0000000..5a0ae3b
+--- /dev/null
++++ b/test/native_apps/retained_rtc_save_test.c
+@@ -0,0 +1,96 @@
++/* Exact reconstructed RTC/save sources with checked native, RTC, atomic and
++ * availability providers. First-Save cases enter settings_activate once;
++ * fault cases invoke the source-bound Save boundary once with an open draft. */
++#define RETAINED_RTC_FIXTURE
++#include "settings_availability_workflow_test.c"
++static bool retained_tick_read(void *ctx,twatch_rtc_time_v1 *out) {
++ bool ok=rtc_read(ctx,out);if(!ok||!which("rtc-tick"))return ok;
++ portable_timezone_civil c={out->year,out->month,out->day,out->hour,out->minute,out->second,out->weekday};
++ int64_t e;assert(!portable_timezone_civil_to_epoch(&c,&e));assert(!portable_timezone_epoch_to_civil(e+1,&c));
++ *out=(twatch_rtc_time_v1){(uint16_t)c.year,c.month,c.day,c.weekday,c.hour,c.minute,c.second};return true;
++}
++static bool retained_acquire(const char *name,uint32_t version,uint64_t ns,risc_runtime_capability_v1 *out) {
++ bool ok=availability_acquire(name,version,ns,out);
++ if(ok&&!strcmp(name,TWATCH_RTC_CAPABILITY)) {static twatch_rtc_api_v1 api;api=*(const twatch_rtc_api_v1 *)out->api;api.read=retained_tick_read;out->api=&api;}
++ return ok;
++}
++static bool retained_release(risc_runtime_capability_v1 *grant) {
++ if(which("native-release-false")&&leases[grant->slot].kind==K_CONTROL&&seeds){io();hidden=true;return false;}
++ return availability_release(grant);
++}
++static void verify_success(bool tick) {
++ static const uint8_t basis_local[12]={0x52,0x54,0x01,0x00,0x60,0x41,0x69,0x69,0x17,0xc9,0x89,0x20};
++ static const uint8_t basis_utc[12]={0x52,0x54,0x01,0x01,0x60,0x41,0x69,0x69,0x30,0xb9,0xfa,0xf5};
++ static const uint8_t basis_edited[12]={0x52,0x54,0x01,0x00,0xe0,0x74,0x4a,0x6b,0x0d,0x35,0xd8,0x76};
++ static const uint8_t basis_tick[12]={0x52,0x54,0x01,0x00,0x61,0x41,0x69,0x69,0xee,0x89,0x87,0x1b};
++ static const uint8_t basis_fold_first[12]={0x52,0x54,0x01,0x00,0x78,0xea,0xe6,0x6a,0x3c,0xfd,0xe6,0xa3};
++ static const uint8_t basis_fold_second[12]={0x52,0x54,0x01,0x00,0x88,0xf8,0xe6,0x6a,0xe2,0x60,0x68,0xed};
++ static const uint8_t basis_fold_utc[12]={0x52,0x54,0x01,0x01,0x88,0xf8,0xe6,0x6a,0x01,0xa3,0xd7,0x8a};
++ bool utc=which("save-utc")||which("fold-second-utc");
++ bool folded=!strncmp(test_name,"fold-",5),edited=which("save-edited");
++ twatch_rtc_time_v1 wanted={edited?2027:2026,folded?11:1,folded?1:15,folded?0:edited?5:4,
++  folded?(utc?8:1):(utc?19:12),folded?30:34,folded?0:56};
++ assert(written.year==wanted.year&&written.month==wanted.month&&written.day==wanted.day&&written.weekday==wanted.weekday&&written.hour==wanted.hour&&written.minute==wanted.minute&&written.second==wanted.second);
++ assert(seed_epoch==expected_epoch+(tick?1:0)&&native_epoch==seed_epoch&&native_valid);
++ const uint8_t *basis=edited?basis_edited:tick?basis_tick:which("fold-first")?basis_fold_first:which("fold-second")?basis_fold_second:which("fold-second-utc")?basis_fold_utc:utc?basis_utc:basis_local;
++ assert(sizes[7]==12&&!memcmp(values[7],basis,12));
++
++ assert(rtc_writes==1&&rtc_reads==1&&seeds==1&&submitted==1);
++ assert(snt_last_result.rtc_outcome==PORTABLE_SET_TIME_CONFIRMED&&snt_last_result.native.verified&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_CONFIRMED);
++ assert(!legacy_puts&&!checkpoint_owned&&!retained);
++ assert(word(values[7]+4)==expected_epoch+(tick?1:0));
++ assert(snt_last_result.verified_utc_epoch==expected_epoch+(tick?1:0));
++ assert(snt_last_result.rtc_tick_accepted==tick);
++ assert(values[7][3]==(which("save-utc")||which("fold-second-utc")));
++}
++int main(int argc,char **argv) {
++ assert(argc==2);test_name=argv[1];zone_id="America/Denver";native_epoch=expected_epoch=1768505696;
++ initial_basis_missing=which("missing-basis");configure_records();
++ memcpy(values[1],zone_record,zone_size);sizes[1]=zone_size;memcpy(values[4],flip_record,flip_size);sizes[4]=flip_size;memcpy(values[7],basis_record,basis_size);sizes[7]=basis_size;
++ availability=RISC_KEY_VALUE_AVAILABLE;
++ if(which("availability-unavailable"))availability=RISC_KEY_VALUE_UNAVAILABLE;
++ if(which("availability-pending"))availability=RISC_KEY_VALUE_RECONCILIATION_PENDING;
++ if(which("availability-conflict"))availability=RISC_KEY_VALUE_CONFLICT;
++ runtime.acquire=retained_acquire;runtime.release=retained_release;runtime.resident_shell=selected_resident;
++ assert(app_module_init()==0);in_main=true;const t5_app_api_v1 *api=t5_app_get_api(1);assert(api&&!retained);
++ bool ui=which("save-local")||which("save-utc")||which("missing-basis")||which("save-edited");
++ bool ok=false;
++ if(ui) {
++  api->settings_render(0,1);inputs();
++  if(which("save-edited")){nav(RISC_NAV_CONFIRM);nav(RISC_NAV_RIGHT);nav(RISC_NAV_BACK);expected_epoch=1800041696;}
++  save_time(false);next_at+=40;end_app();
++  ok=api->settings_activate(0,0)==T5_APP_SETTING_UPDATED;
++  assert(ok&&!settings_availability_draft);verify_success(false);
++ } else {
++  assert(settings_atomic_begin("rtc_basis"));snt_load_basis();assert(snt_load_zone());
++  portable_timezone_civil civil;assert(!portable_timezone_utc_to_local(&snt_rule,expected_epoch,&civil,NULL));
++  settings_draft=(twatch_rtc_time_v1){(uint16_t)civil.year,civil.month,civil.day,civil.weekday,civil.hour,civil.minute,civil.second};
++  int fold=-1;
++  if(!strncmp(test_name,"fold-",5)) {settings_draft=(twatch_rtc_time_v1){2026,11,1,0,1,30,0};fold=which("fold-first")?0:1;expected_epoch=1793518200+(fold?3600:0);}
++  if(which("gap"))settings_draft=(twatch_rtc_time_v1){2026,3,8,0,2,30,0};
++  if(which("range"))settings_draft=(twatch_rtc_time_v1){2038,1,20,3,12,0,0};
++  if(which("stale-time-before"))++revision;
++  if(which("atomic-cancelled"))fault_status=RISC_ATOMIC_CANCELLED;
++  if(which("atomic-uncertain"))fault_status=RISC_ATOMIC_UNCERTAIN;
++  if(which("atomic-io"))fault_status=RISC_ATOMIC_IO;
++  if(which("atomic-capacity"))fault_status=RISC_ATOMIC_CAPACITY;
++  api->settings_render(0,1);sv_switch(SV_FIELDS);inputs();
++  ok=snt_save(fold);
++  bool success=which("rtc-tick")||!strncmp(test_name,"fold-",5);
++  assert(ok==success);
++  if(success)verify_success(which("rtc-tick"));
++  bool no_clock=which("gap")||which("range")||which("stale-time-before")||!strncmp(test_name,"availability-",13)||which("native-control-absent")||which("rtc-acquire-false");
++  if(no_clock)assert(!rtc_writes&&!seeds&&!submitted);
++  else assert(rtc_writes==1);
++  if(!success)assert(snt_last_result.metadata_outcome!=PORTABLE_SET_TIME_CONFIRMED);
++  if(which("rtc-write-false")||which("rtc-read-false")||which("rtc-mismatch")||which("rtc-release-false"))assert(!seeds&&!submitted);
++  if(which("native-seed-io")||which("native-seed-context")||which("native-readback-io")||which("native-readback-mismatch")||which("native-release-false"))assert(seeds==1&&!submitted);
++  if(which("stale-time-during"))assert(seeds==1&&!submitted&&strstr(snt_status_text,"stale"));
++  if(fault_status)assert(submitted==1&&seeds==1&&snt_last_result.metadata_write_accepted);
++  bool custody=which("rtc-acquire-false")||which("rtc-write-false")||which("rtc-read-false")||which("rtc-release-false")||which("native-seed-context")||which("native-release-false")||which("collect-error")||which("collect-retained")||which("submit-dirty-refusal");
++  assert(retained==custody);
++  if(!retained&&settings_availability_draft)availability_discard(false);
++ }
++ assert(!legacy_puts&&!checkpoint_owned);cleanup();
++ printf("%s: %s; RTC writes=%u reads=%u native seeds=%u atomic submissions=%u retained=%u\n",test_name,ok?"verified":"rejected as expected",rtc_writes,rtc_reads,seeds,submitted,retained);
++}
+diff --git a/test/native_apps/retained_rtc_sdk_hashes.json b/test/native_apps/retained_rtc_sdk_hashes.json
+new file mode 100644
+index 0000000..81d0309
+--- /dev/null
++++ b/test/native_apps/retained_rtc_sdk_hashes.json
+@@ -0,0 +1,112 @@
++{
++  "include/AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
++  "include/AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
++  "include/ContextsServiceV1.h": "ade2f40d01c7c384c6a71b4ee2a3b077c140ac6af06d7cc69350f02f7be6643d",
++  "include/CrashReportSd.h": "779e02c23c190439a7683b0cc827012e3fbe781085a118e2722ec22604d5f6ba",
++  "include/CrashReportSpool.h": "73937a89c3b6000ceb3db51664d3677be5fa13886b3deb8898baff85732b78ec",
++  "include/FailureEvidenceReport.h": "4e82c61315936c04ee75f61f6a375b2f568fdd6aacc58487127a11f0932c4a67",
++  "include/PortableAlarmClient.h": "587a85823462e36a2819fe22227b029bcd687fee6d4484a86063b03b4e420aa1",
++  "include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
++  "include/PortableAlarmTerminalClient.h": "1aa14ef12171b849c63ad002e9c3b7988379a6fc01f7687da8c1190b3bc79635",
++  "include/PortableAppCustody.h": "a4188562f44d12bdf9ca0b616fcb24dc8f67fbcb2b334f16e55530393e035c24",
++  "include/PortableAppLaunchGuard.h": "a7da58c80c62ef35cdf4e76aff0d2f66768b66963457c3a00f5e9890ca357558",
++  "include/PortableAppSleep.h": "027f70965663bc86e7f3bbf2733002870e2254ec92d39037def5f42c52fedc62",
++  "include/PortableApps.h": "d8fc1fae3669c439fda7af94568a93bc1d1f35ddc6fe05615eac1cb41ea4a78e",
++  "include/PortableAudioSession.h": "2f3d9cdd59005d44201f52005c7c88c8a9b2d9e816853338e4254196fad36f47",
++  "include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
++  "include/PortableBluetoothControl.h": "777f0c7f92092d05a428c04255b6df1b3e9510a36c7425fc95092b3321e67a2c",
++  "include/PortableBroadcastAppData.h": "39623ec4ebb2a1c576398b60be8cceef084ff7d0809d4f8903aaa6b7873bd30d",
++  "include/PortableBroadcastClient.h": "deb4ef3b3259ea813e4822da46a17c8f9c2dd88f920596b1900b1d2cfd821687",
++  "include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
++  "include/PortableContextsClient.h": "be53a3639e2de93a939c575814bc8183bf37ac7d5663cd2cbc33c26d4054a9de",
++  "include/PortableDeskClock.h": "603609b28ee7d891de2743d0f86417c3b00ca4201be28eb42ac257194e594bb4",
++  "include/PortableDeskClockApp.h": "3ffdc1ae309e95bfaaf3ac67bd91d6a2c9eeb8b0c5ec22c3e40afa65e8e2b1ee",
++  "include/PortableDeskClockFaces.h": "6864b07c69edcdc20e473d9716db2d9ce19edf2fbfafc379566c1990c78ac5a2",
++  "include/PortableDeskClockSettings.h": "ca26111d67474f7664d9fac748708c25f0bc0454c0ffe647e6199d689059af0d",
++  "include/PortableDeskPointsSnapshot.h": "7d3a6816c86d029b9900e7af56e878cea814ed94d637a031031cc8fe928157eb",
++  "include/PortableFileBrowser.h": "0f0119b91d7c66818fe1d3f977dc37562edb1da5455096eb3a821c97ac49f006",
++  "include/PortableHomePointsCatalog.h": "d3c46fef226e626c0732c190108d016caf7bfbdfa0ac15c120e3ce281ca9181b",
++  "include/PortableLowBattery.h": "c83b663b1d5676c7eb7a8ec59157f0efc561802cfe2a3b6eb63937e28b0acca3",
++  "include/PortableNativeCustody.h": "9dc7d0fb89bbab8304d829fa63e5baed3c6c348fdf37cc4166f5e8117a2594b6",
++  "include/PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
++  "include/PortableNavigation.h": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d",
++  "include/PortableNovaKeyboard.h": "388cdc97e48b6e3378f1cf80b1b5dc3b0e116dd1e30a061697ae56bfb15ec0eb",
++  "include/PortableNovaUi.h": "7301c01a0bdeee5888b518bfb19aefeec65403caf52c589b41eb4e1dfc628291",
++  "include/PortablePaperScroll.h": "6575d6618628f5e195b06d9034acea20be9a5d84cee1210c1c248546c27d4347",
++  "include/PortablePaperTransition.h": "2f1b60dddeeae8111287fc0aa13d0d15fcc37fcdaa5da3ae6fb96edb85847328",
++  "include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
++  "include/PortablePointsCatalogView.h": "0350a2d42d1befc07b838ef4386458d876cabc0820a2b773d9eb1b383dd2bead",
++  "include/PortablePointsState.h": "69dd5c45cea14991a06b397b800de7006aee8509d6ffa905a905f40d8a40baaa",
++  "include/PortablePowerStatus.h": "957925504f2032963d1f2411bc676f2f6b493b41db3f9317182c2cca1a3067e4",
++  "include/PortablePreferenceAtomic.h": "0b3a6fcf086c8fb9924e4054510398ac353d1255aef29209af1b47b7bb103983",
++  "include/PortablePreferenceRollback.h": "9b2f63ba5752a93a8bb269a77aef29dfe0f0d4dc1a946ab16cfa5b341de7f92a",
++  "include/PortableQuickActions.h": "711699f55f25c5477fb588882c40d1589b490ffa2e316ff7c41e3ddbcf23a75b",
++  "include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
++  "include/PortableQuickRadios.h": "676fbb46d0eae28fef515672a20c380088f69b3389a14ae44b5a67b9f014c44b",
++  "include/PortableQuickRender.h": "a442eff258880584976d81407cef82aac66e86b91d68ee919f477e92f5bef36a",
++  "include/PortableQuickSession.h": "5229c4bb8730151d15042e6695d44643810c27b85205160cf7bdb0b73349de98",
++  "include/PortableRadioPolicy.h": "560cf6d492bcf3453b2ee260e6e4dfa102afece7fb1d406a77f2fa32465d1ae3",
++  "include/PortableRadioSession.h": "8b09b402a8235dbf48826b890a04dbcabe2f7ac6c600b90b42f71ac5997356b2",
++  "include/PortableRaster.h": "0cded4d7c7d288f5f7a9b20114810aee209302e042d9cfead2cd8316866afc2e",
++  "include/PortableReaderPreferences.h": "3f0b7b12b1ddf6bf9c45c9598dab5488feadde0e9f5879b5e12c9f4eff8d4eda",
++  "include/PortableRealtimeClient.h": "9a366511975762ab7124931e9124756319acfe586ba9f3881a9f710129290b0a",
++  "include/PortableResidentShell.h": "1468438dedba1b80c9ccfddda5d4b0656aab2673ec75e01a6784d246f3449830",
++  "include/PortableRtcBasis.h": "89bd6751cf29c78e0eb3b76b3fe1862d5ebe733b9da0de4688e95150885496f9",
++  "include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
++  "include/PortableSetTime.h": "52bff55873d1e29ece9da91e26e4840fa4035daad858f1f5618281b5ba985457",
++  "include/PortableSettingsAvailability.h": "5c5b9982bce02a532b18644580c4f7ece11bfa0df01ae0c1078bc86183d20be8",
++  "include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
++  "include/PortableSpringboardCatalog.h": "c5d0ef941090cb68a3d355989d6fedb27546a7d8b1fe16d30c702c326f3056ef",
++  "include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
++  "include/PortableTextInputClient.h": "f98564291d4b3685c429cdb96fd6edd0a4b5226b6bbde6ab3ea197a832f5746f",
++  "include/PortableTextInputHandoff.h": "ef811b3b7cf805ccdab1fb330e09dd8c533e303d29b8b4693ae5089a85432c36",
++  "include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
++  "include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
++  "include/PortableTimeZone.h": "3cfb6687d8f3675beb020a059b8cd3b3d8beffd42c11c6fd61d14b48af729c54",
++  "include/PortableTimeZonePreference.h": "0674f99eebc20d8665dc63915019c39b0dd7171e0ea8b6a284150b2eb473d7b0",
++  "include/PortableTouch.h": "817d5bde4d3a3c4634512503d283d0c7e731744a65e743305038294b58205004",
++  "include/PortableTouchScroll.h": "d19aba992818d60477ef0fea7882b73dd6c9c1bd1db76d4d0faf9acc2e64aebd",
++  "include/PortableTransition.h": "627e00b7c8143d946556f67a61803a56335f747dd8f6489bbfcabaef015542d2",
++  "include/PortableUpdate.h": "344344762bfc0430285ecf8a781b64fb3789949cca7a517ad0b0684bf7fa6b76",
++  "include/PortableUsbTransfer.h": "f1351bb4ca5d5af029f6427e814e77c2eca4baa410ca00e9be51a5bce794a2b3",
++  "include/PortableWatchKeyboard.h": "f006ff13fe70236433ec6c37fb8cf5c4efe018d24393a9035c446e1f3554f4dd",
++  "include/PortableWifiCredentials.h": "a6fd61ac64d3607de04b01185633fe9653678df73a467c22e458f9cc43393d29",
++  "include/PortableWifiProfiles.h": "0ee07f7f692fb9988ab1d7a4200cc8f2ed1cfed49becb594c50f893c3d2a7610",
++  "include/PortableWifiSavedNetwork.h": "9d61ddb8d6f5741e731c4b78123afeaf904a6447103b7231bc1d70842dd7e9ea",
++  "include/PortableWifiView.h": "7f7d2d3cf484fc5a903457057a195e43abed9e13eff12adbf343384efc2f2ce9",
++  "include/RiscBankStoreV1.h": "4c20c21500f1c0724221f30cb5664e99b8316e3d0a9594319f63a206ed0e25a8",
++  "include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
++  "include/RiscBluetoothTelemetryV1.h": "f98aaff4165ee3816846cfe9ba110e8bafce403342a870162eb1089a03d935a6",
++  "include/RiscDiagnosticCheckpointV1.h": "2c41504823df54a43e383baafa07f45191869f6ea5de4adaaf2651c2d78af017",
++  "include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
++  "include/RiscFailureEvidenceV1.h": "f2b024c21780155bacf78bd67a279d8959365c1d25ff1ba421449dd5d3b35265",
++  "include/RiscHttpClientV1.h": "e966177d426d3fadcb420f5fa9dd7226d3450a208f7ed333808d6466ba7bf8d6",
++  "include/RiscInputNavigationV1.h": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
++  "include/RiscKeyValueAtomicV1.h": "552b0be1890eced2c688700671832bbd1ec15b3663801d59ae946173f94313c5",
++  "include/RiscKeyValueAvailabilityV1.h": "7cf7765c26af74813f86a1a041a0a92495840c883f5e231c391294dd928ad976",
++  "include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
++  "include/RiscPlatformClockV1.h": "41a12f6529f38731ee874f8bc166e1cf89fe376a1448fe5a4dd4c9abac90e5e2",
++  "include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
++  "include/RiscRadioAsyncV1.h": "6e3991c00e3e299c6d4fe9cb1ee19532a8b25a39a83910476e344b4b4e2885c9",
++  "include/RiscRadioScanV1.h": "696227eecfd124f941023673680e0a15917d5b03c8f769756ed12ec34f7ccc9b",
++  "include/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
++  "include/RiscResidentShellV1.h": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd",
++  "include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
++  "include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
++  "include/RiscStorageExportV1.h": "74ae82f05a916ca0d2df1bb251bc66cc0ac33dde38757ced7c8e864374d43c8a",
++  "include/RiscStorageVolumeStateV1.h": "1f2f7dbfe9ec7ac27a57149ac720cf7f3a4801d6d34b5532f77c77db252b87a1",
++  "include/RiscStorageVolumeV1.h": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5",
++  "include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
++  "include/RiscTelemetryV1.h": "8ef64c586e8392c1d7521498c25cfdaccefd53242530e2dda9116e9cc12a5d48",
++  "include/RiscTextEntryV1.h": "bee01a5a912fe12a3a4fa8124967117cdf1a395c46e50ab2c77175da04d781a7",
++  "include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
++  "include/SoftwareUpdateV1.h": "25c1851c3c61f7d699d166c230cc561961c7e6f0fb5dcad5db8e24eb6bcf93ca",
++  "include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
++  "include/TelemetryBroadcastV1.h": "986a52b5a3ddd361189d204e33624ce6275d953bca6a94a6e6dd5c136a89e2d5",
++  "include/WifiApi.h": "eddb48c2e4284a592f32a540e10e02572bf251e3145783e9083278afd1aa0159",
++  "time/SOURCES.json": "4e7f30ef9414cc625484bd693ff5cbf8a00adc7571f55feae36f9cdf0b2bc5b3",
++  "time/TIMEZONE_PROVENANCE.json": "4dda9d416b6ca815155dbf3ecac6452789564ff1312bba2d28a6d5a9b7eaab1b",
++  "time/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
++  "time/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
++  "time/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e"
++}
+diff --git a/test/native_apps/settings_atomic_workflow_test.c b/test/native_apps/settings_atomic_workflow_test.c
+new file mode 100644
+index 0000000..658da17
+--- /dev/null
++++ b/test/native_apps/settings_atomic_workflow_test.c
+@@ -0,0 +1,263 @@
++/* Actual Settings controller + paper input/view + checked RTC/native helpers.
++ * The atomic endpoint is a scheduled copied provider double, never hardware. */
++#define main unused_native_settings_main
++#include "portable_native_time_settings_test.c"
++#undef main
++
++static const char *const preference_keys[]={"time_format","time_zone","desk_clock_face","desk_direction",
++ "reader_flip_ui","reader_language","sleep_idle","rtc_basis"};
++static uint8_t values[8][64],pending_value[64],copied_intent[PORTABLE_PREFERENCE_INTENT_BYTES];
++static uint32_t sizes[8],pending_size;
++static unsigned submitted,collected,cancelled,atomic_reads,atomic_acquires,legacy_puts,atomic_releases;
++static unsigned collect_ticks,busy_refusals,checkpoint_owned,page_visits[32];
++static uint64_t revision=7,pending_token,submitted_revision;
++static int pending_index;static bool cancellation,intervened,closing;
++static int fault_status;
++static int preference_index(const char *key) {
++ for(unsigned i=0;i<8;++i)if(!strcmp(preference_keys[i],key))return (int)i;
++ return -1;
++}
++static int32_t record_get(const char *key,void *out,uint32_t cap,uint32_t *used) {
++ int index=preference_index(key);*used=index<0?0:sizes[index];
++ if(!*used)return RISC_ATOMIC_NOT_FOUND;
++ if(cap<*used)return RISC_ATOMIC_BUFFER_SMALL;
++ memcpy(out,values[index],*used);return RISC_ATOMIC_OK;
++}
++static int32_t selected_legacy_get(void *ctx,const char *key,void *out,uint32_t cap,uint32_t *used) {
++ (void)ctx;io();++kv_reads;int rc=record_get(key,out,cap,used);
++ return rc==RISC_ATOMIC_OK?RISC_KEY_VALUE_OK:rc==RISC_ATOMIC_NOT_FOUND?RISC_KEY_VALUE_NOT_FOUND:RISC_KEY_VALUE_BUFFER_SMALL;
++}
++static int32_t selected_legacy_put(void *ctx,const char *key,const void *value,uint32_t size) {
++ (void)ctx;(void)key;(void)value;(void)size;io();++legacy_puts;assert(!"Selected Settings called legacy put");return RISC_KEY_VALUE_CONTEXT;
++}
++static int32_t atomic_state(void *ctx,risc_key_value_atomic_state_v1 *state) {
++ (void)ctx;io();assert(kind_live(13));
++ if(pending_token)return RISC_ATOMIC_BUSY;
++ *state=(risc_key_value_atomic_state_v1){sizeof(*state),3,which("wrong-namespace")?6:1,16,64,4096,1024,0,revision};
++ if(which("small-intent"))state->max_intent_bytes=128;
++ return RISC_ATOMIC_OK;
++}
++static int32_t atomic_get(void *ctx,uint64_t expected,const char *key,void *out,uint32_t cap,uint32_t *used) {
++ (void)ctx;io();assert(kind_live(13));++atomic_reads;*used=0;
++ if(which("read-retained")){hidden=true;return RISC_ATOMIC_RETAINED;}
++ if(pending_token)return RISC_ATOMIC_BUSY;
++ if(expected!=revision)return RISC_ATOMIC_STALE;
++ if(which("read-io")&&settings_atomic_edit.revision)return RISC_ATOMIC_IO;
++ return record_get(key,out,cap,used);
++}
++static uint32_t word(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
++static int32_t atomic_submit(void *ctx,uint64_t expected,const risc_key_value_atomic_mutation_v1 *changes,uint32_t count,const void *intent,uint32_t intent_size,uint64_t *token) {
++ (void)ctx;io();assert(kind_live(13)&&!pending_token);*token=0;
++ if(which("submit-busy")&&busy_refusals++<3)return RISC_ATOMIC_BUSY;
++ if(expected!=revision)return RISC_ATOMIC_STALE;
++ assert(count==1&&changes&&changes[0].kind==RISC_ATOMIC_PUT&&changes[0].size<=64&&changes[0].size);
++ pending_index=preference_index(changes[0].key);assert(pending_index>=0);
++ assert(intent_size==sizeof(copied_intent));memcpy(copied_intent,intent,intent_size);
++ assert(!memcmp(copied_intent,"PFI0001",8));assert(copied_intent[8]==PORTABLE_PREFERENCE_USER&&copied_intent[9]==RISC_ATOMIC_PUT);
++ assert(copied_intent[10]==!!sizes[pending_index]&&!strcmp((char *)copied_intent+12,changes[0].key));
++ assert(word(copied_intent+28)==sizes[pending_index]&&word(copied_intent+32)==changes[0].size);
++ assert(word(copied_intent+36)==revision&&word(copied_intent+40)==0);
++ assert(!memcmp(copied_intent+44,values[pending_index],sizes[pending_index]));
++ assert(!memcmp(copied_intent+108,changes[0].value,changes[0].size));
++ assert(word(copied_intent+172)==portable_preference_crc(copied_intent,172));
++ memcpy(pending_value,changes[0].value,changes[0].size);pending_size=changes[0].size;
++ submitted_revision=expected;*token=pending_token=++submitted;collect_ticks=0;
++ if(which("submit-dirty-refusal"))return RISC_ATOMIC_IO;
++ return RISC_ATOMIC_OK;
++}
++static int32_t atomic_collect(void *ctx,uint64_t token,risc_key_value_atomic_receipt_v1 *receipt) {
++ (void)ctx;io();assert(token&&token==pending_token);++collected;
++ if(which("collect-error"))return RISC_ATOMIC_IO;
++ if(which("collect-retained")){hidden=true;return RISC_ATOMIC_RETAINED;}
++ if(which("close-pending"))return RISC_ATOMIC_PENDING;
++ if(++collect_ticks<(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("cancel-race")||which("home-pending")||which("cancel-error")?12u:3u))return RISC_ATOMIC_PENDING;
++ int status=fault_status?fault_status:cancellation&&!which("cancel-race")?RISC_ATOMIC_CANCELLED:RISC_ATOMIC_OK;
++ if(status==RISC_ATOMIC_OK){memcpy(values[pending_index],pending_value,pending_size);sizes[pending_index]=pending_size;++revision;}
++ *receipt=(risc_key_value_atomic_receipt_v1){sizeof(*receipt),status,revision,status==RISC_ATOMIC_OK?45:0};
++ pending_token=0;
++ if(which("bad-receipt"))receipt->operation_id=0;
++ if(which("bad-revision"))receipt->revision=submitted_revision;
++ return RISC_ATOMIC_OK;
++}
++static int32_t atomic_cancel(void *ctx,uint64_t token) {
++ (void)ctx;io();assert(token==pending_token&&token);++cancelled;cancellation=true;
++ if(which("cancel-error"))return RISC_ATOMIC_IO;
++ return RISC_ATOMIC_PENDING;
++}
++static risc_key_value_atomic_v1 atomic_api={1,sizeof(atomic_api),NULL,atomic_state,atomic_get,atomic_submit,atomic_collect,atomic_cancel};
++static bool selected_show(void *ctx,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,size_t count,
++ const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token) {
++ ++page_visits[sv_page];
++ if(settings_atomic_edit.valid&&!intervened&&
++   (which("stale-draft")||which("stale-unrelated")||which("stale-time-before"))) {
++  /* An independently committed write after draft capture, before Save. */
++  ++revision;intervened=true;
++  if(which("stale-draft")){sizes[0]=4;memcpy(values[0],(uint8_t[]){0x54,1,1,0xa4},4);}
++ }
++ return frame_show(ctx,frame,damage,count,options,token);
++}
++static bool selected_rtc_write(void *ctx,const twatch_rtc_time_v1 *value) {
++ bool ok=rtc_write(ctx,value);
++ if(which("stale-time-during")){++revision;intervened=true;}
++ return ok;
++}
++/* The current touch reducer consumes ordered raw edges; the older shared
++ * fixture's snapshot-only schedule must be converted at its provider boundary. */
++static risc_touch_snapshot_v1 raw_state={.width=LOGICAL_WIDTH,.height=LOGICAL_HEIGHT};
++static risc_touch_event_v1 raw_queue[256];static unsigned raw_first,raw_last;
++static void selected_touch_emit(unsigned kind,risc_touch_contact_v1 contact) {
++ assert(raw_last-raw_first<256);
++ raw_queue[raw_last++%256]=(risc_touch_event_v1){++raw_state.sequence,ticks,(uint8_t)kind,contact.id,contact.x,contact.y};
++}
++static bool selected_touch_poll(void *ctx,size_t count) {
++ bool ok=touch_poll(ctx,count);risc_touch_snapshot_v1 report;assert(touch_snapshot(ctx,&report));
++ if(raw_state.contact_count&&!report.contact_count)selected_touch_emit(RISC_TOUCH_EVENT_UP,raw_state.contacts[0]);
++ if(report.contact_count) {
++  if(!raw_state.contact_count)selected_touch_emit(RISC_TOUCH_EVENT_DOWN,report.contacts[0]);
++  else if(memcmp(&raw_state.contacts[0],&report.contacts[0],sizeof(report.contacts[0])))selected_touch_emit(RISC_TOUCH_EVENT_MOVE,report.contacts[0]);
++ }
++ report.sequence=raw_state.sequence;report.timestamp_ms=ticks;raw_state=report;return ok;
++}
++static int32_t selected_touch_next(void *ctx,uint64_t token,risc_touch_event_v1 *out) {
++ (void)ctx;io();assert(token==1);if(raw_first==raw_last)return 0;
++ *out=raw_queue[raw_first++%256];return 1;
++}
++static bool selected_touch_snapshot(void *ctx,risc_touch_snapshot_v1 *out) {
++ (void)ctx;io();*out=raw_state;return true;
++}
++static bool selected_acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1 *grant) {
++ if(!strcmp(name,RISC_KEY_VALUE_ATOMIC_CAPABILITY)) {
++  io();++atomic_acquires;assert(api==1&&instance==1&&grant->struct_size==sizeof(*grant));
++  if(which("missing-capability"))return false;
++  unsigned slot=1;while(leases[slot].kind)++slot;assert(slot<32);
++  leases[slot]=(lease){13,++generation};++live;
++  if(which("bad-api"))atomic_api.api_version=2;
++  *grant=(risc_runtime_capability_v1){sizeof(*grant),slot,generation,&atomic_api};return true;
++ }
++ bool ok=acquire(name,api,instance,grant);if(!ok)return false;
++ if(!strcmp(name,RISC_KEY_VALUE_CAPABILITY)) {
++  static risc_key_value_v1 kv;kv=kv_api;kv.get=selected_legacy_get;kv.put=selected_legacy_put;grant->api=&kv;
++ } else if(!strcmp(name,"display.output")) {
++  static risc_display_output_api_v1 display;display=display_api;display.submit=selected_show;grant->api=&display;
++ } else if(!strcmp(name,"input.touch.raw")) {
++  static risc_touch_api_v1 touch;touch=touch_api;touch.snapshot=selected_touch_snapshot;touch.poll=selected_touch_poll;touch.next=selected_touch_next;grant->api=&touch;
++ } else if(!strcmp(name,TWATCH_RTC_CAPABILITY)) {
++  static twatch_rtc_api_v1 rtc;rtc=rtc_api;rtc.write=selected_rtc_write;grant->api=&rtc;
++ }
++ return true;
++}
++static bool selected_release(risc_runtime_capability_v1 *grant) {
++ if(leases[grant->slot].kind==13){
++  ++atomic_releases;assert(!pending_token);
++  if(which("release-error")){io();hidden=true;return false;}
++ }
++ return release(grant);
++}
++static int32_t selected_checkpoint(uint64_t invocation,const risc_resident_request_v1 *request,risc_resident_reply_v1 *reply) {
++ if(pending_token)++checkpoint_owned;
++ assert(!pending_token&&!settings_atomic_running);
++ return fixture_resident_checkpoint(invocation,request,reply);
++}
++static bool selected_resident(risc_resident_client_v1 *out) {
++ bool result=fixture_resident_shell(out);out->checkpoint=selected_checkpoint;return result;
++}
++static void inputs(void){memset(nav_buttons,0,sizeof(nav_buttons));contact_count=0;next_at=polls+5;}
++static void cleanup(void) {
++ in_main=false;in_fini=true;closing=true;app_module_fini();in_fini=false;
++ if(retained) {
++  unsigned calls=provider_calls,leases_held=live;
++  app_module_fini();settings_view_redraw();assert(provider_calls==calls&&live==leases_held&&barriers==1);
++ } else assert(!live&&!subscriptions&&!frames&&!barriers&&!pending_token);
++}
++#ifndef SETTINGS_AVAILABILITY_FIXTURE
++int main(int argc,char **argv) {
++ assert(argc==2);test_name=argv[1];zone_id="UTC";native_epoch=expected_epoch=1768505696;
++ configure_records();memcpy(values[1],zone_record,zone_size);sizes[1]=zone_size;
++ memcpy(values[4],flip_record,flip_size);sizes[4]=flip_size;
++ memcpy(values[7],basis_record,basis_size);sizes[7]=basis_size;
++ runtime.acquire=selected_acquire;runtime.release=selected_release;runtime.resident_shell=selected_resident;
++ assert(app_module_init()==0);in_main=true;
++ const t5_app_api_v1 *api=t5_app_get_api(1);
++ if(which("bad-api")||which("read-retained")) {
++  assert(!api);assert(retained);cleanup();assert(!legacy_puts);puts(test_name);return 0;
++ }
++ assert(api&&!retained&&atomic_acquires==1);
++ if(which("missing-capability")||which("wrong-namespace")||which("small-intent")||which("read-io")) {
++  assert(api->settings_activate(0,2)==T5_APP_SETTING_ERROR&&!submitted);cleanup();puts(test_name);return 0;
++ }
++ if(which("origin-fence")) {
++  portable_preference_atomic stage={0};
++  assert(portable_preference_atomic_begin(&stage,&atomic_api,"time_format",PORTABLE_PREFERENCE_AUTOMATIC,settings_atomic_guard,NULL)==RISC_ATOMIC_INVALID);
++  assert(!submitted);cleanup();puts(test_name);return 0;
++ }
++ if(which("put-fence")) {
++  assert(settings_store->put(settings_store->context,"time_format","x",1)==RISC_KEY_VALUE_CONTEXT&&!legacy_puts);
++  cleanup();puts(test_name);return 0;
++ }
++ if(which("close-pending")) {
++  assert(settings_atomic_begin("time_format"));uint8_t bytes[]={0x54,1,1,0xa4};
++  assert(portable_preference_atomic_prepare(&settings_atomic_edit,bytes,4)==PORTABLE_PREFERENCE_READY);
++  assert(portable_preference_atomic_submit(&settings_atomic_edit)==RISC_ATOMIC_PENDING);
++  cleanup();assert(retained&&pending_token&&settings_atomic_edit.token&&!atomic_releases);puts(test_name);return 0;
++ }
++ unsigned row=2,index=0;
++ if(!strcmp(test_name,"zone-save")){row=1;index=1;}
++ if(!strcmp(test_name,"face-save")){row=SETTINGS_FACE_ROW;index=2;}
++ if(!strcmp(test_name,"direction-save")){row=SETTINGS_DESK_DIRECTION_ROW;index=3;}
++ if(!strcmp(test_name,"flip-save")){row=SETTINGS_FLIP_ROW;index=4;}
++ if(!strcmp(test_name,"language-save")){row=SETTINGS_LANGUAGE_ROW;index=5;}
++ if(!strcmp(test_name,"timer-save")){row=SETTINGS_TIMER_ROW;index=6;}
++ bool clocks=strstr(test_name,"time-")||which("rtc-write-false")||which("native-seed-io");
++ if(clocks){row=0;index=7;}
++ if(which("uncertain")||which("time-uncertain"))fault_status=RISC_ATOMIC_UNCERTAIN;
++ if(which("io"))fault_status=RISC_ATOMIC_IO;
++ if(which("capacity"))fault_status=RISC_ATOMIC_CAPACITY;
++ api->settings_render(0,(int32_t)row+1);inputs();
++ if(row==0){save_time(which("time-touch-save"));}
++ else if(row==1){next_at+=20;nav(RISC_NAV_DOWN);next_at+=20;nav(RISC_NAV_CONFIRM);next_at+=20;nav(RISC_NAV_CONFIRM);}
++ else if(which("format-touch-save")||which("cancel-touch-before")||which("cancel-touch-pending")||which("held-touch-save")) {
++  next_at+=16;tap(LOGICAL_WIDTH/2,300);next_at+=16;
++  if(which("cancel-touch-before"))tap(80,FOOTER_Y);
++  else if(which("held-touch-save")){for(unsigned i=0;i<12;++i)point(next_at+i,SAVE_X,FOOTER_Y);next_at+=20;}
++  else tap(SAVE_X,FOOTER_Y);
++ } else {
++  if(!which("same-value"))nav(RISC_NAV_RIGHT);
++  nav(which("cancel-before")?RISC_NAV_BACK:RISC_NAV_CONFIRM);
++ }
++ if(which("cancel-touch-pending"))tap(80,FOOTER_Y);
++ else if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-race")||which("cancel-error"))nav(RISC_NAV_BACK);
++ else if(which("home-pending"))nav(RISC_NAV_HOME);
++ else if(which("repeated-confirm"))nav(RISC_NAV_CONFIRM);
++ next_at+=40;end_app();
++ uint8_t result=api->settings_activate(0,row);
++ if(getenv("NATIVE_SETTINGS_TRACE"))fprintf(stderr,"case=%s result=%u submits=%u revision=%llu status=%d message=%s tf=%s retained=%u pending=%llu\n",test_name,result,submitted,(unsigned long long)revision,settings_atomic_status,settings_message,time_format_message,retained,(unsigned long long)pending_token);
++ assert(!legacy_puts&&!checkpoint_owned);
++ bool no_submit=which("stale-draft")||which("stale-unrelated")||which("stale-time-before")||which("stale-time-during")||which("cancel-before")||which("cancel-touch-before")||which("rtc-write-false")||which("native-seed-io");
++ bool retained_case=which("collect-error")||which("collect-retained")||which("bad-receipt")||which("bad-revision")||which("submit-dirty-refusal")||which("cancel-error")||which("rtc-write-false");
++ bool rejected=no_submit||fault_status||retained_case||which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("home-pending");
++ if(!rejected)assert(result==T5_APP_SETTING_UPDATED&&submitted==1&&sizes[index]&&revision==8);
++ else assert(result!=T5_APP_SETTING_UPDATED);
++ assert(retained==retained_case);
++ if(no_submit)assert(!submitted);
++ if(which("stale-time-before"))assert(!rtc_writes&&!seeds);
++ if(which("stale-time-during"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED&&strstr(snt_status_text,"stale"));
++ if(which("time-cancel-pending")||which("time-uncertain"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_UNCONFIRMED&&snt_last_result.metadata_write_accepted);
++ if(which("stale-time-during"))assert(!snt_last_result.metadata_write_accepted);
++ if(which("time-save"))assert(rtc_writes==1&&seeds==1&&snt_last_result.metadata_outcome==PORTABLE_SET_TIME_CONFIRMED);
++ if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||which("cancel-race")||which("home-pending"))assert(cancelled==1);
++ if(which("cancel-pending")||which("time-cancel-pending")||which("cancel-touch-pending")||fault_status)assert(!sizes[0]);
++ if(which("submit-busy"))assert(busy_refusals==4);
++ if(which("cancel-before"))assert(!cancelled&&!sizes[0]);
++ if(which("same-value"))assert(sizes[0]==4&&!values[0][2]);
++ if(which("flip-save"))assert(paper_flip_ui);
++ if(which("timer-save"))assert(sizes[6]==5&&values[6][2]==65);
++ if(which("time-save"))assert(word(values[7]+4)==expected_epoch);
++ if(!retained&&result==T5_APP_SETTING_UPDATED) {
++  uint8_t out[64];uint32_t size=0;assert(selected_legacy_get(NULL,preference_keys[index],out,64,&size)==0);
++  assert(size==sizes[index]&&!memcmp(out,values[index],size));
++ }
++ cleanup();if(which("release-error"))assert(retained&&atomic_releases==1);
++ printf("%s: submits=%u collect=%u cancel=%u retained=%u clocks=%u/%u\n",test_name,submitted,collected,cancelled,retained,rtc_writes,seeds);
++}
++
++#endif
+diff --git a/test/native_apps/settings_availability_workflow_test.c b/test/native_apps/settings_availability_workflow_test.c
+new file mode 100644
+index 0000000..b681f14
+--- /dev/null
++++ b/test/native_apps/settings_availability_workflow_test.c
+@@ -0,0 +1,105 @@
++#define SETTINGS_AVAILABILITY_FIXTURE
++#include "settings_atomic_workflow_test.c"
++static uint32_t availability=RISC_KEY_VALUE_UNAVAILABLE;
++static uint64_t availability_generation=1;
++static unsigned status_grants,status_releases;
++static bool provider_holds;
++static int32_t availability_snapshot(void *ctx,risc_key_value_availability_state_v1 *out) {
++ (void)ctx;io();assert(kind_live(14));
++ *out=(risc_key_value_availability_state_v1){sizeof(*out),1,availability,0,availability_generation};
++ if(which("malformed"))out->namespace_id=6;
++ return 0;
++}
++static const risc_key_value_availability_v1 availability_api={1,sizeof(availability_api),NULL,availability_snapshot};
++static bool availability_acquire(const char *name,uint32_t version,uint64_t ns,risc_runtime_capability_v1 *out) {
++ if(strcmp(name,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY))return selected_acquire(name,version,ns,out);
++ io();assert(version==1&&ns==1);++status_grants;
++ unsigned slot=1;while(leases[slot].kind)++slot;assert(slot<32);
++ leases[slot]=(lease){14,++generation};++live;
++ *out=(risc_runtime_capability_v1){sizeof(*out),slot,generation,&availability_api};return true;
++}
++static bool availability_release(risc_runtime_capability_v1 *grant) {
++ unsigned kind=leases[grant->slot].kind;
++ if(kind==14){++status_releases;if(which("status-release-fails")){io();hidden=true;return false;}}
++ bool ok=selected_release(grant);
++ if(ok&&kind==13&&availability==RISC_KEY_VALUE_RECONCILIATION_PENDING&&!provider_holds) {
++  availability=RISC_KEY_VALUE_AVAILABLE;++availability_generation;
++ }
++ return ok;
++}
++static void availability_discard(bool keep) {
++ t5_app_input_t input={.buttons=T5_APP_BUTTON_BACK};
++ assert(settings_availability_filter(&input)&&!input.buttons&&settings_availability_discard);
++ input=(t5_app_input_t){.buttons=keep?T5_APP_BUTTON_BACK:T5_APP_BUTTON_CONFIRM};
++ assert(settings_availability_filter(&input)&&!settings_availability_discard);
++ assert(settings_availability_draft==keep);
++}
++#ifndef RETAINED_RTC_FIXTURE
++int main(int argc,char **argv) {
++ assert(argc==2);test_name=argv[1];zone_id="UTC";native_epoch=expected_epoch=1768505696;
++ configure_records();memcpy(values[1],zone_record,zone_size);sizes[1]=zone_size;
++ memcpy(values[7],basis_record,basis_size);sizes[7]=basis_size;
++ if(which("conflict")||which("storage-conflict"))availability=RISC_KEY_VALUE_CONFLICT;
++ if(which("reload")||which("reload-modal")||which("storage-pending")||which("provider-pending"))availability=RISC_KEY_VALUE_RECONCILIATION_PENDING;
++ if(which("available-save")||which("failed-save-draft"))availability=RISC_KEY_VALUE_AVAILABLE;
++ runtime.acquire=availability_acquire;runtime.release=availability_release;runtime.resident_shell=selected_resident;
++ assert(app_module_init()==0);in_main=true;const t5_app_api_v1 *api=t5_app_get_api(1);
++ if(which("malformed")){assert(!api&&retained);cleanup();puts(test_name);return 0;}
++ assert(api&&!retained&&status_grants==1);
++ t5_app_setting_t row;assert(settings_get(0,SETTINGS_STORAGE_ROW,&row)&&strstr(row.label,"storage"));
++ if(!strncmp(test_name,"storage-",8)) {
++  api->settings_render(0,1);sv_switch(SV_STORAGE);assert(page_visits[SV_STORAGE]);
++ } else if(which("reload-modal")) {
++  inputs();nav(RISC_NAV_CONFIRM);nav(RISC_NAV_BACK);
++  assert(settings_availability_activate()==T5_APP_SETTING_NO_CHANGE);
++  assert(settings_availability.state.availability==RISC_KEY_VALUE_AVAILABLE&&atomic_acquires==2);
++ } else if(which("available-save")) {
++  api->settings_render(0,3);inputs();nav(RISC_NAV_RIGHT);nav(RISC_NAV_CONFIRM);next_at+=40;end_app();
++  assert(api->settings_activate(0,2)==T5_APP_SETTING_UPDATED&&submitted==1);
++ } else if(which("zone-touch-cancel")) {
++  api->settings_render(0,2);inputs();next_at+=20;nav(RISC_NAV_CONFIRM);next_at+=20;
++  tap(LOGICAL_WIDTH/2,FOOTER_Y);next_at+=20;nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);nav(RISC_NAV_CONFIRM);
++  assert(api->settings_activate(0,1)!=T5_APP_SETTING_UPDATED);
++  assert(!submitted&&!settings_availability_draft&&page_visits[SV_DISCARD]>=2);
++ } else if(which("date-discard")) {
++  assert(settings_atomic_begin("rtc_basis"));api->settings_render(0,1);sv_switch(SV_FIELDS);editor_field=7;
++  t5_app_input_t input={.buttons=T5_APP_BUTTON_CONFIRM};assert(settings_availability_filter(&input)&&settings_availability_discard);
++  input=(t5_app_input_t){.buttons=T5_APP_BUTTON_CONFIRM};assert(settings_availability_filter(&input)&&input.exit_requested&&!settings_availability_draft);
++ } else if(which("unavailable-modal")) {
++  api->settings_render(0,3);inputs();nav(RISC_NAV_RIGHT);nav(RISC_NAV_CONFIRM);
++  nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);nav(RISC_NAV_BACK);nav(RISC_NAV_CONFIRM);
++  assert(api->settings_activate(0,2)!=T5_APP_SETTING_UPDATED);
++  assert(time_format_choice==1&&!submitted&&!settings_availability_draft&&page_visits[SV_DISCARD]>=2);
++ } else if(which("failed-save-draft")) {
++  assert(settings_atomic_begin("time_format"));sv_switch(SV_TIME_FORMAT);fault_status=RISC_ATOMIC_IO;
++  const char *message="";time_format_choice=1;
++  assert(!settings_atomic_choice("time_format",0x54,1,2,&message));
++  assert(submitted==1&&settings_availability_draft&&!settings_atomic_exit&&time_format_choice==1);
++  availability_discard(false);
++ } else if(which("reload")||which("provider-pending")) {
++  provider_holds=which("provider-pending");
++  values[0][0]=0x54;values[0][1]=1;values[0][2]=1;values[0][3]=0xa4;sizes[0]=4;
++  assert(settings_atomic_close());rt->yield_ms(1);assert(settings_atomic_open());settings_time_format_load();
++  assert(settings_availability.state.availability==(provider_holds?RISC_KEY_VALUE_RECONCILIATION_PENDING:RISC_KEY_VALUE_AVAILABLE));
++  assert(time_format_mode==(provider_holds?0:1)&&atomic_acquires==2);
++ } else if(which("status-release-fails")) {
++  cleanup();assert(retained&&status_releases==1);puts(test_name);return 0;
++ } else {
++  unsigned before=atomic_reads;settings_time_format_load();assert(time_format_mode==0&&atomic_reads==before);
++  assert(settings_atomic_begin("time_format")&&settings_availability_temporary&&settings_atomic_owned());
++  time_format_choice=1;sv_switch(SV_TIME_FORMAT);const char *message="";
++  assert(!settings_atomic_choice("time_format",0x54,1,2,&message)&&strstr(message,"Draft kept"));
++  assert(!submitted&&!legacy_puts&&time_format_choice==1);
++  assert(!snt_save(-1)&&!rtc_writes&&!seeds);
++  if(which("draft-pending")) {availability=RISC_KEY_VALUE_RECONCILIATION_PENDING;++availability_generation;assert(settings_availability_refresh());}
++  if(which("invalid-publication")) {availability=RISC_KEY_VALUE_AVAILABLE;++availability_generation;assert(!settings_availability_refresh()&&retained);cleanup();puts(test_name);return 0;}
++  assert(!settings_atomic_close()&&atomic_releases==0);
++  availability_discard(true);assert(time_format_choice==1&&atomic_releases==0);
++  home_pending=true;t5_app_input_t input={0};assert(settings_availability_filter(&input)&&!home_pending);
++  input=(t5_app_input_t){.buttons=T5_APP_BUTTON_BACK};assert(settings_availability_filter(&input)&&settings_availability_draft);
++  availability_discard(false);assert(!settings_atomic_owned());
++ }
++ cleanup();assert(!retained&&!live&&!legacy_puts);printf("Settings availability %s passed\n",test_name);return 0;
++}
++
++#endif

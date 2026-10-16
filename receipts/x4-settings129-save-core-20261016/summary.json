@@ -1,0 +1,658 @@
+{
+  "target": "retained-settings.elf",
+  "candidate": "settings.elf",
+  "timestamp": "2026-10-16T23:36:00Z",
+  "results": {
+    "snt": {
+      "target_start": "0x129ec",
+      "candidate_start": "0x129f4",
+      "compared_nodes": 200,
+      "mismatches": []
+    },
+    "atomic": {
+      "target_start": "0x1267c",
+      "candidate_start": "0x1267c",
+      "compared_nodes": 270,
+      "mismatches": []
+    },
+    "choice": {
+      "target_start": "0x1297c",
+      "candidate_start": "0x12984",
+      "compared_nodes": 20,
+      "mismatches": []
+    },
+    "touch": {
+      "target_start": "0x13e74",
+      "candidate_start": "0x13e74",
+      "compared_nodes": 55,
+      "mismatches": [
+        {
+          "target": "0x13f02",
+          "candidate": "0x13f02",
+          "target_norm": [
+            "call8",
+            "12cbc"
+          ],
+          "candidate_norm": [
+            "call8",
+            "12cc4"
+          ]
+        }
+      ],
+      "interpretation": "Single mismatch is call address to shifted settings_activate entry."
+    },
+    "activate": {
+      "target_start": "0x12cbc",
+      "candidate_start": "0x12cc4",
+      "compared_nodes": 1468,
+      "mismatches": [
+        {
+          "target": "0x13c95",
+          "candidate": "0x13c95",
+          "target_norm": [
+            "call8",
+            "129ec"
+          ],
+          "candidate_norm": [
+            "call8",
+            "129f4"
+          ]
+        },
+        {
+          "target": "0x13d53",
+          "candidate": "0x13d4f",
+          "target_norm": [
+            "call8",
+            "129ec"
+          ],
+          "candidate_norm": [
+            "call8",
+            "129f4"
+          ]
+        },
+        {
+          "target": "0x13aa1",
+          "candidate": "0x13aa1",
+          "target_norm": [
+            "call8",
+            "1297c"
+          ],
+          "candidate_norm": [
+            "call8",
+            "12984"
+          ]
+        },
+        {
+          "target": "0x13826",
+          "candidate": "0x13826",
+          "target_norm": [
+            "call8",
+            "1297c"
+          ],
+          "candidate_norm": [
+            "call8",
+            "12984"
+          ]
+        },
+        {
+          "target": "0x13709",
+          "candidate": "0x13709",
+          "target_norm": [
+            "call8",
+            "1297c"
+          ],
+          "candidate_norm": [
+            "call8",
+            "12984"
+          ]
+        },
+        {
+          "target": "0x135ff",
+          "candidate": "0x13601",
+          "target_norm": [
+            "call8",
+            "1297c"
+          ],
+          "candidate_norm": [
+            "call8",
+            "12984"
+          ]
+        }
+      ],
+      "interpretation": "All six mismatches are call addresses to the independently CFG-matched shifted snt_save and settings_atomic_choice entries."
+    },
+    "poll": {
+      "target_start": "0x1176c",
+      "candidate_start": "0x1176c",
+      "compared_nodes": 280,
+      "mismatches": [
+        {
+          "target": "0x119d0",
+          "candidate": "0x119d0",
+          "target_norm": [
+            "l8ui",
+            "a5, a4, 0"
+          ],
+          "candidate_norm": [
+            "l8ui",
+            "a6, a4, 0"
+          ]
+        },
+        {
+          "target": "0x119d3",
+          "candidate": "0x119d3",
+          "target_norm": [
+            "mov",
+            "a6, a10"
+          ],
+          "candidate_norm": [
+            "mov",
+            "a5, a10"
+          ]
+        },
+        {
+          "target": "0x119d6",
+          "candidate": "0x119d6",
+          "target_norm": [
+            "beqz",
+            "a5"
+          ],
+          "candidate_norm": [
+            "beqz",
+            "a6"
+          ]
+        },
+        {
+          "target": "0x119db",
+          "candidate": "0x119db",
+          "target_norm": [
+            "l32r",
+            "a8, literal_value=265d0, reloc=(5, 0)"
+          ],
+          "candidate_norm": [
+            "l32r",
+            "a6, literal_value=265d0, reloc=(5, 0)"
+          ]
+        },
+        {
+          "target": "0x119de",
+          "candidate": "0x119de",
+          "target_norm": [
+            "l32i",
+            "a5, a8, 0"
+          ],
+          "candidate_norm": [
+            "l32i",
+            "a7, a6, 0"
+          ]
+        },
+        {
+          "target": "0x119e7",
+          "candidate": "0x119e7",
+          "target_norm": [
+            "l8ui",
+            "a7, a4, 0"
+          ],
+          "candidate_norm": [
+            "l8ui",
+            "a6, a4, 0"
+          ]
+        },
+        {
+          "target": "0x119ea",
+          "candidate": "0x119ea",
+          "target_norm": [
+            "beqz",
+            "a7"
+          ],
+          "candidate_norm": [
+            "beqz",
+            "a6"
+          ]
+        },
+        {
+          "target": "0x119ef",
+          "candidate": "0x119ef",
+          "target_norm": [
+            "l32i",
+            "a3, a1, 160"
+          ],
+          "candidate_norm": [
+            "l32i",
+            "a9, a1, 160"
+          ]
+        },
+        {
+          "target": "0x119f2",
+          "candidate": "0x119f2",
+          "target_norm": [
+            "sub",
+            "a7, a6, a5"
+          ],
+          "candidate_norm": [
+            "sub",
+            "a8, a5, a7"
+          ]
+        },
+        {
+          "target": "0x119f5",
+          "candidate": "0x119f5",
+          "target_norm": [
+            "bltu",
+            "a7, a3"
+          ],
+          "candidate_norm": [
+            "bltu",
+            "a8, a9"
+          ]
+        },
+        {
+          "target": "0x11a98",
+          "candidate": "0x11a88",
+          "target_norm": [
+            "l32r",
+            "a3, literal_value=265dc, reloc=(5, 0)"
+          ],
+          "candidate_norm": [
+            "l32r",
+            "a5, literal_value=269a0, reloc=(5, 0)"
+          ]
+        },
+        {
+          "target": "0x11a9b",
+          "candidate": "0x11a8b",
+          "target_norm": [
+            "l8ui",
+            "a7, a3, 0"
+          ],
+          "candidate_norm": [
+            "movi",
+            "a10, 1"
+          ]
+        },
+        {
+          "target": "0x11a9e",
+          "candidate": "0x11a8d",
+          "target_norm": [
+            "bnez",
+            "a7"
+          ],
+          "candidate_norm": [
+            "l32i",
+            "a3, a5, 0"
+          ]
+        },
+        {
+          "target": "0x119fb",
+          "candidate": "0x119fb",
+          "target_norm": [
+            "add",
+            "a5, a3, a5"
+          ],
+          "candidate_norm": [
+            "add",
+            "a3, a9, a7"
+          ]
+        },
+        {
+          "target": "0x119fd",
+          "candidate": "0x119fd",
+          "target_norm": [
+            "sub",
+            "a7, a5, a6"
+          ],
+          "candidate_norm": [
+            "sub",
+            "a7, a3, a5"
+          ]
+        },
+        {
+          "target": "0x11a47",
+          "candidate": "0x11a67",
+          "target_norm": [
+            "l32r",
+            "a3, literal_value=265dc, reloc=(5, 0)"
+          ],
+          "candidate_norm": [
+            "beqz",
+            "a8"
+          ]
+        }
+      ],
+      "coverage": "Paired traversal becomes incomplete at topology mismatch; all 16 encountered mismatches preserved. No equivalence claim."
+    }
+  },
+  "source_sha256": {
+    "lib/PortableApps/src/PortableSetTime.c": "f5a017c35a9acda0f0b1031023333914ab3099b882df16a5b78312c7b11b6390",
+    "lib/PortableApps/src/PortableRealtimeClient.c": "a8115817eb490bb51f3e338fde4dce2542cb82dceefe476beae21a91c14ceade",
+    "lib/PortableApps/src/settings_native_time.inc": "8edf00e795f1364f643ae62e692c91e8e546dd8274b10fa8c0f8c159170813d3",
+    "lib/PortableApps/src/settings_atomic_save.inc": "b385dba6e2566004b4786ee340ccbfb73a39db80867a98bba8f90d94ad7f687e",
+    "lib/PortableApps/src/PortableTimeZone.c": "28c0fecf7a4d83bde07d2b72cb591122cf3c49c3219c8344b97b82a90625c5e7",
+    "lib/PortableApps/src/PortableTimeZonePreference.c": "b54e455d587ba2ecda8f59dd899b59b767214aee807b92d79d18c5e9d30b6bb7"
+  },
+  "target_sha256": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7",
+  "candidate_sha256": "a9fdc7b2c127c7a880dc44cde9dbb6b3e4af627e37436465959408d3c15b7c90",
+  "native_block": {
+    "range": "0x13f14 <= PC < 0x14e6c",
+    "size": 3928,
+    "raw_equal": true,
+    "sha256": "3d3cc06b273139778cfe3934d81ae0374222fdec6a0cf12120cf3737075abc35",
+    "rela_dyn_count": 11,
+    "rela_dyn_equal": true
+  },
+  "limits": [
+    "Instruction CFG comparison does not establish hardware provider correctness or execution timing.",
+    "Whole ELF mismatch remains. Poll has differing conditional behavior including raster slice=1 logic; activation/touch are equivalent only after established callee-entry correspondence.",
+    "Existing test_native_time_settings.py selects old Runtime pin and lacks atomic/availability defines; do not present it as retained 1.3.29 first-Save qualification."
+  ],
+  "candidate_source_revision": "066a78a6080372f1eb797cd9ead9b2112edd3593",
+  "revision_hash_checks": {
+    "lib/PortableApps/src/PortableSetTime.c": true,
+    "lib/PortableApps/src/PortableRealtimeClient.c": true,
+    "lib/PortableApps/src/settings_native_time.inc": true,
+    "lib/PortableApps/src/settings_atomic_save.inc": true,
+    "lib/PortableApps/src/PortableTimeZone.c": true,
+    "lib/PortableApps/src/PortableTimeZonePreference.c": true
+  },
+  "build_record_source_hash_checks": {
+    "lib/PortableApps/src/PortableSetTime.c": true,
+    "lib/PortableApps/src/PortableRealtimeClient.c": true,
+    "lib/PortableApps/src/settings_native_time.inc": true,
+    "lib/PortableApps/src/settings_atomic_save.inc": true,
+    "lib/PortableApps/src/PortableTimeZone.c": true,
+    "lib/PortableApps/src/PortableTimeZonePreference.c": true
+  },
+  "candidate_source_note": "Production source pinned by reconstruction patch and258 source hashes; candidate whole ELF differs.",
+  "nine_native_tail_differences": [
+    {
+      "pc": "0x15380",
+      "target": [
+        3,
+        "l32r",
+        "a8, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a8, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a8, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x153d1",
+      "target": [
+        3,
+        "l32r",
+        "a8, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a8, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a8, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x153fd",
+      "target": [
+        3,
+        "l32r",
+        "a8, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a8, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a8, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x1542a",
+      "target": [
+        3,
+        "l32r",
+        "a2, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a2, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a2, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x155aa",
+      "target": [
+        3,
+        "l32r",
+        "a8, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a8, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a8, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x15d14",
+      "target": [
+        3,
+        "l32r",
+        "a8, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a8, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a8, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x15df5",
+      "target": [
+        3,
+        "l32r",
+        "a4, 12c9c"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a4, 12ca4"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a4, literal_value=15334, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x15e2e",
+      "target": [
+        3,
+        "l32r",
+        "a4, 12ca0"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a4, 12ca8"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a4, literal_value=15cac, reloc=(5, 0)"
+      ]
+    },
+    {
+      "pc": "0x15e43",
+      "target": [
+        3,
+        "l32r",
+        "a6, 12c9c"
+      ],
+      "candidate": [
+        3,
+        "l32r",
+        "a6, 12ca4"
+      ],
+      "resolved_equal": true,
+      "resolved": [
+        "l32r",
+        "a6, literal_value=15334, reloc=(5, 0)"
+      ]
+    }
+  ],
+  "save_direct_callee_raw_checks": [
+    {
+      "name": "portable_preference_atomic_state_valid",
+      "address": "0x8374",
+      "size": 70,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_preference_atomic_terminal",
+      "address": "0x83bc",
+      "size": 22,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_rtc_basis_put_word",
+      "address": "0x83d4",
+      "size": 26,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_atomic_guard",
+      "address": "0x83f0",
+      "size": 33,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "snt_request",
+      "address": "0x8554",
+      "size": 88,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_atomic_message",
+      "address": "0x8f20",
+      "size": 56,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "snt_basis_label",
+      "address": "0x905c",
+      "size": 46,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_settings_availability_available$constprop$161",
+      "address": "0x9878",
+      "size": 26,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_preference_atomic_safe$constprop$164",
+      "address": "0x9894",
+      "size": 26,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_preference_atomic_collect$constprop$121",
+      "address": "0x98b0",
+      "size": 183,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "portable_preference_atomic_cancel$constprop$119",
+      "address": "0x9968",
+      "size": 84,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "snt_describe_result",
+      "address": "0x9ad4",
+      "size": 93,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_availability_refresh",
+      "address": "0x9df0",
+      "size": 50,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "snt_halted",
+      "address": "0x9e24",
+      "size": 43,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_atomic_result$part$54",
+      "address": "0xa2f8",
+      "size": 16,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_view_redraw",
+      "address": "0xeeb4",
+      "size": 2255,
+      "raw_equal": true,
+      "relocations_equal": true
+    },
+    {
+      "name": "poll",
+      "address": "0x1176c",
+      "size": 3773,
+      "raw_equal": false,
+      "relocations_equal": true
+    },
+    {
+      "name": "settings_atomic_save",
+      "address": "0x1267c",
+      "size": 769,
+      "raw_equal": false,
+      "relocations_equal": false
+    }
+  ]
+}

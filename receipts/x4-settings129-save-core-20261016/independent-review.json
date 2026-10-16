@@ -1,0 +1,48 @@
+{
+  "reviewed_at": "2026-10-16T23:50:10Z",
+  "scope": "Read-only independent review and host reruns; no production source or board edits.",
+  "source_commit": "066a78a6080372f1eb797cd9ead9b2112edd3593",
+  "tested_files_sha256": {
+    "scripts/test_retained_rtc.py": "11e0be6f46183c1260e38e90d8695610c1ff2ae15768cdaae014388d2c4f8990",
+    "test/native_apps/retained_rtc_save_test.c": "b620b4fd61fd5a543cd579113672619c21add5f7ed498c2ab01ba0db6e752084",
+    "test/native_apps/retained_rtc_sdk_hashes.json": "e08e65be082d99f7a561623622268c9e956db1c891f5ef826e6b72c321dbdd46",
+    "test/native_apps/portable_native_time_settings_test.c": "d615c433a89978ef2dd8ca7193e55892534ec62e70fedd6b9c39886b125e2092",
+    "test/native_apps/settings_atomic_workflow_test.c": "d70b9dbcbbbad1b435f26edaa3b24aa004702fd32e852119c168bd227cc65de5",
+    "test/native_apps/settings_availability_workflow_test.c": "d8a0dd7368dee8145379c5c7e2797243a108aa584ba5f8e92f8434f9dc73f97a"
+  },
+  "normal_result": "/tmp/rtc-independent-review/normal-corrected/results.json",
+  "sanitized_result": "/tmp/rtc-independent-review/sanitized-corrected/results.json",
+  "normal_cases": 33,
+  "sanitized_cases": 33,
+  "production_source_hash_count": 258,
+  "effective_sdk_hash_count": 110,
+  "findings_resolved": [
+    "RTC civil value, native seed/readback epoch, and full metadata success oracles independently asserted.",
+    "Edited first-Save UI case now changes 2026 to 2027.",
+    "Raster alarm fixture checks permitted display state plus no mutable/provider frame.",
+    "Runner verifies complete production source and effective staged SDK/time hashes."
+  ],
+  "accepted_scope": "Reconstructed, source-bound RTC Save core and host editor first-Save regression.",
+  "ui_cases": [
+    "save-local",
+    "save-utc",
+    "missing-basis",
+    "save-edited"
+  ],
+  "boundary_cases": 29,
+  "not_accepted": "Exact retained Settings first-valid RTC-setting criterion remains open: materially different poll is called transitively by both settings_activate and settings_atomic_save. No retained target execution or hardware provider/timing qualification.",
+  "fault_scope": "atomic-cancelled injects terminal CANCELLED receipt, not user Back/cancel input. Provider doubles enforce stage fencing and custody; no general alarm firing or asynchronous presentation interleaving qualification.",
+  "binary_binding": {
+    "symbolized_candidate": "a9fdc7b2c127c7a880dc44cde9dbb6b3e4af627e37436465959408d3c15b7c90",
+    "stripped_candidate": "f48e2afc599620a9d019cee3dc42d81542654e6370782447b71f714ce66dee42",
+    "retained_target": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7",
+    "strip_verification": "All allocated section bytes/addresses/sizes and .rela.dyn/.rela.plt identical between symbolized and stripped candidate."
+  },
+  "remaining_limits": [
+    "Whole candidate ELF differs from retained ELF.",
+    "Prior native helper and controller CFG equivalence is limited to established functions and cannot be extended through unmatched poll.",
+    "Existing zone-touch-cancel availability suite failure is outside these 33 cases; no full availability-suite claim.",
+    "ASan leak detection disabled intentionally by fixture; pass establishes no detected address/UB violations, not leak freedom."
+  ],
+  "review_path": "independent host rerun"
+}
