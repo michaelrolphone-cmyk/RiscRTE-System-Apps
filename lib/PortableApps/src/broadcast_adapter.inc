@@ -79,6 +79,9 @@ bool portable_broadcast_preference_result(bool enabled,bool saved) {
 }
 #endif
 static bool broadcast_tick(void) {
+#ifdef PORTABLE_HOME_PROVISION
+  if(home_provision_busy)return !failed&&!native_custody_retained;
+#endif
   if(native_custody_retained)return false;
 #ifdef PORTABLE_WIFI_SESSION_APP
   /* Poll completion even while deferring the advertiser, so Cancel progresses. */

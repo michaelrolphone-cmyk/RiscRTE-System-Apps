@@ -3,6 +3,9 @@
  * Its saved frame is app-owned; no lease or callback crosses service calls. */
 #include "PortableAlarmClient.h"
 static portable_alarm_client alarms;
+#ifdef PORTABLE_HOME_PROVISION
+static bool home_provision_alarm_busy(void){return portable_alarm_cue(&alarms);}
+#endif
 #if defined(PORTABLE_WIFI_SESSION_APP) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
 #define PORTABLE_WIFI_SERVICE_LEASE
 static bool alarm_refresh_pending,alarm_ack_pending,alarm_service_deferred;
@@ -341,6 +344,10 @@ static bool alarm_foreground(bool *consumed) {
     for(unsigned n=0;alarms.status.state==ALARM_STATE_LOADING || portable_alarm_cue(&alarms);n++) {
         if(n>=64){failed=true;return alarm_failure();}
         if(portable_alarm_cue(&alarms)){
+#ifdef PORTABLE_HOME_PROVISION
+            int rc=home_provision_close();
+            if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
+#endif
 #if defined(PORTABLE_BLE_BROADCAST) || defined(PORTABLE_CONTEXTS_CLIENT)
             if(!portable_background_stop())return false;
 #endif
