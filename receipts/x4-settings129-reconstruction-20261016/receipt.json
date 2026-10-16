@@ -1,0 +1,31 @@
+{
+  "status": "incomplete_exact_binary_reconstruction",
+  "target": {
+    "version": "1.3.29",
+    "bytes": 153132,
+    "sha256": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7"
+  },
+  "candidate": {
+    "bytes": 153144,
+    "sha256": "841c2415e284390b2be538c2ea2f4689de4bf7613dec5a2b3a6b9737d5e4f046"
+  },
+  "system_base": "a3504d4f8f342d9d78383978e8b70032d0097c23",
+  "local_diagnostic_commit": "d0c812e4ecb26352bbb95a43b8390a13329e32df",
+  "patch_sha256": "0bbe72ecd22242542a9ef0387e82b87168978a7ebeabaeacf888c395fc5f0557",
+  "native_time_sdk_source": "274bc66f193cbe29018d2a85c9400cb0dce8aacc",
+  "resident_sdk_source": "a91edf3fada6a559ec107186dd163d0c8da10d29",
+  "utilities_source": "e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d",
+  "compiler": "xtensa-esp32s3-elf-gcc 8.4.0 (esp-2021r2-patch5)",
+  "postprocessing": [
+    "--discard-all",
+    "--remove-section=.xt.prop",
+    "--remove-section=.xt.lit"
+  ],
+  "facts": [
+    "Target 153132 bytes; candidate 153144 bytes.",
+    "Text size differs by 12 bytes; .rodata, .got.loc, .data.rel.ro and .bss sizes match.",
+    "Normalized text agrees up to 0x9788, then helper ordering differs.",
+    "Exact producer receipt remains missing. RTC behavior qualification is pending."
+  ],
+  "watch_evidence": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/pull/116"
+}
