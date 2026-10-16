@@ -1,0 +1,89 @@
+name: Current automatic provisioning
+on:
+  pull_request:
+    paths:
+      - 'Services/installed_apps/**'
+      - 'lib/PortableApps/**'
+      - 'Apps/paper*'
+      - 'scripts/*provision*'
+      - 'scripts/build_paper_clock.py'
+      - 'scripts/portable_*_build.py'
+      - 'scripts/test_deferred_home_radios.py'
+      - 'scripts/test_automatic_foreground.sh'
+      - 'scripts/test_installed_apps_automatic.sh'
+      - 'scripts/test_installed_apps_boot_profile.sh'
+      - 'test/native_apps/**'
+      - '.github/workflows/automatic-provisioning.yml'
+  push:
+    branches: [work/provisioning-current-20261016]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  service:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        sanitize: [0, 1]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 46ab0039f7a8f514716996115a770c2151383669
+          path: .deps/runtime
+          persist-credentials: false
+      - name: Current controller and service transaction gates
+        env:
+          RUNTIME_REPO: ${{ github.workspace }}/.deps/runtime
+          SANITIZE: ${{ matrix.sanitize }}
+          SANITIZERS: address,undefined
+          ASAN_OPTIONS: detect_leaks=0:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1
+        run: |
+          bash scripts/test_automatic_foreground.sh
+          bash scripts/test_installed_apps_automatic.sh
+          bash scripts/test_installed_apps_boot_profile.sh
+  home:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 46ab0039f7a8f514716996115a770c2151383669
+          path: .deps/runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: c9ecac4058ead7a82b0f74560ac5b19f0b858b3f
+          path: .deps/x4
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: .deps/reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          path: .deps/utilities
+          persist-credentials: false
+      - name: Real Home lifecycle, strict native time and network session
+        run: |
+          python3 scripts/test_home_provision.py --runtime .deps/runtime --x4 .deps/x4 \
+            --sdk .deps/reader/sdk/driver --utilities .deps/utilities --output build/home-provision
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-provision-source-evidence
+          path: build/home-provision/*.json

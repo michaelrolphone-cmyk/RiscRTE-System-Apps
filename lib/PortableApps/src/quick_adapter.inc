@@ -425,6 +425,11 @@ static bool quick_dispatch_destination(const char *quick_destination) {
 }
 static bool quick_foreground(bool *consumed) {
  *consumed=false;
+#ifdef PORTABLE_HOME_PROVISION
+ if(quick_open_requested||pqa_visible(&quick.ui)||pqa_capture(&quick.ui)){
+  int rc=home_provision_close();if(rc!=INSTALLED_APPS_OK){*consumed=true;return rc==INSTALLED_APPS_WORKING;}
+ }
+#endif
  if(!quick_restore_step())return false;
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(failed || native_custody_retained)return false;

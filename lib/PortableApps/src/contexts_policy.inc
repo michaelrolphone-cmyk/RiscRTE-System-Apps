@@ -78,6 +78,9 @@ static bool contexts_face_save(const risc_key_value_v1 *kv,unsigned id) {
 #include "contexts_clock.inc"
 #endif
 static bool contexts_tick(void) {
+#ifdef PORTABLE_HOME_PROVISION
+  if(home_provision_busy)return !failed&&!native_custody_retained;
+#endif
   if(failed||native_custody_retained)return false;
 #ifdef PORTABLE_FILE_SHARING
   if(portable_file_browser_sharing_active())return true;
