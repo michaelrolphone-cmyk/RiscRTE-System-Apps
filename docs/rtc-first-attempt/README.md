@@ -49,6 +49,9 @@ The initial local run used System `cb483470887b5198e2f3cd2457586ef6622142a9`.
 All tracked source and test blobs equal System main
 `769cde61ae0c69b602843ce293985deb2c4fc187`; only two unrelated workflow files
 differed. The qualification PR is based on main and preserves those workflows.
+The local Waveshare receipt names unpublished source `b5931645`; CI pins
+published `92be7bd0b3666dfdf63d468f9206762cd1804053`. Their driver/include blobs
+are identical; the only two tree differences are release-enablement documents.
 
 ## Delivered Settings lineage and limits
 

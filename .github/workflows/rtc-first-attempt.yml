@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/riscrte-wavshare-s3-touch-amoled-2.06
-          ref: b5931645853b6d7b5d74211b1a0b397cc80a1331
+          ref: 92be7bd0b3666dfdf63d468f9206762cd1804053
           path: .deps/waveshare
       - name: Real Settings, RTC providers and alarm service, normal and sanitizers
         run: >-
