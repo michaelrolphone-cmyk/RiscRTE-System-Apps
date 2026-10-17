@@ -1,0 +1,40 @@
+{
+  "observed_at": "2026-10-17T17:46:00Z",
+  "candidate_commit": "95610f4148153ccc1603c30fdb88b657f9809188",
+  "ci_run": 39054473089,
+  "ci_job": 117459516473,
+  "artifact_id": 12109321538,
+  "artifact_sha256": "0cfef889c3ba881f46e72e51bfcd95f26c390ab2f64079a6f5b8976e3bcd5c81",
+  "elf_sha256": "4d02c395baf48043daeed1e0d19a3c6781f56dd00007239bbaa09eb895195fc5",
+  "validator_sha256": "67b6a0c09038821cb51c7d04a0c00d8c7e25eb974f3d4df6e51fa95febbf46fe",
+  "first_rejection": {
+    "section": ".rela.dyn",
+    "section_index": 4,
+    "entry_index": 3308,
+    "type": 0,
+    "offset": 0,
+    "info": 0,
+    "addend": 0,
+    "predicate": "type not in [2,3,4,5]",
+    "source_lines": [
+      71,
+      72,
+      73
+    ]
+  },
+  "method": "Scratch-only instrumentation inserts diagnostics without changing validator branches; first rejection reproduced against exact downloaded CI ELF. No production validator or artifact changed.",
+  "linked_helpers": [
+    "__divdi3 local definition",
+    "__moddi3 local definition"
+  ],
+  "limits": [
+    "Helper linkage and invalid relocations coexist; full corrected target rebuild is required to establish repair.",
+    "Host geometry tests alone do not establish freestanding target ABI or loader admission."
+  ],
+  "files": {
+    "validator": "010a607c63b19351e3f2a2de40c5c604dd708c4eba6fb80beb7254fe23fc7b00",
+    "result.log": "82097d8d7b074c390eca9cb7e80f28615427c69e94a90180dd237edccb340d31",
+    "driver.c": "cd97ad936a3ddf43738311621d41c2cb4071fcf68abd70656614238db1d71440",
+    "validator.c": "5d70b4640f1e9be007e5d195a18a99c9cf2937f0e4e2d8894b9fe3c8d24e3bac"
+  }
+}

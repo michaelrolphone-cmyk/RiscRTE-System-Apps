@@ -175,7 +175,12 @@ static void raster_execute(const raster_command*c) {
 #ifdef PORTABLE_QUICK_ACTIONS
   case RS_QA_RENDER:
    if(!pqa_render_rows(&surface,c->pixels,s,a[0],(uint8_t)a[1],(unsigned)raster_band_top,(unsigned)(raster_band_bottom-raster_band_top)))failed=true;
-   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;(void)raster_checkpoint();break;
+#ifdef PORTABLE_QUICK_NATIVE
+   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*info.width;
+#else
+   raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;
+#endif
+   (void)raster_checkpoint();break;
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   case RS_QR_TEXT:{const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};qr_text(fonts[a[0]],a[1],a[2],s,a[3],a[4],a[5],a[6]);break;}
   case RS_QR_ROUND:qr_round(a[0],a[1],a[2],a[3],a[4],a[5]);break;

@@ -1,0 +1,62 @@
+name: Native alarm RGB adapter selection
+on:
+  pull_request:
+    paths:
+      - 'lib/PortableApps/**'
+      - 'scripts/portable_quick_build.py'
+      - 'scripts/test_alarm_native*.py'
+      - 'test/native_apps/alarm_native*.c'
+      - 'test/native_apps/portable_handoff_test.c'
+      - '.github/workflows/alarm-native-adapter.yml'
+  push:
+    branches: [work/native-alarm-rgb-20261017]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  alarm-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 80efb298c9ca8d0f62f9a31840c9e51d380b40f6
+          path: .dependencies/utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .dependencies/runtime
+          persist-credentials: false
+      - name: Explicit selection, bounded geometry and real modal
+        run: |
+          python scripts/test_alarm_native_selection.py -v
+          python scripts/test_quick_native_selection.py -v
+          python scripts/test_alarm_native_layout.py --output build/alarm-native-layout
+          python scripts/test_alarm_native_optout.py --output build/alarm-native-optout
+          python scripts/test_alarm_native_adapter.py --output build/alarm-native-adapter
+      - name: Existing alarm and modal custody regressions
+        run: |
+          python scripts/test_portable_alarm.py
+          python scripts/test_portable_raster_custody.py --output build/alarm-custody-normal
+          python scripts/test_portable_raster_custody.py --output build/alarm-custody-sanitized --sanitize
+          python scripts/test_portable_alarm_terminal.py --runtime .dependencies/runtime --utilities .dependencies/utilities
+          python scripts/test_alarm_busy_adapter.py --runtime .dependencies/runtime --utilities .dependencies/utilities --output build/alarm-busy
+          python scripts/test_alarm_frame_progress.py --runtime .dependencies/runtime --utilities .dependencies/utilities --output build/alarm-frame-progress
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-alarm-adapter-evidence
+          path: |
+            build/alarm-native-adapter/**
+            build/alarm-native-layout/**
+            build/alarm-native-optout/**
+            build/alarm-custody-*/*.json
+          if-no-files-found: error

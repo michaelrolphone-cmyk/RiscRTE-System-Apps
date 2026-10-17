@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "PortablePaperGeometry.h"
 #ifdef ALARM_SERVICE_TAGGED_V2
 #define quick_alarm_output_modes() alarm_output_modes()
 #else
@@ -6,7 +7,9 @@
 #endif
 /* NOVA-7 paper sheet: large two-column tiles, static 1-bit presentation.
  * Uses existing licensed quick-control masks and shared paper text. */
+#ifndef PORTABLE_RESIDENT_SHELL_HOST
 static int qp_x(int x){return x*width()/480;}
+#endif
 #ifdef PORTABLE_PAPER_TRANSITIONS
 static int qp_offset;
 static bool quick_copy_background(void);
@@ -14,10 +17,22 @@ static int qp_y(int y){return (y+qp_offset)*height()/800;}
 #else
 static int qp_y(int y){return y*height()/800;}
 #endif
-static void qp_rect(int x,int y,int w,int h,bool black){fill(qp_x(x),qp_y(y),qp_x(w),h*height()/800,black?0:0xffff);}
+static void qp_rect(int x,int y,int w,int h,bool black){
+ int32_t px,py,pw,ph;int offset=0;
+#ifdef PORTABLE_PAPER_TRANSITIONS
+ offset=qp_offset;
+#endif
+ if(portable_paper_project_axis(x,w,0,(uint32_t)width(),480,&px,&pw)&&
+    portable_paper_project_axis(y,h,offset,(uint32_t)height(),800,&py,&ph))
+  fill(px,py,pw,ph,black?0:0xffff);
+}
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
 static void qp_text(int x,int y,int w,const char *s,bool heading,bool black) {
- pp_text(qp_x(x),qp_y(y),qp_x(w),s,heading?2:1,heading,black);
+ int max_width=qp_x(w);unsigned options=heading?2u:1u;
+ /* Keep complete state labels inside their native slot at narrow paper widths.
+  * Existing glyph height and all reference-size pixels remain unchanged. */
+ if(pp_measure(s,heading)>max_width)options|=PAPER_TEXT_FIT;
+ pp_text(qp_x(x),qp_y(y),max_width,s,options,heading,black);
 }
 #define qp_tile qp_rect
 static void qp_icon(unsigned icon,int x,int y,bool black){

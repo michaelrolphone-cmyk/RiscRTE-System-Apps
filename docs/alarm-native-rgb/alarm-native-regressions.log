@@ -1,0 +1,194 @@
+BEGIN test_portable_alarm.py []
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+Visual-only Settings preserves stored modes and grants; unsupported choices do not write
+Visual-only Settings preserves stored modes and grants; unsupported choices do not write
+END test_portable_alarm.py
+BEGIN test_portable_raster_custody.py ['--output', '/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal']
+raster custody no-op-settle PASS
+alarm reset failure stops before normal service I/O passed
+raster custody non-cooperative-clear PASS
+raster custody sticky-direct-restore PASS
+raster custody quick-direct-overlay PASS
+raster custody quick-interrupted PASS
+raster custody quick-interrupted-partial PASS
+raster custody quick-action-partial PASS
+quick adapter scenario 0 passed
+raster custody bitmap-allocation-acquire-failure PASS
+raster custody aborted-recording-cleanup PASS
+raster custody failed-partial-cleanup PASS
+raster custody offscreen-allocation-recovery PASS
+raster custody quick-watch-immutable PASS
+raster custody quick-watch-state-oom PASS
+raster custody quick-watch-node-oom PASS
+raster custody quick-watch-capacity PASS
+raster custody quick-watch-offscreen-oom PASS
+Raster custody: 18 cases passed
+END test_portable_raster_custody.py
+BEGIN test_portable_raster_custody.py ['--output', '/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized', '--sanitize']
+raster custody no-op-settle PASS
+alarm reset failure stops before normal service I/O passed
+raster custody non-cooperative-clear PASS
+raster custody sticky-direct-restore PASS
+raster custody quick-direct-overlay PASS
+raster custody quick-interrupted PASS
+raster custody quick-interrupted-partial PASS
+raster custody quick-action-partial PASS
+quick adapter scenario 0 passed
+raster custody bitmap-allocation-acquire-failure PASS
+raster custody aborted-recording-cleanup PASS
+raster custody failed-partial-cleanup PASS
+raster custody offscreen-allocation-recovery PASS
+raster custody quick-watch-immutable PASS
+raster custody quick-watch-state-oom PASS
+raster custody quick-watch-node-oom PASS
+raster custody quick-watch-capacity PASS
+raster custody quick-watch-offscreen-oom PASS
+Raster custody: 18 cases passed
+END test_portable_raster_custody.py
+BEGIN test_portable_alarm_terminal.py ['--runtime', '/tmp/quick-native-adapter-20261017/build/alarm-external/runtime', '--utilities', '/tmp/quick-native-adapter-20261017/build/alarm-external/utilities']
+API1 production adapter storage PASS
+API1 production adapter rtc PASS
+API1 production adapter step-retained PASS
+API1 production adapter status-retained PASS
+API1 production adapter copied-retained PASS
+API1 production adapter quick-retained PASS
+API1 production adapter ack-retained PASS
+API1 production adapter stop-retained PASS
+API1 production adapter global-retained PASS
+API1 production adapter storage PASS
+API1 production adapter rtc PASS
+API1 production adapter step-retained PASS
+API1 production adapter status-retained PASS
+API1 production adapter copied-retained PASS
+API1 production adapter quick-retained PASS
+API1 production adapter ack-retained PASS
+API1 production adapter stop-retained PASS
+API1 production adapter global-retained PASS
+API2 production client: exact negotiation, complete descriptor, safe errors and retained no-I/O PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter global-retained PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+API2 production client: exact negotiation, complete descriptor, safe errors and retained no-I/O PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter global-retained PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+Selected API1/API2: 40 adapter cases plus descriptor/client matrices PASS
+END test_portable_alarm_terminal.py
+BEGIN test_alarm_busy_adapter.py ['--runtime', '/tmp/quick-native-adapter-20261017/build/alarm-external/runtime', '--utilities', '/tmp/quick-native-adapter-20261017/build/alarm-external/utilities', '--output', '/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy']
+API2 production adapter busy-cold PASS
+API2 production adapter busy-mid PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter busy-cold PASS
+API2 production adapter busy-mid PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter busy-cold PASS
+API2 production adapter busy-mid PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter global-retained PASS
+API2 production adapter busy-cold PASS
+API2 production adapter busy-mid PASS
+API2 production adapter storage PASS
+API2 production adapter rtc PASS
+API2 production adapter visual PASS
+API2 production adapter sound PASS
+API2 production adapter step-retained PASS
+API2 production adapter status-retained PASS
+API2 production adapter copied-retained PASS
+API2 production adapter quick-retained PASS
+API2 production adapter ack-retained PASS
+API2 production adapter stop-retained PASS
+API2 production adapter global-retained PASS
+Alarm client: 1000 deferred ticks at startup/mid-reconciliation, visible real errors and terminal-custody regressions; both clients normal + ASan/UBSan PASS
+END test_alarm_busy_adapter.py
+BEGIN test_alarm_frame_progress.py ['--runtime', '/tmp/quick-native-adapter-20261017/build/alarm-external/runtime', '--utilities', '/tmp/quick-native-adapter-20261017/build/alarm-external/utilities', '--output', '/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame']
+busy-queued: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-hardware: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-worker: submits=1 scheduler_ms=1325 queued=0 token=0 loading=0
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-queued: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-hardware: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-worker: submits=1 scheduler_ms=1325 queued=0 token=0 loading=0
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-queued: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-hardware: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-worker: submits=1 scheduler_ms=1325 queued=0 token=0 loading=0
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-queued: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-hardware: submits=1 scheduler_ms=128 queued=0 token=0 loading=1
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+busy-worker: submits=1 scheduler_ms=1325 queued=0 token=0 loading=0
+PASS: queued graphics, async display and native worker progress; input remains quarantined while loading
+PASS: 12 foreground alarm/frame cases; normal and ASan/UBSan, both client variants
+END test_alarm_frame_progress.py
+PASSED 164 existing regression process executions

@@ -1,0 +1,64 @@
+{
+  "observed_at": "2026-10-17T15:33:16.753928+00:00",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "native_adapter": {
+    "configurations": 12,
+    "functional_geometry_executions": 60,
+    "unsupported_geometry_rejections": 16,
+    "compile_guard_rejections": 2,
+    "compiler_dependency_files": 71,
+    "normal_and_asan_ubsan": true,
+    "direct_and_snapshot": true,
+    "oom_fallback": true,
+    "delayed_success": true,
+    "real_modal_close_restore": true
+  },
+  "selector_tests": 8,
+  "selector_off_regressions": {
+    "adapter": 104,
+    "paper": 124,
+    "home_input_runs": 2,
+    "pure_core": 2,
+    "session": 2,
+    "render_fixture_runs": 4,
+    "total_executions": 238
+  },
+  "baseline_comparison": {
+    "native_adapter_assertion_fails_before_fix": true,
+    "identical_selector_off_preprocessed_token_units": 12
+  },
+  "limitations": [
+    "Host providers only; no physical device, runtime timing or new release/catalog claim.",
+    "Existing published native-settings-1.4.0-dev1 limitations remain; these tests do not supersede release acceptance or qualify the stopped idle correction.",
+    "Shared alarm chrome, paper migration, sparse/resident Home and final app integration remain separate.",
+    "Compiler dependency manifest excludes system headers/toolchain; generated fixture is derived from recorded source fixture and runner."
+  ],
+  "log_sha256": {
+    "native-quick-union.log": "23269cc88d11b15ba0969898b6d2a8506ddd281d6c288d88d6d0742af25b6e39",
+    "selector-off-union-regressions.log": "0b9d93d14a16c6f9930c69165d95a2bb20226a7c416667b290ad918a1a21357b",
+    "union-selector-tests.log": "38c02005b8abf80a9683ba7d3bb3de854b3f72884832becf6ca062f95a3b3fb9",
+    "union-settings-builder-tests.log": "8503773927f966c0c6966336abb96c273040c701a9d8d3368f986be1a0fe3e54",
+    "union-baseline-comparison.log": "808f1b1fbb2369809f7236fd93b405c5ce612045c2ef9ca0f34d4d0e3fa3f5a0"
+  },
+  "unchanged_regression_scripts": {
+    "test_quick_actions.py": "c0dec944d3176368a6b83caeec555a6af6a4b026308fce5d3fc03dc36176ab53",
+    "test_paper_quick_actions.py": "f4117d63e4c01e6445bbf79d6b69fdeb2dc58c3a27160ccc06124db4505f4e40"
+  },
+  "published_parents": [
+    "f3bb53c9d8ed458d295aec18fef5d7733df581b1",
+    "fd6bc6065f6e409ed2d2ea1858bd56ab6d9e2fb3"
+  ],
+  "published_main_features": {
+    "passed": 54,
+    "unchanged": true,
+    "boundary": "Existing host fixtures built with explicit native Settings flags; no fixture coordinates changed. Native idle nested-coordinate cases 5 and 6 excluded; separately sized parent controller coverage owns native selectors."
+  },
+  "published_main_builder_tests": 14,
+  "receipt_sha256": {
+    "selector-off-regressions.json": "e9ed2d1892efae7b7155a72934125d2729a86f451ee7ab792a7a721ccdcce8ad",
+    "published-main-features.json": "c0cb5365de7aa9957b5f67b3195bae46a6e54e740dd1a43fdd62d42643754e6e",
+    "baseline-comparison.json": "4c5c9ce11e80d7ade09c2fd7ce449ae134fad331e42bfae103cb00f7e2dad6c3",
+    "adapter-host-results.json": "c79c624190cf22e7c0b43c3221c19dd5d93cba7449871ecc1e2db2f4f094e4e2",
+    "main-preservation.json": "3f32d3872f82ec8bc9fe35c64579fcf205538dd125b4ff9b1a6edb17015bf2f2"
+  }
+}
