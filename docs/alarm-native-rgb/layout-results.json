@@ -1,0 +1,28 @@
+{
+  "rows": [
+    {
+      "sanitized": false,
+      "passed": true,
+      "layouts": 100882,
+      "blocked_layouts": 50438,
+      "hit_assertions": 1058351,
+      "invalid": 5,
+      "binary_sha256": "c0e5e5bba18295a01e7d45410fa00b74d8b983812b67b99b428b885d4dc18ae1"
+    },
+    {
+      "sanitized": true,
+      "passed": true,
+      "layouts": 100882,
+      "blocked_layouts": 50438,
+      "hit_assertions": 1058351,
+      "invalid": 5,
+      "binary_sha256": "6ba0c891d0b3693946501e0683fec95cff070b67f4111584c6c9f0caf221fdf3"
+    }
+  ],
+  "scope": "Pure rectangle and hit boundaries, not renderer or hardware acceptance",
+  "source_sha256": {
+    "lib/PortableApps/include/PortableAlarmLayout.h": "87b59eb7bbf7a06fd0f2fc82e6e6403d12d119ae5c6a0b26457eefe647dc77ff",
+    "test/native_apps/alarm_native_layout_test.c": "db5027bc297ccb8757c55245b930898eb125da3456ec9355e75b64a4cf82a2ca",
+    "scripts/test_alarm_native_layout.py": "ac0de6ca4ea0e5096b79d9143f441151ec75c939a467ea8fa06e9fbd1b088d02"
+  }
+}

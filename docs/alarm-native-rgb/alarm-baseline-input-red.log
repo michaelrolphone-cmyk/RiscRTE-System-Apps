@@ -1,0 +1,9 @@
+native-quick0-rot0-snapshot0-san0 stalled case=center size=410x502 state=2 acks=0 retries=0 script=2/2
+
+Traceback (most recent call last):
+  File "/tmp/quick-native-adapter-20261017/build/alarm-baseline-fbf/scripts/test_alarm_native_adapter.py", line 85, in <module>
+    print(name, result.stdout+result.stderr, flush=True); result.check_returncode()
+                                                          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 502, in check_returncode
+    raise CalledProcessError(self.returncode, self.args, self.stdout,
+subprocess.CalledProcessError: Command '['/tmp/quick-native-adapter-20261017/build/alarm-baseline-input-red/test-binary']' died with <Signals.SIGABRT: 6>.

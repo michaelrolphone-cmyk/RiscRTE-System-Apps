@@ -1,4 +1,10 @@
 #include "RiscRuntimeHostControlV1.h"
+#if defined(PORTABLE_ALARM_NATIVE) && (!defined(PORTABLE_ALARM_CLIENT) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS))
+#error "Native alarm requires explicitly selected alarm client, Nova UI and native canvas"
+#endif
+#if defined(PORTABLE_ALARM_NATIVE) && defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+#error "Native alarm requires generic foreground initialization"
+#endif
 #if defined(PORTABLE_QUICK_NATIVE) && !defined(PORTABLE_QUICK_ACTIONS)
 #error "Native Quick requires explicitly selected Quick Actions"
 #endif
