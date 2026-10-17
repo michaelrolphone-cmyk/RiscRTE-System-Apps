@@ -78,3 +78,20 @@ instances, return app and timezone policy remain those of the locked delivered
 recipe. The standalone artifact does not establish a device installation path.
 It does not replace, reserve a successor to, or mutate the immutable Wave .59
 firmware/payload association. Hardware qualification remains outstanding.
+
+## Ordered native idle qualification
+
+The shared native correction keeps automatic idle behind ordered reset
+cancellation, input resynchronization and held physical contacts. The actual
+Wi-Fi atomic/availability controller fixture checks first-poll cancellation at
+the idle deadline, contacts queued before presentation, contacts arriving during
+the first poll and early contacts. Normal and ASan/UBSan controls require zero
+sleep-helper entry while held, no unintended editor/network/storage action,
+and eventual ordinary idle after release.
+
+`test_native_wifi_idle_target.py` preprocesses the actual nine-input target
+recipe and verifies that its automatic-idle guard and complete Wi-Fi readiness
+body equal those exercised by the behavioral fixture. The other feature seams
+remain explicitly bounded; the full target build and production-loader
+admission qualify compilation and capability composition. No hardware result
+or device memory-fit claim is inferred from these tests.

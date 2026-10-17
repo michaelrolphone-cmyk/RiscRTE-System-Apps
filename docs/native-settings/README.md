@@ -140,3 +140,18 @@ source. They never overwrite that release or represent new source as its
 older artifact. A partial release requires explicit review before recovery.
 This no-overwrite policy is enforced by the publisher; it does not assert that
 GitHub's platform-level immutable-release setting is enabled.
+
+## Native idle and ordered cancellation
+
+The expanded successor check found a separate idle boundary at source
+`53fef0d0`: an initial completion cancellation could precede a newly captured
+DOWN at the idle deadline. Automatic sleep ran before the next edge reduction.
+`idle-cancellation-baseline.json` retains the exact trace and CI witness.
+
+Native Settings/Wi-Fi automatic idle now waits for ordered input progress and
+resynchronization to finish and accounts for physical held contacts even when
+a page boundary has made their gestures ineligible. The feature fixture keeps
+the neutral cancellation pass explicit; it does not turn it into a DOWN.
+Its 62 runs include held reset, no-contact cancellation, persistent failed-poll
+and invalid-snapshot recovery, while ordinary idle/wrap/refusal cases remain.
+The unselected-profile code remains preprocessor-excluded.

@@ -70,7 +70,7 @@ jobs:
           python scripts/test_native_settings_timers.py --output build/native-settings/timers-snapshot --snapshot --case 7 | tee build/native-settings/timers-snapshot.log
       - name: Complete recipe boundaries, Quick Controls and generic sleep/motion bridges
         run: |
-          python -m unittest discover -s tests -p 'test_native_settings_*.py' -v
+          python -m unittest discover -s tests -p 'test_native_settings_*.py' -v 2>&1 | tee build/native-settings/unit-tests.log
           python scripts/test_native_settings_features.py --system . --output build/native-settings/features
           python scripts/test_native_settings_bridges.py --system . --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --output build/native-settings/bridges
       - name: Install pinned public target compiler
