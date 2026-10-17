@@ -1,0 +1,49 @@
+{
+  "results": [
+    {
+      "sanitized": false,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/paper-geometry/normal"
+      ],
+      "binary_sha256": "b4bf5db88ee5929fcb0028d3a19398e54a3bf723ec297c81aeea15284f127140",
+      "stdout": "paper projection: intervals=26362 pixel_assertions=46629037 edge_assertions=50938 invalid_rejections=9 PASS\n",
+      "stderr": ""
+    },
+    {
+      "sanitized": true,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O2",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/paper_geometry_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/paper-geometry/sanitized"
+      ],
+      "binary_sha256": "e94aee5704118a6df9c71e167fc8ee4dada9c4970f095385045827edc064dec9",
+      "stdout": "paper projection: intervals=26362 pixel_assertions=46629037 edge_assertions=50938 invalid_rejections=9 PASS\n",
+      "stderr": ""
+    }
+  ],
+  "source_sha256": {
+    "lib/PortableApps/include/PortablePaperGeometry.h": "079d3c2dd8ea4d11b65c8aa717516d046bad148850415da445d8044119f21a4a",
+    "test/native_apps/paper_geometry_test.c": "d45ecb2377b475f23ef801433f8893e0e5c8a3eeafbd08d53f8ea9bb2586bb43",
+    "scripts/test_paper_geometry.py": "fcad4e07bccb9606d6583eb6c1ba706ff5b6a1656ac000778727bc87892c9869"
+  }
+}
