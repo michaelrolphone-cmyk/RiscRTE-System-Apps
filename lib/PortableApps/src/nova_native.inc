@@ -6,6 +6,9 @@ static void nu_native_pixel(int x,int y,uint32_t rgb,unsigned alpha) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
  if(raster_replaying){int axis=raster_band_columns?x:y;if(axis<raster_band_top||axis>=raster_band_bottom)return;}
 #endif
+#ifdef PORTABLE_TOUCH_SCROLL
+ if(raster_clip_active&&!portable_scroll_inside(&raster_clip,x,y))return;
+#endif
  if(surface_format==RISC_DISPLAY_FORMAT_MONO1){np_pixel(x,y,rgb,alpha);return;}
  native_point(&x,&y);
  uint8_t *p=(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes+(size_t)x*2;
@@ -41,6 +44,15 @@ void portable_nova_native_round(int x,int y,int w,int h,int radius,uint32_t rgb)
 }
 void portable_nova_native_fill(int x,int y,int w,int h,uint32_t rgb) {
  portable_nova_native_round(x,y,w,h,0,rgb);
+}
+/* Clip local glyph coordinates before sampling. Wide endpoints handle hostile
+ * offscreen positions; every resulting offset is within the original glyph. */
+static void nu_native_clip_axis(int64_t origin,int extent,int maximum,int *first,int *end) {
+ int64_t lo=origin<0?-origin:0,hi=(int64_t)maximum-origin;
+ if(lo>extent)lo=extent;
+ if(hi<lo)hi=lo;
+ if(hi>extent)hi=extent;
+ *first=(int)lo;*end=(int)hi;
 }
 #ifdef PORTABLE_RASTER_SNAPSHOT
 static bool nu_native_text_bounds(unsigned face,int x,int y,int max_width,const char*s,int *left,int *top,int *right,int *bottom){
@@ -83,21 +95,73 @@ void portable_nova_native_text(unsigned face,int x,int y,int max_width,const cha
   int gw=(int)(g->width*scale/256u),gh=(int)(g->height*scale/256u);
   if(gw<1&&g->width)gw=1;
   if(gh<1&&g->height)gh=1;
-  int first=0,end=gh;
+  int64_t gx=pen/16+((int)g->left*(int)scale/256),gy=(int64_t)y+((int)g->top*(int)scale/256);
+  int first,end,col_first,col_end;
+  nu_native_clip_axis(gy,gh,height(),&first,&end);
+  nu_native_clip_axis(gx,gw,width(),&col_first,&col_end);
+  int64_t clip_left=(int64_t)x-gx,clip_right=(int64_t)x+max_width-gx;
+  if(clip_left>col_first)col_first=clip_left<col_end?(int)clip_left:col_end;
+  if(clip_right<col_end)col_end=clip_right>col_first?(int)clip_right:col_first;
 #ifdef PORTABLE_RASTER_SNAPSHOT
-  if(!raster_band_columns)raster_rows((int64_t)y+((int)g->top*(int)scale/256),&first,&end);
-#endif
-  int col_first=0,col_end=gw;
-#ifdef PORTABLE_RASTER_SNAPSHOT
-  if(raster_band_columns)raster_rows((int64_t)pen/16+((int)g->left*(int)scale/256),&col_first,&col_end);
+  if(raster_band_columns)raster_rows(gx,&col_first,&col_end);
+  else raster_rows(gy,&first,&end);
 #endif
   for(int j=first;j<end;j++)for(int i=col_first;i<col_end;i++){
    unsigned sx=(unsigned)i*256u/scale,sy=(unsigned)j*256u/scale;if(sx>=g->width||sy>=g->height)continue;
    unsigned n=sy*g->width+sx,a=(g->bits[n/4]>>(6-2*(n%4)))&3;
-   int64_t px=pen/16+((int)g->left*(int)scale/256)+i,py=(int64_t)y+((int)g->top*(int)scale/256)+j;
-   if(px>=x&&px<(int64_t)x+max_width&&px>=INT_MIN&&px<=INT_MAX&&py>=INT_MIN&&py<=INT_MAX)
-    nu_native_pixel((int)px,(int)py,rgb,a*85);
+   nu_native_pixel((int)(gx+i),(int)(gy+j),rgb,a*85);
   }
   pen+=advance;
  }
+}
+/* Shared native icon lookup retains the selected profile's original OFL
+ * coverage bytes. Size describes a glyph box, never a completed UI surface. */
+static const rpi_glyph *nu_native_icon_glyph(const char *name) {
+ if(!name)return NULL;
+ for(unsigned i=0;i<sizeof(rpi_icons)/sizeof(rpi_icons[0]);i++)
+  if(!strcmp(rpi_icons[i].name,name))return &rpi_icons[i];
+#if defined(PORTABLE_SPRINGBOARD_TOUCH_SCROLL) || defined(PORTABLE_RESIDENT_LOADING)
+ if(!strcmp(name,rpi_springboard_gamepad.name))return &rpi_springboard_gamepad;
+#endif
+ return NULL;
+}
+_Static_assert((UINT64_C(2)*UINT16_MAX-1)*UINT8_MAX*128<=UINT32_MAX,
+ "Native icon sampling must fit uint32 without division helpers");
+static bool nu_native_icon_box(int x,int y,int size,const char *name,
+ const rpi_glyph **glyph,int64_t *left,int64_t *top,int *w,int *h) {
+ if(size<1||size>UINT16_MAX)return false;
+ const rpi_glyph*g=nu_native_icon_glyph(name);if(!g)return false;
+ unsigned maximum=g->width>g->height?g->width:g->height;
+ if(!maximum)return false;
+ *w=g->width*size/(int)maximum;*h=g->height*size/(int)maximum;
+ if(*w<1)*w=1;
+ if(*h<1)*h=1;
+ *left=(int64_t)x+(size-*w)/2;*top=(int64_t)y+(size-*h)/2;*glyph=g;return true;
+}
+bool portable_nova_native_icon(int x,int y,int size,const char *name,uint32_t rgb) {
+ const rpi_glyph*g;int64_t left,top;int w,h;
+ if(!nu_native_icon_box(x,y,size,name,&g,&left,&top,&w,&h))return false;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_record(RS_NU_NATIVE_ICON,(int32_t[8]){x,y,size,(int32_t)rgb},name))return true;
+#endif
+ int first,end,col_first,col_end;
+ nu_native_clip_axis(top,h,height(),&first,&end);
+ nu_native_clip_axis(left,w,width(),&col_first,&col_end);
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_band_columns)raster_rows(left,&col_first,&col_end);
+ else raster_rows(top,&first,&end);
+#endif
+ for(int j=first;j<end;j++)for(int i=col_first;i<col_end;i++){
+  /* uint8 glyph dimensions and uint16 output extents keep these products
+   * within uint32, without target 64-bit division helpers. */
+  int u=(int)(((2u*(unsigned)i+1u)*g->width*128u)/(unsigned)w)-128;
+  int v=(int)(((2u*(unsigned)j+1u)*g->height*128u)/(unsigned)h)-128;
+  int sx=u>=0?u/256:-1,sy=v>=0?v/256:-1;
+  unsigned fx=(unsigned)(u-sx*256),fy=(unsigned)(v-sy*256);
+  unsigned a=np_coverage(g,sx,sy)*(256-fx)+np_coverage(g,sx+1,sy)*fx;
+  unsigned b=np_coverage(g,sx,sy+1)*(256-fx)+np_coverage(g,sx+1,sy+1)*fx;
+  unsigned coverage=a*(256-fy)+b*fy;
+  nu_native_pixel((int)(left+i),(int)(top+j),rgb,(coverage*255u+98304u)/196608u);
+ }
+ return true;
 }
