@@ -7,7 +7,7 @@ on:
       - 'scripts/*native_settings*'
       - 'scripts/build_portable_settings.py'
       - 'test/native_apps/**'
-      - 'tests/test_native_settings_build.py'
+      - 'tests/test_native_settings_*.py'
       - '.github/workflows/native-settings.yml'
   push:
     branches: [main]
@@ -68,7 +68,7 @@ jobs:
           python scripts/test_native_settings_timers.py --output build/native-settings/timers-snapshot --snapshot --case 7 | tee build/native-settings/timers-snapshot.log
       - name: Complete recipe boundaries, Quick Controls and generic sleep/motion bridges
         run: |
-          python -m unittest discover -s tests -p test_native_settings_build.py -v
+          python -m unittest discover -s tests -p 'test_native_settings_*.py' -v
           python scripts/test_native_settings_features.py --system . --output build/native-settings/features
           python scripts/test_native_settings_bridges.py --system . --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --output build/native-settings/bridges
       - name: Install pinned public target compiler
@@ -81,6 +81,9 @@ jobs:
         run: |
           python scripts/build_native_settings_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-settings/app
           python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.0' and len(r['required_capabilities'])==16"
+          python scripts/report_native_settings_memory.py --elf build/native-settings/app/settings.elf --runtime ../runtime --output build/native-settings/admission
+          cp build/native-settings/admission/elf-memory-admission.json build/native-settings/app/memory-admission.json
+          cp docs/native-settings/retained-memory-comparison.json build/native-settings/app/retained-memory-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -93,3 +96,22 @@ jobs:
             source/build/native-settings/app/licenses/
           if-no-files-found: error
           retention-days: 30
+  publish-development:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: qualify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-settings-software-qualification-${{ github.sha }}
+          path: qualified
+      - name: Publish or verify immutable standalone development release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_native_settings.py --artifact qualified --repository '${{ github.repository }}' --source-sha '${{ github.sha }}'

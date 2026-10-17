@@ -84,3 +84,30 @@ baseline, then builds the complete native target. Existing Nova, paper/X4,
 timezone, RTC/alarm and shared typography/geometry workflows remain independent
 regression gates. Receipts contain actual case results and source hashes;
 software success makes no hardware qualification claim.
+
+## Allocation and persistent publication
+
+The native ELF is 325,660 bytes, compared with the retained 157,124-byte file.
+File size is not resident memory: the selected section-loader requests 97,790
+executable bytes and 148,321 data bytes including alignment allowance. The
+246,111-byte section total is 43,536 bytes above the retained 202,575-byte
+request. Export tables, allocator overhead, cache, stacks, runtime/providers
+and dynamic app/frame/Quick Controls/sleep buffers are additional. A sleep
+snapshot alone can require `2 * native_width * native_height` bytes.
+
+`report_native_settings_memory.py` derives exact ELF section/program headers
+and verifies data allocation/placement against the pinned production helper.
+The pinned ordinary-app admission check accepts both exact native and retained
+ELFs and rejects missing imports, unsafe lifecycle state and the wrong role,
+normally and under ASan/UBSan. This is bounded structural admission, not
+relocation, execution, device grants or a linked-device heap-fit test. The
+retained comparison is in `retained-memory-comparison.json`; CI regenerates
+the native report from its exact target ELF.
+
+After a successful main-push qualification, the main-only publication job
+publishes the immutable `native-settings-1.4.0-dev1` prerelease. Direct assets
+include ELF, manifest, recipe, build/allocation receipts and SHA256SUMS; its
+compressed archive includes the exact qualification evidence and notices.
+Later main runs verify and skip an existing completed tag at its original
+source. They never overwrite that release or represent new source as its
+older artifact. A partial release requires explicit review before recovery.
