@@ -418,11 +418,10 @@ static bool alarm_foreground(bool *consumed) {
         if(!portable_wifi_services_safe())return alarm_wifi_pause(saved);
 #endif
         portable_touch_sample sample;input_take(&sample);
-#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
-#ifdef PORTABLE_ALARM_NATIVE
-        if(pp_enabled())
-#endif
-        if(info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
+#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_ALARM_NATIVE)
+        /* Paper draws and hits in native coordinates; only the legacy RGB
+         * alarm view needs the native-height sample projected to 240 units. */
+        if(!pp_enabled() && info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
 #endif
         uint32_t buttons=navigation_pending;navigation_pending=0;
         bool tap=sample.valid && sample.released && sample.tap_eligible && !sample.moved && !sample.cancelled;
