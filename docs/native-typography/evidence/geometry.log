@@ -1,0 +1,30 @@
+native geometry 1x1 admission/direct/replay/guards/cleanup PASS
+native geometry 128x64 admission/direct/replay/guards/cleanup PASS
+native geometry 160x96 admission/direct/replay/guards/cleanup PASS
+native geometry 240x240 admission/direct/replay/guards/cleanup PASS
+native geometry 410x502 admission/direct/replay/guards/cleanup PASS
+native geometry 502x410 admission/direct/replay/guards/cleanup PASS
+native geometry 800x480 admission/direct/replay/guards/cleanup PASS
+native geometry 1025x256 admission/direct/replay/guards/cleanup PASS
+native geometry 256x2049 admission/direct/replay/guards/cleanup PASS
+native geometry 4096x16 admission/direct/replay/guards/cleanup PASS
+native geometry 65535x1 admission/direct/replay/guards/cleanup PASS
+ABI byte/stride/dimension boundary checks PASS
+native geometry 1x1 admission/direct/replay/guards/cleanup PASS
+native geometry 128x64 admission/direct/replay/guards/cleanup PASS
+native geometry 160x96 admission/direct/replay/guards/cleanup PASS
+native geometry 240x240 admission/direct/replay/guards/cleanup PASS
+native geometry 410x502 admission/direct/replay/guards/cleanup PASS
+native geometry 502x410 admission/direct/replay/guards/cleanup PASS
+native geometry 800x480 admission/direct/replay/guards/cleanup PASS
+native geometry 1025x256 admission/direct/replay/guards/cleanup PASS
+native geometry 256x2049 admission/direct/replay/guards/cleanup PASS
+native geometry 4096x16 admission/direct/replay/guards/cleanup PASS
+native geometry 65535x1 admission/direct/replay/guards/cleanup PASS
+ABI byte/stride/dimension boundary checks PASS
+profile 0: 18 complete adapter init/fini and native input-edge cases PASS
+profile 0: 18 complete adapter init/fini and native input-edge cases PASS
+profile 1: 18 complete adapter init/fini and native input-edge cases PASS
+profile 1: 18 complete adapter init/fini and native input-edge cases PASS
+profile 2: 18 complete adapter init/fini and native input-edge cases PASS
+profile 2: 18 complete adapter init/fini and native input-edge cases PASS

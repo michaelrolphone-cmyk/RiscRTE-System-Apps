@@ -1161,9 +1161,9 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_TEXT,(int32_t[8]){x,y,limit,color},s))return;
 #endif
-  if (!s)
+  if (!s || limit<=0 || x>=width() || (int64_t)x+128*6<=0 || y>=height() || (int64_t)y+7<=0)
     return;
-  int row_first=0,row_end=7;
+  int row_first=y<0?-y:0,row_end=(int64_t)y+7>height()?height()-y:7;
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(y,&row_first,&row_end);
 #endif
@@ -1174,6 +1174,8 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
     int g = c >= '0' && c <= '9' ? c - '0'
                                  : (c >= 'A' && c <= 'Z' ? c - 'A' + 10 : -1);
     for (int col = 0; col < 5; ++col) {
+      int64_t px=(int64_t)x+k*6+col;
+      if(px<0||px>=width())continue;
       unsigned bits =
           g >= 0
               ? glyphs[g][col]
@@ -1185,12 +1187,14 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
                                         : 0)));
       for (int row = row_first; row < row_end; ++row)
         if (bits & (1u << row))
-          fill(x + k * 6 + col, y + row, 1, 1, color);
+          fill((int)px, y + row, 1, 1, color);
     }
   }
 }
 static void text(int32_t x, int32_t y, const char *s) {
-  text_color(x, y, s, (width() - x) / 6, 0);
+  int64_t remaining=(int64_t)width()-x;
+  int available=remaining<0?0:remaining>128*6?128*6:(int)remaining;
+  text_color(x,y,s,available/6,0);
 }
 static void label(int32_t x, int32_t y, int32_t w, const char *s) {
   int n = 0;
@@ -1200,7 +1204,8 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
     ++n;
   if (n > w / 6)
     n = w / 6;
-  text_color(x + (w - n * 6) / 2, y, s, n, 0);
+  int64_t left=(int64_t)x+((int64_t)w-n*6)/2;
+  if(left>=INT_MIN&&left<=INT_MAX)text_color((int)left,y,s,n,0);
 }
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
 #include "native_toolbar.inc"

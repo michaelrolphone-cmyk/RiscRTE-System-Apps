@@ -57,9 +57,9 @@
     if(!paper_preferences_pending)paper_flip_ui=value!=0;
   }
 #endif
-#if defined(PORTABLE_RF_NATIVE_CANVAS)
-  /* RF paints native pixels on every admitted color aspect ratio. Its editor
-   * layout has its own bounded viewport and does not require 240 logical rows. */
+#if defined(PORTABLE_NATIVE_CANVAS)
+  /* Native callers paint capability-sized pixels on any admitted color aspect
+   * ratio. Legacy 240-wide NOVA callers are not implicitly migrated. */
   if(!pp_enabled() && surface_format!=RISC_DISPLAY_FORMAT_RGB565)return -1;
 #elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || nu_height()<=0)return -1;

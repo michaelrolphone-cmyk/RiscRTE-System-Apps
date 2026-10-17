@@ -1,0 +1,29 @@
+Production app/adapter capture: 1 frames, 0 polls, 0 ms; all grants released; stride guards intact
+Standard Watch keyboard: all 95 ASCII characters, three pages, 35 controls and exhaustive Points0.4.2 hit-map parity passed
+Production app/adapter capture: 0 frames, 92 polls, 301 ms; all grants released; stride guards intact
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+Production app/adapter capture: 1 frames, 0 polls, 0 ms; all grants released; stride guards intact
+Standard Watch keyboard: all 95 ASCII characters, three pages, 35 controls and exhaustive Points0.4.2 hit-map parity passed
+Production app/adapter capture: 0 frames, 92 polls, 301 ms; all grants released; stride guards intact
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm display-failure bounded stop-only passed
+alarm display-failure bounded stop-only passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm retained frame/input/exact dismiss/retry passed
+alarm reset failure stops before normal service I/O passed
+native-retained sleep bypasses service cleanup/fini and keeps grants passed
+Nova primitives, 95 keyboard characters and 22 retained-modal scenarios passed

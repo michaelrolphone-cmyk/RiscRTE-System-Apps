@@ -13,13 +13,24 @@ class WatchColorProfile(unittest.TestCase):
   for name in ('adapter.c','nova.inc','paper.inc','quick_adapter.inc','foreground_adapter_open.inc'):
    s=(ROOT/'lib/PortableApps/src'/name).read_text()
    self.assertNotRegex(s,r'^\s*#define\s+PORTABLE_WATCH_(COLOR_ONLY|FROZEN_ICONS)\b',name)
+ def test_native_alias_is_explicit(self):
+  # Preprocess the public feature header; do not infer selection from comments.
+  for defines in ([],['PORTABLE_NATIVE_CANVAS'],['PORTABLE_RF_NATIVE_CANVAS']):
+   command=[os.environ.get('CC','cc'),'-dM','-E','-x','c',
+    *['-D'+d for d in defines],str(ROOT/'lib/PortableApps/include/PortableNativeCanvas.h')]
+   macros=subprocess.check_output(command,text=True,stderr=subprocess.DEVNULL)
+   selected={line.split()[1] for line in macros.splitlines() if line.startswith('#define ')}
+   self.assertEqual('PORTABLE_NATIVE_CANVAS' in selected,bool(defines))
+   self.assertEqual('PORTABLE_RF_NATIVE_CANVAS' in selected,'PORTABLE_RF_NATIVE_CANVAS' in defines)
+   for macro in ('PORTABLE_NOVA_UI','PORTABLE_WATCH_NATIVE_HEIGHT','PORTABLE_WATCH_COLOR_ONLY','PORTABLE_NOVA_TEXT_FACES_012'):
+    self.assertNotIn(macro,selected)
  def test_incompatible_panels_rejected(self):
   # Compile the production admission statements and native-height layout helpers.
   # The doubles supply only display metadata; they do not reimplement policy.
   source=ROOT/'lib/PortableApps/src/foreground_adapter_open.inc'
   s=source.read_text()
   start=s.index('  if (!display->get_info')
-  layout=s.index('#if defined(PORTABLE_RF_NATIVE_CANVAS)',start)
+  layout=s.index('#if defined(PORTABLE_NATIVE_CANVAS)',start)
   end=s.index('#ifdef PORTABLE_NATIVE_CUSTODY_FENCE',layout)
   predicate=s[start:end]
   ui=(ROOT/'lib/PortableApps/src/nova_ui.inc').read_text()
@@ -96,7 +107,7 @@ if __name__=='__main__':
  result=unittest.main(argv=[sys.argv[0],*remaining],exit=False).result
  if args.evidence:
   args.evidence.parent.mkdir(parents=True,exist_ok=True)
-  sources=[Path(__file__),ROOT/'lib/PortableApps/src/foreground_adapter_open.inc',
+  sources=[Path(__file__),ROOT/'lib/PortableApps/include/PortableNativeCanvas.h',ROOT/'lib/PortableApps/src/foreground_adapter_open.inc',
     ROOT/'lib/PortableApps/src/nova_ui.inc',ROOT/'lib/PortableApps/include/WatchLayout.h',
     ROOT/'lib/PortableApps/include/RiscDisplayOutputV1.h']
   args.evidence.write_text(json.dumps({'passed':result.wasSuccessful(),'tests':result.testsRun,

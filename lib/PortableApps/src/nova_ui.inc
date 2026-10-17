@@ -198,6 +198,6 @@ bool portable_nova_wrap(unsigned face,int x,int y,int w,int line_height,unsigned
   return at<96 && !s[at];
 }
 
-#ifdef PORTABLE_RF_NATIVE_CANVAS
+#ifdef PORTABLE_NATIVE_CANVAS
 #include "nova_native.inc"
 #endif
