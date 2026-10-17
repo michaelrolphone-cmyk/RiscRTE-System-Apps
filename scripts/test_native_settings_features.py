@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Native Settings:52 bounded feature cases plus2 RTC/alarm boundary cases."""
+"""Native Settings:60 bounded feature cases plus2 RTC/alarm boundary cases."""
 import argparse,hashlib,json,os,subprocess
 from pathlib import Path
 parser=argparse.ArgumentParser(description=__doc__)
@@ -18,7 +18,7 @@ profiles=[
  ('quick-native',native+motion+['-DPORTABLE_RASTER_SNAPSHOT'],['test/native_apps/quick_native_test.c',*quick[:2]],[[]]),
  ('quick-adapter',native+motion+['-DPORTABLE_QUICK_RADIOS','-DPORTABLE_SLEEP_SETTINGS','-DPORTABLE_ALARM_SETTINGS','-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL'],['Apps/settings.c','test/native_apps/quick_adapter_test.c',*quick],[[str(n)] for n in range(13)]),
  ('sleep-policy',native,['test/native_apps/portable_sleep_policy_test.c'],[[]]),
- ('native-idle',native,['Apps/settings.c','test/native_apps/portable_idle_sleep_test.c'],[[str(n)] for n in (0,1,2,3,4,7)]),
+ ('native-idle',native,['Apps/settings.c','test/native_apps/portable_idle_sleep_test.c'],[[str(n)] for n in (0,1,2,3,4,7,8,9,10,11)]),
  ('native-retained',native,['Apps/settings.c','test/native_apps/portable_retained_sleep_test.c'],[[],['time-format']]),
 ]
 rows=[]

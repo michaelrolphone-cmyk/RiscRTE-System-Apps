@@ -797,6 +797,10 @@ static void input_dispatch(void) {
   next=(portable_touch_sample){.valid=true,.cancelled=true};input_reset();
  }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
+ /* Physical holds remain activity after a page reset gates their actions. */
+ if(touch.contact_count)last_activity=input_sampled_at;
+#endif
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
@@ -2392,6 +2396,12 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
   if(!failed && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
      !idle_capture_active() &&
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
+     /* A reset cancellation is ordered before newer raw edges. Give that
+      * stream another pass before sleeping; held gated contacts remain
+      * physical activity even when they cannot act on the current page. */
+     !input_progressed && !touch.contact_count && !touch.resync && !touch.poll_failed &&
+#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
      portable_wifi_idle_ready() &&
 #endif
