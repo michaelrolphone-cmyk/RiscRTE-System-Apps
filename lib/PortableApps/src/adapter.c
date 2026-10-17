@@ -96,7 +96,9 @@ static void quick_atomic_discard(void);
 #include "PortableApps.h"
 #include "PortableDisplayGeometry.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+#if !defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_SETTINGS_AVAILABILITY)
 static bool settings_atomic_owned(void);
+#endif
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
 static bool settings_availability_editing(void);
 static bool settings_availability_filter(t5_app_input_t *);

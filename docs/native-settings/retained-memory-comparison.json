@@ -1,0 +1,121 @@
+{
+  "schema": 1,
+  "runtime_commit": "48229bd1593a2e24e95bf4537b495ee615990fd3",
+  "admission_scope": "Pinned production structural validator, ordinary import/role/lifecycle helper and alignment-reservation/placement helpers; no relocation, Xtensa execution, native grant binding or device heap test",
+  "comparison": {
+    "retained_version": "1.3.25",
+    "retained_size_bytes": 157124,
+    "retained_sha256": "a7558b3bd2cd0c2a0edee95e4a8a69477a63772e8300e33e8e7332a2558f8d41",
+    "retained_elf_independently_checked": true,
+    "file_growth_bytes": 168536,
+    "file_growth_percent": 107.26305338458796,
+    "resident_section_growth_bytes": 43536,
+    "resident_section_growth_percent": 21.491299518696778,
+    "section_size_deltas": {
+      "": 0,
+      ".bss": 124,
+      ".comment": 0,
+      ".data": 64,
+      ".data.rel.ro": 2332,
+      ".dynamic": 0,
+      ".dynstr": 0,
+      ".dynsym": 0,
+      ".got": 0,
+      ".got.loc": 464,
+      ".hash": 0,
+      ".rela.dyn": 7752,
+      ".rela.plt": 180,
+      ".rodata": 19611,
+      ".shstrtab": 17,
+      ".strtab": 32044,
+      ".symtab": 22112,
+      ".text": 21405,
+      ".xt.lit": 2456,
+      ".xt.prop": 61344,
+      ".xtensa.info": 0
+    }
+  },
+  "images": {
+    "native": {
+      "sha256": "0ca2f1315afe2ba797ccfd953de8e85626022e1f94ce89c8d5e19429d35ab13b",
+      "file_size_bytes": 325660,
+      "section_loader": {
+        "selection": "CONFIG_ELF_LOADER_BUS_ADDRESS_MIRROR=1",
+        "executable_allocation_request_bytes": 97790,
+        "data_allocation_request_bytes": 148321,
+        "data_allocation_components": [
+          {
+            "section": ".data",
+            "payload_bytes": 140,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".rodata",
+            "payload_bytes": 53261,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".data.rel.ro",
+            "payload_bytes": 10044,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".bss",
+            "payload_bytes": 84860,
+            "alignment": 8,
+            "reserved_padding_bytes": 7
+          }
+        ],
+        "resident_section_allocation_request_bytes": 246111,
+        "uncached_input_plus_section_allocations_bytes": 571771,
+        "structural_limit_bytes": 8388608,
+        "within_structural_limit": true,
+        "scope": "Allocation payload requests, excluding exported-symbol tables/names, module bookkeeping, allocator overhead, caches, stacks, runtime/provider memory and app dynamic allocations"
+      }
+    },
+    "retained059": {
+      "sha256": "a7558b3bd2cd0c2a0edee95e4a8a69477a63772e8300e33e8e7332a2558f8d41",
+      "file_size_bytes": 157124,
+      "section_loader": {
+        "selection": "CONFIG_ELF_LOADER_BUS_ADDRESS_MIRROR=1",
+        "executable_allocation_request_bytes": 76385,
+        "data_allocation_request_bytes": 126190,
+        "data_allocation_components": [
+          {
+            "section": ".data",
+            "payload_bytes": 76,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".rodata",
+            "payload_bytes": 33650,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".data.rel.ro",
+            "payload_bytes": 7712,
+            "alignment": 4,
+            "reserved_padding_bytes": 3
+          },
+          {
+            "section": ".bss",
+            "payload_bytes": 84736,
+            "alignment": 8,
+            "reserved_padding_bytes": 7
+          }
+        ],
+        "resident_section_allocation_request_bytes": 202575,
+        "uncached_input_plus_section_allocations_bytes": 359699,
+        "structural_limit_bytes": 8388608,
+        "within_structural_limit": true,
+        "scope": "Allocation payload requests, excluding exported-symbol tables/names, module bookkeeping, allocator overhead, caches, stacks, runtime/provider memory and app dynamic allocations"
+      }
+    }
+  },
+  "linked_device_memory_fit_qualified": false
+}
