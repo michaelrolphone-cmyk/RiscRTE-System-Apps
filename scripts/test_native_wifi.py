@@ -12,6 +12,7 @@ def stage(out):
     s=(ROOT/'test/native_apps/portable_wifi_test.c').read_text()
     s=s.replace('"../../lib/PortableApps/src/adapter.c"','"'+str(ROOT/'lib/PortableApps/src/adapter.c')+'"').replace('"../../Apps/wifi_settings.c"','"'+str(ROOT/'Apps/wifi_settings.c')+'"')
     s=s.replace('static unsigned ticks,','static unsigned native_snapshots;static uint64_t native_clock_base;static bool native_zero_timestamps,native_sync_display,native_snapshot_fail;\nstatic unsigned ticks,')
+    s=s.replace('ticks+=ms;', 'ticks+=ms;\n#ifdef TEST_NATIVE_WIFI_YIELD_HOOK\n TEST_NATIVE_WIFI_YIELD_HOOK();\n#endif\n')
     s=s.replace('h->uptime_ms=ticks;', 'h->uptime_ms=native_clock_base+ticks;')
     s=s.replace('.timestamp_ms=ticks,', '.timestamp_ms=native_zero_timestamps?0:native_clock_base+ticks,').replace('next.timestamp_ms=ticks;', 'next.timestamp_ms=native_zero_timestamps?0:native_clock_base+ticks;')
     s=s.replace('return poll_count<limit_polls;', 'return ticks<20000;')
@@ -34,7 +35,7 @@ def main():
         if a.snapshot:flags+=['-DPORTABLE_RASTER_SNAPSHOT']
         cmd=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function',*flags,f'-DTEST_WIFI_RGB_WIDTH={w}',f'-DTEST_WIFI_RGB_HEIGHT={h}','-DNATIVE_WIFI_WORKFLOW_FIXTURE="'+str(out/'workflow.c')+'"', '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/native_wifi_test.c'),'-o',str(binary)]
         subprocess.run(cmd,check=True)
-        for case in ([a.case] if a.case is not None else range(16)):
+        for case in ([a.case] if a.case is not None else range(27)):
             env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0:abort_on_error=1',UBSAN_OPTIONS='halt_on_error=1')
             if a.captures and case==11:
                 captures=out/f'{w}x{h}-pages';captures.mkdir(exist_ok=True);env['PORTABLE_WIFI_FRAME_DIR']=str(captures)

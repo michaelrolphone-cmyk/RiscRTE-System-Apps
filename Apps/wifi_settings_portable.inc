@@ -1369,7 +1369,10 @@ void app_main(void) {
 #ifdef PORTABLE_WIFI_NATIVE_UI
     /* Exit/Back remain responsive while presentation is pending. */
     if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
-    if(input.tapped&&!portable_wifi_paper()&&(dirty||!portable_wifi_native_ready())){portable_wifi_native_invalidate();continue;}
+    if(input.tapped&&!portable_wifi_paper()){
+      wifi_make_view();
+      if(!portable_wifi_native_accept(&view)){portable_wifi_native_invalidate();continue;}
+    }
 #endif
     if(!input.buttons && !input.tapped && !input.exit_requested){armed=true;continue;}
     if(!armed)continue;

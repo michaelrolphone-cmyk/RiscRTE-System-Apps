@@ -7,6 +7,29 @@ typedef struct {int x,y,w,h;} wn_rect;
 typedef struct {int w,h,margin,gap,header,top,row,bottom,footer,footer_h;} wn_layout;
 static bool wn_pending=true,wn_gesture,wn_time_valid;
 static int wn_start_x,wn_start_y;
+static bool wn_model_valid,wn_model_keyboard,wn_tap_owned,wn_sequence_valid;
+static unsigned wn_model_count,wn_model_selected,wn_model_key_page;
+static int wn_model_width,wn_model_height;
+static uint8_t wn_contact;
+static uint64_t wn_visible_sequence;
+static char wn_model_title[64],wn_model_rows[PORTABLE_WIFI_VIEW_ROWS][64];
+static bool wn_same_text(const char *saved,const char *text){return !strncmp(saved,text?text:"",64);}
+static void wn_copy_text(char *to,const char *from){size_t n=from?strlen(from):0;if(n>63)n=63;if(n)memcpy(to,from,n);to[n]=0;}
+static bool wn_matches(const portable_wifi_view *v) {
+  if(!v||!wn_model_valid||wn_model_width!=width()||wn_model_height!=height()||
+     wn_model_count!=v->count||wn_model_selected!=v->selected||wn_model_keyboard!=v->keyboard||
+     wn_model_key_page!=v->key_page||!wn_same_text(wn_model_title,v->title))return false;
+  for(unsigned i=0;i<v->count&&i<PORTABLE_WIFI_VIEW_ROWS;i++)if(!wn_same_text(wn_model_rows[i],v->rows[i]))return false;
+  return true;
+}
+static void wn_remember(const portable_wifi_view *v) {
+  wn_model_valid=true;wn_model_width=width();wn_model_height=height();wn_model_count=v->count;
+  wn_model_selected=v->selected;wn_model_keyboard=v->keyboard;wn_model_key_page=v->key_page;
+  wn_copy_text(wn_model_title,v->title);
+  for(unsigned i=0;i<v->count&&i<PORTABLE_WIFI_VIEW_ROWS;i++)wn_copy_text(wn_model_rows[i],v->rows[i]);
+}
+static bool wn_owned(void){return wn_gesture&&wn_model_valid&&wn_contact==touch.contact_id;}
+
 static wn_layout wn_geometry(void) {
   wn_layout g={0};g.w=width();g.h=height();g.margin=g.w<200?8:16;g.gap=g.w<200?4:8;
   g.header=g.h<160?20:g.h<200?24:40;g.top=g.header+18;g.row=g.h<200?28:44;
@@ -47,23 +70,34 @@ static void wn_button(wn_rect r,const char *s,bool selected) {
 }
 void portable_wifi_native_invalidate(void) {
   if(pp_enabled())return;
-  wn_pending=true;wn_gesture=false;wn_time_valid=false;portable_touch_cancel_gesture(&touch);
+  wn_pending=true;wn_gesture=false;wn_time_valid=false;wn_model_valid=false;wn_tap_owned=false;wn_sequence_valid=false;portable_touch_cancel_gesture(&touch);
 }
 void portable_wifi_native_presented(void) {
   if(pp_enabled()||failed)return;
-  wn_gesture=false;input_reset();
+  if(wn_owned()) {
+    risc_touch_snapshot_v1 snapshot={0};
+    if(!touch.api->snapshot(touch.api->context,&snapshot)){portable_touch_terminal(&touch,"snapshot",0);return;}
+    if(!portable_touch_snapshot_valid(&snapshot)||snapshot.sequence<touch.sequence){
+      portable_touch_fault(&touch,"snapshot-data",0);wn_gesture=false;wn_sequence_valid=false;
+    }else{wn_visible_sequence=snapshot.sequence;wn_sequence_valid=true;}
+  }else{
+    wn_gesture=false;input_reset();wn_visible_sequence=touch.sequence;
+    wn_sequence_valid=touch.initialized&&!touch.resync;
+  }
   wn_time_valid=!failed&&!native_custody_retained;
 }
 bool portable_wifi_native_ready(void) {return pp_enabled()||(!wn_pending&&wn_time_valid&&portable_paper_frame_idle());}
+bool portable_wifi_native_accept(const portable_wifi_view *v){return pp_enabled()||(wn_matches(v)&&(portable_wifi_native_ready()||wn_tap_owned));}
 /* Native touch owns its header as well as list/keyboard controls. Cancelling
  * while the scene is pending prevents a held contact crossing a transition. */
 static bool wifi_native_poll(t5_app_input_t *out) {
   if(pp_enabled())return false;
-  portable_touch_sample sample;input_take(&sample);
+  portable_touch_sample sample;input_take(&sample);wn_tap_owned=false;
   if(out->buttons){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
-  if(!portable_wifi_native_ready()){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
+  if(wn_sequence_valid&&touch.sequence<=wn_visible_sequence&&(sample.began||(sample.released&&!wn_gesture))){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
+  if(!portable_wifi_native_ready()&&!wn_owned()){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
   if(sample.cancelled||!sample.valid)wn_gesture=false;
-  if(sample.began){wn_gesture=sample.tap_eligible;wn_start_x=sample.x;wn_start_y=sample.y;}
+  if(sample.began){wn_gesture=sample.tap_eligible;wn_start_x=sample.x;wn_start_y=sample.y;wn_contact=sample.contact_id;}
   if(sample.released&&wn_gesture){
     wn_gesture=false;int dx=(int)sample.x-wn_start_x,dy=(int)sample.y-wn_start_y;
     if(sample.cancelled)return true;
@@ -71,7 +105,7 @@ static bool wifi_native_poll(t5_app_input_t *out) {
       if(dx>=36&&dx>abs(dy)*2)out->buttons=T5_APP_BUTTON_BACK;
       else if(dy>=28&&dy>abs(dx)*2)out->buttons=T5_APP_BUTTON_UP;
       else if(dy<=-28&&-dy>abs(dx)*2)out->buttons=T5_APP_BUTTON_DOWN;
-    }else if(sample.tap_eligible){out->tapped=true;out->touch_x=sample.x;out->touch_y=sample.y;}
+    }else if(sample.tap_eligible){wn_tap_owned=true;out->tapped=true;out->touch_x=sample.x;out->touch_y=sample.y;}
   }
   return true;
 }
@@ -88,7 +122,8 @@ static int wifi_native_hit(const portable_wifi_view *v,int x,int y) {
 }
 static void wifi_native_render(const portable_wifi_view *v) {
   if(failed||!v||!wn_fits()||!portable_paper_frame_ready())return;
-  wn_pending=true;wn_time_valid=false;wn_layout g=wn_geometry();list_mode=false;clear();fill(0,0,g.w,g.h,0);
+  if(!wn_matches(v)){wn_gesture=false;wn_tap_owned=false;portable_touch_cancel_gesture(&touch);}
+  wn_remember(v);wn_pending=true;wn_time_valid=false;wn_layout g=wn_geometry();list_mode=false;clear();fill(0,0,g.w,g.h,0);
   wn_rect back=wn_back();(void)portable_nova_native_icon(back.x+4,back.y+(back.h-16)/2,16,"solid:f053",NOVA_CYAN);
   wn_text(2,g.margin+30,g.header<30?2:13,g.w-2*g.margin-30,v->title,NOVA_CAP);
   portable_nova_native_fill(g.margin,g.header-1,g.w-2*g.margin,1,NOVA_DIM);

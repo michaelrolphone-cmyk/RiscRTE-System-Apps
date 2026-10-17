@@ -55,4 +55,5 @@ bool portable_wifi_idle_ready(void);
 void portable_wifi_native_invalidate(void);
 void portable_wifi_native_presented(void);
 bool portable_wifi_native_ready(void);
+bool portable_wifi_native_accept(const portable_wifi_view *view);
 #endif

@@ -9,12 +9,15 @@
 #include <stdbool.h>
 static bool native_retain(void);
 static bool native_exit(void);
+static void native_status_tick(void);
+#define TEST_NATIVE_WIFI_YIELD_HOOK native_status_tick
 static bool expect_retain;static unsigned native_retains;
 #define TEST_WIFI_RUNTIME_BINDINGS .retain_invocation=native_retain,.exit_requested=native_exit,
 #define WIFI_WORKFLOW_LIBRARY
 #include NATIVE_WIFI_WORKFLOW_FIXTURE
 static bool native_retain(void){assert(expect_retain);++native_retains;return true;}
-static unsigned native_exit_at;
+static unsigned native_exit_at,native_status_at,native_status_wait,native_status_updates;
+static void native_status_tick(void){if(native_status_at&&ticks>=native_status_at){native_status_at=0;assert(wn_gesture);wifi_message="Status refreshed";dirty=true;native_present_wait=native_status_wait;++native_status_updates;}}
 static bool native_exit(void){return native_exit_at&&ticks>=native_exit_at;}
 static void ntap(unsigned at,wn_rect r){assert(r.w>0&&r.h>0);event(at,0,r.x+r.w/2,r.y+r.h/2);}
 static void frame(void){render();assert(!failed);assert(paper_frame_drain());assert(portable_wifi_native_ready());}
@@ -34,7 +37,7 @@ static void geometry(void){
   assert(!writes&&!connects);
 }
 int main(int argc,char**argv){
-  assert(argc==2);unsigned which=atoi(argv[1]);native_sync_display=which==7;native_zero_timestamps=which==8;if(which==9)native_clock_base=UINT32_MAX-50u;workflow_start(which==15);limit_polls=100000;
+  assert(argc==2);unsigned which=atoi(argv[1]);native_sync_display=which==7||which==17||which==26;native_zero_timestamps=which==8;if(which==9)native_clock_base=UINT32_MAX-50u;workflow_start(which==15);limit_polls=100000;
   if(which==0){geometry();finish();return 0;}
   if(which==1){ /* All visible footer transitions and repeat entry use physical coordinates. */
     frame();assert(portable_wifi_close());unsigned at=ticks+300;
@@ -101,6 +104,8 @@ int main(int argc,char**argv){
     assert(paper_token_progress());ticks+=600;assert(paper_token_progress());
     assert(!paper_token&&wn_gesture&&native_snapshots==snapshots);
     portable_native_presented(overlay);assert(wn_gesture&&native_snapshots==snapshots);
+    /* The sentinel checks ownership, not an actual established contact. */
+    wn_gesture=false;
 #ifdef PORTABLE_RASTER_SNAPSHOT
     assert(!portable_wifi_native_ready());assert(paper_frame_drain());
     assert(!wn_gesture&&native_snapshots>snapshots&&portable_wifi_native_ready());
@@ -119,6 +124,47 @@ int main(int argc,char**argv){
     tick(250);assert(dirty);frame();assert(!wn_gesture);
     unsigned until=ticks+150;while(ticks<until){assert(wa->poll(&in,10));assert(!in.tapped);}
     assert(!text_opens&&!writes&&!connects);stopped();finish();
+  }else if(which>=16&&which<=23){
+    frame();unsigned at=ticks+50;ntap(at,wn_footer(2));t5_app_input_t in;
+    while(ticks<at+50){assert(wa->poll(&in,10));}assert(wn_gesture);
+    if(which==22){
+      joining=true;dirty=true;frame(); /* Same positions, changed Connect/Cancel action. */
+      assert(!wn_gesture);joining=false;
+      unsigned until=ticks+200;while(ticks<until){assert(wa->poll(&in,10));assert(!in.tapped);}
+      finish();
+    }else if(which==23){
+      native_snapshot_fail=true;expect_retain=true;wifi_message="Status refreshed";dirty=true;render();(void)paper_frame_drain();
+      assert(native_retains==1&&native_custody_retained&&failed&&!portable_wifi_native_ready());
+      unsigned count=presents;portable_wifi_native_presented();assert(!wa->poll(&in,0));assert(presents==count&&native_retains==1);
+      puts("Native compatible-contact snapshot failure retained PASS");return 0;
+    }else{
+      /* Status text may repaint, but row/key actions and geometry are unchanged. */
+      if(which>=17&&which<=20)native_present_wait=600;
+      if(which==20)ntap(at+250,wn_footer(2)); /* A second, queued begin is not owned. */
+      wifi_message="Status refreshed";dirty=true;
+      if(which==19){render();assert(!portable_wifi_native_ready());}else frame();
+      unsigned taps=0,until=ticks+250;
+      while(ticks<until){
+        assert(wa->poll(&in,10));
+        if(in.tapped){
+          ++taps;wifi_make_view();assert(portable_wifi_native_accept(&view));
+          if(which==19)assert(!portable_wifi_native_ready());
+          if(which==21){++choice;wifi_make_view();assert(!portable_wifi_native_accept(&view));}
+        }
+      }
+      assert(taps==1);
+      if(which==19){assert(paper_frame_drain());assert(portable_wifi_native_ready());}
+      /* A genuinely fresh post-boundary tap remains usable. */
+      at=ticks+50;ntap(at,wn_footer(2));
+      while(ticks<at+200){assert(wa->poll(&in,10));taps+=in.tapped;}assert(taps==2);
+      finish();
+    }
+  }else if(which>=24&&which<=26){
+    frame();assert(portable_wifi_close());unsigned at=ticks+300;
+    ntap(at,wn_footer(2));native_status_at=at+50;native_status_wait=which==24?0:600;
+    ntap(at+2000,wn_back());app_main();
+    assert(native_status_updates==1&&choice==1&&!opened&&launches==1&&!text_opens&&!writes&&!connects);
+    finish();
   }else assert(!"unknown native case");
   printf("Native Wi-Fi case %u %dx%d PASS\n",which,width(),height());return 0;
 }

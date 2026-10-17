@@ -20,15 +20,20 @@ The full delivered feature recipe uses the existing copied shared text editor;
 the local keyboard remains a separately selected legacy profile. Native layout
 introduces no automatic fallback when a shared editor is unavailable.
 
-Touch acceptance requires the relevant scene to have completed presentation.
-A completed **app-owned** display token calls the existing raw-input reset:
-it clears any already-reduced sample and snapshots the provider's sequence
-watermark. Queued pre-presentation contacts and held contacts are discarded;
-newer independent contacts remain ordered. Ownership follows raster snapshots
-through submission, so an older or overlay token cannot claim the successor
-frame's boundary. No timeout or guessed timestamp epoch determines eligibility.
-Physical Back and runtime exit are handled while painting is pending. Snapshot
-failure at this new boundary invokes the existing retained-custody fence.
+The first frame or a changed control layout requires completed presentation
+before a new gesture can begin. The app snapshots a raw sequence watermark at
+its own successful display-token boundary, rejecting queued older beginnings.
+An already established contact may finish across a status-only repaint when
+its dimensions, page title, row labels, selection and keyboard page are unchanged.
+Changing any of those control identities cancels it. The controller rechecks the
+current model before applying a tap, including a release delivered while a
+compatible repaint is pending.
+
+Ownership follows raster snapshots through submission, so an older or overlay
+token cannot claim the successor frame's boundary. No timeout or guessed
+timestamp epoch determines eligibility. Physical Back and runtime exit remain
+responsive while painting is pending. Snapshot failure at either boundary path
+invokes the existing retained-custody fence.
 
 ## Complete source-selected app
 
@@ -52,8 +57,8 @@ and manifest. Releases are draft-first and immutable after publication.
   synthetic display/touch/radio/storage providers; eight sizes from 128x128 to
   410x502 and 502x240; normal, ASan/UBSan, snapshot and combined modes.
 - `scripts/test_native_wifi_boundary.py`: idle-only negative control and corrected
-  boundary using the same production code. The sole negative-control change
-  replaces sequence reset with gesture cancellation at completion.
+  boundary using the same production code, plus a blanket-reset negative control
+  that proves an established same-target tap must survive status-only repaint.
 - `scripts/test_native_wifi_opt_out.py`: selected-compiler byte comparison against
   the immutable pre-native baseline with the native Wi-Fi selector absent.
 - `tests/test_native_wifi_*.py`: source recipe, publication and admission contracts.
