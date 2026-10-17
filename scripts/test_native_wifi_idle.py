@@ -55,7 +55,7 @@ int main(int argc,char**argv){
 passed=features.NATIVE_SWITCHES|features.FIXTURE_SWITCHES|features.ATOMIC_SWITCHES|{'PORTABLE_SETTINGS_AVAILABILITY'}
 flags=[switches[n] for n in sorted(features.NATIVE_SWITCHES)]
 includes=['-I'+str(ROOT/p) for p in ('lib/PortableApps/include','lib/NativeApps/include','lib/RemoteFiles/vendor/tinydtls_sha2')]
-cc=str(pathlib.Path(shutil.which('cc')).resolve())
+cc=str(pathlib.Path(shutil.which(os.environ.get('CC','cc'))).resolve())
 base=[cc,'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function','-DTEST_IDLE_ELIGIBILITY',*flags,*includes]
 pre=base+['-dM','-E',str(OUT/'probe.c')]; macros_text=subprocess.check_output(pre,text=True)
 (OUT/'host-macros.txt').write_text(macros_text);macros=dict(re.findall(r'^#define (\w+)(?: (.*))?$',macros_text,re.M))
