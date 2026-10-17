@@ -76,5 +76,59 @@
     "mode-1.log": "CAPTURE 100 DELIVER 100 KIND 1 PAGE 0 READY 0\nCAPTURE 200 DELIVER 200 KIND 3 PAGE 0 READY 0\nRESULT mode=1 page=0 ticks=1500 displays=1 writes=0\nUNEXPECTED_PAGE 0\n",
     "mode-2.log": "CAPTURE 112 DELIVER 600 KIND 1 PAGE 0 READY 0\nCAPTURE 208 DELIVER 602 KIND 3 PAGE 0 READY 0\nRESULT mode=2 page=0 ticks=1512 displays=2 writes=0\nUNEXPECTED_PAGE 0\n"
   },
-  "note": "Original failing diagnostic evidence, preserved unchanged. Synchronous captured DOWN/UP activated the date editor before the completion sequence-watermark fix, although runtime exit later unwound to root."
+  "note": "Original failing diagnostic evidence, preserved unchanged. Synchronous captured DOWN/UP activated the date editor before the completion sequence-watermark fix, although runtime exit later unwound to root.",
+  "completion_reset_regressions": [
+    {
+      "case": 18,
+      "trace": "COMPLETE elapsed=40 page=0\nCOMPLETE elapsed=80 page=2\nCAPTURE elapsed=100 raw=181 sequence=1 kind=1 page=2 pending=0\nDELIVER elapsed=100 raw=181 sequence=1 kind=1 page=2 ready=1\nCOMPLETE elapsed=141 page=2\nCAPTURE elapsed=202 raw=283 sequence=2 kind=2 page=2 pending=0\nDELIVER elapsed=202 raw=283 sequence=2 kind=2 page=2 ready=1\nCAPTURE elapsed=303 raw=384 sequence=3 kind=2 page=2 pending=0\nDELIVER elapsed=303 raw=384 sequence=3 kind=2 page=2 ready=1\nCAPTURE elapsed=400 raw=481 sequence=4 kind=3 page=2 pending=0\nDELIVER elapsed=400 raw=481 sequence=4 kind=3 page=2 ready=1\nSLIDER final=0 expected=59 gesture=0\ncapture-0-0: /tmp/native-settings-20261017/test/native_apps/native_settings_capture_test.c:167: extended_case: Assertion `editor_value(4)==59' failed.\n",
+      "trace_sha256": "a75978753c0f61ddcc93bc4325394dbcf0de41bf932c2c401f204bbe4e59fcfb",
+      "source_sha256": {
+        "lib/PortableApps/src/adapter.c": "8a3fd5ebdb95b5b828c818a4f9f8d2f4534981e6af1e26f5c5e3becce403fac4",
+        "test/native_apps/native_settings_capture_test.c": "893e8bbb23c82551eea40d1c8722e9ea971331c465b51df6b724db51380d8755",
+        "lib/PortableApps/src/settings_native_layout.inc": "b0b8f3cc8d422574756e7b1e39b46f9ffe47427e3c50369c0d2fa781583cab0a"
+      }
+    },
+    {
+      "case": 19,
+      "trace": "COMPLETE elapsed=40 page=0\nCOMPLETE elapsed=80 page=0\nCAPTURE elapsed=100 raw=181 sequence=1 kind=1 page=0 pending=0\nDELIVER elapsed=100 raw=181 sequence=1 kind=1 page=0 ready=1\nCAPTURE elapsed=201 raw=282 sequence=2 kind=2 page=0 pending=0\nDELIVER elapsed=201 raw=282 sequence=2 kind=2 page=0 ready=1\nCOMPLETE elapsed=242 page=0\nCAPTURE elapsed=303 raw=384 sequence=3 kind=2 page=0 pending=0\nDELIVER elapsed=303 raw=384 sequence=3 kind=2 page=0 ready=1\nCAPTURE elapsed=400 raw=481 sequence=4 kind=3 page=0 pending=0\nDELIVER elapsed=400 raw=481 sequence=4 kind=3 page=0 ready=1\nSCROLL final=44 expected=88 gesture=0\ncapture-0-0: /tmp/native-settings-20261017/test/native_apps/native_settings_capture_test.c:174: extended_case: Assertion `sv_scroll[0]==(int)expected' failed.\n",
+      "trace_sha256": "a2855329f57ba2d3fb25aa6836e0a6e12e267086e6f9d6092777bed15aeb20c7",
+      "source_sha256": {
+        "lib/PortableApps/src/adapter.c": "8a3fd5ebdb95b5b828c818a4f9f8d2f4534981e6af1e26f5c5e3becce403fac4",
+        "test/native_apps/native_settings_capture_test.c": "893e8bbb23c82551eea40d1c8722e9ea971331c465b51df6b724db51380d8755",
+        "lib/PortableApps/src/settings_native_layout.inc": "b0b8f3cc8d422574756e7b1e39b46f9ffe47427e3c50369c0d2fa781583cab0a"
+      }
+    },
+    {
+      "case": 20,
+      "trace": "COMPLETE elapsed=48 page=0\nCOMPLETE elapsed=97 page=0\nCAPTURE elapsed=100 raw=199 sequence=1 kind=1 page=0 pending=0\nDELIVER elapsed=100 raw=199 sequence=1 kind=1 page=0 ready=1\nCOMPLETE elapsed=149 page=0\nUNCHANGED_REDRAW submissions_before=2 after=3 gesture=0\nCAPTURE elapsed=203 raw=302 sequence=2 kind=3 page=0 pending=0\nDELIVER elapsed=203 raw=302 sequence=2 kind=3 page=0 ready=1\ncapture-0-0: /tmp/native-settings-20261017/test/native_apps/native_settings_capture_test.c:181: extended_case: Assertion `ever_fields' failed.\n",
+      "trace_sha256": "975cc574bae0a2ac8bb10fb6651cf062e102a5aa3977626e7e708384a4009311",
+      "source_sha256": {
+        "lib/PortableApps/src/adapter.c": "8a3fd5ebdb95b5b828c818a4f9f8d2f4534981e6af1e26f5c5e3becce403fac4",
+        "test/native_apps/native_settings_capture_test.c": "893e8bbb23c82551eea40d1c8722e9ea971331c465b51df6b724db51380d8755",
+        "lib/PortableApps/src/settings_native_layout.inc": "b0b8f3cc8d422574756e7b1e39b46f9ffe47427e3c50369c0d2fa781583cab0a"
+      }
+    },
+    {
+      "case": 21,
+      "raw_timestamp": 0,
+      "trace": "COMPLETE elapsed=40 page=0\nCOMPLETE elapsed=80 page=2\nCAPTURE elapsed=100 raw=0 sequence=1 kind=1 page=2 pending=0\nDELIVER elapsed=100 raw=0 sequence=1 kind=1 page=2 ready=1\nCOMPLETE elapsed=141 page=2\nCAPTURE elapsed=200 raw=0 sequence=2 kind=2 page=2 pending=1\nDELIVER elapsed=200 raw=0 sequence=2 kind=2 page=2 ready=0\nCOMPLETE elapsed=202 page=2\nCAPTURE elapsed=302 raw=0 sequence=3 kind=2 page=2 pending=0\nDELIVER elapsed=302 raw=0 sequence=3 kind=2 page=2 ready=1\nCAPTURE elapsed=403 raw=0 sequence=4 kind=3 page=2 pending=0\nDELIVER elapsed=403 raw=0 sequence=4 kind=3 page=2 ready=1\nSLIDER final=0 expected=59 gesture=0\ncapture-0-0: /tmp/native-settings-20261017/test/native_apps/native_settings_capture_test.c:167: extended_case: Assertion `editor_value(4)==59' failed.\n",
+      "trace_sha256": "f3a8820b0338596d83624b6b97964482a8c3877beda0e02ac89bd58deca5fc25",
+      "source_sha256": {
+        "lib/PortableApps/src/adapter.c": "8a3fd5ebdb95b5b828c818a4f9f8d2f4534981e6af1e26f5c5e3becce403fac4",
+        "test/native_apps/native_settings_capture_test.c": "464ff9b0be641c8b98c39334b5dd3f693d3f6026c02da0ad6e1f50aafdf1b8f7",
+        "lib/PortableApps/src/settings_native_layout.inc": "b0b8f3cc8d422574756e7b1e39b46f9ffe47427e3c50369c0d2fa781583cab0a"
+      }
+    },
+    {
+      "case": 22,
+      "raw_timestamp": 0,
+      "trace": "COMPLETE elapsed=40 page=0\nCOMPLETE elapsed=80 page=0\nCAPTURE elapsed=100 raw=0 sequence=1 kind=1 page=0 pending=0\nDELIVER elapsed=100 raw=0 sequence=1 kind=1 page=0 ready=1\nCAPTURE elapsed=201 raw=0 sequence=2 kind=2 page=0 pending=0\nDELIVER elapsed=201 raw=0 sequence=2 kind=2 page=0 ready=1\nCOMPLETE elapsed=242 page=0\nCAPTURE elapsed=303 raw=0 sequence=3 kind=2 page=0 pending=0\nDELIVER elapsed=303 raw=0 sequence=3 kind=2 page=0 ready=1\nCAPTURE elapsed=400 raw=0 sequence=4 kind=3 page=0 pending=0\nDELIVER elapsed=400 raw=0 sequence=4 kind=3 page=0 ready=1\nSCROLL final=44 expected=88 gesture=0\ncapture-0-0: /tmp/native-settings-20261017/test/native_apps/native_settings_capture_test.c:174: extended_case: Assertion `sv_scroll[0]==(int)expected' failed.\n",
+      "trace_sha256": "b2f1e7e625ee31266dfd7204c9f93dcfd8da5fd99f2e863785b24fba797dc3d4",
+      "source_sha256": {
+        "lib/PortableApps/src/adapter.c": "8a3fd5ebdb95b5b828c818a4f9f8d2f4534981e6af1e26f5c5e3becce403fac4",
+        "test/native_apps/native_settings_capture_test.c": "464ff9b0be641c8b98c39334b5dd3f693d3f6026c02da0ad6e1f50aafdf1b8f7",
+        "lib/PortableApps/src/settings_native_layout.inc": "b0b8f3cc8d422574756e7b1e39b46f9ffe47427e3c50369c0d2fa781583cab0a"
+      }
+    }
+  ]
 }
