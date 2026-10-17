@@ -5,6 +5,9 @@ on:
       - 'lib/PortableApps/**'
       - 'scripts/portable_quick_build.py'
       - 'scripts/test_alarm_native*.py'
+      - 'scripts/test_paper_alarm*.py'
+      - 'test/native_apps/paper_alarm_composition_test.c'
+      - 'test/native_apps/paper_clock_test.c'
       - 'test/native_apps/alarm_native*.c'
       - 'test/native_apps/portable_handoff_test.c'
       - '.github/workflows/alarm-native-adapter.yml'
@@ -42,6 +45,8 @@ jobs:
           python scripts/test_alarm_native_layout.py --output build/alarm-native-layout
           python scripts/test_alarm_native_optout.py --output build/alarm-native-optout
           python scripts/test_alarm_native_adapter.py --output build/alarm-native-adapter
+          python scripts/test_paper_alarm_composition.py --output build/paper-alarm-composition
+          python scripts/test_paper_alarm_rgb_controls.py --output build/paper-alarm-rgb-controls
       - name: Existing alarm and modal custody regressions
         run: |
           python scripts/test_portable_alarm.py
@@ -58,5 +63,7 @@ jobs:
             build/alarm-native-adapter/**
             build/alarm-native-layout/**
             build/alarm-native-optout/**
+            build/paper-alarm-composition/**
+            build/paper-alarm-rgb-controls/**
             build/alarm-custody-*/*.json
           if-no-files-found: error

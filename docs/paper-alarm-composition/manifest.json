@@ -1,0 +1,26 @@
+{
+  "reproduction_source": "9d2c55b32e88c0b12b1fa16200f399164767f5d1",
+  "publication_parent": "c07f81dab34318659bf27f139e9668354d681ba3",
+  "publication_parent_tree": "6656c464c5c7842c928986a93b5701fd0a6e56a4",
+  "hardware_tested": false,
+  "source_sha256": {
+    "lib/PortableApps/src/alarm.inc": "f97a91ec22bf85d1d5312cf9a738dd8c22e5c99e752aff26bfb72c810e2f272a",
+    "scripts/test_alarm_native_optout.py": "e57bcec78212b813e66e2992b054b3efda50f437c9c5e09b3c1c879c60bcffa6",
+    "scripts/test_paper_alarm_composition.py": "252509ca4aad056d6e5d21535eaeba25199843f2886096708368c4394b8eb47d",
+    "scripts/test_paper_alarm_rgb_controls.py": "4d27997a8466cadba74b0bf4cde8882fa99a682b7f669e9e8f26e28a3179c36f",
+    "test/native_apps/paper_alarm_composition_test.c": "0693420e440fe7113d34c6e7129e185c9e4deaf27d71d8a75f86a1f0c57e8956",
+    ".github/workflows/alarm-native-adapter.yml": "d3af6fb884d74079d40ca01d21235a8f88b8b01d250289c42e588b332d60a534"
+  },
+  "receipt_sha256": {
+    "baseline-guard.patch": "71f5d380786891fe399025cd7ac69703ea8cecd191ab9bacfa00df2d6ad56a8d",
+    "fixture-corrections.json": "8faf43df18b54aad16469c20496ef8e92a40b1d63f8ade13e594b855552899de",
+    "source-closure.json": "e82096e85e81efb64b28ce337e213a6a7fc4c5923e9e2b09ecf485f1a2617faa",
+    "frame-comparison.json": "71c633b036b8d2bfb5f8a2c264a54d742da53893e4f7b4732d5c4c3d842f3729",
+    "optout-results.json": "8ce58b18ed83ad0b68fb98ce354d35152863d02091e9c2ff760495eacf95625c",
+    "rgb-results.json": "c3af56114aa5a3b084cd0505f0dbc6e99d93079b5c08274c7381a22955788d71",
+    "paper-results.json": "c67932cd81531c68fa8697a319b092e4095df14c8db04be17d431e73bb92cc32",
+    "baseline-settings.json": "475bc04036a499e42217a41c2698de674810ca029a10743d73edcf3c66f52795",
+    "baseline-clock.json": "0ade5c7366a659463d80a3e250752f06fcb18d2037950832d33e89b49925f7cc"
+  },
+  "runner_finalization": "Fixed Settings byte hashes were added after executable matrix completion and checked against all preserved captures; compiler commands, sources and binary hashes are unchanged. CI reruns the complete final runner."
+}
