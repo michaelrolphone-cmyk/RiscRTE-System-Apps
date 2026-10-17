@@ -2259,6 +2259,9 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 #include "installed_catalog_adapter.inc"
 #include "resident_adapter.inc"
 #include "resident_shell.inc"
+#ifdef PORTABLE_WIFI_NATIVE_UI
+static bool wifi_native_poll(t5_app_input_t *out);
+#endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_message_foreground())return false;
@@ -2485,6 +2488,9 @@ replay_input:
   if (settings_view_poll(out)) return !failed;
 #endif
   input_navigation_take(out);
+#ifdef PORTABLE_WIFI_NATIVE_UI
+  if(wifi_native_poll(out))return !failed;
+#endif
 #if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
   if(wifi_scroll_poll(out))return !failed;
 #endif

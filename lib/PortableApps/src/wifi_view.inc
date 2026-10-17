@@ -104,10 +104,19 @@ void portable_wifi_render(const portable_wifi_view *v) {
 #undef portable_wifi_hit
 #undef portable_wifi_render
 #include "wifi_paper.inc"
+#ifdef PORTABLE_WIFI_NATIVE_UI
+#include "wifi_native_view.inc"
+#endif
 int portable_wifi_hit(const portable_wifi_view *v,int x,int y) {
+#ifdef PORTABLE_WIFI_NATIVE_UI
+  if(!pp_enabled())return wifi_native_hit(v,x,y);
+#endif
   return pp_enabled()?wifi_paper_hit(v,x,y):wifi_watch_hit(v,x,y);
 }
 void portable_wifi_render(const portable_wifi_view *v) {
+#ifdef PORTABLE_WIFI_NATIVE_UI
+  if(!pp_enabled()){wifi_native_render(v);return;}
+#endif
   if(pp_enabled())wifi_paper_render(v);else wifi_watch_render(v);
 }
 bool portable_wifi_paper(void) {return pp_enabled();}

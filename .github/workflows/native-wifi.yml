@@ -1,0 +1,183 @@
+name: Native Wi-Fi qualification
+on:
+  pull_request:
+    paths:
+      - 'Apps/wifi*'
+      - 'Apps/native/wifi_settings.json'
+      - 'lib/PortableApps/**'
+      - 'lib/NativeApps/**'
+      - 'lib/RemoteFiles/vendor/tinydtls_sha2/**'
+      - 'lib/elf_loader/**'
+      - 'scripts/*wifi*'
+      - 'scripts/native_toolchain.py'
+      - 'scripts/report_native_settings_memory.py'
+      - 'test/native_apps/**'
+      - 'tests/test_native_wifi_*.py'
+      - 'tests/test_portable_wifi_contract.py'
+      - 'tests/test_native_toolchain.py'
+      - 'docs/shared-app-crashes/replay/wave.json'
+      - '.github/workflows/native-wifi.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: normal
+            flags: ''
+          - mode: sanitized
+            flags: '--sanitize'
+          - mode: snapshot
+            flags: '--snapshot'
+          - mode: snapshot-sanitized
+            flags: '--snapshot --sanitize'
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        working-directory: source
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native controller, keyboard, geometry and frame ownership matrix
+        run: |
+          mkdir -p build/native-wifi-controller
+          python scripts/test_native_wifi.py --output build/native-wifi-controller/${{ matrix.mode }} ${{ matrix.flags }} 2>&1 | tee build/native-wifi-controller/${{ matrix.mode }}.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-wifi-controller-${{ matrix.mode }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            source/build/native-wifi-controller/**/*.json
+            source/build/native-wifi-controller/**/*.log
+            source/build/native-wifi-controller/*.log
+          if-no-files-found: error
+          retention-days: 30
+  qualify:
+    needs: controller
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        working-directory: source
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 48229bd1593a2e24e95bf4537b495ee615990fd3
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: bridges
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: b9862e1379813a0914d4926ef59a3feb6fcf656a
+          path: profile-source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          path: utilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-wifi-controller-*-${{ github.event.pull_request.head.sha || github.sha }}
+          path: source/build/native-wifi/controller
+      - name: Recipe, release and exact-source admission contracts
+        run: |
+          mkdir -p build/native-wifi
+          python -m unittest discover -s tests -p 'test_native_wifi_*.py' -v 2>&1 | tee build/native-wifi/native-contracts.log
+          python -m unittest discover -s tests -p 'test_portable_wifi_contract.py' -v 2>&1 | tee build/native-wifi/portable-contracts.log
+          python -m unittest discover -s tests -p 'test_native_toolchain.py' -v 2>&1 | tee build/native-wifi/toolchain-contracts.log
+      - name: Captured-input reset boundary, baseline rejection and fixed acceptance
+        run: python scripts/test_native_wifi_boundary.py --output build/native-wifi/boundary 2>&1 | tee build/native-wifi/boundary.log
+      - name: Native workflow, atomic and availability controller seams
+        run: |
+          python scripts/test_native_wifi_features.py --output build/native-wifi/features-normal 2>&1 | tee build/native-wifi/features-normal.log
+          python scripts/test_native_wifi_features.py --sanitize --output build/native-wifi/features-sanitized 2>&1 | tee build/native-wifi/features-sanitized.log
+      - name: Ordered native idle cancellation and held-contact controls
+        run: python scripts/test_native_wifi_idle.py --output build/native-wifi/idle 2>&1 | tee build/native-wifi/idle.log
+      - name: Install pinned public target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Six explicit-native-selector-off ELF preservation witnesses
+        run: python scripts/test_native_wifi_opt_out.py --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --output build/native-wifi/opt-out
+      - name: Exact-source 18-capability native Wi-Fi development app
+        run: |
+          NATIVE_APP_CC="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" python scripts/build_native_wifi_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-wifi/app 2>&1 | tee build/native-wifi/target-build.log
+          python -c "import json; r=json.load(open('build/native-wifi/app/wifi-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.0' and len(r['required_capabilities'])==18"
+      - name: Verify actual target idle conditions match tested controller
+        run: python scripts/test_native_wifi_idle_target.py --idle build/native-wifi/idle --app build/native-wifi/app 2>&1 | tee build/native-wifi/idle-target.log
+      - name: Pinned production ELF admission and allocation placement
+        run: |
+          python scripts/report_native_wifi_memory.py --elf build/native-wifi/app/wifi_settings.elf --runtime ../runtime --output build/native-wifi/admission 2>&1 | tee build/native-wifi/admission.log
+          cp build/native-wifi/admission/elf-memory-admission.json build/native-wifi/app/elf-memory-admission.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-wifi-software-qualification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            source/build/native-wifi/**/*.json
+            source/build/native-wifi/**/*.log
+            source/build/native-wifi/features-*/*.c
+            source/build/native-wifi/features-*/*-macros.txt
+            source/build/native-wifi/app/wifi_settings.elf
+            source/build/native-wifi/app/licenses/
+          if-no-files-found: error
+          retention-days: 30
+  publish-development:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: qualify
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-wifi-software-qualification-${{ github.sha }}
+          path: qualified
+      - name: Publish or verify immutable standalone development release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_native_wifi.py --artifact qualified --repository '${{ github.repository }}' --source-sha '${{ github.sha }}'
