@@ -1,0 +1,2534 @@
+{
+  "runs": [
+    {
+      "fixture": "clock-change",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/settings_clock_change_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/clock-change-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/settings_clock_change_test.c": "1c4cf4da69227c6a8227132f8c2d1e90737838aa2426edafdf6e412cd2c4a49f"
+      }
+    },
+    {
+      "fixture": "clock-change",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/settings_clock_change_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/clock-change-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/settings_clock_change_test.c": "1c4cf4da69227c6a8227132f8c2d1e90737838aa2426edafdf6e412cd2c4a49f"
+      }
+    },
+    {
+      "fixture": "quick-core",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_core_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-core-0"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_core_test.c": "30540203cb209f76a1b950ec4d8a9e8ca9371b8e045f34e4e49ce5195d4ecc09",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac"
+      }
+    },
+    {
+      "fixture": "quick-core",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_core_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-core-1"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_core_test.c": "30540203cb209f76a1b950ec4d8a9e8ca9371b8e045f34e4e49ce5195d4ecc09",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac"
+      }
+    },
+    {
+      "fixture": "quick-session",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_session_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-session-0"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_session_test.c": "85a0afeb2d87600bcd428184526c0488be04273fa130acdd86c7e67dd3676259",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96"
+      }
+    },
+    {
+      "fixture": "quick-session",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_session_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-session-1"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_session_test.c": "85a0afeb2d87600bcd428184526c0488be04273fa130acdd86c7e67dd3676259",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96"
+      }
+    },
+    {
+      "fixture": "quick-radios",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_radio_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-radios-0"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_radio_test.c": "4f3eac798e6a25bbd36cea4327c6fd429aa1938c939a5e01dd41e2238b6c6c5f",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-radios",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_radio_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-radios-1"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_radio_test.c": "4f3eac798e6a25bbd36cea4327c6fd429aa1938c939a5e01dd41e2238b6c6c5f",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-native",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_RASTER_SNAPSHOT"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_native_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-native-0"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_native_test.c": "bf45416b52217ecc4b6b4d0cc43eafd1d2e66b8a4a3f7feadaa80b78b8650e4f",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac"
+      }
+    },
+    {
+      "fixture": "quick-native",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_RASTER_SNAPSHOT"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_native_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-native-1"
+      ],
+      "source_sha256": {
+        "test/native_apps/quick_native_test.c": "bf45416b52217ecc4b6b4d0cc43eafd1d2e66b8a4a3f7feadaa80b78b8650e4f",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "0"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "1"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "2"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "3"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "4"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "5"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "6"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "7"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "8"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "9"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "10"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "11"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": false,
+      "case": [
+        "12"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "0"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "1"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "2"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "3"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "4"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "5"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "6"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "7"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "8"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "9"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "10"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "11"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "quick-adapter",
+      "sanitized": true,
+      "case": [
+        "12"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_PAPER_TRANSITIONS",
+        "-DPORTABLE_QUICK_RADIOS",
+        "-DPORTABLE_SLEEP_SETTINGS",
+        "-DPORTABLE_ALARM_SETTINGS",
+        "-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/quick_adapter_test.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_actions.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_render.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_session.c",
+        "/tmp/quick-native-adapter-20261017/lib/PortableApps/src/quick_radios.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/quick-adapter-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+        "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+        "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+        "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+        "lib/PortableApps/src/quick_radios.c": "a666bb9aea4907607552b8e52f354b5307b96fcdaa61f7146fdfbe6b435d3d28"
+      }
+    },
+    {
+      "fixture": "sleep-policy",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_sleep_policy_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/sleep-policy-0"
+      ],
+      "source_sha256": {
+        "test/native_apps/portable_sleep_policy_test.c": "4412e3045a70658af90d971564785ea21ee859287ad2f3a6cb6db82a90412d3e"
+      }
+    },
+    {
+      "fixture": "sleep-policy",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_sleep_policy_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/sleep-policy-1"
+      ],
+      "source_sha256": {
+        "test/native_apps/portable_sleep_policy_test.c": "4412e3045a70658af90d971564785ea21ee859287ad2f3a6cb6db82a90412d3e"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "0"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "1"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "2"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "3"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "4"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": false,
+      "case": [
+        "7"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "0"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "1"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "2"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "3"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "4"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-idle",
+      "sanitized": true,
+      "case": [
+        "7"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_idle_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-idle-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_idle_sleep_test.c": "5833c000f918a17a221394e3efe59dfad9d495f2b35cc5bcf884461d29b8adda"
+      }
+    },
+    {
+      "fixture": "native-retained",
+      "sanitized": false,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_retained_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-retained-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_retained_sleep_test.c": "739e9201660b0991458922b4f7bdfc652cf863a49cfc0ff22d3f51e5f40ce5da"
+      }
+    },
+    {
+      "fixture": "native-retained",
+      "sanitized": false,
+      "case": [
+        "time-format"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_retained_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-retained-0"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_retained_sleep_test.c": "739e9201660b0991458922b4f7bdfc652cf863a49cfc0ff22d3f51e5f40ce5da"
+      }
+    },
+    {
+      "fixture": "native-retained",
+      "sanitized": true,
+      "case": [],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_retained_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-retained-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_retained_sleep_test.c": "739e9201660b0991458922b4f7bdfc652cf863a49cfc0ff22d3f51e5f40ce5da"
+      }
+    },
+    {
+      "fixture": "native-retained",
+      "sanitized": true,
+      "case": [
+        "time-format"
+      ],
+      "result": "passed",
+      "returncode": 0,
+      "build_defines": [
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI"
+      ],
+      "compile_command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-I/tmp/quick-native-adapter-20261017/lib/PortableApps/include",
+        "-I/tmp/quick-native-adapter-20261017/lib/NativeApps/include",
+        "-DPORTABLE_SETTINGS_NATIVE_UI",
+        "-DPORTABLE_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "/tmp/quick-native-adapter-20261017/Apps/settings.c",
+        "/tmp/quick-native-adapter-20261017/test/native_apps/portable_retained_sleep_test.c",
+        "-o",
+        "/tmp/quick-native-adapter-20261017/build/published-main-union-features/native-retained-1"
+      ],
+      "source_sha256": {
+        "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+        "test/native_apps/portable_retained_sleep_test.c": "739e9201660b0991458922b4f7bdfc652cf863a49cfc0ff22d3f51e5f40ce5da"
+      }
+    }
+  ],
+  "hardware_verified": false,
+  "boundary": "Existing host fixtures built with explicit native Settings flags; no fixture coordinates changed. Native idle nested-coordinate cases 5 and 6 excluded; separately sized parent controller coverage owns native selectors."
+}

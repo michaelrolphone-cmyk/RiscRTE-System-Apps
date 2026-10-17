@@ -79,3 +79,10 @@ Quick and Home paths. Host mocks do not establish physical behavior or latency.
   hooks; do not overwrite them with the fd9 foundation.
 - Final app selection, combined-source qualification, release publication and
   hardware validation remain outstanding. No current release candidate changes.
+
+## Published-main follow-on
+
+The separate `union/` receipts document the subsequent clean merge with already-
+published main `fd6bc6065f6e409ed2d2ea1858bd56ab6d9e2fb3`. The original receipts
+above remain historical evidence for independent checkpoint `f3bb53c9`. Both
+published parents are preserved; stopped unpublished corrections remain excluded.

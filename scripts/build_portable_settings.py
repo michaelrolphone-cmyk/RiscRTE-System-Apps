@@ -66,6 +66,14 @@ def build(args,parser=None):
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
     native_time=profile=='x4-native-time'
+    native_ui=getattr(args,'native_ui',False)
+    clock_change_control=getattr(args,'clock_change_control',False)
+    if native_ui and profile!='default':
+        parser.error('--native-ui requires --settings-profile default; X4 paper profiles use their own presentation')
+    if clock_change_control and not args.alarm_client:
+        parser.error('--clock-change-control requires --alarm-client')
+    if clock_change_control and native_time:
+        parser.error('--clock-change-control requires the raw RTC Settings controller, not x4-native-time')
     atomic=getattr(args,'experimental_atomic_settings',False)
     availability=getattr(args,'experimental_settings_availability',False)
     if availability and not atomic:
@@ -124,8 +132,10 @@ def build(args,parser=None):
         flags+=['-DPORTABLE_SETTINGS_NATIVE_TIME','-DPORTABLE_SETTINGS_TIME_ZONE',
                 '-DPORTABLE_NATIVE_CUSTODY_FENCE']
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
-    if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if args.nova_ui or native_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if native_ui: flags+=['-DPORTABLE_SETTINGS_NATIVE_UI','-DPORTABLE_NATIVE_CANVAS']
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
+    if clock_change_control: flags.append('-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL')
     if args.denver and args.wall_time:parser.error('Choose one explicit RTC policy')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.wall_time:flags.append('-DPORTABLE_RTC_WALL_TIME')
@@ -133,7 +143,8 @@ def build(args,parser=None):
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
-    version_path=('lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
+    version_path=('lib/PortableApps/profiles/native-settings.json' if native_ui else
+                  'lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
     version=json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
@@ -152,6 +163,7 @@ def build(args,parser=None):
         flags.append('-DPORTABLE_SETTINGS_LIST_SCROLL')
         version='1.3.18'
     version=portable_quick_build.version(args,'settings',version)
+    if native_ui: version=json.loads((ROOT/version_path).read_text())['version']
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     cc = resolve_compiler()
     out.mkdir(parents=True, exist_ok=True)
@@ -252,12 +264,16 @@ def build(args,parser=None):
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
-        'settings_profile':profile,'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
+        'settings_profile':'native-settings' if native_ui else profile,'native_ui':native_ui,'clock_change_control':clock_change_control,
+        'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
         'sleep_fallback':'light' if desk_clock else 'hybrid','desk_clock_faces':['Segments','Sans','Serif','Minimal','Railway','Deco'] if desk_clock else [],
         'preferences':{'instance':1,'sleep_key':'sleep_mode','face_key':'desk_clock_face' if desk_clock else None},
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
+    if native_ui:
+        record['native_ui_contract']={'default_selected':False,'geometry':'capability-sized-native-pixels',
+            'version_profile':version_path,'version_identity':'standalone-development-only','hardware_verified':False}
     if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
     if performance:record['performance_trace']=performance
     if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
@@ -334,7 +350,9 @@ def argument_parser():
     parser.add_argument('--settings-list-scrolling',action='store_true',help='Select Settings 1.3.18 smooth root and Time/Date lists; requires --touch-scrolling')
     parser.add_argument('--home-desk-lock',action='store_true',help='Select Settings 1.3.14 with readonly Top-right key / Desk clock row; requires native paper motion and touch scrolling')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
+    parser.add_argument('--native-ui',action='store_true',help='Default-off capability-sized Settings 1.4.0 development profile with shared native canvas and Nova; default profile only')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
+    parser.add_argument('--clock-change-control',action='store_true',help='Explicit tagged alarm clock-change boundary after verified raw RTC Save; requires --alarm-client, excludes x4-native-time')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
     parser.add_argument('--sleep-settings',action='store_true',help='Enable explicit namespace-1 sleep choice; requires storage.key-value@1 grant')
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')
