@@ -41,6 +41,9 @@ class NativeSettingsBuild(unittest.TestCase):
 
     def test_explicit_complete_profile_declares_generic_retained_capabilities(self):
         profile = qualification.manifest('1.4.0')
+        self.assertEqual(profile, json.loads((ROOT/qualification.MANIFEST_PROFILE).read_text()))
+        with self.assertRaisesRegex(ValueError, 'source manifest differs'):
+            qualification.manifest('1.3.4')
         self.assertEqual(profile['version'], '1.4.0')
         self.assertEqual(len(profile['requires']), 16)
         self.assertEqual({item['capability'] for item in profile['requires']}, {

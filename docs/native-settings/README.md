@@ -31,6 +31,10 @@ It retains time/alarm synchronization, Quick Controls, radios, Contexts,
 broadcast, motion, sleep, low-battery timers, atomic preferences, catalog and
 foreground ownership. Source selectors are validated against all 16 declared
 capabilities; a subset cannot silently receive the complete manifest.
+The genuine full source manifest is
+`lib/PortableApps/profiles/native-settings-manifest.json`; the builder verifies
+its equality with the selected version and capability recipe before compiling.
+It does not replace the legacy `Apps/settings.json` source identity.
 
 External source pins are part of the builder and resulting receipt:
 

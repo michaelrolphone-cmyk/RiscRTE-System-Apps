@@ -31,6 +31,7 @@ REPOSITORIES = {
 }
 RECIPE = 'profiles/shared-catalog-recipes.json'
 VERSION_PROFILE = 'lib/PortableApps/profiles/native-settings.json'
+MANIFEST_PROFILE = 'lib/PortableApps/profiles/native-settings-manifest.json'
 DEFINES = (
     'PORTABLE_SETTINGS_NATIVE_UI', 'PORTABLE_NATIVE_CANVAS',
     'PORTABLE_NATIVE_CUSTODY_FENCE', 'PORTABLE_CHECKED_STORAGE_RUNTIME',
@@ -91,10 +92,14 @@ def pinned(repos, owner, path):
 
 
 def manifest(version):
-    return {'type': 'application', 'id': 'settings', 'version': version,
+    expected = {'type': 'application', 'id': 'settings', 'version': version,
             'architecture': 'xtensa-esp32s3', 'file_name': 'settings.elf',
             'entry': 'app_main', 'requires': [
                 {'capability': cap, 'api': api} for cap, api in CAPABILITIES]}
+    selected = json.loads((ROOT/MANIFEST_PROFILE).read_text())
+    if selected != expected:
+        raise ValueError('Native source manifest differs from the qualified version/capability recipe')
+    return selected
 
 
 def validate_recipe(arguments, version):
@@ -150,6 +155,7 @@ def build(args):
         destination.write_bytes(pinned(repos, owner, path))
         staged[str(destination.resolve())] = (owner, path)
     version = json.loads((ROOT/VERSION_PROFILE).read_text())['version']
+    manifest(version)  # Refuse source/catalog identity drift before compiling.
     recipe_bytes = pinned(repos, 'profile_source', RECIPE)
     arguments = json.loads(recipe_bytes)['settings']['arguments']
     arguments = [item.format(system=ROOT, bridge=repos['bridges'], output=out)
@@ -198,6 +204,7 @@ def build(args):
         source_inputs[identity] = digest(original)
         identity_paths[path] = (identity, owner, relative)
     source_inputs['system:'+VERSION_PROFILE] = digest((ROOT/VERSION_PROFILE).read_bytes())
+    source_inputs['system:'+MANIFEST_PROFILE] = digest((ROOT/MANIFEST_PROFILE).read_bytes())
     source_inputs['system:scripts/build_native_settings_qualification.py'] = digest(Path(__file__).read_bytes())
     source_inputs['profile_source:'+RECIPE] = digest(recipe_bytes)
     source_commit = git(ROOT, 'rev-parse', 'HEAD').decode().strip()
