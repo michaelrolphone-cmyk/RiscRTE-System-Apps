@@ -94,6 +94,7 @@ static void quick_atomic_discard(void);
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
+#include "PortableDisplayGeometry.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 static bool settings_atomic_owned(void);
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
@@ -914,7 +915,11 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
 #ifdef PORTABLE_TOUCH_SCROLL
   if(raster_clip_active && !portable_scroll_clip(&raster_clip,&x,&y,&w,&h))return;
 #endif
-  int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y, x1 = x + w, y1 = y + h;
+  /* Clip wide endpoints before narrowing, including off-screen INT_MIN/MAX. */
+  int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y;
+  int64_t right = (int64_t)x + w, bottom = (int64_t)y + h;
+  int x1 = right > width() ? width() : (int)right;
+  int y1 = bottom > height() ? height() : (int)bottom;
   if (x1 > width())
     x1 = width();
   if (y1 > height())
@@ -1058,12 +1063,7 @@ static bool acquire_surface(void) {
   }
   portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,false);
   perf_draw_begin();
-  if (!surface.frame || !surface.pixels || surface.width != info.width ||
-      surface.height != info.height ||
-      surface.pixel_format != surface_format ||
-      surface.stride_bytes < (surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2) ||
-      surface.stride_bytes > UINT32_MAX / info.height ||
-      surface.size_bytes < surface.stride_bytes * info.height) {
+  if (!portable_display_surface_valid(&surface, info.width, info.height, surface_format)) {
     display_failure("PORTABLE_APP error=display-surface");
     return false;
   }

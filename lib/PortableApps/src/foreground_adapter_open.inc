@@ -10,8 +10,8 @@
       !display->acquire || !display->release || !display->submit ||
       !display->present_status)
     return -1;
-  if (!display->get_info(display->context, &info) || info.width < 160 ||
-      info.height < 160 || info.width > 1024 || info.height > 1024 ||
+  if (!display->get_info(display->context, &info) ||
+      !portable_display_dimensions(info.width, info.height) ||
       !(info.supported_formats & (RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)|
                                  RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1))))
     return -1;
@@ -27,6 +27,7 @@
 #endif
   surface_format=(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565))?
     RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1;
+  if(!portable_display_geometry(info.width,info.height,surface_format,NULL,NULL))return -1;
   paper_rotated=PORTABLE_DISPLAY_ROTATION==90 && surface_format==RISC_DISPLAY_FORMAT_MONO1 &&
     (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) && info.width>info.height;
   if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return -1;
@@ -61,7 +62,7 @@
    * layout has its own bounded viewport and does not require 240 logical rows. */
   if(!pp_enabled() && surface_format!=RISC_DISPLAY_FORMAT_RGB565)return -1;
 #elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
-  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || !nu_layout_ready() || nu_height()<240)return -1;
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || nu_height()<=0)return -1;
 #elif defined(PORTABLE_NOVA_UI)
   if(!pp_enabled() && (info.width!=240 || info.height!=240))return -1;
 #endif
