@@ -200,6 +200,9 @@ static const char *alarm_title(const alarm_status_v1 *s,char out[24]) {
     }
     return s->occurrence.kind==ALARM_KIND_COUNTDOWN?"COUNTDOWN FINISHED":"ALARM";
 }
+#ifdef PORTABLE_ALARM_NATIVE
+#include "alarm_native.inc"
+#endif
 static void alarm_draw(void) {
     const alarm_status_v1 *s=&alarms.status;
     char title[24];
@@ -219,6 +222,10 @@ static void alarm_draw(void) {
         }
         present(false);return;
     }
+#ifdef PORTABLE_ALARM_NATIVE
+    alarm_native_draw(s,alarm_title(s,title));
+    present(false);return;
+#endif
 #ifdef PORTABLE_NOVA_UI
     portable_nova_begin();
     portable_nova_center(0,16,34,208,alarm_title(s,title),NOVA_CYAN);
@@ -412,6 +419,9 @@ static bool alarm_foreground(bool *consumed) {
 #endif
         portable_touch_sample sample;input_take(&sample);
 #ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#ifdef PORTABLE_ALARM_NATIVE
+        if(pp_enabled())
+#endif
         if(info.width){sample.x=(uint32_t)sample.x*240u/info.width;sample.y=(uint32_t)sample.y*240u/info.width;}
 #endif
         uint32_t buttons=navigation_pending;navigation_pending=0;
@@ -428,6 +438,14 @@ static bool alarm_foreground(bool *consumed) {
             retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && sample.y>=height()-92);
             dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && sample.y>=height()-188 && sample.y<height()-100);
         }
+#ifdef PORTABLE_ALARM_NATIVE
+        else {
+            portable_alarm_layout l;
+            if(!portable_alarm_layout_for(width(),height(),alarms.status.state==ALARM_STATE_BLOCKED,&l))return alarm_failure();
+            retry=(buttons&T5_APP_BUTTON_CONFIRM) || (tap && portable_alarm_hit(l.retry,sample.x,sample.y));
+            dismiss=(buttons&T5_APP_BUTTON_BACK) || (tap && portable_alarm_hit(l.dismiss,sample.x,sample.y));
+        }
+#endif
         if(alarms.status.state==ALARM_STATE_BLOCKED && retry) {
 #if defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION)
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
