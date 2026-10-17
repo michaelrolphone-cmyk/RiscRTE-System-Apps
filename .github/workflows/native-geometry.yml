@@ -8,7 +8,7 @@ on:
       - 'test/native_apps/native_geometry*'
       - '.github/workflows/native-geometry.yml'
   push:
-    branches: [work/native-geometry-bounds-20261017]
+    branches: [main, work/native-geometry-bounds-20261017]
   workflow_dispatch:
 permissions:
   contents: read

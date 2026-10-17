@@ -24,7 +24,7 @@
     "scripts/test_watch_color_profile.py": "6969678648895eaace44e92e47025d1f7a7f7c64db9c493046e172d77f73a58b",
     "test/native_apps/native_geometry_test.c": "1b7ef055b0927140a631bc1a87e6b1306666790f48f595ac0f4d0d915b43a1a1",
     "test/native_apps/native_geometry_admission_test.c": "9f4144983a75d4cca1563dea7ebd157e8bbf150085b6259bc5fedb0e6fc06f38",
-    ".github/workflows/native-geometry.yml": "f98eca35ba4836d95e76f23255136c6886707d112764eb675723ab90e8ed2d21"
+    ".github/workflows/native-geometry.yml": "e9b1c65068e850cb9ebfaaeee71069649b32cd0a1c47f3ed73e2c0a758bd2036"
   },
   "limits": [
     "Synthetic peripherals; no hardware validation",
