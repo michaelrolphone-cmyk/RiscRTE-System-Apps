@@ -6,6 +6,9 @@ on:
       - 'lib/PortableApps/**'
       - 'scripts/*native_settings*'
       - 'scripts/build_portable_settings.py'
+      - 'scripts/*native_overlay*'
+      - 'docs/native-overlays/**'
+      - 'tests/test_native_overlay*'
       - 'test/native_apps/**'
       - 'tests/test_native_settings_*.py'
       - '.github/workflows/native-settings.yml'
@@ -82,9 +85,10 @@ jobs:
       - name: Exact-source 16-capability native Settings development app
         run: |
           python scripts/build_native_settings_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-settings/app
-          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.1' and r['bundle']=='native-settings-1.4.1-dev1' and len(r['required_capabilities'])==16"
+          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.2' and r['bundle']=='native-settings-1.4.2-dev1' and len(r['required_capabilities'])==16"
           python scripts/report_native_settings_memory.py --elf build/native-settings/app/settings.elf --runtime ../runtime --output build/native-settings/admission
           cp build/native-settings/admission/elf-memory-admission.json build/native-settings/app/memory-admission.json
+          python scripts/report_native_overlay_successor.py --app settings --app-dir build/native-settings/app --memory build/native-settings/admission/elf-memory-admission.json --output build/native-settings/app/native-overlay-comparison.json
           cp docs/native-settings/retained-memory-comparison.json build/native-settings/app/historical-1.4.0-retained-memory-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()

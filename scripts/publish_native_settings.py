@@ -15,7 +15,7 @@ import subprocess
 import tempfile
 import zipfile
 
-VERSION = '1.4.1'
+VERSION = '1.4.2'
 TAG = 'native-settings-'+VERSION+'-dev1'
 DIRECT = ('settings.elf', 'settings.json', 'command.json',
           'settings-build-record.json', 'memory-admission.json')
@@ -169,6 +169,12 @@ def main():
             or manifest['requires'] != record['required_capabilities']
             or not record['software_target_validation']):
         raise RuntimeError('Complete qualified capability contract is missing')
+    command = json.loads((app/'command.json').read_text())
+    selected = {'-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_ALARM_NATIVE'}
+    if (not selected <= set(command)
+            or [item for item in command if item.startswith('-D')] != record.get('build_defines')
+            or record.get('native_quick') is not True or record.get('native_alarm') is not True):
+        raise RuntimeError('Qualified native overlay selection is missing or inconsistent')
     elf = (app/'settings.elf').read_bytes()
     if hashlib.sha256(elf).hexdigest() != record['sha256'] or len(elf) != record['size_bytes']:
         raise RuntimeError('Target ELF integrity mismatch')
@@ -196,7 +202,8 @@ def main():
                  'deployment-owned bindings and sufficient loader memory. Physical device fit '
                  'and hardware behavior are unqualified. Does not replace product firmware '
                  'or the retained Wave 0.1.59 Settings package. The archive includes '
-                 'the qualification receipts, source recipe and available license notices.')
+                 'the qualification receipts, source recipe and available license notices. '
+                 'Native Quick Controls and alarm overlays are explicitly selected.')
         gh('release', 'create', TAG, '--repo', args.repository, '--target', args.source_sha,
            '--draft', '--prerelease', '--title', TAG, '--notes', notes)
         gh('release', 'upload', TAG, '--repo', args.repository,

@@ -33,6 +33,7 @@ RECIPE = 'profiles/shared-catalog-recipes.json'
 VERSION_PROFILE = 'lib/PortableApps/profiles/native-settings.json'
 MANIFEST_PROFILE = 'lib/PortableApps/profiles/native-settings-manifest.json'
 DEFINES = (
+    'PORTABLE_QUICK_NATIVE', 'PORTABLE_ALARM_NATIVE',
     'PORTABLE_SETTINGS_NATIVE_UI', 'PORTABLE_NATIVE_CANVAS',
     'PORTABLE_NATIVE_CUSTODY_FENCE', 'PORTABLE_CHECKED_STORAGE_RUNTIME',
     'PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL', 'PORTABLE_QUICK_ATOMIC_PREFERENCES',
@@ -203,6 +204,11 @@ def build(args):
         identity = owner+':'+relative
         source_inputs[identity] = digest(original)
         identity_paths[path] = (identity, owner, relative)
+    required_inputs = {'system:lib/PortableApps/src/quick_native_render.inc',
+        'system:lib/PortableApps/include/PortableQuickLayout.h',
+        'system:lib/PortableApps/include/PortableAlarmLayout.h'}
+    if not required_inputs <= source_inputs.keys():
+        raise ValueError('Native overlay source closure is absent: '+repr(required_inputs-source_inputs.keys()))
     source_inputs['system:'+VERSION_PROFILE] = digest((ROOT/VERSION_PROFILE).read_bytes())
     source_inputs['system:'+MANIFEST_PROFILE] = digest((ROOT/MANIFEST_PROFILE).read_bytes())
     source_inputs['system:scripts/build_native_settings_qualification.py'] = digest(Path(__file__).read_bytes())
@@ -261,7 +267,7 @@ def build(args):
             shutil.copyfile(notice, destination)
     record = {'schema': 1, 'purpose': 'standalone-development-software-qualification-only',
         'bundle': 'native-settings-'+version+'-dev1', 'version': version,
-        'settings_profile': 'native-settings', 'native_ui': True, 'clock_change_control': True,
+        'settings_profile': 'native-settings', 'native_ui': True, 'native_quick': True, 'native_alarm': True, 'clock_change_control': True,
         'repository_commit': source_commit,
         'working_tree_dirty': bool(git(ROOT, 'status', '--porcelain').strip()),
         'external_sources': {key: {'repository': REPOSITORIES[key], 'commit': pin} for key, pin in PINS.items()},

@@ -17,7 +17,7 @@ import zipfile
 from build_native_wifi_qualification import (ALLOWED_IMPORTS, EXPORTS, PINS, REPOSITORIES,
     manifest as expected_manifest, validate_recipe)
 
-TAG = 'native-wifi-1.4.0-dev1'
+TAG = 'native-wifi-1.4.1-dev1'
 DIRECT = ('wifi_settings.elf', 'wifi_settings.json', 'command.json',
           'wifi-build-record.json', 'elf-layout.json', 'elf-memory-admission.json')
 REQUIRED = {*DIRECT, 'publication.json', 'SHA256SUMS', TAG+'.zip'}
@@ -65,12 +65,12 @@ def main():
     record = json.loads((app/'wifi-build-record.json').read_text())
     manifest = json.loads((app/'wifi_settings.json').read_text())
     if (record['repository_commit'] != args.source_sha or record['working_tree_dirty']
-            or record['bundle'] != TAG or record['version'] != '1.4.0'
-            or manifest != expected_manifest('1.4.0')):
+            or record['bundle'] != TAG or record['version'] != '1.4.1'
+            or manifest != expected_manifest('1.4.1')):
         raise RuntimeError('Artifact source/version identity differs from qualified main source')
     if (manifest['requires'] != record['required_capabilities']
             or not all(record.get(name) is True for name in (
-                'software_target_validation', 'compiled_version_verified', 'native_ui',
+                'software_target_validation', 'compiled_version_verified', 'native_ui', 'native_quick', 'native_alarm',
                 'atomic_wifi_persistence', 'settings_availability', 'wifi_profiles',
                 'shared_text_input', 'async_rf_cleanup', 'host_fixture_excluded'))
             or record.get('hardware_verified') is not False
@@ -88,13 +88,13 @@ def main():
             or hashlib.sha256(layout_bytes).hexdigest() != record['elf_layout_sha256']):
         raise RuntimeError('Qualified recipe or ELF layout integrity mismatch')
     command = json.loads(command_bytes)
-    validate_recipe(command, '1.4.0')
+    validate_recipe(command, '1.4.1')
     if [item for item in command if item.startswith('-D')] != record['build_defines']:
         raise RuntimeError('Recorded selectors differ from the qualified command')
     elf = (app/'wifi_settings.elf').read_bytes()
     if (hashlib.sha256(elf).hexdigest() != record['sha256'] or len(elf) != record['size_bytes']
             or elf[:7] != b'\x7fELF\x01\x01\x01' or elf[16:20] != b'\x03\x00\x5e\x00'
-            or b'1.4.0\0' not in elf):
+            or b'1.4.1\0' not in elf):
         raise RuntimeError('Target ELF integrity or identity mismatch')
     layout = json.loads(layout_bytes)
     if (layout['sha256'] != record['sha256'] or layout['file_size_bytes'] != len(elf)
@@ -153,7 +153,7 @@ def main():
         sums = ''.join(hashlib.sha256(path.read_bytes()).hexdigest()+'  '+path.name+'\n'
                        for path in sorted(out.iterdir()) if path.is_file())
         (out/'SHA256SUMS').write_text(sums)
-        notes = ('Standalone Wi-Fi 1.4.0 development/software qualification. '
+        notes = ('Standalone Wi-Fi 1.4.1 development/software qualification. '
                  'Exact source: '+args.source_sha+'. Requires all 18 manifest providers, '
                  'deployment-owned bindings and sufficient loader memory. Physical device fit '
                  'and hardware behavior are unqualified. Does not replace product firmware '
