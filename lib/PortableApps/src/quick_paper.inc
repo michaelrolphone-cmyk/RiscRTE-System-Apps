@@ -28,7 +28,11 @@ static void qp_rect(int x,int y,int w,int h,bool black){
 }
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
 static void qp_text(int x,int y,int w,const char *s,bool heading,bool black) {
- pp_text(qp_x(x),qp_y(y),qp_x(w),s,heading?2:1,heading,black);
+ int max_width=qp_x(w);unsigned options=heading?2u:1u;
+ /* Keep complete state labels inside their native slot at narrow paper widths.
+  * Existing glyph height and all reference-size pixels remain unchanged. */
+ if(pp_measure(s,heading)>max_width)options|=PAPER_TEXT_FIT;
+ pp_text(qp_x(x),qp_y(y),max_width,s,options,heading,black);
 }
 #define qp_tile qp_rect
 static void qp_icon(unsigned icon,int x,int y,bool black){

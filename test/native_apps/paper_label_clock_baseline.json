@@ -1,0 +1,25 @@
+{
+  "source_tree": "4b38f9219f5a105c56422d9b71e52e55e70f6474",
+  "captures": {
+    "410": {
+      "source": "build/paper-coordinate-target-fixed/legacy410-capture/frame-1.pbm",
+      "source_sha256": "f8fc2f2a1e170b03ec0a8a52303cd0314632d2b7403f74cd05b3cae1b8ed68eb",
+      "capture_sha256": "a4fa567161d07ef2bd88c1a6f40ab01198478a144e3979ffc46e4005d289c8fa",
+      "capture": "test/native_apps/paper_label_clock_410.png",
+      "size": [
+        410,
+        700
+      ]
+    },
+    "480": {
+      "source": "build/paper-coordinate-target-fixed/legacy480-capture/frame-1.pbm",
+      "source_sha256": "470e7b14d248ebfd8f0d4a5370d78e731b80405ae572044062f96bf66410022c",
+      "capture_sha256": "004663ff3bbf1d3ebe3b3198c55ed0e533d727084b9064d731657e6eab712540",
+      "capture": "test/native_apps/paper_label_clock_480.png",
+      "size": [
+        480,
+        800
+      ]
+    }
+  }
+}
