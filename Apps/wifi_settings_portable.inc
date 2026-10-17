@@ -381,6 +381,9 @@ bool portable_wifi_close(void) {
 }
 static void wifi_page(unsigned next_page) {
   WIFI_SCROLL_CANCEL();WIFI_NEW_VIEW();
+#ifdef PORTABLE_WIFI_NATIVE_UI
+  portable_wifi_native_invalidate();
+#endif
 #ifdef PORTABLE_WIFI_PROFILES
   saved_loading_active=false;
 #endif
@@ -888,7 +891,11 @@ static void wifi_make_view(void) {
     if(page==WP_PASSWORD){memset(masked,'*',n);masked[n]=0;view.entry=masked;}
     else view.entry=editor;
     /* Show the tail so length-limited fields can still be edited on a watch. */
+#ifndef PORTABLE_WIFI_NATIVE_UI
     if(n>25)view.entry+=n-25;
+#else
+    if(portable_wifi_paper()&&n>25)view.entry+=n-25;
+#endif
     view.message=page==WP_SSID?"32 bytes max; < cancels":"63 chars max; < cancels";
     return;
   }
@@ -1206,7 +1213,12 @@ static bool wifi_open(void) {
   wifi_back_return=wifi_scan_back=false;wifi_service_lease=wifi_service_depth=0;
   wa=t5_app_get_api(1);wr=PORTABLE_APP_RUNTIME();
   if(!wa || !wa->poll || !wa->millis || !wa->screen_width || !wa->screen_height ||
-     wa->screen_width()<240 || wa->screen_height()<240 || !wr || wr->api_version!=1 ||
+#ifdef PORTABLE_WIFI_NATIVE_UI
+     wa->screen_width()<(portable_wifi_paper()?240:128) || wa->screen_height()<(portable_wifi_paper()?240:128) ||
+#else
+     wa->screen_width()<240 || wa->screen_height()<240 ||
+#endif
+     !wr || wr->api_version!=1 ||
      wr->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !wr->acquire || !wr->release || !wr->request_launch || !wr->diagnostic || !wr->yield_ms)return false;
   memset(&wg,0,sizeof(wg));memset(&wk,0,sizeof(wk));wifi=NULL;wifi_store=NULL;
 #ifdef WIFI_ASYNC_V1_SIZE
@@ -1222,6 +1234,9 @@ static bool wifi_open(void) {
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   wifi_text=(portable_text_client){0};wifi_text_state=(risc_text_entry_state_v1){0};wifi_text_active=wifi_text_closing=wifi_home_return=false;
+#endif
+#ifdef PORTABLE_WIFI_NATIVE_UI
+  portable_wifi_native_invalidate();
 #endif
   dirty=true;armed=false;page=WP_ROOT;choice=key_page=0;link_state=WIFI_LINK_DOWN;
   strcpy(status_text,"Disconnected");ip_text[0]=0;last_status=wa->millis();
@@ -1315,7 +1330,11 @@ void app_main(void) {
     }
     if(dirty){
       wifi_make_view();
+#ifdef PORTABLE_WIFI_NATIVE_UI
+      if(paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
+#else
       if(!portable_wifi_paper() || paper_frame_ready()){portable_wifi_render(&view);dirty=false;}
+#endif
     }
     t5_app_input_t input;
     if(!wa->poll(&input,25)) {
@@ -1347,11 +1366,26 @@ void app_main(void) {
 #ifdef PORTABLE_TOUCH_SCROLL
     dirty|=portable_wifi_scroll_changed();
 #endif
+#ifdef PORTABLE_WIFI_NATIVE_UI
+    /* Exit/Back remain responsive while presentation is pending. */
+    if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
+    if(input.tapped&&!portable_wifi_paper()&&(dirty||!portable_wifi_native_ready())){portable_wifi_native_invalidate();continue;}
+#endif
     if(!input.buttons && !input.tapped && !input.exit_requested){armed=true;continue;}
     if(!armed)continue;
     armed=false;
     if(input.exit_requested || (input.buttons&T5_APP_BUTTON_BACK)){if(wifi_back())return;continue;}
     wifi_make_view();
+#ifdef PORTABLE_WIFI_NATIVE_UI
+    if(input.tapped && !portable_wifi_paper()) {
+      int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);input.tapped=false;
+      if(hit==WIFI_HIT_BACK){if(wifi_back())return;continue;}
+      if(hit==WIFI_HIT_PREVIOUS)input.buttons=T5_APP_BUTTON_UP;
+      else if(hit==WIFI_HIT_NEXT)input.buttons=T5_APP_BUTTON_DOWN;
+      else if(hit==WIFI_HIT_SELECT)input.buttons=T5_APP_BUTTON_CONFIRM;
+      else {if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;}
+    }
+#endif
     if(input.tapped && portable_wifi_paper()) {
       int hit=portable_wifi_hit(&view,input.touch_x,input.touch_y);
       input.tapped=false;
