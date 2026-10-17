@@ -25,7 +25,9 @@ before a new gesture can begin. The app snapshots a raw sequence watermark at
 its own successful display-token boundary, rejecting queued older beginnings.
 An already established contact may finish across a status-only repaint when
 its dimensions, page title, row labels, selection and keyboard page are unchanged.
-Changing any of those control identities cancels it. The controller rechecks the
+Changing any of those control identities cancels it. The existing controller
+view-generation boundary also cancels replaced scan results even when an SSID
+label stays the same, such as an authentication-mode change. The controller rechecks the
 current model before applying a tap, including a release delivered while a
 compatible repaint is pending.
 

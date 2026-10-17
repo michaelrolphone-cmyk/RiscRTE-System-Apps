@@ -35,7 +35,7 @@ def main():
         if a.snapshot:flags+=['-DPORTABLE_RASTER_SNAPSHOT']
         cmd=[os.environ.get('CC','cc'),'-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-Wno-unused-function',*flags,f'-DTEST_WIFI_RGB_WIDTH={w}',f'-DTEST_WIFI_RGB_HEIGHT={h}','-DNATIVE_WIFI_WORKFLOW_FIXTURE="'+str(out/'workflow.c')+'"', '-I'+str(ROOT/'lib/PortableApps/include'),'-I'+str(ROOT/'lib/NativeApps/include'),str(ROOT/'test/native_apps/native_wifi_test.c'),'-o',str(binary)]
         subprocess.run(cmd,check=True)
-        for case in ([a.case] if a.case is not None else range(27)):
+        for case in ([a.case] if a.case is not None else range(29)):
             env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0:abort_on_error=1',UBSAN_OPTIONS='halt_on_error=1')
             if a.captures and case==11:
                 captures=out/f'{w}x{h}-pages';captures.mkdir(exist_ok=True);env['PORTABLE_WIFI_FRAME_DIR']=str(captures)

@@ -132,10 +132,18 @@ static const char *wifi_message;
 static unsigned page, choice, key_page;
 #if defined(PORTABLE_TOUCH_SCROLL)
 static unsigned wifi_view_identity;
+#ifdef PORTABLE_WIFI_NATIVE_UI
+#define WIFI_NEW_VIEW() (++wifi_view_identity,portable_wifi_native_invalidate())
+#else
 #define WIFI_NEW_VIEW() (++wifi_view_identity)
+#endif
 #define WIFI_SCROLL_CANCEL() portable_wifi_scroll_interrupt()
 #else
+#ifdef PORTABLE_WIFI_NATIVE_UI
+#define WIFI_NEW_VIEW() portable_wifi_native_invalidate()
+#else
 #define WIFI_NEW_VIEW() ((void)0)
+#endif
 #define WIFI_SCROLL_CANCEL() ((void)0)
 #endif
 static bool wifi_back_return,wifi_scan_back;
@@ -381,9 +389,6 @@ bool portable_wifi_close(void) {
 }
 static void wifi_page(unsigned next_page) {
   WIFI_SCROLL_CANCEL();WIFI_NEW_VIEW();
-#ifdef PORTABLE_WIFI_NATIVE_UI
-  portable_wifi_native_invalidate();
-#endif
 #ifdef PORTABLE_WIFI_PROFILES
   saved_loading_active=false;
 #endif

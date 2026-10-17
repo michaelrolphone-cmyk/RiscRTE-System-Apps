@@ -37,7 +37,7 @@ static void geometry(void){
   assert(!writes&&!connects);
 }
 int main(int argc,char**argv){
-  assert(argc==2);unsigned which=atoi(argv[1]);native_sync_display=which==7||which==17||which==26;native_zero_timestamps=which==8;if(which==9)native_clock_base=UINT32_MAX-50u;workflow_start(which==15);limit_polls=100000;
+  assert(argc==2);unsigned which=atoi(argv[1]);native_sync_display=which==7||which==17||which==26;native_zero_timestamps=which==8;if(which==9)native_clock_base=UINT32_MAX-50u;workflow_start(which==15||which==27);limit_polls=100000;
   if(which==0){geometry();finish();return 0;}
   if(which==1){ /* All visible footer transitions and repeat entry use physical coordinates. */
     frame();assert(portable_wifi_close());unsigned at=ticks+300;
@@ -165,6 +165,15 @@ int main(int argc,char**argv){
     ntap(at+2000,wn_back());app_main();
     assert(native_status_updates==1&&choice==1&&!opened&&launches==1&&!text_opens&&!writes&&!connects);
     finish();
+  }else if(which==27||which==28){
+    wifi_scan_start();garden_radio_scan_result_v1 *scan=which==27?&progress.scan:&fake_scan;
+    progress.phase=RISC_RADIO_RESULTS;scan->state=GARDEN_RADIO_SCAN_DONE;scan->count=1;
+    strcpy(scan->entries[0].ssid,"Same AP");scan->entries[0].auth=GARDEN_RADIO_AUTH_OPEN;tick(250);frame();
+    unsigned at=ticks+50;ntap(at,wn_row(0));t5_app_input_t in;while(ticks<at+50)assert(wa->poll(&in,10));assert(wn_gesture);
+    /* Stable label/geometry does not make a replaced radio entry identical. */
+    scan->entries[0].auth=GARDEN_RADIO_AUTH_WPA2_PSK;tick(250);assert(dirty&&!wn_gesture);frame();
+    unsigned until=ticks+150;while(ticks<until){assert(wa->poll(&in,10));assert(!in.tapped);}
+    assert(!text_opens&&!writes&&!connects);if(which==27)stopped();else assert(wifi_cancel_scan());finish();
   }else assert(!"unknown native case");
   printf("Native Wi-Fi case %u %dx%d PASS\n",which,width(),height());return 0;
 }
