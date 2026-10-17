@@ -243,7 +243,11 @@ static void stz_redraw(void) {
   stz_button(margin+(cities?foot_w+gap:0),foot_y,foot_w,foot_h,"CANCEL",false);
   stz_button(margin+(columns-1)*(foot_w+gap),foot_y,foot_w,foot_h,cities?"SAVE":"OPEN",true);
 #endif
-  present(paper?sp_clean:false);sp_clean=false;
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+  if(sn_enabled())portable_native_present(1,false);else
+#endif
+  present(paper?sp_clean:false);
+  sp_clean=false;
 #ifdef PORTABLE_TOUCH_SCROLL
   if(paper){stz_submitted_page=sv_page;stz_submitted_q8=stz_scroll.position_q8;stz_scroll_visible();}
 #endif
@@ -272,13 +276,17 @@ static bool stz_poll(t5_app_input_t *out) {
 #endif
   if(!sample.valid || sample.cancelled){sv_gesture=false;sv_need_neutral=true;return true;}
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
-  if(sn_enabled()&&!sn_touch_ready()){sn_cancel_pending_touch();return true;}
+  if(sn_enabled()&&!sn_touch_accept(&sample)){sn_cancel_pending_touch();return true;}
   int x=sample.x-(pp_enabled()||sn_enabled()?0:(width()-240)/2),y=sample.y-(pp_enabled()||sn_enabled()?0:(height()-240)/2);
 #else
   int x=sample.x-(pp_enabled()?0:(width()-240)/2),y=sample.y-(pp_enabled()?0:(height()-240)/2);
 #endif
   if(sv_need_neutral){if(!sample.down || (sample.began&&sample.tap_eligible))sv_need_neutral=false;else return true;}
-  if(sample.began){sv_gesture=true;sv_eligible=sample.tap_eligible;sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_dragged=false;}
+  if(sample.began){
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+    if(sn_enabled())sn_begin_gesture();
+#endif
+    sv_gesture=true;sv_eligible=sample.tap_eligible;sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_dragged=false;}
   if(sample.down&&sv_gesture){sv_last_x=x;sv_last_y=y;sv_dragged|=sample.moved;}
   if(!sample.released)return true;
   bool eligible=sv_gesture&&sv_eligible;

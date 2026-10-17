@@ -71,6 +71,9 @@ static uint32_t raster_saved_intent;
 static uint32_t raster_handoff_origin;
 #endif
 static bool raster_saved_app_frame;
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI)
+static unsigned raster_native_present_owner;
+#endif
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
 static bool raster_saved_clean;
 #endif

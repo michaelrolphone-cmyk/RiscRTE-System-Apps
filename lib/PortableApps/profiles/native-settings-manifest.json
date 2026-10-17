@@ -1,7 +1,7 @@
 {
   "type": "application",
   "id": "settings",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "architecture": "xtensa-esp32s3",
   "file_name": "settings.elf",
   "entry": "app_main",

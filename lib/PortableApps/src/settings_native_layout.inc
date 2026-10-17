@@ -109,7 +109,55 @@ static sn_rect sn_control(int x,int y,int w,int h) {
   if(h==30&&(y==66||y==104||y==142))return sn_row((unsigned)(y-66)/38u,sn_choice_scroll);
   return (sn_rect){0,0,0,0};
 }
-/* Raw contacts cannot act against a page/layout which is still queued or
- * painting. Navigation/Back and runtime exit are handled independently. */
+/* An established gesture belongs to one page/control layout. Same-page
+ * slider/scroll paints may finish while it remains held; new contacts never
+ * inherit that ownership. Raw sequence watermarks, not dispatch timestamps,
+ * separate queued pre-presentation starts from genuinely newer gestures. */
+static uint64_t sn_visible_sequence;
+static bool sn_sequence_valid;
+static unsigned sn_gesture_page,sn_gesture_field;
+static uint8_t sn_gesture_contact;
+static int sn_gesture_scroll,sn_gesture_choice;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+static unsigned sn_gesture_region,sn_gesture_first;
+#endif
+static void sn_begin_gesture(void) {
+  sn_gesture_page=sv_page;sn_gesture_field=editor_field;sn_gesture_contact=touch.contact_id;
+  sn_gesture_scroll=sv_scroll[sv_page==SV_ROOT?0:1];sn_gesture_choice=sn_choice_scroll;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  sn_gesture_region=stz_region;sn_gesture_first=stz_first;
+#endif
+}
+static bool sn_owned_gesture(void) {
+  if(!sv_gesture||sn_gesture_page!=sv_page||sn_gesture_contact!=touch.contact_id)return false;
+  if(sv_page==SV_VALUE && sn_gesture_field!=editor_field)return false;
+#ifdef PORTABLE_SETTINGS_TIME_ZONE
+  if((sv_page==SV_TIMEZONE_REGIONS||sv_page==SV_TIMEZONE_CITIES) &&
+      (sn_gesture_region!=stz_region||sn_gesture_first!=stz_first))return false;
+#endif
+  if(sv_axis==1&&(sv_page==SV_ROOT||sv_page==SV_FIELDS||sn_choices()))return true;
+  return sn_gesture_scroll==sv_scroll[sv_page==SV_ROOT?0:1] && sn_gesture_choice==sn_choice_scroll;
+}
 static bool sn_touch_ready(void){return !sp_dirty&&portable_paper_frame_idle();}
+static bool sn_touch_accept(const portable_touch_sample *sample) {
+  if(sn_sequence_valid&&touch.sequence<=sn_visible_sequence&&
+      (sample->began || (sample->released&&!sv_gesture)))return false;
+  return sn_touch_ready()||sn_owned_gesture();
+}
 static void sn_cancel_pending_touch(void){sv_gesture=false;sv_need_neutral=true;portable_touch_cancel_gesture(&touch);}
+static void sn_presented(void) {
+  if(!sv_active||!sn_enabled()||failed)return;
+  if(sn_owned_gesture()) {
+    risc_touch_snapshot_v1 snapshot={0};
+    if(!touch.api->snapshot(touch.api->context,&snapshot)) {
+      portable_touch_terminal(&touch,"snapshot",0);return;
+    }
+    if(!portable_touch_snapshot_valid(&snapshot)||snapshot.sequence<touch.sequence) {
+      portable_touch_fault(&touch,"snapshot-data",0);sn_cancel_pending_touch();return;
+    }
+    sn_visible_sequence=snapshot.sequence;sn_sequence_valid=true;
+    return;
+  }
+  sv_gesture=false;sv_need_neutral=true;input_reset();
+  sn_visible_sequence=touch.sequence;sn_sequence_valid=touch.initialized&&!touch.resync;
+}

@@ -1082,7 +1082,7 @@ static bool settings_open(void) {
   #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(!stz_native_fits())return false;
 #endif
-  if(sn_enabled()){sv_scroll[0]=sv_scroll[1]=0;sn_choice_scroll=0;}
+  if(sn_enabled()){sv_scroll[0]=sv_scroll[1]=0;sn_choice_scroll=0;sn_sequence_valid=false;sn_gesture_page=~0u;}
 #else
   if(width()<240 || height()<240)return false;
 #endif

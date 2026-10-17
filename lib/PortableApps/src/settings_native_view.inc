@@ -125,6 +125,6 @@ static void sn_redraw(void) {
     sn_text(2,g.margin,g.top+20,g.w-2*g.margin,dimensions,SV_CYAN);
     notice="Reported device data";
   }
-  sn_notice(notice);sn_footer_draw(save);present(false);
+  sn_notice(notice);sn_footer_draw(save);portable_native_present(1,false);
 }
 #endif

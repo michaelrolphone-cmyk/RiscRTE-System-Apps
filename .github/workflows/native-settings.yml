@@ -64,11 +64,13 @@ jobs:
           mkdir -p build/native-settings
           python scripts/test_native_settings.py --output build/native-settings/layout | tee build/native-settings/layout.log
           python scripts/test_native_settings_ownership.py --runtime ../runtime --output build/native-settings/ownership | tee build/native-settings/ownership.log
+          python scripts/test_native_settings_capture.py --runtime ../runtime --output build/native-settings/capture | tee build/native-settings/capture.log
+          python scripts/test_native_settings_capture.py --runtime ../runtime --output build/native-settings/capture-snapshot --snapshot | tee build/native-settings/capture-snapshot.log
           python scripts/test_native_settings_timers.py --output build/native-settings/timers | tee build/native-settings/timers.log
           python scripts/test_native_settings_timers.py --output build/native-settings/timers-snapshot --snapshot --case 7 | tee build/native-settings/timers-snapshot.log
       - name: Complete recipe boundaries, Quick Controls and generic sleep/motion bridges
         run: |
-          python -m unittest discover -s tests -p 'test_native_settings_*.py' -v
+          python -m unittest discover -s tests -p 'test_native_settings_*.py' -v 2>&1 | tee build/native-settings/unit-tests.log
           python scripts/test_native_settings_features.py --system . --output build/native-settings/features
           python scripts/test_native_settings_bridges.py --system . --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --output build/native-settings/bridges
       - name: Install pinned public target compiler
@@ -80,10 +82,10 @@ jobs:
       - name: Exact-source 16-capability native Settings development app
         run: |
           python scripts/build_native_settings_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-settings/app
-          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.0' and len(r['required_capabilities'])==16"
+          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.1' and r['bundle']=='native-settings-1.4.1-dev1' and len(r['required_capabilities'])==16"
           python scripts/report_native_settings_memory.py --elf build/native-settings/app/settings.elf --runtime ../runtime --output build/native-settings/admission
           cp build/native-settings/admission/elf-memory-admission.json build/native-settings/app/memory-admission.json
-          cp docs/native-settings/retained-memory-comparison.json build/native-settings/app/retained-memory-comparison.json
+          cp docs/native-settings/retained-memory-comparison.json build/native-settings/app/historical-1.4.0-retained-memory-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -111,6 +113,10 @@ jobs:
         with:
           name: native-settings-software-qualification-${{ github.sha }}
           path: qualified
+      - name: Annotate preserved dev1 with its confirmed input limitation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_native_settings.py --repository '${{ github.repository }}' --annotate-dev1
       - name: Publish or verify immutable standalone development release
         env:
           GH_TOKEN: ${{ github.token }}

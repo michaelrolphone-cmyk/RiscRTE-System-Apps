@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'scripts'))
 import build_portable_settings as builder
 import build_native_settings_qualification as qualification
+import publish_native_settings as publisher
 
 
 class NativeSettingsBuild(unittest.TestCase):
@@ -40,11 +41,13 @@ class NativeSettingsBuild(unittest.TestCase):
                 compiler.assert_not_called()
 
     def test_explicit_complete_profile_declares_generic_retained_capabilities(self):
-        profile = qualification.manifest('1.4.0')
+        profile = qualification.manifest('1.4.1')
         self.assertEqual(profile, json.loads((ROOT/qualification.MANIFEST_PROFILE).read_text()))
         with self.assertRaisesRegex(ValueError, 'source manifest differs'):
             qualification.manifest('1.3.4')
-        self.assertEqual(profile['version'], '1.4.0')
+        with self.assertRaisesRegex(ValueError, 'source manifest differs'):
+            qualification.manifest('1.4.0')
+        self.assertEqual(profile['version'], '1.4.1')
         self.assertEqual(len(profile['requires']), 16)
         self.assertEqual({item['capability'] for item in profile['requires']}, {
             'display.output', 'input.touch.raw', 'rtc.clock', 'alarm.service',
@@ -58,21 +61,32 @@ class NativeSettingsBuild(unittest.TestCase):
 
     def test_complete_recipe_refuses_subset_or_inconsistent_version(self):
         arguments = ['-D'+name for name in qualification.REQUIRED_FEATURES]
-        arguments += ['-DPORTABLE_SETTINGS_VERSION="1.4.0"']
+        arguments += ['-DPORTABLE_SETTINGS_VERSION="1.4.1"']
         arguments += ['source/'+name for name in ('settings.c', 'adapter.c',
             'portable_navigation.c', 'portable_sleep.c', 'quick_actions.c',
             'quick_render.c', 'quick_session.c', 'quick_radios.c')]
-        qualification.validate_recipe(arguments, '1.4.0')
+        qualification.validate_recipe(arguments, '1.4.1')
         self.assertEqual(set(qualification.CAPABILITY_SELECTORS),
                          {name for name, version in qualification.CAPABILITIES})
         for missing in ('PORTABLE_BLE_BROADCAST', 'PORTABLE_RUNTIME_APP_CATALOG',
                         'PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL', 'PORTABLE_MOTION_WAKE'):
             with self.subTest(missing=missing), self.assertRaisesRegex(ValueError, 'lacks'):
-                qualification.validate_recipe([x for x in arguments if x != '-D'+missing], '1.4.0')
+                qualification.validate_recipe([x for x in arguments if x != '-D'+missing], '1.4.1')
         with self.assertRaisesRegex(ValueError, 'version'):
             qualification.validate_recipe(arguments, '1.3.4')
         with self.assertRaisesRegex(ValueError, 'source selection'):
-            qualification.validate_recipe([x for x in arguments if not x.endswith('portable_sleep.c')], '1.4.0')
+            qualification.validate_recipe([x for x in arguments if not x.endswith('portable_sleep.c')], '1.4.1')
+
+    def test_selected_profile_publisher_and_workflow_versions_match(self):
+        version = json.loads((ROOT/qualification.VERSION_PROFILE).read_text())['version']
+        self.assertEqual(version, '1.4.1')
+        self.assertEqual(publisher.VERSION, version)
+        self.assertEqual(publisher.TAG, 'native-settings-'+version+'-dev1')
+        self.assertNotIn('native-settings-1.4.0-dev1.zip', publisher.REQUIRED)
+        workflow = (ROOT/'.github/workflows/native-settings.yml').read_text()
+        self.assertIn("r['version']=='"+version+"'", workflow)
+        self.assertIn("r['bundle']=='"+publisher.TAG+"'", workflow)
+        self.assertEqual(json.loads((ROOT/'Apps/settings.json').read_text())['version'], '1.3.4')
 
     def test_external_recipe_reads_immutable_objects_only(self):
         with mock.patch.object(qualification.subprocess, 'check_output', return_value=b'canonical') as read:
@@ -123,7 +137,7 @@ class NativeSettingsBuild(unittest.TestCase):
                     builder.build(parser.parse_args([*flags, '--output-dir', str(root/name)]), parser)
             version = json.loads((ROOT/'Apps/settings.json').read_text())['version']
             native_version = json.loads((ROOT/'lib/PortableApps/profiles/native-settings.json').read_text())['version']
-            self.assertEqual(native_version, '1.4.0')
+            self.assertEqual(native_version, '1.4.1')
             self.assertNotEqual(native_version, version)
             for (name, flags), command in zip(cases, commands):
                 with self.subTest(name=name):
