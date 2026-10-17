@@ -38,10 +38,12 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
   if(!s || (scale&255u)<1 || (scale&255u)>4 || max_width<=0)return;
 #if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:(scale&PAPER_TEXT_LARGE)?2:1;
-  int total=pp_measure(s,heading)*zoom;
-  int fitted=(scale&PAPER_TEXT_FIT)&&total>max_width?max_width:total;
 #else
   int zoom=(scale&PAPER_TEXT_CLOCK)?3:1;
+#endif
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
+  int total=pp_measure(s,heading)*zoom;
+  int fitted=(scale&PAPER_TEXT_FIT)&&total>max_width?max_width:total;
 #endif
   int pen=x*16;
   for(unsigned k=0;k<96 && s[k];k++) {
@@ -57,7 +59,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
     if(c<32||c>126)c='?';
     const rpp_glyph *g=&rpp_text[(heading?0:95)+c-32];
     int advance=(int)g->advance_q4*zoom;
-#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
     if(!(scale&PAPER_TEXT_FIT)&&(pen+advance+15)/16>x+max_width)break;
 #else
     if((pen+advance+15)/16>x+max_width)break;
@@ -74,7 +76,7 @@ static void pp_text(int x,int y,int max_width,const char *s,unsigned scale,bool 
       if(!(g->bits[n/8]&(0x80u>>(n%8)))){i++;continue;}
       unsigned first=i++;
       while(i<g->width){n=j*g->width+i;if(!(g->bits[n/8]&(0x80u>>(n%8))))break;i++;}
-#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP)
+#if defined(PORTABLE_HOME_POINTS_NATIVE_UTC) || defined(PORTABLE_USB_TRANSFER_APP) || defined(PORTABLE_QUICK_ACTIONS)
       int offset=pen/16-x+((int)g->left+(int)first)*zoom;
       int end=pen/16-x+((int)g->left+(int)i)*zoom;
       int left=total?offset*fitted/total:offset;
