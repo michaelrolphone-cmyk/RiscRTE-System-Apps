@@ -19,6 +19,9 @@ The first resident build exposed an unused `qp_x` static function after rectangl
 - `original-results.json`, `original-test.log`: 124 unchanged original paper cases and two Home ordered-input runs; optional captures were omitted in that separate historical run.
 - `fixed-410x700.png`, `fixed-resident-480x640-no-audio.png`, `fixed-resident-480x640-audio.png`: final actual provider captures.
 - `sdk-source.json`: exact external repositories, commits, header paths and SHA256s.
+- `target-probe-results.json`: no-import freestanding Xtensa probe, unchanged ELF admission, and both compiler dependency closures.
+- `target-results/`: the four actual target builders, logs and executable hashes after the wide-division correction.
+- `target-admission-failure/`: preserved original-head first-rejection witness and artifact identities.
 - `summary.json`: source/artifact hashes and qualified component limits.
 
 The maintained runner is `scripts/test_paper_coordinate_adapter.py`, with four separate `test/native_apps/paper_coordinate_*` fixtures. Existing fixture files remain unchanged. It accepts explicit Runtime/display SDK paths and records compiler non-system dependencies. Frozen reference assets are checked against `baseline.json` before compilation and pixel comparisons. Builds run sequentially; only generated executables are hashed and removed.

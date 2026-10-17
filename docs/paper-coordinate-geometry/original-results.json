@@ -686,7 +686,7 @@
     "lib/PortableApps/paper_fonts/text.inc": "9ee273df1c27df92d8ab2a985fb474d15b715770984894da4fee40b8cd9f2e4a",
     "lib/PortableApps/src/quick_adapter.inc": "c4a8c550bc506e50c03f491a4c570620d001c1ad3d520405d48e8ba9629606e6",
     "lib/PortableApps/src/quick_paper.inc": "70d5c0c51a0e0bf5822f400d27d830166e9205678edef70a264b9398b90943fc",
-    "lib/PortableApps/include/PortablePaperGeometry.h": "079d3c2dd8ea4d11b65c8aa717516d046bad148850415da445d8044119f21a4a",
+    "lib/PortableApps/include/PortablePaperGeometry.h": "09090f544f6f84ca701742285039cb4a0e7b59ba5446ba225281f80be42c2c55",
     "lib/PortableApps/src/installed_catalog_adapter.inc": "eb073209f594b38f5123a7f936d3b923517b34a978426de8611de9acba37eb82",
     "lib/PortableApps/src/resident_adapter.inc": "db0c5d2b2423a7cd0f948af816234b51db489ea73cf43ca050e7ef1b7ec5a514",
     "lib/PortableApps/src/resident_shell.inc": "8ae9ae7483ee06dce74983cad92ee3199050b4045ad732c25d4dbd211fda3fad",
@@ -715,5 +715,18 @@
     "scripts/test_paper_quick_actions.py": "f4117d63e4c01e6445bbf79d6b69fdeb2dc58c3a27160ccc06124db4505f4e40",
     "build/run_paper_original_fixed.py": "f9e742f00e4bff2d763fab2c8f7229ebe827a878b1f20fcff544490036b421ba"
   },
-  "log_sha256": "3a32c31f4ba81e3b8893729bfdc36fc9d1907d2ce1873e06d64d6a8378b6bed6"
+  "log_sha256": "a5382f9a12438e68a478dc32fd33f05b531e65c3680ca67387e790aa3b733263",
+  "runner_sha256": "2d6697544aba8c983c3df85f7bb655148e39c6e1b1cd612f131160c2526ea1a7",
+  "executables_sha256": {
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-0-0-0": "7cfa529a176bcf6012cc997a39c8dde9f7d9bb80b7caf0396493bfd0c18815c0",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-0-0-1": "1d1097112de24b577bc5578c646dff24f990f1ab5a645b5bfb93be8b1e45ca6e",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-1-0-0": "26fb9c300c51ef9c011c410eecbe6ddf4b106db7b19346b31918aca2c72a30a7",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-1-0-1": "293e3e490b35be02ef1e7e39f4957b25c8a111e4db1178534cf6a9346e9075f3",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-0-1-0": "1e706ef787ca83f5ea4c17d6fd2083e029f929995abc272daca79858549deadd",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-0-1-1": "c25d2b020238121b506213be0da269f8f68054bc05560d217cbd6af5b3696b68",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-1-1-0": "1b20e100754f9856de9fee82396ab9d0418dc269f7be6cb91929ec25b8871555",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/paper-1-1-1": "659372e21d224ca08f9e0a1aef08f1450670934ecd406cc7741f8074c2a1e917",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/home-0": "2a4861cfb7c06c7a771c690db527769370477e09fe0fa13906a2e3feafb314d8",
+    "/tmp/quick-native-adapter-20261017/build/paper-original-target-fixed/home-1": "ff430a00ea1e674b7fba8b27fdc5656f68f76d7648f7fa776e9eddab7441639c"
+  }
 }

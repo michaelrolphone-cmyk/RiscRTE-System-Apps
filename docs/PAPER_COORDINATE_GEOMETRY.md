@@ -28,8 +28,10 @@ preserved rather than redefined by this correction.
 For an existing inverse input map `floor(pixel * reference / extent)`, logical
 `[a,b)` is accepted at native `[ceil(a*extent/reference), ceil(b*extent/reference))`.
 `PortablePaperGeometry.h` applies those same endpoints to each rectangle axis,
-including the signed transition offset. It uses 64-bit intermediates and clips
-to the native extent before returning drawing integers. Nonpositive lengths,
+including the signed transition offset. It promotes and clips signed reference
+endpoints before multiplication. Ordinary 480/800 references then use safe
+32-bit products and division; wide references use at most 16 product comparisons
+without 64-bit division or modulo. Nonpositive lengths,
 invalid extents/reference sizes, wholly offscreen or collapsed intervals emit
 no rectangle. Adjacent downsampled one-row intervals can individually collapse;
 their union still covers the projected complete glyph/control. No blanket
@@ -57,6 +59,23 @@ including clipped and negative transition coordinates.
 * The unchanged original paper suite separately passes 124 cases plus two
   Home ordered-input runs. The reproducible CI workflow uses pinned Runtime and
   display SDK headers and records compiler non-system dependency hashes.
+* The freestanding Xtensa probe has no undefined imports and passes the unchanged
+  ELF validator. The actual Wi-Fi paper, Quick Clock, Quick File Browser and full
+  16-capability native Settings target builders also pass unchanged admission.
+
+## Target regression retained
+
+Initial published head `95610f4148153ccc1603c30fdb88b657f9809188` passed both
+paper host workflows, but its aggregate was 22 successful and four failed runs.
+The first endpoint implementation introduced signed 64-bit division/modulo.
+Wi-Fi rejected undefined `__divdi3` and `__moddi3` imports. Settings linked those
+helpers locally but the unchanged validator first rejected `.rela.dyn` entry
+3308 (type 0, offset 0); Quick Clock and Quick File Browser also failed admission.
+The arithmetic-only follow-up keeps the same pixel contract while removing the
+wide division dependency. The failed-head admission witness and exact ELF hash
+are retained in `paper-coordinate-geometry/target-admission-failure`; corrected
+target receipts are in `target-results`. No import allowlist or loader policy
+was relaxed. Host pixel tests alone are not target ABI acceptance.
 
 This is host source-component evidence. Hardware and complete app integration
 remain separate. The stopped shared idle correction is neither included nor

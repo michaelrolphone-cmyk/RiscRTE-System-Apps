@@ -6,9 +6,9 @@
   "compiler_units": 29,
   "distinct_non_system_dependencies": 142,
   "explicit_source_sha256": {
-    ".github/workflows/paper-coordinate-geometry.yml": "ee8c2833771cb89a853ed00faaefcfead5d51d99ca02366ce5bd5dff06636787",
-    "docs/PAPER_COORDINATE_GEOMETRY.md": "74c0309404d95ede42c19b138cc3f16432262fece027a55cfb43c524fb8b9a4f",
-    "lib/PortableApps/include/PortablePaperGeometry.h": "079d3c2dd8ea4d11b65c8aa717516d046bad148850415da445d8044119f21a4a",
+    ".github/workflows/paper-coordinate-geometry.yml": "0135fe4f93b72494e40663dcb01f311187cc2fdaae52d25e8d68f0c6d332467a",
+    "docs/PAPER_COORDINATE_GEOMETRY.md": "0d35812ebb139cd7927b716cb71e6960511fe40ddf44ccc66b8ef3101aabcd1a",
+    "lib/PortableApps/include/PortablePaperGeometry.h": "09090f544f6f84ca701742285039cb4a0e7b59ba5446ba225281f80be42c2c55",
     "lib/PortableApps/src/quick_paper.inc": "70d5c0c51a0e0bf5822f400d27d830166e9205678edef70a264b9398b90943fc",
     "scripts/test_paper_geometry.py": "fcad4e07bccb9606d6583eb6c1ba706ff5b6a1656ac000778727bc87892c9869",
     "scripts/test_paper_coordinate_adapter.py": "d6dd77ca096398eefdaa69f7931f0828d34632e88f4583a7edc73a106584f4c2",
@@ -16,20 +16,23 @@
     "test/native_apps/paper_coordinate_test.c": "a0708c374fb2614f118ced184bfcce3214d23ba0252750e0ca7654764a95dad5",
     "test/native_apps/paper_coordinate_quick_fixture.c": "302e75f9e1636b26a1601b3218e89b39d62e4196bb2eac0acfac804d9cf3105f",
     "test/native_apps/paper_coordinate_clock_fixture.c": "885058134b8e632e90ef6bbc980010e278a39b725de213061fd2aba1bc77a598",
-    "test/native_apps/paper_geometry_test.c": "d45ecb2377b475f23ef801433f8893e0e5c8a3eeafbd08d53f8ea9bb2586bb43"
+    "test/native_apps/paper_geometry_test.c": "d45ecb2377b475f23ef801433f8893e0e5c8a3eeafbd08d53f8ea9bb2586bb43",
+    "scripts/test_paper_geometry_target.py": "d602ab293151a204e0cd6acc7288768ade8aff981af1992f4e049c05ab07baf0",
+    "test/native_apps/paper_geometry_target.c": "c9f37e2ef0ac57ea134746859fdf95bd7ba8ef02b967f7431be457e564c1cd5b"
   },
   "artifacts_sha256": {
+    "target-probe-results.json": "1b6a5adbb0327a84d54fd9dc9ab3cc487c1eb300a38ec9d42660c0d4fbb44c39",
     "fixed-resident-480x640-audio.png": "c45b3a05a51aa5c7b9f93bcbae504ea99e06f9265887f9f2c071c6798f35e11b",
     "fixed-resident-480x640-no-audio.png": "3effb0f0ad4b8ca2e244040a5c49d4ea535c42323463ebab4c4e3a1c80af2909",
     "fixed-410x700.png": "e162833ec12a623bb836e350d5562a1113ca87db32f8c97d172624c3ca8bec24",
-    "fixed-test.log": "ff84c276b7efb2410b2be6122927469d41c620894d6fb22daaeb08d3e29d9d87",
-    "fixed-receipt.json": "4053a792517624dce7f3d96fc4f8b98333ab7b26e92273237aa630b803190b50",
+    "fixed-test.log": "b39681f60d066bb1230939afead5b9a005ceb57a7b5546bcc62797b2714c832a",
+    "fixed-receipt.json": "dd881779c12daf7d8810bc60d7b3de111ac062080d9ced606a1676f065866823",
     "sdk-source.json": "04c4edcdf8efa80fd755ffbaeea364cc1403fb731eb37070337bb1e772869838",
-    "FIXED.md": "fa2bd013c0fd999369fcf900f0fcde359ed3664045f40f51efceb62e259a3524",
-    "original-test.log": "3a32c31f4ba81e3b8893729bfdc36fc9d1907d2ce1873e06d64d6a8378b6bed6",
-    "original-results.json": "e03c58aad558ac7a677af7fcef593150b34297640d6dc1cd546899642683bb91",
+    "FIXED.md": "19c38af04eaed157e3c652820cb021df8a8e9d38a95c191a22af40deed64516a",
+    "original-test.log": "a5382f9a12438e68a478dc32fd33f05b531e65c3680ca67387e790aa3b733263",
+    "original-results.json": "9e72c4cbbaba6923130b94ae51a00c5439f4933774370f26e611c5aaa82caed1",
     "pure-test.log": "ef4c9d291a04597d38d766fdbf4058535ff6bea9e947b6778a5702742fe559ce",
-    "pure-results.json": "bea59e1422efa25a6b78f2cd20d3abc40ba466eafe8a5362247449ab3d7dd253",
+    "pure-results.json": "9c62c46fbf52099c114d1a3514ae294b781c2bdf7cf62d8ab8e96b9464dce3c3",
     "HARNESS-ATTEMPTS.md": "4afeb3b66ec0c8466d8ea245ae504c1873486d2ef40d849440e8c1a0ca657fec",
     "BASELINE.md": "ded01ac9e6acfdad0cb2cd1778fa752497205e0e65b134bb11149c085564a9ca",
     "baseline-resident-results.json": "290c48a60babcb9fe68040159006f9970097ca4bc8f3afe5194d0e85a6defca2",
@@ -40,7 +43,24 @@
     "baseline-410x700.png": "999b90ecaa1fecfa22c9d132cf3769021a21af3853a23e96ba5ed270d2761208",
     "resident-480x800-audio.png": "12baa400d7259025c82f18f17c45e38e9dbda78840d45d5fc8d17d46d966f486",
     "resident-480x800-no-audio.png": "0b2438d132973a997861c5c247fb76106c2f75cd0f325dcff7ec5fead38cff42",
-    "legacy-480x800.png": "88c4164d48e8d057edffb8259c8743d5e2be4fe83ce07af24004ee5d26db47ce"
+    "legacy-480x800.png": "88c4164d48e8d057edffb8259c8743d5e2be4fe83ce07af24004ee5d26db47ce",
+    "target-results/settings-command.json": "44d0b643292ef945924f17d07aac695a72d683dd9f6b87338257282ea960c221",
+    "target-results/executable-sha256.txt": "0d10e1450f6abaf7d2f73d2455e1737a7c0973b4c4e04cc727c720f3a25f7816",
+    "target-results/settings.log": "43f01741281586855e2c8ef0420ffd566ae4b71d3fa7b1983daf19462918a239",
+    "target-results/settings-build-record.json": "e12b1b52da35223b00f2aac46c89b856314f9085fa6918639bed1991ab919467",
+    "target-results/file-browser.log": "2d3deccfe2065c4f9e30312f8029164cc34075c2b3fff38ffc1969d0f8962c91",
+    "target-results/file-browser-build-record.json": "f156d3e8cf95b900c3a663fa78f992d36fb72866355d58b47e782723dc63aa4b",
+    "target-results/clock.log": "a5e974be8fcad592ffab87b72b3847ad510f6f72233958a6d7e7b9a57a7d6d3b",
+    "target-results/clock-build-record.json": "b7a70068b652aea8e0ff2c407c9da7761d4ee83fe92b2aca123a640ddd1a0053",
+    "target-results/wifi.log": "330d9f6e69a32fa35a64bb838cb46a2926b5a2097c25ed5b4faa64fa316d81ef",
+    "target-results/wifi-build-record.json": "5918d8df70eeb108ccc11da1c54dc25609030f3e245db6b42badc7ad7bf8235c",
+    "target-admission-failure/before-probe-sha256.txt": "29eff2e5619ca4dc3cf92509c9882e3aeeb55acbbe999cb51dd1bce596ff4bd2",
+    "target-admission-failure/before-probe.c": "4b6d83f45bc9e9e6c3b1360ff70f3122ccca60bf0d8958a19b9f0d691e4a9dab",
+    "target-admission-failure/before-probe-symbols.txt": "b7b31ff9ed21bab72f638b5499ee7e9d9f0df080e76bf9954c5e00278cee59ac",
+    "target-admission-failure/result.log": "82097d8d7b074c390eca9cb7e80f28615427c69e94a90180dd237edccb340d31",
+    "target-admission-failure/validator.c": "5d70b4640f1e9be007e5d195a18a99c9cf2937f0e4e2d8894b9fe3c8d24e3bac",
+    "target-admission-failure/driver.c": "cd97ad936a3ddf43738311621d41c2cb4071fcf68abd70656614238db1d71440",
+    "target-admission-failure/receipt.json": "80d1ca8aae15b3a18fcc4032c3651cfbaf1613ec3675aac0480076fbeef7dc7e"
   },
   "original_cases": 124,
   "home_runs": 2,
@@ -62,5 +82,27 @@
   },
   "reference_480x800_equal": true,
   "hardware_tested": false,
-  "remaining_acceptance": "Same Quick task: bound existing410x700 time/UNAVAILABLE labels and measure/decide paper alarm horizontal hit-strip intent. Shared idle correction and whole-app activation remain separate."
+  "remaining_acceptance": "Same Quick task: bound existing410x700 time/UNAVAILABLE labels and measure/decide paper alarm horizontal hit-strip intent. Shared idle correction and whole-app activation remain separate.",
+  "initial_published_head": "95610f4148153ccc1603c30fdb88b657f9809188",
+  "initial_ci": {
+    "success": 22,
+    "failure": 4,
+    "failed_runs": [
+      39054473355,
+      39054473182,
+      39054473089,
+      39054473170
+    ]
+  },
+  "target_requalification": {
+    "probe": "zero imports and unchanged validator pass",
+    "real_builders": [
+      "Wi-Fi paper",
+      "Quick Clock",
+      "Quick File Browser",
+      "Native Settings full16-capability"
+    ],
+    "host_capture_files_equal_to_initial": 134,
+    "no_loader_or_import_policy_change": true
+  }
 }

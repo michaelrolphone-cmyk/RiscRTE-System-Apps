@@ -14,7 +14,7 @@
         "-o",
         "/tmp/quick-native-adapter-20261017/build/paper-geometry/normal"
       ],
-      "binary_sha256": "b4bf5db88ee5929fcb0028d3a19398e54a3bf723ec297c81aeea15284f127140",
+      "binary_sha256": "e7d0e2a5e2018475fa720e09c5df2e3ee146a38abfcfaf6c7b31f5ddeeb1d2a7",
       "stdout": "paper projection: intervals=26362 pixel_assertions=46629037 edge_assertions=50938 invalid_rejections=9 PASS\n",
       "stderr": ""
     },
@@ -36,13 +36,13 @@
         "-o",
         "/tmp/quick-native-adapter-20261017/build/paper-geometry/sanitized"
       ],
-      "binary_sha256": "e94aee5704118a6df9c71e167fc8ee4dada9c4970f095385045827edc064dec9",
+      "binary_sha256": "12749dfe3887140fa441ea347ce0526c8af60f04699ff1cbf593e39d1d6c9501",
       "stdout": "paper projection: intervals=26362 pixel_assertions=46629037 edge_assertions=50938 invalid_rejections=9 PASS\n",
       "stderr": ""
     }
   ],
   "source_sha256": {
-    "lib/PortableApps/include/PortablePaperGeometry.h": "079d3c2dd8ea4d11b65c8aa717516d046bad148850415da445d8044119f21a4a",
+    "lib/PortableApps/include/PortablePaperGeometry.h": "09090f544f6f84ca701742285039cb4a0e7b59ba5446ba225281f80be42c2c55",
     "test/native_apps/paper_geometry_test.c": "d45ecb2377b475f23ef801433f8893e0e5c8a3eeafbd08d53f8ea9bb2586bb43",
     "scripts/test_paper_geometry.py": "fcad4e07bccb9606d6583eb6c1ba706ff5b6a1656ac000778727bc87892c9869"
   }
