@@ -14,6 +14,8 @@ import subprocess
 import tempfile
 import zipfile
 
+from native_overlay_evidence import validate_native_overlay_evidence
+
 from build_native_wifi_qualification import (ALLOWED_IMPORTS, EXPORTS, PINS, REPOSITORIES,
     manifest as expected_manifest, validate_recipe)
 
@@ -135,6 +137,8 @@ def main():
             raise RuntimeError('Qualified license notice changed: '+relative)
     if not record['notice_sha256']:
         raise RuntimeError('Qualified license notices are missing')
+    overlay_evidence = validate_native_overlay_evidence(
+        'wifi', artifact, record, args.source_sha)
     with tempfile.TemporaryDirectory() as temporary:
         out = Path(temporary)
         for name in DIRECT:
@@ -143,7 +147,8 @@ def main():
                        'qualification': 'software-only', 'hardware_verified': False,
                        'firmware_replacement': False, 'elf_sha256': record['sha256'],
                        'admission_sha256': hashlib.sha256(admission_bytes).hexdigest(),
-                       'manifest_sha256': admission['manifest_sha256']}
+                       'manifest_sha256': admission['manifest_sha256'],
+                       'native_overlay_evidence': overlay_evidence}
         (out/'publication.json').write_text(json.dumps(publication, indent=2)+'\n')
         with zipfile.ZipFile(out/(TAG+'.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
             for path in sorted(artifact.rglob('*')):

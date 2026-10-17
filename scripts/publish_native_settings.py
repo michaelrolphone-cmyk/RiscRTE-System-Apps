@@ -15,6 +15,8 @@ import subprocess
 import tempfile
 import zipfile
 
+from native_overlay_evidence import validate_native_overlay_evidence
+
 VERSION = '1.4.2'
 TAG = 'native-settings-'+VERSION+'-dev1'
 DIRECT = ('settings.elf', 'settings.json', 'command.json',
@@ -181,13 +183,16 @@ def main():
     for name in DIRECT:
         if not (app/name).is_file():
             raise RuntimeError('Missing qualified release input: '+name)
+    overlay_evidence = validate_native_overlay_evidence(
+        'settings', artifact, record, args.source_sha)
     with tempfile.TemporaryDirectory() as temporary:
         out = Path(temporary)
         for name in DIRECT:
             shutil.copyfile(app/name, out/name)
         publication = {'schema': 1, 'tag': TAG, 'source_commit': args.source_sha,
                        'qualification': 'software-only', 'hardware_verified': False,
-                       'firmware_replacement': False, 'elf_sha256': record['sha256']}
+                       'firmware_replacement': False, 'elf_sha256': record['sha256'],
+                       'native_overlay_evidence': overlay_evidence}
         (out/'publication.json').write_text(json.dumps(publication, indent=2)+'\n')
         with zipfile.ZipFile(out/(TAG+'.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
             for path in sorted(artifact.rglob('*')):

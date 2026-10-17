@@ -18,7 +18,7 @@ for before,after in replacements.items():
  assert before in s,before;s=s.replace(before,after)
 fixture=out/'fixture.c';fixture.write_text(s)
 rows=[];dependencies={}
-for profile,selection in [('native',['-DPORTABLE_NATIVE_CANVAS','-DPORTABLE_QUICK_NATIVE']),('height',['-DPORTABLE_WATCH_NATIVE_HEIGHT','-DPORTABLE_QUICK_NATIVE']),('off',['-DPORTABLE_WATCH_NATIVE_HEIGHT'])]:
+for profile,selection in [('native',['-DPORTABLE_NATIVE_CANVAS','-DPORTABLE_QUICK_NATIVE']),('height',['-DPORTABLE_WATCH_NATIVE_HEIGHT','-DPORTABLE_QUICK_NATIVE']),('off',['-DPORTABLE_WATCH_NATIVE_HEIGHT']),('native-color',['-DPORTABLE_NATIVE_CANVAS','-DPORTABLE_WATCH_NATIVE_HEIGHT','-DPORTABLE_QUICK_NATIVE','-DPORTABLE_WATCH_COLOR_ONLY']),('off-color',['-DPORTABLE_WATCH_NATIVE_HEIGHT','-DPORTABLE_WATCH_COLOR_ONLY'])]:
  for snapshot in (False,True):
   for sanitized in ((False,) if a.normal_only else (False,True)):
    name=f'{profile}-snapshot{int(snapshot)}-san{int(sanitized)}';binary=out/'test-binary'

@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
 spec = importlib.util.spec_from_file_location('native_publish', ROOT/'scripts/publish_native_settings.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
@@ -55,7 +56,9 @@ class NativeSettingsPublication(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            self.invoke(root, fake)
+            with patch.object(publisher, 'validate_native_overlay_evidence', return_value={'checked': True}) as gate:
+                self.invoke(root, fake)
+                gate.assert_called_once()
         mutations = [c for c in calls if c[:2] in [('release','create'),('release','upload'),('release','edit')]]
         self.assertEqual([c[1] for c in mutations], ['create','upload','edit'])
         self.assertIn('--draft', mutations[0])

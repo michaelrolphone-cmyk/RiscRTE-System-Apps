@@ -84,7 +84,10 @@ class NativeWifiPublication(unittest.TestCase):
                 self.assertIn(sha((paths[0].parent/'wifi_settings.elf').read_bytes()), sums)
             return subprocess.CompletedProcess([], 0, '', '')
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); self.fixture(root); self.invoke(root, fake)
+            root = Path(temporary); self.fixture(root)
+            with patch.object(publisher, 'validate_native_overlay_evidence', return_value={'checked': True}) as gate:
+                self.invoke(root, fake)
+                gate.assert_called_once()
         mutations = [c for c in calls if c[:2] in [('release','create'), ('release','upload'), ('release','edit')]]
         self.assertEqual([c[1] for c in mutations], ['create', 'upload', 'edit'])
         self.assertIn('--draft', mutations[0])

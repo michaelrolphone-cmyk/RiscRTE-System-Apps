@@ -1,0 +1,71 @@
+{
+  "schema": 1,
+  "verified_at": "2026-10-17T22:40:02.571903+00:00",
+  "scope": "Offline fail-closed native-overlay publication gate verification. No C compiler or external GitHub mutation.",
+  "changed_file_sha256": {
+    "scripts/native_overlay_evidence.py": "bee7b6cdc12df9093d4af80202df78f82e9aad6520a0d89e90f6257236b2d567",
+    "scripts/publish_native_settings.py": "35629a488037fa51061e3bae9a235d33af52b461775ac106634c9326fa8ad19f",
+    "scripts/publish_native_wifi.py": "2436311746b7ca7b242fd54b129f120e06965da5f9aebfeb2028e0e13618a9e0",
+    "tests/test_native_overlay_evidence.py": "feabe20c9ac6eece5a969e8823736acc4bf394da15627e4d51419d653d1b9f59",
+    "tests/test_native_settings_publish.py": "c344b087a2e18eaa0fd6dda568fbdcc1bc7a06c26d03678bc54b2d68947413a6",
+    "tests/test_native_wifi_publish.py": "209e5f6e1da532070732c0154165df7fa2f9e6419c0ca15fba4c2fbcec339807"
+  },
+  "tests": [
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 TMPDIR=/tmp python -m unittest discover -s tests -p 'test_native_overlay_evidence.py' -q",
+      "working_directory": "/tmp/native-overlay-successors-20261017",
+      "result": "PASS",
+      "exit_code": 0,
+      "test_methods": 4,
+      "elapsed_seconds": 37.625,
+      "negative_publication_subcases": 116,
+      "positive_publisher_and_cli_subcases": 2,
+      "real_immutable_baseline_anchor_check": true,
+      "github_calls": "Mocked; negative cases assert no create/upload/edit calls."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -p 'test_native_*publish.py' -q",
+      "working_directory": "/tmp/native-overlay-successors-20261017",
+      "result": "PASS",
+      "exit_code": 0,
+      "test_methods": 18,
+      "elapsed_seconds": 0.147,
+      "github_calls": "Mocked."
+    }
+  ],
+  "real_normal_receipt_probes": [
+    {
+      "application": "settings",
+      "mode": "normal",
+      "receipt_path": "/tmp/native-overlay-settings-guard-normal/receipt.json",
+      "receipt_sha256": "1484ae03dca9c0fb86e6490e17e9122dd5dc86c85aea9bf3f120db5e53dda2fe",
+      "builds": 4,
+      "runs": 20,
+      "result": "PASS",
+      "target_record_mode": "Validation-only in-memory map: system source hashes rehashed to current checkout; no target ELF rebuilt or qualified."
+    },
+    {
+      "application": "wifi",
+      "mode": "normal",
+      "receipt_path": "/tmp/native-overlay-wifi-guard-normal/receipt.json",
+      "receipt_sha256": "6c1f3768dc409b958e15feb3cf18cbf718ef79cabefc050a5f5b5d7d4327ac2b",
+      "builds": 4,
+      "runs": 20,
+      "result": "PASS",
+      "target_record_mode": "Validation-only in-memory map: system source hashes rehashed to current checkout; no target ELF rebuilt or qualified."
+    }
+  ],
+  "raw_test_logs": {
+    "retained": false,
+    "explanation": "Test stdout/stderr was inspected from command-tool results but not persisted as separate log files."
+  },
+  "limits": [
+    "Positive publisher fixtures use coherent synthetic ELF, source and host evidence bytes, with test-only immutable baseline anchors. They test gate behavior, not actual target execution.",
+    "A separate unmocked test verifies the repository retained baseline asset bytes against production hard-coded immutable anchors.",
+    "The two actual normal host receipt probes use rehashed validation-only target source maps. They are not final target qualification and do not validate an ELF against that rehashed map.",
+    "Final current-source target ELF/comparison and complete normal plus sanitized real-app artifact qualification remain CI responsibilities.",
+    "An attempted repeat using TMPDIR=/workspace/scratch/c744abbbbd60 could not create temporary directories because that filesystem had no free space. The final /tmp run shown above passed.",
+    "No physical hardware behavior, physical memory fit or firmware replacement is claimed."
+  ],
+  "owned_source_files_frozen": true
+}

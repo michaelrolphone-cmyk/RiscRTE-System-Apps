@@ -126,6 +126,7 @@ jobs:
         run: |
           mkdir -p build/native-wifi
           python -m unittest discover -s tests -p 'test_native_wifi_*.py' -v 2>&1 | tee build/native-wifi/native-contracts.log
+          python -m unittest discover -s tests -p 'test_native_overlay*.py' -v 2>&1 | tee build/native-wifi/overlay-contracts.log
           python -m unittest discover -s tests -p 'test_portable_wifi_contract.py' -v 2>&1 | tee build/native-wifi/portable-contracts.log
           python -m unittest discover -s tests -p 'test_native_toolchain.py' -v 2>&1 | tee build/native-wifi/toolchain-contracts.log
       - name: Captured-input reset boundary, baseline rejection and fixed acceptance
@@ -136,6 +137,10 @@ jobs:
           python scripts/test_native_wifi_features.py --sanitize --output build/native-wifi/features-sanitized 2>&1 | tee build/native-wifi/features-sanitized.log
       - name: Ordered native idle cancellation and held-contact controls
         run: python scripts/test_native_wifi_idle.py --output build/native-wifi/idle 2>&1 | tee build/native-wifi/idle.log
+      - name: Actual app native overlays, persistence and queued-input ownership
+        run: |
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app wifi --output build/native-wifi/overlays-normal 2>&1 | tee build/native-wifi/overlays-normal.log
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app wifi --sanitize --output build/native-wifi/overlays-sanitized 2>&1 | tee build/native-wifi/overlays-sanitized.log
       - name: Install pinned public target compiler
         run: |
           python -m pip install platformio==6.1.19
@@ -153,6 +158,8 @@ jobs:
           python scripts/report_native_wifi_memory.py --elf build/native-wifi/app/wifi_settings.elf --runtime ../runtime --output build/native-wifi/admission 2>&1 | tee build/native-wifi/admission.log
           cp build/native-wifi/admission/elf-memory-admission.json build/native-wifi/app/elf-memory-admission.json
           python scripts/report_native_overlay_successor.py --app wifi --app-dir build/native-wifi/app --memory build/native-wifi/admission/elf-memory-admission.json --output build/native-wifi/app/native-overlay-comparison.json
+      - name: Validate complete immutable publication evidence before merge
+        run: python scripts/native_overlay_evidence.py --app wifi --artifact build/native-wifi --source-sha '${{ github.event.pull_request.head.sha || github.sha }}' | tee build/native-wifi/native-overlay-publication-validation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -160,6 +167,7 @@ jobs:
           path: |
             source/build/native-wifi/**/*.json
             source/build/native-wifi/**/*.log
+            source/build/native-wifi/overlays-*/**
             source/build/native-wifi/features-*/*.c
             source/build/native-wifi/features-*/*-macros.txt
             source/build/native-wifi/app/wifi_settings.elf
