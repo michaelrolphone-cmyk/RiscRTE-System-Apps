@@ -1,0 +1,43 @@
+name: Native Quick adapter selection
+on:
+  pull_request:
+    paths:
+      - 'lib/PortableApps/**'
+      - 'scripts/portable_quick_build.py'
+      - 'scripts/test_quick_native*.py'
+      - 'test/native_apps/quick_native_adapter_test.c'
+      - 'test/native_apps/portable_handoff_test.c'
+      - '.github/workflows/quick-native-adapter.yml'
+  push:
+    branches: [work/native-quick-adapter-20261017]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  quick-adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Explicit selector and real native adapter
+        run: |
+          python scripts/test_quick_native_selection.py -v
+          python scripts/test_quick_native_adapter.py --output build/native-quick-adapter
+      - name: Existing Quick core and selector-off lifecycle contracts
+        run: |
+          python scripts/test_quick_native.py
+          python scripts/test_quick_actions.py
+          python scripts/test_paper_quick_actions.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-quick-adapter-evidence
+          path: |
+            build/native-quick-adapter/*.json
+            build/native-quick-adapter/*.log
+            build/native-quick-adapter/*.d
+            build/native-quick-adapter/fixture.c
+          if-no-files-found: error

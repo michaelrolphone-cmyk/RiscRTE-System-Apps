@@ -6,7 +6,8 @@ extern "C" {
 #endif
 /* Overlay on a fresh complete app image every frame. No retained pixels.
  * RGB565 little endian. Legacy callers retain 240x240; with the existing
- * PORTABLE_WATCH_NATIVE_HEIGHT build flag, pqa_set_dimensions opts into native
+ * PORTABLE_WATCH_NATIVE_HEIGHT or explicit PORTABLE_QUICK_NATIVE build flag,
+ * pqa_set_dimensions opts into native
  * scanlines and shared native control geometry. Other apps omit native assets.
  * Tight and padded/unaligned surfaces work; active rows need stride>=width*2
  * and size>=((height-1)*stride+width*2), with overflow checks.

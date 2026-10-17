@@ -304,7 +304,12 @@ static bool quick_render_watch(const char *time,bool battery_valid,uint8_t batte
  if(raster_recording){
   /* Copy controller values and the bounded label, never retain a caller's
    * stack or live Quick state while input continues to change it. */
+#ifdef PORTABLE_QUICK_NATIVE
+  if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || quick.ui.paper ||
+     pqa_width(&quick.ui)!=info.width || pqa_height(&quick.ui)!=info.height)return false;
+#else
   if(surface_format!=RISC_DISPLAY_FORMAT_RGB565||info.width!=240||info.height!=240)return false;
+#endif
   pqa_state *snapshot=malloc(sizeof(*snapshot));
   if(!snapshot){if(!raster_immediate())return false;}
   else {

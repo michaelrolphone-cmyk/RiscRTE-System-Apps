@@ -1,0 +1,197 @@
+{
+  "published_parents": [
+    "f3bb53c9d8ed458d295aec18fef5d7733df581b1",
+    "fd6bc6065f6e409ed2d2ea1858bd56ab6d9e2fb3"
+  ],
+  "main_changed_files": [
+    {
+      "path": ".github/workflows/native-settings.yml",
+      "published_main_sha256": "b9fce0dbaa0f974e8bf72b4e43e1d134eceb940d3188a9791273358e8d44cc4f",
+      "union_sha256": "b9fce0dbaa0f974e8bf72b4e43e1d134eceb940d3188a9791273358e8d44cc4f",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "docs/native-settings/README.md",
+      "published_main_sha256": "9ce5c44274bc01a74105d92e84efc110e09b6b489c3bd9c0b2db63b138a95bff",
+      "union_sha256": "9ce5c44274bc01a74105d92e84efc110e09b6b489c3bd9c0b2db63b138a95bff",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "docs/native-settings/bridge-comparison.json",
+      "published_main_sha256": "55ed7c7eb25c6dbe45449b88bfcf5faee23801c0213965f10a6553c5d7850e2e",
+      "union_sha256": "55ed7c7eb25c6dbe45449b88bfcf5faee23801c0213965f10a6553c5d7850e2e",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "docs/native-settings/retained-memory-comparison.json",
+      "published_main_sha256": "4ccbfa9a8f2f06136c09ae2f54d6f7516e340974b57c2028f26065f8a9f0d696",
+      "union_sha256": "4ccbfa9a8f2f06136c09ae2f54d6f7516e340974b57c2028f26065f8a9f0d696",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "docs/native-settings/version-availability.json",
+      "published_main_sha256": "782a9d5a04604f6c5555ef59942c8dc27a968f527a7b04ed7895a185f3f868c0",
+      "union_sha256": "782a9d5a04604f6c5555ef59942c8dc27a968f527a7b04ed7895a185f3f868c0",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/profiles/native-settings-manifest.json",
+      "published_main_sha256": "40a16c9c99cd05e992c440e9e3cf31bd9af8d93f3a00b6df50a3f0e4fd446bb6",
+      "union_sha256": "40a16c9c99cd05e992c440e9e3cf31bd9af8d93f3a00b6df50a3f0e4fd446bb6",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/profiles/native-settings.json",
+      "published_main_sha256": "713aaa1563e607173d68a420957196bb00bf4fc5ea5419961f45b7731a205719",
+      "union_sha256": "713aaa1563e607173d68a420957196bb00bf4fc5ea5419961f45b7731a205719",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/adapter.c",
+      "published_main_sha256": "f2074c08b20587cd43329cd7de1181c7ef40c63a33e52ef0c6bf9d116f7efc68",
+      "union_sha256": "8ff5110ddaeac0048acc1bc688be9991dc65e2712c306ad1623d24f37b7c7c39",
+      "exact_main_bytes_preserved": false
+    },
+    {
+      "path": "lib/PortableApps/src/settings.inc",
+      "published_main_sha256": "15a5a0195f858c4ba5cfdde715d96cdee864e128fcdccacf19935b3da74a77d2",
+      "union_sha256": "15a5a0195f858c4ba5cfdde715d96cdee864e128fcdccacf19935b3da74a77d2",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_atomic.inc",
+      "published_main_sha256": "9a1695de3966da8ea8d1194b1f28dce5aa0d76eed145dd9e8906459ee95e10a1",
+      "union_sha256": "9a1695de3966da8ea8d1194b1f28dce5aa0d76eed145dd9e8906459ee95e10a1",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_native_layout.inc",
+      "published_main_sha256": "d5f6617c0551a91f50f634d31b23f22bd23bbcbe7f1a81f7bb1826b2628d3376",
+      "union_sha256": "d5f6617c0551a91f50f634d31b23f22bd23bbcbe7f1a81f7bb1826b2628d3376",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_native_view.inc",
+      "published_main_sha256": "4dee80084f1e84bcab32e86acac454afc250a81752a9f4bd212cea575cc5a971",
+      "union_sha256": "4dee80084f1e84bcab32e86acac454afc250a81752a9f4bd212cea575cc5a971",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_timezone.inc",
+      "published_main_sha256": "5e68176ee3b824568d44a63daac124b1d3cdffe2ed47020098c7e3fa343b22f1",
+      "union_sha256": "5e68176ee3b824568d44a63daac124b1d3cdffe2ed47020098c7e3fa343b22f1",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_timezone_view.inc",
+      "published_main_sha256": "13e0de46dca2063a914c97ba24f59ed2d64c512702d87b9acd8a8ac8d909863c",
+      "union_sha256": "13e0de46dca2063a914c97ba24f59ed2d64c512702d87b9acd8a8ac8d909863c",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "lib/PortableApps/src/settings_view.inc",
+      "published_main_sha256": "640fc44f5036f318face6b8d5477ab55098795d65db1dd62c9e4cb61c8240e15",
+      "union_sha256": "640fc44f5036f318face6b8d5477ab55098795d65db1dd62c9e4cb61c8240e15",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/build_native_settings_qualification.py",
+      "published_main_sha256": "92cbc344db2f70c9427148d51548c9151564d8effc474d9a05a4c21995f18da4",
+      "union_sha256": "92cbc344db2f70c9427148d51548c9151564d8effc474d9a05a4c21995f18da4",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/build_portable_settings.py",
+      "published_main_sha256": "45d321e4dcb2118b9848d953bd077e9a5deb47aa4398dddb416a46cd7c1f6c83",
+      "union_sha256": "45d321e4dcb2118b9848d953bd077e9a5deb47aa4398dddb416a46cd7c1f6c83",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/publish_native_settings.py",
+      "published_main_sha256": "473578718ad870e4eb65b8e725b5f4706638d04a574044ea8b2586340f01ec83",
+      "union_sha256": "473578718ad870e4eb65b8e725b5f4706638d04a574044ea8b2586340f01ec83",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/report_native_settings_memory.py",
+      "published_main_sha256": "a401a0a5e00899ecc1d340a4014492a6898978498868686d20844688b3d5c7da",
+      "union_sha256": "a401a0a5e00899ecc1d340a4014492a6898978498868686d20844688b3d5c7da",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings.py",
+      "published_main_sha256": "37585f7f06abfad4a897aa077aa80292266c71ed786ff6f6d74f8e55f85ad107",
+      "union_sha256": "37585f7f06abfad4a897aa077aa80292266c71ed786ff6f6d74f8e55f85ad107",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings_bridges.py",
+      "published_main_sha256": "96cbafd4e25507d41c5094e66f1175f89d1128ed183d62cc736e2ed6b829d6ba",
+      "union_sha256": "96cbafd4e25507d41c5094e66f1175f89d1128ed183d62cc736e2ed6b829d6ba",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings_features.py",
+      "published_main_sha256": "23c8ff423a02b81f0b4fdfe9e9f9536b01c6acdaa208cc99135458d12da82efb",
+      "union_sha256": "23c8ff423a02b81f0b4fdfe9e9f9536b01c6acdaa208cc99135458d12da82efb",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings_opt_out.py",
+      "published_main_sha256": "adafc3337620b35d962d4a7893ff96bbdf342feb5e465748052bdf8fcbb8f98c",
+      "union_sha256": "adafc3337620b35d962d4a7893ff96bbdf342feb5e465748052bdf8fcbb8f98c",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings_ownership.py",
+      "published_main_sha256": "9eaa65f034f99a6d66e8d51c8e471bed1561e95ccc36b1781d9b2a1d590093af",
+      "union_sha256": "9eaa65f034f99a6d66e8d51c8e471bed1561e95ccc36b1781d9b2a1d590093af",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "scripts/test_native_settings_timers.py",
+      "published_main_sha256": "3c82d390ffb9203dadaa0ec03b01cc93ea88d4b6dcf6d6fe547360b270105331",
+      "union_sha256": "3c82d390ffb9203dadaa0ec03b01cc93ea88d4b6dcf6d6fe547360b270105331",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "test/native_apps/native_settings_atomic_test.c",
+      "published_main_sha256": "22ad9d5c18d1603921216aa870a7245e885ddf17e1d0e20adf999fd50d4ad949",
+      "union_sha256": "22ad9d5c18d1603921216aa870a7245e885ddf17e1d0e20adf999fd50d4ad949",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "test/native_apps/native_settings_test.c",
+      "published_main_sha256": "671bb7ded12ca2a4a70e89df28ee8538fc233a07cbeaa47e148c25dbf24ea957",
+      "union_sha256": "671bb7ded12ca2a4a70e89df28ee8538fc233a07cbeaa47e148c25dbf24ea957",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "test/native_apps/native_settings_timer_test.c",
+      "published_main_sha256": "c6a147b9fbaef4f9ad98f4d7a1598b476e4f01a95ac5358e4291e0ad22dfd155",
+      "union_sha256": "c6a147b9fbaef4f9ad98f4d7a1598b476e4f01a95ac5358e4291e0ad22dfd155",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "test/native_apps/native_timezone_settings_test.c",
+      "published_main_sha256": "b261f143b2f1af1b3642581b852badc33fb52cbdd44f353754934a5d27400b9c",
+      "union_sha256": "b261f143b2f1af1b3642581b852badc33fb52cbdd44f353754934a5d27400b9c",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "tests/test_native_settings_build.py",
+      "published_main_sha256": "0f324e90c58d70bbeab1dead05567419538fb6fa1092a08b6ef4144b3ece1430",
+      "union_sha256": "0f324e90c58d70bbeab1dead05567419538fb6fa1092a08b6ef4144b3ece1430",
+      "exact_main_bytes_preserved": true
+    },
+    {
+      "path": "tests/test_native_settings_publish.py",
+      "published_main_sha256": "e6386c154be0910ae9ed966a4ee805dd097e61974aa26d6ae6a1c5a655a6b3dd",
+      "union_sha256": "e6386c154be0910ae9ed966a4ee805dd097e61974aa26d6ae6a1c5a655a6b3dd",
+      "exact_main_bytes_preserved": true
+    }
+  ],
+  "only_combined_file": "lib/PortableApps/src/adapter.c",
+  "combined_file_scope": "Main declaration compile guard plus previously qualified Quick selector/input changes; clean automatic merge.",
+  "stopped_unpublished_correction_included": false
+}

@@ -1,0 +1,48 @@
+{
+  "observed_at": "2026-10-17T15:12:59Z",
+  "foundation": "fd9a028c5d38eb517c1328b869684c4330a5d4d9",
+  "compiler": "cc (Debian 14.2.0-19) 14.2.0",
+  "native_adapter": {
+    "configurations": 12,
+    "functional_geometry_executions": 60,
+    "unsupported_geometry_rejections": 16,
+    "compile_guard_rejections": 2,
+    "compiler_dependency_files": 71,
+    "normal_and_asan_ubsan": true,
+    "direct_and_snapshot": true,
+    "oom_fallback": true,
+    "delayed_success": true,
+    "real_modal_close_restore": true
+  },
+  "selector_tests": 8,
+  "existing_native_core_modes": 4,
+  "selector_off_regressions": {
+    "adapter": 104,
+    "paper": 124,
+    "home_input_runs": 2,
+    "pure_core": 2,
+    "session": 2,
+    "render_fixture_runs": 4,
+    "total_executions": 238
+  },
+  "baseline_comparison": {
+    "native_adapter_assertion_fails_before_fix": true,
+    "identical_selector_off_preprocessed_token_units": 12
+  },
+  "limitations": [
+    "Host providers only; no target ELF, physical device, timing, catalog or release claim.",
+    "Only generic RGB Quick is integrated. Alarm overlay, paper migration, sparse/resident Home, stopped idle correction and union qualification remain separate.",
+    "Compiler dependency manifest excludes system headers/toolchain; generated fixture is derived from recorded source fixture and runner."
+  ],
+  "log_sha256": {
+    "native-quick-adapter-qualified.log": "23269cc88d11b15ba0969898b6d2a8506ddd281d6c288d88d6d0742af25b6e39",
+    "selector-off-regressions.log": "0b9d93d14a16c6f9930c69165d95a2bb20226a7c416667b290ad918a1a21357b",
+    "quick-native-current.log": "97831ad47cd8c329edacaa908069bc0e312dccb91b20a44425356b0a2977c8d7",
+    "quick-native-selection.log": "4485a7f2675091fd19e02f751fd8a5bcc74c74fb83ec13cb97f117bc6884df75",
+    "baseline-comparison-current.log": "808f1b1fbb2369809f7236fd93b405c5ce612045c2ef9ca0f34d4d0e3fa3f5a0"
+  },
+  "unchanged_regression_scripts": {
+    "test_quick_actions.py": "c0dec944d3176368a6b83caeec555a6af6a4b026308fce5d3fc03dc36176ab53",
+    "test_paper_quick_actions.py": "f4117d63e4c01e6445bbf79d6b69fdeb2dc58c3a27160ccc06124db4505f4e40"
+  }
+}
