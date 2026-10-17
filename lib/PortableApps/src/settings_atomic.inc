@@ -29,6 +29,7 @@ static int settings_atomic_status;
 static bool settings_atomic_guard(void *unused) {
  (void)unused;return !native_custody_retained&&!failed;
 }
+#if !defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_SETTINGS_AVAILABILITY)
 static bool settings_atomic_owned(void) {
  return settings_atomic_running||settings_atomic_edit.token!=0
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
@@ -36,6 +37,7 @@ static bool settings_atomic_owned(void) {
 #endif
   ;
 }
+#endif
 static const char *settings_atomic_message(int rc) {
  return rc==RISC_ATOMIC_STALE?"Settings changed; reopen editor":
   rc==RISC_ATOMIC_CANCELLED?"Save cancelled":rc==RISC_ATOMIC_CAPACITY?"Native storage full; not saved":

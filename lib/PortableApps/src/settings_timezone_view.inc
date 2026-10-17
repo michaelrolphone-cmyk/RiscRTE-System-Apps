@@ -272,6 +272,7 @@ static bool stz_poll(t5_app_input_t *out) {
 #endif
   if(!sample.valid || sample.cancelled){sv_gesture=false;sv_need_neutral=true;return true;}
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+  if(sn_enabled()&&!sn_touch_ready()){sn_cancel_pending_touch();return true;}
   int x=sample.x-(pp_enabled()||sn_enabled()?0:(width()-240)/2),y=sample.y-(pp_enabled()||sn_enabled()?0:(height()-240)/2);
 #else
   int x=sample.x-(pp_enabled()?0:(width()-240)/2),y=sample.y-(pp_enabled()?0:(height()-240)/2);

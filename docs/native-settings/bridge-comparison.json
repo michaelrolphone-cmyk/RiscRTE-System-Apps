@@ -1,0 +1,108 @@
+{
+  "recipe_pin": "6e82fdcaec0b73ed700d2104cfb4d94f011c19d4",
+  "current_pin": "416fa9f144fa5bd5471e6f4c9cefff21455c8361",
+  "actual_inputs": [
+    {
+      "path": "apps/clock/PortableSleepPolicy.h",
+      "same": false,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/faces/ContextsFaces.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/faces/names.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/portable_navigation.c",
+      "same": false,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/portable_sleep.c",
+      "same": false,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/watch_alarm_sleep.h",
+      "same": false,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/watch_motion_client.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "apps/clock/watch_sleep.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "include/PortableMotionTap.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "include/PortableTapSettings.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "include/WatchPortableBridgeGuard.h",
+      "same": false,
+      "exists_current": false
+    },
+    {
+      "path": "include/WatchTapPolicy.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "include/twatch_caps.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscDeepSleepV1.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscDisplayPowerV1.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscLightSleepV1.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscPowerKeyV1.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscPowerSleepV1.h",
+      "same": true,
+      "exists_current": true
+    },
+    {
+      "path": "sdk/driver/RiscTimedSleepV1.h",
+      "same": true,
+      "exists_current": true
+    }
+  ],
+  "conclusion": "Retain6e82fdc generic bridge for current16-capability profile.416fa9f navigation/sleep use board.battery PMU and private panel suffixes with240x240 frame buffers, incompatible with the declared generic power capabilities and native frame size.",
+  "differences": {
+    "apps/clock/PortableSleepPolicy.h": "416fa9f adds optional shared header forwarding. Existing legacy data format, all-mode behavior, Hybrid fallback and timer loading match current selection; new System profile-filter helpers are additive and do not change this all-mode profile.",
+    "apps/clock/watch_alarm_sleep.h": "416fa9f adds diagnostics on power/panel restore failure; return/fence behavior unchanged.",
+    "include/WatchPortableBridgeGuard.h": "Present only in generic6e82fdc branch; implements retained-owner fencing used by selected navigation/sleep translation units."
+  },
+  "omitted_required_lifecycle_fix_identified": false
+}

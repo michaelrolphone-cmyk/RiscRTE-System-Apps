@@ -60,6 +60,20 @@ static int sn_reveal(unsigned row,int scroll) {
   if(row<first)first=row;else if(row>=first+rows)first=row-rows+1;
   return (int)first*sn_geometry().row;
 }
+/* Selection reveal belongs to the controller layout, including when a busy
+ * provider defers the next paint. It must not depend on raster completion. */
+static void sn_update_choice(void) {
+  if(sn_choices()) {
+    unsigned chosen=sv_page==SV_FOLD?sv_fold_choice:sv_page==SV_TIME_FORMAT?time_format_choice:0;
+#ifdef PORTABLE_SLEEP_SETTINGS
+    if(sv_page==SV_SLEEP)for(unsigned i=0;i<settings_sleep_count();i++)if(settings_sleep_at(i)==sleep_choice)chosen=i;
+#endif
+#ifdef PORTABLE_ALARM_SETTINGS
+    if(sv_page==SV_ALERT)chosen=alert_choice?alert_choice-1:0;
+#endif
+    if(sn_last_choice!=chosen){sn_choice_scroll=sn_reveal(chosen,sn_choice_scroll);sn_last_choice=chosen;}
+  }
+ }
 static sn_rect sn_row(unsigned row,int scroll) {
   sn_layout g=sn_geometry();sn_rect r={g.margin,g.top+(int)row*g.row-scroll,g.w-2*g.margin,g.row};
   /* Only whole visible rows are actionable; partial content never hides a
@@ -95,3 +109,7 @@ static sn_rect sn_control(int x,int y,int w,int h) {
   if(h==30&&(y==66||y==104||y==142))return sn_row((unsigned)(y-66)/38u,sn_choice_scroll);
   return (sn_rect){0,0,0,0};
 }
+/* Raw contacts cannot act against a page/layout which is still queued or
+ * painting. Navigation/Back and runtime exit are handled independently. */
+static bool sn_touch_ready(void){return !sp_dirty&&portable_paper_frame_idle();}
+static void sn_cancel_pending_touch(void){sv_gesture=false;sv_need_neutral=true;portable_touch_cancel_gesture(&touch);}

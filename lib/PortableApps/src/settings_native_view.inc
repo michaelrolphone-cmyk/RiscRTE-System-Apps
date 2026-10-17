@@ -45,16 +45,6 @@ static void sn_footer_draw(bool save) {
 }
 static void sn_redraw(void) {
   sn_layout g=sn_geometry();sv_begin();
-  if(sn_choices()) {
-    unsigned chosen=sv_page==SV_FOLD?sv_fold_choice:sv_page==SV_TIME_FORMAT?time_format_choice:0;
-#ifdef PORTABLE_SLEEP_SETTINGS
-    if(sv_page==SV_SLEEP)for(unsigned i=0;i<settings_sleep_count();i++)if(settings_sleep_at(i)==sleep_choice)chosen=i;
-#endif
-#ifdef PORTABLE_ALARM_SETTINGS
-    if(sv_page==SV_ALERT)chosen=alert_choice?alert_choice-1:0;
-#endif
-    if(sn_last_choice!=chosen){sn_choice_scroll=sn_reveal(chosen,sn_choice_scroll);sn_last_choice=chosen;}
-  }
   const char *title=sv_page==SV_ROOT?"SETTINGS":sv_page==SV_FIELDS?"TIME AND DATE":
     sv_page==SV_VALUE?editor_names[editor_field]:sv_page==SV_TIME_FORMAT?"TIME FORMAT":
     sv_page==SV_FOLD?"REPEATED LOCAL TIME":sv_page==SV_SLEEP?"CLOCK SLEEP MODE":
@@ -124,8 +114,8 @@ static void sn_redraw(void) {
 #endif
 #ifdef PORTABLE_SETTINGS_SLEEP_TIMER
   } else if(sv_page==SV_TIMER) {
-    char value[24];snprintf(value,sizeof(value),"%lu SEC",(unsigned long)(timer_choice/1000u));
-    sn_center(2,g.top+4,value,SV_CYAN);
+    char value[24];snprintf(value,sizeof(value),"%lu",(unsigned long)(timer_choice/1000u));
+    sn_center(2,g.top+2,value,SV_CYAN);sn_center(2,g.top+18,"SECONDS",SV_CAP);
     sn_control_button(20,88,64,44,"-",false);sn_control_button(156,88,64,44,"+",false);
     notice=timer_message[0]?timer_message:"Draft only - Save";save=true;
 #endif

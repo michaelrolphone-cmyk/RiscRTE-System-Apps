@@ -390,6 +390,9 @@ static void settings_view_redraw(void) {
 #endif
   if(handoff_requested)return;
   if(failed || !sv_active)return;
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+  if(sn_enabled())sn_update_choice();
+#endif
   sp_dirty=true;
   if(!portable_paper_frame_ready())return;
   sp_dirty=false;
@@ -520,6 +523,7 @@ static bool settings_view_poll(t5_app_input_t *out) {
     sv_gesture=false;sv_need_neutral=true;return true;
   }
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+  if(sn_enabled()&&!sn_touch_ready()){sn_cancel_pending_touch();return true;}
   int x=(int)sample.x-(sn_enabled()?0:(width()-240)/2),y=(int)sample.y-(sn_enabled()?0:(height()-240)/2);
 #else
   int x=(int)sample.x-(width()-240)/2,y=(int)sample.y-(height()-240)/2;
