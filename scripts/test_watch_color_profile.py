@@ -26,6 +26,7 @@ class WatchColorProfile(unittest.TestCase):
   helpers=ui[ui.index('#ifdef PORTABLE_WATCH_NATIVE_HEIGHT'):ui.index('static void nu_pixel')]
   fixture=r'''
 #include "RiscDisplayOutputV1.h"
+#include "PortableDisplayGeometry.h"
 #include <assert.h>
 #include <stdio.h>
 static risc_display_info_v1 info, offered;
@@ -52,12 +53,14 @@ int main(void){
  const unsigned formats[]={rgb,mono,rgb|mono,RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_GRAY2),0};
  /* generic, legacy 240-only, selected native-height expected admission. */
  const struct {unsigned w,h;bool allow[3];} cases[]={
-  {159,240,{0,0,0}},{240,159,{0,0,0}},{160,160,{1,0,1}},
-  {240,240,{1,1,1}},{240,239,{1,0,0}},{240,241,{1,0,1}},
-  {410,502,{1,0,1}},{480,600,{1,0,1}},{502,410,{1,0,0}},
-  {410,409,{1,0,1}},{410,408,{1,0,0}},
-  {1024,1024,{1,0,1}},{1025,1024,{0,0,0}},{1024,1025,{0,0,0}},
-  {160,1024,{1,0,1}},{1024,160,{1,0,0}}};
+  {0,240,{0,0,0}},{240,0,{0,0,0}},{1,1,{1,0,1}},
+  {159,240,{1,0,1}},{240,159,{1,0,1}},{160,160,{1,0,1}},
+  {240,240,{1,1,1}},{240,239,{1,0,1}},{240,241,{1,0,1}},
+  {410,502,{1,0,1}},{480,600,{1,0,1}},{502,410,{1,0,1}},
+  {410,409,{1,0,1}},{410,408,{1,0,1}},
+  {1024,1024,{1,0,1}},{1025,1024,{1,0,1}},{1024,1025,{1,0,1}},
+  {160,1024,{1,0,1}},{1024,160,{1,0,1}},{4096,2160,{1,0,1}},
+  {65535,240,{1,0,1}},{65536,240,{0,0,0}},{240,65536,{0,0,0}}};
  unsigned checked=0;
  for(unsigned i=0;i<sizeof(cases)/sizeof(cases[0]);i++)
   for(unsigned f=0;f<sizeof(formats)/sizeof(formats[0]);f++)
@@ -80,7 +83,7 @@ int main(void){
        *['-D'+flag for flag in defines],'-I'+str(ROOT/'lib/PortableApps/include'),str(c),'-o',str(binary)]
      subprocess.run(command,check=True,capture_output=True,text=True)
      result=subprocess.run([str(binary)],check=True,capture_output=True,text=True)
-     RUNS.append({'profile':profile,'defines':defines,'cases':160,'stdout':result.stdout.strip(),
+     RUNS.append({'profile':profile,'defines':defines,'cases':int(result.stdout.split()[2]),'stdout':result.stdout.strip(),
                   'fixture_sha256':hashlib.sha256(fixture.encode()).hexdigest()})
  def test_generic_paper_path_retained(self):
   s=(ROOT/'lib/PortableApps/src/quick_adapter.inc').read_text()

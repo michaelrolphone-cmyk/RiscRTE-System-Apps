@@ -1,0 +1,261 @@
+{
+  "runs": [
+    {
+      "dimensions": [
+        160,
+        160
+      ],
+      "sanitized": false,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=160",
+        "-DRF_TEST_H=160",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/160x160"
+      ],
+      "result": "native raster 160x160: comparisons=79 glyph-band-max=15 direct-pixels=44526 replay-pixels=25420 host-cpu-ms=4.136 PASS"
+    },
+    {
+      "dimensions": [
+        160,
+        160
+      ],
+      "sanitized": true,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=160",
+        "-DRF_TEST_H=160",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/160x160-san"
+      ],
+      "result": "native raster 160x160: comparisons=79 glyph-band-max=15 direct-pixels=44526 replay-pixels=25420 host-cpu-ms=34.987 PASS"
+    },
+    {
+      "dimensions": [
+        240,
+        240
+      ],
+      "sanitized": false,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=240",
+        "-DRF_TEST_H=240",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/240x240"
+      ],
+      "result": "native raster 240x240: comparisons=79 glyph-band-max=15 direct-pixels=60210 replay-pixels=34364 host-cpu-ms=5.338 PASS"
+    },
+    {
+      "dimensions": [
+        240,
+        240
+      ],
+      "sanitized": true,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=240",
+        "-DRF_TEST_H=240",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/240x240-san"
+      ],
+      "result": "native raster 240x240: comparisons=79 glyph-band-max=15 direct-pixels=60210 replay-pixels=34364 host-cpu-ms=14.087 PASS"
+    },
+    {
+      "dimensions": [
+        410,
+        502
+      ],
+      "sanitized": false,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=410",
+        "-DRF_TEST_H=502",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/410x502"
+      ],
+      "result": "native raster 410x502: comparisons=79 glyph-band-max=15 direct-pixels=96072 replay-pixels=54952 host-cpu-ms=12.429 PASS"
+    },
+    {
+      "dimensions": [
+        410,
+        502
+      ],
+      "sanitized": true,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=410",
+        "-DRF_TEST_H=502",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/410x502-san"
+      ],
+      "result": "native raster 410x502: comparisons=79 glyph-band-max=15 direct-pixels=96072 replay-pixels=54952 host-cpu-ms=64.280 PASS"
+    },
+    {
+      "dimensions": [
+        640,
+        240
+      ],
+      "sanitized": false,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=640",
+        "-DRF_TEST_H=240",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/640x240"
+      ],
+      "result": "native raster 640x240: comparisons=79 glyph-band-max=15 direct-pixels=133884 replay-pixels=76098 host-cpu-ms=18.790 PASS"
+    },
+    {
+      "dimensions": [
+        640,
+        240
+      ],
+      "sanitized": true,
+      "command": [
+        "cc",
+        "-std=c11",
+        "-O1",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Wno-unused-function",
+        "-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all",
+        "-fno-omit-frame-pointer",
+        "-no-pie",
+        "-DPORTABLE_RF_NATIVE_CANVAS",
+        "-DPORTABLE_NOVA_UI",
+        "-DPORTABLE_RASTER_SNAPSHOT",
+        "-DPORTABLE_RETAINED_RGB565_HANDOFF",
+        "-DRF_TEST_W=640",
+        "-DRF_TEST_H=240",
+        "-DFRAME_FIXTURE=\"/tmp/native-geometry-evidence/raster/fixture.c\"",
+        "-I/tmp/native-geometry-20261017/lib/PortableApps/include",
+        "-I/tmp/native-geometry-20261017/lib/NativeApps/include",
+        "/tmp/native-geometry-20261017/test/native_apps/rf_native_raster_test.c",
+        "-o",
+        "/tmp/native-geometry-evidence/raster/640x240-san"
+      ],
+      "result": "native raster 640x240: comparisons=79 glyph-band-max=15 direct-pixels=133884 replay-pixels=76098 host-cpu-ms=34.517 PASS"
+    }
+  ],
+  "hardware_verified": false
+}
