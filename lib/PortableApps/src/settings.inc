@@ -457,13 +457,20 @@ static void settings_render(uint32_t category,int32_t selected) {
   sp_root_touch_selection=false;
 #endif
   if(changed && selected>0 && selected<=(int32_t)SETTINGS_ROW_COUNT) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     if(sn_enabled())sv_scroll[0]=sn_reveal((unsigned)selected-1,sv_scroll[0]);
     else {
+#endif
     int y=sv_row_y((unsigned)selected-1)-sv_scroll[0];
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     int top=sn_enabled()?sn_geometry().top:52,bottom=sn_enabled()?sn_geometry().bottom:174;
     if(y<top)sv_scroll[0]=sv_row_y((unsigned)selected-1)-top;
     else if(y+SV_ROW_HEIGHT>bottom)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(bottom-SV_ROW_HEIGHT);
     }
+#else
+    if(y<52)sv_scroll[0]=sv_row_y((unsigned)selected-1)-52;
+    else if(y+SV_ROW_HEIGHT>174)sv_scroll[0]=sv_row_y((unsigned)selected-1)-(174-SV_ROW_HEIGHT);
+#endif
   }
   if(sv_page!=SV_ROOT)sv_switch(SV_ROOT);else settings_view_redraw();
 }
@@ -512,15 +519,23 @@ static void editor_select_field(unsigned field) {
   if(pp_enabled()&&field<6){unsigned rows=sp_rows();if(field<sp_field_first)sp_field_first=field;else if(field>=sp_field_first+rows)sp_field_first=field-rows+1;}
 #endif
   if(field<6) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     if(sn_enabled())sv_scroll[1]=sn_reveal(field,sv_scroll[1]);
     else {
     int top=sn_enabled()?sn_geometry().top:60,bottom=sn_enabled()?sn_geometry().bottom:SV_FIELD_BOTTOM;
     int y=top+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
     if(y<top)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
     else if(y+SV_ROW_HEIGHT>bottom)sv_scroll[1]=top+(int)field*SV_ROW_HEIGHT-(bottom-SV_ROW_HEIGHT);
+#else
+    int y=60+(int)field*SV_ROW_HEIGHT-sv_scroll[1];
+    if(y<60)sv_scroll[1]=(int)field*SV_ROW_HEIGHT;
+    else if(y+SV_ROW_HEIGHT>SV_FIELD_BOTTOM)sv_scroll[1]=60+(int)field*SV_ROW_HEIGHT-(SV_FIELD_BOTTOM-SV_ROW_HEIGHT);
+#endif
     if(sv_scroll[1]<0)sv_scroll[1]=0;
     if(sv_scroll[1]>sv_max_scroll())sv_scroll[1]=sv_max_scroll();
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     }
+#endif
   }
 }
 static bool editor_try_save(void) {
@@ -953,6 +968,7 @@ T5_APP_SETTING_UPDATED;break;}
     }
     if(input.buttons&T5_APP_BUTTON_UP)editor_select_field((editor_field+7)%8);
     else if(input.buttons&T5_APP_BUTTON_DOWN)editor_select_field((editor_field+1)%8);
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     else if(input.tapped && (sn_enabled() || (input.touch_y>=50 && input.touch_y<184))) {
       if(sn_enabled()) {
         bool found=false;
@@ -960,6 +976,9 @@ T5_APP_SETTING_UPDATED;break;}
         if(found){sv_switch(SV_VALUE);continue;}
         continue;
       }
+#else
+    else if(input.tapped && input.touch_y>=50 && input.touch_y<184) {
+#endif
       int y=input.touch_y+sv_scroll[1]-60;
       if(y>=0 && y<6*SV_ROW_HEIGHT){editor_field=(unsigned)y/SV_ROW_HEIGHT;sv_switch(SV_VALUE);continue;}
     } else if(input.buttons&T5_APP_BUTTON_CONFIRM) {
@@ -1041,6 +1060,7 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
 #endif
     *category=0;*selected=(int32_t)row+1;return settings_activate(0,row);
   }
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()) {
     if(!category||!selected)return T5_APP_SETTING_NO_CHANGE;
     for(unsigned i=0;i<SETTINGS_ROW_COUNT;i++)if(sn_hit(sn_row(i,sv_scroll[0]),x,y)){
@@ -1048,6 +1068,7 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
     }
     return T5_APP_SETTING_NO_CHANGE;
   }
+#endif
   if(!category || !selected || x<20 || x>=220 || y<0 || y>=190)return T5_APP_SETTING_NO_CHANGE;
   *category=0;
   for(unsigned i=0;i<SETTINGS_ROW_COUNT;++i)if(y+sv_scroll[0]>=sv_row_y(i) && y+sv_scroll[0]<sv_row_y(i)+SV_ROW_HEIGHT) {
@@ -1056,11 +1077,15 @@ static uint8_t settings_touch(int16_t x,int16_t y,uint32_t *category,int32_t *se
   return T5_APP_SETTING_NO_CHANGE;
 }
 static bool settings_open(void) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()? !sn_fits() : (width()<240 || height()<240))return false;
   #ifdef PORTABLE_SETTINGS_TIME_ZONE
   if(!stz_native_fits())return false;
 #endif
   if(sn_enabled()){sv_scroll[0]=sv_scroll[1]=0;sn_choice_scroll=0;}
+#else
+  if(width()<240 || height()<240)return false;
+#endif
 #ifndef PORTABLE_SETTINGS_NATIVE_TIME
   rtc_grant.struct_size=sizeof(rtc_grant);
 #endif

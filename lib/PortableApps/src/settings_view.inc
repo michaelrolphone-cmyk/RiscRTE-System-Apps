@@ -56,7 +56,9 @@ static bool sp_clean,sp_dirty;
 static void sp_redraw(void);
 static bool sp_poll(t5_app_input_t *out);
 static int sv_abs(int n) { return n < 0 ? -n : n; }
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
 #include "settings_native_layout.inc"
+#endif
 static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_SV_PIXEL,(int32_t[8]){x,y,(int32_t)rgb,(int32_t)alpha},NULL))return;
@@ -77,7 +79,9 @@ static void sv_pixel(int x, int y, uint32_t rgb, unsigned alpha) {
 }
 static void sv_rect(int x, int y, int w, int h, uint32_t color) {
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()){portable_nova_native_fill(x,y,w,h,color);return;}
+#endif
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_SV_RECT,(int32_t[8]){x,y,w,h,(int32_t)color},NULL))return;
@@ -99,7 +103,9 @@ static int sv_measure(unsigned face, const char *s, int spacing) {
 }
 static void sv_text(unsigned face, int x, int y, const char *s, uint32_t color, int spacing) {
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()){portable_nova_native_text(face,x,y,width()-x,s,color);return;}
+#endif
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_SV_TEXT,(int32_t[8]){(int32_t)face,x,y,(int32_t)color,spacing},s))return;
@@ -127,7 +133,11 @@ static void sv_right(unsigned face,int x,int y,const char *s,uint32_t color,int 
   sv_text(face,x-sv_measure(face,s,spacing),y,s,color,spacing);
 }
 #ifdef PORTABLE_NOVA_UI
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
 #define SV_ROW_HEIGHT (sn_enabled()?sn_geometry().row:44)
+#else
+#define SV_ROW_HEIGHT 44
+#endif
 #define SV_MESSAGE_Y 172
 #define SV_FIELD_BOTTOM 166
 static void sv_geometry(int *x,int *y,int *w,int *h) {
@@ -182,15 +192,22 @@ static void sv_fade(int top,int bottom) {
 }
 static void sv_begin(void) { clear(); fill(0,0,width(),height(),0); }
 static void sv_heading(const char *title) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()) {
     sn_layout g=sn_geometry();sv_text(2,g.margin,g.h<200?8:24,title,SV_CAP,0);
     sv_rect(g.margin,g.top-6,g.w-2*g.margin,1,SV_DIM);return;
   }
+#endif
   sv_text(2,20,24,title,SV_CAP,28);sv_rect(20,46,200,1,SV_DIM);
 }
 static void sv_back(void) { sv_button(82,192,76,26,"< BACK",false); }
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
 static int sv_row_y(unsigned index) { if(sn_enabled())return sn_geometry().top+(int)index*sn_geometry().row;return index<3?124+(int)index*SV_ROW_HEIGHT:278+(int)(index-3)*SV_ROW_HEIGHT; }
 static int sv_max_scroll(void) { if(sn_enabled())return sn_limit(sv_page==SV_ROOT?SETTINGS_ROW_COUNT:6);return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144); }
+#else
+static int sv_row_y(unsigned index) { return index<3?124+(int)index*SV_ROW_HEIGHT:278+(int)(index-3)*SV_ROW_HEIGHT; }
+static int sv_max_scroll(void) { return sv_page==SV_ROOT?220+(int)(SETTINGS_ROW_COUNT-5u)*SV_ROW_HEIGHT:(SV_ROW_HEIGHT==44?168:144); }
+#endif
 static void sv_clamp_scroll(void) {
   unsigned p=sv_page==SV_ROOT?0:1;
   if(sv_scroll[p]<0)sv_scroll[p]=0;
@@ -364,7 +381,9 @@ static void sv_timer(void) {
   sv_button(24,200,86,26,"CANCEL",false);sv_button(130,200,86,26,"SAVE",false);
 }
 #endif
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
 #include "settings_native_view.inc"
+#endif
 static void settings_view_redraw(void) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
   if(failed)return;
@@ -384,7 +403,9 @@ static void settings_view_redraw(void) {
 #endif
   if(pp_enabled()){sp_redraw();return;}
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()){sn_redraw();return;}
+#endif
 #endif
   sv_begin();
   if(sv_page==SV_ROOT)sv_root();else if(sv_page==SV_FIELDS)sv_fields();
@@ -404,7 +425,9 @@ static void settings_view_redraw(void) {
 static void sv_switch(unsigned page) {
   if(failed)return; /* Retained sleep must unwind without provider I/O. */
   if(pp_enabled())sp_clean=true;
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   sn_choice_scroll=0;sn_last_choice=~0u;
+#endif
   sv_page=page;sv_need_neutral=true;sv_gesture=false;sv_axis=0;sv_dragged=false;
 #ifdef PORTABLE_TOUCH_SCROLL
   settings_view_interrupt();
@@ -442,7 +465,9 @@ static void sv_switch(unsigned page) {
   settings_view_redraw();
 }
 static bool sv_inside(int x,int y,int left,int top,int w,int h) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled())return sn_hit(sn_control(left,top,w,h),x,y);
+#endif
 #ifdef PORTABLE_NOVA_UI
   sv_geometry(&left,&top,&w,&h);
 #endif
@@ -454,10 +479,12 @@ static void sv_back_input(t5_app_input_t *out) {
 }
 static void sv_slider(int x) {
   unsigned lo,hi;editor_bounds(editor_field,&lo,&hi);
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   if(sn_enabled()) {
     sn_rect r=sn_slider_rect();if(x<r.x)x=r.x;if(x>=r.x+r.w)x=r.x+r.w-1;
     editor_set_value(lo+(unsigned)(x-r.x)*(hi-lo)/(unsigned)(r.w-1));settings_view_redraw();return;
   }
+#endif
   if(x<64)x=64;
   if(x>176)x=176;
   editor_set_value(lo+(unsigned)(x-64)*(hi-lo)/112);
@@ -492,7 +519,11 @@ static bool settings_view_poll(t5_app_input_t *out) {
   if(!sample.valid || sample.cancelled) {
     sv_gesture=false;sv_need_neutral=true;return true;
   }
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
   int x=(int)sample.x-(sn_enabled()?0:(width()-240)/2),y=(int)sample.y-(sn_enabled()?0:(height()-240)/2);
+#else
+  int x=(int)sample.x-(width()-240)/2,y=(int)sample.y-(height()-240)/2;
+#endif
   bool fresh_tap=sample.released && sample.tap_eligible && !sample.moved;
   if(sv_need_neutral) {
     if(!sample.down || (sample.began && sample.tap_eligible))sv_need_neutral=false;
@@ -503,15 +534,23 @@ static bool settings_view_poll(t5_app_input_t *out) {
     sv_axis=0;sv_dragged=false;
   }
   if(sample.began) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<(sn_enabled()?width():240) && y>=0 && y<(sn_enabled()?height():240);
+#else
+    sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
+#endif
     sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;sv_axis=0;sv_dragged=false;
 #ifdef PORTABLE_QUICK_ACTIONS
     if(quick_replay_pending){sv_start_x=quick.ui.start_x;sv_start_y=quick.ui.start_y;quick_replay_pending=false;}
 #endif
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     sv_start_scroll=sn_enabled()&&sn_choices()?sn_choice_scroll:sv_scroll[sv_page==SV_ROOT?0:1];
 if(sn_enabled()&&sv_eligible&&sv_page==SV_VALUE&&sn_hit(sn_slider_rect(),x,y)) {
       sv_axis=3;sv_slider(x);
     }
+#else
+    sv_start_scroll=sv_scroll[sv_page==SV_ROOT?0:1];
+#endif
 #ifndef PORTABLE_NOVA_UI
     if(sv_eligible && sv_page==SV_VALUE && y>=116 && y<142 && x>=64 && x<=176) {
       sv_axis=3;sv_slider(x);
@@ -527,11 +566,17 @@ if(sn_enabled()&&sv_eligible&&sv_page==SV_VALUE&&sn_hit(sn_slider_rect(),x,y)) {
     }
     if(sv_axis==1 && (sv_page==SV_ROOT || sv_page==SV_FIELDS)) {
       unsigned p=sv_page==SV_ROOT?0:1;int before=sv_scroll[p];
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
       sv_scroll[p]=sn_enabled()?sn_scroll_value(sv_start_scroll-dy,sv_page==SV_ROOT?SETTINGS_ROW_COUNT:6):sv_start_scroll-dy;sv_clamp_scroll();
+#else
+      sv_scroll[p]=sv_start_scroll-dy;sv_clamp_scroll();
+#endif
       if(before!=sv_scroll[p])settings_view_redraw();
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
     } else if(sv_axis==1&&sn_enabled()&&sn_choices()) {
       sn_choice_scroll=sn_scroll_value(sv_start_scroll-dy,sn_choices());
       settings_view_redraw();
+#endif
     } else if(sv_axis==3)sv_slider(x);
   }
   if(sample.released && sv_gesture) {

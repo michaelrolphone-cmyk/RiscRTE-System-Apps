@@ -22,8 +22,8 @@ static void sn_button(sn_rect r,const char *caption,bool selected) {
   if(!strcmp(caption,"+"))glyph="solid:f067";
   else if(!strcmp(caption,"-"))glyph="solid:f068";
   if(glyph){(void)portable_nova_native_icon(r.x+(r.w-16)/2,r.y+(r.h-16)/2,16,glyph,SV_CYAN);return;}
-  int n=portable_nova_measure(2,caption),available=r.w-10;
-  sn_text(2,n<available?r.x+(r.w-n)/2:r.x+5,r.y+(r.h-12)/2-2,available,caption,SV_CYAN);
+  int n=portable_nova_measure(2,caption),available=r.w-6;
+  sn_text(2,n<available?r.x+(r.w-n)/2:r.x+3,r.y+(r.h-12)/2-2,available,caption,SV_CYAN);
 }
 static void sn_control_button(int x,int y,int w,int h,const char *s,bool selected) {
   sn_button(sn_control(x,y,w,h),s,selected);
