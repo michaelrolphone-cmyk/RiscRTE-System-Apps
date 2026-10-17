@@ -11,6 +11,9 @@ on:
       - 'scripts/*wifi*'
       - 'scripts/native_toolchain.py'
       - 'scripts/report_native_settings_memory.py'
+      - 'scripts/*native_overlay*'
+      - 'docs/native-overlays/**'
+      - 'tests/test_native_overlay*'
       - 'test/native_apps/**'
       - 'tests/test_native_wifi_*.py'
       - 'tests/test_portable_wifi_contract.py'
@@ -123,6 +126,7 @@ jobs:
         run: |
           mkdir -p build/native-wifi
           python -m unittest discover -s tests -p 'test_native_wifi_*.py' -v 2>&1 | tee build/native-wifi/native-contracts.log
+          python -m unittest discover -s tests -p 'test_native_overlay*.py' -v 2>&1 | tee build/native-wifi/overlay-contracts.log
           python -m unittest discover -s tests -p 'test_portable_wifi_contract.py' -v 2>&1 | tee build/native-wifi/portable-contracts.log
           python -m unittest discover -s tests -p 'test_native_toolchain.py' -v 2>&1 | tee build/native-wifi/toolchain-contracts.log
       - name: Captured-input reset boundary, baseline rejection and fixed acceptance
@@ -133,6 +137,10 @@ jobs:
           python scripts/test_native_wifi_features.py --sanitize --output build/native-wifi/features-sanitized 2>&1 | tee build/native-wifi/features-sanitized.log
       - name: Ordered native idle cancellation and held-contact controls
         run: python scripts/test_native_wifi_idle.py --output build/native-wifi/idle 2>&1 | tee build/native-wifi/idle.log
+      - name: Actual app native overlays, persistence and queued-input ownership
+        run: |
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app wifi --output build/native-wifi/overlays-normal 2>&1 | tee build/native-wifi/overlays-normal.log
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app wifi --sanitize --output build/native-wifi/overlays-sanitized 2>&1 | tee build/native-wifi/overlays-sanitized.log
       - name: Install pinned public target compiler
         run: |
           python -m pip install platformio==6.1.19
@@ -142,13 +150,16 @@ jobs:
       - name: Exact-source 18-capability native Wi-Fi development app
         run: |
           NATIVE_APP_CC="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" python scripts/build_native_wifi_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-wifi/app 2>&1 | tee build/native-wifi/target-build.log
-          python -c "import json; r=json.load(open('build/native-wifi/app/wifi-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.0' and len(r['required_capabilities'])==18"
+          python -c "import json; r=json.load(open('build/native-wifi/app/wifi-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.1' and len(r['required_capabilities'])==18"
       - name: Verify actual target idle conditions match tested controller
         run: python scripts/test_native_wifi_idle_target.py --idle build/native-wifi/idle --app build/native-wifi/app 2>&1 | tee build/native-wifi/idle-target.log
       - name: Pinned production ELF admission and allocation placement
         run: |
           python scripts/report_native_wifi_memory.py --elf build/native-wifi/app/wifi_settings.elf --runtime ../runtime --output build/native-wifi/admission 2>&1 | tee build/native-wifi/admission.log
           cp build/native-wifi/admission/elf-memory-admission.json build/native-wifi/app/elf-memory-admission.json
+          python scripts/report_native_overlay_successor.py --app wifi --app-dir build/native-wifi/app --memory build/native-wifi/admission/elf-memory-admission.json --output build/native-wifi/app/native-overlay-comparison.json
+      - name: Validate complete immutable publication evidence before merge
+        run: python scripts/native_overlay_evidence.py --app wifi --artifact build/native-wifi --source-sha '${{ github.event.pull_request.head.sha || github.sha }}' | tee build/native-wifi/native-overlay-publication-validation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -156,6 +167,7 @@ jobs:
           path: |
             source/build/native-wifi/**/*.json
             source/build/native-wifi/**/*.log
+            source/build/native-wifi/overlays-*/**
             source/build/native-wifi/features-*/*.c
             source/build/native-wifi/features-*/*-macros.txt
             source/build/native-wifi/app/wifi_settings.elf

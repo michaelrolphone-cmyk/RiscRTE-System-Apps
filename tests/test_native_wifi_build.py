@@ -16,14 +16,14 @@ class NativeWifiBuild(unittest.TestCase):
         out = Path('/output')
         return builder.compose_arguments((ROOT/builder.RECIPE).read_bytes(),
             {'bridges': Path('/bridges')}, out, out/'include', out/'profile',
-            out/'runtime-sdk', '1.4.0')
+            out/'runtime-sdk', '1.4.1')
 
     def test_separate_native_version_and_exact_full_manifest(self):
         profile = json.loads((ROOT/builder.VERSION_PROFILE).read_text())
-        self.assertEqual(profile['version'], '1.4.0')
+        self.assertEqual(profile['version'], '1.4.1')
         self.assertEqual(profile['profile'], 'native-wifi')
         self.assertNotEqual(profile['version'], json.loads((ROOT/'Apps/wifi_settings.json').read_text())['version'])
-        self.assertEqual(json.loads((ROOT/builder.APP_MANIFEST).read_text()), builder.manifest('1.4.0'))
+        self.assertEqual(json.loads((ROOT/builder.APP_MANIFEST).read_text()), builder.manifest('1.4.1'))
         self.assertEqual(len(builder.CAPABILITIES), 18)
         self.assertEqual(set(builder.CAPABILITY_SELECTORS), {cap for cap, _ in builder.CAPABILITIES})
         for capability in ('storage.key-value.atomic', 'storage.key-value.availability',
@@ -36,7 +36,7 @@ class NativeWifiBuild(unittest.TestCase):
         old = {item for item in original if item.startswith('-D') and not item.startswith('-DPORTABLE_WIFI_VERSION=')}
         self.assertLessEqual(old, set(arguments))
         self.assertEqual({Path(item).name for item in arguments if item.endswith('.c')}, builder.REQUIRED_SOURCES)
-        self.assertIn('-DPORTABLE_WIFI_VERSION="1.4.0"', arguments)
+        self.assertIn('-DPORTABLE_WIFI_VERSION="1.4.1"', arguments)
         self.assertNotIn('-o', arguments)
         self.assertTrue(all('@' not in item and '/test/' not in item and '/fixtures/' not in item for item in arguments))
         self.assertIn('-I/output/runtime-sdk', arguments)
@@ -48,23 +48,23 @@ class NativeWifiBuild(unittest.TestCase):
         arguments = self.arguments()
         for flag in builder.REQUIRED_FEATURES:
             with self.subTest(flag=flag), self.assertRaisesRegex(ValueError, 'lacks'):
-                builder.validate_recipe([item for item in arguments if item != '-D'+flag], '1.4.0')
+                builder.validate_recipe([item for item in arguments if item != '-D'+flag], '1.4.1')
         for name in (*builder.REQUIRED_VALUES, 'PORTABLE_WIFI_VERSION'):
             with self.subTest(name=name), self.assertRaisesRegex(ValueError, 'value differs'):
-                builder.validate_recipe([item for item in arguments if not item.startswith('-D'+name+'=')], '1.4.0')
+                builder.validate_recipe([item for item in arguments if not item.startswith('-D'+name+'=')], '1.4.1')
         for name in builder.REQUIRED_SOURCES:
             with self.subTest(source=name), self.assertRaisesRegex(ValueError, 'source selection'):
-                builder.validate_recipe([item for item in arguments if Path(item).name != name], '1.4.0')
+                builder.validate_recipe([item for item in arguments if Path(item).name != name], '1.4.1')
         for extra in ('-DPORTABLE_WIFI_NATIVE_UI=0', '-DPORTABLE_WIFI_NATIVE_UI'):
             with self.subTest(extra=extra), self.assertRaisesRegex(ValueError, 'ambiguous'):
-                builder.validate_recipe(arguments+[extra], '1.4.0')
+                builder.validate_recipe(arguments+[extra], '1.4.1')
         with self.assertRaisesRegex(ValueError, 'undefined'):
-            builder.validate_recipe(arguments+['-UPORTABLE_WIFI_NATIVE_UI'], '1.4.0')
+            builder.validate_recipe(arguments+['-UPORTABLE_WIFI_NATIVE_UI'], '1.4.1')
 
     def test_retained_recipe_bytes_are_immutable(self):
         with self.assertRaisesRegex(ValueError, 'digest changed'):
             builder.compose_arguments((ROOT/builder.RECIPE).read_bytes()+b'\n', {},
-                Path('/out'), Path('/include'), Path('/profile'), Path('/sdk'), '1.4.0')
+                Path('/out'), Path('/include'), Path('/profile'), Path('/sdk'), '1.4.1')
 
     def test_external_inputs_read_exact_pins(self):
         with mock.patch.object(builder, 'git', return_value=b'pinned') as read:

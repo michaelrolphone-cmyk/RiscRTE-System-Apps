@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'scripts'))
 spec = importlib.util.spec_from_file_location('native_publish', ROOT/'scripts/publish_native_settings.py')
 publisher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(publisher)
@@ -24,12 +25,14 @@ class NativeSettingsPublication(unittest.TestCase):
         record = {'repository_commit': 'new', 'working_tree_dirty': False,
                   'bundle': publisher.TAG, 'version': publisher.VERSION, 'size_bytes': len(elf),
                   'sha256': hashlib.sha256(elf).hexdigest(),
-                  'required_capabilities': capabilities, 'software_target_validation': True}
+                  'required_capabilities': capabilities, 'software_target_validation': True,
+                  'native_quick': True, 'native_alarm': True,
+                  'build_defines': ['-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_ALARM_NATIVE']}
         (app/'settings.elf').write_bytes(elf)
         (app/'settings-build-record.json').write_text(json.dumps(record))
         (app/'settings.json').write_text(json.dumps({'version': publisher.VERSION, 'requires': capabilities}))
-        for name in ('command.json', 'memory-admission.json'):
-            (app/name).write_text('{}')
+        (app/'command.json').write_text(json.dumps(record['build_defines']))
+        (app/'memory-admission.json').write_text('{}')
 
     def invoke(self, root, fake):
         with patch.object(sys, 'argv', ['publish', '--artifact', str(root),
@@ -53,14 +56,16 @@ class NativeSettingsPublication(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             self.fixture(root)
-            self.invoke(root, fake)
+            with patch.object(publisher, 'validate_native_overlay_evidence', return_value={'checked': True}) as gate:
+                self.invoke(root, fake)
+                gate.assert_called_once()
         mutations = [c for c in calls if c[:2] in [('release','create'),('release','upload'),('release','edit')]]
         self.assertEqual([c[1] for c in mutations], ['create','upload','edit'])
         self.assertIn('--draft', mutations[0])
         self.assertEqual(mutations[0][mutations[0].index('--target')+1], 'new')
         self.assertIn('--draft=false', mutations[-1])
-        self.assertEqual(publisher.VERSION, '1.4.1')
-        self.assertEqual(publisher.TAG, 'native-settings-1.4.1-dev1')
+        self.assertEqual(publisher.VERSION, '1.4.2')
+        self.assertEqual(publisher.TAG, 'native-settings-1.4.2-dev1')
         self.assertTrue(all(c[2] == publisher.TAG for c in mutations))
         self.assertFalse(any('native-settings-1.4.0-dev1' in str(c) for c in calls))
 
@@ -84,6 +89,20 @@ class NativeSettingsPublication(unittest.TestCase):
                     self.invoke(root, fake)
                 self.assertFalse(any(c[:2] in [('release','create'),('release','upload'),('release','edit')]
                                      for c in calls))
+
+    def test_missing_native_overlay_selection_never_mutates_release(self):
+        for missing in ('-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_ALARM_NATIVE'):
+            with self.subTest(missing=missing), tempfile.TemporaryDirectory() as temporary:
+                calls = []
+                def fake(*args, **kwargs):
+                    calls.append(args)
+                    return subprocess.CompletedProcess([], 1, '', 'HTTP 404: Not Found')
+                root = Path(temporary); self.fixture(root)
+                path = root/'app/command.json'
+                path.write_text(json.dumps([v for v in json.loads(path.read_text()) if v != missing]))
+                with self.assertRaisesRegex(RuntimeError, 'native overlay selection'):
+                    self.invoke(root, fake)
+                self.assertFalse(any(c[:2] in [('release','create'),('release','upload'),('release','edit')] for c in calls))
 
     def test_existing_release_verifies_original_source_and_skips_new_source(self):
         calls = []

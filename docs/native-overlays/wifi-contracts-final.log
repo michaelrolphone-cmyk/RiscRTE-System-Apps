@@ -1,0 +1,30 @@
+test_delivered_recipe_preserves_every_feature_and_source (test_native_wifi_build.NativeWifiBuild.test_delivered_recipe_preserves_every_feature_and_source) ... ok
+test_every_required_feature_and_value_is_fail_closed (test_native_wifi_build.NativeWifiBuild.test_every_required_feature_and_value_is_fail_closed) ... ok
+test_external_inputs_read_exact_pins (test_native_wifi_build.NativeWifiBuild.test_external_inputs_read_exact_pins) ... ok
+test_retained_recipe_bytes_are_immutable (test_native_wifi_build.NativeWifiBuild.test_retained_recipe_bytes_are_immutable) ... ok
+test_separate_native_version_and_exact_full_manifest (test_native_wifi_build.NativeWifiBuild.test_separate_native_version_and_exact_full_manifest) ... ok
+test_stale_output_is_rejected_before_external_reads (test_native_wifi_build.NativeWifiBuild.test_stale_output_is_rejected_before_external_reads) ... ok
+test_exact_layout_and_elf_binding_is_required (test_native_wifi_memory.NativeWifiMemory.test_exact_layout_and_elf_binding_is_required) ... ok
+test_incomplete_manifest_is_rejected_before_admission (test_native_wifi_memory.NativeWifiMemory.test_incomplete_manifest_is_rejected_before_admission) ... ok
+test_manifest_change_during_admission_is_rejected (test_native_wifi_memory.NativeWifiMemory.test_manifest_change_during_admission_is_rejected) ... ok
+test_missing_layout_cannot_become_admission_evidence (test_native_wifi_memory.NativeWifiMemory.test_missing_layout_cannot_become_admission_evidence) ... ok
+test_pinned_production_inputs_and_sanitized_runs_without_retained_comparison (test_native_wifi_memory.NativeWifiMemory.test_pinned_production_inputs_and_sanitized_runs_without_retained_comparison) ... ok
+test_production_allocation_disagreement_is_rejected (test_native_wifi_memory.NativeWifiMemory.test_production_allocation_disagreement_is_rejected) ... ok
+test_stale_output_is_rejected_before_compilation (test_native_wifi_memory.NativeWifiMemory.test_stale_output_is_rejected_before_compilation) ... ok
+test_target_change_during_admission_is_rejected (test_native_wifi_memory.NativeWifiMemory.test_target_change_during_admission_is_rejected) ... ok
+test_artifact_tampering_is_rejected_before_release_mutation (test_native_wifi_publish.NativeWifiPublication.test_artifact_tampering_is_rejected_before_release_mutation) ... ok
+test_existing_release_verifies_original_source_and_skips_new_source (test_native_wifi_publish.NativeWifiPublication.test_existing_release_verifies_original_source_and_skips_new_source) ... ok
+test_incomplete_prior_release_is_never_modified (test_native_wifi_publish.NativeWifiPublication.test_incomplete_prior_release_is_never_modified) ... ok
+test_new_release_uses_qualified_source_and_draft_before_upload (test_native_wifi_publish.NativeWifiPublication.test_new_release_uses_qualified_source_and_draft_before_upload) ... ok
+test_prior_tag_for_different_source_blocks_new_release (test_native_wifi_publish.NativeWifiPublication.test_prior_tag_for_different_source_blocks_new_release) ... ok
+test_clean_target_admission_and_artifact_are_required_before_main_only_publish (test_native_wifi_workflow.NativeWifiWorkflow.test_clean_target_admission_and_artifact_are_required_before_main_only_publish) ... ok
+test_controller_covers_direct_and_snapshot_normal_and_sanitized (test_native_wifi_workflow.NativeWifiWorkflow.test_controller_covers_direct_and_snapshot_normal_and_sanitized) ... ok
+test_exact_external_source_pins_match_builder (test_native_wifi_workflow.NativeWifiWorkflow.test_exact_external_source_pins_match_builder) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 0.180s
+
+OK
+Native Wi-Fi: pinned production ELF admission and allocation placement passed (normal and ASan/UBSan); physical-device memory fit remains unqualified
+Verified existing native-wifi-1.4.1-dev1 at old; no assets changed. Current qualification remains associated with new.
+Published native-wifi-1.4.1-dev1 from exact qualified source new

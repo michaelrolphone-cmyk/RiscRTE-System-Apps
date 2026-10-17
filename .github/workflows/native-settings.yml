@@ -6,6 +6,9 @@ on:
       - 'lib/PortableApps/**'
       - 'scripts/*native_settings*'
       - 'scripts/build_portable_settings.py'
+      - 'scripts/*native_overlay*'
+      - 'docs/native-overlays/**'
+      - 'tests/test_native_overlay*'
       - 'test/native_apps/**'
       - 'tests/test_native_settings_*.py'
       - '.github/workflows/native-settings.yml'
@@ -24,6 +27,7 @@ jobs:
       PYTHONUNBUFFERED: '1'
     defaults:
       run:
+        shell: bash
         working-directory: source
     steps:
       - uses: actions/checkout@v4
@@ -71,8 +75,13 @@ jobs:
       - name: Complete recipe boundaries, Quick Controls and generic sleep/motion bridges
         run: |
           python -m unittest discover -s tests -p 'test_native_settings_*.py' -v 2>&1 | tee build/native-settings/unit-tests.log
+          python -m unittest discover -s tests -p 'test_native_overlay*.py' -v 2>&1 | tee build/native-settings/overlay-contracts.log
           python scripts/test_native_settings_features.py --system . --output build/native-settings/features
           python scripts/test_native_settings_bridges.py --system . --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --output build/native-settings/bridges
+      - name: Actual app native overlays, persistence and queued-input ownership
+        run: |
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app settings --output build/native-settings/overlays-normal 2>&1 | tee build/native-settings/overlays-normal.log
+          python scripts/test_native_overlay_apps.py --runtime ../runtime --app settings --sanitize --output build/native-settings/overlays-sanitized 2>&1 | tee build/native-settings/overlays-sanitized.log
       - name: Install pinned public target compiler
         run: |
           python -m pip install platformio==6.1.19
@@ -82,10 +91,13 @@ jobs:
       - name: Exact-source 16-capability native Settings development app
         run: |
           python scripts/build_native_settings_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-settings/app
-          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.1' and r['bundle']=='native-settings-1.4.1-dev1' and len(r['required_capabilities'])==16"
+          python -c "import json; r=json.load(open('build/native-settings/app/settings-build-record.json')); assert not r['working_tree_dirty']; assert r['version']=='1.4.2' and r['bundle']=='native-settings-1.4.2-dev1' and len(r['required_capabilities'])==16"
           python scripts/report_native_settings_memory.py --elf build/native-settings/app/settings.elf --runtime ../runtime --output build/native-settings/admission
           cp build/native-settings/admission/elf-memory-admission.json build/native-settings/app/memory-admission.json
+          python scripts/report_native_overlay_successor.py --app settings --app-dir build/native-settings/app --memory build/native-settings/admission/elf-memory-admission.json --output build/native-settings/app/native-overlay-comparison.json
           cp docs/native-settings/retained-memory-comparison.json build/native-settings/app/historical-1.4.0-retained-memory-comparison.json
+      - name: Validate complete immutable publication evidence before merge
+        run: python scripts/native_overlay_evidence.py --app settings --artifact build/native-settings --source-sha '${{ github.event.pull_request.head.sha || github.sha }}' | tee build/native-settings/native-overlay-publication-validation.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -93,6 +105,7 @@ jobs:
           path: |
             source/build/native-settings/**/*.json
             source/build/native-settings/**/*.log
+            source/build/native-settings/overlays-*/**
             source/build/native-settings/**/*.ppm
             source/build/native-settings/app/settings.elf
             source/build/native-settings/app/licenses/

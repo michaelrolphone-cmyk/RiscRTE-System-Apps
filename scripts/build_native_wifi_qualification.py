@@ -36,7 +36,9 @@ RECIPE_COMMIT = '297c38619a867f6200cc2f605b6193e4394bdfa2'
 RECIPE_SHA256 = '5dd7876cd3a869e0326979b599bf9d2c1201b656606028b4a83a31992553f715'
 APP_MANIFEST = 'Apps/native/wifi_settings.json'
 VERSION_PROFILE = 'lib/PortableApps/profiles/native-wifi.json'
-DEFINES = ('PORTABLE_WIFI_NATIVE_UI', 'PORTABLE_NATIVE_CANVAS',
+DEFINES = (
+    'PORTABLE_QUICK_NATIVE', 'PORTABLE_ALARM_NATIVE',
+    'PORTABLE_WIFI_NATIVE_UI', 'PORTABLE_NATIVE_CANVAS',
            'PORTABLE_NATIVE_CUSTODY_FENCE')
 # This declaration covers the complete delivered feature recipe. Namespace
 # bindings remain deployment configuration, with required IDs recorded below.
@@ -238,6 +240,9 @@ def build(args):
         source_inputs[identity] = digest(original)
         identity_paths[path] = (identity, owner, relative)
     required_inputs = {
+        'system:lib/PortableApps/src/quick_native_render.inc',
+        'system:lib/PortableApps/include/PortableQuickLayout.h',
+        'system:lib/PortableApps/include/PortableAlarmLayout.h',
         'system:Apps/wifi_atomic.inc', 'system:lib/PortableApps/src/wifi_native_view.inc',
         'system:lib/PortableApps/src/native_custody_adapter.inc',
         'system:lib/PortableApps/src/text_input_handoff.inc',
@@ -317,7 +322,7 @@ def build(args):
             shutil.copyfile(source, destination)
     record = {'schema': 1, 'purpose': 'standalone-development-software-qualification-only',
         'bundle': 'native-wifi-'+version+'-dev1', 'version': version,
-        'wifi_profile': 'native-wifi', 'native_ui': True, 'atomic_wifi_persistence': True, 'settings_availability': True,
+        'wifi_profile': 'native-wifi', 'native_ui': True, 'native_quick': True, 'native_alarm': True, 'atomic_wifi_persistence': True, 'settings_availability': True,
         'wifi_profiles': True, 'shared_text_input': True, 'async_rf_cleanup': True,
         'repository_commit': source_commit,
         'working_tree_dirty': bool(git(ROOT, 'status', '--porcelain').strip()),

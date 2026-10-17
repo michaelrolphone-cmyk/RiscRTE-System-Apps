@@ -1,0 +1,11 @@
+In file included from /tmp/native-overlay-successors-20261017/lib/PortableApps/src/adapter.c:3011,
+                 from /tmp/native-overlay-wifi-normal-final/fixtures/portable_wifi_test.c:13,
+                 from /tmp/native-overlay-wifi-normal-final/fixtures/wifi_workflow_test.c:7,
+                 from /tmp/native-overlay-wifi-normal-final/fixtures/wifi_atomic_workflow_test.c:9,
+                 from /tmp/native-overlay-wifi-normal-final/fixtures/wifi_availability_test.c:12,
+                 from /tmp/native-overlay-successors-20261017/test/native_apps/native_overlay_wifi_test.c:10:
+/tmp/native-overlay-successors-20261017/lib/PortableApps/src/raster_snapshot_replay.inc: In function ‘raster_execute’:
+/tmp/native-overlay-successors-20261017/lib/PortableApps/src/raster_snapshot_replay.inc:189:19: error: implicit declaration of function ‘qp_icon’; did you mean ‘np_icon’? [-Wimplicit-function-declaration]
+  189 |   case RS_QP_ICON:qp_icon((unsigned)a[0],a[1],a[2],a[3]);break;
+      |                   ^~~~~~~
+      |                   np_icon

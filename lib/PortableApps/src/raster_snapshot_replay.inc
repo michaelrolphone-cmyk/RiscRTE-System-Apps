@@ -181,12 +181,14 @@ static void raster_execute(const raster_command*c) {
    raster_pixels+=(unsigned)(raster_band_bottom-raster_band_top)*240u;
 #endif
    (void)raster_checkpoint();break;
+#ifndef PORTABLE_WATCH_COLOR_ONLY
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
   case RS_QR_TEXT:{const quick_ref_font *fonts[]={&QUICK_REF_TITLE,&QUICK_REF_TIME,&QUICK_REF_NUMBER,&QUICK_REF_LABEL,&QUICK_REF_TILE,&QUICK_REF_SMALL,&QUICK_REF_BATTERY};qr_text(fonts[a[0]],a[1],a[2],s,a[3],a[4],a[5],a[6]);break;}
   case RS_QR_ROUND:qr_round(a[0],a[1],a[2],a[3],a[4],a[5]);break;
   case RS_QR_ICON:qr_icon((unsigned)a[0],a[1],a[2],a[3]);break;
 #else
   case RS_QP_ICON:qp_icon((unsigned)a[0],a[1],a[2],a[3]);break;
+#endif
 #endif
 #endif
   case RS_NP_MASK:nova_mask_pending=true;np_mask();break;
@@ -278,7 +280,7 @@ static void raster_command_span(const raster_command *c) {
   case RS_NU_PIXEL:case RS_SV_PIXEL:case RS_WV_PIXEL:top=(int64_t)a[1]+(height()-240)/2;bottom=top+1;break;
   case RS_NU_RECT:case RS_NU_ROUND:case RS_SV_RECT:case RS_WV_RECT:
    top=(int64_t)a[1]+(height()-240)/2;bottom=top+a[3];break;
-#ifdef PORTABLE_QUICK_ACTIONS
+#if defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_WATCH_COLOR_ONLY)
   case RS_QP_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=top+34*width()/480+1;break;
   case RS_QR_ROUND:top=raster_paper_y((int64_t)a[1]+c->paper_offset);bottom=raster_paper_y((int64_t)a[1]+a[3]+c->paper_offset)+2;break;
   case RS_QR_ICON:top=raster_paper_y((int64_t)a[2]+c->paper_offset);bottom=raster_paper_y((int64_t)a[2]+40+c->paper_offset)+2;break;

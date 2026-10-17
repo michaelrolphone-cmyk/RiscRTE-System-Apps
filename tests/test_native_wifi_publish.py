@@ -21,18 +21,19 @@ def sha(data):
 class NativeWifiPublication(unittest.TestCase):
     def fixture(self, root):
         app = root/'app'; app.mkdir()
-        elf = b'\x7fELF\x01\x01\x01'+b'\0'*9+b'\x03\x00\x5e\x00'+b'1.4.0\0'
+        elf = b'\x7fELF\x01\x01\x01'+b'\0'*9+b'\x03\x00\x5e\x00'+b'1.4.1\0'
         command = builder.compose_arguments((ROOT/builder.RECIPE).read_bytes(),
             {'bridges': Path('/bridges')}, Path('/out'), Path('/include'),
-            Path('/profile'), Path('/sdk'), '1.4.0')
+            Path('/profile'), Path('/sdk'), '1.4.1')
         layout = {'sha256': sha(elf), 'file_size_bytes': len(elf),
                   'linked_device_memory_fit_qualified': False,
                   'section_loader': {'data_allocation_request_bytes': 1234}}
         command_bytes = json.dumps(command).encode(); layout_bytes = json.dumps(layout).encode()
         record = {'repository_commit': 'new', 'working_tree_dirty': False,
-                  'bundle': publisher.TAG, 'version': '1.4.0', 'size_bytes': len(elf), 'sha256': sha(elf),
-                  'required_capabilities': builder.manifest('1.4.0')['requires'],
+                  'bundle': publisher.TAG, 'version': '1.4.1', 'size_bytes': len(elf), 'sha256': sha(elf),
+                  'required_capabilities': builder.manifest('1.4.1')['requires'],
                   'software_target_validation': True, 'compiled_version_verified': True, 'native_ui': True,
+                  'native_quick': True, 'native_alarm': True,
                   'atomic_wifi_persistence': True, 'settings_availability': True, 'wifi_profiles': True,
                   'shared_text_input': True, 'async_rf_cleanup': True, 'host_fixture_excluded': True,
                   'hardware_verified': False, 'firmware_or_product_replacement': False,
@@ -45,9 +46,9 @@ class NativeWifiPublication(unittest.TestCase):
         (app/'licenses').mkdir(); (app/'licenses/LICENSE.txt').write_bytes(b'license')
         (app/'wifi_settings.elf').write_bytes(elf)
         (app/'wifi-build-record.json').write_text(json.dumps(record))
-        (app/'wifi_settings.json').write_text(json.dumps(builder.manifest('1.4.0')))
+        (app/'wifi_settings.json').write_text(json.dumps(builder.manifest('1.4.1')))
         (app/'command.json').write_bytes(command_bytes); (app/'elf-layout.json').write_bytes(layout_bytes)
-        admission = {'application': 'wifi_settings', 'version': '1.4.0',
+        admission = {'application': 'wifi_settings', 'version': '1.4.1',
                      'runtime_commit': builder.PINS['runtime'], 'elf_sha256': sha(elf),
                      'elf_layout_sha256': sha(layout_bytes),
                      'manifest_sha256': sha((app/'wifi_settings.json').read_bytes()),
@@ -83,7 +84,10 @@ class NativeWifiPublication(unittest.TestCase):
                 self.assertIn(sha((paths[0].parent/'wifi_settings.elf').read_bytes()), sums)
             return subprocess.CompletedProcess([], 0, '', '')
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary); self.fixture(root); self.invoke(root, fake)
+            root = Path(temporary); self.fixture(root)
+            with patch.object(publisher, 'validate_native_overlay_evidence', return_value={'checked': True}) as gate:
+                self.invoke(root, fake)
+                gate.assert_called_once()
         mutations = [c for c in calls if c[:2] in [('release','create'), ('release','upload'), ('release','edit')]]
         self.assertEqual([c[1] for c in mutations], ['create', 'upload', 'edit'])
         self.assertIn('--draft', mutations[0])
@@ -134,7 +138,7 @@ class NativeWifiPublication(unittest.TestCase):
                 if case == 'wrong-source': record['repository_commit'] = 'wrong'
                 elif case == 'dirty': record['working_tree_dirty'] = True
                 elif case == 'same-count-capability-substitution':
-                    manifest = builder.manifest('1.4.0'); manifest['requires'][0]['capability'] = 'fake'
+                    manifest = builder.manifest('1.4.1'); manifest['requires'][0]['capability'] = 'fake'
                     record['required_capabilities'] = manifest['requires']
                     (app/'wifi_settings.json').write_text(json.dumps(manifest))
                 elif case == 'missing-native-feature':

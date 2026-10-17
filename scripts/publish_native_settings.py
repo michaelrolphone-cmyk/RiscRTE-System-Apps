@@ -15,7 +15,9 @@ import subprocess
 import tempfile
 import zipfile
 
-VERSION = '1.4.1'
+from native_overlay_evidence import validate_native_overlay_evidence
+
+VERSION = '1.4.2'
 TAG = 'native-settings-'+VERSION+'-dev1'
 DIRECT = ('settings.elf', 'settings.json', 'command.json',
           'settings-build-record.json', 'memory-admission.json')
@@ -169,19 +171,28 @@ def main():
             or manifest['requires'] != record['required_capabilities']
             or not record['software_target_validation']):
         raise RuntimeError('Complete qualified capability contract is missing')
+    command = json.loads((app/'command.json').read_text())
+    selected = {'-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_ALARM_NATIVE'}
+    if (not selected <= set(command)
+            or [item for item in command if item.startswith('-D')] != record.get('build_defines')
+            or record.get('native_quick') is not True or record.get('native_alarm') is not True):
+        raise RuntimeError('Qualified native overlay selection is missing or inconsistent')
     elf = (app/'settings.elf').read_bytes()
     if hashlib.sha256(elf).hexdigest() != record['sha256'] or len(elf) != record['size_bytes']:
         raise RuntimeError('Target ELF integrity mismatch')
     for name in DIRECT:
         if not (app/name).is_file():
             raise RuntimeError('Missing qualified release input: '+name)
+    overlay_evidence = validate_native_overlay_evidence(
+        'settings', artifact, record, args.source_sha)
     with tempfile.TemporaryDirectory() as temporary:
         out = Path(temporary)
         for name in DIRECT:
             shutil.copyfile(app/name, out/name)
         publication = {'schema': 1, 'tag': TAG, 'source_commit': args.source_sha,
                        'qualification': 'software-only', 'hardware_verified': False,
-                       'firmware_replacement': False, 'elf_sha256': record['sha256']}
+                       'firmware_replacement': False, 'elf_sha256': record['sha256'],
+                       'native_overlay_evidence': overlay_evidence}
         (out/'publication.json').write_text(json.dumps(publication, indent=2)+'\n')
         with zipfile.ZipFile(out/(TAG+'.zip'), 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
             for path in sorted(artifact.rglob('*')):
@@ -196,7 +207,8 @@ def main():
                  'deployment-owned bindings and sufficient loader memory. Physical device fit '
                  'and hardware behavior are unqualified. Does not replace product firmware '
                  'or the retained Wave 0.1.59 Settings package. The archive includes '
-                 'the qualification receipts, source recipe and available license notices.')
+                 'the qualification receipts, source recipe and available license notices. '
+                 'Native Quick Controls and alarm overlays are explicitly selected.')
         gh('release', 'create', TAG, '--repo', args.repository, '--target', args.source_sha,
            '--draft', '--prerelease', '--title', TAG, '--notes', notes)
         gh('release', 'upload', TAG, '--repo', args.repository,

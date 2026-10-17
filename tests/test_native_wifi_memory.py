@@ -21,7 +21,7 @@ class NativeWifiMemory(unittest.TestCase):
                   'section_loader': {'data_allocation_request_bytes': 1234},
                   'linked_device_memory_fit_qualified': False}
         layout_path = root/'elf-layout.json'; layout_path.write_text(json.dumps(layout))
-        (root/'wifi_settings.json').write_text(json.dumps(reporter.expected_manifest('1.4.0')))
+        (root/'wifi_settings.json').write_text(json.dumps(reporter.expected_manifest('1.4.1')))
         args = reporter.argument_parser().parse_args(['--elf', str(elf), '--runtime', '/runtime',
                                                       '--output', str(root/'out')])
         return args, layout, layout_path
@@ -105,7 +105,7 @@ class NativeWifiMemory(unittest.TestCase):
             self.assertEqual([r['sanitized'] for r in report['admission_runs']], [False, True])
             self.assertEqual(report['images'], {'native': layout})
             self.assertEqual(report['elf_sha256'], layout['sha256'])
-            self.assertEqual(report['required_capabilities'], reporter.expected_manifest('1.4.0')['requires'])
+            self.assertEqual(report['required_capabilities'], reporter.expected_manifest('1.4.1')['requires'])
             self.assertEqual(report['manifest_sha256'], reporter.shared.sha((args.elf.parent/'wifi_settings.json').read_bytes()))
             self.assertEqual(report['elf_layout_sha256'], reporter.shared.sha(path.read_bytes()))
             self.assertFalse(report['linked_device_memory_fit_qualified'])

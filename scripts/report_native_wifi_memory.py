@@ -39,7 +39,7 @@ def qualify(args):
     manifest_path = (args.manifest or elf.with_name('wifi_settings.json')).resolve()
     manifest_bytes = manifest_path.read_bytes()
     manifest = json.loads(manifest_bytes)
-    shared.require(manifest == expected_manifest('1.4.0'),
+    shared.require(manifest == expected_manifest('1.4.1'),
                    'Required native Wi-Fi manifest differs from the complete versioned recipe')
     manifest_sha = shared.sha(manifest_bytes)
     out.mkdir(parents=True, exist_ok=True)
