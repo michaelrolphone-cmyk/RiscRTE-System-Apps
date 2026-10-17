@@ -350,7 +350,7 @@ def argument_parser():
     parser.add_argument('--settings-list-scrolling',action='store_true',help='Select Settings 1.3.18 smooth root and Time/Date lists; requires --touch-scrolling')
     parser.add_argument('--home-desk-lock',action='store_true',help='Select Settings 1.3.14 with readonly Top-right key / Desk clock row; requires native paper motion and touch scrolling')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
-    parser.add_argument('--native-ui',action='store_true',help='Default-off capability-sized Settings 1.4.0 development profile with shared native canvas and Nova; default profile only')
+    parser.add_argument('--native-ui',action='store_true',help='Default-off capability-sized Settings 1.4.1 development profile with shared native canvas and Nova; default profile only')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
     parser.add_argument('--clock-change-control',action='store_true',help='Explicit tagged alarm clock-change boundary after verified raw RTC Save; requires --alarm-client, excludes x4-native-time')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')

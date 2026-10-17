@@ -6,7 +6,6 @@
 typedef struct {int x,y,w,h;} wn_rect;
 typedef struct {int w,h,margin,gap,header,top,row,bottom,footer,footer_h;} wn_layout;
 static bool wn_pending=true,wn_gesture,wn_time_valid;
-static uint32_t wn_presented_at;
 static int wn_start_x,wn_start_y;
 static wn_layout wn_geometry(void) {
   wn_layout g={0};g.w=width();g.h=height();g.margin=g.w<200?8:16;g.gap=g.w<200?4:8;
@@ -23,7 +22,7 @@ static wn_rect wn_key(unsigned key) {
   wn_layout g=wn_geometry();if(key>=PWK_COUNT)return (wn_rect){0};
   if(key>=PWK_CHARACTERS)return wn_footer(key-PWK_CHARACTERS);
   int gap=2,cell=(g.w-2*g.margin-7*gap)/8,top=g.header+18;
-  int rows=(g.footer-4-top)/4;if(rows>44)rows=44;
+  int rows=(g.footer-4-top)/4;
   return (wn_rect){g.margin+(int)(key%8)*(cell+gap),top+(int)(key/8)*rows,cell,rows-2};
 }
 static void wn_text(unsigned face,int x,int y,int available,const char *s,uint32_t color) {
@@ -51,9 +50,9 @@ void portable_wifi_native_invalidate(void) {
   wn_pending=true;wn_gesture=false;wn_time_valid=false;portable_touch_cancel_gesture(&touch);
 }
 void portable_wifi_native_presented(void) {
-  if(pp_enabled())return;
-  wn_presented_at=millis_now();wn_time_valid=true;wn_gesture=false;
-  portable_touch_cancel_gesture(&touch);
+  if(pp_enabled()||failed)return;
+  wn_gesture=false;input_reset();
+  wn_time_valid=!failed&&!native_custody_retained;
 }
 bool portable_wifi_native_ready(void) {return pp_enabled()||(!wn_pending&&wn_time_valid&&portable_paper_frame_idle());}
 /* Native touch owns its header as well as list/keyboard controls. Cancelling
@@ -63,10 +62,6 @@ static bool wifi_native_poll(t5_app_input_t *out) {
   portable_touch_sample sample;input_take(&sample);
   if(out->buttons){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
   if(!portable_wifi_native_ready()){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
-  /* Captures can queue during a provider drain. Delivery after completion
-   * does not make those earlier contacts belong to the newly visible scene.
-   * Display waits are bounded below the signed half-range; compare modulo32. */
-  if(sample.valid&&!sample.cancelled&&(sample.began||sample.down||sample.released)&&(int32_t)((uint32_t)sample.timestamp_ms-wn_presented_at)<0){wn_gesture=false;portable_touch_cancel_gesture(&touch);return true;}
   if(sample.cancelled||!sample.valid)wn_gesture=false;
   if(sample.began){wn_gesture=sample.tap_eligible;wn_start_x=sample.x;wn_start_y=sample.y;}
   if(sample.released&&wn_gesture){
@@ -119,7 +114,7 @@ static void wifi_native_render(const portable_wifi_view *v) {
     wn_text(2,g.margin,g.footer-16,g.w-2*g.margin,v->message,NOVA_CAP);
     wn_button(wn_footer(0),"Prev",false);wn_button(wn_footer(1),g.w<160?"OK":"Select",false);wn_button(wn_footer(2),"Next",false);
   }
-  present(false);wn_pending=false;
+  portable_native_present(2,false);wn_pending=false;
   /* Unchanged/synchronous frames have no outstanding completion token. */
   if(!wn_time_valid&&portable_paper_frame_idle())portable_wifi_native_presented();
 }

@@ -1,0 +1,73 @@
+# Native Wi-Fi software qualification
+
+Native Wi-Fi is an explicit standalone development profile, selected by
+`PORTABLE_WIFI_NATIVE_UI`, `PORTABLE_NATIVE_CANVAS`, `PORTABLE_NATIVE_CUSTODY_FENCE`
+and `PORTABLE_NOVA_UI`. The ordinary Wi-Fi builder defaults are unchanged.
+Paper/X4 continues through the existing paper renderer and controller path.
+No fixed 240-pixel image is scaled into the reported display.
+
+## Geometry and interaction
+
+The native renderer derives header, rows, footer and keyboard rectangles from
+capability-reported dimensions. The hit tester consumes those same rectangles.
+Selection pages by the actual visible row count. The 8-by-4 local keyboard keeps
+its established character pages and page/delete/done actions. Glyph ink metrics
+center compact labels inside their cells; the keyboard uses the available height.
+The view preserves full SSID/password buffers and fits only the visible tail by
+measured glyph advance. Passwords remain masked.
+
+The full delivered feature recipe uses the existing copied shared text editor;
+the local keyboard remains a separately selected legacy profile. Native layout
+introduces no automatic fallback when a shared editor is unavailable.
+
+Touch acceptance requires the relevant scene to have completed presentation.
+A completed **app-owned** display token calls the existing raw-input reset:
+it clears any already-reduced sample and snapshots the provider's sequence
+watermark. Queued pre-presentation contacts and held contacts are discarded;
+newer independent contacts remain ordered. Ownership follows raster snapshots
+through submission, so an older or overlay token cannot claim the successor
+frame's boundary. No timeout or guessed timestamp epoch determines eligibility.
+Physical Back and runtime exit are handled while painting is pending. Snapshot
+failure at this new boundary invokes the existing retained-custody fence.
+
+## Complete source-selected app
+
+`build_native_wifi_qualification.py` locks the existing delivered Wi-Fi recipe,
+all nine C inputs and all eighteen required capabilities. It retains scan and
+connect ownership, disconnect/retry, atomic credential persistence and availability,
+shared masked text entry, Contexts, telemetry, power/sleep/motion, Quick Controls,
+app catalog and the existing return path. This is not the generic builder's
+smaller feature subset. The source manifest is `Apps/native/wifi_settings.json`;
+profile identity is `lib/PortableApps/profiles/native-wifi.json`.
+
+The target compiler, dependency revisions, selected defines, source hashes,
+license hashes, output bytes, import/export contract, ELF allocation layout and
+production Runtime admission are recorded. Publication requires an exact clean
+source commit plus normal and sanitizer admission receipts bound to that ELF
+and manifest. Releases are draft-first and immutable after publication.
+
+## Reproducible checks
+
+- `scripts/test_native_wifi.py`: actual controller, adapter and native renderer,
+  synthetic display/touch/radio/storage providers; eight sizes from 128x128 to
+  410x502 and 502x240; normal, ASan/UBSan, snapshot and combined modes.
+- `scripts/test_native_wifi_boundary.py`: idle-only negative control and corrected
+  boundary using the same production code. The sole negative-control change
+  replaces sequence reset with gesture cancellation at completion.
+- `scripts/test_native_wifi_opt_out.py`: selected-compiler byte comparison against
+  the immutable pre-native baseline with the native Wi-Fi selector absent.
+- `tests/test_native_wifi_*.py`: source recipe, publication and admission contracts.
+- `scripts/report_native_wifi_memory.py`: exact pinned production Runtime ELF
+  admission, allocation placement and negative import/lifecycle/role controls.
+
+Qualification captures and JSON/log receipts are attached to the focused CI run.
+Synthetic providers prove software behavior, not physical panel timing or RAM fit.
+
+## Compatibility limits
+
+The development app requires the exact complete capability profile and a
+capability-sized RGB565 display at least 128x128. Source-selected storage/radio
+instances, return app and timezone policy remain those of the locked delivered
+recipe. The standalone artifact does not establish a device installation path.
+It does not replace, reserve a successor to, or mutate the immutable Wave .59
+firmware/payload association. Hardware qualification remains outstanding.

@@ -523,7 +523,7 @@ static bool settings_view_poll(t5_app_input_t *out) {
     sv_gesture=false;sv_need_neutral=true;return true;
   }
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
-  if(sn_enabled()&&!sn_touch_ready()){sn_cancel_pending_touch();return true;}
+  if(sn_enabled()&&!sn_touch_accept(&sample)){sn_cancel_pending_touch();return true;}
   int x=(int)sample.x-(sn_enabled()?0:(width()-240)/2),y=(int)sample.y-(sn_enabled()?0:(height()-240)/2);
 #else
   int x=(int)sample.x-(width()-240)/2,y=(int)sample.y-(height()-240)/2;
@@ -534,11 +534,15 @@ static bool settings_view_poll(t5_app_input_t *out) {
     else return true;
   }
   if(fresh_tap && !sv_gesture) {
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+    if(sn_enabled())sn_begin_gesture();
+#endif
     sv_gesture=sv_eligible=true;sv_start_x=sv_last_x=x;sv_start_y=sv_last_y=y;
     sv_axis=0;sv_dragged=false;
   }
   if(sample.began) {
 #ifdef PORTABLE_SETTINGS_NATIVE_UI
+    if(sn_enabled())sn_begin_gesture();
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<(sn_enabled()?width():240) && y>=0 && y<(sn_enabled()?height():240);
 #else
     sv_gesture=true;sv_eligible=sample.tap_eligible && x>=0 && x<240 && y>=0 && y<240;
