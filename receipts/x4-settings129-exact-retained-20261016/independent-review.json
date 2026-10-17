@@ -1,0 +1,33 @@
+{
+  "reviewed_at": "2026-10-16T23:58:50Z",
+  "source_commit": "ef6294bdfb40a20ba6c4a6daa55c07ad129097fc",
+  "production_restoration_commit": "abb460e1aa1cc1339b3ba871960fd9472b7da6d4",
+  "source_clean": true,
+  "verdict": "Accept X4 software first-valid RTC Save and correct readback criterion under the existing hardware waiver. Previous poll/source-lineage blocker is closed. No remaining blocking software finding within this regression scope.",
+  "normal_cases": 33,
+  "sanitized_cases": 33,
+  "production_hash_count": 258,
+  "effective_sdk_hash_count": 110,
+  "fixture_review": "Navigation now advances once per navigation provider poll, consistent with production input_dispatch logical passes; raster capture-only raw touch polling cannot skip planned navigation edges. Four UI cases contain neutral frames between one-shot presses, invoke settings_activate once, and assert one RTC write/read, one native seed, one atomic submission. Edited year, local/UTC/missing basis, independent RTC calendar/native epoch/full metadata oracles preserved. Production code is not bypassed or altered by the fixture.",
+  "normal_result": "/tmp/rtc-exact-independent-review/normal/results.json",
+  "sanitized_result": "/tmp/rtc-exact-independent-review/sanitized/results.json",
+  "files_sha256": {
+    "lib/PortableApps/src/adapter.c": "0b7f7889c80808523681e5a5a4c8da0435f321ec3287318ae3f1d8d32ef54958",
+    "scripts/test_retained_rtc.py": "11e0be6f46183c1260e38e90d8695610c1ff2ae15768cdaae014388d2c4f8990",
+    "test/native_apps/retained_rtc_save_test.c": "22266174551a0a6a18969a1985650e8288b59fec09ed3b562a953037209effa2",
+    "test/native_apps/retained_rtc_sdk_hashes.json": "e08e65be082d99f7a561623622268c9e956db1c891f5ef826e6b72c321dbdd46",
+    "test/native_apps/portable_native_time_settings_test.c": "d615c433a89978ef2dd8ca7193e55892534ec62e70fedd6b9c39886b125e2092"
+  },
+  "symbolized_sha256": "950c0b9554d571e7d7e89ca25aa5e8dc2e137f3712691e7f91874224d0c2a5fa",
+  "stripped_sha256": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7",
+  "retained_target_sha256": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7",
+  "stripped_target_bytes_equal": true,
+  "strip_alloc_section_and_dynamic_reloc_equality": true,
+  "remaining_limits": [
+    "Host execution of exact reconstructed production source, not native Xtensa ELF execution.",
+    "No hardware provider, physical RTC, input timing, or alarm-interleaving claim.",
+    "Terminal CANCELLED receipt injection is not user-input cancellation coverage.",
+    "Four first-Save UI cases and 29 direct Save-boundary cases; no claim of full availability or touch regression coverage.",
+    "ASan leak detection disabled by fixture; no leak-freedom claim."
+  ]
+}

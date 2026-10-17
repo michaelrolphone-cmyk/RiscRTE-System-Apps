@@ -1,0 +1,33 @@
+save-local: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+save-utc: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+missing-basis: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+save-edited: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+rtc-tick: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+fold-first: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+fold-second: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+fold-second-utc: verified; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+gap: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+range: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+rtc-acquire-false: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=1
+rtc-write-false: rejected as expected; RTC writes=1 reads=0 native seeds=0 atomic submissions=0 retained=1
+rtc-read-false: rejected as expected; RTC writes=1 reads=1 native seeds=0 atomic submissions=0 retained=1
+rtc-release-false: rejected as expected; RTC writes=1 reads=1 native seeds=0 atomic submissions=0 retained=1
+rtc-mismatch: rejected as expected; RTC writes=1 reads=1 native seeds=0 atomic submissions=0 retained=0
+native-control-absent: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+native-seed-io: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=0
+native-seed-context: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=1
+native-readback-io: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=0
+native-readback-mismatch: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=0
+native-release-false: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=1
+stale-time-before: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+stale-time-during: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=0 retained=0
+atomic-cancelled: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+atomic-uncertain: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+atomic-io: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+atomic-capacity: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=0
+collect-error: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=1
+collect-retained: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=1
+submit-dirty-refusal: rejected as expected; RTC writes=1 reads=1 native seeds=1 atomic submissions=1 retained=1
+availability-unavailable: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+availability-pending: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0
+availability-conflict: rejected as expected; RTC writes=0 reads=0 native seeds=0 atomic submissions=0 retained=0

@@ -1,0 +1,82 @@
+{
+  "scope": "exact retained X4 Settings 1.3.29 source and host RTC/first-Save qualification",
+  "artifact_sha256": "1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7",
+  "artifact_size_bytes": 153132,
+  "symbolized_artifact_sha256": "950c0b9554d571e7d7e89ca25aa5e8dc2e137f3712691e7f91874224d0c2a5fa",
+  "whole_file_byte_equality": true,
+  "source_base_commit": "5b28172e979b5f008da19e9a00a3b98e35937974",
+  "prior_qualified_checkpoint": "c5889418a26a70a784299a2f482535e9edb43d2c",
+  "production_restoration_checkpoint": "abb460e1aa1cc1339b3ba871960fd9472b7da6d4",
+  "source_and_tests_checkpoint": "ef6294bdfb40a20ba6c4a6daa55c07ad129097fc",
+  "production_source_count": 258,
+  "effective_sdk_file_count": 110,
+  "normal_cases": 33,
+  "sanitized_cases": 33,
+  "ui_first_save_cases": [
+    "save-local",
+    "save-utc",
+    "missing-basis",
+    "save-edited"
+  ],
+  "poll_cfg": {
+    "entry": "0x1176c",
+    "reachable_instruction_nodes": 1254,
+    "mismatches": 0
+  },
+  "historical_poll_input_equal_ignoring_whitespace": true,
+  "historical_poll_changes": [
+    "Remove cooperated bookkeeping and final yield fallback",
+    "Remove sealed-raster slice-1 override",
+    "Restore unconditional controls-intent clearing"
+  ],
+  "fixture_correction": "Queue navigation frames independently of raw touch sample count; capture-only raster touch reads must not skip scheduled navigation presses",
+  "test_source_sha256": {
+    "scripts/test_retained_rtc.py": "11e0be6f46183c1260e38e90d8695610c1ff2ae15768cdaae014388d2c4f8990",
+    "test/native_apps/retained_rtc_save_test.c": "22266174551a0a6a18969a1985650e8288b59fec09ed3b562a953037209effa2",
+    "test/native_apps/settings_availability_workflow_test.c": "d8a0dd7368dee8145379c5c7e2797243a108aa584ba5f8e92f8434f9dc73f97a",
+    "test/native_apps/settings_atomic_workflow_test.c": "d70b9dbcbbbad1b435f26edaa3b24aa004702fd32e852119c168bd227cc65de5",
+    "test/native_apps/portable_native_time_settings_test.c": "d615c433a89978ef2dd8ca7193e55892534ec62e70fedd6b9c39886b125e2092",
+    "test/native_apps/retained_rtc_sdk_hashes.json": "e08e65be082d99f7a561623622268c9e956db1c891f5ef826e6b72c321dbdd46"
+  },
+  "limitations": [
+    "Native providers are checked host doubles",
+    "Target execution, physical device behavior, scheduling/timing and alarm firing/output interleavings are not established",
+    "Unrelated older zone-touch-cancel fixture is excluded",
+    "Terminal CANCELLED receipt injection is not user-input cancellation coverage",
+    "Four UI first-Save cases and 29 direct Save-boundary cases; no claim of full availability/touch regression coverage",
+    "ASan leak detection is disabled; no leak-freedom claim"
+  ],
+  "hardware_verified": false,
+  "evidence_files_sha256": {
+    "README.md": "d7278fab09d8ae64635aa40da2c69d2d7ca9620247fcb1c993e246424b690a41",
+    "build.log": "c73c0f48961d33856cd15cdbe8c126a16e1286f9b84484ab71f91fd70b97320a",
+    "build.sh": "684630608614f5df7efff741cf91da63b2ae157d150fa6a6860091ea6aeb54d1",
+    "compare_cfg.py": "c7085488e13b526a14949d00200a0914814a50326b26a5375b29776ec145a64d",
+    "exact-verification.json": "94bdc4d3b2a5529fcd7965e3acfe0c0e1520991d8060513dee087858ca223974",
+    "historical-poll-input.c": "3f2457825f656cbf962aa0348323c56aca3c7cdf26185a273f38154ee1d767e4",
+    "historical-poll.patch": "1143b081cd05080470e403b91ae42ed394bf5bf929a5723a2e39c84d2cfd3fee",
+    "independent-normal-results.json": "575089e4571b169ffb93d9cc579d2fc81ae3f23e0cf2aecc2847e5776c02a6f1",
+    "independent-review.json": "b0d22b8760042a45054375ab53108faa91ba5c2aedd8d57b2823cd4991b7304a",
+    "independent-sanitized-results.json": "7f5ef537f8e1ee5e6df5ab79d69edecf1b7e98b76fddb59456ca5520c100b32a",
+    "normal-results.json": "575089e4571b169ffb93d9cc579d2fc81ae3f23e0cf2aecc2847e5776c02a6f1",
+    "normal.log": "ccc0922a390384a4d9f62fa2e10b76b0c39b10322d378b6d5f925613e742123b",
+    "ordered-navigation-fixture.patch": "670fce0680a19a950cc07e2122218ff1038fd025fb705ceea47c2e81010f2869",
+    "original-fixture-normal-failure.log": "0f70d893f86caf69bdee84a89176a35dfaa0da42f6062447e19102e87bd19f8a",
+    "original-fixture-sanitized-failure.log": "e4c129aed598e0c6b0b9874c831869347050b7b2b05d105f9580d18383609ac2",
+    "poll-cfg.json": "ac3893d5010a8bb6bc9af582e9217232c1491e2af12e0cdadfc2c914df18a2af",
+    "reconstruction-and-tests.patch": "dd3ee0896a28d18790c0db94cda719697eb76e01773aeff67d8530bed6ec841b",
+    "reproduce.py": "4a9d8125acbd8ba2f42e889e4c890d9aef2df52a77a4cecc63550effa01b5526",
+    "sanitized-results.json": "7f5ef537f8e1ee5e6df5ab79d69edecf1b7e98b76fddb59456ca5520c100b32a",
+    "sanitized.log": "ccc0922a390384a4d9f62fa2e10b76b0c39b10322d378b6d5f925613e742123b",
+    "sections.py": "c0346b3f7bcf7a73095baa2284b72d08e496e70bda7aba9286589d5de78d88ca",
+    "settings-build-record.json": "42a6889ed71d13ab7cecb79bf69ef24f22c22c0e3c512ee6fb220383313cc5ec",
+    "verify_exact.py": "634e07aedc8bfd91f3d59f436602548e92c38741a81d81a2c116f0afae7cbc18"
+  },
+  "independent_review": {
+    "verdict": "accepted within software regression scope under existing hardware waiver",
+    "normal_cases": 33,
+    "sanitized_cases": 33,
+    "whole_file_byte_equality": true,
+    "report": "independent-review.json"
+  }
+}

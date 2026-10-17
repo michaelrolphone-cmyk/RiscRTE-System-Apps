@@ -1,0 +1,4 @@
+Native ELF structural validation tests passed
+Portable Settings: target layout, ELF validator, import/export checks passed
+153132 /tmp/retained-poll-recovery/build-final/settings-discard.elf
+1c4914ed12749cb076019dd255c40939d73a6be10f1eda069c4e5d68b48148b7  /tmp/retained-poll-recovery/build-final/settings-discard.elf

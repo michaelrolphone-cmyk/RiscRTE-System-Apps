@@ -1,0 +1,39 @@
+diff --git a/lib/PortableApps/src/adapter.c b/lib/PortableApps/src/adapter.c
+index 83082db..5b0e4e7 100644
+--- a/lib/PortableApps/src/adapter.c
++++ b/lib/PortableApps/src/adapter.c
+@@ -1863,16 +1863,13 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+   if(failed)return false;
+   const uint32_t idle_budget=spent<wait?wait-spent:0;
+   uint32_t delay=idle_budget;
+-  bool cooperated=false;
+   while(delay && !input_progressed && !navigation_pending && !failed) {
+     uint32_t slice=delay>4u?4u:delay;
+-    if(raster_sealed&&!raster_ready_to_submit)slice=1u;
+ #ifdef PORTABLE_USB_TRANSFER_APP
+     if(slice>2u)slice=2u;
+     portable_usb_transfer_service();
+ #endif
+     rt->yield_ms(paper_token?1u:slice);
+-    cooperated=true;
+ #ifdef PORTABLE_CONTEXTS_CLIENT
+     if(!contexts_capture_checkpoint())return false;
+ #endif
+@@ -1881,7 +1878,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+     uint32_t elapsed=(uint32_t)(millis_now()-now);
+     delay=elapsed>=idle_budget?0:idle_budget-elapsed;
+   }
+-  if(!cooperated || input_progressed || navigation_pending || !wait)rt->yield_ms(1);
++  if(input_progressed || navigation_pending || !wait)rt->yield_ms(1);
+   last_poll_at=millis_now();
+   if(!paper_present_progress() || failed)return false;
+ #ifdef PORTABLE_ALARM_CLIENT
+@@ -1921,7 +1918,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+     }
+ #endif
+     if(reason==RISC_RESIDENT_CHECKPOINT_CONTROLS) {
+-      if(status!=RISC_RESIDENT_BUSY)resident_controls_requested=false;
++      resident_controls_requested=false;
+       return true;
+     }
+   }

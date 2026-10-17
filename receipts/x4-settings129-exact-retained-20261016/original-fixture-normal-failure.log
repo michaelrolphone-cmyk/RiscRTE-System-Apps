@@ -1,0 +1,9 @@
+retained-rtc: /tmp/retained-poll-recovery/source/test/native_apps/portable_native_time_settings_test.c:146: health: Assertion `polls<1900' failed.
+
+Traceback (most recent call last):
+  File "/tmp/retained-poll-recovery/source/scripts/test_retained_rtc.py", line 25, in <module>
+    if result.returncode: print(result.stderr);result.check_returncode()
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/subprocess.py", line 502, in check_returncode
+    raise CalledProcessError(self.returncode, self.args, self.stdout,
+subprocess.CalledProcessError: Command '['/tmp/retained-poll-recovery/tests-normal/retained-rtc', 'save-local']' died with <Signals.SIGABRT: 6>.

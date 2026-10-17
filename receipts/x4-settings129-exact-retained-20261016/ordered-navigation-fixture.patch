@@ -1,0 +1,33 @@
+diff --git a/test/native_apps/retained_rtc_save_test.c b/test/native_apps/retained_rtc_save_test.c
+index 5a0ae3b..a5b6bbb 100644
+--- a/test/native_apps/retained_rtc_save_test.c
++++ b/test/native_apps/retained_rtc_save_test.c
+@@ -9,8 +9,19 @@ static bool retained_tick_read(void *ctx,twatch_rtc_time_v1 *out) {
+  int64_t e;assert(!portable_timezone_civil_to_epoch(&c,&e));assert(!portable_timezone_epoch_to_civil(e+1,&c));
+  *out=(twatch_rtc_time_v1){(uint16_t)c.year,c.month,c.day,c.weekday,c.hour,c.minute,c.second};return true;
+ }
++/* Navigation owns its own ordered provider frames. Raster capture may read
++ * touch many times between navigation polls, so indexing button edges by raw
++ * touch sample count silently drops scheduled presses. */
++static unsigned retained_navigation_frame;
++static bool retained_navigation_poll(void *ctx,risc_input_navigation_frame_v1 *out) {
++ (void)ctx;io();assert(retained_navigation_frame+1<sizeof(nav_buttons)/sizeof(nav_buttons[0]));
++ unsigned buttons=nav_buttons[++retained_navigation_frame];
++ *out=(risc_input_navigation_frame_v1){.buttons=buttons,.pressed=buttons};
++ return true;
++}
+ static bool retained_acquire(const char *name,uint32_t version,uint64_t ns,risc_runtime_capability_v1 *out) {
+  bool ok=availability_acquire(name,version,ns,out);
++ if(ok&&!strcmp(name,"input.navigation")) {static risc_input_navigation_api_v1 api;api=*(const risc_input_navigation_api_v1 *)out->api;api.poll=retained_navigation_poll;out->api=&api;}
+  if(ok&&!strcmp(name,TWATCH_RTC_CAPABILITY)) {static twatch_rtc_api_v1 api;api=*(const twatch_rtc_api_v1 *)out->api;api.read=retained_tick_read;out->api=&api;}
+  return ok;
+ }
+@@ -56,7 +67,7 @@ int main(int argc,char **argv) {
+  bool ui=which("save-local")||which("save-utc")||which("missing-basis")||which("save-edited");
+  bool ok=false;
+  if(ui) {
+-  api->settings_render(0,1);inputs();
++  api->settings_render(0,1);inputs();retained_navigation_frame=0;next_at=5;
+   if(which("save-edited")){nav(RISC_NAV_CONFIRM);nav(RISC_NAV_RIGHT);nav(RISC_NAV_BACK);expected_epoch=1800041696;}
+   save_time(false);next_at+=40;end_app();
+   ok=api->settings_activate(0,0)==T5_APP_SETTING_UPDATED;
