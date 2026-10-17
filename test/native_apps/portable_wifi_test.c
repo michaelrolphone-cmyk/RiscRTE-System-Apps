@@ -48,13 +48,17 @@ static garden_radio_scan_result_v1 fake_scan;
 #endif
 static uint8_t pixels[(TEST_NATIVE_WIDTH+7)/8*TEST_NATIVE_HEIGHT];
 #else
-static uint16_t pixels[240*240];
+#ifndef TEST_WIFI_RGB_WIDTH
+#define TEST_WIFI_RGB_WIDTH 240
+#define TEST_WIFI_RGB_HEIGHT 240
+#endif
+static uint16_t pixels[TEST_WIFI_RGB_WIDTH*TEST_WIFI_RGB_HEIGHT];
 #endif
 static alarm_status_v1 fake_alarm={.api_version=1,.struct_size=sizeof(fake_alarm),.state=ALARM_STATE_READY};
 static jmp_buf blocked;
 static bool block_expected,blocked_note;
 static int sleep_outcome=1;
-static struct {unsigned at;unsigned buttons;int x,y;} script[64];
+static struct {unsigned at;unsigned buttons;int x,y;} script[96];
 #ifndef TEST_WIFI_CELL_COUNT
 #define TEST_WIFI_CELL_COUNT 8u
 #endif
@@ -84,14 +88,14 @@ static bool fake_info(void*c,risc_display_info_v1*out){(void)c;
 #ifdef TEST_WIFI_PAPER
  *out=(risc_display_info_v1){.width=TEST_NATIVE_WIDTH,.height=TEST_NATIVE_HEIGHT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1),.flags=RISC_DISPLAY_INFO_RETAINS_IMAGE|RISC_DISPLAY_INFO_PARTIAL_DAMAGE};
 #else
- *out=(risc_display_info_v1){.width=240,.height=240,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
+ *out=(risc_display_info_v1){.width=TEST_WIFI_RGB_WIDTH,.height=TEST_WIFI_RGB_HEIGHT,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};
 #endif
  return true;}
 static bool fake_frame(void*c,uint32_t format,risc_display_surface_v1*out){(void)c;observed();assert(!frame_count);frame_count=1;
 #ifdef TEST_WIFI_PAPER
  *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=TEST_NATIVE_WIDTH,.height=TEST_NATIVE_HEIGHT,.stride_bytes=(TEST_NATIVE_WIDTH+7)/8,.size_bytes=sizeof(pixels),.pixel_format=format};
 #else
- *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=240,.height=240,.stride_bytes=480,.size_bytes=sizeof(pixels),.pixel_format=format};
+ *out=(risc_display_surface_v1){.frame=1,.pixels=pixels,.width=TEST_WIFI_RGB_WIDTH,.height=TEST_WIFI_RGB_HEIGHT,.stride_bytes=TEST_WIFI_RGB_WIDTH*2,.size_bytes=sizeof(pixels),.pixel_format=format};
 #endif
  return true;}
 static void fake_frame_release(void*c,risc_display_frame_v1 f){(void)c;observed();assert(f==1 && frame_count);frame_count=0;}
@@ -107,7 +111,7 @@ static bool fake_submit(void*c,risc_display_frame_v1 f,const risc_display_rect_v
   unsigned char rgb[]={c,c,c};assert(fwrite(rgb,1,3,file)==3);
  }
 #else
- fprintf(file,"P6\n240 240\n255\n");for(unsigned i=0;i<240*240;++i){unsigned v=pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}
+ fprintf(file,"P6\n%d %d\n255\n",TEST_WIFI_RGB_WIDTH,TEST_WIFI_RGB_HEIGHT);for(unsigned i=0;i<TEST_WIFI_RGB_WIDTH*TEST_WIFI_RGB_HEIGHT;++i){unsigned v=pixels[i];unsigned char rgb[]={(unsigned char)((v>>11)*255/31),(unsigned char)(((v>>5)&63)*255/63),(unsigned char)((v&31)*255/31)};assert(fwrite(rgb,1,3,file)==3);}
 #endif
  fclose(file);}return true;
 }
@@ -199,7 +203,7 @@ static bool fake_release(risc_runtime_capability_v1*g){observed();assert(g->api 
 if(g->api==&radio_api){assert(!native_active || fail_disconnect);if(fail_release)return false;}--grant_count;g->api=NULL;return true;}
 const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t v){return v==1?&runtime_api:NULL;}
 int portable_app_alarm_sleep(const risc_runtime_api_v1*r,const risc_display_output_api_v1*d,const risc_battery_gauge_api_v1*b,const alarm_service_v1*a){(void)r;(void)d;(void)b;(void)a;assert(!native_active && !scan_active && !wg.api && !wifi && !sub_count && !surface.frame);++sleeps;if(sleep_outcome==-2)terminal_sleep=1;return sleep_outcome;}
-static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<64);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
+static void event(unsigned at,unsigned buttons,int x,int y){assert(script_count<96);script[script_count].at=at;script[script_count].buttons=buttons;script[script_count].x=x;script[script_count++].y=y;}
 /* Eight raw samples span the adapter cadence, followed by an explicit neutral gap. */
 static void held_touch(unsigned at,int x,int y){for(unsigned i=0;i<8;i++)event(at+i,0,x,y);}
 #ifndef TEST_WIFI_RUNTIME_BINDINGS

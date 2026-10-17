@@ -8,6 +8,9 @@
  * #else branch of wifi_settings.c. No firmware UI, sockets or network stack. */
 #include "T5AppApi.h"
 #include "PortableWifiView.h"
+#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+#include "WatchViewLayout.h"
+#endif
 #include "PaperFrame.h"
 #include "PortableWifiCredentials.h"
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
@@ -1358,7 +1361,12 @@ void app_main(void) {
       else {if(hit>=0){choice=(unsigned)hit;wifi_activate(choice);}continue;}
     }
     if(input.tapped) {
+#if defined(PORTABLE_NOVA_UI) && defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+      int x=input.touch_x,y=input.touch_y;
+      if(!watch_view_touch(wa->screen_width(),wa->screen_height(),view.keyboard,&x,&y))continue;
+#else
       int x=input.touch_x-(wa->screen_width()-240)/2,y=input.touch_y-(wa->screen_height()-240)/2;
+#endif
 #ifdef PORTABLE_NOVA_UI
       if(!view.keyboard && y>=188 && y<232) {
         if(x>=16 && x<80)input.buttons=T5_APP_BUTTON_UP;
