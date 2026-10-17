@@ -69,3 +69,9 @@ hashes and deterministic pixel receipts are retained in `evidence/`.
 Existing geometry, native-raster, original NOVA, reduced-font, paper, transition
 and input suites remain separate regression evidence. Host checks and target
 compilation do not establish target performance or hardware acceptance.
+
+The color-profile contract test also checks explicit generic/RF alias selection
+and absence of implicit device/profile selection. Its source-section marker was
+updated after the initial PR run exposed the old RF-only spelling; production
+renderer source did not change in that correction. The retained receipt covers
+690 actual admission cases and five tests.

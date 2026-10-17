@@ -28,6 +28,7 @@ jobs:
       - name: Retained raster, glyph bytes, legacy UI and paper paths
         run: |
           python scripts/test_rf_native_raster.py --output build/native-typography/raster
+          python scripts/test_watch_color_profile.py --evidence build/native-typography/color-profile.json
           python scripts/test_nova_text_faces_012.py
           python scripts/test_nova_ui.py
           python scripts/test_reader_paper_flip.py
