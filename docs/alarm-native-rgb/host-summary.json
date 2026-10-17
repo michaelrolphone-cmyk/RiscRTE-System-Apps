@@ -1,0 +1,151 @@
+{
+  "base": "fbf74c263721a5e48c3259e6551f1c195af58464",
+  "source_files_sha256": {
+    ".github/workflows/alarm-native-adapter.yml": "549ac10774f9df39bc884ec759843bee31d34568b2883109c144d506792a8d5f",
+    "docs/ALARM_NATIVE_RGB.md": "1777b9326d27f23eafed235c1f312d2f66683bf8687d3c905799e282e484e346",
+    "lib/PortableApps/include/PortableAlarmLayout.h": "87b59eb7bbf7a06fd0f2fc82e6e6403d12d119ae5c6a0b26457eefe647dc77ff",
+    "lib/PortableApps/src/adapter.c": "bed7258524633f61de34bac5b2a454e704b9c30e7bf95363d9c6472ea5ff360e",
+    "lib/PortableApps/src/alarm.inc": "ae5583f80ce99a711795deac519ae6d3561373444aca1e9f9399fa06b37ff9c9",
+    "lib/PortableApps/src/alarm_native.inc": "a6e37608500615053613edbdcb6529a3e685c539e43098d9de93723f6167ccf8",
+    "scripts/portable_quick_build.py": "1e1dd27ffd479fced4a234a2a168c31ce3db50fa5081fb4fcd234682eb548822",
+    "scripts/test_alarm_native_adapter.py": "176bf1c110358136cdac2750c4800413132acdaf1159983cb4b9c48fd4ba1f1e",
+    "scripts/test_alarm_native_layout.py": "ac0de6ca4ea0e5096b79d9143f441151ec75c939a467ea8fa06e9fbd1b088d02",
+    "scripts/test_alarm_native_optout.py": "b2a06180bb00711ff03be14896a1d454de3dbc4348c87b488fbcdb15e25c9511",
+    "scripts/test_alarm_native_selection.py": "4785fdc9797c4f48493d359521820ef0cd906d9238def97f2933b903cdcad169",
+    "test/native_apps/alarm_native_adapter_test.c": "4a4ad6ad4fa8e0204101cdacd5acfda2c053b5ceb5cd46efd75cde6e6bab0427",
+    "test/native_apps/alarm_native_layout_test.c": "db5027bc297ccb8757c55245b930898eb125da3456ec9355e75b64a4cf82a2ca"
+  },
+  "adapter": {
+    "configurations": 40,
+    "case_executions": 6728,
+    "normal": 20,
+    "sanitized": 20,
+    "all_passed": true,
+    "compiler_non_system_dependency_count": 73,
+    "cases_by_configuration": {
+      "native-quick0-rot0-snapshot0-san0": 189,
+      "native-quick0-rot0-snapshot1-san0": 203,
+      "native-quick0-rot180-snapshot0-san0": 189,
+      "native-quick0-rot180-snapshot1-san0": 203,
+      "native-quick1-rot0-snapshot0-san0": 203,
+      "native-quick1-rot0-snapshot1-san0": 217,
+      "native-quick1-rot180-snapshot0-san0": 203,
+      "native-quick1-rot180-snapshot1-san0": 217,
+      "native-height-quick0-rot0-snapshot0-san0": 189,
+      "native-height-quick0-rot0-snapshot1-san0": 203,
+      "native-height-quick0-rot180-snapshot0-san0": 189,
+      "native-height-quick0-rot180-snapshot1-san0": 203,
+      "native-height-quick1-rot0-snapshot0-san0": 203,
+      "native-height-quick1-rot0-snapshot1-san0": 217,
+      "native-height-quick1-rot180-snapshot0-san0": 203,
+      "native-height-quick1-rot180-snapshot1-san0": 217,
+      "off-quick0-rot0-snapshot0-san0": 27,
+      "off-quick0-rot0-snapshot1-san0": 29,
+      "off-quick1-rot0-snapshot0-san0": 29,
+      "off-quick1-rot0-snapshot1-san0": 31,
+      "native-quick0-rot0-snapshot0-san1": 189,
+      "native-quick0-rot0-snapshot1-san1": 203,
+      "native-quick0-rot180-snapshot0-san1": 189,
+      "native-quick0-rot180-snapshot1-san1": 203,
+      "native-quick1-rot0-snapshot0-san1": 203,
+      "native-quick1-rot0-snapshot1-san1": 217,
+      "native-quick1-rot180-snapshot0-san1": 203,
+      "native-quick1-rot180-snapshot1-san1": 217,
+      "native-height-quick0-rot0-snapshot0-san1": 189,
+      "native-height-quick0-rot0-snapshot1-san1": 203,
+      "native-height-quick0-rot180-snapshot0-san1": 189,
+      "native-height-quick0-rot180-snapshot1-san1": 203,
+      "native-height-quick1-rot0-snapshot0-san1": 203,
+      "native-height-quick1-rot0-snapshot1-san1": 217,
+      "native-height-quick1-rot180-snapshot0-san1": 203,
+      "native-height-quick1-rot180-snapshot1-san1": 217,
+      "off-quick0-rot0-snapshot0-san1": 27,
+      "off-quick0-rot0-snapshot1-san1": 29,
+      "off-quick1-rot0-snapshot0-san1": 29,
+      "off-quick1-rot0-snapshot1-san1": 31
+    }
+  },
+  "layout": {
+    "configurations": 2,
+    "cases_per_configuration": 100882,
+    "hit_assertions_per_configuration": 1058351,
+    "invalid_per_configuration": 5
+  },
+  "selection": {
+    "alarm_unit_tests": 14,
+    "existing_quick_unit_tests": 8,
+    "actual_builder": "Settings --native-ui --alarm-client --alarm-native, Quick optional; captured actual compiler composition plus host syntax, not target ELF"
+  },
+  "selector_off": {
+    "token_identical_compositions": 20,
+    "baseline": "fbf74c263721a5e48c3259e6551f1c195af58464"
+  },
+  "legacy": {
+    "process_executions": 164,
+    "suites": {
+      "test_portable_alarm.py": 24,
+      "test_portable_raster_custody.py": 36,
+      "test_portable_alarm_terminal.py": 42,
+      "test_alarm_busy_adapter.py": 50,
+      "test_alarm_frame_progress.py": 12
+    },
+    "compiler_non_system_dependency_count": 197,
+    "temporary_sdk_source_map": "legacy-staged-source-map.json"
+  },
+  "external_pins": {
+    "RiscRTE": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70",
+    "RiscRTE-Utilities": "80efb298c9ca8d0f62f9a31840c9e51d380b40f6"
+  },
+  "captures": [
+    {
+      "file": "alarm-120x150-blocked.png",
+      "sha256": "8e8f78f0a7a4c1d54a80877c8d83be93ed3bffd31bb76c69f0c1e6ddd352da86",
+      "snapshot_sha256": "8e8f78f0a7a4c1d54a80877c8d83be93ed3bffd31bb76c69f0c1e6ddd352da86",
+      "identical": true
+    },
+    {
+      "file": "alarm-160x160-blocked.png",
+      "sha256": "a23cf558be1d46d951cb13cee2b701dca0313edb8bf23790940e7ea69fc2da4c",
+      "snapshot_sha256": "a23cf558be1d46d951cb13cee2b701dca0313edb8bf23790940e7ea69fc2da4c",
+      "identical": true
+    },
+    {
+      "file": "alarm-410x502-blocked.png",
+      "sha256": "b51bf29b261a1243eaca7f85deb6b98fc2dfbefae3eb2e37a132180186c78b79",
+      "snapshot_sha256": "b51bf29b261a1243eaca7f85deb6b98fc2dfbefae3eb2e37a132180186c78b79",
+      "identical": true
+    },
+    {
+      "file": "alarm-502x410-blocked.png",
+      "sha256": "037f2b6bfad6bf7c5dc0f1b3230746700c51aba2b54a02b679d6152f327f7ea6",
+      "snapshot_sha256": "037f2b6bfad6bf7c5dc0f1b3230746700c51aba2b54a02b679d6152f327f7ea6",
+      "identical": true
+    }
+  ],
+  "hardware": false,
+  "app_activation": false,
+  "release_publication": false,
+  "limits": [
+    "No stopped shared automatic-idle correction included or qualified",
+    "Current scope is explicit shared RGB alarm source component; paper/app-integration acceptance remains separate",
+    "Pure ABI-valid tiny layout is not small-screen usability",
+    "Sanitizer runs disable LeakSanitizer in ptrace container; ASan/UBSan and fixture allocation/grant/frame cleanup assertions remain active"
+  ],
+  "artifact_sha256": {
+    "adapter-host-results.json": "19fc29a1aa3af2be58fce1f32c6d310d73c65b16d2a7c8d4f7167cd2f0a8ed95",
+    "alarm-120x150-blocked.png": "8e8f78f0a7a4c1d54a80877c8d83be93ed3bffd31bb76c69f0c1e6ddd352da86",
+    "alarm-160x160-blocked.png": "a23cf558be1d46d951cb13cee2b701dca0313edb8bf23790940e7ea69fc2da4c",
+    "alarm-410x502-blocked.png": "b51bf29b261a1243eaca7f85deb6b98fc2dfbefae3eb2e37a132180186c78b79",
+    "alarm-502x410-blocked.png": "037f2b6bfad6bf7c5dc0f1b3230746700c51aba2b54a02b679d6152f327f7ea6",
+    "alarm-baseline-410-red.log": "4a9e0d738789280a04304a59471cf2efe6f76d9736c5d801060f0c04917f2f79",
+    "alarm-baseline-input-red.log": "beb3d314c9a5832b95e5939bad7b7baedbe262374565c21e34c1e90caa656632",
+    "alarm-existing-quick-selector.log": "4475eebebc28ecc5a84e2d75c35e746c256986c0bca308a2e1a5038d4a15ab09",
+    "alarm-native-regressions.log": "3d7b8b28118d52015281e6f4a6fd61b91d5a37ce7d23eff649b1aab709d37e56",
+    "alarm-native-selection.log": "b09096a241fda1c029981a60069d654ea2b77b936573e903007b3224ded52381",
+    "baseline-comparison.json": "82fc711bb0bd2397e60f195a84384d4bc8795aa9ba8d4d3d958af5e8b7943844",
+    "layout-results.json": "82b60460e466464928ff05c83f12daf52b203324ceed61d6cd09aaa324349ec6",
+    "legacy-regressions.json": "d040ade12cbddd900d9983caff88c2522ee8f0564403cc4dc353f18fb09602f7",
+    "legacy-staged-source-map.json": "0d07ce04faacb8dada5829c4807663d10fb56f887a773180d2caeef516b364f5",
+    "selector-off-results.json": "6bd66ce58e52d25329f497cddafa04d9bd362e049379f5169bc6a189591968b7"
+  }
+}

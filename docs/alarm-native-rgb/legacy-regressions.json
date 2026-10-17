@@ -1,0 +1,1696 @@
+{
+  "rows": [
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "0"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "1"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "2"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "3"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "4"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "5"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "6"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "7"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "8"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "9"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/plain",
+        "10"
+      ],
+      "binary_sha256": "f98ef92b54c91a7f1f98c2dd238a39ef7b231dcedf422d4e39a0d73695be2a4f",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "0"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "1"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "2"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "3"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "4"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "5"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "6"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "7"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "8"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "9"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/san",
+        "10"
+      ],
+      "binary_sha256": "c1e4c3d6988c96bbc9053529b2093bf8be182335d592b8b3e4674d67a58e5e20",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/visual-settings-plain"
+      ],
+      "binary_sha256": "55c072e210a0a209f90b6aad7331053e0bfd2d1e42e02397db8081d83b4fae5a",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/portable-alarm/visual-settings-san"
+      ],
+      "binary_sha256": "f6fc4bdb08c9022a185a47d8b1725a3cc15f9c66df97becc1095320779aea254",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "no-op-settle"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "failed-cleanup"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "non-cooperative-clear"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "sticky-direct-restore"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-direct-overlay"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-interrupted"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-interrupted-partial"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-action-partial"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-real-open-close"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "bitmap-allocation-acquire-failure"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "aborted-recording-cleanup"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "failed-partial-cleanup"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "offscreen-allocation-recovery"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-watch-immutable"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-watch-state-oom"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-watch-node-oom"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-watch-capacity"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-normal/test",
+        "quick-watch-offscreen-oom"
+      ],
+      "binary_sha256": "4f1feb0facdf6fb4cc94344badbad0b96218c57bfc04957f5d28952ae7c86a16",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "no-op-settle"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "failed-cleanup"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "non-cooperative-clear"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "sticky-direct-restore"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-direct-overlay"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-interrupted"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-interrupted-partial"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-action-partial"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-real-open-close"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "bitmap-allocation-acquire-failure"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "aborted-recording-cleanup"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "failed-partial-cleanup"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "offscreen-allocation-recovery"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-watch-immutable"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-watch-state-oom"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-watch-node-oom"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-watch-capacity"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_raster_custody.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/custody-sanitized/test",
+        "quick-watch-offscreen-oom"
+      ],
+      "binary_sha256": "d7999fc417e8ff19483b241cf3b8ee075a10cab52d62ec753b7428c95e0e1349",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "storage"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "rtc"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "step-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "status-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "copied-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "quick-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "ack-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "stop-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-0",
+        "global-retained"
+      ],
+      "binary_sha256": "eecc7498420759cf9c483b54afe240af7caee46491c0bcd8f14310666b4419c6",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "storage"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "rtc"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "step-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "status-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "copied-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "quick-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "ack-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "stop-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-1-1",
+        "global-retained"
+      ],
+      "binary_sha256": "2855ec7e334acc87c2ecccf25a0a530efeca41845eb6deecfdf385b8004f8561",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/client-2-0"
+      ],
+      "binary_sha256": "a3cde5907f1fab5d5c5666414bc04d01ea925690e477eb11a47877aca501176c",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "storage"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "rtc"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "step-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "status-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "copied-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "quick-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "ack-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "stop-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "global-retained"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "visual"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-0",
+        "sound"
+      ],
+      "binary_sha256": "91c551e7ae2b55b18ecc297fdd131a0900f03b0c4be6e940bf9edd6cf4d836a9",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/client-2-1"
+      ],
+      "binary_sha256": "86840e35b854305c39f1e4355b8fa84682890b4843f7fecec6c38d305c64fe27",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "storage"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "rtc"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "step-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "status-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "copied-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "quick-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "ack-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "stop-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "global-retained"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "visual"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_portable_alarm_terminal.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-terminal/adapter-2-1",
+        "sound"
+      ],
+      "binary_sha256": "cea5ee33dd003cc32c36c1964009a51ee4b67683b3ed06d2c6e767cebb75d443",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "busy-cold"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "busy-mid"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "storage"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "rtc"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "visual"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "sound"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "step-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "status-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "copied-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "quick-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "ack-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-0",
+        "stop-retained"
+      ],
+      "binary_sha256": "c0afb151506f220b9621c37eb3b7c8c53113fdb103ecc6ffa860dd6b3cf9a80a",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "busy-cold"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "busy-mid"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "storage"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "rtc"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "visual"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "sound"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "step-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "status-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "copied-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "quick-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "ack-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-0-1",
+        "stop-retained"
+      ],
+      "binary_sha256": "eaabaa4aaba30c4649e55cfd4ebb5085e1beb5db607eef02ed1b10cf82278fb5",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "busy-cold"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "busy-mid"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "storage"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "rtc"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "visual"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "sound"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "step-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "status-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "copied-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "quick-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "ack-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "stop-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-0",
+        "global-retained"
+      ],
+      "binary_sha256": "5c4037c7f3ab81600bf8986eceb0df2766a98202284c0276a2370de6814a05be",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "busy-cold"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "busy-mid"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "storage"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "rtc"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "visual"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "sound"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "step-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "status-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "copied-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "quick-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "ack-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "stop-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_busy_adapter.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/busy/adapter-1-1",
+        "global-retained"
+      ],
+      "binary_sha256": "cbb5078f5008ff4d8eeb02bffdd2595e4ac6ab8b4641894c082b3bd18625b9b0",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-0",
+        "busy-queued",
+        "fixed"
+      ],
+      "binary_sha256": "a24279af1ed5e35f79a2dc125dcf42166a2794bbeddc3abdaaea08da6954b563",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-0",
+        "busy-hardware",
+        "fixed"
+      ],
+      "binary_sha256": "a24279af1ed5e35f79a2dc125dcf42166a2794bbeddc3abdaaea08da6954b563",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-0",
+        "busy-worker",
+        "fixed"
+      ],
+      "binary_sha256": "a24279af1ed5e35f79a2dc125dcf42166a2794bbeddc3abdaaea08da6954b563",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-1",
+        "busy-queued",
+        "fixed"
+      ],
+      "binary_sha256": "db5711d251cca968a55cfc41527166a849707fe54f15fdea535bd5b464997c15",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-1",
+        "busy-hardware",
+        "fixed"
+      ],
+      "binary_sha256": "db5711d251cca968a55cfc41527166a849707fe54f15fdea535bd5b464997c15",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-0-1",
+        "busy-worker",
+        "fixed"
+      ],
+      "binary_sha256": "db5711d251cca968a55cfc41527166a849707fe54f15fdea535bd5b464997c15",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-0",
+        "busy-queued",
+        "fixed"
+      ],
+      "binary_sha256": "d5ae63fef828c485243720af9bdf9a81f6b17e481a25f31ae55cd685d8205104",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-0",
+        "busy-hardware",
+        "fixed"
+      ],
+      "binary_sha256": "d5ae63fef828c485243720af9bdf9a81f6b17e481a25f31ae55cd685d8205104",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-0",
+        "busy-worker",
+        "fixed"
+      ],
+      "binary_sha256": "d5ae63fef828c485243720af9bdf9a81f6b17e481a25f31ae55cd685d8205104",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-1",
+        "busy-queued",
+        "fixed"
+      ],
+      "binary_sha256": "8d7b298584c072218c707fc4b62b2dca1e7d339a511c298ae82c79427b66fa29",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-1",
+        "busy-hardware",
+        "fixed"
+      ],
+      "binary_sha256": "8d7b298584c072218c707fc4b62b2dca1e7d339a511c298ae82c79427b66fa29",
+      "passed": true
+    },
+    {
+      "suite": "test_alarm_frame_progress.py",
+      "command": [
+        "/tmp/quick-native-adapter-20261017/build/alarm-native-regressions/frame/frame-progress-1-1",
+        "busy-worker",
+        "fixed"
+      ],
+      "binary_sha256": "8d7b298584c072218c707fc4b62b2dca1e7d339a511c298ae82c79427b66fa29",
+      "passed": true
+    }
+  ],
+  "compiler_non_system_dependency_sha256": {
+    "Apps/settings.c": "2af07dfa4c19d8c1fd3f652fb052a33d40611a4c545e77ac7298328486626bd6",
+    "lib/NativeApps/include/T5AppApi.h": "23ec6910005343055e71d0a364458824734f52c91a28364e419a85e94aa4ff42",
+    "test/native_apps/portable_alarm_test.c": "bb81ec0bc0d0b716a5a905513fdf1cec268adbc42809ff23112600763caa6610",
+    "test/native_apps/portable_settings_test.c": "9c73762c7398052b68f13a65eb709ba41c41784e7904077e289516a05d0c864a",
+    "lib/PortableApps/src/adapter.c": "bed7258524633f61de34bac5b2a454e704b9c30e7bf95363d9c6472ea5ff360e",
+    "lib/PortableApps/include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "lib/PortableApps/include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "lib/PortableApps/include/PortableApps.h": "a8f530ca55f9c55849c30b8c201444fbd58b012ef457e8c6f00f3ec75cae893e",
+    "lib/PortableApps/include/PortableNativeCanvas.h": "dee12acb1ef5f3144f3b9b12a9193bcd98153844a22e3534ff5e46ebbe7980fe",
+    "lib/PortableApps/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "lib/PortableApps/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "lib/PortableApps/include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "lib/PortableApps/include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "lib/PortableApps/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "lib/PortableApps/include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "lib/PortableApps/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "lib/PortableApps/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "lib/PortableApps/include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "lib/PortableApps/include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "lib/NativeApps/include/T5StorageApi.h": "be0d63a89943a75a58723b703284992e8c6e95956c7cb39a9b3523af2c5d23ba",
+    "lib/NativeApps/include/T5UiApi.h": "88dbfde2a45ab385c69ee0b8192e8025446c9872711e4810f799251479b1057a",
+    "lib/NativeApps/include/T5VideoApi.h": "af3f2318e53e20efb4e8e9e98d93abae11f1788fe14640c7b02392c22d08c6a4",
+    "lib/PortableApps/include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "lib/PortableApps/src/performance.inc": "547a1f1902f60b816b8dc25a28821fb0a4c84c21e219c460a6dbb760a8c71db9",
+    "lib/PortableApps/include/AlarmServiceV1.h": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b",
+    "lib/PortableApps/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "lib/PortableApps/include/PortableAppSleep.h": "027f70965663bc86e7f3bbf2733002870e2254ec92d39037def5f42c52fedc62",
+    "lib/PortableApps/include/PortableNavigation.h": "f3b9623d1e97d6a18df565aef0d9c934f18a1b97b701fbbc208de3bf0a344e6d",
+    "lib/PortableApps/include/RiscInputNavigationV1.h": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26",
+    "lib/PortableApps/src/nova.inc": "fdf01a3d48083dd13365065cc324d6e4fc1b3b021170da9b0f44b31e00afe497",
+    "Apps/SpringboardPresentation.h": "af80cd3f66de0ca0ca7077a926e196a14de2c79263d449f90e501090aa55031b",
+    "lib/PortableApps/fonts/icons.inc": "fbfee54e9dd3fd331bdfc6babf60427ccffa93c4e8956ceb0129d2b6111d411d",
+    "lib/PortableApps/fonts/text.inc": "88aad3c3002381190ba5fc584fb2177b623cbeb30bc6cf7bfde10b0399d20c42",
+    "lib/PortableApps/src/paper.inc": "4d6c7067392bf688be512735523e48a850dbecf0f823128b701436429d5eccac",
+    "Apps/PaperPresentation.h": "8d13a8c73187d1e35f67c3208f861b95ceac143b6401e6572c2b4356ef409747",
+    "lib/PortableApps/paper_fonts/text.inc": "9ee273df1c27df92d8ab2a985fb474d15b715770984894da4fee40b8cd9f2e4a",
+    "lib/PortableApps/src/installed_catalog_adapter.inc": "eb073209f594b38f5123a7f936d3b923517b34a978426de8611de9acba37eb82",
+    "lib/PortableApps/src/resident_adapter.inc": "db0c5d2b2423a7cd0f948af816234b51db489ea73cf43ca050e7ef1b7ec5a514",
+    "lib/PortableApps/src/resident_shell.inc": "8ae9ae7483ee06dce74983cad92ee3199050b4045ad732c25d4dbd211fda3fad",
+    "lib/PortableApps/src/alarm.inc": "ae5583f80ce99a711795deac519ae6d3561373444aca1e9f9399fa06b37ff9c9",
+    "lib/PortableApps/include/PortableAlarmClient.h": "2e16dcb9d4b7b27615756b6781a9354fb61c3c6ea4d33eba448062d783dd7c36",
+    "lib/PortableApps/src/settings.inc": "15a5a0195f858c4ba5cfdde715d96cdee864e128fcdccacf19935b3da74a77d2",
+    "lib/PortableApps/include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "lib/PortableApps/time/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "lib/PortableApps/time/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "lib/PortableApps/time/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e",
+    "lib/PortableApps/include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "lib/PortableApps/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "lib/PortableApps/src/settings_view.inc": "640fc44f5036f318face6b8d5477ab55098795d65db1dd62c9e4cb61c8240e15",
+    "lib/PortableApps/settings_fonts/text.inc": "8453a3f7c123799354a0ff4246dba420de2a612f421d6d9de9bf4c976073b449",
+    "Apps/PaperFrame.h": "8c7952e8e43cc404ec485dd5b6cbf1e8200b2b4f88409c903ecf1fd0667e2d5b",
+    "lib/PortableApps/src/settings_paper.inc": "e754257cd76e07656df92f34566c4b5edba8a831cb3097fba4d966b28e510006",
+    "lib/PortableApps/src/foreground_adapter_open.inc": "85d276cfb2dc6fb6b105e0676b81d636f8198e4ba8d421a527dc2f5341e432c4",
+    "test/native_apps/nova_settings_coordinates.h": "7691bbac78bcabe4aa89d59b9bf2d57f8ad6b8cbd6b7efda8e9c00e6e0006bfc",
+    "test/native_apps/portable_visual_settings_test.c": "c31f7f3163bd37cba2b39fd01ec38f7016e91dd64ac7cad940523baa6c03d102",
+    "lib/PortableApps/include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "lib/PortableApps/include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "test/native_apps/portable_raster_custody_test.c": "e0265b316288d498d190d2ccc8015940f726c105a1f680d98492c53828548c7d",
+    "test/native_apps/quick_adapter_test.c": "7db19c534a77feb787311a00f33dee0af21f57a3f49be36c3aff454c81c7c9f6",
+    "lib/PortableApps/include/PortableQuickSession.h": "039d8034f819ea6b494bcd9179408f57546f834a347b844c1f29c37b7c428ce8",
+    "lib/PortableApps/include/PortableQuickActions.h": "9ff285cb8b2e11cc37a7999857bae25c12ed67aec096af1917e46b0ad59d20d7",
+    "lib/PortableApps/include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "lib/PortableApps/include/PortableQuickRender.h": "4813385509b3752ab25cc3d9ae2b2e3d0e4792b62e3b6f99852282cf38c27774",
+    "lib/PortableApps/src/raster_snapshot_state.inc": "940c148522f79968d758fa76ed1e5dc057b36046434ee33ce89de95a46dee685",
+    "lib/PortableApps/include/PortableRasterLayer.h": "6bfac32a8582a41d447bd8121dc76fdd147c2761f3d75ff458b556339c4f2ff9",
+    "lib/PortableApps/src/nova_ui.inc": "2dad2cfc71d09c364630c80e886ce014529294f49f9da9f5f56739b962f7858e",
+    "lib/PortableApps/include/PortableNovaUi.h": "2158221bc22187c8a642016e2984ae97ed6653dd607ea9c0b4616d965f63883d",
+    "lib/PortableApps/src/quick_adapter.inc": "c4a8c550bc506e50c03f491a4c570620d001c1ad3d520405d48e8ba9629606e6",
+    "lib/PortableApps/src/quick_paper.inc": "8406e17234ccbd516572e935fdbc4a48849fb4daac6534f454c42b040f0cac48",
+    "lib/PortableApps/src/raster_snapshot_replay.inc": "b5e22a8eb81065f535ff25eeadf66c52b10a87cdb7ab79da0fe53d6c0d8ce7bd",
+    "lib/PortableApps/src/raster_layers.inc": "37d11bf454fc73bc49de5a4723ccad058c00d244b80af511f2a9656d20afd357",
+    "lib/PortableApps/src/quick_actions.c": "77048fbf21dca3f7b0772c74944ee4b8fefb3613ed48411280294600acaecc66",
+    "lib/PortableApps/include/PortableQuickLayout.h": "c0bd8c54cffa361d33b1a11246217ef9a6749d95901c59558867f74d9f30f1c8",
+    "lib/PortableApps/src/quick_render.c": "dd627c99c2cf89db07532490fb5e67aac23245a8e3f80bd445cd65d9b849b4ac",
+    "lib/PortableApps/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "lib/PortableApps/src/quick_actions_assets.inc": "6e0eadad1387eee501f4524d3b21d86fac61e9051822c368070468b9c41d896c",
+    "lib/PortableApps/src/quick_session.c": "7b2313c4f1a67f1c3ba2398c65851aad3c5c92b59f69534b5900d1362dc92c96",
+    "lib/PortableApps/include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "test/native_apps/portable_alarm_v2_adapter_test.c": "b04352b1960d46622e002717fbc13b25182bcc004453c79874cec9340a294355",
+    "test/native_apps/portable_native_toolbar_test.c": "a76d0394b2a5932d922c4648f58f4857f9f3beb63d16d7f0ef64c7cfe970838f",
+    "temporary-sdk/include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "temporary-sdk/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "temporary-sdk/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "temporary-sdk/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e",
+    "temporary-sdk/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "temporary-sdk/include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "temporary-sdk/include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "temporary-sdk/include/PortableApps.h": "a8f530ca55f9c55849c30b8c201444fbd58b012ef457e8c6f00f3ec75cae893e",
+    "temporary-sdk/include/PortableNativeCanvas.h": "dee12acb1ef5f3144f3b9b12a9193bcd98153844a22e3534ff5e46ebbe7980fe",
+    "temporary-sdk/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "temporary-sdk/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "temporary-sdk/include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "temporary-sdk/include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "temporary-sdk/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "temporary-sdk/include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "temporary-sdk/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "temporary-sdk/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "temporary-sdk/include/PortableNativeCustody.h": "0abf81f9964fbe191c0ddfed56a8ce7580367dcfb14fbd219424bc96d52ca310",
+    "temporary-sdk/include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "temporary-sdk/include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "temporary-sdk/include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "temporary-sdk/include/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "temporary-sdk/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "temporary-sdk/include/PortableQuickSession.h": "039d8034f819ea6b494bcd9179408f57546f834a347b844c1f29c37b7c428ce8",
+    "temporary-sdk/include/PortableQuickActions.h": "9ff285cb8b2e11cc37a7999857bae25c12ed67aec096af1917e46b0ad59d20d7",
+    "temporary-sdk/include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "temporary-sdk/include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "temporary-sdk/include/PortableQuickRender.h": "4813385509b3752ab25cc3d9ae2b2e3d0e4792b62e3b6f99852282cf38c27774",
+    "temporary-sdk/include/AlarmServiceV1.h": "19984058bf5ec47f2772cf56acf0d3c41a389b7edc5bd4e41aaddab5a32a017b",
+    "lib/PortableApps/src/native_custody_adapter.inc": "478a77ec895642eadf77c1b7cb57a4a1100b11e8fa222f5a3777c05a782dd0d9",
+    "lib/PortableApps/src/native_toolbar.inc": "0ecab2af95aab850734d9a13482a9e3177d4a6cddf5499435ae746fe7a21151f",
+    "temporary-sdk/include/PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
+    "temporary-sdk/include/PortableAlarmClient.h": "2e16dcb9d4b7b27615756b6781a9354fb61c3c6ea4d33eba448062d783dd7c36",
+    "temporary-sdk/include/PortableAlarmTerminalClient.h": "2f2ea1064a106ca5d4a25ee5d69d700099f20814a4d7dcb92b18af9d53123f1a",
+    "test/native_apps/broadcast_fixture.h": "83c8f4b7665aab52b70f3f82d4d2ff9e7b26f6cea5f59bdb95aaf95c9580ff4f",
+    "temporary-sdk/include/PortableQuickLayout.h": "c0bd8c54cffa361d33b1a11246217ef9a6749d95901c59558867f74d9f30f1c8",
+    "temporary-sdk/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "temporary-sdk/include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "temporary-sdk/include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "temporary-sdk/include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "test/native_apps/portable_alarm_v2_test.c": "4fcd95153829e29a8d73beb1f9f6f0cc54300867ced631b7f52fca218eefe712",
+    "build/alarm-external/utilities/lib/Alarm/include/AlarmServiceV2.h": "d7e750a8093e1b5e698483254edc38533b7242a3446d0bca5866c9dfd6ad07a1",
+    "build/alarm-external/utilities/lib/Alarm/include/AlarmServiceV1.h": "c70c087550306c123255e1ace41aeb504809e16b0193e382ec8dfbd7cb5531f5",
+    "build/alarm-native-regressions/busy/include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "build/alarm-native-regressions/busy/time/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "build/alarm-native-regressions/busy/time/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "build/alarm-native-regressions/busy/time/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e",
+    "build/alarm-native-regressions/busy/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "build/alarm-native-regressions/busy/include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "build/alarm-native-regressions/busy/include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "build/alarm-native-regressions/busy/include/PortableApps.h": "a8f530ca55f9c55849c30b8c201444fbd58b012ef457e8c6f00f3ec75cae893e",
+    "build/alarm-native-regressions/busy/include/PortableNativeCanvas.h": "dee12acb1ef5f3144f3b9b12a9193bcd98153844a22e3534ff5e46ebbe7980fe",
+    "build/alarm-native-regressions/busy/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "build/alarm-native-regressions/busy/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "build/alarm-native-regressions/busy/include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "build/alarm-native-regressions/busy/include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "build/alarm-native-regressions/busy/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "build/alarm-native-regressions/busy/include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "build/alarm-native-regressions/busy/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "build/alarm-native-regressions/busy/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "build/alarm-native-regressions/busy/include/PortableNativeCustody.h": "0abf81f9964fbe191c0ddfed56a8ce7580367dcfb14fbd219424bc96d52ca310",
+    "build/alarm-native-regressions/busy/include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "build/alarm-native-regressions/busy/include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "build/alarm-native-regressions/busy/include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "build/alarm-native-regressions/busy/include/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "build/alarm-native-regressions/busy/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "build/alarm-native-regressions/busy/include/PortableQuickSession.h": "039d8034f819ea6b494bcd9179408f57546f834a347b844c1f29c37b7c428ce8",
+    "build/alarm-native-regressions/busy/include/PortableQuickActions.h": "9ff285cb8b2e11cc37a7999857bae25c12ed67aec096af1917e46b0ad59d20d7",
+    "build/alarm-native-regressions/busy/include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "build/alarm-native-regressions/busy/include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "build/alarm-native-regressions/busy/include/PortableQuickRender.h": "4813385509b3752ab25cc3d9ae2b2e3d0e4792b62e3b6f99852282cf38c27774",
+    "build/alarm-native-regressions/busy/include/PortableAlarmClient.h": "2e16dcb9d4b7b27615756b6781a9354fb61c3c6ea4d33eba448062d783dd7c36",
+    "build/alarm-native-regressions/busy/include/PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
+    "build/alarm-native-regressions/busy/include/PortableQuickLayout.h": "c0bd8c54cffa361d33b1a11246217ef9a6749d95901c59558867f74d9f30f1c8",
+    "build/alarm-native-regressions/busy/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "build/alarm-native-regressions/busy/include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "build/alarm-native-regressions/busy/include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "build/alarm-native-regressions/busy/include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "build/alarm-native-regressions/busy/include/PortableAlarmTerminalClient.h": "2f2ea1064a106ca5d4a25ee5d69d700099f20814a4d7dcb92b18af9d53123f1a",
+    "test/native_apps/alarm_frame_progress_test.c": "b5d312a5cf4ccc10e3dd9edfda2489e76f8c05d462958ce1d9553f363d409a22",
+    "build/alarm-native-regressions/frame/include/PortableTime.h": "350b8c5255dafa9e25c4a20cfb458cdcda3439da929dab05e0de0c82e981ff6e",
+    "build/alarm-native-regressions/frame/time/denver/display_time.h": "9460e26e1d6faf574a212cdec86d9477de7a0e5d50168d5e7e76613be2868a03",
+    "build/alarm-native-regressions/frame/time/denver/twatch_calendar.h": "67e4a670e4ee8a485843e99be0d198d0b60d84a0bc8d84fc77a3d0e4bde39733",
+    "build/alarm-native-regressions/frame/time/denver/twatch_caps.h": "b8b3003c77c72eb251227329c94fda7244389fb45c7a7e92aa01a5ddce50600e",
+    "build/alarm-native-regressions/frame/include/PortableRtcClock.h": "43508db1cd392606cf37a7e55ad15e3770de1284af13a431876fd5d7785b838c",
+    "build/alarm-native-regressions/frame/include/RiscRuntimeHostControlV1.h": "697f710f7512dc724c2986bac0abc86756c9ae0739577b4f4ab20583a2743815",
+    "build/alarm-native-regressions/frame/include/RiscRuntimeV1.h": "6e114c69b4de04a8faa254d89e92143b11549824f53d63b8e75d7e09cd216387",
+    "build/alarm-native-regressions/frame/include/PortableApps.h": "a8f530ca55f9c55849c30b8c201444fbd58b012ef457e8c6f00f3ec75cae893e",
+    "build/alarm-native-regressions/frame/include/PortableNativeCanvas.h": "dee12acb1ef5f3144f3b9b12a9193bcd98153844a22e3534ff5e46ebbe7980fe",
+    "build/alarm-native-regressions/frame/include/PortableDisplayGeometry.h": "a90c2163797097dcfe93798c78593236c7f2eb43fbd391704f3880b43abab6e8",
+    "build/alarm-native-regressions/frame/include/RiscDisplayOutputV1.h": "8111c8fb6d28542f3d2f5ae7ce7497891b1c89bd2488735c817542b955bdd726",
+    "build/alarm-native-regressions/frame/include/PortablePerformance.h": "4242d93019235138f6d0a80cd1edc58e55b9c591157d5f90b0d6c2992ce0672e",
+    "build/alarm-native-regressions/frame/include/PortableStageLog.h": "b347496d8bbb70cbbc19bd85d4a4a214f57b660d90cfb1ccaab9138fac787f02",
+    "build/alarm-native-regressions/frame/include/PortableTouch.h": "ac620d1725beec57df1eeb31474644180099305ee132b605d264af6ce98a01c6",
+    "build/alarm-native-regressions/frame/include/RiscTouchV1.h": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d",
+    "build/alarm-native-regressions/frame/include/RiscProviderV2.h": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+    "build/alarm-native-regressions/frame/include/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+    "build/alarm-native-regressions/frame/include/PortableNativeCustody.h": "0abf81f9964fbe191c0ddfed56a8ce7580367dcfb14fbd219424bc96d52ca310",
+    "build/alarm-native-regressions/frame/include/RiscBatteryGaugeV1.h": "03d2f2b78e8f261cfb10f5c44bcabc1495bfecb17d7953586a58c27dce151b86",
+    "build/alarm-native-regressions/frame/include/T5BatteryApi.h": "f939c924102099de4ed746519791ce2b68eb2bac79bc212caeaad1366dc8c9a5",
+    "build/alarm-native-regressions/frame/include/PortableBackgroundServices.h": "f1291afed98c321a81550e7648234d478652f81299cbad9c44814218a384e5b8",
+    "build/alarm-native-regressions/frame/include/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "build/alarm-native-regressions/frame/include/RiscKeyValueV1.h": "0e73bf29c402be030baf52f5b2b324f5b872549cdf58aa31f45b72bd70977179",
+    "build/alarm-native-regressions/frame/include/PortableQuickSession.h": "039d8034f819ea6b494bcd9179408f57546f834a347b844c1f29c37b7c428ce8",
+    "build/alarm-native-regressions/frame/include/PortableQuickActions.h": "9ff285cb8b2e11cc37a7999857bae25c12ed67aec096af1917e46b0ad59d20d7",
+    "build/alarm-native-regressions/frame/include/PortableQuickPreferences.h": "bc0de08849d553da4049cee1608d765db1f48d89aa27524094088ea31d8b1b91",
+    "build/alarm-native-regressions/frame/include/PortableSleepPolicy.h": "70fa8ff8f63270b2a04d591bdbc61cd7e16d6483421121a96fe22f2855966d9d",
+    "build/alarm-native-regressions/frame/include/PortableQuickRender.h": "4813385509b3752ab25cc3d9ae2b2e3d0e4792b62e3b6f99852282cf38c27774",
+    "build/alarm-native-regressions/frame/include/PortableAlarmClient.h": "2e16dcb9d4b7b27615756b6781a9354fb61c3c6ea4d33eba448062d783dd7c36",
+    "build/alarm-native-regressions/frame/include/PortableRasterLayer.h": "6bfac32a8582a41d447bd8121dc76fdd147c2761f3d75ff458b556339c4f2ff9",
+    "build/alarm-native-regressions/frame/include/PortableNativeTimeToolbar.h": "940454536d845d560b734eb8e887e789f4d32fadff7e5d132dc259eb69106b3b",
+    "build/alarm-native-regressions/frame/include/PortableQuickLayout.h": "c0bd8c54cffa361d33b1a11246217ef9a6749d95901c59558867f74d9f30f1c8",
+    "build/alarm-native-regressions/frame/include/WatchLayout.h": "8a1a62346320a0dc76d0976d84e589ffbc5b0cdc064acf32a2d8057da0637aab",
+    "build/alarm-native-regressions/frame/include/PortableTimeFormat.h": "8eb4d0f850c974da910a516c0f13ed9302ad3928849aa85d7641bdbcf3bd1867",
+    "build/alarm-native-regressions/frame/include/PortableContextPreferences.h": "1fb5e6d3cc796892f15c15162bd38b64d4b4508756de5f0c77b2015fbe388826",
+    "build/alarm-native-regressions/frame/include/PortableAlarmSettings.h": "cf4fb88bfeabb99282b02a871963858a9d20c8985e7da80d57341c33c5250284",
+    "build/alarm-native-regressions/frame/include/PortableAlarmTerminalClient.h": "2f2ea1064a106ca5d4a25ee5d69d700099f20814a4d7dcb92b18af9d53123f1a"
+  },
+  "scripts_sha256": {
+    "test_portable_alarm.py": "748f5f7519471d98c67d1d8ab4885256813dfda79f2b6e9d09f77771bd795c5e",
+    "test_portable_raster_custody.py": "6094aae0fe7126c92c27cb565cbf1b0d5ce91e8e11c1aecdc012a1823f933a37",
+    "test_portable_alarm_terminal.py": "b46b557a77e1c1c41b1dcc5db60027ab279412d49d6fb62d80bd99308a5f2e85",
+    "test_alarm_busy_adapter.py": "a6424c3a91a61207b988799ebb8c390a9d0ae47b4f1889bdca2f842aedd975ca",
+    "test_alarm_frame_progress.py": "811f5c893d3b1ab51d42c0ddd714e7783c35f86609393d54ce92c58e2423f726"
+  },
+  "runtime": "1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70",
+  "utilities": "80efb298c9ca8d0f62f9a31840c9e51d380b40f6"
+}

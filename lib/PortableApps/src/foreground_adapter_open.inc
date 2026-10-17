@@ -110,6 +110,10 @@
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   quick.ui.paper=pp_enabled();
+#ifdef PORTABLE_QUICK_NATIVE
+  /* Select native Quick without changing the foreground app or paper profile. */
+  if(!quick.ui.paper && !pqa_set_dimensions(&quick.ui,info.width,info.height))return -1;
+#endif
   if(!pqa_session_load(&quick,rt))return -1;
   initial_brightness_pending=surface_format==RISC_DISPLAY_FORMAT_RGB565 &&
     (info.flags&RISC_DISPLAY_INFO_BRIGHTNESS)!=0;

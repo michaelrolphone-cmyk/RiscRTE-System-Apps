@@ -1,4 +1,16 @@
 #include "RiscRuntimeHostControlV1.h"
+#if defined(PORTABLE_ALARM_NATIVE) && (!defined(PORTABLE_ALARM_CLIENT) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS))
+#error "Native alarm requires explicitly selected alarm client, Nova UI and native canvas"
+#endif
+#if defined(PORTABLE_ALARM_NATIVE) && defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+#error "Native alarm requires generic foreground initialization"
+#endif
+#if defined(PORTABLE_QUICK_NATIVE) && !defined(PORTABLE_QUICK_ACTIONS)
+#error "Native Quick requires explicitly selected Quick Actions"
+#endif
+#if defined(PORTABLE_QUICK_NATIVE) && defined(PORTABLE_DESK_CLOCK_SPARSE_START)
+#error "Native Quick requires generic foreground initialization"
+#endif
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 #if !defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
 #error "Atomic Settings requires the Settings controller and checked native custody"
@@ -806,7 +818,9 @@ static void input_dispatch(void) {
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
   int quick_x=next.x,quick_y=next.y;bool quick_native=false;
-#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
+#ifdef PORTABLE_QUICK_NATIVE
+  if(!quick.ui.paper)quick_native=true;
+#elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
   if(!quick.ui.paper&&info.width&&info.height){quick_x=(uint32_t)next.x*240u/info.width;quick_y=(uint32_t)next.y*240u/info.height;quick_native=true;}
 #endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES

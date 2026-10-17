@@ -1,0 +1,27 @@
+{
+  "description": "Frozen 480x800 legacy Quick text observation slots. Pixel masks come from the licensed font metric/bitmap source; the provider fixture owns input and controller geometry.",
+  "font": "lib/PortableApps/paper_fonts/text.inc",
+  "reference_size": [480, 800],
+  "slots": [
+    {"id":"title", "rect":[32,24,300], "text":"QUICK ACTIONS", "heading":true},
+    {"id":"time", "rect":[342,30,112], "text":"$time", "heading":true},
+    {"id":"frontlight", "rect":[32,96,400], "text":"FRONTLIGHT"},
+    {"id":"frontlight-percent", "rect":[382,134,70], "text":"--%"},
+    {"id":"notifications", "rect":[32,190,400], "text":"$notifications"},
+    {"id":"volume-percent", "rect":[382,228,70], "text":"$volume"},
+    {"id":"silent", "rect":[102,334,126], "text":"SILENT", "no_sound_y":321},
+    {"id":"silent-status", "rect":[102,348,126], "text":"UNAVAILABLE", "no_sound_only":true},
+    {"id":"dnd", "rect":[314,334,126], "text":"DND"},
+    {"id":"airplane", "rect":[102,425,126], "text":"AIRPLANE"},
+    {"id":"airplane-status", "rect":[102,452,126], "text":"UNAVAILABLE"},
+    {"id":"wifi", "rect":[314,425,126], "text":"WI-FI"},
+    {"id":"wifi-status", "rect":[314,452,126], "text":"UNAVAILABLE"},
+    {"id":"bluetooth", "rect":[102,529,126], "text":"BLUETOOTH"},
+    {"id":"bluetooth-status", "rect":[102,556,126], "text":"UNAVAILABLE"},
+    {"id":"torch", "rect":[314,529,126], "text":"TORCH"},
+    {"id":"torch-status", "rect":[314,556,126], "text":"UNAVAILABLE"},
+    {"id":"close", "rect":[74,665,360], "text":"SWIPE UP TO CLOSE"},
+    {"id":"battery", "rect":[32,756,70], "text":"BATT"},
+    {"id":"battery-percent", "rect":[384,750,70], "text":"84%"}
+  ]
+}

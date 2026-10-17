@@ -1,0 +1,56 @@
+name: Paper Quick coordinate geometry
+on:
+  pull_request:
+  push:
+    branches: [main, work/paper-coordinate-geometry-20261017]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 1c1ed8661ea30d47e7e9707c41d492ce3a2b4d70
+          path: .paper-deps/runtime
+          sparse-checkout: sdk/app
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: a9009a5d774ae7060b9f298fdcbc81be6c22cc17
+          path: .paper-deps/display
+          sparse-checkout: minimal/t039/profile/target-x4/sdk/include
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install Pillow==11.3.0
+      - name: Signed endpoint and inverse-input properties
+        run: python scripts/test_paper_geometry.py
+      - name: Actual legacy and resident paper adapter pixels and input
+        run: >-
+          python scripts/test_paper_coordinate_adapter.py
+          --runtime-sdk .paper-deps/runtime/sdk/app
+          --display-sdk .paper-deps/display/minimal/t039/profile/target-x4/sdk/include
+          --output build/paper-coordinate-ci
+      - name: Original paper modal and Home regressions
+        run: python scripts/test_paper_quick_actions.py
+      - name: Install pinned target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Freestanding target arithmetic and unchanged ELF admission
+        run: python scripts/test_paper_geometry_target.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paper-coordinate-evidence
+          path: |
+            build/paper-geometry
+            build/paper-geometry-target
+            build/paper-coordinate-ci
+            build/paper-quick
