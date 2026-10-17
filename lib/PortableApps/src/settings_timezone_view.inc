@@ -243,7 +243,11 @@ static void stz_redraw(void) {
   stz_button(margin+(cities?foot_w+gap:0),foot_y,foot_w,foot_h,"CANCEL",false);
   stz_button(margin+(columns-1)*(foot_w+gap),foot_y,foot_w,foot_h,cities?"SAVE":"OPEN",true);
 #endif
-  present(paper?sp_clean:false);sp_clean=false;
+#ifdef PORTABLE_SETTINGS_NATIVE_UI
+  if(sn_enabled())portable_native_present(1,false);else
+#endif
+  present(paper?sp_clean:false);
+  sp_clean=false;
 #ifdef PORTABLE_TOUCH_SCROLL
   if(paper){stz_submitted_page=sv_page;stz_submitted_q8=stz_scroll.position_q8;stz_scroll_visible();}
 #endif

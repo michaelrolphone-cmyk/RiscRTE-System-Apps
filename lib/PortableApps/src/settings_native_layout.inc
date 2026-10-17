@@ -113,3 +113,13 @@ static sn_rect sn_control(int x,int y,int w,int h) {
  * painting. Navigation/Back and runtime exit are handled independently. */
 static bool sn_touch_ready(void){return !sp_dirty&&portable_paper_frame_idle();}
 static void sn_cancel_pending_touch(void){sv_gesture=false;sv_need_neutral=true;portable_touch_cancel_gesture(&touch);}
+
+/* Completion is an input ownership boundary, including synchronous display
+ * waits which collect raw edges before the controller can dispatch them.
+ * Use the raw ABI's sequence watermark instead of dispatch time or guessed
+ * timestamp epochs. Held contacts cancel; newer queued edges remain ordered. */
+static void sn_presented(void) {
+  if(!sv_active||!sn_enabled()||failed)return;
+  sv_gesture=false;sv_need_neutral=true;
+  input_reset();
+}
