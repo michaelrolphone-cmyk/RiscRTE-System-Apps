@@ -19,7 +19,7 @@ typedef struct {
   const char *entry; /* Already masked by the controller for passwords. */
 } portable_wifi_view;
 enum { WIFI_HIT_BACK=-2, WIFI_HIT_PREVIOUS=-3, WIFI_HIT_NEXT=-4
-#ifdef PORTABLE_WIFI_NATIVE_UI
+#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
  ,WIFI_HIT_SELECT=-5
 #endif
  };
@@ -51,9 +51,12 @@ bool portable_wifi_close(void);
 
 bool portable_wifi_idle_ready(void);
 
-#ifdef PORTABLE_WIFI_NATIVE_UI
+#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
 void portable_wifi_native_invalidate(void);
 void portable_wifi_native_presented(void);
 bool portable_wifi_native_ready(void);
+#ifdef PORTABLE_UPDATE_NATIVE_UI
+bool portable_update_native_drawn(const portable_wifi_view *view);
+#endif
 bool portable_wifi_native_accept(const portable_wifi_view *view);
 #endif
