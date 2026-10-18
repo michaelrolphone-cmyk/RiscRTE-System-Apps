@@ -90,6 +90,9 @@ bool portable_wifi_native_ready(void) {return pp_enabled()||(!wn_pending&&wn_tim
 bool portable_wifi_native_accept(const portable_wifi_view *v){return pp_enabled()||(wn_matches(v)&&(portable_wifi_native_ready()||wn_tap_owned));}
 /* Native touch owns its header as well as list/keyboard controls. Cancelling
  * while the scene is pending prevents a held contact crossing a transition. */
+#ifdef PORTABLE_UPDATE_NATIVE_UI
+bool portable_update_native_drawn(const portable_wifi_view *v){return wn_matches(v)&&!wn_pending;}
+#endif
 static bool wifi_native_poll(t5_app_input_t *out) {
   if(pp_enabled())return false;
   portable_touch_sample sample;input_take(&sample);wn_tap_owned=false;
