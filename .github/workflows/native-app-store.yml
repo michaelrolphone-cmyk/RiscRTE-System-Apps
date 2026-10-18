@@ -1,0 +1,207 @@
+name: Native App Store qualification
+on:
+  pull_request:
+    paths:
+      - 'Apps/app_store*'
+      - 'Apps/update*'
+      - 'lib/PortableApps/**'
+      - 'lib/NativeApps/**'
+      - 'lib/elf_loader/**'
+      - 'Services/update/**'
+      - 'profiles/native-app-store/**'
+      - 'scripts/*app_store*'
+      - 'scripts/native_toolchain.py'
+      - 'scripts/report_native_settings_memory.py'
+      - 'scripts/test_portable_update.py'
+      - 'scripts/test_watch_updates_native_layout.py'
+      - 'test/native_apps/**'
+      - 'docs/shared-app-crashes/replay/wave.json'
+      - '.github/workflows/native-app-store.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      publish_development:
+        description: Publish the verified additive native-app-store-1.4.0-dev1 prerelease
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: native-app-store-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  controller:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: normal
+            flags: ''
+          - mode: sanitized
+            flags: '--sanitize'
+          - mode: snapshot
+            flags: '--snapshot'
+          - mode: snapshot-sanitized
+            flags: '--snapshot --sanitize'
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        working-directory: source
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 48229bd1593a2e24e95bf4537b495ee615990fd3
+          path: runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Native controller, geometry, input, retention and completion matrix
+        run: python scripts/test_native_app_store.py --runtime ../runtime --output build/controller/${{ matrix.mode }} ${{ matrix.flags }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-app-store-controller-${{ matrix.mode }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: source/build/controller/${{ matrix.mode }}/
+          if-no-files-found: error
+          retention-days: 30
+  qualify:
+    needs: controller
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    defaults:
+      run:
+        working-directory: source
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 48229bd1593a2e24e95bf4537b495ee615990fd3
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 6e82fdcaec0b73ed700d2104cfb4d94f011c19d4
+          path: bridges
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
+          ref: b9862e1379813a0914d4926ef59a3feb6fcf656a
+          path: profile-source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          path: utilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-app-store-controller-*-${{ github.event.pull_request.head.sha || github.sha }}
+          path: controllers
+      - name: Place each exact-source controller mode
+        run: |
+          mkdir -p build/native-app-store/controller
+          for mode in normal sanitized snapshot snapshot-sanitized; do
+            mv "../controllers/native-app-store-controller-$mode-${{ github.event.pull_request.head.sha || github.sha }}" "build/native-app-store/controller/$mode"
+          done
+      - name: Recipe, publication and catalog mutation rejection tests
+        run: python scripts/test_native_app_store_release.py
+      - name: Existing 312-case geometry and paired/service/controller fault suites
+        run: python scripts/run_native_app_store_regressions.py --output build/native-app-store/regressions
+      - name: Actual App Store plus native Quick/alarm composition
+        run: |
+          python scripts/test_native_app_store_overlays.py --runtime ../runtime --output build/native-app-store/overlays-normal
+          python scripts/test_native_app_store_overlays.py --runtime ../runtime --sanitize --output build/native-app-store/overlays-sanitized
+      - name: Install pinned public target compiler
+        run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Twelve explicit-selector-off byte preservation witnesses
+        run: python scripts/test_native_app_store_opt_out.py --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --output build/native-app-store/opt-out
+      - name: Full retained App Store and firmware updater selector-off byte controls
+        run: python scripts/test_native_app_store_recipe_opt_out.py --xtensa-cc "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output build/native-app-store/recipe-opt-out
+      - name: Complete retained recipe, four native selectors and sixteen capabilities
+        run: |
+          NATIVE_APP_CC="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" python scripts/build_native_app_store_qualification.py --bridges ../bridges --runtime ../runtime --profile-source ../profile-source --utilities ../utilities --output-dir build/native-app-store/app
+          python scripts/report_native_app_store_memory.py --elf build/native-app-store/app/app_store.elf --runtime ../runtime --output build/native-app-store/admission
+          cp build/native-app-store/admission/elf-memory-admission.json build/native-app-store/app/elf-memory-admission.json
+      - name: Fail closed on incomplete or stale exact-source receipts
+        run: python scripts/native_app_store_evidence.py --artifact build/native-app-store --source-sha '${{ github.event.pull_request.head.sha || github.sha }}' > build/native-app-store/qualification.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-app-store-software-qualification-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            source/build/native-app-store/controller/
+            source/build/native-app-store/overlays-normal/
+            source/build/native-app-store/overlays-sanitized/
+            source/build/native-app-store/recipe-opt-out/
+            source/build/native-app-store/app/
+            source/build/native-app-store/admission/
+            source/build/native-app-store/opt-out/*.json
+            source/build/native-app-store/opt-out/*.stdout
+            source/build/native-app-store/opt-out/*.stderr
+            source/build/native-app-store/regressions/*.json
+            source/build/native-app-store/regressions/*.log
+            source/build/native-app-store/regressions/legacy-layout/results.json
+            source/build/native-app-store/qualification.json
+          if-no-files-found: error
+          retention-days: 30
+  publish-development:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_development
+    needs: qualify
+    runs-on: ubuntu-24.04
+    environment: native-app-store-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-app-store-software-qualification-${{ github.sha }}
+          path: build/native-app-store-qualified
+      - name: Stage, byte-check and publish the additive development release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/publish_native_app_store.py --artifact build/native-app-store-qualified --source-sha '${{ github.sha }}' --output '${{ runner.temp }}/native-app-store-release' --audit '${{ runner.temp }}/native-app-store-public-audit' --publish
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-app-store-public-byte-audit-${{ github.sha }}
+          path: ${{ runner.temp }}/native-app-store-public-audit/
+          if-no-files-found: warn
+          retention-days: 90
