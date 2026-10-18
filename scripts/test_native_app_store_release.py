@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Offline recipe, immutable-bundle and additive-catalog negative controls."""
 import copy
+import ast
 import hashlib
 import json
 from pathlib import Path
 import sys
 import tempfile
+import subprocess
+from unittest import mock
 import unittest
 import zipfile
 
@@ -116,6 +119,66 @@ class NativeAppStoreReleaseTests(unittest.TestCase):
     def test_duplicate_keys_rejected(self):
         p=self.root/'duplicate.json';p.write_text('{"status":"PASS","status":"FAIL"}')
         with self.assertRaises(ValueError):evidence.read(p)
+    def main_response(self, sha=None, **changes):
+        ref={'ref':'refs/heads/main','object':{'type':'commit','sha':sha or self.source}}
+        ref.update(changes)
+        return subprocess.CompletedProcess(['gh'],0,json.dumps(ref).encode(),b'')
+    def test_release_mutation_reads_current_main_immediately(self):
+        client=publish.Github(self.root/'network')
+        actions=[('api','--method','POST','repos/'+publish.REPOSITORY+'/git/refs'),
+                 ('release','create',publish.TAG),('release','upload',publish.TAG),
+                 ('release','edit',publish.TAG,'--draft=false')]
+        for action in actions:
+            result=subprocess.CompletedProcess(['gh'],0,b'{}',b'')
+            with self.subTest(action=action),mock.patch.object(client,'gh',side_effect=[self.main_response(),result]) as gh:
+                self.assertIs(client.mutate_at_current_main(self.source,*action),result)
+                self.assertEqual(gh.call_args_list,[mock.call('api','repos/'+publish.REPOSITORY+'/git/ref/heads/main'),
+                                                    mock.call(*action)])
+    def test_stale_or_malformed_main_never_mutates(self):
+        client=publish.Github(self.root/'network')
+        responses=[self.main_response('b'*40),self.main_response(ref='refs/heads/release/'+publish.TAG),
+                   self.main_response(object={'type':'tag','sha':self.source}),
+                   self.main_response(object={})]
+        for response in responses:
+            with self.subTest(response=response.stdout),mock.patch.object(client,'gh',return_value=response) as gh:
+                with self.assertRaises(ValueError):client.mutate_at_current_main(self.source,'release','edit',publish.TAG,'--draft=false')
+                self.assertEqual(gh.call_count,1)
+    def test_main_lookup_failure_never_mutates(self):
+        client=publish.Github(self.root/'network')
+        for failure in (subprocess.CalledProcessError(1,['gh']),ValueError('malformed response')):
+            with self.subTest(failure=type(failure).__name__),mock.patch.object(client,'gh',side_effect=failure) as gh:
+                with self.assertRaises(type(failure)):client.mutate_at_current_main(self.source,'release','create',publish.TAG)
+                self.assertEqual(gh.call_count,1)
+    def test_main_drift_between_mutations_stops_later_action(self):
+        client=publish.Github(self.root/'network')
+        result=subprocess.CompletedProcess(['gh'],0,b'{}',b'')
+        with mock.patch.object(client,'gh',side_effect=[self.main_response(),result,self.main_response('b'*40)]) as gh:
+            client.mutate_at_current_main(self.source,'release','create',publish.TAG)
+            with self.assertRaises(ValueError):client.mutate_at_current_main(self.source,'release','upload',publish.TAG)
+            self.assertEqual(gh.call_args_list,[mock.call('api','repos/'+publish.REPOSITORY+'/git/ref/heads/main'),
+                mock.call('release','create',publish.TAG),mock.call('api','repos/'+publish.REPOSITORY+'/git/ref/heads/main')])
+    def test_every_publisher_mutation_uses_main_guard(self):
+        tree=ast.parse(Path(publish.__file__).read_text())
+        function=next(n for n in tree.body if isinstance(n,ast.FunctionDef) and n.name=='publish')
+        guarded=[]
+        for call in [n for n in ast.walk(function) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute)
+                     and isinstance(n.func.value,ast.Name) and n.func.value.id=='client']:
+            if call.func.attr=='mutate_at_current_main':
+                self.assertIsInstance(call.args[0],ast.Name);self.assertEqual(call.args[0].id,'source_sha')
+                guarded.append(call.args[1].value)
+            if call.func.attr=='gh':
+                literals=[arg.value for arg in call.args if isinstance(arg,ast.Constant)]
+                self.assertNotIn('--method',literals)
+                if literals[0]=='release':self.assertEqual(literals[1],'download')
+        self.assertEqual(sorted(guarded),['api','release','release','release'])
+    def test_release_branch_trigger_remains_exact(self):
+        workflow=(build.ROOT/'.github/workflows/native-app-store.yml').read_text()
+        self.assertEqual(publish.RELEASE_BRANCH,'release/'+publish.TAG)
+        self.assertIn("branches: [main, '"+publish.RELEASE_BRANCH+"']",workflow)
+        self.assertIn("github.repository == '"+publish.REPOSITORY+"'",workflow)
+        self.assertIn("github.event_name == 'push' && github.ref == 'refs/heads/"+publish.RELEASE_BRANCH+"'",workflow)
+        self.assertIn("github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_development",workflow)
+        self.assertIn('needs: qualify',workflow)
     def test_source_traversal_rejected(self):
         for name in ('../file','/tmp/file','a/../file'):
             with self.assertRaises(ValueError):evidence.relative(name)

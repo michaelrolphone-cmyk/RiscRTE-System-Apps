@@ -18,6 +18,7 @@ import zipfile
 from native_app_store_evidence import TAG, VERSION, DIRECT, ROOT, read, require, sha, validate
 
 REPOSITORY = 'michaelrolphone-cmyk/RiscRTE-System-Apps'
+RELEASE_BRANCH = 'release/'+TAG
 ASSETS = {*DIRECT, 'publication.json', 'catalog-binding.json', 'qualification.json', 'SHA256SUMS', TAG+'.zip'}
 
 
@@ -42,6 +43,20 @@ class Github:
         if check:
             result.check_returncode()
         return result
+
+    def mutate_at_current_main(self, source_sha, *args):
+        """Read current main immediately before each already-qualified mutation.
+
+        No cached branch identity, tree-equivalent alias or release-branch tip
+        may replace the exact source commit qualified by this workflow.
+        """
+        raw = self.gh('api', 'repos/'+REPOSITORY+'/git/ref/heads/main')
+        ref = json.loads(raw.stdout)
+        require(ref.get('ref') == 'refs/heads/main' and
+                ref.get('object', {}).get('type') == 'commit' and
+                ref['object'].get('sha') == source_sha,
+                'qualified source is no longer current main; do not publish')
+        return self.gh(*args)
 
     def releases(self):
         raw = self.gh('api', '--paginate', '--slurp', 'repos/'+REPOSITORY+'/releases?per_page=100')
@@ -189,17 +204,17 @@ def publish(artifact, prepared, audit, source_sha):
                  'All 16 capability providers and deployment-owned grants are required. '
                  'Physical memory fit, device behavior, install path and firmware composition are unqualified. '
                  'This additive development release does not replace or modify earlier releases.')
-        client.gh('api','--method','POST','repos/'+REPOSITORY+'/git/refs',
+        client.mutate_at_current_main(source_sha,'api','--method','POST','repos/'+REPOSITORY+'/git/refs',
                   '-f','ref=refs/tags/'+TAG,'-f','sha='+source_sha)
-        client.gh('release','create',TAG,'--repo',REPOSITORY,'--target',source_sha,
+        client.mutate_at_current_main(source_sha,'release','create',TAG,'--repo',REPOSITORY,'--target',source_sha,
                   '--draft','--prerelease','--title',TAG,'--notes',notes)
-        client.gh('release','upload',TAG,'--repo',REPOSITORY,*[str(prepared/name) for name in sorted(ASSETS)])
+        client.mutate_at_current_main(source_sha,'release','upload',TAG,'--repo',REPOSITORY,*[str(prepared/name) for name in sorted(ASSETS)])
         require(client.commit() == source_sha, 'draft tag differs from qualified source')
         # Verify every draft byte before making it public. Never clobber or delete.
         with tempfile.TemporaryDirectory() as tmp:
             client.gh('release','download',TAG,'--repo',REPOSITORY,'--dir',tmp)
             require(verify_bundle(Path(tmp),source_sha) == expected, 'draft upload byte mismatch')
-        client.gh('release','edit',TAG,'--repo',REPOSITORY,'--draft=false')
+        client.mutate_at_current_main(source_sha,'release','edit',TAG,'--repo',REPOSITORY,'--draft=false')
         result = public_audit(client,audit,source_sha,expected)
     after = inventory(client.releases())
     require(after == old, 'a prior release changed during publication; investigate before catalog binding')

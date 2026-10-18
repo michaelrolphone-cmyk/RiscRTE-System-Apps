@@ -17,6 +17,7 @@ import subprocess
 import sys
 sys.dont_write_bytecode = True
 from test_native_settings import stage_fixture
+from native_overlay_evidence import source_paths
 ROOT = Path(__file__).resolve().parents[1]
 CASES = {0:'quick-draft-restoration',1:'paired-atomic-preferences-and-reentry',2:'alarm-interrupts-quick',3:'alarm-interrupts-torch',4:'queued-stale-and-fresh-app-contact'}
 RUNTIME_PIN = '48229bd1593a2e24e95bf4537b495ee615990fd3'
@@ -69,10 +70,9 @@ def main():
    s=replace(s,'h->uptime_ms=ticks;return poll_count<limit_polls;', 'assert(ticks<120000);h->uptime_ms=ticks;return true;',name)
   if name=='wifi_workflow_test.c':s=replace(s,'runtime_api.acquire=workflow_acquire;runtime_api.release=workflow_release;', 'runtime_api.acquire=ov_acquire;runtime_api.release=ov_release;',name)
   (staged/name).write_text(s)
- inputs=[ROOT/('test/native_apps/'+n) for n in ('portable_settings_test.c','portable_alarm_test.c','quick_adapter_test.c',*names)]
- inputs += list((ROOT/'test/native_apps').glob('native_overlay_*_test.c'))+[Path(__file__),ROOT/'scripts/test_native_settings.py']
- inputs += [p for directory in ('Apps','lib/PortableApps','lib/NativeApps') for p in (ROOT/directory).rglob('*') if p.is_file()]
- hashes={str(p.relative_to(ROOT)):sha(p) for p in inputs}
+ # Use the validator's explicit fixture closure. A separately owned app fixture
+ # is not an input to Settings/Wi-Fi merely because its filename shares a prefix.
+ hashes=source_paths(ROOT)
  receipt={'scope':'Actual production Settings/Wi-Fi controllers and generic native Quick/alarm paths with bounded host capability providers. Target builds separately qualify all deployment flags and bridges.','hardware_tested':False,'cases':CASES,'source_sha256':hashes,'runtime_pin':RUNTIME_PIN,'runtime_sdk_sha256':{p.name:sha(p) for p in sdk.glob('*.h')},'staged_include_sha256':{p.name:sha(p) for p in include.glob('*.h')},'fixture_sha256':{p.name:sha(p) for p in staged.glob('*.c')},'transformations':transformations,'omitted_provider_groups':OMITTED,'builds':[],'runs':[],'status':'RUNNING'}
  def save(): (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
  save();sizes=[tuple(map(int,a.size.split('x')))] if a.size else [(240,240),(410,502)]
@@ -114,7 +114,7 @@ def main():
       r=subprocess.run(args,capture_output=True,text=True,timeout=30,env=env);log=out/(name+f'-case{case}.log');log.write_text(r.stdout+r.stderr)
       receipt['runs'].append({'build':name,'case':case,'command':args,'returncode':r.returncode,'log_sha256':sha(log)});save();print(name,case,r.stdout+r.stderr,flush=True);r.check_returncode()
      binary.unlink()
-  assert hashes=={str(p.relative_to(ROOT)):sha(p) for p in inputs},'Input sources changed during run'
+  assert hashes==source_paths(ROOT),'Input sources changed during run'
   receipt['status']='PASS'
  except Exception as e:receipt['status']='FAIL';receipt['error']=str(e);raise
  finally:

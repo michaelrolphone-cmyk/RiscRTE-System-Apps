@@ -18,7 +18,7 @@ on:
       - 'docs/shared-app-crashes/replay/wave.json'
       - '.github/workflows/native-app-store.yml'
   push:
-    branches: [main]
+    branches: [main, 'release/native-app-store-1.4.0-dev1']
   workflow_dispatch:
     inputs:
       publish_development:
@@ -179,7 +179,10 @@ jobs:
           if-no-files-found: error
           retention-days: 30
   publish-development:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_development
+    if: >-
+      github.repository == 'michaelrolphone-cmyk/RiscRTE-System-Apps' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish_development) ||
+       (github.event_name == 'push' && github.ref == 'refs/heads/release/native-app-store-1.4.0-dev1'))
     needs: qualify
     runs-on: ubuntu-24.04
     environment: native-app-store-release

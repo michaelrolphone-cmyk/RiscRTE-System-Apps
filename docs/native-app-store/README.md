@@ -131,9 +131,27 @@ integration diagnosis. The publisher has no dirty-source bypass.
 
 ## Immutable release pipeline
 
-Ordinary pushes and PRs cannot publish. The dedicated workflow must be manually
-started on `main` with `publish_development=true`, after qualification succeeds.
-The publish job names the `native-app-store-release` environment. Repository
+Ordinary `main` pushes and PRs cannot publish. Two explicit triggers are supported:
+
+- Manually start the workflow on `main` with `publish_development=true`.
+- Push the exact qualified current-main commit to
+  `release/native-app-store-1.4.0-dev1`. This release branch is an explicit
+  publication request, not an ordinary development branch. Other release branch
+  names do not trigger publication.
+
+Both routes run the full qualification workflow for that exact SHA and require its
+`qualify` job to succeed. The release branch must point to the identical commit
+currently at `main`; matching file content or an older qualified commit is not
+enough. Immediately before each mutating tag/release API call, the publisher
+re-reads the canonical repository's `refs/heads/main` and refuses a mismatched SHA.
+This includes tag creation, draft creation, asset upload and making the draft
+public. If main changes after one of those steps, the next step stops and leaves
+any partial release untouched for review. The read/write boundary cannot provide
+an atomic server-side lock against a simultaneous main change, but no cached
+main identity is reused across mutations. No new credentials are introduced.
+
+The publish job is restricted to the canonical System-Apps repository and names
+the `native-app-store-release` environment. Repository
 administrators should configure that environment's desired approval protection;
 this file alone does not create or guarantee an approval policy.
 
