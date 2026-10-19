@@ -79,8 +79,8 @@ static uint32_t nova_color(nova_point p) {
     int color=(2*q+3*r)%7;
     return palette[color<0?color+7:color];
 }
-static void nova_render(nova_state *s) {
-    if(!t5_app_frame_ready(api))return;
+static bool nova_render(nova_state *s) {
+    if(!t5_app_frame_ready(api))return false;
     s->view->begin();
     int cx = api->screen_width()/2, cy = api->screen_height()/2;
     bool unavailable_icon=false;
@@ -115,6 +115,7 @@ static void nova_render(nova_state *s) {
         s->view->caption(api->screen_height()-16,page,true,0x7d8c90);
     }
     api->present(false);s->visible_x=(int)(s->motion.x*16);s->visible_y=(int)(s->motion.y*16);s->dirty=false;
+    return true;
 }
 static int nova_hit(nova_state *s,int x,int y) {
     int best=-1, nearest=10000;
@@ -234,8 +235,10 @@ static bool nova_run(void) {
             s.hour=hour;s.minute=minute;s.time_known=known;s.last_clock=now;
         }
         if((uint32_t)(now-s.last_frame)>=NOVA_FRAME_MS) {
-            s.last_frame=now;
-            if(s.dirty || springboard_transition_active())nova_render(&s);
+            /* A BUSY lease has not consumed an app frame. Keep the paint due
+             * so the next input poll can submit the latest state when ready. */
+            if(!(s.dirty || springboard_transition_active()) || nova_render(&s))
+                s.last_frame=now;
         }
         if(s.pending>=0 && !s.pulse) {
             selected=s.first+(unsigned)s.pending;
