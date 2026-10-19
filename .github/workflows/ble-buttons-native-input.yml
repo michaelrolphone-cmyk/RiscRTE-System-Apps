@@ -1,0 +1,10 @@
+name: BLE Buttons native input ownership
+on:
+  push:
+  pull_request:
+jobs:
+  private-owner:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/test_ble_buttons_native_input.py
