@@ -46,3 +46,18 @@ implementations are byte-identical to that base and compares 52 LoRa-off
 preprocessed compositions, including Files/Frequency together, Quick and raster
 snapshots. The original 40 pre-LoRa controls remain separate and unchanged.
 No Points owner 12 or Stopwatch owner 13 source is introduced.
+
+## LoRa-only snapshot compile regression
+
+The shared snapshot owner declaration must be selected when LoRa is the only
+native app. The input runner compiles all four direct/snapshot × Quick-off/on
+adapter combinations and checks that all five LoRa hooks remain hidden. This
+repairs an optional-composition compile gap; the qualified Utilities native
+profile does not select `PORTABLE_RASTER_SNAPSHOT` and its pins are unchanged.
+Snapshot compile success is not a claim of full product or physical validation.
+
+The Points-off composition runner keeps 66 profiles byte-exact at the token
+level. Two pre-existing LoRa-only snapshot profiles pinned to `b98875eb` require
+that old baseline to fail compilation for the missing owner declaration, permit
+only the single added declaration, and require the corrected candidate to
+compile. They are reported separately rather than labeled raw-identical.
