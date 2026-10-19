@@ -14,6 +14,9 @@ static bool fb_text_begin(unsigned mode,const char *label) {
                                            mode==FB_FILTER?sizeof(fb_query):sizeof(fb_editor));
  if(rc!=RISC_TEXT_ENTRY_OK){if(!fb_text.retained)fb_message("Keyboard unavailable. Retry.");return false;}
  fb_text_return_mode=fb_mode;fb_text_return_choice=fb_choice;fb_text_mode=mode;fb_text_storage=fb_storage_index;
+#ifdef PORTABLE_FILES_NATIVE_UI
+ if(!fb_paper)portable_files_native_begin();
+#endif
  fb_mode=mode;fb_text_active=true;fb_armed=fb_contact=fb_drag=fbp_contact_down=false;
 #ifdef PORTABLE_TEXT_INPUT_POLICY
  rc=portable_text_checkpoint_enable(&fb_text,&fb_text_checkpoint);

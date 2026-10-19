@@ -71,7 +71,7 @@ static uint32_t raster_saved_intent;
 static uint32_t raster_handoff_origin;
 #endif
 static bool raster_saved_app_frame;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI)
 static unsigned raster_native_present_owner;
 #endif
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
