@@ -347,7 +347,7 @@ bool portable_paper_frame_ready(void);
 static bool paper_token_progress(void);
 bool portable_paper_frame_drain(void);
 static bool paper_token_clean;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
 /* Owner follows the submitted frame, not whichever UI is active at callback.
  * Zero is an overlay/ordinary frame. Snapshot replay preserves this identity. */
 static unsigned native_present_owner,native_token_owner;
@@ -591,10 +591,13 @@ static void input_reset(void) {
 #ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
 #include "ble_buttons_native_input.inc"
 #endif
+#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
+#include "ble_touchpad_native_input.inc"
+#endif
 #ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
 #include "ble_scanner_native_input.inc"
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
 static void portable_native_presented(risc_display_present_token_v1 token) {
  if(token!=native_present_token)return;
  unsigned owner=native_token_owner;native_present_token=0;native_token_owner=0;
@@ -615,6 +618,9 @@ static void portable_native_presented(risc_display_present_token_v1 token) {
 #endif
 #ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
  if(owner==6)ble_scanner_native_presented();
+#endif
+#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
+ if(owner==7)ble_touchpad_native_presented();
 #endif
 }
 #endif
@@ -838,6 +844,8 @@ static void input_dispatch(void) {
  if(touch.contact_count)last_activity=input_sampled_at;
 #elif defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
  if(ble_scanner_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
+#elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
+ if(ble_touchpad_native_enabled()&&touch.contact_count)last_activity=input_sampled_at;
 #endif
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
 #endif
@@ -1419,11 +1427,11 @@ static bool paper_token_progress(void) {
   }
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
   risc_display_present_token_v1 native_completed_token=paper_token;
 #endif
   paper_token=0;paper_token_clean=false;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
   portable_native_presented(native_completed_token);if(failed)return false;
 #endif
   if(!initial_frame_visible())return false;
@@ -1511,8 +1519,13 @@ static void present(bool full) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_recording&&!failed){
     raster_recording=false;raster_sealed=true;raster_full=full;raster_saved_intent=present_intent(full);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
     raster_native_present_owner=native_present_owner;
+#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
+    ble_touchpad_native_frame(raster_native_present_owner);
+    raster_ble_touchpad_native_generation=ble_touchpad_native_submit_generation;
+    raster_ble_touchpad_native_layout=ble_touchpad_native_submit_layout;
+#endif
 #ifdef PORTABLE_BATTERY_NATIVE_UI
     raster_battery_native_generation=battery_native_submit_generation;
     raster_battery_native_layout=battery_native_submit_layout;
@@ -1662,12 +1675,25 @@ static void present(bool full) {
     display_callback_failure("PORTABLE_APP error=display-submit");
     return;
   }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
   native_present_token=token;native_token_owner=
 #ifdef PORTABLE_RASTER_SNAPSHOT
     raster_replaying?raster_native_present_owner:
 #endif
     native_present_owner;
+#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
+  ble_touchpad_native_frame(native_token_owner);
+  ble_touchpad_native_token_generation=
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_ble_touchpad_native_generation:
+#endif
+    ble_touchpad_native_submit_generation;
+  ble_touchpad_native_token_layout=
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_ble_touchpad_native_layout:
+#endif
+    ble_touchpad_native_submit_layout;
+#endif
 #ifdef PORTABLE_BATTERY_NATIVE_UI
   battery_native_token_generation=
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -1767,7 +1793,7 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
       portable_native_presented(token);if(failed)return;
 #endif
       if(!initial_frame_visible())return;
@@ -1806,7 +1832,7 @@ static void present(bool full) {
   }
   display_failure("PORTABLE_APP error=display-timeout");
 }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
 static void portable_native_present(unsigned owner,bool full) {
  native_present_owner=owner;present(full);native_present_owner=0;
 }
@@ -2510,6 +2536,9 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
      !input_progressed && !touch.contact_count && !touch.resync && !touch.poll_failed &&
 #elif defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
      (!ble_scanner_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
+#elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
+     (!ble_touchpad_native_enabled() ||
+       (!input_progressed && !touch.contact_count && !touch.resync && !touch.poll_failed)) &&
 #endif
 #ifdef PORTABLE_WIFI_SESSION_APP
      portable_wifi_idle_ready() &&
@@ -2599,6 +2628,9 @@ replay_input:
 #endif
 #ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
   if(!ble_scanner_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
+#endif
+#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
+  if(!ble_touchpad_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
 #endif
   uint16_t x=sample.x,y=sample.y;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
@@ -3611,7 +3643,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 }
 
 __attribute__((visibility("default"))) int app_module_init(void) {
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
   native_present_owner=native_token_owner=0;native_present_token=0;
 #endif
   int status = initialize();
