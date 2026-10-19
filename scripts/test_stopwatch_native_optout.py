@@ -9,13 +9,13 @@ import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = 'c94f367f6ca3677954b580833f222ae16775c964'
+BASELINE = '0c4d309118f6b078b5984caac0b62229ccd05065'
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--output', type=Path, default=ROOT / 'build/stopwatch-native-optout')
 p.add_argument('--baseline-dir', type=Path, help='Offline directory containing the exact pinned adapter.c and raster_snapshot_state.inc')
 a = p.parse_args(); out = a.output.resolve(); out.mkdir(parents=True, exist_ok=True)
 base = out / 'baseline'; base.mkdir(exist_ok=True)
-for name, blob in (('adapter.c', 'ca73d90b653afc9777fce86e519db7163caf19bf'), ('raster_snapshot_state.inc', '9c055e7db99b5d7101a6876e66c866d0eea840ad')):
+for name, blob in (('adapter.c', '5412b2645f94397354581881d137ca7a5c7cabb0'), ('raster_snapshot_state.inc', '4acde7ef52a6cd0d732281376c1e002e9535299a')):
     data = (a.baseline_dir / name).read_bytes() if a.baseline_dir else subprocess.check_output(['git', 'show', BASELINE + ':lib/PortableApps/src/' + name], cwd=ROOT)
     assert hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest() == blob, name
     (base / name).write_bytes(data)
@@ -29,7 +29,8 @@ profiles = [('plain', []), ('nova', ['PORTABLE_NOVA_UI']),
     ('calculator', ['PORTABLE_NOVA_UI', 'PORTABLE_NATIVE_CANVAS', 'PORTABLE_CALCULATOR_NATIVE_UI']),
     *[(name, ['PORTABLE_NOVA_UI', 'PORTABLE_NATIVE_CANVAS', 'PORTABLE_' + selector + '_NATIVE_UI'])
       for name, selector in (('settings', 'SETTINGS'), ('wifi', 'WIFI'), ('update', 'UPDATE'),
-        ('battery', 'BATTERY'), ('alarms', 'ALARMS'), ('files', 'FILES'), ('frequency', 'FREQUENCY'))]]
+        ('battery', 'BATTERY'), ('alarms', 'ALARMS'), ('files', 'FILES'), ('frequency', 'FREQUENCY'), ('lora', 'LORA'), ('points', 'POINTS'))]]
+profiles += [('owners9-12', ['PORTABLE_NOVA_UI', 'PORTABLE_NATIVE_CANVAS', 'PORTABLE_FILES_NATIVE_UI', 'PORTABLE_FREQUENCY_NATIVE_UI', 'PORTABLE_LORA_NATIVE_UI', 'PORTABLE_POINTS_NATIVE_UI'])]
 rows = []
 for profile, defines in profiles:
     for quick in (False, True):

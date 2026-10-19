@@ -1,8 +1,8 @@
 # Stopwatch native presentation ownership
 
 `PORTABLE_STOPWATCH_NATIVE_UI` selects the private owner13 adapter. Existing
-Frequency owner10, Files owner9, and Calculator owner8 remain unchanged. Owners11
-and12 remain unimplemented here. There are no Runtime or T5 ABI additions.
+Frequency owner10, Files owner9, Calculator owner8, LoRa owner11, and Points
+owner12 remain unchanged. There are no Runtime or T5 ABI additions.
 
 The statically linked hooks in `PortableStopwatchNative.h` have hidden visibility:
 
@@ -45,16 +45,18 @@ and input qualification remain separate.
   production-reducer executions, including runtime paper bypass, all foreign
   owners0..12, visibility/neutral fences, held/queued input, Quick replay,
   stale completion, snapshot faults, and generation exhaustion.
-- `python3 scripts/test_stopwatch_native_adapter.py`: eight normal/ASan+UBSan
-  real-adapter executions across direct/snapshot and Quick on/off. Includes
+- `python3 scripts/test_stopwatch_native_adapter.py`: sixteen normal/ASan+UBSan
+  real-adapter executions across direct/snapshot and Quick on/off, with owner13
+  alone and combined owners9/10/11/12/13. Includes
   pipelined snapshots, preserved immutable token identity, synchronous completion,
   raw contact custody, repaint fences, Quick snapshot priority, queued Back, module
   re-entry, and retained
   cleanup after provider failure. Four real adapter objects verify all seven
   native hooks remain hidden.
 - `python3 scripts/test_stopwatch_native_optout.py`: exact preprocessed-token
-  equality against System `c94f367f6ca3677954b580833f222ae16775c964` in 68
+  equality against System `0c4d309118f6b078b5984caac0b62229ccd05065` in 80
   feature-off compositions, covering every existing native selector, paper,
   Quick, and snapshot options. No Stopwatch hook is emitted.
 
-Frequency, Files, and Calculator tests remain independent controls.
+Frequency, Files, Calculator, LoRa, and Points tests remain independent controls.
+The feature-off matrix also includes the combined owners9/10/11/12 composition.

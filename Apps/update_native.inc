@@ -1,4 +1,4 @@
-/* Opt-in App Store presentation identity. Service/bank authority remains in
+/* Opt-in update presentation identity. Service/bank authority remains in
  * the existing updater; this stores only the release the user actually saw. */
 enum {UN_CATALOG,UN_CONFIRM,UN_PROGRESS,UN_CLEANUP,UN_RESTART};
 static unsigned un_mode,un_selected,un_model_mode;
@@ -10,12 +10,14 @@ static unsigned un_current_mode(void) {
   confirming?UN_CONFIRM:UN_CATALOG;
 }
 static bool un_string(const char *s,unsigned n){return memchr(s,0,n)!=NULL;}
+static bool un_row_valid(const software_update_row_v1 *r) {
+ return un_string(r->id,sizeof(r->id))&&un_string(r->version,sizeof(r->version))&&
+  un_string(r->installed,sizeof(r->installed))&&un_string(r->reason,sizeof(r->reason));
+}
 static bool un_get(software_update_row_v1 *r) {
  *r=(software_update_row_v1){.struct_size=sizeof(*r)};
  return !PORTABLE_APP_RETAINED()&&selected&&selected<=ust.count&&selected<=SOFTWARE_UPDATE_ROWS_MAX&&us&&
-  us->get(us->context,selected-1,r)&&!PORTABLE_APP_RETAINED()&&
-  un_string(r->id,sizeof(r->id))&&un_string(r->version,sizeof(r->version))&&
-  un_string(r->installed,sizeof(r->installed))&&un_string(r->reason,sizeof(r->reason));
+  us->get(us->context,selected-1,r)&&!PORTABLE_APP_RETAINED()&&un_row_valid(r);
 }
 static bool un_same(const software_update_row_v1 *a,const software_update_row_v1 *b) {
  return a->availability==b->availability&&a->size==b->size&&!strcmp(a->id,b->id)&&

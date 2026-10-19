@@ -1,0 +1,60 @@
+name: Points native input qualification
+on:
+  pull_request:
+    paths:
+      - 'lib/PortableApps/**'
+      - 'test/native_apps/points_native*'
+      - 'scripts/test_points_native*'
+      - '.github/workflows/points-native-input.yml'
+  push:
+    branches: [main, feat/points-native-ui-20261019]
+    paths:
+      - 'lib/PortableApps/**'
+      - 'test/native_apps/points_native*'
+      - 'scripts/test_points_native*'
+      - '.github/workflows/points-native-input.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ownership:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ASAN_OPTIONS: detect_leaks=0:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Points owner12 normal and sanitized adapter qualification
+        run: python3 scripts/test_points_native_input.py
+      - name: Exact Points selector-off token parity
+        run: python3 scripts/test_points_native_optout.py
+      - name: Exact Points-off Files9 Frequency10 LoRa11 composition parity
+        run: python3 scripts/test_points_native_composition.py
+      - name: Existing LoRa owner11 controls
+        run: |
+          python3 scripts/test_lora_native_input.py
+          python3 scripts/test_lora_native_composition.py
+      - name: Existing Frequency owner10 controls
+        run: |
+          python3 scripts/test_frequency_native_input.py
+          python3 scripts/test_frequency_native_optout.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: points-native-ownership-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/points-native-input/*.log
+            build/points-native-optout/results.json
+            build/points-native-composition/results.json
+            build/lora-native-input/**
+            build/lora-native-composition/results.json
+            build/frequency-native-input/*.log
+            build/frequency-native-optout/results.json
+          retention-days: 14
+          if-no-files-found: error

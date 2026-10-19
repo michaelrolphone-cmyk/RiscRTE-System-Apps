@@ -7,10 +7,10 @@
 #include "PortableWifiView.h"
 #ifdef PORTABLE_UPDATE_NATIVE_UI
 #ifndef PORTABLE_UPDATE_VERSION
-#error "Native App Store requires an explicit application version"
+#error "Native update UI requires an explicit application version"
 #endif
-#if PORTABLE_UPDATE_FIRMWARE || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
-#error "Native App Store requires apps-only service, Nova, native canvas and checked custody"
+#if !defined(PORTABLE_UPDATE_FIRMWARE) || (PORTABLE_UPDATE_FIRMWARE != 0 && PORTABLE_UPDATE_FIRMWARE != 1) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Native update UI requires explicit apps/firmware service, Nova, native canvas and checked custody"
 #endif
 #endif
 #include "PaperFrame.h"
@@ -306,6 +306,10 @@ uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
    software_update_row_v1 r={.struct_size=sizeof(r)};
    if(!us||!us->get(us->context,index-1,&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
 #ifdef PORTABLE_UPDATE_NATIVE_UI
+   if(PORTABLE_APP_RETAINED())return;
+   /* Validate every displayed row before string formatting, not only the
+    * selected release before authorization. Malformed provider data is inert. */
+   if(!un_row_valid(&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
    if(index==selected){un_candidate=r;un_candidate_valid=true;}
 #endif
    snprintf(row_names[i],sizeof(row_names[i]),"%s",r.id);
@@ -508,6 +512,10 @@ void app_main(void) {
   if(!selected){(void)connect_saved(false);continue;}
   selected_row=(software_update_row_v1){.struct_size=sizeof(selected_row)};
   if(us&&us->get(us->context,selected-1,&selected_row)){
+#ifdef PORTABLE_UPDATE_NATIVE_UI
+   if(PORTABLE_APP_RETAINED())return;
+   if(!un_row_valid(&selected_row)){un_changed();continue;}
+#endif
    message=selected_row.reason;
 #ifdef PORTABLE_APP_STORE_ACTIONS
    if((selected_row.availability==SOFTWARE_UPDATE_REMOVE||selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD)&&inventory_choose(selected-1)){confirming=true;confirm_choice=0;}

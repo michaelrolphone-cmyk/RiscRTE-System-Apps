@@ -39,6 +39,12 @@ for sanitized in (False, True):
         ('snapshot', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_RASTER_SNAPSHOT'], 'stopwatch_native_adapter_test.c'),
         ('quick-direct', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_QUICK_ACTIONS', '-DPORTABLE_ALARM_CLIENT', '-DPORTABLE_QUICK_NATIVE'], 'stopwatch_native_adapter_test.c'),
         ('quick-snapshot', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_QUICK_ACTIONS', '-DPORTABLE_ALARM_CLIENT', '-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_RASTER_SNAPSHOT'], 'stopwatch_native_adapter_test.c'),
+        *[(name + '-owners9-13', flags + ['-DPORTABLE_' + owner + '_NATIVE_UI' for owner in ('FILES', 'FREQUENCY', 'LORA', 'POINTS')], 'stopwatch_native_adapter_test.c')
+          for name, flags in (
+            ('direct', selection + ['-DPORTABLE_RETURN_APP="default.elf"']),
+            ('snapshot', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_RASTER_SNAPSHOT']),
+            ('quick-direct', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_QUICK_ACTIONS', '-DPORTABLE_ALARM_CLIENT', '-DPORTABLE_QUICK_NATIVE']),
+            ('quick-snapshot', selection + ['-DPORTABLE_RETURN_APP="default.elf"', '-DPORTABLE_QUICK_ACTIONS', '-DPORTABLE_ALARM_CLIENT', '-DPORTABLE_QUICK_NATIVE', '-DPORTABLE_RASTER_SNAPSHOT']))],
     ):
         label = name + ('-sanitized' if sanitized else '-normal')
         binary = out / label
@@ -66,4 +72,4 @@ for snapshot in (False, True):
         for name in ('available', 'begin', 'layout', 'present', 'ready', 'repaint', 'back'):
             rows = [line for line in symbols.splitlines() if line.split()[-1:] == ['portable_stopwatch_native_' + name]]
             assert len(rows) == 1 and 'GLOBAL HIDDEN' in rows[0], rows
-print('PASS: eight normal/sanitized executions and seven private Stopwatch hooks hidden in four adapter compositions')
+print('PASS: sixteen normal/sanitized executions including combined owners9-13 and seven private Stopwatch hooks hidden in four adapter compositions')
