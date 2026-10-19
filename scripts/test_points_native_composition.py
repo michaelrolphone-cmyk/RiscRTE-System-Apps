@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exact Points-off parity with existing Files9, Frequency10 and LoRa11 owners."""
+"""Points-off parity, with two explicit pre-existing LoRa snapshot repairs."""
 import argparse
 import hashlib
 import json
@@ -52,9 +52,40 @@ for profile, defines in profiles:
                     *('-I' + str(ROOT / inc) for inc in ('lib/PortableApps/include', 'lib/NativeApps/include', 'lib/PortableApps/src')), str(source)]
                 data = subprocess.check_output(cmd, text=True).replace(str(base), '$ROOT/lib/PortableApps/src').replace(str(ROOT), '$ROOT')
                 tokens.append('\n'.join(re.findall(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[A-Za-z_0-9]+|[^\s]''', data)))
-            assert tokens[0] == tokens[1], (profile, quick, snapshot)
+            corrected = profile == 'lora' and snapshot
+            row = {'profile': profile, 'quick': quick, 'snapshot': snapshot,
+                'identical': tokens[0] == tokens[1], 'corrected_baseline': corrected,
+                'token_sha256': hashlib.sha256(tokens[0].encode()).hexdigest(),
+                'candidate_token_sha256': hashlib.sha256(tokens[1].encode()).hexdigest()}
+            if corrected:
+                # b988's LoRa-only snapshot profile does not compile. Permit
+                # only its missing owner declaration; every other token must
+                # remain exact, and the old failure/new success are required.
+                declaration = 'static\nunsigned\nraster_native_present_owner\n;'
+                assert tokens[0].count(declaration) == 0
+                assert tokens[1].count(declaration) == 1
+                assert tokens[0] == tokens[1].replace(declaration + '\n', '', 1)
+                row.update(declaration_added='static unsigned raster_native_present_owner;',
+                    identical_except_missing_declaration=True)
+                for label, source in (('baseline', base / 'adapter.c'),
+                                      ('candidate', ROOT / 'lib/PortableApps/src/adapter.c')):
+                    cmd = [os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-fsyntax-only',
+                        *('-D' + f for f in flags),
+                        *('-I' + str(ROOT / inc) for inc in ('lib/PortableApps/include', 'lib/NativeApps/include', 'lib/PortableApps/src')), str(source)]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    (out / f'lora-snapshot-quick{int(quick)}-{label}.log').write_text(result.stdout + result.stderr)
+                    row[label + '_compile_exit'] = result.returncode
+                    if label == 'baseline':
+                        assert result.returncode != 0 and 'raster_native_present_owner' in result.stderr and 'undeclared' in result.stderr
+                    else:
+                        assert result.returncode == 0, result.stderr
+            else:
+                assert tokens[0] == tokens[1], (profile, quick, snapshot)
             assert 'portable_points_native_' not in tokens[1]
-            rows.append({'profile': profile, 'quick': quick, 'snapshot': snapshot, 'identical': True,
-                'token_sha256': hashlib.sha256(tokens[0].encode()).hexdigest()})
-(out / 'results.json').write_text(json.dumps({'baseline': BASELINE, 'normalization': 'None; path spelling only', 'rows': rows}, indent=2) + '\n')
-print(f'PASS: {len(rows)} feature-off adapter compositions have identical preprocessed tokens; no Points API emitted')
+            rows.append(row)
+assert sum(row['identical'] for row in rows) == 66
+assert sum(row['corrected_baseline'] for row in rows) == 2
+(out / 'results.json').write_text(json.dumps({'baseline': BASELINE,
+    'normalization': 'Path spelling only for 66 exact profiles; two LoRa-only snapshots permit only the missing owner declaration and require baseline compile failure / candidate success',
+    'rows': rows}, indent=2) + '\n')
+print('PASS: 66 exact feature-off compositions; two narrowly corrected LoRa snapshots compile; no Points API emitted')
