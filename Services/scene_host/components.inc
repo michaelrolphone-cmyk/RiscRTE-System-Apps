@@ -580,7 +580,14 @@ static void component_focus(int direction){
     if(document.nodes[target].kind==RISC_COMPONENT_TAB_BAR||document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION){invalidate_view();rebuild_hits();return;}
     int x,y,w,h;nc_layout(target,&x,&y,&w,&h);
     int min=nc_paper()?nc_header_height():0;if(y-model->scroll<min)model->scroll=y-min;
-    if(y+h-model->scroll>(int)height-tm_footer())model->scroll=y+h-(int)height+tm_footer();
+    /* The fixed Back control is painted after content. Keep keyboard-focused
+     * controls above it, including on narrow displays where it covers the
+     * center of the entire action row. */
+    int footer=tm_footer();
+    if(nc_back_button()&&!tm_tabbed()){
+        int back=(nc_paper()?38:40)*nc_scale();if(footer<back)footer=back;
+    }
+    if(y+h-model->scroll>(int)height-footer)model->scroll=y+h-(int)height+footer;
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){
