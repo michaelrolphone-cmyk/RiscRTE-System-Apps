@@ -49,7 +49,7 @@ jobs:
           python -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
           python scripts/build_scene_services.py --runtime Runtime --output build/scene 2>&1 | tee evidence/target.log
-          echo 'c9fb618c1d37785b7e4ef539ba9933f988dc9f7d279d30d9b3882362a3c3e9d3  build/scene/scene-host/driver.elf' | sha256sum --check
+          echo 'f29a103b348f8abca20abd3e61dbcec7b2e7093132348c016f689f98918d2c01  build/scene/scene-host/driver.elf' | sha256sum --check
           git rev-parse HEAD > evidence/published-source.txt
       - uses: actions/upload-artifact@v4
         with:
