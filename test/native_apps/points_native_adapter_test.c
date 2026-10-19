@@ -84,6 +84,7 @@ static void held_and_foreign(void) {
  seal(8);complete_frame();assert(!portable_points_native_ready(NULL,NULL));
  seal(9);complete_frame();assert(!portable_points_native_ready(NULL,NULL));
  seal(10);complete_frame();assert(!portable_points_native_ready(NULL,NULL));
+ seal(11);complete_frame();assert(!portable_points_native_ready(NULL,NULL));
  seal(12);complete_frame();neutral();assert(portable_points_native_ready(NULL,NULL));fresh_tap();end_test();
 }
 static void synchronous(void) {
@@ -208,5 +209,5 @@ int main(void) {
  quick_replay();quick_replay_fences();
 #endif
  failed_status();
- puts("Points production adapter: frame-token owner12, pending/queued/held input, stale tokens, immutable snapshot/reset identity, foreign owners0/8/9/10 with raw custody, synchronous completion, repaint fences, Quick top-edge replay, queued adapter Back, failure and cleanup PASS");
+ puts("Points production adapter: frame-token owner12, pending/queued/held input, stale tokens, immutable snapshot/reset identity, foreign owners0/8/9/10/11 with raw custody, synchronous completion, repaint fences, Quick top-edge replay, queued adapter Back, failure and cleanup PASS");
 }

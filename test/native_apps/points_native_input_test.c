@@ -78,9 +78,9 @@ int main(void){
  portable_points_native_layout(8);complete();assert(!points_native_visible&&!points_native_owned());
  portable_touch_sample up={.valid=true,.released=true,.contact_id=1};assert(!points_native_input_accept(&up));
  portable_points_native_present(false);state.sequence=30;complete();settle_neutral();assert(portable_points_native_ready(NULL,&watermark)&&watermark==30);
- /* Foreign overlays, Calculator owner8 and reserved owner9 all fence a
+ /* Foreign overlays, Calculator owner8 and Files owner9, Frequency owner10 and LoRa owner11 all fence a
   * held contact, including a native completion still outstanding at entry. */
- for(unsigned owner=0;owner<=10;owner+=owner?1:8) {
+ for(unsigned owner=0;owner<=11;owner+=owner?1:8) {
   fresh();portable_points_native_present(false);
   uint64_t before=points_native_generation;
   points_native_frame(owner);assert(points_native_generation>before);
@@ -121,5 +121,5 @@ int main(void){
  (void)portable_points_native_ready(&generation,&watermark);
  assert(event_reads==reads&&snapshot_reads==shots);
  points_native_generation=UINT64_MAX;portable_points_native_begin();assert(failed&&!portable_points_native_ready(NULL,NULL));
- puts("Points owner12: runtime paper bypass, visibility/neutral readiness, same-map repaint input, read-only watermark, drag ownership, held release, layout cancellation, foreign owners0/8/9/10, Quick capture, pending-frame reset, stale completion, snapshot faults and generation exhaustion PASS");
+ puts("Points owner12: runtime paper bypass, visibility/neutral readiness, same-map repaint input, read-only watermark, drag ownership, held release, layout cancellation, foreign owners0/8/9/10/11, Quick capture, pending-frame reset, stale completion, snapshot faults and generation exhaustion PASS");
 }

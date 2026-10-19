@@ -34,6 +34,12 @@ jobs:
         run: python3 scripts/test_points_native_input.py
       - name: Exact Points selector-off token parity
         run: python3 scripts/test_points_native_optout.py
+      - name: Exact Points-off Files9 Frequency10 LoRa11 composition parity
+        run: python3 scripts/test_points_native_composition.py
+      - name: Existing LoRa owner11 controls
+        run: |
+          python3 scripts/test_lora_native_input.py
+          python3 scripts/test_lora_native_composition.py
       - name: Existing Frequency owner10 controls
         run: |
           python3 scripts/test_frequency_native_input.py
@@ -45,6 +51,9 @@ jobs:
           path: |
             build/points-native-input/*.log
             build/points-native-optout/results.json
+            build/points-native-composition/results.json
+            build/lora-native-input/**
+            build/lora-native-composition/results.json
             build/frequency-native-input/*.log
             build/frequency-native-optout/results.json
           retention-days: 14
