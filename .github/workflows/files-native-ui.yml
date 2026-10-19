@@ -1,0 +1,66 @@
+name: Files native UI qualification
+on: [push, pull_request]
+jobs:
+  ownership:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: python3 scripts/test_files_native_input.py
+      - run: python3 scripts/test_files_native_optout.py
+  controller:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: normal
+            args: ''
+          - profile: sanitized
+            args: '--sanitize'
+          - profile: snapshot
+            args: '--snapshot'
+          - profile: snapshot-sanitized
+            args: '--snapshot --sanitize'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: system
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 64c8e52e46fd91e8fdafd636db04eed88f0c51a9
+          path: runtime
+          persist-credentials: false
+      - run: python3 scripts/test_files_native_ui.py --output ../evidence ${{ matrix.args }}
+        working-directory: system
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: files-native-${{ matrix.profile }}
+          path: |
+            evidence/results.json
+            evidence/*/root.ppm
+            evidence/*/pairing.ppm
+            evidence/*/delete-confirmation.ppm
+  target:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          python -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - run: |
+          python scripts/build_portable_file_browser.py --native-ui --rgb-only --file-handlers --source-handoff --shared-text-input --webdav-sharing --peer-files --sharing-export-instance 0 --sharing-tcp-instance 0 --sharing-entropy-instance 0 --sharing-setup-instance 0 --output-dir build/files-native
+      - uses: actions/upload-artifact@v4
+        with:
+          name: files-native-target-qualification
+          path: build/files-native
