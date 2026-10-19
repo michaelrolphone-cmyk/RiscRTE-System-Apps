@@ -4,9 +4,9 @@ import argparse,hashlib,json,os,subprocess,tempfile
 from pathlib import Path
 from scene_sdk import stage_sdk
 ROOT=Path(__file__).resolve().parents[1]
-MODES=['abi','unsupported','unsupported-continuity','opt-in','flags','usb-flags','usb-activity-race','usb-queue','outcome-race','home-race','key-race','layer','caps','pause-again','close-pausing','close-paused','invalid']
+MODES=['abi','unsupported','unsupported-continuity','opt-in','flags','usb-flags','usb-activity-race','usb-queue','usb-full-batch','outcome-race','home-race','key-race','layer','caps','pause-again','close-pausing','close-paused','invalid']
 MODES += ['loss-'+site for site in ('enable-configure','enable-usb-snapshot','checkpoint-snapshot','close-subscription','pause-scene','resume-usb-snapshot','resume-scene')]
-MODES += ['usb-continuity-'+mode for mode in ('repeated','held','cancel','done','sleep','overflow','close')]
+MODES += ['usb-continuity-'+mode for mode in ('repeated','full-batch','held','cancel','done','sleep','overflow','close')]
 MODES += ['usb-full-'+mode for mode in ('roundtrip','again','close','pause-loss','pause-fault','resume-loss','snapshot-loss','snapshot-fault')]
 CLIENT_MODES=['prefix','lifecycle','close-paused']+[f'enable-{x}' for x in ('busy','unavailable','loss','retained','invalid')]+[f'snapshot-{x}' for x in ('loss','retained','busy','size','flags','phase','paused-presenting','paused-busy')]+[f'pause-{x}' for x in ('loss','retained','busy','busy-after-again','invalid')]+[f'resume-{x}' for x in ('loss','retained','busy','invalid')]
 MODES += ['fault-'+site for site in ('enable-configure','enable-usb-snapshot','close-subscription','pause-scene','resume-usb-snapshot','resume-scene')]
