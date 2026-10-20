@@ -2,6 +2,10 @@
 #include "PortablePaperGeometry.h"
 #ifdef ALARM_SERVICE_TAGGED_V2
 #define quick_alarm_output_modes() alarm_output_modes()
+#elif defined(PORTABLE_TIMECARD_NATIVE_UI) && defined(ALARM_SERVICE_SLEEP_RESUME_SUPPORTED)
+/* Canonical API1 appends a resume callback, not an output-mode descriptor.
+ * Legacy API1 requires both outputs; never reinterpret the callback suffix. */
+#define quick_alarm_output_modes() ALARM_MODE_BOTH
 #else
 #define quick_alarm_output_modes() alarm_service_output_modes(alarm_sleep_api())
 #endif

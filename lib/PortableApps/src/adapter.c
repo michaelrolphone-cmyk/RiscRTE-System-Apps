@@ -347,7 +347,7 @@ bool portable_paper_frame_ready(void);
 static bool paper_token_progress(void);
 bool portable_paper_frame_drain(void);
 static bool paper_token_clean;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
 /* Owner follows the submitted frame, not whichever UI is active at callback.
  * Zero is an overlay/ordinary frame. Snapshot replay preserves this identity. */
 static unsigned native_present_owner,native_token_owner;
@@ -612,10 +612,13 @@ static void input_reset(void) {
 #ifdef PORTABLE_POINTS_NATIVE_UI
 #include "points_native_input.inc"
 #endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+#include "timecard_native_input.inc"
+#endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
 #include "stopwatch_native_input.inc"
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
 static void portable_native_presented(risc_display_present_token_v1 token) {
  if(token!=native_present_token)return;
  unsigned owner=native_token_owner;native_present_token=0;native_token_owner=0;
@@ -652,6 +655,9 @@ static void portable_native_presented(risc_display_present_token_v1 token) {
 #ifdef PORTABLE_POINTS_NATIVE_UI
  if(owner==12)points_native_presented();
 #endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+ if(owner==14)timecard_native_presented();
+#endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
  if(owner==13)stopwatch_native_presented();
 #endif
@@ -679,6 +685,11 @@ void portable_frequency_native_back(void) {
 #ifdef PORTABLE_POINTS_NATIVE_UI
 void portable_points_native_back(void) {
  if(points_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
+}
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+void portable_timecard_native_back(void) {
+ if(timecard_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
 }
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
@@ -905,6 +916,8 @@ static void input_dispatch(void) {
  if(frequency_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
 #elif defined(PORTABLE_POINTS_NATIVE_UI)
  if(points_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
+#elif defined(PORTABLE_TIMECARD_NATIVE_UI)
+ if(timecard_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
 #elif defined(PORTABLE_STOPWATCH_NATIVE_UI)
  if(stopwatch_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
 #elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
@@ -922,6 +935,9 @@ static void input_dispatch(void) {
 #endif
 #ifdef PORTABLE_POINTS_NATIVE_UI
   points_native_quick_observe(&next);
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+  timecard_native_quick_observe(&next);
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
   stopwatch_native_quick_observe(&next);
@@ -954,6 +970,9 @@ static void input_dispatch(void) {
 #endif
 #ifdef PORTABLE_POINTS_NATIVE_UI
    points_native_gesture=false;
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+   timecard_native_gesture=false;
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
    stopwatch_native_gesture=false;
@@ -1373,7 +1392,7 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
 #include "native_toolbar.inc"
 #endif
-#if defined(PORTABLE_POINTS_NATIVE_UI) || (defined(PORTABLE_STOPWATCH_NATIVE_UI) && defined(PORTABLE_NATIVE_TIME_TOOLBAR))
+#if defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI) || (defined(PORTABLE_STOPWATCH_NATIVE_UI) && defined(PORTABLE_NATIVE_TIME_TOOLBAR))
 static void np_poll(t5_app_input_t *out);
 #endif
 #include "nova.inc"
@@ -1447,6 +1466,13 @@ bool portable_paper_frame_ready(void) {
    * painting and retained-underlay restoration must remain admissible. */
   if(stopwatch_native_enabled&&!quick_modal&&!quick_restoring&&pqa_visible(&quick.ui))return false;
 #endif
+#if defined(PORTABLE_TIMECARD_NATIVE_UI) && defined(PORTABLE_RASTER_SNAPSHOT)
+  /* A scrolling Timecard can repaint faster than the display completes. Once
+   * Quick requests the screen, stop admitting new app snapshots so its existing
+   * token/mailbox can drain and the modal can acquire custody. Quick's own
+   * painting and retained-underlay restoration must remain admissible. */
+  if(timecard_native_enabled&&!quick_modal&&!quick_restoring&&pqa_visible(&quick.ui))return false;
+#endif
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   /* Latest-image mailbox: a completed software image which has not acquired
@@ -1499,6 +1525,26 @@ bool portable_frequency_native_repaint(void) {
 #ifdef PORTABLE_POINTS_NATIVE_UI
 bool portable_points_native_repaint(void) {
  return points_native_enabled&&!failed&&points_native_layout_known&&!points_native_visible&&
+   !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
+#ifdef PORTABLE_RASTER_SNAPSHOT
+   &&!raster_sealed&&!raster_recording&&!raster_replaying
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+   &&!alarm_modal&&!native_sleep_retained
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+   &&!quick_modal&&!quick_restore_pending&&!quick_restoring&&!quick_launch_pending&&
+   !pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
+#endif
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+   &&!handoff_pending&&!handoff_active
+#endif
+   ;
+}
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+bool portable_timecard_native_repaint(void) {
+ return timecard_native_enabled&&!failed&&timecard_native_layout_known&&!timecard_native_visible&&
    !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
 #ifdef PORTABLE_RASTER_SNAPSHOT
    &&!raster_sealed&&!raster_recording&&!raster_replaying
@@ -1581,11 +1627,11 @@ static bool paper_token_progress(void) {
   }
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
   risc_display_present_token_v1 native_completed_token=paper_token;
 #endif
   paper_token=0;paper_token_clean=false;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
   portable_native_presented(native_completed_token);if(failed)return false;
 #endif
   if(!initial_frame_visible())return false;
@@ -1673,7 +1719,7 @@ static void present(bool full) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_recording&&!failed){
     raster_recording=false;raster_sealed=true;raster_full=full;raster_saved_intent=present_intent(full);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
     raster_native_present_owner=native_present_owner;
 #ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
     ble_touchpad_native_frame(raster_native_present_owner);
@@ -1717,6 +1763,11 @@ static void present(bool full) {
     points_native_frame(raster_native_present_owner);
     raster_points_native_generation=points_native_submit_generation;
     raster_points_native_layout=points_native_submit_layout;
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+    timecard_native_frame(raster_native_present_owner);
+    raster_timecard_native_generation=timecard_native_submit_generation;
+    raster_timecard_native_layout=timecard_native_submit_layout;
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
     stopwatch_native_frame(raster_native_present_owner);
@@ -1820,6 +1871,17 @@ static void present(bool full) {
 #endif
         native_present_owner)==12)previous_valid=false;
 #endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+    /* Alarm/Quick may restore byte-identical app pixels under a foreign owner.
+     * A new Timecard generation still needs its own visibility completion. Do
+     * not let RGB damage elision strand that generation without a token. */
+    if(timecard_native_enabled&&!timecard_native_visible&&
+       (
+#ifdef PORTABLE_RASTER_SNAPSHOT
+        raster_replaying?raster_native_present_owner:
+#endif
+        native_present_owner)==14)previous_valid=false;
+#endif
     if(previous_valid)for(unsigned y=0;y<info.height;y++) {
       if(!(y&7u) && !raster_checkpoint())return;
       if(memcmp(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2)) {
@@ -1867,7 +1929,7 @@ static void present(bool full) {
     display_callback_failure("PORTABLE_APP error=display-submit");
     return;
   }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
   native_present_token=token;native_token_owner=
 #ifdef PORTABLE_RASTER_SNAPSHOT
     raster_replaying?raster_native_present_owner:
@@ -1984,6 +2046,19 @@ static void present(bool full) {
 #endif
     points_native_submit_layout;
 #endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+  timecard_native_frame(native_token_owner);
+  timecard_native_token_generation=
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_timecard_native_generation:
+#endif
+    timecard_native_submit_generation;
+  timecard_native_token_layout=
+#ifdef PORTABLE_RASTER_SNAPSHOT
+    raster_replaying?raster_timecard_native_layout:
+#endif
+    timecard_native_submit_layout;
+#endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
   stopwatch_native_frame(native_token_owner);
   stopwatch_native_token_generation=
@@ -2060,7 +2135,7 @@ static void present(bool full) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
       portable_native_presented(token);if(failed)return;
 #endif
       if(!initial_frame_visible())return;
@@ -2099,7 +2174,7 @@ static void present(bool full) {
   }
   display_failure("PORTABLE_APP error=display-timeout");
 }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
 static void portable_native_present(unsigned owner,bool full) {
  native_present_owner=owner;present(full);native_present_owner=0;
 }
@@ -2625,6 +2700,9 @@ bool portable_paper_scroll_available(void) {
 }
 #endif
 static void clear_contact_snapshots(void) {
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+ timecard_native_sample=(portable_touch_sample){.cancelled=true};
+#endif
 #ifdef PORTABLE_APP_TOUCH_SCROLL
  paper_scroll_sample=(portable_touch_sample){.cancelled=true};paper_scroll_sampled_at=input_sampled_at;
 #endif
@@ -2646,6 +2724,9 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 static bool wifi_native_poll(t5_app_input_t *out);
 #endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+  timecard_native_sample=(portable_touch_sample){.cancelled=true};
+#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_message_foreground())return false;
   if(context_launch_pending){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
@@ -2813,6 +2894,8 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
      (!frequency_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
 #elif defined(PORTABLE_POINTS_NATIVE_UI)
      (!points_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
+#elif defined(PORTABLE_TIMECARD_NATIVE_UI)
+     (!timecard_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
 #elif defined(PORTABLE_STOPWATCH_NATIVE_UI)
      (!stopwatch_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
 #elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
@@ -2949,6 +3032,23 @@ replay_input:
 #endif
   if(!points_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
   points_native_sample=sample;
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+#if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+  if(timecard_native_enabled&&quick_replay_pending) {
+   quick_replay_pending=false;
+   if(timecard_native_quick_replay(&sample)) {
+    /* Quick reserved the original down. Replay it before the saved current
+     * sample so app-owned native chrome observes both edges in order. Keep
+     * the provider's original coordinates; never read ahead or poll here. */
+    input_sample=sample;input_sample.began=false;input_pending=true;quick_replay_delivery=true;
+    sample.began=sample.down=true;sample.released=sample.moved=false;
+    sample.x=timecard_native_quick_x;sample.y=timecard_native_quick_y;
+   }else sample=(portable_touch_sample){.cancelled=true};
+  }
+#endif
+  if(!timecard_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
+  timecard_native_sample=sample;
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
 #if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
@@ -3980,7 +4080,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 }
 
 __attribute__((visibility("default"))) int app_module_init(void) {
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI)
+#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
   native_present_owner=native_token_owner=0;native_present_token=0;
 #endif
   int status = initialize();
@@ -4001,6 +4101,9 @@ __attribute__((visibility("default"))) int app_module_init(void) {
 #endif
 #ifdef PORTABLE_POINTS_NATIVE_UI
   if(!status)points_native_enabled=false;
+#endif
+#ifdef PORTABLE_TIMECARD_NATIVE_UI
+  if(!status)timecard_native_enabled=false;
 #endif
 #ifdef PORTABLE_STOPWATCH_NATIVE_UI
   if(!status)stopwatch_native_enabled=false;
