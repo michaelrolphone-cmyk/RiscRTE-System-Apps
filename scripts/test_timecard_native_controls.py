@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 root = Path(__file__).resolve().parents[1]
@@ -15,6 +16,36 @@ changed = {'lib/PortableApps/src/adapter.c', 'lib/PortableApps/src/raster_snapsh
 # This prevents a feature-off comparison from accidentally hiding edits in an
 # include shared by both preprocessing inputs. Existing Alarm, raw-touch,
 # retained custody, ABI headers, renderers and every owner are byte-for-byte.
+# The independently reviewed USB native successor changes paper.inc only behind
+# the combined USB app/native selectors. Admit that exact blob, never an arbitrary
+# edit, and prove every pre-existing branch still emits identical tokens.
+usb_paper_blob = '9df172e53dabba2495238a8b9515ee41a10dddbd'
+reviewed_successors = []
+
+def verify_usb_paper_successor(name, data, actual_blob):
+    assert name == 'lib/PortableApps/src/paper.inc' and actual_blob == usb_paper_blob, name
+    old = subprocess.check_output(['git', 'show', baseline + ':' + name], cwd=root, text=True)
+    rows = []
+    for selectors in ((), ('PORTABLE_USB_TRANSFER_APP',), ('PORTABLE_USB_TRANSFER_NATIVE_UI',)):
+        for snapshot in (False, True):
+            for toolbar in (False, True):
+                defines = ['PORTABLE_TIMECARD_NATIVE_UI', 'PORTABLE_NOVA_UI', 'PORTABLE_NATIVE_CANVAS', *selectors]
+                if snapshot:
+                    defines += ['PORTABLE_RASTER_SNAPSHOT']
+                if toolbar:
+                    defines += ['PORTABLE_NATIVE_TIME_TOOLBAR']
+                command = [os.environ.get('CC', 'cc'), '-E', '-P', '-x', 'c',
+                    *('-D' + flag for flag in defines), '-I' + str(root / 'lib/PortableApps/src'), '-']
+                tokens = []
+                for source in (old, data.decode()):
+                    expanded = subprocess.check_output(command, input=source, text=True)
+                    tokens.append('\n'.join(re.findall(r'''"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[A-Za-z_0-9]+|[^\s]''', expanded)))
+                assert tokens[0] == tokens[1], ('USB paper successor changed an existing branch', defines)
+                assert 'portable_usb_transfer_native_available' not in tokens[1]
+                rows.append({'defines': defines, 'identical': True,
+                    'token_sha256': hashlib.sha256(tokens[0].encode()).hexdigest()})
+    return {'path': name, 'git_blob': actual_blob, 'selector_off_parity': rows}
+
 entries = subprocess.check_output(['git', 'ls-tree', '-r', baseline, 'lib/PortableApps'], cwd=root, text=True)
 unchanged = []
 for entry in entries.splitlines():
@@ -22,8 +53,11 @@ for entry in entries.splitlines():
     if name in changed:
         continue
     data = (root / name).read_bytes()
-    assert hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest() == meta.split()[2], name
-    unchanged.append(name)
+    actual_blob = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+    if actual_blob != meta.split()[2]:
+        reviewed_successors.append(verify_usb_paper_successor(name, data, actual_blob))
+    else:
+        unchanged.append(name)
 
 common = [os.environ.get('CC', 'cc'), '-std=c11', '-O1', '-g', '-Wall', '-Wextra', '-Werror',
     *('-I' + str(root / p) for p in ('lib/PortableApps/include', 'lib/PortableApps/src', 'lib/NativeApps/include'))]
@@ -76,5 +110,5 @@ for sanitize in (False, True):
                     extra = [root / 'lib/PortableApps/src' / name for name in ('quick_actions.c', 'quick_render.c', 'quick_session.c')]
                 run(label, owner + '_native_adapter_test.c', flags, sanitize, extra)
 (out / 'results.json').write_text(json.dumps({'baseline': baseline, 'unchanged_portable_files': unchanged,
-    'passed_executions': rows}, indent=2) + '\n')
-print(f'PASS: {len(unchanged)} unchanged PortableApps files and {len(rows)} existing-owner normal/sanitized executions')
+    'reviewed_successors': reviewed_successors, 'passed_executions': rows}, indent=2) + '\n')
+print(f'PASS: {len(unchanged)} unchanged PortableApps files and {len(rows)} existing-owner normal/sanitized executions; {len(reviewed_successors)} exact reviewed USB paper successor')

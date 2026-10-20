@@ -324,7 +324,13 @@ static const char *status_name(void) {
     default:return "READY TO TRANSFER";
     }
 }
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+#include "usb_sd_transfer_native.inc"
+#endif
 static void render(void) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native){usb_native_render();return;}
+#endif
     /* Clear before drawing: servicing a display wait may set dirty again. */
     const uint32_t painted_state=state;
     dirty=false;paper->begin();text(28,"USB SD TRANSFER",true);
@@ -368,11 +374,18 @@ static void render(void) {
     preparing_presented=painted_state==RISC_USB_MSC_PREPARING && state==painted_state && !dirty;
 }
 static bool hit(const t5_app_input_t *in,int y) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native)return in->tapped && usb_native_rect_hit(y==612?usb_layout.primary:usb_layout.secondary,in->touch_x,in->touch_y);
+#endif
     return in->tapped && in->touch_x>=sx(32) && in->touch_x<sx(448) && in->touch_y>=sy(y) && in->touch_y<sy(y+68);
 }
 void app_main(void) {
     app=t5_app_get_api(1);paper=paper_presentation_get();runtime=risc_runtime_get_api(1);
     if(!app || !paper || !runtime || !runtime->acquire || !runtime->release || !runtime->request_launch)return;
+    #ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    usb_native=portable_usb_transfer_native_available();
+    if(usb_native && !usb_native_layout_open(&usb_layout,app->screen_width(),app->screen_height()))return;
+    #endif
     checkpoint_client=(risc_diagnostic_checkpoint_client_v1){.struct_size=sizeof(checkpoint_client)};
     if(!risc_runtime_diagnostic_checkpoint_client(runtime,&checkpoint_client) ||
        checkpoint_client.api_version!=1 || checkpoint_client.struct_size<sizeof(checkpoint_client) ||

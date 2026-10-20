@@ -1,0 +1,120 @@
+name: USB transfer native source qualification
+on:
+  pull_request:
+    paths:
+      - 'Apps/usb_sd_transfer*'
+      - 'Apps/UsbTransfer*'
+      - 'Apps/PaperPresentation.h'
+      - 'Apps/native/usb_sd_transfer.json'
+      - 'lib/PortableApps/**'
+      - 'lib/NativeApps/include/**'
+      - 'lib/elf_loader/**'
+      - 'scripts/build_portable_usb_transfer.py'
+      - 'scripts/test_usb_transfer*'
+      - 'scripts/portable_quick_build.py'
+      - 'scripts/portable_alarm_build.py'
+      - 'scripts/portable_idle_build.py'
+      - 'scripts/native_toolchain.py'
+      - 'test/native_apps/usb*'
+      - 'test/native_apps/paper_clock_test.c'
+      - 'test/native_apps/stubs/**'
+      - 'test/native_apps/validate_test.c'
+      - '.github/workflows/usb-transfer-native.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install Pillow==11.3.0
+      - name: Read and verify immutable canonical MSC SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/usb-msc-sdk"
+          header="$RUNNER_TEMP/usb-msc-sdk/RiscUsbDeviceMscV1.h"
+          curl --fail --location --retry 3 -o "$header" https://raw.githubusercontent.com/michaelrolphone-cmyk/T5S3-Reader/322fc9c0fbe6713a9fc0f3175a19550970682eaa/sdk/driver/RiscUsbDeviceMscV1.h
+          echo "d55a9340c3ff64e8679c4d9332812f073c30b8aa08ae3e3fb04f9010cf517ed6  $header" | sha256sum --check
+      - name: Profile selection and negative controls
+        run: python scripts/test_usb_transfer_native_profile.py -v
+      - name: Native geometry, lifecycle, sanitizer and pristine paper/opt-out parity
+        run: python scripts/test_usb_transfer_native.py --msc-sdk "$RUNNER_TEMP/usb-msc-sdk" --output-dir build/usb-native
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: usb-native-host-source-evidence-${{ github.sha }}
+          path: |
+            build/usb-native/**/*.json
+            build/usb-native/**/*.log
+            build/usb-native/**/*.png
+          if-no-files-found: error
+          retention-days: 14
+  strict-targets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        toolchain: [gcc8, gcc15]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read and verify immutable canonical MSC SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/usb-msc-sdk"
+          header="$RUNNER_TEMP/usb-msc-sdk/RiscUsbDeviceMscV1.h"
+          curl --fail --location --retry 3 -o "$header" https://raw.githubusercontent.com/michaelrolphone-cmyk/T5S3-Reader/322fc9c0fbe6713a9fc0f3175a19550970682eaa/sdk/driver/RiscUsbDeviceMscV1.h
+          echo "d55a9340c3ff64e8679c4d9332812f073c30b8aa08ae3e3fb04f9010cf517ed6  $header" | sha256sum --check
+      - name: Install explicit historical GCC8 compiler
+        if: matrix.toolchain == 'gcc8'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install platformio==6.1.18
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          echo "NATIVE_APP_CC=$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" >> "$GITHUB_ENV"
+      - name: Install pinned GCC15 ESP32-S3 compiler
+        if: matrix.toolchain == 'gcc15'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/xtensa-esp-elf.tar.xz"
+          curl --fail --location --retry 3 -o "$archive" https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $archive" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/usb-native-toolchain"
+          tar -xJf "$archive" -C "$RUNNER_TEMP/usb-native-toolchain"
+          echo "NATIVE_APP_CC=$RUNNER_TEMP/usb-native-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc" >> "$GITHUB_ENV"
+      - name: Strict targets, exact ABI, loader negatives, deterministic repeats and pristine feature-off ELFs
+        run: python scripts/test_usb_transfer_native_target.py --msc-sdk "$RUNNER_TEMP/usb-msc-sdk" --output-dir build/usb-native-target
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: usb-native-${{ matrix.toolchain }}-source-evidence-${{ github.sha }}
+          path: |
+            build/usb-native-target/**/*.json
+            build/usb-native-target/**/*.log
+          if-no-files-found: error
+          retention-days: 14

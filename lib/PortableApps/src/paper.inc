@@ -114,6 +114,12 @@ static bool pp_enabled(void) {
     (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_MONO1));
 #endif
 }
+#if defined(PORTABLE_USB_TRANSFER_APP) && defined(PORTABLE_USB_TRANSFER_NATIVE_UI)
+#include "../../../Apps/UsbTransferNative.h"
+bool portable_usb_transfer_native_available(void) {
+  return surface_format==RISC_DISPLAY_FORMAT_RGB565;
+}
+#endif
 const paper_presentation *paper_presentation_get(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
   if(failed || native_custody_retained)return NULL;
@@ -121,7 +127,12 @@ const paper_presentation *paper_presentation_get(void) {
   if(!pp_enabled()
 #ifdef PORTABLE_USB_TRANSFER_APP
      /* This awake utility uses the same scalable presentation on RGB panels. */
-     && !(width()>=240 && height()>=240 &&
+     && !(
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+          width()>=160 && height()>=160 &&
+#else
+          width()>=240 && height()>=240 &&
+#endif
           (info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))
 #endif
      )return NULL;
