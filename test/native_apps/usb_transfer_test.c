@@ -130,10 +130,20 @@ static bool nav_foreground(void*c,const risc_input_foreground_v1*x,size_t n){(vo
 static bool nav_reset(void*c){(void)c;return true;}
 static const risc_input_navigation_api_v1 nav={1,sizeof(nav),NULL,nav_poll,nav_foreground,nav_reset};
 #ifdef TEST_USB_RGB
-#define USB_TEST_WIDTH 410
-#define USB_TEST_HEIGHT 502
-#define USB_TEST_X(x) ((x)*410/480)
-#define USB_TEST_Y(y) ((y)*502/800)
+#define USB_TEST_WIDTH PANEL_WIDTH
+#define USB_TEST_HEIGHT PANEL_HEIGHT
+#if defined(PORTABLE_USB_TRANSFER_NATIVE_UI)
+#include "../../Apps/UsbTransferLayout.h"
+static int usb_test_y(int y) {
+ usb_native_layout l;assert(usb_native_layout_open(&l,USB_TEST_WIDTH,USB_TEST_HEIGHT));
+ usb_native_rect r=y<700?l.primary:l.secondary;return r.y+r.h/2;
+}
+#define USB_TEST_X(x) ((x)*USB_TEST_WIDTH/480)
+#define USB_TEST_Y(y) usb_test_y(y)
+#else
+#define USB_TEST_X(x) ((x)*USB_TEST_WIDTH/480)
+#define USB_TEST_Y(y) ((y)*USB_TEST_HEIGHT/800)
+#endif
 #else
 #define USB_TEST_WIDTH 480
 #define USB_TEST_HEIGHT 800
@@ -187,6 +197,11 @@ static int32_t usb_touch_next(void*c,uint64_t subscription,risc_touch_event_v1*o
 static bool usb_touch(void*c,risc_touch_snapshot_v1*out){(void)c;*out=usb_touch_state;return true;}
 static bool usb_submit(void*c,risc_display_frame_v1 frame,const risc_display_rect_v1*r,size_t n,const risc_display_present_options_v1*o,risc_display_present_token_v1*key){
  (void)c;(void)r;(void)n;(void)o;assert(frame==1&&frames);frames=0;if(session&&preparing)preparing_frames++;*key=++presents;queued_until=ms+24;
+#ifdef TEST_USB_TRACE
+ uint64_t hash=UINT64_C(14695981039346656037);
+ for(size_t i=0;i<sizeof(pixels);i++){hash^=pixels[i];hash*=UINT64_C(1099511628211);}
+ printf("FRAME %u %016llx\n",presents,(unsigned long long)hash);
+#endif
  #ifdef TEST_USB_RGB
  if(capture){char name[512];snprintf(name,sizeof(name),"%s/frame-%02u.ppm",capture,presents);FILE*f=fopen(name,"wb");assert(f);fprintf(f,"P6\n%u %u\n255\n",PANEL_WIDTH,PANEL_HEIGHT);for(unsigned i=0;i<PANEL_WIDTH*PANEL_HEIGHT;i++){uint16_t v=((uint16_t*)pixels)[i];uint8_t rgb[]={(uint8_t)((v>>11)*255/31),(uint8_t)(((v>>5)&63)*255/63),(uint8_t)((v&31)*255/31)};assert(fwrite(rgb,1,3,f)==3);}fclose(f);}
 #else
