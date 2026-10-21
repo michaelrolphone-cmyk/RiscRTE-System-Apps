@@ -415,6 +415,13 @@ static bool desk_guard_launch(const char *);
 #include "PortableQuickSession.h"
 #include "PortableQuickRender.h"
 static pqa_session quick;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+#if !defined(PORTABLE_RESIDENT_SHELL_HOST) || !defined(PORTABLE_PAPER_TRANSITIONS) || !defined(PORTABLE_QUICK_RADIOS)
+#error Remote battery controls require the explicit resident paper/radio host profile
+#endif
+#include "PortableRemoteBattery.h"
+static pqb_session quick_remote;
+#endif
 #ifdef PORTABLE_QUICK_RADIOS
 #include "PortableQuickRadios.h"
 static pqa_radios quick_radios;

@@ -167,6 +167,7 @@ def build():
  if a.deferred_foreground_services:version='0.4.13'
  if a.sparse_start:version='0.4.18' # bounded foreground RTC reconciliation
  if a.automatic_provision:version='0.4.20'
+ version=portable_quick_build.remote_battery_version(a,p,version) # explicit local-only identity, never an accepted product pin
  needs=[{'capability':n,'api':v} for n,v in [('display.output',1),('input.touch.raw',1),('rtc.clock',2),('board.battery',1),('storage.key-value',1)]]
  if a.navigation:needs.append({'capability':'input.navigation','api':1})
  if a.sleep_capability:needs.append({'capability':a.sleep_capability,'api':1})
@@ -184,7 +185,10 @@ def build():
   if a.contexts_rf_only:needs.extend([{'capability':'contexts.service','api':1},{'capability':'storage.shared-data','api':1}])
   if len(needs)!=((((15 if a.ble_broadcast else 14)+2*int(a.contexts_rf_only)) if a.sparse_start else 12)+int(a.crash_report_sd)+int(a.experimental_atomic_quick)+int(a.experimental_settings_availability)):raise ValueError('Desk clock grant count mismatch')
  if a.installed_catalog_volume_instance is not None:needs.append({'capability':'software.installed-apps','api':1})
- (out/'default.json').write_text(json.dumps({'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs},indent=2)+'\n')
+ manifest={'type':'application','id':'paper_clock','version':version,'architecture':'xtensa-esp32s3','file_name':'default.elf','entry':'app_main','requires':needs}
+ optional=[];portable_quick_build.optional_requirements(a,optional)
+ if optional:manifest['optional']=optional
+ (out/'default.json').write_text(json.dumps(manifest,indent=2)+'\n')
  data=elf.read_bytes()
  record={'purpose':'development-artifact-no-hardware-qualification','desk_clock':a.desk_clock,'retained_wake_sdk_sha256':hashlib.sha256((a.retained_wake_sdk/'RiscRetainedWakeV1.h').read_bytes()).hexdigest() if a.desk_clock else None,'version':version,'clock_policy':'rtc-wall-time','display_rotation':a.display_rotation,'launcher_app':a.launcher_app,'navigation':a.navigation,'sleep_capability':a.sleep_capability,'local_sleep_source_sha256':hashlib.sha256(a.local_sleep_source.read_bytes()).hexdigest() if a.local_sleep_source else None,'alarm_client':a.alarm_client,'quick_actions':a.quick_actions,'quick_radios':a.quick_radios,'home_app':a.home_app,'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),'imports':sorted(imports),'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip())}
  if a.experimental_atomic_quick:

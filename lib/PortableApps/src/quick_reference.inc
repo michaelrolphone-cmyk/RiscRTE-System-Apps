@@ -99,7 +99,43 @@ static void qr_slider(int y,const char *label,unsigned icon,unsigned value,bool 
  char percent[8];if(valid)snprintf(percent,sizeof(percent),"%u%%",value);else strcpy(percent,"--%");
  qr_text(&QUICK_REF_NUMBER,448,y+(compact?26:33),percent,0,1,0,true);
 }
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+static void quick_remote_paint(void) {
+ qr_text(&QUICK_REF_TILE,32,58,"WATCH BATTERY",2*64,0,0,true);qp_rect(32,78,416,4,true);
+ const char *labels[]={"BACK",quick_remote.active?"RESTART":"SCAN","STOP"};
+ for(unsigned i=0;i<3;i++){int x=32+(int)i*144;qr_round(x,88,128,52,10,true);qr_round(x+2,90,124,48,8,false);
+  qr_text(&QUICK_REF_TILE,x+64,122,labels[i],0,2,0,true);}
+ qr_text(&QUICK_REF_SMALL,240,164,quick_remote_status_text(),0,2,0,true);
+ char text[64];
+ if(quick_remote.selected) {
+  if(quick_remote.last_valid)snprintf(text,sizeof(text),"LAST ACQUIRED %u%%",quick_remote.last_percent);
+  else strcpy(text,"NO BATTERY READING YET");
+  qr_text(&QUICK_REF_TILE,240,196,text,0,2,0,true);
+  quick_remote_identity(text,quick_remote.selected_address,quick_remote.selected_address_type);
+  qr_text(&QUICK_REF_SMALL,240,222,text,0,2,0,true);
+ } else qr_text(&QUICK_REF_TILE,240,205,"SELECT AN OBSERVED DEVICE",0,2,0,true);
+ for(unsigned row=0;row<6;row++) {
+  uint32_t index=(uint32_t)quick.ui.remote_battery_offset+row;if(index>=quick_remote_shown.count)break;
+  const pqb_candidate *c=&quick_remote_shown.rows[index];int y=248+(int)row*64;
+  bool selected=quick_remote.selected&&c->address_type==quick_remote.selected_address_type&&!memcmp(c->address,quick_remote.selected_address,6);
+  qr_round(32,y,416,60,8,true);qr_round(34,y+2,412,56,6,false);
+  quick_remote_identity(text,c->address,c->address_type);qr_text(&QUICK_REF_SMALL,44,y+23,text,0,0,0,true);
+  if(c->battery_valid&&c->last_valid)snprintf(text,sizeof(text),"%s %u%%",selected?"SELECTED":"SELECT",c->last_percent);
+  else strcpy(text,"BATTERY UNAVAILABLE");
+  qr_text(&QUICK_REF_SMALL,44,y+47,text,0,0,0,true);
+ }
+ if(!quick_remote_shown.count)qr_text(&QUICK_REF_SMALL,240,300,"SCAN THEN SELECT YOUR DEVICE",0,2,0,true);
+ qr_round(32,664,196,48,8,true);qr_round(34,666,192,44,6,false);
+ qr_round(252,664,196,48,8,true);qr_round(254,666,192,44,6,false);
+ qr_text(&QUICK_REF_TILE,130,697,"PREVIOUS",0,2,0,true);qr_text(&QUICK_REF_TILE,350,697,"NEXT",0,2,0,true);
+ qr_text(&QUICK_REF_SMALL,240,737,"PUBLIC BROADCAST - NOT PAIRED",0,2,0,true);
+ qr_text(&QUICK_REF_SMALL,240,766,"NEW SESSION MAY NEED RESELECTION",0,2,0,true);
+}
+#endif
 static void quick_paper_paint(const char *time,bool battery_valid,unsigned battery) {
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ if(quick.ui.remote_battery_controls&&quick.ui.remote_battery_page){quick_remote_paint();return;}
+#endif
  qr_text(&QUICK_REF_TITLE,32,58,"QUICK ACTIONS",2*64,0,260,true);
  qr_text(&QUICK_REF_TIME,448,58,time,0,1,0,true);qp_rect(32,78,416,4,true);
 #ifdef PORTABLE_PAPER_TRANSITIONS
@@ -134,6 +170,17 @@ static void quick_paper_paint(const char *time,bool battery_valid,unsigned batte
   }
  }
  qr_text(&QUICK_REF_SMALL,240,731,quick.ui.error_flags?"CHANGE UNCONFIRMED":"SWIPE UP TO CLOSE",0,2,0,true);
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ if(quick.ui.remote_battery_controls) {
+  char local[20],remote[24];if(battery_valid)snprintf(local,sizeof(local),"BATT %u%%",battery);else strcpy(local,"BATT --%");
+  qr_text(&QUICK_REF_TILE,32,772,local,0,0,0,true);
+  qr_round(240,744,208,52,8,true);qr_round(242,746,204,48,6,false);
+  if(quick_remote.last_valid)snprintf(remote,sizeof(remote),"WATCH %u%%",quick_remote.last_percent);else strcpy(remote,"WATCH --%");
+  qr_text(&QUICK_REF_SMALL,344,764,remote,0,2,0,true);
+  qr_text(&QUICK_REF_SMALL,344,787,quick_remote.current?"CURRENT":"NOT CURRENT",0,2,0,true);
+  return;
+ }
+#endif
  qr_text(&QUICK_REF_BATTERY,32,764,"BATT",4*64,0,0,true);
  for(unsigned i=0;i<10;i++){int x=104+(int)i*23;qr_round(x-2,748,22,18,4,true);
   if(!battery_valid||i*10>=battery)qr_round(x+2,752,14,10,1,false);}

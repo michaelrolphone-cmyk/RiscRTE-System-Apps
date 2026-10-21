@@ -15,6 +15,9 @@ static unsigned quick_atomic_captured_contact;
 typedef struct {
  uint32_t actions;unsigned contact;
  uint8_t brightness,tone,volume;bool torch,action_torch,dnd,contexts;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ uint8_t remote_index;uint32_t remote_epoch;
+#endif
 } quick_atomic_action;
 static quick_atomic_action quick_atomic_queue[QUICK_ATOMIC_QUEUE_CAPACITY];
 static unsigned quick_atomic_queue_head,quick_atomic_queue_count,quick_atomic_delivered_contact;
@@ -31,7 +34,11 @@ static void quick_atomic_enqueue(void) {
 #else
   0,
 #endif
-  quick.ui.action_volume,quick.ui.torch,quick.ui.action_torch,quick.ui.action_dnd,quick.ui.action_contexts};
+  quick.ui.action_volume,quick.ui.torch,quick.ui.action_torch,quick.ui.action_dnd,quick.ui.action_contexts
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+  ,quick.ui.action_remote_index,quick.ui.action_remote_epoch
+#endif
+  };
  /* Consecutive previews of the same contact may collapse; commits and
   * distinct controls never do. There is no provider call at this boundary. */
  const uint32_t previews=PQA_BRIGHTNESS_PREVIEW|PQA_TONE_PREVIEW;
@@ -56,6 +63,9 @@ static uint32_t quick_atomic_take_action(void) {
 #endif
  quick.ui.action_volume=a->volume;
  quick.ui.torch=a->torch;quick.ui.action_torch=a->action_torch;quick.ui.action_dnd=a->dnd;quick.ui.action_contexts=a->contexts;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ quick.ui.action_remote_index=a->remote_index;quick.ui.action_remote_epoch=a->remote_epoch;
+#endif
  quick_atomic_delivered_contact=a->contact;quick_atomic_delivering=true;uint32_t actions=a->actions;
  quick_atomic_queue_head=(quick_atomic_queue_head+1)%QUICK_ATOMIC_QUEUE_CAPACITY;--quick_atomic_queue_count;
  return actions;

@@ -11,6 +11,13 @@ extern "C" {
 
 typedef enum {
     PQA_NONE = 0,
+    PQA_REMOTE_OPEN = 1u << 14,
+    PQA_REMOTE_BACK = 1u << 15,
+    PQA_REMOTE_SCAN = 1u << 16,
+    PQA_REMOTE_STOP = 1u << 17,
+    PQA_REMOTE_SELECT = 1u << 18,
+    PQA_REMOTE_PREVIOUS = 1u << 19,
+    PQA_REMOTE_NEXT = 1u << 20,
     PQA_CONTEXTS = 1u << 13,
     PQA_BRIGHTNESS_PREVIEW = 1u << 0,
     PQA_BRIGHTNESS_COMMIT = 1u << 1,
@@ -59,6 +66,12 @@ typedef struct {
     bool dnd_valid, dnd_enabled;
     bool radio_controls,radios_valid,wifi_enabled,bluetooth_enabled,airplane;
     bool contexts_controls, contexts_valid, contexts_enabled;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+    bool remote_battery_controls, remote_battery_page;
+    uint8_t remote_battery_count, remote_battery_offset, action_remote_index;
+    uint32_t remote_battery_epoch, remote_battery_revision, action_remote_epoch;
+    uint32_t remote_contact_epoch;
+#endif
     uint16_t error_flags;
     int32_t position_q8, target_q8, velocity_q8;
     pqa_gesture gesture;

@@ -5,6 +5,9 @@
 #endif
 #include "PortableRtcClock.h"
 #include "PortableTime.h"
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+#include "quick_remote_battery.inc"
+#endif
 #ifndef PORTABLE_WATCH_COLOR_ONLY
 #include "quick_paper.inc"
 #else
@@ -117,6 +120,11 @@ static bool low_battery_poll_inner(void) {
   return !failed && !native_sleep_retained;
  }
 #endif
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ if(quick_remote.active && portable_low_battery_sample_valid(&sample) &&
+    sample.percent<PORTABLE_LOW_BATTERY_THRESHOLD && (!low_battery.observed||!low_battery.low) &&
+    !quick_remote_close())return false;
+#endif
 #ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
  unsigned result=home_automatic_low_battery(&sample);
 #else
@@ -169,6 +177,9 @@ static bool low_battery_poll(void) {
 }
 #endif
 static bool quick_apply(uint32_t actions) {
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ if(native_sleep_retained || !quick_remote_actions(&actions))return false;
+#endif
 #if defined(PORTABLE_SETTINGS_AVAILABILITY) && defined(PORTABLE_HOME_AUTOMATIC_PREFERENCES)
  actions=home_settings_filter_actions(actions);
 #endif
@@ -334,6 +345,9 @@ static bool quick_interrupt(void) {
  if(failed || native_custody_retained)return false;
 #endif
  if(!quick_modal)return true;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ if(!quick_remote_close())return false;
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
  quick_atomic_discard();
 #endif
@@ -501,6 +515,9 @@ static bool quick_foreground(bool *consumed) {
 #endif
  if(!pqa_session_load(&quick,rt))return false;
  quick_paper_capabilities();
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ quick_remote_sync();
+#endif
 #ifdef PORTABLE_PAPER_TRANSITIONS
  if(quick.ui.paper && quick.ui.torch_valid && !pqa_session_sync_brightness(&quick,display)) {
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
@@ -535,6 +552,9 @@ static bool quick_foreground(bool *consumed) {
  bool usb_transfer=false;
 #endif
  uint32_t began=millis_now(),telemetry_at=began-1000u;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ uint32_t remote_poll_at=began-250u;
+#endif
  char time[6]="--:--",painted_time[6]={0};risc_battery_sample_v1 battery={0};bool battery_valid=false,painted_battery_valid=false;
  pqa_state painted_state={0};uint8_t painted_battery=0;
  while(!failed && (pqa_visible(&quick.ui)||pqa_capture(&quick.ui)
@@ -550,7 +570,13 @@ static bool quick_foreground(bool *consumed) {
 #ifdef PORTABLE_LOW_BATTERY
   if(!low_battery_poll()){failed=true;break;}
 #endif
-  if(navigation_pending&T5_APP_BUTTON_BACK){navigation_pending=0;pqa_close(&quick.ui);}
+  if(navigation_pending&T5_APP_BUTTON_BACK){navigation_pending=0;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+   if(!quick_remote_back())return false;
+#else
+   pqa_close(&quick.ui);
+#endif
+  }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   /* Retaining paper controls stay available for inspection until dismissed.
    * Keep the existing idle policy for the animated Watch sheet. */
@@ -566,6 +592,14 @@ static bool quick_foreground(bool *consumed) {
   if(actions&PQA_USB_TRANSFER){usb_transfer=true;pqa_cancel(&quick.ui);actions|=pqa_take_action(&quick.ui);}
 #endif
   if(!quick_apply(actions)){failed=true;break;}
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+  if(!pqa_visible(&quick.ui) || quick.ui.target_q8==0) {
+   if(!quick_remote_close())return false;
+  } else if(quick_remote.active && (uint32_t)(now-remote_poll_at)>=250u) {
+   remote_poll_at=now;(void)pqb_poll(&quick_remote);quick_remote_sync();
+   if(!quick_remote_safe())return false;
+  }
+#endif
   if(!paper_present_progress())break;
   pqa_animate(&quick.ui,now);
   if(pqa_visible(&quick.ui) || (!quick.ui.paper && painted)) {
@@ -610,12 +644,22 @@ static bool quick_foreground(bool *consumed) {
 #endif
   rt->yield_ms(pause);
  }
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ /* A terminal owner retains all custody without further provider calls. */
+ if(native_sleep_retained)return false;
+ if(!quick_remote_close())return false;
+#endif
  /* A release can make the overlay invisible immediately (torch-off). Its
   * final action still owns a hardware restoration even after the loop ends. */
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
  while(!failed) {uint32_t actions=quick_take_action();if(!actions)break;if(!quick_apply(actions))failed=true;}
 #else
  if(!failed && !quick_apply(pqa_take_action(&quick.ui)))failed=true;
+#endif
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ /* Final queued intents cannot restart RF after dismissal; also close after
+  * draining to keep this boundary safe if future actions gain scan behavior. */
+ if(native_sleep_retained || !quick_remote_close())return false;
 #endif
  /* The modal's release has already been reduced. Cancel only a still-held
   * logical gesture; never adopt a newer physical snapshot watermark here. */
