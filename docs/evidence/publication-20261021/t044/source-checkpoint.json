@@ -1,0 +1,22 @@
+{
+  "key": "t044",
+  "repo": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "branch": "tasker/t044-low-battery-qualification-20261021",
+  "base": "main",
+  "local": "df045bcdb30fa95650156ab9ad9f977f2ca8382a",
+  "parent": "7270a10ed9cefba6ec1368060196a13bb3370985",
+  "tree": "424d1b28329877a541cc58df0d5d3bc8fe7c6aa8",
+  "remote_source": "13bfa0b6657ad5edc2d79ce5afaf0e56848c9937",
+  "changed_paths": [
+    "test/native_apps/low_battery_adapter_test.c"
+  ],
+  "source_tree_identical": true,
+  "original_commit_restoration": "The incremental original-source.bundle needs its original parent. For stacked checkpoints, restore the parent checkpoint bundle first. The GitHub source commit has the exact original tree but different commit metadata.",
+  "publication_scope": "Existing source and historical software evidence only; no new tests, target build, merge, tag, firmware release, deployment, or hardware acceptance is claimed.",
+  "historical_reports": "Reports and logs are preserved from before publication; local-only/unpublished statements describe that earlier observation. This source lock supersedes only their publication state.",
+  "archive_included_files": null,
+  "archive_omitted_files": null,
+  "archive_included_files_count": 268,
+  "archive_sha256": "151e1ee5cdc31052e57930fc6a70d80b0c87d760cdd30eee027cc016e1882a8b",
+  "archive_bytes": 448238
+}
