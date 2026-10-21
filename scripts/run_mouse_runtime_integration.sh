@@ -15,8 +15,13 @@ cp -R "$system/lib/PortableApps/include/." "$build/sdk/"
 cp "$runtime/sdk/app/RiscRuntimeV1.h" "$runtime/sdk/app/RiscStreamClientV1.h" "$build/sdk/"
 cp "$reader/Drivers/usb_hid_mouse/manifest.json" "$build/mouse/manifest.json"
 san=(-g -O1)
+runtime_opt=()
 if [[ "${SANITIZE:-0}" == 1 ]]; then
  san+=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer)
+ # The pinned ArduinoJson empty iterator triggers GCC's maybe-uninitialized
+ # diagnostic with ASan/UBSan at -O1. Keep upstream bytes and -Werror intact;
+ # instrument Runtime at -O0, while consumer/provider C stays instrumented -O1.
+ runtime_opt=(-O0)
 fi
 cc="${CC:-cc}"; cxx="${CXX:-c++}"
 flags=("${san[@]}" -std=c11 -Wall -Wextra -Werror -fPIC -fvisibility=hidden -shared
@@ -27,7 +32,7 @@ set -x
 "$cc" "${flags[@]}" "$reader/Drivers/usb_hid_mouse/driver.c" -o "$build/mouse/driver.elf"
 "$cc" "${flags[@]}" -DPORTABLE_USB_MOUSE "$system/test/native_apps/mouse_runtime_consumer_app.c" \
  "$system/lib/PortableApps/src/PortableMouseConsumer.c" -o "$build/default.elf"
-"$cxx" "${san[@]}" -std=c++17 -Wall -Wextra -Werror -Wno-missing-field-initializers -no-pie -rdynamic -DRISC_STREAM_HOST_TESTING \
+"$cxx" "${san[@]}" "${runtime_opt[@]}" -std=c++17 -Wall -Wextra -Werror -Wno-missing-field-initializers -no-pie -rdynamic -DRISC_STREAM_HOST_TESTING \
  -I"$runtime/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$runtime/sdk/hardware" \
  -I"$runtime/lib/ArduinoJson/src" -I"$runtime/test/drivers/stubs" -I"$runtime/test" -I"$system/test/native_apps" \
  "$runtime/src/bootstrap/Json.cpp" "$runtime/src/bootstrap/Board.cpp" "$runtime/src/bootstrap/Runtime.cpp" \

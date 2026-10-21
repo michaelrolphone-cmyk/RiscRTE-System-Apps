@@ -43,3 +43,24 @@ ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=halt_on_error=1 python3 scripts/test_p
 Both upstream checkouts must be clean at the exact revisions above. The
 sanitizer mode enables AddressSanitizer and UndefinedBehaviorSanitizer; this
 lane makes no LeakSanitizer claim.
+
+The normal lane compiles at `-O1`. The sanitizer lane keeps the consumer and
+provider C at `-O1` and compiles the Runtime C++ host harness at `-O0`, with
+`-Wall -Wextra -Werror` and sanitizer instrumentation retained. The unchanged
+pinned ArduinoJson empty iterator produces a GCC `maybe-uninitialized`
+diagnostic at `-O1` with sanitizers. This profile adjustment does not patch
+upstream source, disable a warning, or qualify optimized Runtime sanitizer
+behavior.
+
+Historical failures remain available and are not overwritten by later runs:
+
+- [Run 39670339438](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/39670339438),
+  head `4799a04d17399e24ea8d6a219e143b55b13782e7`: native integration did not
+  compile because the fixture used absent `Runtime::lastError`; sanitizer step
+  skipped. Artifact `12378579185`, ZIP SHA-256
+  `a074d5af99e2ca2bf56d74cc6e758a23f9c99b775e0b66dee9e0d940b00f55ea`.
+- [Run 39674048111](https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/39674048111),
+  head `28b501b4d4557bc7f1fc30d87cd50ee60e82a809`: normal qualification passed;
+  sanitizer consumer cases passed but Runtime compilation stopped at the
+  ArduinoJson diagnostic before integration execution. Artifact `12380433812`,
+  ZIP SHA-256 `ae6929538b779b91d3f295731999845d34afabca4cd327c7f83ea5c54296ea72`.
