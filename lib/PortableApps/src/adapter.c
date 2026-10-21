@@ -1,3 +1,12 @@
+#ifdef PORTABLE_SERIAL_MONITOR_APP
+#if !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) || !defined(PORTABLE_APP_LAUNCH_GUARD) || !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
+#error "Serial Monitor requires checked native custody and app-owned navigation"
+#endif
+#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP)
+#error "Serial Monitor product handoff, sleep and resident composition are not qualified"
+#endif
+#include "PortableSerialMonitor.h"
+#endif
 #include "RiscRuntimeHostControlV1.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 #if !defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
@@ -3270,6 +3279,11 @@ static void settings_native_finalize(void) {
 }
 #endif
 __attribute__((visibility("default"))) void app_module_fini(void) {
+#ifdef PORTABLE_SERIAL_MONITOR_APP
+  /* Serial custody precedes display drain, provider teardown and allocation
+   * release, even when app_main was interrupted or never completed. */
+  if(native_custody_retained || !portable_serial_monitor_close())return;
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
 #ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
   if(rt&&!home_automatic_close()) {if(!native_custody_retained)portable_adapter_retain();return;}
