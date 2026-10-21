@@ -1,0 +1,156 @@
+name: USB serial monitor qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/usb-serial-monitor.yml'
+      - 'Apps/serial_monitor*'
+      - 'lib/PortableApps/**'
+      - 'lib/NativeApps/**'
+      - 'scripts/test_serial_monitor.py'
+      - 'scripts/test_portable_serial_client.py'
+      - 'test/native_apps/*serial*'
+      - 'docs/SERIAL_MONITOR_QUALIFICATION.md'
+  push:
+    branches: ['qualify/usb-serial-monitor-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SYSTEM_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      RUNTIME_SHA: 6a3b3d46f5b2857eacc6e9863799dec1f466b036
+      PYTHONDONTWRITEBYTECODE: '1'
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SYSTEM_SHA }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: ${{ env.RUNTIME_SHA }}
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install raster dependency
+        run: python -m pip install Pillow==11.3.0
+      - name: Verify separate exact clean source trees
+        id: sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git -C System rev-parse HEAD)" = "$SYSTEM_SHA"
+          test "$(git -C Runtime rev-parse HEAD)" = "$RUNTIME_SHA"
+          test -z "$(git -C System status --porcelain)"
+          test -z "$(git -C Runtime status --porcelain)"
+          {
+            printf 'System %s\nRuntime %s\n' "$SYSTEM_SHA" "$RUNTIME_SHA"
+            printf 'System tree %s\n' "$(git -C System rev-parse HEAD^{tree})"
+            printf 'Runtime tree %s\n' "$(git -C Runtime rev-parse HEAD^{tree})"
+            printf 'Run %s attempt %s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            python --version
+            python -m pip show Pillow
+            cc --version
+            c++ --version
+            printf 'ASAN_OPTIONS=%s\nUBSAN_OPTIONS=%s\n' "$ASAN_OPTIONS" "$UBSAN_OPTIONS"
+          } > evidence/source-and-tools.txt
+      - name: Monitor normal
+        if: ${{ !cancelled() && steps.sources.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_serial_monitor.py --runtime Runtime --output evidence/monitor-normal 2>&1 | tee evidence/monitor-normal.console.log
+      - name: Monitor ASan UBSan
+        if: ${{ !cancelled() && steps.sources.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_serial_monitor.py --runtime Runtime --output evidence/monitor-sanitized --sanitize 2>&1 | tee evidence/monitor-sanitized.console.log
+      - name: Client production Runtime normal
+        if: ${{ !cancelled() && steps.sources.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_portable_serial_client.py --runtime Runtime --output "$GITHUB_WORKSPACE/evidence/client-normal" 2>&1 | tee evidence/client-normal.console.log
+      - name: Client production Runtime ASan UBSan
+        if: ${{ !cancelled() && steps.sources.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python System/scripts/test_portable_serial_client.py --runtime Runtime --output "$GITHUB_WORKSPACE/evidence/client-sanitized" --sanitize 2>&1 | tee evidence/client-sanitized.console.log
+      - name: Verify receipts and observed counts
+        if: ${{ !cancelled() && steps.sources.outcome == 'success' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, re
+          from pathlib import Path
+          root = Path('evidence')
+          summary = {'system': os.environ['SYSTEM_SHA'], 'runtime': os.environ['RUNTIME_SHA'], 'lanes': {}}
+          for mode in ('normal', 'sanitized'):
+              for suite in ('monitor', 'client'):
+                  directory = root / f'{suite}-{mode}'
+                  receipt = json.loads((directory / 'evidence.json').read_text())
+                  log = (directory / 'tests.log').read_bytes()
+                  assert receipt['result'] == 'PASS'
+                  assert receipt['sanitized'] == (mode == 'sanitized')
+                  assert not receipt['system_status'], receipt['system_status']
+                  assert receipt['log_sha256'] == hashlib.sha256(log).hexdigest()
+                  assert receipt['sanitizer_environment']['ASAN_OPTIONS'] == 'detect_leaks=0'
+                  assert receipt['sanitizer_environment']['UBSAN_OPTIONS'] == 'halt_on_error=1:print_stacktrace=1'
+                  if suite == 'monitor':
+                      assert receipt['system_parent'] == summary['system']
+                      assert receipt['runtime'] == summary['runtime']
+                      controller = sum(Path(command[0]).name in ('controller', 'invalid-catalog') for command in receipt['commands'])
+                      adapter = sum(Path(command[0]).name == 'adapter' for command in receipt['commands'])
+                      refusals = log.count(b'Rejected unqualified composition: ')
+                      assert (controller, adapter, refusals) == (25, 20, 9)
+                      assert receipt['native_adapter_dimensions'] == [[240, 240], [480, 800]]
+                      assert len(receipt['cases']) == controller
+                      assert len(receipt['negative_composition_controls']) == refusals
+                      for capture in receipt['captures']:
+                          image = directory / 'captures' / capture['name']
+                          assert hashlib.sha256(image.read_bytes()).hexdigest() == capture['sha256']
+                      assert hashlib.sha256((directory / 'contact-sheet.png').read_bytes()).hexdigest() == receipt['contact_sheet_sha256']
+                      observed = {'controller': controller, 'adapter': adapter, 'composition_refusals': refusals, 'captures': len(receipt['captures'])}
+                  else:
+                      assert receipt['system_source'] == summary['system']
+                      assert receipt['runtime_source'] == summary['runtime']
+                      cases = re.findall(rb'^portable serial ([^\n]+) PASS$', log, re.M)
+                      assert len(cases) == 22 and len(set(cases)) == 22
+                      assert sum(b'/eager:' in case for case in cases) == 11
+                      assert sum(b'/demand:' in case for case in cases) == 11
+                      observed = {'production_runtime_cases': len(cases)}
+                  summary['lanes'][f'{suite}-{mode}'] = observed
+          (root / 'qualification-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
+          print(json.dumps(summary, indent=2))
+          PY
+          test -z "$(git -C System status --porcelain)"
+          test -z "$(git -C Runtime status --porcelain)"
+      - name: Hash preserved evidence, including failed lanes
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          find evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: usb-serial-monitor-${{ env.SYSTEM_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 90
