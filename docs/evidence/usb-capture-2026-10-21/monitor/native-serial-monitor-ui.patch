@@ -1,0 +1,1208 @@
+From bcf02b442c68a68d7434601f719a98526cb5d897 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 21 Oct 2026 07:40:10 -0600
+Subject: [PATCH 1/2] Add isolated native serial monitor UI and custody
+ qualification
+
+---
+ Apps/serial_monitor.c                         | 268 ++++++++++++++++++
+ Apps/serial_monitor_font.inc                  |  99 +++++++
+ docs/NATIVE_SERIAL_MONITOR_UI.md              | 139 +++++++++
+ .../include/PortableNativeCustody.h           |   2 +-
+ .../include/PortableSerialMonitor.h           |  16 ++
+ lib/PortableApps/src/adapter.c                |  14 +
+ .../src/native_custody_adapter.inc            |   6 +-
+ scripts/generate_serial_monitor_font.py       |  20 ++
+ scripts/test_serial_monitor.py                |  69 +++++
+ .../native_apps/serial_monitor_adapter_test.c | 233 +++++++++++++++
+ test/native_apps/serial_monitor_test.c        | 163 +++++++++++
+ 11 files changed, 1025 insertions(+), 4 deletions(-)
+ create mode 100644 Apps/serial_monitor.c
+ create mode 100644 Apps/serial_monitor_font.inc
+ create mode 100644 docs/NATIVE_SERIAL_MONITOR_UI.md
+ create mode 100644 lib/PortableApps/include/PortableSerialMonitor.h
+ create mode 100644 scripts/generate_serial_monitor_font.py
+ create mode 100644 scripts/test_serial_monitor.py
+ create mode 100644 test/native_apps/serial_monitor_adapter_test.c
+ create mode 100644 test/native_apps/serial_monitor_test.c
+
+diff --git a/Apps/serial_monitor.c b/Apps/serial_monitor.c
+new file mode 100644
+index 0000000..46f9090
+--- /dev/null
++++ b/Apps/serial_monitor.c
+@@ -0,0 +1,268 @@
++/* Unmanifested, local-only native Serial Monitor candidate. No product binding,
++ * role switching, hardware discovery, raw serial fallback or launch route. */
++#include "PortableSerialMonitor.h"
++#include "PortableSerialClient.h"
++#include "PortableNativeCustody.h"
++#include "PortableAppLaunchGuard.h"
++#include "T5AppFrame.h"
++#include <stdio.h>
++#include <string.h>
++#if !defined(PORTABLE_SERIAL_MONITOR_APP) || !defined(PORTABLE_SERIAL_STREAMS)
++#error "Serial Monitor must be explicitly selected with the stream client"
++#endif
++#include "serial_monitor_font.inc"
++#define SM_LINES 64u
++#define SM_COLUMNS 80u
++#define SM_ROW 24
++#define SM_TOP 56
++#define SM_PERIOD 250u
++static const t5_app_api_v1 *sm_app;
++static const risc_runtime_api_v1 *sm_runtime;
++static portable_serial_client sm_client;
++static bool sm_started,sm_client_ready,sm_dirty,sm_input_armed,sm_urgent;
++static uint32_t sm_buttons,sm_last_frame;
++static unsigned sm_mode,sm_selected,sm_first,sm_width,sm_height,sm_columns;
++static unsigned sm_head,sm_count,sm_column,sm_scroll,sm_baud;
++static char sm_lines[SM_LINES][SM_COLUMNS+1u],sm_status[96];
++static const uint32_t sm_bauds[]={9600,19200,38400,57600,115200,230400,460800,921600};
++enum {SM_PROVIDERS,SM_ENDPOINTS,SM_TERMINAL,SM_UNAVAILABLE};
++static bool sm_safe(void) {
++    if(portable_adapter_retained())return false;
++    if(sm_client_ready && sm_client.cleanup_required){portable_adapter_retain_silent();return false;}
++    return true;
++}
++bool portable_serial_monitor_close(void) {
++    if(!sm_safe())return false;
++    if(!sm_client_ready)return true;
++    if(!portable_serial_close(&sm_client)) {
++        /* A stale/uncertain close is not retryable by the UI. */
++        portable_adapter_retain_silent();return false;
++    }
++    sm_client_ready=false;return true;
++}
++bool portable_app_before_launch(const char *destination) {
++    (void)destination;return portable_serial_monitor_close();
++}
++static void sm_message(const char *text) {
++    snprintf(sm_status,sizeof(sm_status),"%s",text);sm_dirty=true;
++}
++static const char *sm_error(int code) {
++    switch(code) {
++    case PSC_DENIED:return "Provider unavailable/denied";
++    case PSC_UNSUPPORTED:return "Stream API unavailable";
++    case PSC_DISCONNECTED:return "Disconnected - select again";
++    case PSC_BUSY:return "Busy - no automatic retry";
++    case PSC_EOF:return "End of stream - select again";
++    case PSC_IO:return "Inventory/stream unavailable";
++    case PSC_TIMEOUT:return "Timed out";
++    default:return "Serial operation failed";
++    }
++}
++static void sm_page(unsigned mode) {
++    sm_mode=mode;sm_selected=sm_first=0;sm_dirty=sm_urgent=true;sm_input_armed=false;
++}
++static unsigned sm_rows(void) {return (sm_height-100u)/SM_ROW;}
++static unsigned sm_items(void) {
++    if(sm_mode==SM_PROVIDERS)return portable_serial_monitor_instance_count;
++    if(sm_mode==SM_ENDPOINTS)return 1u+(unsigned)sm_client.inventory_count;
++    return 0;
++}
++static unsigned sm_visible_lines(void) {return (sm_height-98u)/14u;}
++static unsigned sm_max_scroll(void) {
++    unsigned visible=sm_visible_lines();return sm_count>visible?sm_count-visible:0;
++}
++static void sm_clear_terminal(void) {
++    memset(sm_lines,0,sizeof(sm_lines));sm_head=sm_column=sm_scroll=0;sm_count=1;sm_dirty=true;
++}
++static void sm_newline(void) {
++    sm_head=(sm_head+1u)%SM_LINES;sm_lines[sm_head][0]=0;sm_column=0;
++    if(sm_count<SM_LINES)++sm_count;
++    if(sm_scroll && sm_scroll<sm_max_scroll())++sm_scroll;
++}
++static void sm_character(char c) {
++    if(sm_column>=sm_columns)sm_newline();
++    char *line=sm_lines[sm_head];size_t length=strlen(line);
++    line[sm_column++]=c;if(sm_column>length)line[sm_column]=0;
++}
++static void sm_receive(const unsigned char *bytes,size_t n) {
++    static const char hex[]="0123456789ABCDEF";
++    for(size_t i=0;i<n;i++) {
++        unsigned c=bytes[i];
++        if(c=='\n')sm_newline();
++        else if(c=='\r')sm_column=0;
++        else if(c=='\b') {if(sm_column){--sm_column;sm_lines[sm_head][sm_column]=0;}}
++        else if(c=='\t') {unsigned spaces=4u-sm_column%4u;while(spaces--)sm_character(' ');}
++        else if(c>=32 && c<127)sm_character((char)c);
++        else {sm_character('[');sm_character(hex[c>>4]);sm_character(hex[c&15]);sm_character(']');}
++    }
++    sm_dirty=true;
++}
++static void sm_text(int x,int y,const char *text) {
++    /* Own ASCII renderer preserves case/punctuation unlike the compact adapter
++     * labels. Only bounded framebuffer primitives, never terminal escapes. */
++    for(unsigned i=0;i<SM_COLUMNS && text[i] && x+8<=(int)sm_width;i++,x+=8) {
++        unsigned c=(unsigned char)text[i];if(c<32 || c>126)c='?';
++        for(unsigned row=0;row<12 && y+(int)row<(int)sm_height;row++)
++            for(unsigned col=0;col<8;col++)if(sm_font[c-32][row]&(1u<<(7-col))) {
++                if(!sm_safe())return;
++                sm_app->fill_rect(x+(int)col,y+(int)row,1,1,true);
++            }
++    }
++}
++static const char *sm_transport(unsigned kind) {
++    static const char *const names[]={"Internal","UART","USB","BLE","I2C","SPI","GPIO","LoRa","IP"};
++    return kind<sizeof(names)/sizeof(*names)?names[kind]:"Unknown";
++}
++static void sm_render(void) {
++    if(!sm_safe())return;
++    if(!t5_app_frame_ready(sm_app) || !sm_safe())return;
++    sm_app->clear();if(!sm_safe())return;
++    sm_text(8,8,"Back");sm_text(64,8,"Serial Monitor");
++    if(sm_mode==SM_ENDPOINTS || sm_mode==SM_TERMINAL)sm_text((int)sm_width-64,28,sm_mode==SM_TERMINAL?"Clear":"Refresh");
++    char text[96];
++    if(sm_mode==SM_TERMINAL) {
++        snprintf(text,sizeof(text),"RX %llu bytes",(unsigned long long)sm_client.rx_bytes);
++        sm_text(8,28,text);
++        unsigned visible=sm_visible_lines(),end=sm_count-sm_scroll;
++        unsigned start=end>visible?end-visible:0;
++        unsigned oldest=(sm_head+SM_LINES+1u-sm_count)%SM_LINES;
++        for(unsigned i=start;i<end;i++)sm_text(8,SM_TOP+(int)(i-start)*14,sm_lines[(oldest+i)%SM_LINES]);
++    } else if(sm_mode==SM_PROVIDERS || sm_mode==SM_ENDPOINTS) {
++        unsigned items=sm_items(),visible=sm_rows();sm_first=sm_selected/visible*visible;
++        sm_text(8,28,sm_mode==SM_PROVIDERS?"Choose provider instance":"Choose endpoint");
++        for(unsigned i=sm_first;i<items && i<sm_first+visible;i++) {
++            int y=SM_TOP+(int)(i-sm_first)*SM_ROW;
++            if(sm_mode==SM_PROVIDERS)
++                snprintf(text,sizeof(text),"%llu %s",(unsigned long long)portable_serial_monitor_instances[i].instance,portable_serial_monitor_instances[i].label);
++            else if(!i)snprintf(text,sizeof(text),"Baud %lu 8N1 - change",(unsigned long)sm_bauds[sm_baud]);
++            else snprintf(text,sizeof(text),"Endpoint %u - %s",i,sm_transport(sm_client.inventory[i-1].transport));
++            sm_text(20,y,text);
++            if(i==sm_selected){if(!sm_safe())return;sm_app->fill_rect(8,y+2,4,8,true);}
++        }
++    }
++    sm_text(8,(int)sm_height-38,sm_status);
++    sm_text(8,(int)sm_height-18,sm_mode==SM_TERMINAL?"Older":"Prev");
++    sm_text((int)sm_width/3+8,(int)sm_height-18,sm_mode==SM_TERMINAL?"Live":"Select");
++    sm_text((int)sm_width*2/3+8,(int)sm_height-18,sm_mode==SM_TERMINAL?"Newer":"Next");
++    if(!sm_safe())return;
++    sm_app->present(false);
++    if(!sm_safe())return;
++    sm_dirty=sm_urgent=false;
++}
++static bool sm_refresh(void) {
++    bool ok=portable_serial_refresh(&sm_client);if(!sm_safe())return false;
++    /* A failed refresh keeps the client's prior snapshot for custody, but the
++     * UI refuses endpoint activation until a complete fresh snapshot succeeds. */
++    if(!ok){sm_message(sm_error(sm_client.result));return false;}
++    sm_selected=sm_first=0;sm_message(sm_client.inventory_count?"Select an endpoint":"No endpoints - Refresh");return true;
++}
++static bool sm_snapshot_valid;
++static void sm_activate(unsigned index) {
++    if(sm_mode==SM_PROVIDERS) {
++        if(index>=portable_serial_monitor_instance_count || !portable_serial_monitor_close())return;
++        if(!portable_serial_init_instance(&sm_client,sm_runtime,portable_serial_monitor_instances[index].instance)) {
++            sm_message("Stream API unavailable");return;
++        }
++        sm_client_ready=true;
++        (void)portable_serial_set_control_budget(&sm_client,20);
++        sm_snapshot_valid=sm_refresh();if(!sm_safe())return;sm_page(SM_ENDPOINTS);
++    } else if(sm_mode==SM_ENDPOINTS) {
++        if(!index){sm_baud=(sm_baud+1u)%(sizeof(sm_bauds)/sizeof(*sm_bauds));sm_dirty=true;return;}
++        if(!sm_snapshot_valid || index>sm_client.inventory_count)return;
++        t5_serial_config_t config={sm_bauds[sm_baud],8,T5_SERIAL_PARITY_NONE,1,T5_SERIAL_FLOW_NONE};
++        if(!portable_serial_open(&sm_client,index-1u,&config)) {
++            if(!sm_safe())return;
++            sm_snapshot_valid=false;sm_message(sm_error(sm_client.result));return;
++        }
++        sm_clear_terminal();sm_page(SM_TERMINAL);sm_message("Receiving");
++    }
++}
++static bool sm_back(void) {
++    if(sm_mode==SM_PROVIDERS || sm_mode==SM_UNAVAILABLE)return true;
++    if(!portable_serial_monitor_close())return true;
++    sm_page(SM_PROVIDERS);sm_message("Choose provider instance");return false;
++}
++static bool sm_event(const t5_app_input_t *in) {
++    if(in->exit_requested)return true;
++    uint32_t pressed=in->buttons&~sm_buttons;sm_buttons=in->buttons;
++    if(!sm_input_armed){if(!in->buttons && !in->tapped)sm_input_armed=true;return false;}
++    if(pressed || in->tapped)sm_urgent=true;
++    if(pressed&T5_APP_BUTTON_BACK)return sm_back();
++    if(in->tapped) {
++        sm_input_armed=false;
++        if(in->touch_x<0 || in->touch_y<0 || in->touch_x>=(int)sm_width || in->touch_y>=(int)sm_height)return false;
++        if(in->touch_y>=(int)sm_height-24) {
++            unsigned zone=(unsigned)in->touch_x*3u/sm_width;
++            if(sm_mode==SM_TERMINAL) {
++                if(zone==0 && sm_scroll<sm_max_scroll())++sm_scroll;
++                else if(zone==1)sm_scroll=0;
++                else if(zone==2 && sm_scroll)--sm_scroll;
++            } else if(sm_items()) {
++                unsigned n=sm_items();
++                if(zone==0)sm_selected=sm_selected?sm_selected-1u:n-1u;
++                else if(zone==1)sm_activate(sm_selected);
++                else sm_selected=(sm_selected+1u)%n;
++            }
++            sm_dirty=true;return false;
++        }
++        if(in->touch_y<24 && in->touch_x<60)return sm_back();
++        if(in->touch_y>=24 && in->touch_y<48 && in->touch_x>=(int)sm_width-72) {
++            if(sm_mode==SM_TERMINAL)sm_clear_terminal();
++            else if(sm_mode==SM_ENDPOINTS)sm_snapshot_valid=sm_refresh();
++            return false;
++        }
++        unsigned row=(unsigned)(in->touch_y-SM_TOP)/SM_ROW;
++        if(in->touch_y>=SM_TOP && row<sm_rows() && sm_first+row<sm_items()) {
++            sm_selected=sm_first+row;sm_activate(sm_selected);
++        }
++        return false;
++    }
++    if(sm_mode==SM_TERMINAL) {
++        if((pressed&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT)) && sm_scroll<sm_max_scroll())++sm_scroll;
++        if((pressed&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT)) && sm_scroll)--sm_scroll;
++        if(pressed)sm_dirty=true;
++    } else {
++        unsigned n=sm_items();if(!n)return false;
++        if(pressed&(T5_APP_BUTTON_UP|T5_APP_BUTTON_LEFT)){sm_selected=sm_selected?sm_selected-1:n-1;sm_dirty=true;}
++        if(pressed&(T5_APP_BUTTON_DOWN|T5_APP_BUTTON_RIGHT)){sm_selected=(sm_selected+1)%n;sm_dirty=true;}
++        if(pressed&T5_APP_BUTTON_CONFIRM){sm_activate(sm_selected);sm_input_armed=false;}
++    }
++    return false;
++}
++void app_main(void) {
++    if(sm_started || !sm_safe())return;
++    sm_started=true;
++    sm_runtime=risc_runtime_get_api(1);
++    if(!sm_runtime || sm_runtime->struct_size<RISC_RUNTIME_STREAM_CLIENT_V1_SIZE || !sm_runtime->retain_invocation) {sm_started=false;return;}
++    sm_app=t5_app_get_api(1);
++    if(!sm_app || sm_app->struct_size<offsetof(t5_app_api_v1,set_back_exits_app)+sizeof(sm_app->set_back_exits_app) ||
++       !sm_app->screen_width || !sm_app->screen_height || !sm_app->clear || !sm_app->fill_rect || !sm_app->present ||
++       !sm_app->poll || !sm_app->millis || !sm_app->set_back_exits_app) {sm_started=false;return;}
++    int width=sm_app->screen_width();if(!sm_safe())return;
++    int height=sm_app->screen_height();if(!sm_safe())return;
++    if(width<160 || height<160 || width>1024 || height>1024){sm_started=false;return;}
++    sm_width=(unsigned)width;sm_height=(unsigned)height;sm_columns=(sm_width-16u)/8u;if(sm_columns>SM_COLUMNS)sm_columns=SM_COLUMNS;
++    sm_app->set_back_exits_app(false);if(!sm_safe())return;
++    bool valid=portable_serial_monitor_instance_count>0 && portable_serial_monitor_instance_count<=PORTABLE_SERIAL_MONITOR_MAX_INSTANCES;
++    for(unsigned i=0;valid && i<portable_serial_monitor_instance_count;i++) {
++        if(!portable_serial_monitor_instances[i].instance || !portable_serial_monitor_instances[i].label)valid=false;
++        for(unsigned j=0;j<i;j++)if(portable_serial_monitor_instances[j].instance==portable_serial_monitor_instances[i].instance)valid=false;
++    }
++    sm_baud=4;sm_buttons=0;sm_page(valid?SM_PROVIDERS:SM_UNAVAILABLE);sm_message(valid?"No endpoint is opened":"Instance catalog required");
++    sm_last_frame=sm_app->millis();if(!sm_safe())return;sm_render();
++    while(sm_safe()) {
++        t5_app_input_t in={0};bool ok=sm_app->poll(&in,20);if(!sm_safe())return;
++        if(!ok || sm_event(&in))break;
++        if(!sm_safe())return;
++        uint32_t now=sm_app->millis();if(!sm_safe())return;
++        if(sm_mode==SM_TERMINAL && sm_client.connected) {
++            unsigned char bytes[PSC_CHUNK];size_t n=portable_serial_tick(&sm_client,bytes,sizeof(bytes),now);
++            if(!sm_safe())return;
++            if(n)sm_receive(bytes,n);
++            if(sm_client.result!=PSC_OK)sm_message(sm_error(sm_client.result));
++        }
++        if(sm_dirty && (sm_urgent || (uint32_t)(now-sm_last_frame)>=SM_PERIOD)) {sm_render();if(!sm_safe())return;sm_last_frame=now;}
++    }
++    if(!portable_serial_monitor_close())return;
++    sm_started=false;
++}
+diff --git a/Apps/serial_monitor_font.inc b/Apps/serial_monitor_font.inc
+new file mode 100644
+index 0000000..1fbf635
+--- /dev/null
++++ b/Apps/serial_monitor_font.inc
+@@ -0,0 +1,99 @@
++/* Generated by scripts/generate_serial_monitor_font.py from Rajdhani-600.ttf.
++ * SIL OFL 1.1: lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt. */
++static const unsigned char sm_font[95][12] = {
++ {0,0,0,0,0,0,0,0,0,0,0,0}, /* 32 */
++ {0,0,8,8,8,8,8,8,0,0,0,0}, /* 33 */
++ {0,0,40,8,0,0,0,0,0,0,0,0}, /* 34 */
++ {0,0,36,124,40,40,252,80,0,0,0,0}, /* 35 */
++ {0,16,56,96,56,12,108,56,16,0,0,0}, /* 36 */
++ {0,0,104,168,112,30,42,46,0,0,0,0}, /* 37 */
++ {0,0,56,44,48,62,104,60,0,0,0,0}, /* 38 */
++ {0,0,16,0,0,0,0,0,0,0,0,0}, /* 39 */
++ {0,0,16,48,32,32,32,32,48,16,0,0}, /* 40 */
++ {0,0,48,16,24,24,24,24,16,48,0,0}, /* 41 */
++ {0,0,0,24,24,0,0,0,0,0,0,0}, /* 42 */
++ {0,0,0,16,60,16,16,0,0,0,0,0}, /* 43 */
++ {0,0,0,0,0,0,24,24,16,0,0,0}, /* 44 */
++ {0,0,0,0,56,0,0,0,0,0,0,0}, /* 45 */
++ {0,0,0,0,0,0,24,24,0,0,0,0}, /* 46 */
++ {0,0,12,8,8,16,16,48,0,0,0,0}, /* 47 */
++ {0,0,56,100,100,100,100,56,0,0,0,0}, /* 48 */
++ {0,0,24,56,24,24,24,24,0,0,0,0}, /* 49 */
++ {0,0,56,104,8,16,32,120,0,0,0,0}, /* 50 */
++ {0,0,56,108,24,12,108,56,0,0,0,0}, /* 51 */
++ {0,0,24,24,40,40,124,8,0,0,0,0}, /* 52 */
++ {0,0,120,96,120,12,108,56,0,0,0,0}, /* 53 */
++ {0,0,56,96,120,108,108,56,0,0,0,0}, /* 54 */
++ {0,0,60,12,8,8,16,16,0,0,0,0}, /* 55 */
++ {0,0,60,100,56,36,100,56,0,0,0,0}, /* 56 */
++ {0,0,56,108,108,60,12,56,0,0,0,0}, /* 57 */
++ {0,0,0,24,24,0,24,24,0,0,0,0}, /* 58 */
++ {0,0,0,24,24,0,0,24,16,0,0,0}, /* 59 */
++ {0,0,0,12,48,56,0,0,0,0,0,0}, /* 60 */
++ {0,0,0,60,0,60,0,0,0,0,0,0}, /* 61 */
++ {0,0,0,48,12,56,0,0,0,0,0,0}, /* 62 */
++ {0,0,56,104,24,16,16,16,0,0,0,0}, /* 63 */
++ {0,0,60,66,58,42,42,126,56,0,0,0}, /* 64 */
++ {0,0,24,56,40,44,60,100,0,0,0,0}, /* 65 */
++ {0,0,60,36,60,36,36,60,0,0,0,0}, /* 66 */
++ {0,0,60,36,96,96,36,60,0,0,0,0}, /* 67 */
++ {0,0,60,36,36,36,36,60,0,0,0,0}, /* 68 */
++ {0,0,56,32,56,32,32,56,0,0,0,0}, /* 69 */
++ {0,0,56,32,56,32,32,32,0,0,0,0}, /* 70 */
++ {0,0,60,36,96,108,36,60,0,0,0,0}, /* 71 */
++ {0,0,36,36,60,36,36,36,0,0,0,0}, /* 72 */
++ {0,0,16,16,16,16,16,16,0,0,0,0}, /* 73 */
++ {0,0,12,12,12,12,76,56,0,0,0,0}, /* 74 */
++ {0,0,36,40,48,56,40,36,0,0,0,0}, /* 75 */
++ {0,0,32,32,32,32,32,56,0,0,0,0}, /* 76 */
++ {0,0,70,110,110,94,86,70,0,0,0,0}, /* 77 */
++ {0,0,36,52,52,44,44,36,0,0,0,0}, /* 78 */
++ {0,0,60,36,100,100,36,60,0,0,0,0}, /* 79 */
++ {0,0,60,36,36,56,32,32,0,0,0,0}, /* 80 */
++ {0,0,60,36,36,36,36,60,8,0,0,0}, /* 81 */
++ {0,0,56,36,36,56,40,36,0,0,0,0}, /* 82 */
++ {0,0,60,36,48,28,36,60,0,0,0,0}, /* 83 */
++ {0,0,120,16,16,16,16,16,0,0,0,0}, /* 84 */
++ {0,0,36,36,36,36,36,60,0,0,0,0}, /* 85 */
++ {0,0,68,108,40,40,56,16,0,0,0,0}, /* 86 */
++ {0,0,153,219,90,126,102,102,0,0,0,0}, /* 87 */
++ {0,0,100,40,24,56,40,100,0,0,0,0}, /* 88 */
++ {0,0,100,40,56,16,16,16,0,0,0,0}, /* 89 */
++ {0,0,60,8,24,48,32,124,0,0,0,0}, /* 90 */
++ {0,0,16,16,16,16,16,16,16,16,0,0}, /* 91 */
++ {0,0,48,16,16,8,8,12,0,0,0,0}, /* 92 */
++ {0,0,16,16,16,16,16,16,16,16,0,0}, /* 93 */
++ {0,0,16,40,40,0,0,0,0,0,0,0}, /* 94 */
++ {0,0,0,0,0,0,0,0,60,0,0,0}, /* 95 */
++ {0,16,0,0,0,0,0,0,0,0,0,0}, /* 96 */
++ {0,0,0,60,108,108,108,60,0,0,0,0}, /* 97 */
++ {0,32,96,120,108,100,108,56,0,0,0,0}, /* 98 */
++ {0,0,0,28,48,48,48,28,0,0,0,0}, /* 99 */
++ {0,12,12,60,108,108,108,60,0,0,0,0}, /* 100 */
++ {0,0,0,56,108,124,96,56,0,0,0,0}, /* 101 */
++ {0,24,16,56,16,16,16,16,0,0,0,0}, /* 102 */
++ {0,0,0,60,108,108,60,12,56,0,0,0}, /* 103 */
++ {0,32,96,120,108,108,108,36,0,0,0,0}, /* 104 */
++ {0,8,0,8,8,8,8,8,0,0,0,0}, /* 105 */
++ {0,8,0,8,8,8,8,24,48,0,0,0}, /* 106 */
++ {0,32,96,104,120,112,120,40,0,0,0,0}, /* 107 */
++ {0,8,8,8,8,8,8,8,0,0,0,0}, /* 108 */
++ {0,0,0,126,218,218,218,90,0,0,0,0}, /* 109 */
++ {0,0,0,56,108,108,108,36,0,0,0,0}, /* 110 */
++ {0,0,0,56,108,108,108,56,0,0,0,0}, /* 111 */
++ {0,0,0,56,108,100,108,120,32,0,0,0}, /* 112 */
++ {0,0,0,60,108,108,108,60,12,0,0,0}, /* 113 */
++ {0,0,0,24,48,48,48,16,0,0,0,0}, /* 114 */
++ {0,0,0,28,48,24,4,60,0,0,0,0}, /* 115 */
++ {0,0,16,56,16,16,16,24,0,0,0,0}, /* 116 */
++ {0,0,0,108,108,108,108,60,0,0,0,0}, /* 117 */
++ {0,0,0,72,104,40,48,48,0,0,0,0}, /* 118 */
++ {0,0,0,150,244,108,108,108,0,0,0,0}, /* 119 */
++ {0,0,0,104,56,48,56,104,0,0,0,0}, /* 120 */
++ {0,0,0,72,40,40,56,16,48,0,0,0}, /* 121 */
++ {0,0,0,120,24,48,32,120,0,0,0,0}, /* 122 */
++ {0,0,24,16,16,48,16,16,16,24,0,0}, /* 123 */
++ {0,0,8,8,8,8,8,8,0,0,0,0}, /* 124 */
++ {0,0,48,16,16,24,16,16,16,48,0,0}, /* 125 */
++ {0,0,0,0,60,0,0,0,0,0,0,0}, /* 126 */
++};
+diff --git a/docs/NATIVE_SERIAL_MONITOR_UI.md b/docs/NATIVE_SERIAL_MONITOR_UI.md
+new file mode 100644
+index 0000000..9f9749c
+--- /dev/null
++++ b/docs/NATIVE_SERIAL_MONITOR_UI.md
+@@ -0,0 +1,139 @@
++# Native Serial Monitor UI: isolated local candidate
++
++This is a **receive-only, unmanifested source candidate**, based on System
++`f9d55dbeb941ba40fb965f53172ce3e1b85af376`. It is not a delivered System utility,
++product selection or release. The System repository's existing scope places
++MCU/debug utilities outside the foundational application inventory. This local
++branch keeps the controller beside its qualified client for qualification only;
++its eventual utility repository and product launch composition are not chosen.
++
++## Implemented behavior
++
++- Explicit nonzero provider-instance choices, supplied by a bounded linked
++  composition catalog (one to eight unique entries). No default instance,
++  registry-order fallback, automatic selection or device scanning.
++- Explicit endpoint selection from a complete provider snapshot. The displayed
++  ordinal and provider-reported transport are the only available descriptive
++  metadata. Opening uses the exact selected device and generation, without
++  refresh/rebinding. A failed refresh invalidates UI activation, even though the
++  client's prior snapshot remains retained for custody.
++- Baud selection from 9600 through 921600, fixed 8N1/no flow control. Default UI
++  selection is 115200, not an automatic connection. No TX, line editor, DTR/RTS
++  control, flashing, role switching or serial protocol inference is implemented.
++- Receive-only terminal with 64 bounded lines of up to 80 display columns,
++  wrapping to the current geometry. Case and ASCII punctuation are preserved.
++  CR returns the cursor; LF advances the line; Backspace erases the preceding
++  character; Tab expands to a four-column boundary. Other control and non-ASCII
++  bytes display as `[HH]`. ANSI escapes and UTF-8 are not interpreted. No data is
++  written to storage or exported.
++- Touch rows and Prev/Select/Next footer work without button-navigation
++  composition. Older/Live/Newer navigates terminal history. Button events are
++  also supported when a separately admitted input provider supplies them.
++  Neutral input is required between actions, preventing held/repeated activation
++  across page changes. Clear affects only display history, not RX byte counts.
++- Disconnect/error is visible without reopening. Back closes before returning to
++  instance selection. In this isolated profile, physical Home follows in-app
++  Back rather than an unconfigured product route. Host exit and input failure
++  close and return from the invocation; the controller never queues another
++  application. Successful close permits a fresh
++  explicit open. No provider or UI work follows retained custody.
++
++The actual UI uses an app-local fixed-cell ASCII raster, not the adapter's compact
++uppercase-only label font. `scripts/generate_serial_monitor_font.py` deterministically
++rasterizes the already-vendored Rajdhani-600 font to 95 × 12 bytes. Its input SHA-256
++is pinned in the script; the original copyright and SIL OFL 1.1 are in
++`lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt`. The source font is
++`lib/PortableApps/quick_fonts/Rajdhani-600.ttf`. This bitmap is a derivative font;
++retain the license and attribution if it is later packaged.
++
++## Native composition contract
++
++Required compile defines:
++
++```
++PORTABLE_SERIAL_MONITOR_APP
++PORTABLE_SERIAL_STREAMS
++PORTABLE_NATIVE_CUSTODY_FENCE
++PORTABLE_CHECKED_STORAGE_RUNTIME
++PORTABLE_APP_LAUNCH_GUARD
++PORTABLE_APP_OWNS_TOUCH_CHROME
++```
++
++The app links `Apps/serial_monitor.c`, `PortableSerialClient.c`, the existing
++native `adapter.c`, and an explicitly supplied
++`portable_serial_monitor_instances`/`portable_serial_monitor_instance_count`
++catalog. The fixture's instances 41/42 are fake inputs, not X4 identities or
++product grants. Do not ship them. Use the exact canonical Runtime headers at
++`6a3b3d46f5b2857eacc6e9863799dec1f466b036`, including `RiscRealtimeV1.h` needed by
++the checked adapter. Do not replace the repository's bundled compatibility SDK.
++
++The adapter uses its existing display/touch/battery capabilities. The monitor
++uses the Runtime's stream-only client and exact `serial.port` instance grant.
++Every call stays on the invocation's owner task. Each UI iteration uses one
++bounded client tick, at most `PSC_CHUNK` bytes, and a 20 ms app-allocated stream
++control budget. This is a local cooperative budget, **not** a measured physical
++callback deadline or a discovery schedule. Stream-driven redraws are paced to
++250 ms; navigation redraws immediately when the native frame is ready. RX may
++continue while a previous display frame is pending, without writing that frame.
++
++The selected profile deliberately rejects resident, Quick, sleep, Home-route and
++return-route defines. No profile or manifest is provided. Full product composition
++must establish its own authorized instances, appropriate native launch/return,
++safely scheduled discovery, and target callback timing. Do not bypass these
++compile checks to claim admission.
++
++## Cleanup and retained custody
++
++`portable_serial_monitor_close()` runs before any native adapter finalization,
++including display draining, capability release and allocation cleanup. The
++existing launch-guard callback also requires this checked close before a launch
++can be queued. Unknown serial closure calls the shared silent invocation fence,
++then returns immediately. No diagnostic, render, poll, retry, release or free is
++allowed after that boundary. Repeated close/main/fini/launch attempts remain
++inert while retained. A special "closing" screen is intentionally absent: close
++is synchronous, and displaying anything after an uncertain close would violate
++custody. Physical teardown is not inferred from a requested close.
++
++## Reproduce local qualification
++
++```
++python scripts/test_serial_monitor.py --runtime /path/to/pinned/RiscRTE --output /tmp/monitor-normal
++python scripts/test_serial_monitor.py --runtime /path/to/pinned/RiscRTE --output /tmp/monitor-sanitized --sanitize
++```
++
++The runner stages verified canonical headers without mutating the Runtime,
++compiles with strict warnings, and runs the actual UI and PortableSerialClient
++against deterministic providers. Cases cover unselected/invalid instances,
++240-pixel touch pagination through all eight instances/endpoints, exact snapshot
++binding, failed refresh, refusal, held/repeated inputs, clean reopen, instance
++switch, disconnection, poll interruption, malformed/retained operations and
++invocation loss. All 256 byte values, ring bounds, wrapping and printable glyphs
++are checked. The unchanged client unit suite is rerun.
++
++A separate fixture links the actual native adapter/controller/client at 240×240
++and 480×800 RGB565, with frame bounds guards and captured pixels. It checks
++selection, receive, clean refusal, RX during a 600 ms asynchronous immutable
++frame, retained open/tick/close, interrupted active-session finalization and
++launch cleanup. Every Runtime/provider call after a terminal result aborts the
++fixture. Retained frames remain byte-identical. Nine unqualified compile
++compositions must fail. The unchanged legacy, checked-native and checked-native
++terminal adapter profiles preprocess identically to the parent source when the
++monitor is not selected. This is source equivalence, not a release-byte rebuild. Test-only `setjmp` interruption is not production code.
++
++The output contains exact source/header hashes, commands, logs, native frame
++PNGs and a contact sheet. ASan/UBSan run with LeakSanitizer disabled because this
++execution environment uses ptrace; no leak qualification is claimed.
++
++## Remaining gates
++
++- Full native controller/IDF/Xtensa/ELF target build and callback timing.
++- Safe out-of-callback discovery and role integration.
++- Product utility placement, instance grants, launch integration and manifests.
++- Authoritative X4 VBUS/role-root evidence and physical acceptance.
++- Any publication or release authorization already on hold.
++
++No driver/controller source, PortableSerialClient implementation, accepted
++builder/profile/manifest, SDK baseline, product pin, firmware byte, remote branch
++or release is changed. Drivers remain at
++`77980f897e49829a8986df323024132c759671f2`. No hardware, USB, radio, flash,
++installation, personal Cloudflare or Mycelium action is part of this work.
+diff --git a/lib/PortableApps/include/PortableNativeCustody.h b/lib/PortableApps/include/PortableNativeCustody.h
+index 9809db3..872af40 100644
+--- a/lib/PortableApps/include/PortableNativeCustody.h
++++ b/lib/PortableApps/include/PortableNativeCustody.h
+@@ -7,7 +7,7 @@ void portable_adapter_retain(void);
+ #include <stdbool.h>
+ bool portable_adapter_retained(void);
+ #endif
+-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
++#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
+ #include <stdbool.h>
+ /* Terminal service results permit no stage diagnostic before the fence. */
+ void portable_adapter_retain_silent(void);
+diff --git a/lib/PortableApps/include/PortableSerialMonitor.h b/lib/PortableApps/include/PortableSerialMonitor.h
+new file mode 100644
+index 0000000..9c1fb76
+--- /dev/null
++++ b/lib/PortableApps/include/PortableSerialMonitor.h
+@@ -0,0 +1,16 @@
++#pragma once
++#include <stdbool.h>
++#include <stdint.h>
++/* Local, unmanifested development controller. The composition supplies only
++ * explicitly authorized, nonzero provider instances. This is not discovery,
++ * a device identity or product admission policy. No default instance is chosen. */
++#define PORTABLE_SERIAL_MONITOR_MAX_INSTANCES 8u
++typedef struct {
++    uint64_t instance;
++    const char *label;
++} portable_serial_monitor_instance;
++extern const portable_serial_monitor_instance portable_serial_monitor_instances[];
++extern const unsigned portable_serial_monitor_instance_count;
++/* Owner-task only. Used before launch and before all adapter finalization.
++ * False is terminal retained custody, never a request to retry. */
++bool portable_serial_monitor_close(void);
+diff --git a/lib/PortableApps/src/adapter.c b/lib/PortableApps/src/adapter.c
+index ae8c851..ec937ac 100644
+--- a/lib/PortableApps/src/adapter.c
++++ b/lib/PortableApps/src/adapter.c
+@@ -1,3 +1,12 @@
++#ifdef PORTABLE_SERIAL_MONITOR_APP
++#if !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || !defined(PORTABLE_CHECKED_STORAGE_RUNTIME) || !defined(PORTABLE_APP_LAUNCH_GUARD) || !defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
++#error "Serial Monitor requires checked native custody and app-owned navigation"
++#endif
++#if defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_APP_SLEEP_LOCAL) || defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP)
++#error "Serial Monitor product handoff, sleep and resident composition are not qualified"
++#endif
++#include "PortableSerialMonitor.h"
++#endif
+ #include "RiscRuntimeHostControlV1.h"
+ #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
+ #if !defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+@@ -3270,6 +3279,11 @@ static void settings_native_finalize(void) {
+ }
+ #endif
+ __attribute__((visibility("default"))) void app_module_fini(void) {
++#ifdef PORTABLE_SERIAL_MONITOR_APP
++  /* Serial custody precedes display drain, provider teardown and allocation
++   * release, even when app_main was interrupted or never completed. */
++  if(native_custody_retained || !portable_serial_monitor_close())return;
++#endif
+ #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+ #ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
+   if(rt&&!home_automatic_close()) {if(!native_custody_retained)portable_adapter_retain();return;}
+diff --git a/lib/PortableApps/src/native_custody_adapter.inc b/lib/PortableApps/src/native_custody_adapter.inc
+index 0f12f8a..ebf7de6 100644
+--- a/lib/PortableApps/src/native_custody_adapter.inc
++++ b/lib/PortableApps/src/native_custody_adapter.inc
+@@ -16,7 +16,7 @@ void portable_adapter_touch_issue(const char *operation,int status,int terminal)
+ }
+ #endif
+ /* One Runtime fence shared by all opt-in X4 paper controllers. */
+-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
++#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
+ static void portable_adapter_retain_inner(bool log) {
+ #else
+ void portable_adapter_retain(void) {
+@@ -27,7 +27,7 @@ void portable_adapter_retain(void) {
+      * providers. The retention barrier itself remains the terminal action. */
+     if(!file_setup_io_allowed())log=false;
+ #endif
+-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
++#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
+     if(log)
+ #endif
+     portable_stage_log(native_custody_runtime,"app-retain","reason=uncertain-capability-custody");
+@@ -41,7 +41,7 @@ void portable_adapter_retain(void) {
+   native_sleep_retained=true;
+ #endif
+ }
+-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
++#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
+ void portable_adapter_retain(void) {
+ #if defined(PORTABLE_DISPLAY_SETTLED) && defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
+  portable_adapter_retain_inner(!resident_sleep_present);
+diff --git a/scripts/generate_serial_monitor_font.py b/scripts/generate_serial_monitor_font.py
+new file mode 100644
+index 0000000..f0021ad
+--- /dev/null
++++ b/scripts/generate_serial_monitor_font.py
+@@ -0,0 +1,20 @@
++#!/usr/bin/env python3
++"""Generate a fixed-cell ASCII terminal font from the existing OFL font input."""
++from pathlib import Path
++import hashlib
++from PIL import Image, ImageDraw, ImageFont
++ROOT = Path(__file__).resolve().parents[1]
++source = ROOT / 'lib/PortableApps/quick_fonts/Rajdhani-600.ttf'
++assert hashlib.sha256(source.read_bytes()).hexdigest() == 'bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144'
++font = ImageFont.truetype(str(source), 10)
++lines = ['/* Generated by scripts/generate_serial_monitor_font.py from Rajdhani-600.ttf.',
++         ' * SIL OFL 1.1: lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt. */',
++         'static const unsigned char sm_font[95][12] = {']
++for code in range(32,127):
++    im=Image.new('L',(8,12)); draw=ImageDraw.Draw(im)
++    box=font.getbbox(chr(code)); x=(8-(box[2]-box[0]))//2-box[0]
++    draw.text((x,-2),chr(code),font=font,fill=255)
++    rows=[sum((1<<(7-x)) for x in range(8) if im.getpixel((x,y))>=96) for y in range(12)]
++    lines.append(' {'+','.join(str(n) for n in rows)+'}, /* '+str(code)+' */')
++lines.append('};')
++(ROOT/'Apps/serial_monitor_font.inc').write_text('\n'.join(lines)+'\n')
+diff --git a/scripts/test_serial_monitor.py b/scripts/test_serial_monitor.py
+new file mode 100644
+index 0000000..00b3d6f
+--- /dev/null
++++ b/scripts/test_serial_monitor.py
+@@ -0,0 +1,69 @@
++#!/usr/bin/env python3
++"""Source-only native Serial Monitor UI qualification; no hardware or publication."""
++import argparse, hashlib, json, os, shutil, subprocess
++from pathlib import Path
++from test_portable_serial_client import RUNTIME, HEADERS
++ROOT=Path(__file__).resolve().parents[1]
++CASES='terminal pagination no-selection inventory-failure back-before-open open-denied switch-instance repeat-tap happy repeat held refresh-failure snapshot-binding back-reselect poll-failure disconnect open-retained open-malformed call-retained read-retained read-malformed close-retained release-retained stale-invocation'.split()
++def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
++def main():
++ p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');a=p.parse_args()
++ a.runtime=a.runtime.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);stage=out/'include'
++ assert subprocess.check_output(['git','-C',a.runtime,'rev-parse','HEAD'],text=True).strip()==RUNTIME
++ assert not subprocess.check_output(['git','-C',a.runtime,'status','--porcelain'],text=True).strip()
++ shutil.copytree(ROOT/'lib/PortableApps/include',stage,dirs_exist_ok=True)
++ canonical={}
++ for group,names in {**HEADERS,'app':HEADERS['app']+['RiscRealtimeV1.h']}.items():
++  for name in names:
++   path='sdk/'+group+'/'+name;data=subprocess.check_output(['git','-C',a.runtime,'show',RUNTIME+':'+path]);assert data==(a.runtime/path).read_bytes();(stage/name).write_bytes(data);canonical[path]=hashlib.sha256(data).hexdigest()
++ flags=['-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-I'+str(stage),'-I'+str(ROOT/'lib/NativeApps/include')]
++ flags+=['-D'+name for name in ['PORTABLE_SERIAL_STREAMS','PORTABLE_SERIAL_MONITOR_APP','PORTABLE_NATIVE_CUSTODY_FENCE','PORTABLE_CHECKED_STORAGE_RUNTIME','PORTABLE_APP_LAUNCH_GUARD','PORTABLE_APP_OWNS_TOUCH_CHROME']]
++ if a.sanitize:flags+=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
++ env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',UBSAN_OPTIONS='halt_on_error=1:print_stacktrace=1')
++ commands=[];raster=[]
++ adapter_cases='render open-refused slow-frame retained-open retained-tick retained-close fini-clean fini-retained launch-clean launch-retained'.split()
++ with (out/'tests.log').open('w') as log:
++  def run(cmd):
++   cmd=list(map(str,cmd));commands.append(cmd);log.write('$ '+' '.join(cmd)+'\n');log.flush();subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,env=env,check=True,timeout=60)
++  cc=os.environ.get('CC','cc');client=ROOT/'lib/PortableApps/src/PortableSerialClient.c'
++  run([cc,*flags,ROOT/'test/native_apps/serial_monitor_test.c',client,'-o',out/'controller'])
++  for case in CASES:run([out/'controller',case])
++  run([cc,*flags,'-DSM_TEST_INVALID_CATALOG',ROOT/'test/native_apps/serial_monitor_test.c',client,'-o',out/'invalid-catalog'])
++  run([out/'invalid-catalog','invalid-catalog'])
++  # Compile the unchanged client test too, so adapter additions cannot hide a
++  # regression in the previously qualified contract.
++  run([cc,*flags,ROOT/'test/native_apps/portable_serial_client_test.c',client,'-o',out/'client'])
++  run([out/'client'])
++  # Refuse accidental composition without its owner/fence, or with an
++  # unqualified product navigation/sleep/resident policy.
++  negative=[]
++  for name in ['PORTABLE_NATIVE_CUSTODY_FENCE','PORTABLE_CHECKED_STORAGE_RUNTIME','PORTABLE_APP_LAUNCH_GUARD','PORTABLE_APP_OWNS_TOUCH_CHROME']:
++   negative.append((name,[f for f in flags if f!='-D'+name]))
++  for name in ['PORTABLE_HOME_APP','PORTABLE_RETURN_APP','PORTABLE_APP_SLEEP_LOCAL','PORTABLE_RESIDENT_SHELL_CLIENT','PORTABLE_QUICK_ACTIONS']:
++   negative.append((name,[*flags,'-D'+name]))
++  for name,negative_flags in negative:
++   cmd=[cc,*negative_flags,'-fsyntax-only',ROOT/'test/native_apps/serial_monitor_adapter_test.c']
++   commands.append(list(map(str,cmd)));result=subprocess.run(list(map(str,cmd)),cwd=ROOT,capture_output=True,text=True,env=env,timeout=60)
++   assert result.returncode and 'Serial Monitor' in result.stderr,name
++   log.write('Rejected unqualified composition: '+name+'\n')
++
++  run([cc,*flags,ROOT/'test/native_apps/serial_monitor_adapter_test.c',ROOT/'Apps/serial_monitor.c',client,'-o',out/'adapter'])
++  captures=out/'captures';captures.mkdir(exist_ok=True)
++  for width,height in [(240,240),(480,800)]:
++   for case in adapter_cases:run([out/'adapter',case,width,height,captures])
++  from PIL import Image, ImageDraw
++  selected=[]
++  for path in sorted(captures.glob('*.ppm')):
++   with Image.open(path) as source:
++    im=source.convert('RGB');assert im.getextrema()!=((255,255),)*3
++    dst=path.with_suffix('.png');im.save(dst)
++    raster.append({'name':dst.name,'sha256':sha(dst),'width':im.width,'height':im.height})
++    if path.name.startswith('render-'):selected.append((path.stem,im.copy()))
++  sheet=Image.new('RGB',(4*260,((len(selected)+3)//4)*440),'#dddddd');draw=ImageDraw.Draw(sheet)
++  for i,(title,im) in enumerate(selected):
++   x=(i%4)*260;y=(i//4)*440;im.thumbnail((240,400));sheet.paste(im,(x+10,y+30));draw.text((x+5,y+5),title,fill='black')
++  sheet.save(out/'contact-sheet.png')
++ source=['Apps/serial_monitor.c','Apps/serial_monitor_font.inc','lib/PortableApps/include/PortableSerialMonitor.h','lib/PortableApps/include/PortableNativeCustody.h','lib/PortableApps/src/adapter.c','lib/PortableApps/src/native_custody_adapter.inc','lib/PortableApps/src/PortableSerialClient.c','test/native_apps/serial_monitor_test.c','scripts/test_serial_monitor.py','scripts/generate_serial_monitor_font.py','test/native_apps/serial_monitor_adapter_test.c','lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt','lib/PortableApps/quick_fonts/Rajdhani-600.ttf']
++ receipt={'result':'PASS','runtime':RUNTIME,'system_parent':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'system_status':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).splitlines(),'sanitized':a.sanitize,'sanitizer_environment':{k:env[k] for k in ['ASAN_OPTIONS','UBSAN_OPTIONS']},'cases':CASES+['invalid-catalog'],'negative_composition_controls':[n for n,_ in negative],'native_adapter_cases':adapter_cases,'native_adapter_dimensions':[[240,240],[480,800]],'captures':raster,'contact_sheet_sha256':sha(out/'contact-sheet.png'),'canonical_headers':canonical,'source_hashes':{p:sha(ROOT/p) for p in source},'commands':commands,'log_sha256':sha(out/'tests.log'),'not_claimed':['LeakSanitizer','full Xtensa/IDF/ELF build','native product admission','discovery/role scheduling','hardware','remote publication']}
++ (out/'evidence.json').write_text(json.dumps(receipt,indent=2)+'\n');print('Serial Monitor UI PASS:',out)
++if __name__=='__main__':main()
+diff --git a/test/native_apps/serial_monitor_adapter_test.c b/test/native_apps/serial_monitor_adapter_test.c
+new file mode 100644
+index 0000000..efd5d3e
+--- /dev/null
++++ b/test/native_apps/serial_monitor_adapter_test.c
+@@ -0,0 +1,233 @@
++/* Real native adapter and monitor controller over deterministic RGB565, touch,
++ * and invocation-scoped stream doubles. No physical transport is exercised.
++ * Compile with the exact pinned Runtime SDK staged ahead of PortableApps. */
++#include <assert.h>
++#include <stdbool.h>
++#include <stdint.h>
++#include <setjmp.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include "PortableSerialClient.h"
++#include "PortableSerialMonitor.h"
++#include "../../lib/PortableApps/src/adapter.c"
++
++extern void app_main(void);
++const t5_app_manifest_t portable_catalog[1]={{.display_name="Fixture",.file_name="fixture.elf",.compatible=true}};
++const unsigned portable_catalog_count=1;
++const portable_serial_monitor_instance portable_serial_monitor_instances[]={
++ {41,"USB A"},{42,"USB B"}
++};
++const unsigned portable_serial_monitor_instance_count=2;
++
++#define FX_WIDTH_MAX 480u
++#define FX_HEIGHT_MAX 800u
++#define FX_PIXEL_CAPACITY (FX_WIDTH_MAX*FX_HEIGHT_MAX*2u)
++static struct { uint8_t before[16], pixels[FX_PIXEL_CAPACITY], after[16]; } fx_buffer;
++static uint8_t fx_frozen[FX_PIXEL_CAPACITY],fx_queued_pixels[FX_PIXEL_CAPACITY];
++static unsigned fx_width=240,fx_height=240,fx_ticks,fx_calls,fx_presents;
++static unsigned fx_acquires,fx_releases,fx_live,fx_subscription,fx_frame_live;
++static unsigned fx_serial_acquires,fx_serial_releases,fx_stream_opens,fx_stream_closes;
++static unsigned fx_fences,fx_terminal_calls,fx_terminal_presents,fx_last_frame_black;
++static unsigned fx_reads,fx_writes,fx_launches,fx_reads_pending,fx_queued_at;
++static risc_display_present_token_v1 fx_pending;
++static uint64_t fx_device,fx_generation,fx_instance,fx_sequence;
++static bool fx_retained,fx_terminal_result,fx_session_live,fx_touch_down;
++static uint16_t fx_touch_x,fx_touch_y;
++static const char *fx_case,*fx_capture;
++static risc_runtime_api_v1 fx_runtime;
++static unsigned fx_event_index;
++static jmp_buf fx_owner_escape;
++static uint8_t fx_received[]="Ab9 !?[]{}=+-_/\\\r\nRX COMPLETE\r\n";
++static size_t fx_rx_offset;
++static bool fx_is(const char *name){return !strcmp(fx_case,name);}
++static void fx_io(void){assert(!fx_retained&&!fx_terminal_result);++fx_calls;}
++static void fx_guards(void){
++ for(unsigned i=0;i<sizeof(fx_buffer.before);++i)assert(fx_buffer.before[i]==0xa5&&fx_buffer.after[i]==0x5a);
++ for(unsigned i=fx_width*fx_height*2;i<FX_PIXEL_CAPACITY;++i)assert(fx_buffer.pixels[i]==0xc3);
++}
++static bool fx_health(risc_runtime_health_v1 *out){fx_io();out->uptime_ms=fx_ticks;return true;}
++static bool fx_monotonic(uint32_t *out){fx_io();*out=fx_ticks;return true;}
++static void fx_yield(uint32_t ms){fx_io();assert(fx_ticks<4000);fx_ticks+=ms;}
++static bool fx_diagnostic(const char *line){fx_io();assert(line);return true;}
++static bool fx_launch(const char *path){fx_io();assert(path&&!strcmp(path,"fixture.elf")&&!fx_session_live&&fx_serial_releases==1);++fx_launches;return true;}
++static bool fx_exit_requested(void){
++ fx_io();
++ /* Fixture-only interrupted app return: leave the live client untouched so
++  * the real module finalizer must prove app-first cleanup independently. */
++ if(fx_ticks>=1000&&(fx_is("fini-clean")||fx_is("fini-retained")||fx_is("launch-clean")||fx_is("launch-retained")))longjmp(fx_owner_escape,1);
++ return fx_ticks>=1000;
++}
++static bool fx_retain(void){
++ assert(!fx_retained);fx_terminal_calls=fx_calls;fx_terminal_presents=fx_presents;
++ memcpy(fx_frozen,fx_buffer.pixels,FX_PIXEL_CAPACITY);fx_retained=true;++fx_fences;return true;
++}
++static bool fx_display_info(void *context,risc_display_info_v1 *out){
++ (void)context;fx_io();*out=(risc_display_info_v1){.width=fx_width,.height=fx_height,
++  .supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565),.flags=RISC_DISPLAY_INFO_ASYNC_PRESENT};return true;
++}
++static bool fx_frame(void *context,uint32_t format,risc_display_surface_v1 *out){
++ (void)context;fx_io();assert(!fx_frame_live&&!fx_pending&&format==RISC_DISPLAY_FORMAT_RGB565);fx_frame_live=1;
++ *out=(risc_display_surface_v1){.frame=1,.pixels=fx_buffer.pixels,.width=fx_width,.height=fx_height,
++  .stride_bytes=fx_width*2,.size_bytes=fx_width*fx_height*2,.pixel_format=format};return true;
++}
++static void fx_frame_release(void *context,risc_display_frame_v1 frame){
++ (void)context;fx_io();assert(frame==1&&fx_frame_live);fx_frame_live=0;
++}
++static void fx_save_frame(void){
++ if(!fx_capture)return;
++ char path[768];int length=snprintf(path,sizeof(path),"%s/%s-%ux%u-%03u.ppm",fx_capture,fx_case,fx_width,fx_height,fx_presents);
++ assert(length>0&&(size_t)length<sizeof(path));FILE *file=fopen(path,"wb");assert(file);
++ fprintf(file,"P6\n%u %u\n255\n",fx_width,fx_height);
++ for(unsigned i=0;i<fx_width*fx_height;++i){
++  uint16_t value;memcpy(&value,fx_buffer.pixels+i*2,2);
++  uint8_t rgb[3]={(uint8_t)(((value>>11)&31u)*255u/31u),(uint8_t)(((value>>5)&63u)*255u/63u),(uint8_t)((value&31u)*255u/31u)};
++  assert(fwrite(rgb,1,sizeof(rgb),file)==sizeof(rgb));
++ }
++ assert(!fclose(file));
++}
++static bool fx_submit(void *context,risc_display_frame_v1 frame,const risc_display_rect_v1 *damage,
++ size_t count,const risc_display_present_options_v1 *options,risc_display_present_token_v1 *token){
++ (void)context;(void)damage;(void)count;fx_io();assert(options&&frame==1&&fx_frame_live);fx_guards();
++ fx_last_frame_black=0;for(unsigned i=0;i<fx_width*fx_height;++i){uint16_t value;memcpy(&value,fx_buffer.pixels+i*2,2);fx_last_frame_black+=value==0;}
++ assert(fx_last_frame_black>50&&fx_last_frame_black<fx_width*fx_height);
++ fx_frame_live=0;*token=++fx_presents;fx_pending=*token;fx_queued_at=fx_ticks;
++ memcpy(fx_queued_pixels,fx_buffer.pixels,FX_PIXEL_CAPACITY);fx_save_frame();return true;
++}
++static bool fx_present_status(void *context,risc_display_present_token_v1 token,risc_display_present_status_v1 *out){
++ (void)context;fx_io();assert(token&&token==fx_pending);
++ assert(!memcmp(fx_queued_pixels,fx_buffer.pixels,FX_PIXEL_CAPACITY));
++ if(fx_is("slow-frame")&&fx_ticks-fx_queued_at<600u)out->state=RISC_DISPLAY_PRESENT_ACTIVE;
++ else {out->state=RISC_DISPLAY_PRESENT_COMPLETE;fx_pending=0;}
++ return true;
++}
++static const risc_display_output_api_v1 fx_display={.api_version=1,.struct_size=sizeof(fx_display),
++ .get_info=fx_display_info,.acquire=fx_frame,.release=fx_frame_release,.submit=fx_submit,.present_status=fx_present_status};
++static uint64_t fx_subscribe(void *context){(void)context;fx_io();assert(!fx_subscription);return fx_subscription=1;}
++static bool fx_unsubscribe(void *context,uint64_t token){
++ (void)context;fx_io();assert(token==1&&fx_subscription&&!fx_session_live);fx_subscription=0;return true;
++}
++static bool fx_touch_poll(void *context,size_t maximum){(void)context;fx_io();assert(maximum==1);return true;}
++/* A complete down/up sequence goes through the actual raw-touch reducer. */
++static int32_t fx_touch_next(void *context,uint64_t subscription,risc_touch_event_v1 *out){
++ (void)context;fx_io();assert(subscription==1&&fx_subscription);
++ static const unsigned times[]={100,120,300,320};
++ if(fx_event_index>=sizeof(times)/sizeof(times[0])||fx_ticks<times[fx_event_index])return 0;
++ unsigned item=fx_event_index++;bool down=!(item&1u);
++ fx_touch_x=20;fx_touch_y=item<2?64:88;
++ fx_touch_down=down;++fx_sequence;
++ *out=(risc_touch_event_v1){.sequence=fx_sequence,.timestamp_ms=fx_ticks,
++  .kind=down?RISC_TOUCH_EVENT_DOWN:RISC_TOUCH_EVENT_UP,.id=1,.x=fx_touch_x,.y=fx_touch_y};return 1;
++}
++static bool fx_touch_snapshot(void *context,risc_touch_snapshot_v1 *out){
++ (void)context;fx_io();*out=(risc_touch_snapshot_v1){.sequence=fx_sequence,.timestamp_ms=fx_ticks,
++  .width=(uint16_t)fx_width,.height=(uint16_t)fx_height,.contact_count=fx_touch_down?1:0};
++ if(fx_touch_down)out->contacts[0]=(risc_touch_contact_v1){.id=1,.x=fx_touch_x,.y=fx_touch_y};
++ return true;
++}
++static const risc_touch_api_v1 fx_touch={1,sizeof(fx_touch),NULL,fx_subscribe,fx_unsubscribe,fx_touch_poll,fx_touch_next,fx_touch_snapshot};
++static bool fx_battery_read(void *context,risc_battery_sample_v1 *out){(void)context;fx_io();*out=(risc_battery_sample_v1){3900,70,0};return true;}
++static const risc_battery_gauge_api_v1 fx_battery={1,sizeof(fx_battery),NULL,fx_battery_read};
++static bool fx_serial_snapshot(risc_serial_device_v1 *out,size_t *count){
++ fx_io();assert(*count>=2);out[0]=(risc_serial_device_v1){17,9,RISC_SERIAL_TRANSPORT_USB,{0}};
++ out[1]=(risc_serial_device_v1){23,11,RISC_SERIAL_TRANSPORT_USB,{0}};*count=2;return true;
++}
++static const risc_serial_port_inventory_v1 fx_serial={.discovery={.serial={.api_version=1,.struct_size=sizeof(fx_serial)}},.snapshot=fx_serial_snapshot};
++static bool fx_acquire(const char *name,uint32_t version,uint64_t instance,risc_runtime_capability_v1 *out){
++ fx_io();assert(version==1&&out->struct_size==sizeof(*out));const void *api=NULL;
++ if(!strcmp(name,"display.output"))api=&fx_display;
++ else if(!strcmp(name,"input.touch.raw"))api=&fx_touch;
++ else if(!strcmp(name,"board.battery"))api=&fx_battery;
++ else if(!strcmp(name,T5_SERIAL_PORT_CAPABILITY)){assert(instance==41);fx_instance=instance;api=&fx_serial;++fx_serial_acquires;}
++ else assert(!"unexpected capability acquisition");
++ ++fx_live;*out=(risc_runtime_capability_v1){.struct_size=sizeof(*out),.slot=++fx_acquires,.generation=1,.api=api};return true;
++}
++static bool fx_release(risc_runtime_capability_v1 *grant){
++ fx_io();assert(grant&&grant->api&&grant->slot&&fx_live);
++ if(grant->api==&fx_serial){assert(!fx_session_live);++fx_serial_releases;}
++ else assert(!fx_session_live);
++ --fx_live;++fx_releases;*grant=(risc_runtime_capability_v1){.struct_size=sizeof(*grant)};return true;
++}
++static int32_t fx_open_stream(uint64_t context,const risc_runtime_capability_v1 *grant,const void *request,uint32_t size,
++ uint32_t budget_ms,risc_stream_opened_v1 *out){
++ fx_io();assert(context==42&&grant->api==&fx_serial&&request&&size==sizeof(risc_serial_stream_open_v1));
++ assert(budget_ms>0&&budget_ms<=500&&!fx_session_live);++fx_stream_opens;
++ const risc_serial_stream_open_v1 *open=request;assert(open->api_version==1&&open->struct_size==size);
++ fx_device=open->provider_device;fx_generation=open->device_generation;
++ assert(fx_device==17&&fx_generation==9&&fx_instance==41);
++ if(fx_is("retained-open")){fx_terminal_result=true;return PSC_RETAINED;}
++ if(fx_is("open-refused"))return PSC_BUSY;
++ fx_session_live=true;*out=(risc_stream_opened_v1){sizeof(*out),0,100,101,102};return PSC_OK;
++}
++static int32_t fx_call_stream(uint64_t context,risc_stream_session_t session,const void *request,uint32_t size,
++ uint32_t budget_ms,void *reply,uint32_t capacity,uint32_t *actual){
++ fx_io();assert(context==42&&session==100&&fx_session_live&&request&&size==sizeof(risc_serial_stream_call_v1));
++ assert(budget_ms>0&&budget_ms<=500&&!reply&&!capacity&&actual);*actual=0;
++ const risc_serial_stream_call_v1 *call=request;
++ assert(call->operation==RISC_SERIAL_STREAM_CHECK_DEVICE||call->operation==RISC_SERIAL_STREAM_CONFIGURE||call->operation==RISC_SERIAL_STREAM_CONTROL_LINES);
++ if(fx_is("retained-tick")){fx_terminal_result=true;return PSC_RETAINED;}
++ return PSC_OK;
++}
++static int32_t fx_close_stream(uint64_t context,risc_stream_session_t session,uint32_t budget_ms){
++ fx_io();assert(context==42&&session==100&&fx_session_live&&budget_ms>0&&budget_ms<=1000);++fx_stream_closes;
++ if(fx_is("retained-close")||fx_is("fini-retained")||fx_is("launch-retained")){fx_terminal_result=true;return PSC_IO;}
++ fx_session_live=false;return PSC_OK;
++}
++static int32_t fx_read_stream(uint64_t context,risc_stream_client_handle_t stream,void *data,uint32_t capacity,uint32_t *count){
++ fx_io();assert(context==42&&stream==101&&fx_session_live&&capacity&&capacity<=PSC_CHUNK);++fx_reads;if(fx_pending)++fx_reads_pending;
++ *count=0;if(fx_rx_offset>=sizeof(fx_received)-1)return PSC_AGAIN;
++ size_t n=sizeof(fx_received)-1-fx_rx_offset;if(n>capacity)n=capacity;if(n>7)n=7;
++ memcpy(data,fx_received+fx_rx_offset,n);fx_rx_offset+=n;*count=(uint32_t)n;return PSC_OK;
++}
++static int32_t fx_write_stream(uint64_t context,risc_stream_client_handle_t stream,const void *data,uint32_t length,uint32_t *count){
++ fx_io();assert(context==42&&stream==102&&fx_session_live&&data&&length&&length<=PSC_CHUNK);++fx_writes;
++ *count=length>3?3:length;return PSC_OK;
++}
++static int32_t fx_stream_info(uint64_t context,risc_stream_client_handle_t stream,risc_stream_client_info_v1 *out){
++ (void)context;(void)stream;(void)out;assert(!"unused stream info");return PSC_UNSUPPORTED;
++}
++static bool fx_stream_getter(risc_stream_client_v1 *out){
++ fx_io();assert(out&&out->struct_size==sizeof(*out));
++ *out=(risc_stream_client_v1){1,sizeof(*out),42,fx_open_stream,fx_call_stream,fx_close_stream,fx_read_stream,fx_write_stream,fx_stream_info};return true;
++}
++const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){fx_io();return version==1?&fx_runtime:NULL;}
++
++int main(int argc,char **argv){
++ assert(argc>=2&&argc<=5);fx_case=argv[1];
++ if(argc>=4){fx_width=(unsigned)strtoul(argv[2],NULL,10);fx_height=(unsigned)strtoul(argv[3],NULL,10);}
++ assert(fx_width>=160&&fx_width<=FX_WIDTH_MAX&&fx_height>=160&&fx_height<=FX_HEIGHT_MAX);
++ if(argc==5)fx_capture=argv[4];
++ memset(fx_buffer.pixels,0xc3,sizeof(fx_buffer.pixels));
++ memset(fx_buffer.before,0xa5,sizeof(fx_buffer.before));memset(fx_buffer.after,0x5a,sizeof(fx_buffer.after));
++ fx_runtime=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(fx_runtime),.health=fx_health,.monotonic_ms=fx_monotonic,
++  .yield_ms=fx_yield,.diagnostic=fx_diagnostic,.request_launch=fx_launch,.acquire=fx_acquire,.release=fx_release,
++  .retain_invocation=fx_retain,.exit_requested=fx_exit_requested,.stream_client=fx_stream_getter};
++ assert(!app_module_init());
++ if(!setjmp(fx_owner_escape))app_main();
++ else {
++  assert(fx_session_live&&fx_stream_opens==1&&!fx_stream_closes&&!fx_serial_releases);
++  if(fx_is("launch-clean")||fx_is("launch-retained")) {
++   assert(app.request_app_launch(0)==fx_is("launch-clean"));
++   assert(fx_launches==(fx_is("launch-clean")?1u:0u));
++  }else app_module_fini();
++ }
++ assert(fx_serial_acquires==1&&fx_stream_opens==1&&fx_presents>=2);
++ if(!strncmp(fx_case,"retained-",9)||fx_is("fini-retained")||fx_is("launch-retained")){
++  assert(fx_retained&&fx_fences==1&&portable_adapter_retained());
++  unsigned checkpoint=fx_calls;
++  assert(!portable_serial_monitor_close());app_module_fini();app_module_fini();
++  const t5_app_api_v1 *view=&app;t5_app_input_t input={0};
++  view->clear();view->draw_text(5,5,"MUST NOT DRAW");view->fill_rect(0,0,20,20,true);view->present(false);assert(!view->poll(&input,1));
++  assert(fx_calls==checkpoint&&fx_calls==fx_terminal_calls&&fx_presents==fx_terminal_presents);
++  assert(!memcmp(fx_frozen,fx_buffer.pixels,FX_PIXEL_CAPACITY));
++  assert(!fx_serial_releases&&fx_live==4&&fx_subscription==1);
++ }else{
++  assert(!fx_retained&&!fx_session_live&&fx_stream_closes==(fx_is("open-refused")?0u:1u)&&fx_serial_releases==1);
++  if(fx_is("open-refused"))assert(!fx_reads&&!fx_writes&&!fx_rx_offset);
++  else assert(fx_reads&&fx_rx_offset==sizeof(fx_received)-1);
++  if(fx_is("slow-frame"))assert(fx_reads_pending>0);
++  app_module_fini();assert(!fx_live&&!fx_subscription&&!fx_frame_live&&!fx_pending&&fx_acquires==fx_releases);
++ }
++ fx_guards();printf("{\"case\":\"%s\",\"width\":%u,\"height\":%u,\"frames\":%u,\"opens\":%u,\"closes\":%u,\"fences\":%u,\"result\":\"PASS\"}\n",
++ fx_case,fx_width,fx_height,fx_presents,fx_stream_opens,fx_stream_closes,fx_fences);return 0;
++}
+diff --git a/test/native_apps/serial_monitor_test.c b/test/native_apps/serial_monitor_test.c
+new file mode 100644
+index 0000000..1b9c7e3
+--- /dev/null
++++ b/test/native_apps/serial_monitor_test.c
+@@ -0,0 +1,163 @@
++/* Actual production UI + actual PortableSerialClient over bounded stream doubles.
++ * Reuse the qualified client's fault vocabulary, not a replacement client. */
++#define main serial_client_reference_tests
++#include "portable_serial_client_test.c"
++#undef main
++#include "../../Apps/serial_monitor.c"
++#include <stdlib.h>
++
++#ifdef SM_TEST_INVALID_CATALOG
++const portable_serial_monitor_instance portable_serial_monitor_instances[]={{0,"Unbound"},{42,"Second"}};
++#else
++const portable_serial_monitor_instance portable_serial_monitor_instances[]={{41,"First"},{42,"Second"},{43,"Third"},{44,"Fourth"},{45,"Fifth"},{46,"Sixth"},{47,"Seventh"},{48,"Eighth"}};
++#endif
++const unsigned portable_serial_monitor_instance_count=
++#ifdef SM_TEST_INVALID_CATALOG
++2;
++#else
++8;
++#endif
++static bool ui_retained;
++static unsigned fences,ui_calls,poll_count,draws;
++static uint32_t now;
++static unsigned test_width=480,test_height=800;
++static const char *scenario;
++static void ui_enter(void){enter();++ui_calls;}
++bool portable_adapter_retained(void){return ui_retained;}
++static bool ui_retain(void){++fences;fenced=ui_retained=true;return true;}
++void portable_adapter_retain_silent(void){if(!ui_retained)assert(runtime.retain_invocation());}
++static int32_t ui_width(void){ui_enter();return (int32_t)test_width;}
++static int32_t ui_height(void){ui_enter();return (int32_t)test_height;}
++static void ui_clear(void){ui_enter();++draws;}
++static void ui_rect(int32_t x,int32_t y,int32_t w,int32_t h,bool black){ui_enter();assert(x>=0 && y>=0 && x+w<=(int)test_width && y+h<=(int)test_height);(void)black;}
++static void ui_present(bool full){ui_enter();(void)full;}
++static void ui_back(bool enabled){ui_enter();assert(!enabled);}
++static uint32_t ui_millis(void){ui_enter();return now;}
++static bool ui_frame(void){ui_enter();return true;}
++static void tap(t5_app_input_t *in,int x,int y){in->tapped=true;in->touch_x=x;in->touch_y=y;}
++static bool ui_poll(t5_app_input_t *in,uint32_t wait) {
++    ui_enter();assert(wait==20);assert(poll_count<100);now+=20;spent=0;
++    unsigned step=poll_count++;
++    if(!strcmp(scenario,"poll-failure") && step==5)return false;
++    if(!strcmp(scenario,"pagination")) {
++        if((step>=1 && step<=13 && (step&1)) || (step>=17 && step<=31 && (step&1)))tap(in,230,230);
++        if(step==15 || step==33)tap(in,120,230);
++        if(step==40)in->exit_requested=true;
++        return true;
++    }
++    if(!strcmp(scenario,"held")) {
++        if(step<=1 || step==3 || step==4 || step==7 || step==8)in->buttons=T5_APP_BUTTON_CONFIRM;
++        if(step==6)in->buttons=T5_APP_BUTTON_DOWN;
++        if(step==10)in->exit_requested=true;
++        return true;
++    }
++    if(!strcmp(scenario,"no-selection") || !strcmp(scenario,"invalid-catalog")) {
++        if(step==7)in->exit_requested=true;
++        return true;
++    }
++    if(!strcmp(scenario,"repeat-tap")) {
++        if(step==1 || step==2)tap(in,30,80);
++        if(step==3)assert(!opens);
++        if(step==4 || step==5)tap(in,30,104);
++        if(step==7)in->exit_requested=true;
++        return true;
++    }
++    if(step==1){if(!strcmp(scenario,"inventory-failure"))snapshot_ok=false;tap(in,30,80);} /* Instance 42, not registry-first 41. */
++    if(!strcmp(scenario,"refresh-failure")) {
++        if(step==3){snapshot_ok=false;tap(in,450,32);}
++        if(step==5)tap(in,30,104);
++        if(step==6)assert(!opens);
++        if(step==7){snapshot_ok=true;tap(in,450,32);}
++        if(step==9)tap(in,30,104);
++        if(step==12)in->exit_requested=true;
++        return true;
++    }
++    if(!strcmp(scenario,"back-before-open")) {
++        if(step==3)tap(in,10,10);
++        if(step==7)in->exit_requested=true;
++        return true;
++    }
++    if(step==3) {
++        if(!strcmp(scenario,"snapshot-binding"))devices[1].generation=888;
++        if(!strcmp(scenario,"open-retained"))open_rc=PSC_RETAINED;
++        if(!strcmp(scenario,"open-denied"))open_rc=PSC_BUSY;
++        if(!strcmp(scenario,"open-malformed"))bad_open=2;
++        tap(in,30,104); /* Exact second snapshot endpoint. */
++    }
++    if(step==4) {
++        if(!strcmp(scenario,"call-retained"))call_rc=PSC_RETAINED;
++        if(!strcmp(scenario,"read-retained"))read_rc=PSC_RETAINED;
++        if(!strcmp(scenario,"read-malformed"))bad_count=1;
++        if(!strcmp(scenario,"disconnect"))device_count=0;
++        if(!strcmp(scenario,"close-retained"))close_rc=PSC_BUSY;
++        if(!strcmp(scenario,"release-retained"))release_ok=false;
++        if(!strcmp(scenario,"stale-invocation"))streams.context++;
++    }
++    if(!strcmp(scenario,"back-reselect") || !strcmp(scenario,"switch-instance")) {
++        if(step==5)tap(in,10,10);
++        if(step==7){if(!strcmp(scenario,"switch-instance")){expected_instance=41;tap(in,30,56);}else tap(in,30,80);}
++        if(step==9)tap(in,30,104);
++        if(step==11)in->exit_requested=true;
++    } else if(step==7)in->exit_requested=true;
++    return true;
++}
++static const t5_app_api_v1 ui_app={.abi_version=1,.struct_size=sizeof(ui_app),
++    .screen_width=ui_width,.screen_height=ui_height,.clear=ui_clear,.fill_rect=ui_rect,
++    .present=ui_present,.poll=ui_poll,.millis=ui_millis,.set_back_exits_app=ui_back,.frame_ready=ui_frame};
++const t5_app_api_v1 *t5_app_get_api(uint32_t version){ui_enter();assert(version==1);return &ui_app;}
++const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){ui_enter();assert(version==1);return &runtime;}
++static void terminal_test(void) {
++    sm_columns=8;sm_width=480;sm_height=160;sm_clear_terminal();
++    const unsigned char bytes[]="abCD!\rX\nq\tR\b!\n\033\0\377";
++    sm_receive(bytes,sizeof(bytes)-1);
++    assert(!strcmp(sm_lines[0],"XbCD!"));assert(!strcmp(sm_lines[1],"q   !"));
++    assert(!strcmp(sm_lines[2],"[1B][00]"));assert(!strcmp(sm_lines[3],"[FF]"));
++    for(unsigned i=0;i<1000;i++)sm_receive((const unsigned char*)"01234567\n",9);
++    assert(sm_count==SM_LINES && sm_head<SM_LINES && sm_column==0);
++    sm_scroll=sm_max_scroll();assert(sm_scroll>0);
++    for(unsigned i=0;i<100;i++)sm_receive((const unsigned char*)"tail\n",5);
++    assert(sm_scroll<=sm_max_scroll());
++    for(unsigned i=0;i<SM_LINES;i++)assert(strlen(sm_lines[i])<=sm_columns);
++    sm_mode=SM_TERMINAL;sm_input_armed=true;
++    t5_app_input_t in={0};tap(&in,10,150);sm_scroll=0;assert(!sm_event(&in));assert(sm_scroll==1);
++    in=(t5_app_input_t){0};assert(!sm_event(&in));tap(&in,240,150);assert(!sm_event(&in));assert(!sm_scroll);
++    sm_clear_terminal();assert(sm_count==1 && !sm_scroll && !sm_column && !sm_lines[0][0]);
++    /* Every printable non-space character has a visible glyph, including
++     * punctuation and case. ESC is represented as data, never interpreted. */
++    for(unsigned c=1;c<95;c++){unsigned bits=0;for(unsigned y=0;y<12;y++)bits|=sm_font[c][y];assert(bits);}
++    assert(memcmp(sm_font['A'-32],sm_font['a'-32],12));
++    for(unsigned c=0;c<256;c++){unsigned char byte=(unsigned char)c;sm_receive(&byte,1);}
++    for(unsigned i=0;i<SM_LINES;i++)for(const char *p=sm_lines[i];*p;p++)assert(*p>=32 && *p<127);
++}
++int main(int argc,char **argv) {
++    assert(argc==2);scenario=argv[1];reset();runtime.retain_invocation=ui_retain;
++    expected_instance=!strcmp(scenario,"pagination")?48:!strcmp(scenario,"held")?41:42;
++    devices[0]=(risc_serial_device_v1){17,9,RISC_SERIAL_TRANSPORT_USB,{0}};
++    devices[1]=(risc_serial_device_v1){23,11,RISC_SERIAL_TRANSPORT_USB,{0}};device_count=2;
++    if(!strcmp(scenario,"pagination")) {
++        device_count=8;test_width=test_height=240;
++        for(unsigned i=0;i<8;i++)devices[i]=(risc_serial_device_v1){17+i,9+i,RISC_SERIAL_TRANSPORT_USB,{0}};
++    }
++    const char data[]="Hello, serial!\r\nCase & punctuation.";memcpy(echo,data,sizeof(data)-1);echo_size=sizeof(data)-1;rx_step=64;
++    if(!strcmp(scenario,"terminal")){terminal_test();puts("serial monitor terminal PASS");return 0;}
++    app_main();
++    bool expect_retained=strstr(scenario,"retained") || !strcmp(scenario,"open-malformed") || !strcmp(scenario,"read-malformed") || !strcmp(scenario,"stale-invocation");
++    if(expect_retained) {
++        assert(ui_retained && fences==1 && !fenced_calls);
++        unsigned calls_before=io_count(),ui_before=ui_calls;
++        assert(!portable_serial_monitor_close());assert(!portable_app_before_launch("ignored.elf"));app_main();sm_render();
++        assert(io_count()==calls_before && ui_calls==ui_before && fences==1);
++    } else {
++        assert(!ui_retained && !fences && !sm_client_ready && !sm_client.session && !sm_client.grant.api);
++        bool no_open=!strcmp(scenario,"no-selection") || !strcmp(scenario,"invalid-catalog") || !strcmp(scenario,"back-before-open") || !strcmp(scenario,"inventory-failure");
++        assert(opens==(no_open?0u:(!strcmp(scenario,"back-reselect") || !strcmp(scenario,"switch-instance"))?2u:1u));
++        if(no_open){assert(!selected_device && !selected_generation);puts("serial monitor no unintended selection PASS");return 0;}
++        assert(selected_device==(!strcmp(scenario,"pagination")?24u:!strcmp(scenario,"held")?17u:23u));
++        assert(selected_generation==(!strcmp(scenario,"pagination")?16u:!strcmp(scenario,"held")?9u:11u));
++        assert(!writes); /* Receive-only UI never toggles line state or sends. */
++        assert(portable_serial_monitor_close());assert(portable_app_before_launch("ignored.elf"));
++        if(!strcmp(scenario,"repeat")){poll_count=0;spent=0;app_main();assert(opens==2 && closes==2 && !sm_started);}
++    }
++    printf("serial monitor %s PASS (%u provider calls, %u UI calls)\n",scenario,io_count(),ui_calls);
++    return 0;
++}
+-- 
+2.52.0
+
+
+From 5843d1bf2079e66f837aec5eb03a1f15b9a95ae7 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 21 Oct 2026 07:43:11 -0600
+Subject: [PATCH 2/2] Preserve terminal suffix when backspace follows carriage
+ return
+
+---
+ Apps/serial_monitor.c                  | 9 ++++++++-
+ test/native_apps/serial_monitor_test.c | 3 +++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/Apps/serial_monitor.c b/Apps/serial_monitor.c
+index 46f9090..c63dae8 100644
+--- a/Apps/serial_monitor.c
++++ b/Apps/serial_monitor.c
+@@ -90,7 +90,14 @@ static void sm_receive(const unsigned char *bytes,size_t n) {
+         unsigned c=bytes[i];
+         if(c=='\n')sm_newline();
+         else if(c=='\r')sm_column=0;
+-        else if(c=='\b') {if(sm_column){--sm_column;sm_lines[sm_head][sm_column]=0;}}
++        else if(c=='\b') {
++            if(sm_column) {
++                --sm_column;
++                char *line=sm_lines[sm_head];
++                /* Erase one cell without discarding later text left by CR. */
++                line[sm_column]=line[sm_column+1u]?' ':0;
++            }
++        }
+         else if(c=='\t') {unsigned spaces=4u-sm_column%4u;while(spaces--)sm_character(' ');}
+         else if(c>=32 && c<127)sm_character((char)c);
+         else {sm_character('[');sm_character(hex[c>>4]);sm_character(hex[c&15]);sm_character(']');}
+diff --git a/test/native_apps/serial_monitor_test.c b/test/native_apps/serial_monitor_test.c
+index 1b9c7e3..02246aa 100644
+--- a/test/native_apps/serial_monitor_test.c
++++ b/test/native_apps/serial_monitor_test.c
+@@ -122,6 +122,9 @@ static void terminal_test(void) {
+     t5_app_input_t in={0};tap(&in,10,150);sm_scroll=0;assert(!sm_event(&in));assert(sm_scroll==1);
+     in=(t5_app_input_t){0};assert(!sm_event(&in));tap(&in,240,150);assert(!sm_event(&in));assert(!sm_scroll);
+     sm_clear_terminal();assert(sm_count==1 && !sm_scroll && !sm_column && !sm_lines[0][0]);
++    sm_receive((const unsigned char*)"abcde\rXY\b",9);
++    assert(!strcmp(sm_lines[0],"X cde"));
++    sm_receive((const unsigned char*)"z",1);assert(!strcmp(sm_lines[0],"Xzcde"));
+     /* Every printable non-space character has a visible glyph, including
+      * punctuation and case. ESC is represented as data, never interpreted. */
+     for(unsigned c=1;c<95;c++){unsigned bits=0;for(unsigned y=0;y<12;y++)bits|=sm_font[c][y];assert(bits);}
+-- 
+2.52.0
+
