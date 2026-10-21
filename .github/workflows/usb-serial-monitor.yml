@@ -111,6 +111,8 @@ jobs:
                   assert receipt['log_sha256'] == hashlib.sha256(log).hexdigest()
                   assert receipt['sanitizer_environment']['ASAN_OPTIONS'] == 'detect_leaks=0'
                   assert receipt['sanitizer_environment']['UBSAN_OPTIONS'] == 'halt_on_error=1:print_stacktrace=1'
+                  for source, digest in receipt['source_hashes'].items():
+                      assert hashlib.sha256((Path('System') / source).read_bytes()).hexdigest() == digest
                   if suite == 'monitor':
                       assert receipt['system_parent'] == summary['system']
                       assert receipt['runtime'] == summary['runtime']
@@ -121,6 +123,13 @@ jobs:
                       assert receipt['native_adapter_dimensions'] == [[240, 240], [480, 800]]
                       assert len(receipt['cases']) == controller
                       assert len(receipt['negative_composition_controls']) == refusals
+                      controller_ids = [command[1] for command in receipt['commands'] if Path(command[0]).name in ('controller', 'invalid-catalog')]
+                      assert len(set(controller_ids)) == 25 and set(controller_ids) == set(receipt['cases'])
+                      adapter_ids = [tuple(command[1:4]) for command in receipt['commands'] if Path(command[0]).name == 'adapter']
+                      expected_adapter = {(case, str(w), str(h)) for case in receipt['native_adapter_cases'] for w, h in ((240, 240), (480, 800))}
+                      assert len(expected_adapter) == 20 and len(set(adapter_ids)) == 20
+                      assert set(adapter_ids) == expected_adapter
+                      assert len(receipt['captures']) == 66
                       for capture in receipt['captures']:
                           image = directory / 'captures' / capture['name']
                           assert hashlib.sha256(image.read_bytes()).hexdigest() == capture['sha256']
@@ -129,10 +138,10 @@ jobs:
                   else:
                       assert receipt['system_source'] == summary['system']
                       assert receipt['runtime_source'] == summary['runtime']
-                      cases = re.findall(rb'^portable serial ([^\n]+) PASS$', log, re.M)
+                      cases = re.findall(rb'^portable serial ([a-z-]+/(?:eager|demand)):[^\n]+ PASS$', log, re.M)
                       assert len(cases) == 22 and len(set(cases)) == 22
-                      assert sum(b'/eager:' in case for case in cases) == 11
-                      assert sum(b'/demand:' in case for case in cases) == 11
+                      assert sum(case.endswith(b'/eager') for case in cases) == 11
+                      assert sum(case.endswith(b'/demand') for case in cases) == 11
                       observed = {'production_runtime_cases': len(cases)}
                   summary['lanes'][f'{suite}-{mode}'] = observed
           (root / 'qualification-summary.json').write_text(json.dumps(summary, indent=2) + '\n')
