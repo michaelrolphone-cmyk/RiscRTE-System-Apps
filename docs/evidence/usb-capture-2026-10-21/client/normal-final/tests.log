@@ -1,0 +1,37 @@
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/tmp/portable-serial-2eall1_4/sdk -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include -DPORTABLE_SERIAL_STREAMS /workspace/scratch/c744abbbbd60/usb-native-cdc/System/test/native_apps/portable_serial_client_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/PortableApps/src/PortableSerialClient.c -o /tmp/portable-serial-2eall1_4/unit
+$ /tmp/portable-serial-2eall1_4/unit
+serial client invalid arguments, truncated tables and configuration PASS
+serial client complete inventory, unknown recovery and explicit selection PASS
+serial client retained/malformed open, call, close and release never retry PASS
+serial client lifecycle, reconfiguration and total 1..1000 ms control budgets PASS
+serial client copied objects and stale invocation contexts never enter provider PASS
+serial client partial transfers, bounded CRLF queue, cancellation, wrap deadline and saturation PASS
+serial client detach/reconnect, EOF, malformed counts and retained transfers PASS
+portable serial client all local checks PASS
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/tmp/portable-serial-2eall1_4/sdk -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include /tmp/portable-serial-2eall1_4/disabled.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/PortableApps/src/PortableSerialClient.c -o /tmp/portable-serial-2eall1_4/disabled
+$ /tmp/portable-serial-2eall1_4/disabled
+$ c++ -std=c++17 -O1 -g -Wall -Wextra -Werror -I/tmp/portable-serial-2eall1_4/sdk -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include /tmp/portable-serial-2eall1_4/headers.cpp -o /tmp/portable-serial-2eall1_4/headers
+$ /tmp/portable-serial-2eall1_4/headers
+$ bash /workspace/scratch/c744abbbbd60/usb-serial-monitor/RiscRTE/test/run_serial_stream_client_integration_test.sh
+portable serial normal/eager: production client/broker/graph/provider/queue PASS
+portable serial inventory-recover/eager: production client/broker/graph/provider/queue PASS
+portable serial inventory-malformed/eager: production client/broker/graph/provider/queue PASS
+portable serial disconnect/eager: production client/broker/graph/provider/queue PASS
+portable serial reconnect/eager: production client/broker/graph/provider/queue PASS
+portable serial eof/eager: production client/broker/graph/provider/queue PASS
+portable serial cancel/eager: production client/broker/graph/provider/queue PASS
+portable serial stall/eager: production client/broker/graph/provider/queue PASS
+portable serial configure-fail/eager: production client/broker/graph/provider/queue PASS
+portable serial close-retained/eager: exact custody retained; no raw fallback PASS
+portable serial configure-rollback-retained/eager: exact custody retained; no raw fallback PASS
+portable serial normal/demand: production client/broker/graph/provider/queue PASS
+portable serial inventory-recover/demand: production client/broker/graph/provider/queue PASS
+portable serial inventory-malformed/demand: production client/broker/graph/provider/queue PASS
+portable serial disconnect/demand: production client/broker/graph/provider/queue PASS
+portable serial reconnect/demand: production client/broker/graph/provider/queue PASS
+portable serial eof/demand: production client/broker/graph/provider/queue PASS
+portable serial cancel/demand: production client/broker/graph/provider/queue PASS
+portable serial stall/demand: production client/broker/graph/provider/queue PASS
+portable serial configure-fail/demand: production client/broker/graph/provider/queue PASS
+portable serial close-retained/demand: exact custody retained; no raw fallback PASS
+portable serial configure-rollback-retained/demand: exact custody retained; no raw fallback PASS

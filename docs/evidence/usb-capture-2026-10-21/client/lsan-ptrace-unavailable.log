@@ -1,0 +1,5 @@
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/tmp/portable-serial-2jwnd4ti/sdk -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -DPORTABLE_SERIAL_STREAMS /workspace/scratch/c744abbbbd60/usb-native-cdc/System/test/native_apps/portable_serial_client_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/PortableApps/src/PortableSerialClient.c -o /tmp/portable-serial-2jwnd4ti/unit
+$ /tmp/portable-serial-2jwnd4ti/unit
+==20==LeakSanitizer has encountered a fatal error.
+==20==HINT: For debugging, try setting environment variable LSAN_OPTIONS=verbosity=1:log_threads=1
+==20==HINT: LeakSanitizer does not work under ptrace (strace, gdb, etc)
