@@ -5,7 +5,7 @@
 
 static uint64_t context, selected_instance, selected_filter;
 static unsigned getters, acquires, releases, subscriptions, unsubscriptions, snapshots, reads, statuses, fences;
-static int acquire_mode, release_mode, snapshot_mode, next_result;
+static int acquire_mode, release_mode, snapshot_mode, next_result, tag_mode;
 static bool unsubscribe_ok, subscribe_ok, getter_ok, fence_ok, change_context;
 static uint32_t provider_status;
 static risc_usb_mouse_state_v1 states[4];
@@ -41,7 +41,11 @@ static bool release(risc_runtime_capability_v1 *g){
 }
 static bool get(risc_stream_client_v1 *out){
  getters++;if(!getter_ok)return false;
- *out=(risc_stream_client_v1){.api_version=1,.struct_size=sizeof(*out),.context=context};return true;
+ *out=(risc_stream_client_v1){.api_version=1,.struct_size=sizeof(*out),.context=context};
+ if(tag_mode==1)out->api_version=2;
+ if(tag_mode==2)out->struct_size=sizeof(*out)-1;
+ if(tag_mode==3)out->context=0;
+ return true;
 }
 static bool fence(void){fences++;return fence_ok;}
 static risc_runtime_api_v1 runtime;
@@ -50,7 +54,7 @@ static portable_mouse_frame frame;
 static unsigned external(void){return getters+acquires+releases+subscriptions+unsubscriptions+snapshots+reads+statuses+fences;}
 static void fixture(void){
  getters=acquires=releases=subscriptions=unsubscriptions=snapshots=reads=statuses=fences=0;
- acquire_mode=release_mode=snapshot_mode=next_result=0;
+ acquire_mode=release_mode=snapshot_mode=next_result=tag_mode=0;
  subscribe_ok=unsubscribe_ok=getter_ok=fence_ok=true;change_context=false;
  context=77;provider_status=RISC_USB_MOUSE_RUNNING;state_count=0;
  memset(states,0,sizeof(states));memset(&event,0,sizeof(event));
@@ -159,6 +163,36 @@ static void malformed(void){
  assert(portable_mouse_next(&client,&frame)==PMC_BASELINE);
  next_result=1;assert(portable_mouse_next(&client,&frame)==PMC_MALFORMED); /* Replay across snapshot rejected. */
 }
+static void qualification_boundaries(void){
+ /* A new connection cannot write beyond the four-device bounded snapshot. */
+ fixture();
+ for(size_t i=0;i<RISC_USB_MOUSE_MAX_DEVICES;i++)states[i]=state(i+1,i+1,1,0);
+ state_count=RISC_USB_MOUSE_MAX_DEVICES;opened();
+ emit(RISC_USB_MOUSE_CONNECTED,1,state(5,5,0,0),0,0);
+ assert(portable_mouse_next(&client,&frame)==PMC_MALFORMED);
+ assert(frame.previous_count==RISC_USB_MOUSE_MAX_DEVICES && !frame.current_count && client.needs_snapshot);
+ /* Reject malformed provider-free identity before any borrowed access. */
+ for(int mode=1;mode<=3;mode++){
+  fixture();tag_mode=mode;
+  assert(!portable_mouse_init(&client,&runtime,0,0) && client.result==PMC_UNSUPPORTED);
+  assert(!acquires && !subscriptions && !statuses && !fences);
+  fixture();opened();tag_mode=mode;
+  unsigned before=external()-getters;
+  assert(portable_mouse_next(&client,&frame)==PMC_RETAINED);
+  assert(before==external()-getters && !fences);terminal();
+ }
+ /* A rejected retention fence never permits borrowed calls or cleanup retries. */
+ for(int mode=0;mode<3;mode++){
+  fixture();opened();fence_ok=false;
+  if(mode==0)unsubscribe_ok=false;
+  if(mode==1)release_mode=1;
+  if(mode==2)provider_status=RISC_USB_MOUSE_RETAINED;
+  assert(portable_mouse_close(&client,&frame)==PMC_RETAINED);
+  assert(fences==1 && !client.fence_accepted && client.grant.api==&api);
+  assert(client.subscription==(mode==1?0:57));terminal();
+ }
+ puts("mouse consumer: maximum-capacity connection, malformed invocation tags, rejected retention fence PASS");
+}
 static void failures(void){
  fixture();acquire_mode=1;assert(portable_mouse_open(&client,&frame)==PMC_DENIED && !client.cleanup_required && !releases);
  fixture();acquire_mode=2;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED && fences==1);terminal();
@@ -187,4 +221,4 @@ static void failures(void){
  fixture();runtime.struct_size=RISC_RUNTIME_CAPABILITIES_V1_SIZE;
  assert(!portable_mouse_init(&client,&runtime,0,0) && client.result==PMC_UNSUPPORTED);
 }
-int main(void){normal();gaps_and_focus();malformed();failures();puts("mouse consumer: copied events, recovery, focus and custody PASS");}
+int main(void){normal();gaps_and_focus();malformed();failures();qualification_boundaries();puts("mouse consumer: copied events, recovery, focus and custody PASS");}

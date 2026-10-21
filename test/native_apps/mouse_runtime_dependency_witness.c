@@ -1,5 +1,5 @@
 /* TEST ONLY: exact existing usb.hid@1 / platform.clock@1 dependency ABIs.
- * Compiled twice as two independent provider ELFs, never product-installed. */
+ * HID is a host shared object; clock is registered by the test port only. Never product-installed. */
 #include "mouse_runtime_fixture.h"
 #include <RiscUsbHidV1.h>
 #include <RiscPlatformClockV1.h>
@@ -17,7 +17,7 @@ static const uint8_t descriptor[] = {
 };
 static const uint64_t raw_token = UINT64_C(0x9753000042);
 static void check_raw(uint64_t raw) {
- assert(raw == raw_token && mouse_runtime_control()->raw == raw);
+ assert(raw && mouse_runtime_control()->raw == raw);
 }
 static bool scan(void *context, size_t budget) {
  (void)context;mouse_runtime_lower_call("hid:scan");assert(budget == 16);return true;
@@ -25,15 +25,15 @@ static bool scan(void *context, size_t budget) {
 static bool interfaces(void *context, risc_usb_hid_interface_v1 *out, size_t *n) {
  (void)context;mouse_runtime_lower_call("hid:interfaces");assert(out && n && *n >= 1);
  *n = mouse_runtime_control()->present ? 1 : 0;
- if(*n)out[0] = (risc_usb_hid_interface_v1){.device=100,.interface_number=2,
+ if(*n)out[0] = (risc_usb_hid_interface_v1){.device=mouse_runtime_control()->device,.interface_number=2,
    .report_descriptor_length=sizeof(descriptor),.max_packet=64};
  return true;
 }
 static uint64_t open_hid(void *context, uint64_t device, uint8_t iface, uint8_t alt) {
  (void)context;mouse_runtime_lower_call("hid:open");
  mouse_runtime_controls *c = mouse_runtime_control();
- assert(c->present && !c->raw && device == 100 && iface == 2 && !alt);
- ++c->opens;return c->raw = raw_token;
+ assert(c->present && !c->raw && device == c->device && iface == 2 && !alt);
+ ++c->opens;return c->raw = raw_token+c->opens;
 }
 static bool report_descriptor(void *context, uint64_t raw, uint8_t *out, size_t *n) {
  (void)context;mouse_runtime_lower_call("hid:descriptor");check_raw(raw);
@@ -80,16 +80,12 @@ static void sleep_ms(void *context, uint32_t ms) {
  (void)context;mouse_runtime_lower_call("clock:sleep");assert(ms == 1);
  mouse_runtime_control()->now+=ms; /* simulated time only, not a scheduler proof */
 }
-static bool start(const risc_provider_dependency_v1 *deps, size_t n) {
- (void)deps;mouse_runtime_event("clock:start");return !n;
-}
-static bool quiesce(void) {mouse_runtime_event("clock:quiesce");return true;}
-static void stop(void) {mouse_runtime_event("clock:stop");}
 static const risc_platform_clock_api_v1 api={1,sizeof(api),0,now,sleep_ms};
-static const risc_driver_v2 driver={2,sizeof(driver),"mouse-test-clock","platform.clock",1,
- &api,start,stop,quiesce};
+const void *mouse_runtime_clock(void) {return &api;}
 #else
 #error Select exactly one software dependency witness
 #endif
+#if defined(MOUSE_RUNTIME_HID_WITNESS)
 __attribute__((visibility("default")))
 const risc_driver_v2 *t5_driver_get(uint32_t abi) {return abi == 2 ? &driver : 0;}
+#endif

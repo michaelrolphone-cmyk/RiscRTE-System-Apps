@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exact-source, software-only mouse consumer qualification; no publication."""
+"""Exact-source, software-only mouse consumer qualification."""
 import argparse
 import hashlib
 import json
@@ -37,6 +37,8 @@ def main():
         data = subprocess.check_output(["git", "-C", str(origin), "show", f'{f["commit"]}:{f["source"]}'])
         assert data == (ROOT / f["destination"]).read_bytes() == (origin / f["source"]).read_bytes(), f
         assert sha(ROOT / f["destination"]) == f["sha256"], f
+    # Reject modified tracked source; untracked output/input directories are not code.
+    assert not git(ROOT, "status", "--porcelain", "--untracked-files=no"), "System tracked source must be clean"
     args.output.mkdir(parents=True, exist_ok=True)
     commands = []
     log_path = args.output / "tests.log"
@@ -87,8 +89,13 @@ def main():
                     reader_tree=git(args.reader, "rev-parse", "HEAD^{tree}"),
                     commands=commands, log_sha256=sha(log_path),
                     sanitizer_environment={k: os.environ.get(k, "") for k in ("ASAN_OPTIONS", "UBSAN_OPTIONS", "LSAN_OPTIONS")},
+                    coverage=["system-prefix and complete pinned-native SDK strict C", "C++ ABI and opt-out",
+                              "copied-event, focus, GAP, snapshot, disconnect, malformed/retained unit paths",
+                              "maximum capacity, malformed invocation tags, rejected retention fences",
+                              "8 actual Runtime/provider eager/demand cases including missing-platform refusal"],
+                    ci={k: os.environ.get(k, "") for k in ("GITHUB_SHA", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT")},
                     not_run=["target build/timing", "safe production poll executor", "product UI routing",
-                             "physical USB/X4 electrical acceptance", "publication", "remote CI"])
+                             "physical USB/X4 electrical acceptance", "LeakSanitizer", "target executable mapping retention"])
     (args.output / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print(f"Mouse consumer {'ASan/UBSan' if args.sanitize else 'normal'} PASS: {log_path}")
 

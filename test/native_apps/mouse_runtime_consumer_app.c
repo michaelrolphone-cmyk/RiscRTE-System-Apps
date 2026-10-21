@@ -58,6 +58,14 @@ __attribute__((visibility("default"))) void app_main(void) {
  assert(copied.x==7 && copied.y==-9 && copied.state.session==session);
  mouse_runtime_event("case:copied-once");
 
+ if(mode("connected-close")) {
+  before=calls();
+  assert(portable_mouse_close(&consumer,&f)==PMC_CLOSED && !consumer.grant.api && !consumer.subscription);
+  assert(f.previous_count==1 && f.previous[0].buttons==1 && !f.current_count);event_empty(&f);
+  if(mouse_runtime_demand())assert(calls()==before+1 && !mouse_runtime_control()->raw && mouse_runtime_control()->closes==1);
+  else assert(calls()==before && mouse_runtime_control()->raw && !mouse_runtime_control()->closes);
+  mouse_runtime_event("case:connected-close");mouse_runtime_event("app:complete");return;
+ }
  if(mode("close-retained")) {
   mouse_runtime_control()->close_fails=true;
   const risc_runtime_capability_v1 exact=consumer.grant;
@@ -117,8 +125,24 @@ __attribute__((visibility("default"))) void app_main(void) {
  next_local(PMC_EMPTY,&f);event_empty(&f);
  assert(!mouse_runtime_control()->raw && mouse_runtime_control()->closes==1);
  mouse_runtime_event("case:disconnect-once");
+ /* usb.host device tokens are generation-qualified. Re-enumeration creates
+  * a new device token and a fresh mouse semantic session. */
+ mouse_runtime_control()->device=101;mouse_runtime_control()->present=true;
+ report(0,0,0,0,0);produce(producer);
+ next_local(PMC_EVENT,&f);
+ assert(f.event.kind==RISC_USB_MOUSE_CONNECTED && f.event.state.device==101 &&
+        f.event.state.session!=session && f.event.state.session && !f.event.state.buttons);
+ uint64_t replacement=f.event.state.session;
+ next_local(PMC_EMPTY,&f);event_empty(&f);
+ report(1,6,0,0,0);produce(producer);next_local(PMC_EVENT,&f);
+ assert(f.event.kind==RISC_USB_MOUSE_REPORT && f.event.state.session==replacement &&
+        f.event.x==6 && f.event.pressed==1 && !f.event.released);
+ mouse_runtime_event("case:reconnect-session");
+ before=calls();
  assert(portable_mouse_close(&consumer,&f)==PMC_CLOSED && !consumer.grant.api &&
         !consumer.subscription && !consumer.cleanup_required);
+ if(mouse_runtime_demand())assert(calls()==before+1 && !mouse_runtime_control()->raw && mouse_runtime_control()->closes==2);
+ else assert(calls()==before && mouse_runtime_control()->raw && mouse_runtime_control()->closes==1);
  mouse_runtime_event("app:complete");
 }
 __attribute__((visibility("default"))) void app_module_fini(void) {mouse_runtime_event("app:fini");}

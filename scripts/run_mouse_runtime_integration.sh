@@ -23,7 +23,7 @@ flags=("${san[@]}" -std=c11 -Wall -Wextra -Werror -fPIC -fvisibility=hidden -sha
  -I"$build/sdk" -I"$reader/sdk/driver" -I"$system/test/native_apps")
 set -x
 "$cc" "${flags[@]}" -DMOUSE_RUNTIME_HID_WITNESS "$system/test/native_apps/mouse_runtime_dependency_witness.c" -o "$build/hid.elf"
-"$cc" "${flags[@]}" -DMOUSE_RUNTIME_CLOCK_WITNESS "$system/test/native_apps/mouse_runtime_dependency_witness.c" -o "$build/clock.elf"
+"$cc" "${san[@]}" -std=c11 -Wall -Wextra -Werror -I"$reader/sdk/driver" -I"$system/test/native_apps" -DMOUSE_RUNTIME_CLOCK_WITNESS -c "$system/test/native_apps/mouse_runtime_dependency_witness.c" -o "$build/clock.o"
 "$cc" "${flags[@]}" "$reader/Drivers/usb_hid_mouse/driver.c" -o "$build/mouse/driver.elf"
 "$cc" "${flags[@]}" -DPORTABLE_USB_MOUSE "$system/test/native_apps/mouse_runtime_consumer_app.c" \
  "$system/lib/PortableApps/src/PortableMouseConsumer.c" -o "$build/default.elf"
@@ -33,9 +33,9 @@ set -x
  "$runtime/src/bootstrap/Json.cpp" "$runtime/src/bootstrap/Board.cpp" "$runtime/src/bootstrap/Runtime.cpp" \
  "$runtime/src/runtime/streams/ProviderQueueHost.cpp" "$runtime/src/runtime/streams/AppStreamSessions.cpp" \
  "$runtime/src/runtime/drivers/ProviderGraphV2.cpp" "$runtime/src/runtime/drivers/ProviderModuleV2.cpp" \
- "$system/test/native_apps/mouse_runtime_integration_test.cpp" -ldl -o "$build/test"
+ "$system/test/native_apps/mouse_runtime_integration_test.cpp" "$build/clock.o" -ldl -o "$build/test"
 for activation in eager demand; do
- for mode in normal close-retained; do
+ for mode in normal connected-close close-retained unregistered-clock; do
   "$build/test" "$build" "$mode" "$activation"
  done
 done

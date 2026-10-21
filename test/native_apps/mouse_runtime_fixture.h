@@ -12,9 +12,10 @@ typedef struct {
  bool present, close_fails;
  uint8_t report[5];
  unsigned remaining, lower_calls, opens, closes, polls;
- uint64_t raw, last_close, now;
+ uint64_t raw, last_close, now, device;
 } mouse_runtime_controls;
 mouse_runtime_controls *mouse_runtime_control(void);
+const void *mouse_runtime_clock(void);
 void mouse_runtime_lower_call(const char *name);
 void mouse_runtime_event(const char *name);
 const char *mouse_runtime_mode(void);

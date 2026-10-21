@@ -10,8 +10,21 @@ Inputs remain Runtime 6a3b3d46f5b2857eacc6e9863799dec1f466b036 and Reader
 59177418ea746c7605b7b5a5aec501e70bdae80f (provider source
 c334919a05d393b7b3a536fceb117cfbb573a4ef). Reader PR468 and all ABI/source
 bytes are unchanged. The runner compiles the real mouse driver and generic
-Runtime graph, using test-only HID/clock dependency witnesses. Separate
-processes exercise normal/failed-close cases with eager/demand activation.
+Runtime graph, using a test-only HID provider and a clock table registered through the
+existing port API. Platform clock is not a substitute driver ELF: the unchanged
+Runtime refuses that dependency without trusted port registration. An explicit
+negative control preserves this refusal before any driver starts. No Runtime
+admission source or trusted product table is edited.
+
+Separate processes exercise normal, still-connected close, failed close and
+missing-platform refusal with eager/demand activation. Normal includes a fresh
+semantic session and generation-qualified device token after re-enumeration, copied-once motion, focus
+loss and fresh baseline, queue overflow/GAP/snapshot recovery, and disconnect
+release. Tests cover maximum-capacity CONNECTED rejection, malformed
+provider-free invocation tags and rejected retention fences without retries.
+Retention assertions establish Runtime retained state, exact raw test-token
+custody, no dependency stop and app-fini suppression where applicable; they do
+not instrument or prove target executable mapping or physical quiescence.
 
 This is not lower-host/physical USB qualification. The host shared objects are
 not Xtensa product binaries. No producer cadence, target Runtime admission,

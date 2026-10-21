@@ -1,10 +1,11 @@
 # Copied USB mouse consumer candidate
 
-**Unvalidated checkpoint, 2026-10-21:** implementation/qualification was stopped
-for durable GitHub capture. Only the focused strict-C unit fixture was executed.
-The integration fixtures are uncompiled drafts and their runner is absent; the
-commands in the qualification section are therefore not runnable end-to-end yet.
-See `MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md` for exact state and remaining work.
+The original incomplete checkpoint is preserved in PR151 and
+`MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md`. This bounded successor adds the
+missing integration runner, repairs draft fixtures against the pinned native
+Runtime API, and exercises the actual existing mouse provider. See
+`MOUSE_CONSUMER_QUALIFICATION.md` and the draft PR exact-head CI receipt for
+results and limits. This is still not product or physical USB acceptance.
 
 `PortableMouseConsumer` is an opt-in, app-local lifecycle and copied-event
 helper above the existing `usb.hid.mouse@1` ABI. It is **not an integrated
