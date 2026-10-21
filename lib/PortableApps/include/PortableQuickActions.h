@@ -11,6 +11,7 @@ extern "C" {
 
 typedef enum {
     PQA_NONE = 0,
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
     PQA_REMOTE_OPEN = 1u << 14,
     PQA_REMOTE_BACK = 1u << 15,
     PQA_REMOTE_SCAN = 1u << 16,
@@ -18,6 +19,7 @@ typedef enum {
     PQA_REMOTE_SELECT = 1u << 18,
     PQA_REMOTE_PREVIOUS = 1u << 19,
     PQA_REMOTE_NEXT = 1u << 20,
+#endif
     PQA_CONTEXTS = 1u << 13,
     PQA_BRIGHTNESS_PREVIEW = 1u << 0,
     PQA_BRIGHTNESS_COMMIT = 1u << 1,

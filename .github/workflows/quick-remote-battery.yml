@@ -1,0 +1,94 @@
+name: Resident Quick remote battery qualification
+on:
+  pull_request:
+    paths:
+      - 'lib/PortableApps/**'
+      - 'scripts/*remote*battery*'
+      - 'scripts/test_quick_remote*'
+      - 'scripts/portable_quick_build.py'
+      - 'scripts/build_paper_clock.py'
+      - 'test/native_apps/*remote*'
+      - '.github/workflows/quick-remote-battery.yml'
+permissions:
+  contents: read
+jobs:
+  enabled-battery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: source
+        shell: bash
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+      PYTHONUNBUFFERED: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 13eca114cb58469cf6004fafc3da84fbd9d29beb
+          path: runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Drivers
+          ref: 1c9663658d61bc51557576aef40f82c26f36232c
+          path: drivers
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 6b2047500905f8f45087cb49989103a926fc5c63
+          path: utilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: x4
+          persist-credentials: false
+      - name: Record exact source cohort
+        run: |
+          mkdir -p build/remote-battery-logs
+          for repo in source runtime drivers utilities x4; do
+            printf '%s ' "$repo"
+            git -C "../$repo" rev-parse HEAD
+          done | tee build/remote-battery-logs/source-cohort.log
+          cc --version | tee build/remote-battery-logs/compiler.log
+      - name: Preserve action declarations and explicit build selection
+        run: |
+          python3 scripts/test_remote_battery_action_contract.py 2>&1 | tee build/remote-battery-logs/action-contract.log
+          python3 scripts/test_quick_remote_battery_build.py -v 2>&1 | tee build/remote-battery-logs/build-selection.log
+      - name: Enabled session and controller, normal and sanitizers
+        run: |
+          python3 scripts/test_remote_battery.py 2>&1 | tee build/remote-battery-logs/session.log
+          python3 scripts/test_quick_remote_controls.py 2>&1 | tee build/remote-battery-logs/controls.log
+      - name: Enabled actual adapter, atomic queue and seven rendered states
+        run: |
+          python3 scripts/test_quick_remote_adapter.py --runtime ../runtime --drivers ../drivers --utilities ../utilities --x4 ../x4 2>&1 | tee build/remote-battery-logs/adapter.log
+      - name: Actual patched producer parser consumer roundtrip
+        run: |
+          python3 scripts/test_remote_battery_roundtrip.py --drivers ../drivers 2>&1 | tee build/remote-battery-logs/roundtrip.log
+      - name: Real Runtime optional admission with synthetic providers
+        run: |
+          python3 scripts/test_quick_remote_manifest.py --runtime-repo ../runtime 2>&1 | tee build/remote-battery-logs/admission-normal.log
+          python3 scripts/test_quick_remote_manifest.py --runtime-repo ../runtime --sanitize 2>&1 | tee build/remote-battery-logs/admission-sanitized.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: resident-remote-battery-${{ github.event.pull_request.head.sha }}
+          path: |
+            source/build/remote-battery-logs/
+            source/build/quick-remote-adapter/*.json
+            source/build/quick-remote-adapter/*.log
+            source/build/quick-remote-adapter/*.d
+            source/build/quick-remote-adapter/*-frames/*.pbm
+            source/build/remote-battery-roundtrip/*.json
+          if-no-files-found: error
+          retention-days: 30
