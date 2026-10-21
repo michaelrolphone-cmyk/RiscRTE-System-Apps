@@ -1,0 +1,53 @@
+name: Copied USB mouse consumer qualification
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/usb-mouse-consumer.yml'
+      - 'scripts/*mouse*'
+      - 'test/native_apps/*mouse*'
+      - 'lib/PortableApps/**'
+      - 'docs/PORTABLE_MOUSE_CONSUMER.md'
+      - 'docs/MOUSE_CONSUMER_QUALIFICATION.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pinned-host-composition:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 6a3b3d46f5b2857eacc6e9863799dec1f466b036
+          path: inputs/Runtime
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: 59177418ea746c7605b7b5a5aec501e70bdae80f
+          path: inputs/Reader
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Normal consumer and actual Runtime/provider composition
+        run: python3 scripts/test_portable_mouse_consumer.py --runtime inputs/Runtime --reader inputs/Reader --output build/mouse-normal
+      - name: ASan and UBSan consumer and actual Runtime/provider composition
+        run: python3 scripts/test_portable_mouse_consumer.py --runtime inputs/Runtime --reader inputs/Reader --output build/mouse-sanitized --sanitize
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mouse-consumer-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            build/mouse-normal/
+            build/mouse-sanitized/
+          if-no-files-found: error
+          retention-days: 90
