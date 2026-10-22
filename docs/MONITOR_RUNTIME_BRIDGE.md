@@ -26,9 +26,16 @@ The runner retains the original PR157 source guard and additionally accepts only
 descendants of this exact published consolidation commit and tree. After either
 anchor, only this isolated bridge suite, runner, workflow, documentation and its
 source-guard regression file may differ. Production source, existing tests and
-historical evidence remain guarded. Seven real-Git regression tests cover both
+historical evidence remain guarded. Twelve real-Git regression tests cover both
 accepted lineages and rejection of unknown ancestry, altered tree identity,
-committed or uncommitted production changes, old tests and evidence changes.
+committed or uncommitted production changes, old tests and evidence changes,
+and commit/tree replacement objects. Every runner Git operation disables
+replacement-object substitution. Explicit untracked-file reporting prevents a
+Git status preference from hiding extra input headers during clean-source checks.
+Runner Git commands discard ambient Git environment overrides so source checks
+cannot be redirected to another repository, worktree, index or object store.
+Assume-unchanged and skip-worktree index entries are rejected so they cannot hide
+edited tracked inputs from status and diff.
 All 36 cases, exact raster checks, grant/retention controls and sanitizer settings
 remain unchanged. The original consolidation-head preflight failure is preserved
 in its CI run, not relabeled as a pass.
@@ -39,7 +46,9 @@ The suite compiles unchanged `Apps/serial_monitor.c`, the native PortableApps
 adapter and PortableSerialClient. Thin test-only lifecycle wrappers expose the
 actual paired module init/fini and app_main implementations to the production
 loader while recording entry/return/fini/unload. Compilation renames only those
-implementation symbols; source bytes remain identical to PR157. No Runtime API,
+implementation symbols. In the original stacked cohort these source bytes are
+identical to PR157. In the direct-main cohort, the adapter has the exact newer-main
+composition described above; the monitor and client remain unchanged. No Runtime API,
 capability acquire/release, or stream-client function is stubbed. A dynamic
 symbol gate requires the app's unresolved `risc_runtime_get_api` to resolve
 from the real Runtime host executable.

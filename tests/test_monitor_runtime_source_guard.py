@@ -1,5 +1,6 @@
 """Real Git negative controls for stacked and flattened monitor source custody."""
 import importlib.util
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -85,6 +86,60 @@ class SourceGuardTest(unittest.TestCase):
         self.git("checkout", "--detach", "-q", self.root_commit)
         with self.assertRaises(AssertionError):
             BRIDGE.verify_source_scope(self.root_commit)
+
+    def test_tree_replacements_cannot_hide_production_changes(self):
+        self.write("Apps/serial_monitor.c", "changed\n")
+        head = self.commit()
+        replacement = self.git("rev-parse", "HEAD^{tree}")
+        self.git("replace", self.tree, replacement)
+        # Establish the original failure mode before invoking the hardened guard.
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.git("rev-parse", self.flattened + "^{tree}"), self.tree)
+        self.assertEqual(self.git("diff", "--name-only", self.flattened), "")
+        with self.assertRaises(AssertionError):
+            BRIDGE.verify_source_scope(head)
+
+    def test_commit_replacements_cannot_hide_production_changes(self):
+        self.write("Apps/serial_monitor.c", "changed\n")
+        head = self.commit()
+        tree = self.git("rev-parse", "HEAD^{tree}")
+        replacement = self.git("commit-tree", tree, "-p", self.root_commit, "-m", "replacement fixture")
+        self.git("replace", self.flattened, replacement)
+        self.assertEqual(self.git("status", "--porcelain"), "")
+        self.assertEqual(self.git("diff", "--name-only", self.flattened), "")
+        with self.assertRaises(AssertionError):
+            BRIDGE.verify_source_scope(head)
+
+    def test_clean_status_cannot_hide_untracked_input_headers(self):
+        self.write("lib/PortableApps/include/new_input.h", "untracked input\n")
+        override = {"GIT_CONFIG_COUNT": "1", "GIT_CONFIG_KEY_0": "status.showUntrackedFiles",
+                    "GIT_CONFIG_VALUE_0": "no"}
+        with patch.dict(os.environ, override):
+            self.assertEqual(self.git("status", "--porcelain"), "")
+            self.assertIn("?? lib/PortableApps/include/new_input.h", BRIDGE.source_status(self.root))
+
+    def test_git_environment_cannot_redirect_clean_source_checks(self):
+        with tempfile.TemporaryDirectory() as redirected:
+            subprocess.run(["git", "clone", "--no-hardlinks", "--quiet", str(self.root), redirected],
+                           env=BRIDGE.git_environment(), check=True)
+            self.write("lib/PortableApps/include/new_input.h", "untracked input\n")
+            override = {"GIT_DIR": str(Path(redirected) / ".git"), "GIT_WORK_TREE": redirected}
+            with patch.dict(os.environ, override):
+                self.assertEqual(self.git("status", "--porcelain"), "")
+                self.assertIn("?? lib/PortableApps/include/new_input.h", BRIDGE.source_status(self.root))
+
+    def test_index_flags_cannot_hide_edited_tracked_inputs(self):
+        path = "Apps/serial_monitor.c"
+        for flag in ("assume-unchanged", "skip-worktree"):
+            with self.subTest(flag=flag):
+                self.git("update-index", "--" + flag, path)
+                self.write(path, "hidden production mutation\n")
+                self.assertEqual(self.git("status", "--porcelain", "--untracked-files=all"), "")
+                self.assertEqual(self.git("diff", "--name-only", self.flattened), "")
+                with self.assertRaises(AssertionError):
+                    BRIDGE.source_status(self.root)
+                self.git("update-index", "--no-" + flag, path)
+                self.git("restore", path)
 
     def test_wrong_consolidated_tree_is_rejected(self):
         with patch.object(BRIDGE, "CONSOLIDATED_TREE", "0" * 40):

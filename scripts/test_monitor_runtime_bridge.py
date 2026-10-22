@@ -25,8 +25,23 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def git_environment():
+    # Attribute source to the requested checkout, never an ambient Git directory,
+    # worktree, index, object store or injected configuration. No network is used.
+    return {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+
+
 def git(root, *args):
-    return subprocess.check_output(["git", "-C", str(root), *args], text=True).strip()
+    return subprocess.check_output(["git", "--no-replace-objects", "-C", str(root), *args],
+                                   env=git_environment(), text=True).strip()
+
+
+def source_status(root):
+    # These index flags hide edited inputs from both status and diff.
+    flagged = [entry[2:] for entry in git(root, "ls-files", "-v", "-z").split("\0")
+               if entry and (entry[0].islower() or entry[0] == "S")]
+    assert not flagged, "Source index must not hide tracked inputs: " + repr(flagged)
+    return git(root, "status", "--porcelain", "--untracked-files=all")
 
 
 def write_json(path, value):
@@ -39,13 +54,13 @@ def verify_source_scope(system_sha):
     # expected rendering, functional result or accepted product baseline.
     anchor = None
     for candidate in (CONSOLIDATED_SOURCE, BASE):
-        result = subprocess.run(["git", "-C", str(ROOT), "merge-base",
+        result = subprocess.run(["git", "--no-replace-objects", "-C", str(ROOT), "merge-base",
                                  "--is-ancestor", candidate, system_sha],
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=git_environment())
         if result.returncode == 0:
             anchor = candidate
             break
-    assert anchor is not None, "System must descend from an exact qualified source cohort"
+    assert anchor is not None, "System must descend from an exact published source cohort"
     if anchor == CONSOLIDATED_SOURCE:
         assert git(ROOT, "rev-parse", anchor + "^{tree}") == CONSOLIDATED_TREE
     allowed = {"scripts/test_monitor_runtime_bridge.py", ".github/workflows/monitor-runtime-bridge.yml",
@@ -138,8 +153,8 @@ def main():
 def execute(a, runtime, out):
     system_sha = git(ROOT, "rev-parse", "HEAD")
     assert git(runtime, "rev-parse", "HEAD") == RUNTIME
-    assert not git(runtime, "status", "--porcelain"), "Runtime must be clean"
-    status = git(ROOT, "status", "--porcelain")
+    assert not source_status(runtime), "Runtime must be clean"
+    status = source_status(ROOT)
     assert a.development or not status, "System must be clean"
     source_anchor = verify_source_scope(system_sha)
     initial = json.loads((out/"evidence.json").read_text())
@@ -209,8 +224,8 @@ def execute(a, runtime, out):
                         results.append(result)
             assert a.development or len(results) == 36
             assert len({(r["mode"],r["activation"],r["width"],r["height"]) for r in results}) == len(results)
-            assert git(ROOT, "status", "--porcelain") == status
-            assert not git(runtime, "status", "--porcelain")
+            assert source_status(ROOT) == status
+            assert not source_status(runtime)
             receipt["result"] = "DEVELOPMENT_PASS" if a.development else "PASS"
             receipt["phase"] = "complete"
         finally:
