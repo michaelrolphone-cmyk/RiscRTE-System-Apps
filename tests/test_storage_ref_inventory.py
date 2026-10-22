@@ -52,6 +52,21 @@ class StorageRefInventoryTests(unittest.TestCase):
         self.assertEqual(item["hits"][1]["line"], 2)
         self.assertIn(first, item["url"])
 
+    def test_replace_refs_cannot_change_reported_commit_or_blob_bytes(self):
+        original = "storage.files\n"
+        self.write("Apps/client.c", original)
+        first = self.commit()
+        original_blob = self.git("rev-parse", first + ":Apps/client.c")
+        self.write("Apps/client.c", "SD.open(\"different\");\n")
+        later = self.commit()
+        replacement_blob = self.git("rev-parse", later + ":Apps/client.c")
+        self.git("replace", original_blob, replacement_blob)
+        self.git("replace", first, later)
+        item = self.scan(first)["files"][0]
+        self.assertEqual(item["blob"], original_blob)
+        self.assertEqual(item["sha256"], hashlib.sha256(original.encode()).hexdigest())
+        self.assertEqual(item["hits"], [{"line": 1, "kinds": ["generic_file_contract"]}])
+
     def test_arduino_recipes_and_configuration_are_covered(self):
         for path in ["src/main.ino", "scripts/build.py", ".github/workflows/build.yml", "platformio.ini", "CMakeLists.txt"]:
             self.write(path, "storage.installed-files\n")
@@ -60,7 +75,7 @@ class StorageRefInventoryTests(unittest.TestCase):
         self.assertEqual(result["scanned_by_role"]["configuration"], 3)
 
     def test_role_hints_keep_nonconsumers_distinct(self):
-        cases = {"Apps/a.c": "application", "Services/files/a.c": "provider_or_service", "Drivers/sd/a.c": "provider_or_service", "sdk/include/api.h": "interface_or_header", "tests/a.c": "test_fixture", "archive/a.c": "historical", "assets/a.h": "generated_or_asset", "docs/evidence/a.json": "documentation_evidence", "vendor/a.c": "third_party"}
+        cases = {"Apps/a.c": "application", "Services/files/a.c": "provider_or_service", "Drivers/sd/a.c": "provider_or_service", "sdk/include/api.h": "interface_or_header", "tests/a.c": "test_fixture", "archive/a.c": "historical", "custody/old/apps/a.c": "historical", "release/1.0/a.c": "generated_or_asset", "assets/a.h": "generated_or_asset", "docs/evidence/a.json": "documentation_evidence", "vendor/a.c": "third_party"}
         for path, role in cases.items():
             self.assertEqual(audit.role_for(path), role)
 

@@ -5,6 +5,8 @@ python scripts/audit_storage_refs.py --manifest sources.json \
     --checkout-root /path/to/repositories --output report.json
 Checkouts must already contain every manifest commit. No network or checkout
 mutation is performed by this script (Git may hydrate a partial clone).
+Evidence records exact line numbers and immutable links, not copied source text.
+Replacement objects are disabled for every Git invocation.
 """
 import argparse
 from collections import Counter
@@ -24,7 +26,7 @@ PATTERNS = {
     "persistence_contract": r"(?:storage\.(?:app-data|key-value)|RiscAppData|RiscKeyValue|\bfopen\s*\()",
     "block_transport_contract": r"(?:usb\.device\.msc|RiscStorageExport|RiscUsbDeviceMsc)",
     "file_io": r"\b(?:fread|fwrite|fclose|opendir|readdir|closedir|fsync|fflush|fseek|ftell|unlink|rename|mkdir|rmdir)\s*\(",
-    "indirect_storage_api": r"(?:->|\.)\s*(?:file_|storage_|sd_|usb_|installed_apps|app_data|key_value)|\b(?:T5AppApi|T5AppRuntime|T5InstalledApps|RiscInstalledApps|RiscFileOpen|T5FileOpen)",
+    "indirect_storage_api": r"(?:->|\.)\s*(?:file_|dir_|storage_|sd_|usb_|read_file|write_file|remove_file|rename_file|installed_apps|app_data|key_value)|\b(?:T5AppApi|T5AppRuntime|T5InstalledApps|RiscInstalledApps|RiscFileOpen|T5FileOpen)",
 }
 REGEX = {key: re.compile(value) for key, value in PATTERNS.items()}
 SOURCE_SUFFIXES = {".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".inc", ".ino", ".ipp", ".rs", ".s"}
@@ -34,20 +36,20 @@ MAX_BLOB_BYTES = 2 * 1024 * 1024
 
 
 def git(root, *args, input_bytes=None):
-    return subprocess.check_output(["git", "-C", str(root), *args], input=input_bytes)
+    return subprocess.check_output(["git", "--no-replace-objects", "-C", str(root), *args], input=input_bytes)
 
 
 def role_for(path):
     """Conservative path hints, not an inference that a match is a defect."""
     p = PurePosixPath(path)
     parts = {part.lower() for part in p.parts}
-    if parts & {"archive", "archives", "historical", "legacy"}:
+    if parts & {"archive", "archives", "historical", "legacy", "custody", "reference", "snapshots", "replay"}:
         return "historical"
     if parts & {"test", "tests", "fixtures", "fixture"} or p.name.startswith("test_"):
         return "test_fixture"
     if parts & {"docs", "doc", "evidence", "receipts"}:
         return "documentation_evidence"
-    if parts & {"generated", "assets", "fonts", "font", "images", "dist", "build"} or any(x.startswith("build-") for x in parts):
+    if parts & {"generated", "assets", "fonts", "font", "images", "dist", "build", "release", "releases"} or any(x.startswith("build-") for x in parts):
         return "generated_or_asset"
     if parts & {"vendor", "third_party", "third-party", "node_modules"}:
         return "third_party"
@@ -159,11 +161,11 @@ def scan_repository(source, root):
         for number, line in enumerate(lines, 1):
             kinds = [key for key, regex in REGEX.items() if regex.search(line)]
             if kinds:
-                hits.append({"line": number, "kinds": kinds, "source": line.strip()[:320]})
+                hits.append({"line": number, "kinds": kinds})
         if hits:
             files.append({"path": path, "blob": blob, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "role_hint": role,
                           "url": f"https://github.com/{name}/blob/{commit}/{quote(path, safe='/')}", "hits": hits})
-    return {"repository": name, "commit": commit, "default_branch": source.get("default_branch"), "source_mode": "immutable Git blobs; worktree and index ignored",
+    return {"repository": name, "commit": commit, "default_branch": source.get("default_branch"), "ref_kind": source.get("ref_kind", "default_branch"), "source_mode": "immutable Git blobs; worktree and index ignored",
             "tracked_entries": len(entries), "scanned_files": sum(scanned.values()), "scanned_by_role": dict(sorted(scanned.items())),
             "skipped_by_reason": dict(sorted(skipped.items())), "unresolved_paths": unresolved,
             "matching_files": len(files), "files": files}
