@@ -1,0 +1,27 @@
+{
+  "archive_sha256": "4ebccce20fd7b4e4fcf32153f8a009027ed56c130ef5a2738ed3b2e5d6240775",
+  "archive_bytes": 66959,
+  "files": {
+    "action-contract.log": "307801040ba8d8249503f53151d050eb559032d9a861fafa3a92146d91dad515",
+    "adapter-receipt.json": "af2f90e23eac68f0972c6bb47ec4245a15cdc80179f15a46788c65bcf7309474",
+    "adapter.log": "ecb80214735d6735a26e98b504a7a9a8dcf409adeaebe62659cd17c9f54ddf5a",
+    "admission-normal.log": "d12a072c8f6c8325e231319836fd387554ec9beffbc1f5f7cc2835b267fa579e",
+    "admission-sanitized.log": "935019fe9fc4373a8d68db8ebd2f6f8e0fe13b84415e90a49b6f4355e11730b5",
+    "alarm-selection.log": "232510837418f6c9db387f99f0988f507ce9a699d03696b1208c8e5eb1093384",
+    "base-original-receipt.json": "06d9bb1ecd399c704a0308cbfa8758bb7ba92fc695a718932072dbe532ecbbf8",
+    "build-selection.log": "435ec312d4e25e688621f77d50fac8168ed63d9da173ce3f9d82c7ab33d1296e",
+    "candidate-original-receipt.json": "76543041c92a1db04c1553ea56007464974fea1f583b873c765937627bb83d8b",
+    "controls.log": "9f1ee728ca12ccd8e92295117f0b93ef47f155c9d3988904d471a1d203a41a42",
+    "firmware-original-receipt.json": "c24ed76bc8af04d40d7035f7b5a44f51915a1a6a251c07ca69db5ee33ade5479",
+    "header-preprocessor-proof.json": "35cacd095fec8311c76ce3a0b9cc9e6c4ff2408df691bae999ce0df9752cf1cd",
+    "native-selection.log": "9b36dcb11ab8942949ee27a59042db858b58f30362a69104c19611860169ddb4",
+    "ordinary-quick.log": "da6ede5cd68c8a556fdb1c5420f8ccb904aa957a74afb27c5b63dc262ece0cf1",
+    "original-selector-off-analysis.json": "c9b4caf8550e39f50f24fed6a729f8852d5d820319723fb8857580f6d0bf8530",
+    "qualification.json": "3deb12e418c8ea8f8f2b5f4e567e1fa1cc191301b3518dfc95844db82625cc01",
+    "roundtrip-receipt.json": "e51a3ef8ff47fed016f2b481cc1df757bb97f3fd4e10aa727d5b5a29ffe498cf",
+    "roundtrip.log": "db26e51ec96feaef2d82d81b546007743f16038d8c4d0018b2ade70dcb8ee8cb",
+    "session.log": "485583b1f8c95943658a27fb5c0f9e2faa3cba88201bb2cd95aa914964e08532",
+    "source-repair.patch": "26f0c5bbbbaf8fc7977c27264e048a19bc4367b821e95a0227404464cebcc0cf"
+  },
+  "excluded": "Compiled binaries, frames and original full CI ZIPs. This is a report-level archive, not a self-contained source replay bundle. Source trees are Git-addressed; raw CI artifact identities remain in the report."
+}

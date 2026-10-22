@@ -6,6 +6,22 @@ import shutil
 import portable_idle_build
 
 RESIDENT_CLIENT_VERSIONS={'springboard': '1.7.30', 'settings': '1.3.28', 'file_browser': '1.5.21', 'wifi_settings': '1.1.27', 'ota_update': '1.2.14', 'app_store': '1.2.14', 'usb_sd_transfer': '0.1.11'}
+QUICK_REMOTE_BATTERY_SDK='RiscBluetoothSensorsV1.h'
+# Exact canonical RiscRTE-Drivers/sdk/driver/RiscBluetoothSensorsV1.h copy.
+QUICK_REMOTE_BATTERY_SDK_SHA256='62f21be78604b6c32c47beb8317f1fea059653b407baa73a93ee23ce8d8d050e'
+QUICK_REMOTE_BATTERY_SOURCES=(
+    'scripts/portable_quick_build.py',
+    'scripts/build_paper_clock.py',
+    'lib/PortableApps/include/PortableQuickActions.h',
+    'lib/PortableApps/include/PortableRemoteBattery.h',
+    'lib/PortableApps/src/adapter.c',
+    'lib/PortableApps/src/quick_adapter.inc',
+    'lib/PortableApps/src/quick_remote_battery.inc',
+    'lib/PortableApps/src/quick_paper.inc',
+    'lib/PortableApps/src/quick_reference.inc',
+    'lib/PortableApps/src/quick_atomic.inc',
+    'lib/PortableApps/src/quick_actions.c',
+    'lib/PortableApps/src/remote_battery.c')
 QUICK_NATIVE_SOURCES=(
     'scripts/portable_quick_build.py',
     'lib/PortableApps/include/PortableQuickActions.h',
@@ -52,6 +68,23 @@ def version(args,app,current):
         return '0.3.21' if getattr(args,'resident_loading_catalog',None) else '0.3.20'
     return RESIDENT_CLIENT_VERSIONS.get(app,current) if getattr(args,'resident_shell_client',False) else current
 
+
+def _numeric_version(value):
+    # Match Runtime safeVersion's numeric-only, bounded identity grammar.
+    if not isinstance(value,str) or len(value)>=32 or not re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+',value):return None
+    parts=tuple(int(part) for part in value.split('.'))
+    return parts if all(part<=4294967295 for part in parts) else None
+
+
+def remote_battery_version(args,parser,current):
+    if not getattr(args,'quick_remote_battery',False):return current
+    selected=getattr(args,'quick_remote_battery_version',None)
+    candidate=_numeric_version(selected);baseline=_numeric_version(current)
+    if candidate is None:parser.error('--quick-remote-battery-version requires Runtime-compatible numeric major.minor.patch')
+    if baseline is None or candidate<=baseline:
+        parser.error('--quick-remote-battery-version must be newer than the selected ordinary profile version '+str(current))
+    return selected
+
 def options(parser):
     portable_idle_build.options(parser)
     parser.add_argument('--raster-snapshot',action='store_true',help='Opt-in immutable command recording and bounded app-local raster replay; direct/OOM compatibility remains available')
@@ -69,6 +102,8 @@ def options(parser):
     parser.add_argument('--paper-transitions',action='store_true',help='Opt-in paper Quick Controls pull-down motion; independent of app crossfade')
     parser.add_argument('--quick-usb-transfer',action='store_true',help='Paper sheet launch to the separately granted USB SD transfer app')
     parser.add_argument('--quick-radios',action='store_true',help='Explicit Wi-Fi/Bluetooth quick-control selection; requires --quick-actions and exact radio grants')
+    parser.add_argument('--quick-remote-battery',action='store_true',help='Local opt-in manual per-session remote battery scan/selection; requires resident host, Quick Actions, radios and paper transitions; no background scan or RF policy changes')
+    parser.add_argument('--quick-remote-battery-version',help='Explicit local-only numeric version paired with --quick-remote-battery; must exceed the selected ordinary profile, not reserved or verified unused')
     parser.add_argument('--frontlight-tone',action='store_true',help='Optional host-owned warm/cool slider through a size-checked display suffix; no new grants')
     parser.add_argument('--frontlight-tone-sdk',type=Path,help='SDK containing RiscDisplayOutputFrontlightV1.h')
     parser.add_argument('--crash-report-sd',action='store_true',help='Back up the copied crash OSD report in dedicated AppData, then export to SD at safe Home checkpoints')
@@ -98,6 +133,35 @@ def configure(args,parser,root,output,includes=None):
             'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in QUICK_NATIVE_SOURCES}}
     host=getattr(args,'resident_shell_host',False)
     client=getattr(args,'resident_shell_client',False)
+    remote=getattr(args,'quick_remote_battery',False)
+    remote_version=getattr(args,'quick_remote_battery_version',None)
+    if remote!=(remote_version is not None):parser.error('--quick-remote-battery and --quick-remote-battery-version must be selected together')
+    if remote:
+        if _numeric_version(remote_version) is None:parser.error('--quick-remote-battery-version requires Runtime-compatible numeric major.minor.patch')
+        if client or not (host and args.quick_actions and args.quick_radios and getattr(args,'paper_transitions',False)):
+            parser.error('--quick-remote-battery requires --resident-shell-host, --quick-actions, --quick-radios and --paper-transitions; resident clients are unsupported')
+        if not all((root/name).is_file() for name in QUICK_REMOTE_BATTERY_SOURCES):
+            parser.error('--quick-remote-battery requires the remote battery implementation in selected System source')
+        for header in (root/'lib/PortableApps/include'/QUICK_REMOTE_BATTERY_SDK,
+                       Path(includes)/QUICK_REMOTE_BATTERY_SDK if includes else None):
+            if header is None or not header.is_file():
+                parser.error('--quick-remote-battery requires the canonical copied and staged '+QUICK_REMOTE_BATTERY_SDK)
+            if hashlib.sha256(header.read_bytes()).hexdigest()!=QUICK_REMOTE_BATTERY_SDK_SHA256:
+                parser.error('--quick-remote-battery SDK differs from the exact canonical '+QUICK_REMOTE_BATTERY_SDK)
+        # These are local implementation choices, not a user rule or deployment
+        # policy: observed address/type selection is RAM-only for this session.
+        args.quick_remote_battery_receipt={
+            'selected':True,'default_selected':False,'status':'local-development-not-reserved-or-published',
+            'local_app_version':remote_version,'version_verified_unused':False,'capability':'bluetooth.sensors@1','instance':0,
+            'declaration':'optional','grant_authority':'explicit-owner-policy-only',
+            'additional_declaration_rows':1,'additional_grant_rows_if_authorized':1,
+            'omitted_behavior':'Home admitted; remote battery unavailable; no automatic grant',
+            'selection':'manual-address-and-type-per-session','auto_target_selection':False,
+            'scan':'manual-bounded-passive','scan_duration_ms':15000,'freshness_ms':10000,
+            'persistent_selection':False,'background_scan':False,'rf_policy_changed':False,
+            'hardware_verified':False,'publication_ready':False,
+            'source_sha256':{name:hashlib.sha256((root/name).read_bytes()).hexdigest() for name in QUICK_REMOTE_BATTERY_SOURCES},
+            'sdk_sha256':{QUICK_REMOTE_BATTERY_SDK:QUICK_REMOTE_BATTERY_SDK_SHA256}}
     tone=getattr(args,'frontlight_tone',False)
     if tone and not (host and getattr(args,'paper_transitions',False)):
         parser.error('--frontlight-tone requires resident host and paper transitions')
@@ -208,6 +272,7 @@ def configure(args,parser,root,output,includes=None):
     flags+=['-DPORTABLE_QUICK_ACTIONS'];names=['quick_actions.c','quick_render.c','quick_session.c']
     if native:flags.append('-DPORTABLE_QUICK_NATIVE')
     if args.quick_radios:flags+=['-DPORTABLE_QUICK_RADIOS'];names+=['quick_radios.c']
+    if remote:flags+=['-DPORTABLE_QUICK_REMOTE_BATTERY'];names+=['remote_battery.c']
     target=output/'licenses/quick-controls';target.mkdir(parents=True,exist_ok=True)
     for name in ['FAClassic-LICENSE.txt','Orbitron-OFL.txt','Rajdhani-OFL.txt','SOURCES.json']:
         shutil.copyfile(root/'lib/PortableApps/quick_fonts'/name,target/name)
@@ -240,6 +305,13 @@ def requirements(args,needs):
         if item not in needs:needs.append(item)
 
 
+def optional_requirements(args, optional):
+    # A declaration never supplies owner authority. Omission remains admissible.
+    if getattr(args,'quick_remote_battery',False):
+        item={'capability':'bluetooth.sensors','api':1}
+        if item not in optional:optional.append(item)
+
+
 def exports(args, names):
     if getattr(args,'resident_shell_host',False) or getattr(args,'resident_shell_client',False):
         names.add('risc_resident_app_descriptor_v1')
@@ -247,6 +319,10 @@ def exports(args, names):
 
 
 def record(args, value):
+    remote=getattr(args,'quick_remote_battery_receipt',None)
+    if remote:
+        value['quick_remote_battery']=remote
+        value.setdefault('optional_grant_bindings',{})['bluetooth.sensors']=[0]
     alarm_native=getattr(args,'alarm_native_receipt',None)
     if alarm_native:value['alarm_native']=alarm_native
     native=getattr(args,'quick_native_receipt',None)

@@ -53,6 +53,9 @@ static void quick_paper_capabilities(void) {
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
  quick.ui.audio_controls=!!(quick_alarm_output_modes()&ALARM_MODE_SOUND);
  quick.ui.clean_refresh_valid=!!(info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT);
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+ quick.ui.remote_battery_controls=true;
+#endif
 #endif
 #ifndef PORTABLE_QUICK_RADIOS
  /* An ungranted radio is unavailable, never implicitly enabled or launched. */
@@ -73,6 +76,10 @@ static void qp_slider(int y,const char *label,unsigned icon,unsigned value,bool 
 #endif
 static bool quick_paper_changed(const pqa_state *a,const pqa_state *b) {
  return
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+  a->remote_battery_page!=b->remote_battery_page || a->remote_battery_controls!=b->remote_battery_controls ||
+  a->remote_battery_offset!=b->remote_battery_offset || a->remote_battery_revision!=b->remote_battery_revision ||
+#endif
 #ifdef PORTABLE_FRONTLIGHT_TONE
   a->tone!=b->tone || a->applied_tone!=b->applied_tone || a->tone_controls!=b->tone_controls ||
   a->tone_valid!=b->tone_valid || a->applied_tone_valid!=b->applied_tone_valid ||

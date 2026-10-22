@@ -1,0 +1,34 @@
+{
+  "observed_at_utc": "2026-10-22T15:30:51.489354+00:00",
+  "local_tests": {
+    "command": "python -m unittest discover -s tests -v",
+    "tests": 194,
+    "result": "passed",
+    "duration_seconds": 15.161,
+    "focused_inventory_tests": 11
+  },
+  "reproduction": {
+    "result": "passed",
+    "method": "Second complete immutable scan; all generated split-report bytes identical."
+  },
+  "evidence_privacy": {
+    "result": "passed",
+    "method": "Every hit contains only line and kinds. No source-line literals are copied; immutable file URLs/hashes supply source evidence."
+  },
+  "content_sha256": {
+    "scripts/audit_storage_refs.py": "0657b72ebce3e5ee124bddf80643e497cc22a7d4ac19b91c4330ec0d5e77f017",
+    "tests/test_storage_ref_inventory.py": "b7b291ea102aed9d5df51218190d703bb052a0faf3a08a55e3a86824792d40b8",
+    ".github/workflows/storage-inventory.yml": "22bcf5ec4f43bab607069bb1005a101173025ba0f9e57c1a989314e26961d3dc"
+  },
+  "hosted_predecessor": {
+    "commit": "8118cbabaedab39ad5116dd5efb046c29ddb209f",
+    "result": "success",
+    "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/runs/39804469395/job/119913867370"
+  },
+  "final_head_hosted_status": "pending at artifact generation; inspect exact PR head checks after publication",
+  "limitations": [
+    "No target builds or device tests were run by this inventory task.",
+    "Static inventory is not migration completion.",
+    "Predecessor CI success is not final-head success."
+  ]
+}

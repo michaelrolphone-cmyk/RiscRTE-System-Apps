@@ -163,6 +163,25 @@ static int tile_at(const pqa_state *s,int x, int y) {
         return -1;
     }
     if(s->paper) {
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+        if(s->remote_battery_controls) {
+            if(s->remote_battery_page) {
+                if(y>=88&&y<140) {
+                    if(x>=32&&x<160)return 11;
+                    if(x>=176&&x<304)return 12;
+                    if(x>=320&&x<448)return 13;
+                }
+                if(y>=664&&y<712) {
+                    if(x>=32&&x<228)return 14;
+                    if(x>=252&&x<448)return 15;
+                }
+                for(unsigned i=0;i<6;i++)if(x>=32&&x<448&&y>=248+(int)i*64&&y<308+(int)i*64&&
+                    i+s->remote_battery_offset<s->remote_battery_count)return 16+(int)i;
+                return -1;
+            }
+            if(x>=240&&x<448&&y>=744&&y<796)return 10;
+        }
+#endif
 #ifdef PORTABLE_QUICK_USB_TRANSFER
 #ifndef PORTABLE_RESIDENT_SHELL_HOST
         if(x>=32 && x<448 && y>=612 && y<676)return 7;
@@ -227,6 +246,9 @@ static void begin_contact(pqa_state *s, uint32_t now, uint32_t id, int x, int y)
     s->pressed_tile = -1;
     s->handle_pressed = false;
     s->moved = false;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+    s->remote_contact_epoch=s->remote_battery_epoch;
+#endif
     s->saved_brightness = s->brightness;
 #ifdef PORTABLE_FRONTLIGHT_TONE
     s->saved_tone=s->tone;
@@ -289,6 +311,22 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             if (!s->moved) { s->torch = false; emit_torch(s); }
         } else if (previous == PQA_PANEL_PENDING && !s->moved) {
             if (s->handle_pressed) s->target_q8 = 0;
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+            else if(s->paper&&s->remote_battery_controls&&s->pressed_tile>=10&&
+                    s->remote_contact_epoch==s->remote_battery_epoch &&
+                    ((s->pressed_tile==10&&!s->remote_battery_page)||
+                     (s->pressed_tile>10&&s->remote_battery_page))) {
+                static const uint32_t actions[]={PQA_REMOTE_OPEN,PQA_REMOTE_BACK,PQA_REMOTE_SCAN,
+                    PQA_REMOTE_STOP,PQA_REMOTE_PREVIOUS,PQA_REMOTE_NEXT};
+                s->action_remote_epoch=s->remote_contact_epoch;
+                if(s->pressed_tile<16)s->pending|=actions[s->pressed_tile-10];
+                else if(s->pressed_tile<22 &&
+                        (unsigned)s->remote_battery_offset+(unsigned)s->pressed_tile-16u<s->remote_battery_count) {
+                    s->action_remote_index=(uint8_t)(s->remote_battery_offset+s->pressed_tile-16);
+                    s->pending|=PQA_REMOTE_SELECT;
+                }
+            }
+#endif
 #ifdef PORTABLE_PAPER_TRANSITIONS
             else if(s->paper && s->pressed_tile==6 && s->brightness_valid) {
                 s->brightness=s->brightness?0:s->last_nonzero_brightness;
@@ -352,7 +390,12 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
             /* Moving panels are draggable but never activate controls. */
             int local_y = y + (pqa_open_q8(s) - s->position_q8) / 256;
             bool settled = s->position_q8 == pqa_open_q8(s) && s->target_q8 == pqa_open_q8(s);
-            if (settled && s->brightness_valid && (s->paper ?
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+            bool ordinary_controls=!s->remote_battery_page;
+#else
+            const bool ordinary_controls=true;
+#endif
+            if (settled && ordinary_controls && s->brightness_valid && (s->paper ?
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
                 paper_slider_at(s,0,x,y)
 #else
@@ -361,10 +404,10 @@ bool pqa_input(pqa_state *s, uint32_t now, bool valid, unsigned count,
                 : s->native_width?pqa_rect_contains(native.slider_hit[0],x,local_y):x>=16 && x<224 && local_y>=(s->contexts_controls?24:48) && local_y<(s->contexts_controls?53:77)))
                 s->gesture = PQA_BRIGHTNESS_DRAG;
 #ifdef PORTABLE_FRONTLIGHT_TONE
-            else if(settled && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
+            else if(settled && ordinary_controls && s->paper && s->tone_controls && s->tone_valid && paper_slider_at(s,2,x,y))
                 s->gesture=PQA_TONE_DRAG;
 #endif
-            else if (settled &&
+            else if (settled && ordinary_controls &&
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
                 s->audio_controls &&
 #endif
