@@ -6,6 +6,7 @@ on:
       - '.github/workflows/monitor-runtime-bridge.yml'
       - 'test/native_apps/monitor_runtime/**'
       - 'scripts/test_monitor_runtime_bridge.py'
+      - 'tests/test_monitor_runtime_source_guard.py'
       - 'docs/MONITOR_RUNTIME_BRIDGE.md'
       - 'Apps/serial_monitor*'
       - 'lib/PortableApps/**'
@@ -96,6 +97,8 @@ jobs:
               assert receipt['failure']['type'] == ('AssertionError' if phase == 'preflight' else 'OSError')
           print('Two isolated failure-receipt controls: PASS (not monitor cases)')
           PYNEG
+      - name: Reject source-cohort mutations
+        run: python System/tests/test_monitor_runtime_source_guard.py -v
       - name: Run unchanged monitor through production Runtime
         shell: bash
         run: |

@@ -10,6 +10,29 @@ all 36 distinct cases in each normal and ASan/UBSan lane, and verified receipts.
 Initial failures and later fixes remain separate commits/runs; no history is
 replaced. PR157 source, tests, evidence and failed runs remain untouched.
 
+## Direct-main consolidation source cohort
+
+PR160 composes the preserved source onto current main rather than retaining the
+old stacked Git ancestry. Its published source commit is
+`cfb92541c25d96920fdeb55585703537542e9a62`, tree
+`f32edf56fa80801ba3c2b1558a8c1d5687497068`, with parent
+`7270a10ed9cefba6ec1368060196a13bb3370985`. The monitor and serial client remain
+byte-identical to PR158; the adapter preserves newer main and adds exactly the
+same 14 monitor-gated lines. Mouse source and all already-public capture evidence
+are also preserved. These are source-cohort identities, not refreshed expected
+renderings, functional results, accepted hashes or frozen product baselines.
+
+The runner retains the original PR157 source guard and additionally accepts only
+descendants of this exact published consolidation commit and tree. After either
+anchor, only this isolated bridge suite, runner, workflow, documentation and its
+source-guard regression file may differ. Production source, existing tests and
+historical evidence remain guarded. Seven real-Git regression tests cover both
+accepted lineages and rejection of unknown ancestry, altered tree identity,
+committed or uncommitted production changes, old tests and evidence changes.
+All 36 cases, exact raster checks, grant/retention controls and sanitizer settings
+remain unchanged. The original consolidation-head preflight failure is preserved
+in its CI run, not relabeled as a pass.
+
 ## Actual composition and its boundary
 
 The suite compiles unchanged `Apps/serial_monitor.c`, the native PortableApps

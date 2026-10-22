@@ -12,6 +12,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "0dd03a6b65c4e643081d8a2d8e175f08b5c02c23"
+CONSOLIDATED_SOURCE = "cfb92541c25d96920fdeb55585703537542e9a62"
+CONSOLIDATED_TREE = "f32edf56fa80801ba3c2b1558a8c1d5687497068"
 RUNTIME = "6a3b3d46f5b2857eacc6e9863799dec1f466b036"
 MODES = "normal select-second slow-frame reopen missing-grant wrong-grant close-retained call-overrun close-overrun".split()
 SIZES = [(240, 240), (480, 800)]
@@ -29,6 +31,29 @@ def git(root, *args):
 
 def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n")
+
+
+def verify_source_scope(system_sha):
+    # Keep the original stacked source boundary. The independently published
+    # direct-main composition is a second immutable source cohort, not a new
+    # expected rendering, functional result or accepted product baseline.
+    anchor = None
+    for candidate in (CONSOLIDATED_SOURCE, BASE):
+        result = subprocess.run(["git", "-C", str(ROOT), "merge-base",
+                                 "--is-ancestor", candidate, system_sha],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if result.returncode == 0:
+            anchor = candidate
+            break
+    assert anchor is not None, "System must descend from an exact qualified source cohort"
+    if anchor == CONSOLIDATED_SOURCE:
+        assert git(ROOT, "rev-parse", anchor + "^{tree}") == CONSOLIDATED_TREE
+    allowed = {"scripts/test_monitor_runtime_bridge.py", ".github/workflows/monitor-runtime-bridge.yml",
+               "docs/MONITOR_RUNTIME_BRIDGE.md", "tests/test_monitor_runtime_source_guard.py"}
+    changed = git(ROOT, "diff", "--name-only", anchor).splitlines()
+    assert all(path in allowed or path.startswith("test/native_apps/monitor_runtime/")
+               for path in changed), changed
+    return anchor
 
 
 def manifests(folder, mode, activation):
@@ -114,15 +139,11 @@ def execute(a, runtime, out):
     system_sha = git(ROOT, "rev-parse", "HEAD")
     assert git(runtime, "rev-parse", "HEAD") == RUNTIME
     assert not git(runtime, "status", "--porcelain"), "Runtime must be clean"
-    subprocess.run(["git", "-C", str(ROOT), "merge-base", "--is-ancestor", BASE, system_sha], check=True)
     status = git(ROOT, "status", "--porcelain")
     assert a.development or not status, "System must be clean"
-    # No production or pre-existing suite/evidence differences from exact PR157.
-    allowed = {"scripts/test_monitor_runtime_bridge.py", ".github/workflows/monitor-runtime-bridge.yml", "docs/MONITOR_RUNTIME_BRIDGE.md"}
-    changed = git(ROOT, "diff", "--name-only", BASE).splitlines()
-    assert all(path in allowed or path.startswith("test/native_apps/monitor_runtime/") for path in changed), changed
+    source_anchor = verify_source_scope(system_sha)
     initial = json.loads((out/"evidence.json").read_text())
-    initial.update(phase="staging", system=system_sha, runtime=RUNTIME, system_status=status.splitlines())
+    initial.update(phase="staging", system=system_sha, runtime=RUNTIME, system_status=status.splitlines(), source_anchor=source_anchor)
     write_json(out/"evidence.json", initial)
     stage, build = out / "include", out / "build"
     shutil.copytree(ROOT / "lib/PortableApps/include", stage)
@@ -141,7 +162,7 @@ def execute(a, runtime, out):
     flags = ["-std=c11", *common, "-fPIC", "-fvisibility=hidden", *includes]
     defines = ["-D"+name for name in DEFINES]
     commands, results = [], []
-    receipt = {"result": "UNQUALIFIED", "phase": "build-and-test", "system": system_sha, "base": BASE, "runtime": RUNTIME,
+    receipt = {"result": "UNQUALIFIED", "phase": "build-and-test", "system": system_sha, "base": BASE, "source_anchor": source_anchor, "runtime": RUNTIME,
                "system_status": status.splitlines(), "system_tree": git(ROOT, "rev-parse", "HEAD^{tree}"), "runtime_tree": git(runtime, "rev-parse", "HEAD^{tree}"), "sanitized": a.sanitize, "development": a.development,
                "expected_cases": 36, "runtime_headers": canonical, "commands": commands, "cases": results,
                "sanitizer_environment": {name: env[name] for name in ("ASAN_OPTIONS", "UBSAN_OPTIONS")}}
