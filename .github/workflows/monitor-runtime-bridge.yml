@@ -1,0 +1,123 @@
+name: Monitor real Runtime host bridge
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/monitor-runtime-bridge.yml'
+      - 'test/native_apps/monitor_runtime/**'
+      - 'scripts/test_monitor_runtime_bridge.py'
+      - 'docs/MONITOR_RUNTIME_BRIDGE.md'
+      - 'Apps/serial_monitor*'
+      - 'lib/PortableApps/**'
+      - 'lib/NativeApps/**'
+  push:
+    branches: ['qualify/monitor-runtime-bridge-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  host-bridge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [normal, sanitized]
+    env:
+      SYSTEM_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      RUNTIME_SHA: 6a3b3d46f5b2857eacc6e9863799dec1f466b036
+      PYTHONDONTWRITEBYTECODE: '1'
+      ASAN_OPTIONS: detect_leaks=0
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SYSTEM_SHA }}
+          fetch-depth: 0
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: ${{ env.RUNTIME_SHA }}
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install raster reader
+        run: python -m pip install Pillow==11.3.0
+      - name: Verify exact clean source cohort
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C System rev-parse HEAD)" = "$SYSTEM_SHA"
+          test "$(git -C Runtime rev-parse HEAD)" = "$RUNTIME_SHA"
+          test -z "$(git -C System status --porcelain)"
+          test -z "$(git -C Runtime status --porcelain)"
+          mkdir evidence
+          {
+            printf 'System %s\nRuntime %s\n' "$SYSTEM_SHA" "$RUNTIME_SHA"
+            printf 'System tree %s\n' "$(git -C System rev-parse HEAD^{tree})"
+            printf 'Runtime tree %s\n' "$(git -C Runtime rev-parse HEAD^{tree})"
+            printf 'Run %s attempt %s lane %s\n' "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" '${{ matrix.lane }}'
+            cc --version
+            c++ --version
+            python --version
+            python -m pip show Pillow
+          } > evidence/source-and-tools.txt
+      - name: Run unchanged monitor through production Runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=()
+          if [[ '${{ matrix.lane }}' == sanitized ]]; then flags+=(--sanitize); fi
+          python System/scripts/test_monitor_runtime_bridge.py --runtime Runtime --output evidence/bridge "${flags[@]}" 2>&1 | tee evidence/console.log
+      - name: Verify exact-head receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          root = Path('evidence/bridge')
+          receipt = json.loads((root/'evidence.json').read_text())
+          assert receipt['result'] == 'PASS' and not receipt['development']
+          assert receipt['system'] == os.environ['SYSTEM_SHA']
+          assert receipt['runtime'] == os.environ['RUNTIME_SHA']
+          assert not receipt['system_status']
+          assert receipt['sanitized'] == ('${{ matrix.lane }}' == 'sanitized')
+          assert len(receipt['cases']) == receipt['expected_cases'] == 36
+          modes = 'normal select-second slow-frame reopen missing-grant wrong-grant close-retained call-overrun close-overrun'.split()
+          expected = {(m,a,w,h) for m in modes for a in ('eager','demand') for w,h in ((240,240),(480,800))}
+          assert {(r['mode'],r['activation'],r['width'],r['height']) for r in receipt['cases']} == expected
+          assert receipt['log_sha256'] == hashlib.sha256((root/'tests.log').read_bytes()).hexdigest()
+          for path, digest in receipt['source_hashes'].items():
+              assert hashlib.sha256((Path('System')/path).read_bytes()).hexdigest() == digest
+          for path, digest in {**receipt['runtime_headers'], **receipt['runtime_source_hashes']}.items():
+              assert hashlib.sha256((Path('Runtime')/path).read_bytes()).hexdigest() == digest
+          for case in receipt['cases']:
+              assert case['result'] == 'PASS'
+              for capture in case['captures']:
+                  image = root/case['directory']/capture['name']
+                  assert hashlib.sha256(image.read_bytes()).hexdigest() == capture['sha256']
+                  assert hashlib.sha256(image.with_suffix('.ppm').read_bytes()).hexdigest() == capture['ppm_sha256']
+          print('Exact-head 36-case receipt and source/raster hashes: PASS')
+          PY
+          test -z "$(git -C System status --porcelain)"
+          test -z "$(git -C Runtime status --porcelain)"
+      - name: Preserve hashes even on failure
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p evidence
+          find evidence -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > evidence/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monitor-runtime-${{ env.SYSTEM_SHA }}-${{ matrix.lane }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence/
+          retention-days: 90
+          if-no-files-found: error
