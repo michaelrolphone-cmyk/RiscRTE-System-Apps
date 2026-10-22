@@ -1,0 +1,65 @@
+{
+  "capture_date": "2026-10-21",
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "component": "mouse",
+  "source_mapping": {
+    "label": "mouse",
+    "branch": "capture/usb-mouse-consumer-20261021",
+    "source_commit": "72cca023420964321bf2249f059596f2703c00d7",
+    "tree": "581c40db32c4ef7319d6dd70c600b587281ae81a",
+    "parent": "403933000a7831192547304cf769b438ee8d2af3",
+    "local_commit": "b643fdfe7e36a5a007603c34e24f7953ee90b072",
+    "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/72cca023420964321bf2249f059596f2703c00d7"
+  },
+  "family_source_mappings": [
+    {
+      "label": "client",
+      "branch": "capture/usb-serial-client-20261021",
+      "source_commit": "403933000a7831192547304cf769b438ee8d2af3",
+      "tree": "d959bd31c689ea9a038069eb3bf0961a958d8539",
+      "parent": "0651a55513b0aa0dff1b6a9072303def08a97378",
+      "local_commit": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/403933000a7831192547304cf769b438ee8d2af3"
+    },
+    {
+      "label": "monitor",
+      "branch": "capture/usb-serial-monitor-ui-20261021",
+      "source_commit": "3babc8fd5d683e537bf85290c74ce9d78234803a",
+      "tree": "14c2b4e7a1566ea2910d7783864d969677280235",
+      "parent": "403933000a7831192547304cf769b438ee8d2af3",
+      "local_commit": "5843d1bf2079e66f837aec5eb03a1f15b9a95ae7",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/3babc8fd5d683e537bf85290c74ce9d78234803a"
+    },
+    {
+      "label": "mouse",
+      "branch": "capture/usb-mouse-consumer-20261021",
+      "source_commit": "72cca023420964321bf2249f059596f2703c00d7",
+      "tree": "581c40db32c4ef7319d6dd70c600b587281ae81a",
+      "parent": "403933000a7831192547304cf769b438ee8d2af3",
+      "local_commit": "b643fdfe7e36a5a007603c34e24f7953ee90b072",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/72cca023420964321bf2249f059596f2703c00d7"
+    }
+  ],
+  "qualification": "Incomplete unvalidated checkpoint. One strict-C unit body ran. Integration runner absent; four fixture drafts uncompiled. No sanitizer/current-native-SDK/final-review pass.",
+  "evidence_files": [
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/mouse/mouse-consumer.patch",
+      "bytes": 87216,
+      "sha256": "4cc64fe490914b5952dc34d48739cf4277a64ac927e3a889e6ec4c0bccf5b3b6",
+      "git_blob": "f36ddaa1a15296d9798ae0488ba6d43116e49893"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/mouse/mouse-consumer-incremental.bundle",
+      "bytes": 29814,
+      "sha256": "b22224273a8caa22e53deab5b408f9ff88751317355fa1e01791ffe5e8059360",
+      "git_blob": "4e20d9dbf0a538252f294fa855ba44cc5fbe47ed"
+    }
+  ],
+  "limits": [
+    "Original source trees are unchanged and captured in separate source commits.",
+    "Reconstructed GitHub commit IDs differ; original commit recovery is preserved by incremental bundles and patches.",
+    "No merge, release, target binary, product pin change, or physical USB/radio action.",
+    "Historical reports describe their original capture time; publication holds in those reports are superseded only for this GitHub source/evidence capture.",
+    "Selected technical evidence is included. Full recovery tarballs, executable test binaries, redundant reruns and raw internal tool or board replies are not included."
+  ]
+}

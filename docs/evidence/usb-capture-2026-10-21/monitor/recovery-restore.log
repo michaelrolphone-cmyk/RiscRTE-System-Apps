@@ -1,0 +1,21 @@
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: will change to "main" in Git 3.0. To configure the initial branch name
+hint: to use in all of your new repositories, which will suppress this warning,
+hint: call:
+hint:
+hint: 	git config --global init.defaultBranch <name>
+hint:
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint:
+hint: 	git branch -m <name>
+hint:
+hint: Disable this message with "git config set advice.defaultBranchName false"
+Initialized empty Git repository in /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/restored-source/.git/
+bcf02b442c68a68d7434601f719a98526cb5d897 refs/heads/tasker/native-serial-monitor-ui-20261021
+f9d55dbeb941ba40fb965f53172ce3e1b85af376 refs/heads/tasker/portable-serial-client-20261021
+f9d55dbeb941ba40fb965f53172ce3e1b85af376 refs/remotes/origin/HEAD
+f9d55dbeb941ba40fb965f53172ce3e1b85af376 refs/remotes/origin/tasker/portable-serial-client-20261021
+bcf02b442c68a68d7434601f719a98526cb5d897 HEAD
+Switched to branch 'tasker/native-serial-monitor-ui-20261021'
+Exact shallow source candidate restored; earlier upstream history is not included.

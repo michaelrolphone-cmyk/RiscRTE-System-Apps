@@ -1,0 +1,1638 @@
+From b643fdfe7e36a5a007603c34e24f7953ee90b072 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 21 Oct 2026 07:57:47 -0600
+Subject: [PATCH] Checkpoint unvalidated copied USB mouse consumer and fixtures
+
+---
+ docs/MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md  |  95 ++++++++
+ docs/PORTABLE_MOUSE_CONSUMER.md               | 141 ++++++++++++
+ .../MOUSE_CONSUMER_PROVENANCE.json            |  81 +++++++
+ .../include/PortableMouseConsumer.h           |  62 ++++++
+ .../include/RiscUsbControllerV1.h             | 102 +++++++++
+ lib/PortableApps/include/RiscUsbHidV1.h       | 104 +++++++++
+ lib/PortableApps/include/RiscUsbMouseV1.h     |  64 ++++++
+ lib/PortableApps/include/RiscUsbProviderV1.h  |  46 ++++
+ lib/PortableApps/src/PortableMouseConsumer.c  | 204 ++++++++++++++++++
+ scripts/test_portable_mouse_consumer.py       |  97 +++++++++
+ test/native_apps/mouse_runtime_consumer_app.c | 124 +++++++++++
+ .../mouse_runtime_dependency_witness.c        |  95 ++++++++
+ test/native_apps/mouse_runtime_fixture.h      |  29 +++
+ .../mouse_runtime_integration_test.cpp        |  73 +++++++
+ .../portable_mouse_consumer_test.c            | 190 ++++++++++++++++
+ 15 files changed, 1507 insertions(+)
+ create mode 100644 docs/MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md
+ create mode 100644 docs/PORTABLE_MOUSE_CONSUMER.md
+ create mode 100644 lib/PortableApps/MOUSE_CONSUMER_PROVENANCE.json
+ create mode 100644 lib/PortableApps/include/PortableMouseConsumer.h
+ create mode 100644 lib/PortableApps/include/RiscUsbControllerV1.h
+ create mode 100644 lib/PortableApps/include/RiscUsbHidV1.h
+ create mode 100644 lib/PortableApps/include/RiscUsbMouseV1.h
+ create mode 100644 lib/PortableApps/include/RiscUsbProviderV1.h
+ create mode 100644 lib/PortableApps/src/PortableMouseConsumer.c
+ create mode 100644 scripts/test_portable_mouse_consumer.py
+ create mode 100644 test/native_apps/mouse_runtime_consumer_app.c
+ create mode 100644 test/native_apps/mouse_runtime_dependency_witness.c
+ create mode 100644 test/native_apps/mouse_runtime_fixture.h
+ create mode 100644 test/native_apps/mouse_runtime_integration_test.cpp
+ create mode 100644 test/native_apps/portable_mouse_consumer_test.c
+
+diff --git a/docs/MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md b/docs/MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md
+new file mode 100644
+index 0000000..c3b9372
+--- /dev/null
++++ b/docs/MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md
+@@ -0,0 +1,95 @@
++# Mouse consumer unvalidated source checkpoint
++
++Development stopped at 2026-10-21 13:55 UTC to capture existing work in GitHub.
++This checkpoint is not delivered, completed, qualified, or task progress until
++its exact commit is verified in GitHub. Publication is coordinated separately;
++no push, PR creation, merge, release, product selection or hardware action was
++performed by this source work.
++
++## Repository and dependencies
++
++- Target repository: `michaelrolphone-cmyk/RiscRTE-System-Apps`.
++- Working branch: `work/mouse-copied-consumer`.
++- Base: `f9d55dbeb941ba40fb965f53172ce3e1b85af376`, the existing serial-client
++  candidate, whose own parent is `0651a55513b0aa0dff1b6a9072303def08a97378`.
++  Whether the serial-client base is in GitHub must be verified before publishing
++  this branch or choosing a PR base. Do not imply it is accepted upstream.
++- Native Runtime source: `6a3b3d46f5b2857eacc6e9863799dec1f466b036`.
++- Recovered Reader provider source: `c334919a05d393b7b3a536fceb117cfbb573a4ef`;
++  evidence head: `59177418ea746c7605b7b5a5aec501e70bdae80f` in existing draft
++  [PR468](https://github.com/michaelrolphone-cmyk/T5S3-Reader/pull/468), stacked
++  on open draft [PR467](https://github.com/michaelrolphone-cmyk/T5S3-Reader/pull/467).
++  Neither PR was changed. No abandonment or ownership transfer is inferred.
++
++The local recovered Reader input is a materialized source tree, not a Git
++checkout. The draft qualification runner deliberately expects a clean checkout
++at the exact evidence head, and cannot pass that check on this materialization.
++Restore or obtain the exact public checkout before running it. The immutable
++source custody was supplied by the prior recovery report; this checkpoint's
++header copies were compared directly to those recovered bytes, not freshly
++recovered from Git during this slice.
++
++## Captured source
++
++- `PortableMouseConsumer.h/.c`: opt-in app-local native generic lease consumer,
++  not a new mouse provider or product binding.
++- Four byte-identical USB ABI headers and provenance. Existing serial/provider
++  and stream-header dependencies are unchanged. T5 legacy lease getter unused.
++- Fault-injection unit fixture; draft documentation and qualification runner.
++- Four `test/native_apps/mouse_runtime_*` draft integration fixture files.
++
++The helper uses Runtime's provider-free stream-client invocation identity,
++without stream operations, before borrowed provider access. It separates
++copied-event/focus work from synchronous acquire/release graph lifecycle. It
++never directly calls provider poll/yield/raw HID. Initial snapshot, per-session
++held state, relative-event sequence checks, GAP recovery and terminal cleanup
++custody are implemented but not fully qualified.
++
++## Executed check
++
++At approximately 13:51 UTC, this focused command completed with exit code zero:
++
++```sh
++cc -std=c11 -Wall -Wextra -Werror -g -DPORTABLE_USB_MOUSE \
++  -Ilib/PortableApps/include lib/PortableApps/src/PortableMouseConsumer.c \
++  test/native_apps/portable_mouse_consumer_test.c -o /tmp/mouse-consumer-unit
++/tmp/mouse-consumer-unit
++```
++
++Compiler: `cc (Debian 14.2.0-19) 14.2.0`.
++Output: `mouse consumer: copied events, recovery, focus and custody PASS`.
++This one body used the existing System SDK prefix. No full-suite, sanitizer,
++current-native-SDK, target-build or physical test result is established here.
++
++A contract-only independent review established that pinned Runtime's
++`stream_client` getter is a suitable provider-free invocation identity check,
++that acquire services providers, and that failed graph release permanently ends
++borrowed-pointer usability. A separate final source review was stopped before
++completion. It reported no concrete blocker in inspected portions, not an
++approval or completed qualification.
++
++## Pending work and explicit limits
++
++1. Verify and publish this exact checkpoint plus its required base dependency
++   to GitHub, with an unvalidated draft PR. Do not call source delivery complete
++   until the remote SHA and PR are verified.
++2. Complete `scripts/run_mouse_runtime_integration.sh` (currently absent),
++   compile/review the four draft fixtures, and run real recovered provider plus
++   native Runtime graph tests. Intended eager/demand distinction: eager Runtime
++   retains a boot grant, so final graph cleanup is not helper-release cleanup.
++3. Run the complete draft qualification runner on exact clean upstream Git
++   checkouts normally and with ASan/UBSan. Record actual hashes/logs. No current
++   end-to-end runner success is claimed.
++4. Complete final independent review. Visible untested cases include a false
++   retain_invocation result, malformed stream-client tag version/size, and a
++   CONNECTED record at maximum device capacity.
++5. Independently qualify the producer executor, serialization, manifest/grant
++   admission and intended product input routing. No cursor, scaling or UI focus
++   policy is selected. Existing mouse poll has 20 ms report work, a 1 ms yield,
++   and separately bounded 100 ms raw HID calls; it is not a UI callback.
++6. Preserve lower-host quarantine/checked-host custody and X4 VBUS/role/source
++   route/current-limit/electrical proof. Raw HID's void host release does not
++   certify physical quiescence. No hardware acceptance is requested.
++
++All Reader/provider source, accepted binary bytes, existing application
++manifests, product pins and other owners' active branches remain unchanged.
+diff --git a/docs/PORTABLE_MOUSE_CONSUMER.md b/docs/PORTABLE_MOUSE_CONSUMER.md
+new file mode 100644
+index 0000000..d37b787
+--- /dev/null
++++ b/docs/PORTABLE_MOUSE_CONSUMER.md
+@@ -0,0 +1,141 @@
++# Copied USB mouse consumer candidate
++
++**Unvalidated checkpoint, 2026-10-21:** implementation/qualification was stopped
++for durable GitHub capture. Only the focused strict-C unit fixture was executed.
++The integration fixtures are uncompiled drafts and their runner is absent; the
++commands in the qualification section are therefore not runnable end-to-end yet.
++See `MOUSE_CONSUMER_CHECKPOINT_2026-10-21.md` for exact state and remaining work.
++
++`PortableMouseConsumer` is an opt-in, app-local lifecycle and copied-event
++helper above the existing `usb.hid.mouse@1` ABI. It is **not an integrated
++mouse feature**, a new provider, a cursor, or a producer executor. No application
++manifest, product selection, accepted binary, Runtime implementation or provider
++source changes accompany it.
++
++## Placement, ownership and exact inputs
++
++- System base: `f9d55dbeb941ba40fb965f53172ce3e1b85af376`.
++- Native Runtime: `6a3b3d46f5b2857eacc6e9863799dec1f466b036`.
++- Recovered Reader evidence head: `59177418ea746c7605b7b5a5aec501e70bdae80f`.
++- Mouse production source: `c334919a05d393b7b3a536fceb117cfbb573a4ef`.
++- Existing [Reader PR468](https://github.com/michaelrolphone-cmyk/T5S3-Reader/pull/468)
++  and its parent [PR467](https://github.com/michaelrolphone-cmyk/T5S3-Reader/pull/467)
++  remain open draft work, preserved read-only. Their age and empty review/assignee
++  lists are not evidence of abandonment or an ownership handoff.
++
++System is the existing home of native app-local helpers (`lib/PortableApps`),
++including `PortableSerialClient`. This helper remains unbound there rather than
++choosing a product owner or modifying the upstream PR stack. Product placement,
++PR ownership coordination and promotion into current Drivers packaging still
++require reconciliation before publication/integration.
++
++`MOUSE_CONSUMER_PROVENANCE.json` pins every included provider declaration. The
++four USB headers are new byte-identical copies; three transitive provider headers
++and two native stream declarations already match. The legacy
++`T5ProviderCapabilityApi.h` is unchanged and its getter is never called. Current
++native apps instead use `RiscRuntimeV1.acquire/release` with opaque invocation
++grants. The existing System Runtime header already has the needed prefix;
++tests also compile against the complete exact Runtime SDK, without replacing
++the System header or overlaying a historical SDK on product builds.
++
++## Contract and use
++
++Build the helper with `PORTABLE_USB_MOUSE` and the PortableApps include path.
++Without that opt-in, init returns UNSUPPORTED without any external call.
++
++1. Initialize a fresh, exclusively owned object once during the active native
++   invocation. It cannot be copied, persisted, reinitialized while live/retained,
++   or have its fields changed by callers. Its grant and subscription cannot be
++   released by another owner. The object and Runtime table live until invocation
++   teardown or retained custody.
++2. Explicitly open with the configured capability instance and optional device
++   filter. Instance zero means a unique authorized provider, not first-match
++   fallback. Runtime's existing manifest/grant policy remains authoritative.
++3. The existing `stream_client` getter provides a Runtime-minted unique
++   invocation identity. It is used only as a provider-free identity check,
++   never to open or operate a stream. The helper rechecks it before borrowed
++   provider access and after acquire, including failed acquire. It does not
++   mistake a still-live invocation for proof that a released grant is valid.
++4. Subscribe, then snapshot at the ABI's maximum four-state capacity. Failed
++   capacity/snapshot attempts return GAP with no partial state. Only a fully
++   validated snapshot establishes the baseline. No retry loop is hidden in a
++   public call.
++5. Each next step takes at most one copied event or one snapshot, plus one local
++   provider status read. A successful EVENT contains exactly one event. Deliver
++   its relative x/y/wheel/pan counts once; do not accumulate or replay them from
++   state arrays. Filtered subscriptions may legitimately skip global sequence
++   values, but zero, duplicate and regressing sequence records are rejected.
++6. Identity is `(device, session)`; composite-device interfaces are separate.
++   The previous/current copied states expose held-button reconciliation. REPORT
++   transitions must agree with the prior mask. DISCONNECTED delivers releases
++   once. Missing sessions in a replacement baseline release their old held
++   state. A BASELINE is not a synthetic press/click event.
++7. GAP, malformed records and unavailable provider state clear assumptions
++   immediately. GAP recovery occurs on a later next step. A successful snapshot
++   discards the subscription's queue and replaces the baseline; no lost relative
++   movement, scroll or click history can be reconstructed. Malformed snapshots
++   stay unready even if a faulty provider acknowledged its GAP.
++8. Focus loss produces an immediate previous-to-empty RESET without a provider
++   call. Unfocused next calls read nothing. Focus regain requires snapshot,
++   which discards queued pre-focus events. Repeated same-focus calls do not
++   reset or replay state. Product focus policy is deliberately not selected.
++9. Close clears held input, unsubscribes once, then releases the native grant.
++   Failed unsubscribe preserves both tokens and never calls release. A failed
++   or malformed release preserves the original grant, permanently ending all
++   borrowed-pointer access. Subsequent calls make no external calls.
++
++The helper checks structure prefixes, callbacks, nonzero identity, reserved
++fields, filters, duplicate snapshot sessions/interfaces, event kinds and button
++transition consistency. Provider context may be null, as in the real provider.
++Native apps remain trusted code: validation is not an arbitrary-pointer sandbox.
++
++## Retention and execution boundaries
++
++Uncertain cleanup is terminal. For a confirmed current owner the helper attempts
++`retain_invocation` once, retaining images and dependencies without more provider
++calls. A stale invocation is rejected before dereferencing the borrowed table
++and never fences the newer owner. After RETAINED, return promptly; do not retry,
++free, reinitialize, poll, or attempt recovery in place. A failed fence is not
++proof that cleanup completed. Keep exact custody evidence.
++
++The non-I/O promise applies only to copied `next`/`snapshot`/`status`, focus and
++local reconciliation on the existing ABI. **Open and close are lifecycle work,
++not UI callbacks.** Native acquire may activate/service providers; release may
++synchronously quiesce the graph and its lower dependencies. There is no helper
++wall-clock guarantee for those operations.
++
++All calls must run on the owner task serialized with the provider executor,
++including any producer. The helper never invokes mouse `poll`, Runtime yield,
++raw HID, scheduler sleep, callbacks or a worker task. Obtaining a native grant
++does not schedule the recovered mouse provider: its descriptor has no generic
++poll/service suffix. A safe producer executor is still missing. Mouse poll has
++up to 20 ms report work, a 1 ms scheduler yield, separately bounded 100 ms raw
++HID descriptor/control calls (possibly two during setup), and inherited lower
++cleanup bounds. None fits an assumed UI callback budget merely because event
++consumption is cheap.
++
++The unchanged raw HID close still invokes a void host release. Its true return
++cannot prove physical quiescence. Existing checked-host/controller work,
++lower-host quarantine and retained graph custody remain mandatory and separate.
++No X4 VBUS/source-route/current-limit/role safety, physical interoperability,
++input routing, native package admission or product acceptance is claimed.
++
++## Reproducible qualification
++
++Run with the exact clean upstream checkouts:
++
++```sh
++python3 scripts/test_portable_mouse_consumer.py --runtime /path/to/RiscRTE \
++  --reader /path/to/Reader-mouse --output /path/to/evidence/normal
++ASAN_OPTIONS=detect_leaks=0 python3 scripts/test_portable_mouse_consumer.py \
++  --runtime /path/to/RiscRTE --reader /path/to/Reader-mouse \
++  --output /path/to/evidence/sanitized --sanitize
++```
++
++The runner verifies exact source locks and ABI bytes, compiles strict C and C++
++header/opt-out checks, runs fault-injection unit coverage and the software native
++graph composition fixture, and records input hashes, compiler commands and
++logs. The production provider is unchanged; any HID/clock fixture and manual
++poll scheduling are test-only. LeakSanitizer is disabled in ptrace-constrained
++runners; ASan/UBSan success is not leak or hardware qualification. No target
++binary, target timing, remote CI, publication, radio or physical USB test is run.
+diff --git a/lib/PortableApps/MOUSE_CONSUMER_PROVENANCE.json b/lib/PortableApps/MOUSE_CONSUMER_PROVENANCE.json
+new file mode 100644
+index 0000000..8e3c1b7
+--- /dev/null
++++ b/lib/PortableApps/MOUSE_CONSUMER_PROVENANCE.json
+@@ -0,0 +1,81 @@
++{
++  "system_base": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
++  "runtime_commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++  "reader_commit": "59177418ea746c7605b7b5a5aec501e70bdae80f",
++  "provider_source_commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++  "scope": "Source-only app-local copied consumer. No ABI, provider source, accepted artifact, product pin or publication changes.",
++  "files": [
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscUsbMouseV1.h",
++      "destination": "lib/PortableApps/include/RiscUsbMouseV1.h",
++      "sha256": "bbdf2c8c92adcc23a3a720e51fa630b83f6fa0f0f28853ddab17c1041a37f416",
++      "new_copy": true
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscUsbHidV1.h",
++      "destination": "lib/PortableApps/include/RiscUsbHidV1.h",
++      "sha256": "5b5549c4cb718dec55f2aca8bc93f401b2d5a703d30aaa1a78d1bcdd26755b5c",
++      "new_copy": true
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscUsbControllerV1.h",
++      "destination": "lib/PortableApps/include/RiscUsbControllerV1.h",
++      "sha256": "226f083493085ecdcaa21a7c3bf1c269640b7d1ebaa099e7217fb64124f1dbed",
++      "new_copy": true
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscUsbProviderV1.h",
++      "destination": "lib/PortableApps/include/RiscUsbProviderV1.h",
++      "sha256": "65bbde81bf4159918392d9525dc0dfd5a075bf028a693d9a4d9981b1cecf516e",
++      "new_copy": true
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscSerialPortV1.h",
++      "destination": "lib/PortableApps/include/RiscSerialPortV1.h",
++      "sha256": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700",
++      "new_copy": false
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscProviderV2.h",
++      "destination": "lib/PortableApps/include/RiscProviderV2.h",
++      "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
++      "new_copy": false
++    },
++    {
++      "repository": "T5S3-Reader",
++      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
++      "source": "sdk/driver/RiscStreamProviderV1.h",
++      "destination": "lib/PortableApps/include/RiscStreamProviderV1.h",
++      "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
++      "new_copy": false
++    },
++    {
++      "repository": "RiscRTE",
++      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++      "source": "sdk/app/RiscStreamClientV1.h",
++      "destination": "lib/PortableApps/include/RiscStreamClientV1.h",
++      "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb",
++      "new_copy": false
++    },
++    {
++      "repository": "RiscRTE",
++      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++      "source": "sdk/driver/RiscStreamResultV1.h",
++      "destination": "lib/PortableApps/include/RiscStreamResultV1.h",
++      "sha256": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f",
++      "new_copy": false
++    }
++  ]
++}
+diff --git a/lib/PortableApps/include/PortableMouseConsumer.h b/lib/PortableApps/include/PortableMouseConsumer.h
+new file mode 100644
+index 0000000..22fa2c2
+--- /dev/null
++++ b/lib/PortableApps/include/PortableMouseConsumer.h
+@@ -0,0 +1,62 @@
++#ifndef PORTABLE_MOUSE_CONSUMER_H
++#define PORTABLE_MOUSE_CONSUMER_H
++/* Opt-in app-local copied-event consumer, NOT a producer executor or UI input
++ * binding. Build with PORTABLE_USB_MOUSE. All calls must be serialized with
++ * the provider on the current native app owner task, within one invocation.
++ * Never copy, persist, mutate, or reinitialize a live/retained object. */
++#include "RiscStreamClientV1.h"
++#include "RiscUsbMouseV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++enum {
++ PMC_EMPTY=0, PMC_EVENT=1, PMC_BASELINE=2, PMC_RESET=3, PMC_PAUSED=4,
++ PMC_INVALID=-1, PMC_UNSUPPORTED=-2, PMC_DENIED=-3, PMC_GAP=-4,
++ PMC_MALFORMED=-5, PMC_UNAVAILABLE=-6, PMC_CLOSED=-7, PMC_RETAINED=-8
++};
++/* Every call initializes this copied result. Only PMC_EVENT contains an event;
++ * deliver its relative counts exactly once, never from previous/current.
++ * BASELINE replaces held state, not a click/press replay. RESET or an error
++ * can release previous buttons: reconcile by (device,session), never by ORing
++ * devices. No snapshot or reset reconstructs lost relative/click history. */
++typedef struct {
++ risc_usb_mouse_event_v1 event;
++ risc_usb_mouse_state_v1 previous[RISC_USB_MOUSE_MAX_DEVICES];
++ risc_usb_mouse_state_v1 current[RISC_USB_MOUSE_MAX_DEVICES];
++ size_t previous_count, current_count;
++} portable_mouse_frame;
++typedef struct portable_mouse_consumer {
++ const struct portable_mouse_consumer *self;
++ const risc_runtime_api_v1 *runtime;
++ risc_runtime_capability_v1 grant;
++ const risc_usb_mouse_api_v1 *mouse;
++ uint64_t invocation, instance, filter, subscription, sequence;
++ risc_usb_mouse_state_v1 states[RISC_USB_MOUSE_MAX_DEVICES];
++ size_t count;
++ int result;
++ bool initialized, focused, needs_snapshot, cleanup_required, fence_accepted;
++} portable_mouse_consumer;
++/* Init a fresh object once. No capability acquisition. stream_client is used
++ * only as the existing provider-free invocation tag; no stream is opened. */
++bool portable_mouse_init(portable_mouse_consumer *, const risc_runtime_api_v1 *,
++                         uint64_t instance, uint64_t device_or_zero);
++/* Explicit lifecycle operations, NOT UI callbacks: acquire/release may run
++ * provider start/quiesce and have no app-local elapsed-time guarantee. Zero
++ * instance requires a unique authorized provider. No implicit fallback. */
++int portable_mouse_open(portable_mouse_consumer *, portable_mouse_frame *);
++int portable_mouse_close(portable_mouse_consumer *, portable_mouse_frame *);
++/* At most one next OR one snapshot plus one status per call; no poll, sleeps,
++ * yields, raw I/O, allocation, callbacks or retry loops. Production scheduling
++ * and serialization still need a separately qualified producer executor. */
++int portable_mouse_next(portable_mouse_consumer *, portable_mouse_frame *);
++/* Focus loss clears held state immediately without a provider call. Resume
++ * requires a new baseline on next, discarding all unfocused queued history. */
++int portable_mouse_focus(portable_mouse_consumer *, bool, portable_mouse_frame *);
++/* RETAINED is terminal. Preserve this object, exact subscription and grant;
++ * return promptly, do not retry cleanup/free/poll. A same-owner failure tries
++ * Runtime's retain_invocation once. A stale invocation never fences a newer
++ * owner and never dereferences its old borrowed provider pointer. */
++#ifdef __cplusplus
++}
++#endif
++#endif
+diff --git a/lib/PortableApps/include/RiscUsbControllerV1.h b/lib/PortableApps/include/RiscUsbControllerV1.h
+new file mode 100644
+index 0000000..7b2ecba
+--- /dev/null
++++ b/lib/PortableApps/include/RiscUsbControllerV1.h
+@@ -0,0 +1,102 @@
++#pragma once
++/* USB-specific provider-to-provider interfaces. Never include from RiscRTE
++ * compiled core. The controller API MUST be implemented by a hardware-owning
++ * ELF, not by a firmware bridge or mock in a shipping package. */
++#include "RiscUsbProviderV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_USB_CONTROLLER_API_V1 1u
++#define RISC_USB_HOST_MAX_DEVICES 8u
++#define RISC_USB_HOST_MAX_CLAIMS 16u
++
++/* Physical tokens are owned and generation-checked by the controller ELF.
++ * ATTACH/DETACH are delivered in order; a reused address MUST have a new
++ * physical token. Overflow/lost events MUST be treated as an error. */
++typedef struct {
++    uint32_t kind; /* 1=attach, 2=detach */
++    uint64_t physical_device;
++} risc_usb_controller_event_v1;
++
++typedef struct {
++    uint32_t api_version;
++    uint32_t struct_size;
++    void *context;
++    /* Return 1 for event, 0 for empty, negative for failure/lost events. */
++    int32_t (*next_event)(void *context, risc_usb_controller_event_v1 *event);
++    bool (*configuration)(void *context, uint64_t physical_device,
++                          uint8_t *bytes, size_t *inout_length,
++                          uint16_t *vid, uint16_t *pid);
++    bool (*claim)(void *context, uint64_t physical_device,
++                  uint8_t interface_number, uint8_t alternate,
++                  uint64_t *physical_claim);
++    /* False means resources might remain live: dependent provider MUST
++     * quarantine rather than return a claim slot to the allocation pool. */
++    bool (*release)(void *context, uint64_t physical_claim);
++    int32_t (*control)(void *context, uint64_t physical_device,
++                       uint8_t request_type, uint8_t request,
++                       uint16_t value, uint16_t index, uint8_t *payload,
++                       uint16_t length, uint32_t timeout_ms);
++    int32_t (*bulk_read)(void *context, uint64_t physical_claim,
++                         uint8_t endpoint, uint8_t *dst, size_t capacity,
++                         uint32_t timeout_ms);
++    int32_t (*bulk_write)(void *context, uint64_t physical_claim,
++                          uint8_t endpoint, const uint8_t *src, size_t length,
++                          uint32_t timeout_ms);
++    /* True only when controller has drained transfers, callbacks and DMA.
++     * Host must also have no outstanding device/interface claims. */
++    bool (*quiesce)(void *context);
++} risc_usb_controller_api_v1;
++
++/* Preserve the deployed discovery/interrupt/diagnostic prefix. U1 checked
++ * release/control slots follow it, so published HID binaries keep offsets. */
++typedef struct {
++    risc_usb_host_api_v1 host;
++    bool (*poll)(void *context, size_t max_events, size_t *processed);
++    bool (*devices)(void *context, uint64_t *out, size_t *inout_count);
++} risc_usb_host_legacy_discovery_v1;
++
++typedef struct {
++    risc_usb_host_api_v1 host;
++    bool (*poll)(void *context, size_t max_events, size_t *processed);
++    bool (*devices)(void *context, uint64_t *out,
++                    size_t *inout_count);
++    int32_t (*interrupt_read)(void *context, uint64_t claim, uint8_t endpoint,
++                              uint8_t *dst, size_t capacity, uint32_t timeout_ms);
++    bool (*diagnostic)(void *context, char *out, size_t capacity);
++    bool (*release_checked)(void *context, uint64_t claim);
++    /* The caller presents its own claim rather than a publicly discoverable
++     * device token. Interface recipient: index must equal claimed interface.
++     * Device recipient: claim must be the device's sole live claim, preventing
++     * one class from issuing device-wide vendor commands against another.
++     * Endpoint/other recipients and stale/closing/detached claims fail closed. */
++    int32_t (*control_claim)(void *context, uint64_t claim,
++                             uint8_t request_type, uint8_t request,
++                             uint16_t value, uint16_t index, uint8_t *payload,
++                             uint16_t length, uint32_t timeout_ms);
++} risc_usb_host_discovery_v1;
++
++/* Provider-owned, bounded and coherent discovery result. Presence and
++ * identification are distinct: if descriptor retrieval transiently fails,
++ * identified=0 but the same live token remains visible so an established
++ * session is NOT falsely closed. No descriptor bytes enter firmware. */
++typedef struct {
++    uint64_t token;
++    uint16_t vid, pid;
++    uint8_t identified;
++    uint8_t reserved[3];
++} risc_usb_device_identity_v1;
++
++/* The discovery ABI prefix above stays intact for independently installed
++ * classes. snapshot() consumes at most 16 controller events, then returns one
++ * ordered host-owned generation-token snapshot. Capacity failure publishes no
++ * partial records and returns the required count. Failed event polling returns
++ * false, never an apparently empty device set. */
++typedef struct {
++    risc_usb_host_discovery_v1 discovery;
++    bool (*snapshot)(void *context, risc_usb_device_identity_v1 *out,
++                     size_t *inout_count);
++} risc_usb_host_snapshot_v1;
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscUsbHidV1.h b/lib/PortableApps/include/RiscUsbHidV1.h
+new file mode 100644
+index 0000000..47913eb
+--- /dev/null
++++ b/lib/PortableApps/include/RiscUsbHidV1.h
+@@ -0,0 +1,104 @@
++#pragma once
++/* Driver-only USB HID composition ABI. The hardware-blind runtime treats all
++ * capability strings and pointers here as opaque, versioned provider data.
++ * Calls are serialized by the provider executor. Subscribers use copied events
++ * and opaque cursors, never pointers/callbacks into unloadable app modules. */
++#include "RiscUsbControllerV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_USB_HID_API_V1 1u
++#define RISC_USB_KEYBOARD_API_V1 1u
++#define RISC_USB_GAMEPAD_API_V1 1u
++#define RISC_USB_HID_MAX_INTERFACES 16u
++#define RISC_USB_HID_MAX_SESSIONS 8u
++#define RISC_USB_HID_MAX_REPORT 64u
++#define RISC_USB_HID_MAX_DESCRIPTOR 512u
++#define RISC_USB_INPUT_MAX_SUBSCRIBERS 4u
++#define RISC_USB_INPUT_QUEUE_LENGTH 32u
++
++/* Device is the usb.host generation-qualified identity. Interface/alternate
++ * select a single independently claimed HID function on composite devices. */
++typedef struct {
++    uint64_t device;
++    uint16_t vid, pid;
++    uint16_t report_descriptor_length;
++    uint8_t interface_number, alternate, subclass, protocol;
++    uint8_t interrupt_in, interval;
++    uint16_t max_packet;
++} risc_usb_hid_interface_v1;
++
++typedef struct {
++    uint32_t api_version, struct_size;
++    void *context;
++    bool (*scan)(void *context, size_t max_host_events);
++    bool (*interfaces)(void *context, risc_usb_hid_interface_v1 *out,
++                       size_t *inout_count);
++    uint64_t (*open)(void *context, uint64_t device, uint8_t interface_number,
++                     uint8_t alternate);
++    bool (*report_descriptor)(void *context, uint64_t session,
++                              uint8_t *out, size_t *inout_length);
++    bool (*set_boot_protocol)(void *context, uint64_t session, bool boot);
++    int32_t (*read)(void *context, uint64_t session, uint8_t *out,
++                    size_t capacity, uint32_t timeout_ms);
++    bool (*present)(void *context, uint64_t session);
++    bool (*close)(void *context, uint64_t session);
++} risc_usb_hid_api_v1;
++
++/* Event kinds: 1=connected, 2=disconnected, 3=key down, 4=key up,
++ * 5=GAP (subscriber must call snapshot). Usage is HID page 0x07, including
++ * modifiers 0xe0..0xe7. Sequence is monotonically increasing per provider. */
++typedef struct {
++    uint64_t sequence, device;
++    uint8_t kind, usage, modifiers, reserved;
++} risc_usb_keyboard_event_v1;
++typedef struct {
++    uint64_t device;
++    uint8_t modifiers, keys[6], connected;
++} risc_usb_keyboard_state_v1;
++typedef struct {
++    uint32_t api_version, struct_size;
++    void *context;
++    uint64_t (*subscribe)(void *context, uint64_t device_or_zero);
++    bool (*unsubscribe)(void *context, uint64_t subscription);
++    bool (*poll)(void *context, size_t max_reports);
++    /* 1 event, 0 empty, -1 stale handle or overflow/GAP; on -2 provider fault.
++     * GAP is also copied as an event when space permits; always resnapshot. */
++    int32_t (*next)(void *context, uint64_t subscription,
++                    risc_usb_keyboard_event_v1 *out);
++    bool (*snapshot)(void *context, risc_usb_keyboard_state_v1 *out,
++                     size_t *inout_count);
++} risc_usb_keyboard_api_v1;
++
++/* Gamepads expose current state: call poll(), then snapshot(). No historical
++ * button sequence is retained. Legacy next() coalesces changes per device,
++ * including connect/disconnect, and is not an ordered input journal. Keyboard
++ * next() remains an ordered event queue. Button bit zero is
++ * HID Button 1. Axes are normalized to signed 16-bit; hat is 0..7 or 8=none.
++ * Kinds: 1=connect, 2=disconnect, 3=state, 5=GAP. */
++typedef struct {
++    uint64_t device;
++    uint32_t buttons;
++    int16_t x, y, z, rx, ry, rz;
++    uint8_t hat, report_id, connected, reserved;
++} risc_usb_gamepad_state_v1;
++typedef struct {
++    uint64_t sequence;
++    uint8_t kind;
++    uint8_t reserved[7];
++    risc_usb_gamepad_state_v1 state;
++} risc_usb_gamepad_event_v1;
++typedef struct {
++    uint32_t api_version, struct_size;
++    void *context;
++    uint64_t (*subscribe)(void *context, uint64_t device_or_zero);
++    bool (*unsubscribe)(void *context, uint64_t subscription);
++    bool (*poll)(void *context, size_t max_reports);
++    int32_t (*next)(void *context, uint64_t subscription,
++                    risc_usb_gamepad_event_v1 *out);
++    bool (*snapshot)(void *context, risc_usb_gamepad_state_v1 *out,
++                     size_t *inout_count);
++} risc_usb_gamepad_api_v1;
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscUsbMouseV1.h b/lib/PortableApps/include/RiscUsbMouseV1.h
+new file mode 100644
+index 0000000..3daf083
+--- /dev/null
++++ b/lib/PortableApps/include/RiscUsbMouseV1.h
+@@ -0,0 +1,64 @@
++#pragma once
++/* Additive driver-only copied pointer input ABI. No changes to existing HID
++ * prefixes. Calls are serialized by the provider executor; no app pointers or
++ * callbacks are retained. The consumer owns cursor position/acceleration. */
++#include "RiscUsbHidV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_USB_MOUSE_API_V1 1u
++#define RISC_USB_MOUSE_MAX_DEVICES 4u
++#define RISC_USB_MOUSE_CONNECTED 1u
++#define RISC_USB_MOUSE_DISCONNECTED 2u
++#define RISC_USB_MOUSE_REPORT 3u
++#define RISC_USB_MOUSE_GAP 5u
++#define RISC_USB_MOUSE_STOPPED 0u
++#define RISC_USB_MOUSE_RUNNING 1u
++#define RISC_USB_MOUSE_CLOSING 2u
++#define RISC_USB_MOUSE_RETAINED 3u
++
++typedef struct {
++    uint64_t device, session;
++    uint32_t buttons; /* bit zero = HID Button 1 */
++    uint8_t interface_number, alternate, connected, reserved;
++} risc_usb_mouse_state_v1;
++typedef struct {
++    uint64_t sequence;
++    risc_usb_mouse_state_v1 state;
++    int32_t x, y, wheel, pan; /* signed relative counts, never accumulated */
++    uint32_t pressed, released;
++    uint8_t kind, reserved[7];
++} risc_usb_mouse_event_v1;
++typedef struct {
++    uint32_t api_version, struct_size;
++    void *context;
++    uint64_t (*subscribe)(void *context, uint64_t device_or_zero);
++    bool (*unsubscribe)(void *context, uint64_t subscription);
++    /* max_reports 1..16; one discovery attempt, <=20 ms report work, then an
++     * actual 1 ms scheduler yield. Raw HID descriptor/control calls have their
++     * own 100 ms bound. False includes transport/descriptor/report failures,
++     * close pending, or terminal retention. Always inspect status/snapshot. */
++    bool (*poll)(void *context, size_t max_reports);
++    /* 1 copied event, 0 empty, -1 invalid handle/output, -2 sticky GAP (out is
++     * initialized to GAP). GAP means lost relative motion AND button history;
++     * discard assumptions and call snapshot. Snapshot cannot recover motion.
++     * New subscriptions start in GAP. Unsubscribe and next remain local and
++     * usable during retained cleanup; they never call a lower provider. */
++    int32_t (*next)(void *context, uint64_t subscription,
++                    risc_usb_mouse_event_v1 *out);
++    /* Atomically replace this subscription's baseline with connected states
++     * matching its filter, discard its queued history, and acknowledge GAP.
++     * Insufficient capacity writes required count and does NOT acknowledge.
++     * Session is an opaque semantic generation, not a raw HID session token.
++     * A missing session means release every button previously held for it. */
++    bool (*snapshot)(void *context, uint64_t subscription,
++                      risc_usb_mouse_state_v1 *out, size_t *inout_count);
++    /* RUNNING may include unsupported/failed interfaces; it means the provider
++     * can operate, not that a mouse or physical host is qualified. CLOSING only
++     * retries close; RETAINED makes zero further dependency calls and prevents
++     * unload/restart. Dependencies must remain pinned until reboot. */
++    uint32_t (*status)(void *context);
++} risc_usb_mouse_api_v1;
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscUsbProviderV1.h b/lib/PortableApps/include/RiscUsbProviderV1.h
+new file mode 100644
+index 0000000..1b01570
+--- /dev/null
++++ b/lib/PortableApps/include/RiscUsbProviderV1.h
+@@ -0,0 +1,46 @@
++#pragma once
++/* Driver-only protocol ABI. RiscRTE core MUST treat usb.host, serial.port,
++ * and their provider interface tables as opaque versioned capabilities. */
++#include "RiscSerialPortV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define RISC_USB_HOST_API_V1 1u
++#define RISC_USB_CDC_API_V1 RISC_SERIAL_PORT_API_V1
++#define RISC_USB_CONFIG_LIMIT 4096u
++#define RISC_USB_CDC_MAX_SESSIONS 4u
++
++/* Device identities and interface claims are host-ELF-owned generation-safe
++ * tokens, not IDF objects. Negative transfers fail; zero means no data. */
++typedef struct {
++    uint32_t api_version;
++    uint32_t struct_size;
++    void *context;
++    bool (*configuration)(void *context, uint64_t device, uint8_t *bytes,
++                          size_t *inout_length, uint16_t *vid, uint16_t *pid);
++    bool (*claim)(void *context, uint64_t device, uint8_t interface_number,
++                  uint8_t alternate, uint64_t *claim);
++    void (*release)(void *context, uint64_t claim);
++    int32_t (*control)(void *context, uint64_t device, uint8_t request_type,
++                       uint8_t request, uint16_t value, uint16_t index,
++                       uint8_t *payload, uint16_t length, uint32_t timeout_ms);
++    int32_t (*bulk_read)(void *context, uint64_t claim, uint8_t endpoint,
++                         uint8_t *dst, size_t capacity, uint32_t timeout_ms);
++    int32_t (*bulk_write)(void *context, uint64_t claim, uint8_t endpoint,
++                          const uint8_t *src, size_t length, uint32_t timeout_ms);
++} risc_usb_host_api_v1;
++
++/* The generic serial ABI is identical to the previous class API prefix.
++ * Keep historical names for installed providers and their independent builds;
++ * compiled core uses only RiscSerialPortV1.h for semantic serial operations. */
++typedef risc_serial_port_api_v1 risc_usb_cdc_api_v1;
++typedef risc_serial_port_discovery_v1 risc_usb_serial_class_discovery_v1;
++
++/* The class's append-only inventory extension is provider-originated. It
++ * lists opaque generation-qualified physical identities through the class
++ * ELF itself rather than exporting host enumeration into compiled firmware. */
++typedef risc_serial_port_inventory_v1 risc_usb_serial_class_inventory_v1;
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/src/PortableMouseConsumer.c b/lib/PortableApps/src/PortableMouseConsumer.c
+new file mode 100644
+index 0000000..782b4e9
+--- /dev/null
++++ b/lib/PortableApps/src/PortableMouseConsumer.c
+@@ -0,0 +1,204 @@
++#include "PortableMouseConsumer.h"
++#include <string.h>
++
++static int result(portable_mouse_consumer *c, int code) {
++ if(c)c->result=code;
++ return code;
++}
++static void frame_begin(const portable_mouse_consumer *c, portable_mouse_frame *out) {
++ memset(out,0,sizeof(*out));
++ if(c && c->self==c && c->initialized) {
++  out->previous_count=out->current_count=c->count;
++  memcpy(out->previous,c->states,sizeof(c->states));
++  memcpy(out->current,c->states,sizeof(c->states));
++ }
++}
++static int clear(portable_mouse_consumer *c, portable_mouse_frame *out, int code) {
++ memset(c->states,0,sizeof(c->states));c->count=0;c->needs_snapshot=true;
++ memset(out->current,0,sizeof(out->current));out->current_count=0;
++ return result(c,code);
++}
++static int retain(portable_mouse_consumer *c, portable_mouse_frame *out, bool owner) {
++ c->cleanup_required=true;c->focused=false;
++ clear(c,out,PMC_RETAINED);
++ if(owner)c->fence_accepted=c->runtime->retain_invocation();
++ return PMC_RETAINED;
++}
++static bool tag(const risc_runtime_api_v1 *rt, uint64_t *context) {
++ risc_stream_client_v1 now={.struct_size=sizeof(now)};
++ if(!rt->stream_client(&now) || now.api_version!=RISC_STREAM_CLIENT_API_V1 ||
++    now.struct_size<sizeof(now) || !now.context)return false;
++ *context=now.context;return true;
++}
++static bool current(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ if(!out){result(c,PMC_INVALID);return false;}
++ frame_begin(c,out);
++ if(!c || c->self!=c || !c->initialized) {
++  result(c,PMC_INVALID);return false;
++ }
++ if(c->cleanup_required){result(c,PMC_RETAINED);return false;}
++ uint64_t now=0;
++ if(!tag(c->runtime,&now) || now!=c->invocation) {
++  retain(c,out,false);return false;
++ }
++ return true;
++}
++static bool grant_empty(const risc_runtime_capability_v1 *g) {
++ return g->struct_size==sizeof(*g) && !g->slot && !g->generation && !g->api;
++}
++static bool release(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ risc_runtime_capability_v1 copy=c->grant;
++ if(!c->runtime->release(&copy) || !grant_empty(&copy)) {
++  retain(c,out,true);return false;
++ }
++ c->grant=copy;c->mouse=NULL;return true;
++}
++static bool state_valid(const portable_mouse_consumer *c, const risc_usb_mouse_state_v1 *s) {
++ return s->device && s->session && !s->reserved && s->connected==1 &&
++        (!c->filter || s->device==c->filter);
++}
++static bool same(const risc_usb_mouse_state_v1 *a, const risc_usb_mouse_state_v1 *b) {
++ return a->device==b->device && a->session==b->session;
++}
++static bool interface_same(const risc_usb_mouse_state_v1 *a, const risc_usb_mouse_state_v1 *b) {
++ return a->device==b->device && a->interface_number==b->interface_number && a->alternate==b->alternate;
++}
++static int baseline(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ risc_usb_mouse_state_v1 states[RISC_USB_MOUSE_MAX_DEVICES]={0};
++ size_t n=RISC_USB_MOUSE_MAX_DEVICES;
++ if(!c->mouse->snapshot(c->mouse->context,c->subscription,states,&n))
++  return clear(c,out,PMC_GAP); /* No retry, no partial state, GAP remains. */
++ if(n>RISC_USB_MOUSE_MAX_DEVICES)return clear(c,out,PMC_MALFORMED);
++ for(size_t i=0;i<n;i++) {
++  if(!state_valid(c,&states[i]))return clear(c,out,PMC_MALFORMED);
++  for(size_t j=0;j<i;j++)
++   if(states[i].session==states[j].session || interface_same(&states[i],&states[j]))
++    return clear(c,out,PMC_MALFORMED);
++ }
++ memcpy(c->states,states,sizeof(states));c->count=n;c->needs_snapshot=false;
++ memcpy(out->current,states,sizeof(states));out->current_count=n;
++ return result(c,PMC_BASELINE);
++}
++static int phase(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ uint32_t state=c->mouse->status(c->mouse->context);
++ if(state==RISC_USB_MOUSE_RETAINED)return retain(c,out,true);
++ if(state==RISC_USB_MOUSE_RUNNING)return PMC_EMPTY;
++ if(state==RISC_USB_MOUSE_CLOSING || state==RISC_USB_MOUSE_STOPPED)
++  return clear(c,out,PMC_UNAVAILABLE);
++ return retain(c,out,true);
++}
++bool portable_mouse_init(portable_mouse_consumer *c, const risc_runtime_api_v1 *rt,
++                         uint64_t instance, uint64_t filter) {
++ if(!c)return false;
++ memset(c,0,sizeof(*c));c->self=c;c->instance=instance;c->filter=filter;
++ c->grant.struct_size=sizeof(c->grant);
++#ifndef PORTABLE_USB_MOUSE
++ (void)rt;result(c,PMC_UNSUPPORTED);return false;
++#else
++ if(!rt || rt->api_version!=RISC_RUNTIME_API_V1 ||
++    rt->struct_size<RISC_RUNTIME_STREAM_CLIENT_V1_SIZE || !rt->acquire ||
++    !rt->release || !rt->retain_invocation || !rt->stream_client || !tag(rt,&c->invocation)) {
++  result(c,PMC_UNSUPPORTED);return false;
++ }
++ c->runtime=rt;c->initialized=true;return true;
++#endif
++}
++int portable_mouse_open(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ if(!current(c,out))return c?c->result:PMC_INVALID;
++ if(c->subscription || c->grant.api)return result(c,PMC_INVALID);
++ risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
++ bool ok=c->runtime->acquire("usb.hid.mouse",RISC_USB_MOUSE_API_V1,c->instance,&grant);
++ c->grant=grant;
++ /* Check both successful and failed acquisition before borrowed access or a
++  * retention fence: neither operation may affect a newer invocation. */
++ if(!current(c,out))return c->result;
++ if(!ok) {
++  if(!grant_empty(&grant))return retain(c,out,true);
++  return result(c,PMC_DENIED);
++ }
++ if(grant.struct_size!=sizeof(grant) || !grant.slot || !grant.generation || !grant.api)
++  return retain(c,out,true);
++ const risc_usb_mouse_api_v1 *api=grant.api;
++ uint32_t header[2];memcpy(header,api,sizeof(header));
++ if(header[0]!=RISC_USB_MOUSE_API_V1 || header[1]<sizeof(*api) ||
++    !api->subscribe || !api->unsubscribe || !api->poll || !api->next || !api->snapshot || !api->status) {
++  if(!release(c,out))return c->result;
++  return result(c,PMC_UNSUPPORTED);
++ }
++ c->mouse=api;
++ if(phase(c,out)!=PMC_EMPTY)return c->result;
++ c->subscription=api->subscribe(api->context,c->filter);
++ if(!c->subscription) {
++  if(!release(c,out))return c->result;
++  return result(c,PMC_DENIED);
++ }
++ c->focused=true;c->needs_snapshot=true;c->sequence=0;
++ return baseline(c,out);
++}
++int portable_mouse_next(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ if(!current(c,out))return c?c->result:PMC_INVALID;
++ if(!c->subscription)return result(c,PMC_CLOSED);
++ if(!c->focused)return result(c,PMC_PAUSED);
++ if(phase(c,out)!=PMC_EMPTY)return c->result;
++ if(c->needs_snapshot)return baseline(c,out);
++ risc_usb_mouse_event_v1 event={0};
++ int32_t rc=c->mouse->next(c->mouse->context,c->subscription,&event);
++ if(rc==0)return result(c,PMC_EMPTY);
++ if(rc==-2)return clear(c,out,PMC_GAP); /* Snapshot on the next bounded step. */
++ if(rc!=1)return retain(c,out,true);
++ const risc_usb_mouse_state_v1 *s=&event.state;
++ bool malformed=!event.sequence || event.sequence<=c->sequence || !s->device ||
++   !s->session || s->reserved || (c->filter && s->device!=c->filter);
++ for(size_t i=0;i<sizeof(event.reserved);i++)malformed|=event.reserved[i]!=0;
++ size_t index=0;while(index<c->count && !same(s,&c->states[index]))++index;
++ if(event.kind==RISC_USB_MOUSE_CONNECTED) {
++  malformed|=index!=c->count || c->count==RISC_USB_MOUSE_MAX_DEVICES ||
++    !state_valid(c,s) || s->buttons || event.pressed || event.released ||
++    event.x || event.y || event.wheel || event.pan;
++  for(size_t i=0;i<c->count;i++)
++   malformed|=s->session==c->states[i].session || interface_same(s,&c->states[i]);
++ } else if(event.kind==RISC_USB_MOUSE_REPORT || event.kind==RISC_USB_MOUSE_DISCONNECTED) {
++  if(index==c->count)malformed=true;
++  else {
++   uint32_t old=c->states[index].buttons;
++   malformed|=!interface_same(s,&c->states[index]) ||
++     event.pressed!=(s->buttons & ~old) || event.released!=(old & ~s->buttons);
++  }
++  if(event.kind==RISC_USB_MOUSE_REPORT)malformed|=!state_valid(c,s);
++  else malformed|=s->connected || s->buttons || event.pressed ||
++      event.x || event.y || event.wheel || event.pan;
++ } else malformed=true;
++ if(malformed)return clear(c,out,PMC_MALFORMED);
++ if(event.kind==RISC_USB_MOUSE_DISCONNECTED) {
++  for(size_t i=index+1;i<c->count;i++)c->states[i-1]=c->states[i];
++  c->states[--c->count]=(risc_usb_mouse_state_v1){0};
++ } else {
++  c->states[index]=*s;if(index==c->count)++c->count;
++ }
++ c->sequence=event.sequence;out->event=event;
++ memcpy(out->current,c->states,sizeof(c->states));out->current_count=c->count;
++ return result(c,PMC_EVENT);
++}
++int portable_mouse_focus(portable_mouse_consumer *c, bool focused, portable_mouse_frame *out) {
++ if(!current(c,out))return c?c->result:PMC_INVALID;
++ if(!c->subscription)return result(c,PMC_CLOSED);
++ if(c->focused==focused)return result(c,focused?PMC_EMPTY:PMC_PAUSED);
++ c->focused=focused;
++ return clear(c,out,PMC_RESET);
++}
++int portable_mouse_close(portable_mouse_consumer *c, portable_mouse_frame *out) {
++ if(!current(c,out))return c?c->result:PMC_INVALID;
++ c->focused=false;clear(c,out,PMC_RESET);
++ if(!c->grant.api)return result(c,PMC_CLOSED);
++ if(c->mouse) {
++  uint32_t state=c->mouse->status(c->mouse->context);
++  if(state==RISC_USB_MOUSE_RETAINED || state>RISC_USB_MOUSE_RETAINED)
++   return retain(c,out,true);
++ }
++ if(c->subscription) {
++  if(!c->mouse->unsubscribe(c->mouse->context,c->subscription))return retain(c,out,true);
++  c->subscription=0;
++ }
++ if(!release(c,out))return c->result;
++ return result(c,PMC_CLOSED);
++}
+diff --git a/scripts/test_portable_mouse_consumer.py b/scripts/test_portable_mouse_consumer.py
+new file mode 100644
+index 0000000..f7b2d90
+--- /dev/null
++++ b/scripts/test_portable_mouse_consumer.py
+@@ -0,0 +1,97 @@
++#!/usr/bin/env python3
++"""Exact-source, software-only mouse consumer qualification; no publication."""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import shutil
++import subprocess
++import tempfile
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def sha(path):
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
++
++
++def main():
++    p = argparse.ArgumentParser(description=__doc__)
++    p.add_argument("--runtime", type=Path, required=True)
++    p.add_argument("--reader", type=Path, required=True)
++    p.add_argument("--output", type=Path, required=True)
++    p.add_argument("--sanitize", action="store_true")
++    args = p.parse_args()
++    args.runtime, args.reader, args.output = args.runtime.resolve(), args.reader.resolve(), args.output.resolve()
++    provenance = json.loads((ROOT / "lib/PortableApps/MOUSE_CONSUMER_PROVENANCE.json").read_text())
++    for repo, commit in ((args.runtime, provenance["runtime_commit"]), (args.reader, provenance["reader_commit"])):
++        assert git(repo, "rev-parse", "HEAD") == commit, repo
++        assert not git(repo, "status", "--porcelain"), f"Upstream must be clean: {repo}"
++    for f in provenance["files"]:
++        origin = args.reader if f["repository"] == "T5S3-Reader" else args.runtime
++        data = subprocess.check_output(["git", "-C", str(origin), "show", f'{f["commit"]}:{f["source"]}'])
++        assert data == (ROOT / f["destination"]).read_bytes() == (origin / f["source"]).read_bytes(), f
++        assert sha(ROOT / f["destination"]) == f["sha256"], f
++    args.output.mkdir(parents=True, exist_ok=True)
++    commands = []
++    log_path = args.output / "tests.log"
++    source = ROOT / "lib/PortableApps/src/PortableMouseConsumer.c"
++    fixture = ROOT / "test/native_apps/portable_mouse_consumer_test.c"
++    with log_path.open("w") as log:
++        def run(command, **kwargs):
++            command = list(map(str, command)); commands.append(command)
++            log.write("$ " + " ".join(command) + "\n"); log.flush()
++            subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True, **kwargs)
++        cc = os.environ.get("CC", "cc")
++        run([cc, "--version"])
++        san = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"] if args.sanitize else []
++        with tempfile.TemporaryDirectory(prefix="mouse-consumer-") as directory:
++            build = Path(directory)
++            includes = build / "sdk"
++            shutil.copytree(ROOT / "lib/PortableApps/include", includes)
++            # Existing System prefix and full current native Runtime both compile.
++            for label in ("system-prefix", "native-sdk"):
++                if label == "native-sdk":
++                    shutil.copy(args.runtime / "sdk/app/RiscRuntimeV1.h", includes)
++                common = ["-g", "-O1", "-Wall", "-Wextra", "-Werror", "-I" + str(includes)]
++                run([cc, "-std=c11", *common, *san, "-no-pie", "-DPORTABLE_USB_MOUSE", source, fixture, "-o", build / label])
++                run([build / label])
++            disabled = build / "disabled.c"
++            disabled.write_text('#include "PortableMouseConsumer.h"\n#include <assert.h>\n'
++                                'int main(void){portable_mouse_consumer c;assert(!portable_mouse_init(&c,0,0,0));'
++                                'assert(c.result==PMC_UNSUPPORTED && !c.initialized && !c.cleanup_required);return 0;}\n')
++            run([cc, "-std=c11", *common, *san, "-no-pie", source, disabled, "-o", build / "disabled"])
++            run([build / "disabled"])
++            cpp = build / "headers.cpp"
++            cpp.write_text('#include "PortableMouseConsumer.h"\n'
++                           'static_assert(sizeof(risc_usb_mouse_state_v1)==24,"mouse state");\n'
++                           'static_assert(sizeof(risc_usb_mouse_event_v1)==64,"mouse event");\n'
++                           'int main(){return 0;}\n')
++            run([os.environ.get("CXX", "c++"), "-std=c++17", *common, cpp, "-o", build / "headers"])
++            run([build / "headers"])
++        env = dict(os.environ, MOUSE_RUNTIME_SOURCE=str(args.runtime), MOUSE_READER_SOURCE=str(args.reader),
++                   SANITIZE="1" if args.sanitize else "0")
++        run(["bash", ROOT / "scripts/run_mouse_runtime_integration.sh"], env=env)
++    inputs = [p for pattern in ("lib/PortableApps/*MOUSE*", "lib/PortableApps/include/PortableMouseConsumer.h",
++                               "lib/PortableApps/src/PortableMouseConsumer.c", "test/native_apps/*mouse*",
++                               "scripts/*mouse*", "docs/PORTABLE_MOUSE_CONSUMER.md") for p in ROOT.glob(pattern) if p.is_file()]
++    evidence = dict(result="PASS", sanitized=args.sanitize, system_source=git(ROOT, "rev-parse", "HEAD"),
++                    system_status=git(ROOT, "status", "--porcelain").splitlines(),
++                    source_locks=provenance, source_hashes={str(p.relative_to(ROOT)): sha(p) for p in inputs},
++                    runtime_tree=git(args.runtime, "rev-parse", "HEAD^{tree}"),
++                    reader_tree=git(args.reader, "rev-parse", "HEAD^{tree}"),
++                    commands=commands, log_sha256=sha(log_path),
++                    sanitizer_environment={k: os.environ.get(k, "") for k in ("ASAN_OPTIONS", "UBSAN_OPTIONS", "LSAN_OPTIONS")},
++                    not_run=["target build/timing", "safe production poll executor", "product UI routing",
++                             "physical USB/X4 electrical acceptance", "publication", "remote CI"])
++    (args.output / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
++    print(f"Mouse consumer {'ASan/UBSan' if args.sanitize else 'normal'} PASS: {log_path}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/test/native_apps/mouse_runtime_consumer_app.c b/test/native_apps/mouse_runtime_consumer_app.c
+new file mode 100644
+index 0000000..f8400ce
+--- /dev/null
++++ b/test/native_apps/mouse_runtime_consumer_app.c
+@@ -0,0 +1,124 @@
++/* Native test app only. The production helper never polls. The producer
++ * harness below runs synchronously on the same checked native owner thread. */
++#include <PortableMouseConsumer.h>
++#include "mouse_runtime_fixture.h"
++#include <assert.h>
++#include <string.h>
++
++static portable_mouse_consumer consumer;
++static const risc_runtime_api_v1 *runtime;
++static unsigned calls(void) {return mouse_runtime_control()->lower_calls;}
++static bool mode(const char *s) {return !strcmp(mouse_runtime_mode(),s);}
++static void event_empty(const portable_mouse_frame *f) {
++ risc_usb_mouse_event_v1 empty={0};assert(!memcmp(&f->event,&empty,sizeof(empty)));
++}
++static void report(uint8_t buttons, int x, int y, int wheel, int pan) {
++ mouse_runtime_controls *c=mouse_runtime_control();assert(!c->remaining);
++ c->report[0]=buttons;c->report[1]=(uint8_t)x;c->report[2]=(uint8_t)y;
++ c->report[3]=(uint8_t)wheel;c->report[4]=(uint8_t)pan;c->remaining=1;
++}
++static void produce(const risc_usb_mouse_api_v1 *api) {
++ assert(mouse_runtime_test_only_poll(api->poll,api->context,1));
++}
++static void next_local(int expected, portable_mouse_frame *f) {
++ unsigned before=calls();assert(portable_mouse_next(&consumer,f)==expected);
++ assert(calls()==before);
++}
++static void focus_local(bool focused, int expected, portable_mouse_frame *f) {
++ unsigned before=calls();assert(portable_mouse_focus(&consumer,focused,f)==expected);
++ assert(calls()==before);
++}
++__attribute__((visibility("default"))) int app_module_init(void) {
++ runtime=risc_runtime_get_api(1);assert(portable_mouse_init(&consumer,runtime,0,0));
++ mouse_runtime_event("app:init");return 0;
++}
++__attribute__((visibility("default"))) void app_main(void) {
++ /* A second real generic Runtime grant seeds a nonempty initial baseline.
++  * The seed is released while the helper's grant still pins the provider. */
++ risc_runtime_capability_v1 seed={.struct_size=sizeof(seed)};
++ assert(runtime->acquire("usb.hid.mouse",1,0,&seed));
++ const risc_usb_mouse_api_v1 *producer=seed.api;
++ report(3,0,0,0,0);produce(producer);
++ portable_mouse_frame f;unsigned before=calls();
++ assert(portable_mouse_open(&consumer,&f)==PMC_BASELINE && calls()==before);
++ assert(f.current_count==1 && f.current[0].device==100 && f.current[0].session &&
++        f.current[0].buttons==3 && f.current[0].connected && !f.previous_count);
++ event_empty(&f);uint64_t session=f.current[0].session;
++ before=calls();assert(runtime->release(&seed) && calls()==before && !seed.api);
++ mouse_runtime_event("case:initial-baseline");
++
++ report(1,7,-9,2,-3);produce(producer);
++ next_local(PMC_EVENT,&f);
++ assert(f.event.kind==RISC_USB_MOUSE_REPORT && f.event.x==7 && f.event.y==-9 &&
++        f.event.wheel==2 && f.event.pan==-3 && !f.event.pressed && f.event.released==2);
++ assert(f.previous_count==1 && f.previous[0].buttons==3 &&
++        f.current_count==1 && f.current[0].buttons==1);
++ risc_usb_mouse_event_v1 copied=f.event;
++ next_local(PMC_EMPTY,&f);event_empty(&f);
++ assert(copied.x==7 && copied.y==-9 && copied.state.session==session);
++ mouse_runtime_event("case:copied-once");
++
++ if(mode("close-retained")) {
++  mouse_runtime_control()->close_fails=true;
++  const risc_runtime_capability_v1 exact=consumer.grant;
++  before=calls();int rc=portable_mouse_close(&consumer,&f);
++  assert(f.previous_count==1 && f.previous[0].buttons==1 && !f.current_count);
++  event_empty(&f);
++  if(mouse_runtime_demand()) {
++   assert(rc==PMC_RETAINED && consumer.cleanup_required && consumer.fence_accepted);
++   assert(consumer.grant.slot==exact.slot && consumer.grant.generation==exact.generation &&
++          consumer.grant.api==exact.api && consumer.mouse==producer && !consumer.subscription);
++   assert(calls()==before+1 && mouse_runtime_control()->closes==1 && mouse_runtime_control()->raw);
++   before=calls();
++   next_local(PMC_RETAINED,&f);focus_local(true,PMC_RETAINED,&f);
++   assert(portable_mouse_close(&consumer,&f)==PMC_RETAINED && calls()==before);
++   mouse_runtime_event("case:demand-helper-retained");
++  } else {
++   /* The eager boot grant still owns the graph. Failure is deferred to the
++    * real Runtime teardown, NOT misreported as helper release quiescence. */
++   assert(rc==PMC_CLOSED && !consumer.cleanup_required && !consumer.grant.api);
++   assert(calls()==before && mouse_runtime_control()->raw);
++   mouse_runtime_event("case:eager-boot-grant-remains");
++  }
++  return;
++ }
++
++ /* One queued focused event and one unfocused event must both be discarded.
++  * Focus loss releases held state locally; resume takes a fresh held baseline. */
++ report(1,11,0,0,0);produce(producer);
++ focus_local(false,PMC_RESET,&f);
++ assert(f.previous_count==1 && f.previous[0].buttons==1 && !f.current_count);event_empty(&f);
++ next_local(PMC_PAUSED,&f);event_empty(&f);
++ report(2,23,0,0,0);produce(producer);
++ focus_local(true,PMC_RESET,&f);event_empty(&f);
++ next_local(PMC_BASELINE,&f);
++ assert(f.current_count==1 && f.current[0].buttons==2 && f.current[0].session==session);event_empty(&f);
++ next_local(PMC_EMPTY,&f);event_empty(&f);
++ report(0,-5,4,0,0);produce(producer);next_local(PMC_EVENT,&f);
++ assert(f.event.x==-5 && f.event.y==4 && f.event.released==2 && !f.event.pressed);
++ next_local(PMC_EMPTY,&f);event_empty(&f);
++ mouse_runtime_event("case:focus-discard");
++
++ for(unsigned i=0;i<RISC_USB_INPUT_QUEUE_LENGTH+8;i++) {
++  report((uint8_t)(i&1),1,0,0,0);produce(producer);
++ }
++ next_local(PMC_GAP,&f);assert(f.previous_count==1 && !f.current_count);event_empty(&f);
++ next_local(PMC_BASELINE,&f);
++ assert(f.current_count==1 && f.current[0].buttons==1 && f.current[0].session==session);event_empty(&f);
++ next_local(PMC_EMPTY,&f);event_empty(&f);
++ mouse_runtime_event("case:overflow-resnapshot");
++
++ mouse_runtime_control()->present=false;produce(producer);
++ next_local(PMC_EVENT,&f);
++ assert(f.event.kind==RISC_USB_MOUSE_DISCONNECTED && f.event.state.session==session &&
++        f.event.released==1 && !f.event.state.connected && !f.event.state.buttons &&
++        !f.event.x && !f.event.y && !f.current_count);
++ assert(f.previous_count==1 && f.previous[0].buttons==1);
++ next_local(PMC_EMPTY,&f);event_empty(&f);
++ assert(!mouse_runtime_control()->raw && mouse_runtime_control()->closes==1);
++ mouse_runtime_event("case:disconnect-once");
++ assert(portable_mouse_close(&consumer,&f)==PMC_CLOSED && !consumer.grant.api &&
++        !consumer.subscription && !consumer.cleanup_required);
++ mouse_runtime_event("app:complete");
++}
++__attribute__((visibility("default"))) void app_module_fini(void) {mouse_runtime_event("app:fini");}
+diff --git a/test/native_apps/mouse_runtime_dependency_witness.c b/test/native_apps/mouse_runtime_dependency_witness.c
+new file mode 100644
+index 0000000..64d18fe
+--- /dev/null
++++ b/test/native_apps/mouse_runtime_dependency_witness.c
+@@ -0,0 +1,95 @@
++/* TEST ONLY: exact existing usb.hid@1 / platform.clock@1 dependency ABIs.
++ * Compiled twice as two independent provider ELFs, never product-installed. */
++#include "mouse_runtime_fixture.h"
++#include <RiscUsbHidV1.h>
++#include <RiscPlatformClockV1.h>
++#include <assert.h>
++#include <string.h>
++
++#if defined(MOUSE_RUNTIME_HID_WITNESS)
++static const uint8_t descriptor[] = {
++ 0x05,1, 0x09,2, 0xa1,1, 0x09,1, 0xa1,0,
++ 0x05,9, 0x19,1, 0x29,3, 0x15,0, 0x25,1, 0x75,1, 0x95,3, 0x81,2,
++ 0x75,5, 0x95,1, 0x81,3,
++ 0x05,1, 0x09,0x30, 0x09,0x31, 0x09,0x38,
++ 0x15,0x81, 0x25,0x7f, 0x75,8, 0x95,3, 0x81,6,
++ 0x05,0x0c, 0x0a,0x38,2, 0x95,1, 0x81,6, 0xc0, 0xc0
++};
++static const uint64_t raw_token = UINT64_C(0x9753000042);
++static void check_raw(uint64_t raw) {
++ assert(raw == raw_token && mouse_runtime_control()->raw == raw);
++}
++static bool scan(void *context, size_t budget) {
++ (void)context;mouse_runtime_lower_call("hid:scan");assert(budget == 16);return true;
++}
++static bool interfaces(void *context, risc_usb_hid_interface_v1 *out, size_t *n) {
++ (void)context;mouse_runtime_lower_call("hid:interfaces");assert(out && n && *n >= 1);
++ *n = mouse_runtime_control()->present ? 1 : 0;
++ if(*n)out[0] = (risc_usb_hid_interface_v1){.device=100,.interface_number=2,
++   .report_descriptor_length=sizeof(descriptor),.max_packet=64};
++ return true;
++}
++static uint64_t open_hid(void *context, uint64_t device, uint8_t iface, uint8_t alt) {
++ (void)context;mouse_runtime_lower_call("hid:open");
++ mouse_runtime_controls *c = mouse_runtime_control();
++ assert(c->present && !c->raw && device == 100 && iface == 2 && !alt);
++ ++c->opens;return c->raw = raw_token;
++}
++static bool report_descriptor(void *context, uint64_t raw, uint8_t *out, size_t *n) {
++ (void)context;mouse_runtime_lower_call("hid:descriptor");check_raw(raw);
++ assert(out && n && *n >= sizeof(descriptor));
++ memcpy(out,descriptor,sizeof(descriptor));*n=sizeof(descriptor);return true;
++}
++static bool boot(void *context, uint64_t raw, bool enabled) {
++ (void)context;(void)enabled;mouse_runtime_lower_call("hid:boot");check_raw(raw);
++ assert(!"Non-boot witness must use the real report descriptor");return false;
++}
++static int32_t read_hid(void *context, uint64_t raw, uint8_t *out, size_t n, uint32_t ms) {
++ (void)context;mouse_runtime_lower_call("hid:read");check_raw(raw);
++ mouse_runtime_controls *c=mouse_runtime_control();
++ assert(c->present && out && n == 64 && ms == 1);
++ if(!c->remaining)return 0;
++ --c->remaining;memcpy(out,c->report,sizeof(c->report));return sizeof(c->report);
++}
++static bool present(void *context, uint64_t raw) {
++ (void)context;mouse_runtime_lower_call("hid:present");check_raw(raw);
++ return mouse_runtime_control()->present;
++}
++static bool close_hid(void *context, uint64_t raw) {
++ (void)context;mouse_runtime_lower_call("hid:close");check_raw(raw);
++ mouse_runtime_controls *c=mouse_runtime_control();++c->closes;c->last_close=raw;
++ if(c->close_fails)return false;
++ c->raw=0;return true;
++}
++static bool start(const risc_provider_dependency_v1 *deps, size_t n) {
++ (void)deps;mouse_runtime_event("hid:start");return !n;
++}
++static bool quiesce(void) {
++ mouse_runtime_event("hid:quiesce");return !mouse_runtime_control()->raw;
++}
++static void stop(void) {assert(!mouse_runtime_control()->raw);mouse_runtime_event("hid:stop");}
++static const risc_usb_hid_api_v1 api={1,sizeof(api),0,scan,interfaces,open_hid,
++ report_descriptor,boot,read_hid,present,close_hid};
++static const risc_driver_v2 driver={2,sizeof(driver),"mouse-test-hid","usb.hid",1,
++ &api,start,stop,quiesce};
++#elif defined(MOUSE_RUNTIME_CLOCK_WITNESS)
++static uint64_t now(void *context) {
++ (void)context;mouse_runtime_lower_call("clock:now");return mouse_runtime_control()->now;
++}
++static void sleep_ms(void *context, uint32_t ms) {
++ (void)context;mouse_runtime_lower_call("clock:sleep");assert(ms == 1);
++ mouse_runtime_control()->now+=ms; /* simulated time only, not a scheduler proof */
++}
++static bool start(const risc_provider_dependency_v1 *deps, size_t n) {
++ (void)deps;mouse_runtime_event("clock:start");return !n;
++}
++static bool quiesce(void) {mouse_runtime_event("clock:quiesce");return true;}
++static void stop(void) {mouse_runtime_event("clock:stop");}
++static const risc_platform_clock_api_v1 api={1,sizeof(api),0,now,sleep_ms};
++static const risc_driver_v2 driver={2,sizeof(driver),"mouse-test-clock","platform.clock",1,
++ &api,start,stop,quiesce};
++#else
++#error Select exactly one software dependency witness
++#endif
++__attribute__((visibility("default")))
++const risc_driver_v2 *t5_driver_get(uint32_t abi) {return abi == 2 ? &driver : 0;}
+diff --git a/test/native_apps/mouse_runtime_fixture.h b/test/native_apps/mouse_runtime_fixture.h
+new file mode 100644
+index 0000000..14e73dd
+--- /dev/null
++++ b/test/native_apps/mouse_runtime_fixture.h
+@@ -0,0 +1,29 @@
++#ifndef MOUSE_RUNTIME_FIXTURE_H
++#define MOUSE_RUNTIME_FIXTURE_H
++/* TEST ONLY. Software dependency controls, owned by the single native test
++ * thread. No product imports, asynchronous producer, or physical transport. */
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++typedef struct {
++ bool present, close_fails;
++ uint8_t report[5];
++ unsigned remaining, lower_calls, opens, closes, polls;
++ uint64_t raw, last_close, now;
++} mouse_runtime_controls;
++mouse_runtime_controls *mouse_runtime_control(void);
++void mouse_runtime_lower_call(const char *name);
++void mouse_runtime_event(const char *name);
++const char *mouse_runtime_mode(void);
++bool mouse_runtime_demand(void);
++/* This harness is the ONLY call site that invokes the mouse poll callback.
++ * It checks the same serialized owner as Runtime's port.owner callback. It is
++ * not a proposed production executor, UI callback, or helper implementation. */
++bool mouse_runtime_test_only_poll(bool (*poll)(void *, size_t), void *, size_t);
++#ifdef __cplusplus
++}
++#endif
++#endif
+diff --git a/test/native_apps/mouse_runtime_integration_test.cpp b/test/native_apps/mouse_runtime_integration_test.cpp
+new file mode 100644
+index 0000000..c6ede7d
+--- /dev/null
++++ b/test/native_apps/mouse_runtime_integration_test.cpp
+@@ -0,0 +1,73 @@
++#include "bootstrap/Runtime.h"
++#include "RuntimeFileFixture.h"
++#include "mouse_runtime_fixture.h"
++#include <algorithm>
++#include <cassert>
++#include <cstdio>
++#include <cstdlib>
++#include <fstream>
++#include <string>
++#include <thread>
++#include <vector>
++
++static std::string mode,activation;
++static std::thread::id owner;
++static mouse_runtime_controls controls{};
++static std::vector<std::string> events;
++static bool on_owner() {return std::this_thread::get_id()==owner;}
++extern "C" mouse_runtime_controls *mouse_runtime_control() {assert(on_owner());return &controls;}
++extern "C" void mouse_runtime_event(const char *name) {assert(on_owner());events.emplace_back(name);}
++extern "C" void mouse_runtime_lower_call(const char *name) {
++ assert(on_owner());++controls.lower_calls;events.emplace_back(name);
++}
++extern "C" const char *mouse_runtime_mode() {assert(on_owner());return mode.c_str();}
++extern "C" bool mouse_runtime_demand() {assert(on_owner());return activation=="demand";}
++extern "C" bool mouse_runtime_test_only_poll(bool (*poll)(void *,size_t),void *context,size_t budget) {
++ assert(on_owner() && poll && budget==1);++controls.polls;return poll(context,budget);
++}
++static unsigned count(const char *event) {return unsigned(std::count(events.begin(),events.end(),event));}
++static void write(const std::string &root,const char *name,const std::string &bytes) {
++ std::ofstream out(root+"/"+name);out<<bytes;assert(out.good());
++}
++int main(int argc,char **argv) {
++ assert(argc==4);const std::string root=argv[1];mode=argv[2];activation=argv[3];
++ assert((mode=="normal" || mode=="close-retained") && (activation=="eager" || activation=="demand"));
++ owner=std::this_thread::get_id();controls.present=true;controls.now=100;
++ write(root,"board.json",R"({"schema":"riscrte.board-hardware","schema_version":1,"board_id":"test","revision":"unspecified","buses":[],"devices":[]})");
++ write(root,"hid.json",R"({"type":"driver","id":"mouse-test-hid","version":"1.0.0","driver_abi":2,"architecture":"xtensa-esp32s3","file_name":"hid.elf","requires":[],"provides":[{"capability":"usb.hid","api":1}]})");
++ write(root,"clock.json",R"({"type":"driver","id":"mouse-test-clock","version":"1.0.0","driver_abi":2,"architecture":"xtensa-esp32s3","file_name":"clock.elf","requires":[],"provides":[{"capability":"platform.clock","api":1}]})");
++ /* The runner copies the unchanged recovered mouse manifest to mouse/ and
++  * compiles its unchanged source to the manifest's exact driver.elf path. */
++ write(root,"app.json",R"({"type":"application","id":"mouse-consumer-test","version":"1.0.0","architecture":"xtensa-esp32s3","file_name":"default.elf","entry":"app_main","requires":[{"capability":"usb.hid.mouse","api":1}]})");
++ write(root,"boot.json",std::string(R"({"board":"board.json","default_app":"default.elf","provider_activation":")")+activation+
++  R"(","drivers":[{"manifest":"hid.json"},{"manifest":"clock.json"},{"manifest":"mouse/manifest.json"}],"app_capabilities":[{"manifest":"app.json","grants":[{"capability":"usb.hid.mouse","api":1,"instance_id":0}]}]})");
++ static uint32_t now=0;
++ static RiscTest::FileSources files({root.c_str()});
++ auto *runtime=new RiscBoot::Runtime({on_owner,[](risc_runtime_health_v1 *h){h->uptime_ms=++now;return true;},
++  [](uint32_t){assert(on_owner());},[](const char *line){std::fprintf(stderr,"%s\n",line);return true;}});
++ assert(files.bind(*runtime));
++ if(!runtime->prepare(root.c_str())){std::fprintf(stderr,"prepare: %s\n",runtime->lastError());return 1;}
++ const bool retained=mode=="close-retained";
++ const bool ran=runtime->run();
++ if(ran==retained || runtime->retained()!=retained) {
++  std::fprintf(stderr,"run=%d retained=%d expected-retained=%d: %s\n",ran,runtime->retained(),retained,runtime->lastError());return 1;
++ }
++ assert(count("hid:start")==1 && count("clock:start")==1 && count("app:init")==1);
++ assert(count("case:initial-baseline")==1 && count("case:copied-once")==1);
++ assert(controls.opens==1 && controls.closes==1 && controls.last_close && controls.polls);
++ if(retained) {
++  assert(controls.raw==controls.last_close && !count("hid:quiesce") && !count("hid:stop") && !count("clock:stop"));
++  if(activation=="demand")assert(!count("app:fini") && count("case:demand-helper-retained")==1);
++  else assert(count("app:fini")==1 && count("case:eager-boot-grant-remains")==1);
++  std::printf("mouse Runtime %s/%s: exact raw custody + dependency graph retained; %s PASS\n",mode.c_str(),activation.c_str(),
++   activation=="demand"?"helper grant retained, invocation fenced":"helper closed; boot-grant final teardown retained");
++  std::fflush(stdout);
++  /* Intentionally retained graph/module state must not be destructed/retried.
++   * Process isolation is test disposal only, never a product recovery action. */
++  std::_Exit(0);
++ }
++ assert(count("case:focus-discard")==1 && count("case:overflow-resnapshot")==1 && count("case:disconnect-once")==1);
++ assert(!controls.raw && count("hid:stop")==1 && count("clock:stop")==1 && count("app:complete")==1 && count("app:fini")==1);
++ delete runtime;
++ std::printf("mouse Runtime normal/%s: nonempty baseline, copied-once motion, focus discard, GAP/resnapshot, disconnect, lower-call isolation PASS\n",activation.c_str());
++}
+diff --git a/test/native_apps/portable_mouse_consumer_test.c b/test/native_apps/portable_mouse_consumer_test.c
+new file mode 100644
+index 0000000..ab184b5
+--- /dev/null
++++ b/test/native_apps/portable_mouse_consumer_test.c
+@@ -0,0 +1,190 @@
++#include "PortableMouseConsumer.h"
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++
++static uint64_t context, selected_instance, selected_filter;
++static unsigned getters, acquires, releases, subscriptions, unsubscriptions, snapshots, reads, statuses, fences;
++static int acquire_mode, release_mode, snapshot_mode, next_result;
++static bool unsubscribe_ok, subscribe_ok, getter_ok, fence_ok, change_context;
++static uint32_t provider_status;
++static risc_usb_mouse_state_v1 states[4];
++static size_t state_count;
++static risc_usb_mouse_event_v1 event;
++static uint64_t sub(void *p,uint64_t filter){(void)p;subscriptions++;selected_filter=filter;return subscribe_ok?57:0;}
++static bool unsub(void *p,uint64_t s){(void)p;assert(s==57);unsubscriptions++;return unsubscribe_ok;}
++static bool poll_forbidden(void *p,size_t n){(void)p;(void)n;assert(!"consumer polled provider");return false;}
++static int32_t next(void *p,uint64_t s,risc_usb_mouse_event_v1 *out){(void)p;assert(s==57);reads++;*out=event;int rc=next_result;next_result=0;return rc;}
++static bool snapshot(void *p,uint64_t s,risc_usb_mouse_state_v1 *out,size_t *n){
++ (void)p;assert(s==57 && *n==4);snapshots++;
++ if(snapshot_mode==1){*n=5;return false;}
++ if(snapshot_mode==2){*n=5;return true;}
++ memcpy(out,states,sizeof(states));*n=state_count;return true;
++}
++static uint32_t status(void *p){(void)p;statuses++;return provider_status;}
++static risc_usb_mouse_api_v1 api;
++static bool acquire(const char *cap,uint32_t v,uint64_t instance,risc_runtime_capability_v1 *g){
++ assert(!strcmp(cap,"usb.hid.mouse") && v==1);acquires++;selected_instance=instance;
++ if(change_context)context++;
++ if(acquire_mode==1)return false;
++ *g=(risc_runtime_capability_v1){sizeof(*g),2,9,&api};
++ if(acquire_mode==2)return false;
++ if(acquire_mode==3)g->slot=0;
++ return true;
++}
++static bool release(risc_runtime_capability_v1 *g){
++ releases++;assert(g->slot==2 && g->generation==9 && g->api==&api);
++ assert(!subscriptions || unsubscriptions || !subscribe_ok);
++ if(release_mode==1){g->api=NULL;return false;} /* Local copy may be mangled. */
++ if(release_mode==2)return true;
++ *g=(risc_runtime_capability_v1){.struct_size=sizeof(*g)};return true;
++}
++static bool get(risc_stream_client_v1 *out){
++ getters++;if(!getter_ok)return false;
++ *out=(risc_stream_client_v1){.api_version=1,.struct_size=sizeof(*out),.context=context};return true;
++}
++static bool fence(void){fences++;return fence_ok;}
++static risc_runtime_api_v1 runtime;
++static portable_mouse_consumer client;
++static portable_mouse_frame frame;
++static unsigned external(void){return getters+acquires+releases+subscriptions+unsubscriptions+snapshots+reads+statuses+fences;}
++static void fixture(void){
++ getters=acquires=releases=subscriptions=unsubscriptions=snapshots=reads=statuses=fences=0;
++ acquire_mode=release_mode=snapshot_mode=next_result=0;
++ subscribe_ok=unsubscribe_ok=getter_ok=fence_ok=true;change_context=false;
++ context=77;provider_status=RISC_USB_MOUSE_RUNNING;state_count=0;
++ memset(states,0,sizeof(states));memset(&event,0,sizeof(event));
++ api=(risc_usb_mouse_api_v1){1,sizeof(api),NULL,sub,unsub,poll_forbidden,next,snapshot,status};
++ runtime=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.retain_invocation=fence,.stream_client=get};
++ assert(portable_mouse_init(&client,&runtime,81,0));
++}
++static risc_usb_mouse_state_v1 state(uint64_t device,uint64_t session,uint32_t buttons,uint8_t iface){
++ return (risc_usb_mouse_state_v1){device,session,buttons,iface,0,1,0};
++}
++static void opened(void){assert(portable_mouse_open(&client,&frame)==PMC_BASELINE);assert(acquires==1 && subscriptions==1 && snapshots==1 && selected_instance==81);}
++static void emit(uint8_t kind,uint64_t sequence,risc_usb_mouse_state_v1 s,uint32_t pressed,uint32_t released){
++ event=(risc_usb_mouse_event_v1){.sequence=sequence,.state=s,.pressed=pressed,.released=released,.kind=kind};next_result=1;
++}
++static void terminal(void){
++ assert(client.cleanup_required && client.result==PMC_RETAINED && !client.count);
++ unsigned calls=external();
++ assert(portable_mouse_next(&client,&frame)==PMC_RETAINED);
++ assert(portable_mouse_close(&client,&frame)==PMC_RETAINED);
++ assert(portable_mouse_open(&client,&frame)==PMC_RETAINED);
++ assert(portable_mouse_focus(&client,true,&frame)==PMC_RETAINED);
++ assert(calls==external());
++}
++static void normal(void){
++ fixture();states[0]=state(1,10,1,0);states[1]=state(1,11,2,1);state_count=2;opened();
++ assert(frame.current_count==2 && !frame.previous_count && !frame.event.kind);
++ emit(RISC_USB_MOUSE_REPORT,9,state(1,10,3,0),2,0);
++ event.x=-32768;event.y=32767;event.wheel=-2;event.pan=3;
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT);
++ assert(frame.event.x==-32768 && frame.event.y==32767 && frame.event.wheel==-2 && frame.event.pan==3);
++ assert(frame.previous[0].buttons==1 && frame.current[0].buttons==3 && frame.current[1].buttons==2);
++ assert(portable_mouse_next(&client,&frame)==PMC_EMPTY && !frame.event.kind && !frame.event.x);
++ emit(RISC_USB_MOUSE_REPORT,100,state(1,11,0,1),0,2); /* Global sequence may skip. */
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT && frame.current[0].buttons==3);
++ emit(RISC_USB_MOUSE_DISCONNECTED,101,state(1,10,0,0),0,3);event.state.connected=0;
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT && frame.current_count==1 && frame.event.released==3);
++ assert(frame.current[0].session==11);
++ emit(RISC_USB_MOUSE_CONNECTED,102,state(1,12,0,0),0,0);
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT && frame.current_count==2);
++ assert(portable_mouse_close(&client,&frame)==PMC_CLOSED && frame.previous_count==2 && !frame.current_count);
++ assert(unsubscriptions==1 && releases==1 && !client.grant.api);
++ assert(portable_mouse_close(&client,&frame)==PMC_CLOSED && releases==1);
++ assert(portable_mouse_open(&client,&frame)==PMC_BASELINE && acquires==2);
++}
++static void gaps_and_focus(void){
++ fixture();states[0]=state(3,7,4,0);state_count=1;snapshot_mode=1;
++ assert(portable_mouse_open(&client,&frame)==PMC_GAP && client.subscription && client.needs_snapshot && !client.count);
++ assert(snapshots==1 && reads==0);
++ snapshot_mode=0;assert(portable_mouse_next(&client,&frame)==PMC_BASELINE && frame.current[0].buttons==4);
++ next_result=-2;assert(portable_mouse_next(&client,&frame)==PMC_GAP && frame.previous[0].buttons==4 && !frame.current_count);
++ assert(snapshots==2); /* No inline retry/snapshot after next. */
++ states[0]=state(3,8,2,0);assert(portable_mouse_next(&client,&frame)==PMC_BASELINE && frame.current[0].session==8 && !frame.event.kind);
++ unsigned before=snapshots+reads+statuses;
++ assert(portable_mouse_focus(&client,false,&frame)==PMC_RESET && frame.previous[0].buttons==2 && !frame.current_count);
++ assert(portable_mouse_next(&client,&frame)==PMC_PAUSED);
++ assert(portable_mouse_focus(&client,false,&frame)==PMC_PAUSED);
++ assert(portable_mouse_focus(&client,true,&frame)==PMC_RESET);
++ assert(before==snapshots+reads+statuses);
++ state_count=0;assert(portable_mouse_next(&client,&frame)==PMC_BASELINE && !frame.current_count);
++ assert(portable_mouse_focus(&client,true,&frame)==PMC_EMPTY);
++ assert(portable_mouse_next(&client,&frame)==PMC_EMPTY);
++ provider_status=RISC_USB_MOUSE_CLOSING;
++ assert(portable_mouse_next(&client,&frame)==PMC_UNAVAILABLE && client.needs_snapshot);
++ provider_status=RISC_USB_MOUSE_RUNNING;
++ assert(portable_mouse_next(&client,&frame)==PMC_BASELINE);
++}
++static void malformed(void){
++ for(unsigned mode=0;mode<14;mode++){
++  fixture();states[0]=state(1,5,1,0);state_count=1;opened();
++  emit(RISC_USB_MOUSE_REPORT,3,state(1,5,2,0),2,1);
++  switch(mode){
++   case 0:event.sequence=0;break;
++   case 1:event.state.session=9;break;
++   case 2:event.state.device=0;break;
++   case 3:event.state.reserved=1;break;
++   case 4:event.reserved[6]=1;break;
++   case 5:event.state.connected=2;break;
++   case 6:event.state.interface_number=1;break;
++   case 7:event.pressed=0;break;
++   case 8:event.released=0;break;
++   case 9:event.kind=4;break;
++   case 10:event.kind=RISC_USB_MOUSE_DISCONNECTED;break;
++   case 11:event.kind=RISC_USB_MOUSE_CONNECTED;break;
++   case 12:client.filter=2;break; /* Simulate a bad filtered record. */
++   case 13:client.sequence=3;break;
++  }
++  assert(portable_mouse_next(&client,&frame)==PMC_MALFORMED && !frame.event.kind && !frame.current_count);
++  assert(frame.previous[0].buttons==1 && client.needs_snapshot);
++ }
++ for(unsigned mode=0;mode<6;mode++){
++  fixture();states[0]=state(1,5,1,0);state_count=1;
++  if(mode==0)snapshot_mode=2;
++  if(mode==1)states[0].connected=0;
++  if(mode==2)states[0].session=0;
++  if(mode==3)states[0].reserved=1;
++  if(mode==4){states[1]=state(2,5,0,0);state_count=2;}
++  if(mode==5){states[1]=state(1,6,0,0);state_count=2;}
++  assert(portable_mouse_open(&client,&frame)==PMC_MALFORMED && !client.count && client.needs_snapshot);
++ }
++ fixture();opened();emit(RISC_USB_MOUSE_CONNECTED,1,state(1,1,0,0),0,0);
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT);
++ emit(RISC_USB_MOUSE_REPORT,2,state(1,1,0,0),0,0);event.x=7;
++ assert(portable_mouse_next(&client,&frame)==PMC_EVENT && frame.event.x==7);
++ next_result=1;assert(portable_mouse_next(&client,&frame)==PMC_MALFORMED && !frame.event.x);
++ assert(client.sequence==2);states[0]=state(1,1,0,0);state_count=1;
++ assert(portable_mouse_next(&client,&frame)==PMC_BASELINE);
++ next_result=1;assert(portable_mouse_next(&client,&frame)==PMC_MALFORMED); /* Replay across snapshot rejected. */
++}
++static void failures(void){
++ fixture();acquire_mode=1;assert(portable_mouse_open(&client,&frame)==PMC_DENIED && !client.cleanup_required && !releases);
++ fixture();acquire_mode=2;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED && fences==1);terminal();
++ fixture();acquire_mode=3;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED);terminal();
++ fixture();change_context=true;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED && !fences && !subscriptions);terminal();
++ fixture();acquire_mode=1;change_context=true;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED && !fences);terminal();
++ fixture();api.struct_size=8;assert(portable_mouse_open(&client,&frame)==PMC_UNSUPPORTED && releases==1 && !subscriptions);
++ fixture();api.snapshot=NULL;assert(portable_mouse_open(&client,&frame)==PMC_UNSUPPORTED && releases==1);
++ fixture();subscribe_ok=false;assert(portable_mouse_open(&client,&frame)==PMC_DENIED && releases==1 && !unsubscriptions);
++ fixture();subscribe_ok=false;release_mode=1;assert(portable_mouse_open(&client,&frame)==PMC_RETAINED);terminal();
++ fixture();opened();unsubscribe_ok=false;assert(portable_mouse_close(&client,&frame)==PMC_RETAINED);
++ assert(client.subscription==57 && client.grant.api==&api && !releases && fences==1);terminal();
++ for(int mode=1;mode<=2;mode++){
++  fixture();opened();release_mode=mode;assert(portable_mouse_close(&client,&frame)==PMC_RETAINED);
++  assert(!client.subscription && client.grant.api==&api && client.grant.slot==2 && unsubscriptions==1 && releases==1 && fences==1);terminal();
++ }
++ fixture();opened();context++;assert(portable_mouse_next(&client,&frame)==PMC_RETAINED && !fences && !reads);terminal();
++ fixture();opened();getter_ok=false;assert(portable_mouse_close(&client,&frame)==PMC_RETAINED && !unsubscriptions && !releases);terminal();
++ fixture();opened();next_result=-1;assert(portable_mouse_next(&client,&frame)==PMC_RETAINED && !unsubscriptions);terminal();
++ fixture();opened();provider_status=RISC_USB_MOUSE_RETAINED;assert(portable_mouse_next(&client,&frame)==PMC_RETAINED);terminal();
++ fixture();opened();provider_status=99;assert(portable_mouse_close(&client,&frame)==PMC_RETAINED && !unsubscriptions);terminal();
++ fixture();opened();portable_mouse_consumer copy=client;unsigned before=external();
++ assert(portable_mouse_next(&copy,&frame)==PMC_INVALID && before==external());
++ assert(portable_mouse_next(&client,NULL)==PMC_INVALID && before==external());
++ assert(portable_mouse_next(NULL,&frame)==PMC_INVALID);
++ fixture();runtime.struct_size=RISC_RUNTIME_CAPABILITIES_V1_SIZE;
++ assert(!portable_mouse_init(&client,&runtime,0,0) && client.result==PMC_UNSUPPORTED);
++}
++int main(void){normal();gaps_and_focus();malformed();failures();puts("mouse consumer: copied events, recovery, focus and custody PASS");}
+-- 
+2.52.0
+

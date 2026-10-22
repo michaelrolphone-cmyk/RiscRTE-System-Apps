@@ -1,0 +1,160 @@
+{
+  "result": "PASS",
+  "sanitized": true,
+  "sanitizer_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "",
+    "LSAN_OPTIONS": ""
+  },
+  "system_source": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+  "system_status": [],
+  "runtime_source": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+  "runtime_headers": {
+    "sdk/app/RiscRuntimeV1.h": "e8ddeb072831b0951ebe4eb3c68e54c08d778560b866537f86eaf78d2aae34fc",
+    "sdk/app/RiscStreamClientV1.h": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb",
+    "sdk/app/RiscSerialStreamSessionV1.h": "66d328c2a201625a7be348507c8dbedcaa937dfb46f86b05ecd04d60e3fba0b7",
+    "sdk/driver/RiscStreamResultV1.h": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f",
+    "sdk/driver/RiscStreamSessionProviderV1.h": "fe463661530c43ae7d1dd8b9c8227fdc6a7e4380bca3f5c8a13287cb0db9e873",
+    "sdk/driver/RiscProviderV2.h": "62478822fa8943ddfd1607f8923de52d7b5b6fc8a0db2df6ca07c65c95c62d41",
+    "sdk/driver/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  },
+  "source_hashes": {
+    "lib/PortableApps/include/PortableSerialClient.h": "8af320f976996d4ac19a38d231d5444d312b77f7946c760f575b2b904fe5f42a",
+    "lib/PortableApps/src/PortableSerialClient.c": "e69e7dbac8300a9f57f4f832ef9b99df1b62fa7f8ce79836ff2de3cf12c3c269",
+    "test/native_apps/portable_serial_client_test.c": "687e889d42610c9c5b7b67f3bf53fa64739d598a807fa9ce5730db89983847aa",
+    "scripts/test_portable_serial_client.py": "23b1ca2f49d8ca7e637b7749b8cbaf3acbc0ec8bbc6443dda5814d0ea7e0f1f8",
+    "lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json": "b4d2d021a8431a90c75d697f607e6438c8f5c633e5958308dade4fa054cc40b1",
+    "docs/PORTABLE_SERIAL_CLIENT.md": "1af407df097a257850f56b827c3e369140e0b79f413562c0b9c210aa5ebe2964"
+  },
+  "imported_headers": [
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/app/RiscStreamClientV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamClientV1.h",
+      "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb"
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/app/RiscSerialStreamSessionV1.h",
+      "destination": "lib/PortableApps/include/RiscSerialStreamSessionV1.h",
+      "sha256": "66d328c2a201625a7be348507c8dbedcaa937dfb46f86b05ecd04d60e3fba0b7"
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/driver/RiscStreamResultV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamResultV1.h",
+      "sha256": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "sdk/driver/RiscSerialPortV1.h",
+      "destination": "lib/PortableApps/include/RiscSerialPortV1.h",
+      "sha256": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "lib/NativeApps/include/T5SerialPortApi.h",
+      "destination": "lib/NativeApps/include/T5SerialPortApi.h",
+      "sha256": "36fdedb9776220ddf9a4201ca292cc597aaea9703d3ca05737e2a161eb38529f"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "lib/NativeApps/include/T5StreamApi.h",
+      "destination": "lib/NativeApps/include/T5StreamApi.h",
+      "sha256": "9f087d8f5446da8ae34b9815ca231285473fbbba0ad43dc6c367208126b554c5"
+    }
+  ],
+  "commands": [
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/portable-serial-rmmlh1ep/sdk",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System/test/native_apps/portable_serial_client_test.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/portable-serial-rmmlh1ep/unit"
+    ],
+    [
+      "/tmp/portable-serial-rmmlh1ep/unit"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/portable-serial-rmmlh1ep/sdk",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include",
+      "-fsanitize=address,undefined",
+      "-fno-sanitize-recover=all",
+      "-fno-omit-frame-pointer",
+      "/tmp/portable-serial-rmmlh1ep/disabled.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/portable-serial-rmmlh1ep/disabled"
+    ],
+    [
+      "/tmp/portable-serial-rmmlh1ep/disabled"
+    ],
+    [
+      "c++",
+      "-std=c++17",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/portable-serial-rmmlh1ep/sdk",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System/lib/NativeApps/include",
+      "/tmp/portable-serial-rmmlh1ep/headers.cpp",
+      "-o",
+      "/tmp/portable-serial-rmmlh1ep/headers"
+    ],
+    [
+      "/tmp/portable-serial-rmmlh1ep/headers"
+    ],
+    [
+      "bash",
+      "/workspace/scratch/c744abbbbd60/usb-serial-monitor/RiscRTE/test/run_serial_stream_client_integration_test.sh"
+    ]
+  ],
+  "log_sha256": "418569155db44ab0b67cd5c6f5fa9121235e0755d78b7bb85fa7ec4ebe7ef5db",
+  "coverage": [
+    "invalid arguments and prefix bounds",
+    "explicit instance/index and complete inventory",
+    "unknown inventory recovery",
+    "partial RX/TX and accepted-byte saturation",
+    "cancel/stall/wrap",
+    "detach/generation change",
+    "stale copied object/invocation",
+    "retained open/call/read/write/close/release",
+    "malformed counts/status/output",
+    "1..1000 ms allocated total controls including broker open rollback",
+    "opt-out and C++ header smoke",
+    "22 production Runtime integration cases"
+  ],
+  "not_run": [
+    "physical USB/serial/radio I/O",
+    "hardware qualification",
+    "monitor UI",
+    "product pin/publication"
+  ]
+}

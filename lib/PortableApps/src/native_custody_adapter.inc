@@ -16,7 +16,7 @@ void portable_adapter_touch_issue(const char *operation,int status,int terminal)
 }
 #endif
 /* One Runtime fence shared by all opt-in X4 paper controllers. */
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
 static void portable_adapter_retain_inner(bool log) {
 #else
 void portable_adapter_retain(void) {
@@ -27,7 +27,7 @@ void portable_adapter_retain(void) {
      * providers. The retention barrier itself remains the terminal action. */
     if(!file_setup_io_allowed())log=false;
 #endif
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
     if(log)
 #endif
     portable_stage_log(native_custody_runtime,"app-retain","reason=uncertain-capability-custody");
@@ -41,7 +41,7 @@ void portable_adapter_retain(void) {
   native_sleep_retained=true;
 #endif
 }
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_SERIAL_MONITOR_APP)
 void portable_adapter_retain(void) {
 #if defined(PORTABLE_DISPLAY_SETTLED) && defined(PORTABLE_RESIDENT_SHELL_HOST) && defined(PORTABLE_RESIDENT_POLICY)
  portable_adapter_retain_inner(!resident_sleep_present);

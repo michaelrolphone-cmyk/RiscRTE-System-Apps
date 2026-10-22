@@ -34,6 +34,10 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of 
 
 ## Repository tree
 
+The opt-in [bounded portable serial client](docs/PORTABLE_SERIAL_CLIENT.md) is a
+software-tested library candidate, not an installed serial monitor or product
+selection.
+
 ```text
 Apps/
   app_store.c

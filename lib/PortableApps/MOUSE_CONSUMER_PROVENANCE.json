@@ -1,0 +1,81 @@
+{
+  "system_base": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+  "runtime_commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+  "reader_commit": "59177418ea746c7605b7b5a5aec501e70bdae80f",
+  "provider_source_commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+  "scope": "Source-only app-local copied consumer. No ABI, provider source, accepted artifact, product pin or publication changes.",
+  "files": [
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscUsbMouseV1.h",
+      "destination": "lib/PortableApps/include/RiscUsbMouseV1.h",
+      "sha256": "bbdf2c8c92adcc23a3a720e51fa630b83f6fa0f0f28853ddab17c1041a37f416",
+      "new_copy": true
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscUsbHidV1.h",
+      "destination": "lib/PortableApps/include/RiscUsbHidV1.h",
+      "sha256": "5b5549c4cb718dec55f2aca8bc93f401b2d5a703d30aaa1a78d1bcdd26755b5c",
+      "new_copy": true
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscUsbControllerV1.h",
+      "destination": "lib/PortableApps/include/RiscUsbControllerV1.h",
+      "sha256": "226f083493085ecdcaa21a7c3bf1c269640b7d1ebaa099e7217fb64124f1dbed",
+      "new_copy": true
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscUsbProviderV1.h",
+      "destination": "lib/PortableApps/include/RiscUsbProviderV1.h",
+      "sha256": "65bbde81bf4159918392d9525dc0dfd5a075bf028a693d9a4d9981b1cecf516e",
+      "new_copy": true
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscSerialPortV1.h",
+      "destination": "lib/PortableApps/include/RiscSerialPortV1.h",
+      "sha256": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700",
+      "new_copy": false
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscProviderV2.h",
+      "destination": "lib/PortableApps/include/RiscProviderV2.h",
+      "sha256": "2935d83493a411e19ee98b8c7e805b86f4adf98c6bde66fd031df7cc379bdc17",
+      "new_copy": false
+    },
+    {
+      "repository": "T5S3-Reader",
+      "commit": "c334919a05d393b7b3a536fceb117cfbb573a4ef",
+      "source": "sdk/driver/RiscStreamProviderV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamProviderV1.h",
+      "sha256": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432",
+      "new_copy": false
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/app/RiscStreamClientV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamClientV1.h",
+      "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb",
+      "new_copy": false
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/driver/RiscStreamResultV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamResultV1.h",
+      "sha256": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f",
+      "new_copy": false
+    }
+  ]
+}
