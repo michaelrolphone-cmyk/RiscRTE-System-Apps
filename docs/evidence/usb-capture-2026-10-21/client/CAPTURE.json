@@ -1,0 +1,119 @@
+{
+  "capture_date": "2026-10-21",
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "component": "client",
+  "source_mapping": {
+    "label": "client",
+    "branch": "capture/usb-serial-client-20261021",
+    "source_commit": "403933000a7831192547304cf769b438ee8d2af3",
+    "tree": "d959bd31c689ea9a038069eb3bf0961a958d8539",
+    "parent": "0651a55513b0aa0dff1b6a9072303def08a97378",
+    "local_commit": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+    "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/403933000a7831192547304cf769b438ee8d2af3"
+  },
+  "family_source_mappings": [
+    {
+      "label": "client",
+      "branch": "capture/usb-serial-client-20261021",
+      "source_commit": "403933000a7831192547304cf769b438ee8d2af3",
+      "tree": "d959bd31c689ea9a038069eb3bf0961a958d8539",
+      "parent": "0651a55513b0aa0dff1b6a9072303def08a97378",
+      "local_commit": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/403933000a7831192547304cf769b438ee8d2af3"
+    },
+    {
+      "label": "monitor",
+      "branch": "capture/usb-serial-monitor-ui-20261021",
+      "source_commit": "3babc8fd5d683e537bf85290c74ce9d78234803a",
+      "tree": "14c2b4e7a1566ea2910d7783864d969677280235",
+      "parent": "403933000a7831192547304cf769b438ee8d2af3",
+      "local_commit": "5843d1bf2079e66f837aec5eb03a1f15b9a95ae7",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/3babc8fd5d683e537bf85290c74ce9d78234803a"
+    },
+    {
+      "label": "mouse",
+      "branch": "capture/usb-mouse-consumer-20261021",
+      "source_commit": "72cca023420964321bf2249f059596f2703c00d7",
+      "tree": "581c40db32c4ef7319d6dd70c600b587281ae81a",
+      "parent": "403933000a7831192547304cf769b438ee8d2af3",
+      "local_commit": "b643fdfe7e36a5a007603c34e24f7953ee90b072",
+      "commit_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/commit/72cca023420964321bf2249f059596f2703c00d7"
+    }
+  ],
+  "qualification": "Previously recorded software fixture results only. No target build, hardware or product acceptance.",
+  "evidence_files": [
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/QUALIFICATION.md",
+      "bytes": 3762,
+      "sha256": "8b9b027ddfe09ed57f47fce7a022795db0db014c1ac44556b21a4cf879019545",
+      "git_blob": "5a4617d278d1caacce3b057ca82db7b084973ba9"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/SOURCE_LOCKS.json",
+      "bytes": 4734,
+      "sha256": "e1a7ae48aa9c5a0bbbb201e5b3df94cce20410156795b24c57cc948cb380bd0a",
+      "git_blob": "55049fb15f62e3de0356496c83e03c1b9f416435"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/normal-final/tests.log",
+      "bytes": 3763,
+      "sha256": "ccb2ba99fb8b5b403594d2e51ef4947e2e2c3a53a36e8c2478d7cdf761a0708c",
+      "git_blob": "feaf46a48cb01e3b11bb4da2dd55ebcd5d486b1a"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/normal-final/evidence.json",
+      "bytes": 6206,
+      "sha256": "efbafa14ff33c8ac0e3b839ebe760ed43c485b8945f1d2fb7eb5419c3ad5af31",
+      "git_blob": "3400b69fbf13a465da2c6c3a83165de29b93f442"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/sanitized-committed/tests.log",
+      "bytes": 3921,
+      "sha256": "418569155db44ab0b67cd5c6f5fa9121235e0755d78b7bb85fa7ec4ebe7ef5db",
+      "git_blob": "b6448d7f25557ad013e8a312678681670856a5d7"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/sanitized-committed/evidence.json",
+      "bytes": 6431,
+      "sha256": "3806bf9a16482be44aa7fdc1433b70bbb24bc17da016fda3a66908ef88368296",
+      "git_blob": "bd8d7793a27d7154dad04213bd3c98e007307a79"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/lsan-ptrace-unavailable.log",
+      "bytes": 759,
+      "sha256": "878da42bffc860b8af8c5156a85772728a8d4609bedc5871877e01df8dc1912d",
+      "git_blob": "78da4027b761009d800c5ac8d138aa7cfde24e53"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/portable-serial-client.patch",
+      "bytes": 76745,
+      "sha256": "84447f3fa1e84e17a6ef9d630826eb599adaaaab9777b48be79d8c3650b8dce0",
+      "git_blob": "afb934f5d6f026a11484334d140aa36e3f5d6516"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/portable-serial-client.bundle",
+      "bytes": 25065,
+      "sha256": "d95b8aefae691c4b815600aa3afaa86e8f5bf80724e65d83de2f30035ceeeaf2",
+      "git_blob": "36e8966e8a1831ebbe57ca426a54e34036e52447"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/bundle-restore.log",
+      "bytes": 941,
+      "sha256": "0e023b4f548c9ce3b9de595eafa39b6377901c187c76c1baa594722a65a22b87",
+      "git_blob": "2588dd010941f6b9f20c28bb717b9ce59cee44ed"
+    },
+    {
+      "path": "docs/evidence/usb-capture-2026-10-21/client/full-bundle-verify.log",
+      "bytes": 309,
+      "sha256": "ff50bb13e74f6b3015a2b2ce4b706df039c7ba1697a690619e5a0dbc501e02a9",
+      "git_blob": "5cf5d520db384b4cccb5482ff717d524c11bed6f"
+    }
+  ],
+  "limits": [
+    "Original source trees are unchanged and captured in separate source commits.",
+    "Reconstructed GitHub commit IDs differ; original commit recovery is preserved by incremental bundles and patches.",
+    "No merge, release, target binary, product pin change, or physical USB/radio action.",
+    "Historical reports describe their original capture time; publication holds in those reports are superseded only for this GitHub source/evidence capture.",
+    "Selected technical evidence is included. Full recovery tarballs, executable test binaries, redundant reruns and raw internal tool or board replies are not included."
+  ]
+}

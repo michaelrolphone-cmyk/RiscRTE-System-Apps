@@ -1,0 +1,112 @@
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/include -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include -DPORTABLE_SERIAL_STREAMS -DPORTABLE_SERIAL_MONITOR_APP -DPORTABLE_NATIVE_CUSTODY_FENCE -DPORTABLE_CHECKED_STORAGE_RUNTIME -DPORTABLE_APP_LAUNCH_GUARD -DPORTABLE_APP_OWNS_TOUCH_CHROME /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c -o /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller terminal
+serial monitor terminal PASS
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller pagination
+serial monitor pagination PASS (31 provider calls, 30860 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller no-selection
+serial monitor no unintended selection PASS
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller inventory-failure
+serial monitor no unintended selection PASS
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller back-before-open
+serial monitor no unintended selection PASS
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller open-denied
+serial monitor open-denied PASS (9 provider calls, 5048 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller switch-instance
+serial monitor switch-instance PASS (32 provider calls, 9261 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller repeat-tap
+serial monitor repeat-tap PASS (19 provider calls, 4830 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller happy
+serial monitor happy PASS (22 provider calls, 4830 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller repeat
+serial monitor repeat PASS (44 provider calls, 9240 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller held
+serial monitor held PASS (19 provider calls, 6552 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller refresh-failure
+serial monitor refresh-failure PASS (25 provider calls, 8411 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller snapshot-binding
+serial monitor snapshot-binding PASS (12 provider calls, 4627 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller back-reselect
+serial monitor back-reselect PASS (32 provider calls, 9261 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller poll-failure
+serial monitor poll-failure PASS (16 provider calls, 4826 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller disconnect
+serial monitor disconnect PASS (15 provider calls, 4830 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller open-retained
+serial monitor open-retained PASS (7 provider calls, 3647 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller open-malformed
+serial monitor open-malformed PASS (7 provider calls, 3647 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller call-retained
+serial monitor call-retained PASS (12 provider calls, 4825 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller read-retained
+serial monitor read-retained PASS (13 provider calls, 4825 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller read-malformed
+serial monitor read-malformed PASS (13 provider calls, 4825 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller close-retained
+serial monitor close-retained PASS (21 provider calls, 4830 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller release-retained
+serial monitor release-retained PASS (22 provider calls, 4830 UI calls)
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/controller stale-invocation
+serial monitor stale-invocation PASS (11 provider calls, 4825 UI calls)
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/include -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include -DPORTABLE_SERIAL_STREAMS -DPORTABLE_SERIAL_MONITOR_APP -DPORTABLE_NATIVE_CUSTODY_FENCE -DPORTABLE_CHECKED_STORAGE_RUNTIME -DPORTABLE_APP_LAUNCH_GUARD -DPORTABLE_APP_OWNS_TOUCH_CHROME -DSM_TEST_INVALID_CATALOG /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c -o /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/invalid-catalog
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/invalid-catalog invalid-catalog
+serial monitor no unintended selection PASS
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/include -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include -DPORTABLE_SERIAL_STREAMS -DPORTABLE_SERIAL_MONITOR_APP -DPORTABLE_NATIVE_CUSTODY_FENCE -DPORTABLE_CHECKED_STORAGE_RUNTIME -DPORTABLE_APP_LAUNCH_GUARD -DPORTABLE_APP_OWNS_TOUCH_CHROME /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/portable_serial_client_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c -o /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/client
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/client
+serial client invalid arguments, truncated tables and configuration PASS
+serial client complete inventory, unknown recovery and explicit selection PASS
+serial client retained/malformed open, call, close and release never retry PASS
+serial client lifecycle, reconfiguration and total 1..1000 ms control budgets PASS
+serial client copied objects and stale invocation contexts never enter provider PASS
+serial client partial transfers, bounded CRLF queue, cancellation, wrap deadline and saturation PASS
+serial client detach/reconnect, EOF, malformed counts and retained transfers PASS
+portable serial client all local checks PASS
+Rejected unqualified composition: PORTABLE_NATIVE_CUSTODY_FENCE
+Rejected unqualified composition: PORTABLE_CHECKED_STORAGE_RUNTIME
+Rejected unqualified composition: PORTABLE_APP_LAUNCH_GUARD
+Rejected unqualified composition: PORTABLE_APP_OWNS_TOUCH_CHROME
+Rejected unqualified composition: PORTABLE_HOME_APP
+Rejected unqualified composition: PORTABLE_RETURN_APP
+Rejected unqualified composition: PORTABLE_APP_SLEEP_LOCAL
+Rejected unqualified composition: PORTABLE_RESIDENT_SHELL_CLIENT
+Rejected unqualified composition: PORTABLE_QUICK_ACTIONS
+$ cc -std=c11 -O1 -g -Wall -Wextra -Werror -I/workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/include -I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include -DPORTABLE_SERIAL_STREAMS -DPORTABLE_SERIAL_MONITOR_APP -DPORTABLE_NATIVE_CUSTODY_FENCE -DPORTABLE_CHECKED_STORAGE_RUNTIME -DPORTABLE_APP_LAUNCH_GUARD -DPORTABLE_APP_OWNS_TOUCH_CHROME /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/Apps/serial_monitor.c /workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c -o /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter render 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"render","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter open-refused 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"open-refused","width":240,"height":240,"frames":3,"opens":1,"closes":0,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter slow-frame 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"slow-frame","width":240,"height":240,"frames":2,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-open 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-open","width":240,"height":240,"frames":2,"opens":1,"closes":0,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-tick 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-tick","width":240,"height":240,"frames":2,"opens":1,"closes":0,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-close 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-close","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter fini-clean 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"fini-clean","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter fini-retained 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"fini-retained","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter launch-clean 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"launch-clean","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter launch-retained 240 240 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"launch-retained","width":240,"height":240,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter render 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"render","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter open-refused 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"open-refused","width":480,"height":800,"frames":3,"opens":1,"closes":0,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter slow-frame 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"slow-frame","width":480,"height":800,"frames":2,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-open 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-open","width":480,"height":800,"frames":2,"opens":1,"closes":0,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-tick 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-tick","width":480,"height":800,"frames":2,"opens":1,"closes":0,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter retained-close 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"retained-close","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter fini-clean 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"fini-clean","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter fini-retained 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"fini-retained","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter launch-clean 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"launch-clean","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":0,"result":"PASS"}
+$ /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/adapter launch-retained 480 800 /workspace/scratch/c744abbbbd60/usb-native-cdc/monitor-ui-artifacts/final-normal/captures
+{"case":"launch-retained","width":480,"height":800,"frames":4,"opens":1,"closes":1,"fences":1,"result":"PASS"}

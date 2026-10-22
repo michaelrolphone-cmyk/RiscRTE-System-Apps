@@ -1,0 +1,178 @@
+{
+  "observed_at": "2026-10-21T13:46:36.895249+00:00",
+  "system": {
+    "base": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+    "commit": "5843d1bf2079e66f837aec5eb03a1f15b9a95ae7",
+    "tree": "14c2b4e7a1566ea2910d7783864d969677280235",
+    "branch": "tasker/native-serial-monitor-ui-20261021",
+    "status": "",
+    "files": {
+      "Apps/serial_monitor.c": "b4b427c9ab86cde65bdf1a9d27c9065a0ff3c7e3c6c26fcc058ae12da36a56b0",
+      "Apps/serial_monitor_font.inc": "323318be69fa332e14afeb0bc6de168a74294993d082a22acedb72213bee7e9d",
+      "docs/NATIVE_SERIAL_MONITOR_UI.md": "fef6d9d57da1c148399cc5f70da805387b5f412c9dc19068c5df52ecbfcbc745",
+      "lib/PortableApps/include/PortableNativeCustody.h": "5458a1fb850e55a4c1de5410b3410f8885d446f9848406d61a142cb0a82b21d7",
+      "lib/PortableApps/include/PortableSerialMonitor.h": "7f1a589c121b1db06afced902ca35cffd02dfa889a40ef9293d43ac7a4ada18e",
+      "lib/PortableApps/src/adapter.c": "f9707cad6d694d5a667aac6bc26a89907862cdfe749db826442ec9d31ead4b37",
+      "lib/PortableApps/src/native_custody_adapter.inc": "1417beb6090a5bfaaa6b694fdbc4bedbb748c3b1472ddd9a111a3cb9307acaae",
+      "scripts/generate_serial_monitor_font.py": "e2b48e5120d197559281958d07e7a07f707c13c5dfe2dcf66725a1e2b049bfca",
+      "scripts/test_serial_monitor.py": "9baa7f9e47417f9c6e2ad6641cf4e44e3184dbc72d00208d9de93abf552d33d1",
+      "test/native_apps/serial_monitor_adapter_test.c": "5893214dd52a4702b9fd9f77090e1e35ab6339c10849ce0d5c36c7181026fff1",
+      "test/native_apps/serial_monitor_test.c": "84c4d6b2d6d98e27185780bc8ba15bf8bf6681c8ca6e482caf6e5620976f2914"
+    }
+  },
+  "preserved_sources": {
+    "system-parent": {
+      "commit": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+      "tree": "d959bd31c689ea9a038069eb3bf0961a958d8539",
+      "clean": true
+    },
+    "drivers": {
+      "commit": "77980f897e49829a8986df323024132c759671f2",
+      "tree": "2fc7909e3ba3498e3f65f1a35c044270f170474c",
+      "clean": true
+    },
+    "runtime": {
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "tree": "a5cc849726698c8651aa503af788b938bca28ec2",
+      "clean": true
+    }
+  },
+  "artifacts": {
+    "native-serial-monitor-ui.patch": {
+      "sha256": "dce5d60f7f79d35372ddc412463336480534dc74cf29fed5afe45913ffbd09a2",
+      "bytes": 70180
+    },
+    "native-serial-monitor-ui.bundle": {
+      "sha256": "206ed813e07201d6a43526abd6010d714d540768ce0e3121809e5e6ef8e8e93e",
+      "bytes": 23577
+    },
+    "native-serial-monitor-ui-recovery.tar.gz": {
+      "sha256": "7a18b54a4206dd8275e33afa5c2bd184e83e1e1dc8f13e3095d441e9bdef9e1c",
+      "bytes": 6564975
+    },
+    "recovery/SHALLOW": {
+      "sha256": "936db6be54e007f6c0449caabcc58130a4be33d42206aed6b82398de603b29e5",
+      "bytes": 41
+    },
+    "recovery/restore.sh": {
+      "sha256": "b9e7af9c58a92661dbeb2c734e92db8c3d2ea491379bb69162a2c870d6310af6",
+      "bytes": 760
+    },
+    "bundle-verify.log": {
+      "sha256": "000acf305ee87cc64c0d51ecb936e10465ee4387fac947506559031a05d307ba",
+      "bytes": 345
+    },
+    "recovery-restore-final.log": {
+      "sha256": "9ec3d9d8730985e4a2a106052929bf7b6af9e45ab4ad1824c6d6fe08cba1dae6",
+      "bytes": 1252
+    },
+    "patch-restore.log": {
+      "sha256": "b96033a7f5fcd87e3496aaf09665ce9d55807f5cbb5fb128406217adbc75cc34",
+      "bytes": 249
+    },
+    "existing-profile-parity.json": {
+      "sha256": "4829681cad8e6f6c6dcc0d83466d5d923b92f3a271171e35ca4bf720abc54ab6",
+      "bytes": 549
+    },
+    "QUALIFICATION.md": {
+      "sha256": "e916fdb3df586c555884291cfc809b0bbe7adcb63ec0ecbb712772a7246752bb",
+      "bytes": 4220
+    },
+    "INDEPENDENT_REVIEW.md": {
+      "sha256": "8121eb435af04a0ae8d55ea4b9e3ef48b1ed7e7b85a4da8bcae251aa03a97e24",
+      "bytes": 1348
+    },
+    "final-normal/evidence.json": {
+      "sha256": "a666f7b8f4054fd1c192879d55ae8f54159224a7884ff257d002f7c452d5d55d",
+      "bytes": 35033
+    },
+    "final-normal/tests.log": {
+      "sha256": "81651627826adfd9e1e66cf622d16e7f58cc2b901cbf12c363fbefd07dc8f947",
+      "bytes": 14695
+    },
+    "final-sanitized/evidence.json": {
+      "sha256": "423170e801f5b368c49d50c53b640d4161114f28d4e26e4d316945bcb7d34236",
+      "bytes": 36880
+    },
+    "final-sanitized/tests.log": {
+      "sha256": "3e657a1332c41d5e01c83970b517ce72c2f8382e90b67015e470f509fba633b8",
+      "bytes": 15265
+    },
+    "final-client-normal/evidence.json": {
+      "sha256": "418757f555787cb98bc668d6a0924dae34375c83e12134508f2ebd64720d0cdb",
+      "bytes": 6272
+    },
+    "final-client-normal/tests.log": {
+      "sha256": "42d9d28448cb0c107cac29441f2ecdcb9f954af005841fbc0ea732cafac77cb7",
+      "bytes": 3829
+    },
+    "final-client-sanitized/evidence.json": {
+      "sha256": "8ec063fe12b37ff8d93110c3fd984d94475b1fffa9e4cedc12349d0a702a9d4f",
+      "bytes": 6497
+    },
+    "final-client-sanitized/tests.log": {
+      "sha256": "f100d46a949829e568c00f4269951d488699aa56749b42391bfd98ee0e7adf6d",
+      "bytes": 3987
+    },
+    "independent-review/normal/evidence.json": {
+      "sha256": "bd9d85a88d3169ed0d64c98a9f1552e10baf9c2ce1ee655f3bb8c591d9273ea1",
+      "bytes": 32294
+    },
+    "independent-review/normal/tests.log": {
+      "sha256": "9bb67c30806cb48b52aa8eb78a7f3eb6290de9c573a2aaeb0902666989542da0",
+      "bytes": 12253
+    },
+    "independent-review/sanitized/evidence.json": {
+      "sha256": "a34296d885024d85d223f879e974f5dbdc308443b700dc3a653363374a34ca59",
+      "bytes": 34141
+    },
+    "independent-review/sanitized/tests.log": {
+      "sha256": "911ca5b009ba812d77a1ba50d14027a38f0016582900e4fb87779266bc6ed98d",
+      "bytes": 12823
+    },
+    "final-normal/contact-sheet.png": {
+      "sha256": "c79b2c0cb36e243401812ed9a43a99442dae70fc36066b7a6a404de043aabac0",
+      "bytes": 19901
+    },
+    "final-sanitized/contact-sheet.png": {
+      "sha256": "c79b2c0cb36e243401812ed9a43a99442dae70fc36066b7a6a404de043aabac0",
+      "bytes": 19901
+    }
+  },
+  "recovery": {
+    "commit": "5843d1bf2079e66f837aec5eb03a1f15b9a95ae7",
+    "tree": "14c2b4e7a1566ea2910d7783864d969677280235",
+    "patch_restored_tree": "14c2b4e7a1566ea2910d7783864d969677280235",
+    "shallow_boundary": "0651a55513b0aa0dff1b6a9072303def08a97378",
+    "instructions": "Use recovery/restore.sh with a new directory; preceding upstream history is not included."
+  },
+  "qualification": {
+    "controller_cases_per_mode": 25,
+    "real_native_adapter_cases_per_mode": 20,
+    "negative_compositions_per_mode": 9,
+    "runtime_client_cases_per_mode": 22,
+    "modes": [
+      "normal",
+      "ASan/UBSan"
+    ],
+    "independent_final_review": "passed; no blocking findings",
+    "leak_sanitizer": "disabled: ptrace environment",
+    "native_raster_formats": [
+      "RGB565"
+    ],
+    "native_raster_sizes": [
+      [
+        240,
+        240
+      ],
+      [
+        480,
+        800
+      ]
+    ],
+    "full_target_build": false,
+    "hardware": false,
+    "remote_publication": false,
+    "product_admission": false
+  }
+}

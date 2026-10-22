@@ -1,0 +1,1007 @@
+{
+  "result": "PASS",
+  "runtime": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+  "system_parent": "5843d1bf2079e66f837aec5eb03a1f15b9a95ae7",
+  "system_status": [],
+  "sanitized": false,
+  "sanitizer_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+  },
+  "cases": [
+    "terminal",
+    "pagination",
+    "no-selection",
+    "inventory-failure",
+    "back-before-open",
+    "open-denied",
+    "switch-instance",
+    "repeat-tap",
+    "happy",
+    "repeat",
+    "held",
+    "refresh-failure",
+    "snapshot-binding",
+    "back-reselect",
+    "poll-failure",
+    "disconnect",
+    "open-retained",
+    "open-malformed",
+    "call-retained",
+    "read-retained",
+    "read-malformed",
+    "close-retained",
+    "release-retained",
+    "stale-invocation",
+    "invalid-catalog"
+  ],
+  "negative_composition_controls": [
+    "PORTABLE_NATIVE_CUSTODY_FENCE",
+    "PORTABLE_CHECKED_STORAGE_RUNTIME",
+    "PORTABLE_APP_LAUNCH_GUARD",
+    "PORTABLE_APP_OWNS_TOUCH_CHROME",
+    "PORTABLE_HOME_APP",
+    "PORTABLE_RETURN_APP",
+    "PORTABLE_APP_SLEEP_LOCAL",
+    "PORTABLE_RESIDENT_SHELL_CLIENT",
+    "PORTABLE_QUICK_ACTIONS"
+  ],
+  "native_adapter_cases": [
+    "render",
+    "open-refused",
+    "slow-frame",
+    "retained-open",
+    "retained-tick",
+    "retained-close",
+    "fini-clean",
+    "fini-retained",
+    "launch-clean",
+    "launch-retained"
+  ],
+  "native_adapter_dimensions": [
+    [
+      240,
+      240
+    ],
+    [
+      480,
+      800
+    ]
+  ],
+  "captures": [
+    {
+      "name": "fini-clean-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-clean-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-clean-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-clean-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-clean-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-clean-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-clean-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-clean-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-retained-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-retained-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-retained-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-retained-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "fini-retained-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-retained-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-retained-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "fini-retained-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-clean-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-clean-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-clean-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-clean-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-clean-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-clean-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-clean-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-clean-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-retained-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-retained-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-retained-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-retained-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "launch-retained-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-retained-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-retained-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "launch-retained-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "open-refused-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "open-refused-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "open-refused-240x240-003.png",
+      "sha256": "ecd8f87c205d45f91240c0c6225d3a6a44578b9d3c9b12e63ce59f888dd7455f",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "open-refused-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "open-refused-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "open-refused-480x800-003.png",
+      "sha256": "f1aef29ec3f41e4827f2bbef49e8ecd69ffbb46b99c024d68c8e4bc357385e1d",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "render-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "render-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "render-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "render-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "render-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "render-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "render-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "render-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-close-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-close-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-close-240x240-003.png",
+      "sha256": "64fc77ef3f233da4109262925d5d10e06b470148307014bde5e8bd0292ed139b",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-close-240x240-004.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-close-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-close-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-close-480x800-003.png",
+      "sha256": "85c2c10d4f47a63c3d6a6b560248bddf13b8febc37f03e891f4a6010d8d090e6",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-close-480x800-004.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-open-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-open-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-open-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-open-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-tick-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-tick-240x240-002.png",
+      "sha256": "5d21135729a0bf0af2f85ed869009588104c958a2613b98a437e313c37a476c1",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "retained-tick-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "retained-tick-480x800-002.png",
+      "sha256": "8d0448ec67ed603eb3e2409f488510d279aba8006f01ec2d4d72495653ece786",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "slow-frame-240x240-001.png",
+      "sha256": "add9c923c508825b428e53d4fb3bd3b2238743ccbc6fb39518e2663e0a8cd294",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "slow-frame-240x240-002.png",
+      "sha256": "1d327e86edbef758acc64193cc95a14bddbb7edf275ad97c4d20431252407184",
+      "width": 240,
+      "height": 240
+    },
+    {
+      "name": "slow-frame-480x800-001.png",
+      "sha256": "28d3a60d7b1d4d7a0a5b04535bbd9d17a9dfb860f81a65b838e36b7f37954f3a",
+      "width": 480,
+      "height": 800
+    },
+    {
+      "name": "slow-frame-480x800-002.png",
+      "sha256": "f3e42ff2a3fc45904f3dfa97cb0b631a421ab917d2eec8db81150d9f8934cb21",
+      "width": 480,
+      "height": 800
+    }
+  ],
+  "contact_sheet_sha256": "c79b2c0cb36e243401812ed9a43a99442dae70fc36066b7a6a404de043aabac0",
+  "canonical_headers": {
+    "sdk/app/RiscRuntimeV1.h": "e8ddeb072831b0951ebe4eb3c68e54c08d778560b866537f86eaf78d2aae34fc",
+    "sdk/app/RiscStreamClientV1.h": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb",
+    "sdk/app/RiscSerialStreamSessionV1.h": "66d328c2a201625a7be348507c8dbedcaa937dfb46f86b05ecd04d60e3fba0b7",
+    "sdk/app/RiscRealtimeV1.h": "639781f728841cda6d40c3033877436b9e5d59519a4b15e11a9bc99b2365395d",
+    "sdk/driver/RiscStreamResultV1.h": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f",
+    "sdk/driver/RiscStreamSessionProviderV1.h": "fe463661530c43ae7d1dd8b9c8227fdc6a7e4380bca3f5c8a13287cb0db9e873",
+    "sdk/driver/RiscProviderV2.h": "62478822fa8943ddfd1607f8923de52d7b5b6fc8a0db2df6ca07c65c95c62d41",
+    "sdk/driver/RiscStreamProviderV1.h": "0fe306e060321387c816bb70ec4370a501a423f4fe19a20c9be80aa1b98f3432"
+  },
+  "source_hashes": {
+    "Apps/serial_monitor.c": "b4b427c9ab86cde65bdf1a9d27c9065a0ff3c7e3c6c26fcc058ae12da36a56b0",
+    "Apps/serial_monitor_font.inc": "323318be69fa332e14afeb0bc6de168a74294993d082a22acedb72213bee7e9d",
+    "lib/PortableApps/include/PortableSerialMonitor.h": "7f1a589c121b1db06afced902ca35cffd02dfa889a40ef9293d43ac7a4ada18e",
+    "lib/PortableApps/include/PortableNativeCustody.h": "5458a1fb850e55a4c1de5410b3410f8885d446f9848406d61a142cb0a82b21d7",
+    "lib/PortableApps/src/adapter.c": "f9707cad6d694d5a667aac6bc26a89907862cdfe749db826442ec9d31ead4b37",
+    "lib/PortableApps/src/native_custody_adapter.inc": "1417beb6090a5bfaaa6b694fdbc4bedbb748c3b1472ddd9a111a3cb9307acaae",
+    "lib/PortableApps/src/PortableSerialClient.c": "e69e7dbac8300a9f57f4f832ef9b99df1b62fa7f8ce79836ff2de3cf12c3c269",
+    "test/native_apps/serial_monitor_test.c": "84c4d6b2d6d98e27185780bc8ba15bf8bf6681c8ca6e482caf6e5620976f2914",
+    "scripts/test_serial_monitor.py": "9baa7f9e47417f9c6e2ad6641cf4e44e3184dbc72d00208d9de93abf552d33d1",
+    "scripts/generate_serial_monitor_font.py": "e2b48e5120d197559281958d07e7a07f707c13c5dfe2dcf66725a1e2b049bfca",
+    "test/native_apps/serial_monitor_adapter_test.c": "5893214dd52a4702b9fd9f77090e1e35ab6339c10849ce0d5c36c7181026fff1",
+    "lib/PortableApps/paper_fonts/LICENSE-Rajdhani.txt": "f62ef357d3a1c3d27edd35a6e1ba350e8a8d13499797964eeadefbf0b3b15d1f",
+    "lib/PortableApps/quick_fonts/Rajdhani-600.ttf": "bcffd70c330f38f97f49fbb41cad34a1628a7852c0e6d1d1418ebc162add3144"
+  },
+  "commands": [
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_test.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "terminal"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "pagination"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "no-selection"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "inventory-failure"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "back-before-open"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "open-denied"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "switch-instance"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "repeat-tap"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "happy"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "repeat"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "held"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "refresh-failure"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "snapshot-binding"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "back-reselect"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "poll-failure"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "disconnect"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "open-retained"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "open-malformed"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "call-retained"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "read-retained"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "read-malformed"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "close-retained"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "release-retained"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/controller",
+      "stale-invocation"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DSM_TEST_INVALID_CATALOG",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_test.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/invalid-catalog"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/invalid-catalog",
+      "invalid-catalog"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/portable_serial_client_test.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/client"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/client"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DPORTABLE_HOME_APP",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DPORTABLE_RETURN_APP",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DPORTABLE_APP_SLEEP_LOCAL",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DPORTABLE_RESIDENT_SHELL_CLIENT",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "-DPORTABLE_QUICK_ACTIONS",
+      "-fsyntax-only",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c"
+    ],
+    [
+      "cc",
+      "-std=c11",
+      "-O1",
+      "-g",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-I/tmp/serial-monitor-final-review-5843d1b/normal/include",
+      "-I/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/NativeApps/include",
+      "-DPORTABLE_SERIAL_STREAMS",
+      "-DPORTABLE_SERIAL_MONITOR_APP",
+      "-DPORTABLE_NATIVE_CUSTODY_FENCE",
+      "-DPORTABLE_CHECKED_STORAGE_RUNTIME",
+      "-DPORTABLE_APP_LAUNCH_GUARD",
+      "-DPORTABLE_APP_OWNS_TOUCH_CHROME",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/test/native_apps/serial_monitor_adapter_test.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/Apps/serial_monitor.c",
+      "/workspace/scratch/c744abbbbd60/usb-native-cdc/System-monitor-ui/lib/PortableApps/src/PortableSerialClient.c",
+      "-o",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "render",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "open-refused",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "slow-frame",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-open",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-tick",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-close",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "fini-clean",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "fini-retained",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "launch-clean",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "launch-retained",
+      "240",
+      "240",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "render",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "open-refused",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "slow-frame",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-open",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-tick",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "retained-close",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "fini-clean",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "fini-retained",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "launch-clean",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ],
+    [
+      "/tmp/serial-monitor-final-review-5843d1b/normal/adapter",
+      "launch-retained",
+      "480",
+      "800",
+      "/tmp/serial-monitor-final-review-5843d1b/normal/captures"
+    ]
+  ],
+  "log_sha256": "9bb67c30806cb48b52aa8eb78a7f3eb6290de9c573a2aaeb0902666989542da0",
+  "not_claimed": [
+    "LeakSanitizer",
+    "full Xtensa/IDF/ELF build",
+    "native product admission",
+    "discovery/role scheduling",
+    "hardware",
+    "remote publication"
+  ]
+}

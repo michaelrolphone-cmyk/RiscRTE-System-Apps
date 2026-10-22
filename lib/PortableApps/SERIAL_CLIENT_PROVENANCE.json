@@ -1,0 +1,50 @@
+{
+  "system_base": "0651a55513b0aa0dff1b6a9072303def08a97378",
+  "runtime_commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+  "reader_commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+  "scope": "App-local client plus byte-identical existing declarations; no new Runtime/provider ABI, product selection, installation or hardware action.",
+  "files": [
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/app/RiscStreamClientV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamClientV1.h",
+      "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb"
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/app/RiscSerialStreamSessionV1.h",
+      "destination": "lib/PortableApps/include/RiscSerialStreamSessionV1.h",
+      "sha256": "66d328c2a201625a7be348507c8dbedcaa937dfb46f86b05ecd04d60e3fba0b7"
+    },
+    {
+      "repository": "RiscRTE",
+      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
+      "source": "sdk/driver/RiscStreamResultV1.h",
+      "destination": "lib/PortableApps/include/RiscStreamResultV1.h",
+      "sha256": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "sdk/driver/RiscSerialPortV1.h",
+      "destination": "lib/PortableApps/include/RiscSerialPortV1.h",
+      "sha256": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "lib/NativeApps/include/T5SerialPortApi.h",
+      "destination": "lib/NativeApps/include/T5SerialPortApi.h",
+      "sha256": "36fdedb9776220ddf9a4201ca292cc597aaea9703d3ca05737e2a161eb38529f"
+    },
+    {
+      "repository": "T5S3-Reader-native",
+      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
+      "source": "lib/NativeApps/include/T5StreamApi.h",
+      "destination": "lib/NativeApps/include/T5StreamApi.h",
+      "sha256": "9f087d8f5446da8ae34b9815ca231285473fbbba0ad43dc6c367208126b554c5"
+    }
+  ]
+}

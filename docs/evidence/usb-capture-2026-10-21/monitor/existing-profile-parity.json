@@ -1,0 +1,17 @@
+{
+  "base": "f9d55dbeb941ba40fb965f53172ce3e1b85af376",
+  "profiles": {
+    "legacy": {
+      "preprocessed_sha256": "28284d0978a0bff4e0d4f2e7084e758ba5a4c9b44f73e7741ebd2a58eacc7137",
+      "matches_parent": true
+    },
+    "checked-native": {
+      "preprocessed_sha256": "f0b40b68f50c0305c4b9015dc67f6e47de8990f2d8ea956d7e54bb6b3543d335",
+      "matches_parent": true
+    },
+    "checked-native-terminal": {
+      "preprocessed_sha256": "10d662eb0e99b5eacceeb4a4a59e06f922cdb292d78b56f7e3d70b0976a9f515",
+      "matches_parent": true
+    }
+  }
+}

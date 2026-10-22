@@ -1,0 +1,1484 @@
+From f9d55dbeb941ba40fb965f53172ce3e1b85af376 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 21 Oct 2026 06:16:51 -0600
+Subject: [PATCH] Add bounded invocation-safe portable serial stream client
+
+---
+ README.md                                     |   4 +
+ docs/PORTABLE_SERIAL_CLIENT.md                | 127 +++++++
+ lib/NativeApps/include/T5SerialPortApi.h      | 125 +++++++
+ lib/NativeApps/include/T5StreamApi.h          |  99 ++++++
+ .../SERIAL_CLIENT_PROVENANCE.json             |  50 +++
+ .../include/PortableSerialClient.h            |  76 ++++
+ lib/PortableApps/include/RiscSerialPortV1.h   |  78 ++++
+ .../include/RiscSerialStreamSessionV1.h       |  37 ++
+ lib/PortableApps/include/RiscStreamClientV1.h |  53 +++
+ lib/PortableApps/include/RiscStreamResultV1.h |  12 +
+ lib/PortableApps/src/PortableSerialClient.c   | 265 ++++++++++++++
+ scripts/test_portable_serial_client.py        | 106 ++++++
+ .../native_apps/portable_serial_client_test.c | 333 ++++++++++++++++++
+ 13 files changed, 1365 insertions(+)
+ create mode 100644 docs/PORTABLE_SERIAL_CLIENT.md
+ create mode 100644 lib/NativeApps/include/T5SerialPortApi.h
+ create mode 100644 lib/NativeApps/include/T5StreamApi.h
+ create mode 100644 lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json
+ create mode 100644 lib/PortableApps/include/PortableSerialClient.h
+ create mode 100644 lib/PortableApps/include/RiscSerialPortV1.h
+ create mode 100644 lib/PortableApps/include/RiscSerialStreamSessionV1.h
+ create mode 100644 lib/PortableApps/include/RiscStreamClientV1.h
+ create mode 100644 lib/PortableApps/include/RiscStreamResultV1.h
+ create mode 100644 lib/PortableApps/src/PortableSerialClient.c
+ create mode 100644 scripts/test_portable_serial_client.py
+ create mode 100644 test/native_apps/portable_serial_client_test.c
+
+diff --git a/README.md b/README.md
+index 4934c06..b0ca8ea 100644
+--- a/README.md
++++ b/README.md
+@@ -34,6 +34,10 @@ During migration, `T5S3-Reader` remains a strictly read-only upstream source of
+ 
+ ## Repository tree
+ 
++The opt-in [bounded portable serial client](docs/PORTABLE_SERIAL_CLIENT.md) is a
++software-tested library candidate, not an installed serial monitor or product
++selection.
++
+ ```text
+ Apps/
+   app_store.c
+diff --git a/docs/PORTABLE_SERIAL_CLIENT.md b/docs/PORTABLE_SERIAL_CLIENT.md
+new file mode 100644
+index 0000000..02d1780
+--- /dev/null
++++ b/docs/PORTABLE_SERIAL_CLIENT.md
+@@ -0,0 +1,127 @@
++# Bounded portable serial client candidate
++
++`PortableSerialClient.h` and `PortableSerialClient.c` implement the missing
++app-local client used by the Runtime serial-stream witness. This is a library,
++not a delivered serial monitor, flashing tool, default application, installed
++provider or product selection. It performs no hardware discovery or host
++polling itself. No Runtime/provider ABI changes are made.
++
++## Exact source contract
++
++- System base: `0651a55513b0aa0dff1b6a9072303def08a97378`.
++- Runtime SDK and integration witness: `6a3b3d46f5b2857eacc6e9863799dec1f466b036`.
++- Native Reader serial declarations: `c98e4222048244b1e729869ed47aa99130025fd3`.
++
++`lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json` locks every copied declaration
++to its original path, commit and SHA-256. The six copied headers are byte-identical,
++not a new ABI or a broad historical SDK overlay. The existing System Runtime
++header is not changed; tests stage the exact pinned canonical Runtime headers.
++The T5 serial and stream declarations supply compatible configuration types
++only. Their legacy getters and transfer interfaces are never called.
++
++## Selection and invocation ownership
++
++Build the source with `PORTABLE_SERIAL_STREAMS`, the PortableApps include path
++and the NativeApps include path. Without the opt-in, init returns UNSUPPORTED
++without making any external call.
++
++1. Initialize a fresh client once in the active owner invocation. The default
++   initializer requests instance zero, which means exactly one authorized
++   provider, never the first or last provider. Use `portable_serial_init_instance`
++   to select an exact nonzero declared capability instance.
++2. `portable_serial_refresh` acquires that capability and copies its complete
++   inventory for presentation. A failed or malformed snapshot is IO, not an
++   empty set or a detach. The prior complete snapshot remains unchanged.
++3. `portable_serial_open(client, index, config)` explicitly selects an entry
++   from that snapshot. If no snapshot is loaded, it takes one first. The exact
++   provider device and generation are passed to Runtime. An invalid or absent
++   index does not fall back to another device. Provider-side validation closes
++   the enumeration/open race.
++4. Tick checks that same device/generation through the broker before touching
++   RX/TX. Unknown inventory pauses movement. Confirmed absence or a changed
++   generation closes once and reports DISCONNECTED. There is no automatic
++   reconnect or device reselection.
++5. Clean close releases the session before the grant. Only a fresh explicit
++   open can reconnect. Copied objects are rejected; a fresh Runtime table must
++   match the original invocation context before borrowed provider-table access.
++   Runtime remains authoritative for grants and opaque handles.
++
++All public struct fields are implementation state or read-only status; callers
++must not mutate, copy, persist or reinitialize a live/retained object. The object
++and Runtime table must remain alive for the invocation. Init deliberately
++supports the existing target witness's uninitialized stack object, so calling
++init again is not a reset/cleanup API.
++
++## Transfers, framing and budgets
++
++Framing accepts 300–3000000 baud, 5–8 data bits, parity NONE through SPACE,
++one or two stop bits and no flow control, matching the current serial witness.
++The provider can still reject supported-looking framing. A failed framing or
++control-line operation closes the session once, rather than assuming physical
++state or silently retrying. DTR/RTS state changes only after confirmed success.
++
++`portable_serial_queue` copies one line of at most 510 bytes and appends CRLF.
++It rejects another line while one is outstanding. Tick makes at most one write
++and one read, each at most 512 bytes, with no waits/yields/retry loops. Partial
++progress preserves order. Counters saturate and count accepted bytes, not
++physical transmission or a flush guarantee. Cancel discards only unaccepted
++local bytes. A queue expires after 2000 ms without accepted write progress,
++using caller-supplied same-boot wrapping monotonic milliseconds.
++
++The default allocated stream-control budget is 1000 ms per public operation;
++the setter accepts 1–1000 ms. Configure/control/check allocate the rounded-up
++half to the call and reserve the rest for at most one checked error close.
++The pinned Runtime broker may give its open budget again to an internal grant
++rollback close. Therefore open supplies the rounded-down half; a total budget
++of one millisecond rejects open locally before acquiring anything. Existing
++session controls can still use one millisecond, but an error that requires a
++close when no budget remains must retain custody. Tests simulate the broker's
++double allocation and assert totals never exceed the configured limit.
++
++These are cooperative callback budgets, not preemption, physical USB timing
++qualification or an end-to-end wall-clock bound on capability acquire/release.
++Runtime detects callback overruns and fences the invocation.
++
++## Retention and failures
++
++RETAINED is terminal even when open returns no app session token. Malformed
++outputs, counts, control statuses, uncertain close/release and stale contexts
++with custody latch `cleanup_required`. No later client method makes an external
++call, clears the queue/custody evidence, retries or releases anything. Return
++promptly from the invocation, using Runtime's `retain_invocation` fence when
++needed; do not free the client, poll providers or attempt recovery in place.
++
++A failed capability acquire with an empty output can be a healthy refusal
++(wrong/ambiguous instance or no authorized provider). A provider-free Runtime
++getter verifies the same live invocation before reporting DENIED. If that
++verification fails, or the failed acquire supplies malformed/nonempty output,
++custody is retained. This check is not performed after an explicit RETAINED.
++
++## Reproducible software checks
++
++From System, with the exact Runtime checkout:
++
++```sh
++python3 scripts/test_portable_serial_client.py --runtime /path/to/RiscRTE --output build/serial-normal
++python3 scripts/test_portable_serial_client.py --runtime /path/to/RiscRTE --output build/serial-sanitized --sanitize
++```
++
++In a ptrace-constrained runner where LeakSanitizer cannot start, prefix the
++sanitized command with `ASAN_OPTIONS=detect_leaks=0`. ASan and UBSan remain active;
++this does not constitute leak checking. The evidence records these options.
++
++Each run checks source hashes, strict C compilation, invalid arguments, table
++prefixes, complete/partial/malformed inventories, explicit instance/index,
++unknown-inventory recovery, partial reads/writes, bounded queues, cancellation,
++wrap-safe stalled deadlines, saturating counters, detach/reconnect, stale
++objects/invocations, failed/retained control and cleanup, malformed results and
++no external call after retention. Opt-out and C++ header checks also run.
++
++Finally the unchanged pinned Runtime integration runner loads the production
++client and software serial provider through the real broker, graph, module and
++byte queues: 11 modes under both eager and demand activation, 22 cases per run.
++Retained cases prove no fini/quiesce/stop and exact queue custody. Logs, commands,
++input hashes and clean/dirty checkout state are written to the output directory.
++
++These checks do not qualify an X4 USB/controller/PHY handoff, power/VBUS, a
++physical UART/CDC device, product installation, flashing or monitor UI behavior.
+diff --git a/lib/NativeApps/include/T5SerialPortApi.h b/lib/NativeApps/include/T5SerialPortApi.h
+new file mode 100644
+index 0000000..c159ffa
+--- /dev/null
++++ b/lib/NativeApps/include/T5SerialPortApi.h
+@@ -0,0 +1,125 @@
++#pragma once
++#include <stdbool.h>
++#include <stdint.h>
++#include "T5StreamApi.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define T5_SERIAL_PORT_API_VERSION 1u
++#define T5_SERIAL_PORT_CAPABILITY "serial.port"
++#define T5_SERIAL_PORT_LABEL_MAX 96u
++#define T5_SERIAL_DIAGNOSTIC_MAX 256u
++
++typedef uint32_t t5_serial_port_lease_t;
++typedef uint32_t t5_serial_device_t;
++typedef int32_t t5_serial_result_t;
++
++enum {
++    T5_SERIAL_OK = 0,
++    T5_SERIAL_INVALID = -1,
++    T5_SERIAL_DENIED = -2,
++    T5_SERIAL_LIMIT = -3,
++    T5_SERIAL_UNSUPPORTED = -4,
++    T5_SERIAL_IO = -5,
++    T5_SERIAL_DISCONNECTED = -6,
++    T5_SERIAL_BUSY = -8,
++    T5_SERIAL_CLOSED = -9,
++};
++
++typedef enum {
++    T5_SERIAL_STATUS_UNAVAILABLE = 0,
++    T5_SERIAL_STATUS_OFF = 1,
++    T5_SERIAL_STATUS_WAITING = 2,
++    T5_SERIAL_STATUS_CONFIGURING = 3,
++    T5_SERIAL_STATUS_READY = 4,
++    T5_SERIAL_STATUS_ERROR = 5,
++} t5_serial_status_t;
++
++typedef enum {
++    T5_SERIAL_PARITY_NONE = 0,
++    T5_SERIAL_PARITY_ODD = 1,
++    T5_SERIAL_PARITY_EVEN = 2,
++    T5_SERIAL_PARITY_MARK = 3,
++    T5_SERIAL_PARITY_SPACE = 4,
++} t5_serial_parity_t;
++
++typedef enum {
++    T5_SERIAL_FLOW_NONE = 0,
++    T5_SERIAL_FLOW_RTS_CTS = 1,
++} t5_serial_flow_control_t;
++
++typedef struct {
++    uint32_t baud_rate;
++    uint8_t data_bits;
++    uint8_t parity;
++    uint8_t stop_bits;
++    uint8_t flow_control;
++} t5_serial_config_t;
++
++typedef struct {
++    /* Zero selects the default usable provider/device. Non-zero is reserved for
++     * a device handle previously returned by this capability. */
++    t5_serial_device_t device;
++    t5_serial_config_t config;
++} t5_serial_port_request_t;
++
++typedef struct {
++    uint8_t status;
++    uint8_t connected;
++    uint8_t dtr;
++    uint8_t rts;
++    int32_t last_error;
++    uint32_t rx_bytes;
++    uint32_t tx_bytes;
++    uint32_t dropped_rx_bytes;
++    t5_serial_device_t device;
++    t5_serial_config_t config;
++    /* Provider-owned presentation string. Consumers may display but must not
++     * parse it for transport-specific identity. */
++    char device_label[T5_SERIAL_PORT_LABEL_MAX];
++} t5_serial_port_state_t;
++
++/* Optional post-acquisition diagnostic. It remains available when no lease
++ * exists, unlike read_status(). The generic result and provider error are
++ * distinct; detail is a bounded, human-readable diagnostic, not a command or
++ * a transport-specific API. It must not include received serial payloads. */
++typedef struct {
++    t5_serial_result_t result;
++    int32_t provider_error;
++    char detail[T5_SERIAL_DIAGNOSTIC_MAX];
++} t5_serial_diagnostic_t;
++
++typedef struct {
++    uint32_t api_version;
++    uint32_t struct_size;
++    const char *capability_id;
++
++    /* The lease owns both stream handles. release() closes them. */
++    t5_serial_result_t (*acquire)(const t5_serial_port_request_t *request,
++                                  t5_serial_port_lease_t *lease,
++                                  t5_stream_t *rx_stream,
++                                  t5_stream_t *tx_stream);
++    t5_serial_result_t (*configure)(t5_serial_port_lease_t lease,
++                                    const t5_serial_config_t *config);
++    t5_serial_result_t (*read_status)(t5_serial_port_lease_t lease,
++                                      t5_serial_port_state_t *state);
++    t5_serial_result_t (*set_control_lines)(t5_serial_port_lease_t lease,
++                                            bool dtr, bool rts);
++    t5_serial_result_t (*release)(t5_serial_port_lease_t lease);
++
++    /* ABI-v1 append-only extension. Check struct_size and pointer before use;
++     * older providers remain valid and report only the acquire return code.
++     * C++ default avoids -Wmissing-field-initializers for legacy tables. */
++#ifdef __cplusplus
++    bool (*last_diagnostic)(t5_serial_diagnostic_t *out) = nullptr;
++#else
++    bool (*last_diagnostic)(t5_serial_diagnostic_t *out);
++#endif
++} t5_serial_port_api_v1;
++
++const t5_serial_port_api_v1 *t5_serial_port_get_api(uint32_t version);
++
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/NativeApps/include/T5StreamApi.h b/lib/NativeApps/include/T5StreamApi.h
+new file mode 100644
+index 0000000..12538cd
+--- /dev/null
++++ b/lib/NativeApps/include/T5StreamApi.h
+@@ -0,0 +1,99 @@
++#pragma once
++#include <stdint.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define T5_STREAM_API_VERSION 1u
++#define T5_STREAM_CHUNK 512u
++#define T5_STREAM_MAX_BUFFER 4096u
++typedef uint32_t t5_stream_t;
++typedef uint32_t t5_pipe_t;
++typedef int32_t t5_stream_result_t;
++enum {
++  T5_STREAM_OK = 0, T5_STREAM_AGAIN = 1, T5_STREAM_EOF = 2,
++  T5_STREAM_INVALID = -1, T5_STREAM_DENIED = -2, T5_STREAM_LIMIT = -3,
++  T5_STREAM_UNSUPPORTED = -4, T5_STREAM_IO = -5, T5_STREAM_DISCONNECTED = -6,
++  T5_STREAM_CANCELLED = -7, T5_STREAM_BUSY = -8, T5_STREAM_CLOSED = -9,
++  T5_STREAM_TIMEOUT = -10
++};
++enum { T5_STREAM_READ = 1, T5_STREAM_WRITE = 2, T5_STREAM_SEEK = 4 };
++enum { T5_STREAM_BYTES = 1, T5_STREAM_RECORDS = 2 };
++enum { T5_PIPE_BLOCK_PRODUCER = 0 };
++enum { T5_PIPE_RUNNING = 1, T5_PIPE_PAUSED, T5_PIPE_DONE, T5_PIPE_FAILED, T5_PIPE_CANCELLED };
++enum { T5_STREAM_FILE_READ = 1, T5_STREAM_FILE_CREATE_NEW = 2 };
++typedef struct {
++  uint32_t struct_size, kind, flags, owner, capacity, buffered, high_water;
++  int32_t terminal;
++  uint64_t bytes_read, bytes_written;
++} t5_stream_info_t;
++typedef struct {
++  uint32_t struct_size, owner, state, buffered;
++  t5_stream_t source, destination;
++  int32_t last_error;
++  uint64_t bytes_transferred, stalls;
++} t5_pipe_info_t;
++/* All operations are session-bound. No app pointers/callbacks are retained.
++ * read/write transfer at most T5_STREAM_CHUNK bytes and always set *count.
++ * AGAIN means retry later; EOF is distinct from temporary lack of data.
++ * A pipe exclusively leases source reads and destination writes until terminal.
++ * BLOCK_PRODUCER is the only MVP policy; other values are rejected.
++ */
++typedef struct {
++  uint32_t api_version, struct_size;
++  t5_stream_result_t (*open_buffer)(uint32_t capacity, t5_stream_t *out);
++  t5_stream_result_t (*open_file)(const char *path, uint32_t mode, t5_stream_t *out);
++  /* ABI slot retained. Returns UNSUPPORTED; use serial.port RX/TX instead. */
++  t5_stream_result_t (*open_usb)(t5_stream_t *out);
++  /* Starts one asynchronous HTTP body request. Uses existing network/TLS policy. */
++  t5_stream_result_t (*open_http)(const char *url, t5_stream_t *out);
++  t5_stream_result_t (*read)(t5_stream_t, void *, uint32_t capacity, uint32_t *count);
++  t5_stream_result_t (*write)(t5_stream_t, const void *, uint32_t size, uint32_t *count);
++  t5_stream_result_t (*finish)(t5_stream_t); /* buffer EOF; file flush/close */
++  t5_stream_result_t (*seek)(t5_stream_t, uint64_t offset);
++  t5_stream_result_t (*close)(t5_stream_t);
++  t5_stream_result_t (*info)(t5_stream_t, t5_stream_info_t *);
++  t5_stream_result_t (*pipe_connect)(t5_stream_t, t5_stream_t, uint32_t policy, t5_pipe_t *);
++  t5_stream_result_t (*pipe_pause)(t5_pipe_t, uint32_t paused);
++  t5_stream_result_t (*pipe_cancel)(t5_pipe_t);
++  t5_stream_result_t (*pipe_close)(t5_pipe_t);
++  t5_stream_result_t (*pipe_info)(t5_pipe_t, t5_pipe_info_t *);
++} t5_stream_api_v1;
++/* RiscRTE's v2 API is additive: v1's binary layout and get_api(1) behavior
++ * are retained. The v2 pointer is only valid for this invocation; an ELF must
++ * check version, struct_size and required function pointers before use.
++ * No record metadata pointer is retained, and the schema is copied by value.
++ */
++#define RISCRTE_STREAM_API_VERSION_2 2u
++#define RISCRTE_RECORD_SCHEMA_CAPACITY 64u
++typedef struct {
++  uint32_t struct_size, flags, owner;
++  char schema[RISCRTE_RECORD_SCHEMA_CAPACITY];
++  uint32_t max_record, capacity_records, queued_records, queued_bytes;
++  uint32_t high_water_records, high_water_bytes;
++  int32_t terminal;
++  uint64_t records_read, records_written, bytes_read, bytes_written;
++} riscrte_record_info_v1;
++typedef struct {
++  t5_stream_api_v1 v1; /* ABI prefix: api_version=2 and struct_size=sizeof(v2). */
++  t5_stream_result_t (*open_record_buffer)(const char *schema, uint32_t max_record,
++      uint32_t capacity_records, uint32_t flags, t5_stream_t *out);
++  t5_stream_result_t (*record_read)(t5_stream_t, void *out, uint32_t capacity,
++      uint32_t *size);
++  t5_stream_result_t (*record_write)(t5_stream_t, const void *record, uint32_t size);
++  t5_stream_result_t (*record_info)(t5_stream_t, riscrte_record_info_v1 *out);
++} riscrte_stream_api_v2;
++/* The historical symbol remains the sole exported loader entry point. A v2
++ * caller casts only after checking the returned version and full struct size.
++ * The v1 read/write members reject record handles; v2 record operations reject
++ * byte handles. pipe_connect accepts only matching kinds and exact schemas.
++ */
++const t5_stream_api_v1 *t5_stream_get_api(uint32_t version);
++static inline const riscrte_stream_api_v2 *riscrte_stream_get_api_v2(void) {
++  const t5_stream_api_v1 *base = t5_stream_get_api(RISCRTE_STREAM_API_VERSION_2);
++  if (!base || base->api_version != RISCRTE_STREAM_API_VERSION_2 ||
++      base->struct_size < sizeof(riscrte_stream_api_v2)) return (const riscrte_stream_api_v2 *)0;
++  return (const riscrte_stream_api_v2 *)base;
++}
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json b/lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json
+new file mode 100644
+index 0000000..852bfd8
+--- /dev/null
++++ b/lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json
+@@ -0,0 +1,50 @@
++{
++  "system_base": "0651a55513b0aa0dff1b6a9072303def08a97378",
++  "runtime_commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++  "reader_commit": "c98e4222048244b1e729869ed47aa99130025fd3",
++  "scope": "App-local client plus byte-identical existing declarations; no new Runtime/provider ABI, product selection, installation or hardware action.",
++  "files": [
++    {
++      "repository": "RiscRTE",
++      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++      "source": "sdk/app/RiscStreamClientV1.h",
++      "destination": "lib/PortableApps/include/RiscStreamClientV1.h",
++      "sha256": "ef5deb9a3bf8d20c0af9859a83977b93acfb8e480a851d0dcf96caf2795babcb"
++    },
++    {
++      "repository": "RiscRTE",
++      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++      "source": "sdk/app/RiscSerialStreamSessionV1.h",
++      "destination": "lib/PortableApps/include/RiscSerialStreamSessionV1.h",
++      "sha256": "66d328c2a201625a7be348507c8dbedcaa937dfb46f86b05ecd04d60e3fba0b7"
++    },
++    {
++      "repository": "RiscRTE",
++      "commit": "6a3b3d46f5b2857eacc6e9863799dec1f466b036",
++      "source": "sdk/driver/RiscStreamResultV1.h",
++      "destination": "lib/PortableApps/include/RiscStreamResultV1.h",
++      "sha256": "af140ee9ca4f6286c5f1beeecb0a0952264b14eb40d3ba4f313ff952e8824a6f"
++    },
++    {
++      "repository": "T5S3-Reader-native",
++      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
++      "source": "sdk/driver/RiscSerialPortV1.h",
++      "destination": "lib/PortableApps/include/RiscSerialPortV1.h",
++      "sha256": "7f00311161a071c6575be8b65e7aba30ebef7a8f1a45f9c0bf9168bc25e05700"
++    },
++    {
++      "repository": "T5S3-Reader-native",
++      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
++      "source": "lib/NativeApps/include/T5SerialPortApi.h",
++      "destination": "lib/NativeApps/include/T5SerialPortApi.h",
++      "sha256": "36fdedb9776220ddf9a4201ca292cc597aaea9703d3ca05737e2a161eb38529f"
++    },
++    {
++      "repository": "T5S3-Reader-native",
++      "commit": "c98e4222048244b1e729869ed47aa99130025fd3",
++      "source": "lib/NativeApps/include/T5StreamApi.h",
++      "destination": "lib/NativeApps/include/T5StreamApi.h",
++      "sha256": "9f087d8f5446da8ae34b9815ca231285473fbbba0ad43dc6c367208126b554c5"
++    }
++  ]
++}
+diff --git a/lib/PortableApps/include/PortableSerialClient.h b/lib/PortableApps/include/PortableSerialClient.h
+new file mode 100644
+index 0000000..c62e355
+--- /dev/null
++++ b/lib/PortableApps/include/PortableSerialClient.h
+@@ -0,0 +1,76 @@
++#ifndef PORTABLE_SERIAL_CLIENT_H
++#define PORTABLE_SERIAL_CLIENT_H
++/* App-local, opt-in stream client, not a monitor application or raw serial ABI.
++ * Build PortableSerialClient.c with PORTABLE_SERIAL_STREAMS. Use only on the
++ * owner task, within one invocation. Init a fresh object once; never copy,
++ * reinitialize a live/retained object, mutate its fields, or persist handles. */
++#include "RiscStreamClientV1.h"
++#include "RiscSerialStreamSessionV1.h"
++#include "RiscSerialPortV1.h"
++#include "T5SerialPortApi.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define PSC_CHUNK RISC_STREAM_CHUNK_V1
++#define PSC_QUEUE_CAPACITY PSC_CHUNK
++#define PSC_STALL_MS 2000u
++enum {
++ PSC_OK=0, PSC_AGAIN=1, PSC_EOF=2,
++ PSC_INVALID=-1, PSC_DENIED=-2, PSC_LIMIT=-3, PSC_UNSUPPORTED=-4,
++ PSC_IO=-5, PSC_DISCONNECTED=-6, PSC_CANCELLED=-7, PSC_BUSY=-8,
++ PSC_CLOSED=-9, PSC_TIMEOUT=-10, PSC_RETAINED=-11
++};
++typedef struct portable_serial_client {
++ const struct portable_serial_client *self;
++ const risc_runtime_api_v1 *runtime;
++ risc_stream_client_v1 streams;
++ risc_runtime_capability_v1 grant;
++ risc_serial_device_v1 inventory[RISC_SERIAL_INVENTORY_MAX_DEVICES];
++ size_t inventory_count;
++ uint64_t instance,device,generation;
++ risc_stream_session_t session;
++ risc_stream_client_handle_t rx_stream,tx_stream;
++ t5_serial_config_t config;
++ uint64_t rx_bytes,tx_bytes; /* Saturating accepted-byte counters, not flush. */
++ uint8_t queue[PSC_QUEUE_CAPACITY];
++ size_t queued,sent;
++ uint32_t queued_at,control_budget_ms;
++ int result;
++ bool initialized,stream_mode,connected,cleanup_required,halted,inventory_loaded,dtr,rts;
++} portable_serial_client;
++/* Init does not acquire a provider. Zero instance requires exactly one
++ * authorized provider, as defined by Runtime; it never picks a provider. */
++bool portable_serial_init(portable_serial_client *,const risc_runtime_api_v1 *);
++bool portable_serial_init_instance(portable_serial_client *,const risc_runtime_api_v1 *,uint64_t instance);
++/* Total allocated stream-control budget per public operation, including its
++ * one optional error close, is 1..1000 ms. Open needs at least 2 ms because
++ * Runtime may spend the same sub-budget again on its internal open rollback.
++ * No retries, sleeps or yields. These are cooperative callback budgets, not
++ * preemption or a wall-clock bound on capability acquisition/release. */
++bool portable_serial_set_control_budget(portable_serial_client *,uint32_t milliseconds);
++/* Acquire the selected capability and copy a complete, validated inventory.
++ * Failed/partial/malformed snapshots return IO and leave the prior snapshot
++ * untouched. No endpoint is opened and no device is automatically selected. */
++bool portable_serial_refresh(portable_serial_client *);
++/* Explicit index into the last successful snapshot. If none is loaded, take
++ * one snapshot first. Open passes its exact device AND generation to Runtime;
++ * it never refreshes/rebinds an already selected index or retries on detach. */
++bool portable_serial_open(portable_serial_client *,size_t index,const t5_serial_config_t *);
++bool portable_serial_configure(portable_serial_client *,const t5_serial_config_t *);
++bool portable_serial_control(portable_serial_client *,bool dtr,bool rts);
++/* Copy one bounded NUL-terminated line plus CRLF. Only one outstanding line.
++ * now_ms is caller-supplied same-boot uint32 monotonic time; wraps are allowed.
++ * A stalled queue expires 2000 ms after last accepted progress. Cancellation
++ * discards only unaccepted app bytes, never bytes already accepted by Runtime. */
++bool portable_serial_queue(portable_serial_client *,const char *line,uint32_t now_ms);
++size_t portable_serial_tick(portable_serial_client *,void *rx,size_t capacity,uint32_t now_ms);
++void portable_serial_cancel(portable_serial_client *);
++/* Idempotent after a clean close; reconnect requires another explicit open.
++ * On cleanup_required: return promptly from the invocation, requesting its
++ * retain_invocation fence if needed. Never close/release/retry/free this client
++ * or poll/yield providers. This client never attempts cleanup after RETAINED. */
++bool portable_serial_close(portable_serial_client *);
++#ifdef __cplusplus
++}
++#endif
++#endif
+diff --git a/lib/PortableApps/include/RiscSerialPortV1.h b/lib/PortableApps/include/RiscSerialPortV1.h
+new file mode 100644
+index 0000000..16b59c5
+--- /dev/null
++++ b/lib/PortableApps/include/RiscSerialPortV1.h
+@@ -0,0 +1,78 @@
++#pragma once
++/* Generic semantic serial.port@1 provider ABI. Hardware-specific protocols,
++ * host enumeration and transport identity belong to the installed provider.
++ * The runtime can inspect this interface without including USB headers. */
++#include "RiscProviderV2.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_SERIAL_PORT_API_V1 1u
++#define RISC_SERIAL_INVENTORY_MAX_DEVICES 8u
++
++typedef struct {
++    uint32_t api_version;
++    uint32_t struct_size;
++    uint64_t (*open)(uint64_t provider_device);
++    bool (*configure)(uint64_t session, uint32_t baud, uint8_t data_bits,
++                      uint8_t parity, uint8_t stop_bits);
++    bool (*control_lines)(uint64_t session, bool dtr, bool rts);
++    int32_t (*read)(uint64_t session, uint8_t *dst, size_t capacity,
++                    uint32_t timeout_ms);
++    int32_t (*write)(uint64_t session, const uint8_t *src, size_t length,
++                     uint32_t timeout_ms);
++    bool (*close)(uint64_t session);
++} risc_serial_port_api_v1;
++
++/* Optional append-only read-only probe. 1=match, 0=definite nonmatch,
++ * negative=uncertain; an uncertain result MUST NOT be treated as detach. */
++typedef struct {
++    risc_serial_port_api_v1 serial;
++    int32_t (*probe)(uint64_t provider_device);
++} risc_serial_port_discovery_v1;
++
++/* Transport values match the versioned generic device-registry vocabulary.
++ * A protocol ELF, not the framework, identifies its actual transport. */
++enum {
++    RISC_SERIAL_TRANSPORT_INTERNAL = 0,
++    RISC_SERIAL_TRANSPORT_UART = 1,
++    RISC_SERIAL_TRANSPORT_USB = 2,
++    RISC_SERIAL_TRANSPORT_BLE = 3,
++    RISC_SERIAL_TRANSPORT_I2C = 4,
++    RISC_SERIAL_TRANSPORT_SPI = 5,
++    RISC_SERIAL_TRANSPORT_GPIO = 6,
++    RISC_SERIAL_TRANSPORT_LORA = 7,
++    RISC_SERIAL_TRANSPORT_IP = 8
++};
++
++typedef struct {
++    /* Both tokens are provider-owned, nonzero and stable while connected.
++     * generation changes on each physical reconnect, even at a reused port.
++     * Never publish these raw tokens as application device handles. */
++    uint64_t provider_device;
++    uint64_t generation;
++    uint8_t transport;
++    uint8_t reserved[7];
++} risc_serial_device_v1;
++
++/* Provider-originated bounded inventory; no direct host/device work in core.
++ * On success, *inout_count is the exact number of complete records written.
++ * Insufficient capacity returns false and required count, WITHOUT writing a
++ * partial inventory. Failed enumeration/identity is UNKNOWN: the runtime must
++ * neither publish a healthy empty set nor silently revoke existing leases.
++ * Implementations must perform no claims, controls or data transfers here.
++ * The provider grant must remain pinned while any announced device is live. */
++typedef struct {
++    risc_serial_port_discovery_v1 discovery;
++    bool (*snapshot)(risc_serial_device_v1 *out, size_t *inout_count);
++} risc_serial_port_inventory_v1;
++/* Optional provider-owned stream endpoints for an already-open session.
++ * The provider owns publication, bounded physical pumping, and close. A
++ * false return fails acquisition; core must not fall back to raw read/write.
++ * Consumer grants are issued separately against the exact capability lease. */
++typedef struct {
++    risc_serial_port_inventory_v1 inventory;
++    bool (*endpoints)(uint64_t session, uint32_t *rx, uint32_t *tx);
++} risc_serial_port_streams_v1;
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscSerialStreamSessionV1.h b/lib/PortableApps/include/RiscSerialStreamSessionV1.h
+new file mode 100644
+index 0000000..9fb56fb
+--- /dev/null
++++ b/lib/PortableApps/include/RiscSerialStreamSessionV1.h
+@@ -0,0 +1,37 @@
++#pragma once
++/* Interpreted by the app and serial provider adapter;
++ * generic Runtime copies these bytes and never includes this header. */
++#include <stdint.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_SERIAL_STREAM_REQUEST_V1 1u
++typedef struct {
++  uint32_t baud_rate;
++  uint8_t data_bits, parity, stop_bits, flow_control;
++} risc_serial_stream_config_v1;
++typedef struct {
++  uint32_t api_version, struct_size;
++  uint64_t provider_device, device_generation;
++  risc_serial_stream_config_v1 config;
++} risc_serial_stream_open_v1;
++enum {
++  RISC_SERIAL_STREAM_CONFIGURE=1,
++  RISC_SERIAL_STREAM_CONTROL_LINES=2,
++  RISC_SERIAL_STREAM_CHECK_DEVICE=3
++};
++typedef struct {
++  uint32_t api_version, struct_size, operation, reserved;
++  union {
++    risc_serial_stream_config_v1 config;
++    struct { uint8_t dtr, rts, reserved[6]; } lines;
++    uint8_t zero[8];
++  } value;
++} risc_serial_stream_call_v1;
++/* All three calls return status only, with reply_size=0. CHECK_DEVICE requires
++ * a complete valid inventory: exact device+generation => OK; valid absence =>
++ * DISCONNECTED; failed/malformed/partial inventory => IO, preserving custody.
++ */
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscStreamClientV1.h b/lib/PortableApps/include/RiscStreamClientV1.h
+new file mode 100644
+index 0000000..bb33457
+--- /dev/null
++++ b/lib/PortableApps/include/RiscStreamClientV1.h
+@@ -0,0 +1,53 @@
++#pragma once
++/* Invocation-bound byte streams; the Runtime owns provider-session custody. */
++#include "RiscRuntimeV1.h"
++#include "RiscStreamResultV1.h"
++#ifdef __cplusplus
++extern "C" {
++#endif
++#define RISC_STREAM_CLIENT_API_V1 1u
++#define RISC_STREAM_CHUNK_V1 512u
++#define RISC_STREAM_BUFFER_MAX_V1 4096u
++#define RISC_STREAM_CONTROL_MAX_MS_V1 1000u
++typedef uint64_t risc_stream_session_t;
++typedef uint64_t risc_stream_client_handle_t;
++typedef struct {
++  uint32_t struct_size, reserved;
++  risc_stream_session_t session;
++  risc_stream_client_handle_t rx, tx;
++} risc_stream_opened_v1;
++typedef struct {
++  uint32_t struct_size, rights, capacity, buffered, high_water;
++  int32_t terminal;
++  uint64_t bytes_read, bytes_written;
++} risc_stream_client_info_v1;
++/* All methods are owner-task/invocation bound. Open also requires the exact
++ * live capability grant; session/stream handles are Runtime-issued opaque IDs.
++ * Control budgets are 1..1000 ms; requests/replies are copied and <=512 bytes.
++ * Read/write initialize count to zero and transfer at most min(request,512).
++ * Partial progress is OK; empty/full is AGAIN; drained graceful RX is EOF.
++ * Writes count accepted queue bytes, never a physical flush guarantee.
++ * RETAINED requires prompt return without cleanup, polling, frees or retries. */
++typedef struct risc_stream_client_v1 {
++  uint32_t api_version, struct_size;
++  uint64_t context; /* Runtime-minted, unique current invocation, never an owner input. */
++  int32_t (*open)(uint64_t context, const risc_runtime_capability_v1 *grant,
++      const void *request, uint32_t request_size, uint32_t budget_ms,
++      risc_stream_opened_v1 *out);
++  int32_t (*call)(uint64_t context, risc_stream_session_t session,
++      const void *request, uint32_t request_size, uint32_t budget_ms,
++      void *reply, uint32_t reply_capacity, uint32_t *reply_size);
++  int32_t (*close)(uint64_t context, risc_stream_session_t session,
++      uint32_t budget_ms);
++  int32_t (*read)(uint64_t context, risc_stream_client_handle_t stream,
++      void *data, uint32_t capacity, uint32_t *count);
++  int32_t (*write)(uint64_t context, risc_stream_client_handle_t stream,
++      const void *data, uint32_t length, uint32_t *count);
++  int32_t (*info)(uint64_t context, risc_stream_client_handle_t stream,
++      risc_stream_client_info_v1 *out);
++} risc_stream_client_v1;
++/* Obtain a copied table using Runtime.stream_client. A table copy never extends
++ * its invocation. No API accepts raw provider session or endpoint IDs. */
++#ifdef __cplusplus
++}
++#endif
+diff --git a/lib/PortableApps/include/RiscStreamResultV1.h b/lib/PortableApps/include/RiscStreamResultV1.h
+new file mode 100644
+index 0000000..4bdf0f5
+--- /dev/null
++++ b/lib/PortableApps/include/RiscStreamResultV1.h
+@@ -0,0 +1,12 @@
++#pragma once
++#include <stdint.h>
++/* Existing T5 result numbers are preserved. RETAINED is additive. */
++enum {
++  RISC_STREAM_OK=0, RISC_STREAM_AGAIN=1, RISC_STREAM_EOF=2,
++  RISC_STREAM_INVALID=-1, RISC_STREAM_DENIED=-2, RISC_STREAM_LIMIT=-3,
++  RISC_STREAM_UNSUPPORTED=-4, RISC_STREAM_IO=-5,
++  RISC_STREAM_DISCONNECTED=-6, RISC_STREAM_CANCELLED=-7,
++  RISC_STREAM_BUSY=-8, RISC_STREAM_CLOSED=-9, RISC_STREAM_TIMEOUT=-10,
++  RISC_STREAM_RETAINED=-11
++};
++enum { RISC_STREAM_READ=1, RISC_STREAM_WRITE=2 };
+diff --git a/lib/PortableApps/src/PortableSerialClient.c b/lib/PortableApps/src/PortableSerialClient.c
+new file mode 100644
+index 0000000..4d1d3c8
+--- /dev/null
++++ b/lib/PortableApps/src/PortableSerialClient.c
+@@ -0,0 +1,265 @@
++#include "PortableSerialClient.h"
++#include <string.h>
++
++static bool result(portable_serial_client *c,int code) {
++ if(c)c->result=code;
++ return code==PSC_OK;
++}
++static bool retained(portable_serial_client *c) {
++ c->cleanup_required=true;c->halted=true;c->connected=false;
++ return result(c,PSC_RETAINED);
++}
++static bool object(portable_serial_client *c) {
++ if(!c)return false;
++ if(c->self!=c || !c->initialized)return result(c,PSC_INVALID);
++ if(c->halted || c->cleanup_required)return false;
++ return true;
++}
++static bool table_valid(const risc_stream_client_v1 *s) {
++ return s->api_version==RISC_STREAM_CLIENT_API_V1 && s->struct_size>=sizeof(*s) &&
++        s->context && s->open && s->call && s->close && s->read && s->write && s->info;
++}
++/* Verify invocation before dereferencing a borrowed capability table. Runtime
++ * also checks every stream operation, including stale/forged handle use. */
++static bool current(portable_serial_client *c) {
++ if(!object(c))return false;
++ risc_stream_client_v1 now={.struct_size=sizeof(now)};
++ if(!c->runtime->stream_client(&now) || !table_valid(&now) ||
++    now.context!=c->streams.context) {
++  c->halted=true;
++  if(c->grant.api || c->session)return retained(c);
++  return result(c,PSC_DENIED);
++ }
++ return true;
++}
++static bool configuration(const t5_serial_config_t *v) {
++ return v && v->baud_rate>=300 && v->baud_rate<=3000000 &&
++        v->data_bits>=5 && v->data_bits<=8 && v->parity<=T5_SERIAL_PARITY_SPACE &&
++        (v->stop_bits==1 || v->stop_bits==2) && v->flow_control==T5_SERIAL_FLOW_NONE;
++}
++static bool status_valid(int rc) {return rc>=PSC_RETAINED && rc<=PSC_EOF;}
++static bool control_status(int rc) {return rc>=PSC_RETAINED && rc<=PSC_OK;}
++static bool grant_valid(const risc_runtime_capability_v1 *g) {
++ return g->struct_size==sizeof(*g) && g->slot && g->generation && g->api;
++}
++static bool grant_empty(const risc_runtime_capability_v1 *g) {
++ return g->struct_size==sizeof(*g) && !g->slot && !g->generation && !g->api;
++}
++static bool release_grant(portable_serial_client *c) {
++ if(!c->grant.api)return true;
++ risc_runtime_capability_v1 copy=c->grant;
++ if(!c->runtime->release(&copy) || !grant_empty(&copy))return retained(c);
++ c->grant=copy;c->inventory_count=0;c->inventory_loaded=false;
++ return true;
++}
++static void discard(portable_serial_client *c) {c->queued=c->sent=0;}
++/* No retry even for BUSY/CLOSED: these do not prove physical teardown. Keep
++ * original tokens as evidence if either close or release is uncertain. */
++static bool close_with_budget(portable_serial_client *c,uint32_t budget,int final) {
++ if(c->session) {
++  if(!budget)return retained(c);
++  int rc=c->streams.close(c->streams.context,c->session,budget);
++  if(rc!=PSC_OK)return retained(c);
++  c->session=0;c->rx_stream=c->tx_stream=0;c->connected=false;
++ }
++ if(!release_grant(c))return false;
++ c->connected=false;c->device=c->generation=0;c->dtr=c->rts=false;
++ c->inventory_count=0;c->inventory_loaded=false;discard(c);
++ return result(c,final);
++}
++static uint32_t operation_budget(const portable_serial_client *c) {
++ /* Reserve the remainder for at most one checked close. Even a one-ms budget
++  * is valid; if it is consumed, uncertain custody must be retained. */
++ return (c->control_budget_ms+1u)/2u;
++}
++static int call(portable_serial_client *c,risc_serial_stream_call_v1 *request,uint32_t budget) {
++ uint32_t actual=0;
++ int rc=c->streams.call(c->streams.context,c->session,request,sizeof(*request),budget,0,0,&actual);
++ if(rc==PSC_RETAINED || !control_status(rc) || actual) {
++  (void)retained(c);return PSC_RETAINED;
++ }
++ return rc;
++}
++static risc_serial_stream_config_v1 stream_config(const t5_serial_config_t *v) {
++ risc_serial_stream_config_v1 out={v->baud_rate,v->data_bits,v->parity,v->stop_bits,v->flow_control};
++ return out;
++}
++static void add(uint64_t *total,uint32_t n) {
++ *total=UINT64_MAX-*total<n?UINT64_MAX:*total+n;
++}
++bool portable_serial_init_instance(portable_serial_client *c,const risc_runtime_api_v1 *rt,uint64_t instance) {
++ if(!c)return false;
++ memset(c,0,sizeof(*c));c->self=c;c->control_budget_ms=RISC_STREAM_CONTROL_MAX_MS_V1;
++ c->instance=instance;c->grant.struct_size=sizeof(c->grant);
++#ifndef PORTABLE_SERIAL_STREAMS
++ (void)rt;return result(c,PSC_UNSUPPORTED);
++#else
++ if(!rt || rt->api_version!=RISC_RUNTIME_API_V1 ||
++    rt->struct_size<RISC_RUNTIME_STREAM_CLIENT_V1_SIZE || !rt->acquire || !rt->release || !rt->stream_client)
++  return result(c,PSC_UNSUPPORTED);
++ c->streams.struct_size=sizeof(c->streams);
++ if(!rt->stream_client(&c->streams) || !table_valid(&c->streams))return result(c,PSC_UNSUPPORTED);
++ c->runtime=rt;c->initialized=true;c->stream_mode=true;
++ return result(c,PSC_OK);
++#endif
++}
++bool portable_serial_init(portable_serial_client *c,const risc_runtime_api_v1 *rt) {
++ return portable_serial_init_instance(c,rt,0);
++}
++bool portable_serial_set_control_budget(portable_serial_client *c,uint32_t ms) {
++ if(!object(c))return false;
++ if(!ms || ms>RISC_STREAM_CONTROL_MAX_MS_V1)return result(c,PSC_INVALID);
++ c->control_budget_ms=ms;return result(c,PSC_OK);
++}
++bool portable_serial_refresh(portable_serial_client *c) {
++ if(!current(c))return false;
++ if(c->session)return result(c,PSC_BUSY);
++ if(!c->grant.api) {
++  risc_runtime_capability_v1 g={.struct_size=sizeof(g)};
++  bool ok=c->runtime->acquire(T5_SERIAL_PORT_CAPABILITY,RISC_SERIAL_PORT_API_V1,c->instance,&g);
++  c->grant=g;
++  if(!ok) {
++   if(!grant_empty(&g))return retained(c);
++   /* Runtime's getter is provider-free and is unavailable after a retention
++    * fence. Only a live same-invocation table proves an empty refusal clean.
++    * This is not a provider retry or cleanup attempt. */
++   risc_stream_client_v1 now={.struct_size=sizeof(now)};
++   if(!c->runtime->stream_client(&now) || !table_valid(&now) || now.context!=c->streams.context)
++    return retained(c);
++   return result(c,PSC_DENIED);
++  }
++  if(!grant_valid(&g))return retained(c);
++ }
++ if(!current(c))return false;
++ const risc_serial_port_inventory_v1 *api=c->grant.api;
++ uint32_t header[2];memcpy(header,api,sizeof(header));
++ if(header[0]!=RISC_SERIAL_PORT_API_V1 || header[1]<sizeof(*api) || !api->snapshot) {
++  (void)close_with_budget(c,c->control_budget_ms,PSC_UNSUPPORTED);return false;
++ }
++ risc_serial_device_v1 snapshot[RISC_SERIAL_INVENTORY_MAX_DEVICES]={0};
++ size_t count=RISC_SERIAL_INVENTORY_MAX_DEVICES;
++ if(!api->snapshot(snapshot,&count) || count>RISC_SERIAL_INVENTORY_MAX_DEVICES)return result(c,PSC_IO);
++ for(size_t i=0;i<count;i++) {
++  if(!snapshot[i].provider_device || !snapshot[i].generation || snapshot[i].transport>RISC_SERIAL_TRANSPORT_IP)
++   return result(c,PSC_IO);
++  for(size_t b=0;b<sizeof(snapshot[i].reserved);b++)if(snapshot[i].reserved[b])return result(c,PSC_IO);
++  for(size_t j=0;j<i;j++)if(snapshot[i].provider_device==snapshot[j].provider_device)return result(c,PSC_IO);
++ }
++ memcpy(c->inventory,snapshot,sizeof(snapshot));c->inventory_count=count;c->inventory_loaded=true;
++ return result(c,PSC_OK);
++}
++bool portable_serial_open(portable_serial_client *c,size_t index,const t5_serial_config_t *config) {
++ if(!object(c))return false;
++ if(!configuration(config) || index>=RISC_SERIAL_INVENTORY_MAX_DEVICES || c->control_budget_ms<2u)
++  return result(c,PSC_INVALID);
++ if(c->connected || c->session)return result(c,PSC_BUSY);
++ if(!current(c))return false;
++ if(!c->inventory_loaded && !portable_serial_refresh(c))return false;
++ if(index>=c->inventory_count)return result(c,PSC_DISCONNECTED);
++ risc_serial_device_v1 selected=c->inventory[index];
++ risc_serial_stream_open_v1 request={RISC_SERIAL_STREAM_REQUEST_V1,sizeof(request),
++     selected.provider_device,selected.generation,stream_config(config)};
++ risc_stream_opened_v1 opened={.struct_size=sizeof(opened)};
++ /* The pinned broker can spend its entire budget again on one internal
++  * grant-rollback close. Allocate both parts here, without changing its ABI. */
++ int rc=c->streams.open(c->streams.context,&c->grant,&request,sizeof(request),c->control_budget_ms/2u,&opened);
++ if(rc==PSC_RETAINED)return retained(c);
++ if(!control_status(rc) || opened.struct_size!=sizeof(opened) || opened.reserved ||
++    (rc!=PSC_OK && (opened.session || opened.rx || opened.tx)))return retained(c);
++ if(rc!=PSC_OK) {
++  if(!release_grant(c))return false;
++  return result(c,rc);
++ }
++ if(!opened.session || !opened.rx || !opened.tx || opened.rx==opened.tx ||
++    opened.session==opened.rx || opened.session==opened.tx)return retained(c);
++ c->session=opened.session;c->rx_stream=opened.rx;c->tx_stream=opened.tx;
++ c->device=selected.provider_device;c->generation=selected.generation;c->config=*config;
++ c->connected=true;c->dtr=c->rts=false;discard(c);
++ return result(c,PSC_OK);
++}
++static bool live(portable_serial_client *c) {
++ if(!current(c))return false;
++ return c->connected && c->session?true:result(c,PSC_CLOSED);
++}
++static bool control_result(portable_serial_client *c,int rc) {
++ if(rc==PSC_RETAINED)return false;
++ if(rc==PSC_OK)return result(c,PSC_OK);
++ /* A failed framing/line change is not silently retried on an uncertain
++  * physical configuration. Close once within the remaining control budget. */
++ (void)close_with_budget(c,c->control_budget_ms-operation_budget(c),rc);
++ return false;
++}
++bool portable_serial_configure(portable_serial_client *c,const t5_serial_config_t *config) {
++ if(!object(c))return false;
++ if(!configuration(config))return result(c,PSC_INVALID);
++ if(!live(c))return false;
++ risc_serial_stream_call_v1 request={.api_version=RISC_SERIAL_STREAM_REQUEST_V1,
++     .struct_size=sizeof(request),.operation=RISC_SERIAL_STREAM_CONFIGURE};
++ request.value.config=stream_config(config);
++ if(!control_result(c,call(c,&request,operation_budget(c))))return false;
++ c->config=*config;return true;
++}
++bool portable_serial_control(portable_serial_client *c,bool dtr,bool rts) {
++ if(!live(c))return false;
++ risc_serial_stream_call_v1 request={.api_version=RISC_SERIAL_STREAM_REQUEST_V1,
++     .struct_size=sizeof(request),.operation=RISC_SERIAL_STREAM_CONTROL_LINES};
++ request.value.lines.dtr=dtr;request.value.lines.rts=rts;
++ if(!control_result(c,call(c,&request,operation_budget(c))))return false;
++ c->dtr=dtr;c->rts=rts;return true;
++}
++bool portable_serial_queue(portable_serial_client *c,const char *line,uint32_t now) {
++ if(!object(c))return false;
++ if(!line)return result(c,PSC_INVALID);
++ if(!c->connected)return result(c,PSC_CLOSED);
++ if(c->queued)return result(c,PSC_BUSY);
++ size_t length=0;
++ while(length<=PSC_QUEUE_CAPACITY-2u && line[length])++length;
++ if(length>PSC_QUEUE_CAPACITY-2u)return result(c,PSC_LIMIT);
++ if(length)memcpy(c->queue,line,length);
++ c->queue[length++]='\r';c->queue[length++]='\n';
++ c->queued=length;c->sent=0;c->queued_at=now;
++ return result(c,PSC_OK);
++}
++static bool transfer_result(portable_serial_client *c,int rc,uint32_t n,uint32_t bound) {
++ if(rc==PSC_RETAINED || !status_valid(rc) || n>bound || (rc!=PSC_OK && n) || (rc==PSC_OK && !n))
++  return retained(c);
++ if(rc==PSC_OK || rc==PSC_AGAIN || rc==PSC_BUSY)return true;
++ (void)close_with_budget(c,c->control_budget_ms-operation_budget(c),rc);return false;
++}
++size_t portable_serial_tick(portable_serial_client *c,void *rx,size_t capacity,uint32_t now) {
++ if(!object(c))return 0;
++ if(!rx && capacity){(void)result(c,PSC_INVALID);return 0;}
++ if(!live(c))return 0;
++ risc_serial_stream_call_v1 check={.api_version=RISC_SERIAL_STREAM_REQUEST_V1,
++     .struct_size=sizeof(check),.operation=RISC_SERIAL_STREAM_CHECK_DEVICE};
++ int rc=call(c,&check,operation_budget(c));
++ if(rc==PSC_RETAINED)return 0;
++ if(rc!=PSC_OK) {
++  if(rc==PSC_IO || rc==PSC_AGAIN || rc==PSC_BUSY){(void)result(c,rc);return 0;}
++  (void)close_with_budget(c,c->control_budget_ms-operation_budget(c),rc);return 0;
++ }
++ bool timeout=c->queued && (uint32_t)(now-c->queued_at)>=PSC_STALL_MS;
++ if(timeout)discard(c);
++ if(c->queued) {
++  uint32_t n=0,length=(uint32_t)(c->queued-c->sent);
++  rc=c->streams.write(c->streams.context,c->tx_stream,c->queue+c->sent,length,&n);
++  if(!transfer_result(c,rc,n,length))return 0;
++  if(n) {c->sent+=n;add(&c->tx_bytes,n);c->queued_at=now;}
++  if(c->sent==c->queued)discard(c);
++ }
++ uint32_t n=0,bound=capacity>PSC_CHUNK?PSC_CHUNK:(uint32_t)capacity;
++ if(bound) {
++  rc=c->streams.read(c->streams.context,c->rx_stream,rx,bound,&n);
++  if(!transfer_result(c,rc,n,bound))return 0;
++  add(&c->rx_bytes,n);
++ }
++ (void)result(c,timeout?PSC_TIMEOUT:PSC_OK);return n;
++}
++void portable_serial_cancel(portable_serial_client *c) {
++ if(!object(c))return;
++ discard(c);(void)result(c,PSC_CANCELLED);
++}
++bool portable_serial_close(portable_serial_client *c) {
++ if(!current(c))return false;
++ return close_with_budget(c,c->control_budget_ms,PSC_OK);
++}
+diff --git a/scripts/test_portable_serial_client.py b/scripts/test_portable_serial_client.py
+new file mode 100644
+index 0000000..37daa72
+--- /dev/null
++++ b/scripts/test_portable_serial_client.py
+@@ -0,0 +1,106 @@
++#!/usr/bin/env python3
++"""Pinned, software-only portable serial client tests and Runtime integration."""
++import argparse
++import hashlib
++import json
++import os
++from pathlib import Path
++import shutil
++import subprocess
++import tempfile
++
++ROOT = Path(__file__).resolve().parents[1]
++RUNTIME = "6a3b3d46f5b2857eacc6e9863799dec1f466b036"
++HEADERS = {
++    "app": ["RiscRuntimeV1.h", "RiscStreamClientV1.h", "RiscSerialStreamSessionV1.h"],
++    "driver": ["RiscStreamResultV1.h", "RiscStreamSessionProviderV1.h", "RiscProviderV2.h", "RiscStreamProviderV1.h"],
++}
++
++
++def sha(path):
++    return hashlib.sha256(path.read_bytes()).hexdigest()
++
++
++def main():
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--runtime", type=Path, required=True)
++    parser.add_argument("--output", type=Path, default=ROOT / "build/portable-serial-client")
++    parser.add_argument("--sanitize", action="store_true")
++    args = parser.parse_args()
++    args.runtime = args.runtime.resolve()
++    args.output.mkdir(parents=True, exist_ok=True)
++    assert subprocess.check_output(["git", "-C", str(args.runtime), "rev-parse", "HEAD"], text=True).strip() == RUNTIME
++    assert not subprocess.check_output(["git", "-C", str(args.runtime), "status", "--porcelain"], text=True).strip(), "Runtime checkout must be clean"
++    provenance = json.loads((ROOT / "lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json").read_text())
++    for entry in provenance["files"]:
++        assert sha(ROOT / entry["destination"]) == entry["sha256"], entry
++    inputs = ["lib/PortableApps/include/PortableSerialClient.h", "lib/PortableApps/src/PortableSerialClient.c",
++              "test/native_apps/portable_serial_client_test.c", "scripts/test_portable_serial_client.py",
++              "lib/PortableApps/SERIAL_CLIENT_PROVENANCE.json", "docs/PORTABLE_SERIAL_CLIENT.md"]
++    commands = []
++    log_path = args.output / "tests.log"
++    with log_path.open("w") as log:
++        def run(command, **kwargs):
++            command = list(map(str, command))
++            commands.append(command)
++            log.write("$ " + " ".join(command) + "\n")
++            log.flush()
++            subprocess.run(command, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, check=True, **kwargs)
++
++        with tempfile.TemporaryDirectory(prefix="portable-serial-") as directory:
++            build = Path(directory)
++            includes = build / "sdk"
++            shutil.copytree(ROOT / "lib/PortableApps/include", includes)
++            canonical = {}
++            for group, names in HEADERS.items():
++                for name in names:
++                    path = f"sdk/{group}/{name}"
++                    data = subprocess.check_output(["git", "-C", str(args.runtime), "show", f"{RUNTIME}:{path}"])
++                    assert data == (args.runtime / path).read_bytes(), path
++                    canonical[path] = hashlib.sha256(data).hexdigest()
++                    (includes / name).write_bytes(data)
++            common = ["-O1", "-g", "-Wall", "-Wextra", "-Werror", "-I" + str(includes),
++                      "-I" + str(ROOT / "lib/NativeApps/include")]
++            sanitizer = ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer"] if args.sanitize else []
++            cc = os.environ.get("CC", "cc")
++            run([cc, "-std=c11", *common, *sanitizer, "-DPORTABLE_SERIAL_STREAMS",
++                 ROOT / inputs[2], ROOT / inputs[1], "-o", build / "unit"])
++            run([build / "unit"])
++            disabled = build / "disabled.c"
++            disabled.write_text('#include "PortableSerialClient.h"\n#include <assert.h>\n'
++                                'int main(void){portable_serial_client c;assert(!portable_serial_init(&c,0));'
++                                'assert(c.result==PSC_UNSUPPORTED && !c.initialized && !c.cleanup_required);return 0;}\n')
++            run([cc, "-std=c11", *common, *sanitizer, disabled, ROOT / inputs[1], "-o", build / "disabled"])
++            run([build / "disabled"])
++            cpp = build / "headers.cpp"
++            cpp.write_text('#include "PortableSerialClient.h"\n'
++                           'static_assert(sizeof(risc_serial_stream_open_v1)==32,"open layout");\n'
++                           'static_assert(sizeof(risc_serial_stream_call_v1)==24,"call layout");\n'
++                           'static_assert(sizeof(t5_serial_config_t)==8,"config layout");\n'
++                           'int main(){return 0;}\n')
++            run([os.environ.get("CXX", "c++"), "-std=c++17", *common, cpp, "-o", build / "headers"])
++            run([build / "headers"])
++        env = dict(os.environ, SERIAL_SYSTEM_SOURCE=str(ROOT), SANITIZE="1" if args.sanitize else "0")
++        run(["bash", args.runtime / "test/run_serial_stream_client_integration_test.sh"], env=env)
++    evidence = {
++        "result": "PASS", "sanitized": args.sanitize,
++        "sanitizer_environment": {name: os.environ.get(name, "") for name in ("ASAN_OPTIONS", "UBSAN_OPTIONS", "LSAN_OPTIONS")},
++        "system_source": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
++        "system_status": subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).splitlines(),
++        "runtime_source": RUNTIME, "runtime_headers": canonical,
++        "source_hashes": {p: sha(ROOT / p) for p in inputs}, "imported_headers": provenance["files"],
++        "commands": commands, "log_sha256": sha(log_path),
++        "coverage": ["invalid arguments and prefix bounds", "explicit instance/index and complete inventory",
++                     "unknown inventory recovery", "partial RX/TX and accepted-byte saturation",
++                     "cancel/stall/wrap", "detach/generation change", "stale copied object/invocation",
++                     "retained open/call/read/write/close/release", "malformed counts/status/output",
++                     "1..1000 ms allocated total controls including broker open rollback",
++                     "opt-out and C++ header smoke", "22 production Runtime integration cases"],
++        "not_run": ["physical USB/serial/radio I/O", "hardware qualification", "monitor UI", "product pin/publication"],
++    }
++    (args.output / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
++    print(f"Portable serial client {'ASan/UBSan' if args.sanitize else 'normal'} PASS: {log_path}")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/test/native_apps/portable_serial_client_test.c b/test/native_apps/portable_serial_client_test.c
+new file mode 100644
+index 0000000..3d31dd7
+--- /dev/null
++++ b/test/native_apps/portable_serial_client_test.c
+@@ -0,0 +1,333 @@
++#include "PortableSerialClient.h"
++#include <assert.h>
++#include <stdio.h>
++#include <string.h>
++
++static const t5_serial_config_t config={9600,8,T5_SERIAL_PARITY_NONE,1,T5_SERIAL_FLOW_NONE};
++static risc_runtime_api_v1 runtime;
++static risc_stream_client_v1 streams;
++static risc_serial_port_inventory_v1 provider;
++static risc_serial_device_v1 devices[RISC_SERIAL_INVENTORY_MAX_DEVICES];
++static size_t device_count;
++static uint64_t context,expected_instance,selected_device,selected_generation;
++static unsigned getters,acquires,releases,snapshots,opens,calls,closes,reads,writes,spent;
++static unsigned fenced_calls;
++static bool fenced,acquire_ok,release_ok,snapshot_ok,get_ok,acquire_retained,open_rollback;
++static int open_rc,call_rc,close_rc,read_rc,write_rc;
++static unsigned bad_grant,bad_open,bad_count,reply_bytes;
++static uint32_t tx_step,rx_step;
++static unsigned char echo[4096];
++static size_t echo_size,echo_read;
++
++static void enter(void) {if(fenced)++fenced_calls;assert(!fenced);}
++static void budget(uint32_t ms) {assert(ms>=1 && ms<=1000);spent+=ms;assert(spent<=1000);}
++static void retain_if(int rc) {if(rc==PSC_RETAINED)fenced=true;}
++static bool snapshot(risc_serial_device_v1 *out,size_t *count) {
++ enter();++snapshots;assert(out && count && *count==RISC_SERIAL_INVENTORY_MAX_DEVICES);
++ memcpy(out,devices,sizeof(devices));*count=device_count;return snapshot_ok;
++}
++static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1 *out) {
++ enter();++acquires;assert(!strcmp(name,"serial.port") && api==1 && instance==expected_instance);
++ if(acquire_ok || bad_grant)*out=(risc_runtime_capability_v1){sizeof(*out),1,3,&provider};
++ if(bad_grant==1)out->slot=0;
++ if(bad_grant==2)out->generation=0;
++ if(bad_grant==3)out->struct_size=0;
++ if(bad_grant==4)out->api=0;
++ if(acquire_retained)get_ok=false;
++ return acquire_ok;
++}
++static bool release(risc_runtime_capability_v1 *g) {
++ enter();++releases;assert(g->api==&provider);
++ if(!release_ok)return false;
++ *g=(risc_runtime_capability_v1){.struct_size=sizeof(*g)};return true;
++}
++static int32_t open_stream(uint64_t ctx,const risc_runtime_capability_v1 *grant,
++ const void *bytes,uint32_t size,uint32_t ms,risc_stream_opened_v1 *out) {
++ enter();++opens;budget(ms);assert(ctx==context && grant->api==&provider);
++ if(open_rollback)budget(ms);
++ assert(bytes && size==sizeof(risc_serial_stream_open_v1));
++ const risc_serial_stream_open_v1 *r=bytes;
++ assert(r->api_version==1 && r->struct_size==sizeof(*r));
++ selected_device=r->provider_device;selected_generation=r->device_generation;
++ assert(selected_device && selected_generation);
++ if(open_rc==PSC_OK || bad_open)*out=(risc_stream_opened_v1){sizeof(*out),0,100,101,102};
++ if(bad_open==1)out->session=0;
++ if(bad_open==2)out->rx=out->tx;
++ if(bad_open==3)out->reserved=1;
++ if(bad_open==4)out->struct_size=0;
++ if(bad_open==5)out->tx=out->session;
++ retain_if(open_rc);return open_rc;
++}
++static int32_t call_stream(uint64_t ctx,uint64_t session,const void *bytes,uint32_t size,
++ uint32_t ms,void *reply,uint32_t cap,uint32_t *actual) {
++ enter();++calls;budget(ms);assert(ctx==context && session==100);
++ assert(bytes && size==sizeof(risc_serial_stream_call_v1) && !reply && !cap && actual);
++ const risc_serial_stream_call_v1 *r=bytes;
++ assert(r->api_version==1 && r->struct_size==sizeof(*r) && !r->reserved);
++ *actual=reply_bytes;retain_if(call_rc);
++  if(call_rc!=PSC_OK)return call_rc;
++ if(r->operation==RISC_SERIAL_STREAM_CHECK_DEVICE) {
++  for(size_t i=0;i<8;i++)assert(!r->value.zero[i]);
++  if(!snapshot_ok || device_count>RISC_SERIAL_INVENTORY_MAX_DEVICES)return PSC_IO;
++  bool present=false;
++  for(size_t i=0;i<device_count;i++) {
++   if(!devices[i].provider_device || !devices[i].generation || devices[i].transport>RISC_SERIAL_TRANSPORT_IP)return PSC_IO;
++   for(size_t j=0;j<7;j++)if(devices[i].reserved[j])return PSC_IO;
++   for(size_t j=0;j<i;j++)if(devices[i].provider_device==devices[j].provider_device)return PSC_IO;
++   if(devices[i].provider_device==selected_device && devices[i].generation==selected_generation)present=true;
++  }
++  return present?PSC_OK:PSC_DISCONNECTED;
++ }
++ if(r->operation==RISC_SERIAL_STREAM_CONTROL_LINES) {
++  assert(r->value.lines.dtr<=1 && r->value.lines.rts<=1);
++  for(size_t i=0;i<6;i++)assert(!r->value.lines.reserved[i]);
++ } else assert(r->operation==RISC_SERIAL_STREAM_CONFIGURE);
++ return PSC_OK;
++}
++static int32_t close_stream(uint64_t ctx,uint64_t session,uint32_t ms) {
++ enter();++closes;budget(ms);assert(ctx==context && session==100);
++ retain_if(close_rc);return close_rc;
++}
++static int32_t write_stream(uint64_t ctx,uint64_t stream,const void *data,uint32_t length,uint32_t *n) {
++ enter();++writes;assert(ctx==context && stream==102 && data && length && length<=PSC_CHUNK);
++ *n=0;
++  if(write_rc!=PSC_OK){if(bad_count)*n=1;retain_if(write_rc);return write_rc;}
++ *n=length<tx_step?length:tx_step;
++ if(bad_count){*n=bad_count==1?length+1:0;return PSC_OK;}
++ if(!*n)return PSC_AGAIN;
++ assert(echo_size+*n<=sizeof(echo));memcpy(echo+echo_size,data,*n);echo_size+=*n;return PSC_OK;
++}
++static int32_t read_stream(uint64_t ctx,uint64_t stream,void *data,uint32_t capacity,uint32_t *n) {
++ enter();++reads;assert(ctx==context && stream==101 && data && capacity && capacity<=PSC_CHUNK);
++ *n=0;
++  if(read_rc!=PSC_OK){if(bad_count)*n=1;retain_if(read_rc);return read_rc;}
++ size_t available=echo_size-echo_read;
++ *n=available<capacity?(uint32_t)available:capacity;
++  if(*n>rx_step)*n=rx_step;
++ if(bad_count){*n=bad_count==1?capacity+1:0;return PSC_OK;}
++ if(!*n)return PSC_AGAIN;
++ memcpy(data,echo+echo_read,*n);echo_read+=*n;return PSC_OK;
++}
++static int32_t info(uint64_t ctx,uint64_t stream,risc_stream_client_info_v1 *out) {
++ (void)ctx;(void)stream;(void)out;assert(!"unused info");return PSC_UNSUPPORTED;
++}
++static bool getter(risc_stream_client_v1 *out) {
++ enter();++getters;assert(out && out->struct_size==sizeof(*out));
++ if(!get_ok)return false;
++ *out=streams;return true;
++}
++static void reset(void) {
++ getters=acquires=releases=snapshots=opens=calls=closes=reads=writes=spent=fenced_calls=0;
++ context=42;expected_instance=0;selected_device=selected_generation=0;
++ fenced=acquire_retained=open_rollback=false;get_ok=acquire_ok=release_ok=snapshot_ok=true;
++ open_rc=call_rc=close_rc=read_rc=write_rc=PSC_OK;
++ bad_grant=bad_open=bad_count=reply_bytes=0;tx_step=5;rx_step=1;echo_size=echo_read=0;
++ memset(devices,0,sizeof(devices));devices[0]=(risc_serial_device_v1){17,9,0,{0}};device_count=1;
++ provider=(risc_serial_port_inventory_v1){.discovery={.serial={.api_version=1,.struct_size=sizeof(provider)}},.snapshot=snapshot};
++ streams=(risc_stream_client_v1){1,sizeof(streams),context,open_stream,call_stream,close_stream,read_stream,write_stream,info};
++ runtime=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire,.release=release,.stream_client=getter};
++}
++static portable_serial_client client;
++static void fresh(void) {reset();assert(portable_serial_init(&client,&runtime));}
++static void opened(void) {fresh();assert(portable_serial_open(&client,0,&config));spent=0;}
++static void closed(void) {spent=0;assert(portable_serial_close(&client));assert(!client.grant.api && !client.session && !client.rx_stream && !client.tx_stream && !client.connected);}
++static unsigned io_count(void) {return getters+acquires+releases+snapshots+opens+calls+closes+reads+writes;}
++static void stopped(void) {
++ assert(client.cleanup_required && client.halted && client.result==PSC_RETAINED);
++ unsigned count=io_count();uint8_t b=0;fenced=true;
++ assert(!portable_serial_open(&client,0,&config));assert(!portable_serial_refresh(&client));
++ assert(!portable_serial_configure(&client,&config));assert(!portable_serial_control(&client,true,true));
++ assert(!portable_serial_queue(&client,"x",0));assert(!portable_serial_tick(&client,&b,1,1));
++ assert(!portable_serial_close(&client));assert(!portable_serial_set_control_budget(&client,10));
++ portable_serial_cancel(&client);assert(io_count()==count && !fenced_calls && client.result==PSC_RETAINED);
++}
++static void invalid(void) {
++ fresh();assert(!portable_serial_init(0,&runtime));assert(!portable_serial_open(0,0,&config));
++ assert(!portable_serial_refresh(0));assert(!portable_serial_close(0));portable_serial_cancel(0);
++ assert(!portable_serial_init(&client,0));assert(!portable_serial_open(&client,0,&config));
++ for(unsigned mode=0;mode<6;mode++) {
++  reset();
++  if(mode==0)runtime.struct_size=RISC_RUNTIME_STREAM_CLIENT_V1_SIZE-1;
++  if(mode==1)runtime.api_version=2;
++  if(mode==2)runtime.stream_client=0;
++  if(mode==3)runtime.acquire=0;
++  if(mode==4)runtime.release=0;
++  if(mode==5)get_ok=false;
++  assert(!portable_serial_init(&client,&runtime));assert(!acquires);
++ }
++ for(unsigned mode=0;mode<9;mode++) {
++  reset();
++  if(mode==0)streams.struct_size--;
++  if(mode==1)streams.api_version=2;
++  if(mode==2)streams.context=0;
++  if(mode==3)streams.open=0;
++  if(mode==4)streams.call=0;
++  if(mode==5)streams.close=0;
++  if(mode==6)streams.read=0;
++  if(mode==7)streams.write=0;
++  if(mode==8)streams.info=0;
++  assert(!portable_serial_init(&client,&runtime));assert(!acquires);
++ }
++ fresh();unsigned before=io_count();
++ assert(!portable_serial_set_control_budget(&client,0));assert(!portable_serial_set_control_budget(&client,1001));
++ assert(!portable_serial_open(&client,8,&config));assert(!portable_serial_open(&client,0,0));
++ for(unsigned i=0;i<8;i++) {
++  t5_serial_config_t bad=config;
++  if(i==0)bad.baud_rate=299;
++  if(i==1)bad.baud_rate=3000001;
++  if(i==2)bad.data_bits=4;
++  if(i==3)bad.data_bits=9;
++  if(i==4)bad.parity=5;
++  if(i==5)bad.stop_bits=0;
++  if(i==6)bad.stop_bits=3;
++  if(i==7)bad.flow_control=1;
++  assert(!portable_serial_open(&client,0,&bad));
++ }
++ assert(io_count()==before);assert(!portable_serial_queue(&client,"x",0));
++ puts("serial client invalid arguments, truncated tables and configuration PASS");
++}
++static void inventories(void) {
++ for(unsigned mode=0;mode<8;mode++) {
++  fresh();
++  if(mode==0)snapshot_ok=false;
++  if(mode==1)device_count=9;
++  if(mode==2)devices[0].provider_device=0;
++  if(mode==3)devices[0].generation=0;
++  if(mode==4)devices[0].transport=9;
++  if(mode==5)devices[0].reserved[3]=1;
++  if(mode==6){device_count=2;devices[1]=devices[0];}
++  if(mode==7){snapshot_ok=false;device_count=0;}
++  assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_IO && !opens && !client.cleanup_required);
++  assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_IO && !opens);closed();
++ }
++ fresh();device_count=0;assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_DISCONNECTED && !opens);closed();
++ fresh();assert(portable_serial_refresh(&client));devices[0].generation=10;snapshot_ok=false;
++ assert(!portable_serial_refresh(&client));assert(client.inventory[0].generation==9 && client.inventory_count==1);closed();
++ reset();expected_instance=73;assert(portable_serial_init_instance(&client,&runtime,73));
++ devices[1]=(risc_serial_device_v1){18,12,RISC_SERIAL_TRANSPORT_USB,{0}};device_count=2;
++ assert(portable_serial_refresh(&client));unsigned before=snapshots;
++ assert(portable_serial_open(&client,1,&config));assert(selected_device==18 && selected_generation==12 && snapshots==before);
++ assert(!portable_serial_refresh(&client) && client.result==PSC_BUSY);closed();
++ puts("serial client complete inventory, unknown recovery and explicit selection PASS");
++}
++static void retained_paths(void) {
++ fresh();acquire_ok=false;acquire_retained=true;assert(!portable_serial_open(&client,0,&config));assert(!releases);stopped();
++ for(unsigned i=1;i<=4;i++){fresh();bad_grant=i;assert(!portable_serial_open(&client,0,&config));stopped();}
++ fresh();open_rc=PSC_RETAINED;assert(!portable_serial_open(&client,0,&config));assert(!closes && !releases);stopped();
++ for(unsigned i=1;i<=5;i++){fresh();bad_open=i;assert(!portable_serial_open(&client,0,&config));assert(!closes && !releases);stopped();}
++ fresh();open_rc=PSC_IO;bad_open=1;assert(!portable_serial_open(&client,0,&config));stopped();
++ fresh();open_rc=-100;assert(!portable_serial_open(&client,0,&config));stopped();
++ for(int rc=PSC_AGAIN;rc<=PSC_EOF;rc++) {
++  fresh();open_rc=rc;assert(!portable_serial_open(&client,0,&config));assert(!closes && !releases);stopped();
++  opened();call_rc=rc;assert(!portable_serial_configure(&client,&config));assert(!closes && !releases);stopped();
++ }
++ opened();call_rc=PSC_RETAINED;assert(!portable_serial_configure(&client,&config));assert(!closes && !releases);stopped();
++ opened();call_rc=PSC_RETAINED;assert(!portable_serial_control(&client,true,true));stopped();
++ opened();reply_bytes=1;assert(!portable_serial_configure(&client,&config));stopped();
++ opened();call_rc=-100;assert(!portable_serial_control(&client,true,true));stopped();
++ int codes[]={PSC_RETAINED,PSC_IO,PSC_BUSY,PSC_CLOSED};
++ for(unsigned i=0;i<sizeof(codes)/sizeof(*codes);i++){
++  opened();close_rc=codes[i];assert(!portable_serial_close(&client));assert(closes==1 && !releases);stopped();
++ }
++ opened();release_ok=false;assert(!portable_serial_close(&client));assert(closes==1 && releases==1);stopped();
++ opened();call_rc=PSC_IO;close_rc=PSC_RETAINED;assert(!portable_serial_configure(&client,&config));assert(closes==1 && !releases);stopped();
++ puts("serial client retained/malformed open, call, close and release never retry PASS");
++}
++static void lifecycle(void) {
++ fresh();acquire_ok=false;assert(!portable_serial_open(&client,0,&config));
++ assert(client.result==PSC_DENIED && !client.cleanup_required && !opens && !releases);
++ acquire_ok=true;assert(portable_serial_open(&client,0,&config));closed();
++ fresh();assert(portable_serial_set_control_budget(&client,1));unsigned before=io_count();
++ assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_INVALID && before==io_count());
++ fresh();open_rc=PSC_LIMIT;open_rollback=true;assert(!portable_serial_open(&client,0,&config));
++ assert(spent==1000 && releases==1 && client.result==PSC_LIMIT && !client.cleanup_required);
++ fresh();open_rc=PSC_IO;assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_IO && releases==1 && !closes && !client.cleanup_required);
++ spent=0;open_rc=PSC_OK;assert(portable_serial_open(&client,0,&config));closed();
++ fresh();provider.discovery.serial.struct_size=sizeof(risc_serial_port_api_v1);
++ assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_UNSUPPORTED && releases==1 && !snapshots);
++ fresh();provider.snapshot=0;assert(!portable_serial_open(&client,0,&config));assert(client.result==PSC_UNSUPPORTED && releases==1);
++ opened();t5_serial_config_t changed={3000000,5,4,2,0};assert(portable_serial_configure(&client,&changed));
++ assert(client.config.baud_rate==3000000 && spent<=1000);spent=0;
++ assert(portable_serial_control(&client,true,true) && client.dtr && client.rts);closed();
++ opened();call_rc=PSC_IO;assert(!portable_serial_configure(&client,&config));assert(!client.connected && !client.cleanup_required && client.result==PSC_IO && spent==1000 && releases==1);
++ opened();call_rc=PSC_IO;assert(!portable_serial_control(&client,true,true));assert(!client.connected && client.result==PSC_IO && spent==1000);
++ opened();assert(portable_serial_set_control_budget(&client,1));call_rc=PSC_IO;
++ assert(!portable_serial_configure(&client,&config));assert(spent==1 && !closes && !releases);stopped();
++ opened();assert(portable_serial_set_control_budget(&client,999));call_rc=PSC_IO;
++ assert(!portable_serial_configure(&client,&config));assert(spent==999 && closes==1);
++ opened();closed();unsigned count=closes;closed();assert(closes==count);
++ spent=0;devices[0].generation=10;assert(portable_serial_open(&client,0,&config));assert(client.generation==10);closed();
++ puts("serial client lifecycle, reconfiguration and total 1..1000 ms control budgets PASS");
++}
++static void stale(void) {
++ opened();portable_serial_client copied=client;unsigned before=io_count();
++ assert(!portable_serial_close(&copied));assert(!portable_serial_refresh(&copied));
++ uint8_t byte;assert(!portable_serial_tick(&copied,&byte,1,0));assert(io_count()==before);closed();
++ fresh();context=43;streams.context=context;assert(!portable_serial_open(&client,0,&config));
++ assert(client.result==PSC_DENIED && !acquires);assert(!portable_serial_close(&client));
++ fresh();assert(portable_serial_refresh(&client));context=43;streams.context=context;
++ assert(!portable_serial_refresh(&client));assert(snapshots==1 && !releases);stopped();
++ opened();context=43;streams.context=context;assert(!portable_serial_tick(&client,&byte,1,0));assert(!calls && !reads && !writes);stopped();
++ opened();get_ok=false;assert(!portable_serial_close(&client));assert(!closes && !releases);stopped();
++ puts("serial client copied objects and stale invocation contexts never enter provider PASS");
++}
++static void transfers(void) {
++ opened();assert(portable_serial_queue(&client,"ABCDEFG",0));assert(client.queued==9);
++ assert(!portable_serial_queue(&client,"x",0));uint8_t output[600]={0};size_t total=0;
++ for(unsigned tick=1;tick<20 && total<9;tick++) {spent=0;total+=portable_serial_tick(&client,output+total,sizeof(output)-total,tick);}
++ assert(total==9 && !memcmp(output,"ABCDEFG\r\n",9) && client.tx_bytes==9 && client.rx_bytes==9 && !client.queued);closed();
++ opened();char line[PSC_QUEUE_CAPACITY+1];memset(line,'x',sizeof(line));line[PSC_QUEUE_CAPACITY]=0;
++ assert(!portable_serial_queue(&client,line,0) && client.result==PSC_LIMIT);
++ line[PSC_QUEUE_CAPACITY-2]=0;assert(portable_serial_queue(&client,line,0) && client.queued==PSC_QUEUE_CAPACITY);
++ portable_serial_cancel(&client);assert(!client.queued && client.result==PSC_CANCELLED);
++ assert(!portable_serial_queue(&client,0,0));assert(portable_serial_queue(&client,"",0));assert(client.queued==2);closed();
++ opened();assert(portable_serial_queue(&client,"ABCDEFG",0));assert(!portable_serial_tick(&client,0,0,1));
++ assert(client.tx_bytes==5 && client.sent==5);portable_serial_cancel(&client);
++ assert(client.tx_bytes==5 && !client.queued && !client.sent && client.result==PSC_CANCELLED);closed();
++ opened();assert(portable_serial_queue(&client,"ABCDEFG",UINT32_MAX-10u));spent=0;
++ assert(!portable_serial_tick(&client,0,0,UINT32_MAX-9u));assert(client.tx_bytes==5);tx_step=0;
++ spent=0;assert(!portable_serial_tick(&client,0,0,1989));assert(client.queued && client.result==PSC_OK);
++ spent=0;assert(!portable_serial_tick(&client,0,0,1990));assert(!client.queued && client.result==PSC_TIMEOUT && client.tx_bytes==5);closed();
++ opened();client.tx_bytes=client.rx_bytes=UINT64_MAX-1;assert(portable_serial_queue(&client,"a",0));tx_step=rx_step=512;
++ assert(portable_serial_tick(&client,output,sizeof(output),1)==3);
++ assert(client.tx_bytes==UINT64_MAX && client.rx_bytes==UINT64_MAX);closed();
++ opened();unsigned before=io_count();assert(!portable_serial_tick(&client,0,1,0));assert(io_count()==before && client.result==PSC_INVALID);closed();
++ puts("serial client partial transfers, bounded CRLF queue, cancellation, wrap deadline and saturation PASS");
++}
++static void terminals(void) {
++ uint8_t output[PSC_CHUNK];
++ for(unsigned mode=0;mode<2;mode++) {
++  opened();assert(portable_serial_queue(&client,"ABCDEFG",0));
++  if(mode==0)snapshot_ok=false;else devices[0].generation=0;
++  assert(!portable_serial_tick(&client,output,sizeof(output),1));
++  assert(client.connected && client.generation==9 && client.queued==9 && !writes && !reads && !closes && client.result==PSC_IO);
++  snapshot_ok=true;devices[0].generation=9;spent=0;assert(portable_serial_tick(&client,output,sizeof(output),2)==1);closed();
++ }
++ for(unsigned mode=0;mode<2;mode++) {
++  opened();
++  if(mode==0)device_count=0;else devices[0].generation=10;
++  assert(!portable_serial_tick(&client,output,sizeof(output),1));
++  assert(!client.connected && client.result==PSC_DISCONNECTED && closes==1 && releases==1 && !writes && !reads);
++ }
++ int terminals[]={PSC_EOF,PSC_IO,PSC_DISCONNECTED,PSC_CANCELLED,PSC_CLOSED,PSC_DENIED};
++ for(unsigned i=0;i<sizeof(terminals)/sizeof(*terminals);i++) {
++  opened();read_rc=terminals[i];assert(!portable_serial_tick(&client,output,sizeof(output),1));
++  assert(!client.connected && !client.cleanup_required && client.result==terminals[i] && closes==1 && releases==1);
++ }
++ opened();call_rc=PSC_RETAINED;assert(!portable_serial_tick(&client,output,sizeof(output),1));assert(!reads && !writes && !closes);stopped();
++ opened();read_rc=PSC_RETAINED;assert(!portable_serial_tick(&client,output,sizeof(output),1));assert(!closes);stopped();
++ opened();write_rc=PSC_RETAINED;assert(portable_serial_queue(&client,"x",0));
++ assert(!portable_serial_tick(&client,output,sizeof(output),1));assert(!reads && !closes);stopped();
++ for(unsigned mode=0;mode<4;mode++) {
++  opened();bad_count=(mode%2)+1;
++  if(mode<2)assert(portable_serial_queue(&client,"x",0));
++  assert(!portable_serial_tick(&client,output,sizeof(output),1));assert(!closes);stopped();
++ }
++ opened();bad_count=1;write_rc=PSC_AGAIN;assert(portable_serial_queue(&client,"x",0));
++ assert(!portable_serial_tick(&client,output,sizeof(output),1));stopped();
++ puts("serial client detach/reconnect, EOF, malformed counts and retained transfers PASS");
++}
++int main(void) {
++ invalid();inventories();retained_paths();lifecycle();stale();transfers();terminals();
++ puts("portable serial client all local checks PASS");return 0;
++}
+-- 
+2.52.0
+
