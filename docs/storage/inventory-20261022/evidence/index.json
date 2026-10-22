@@ -1,0 +1,470 @@
+{
+  "schema": 2,
+  "source_manifest_sha256": "a025ad1865b100f1df4a6a81f644be5eab314175ea10be21a09e5c3e5e63cdc1",
+  "scope": "All RiscRTE applications remain required; this manifest bounds evidence only, not migration scope.",
+  "limitations": [
+    "Static lexical discovery, not proof of migration, semantic compatibility or absence of transitive storage use.",
+    "Only manifest commits are scanned; other branches, release tags, binaries and live devices are not qualified.",
+    "Role hints are path heuristics. Providers, headers, tests, configuration and historical hits are not automatically consumer defects.",
+    "Non-source extensions, symlinks, gitlinks, binary/non-UTF-8 and oversize blobs are explicitly outside this scan."
+  ],
+  "patterns": {
+    "physical_api": "\\b(?:SPIFFS|LittleFS|SD_MMC|SD|SdFat|sdmmc_card_t|nvs_open|esp_vfs_spiffs_register)\\b",
+    "physical_path": "/(?:sd|spiffs|sdcard|usb)(?:/|[\\\"'])",
+    "legacy_file_contract": "(?:storage\\.(?:volume|installed-files|user-files|app-data\\.export)|RiscStorageVolume|T5StorageApi|T5FileBrowserApi)",
+    "generic_file_contract": "(?:storage\\.files|RiscStorageFiles)",
+    "storage_contract": "\\bstorage\\.[A-Za-z0-9_.-]+",
+    "persistence_contract": "(?:storage\\.(?:app-data|key-value)|RiscAppData|RiscKeyValue|\\bfopen\\s*\\()",
+    "block_transport_contract": "(?:usb\\.device\\.msc|RiscStorageExport|RiscUsbDeviceMsc)",
+    "file_io": "\\b(?:fread|fwrite|fclose|opendir|readdir|closedir|fsync|fflush|fseek|ftell|unlink|rename|mkdir|rmdir)\\s*\\(",
+    "indirect_storage_api": "(?:->|\\.)\\s*(?:file_|dir_|storage_|sd_|usb_|read_file|write_file|remove_file|rename_file|installed_apps|app_data|key_value)|\\b(?:T5AppApi|T5AppRuntime|T5InstalledApps|RiscInstalledApps|RiscFileOpen|T5FileOpen)"
+  },
+  "max_blob_bytes": 2097152,
+  "source_suffixes": [
+    ".bash",
+    ".c",
+    ".cc",
+    ".cfg",
+    ".cmake",
+    ".cpp",
+    ".cxx",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
+    ".inc",
+    ".ini",
+    ".ino",
+    ".ipp",
+    ".js",
+    ".json",
+    ".ld",
+    ".mjs",
+    ".mk",
+    ".ps1",
+    ".py",
+    ".rs",
+    ".s",
+    ".sh",
+    ".toml",
+    ".ts",
+    ".yaml",
+    ".yml"
+  ],
+  "repositories": [
+    {
+      "repository": "michaelrolphone-cmyk/T5S3-Reader",
+      "commit": "9c8783d6f20659a514bfaeb3847a77c7213dc4f6",
+      "default_branch": "master",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/master",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 3360,
+      "scanned_files": 2518,
+      "scanned_by_role": {
+        "application": 120,
+        "configuration": 146,
+        "documentation_evidence": 59,
+        "generated_or_asset": 19,
+        "interface_or_header": 111,
+        "provider_or_service": 115,
+        "shared_or_runtime": 709,
+        "test_fixture": 1072,
+        "third_party": 8,
+        "tooling": 159
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 842
+      },
+      "matching_files": 636,
+      "report_file": "michaelrolphone-cmyk--T5S3-Reader.json",
+      "report_sha256": "500d4f2bf7278ea1d2d2c49669b33909d33440b9a5ea79ad3e25e7aaccc54006",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/T5S3-GameBoy",
+      "commit": "46e74ba453243921695b29e06f5eaa25453645de",
+      "default_branch": "master",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/master",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 153,
+      "scanned_files": 133,
+      "scanned_by_role": {
+        "configuration": 12,
+        "interface_or_header": 8,
+        "shared_or_runtime": 69,
+        "test_fixture": 35,
+        "tooling": 9
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 20
+      },
+      "matching_files": 23,
+      "report_file": "michaelrolphone-cmyk--T5S3-GameBoy.json",
+      "report_sha256": "8d2360262ed7a1c8345e70dadf1fa55062639cd8f75be0cb3d9d13247d75e874",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+      "commit": "a7ae39994603c4545a3c014f09051ecfc12084d2",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 536,
+      "scanned_files": 480,
+      "scanned_by_role": {
+        "configuration": 57,
+        "generated_or_asset": 10,
+        "interface_or_header": 43,
+        "provider_or_service": 73,
+        "test_fixture": 81,
+        "third_party": 169,
+        "tooling": 47
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 56
+      },
+      "matching_files": 54,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-Drivers.json",
+      "report_sha256": "4f0fb9a050fc960ea8eb479e90cd879a2166f04b54a5a0fea4d4b47a547656ad",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "commit": "7270a10ed9cefba6ec1368060196a13bb3370985",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 2813,
+      "scanned_files": 1860,
+      "scanned_by_role": {
+        "application": 67,
+        "configuration": 142,
+        "documentation_evidence": 334,
+        "generated_or_asset": 18,
+        "historical": 20,
+        "interface_or_header": 207,
+        "provider_or_service": 40,
+        "shared_or_runtime": 133,
+        "test_fixture": 792,
+        "third_party": 3,
+        "tooling": 104
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 953
+      },
+      "matching_files": 777,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-System-Apps.json",
+      "report_sha256": "34735148eb21a7e87efb17da56a0b6174dadbd9dd19b453c7ba729d79adb3fe0",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-MCU-Dev-Tools",
+      "commit": "f11252265584da9b4c3f3dbcf0e4d1a894b28528",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 62,
+      "scanned_files": 53,
+      "scanned_by_role": {
+        "application": 5,
+        "configuration": 8,
+        "documentation_evidence": 2,
+        "interface_or_header": 15,
+        "shared_or_runtime": 3,
+        "test_fixture": 12,
+        "tooling": 8
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 9
+      },
+      "matching_files": 16,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-MCU-Dev-Tools.json",
+      "report_sha256": "c2f640cddc7e60455c8df103abf02ab771815cb9da24e48b89bac0e72f738612",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "commit": "6b2047500905f8f45087cb49989103a926fc5c63",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 1150,
+      "scanned_files": 919,
+      "scanned_by_role": {
+        "application": 188,
+        "configuration": 118,
+        "documentation_evidence": 95,
+        "generated_or_asset": 2,
+        "interface_or_header": 54,
+        "provider_or_service": 8,
+        "shared_or_runtime": 24,
+        "test_fixture": 354,
+        "tooling": 76
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 231
+      },
+      "matching_files": 360,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-Utilities.json",
+      "report_sha256": "c528fa7d7e075bb098a8532ccc7c9aeb8b710807d191db12fd3c313f092ce57d",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+      "commit": "bb8d0d99b3a857103d2b01e6b4c756b913aa14d3",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 366,
+      "scanned_files": 299,
+      "scanned_by_role": {
+        "application": 29,
+        "configuration": 45,
+        "documentation_evidence": 12,
+        "generated_or_asset": 5,
+        "interface_or_header": 13,
+        "shared_or_runtime": 37,
+        "test_fixture": 122,
+        "tooling": 36
+      },
+      "skipped_by_reason": {
+        "gitlink_not_descended": 1,
+        "non_source_extension": 66
+      },
+      "matching_files": 148,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-Productivity.json",
+      "report_sha256": "fb61215e754b32687fc530bacce9bf9837dacc1db078a829573b16603d766a41",
+      "unresolved_paths": [
+        {
+          "path": "third_party/crosspoint",
+          "reason": "gitlink_not_descended",
+          "commit": "3607ea7bb95d65b4cf3edf1aa89b2b0970985793"
+        }
+      ]
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-3D",
+      "status": "empty_no_refs",
+      "matching_files": 0,
+      "evidence": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-3D/branches",
+      "report_file": "michaelrolphone-cmyk--RiscRTE-3D.json",
+      "report_sha256": "289ddc8abc24fc0c7e60e16b95460833048d72c05f6f4d67cbfa16344629b19f",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+      "commit": "81dbde86969615f7378cc03c5800960a9092e076",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 1778,
+      "scanned_files": 1275,
+      "scanned_by_role": {
+        "application": 50,
+        "configuration": 165,
+        "documentation_evidence": 200,
+        "generated_or_asset": 27,
+        "historical": 177,
+        "interface_or_header": 37,
+        "provider_or_service": 21,
+        "test_fixture": 317,
+        "third_party": 12,
+        "tooling": 269
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 503
+      },
+      "matching_files": 477,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-T-Watch-S3.json",
+      "report_sha256": "5d828036c8b061ffef7c7ef1a99af357e3387c9aa09bc711e5a40507be1877dd",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "commit": "13eca114cb58469cf6004fafc3da84fbd9d29beb",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 3643,
+      "scanned_files": 2280,
+      "scanned_by_role": {
+        "application": 1,
+        "configuration": 71,
+        "documentation_evidence": 350,
+        "interface_or_header": 107,
+        "provider_or_service": 10,
+        "shared_or_runtime": 450,
+        "test_fixture": 1237,
+        "third_party": 11,
+        "tooling": 43
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 1363
+      },
+      "matching_files": 732,
+      "report_file": "michaelrolphone-cmyk--RiscRTE.json",
+      "report_sha256": "6cbff5d0807a0ffd32c15587613da2f1485b487367a83ff6fcb42959f811864f",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO",
+      "commit": "6b7d1abe9b2dcc236f6086d07c0f619244c907cb",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 1313,
+      "scanned_files": 1026,
+      "scanned_by_role": {
+        "application": 2,
+        "configuration": 162,
+        "documentation_evidence": 177,
+        "generated_or_asset": 6,
+        "historical": 15,
+        "interface_or_header": 187,
+        "provider_or_service": 28,
+        "shared_or_runtime": 24,
+        "test_fixture": 244,
+        "third_party": 1,
+        "tooling": 180
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 287
+      },
+      "matching_files": 407,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-XTEINK-X4-PRO.json",
+      "report_sha256": "a9c3b757e6d1c81ebff03f8d4a48f2d448a0d208c380330167cd50cc76cadb84",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+      "commit": "31ef3e34ffafddd4bb1a6ff4ed6e0f91236f6bb8",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 862,
+      "scanned_files": 691,
+      "scanned_by_role": {
+        "configuration": 94,
+        "documentation_evidence": 199,
+        "interface_or_header": 19,
+        "provider_or_service": 12,
+        "shared_or_runtime": 15,
+        "test_fixture": 137,
+        "tooling": 215
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 171
+      },
+      "matching_files": 339,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-Wavshare-S3-Touch-AMOLED-2.06.json",
+      "report_sha256": "0b97897758a31a14954bd6cb4560dc307d51018b76fa8b405497b477b592d969",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "commit": "401fcfd360825ec1cf4ad89e736093aa6ac4c5cc",
+      "default_branch": "main",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 583,
+      "scanned_files": 303,
+      "scanned_by_role": {
+        "application": 67,
+        "configuration": 35,
+        "documentation_evidence": 68,
+        "historical": 3,
+        "interface_or_header": 45,
+        "test_fixture": 64,
+        "tooling": 21
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 280
+      },
+      "matching_files": 84,
+      "report_file": "michaelrolphone-cmyk--RiscRTE-Watch.json",
+      "report_sha256": "2f6a5d8c47a511471ac78ee64d7cb0a8bea9236246de58a8a832d1a1fe9794e5",
+      "unresolved_paths": []
+    },
+    {
+      "repository": "crosspoint-reader/crosspoint-reader",
+      "commit": "3607ea7bb95d65b4cf3edf1aa89b2b0970985793",
+      "default_branch": null,
+      "ref_kind": "pinned_gitlink",
+      "source_ref": null,
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 921,
+      "scanned_files": 752,
+      "scanned_by_role": {
+        "configuration": 50,
+        "generated_or_asset": 15,
+        "shared_or_runtime": 522,
+        "test_fixture": 131,
+        "third_party": 2,
+        "tooling": 32
+      },
+      "skipped_by_reason": {
+        "gitlink_not_descended": 1,
+        "non_source_extension": 166,
+        "symlink_not_followed": 2
+      },
+      "matching_files": 191,
+      "report_file": "crosspoint-reader--crosspoint-reader.json",
+      "report_sha256": "65ca6b00ec3fde4af2d26b4b173d95746517556794bb7a5bdf7bcc68e76bd1a3",
+      "unresolved_paths": [
+        {
+          "path": "CLAUDE.md",
+          "reason": "symlink_not_followed",
+          "blob": "47dc3e3d863cfb5727b87d785d09abf9743c0a72"
+        },
+        {
+          "path": "freeink-sdk",
+          "reason": "gitlink_not_descended",
+          "commit": "425d200a8ea447326b4b9696e4e47dc84ad9d7f6"
+        },
+        {
+          "path": "nix/default.nix",
+          "reason": "symlink_not_followed",
+          "blob": "593a000b672bc983c1719c7ac0ee0570a41de8fe"
+        }
+      ]
+    },
+    {
+      "repository": "michaelrolphone-cmyk/Garden-Controller",
+      "commit": "2b27fec49c2bb33914f53821f2a530578d5578cc",
+      "default_branch": "main",
+      "ref_kind": "product_branch",
+      "source_ref": "refs/heads/riscrte/garden-controller",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 179,
+      "scanned_files": 149,
+      "scanned_by_role": {
+        "application": 4,
+        "configuration": 29,
+        "interface_or_header": 10,
+        "provider_or_service": 46,
+        "shared_or_runtime": 23,
+        "test_fixture": 26,
+        "tooling": 11
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 30
+      },
+      "matching_files": 23,
+      "report_file": "michaelrolphone-cmyk--Garden-Controller.json",
+      "report_sha256": "6042e6012b3dff5975f9723a5ad4ddb01635ffb1ef1acb29b778f0a951bebd97",
+      "unresolved_paths": []
+    }
+  ]
+}

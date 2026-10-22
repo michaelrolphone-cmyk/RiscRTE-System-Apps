@@ -23,6 +23,7 @@ PATTERNS = {
     "physical_path": r"/(?:sd|spiffs|sdcard|usb)(?:/|[\"'])",
     "legacy_file_contract": r"(?:storage\.(?:volume|installed-files|user-files|app-data\.export)|RiscStorageVolume|T5StorageApi|T5FileBrowserApi)",
     "generic_file_contract": r"(?:storage\.files|RiscStorageFiles)",
+    "storage_contract": r"\bstorage\.[A-Za-z0-9_.-]+",
     "persistence_contract": r"(?:storage\.(?:app-data|key-value)|RiscAppData|RiscKeyValue|\bfopen\s*\()",
     "block_transport_contract": r"(?:usb\.device\.msc|RiscStorageExport|RiscUsbDeviceMsc)",
     "file_io": r"\b(?:fread|fwrite|fclose|opendir|readdir|closedir|fsync|fflush|fseek|ftell|unlink|rename|mkdir|rmdir)\s*\(",
@@ -165,7 +166,7 @@ def scan_repository(source, root):
         if hits:
             files.append({"path": path, "blob": blob, "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data), "role_hint": role,
                           "url": f"https://github.com/{name}/blob/{commit}/{quote(path, safe='/')}", "hits": hits})
-    return {"repository": name, "commit": commit, "default_branch": source.get("default_branch"), "ref_kind": source.get("ref_kind", "default_branch"), "source_mode": "immutable Git blobs; worktree and index ignored",
+    return {"repository": name, "commit": commit, "default_branch": source.get("default_branch"), "ref_kind": source.get("ref_kind", "default_branch"), "source_ref": source.get("source_ref"), "source_mode": "immutable Git blobs; worktree and index ignored",
             "tracked_entries": len(entries), "scanned_files": sum(scanned.values()), "scanned_by_role": dict(sorted(scanned.items())),
             "skipped_by_reason": dict(sorted(skipped.items())), "unresolved_paths": unresolved,
             "matching_files": len(files), "files": files}
@@ -191,15 +192,37 @@ def make_report(manifest, checkout_root):
             "patterns": PATTERNS, "max_blob_bytes": MAX_BLOB_BYTES, "source_suffixes": sorted(SOURCE_SUFFIXES | CONFIG_SUFFIXES | TOOL_SUFFIXES), "repositories": entries}
 
 
+def write_split_report(report, directory):
+    """Bounded per-repository JSON plus hashes for reproducible verification."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+    index = {key: value for key, value in report.items() if key != "repositories"}
+    index["repositories"] = []
+    for entry in report["repositories"]:
+        filename = entry["repository"].replace("/", "--") + ".json"
+        data = (json.dumps(entry, separators=(",", ":")) + "\n").encode()
+        (directory / filename).write_bytes(data)
+        summary = {key: value for key, value in entry.items() if key not in {"files", "unresolved_paths"}}
+        summary.update({"report_file": filename, "report_sha256": hashlib.sha256(data).hexdigest(),
+                        "unresolved_paths": entry.get("unresolved_paths", [])})
+        index["repositories"].append(summary)
+    (directory / "index.json").write_text(json.dumps(index, indent=2) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--checkout-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path, required=True)
+    output = parser.add_mutually_exclusive_group(required=True)
+    output.add_argument("--output", type=Path)
+    output.add_argument("--output-dir", type=Path)
     args = parser.parse_args()
     report = make_report(json.loads(args.manifest.read_text()), args.checkout_root)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(report, indent=2) + "\n")
+    if args.output_dir:
+        write_split_report(report, args.output_dir)
+    else:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps([{key: value for key, value in entry.items() if key not in {"files", "unresolved_paths"}} for entry in report["repositories"]], indent=2))
 
 

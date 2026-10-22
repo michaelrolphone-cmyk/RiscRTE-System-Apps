@@ -1,5 +1,6 @@
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import subprocess
 import tempfile
@@ -65,7 +66,7 @@ class StorageRefInventoryTests(unittest.TestCase):
         item = self.scan(first)["files"][0]
         self.assertEqual(item["blob"], original_blob)
         self.assertEqual(item["sha256"], hashlib.sha256(original.encode()).hexdigest())
-        self.assertEqual(item["hits"], [{"line": 1, "kinds": ["generic_file_contract"]}])
+        self.assertEqual(item["hits"], [{"line": 1, "kinds": ["generic_file_contract", "storage_contract"]}])
 
     def test_arduino_recipes_and_configuration_are_covered(self):
         for path in ["src/main.ino", "scripts/build.py", ".github/workflows/build.yml", "platformio.ini", "CMakeLists.txt"]:
@@ -93,9 +94,32 @@ class StorageRefInventoryTests(unittest.TestCase):
             self.assertEqual(report["skipped_by_reason"][reason], 1)
         self.assertEqual(report["matching_files"], 1)
 
+    def test_unfamiliar_storage_capability_is_still_a_candidate(self):
+        self.write("Apps/client.json", '{"capability":"storage.block"}\n')
+        item = self.scan(self.commit())["files"][0]
+        self.assertEqual(item["hits"], [{"line": 1, "kinds": ["storage_contract"]}])
+
     def test_nonimmutable_ref_is_rejected(self):
         with self.assertRaises(ValueError):
             self.scan("main")
+
+    def test_evidence_has_locations_not_credential_literals(self):
+        self.write("Apps/client.c", 'const char *password = "example-sensitive-value"; /* storage.files */\n')
+        entry = self.scan(self.commit())
+        serialized = json.dumps(entry)
+        self.assertNotIn("example-sensitive-value", serialized)
+        self.assertNotIn("password", serialized)
+        self.assertEqual(entry["files"][0]["hits"], [{"line": 1, "kinds": ["generic_file_contract", "storage_contract"]}])
+
+    def test_split_reports_roundtrip_with_exact_hash(self):
+        self.write("Apps/client.c", "storage.files\n")
+        entry = self.scan(self.commit())
+        output = self.root / "report"
+        audit.write_split_report({"schema": 2, "repositories": [entry]}, output)
+        index = json.loads((output / "index.json").read_text())
+        saved = (output / index["repositories"][0]["report_file"]).read_bytes()
+        self.assertEqual(json.loads(saved), entry)
+        self.assertEqual(hashlib.sha256(saved).hexdigest(), index["repositories"][0]["report_sha256"])
 
     def test_absent_repository_fails_instead_of_success_with_zero_hits(self):
         with self.assertRaises(subprocess.CalledProcessError):
