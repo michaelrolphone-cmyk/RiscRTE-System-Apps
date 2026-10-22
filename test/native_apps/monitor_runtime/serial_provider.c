@@ -48,6 +48,10 @@ static bool valid_config(const risc_serial_stream_config_v1 *config) {
         config->data_bits >= 5 && config->data_bits <= 8 && config->parity <= 4 &&
         (config->stop_bits == 1 || config->stop_bits == 2) && !config->flow_control;
 }
+static bool expected_config(const risc_serial_stream_config_v1 *config) {
+    return config && config->baud_rate == 115200 && config->data_bits == 8 &&
+        config->parity == 0 && config->stop_bits == 1 && config->flow_control == 0;
+}
 static bool snapshot(risc_serial_device_v1 *out, size_t *count) {
     event("snapshot");
     if (!count) return false;
@@ -114,6 +118,7 @@ static int32_t open_session(const void *bytes, uint32_t size, uint32_t ms,
     if (request.api_version != RISC_SERIAL_STREAM_REQUEST_V1 ||
         request.struct_size != sizeof(request) || !valid_config(&request.config))
         return RISC_STREAM_INVALID;
+    assert(expected_config(&request.config));
     const int32_t present = check_device(request.provider_device, request.device_generation);
     if (present != RISC_STREAM_OK) return present;
     if (session) return RISC_STREAM_BUSY;
@@ -168,6 +173,7 @@ static int32_t call_session(uint64_t token, const void *bytes, uint32_t size,
         return RISC_STREAM_OK;
     case RISC_SERIAL_STREAM_CONFIGURE:
         if (!valid_config(&request.value.config)) return RISC_STREAM_INVALID;
+        assert(expected_config(&request.value.config));
         framing = request.value.config;
         event("configure");
         return RISC_STREAM_OK;

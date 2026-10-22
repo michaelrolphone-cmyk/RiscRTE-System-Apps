@@ -91,8 +91,16 @@ PYTHONDONTWRITEBYTECODE=1 python System/scripts/test_monitor_runtime_bridge.py -
 
 `--development` permits work-in-progress smoke testing but can only emit
 `DEVELOPMENT_PASS`, never qualification PASS. `--case` is development-only.
-Failures preserve an UNQUALIFIED receipt and the failed command log. CI checks
-out the exact PR head, never the synthetic merge. Both lanes run independently.
+After a valid external output directory is reserved, preflight, staging,
+compilation and test failures preserve an UNQUALIFIED receipt with failure type
+and message. Build/test failures additionally preserve their command log. Invalid
+CLI arguments, unsafe output paths and inability to create the output directory
+cannot guarantee a receipt; their console error and missing receipt are never
+success. Each CI lane also runs two isolated negative controls: a wrong Runtime
+checkout and an injected staging-copy failure must leave zero-case UNQUALIFIED
+receipts. These are runner controls, not additional monitor cases or production
+mutations. CI checks out the exact PR head, never the synthetic merge. Both lanes
+run independently.
 Artifacts preserve logs, generated manifests, binaries, symbols, rasters, source
 hashes and receipts even on failure, with an exact head/run/attempt/lane name.
 They expire after 90 days. Download and verify SHA256SUMS before citing artifact
@@ -119,3 +127,16 @@ exact trusted controller admission, source parity and electrical/physical USB
 acceptance remain separate gates. This suite closes only the host evidence gap
 between the unchanged monitor and the real Runtime machinery when its exact-head
 qualification succeeds.
+
+## Qualification correction after initial capture
+
+The initial source capture compiled the Runtime host at O1. Local GCC14.2 and
+CI GCC13.3 sanitizer compilation stopped before cases on ArduinoJson
+maybe-uninitialized warnings.
+The follow-up runner explicitly builds only the Runtime host at O0, matching
+the pinned Runtime runner; app/provider modules remain O1. Strict warnings and
+ASan/UBSan stay enabled. No diagnostic is suppressed and no dependency source
+is edited. An O0 host pass is not equivalence to an optimized O1 host pass.
+The fixture also asserts exact 115200/8N1/no-flow-control framing instead of
+merely accepting any valid serial configuration. Initial source and failed
+compilation evidence are not erased by these corrections.

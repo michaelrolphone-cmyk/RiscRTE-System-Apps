@@ -68,6 +68,34 @@ jobs:
             python --version
             python -m pip show Pillow
           } > evidence/source-and-tools.txt
+      - name: Verify preflight and staging failure receipts
+        shell: bash
+        run: |
+          python - <<'PYNEG'
+          import importlib.util, json, sys
+          from pathlib import Path
+          from unittest.mock import patch
+          runner = Path('System/scripts/test_monitor_runtime_bridge.py').resolve()
+          spec = importlib.util.spec_from_file_location('bridge_receipt_probe', runner)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+          for phase in ('preflight', 'staging'):
+              output = Path('evidence') / (phase + '-rejection')
+              runtime = 'System' if phase == 'preflight' else 'Runtime'
+              argv = [str(runner), '--runtime', runtime, '--output', str(output)]
+              with patch.object(sys, 'argv', argv), patch.object(module.shutil, 'copytree', side_effect=OSError('controlled staging copy failure')):
+                  try:
+                      module.main()
+                  except (AssertionError, OSError):
+                      pass
+                  else:
+                      raise AssertionError('negative control unexpectedly passed')
+              receipt = json.loads((output/'evidence.json').read_text())
+              assert receipt['result'] == 'UNQUALIFIED' and receipt['phase'] == phase
+              assert not receipt['cases']
+              assert receipt['failure']['type'] == ('AssertionError' if phase == 'preflight' else 'OSError')
+          print('Two isolated failure-receipt controls: PASS (not monitor cases)')
+          PYNEG
       - name: Run unchanged monitor through production Runtime
         shell: bash
         run: |

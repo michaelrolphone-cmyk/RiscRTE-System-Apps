@@ -96,6 +96,21 @@ def main():
     runtime, out = a.runtime.resolve(), a.output.resolve()
     assert not out.is_relative_to(ROOT) and not out.is_relative_to(runtime), "Output must be outside source trees"
     out.mkdir(parents=True, exist_ok=False)
+    # Reserve a valid external output directory before touching source/staging.
+    # Even a failed git check, copied header, compiler or test leaves a receipt.
+    write_json(out/"evidence.json", {"result": "UNQUALIFIED", "phase": "preflight",
+        "expected_cases": 36, "cases": [], "requested_runtime": str(runtime),
+        "development": a.development, "sanitized": a.sanitize})
+    try:
+        execute(a, runtime, out)
+    except BaseException as error:
+        receipt = json.loads((out/"evidence.json").read_text())
+        receipt.update(result="UNQUALIFIED", failure={"type": type(error).__name__, "message": str(error)})
+        write_json(out/"evidence.json", receipt)
+        raise
+
+
+def execute(a, runtime, out):
     system_sha = git(ROOT, "rev-parse", "HEAD")
     assert git(runtime, "rev-parse", "HEAD") == RUNTIME
     assert not git(runtime, "status", "--porcelain"), "Runtime must be clean"
@@ -106,6 +121,9 @@ def main():
     allowed = {"scripts/test_monitor_runtime_bridge.py", ".github/workflows/monitor-runtime-bridge.yml", "docs/MONITOR_RUNTIME_BRIDGE.md"}
     changed = git(ROOT, "diff", "--name-only", BASE).splitlines()
     assert all(path in allowed or path.startswith("test/native_apps/monitor_runtime/") for path in changed), changed
+    initial = json.loads((out/"evidence.json").read_text())
+    initial.update(phase="staging", system=system_sha, runtime=RUNTIME, system_status=status.splitlines())
+    write_json(out/"evidence.json", initial)
     stage, build = out / "include", out / "build"
     shutil.copytree(ROOT / "lib/PortableApps/include", stage)
     build.mkdir()
@@ -123,7 +141,7 @@ def main():
     flags = ["-std=c11", *common, "-fPIC", "-fvisibility=hidden", *includes]
     defines = ["-D"+name for name in DEFINES]
     commands, results = [], []
-    receipt = {"result": "UNQUALIFIED", "system": system_sha, "base": BASE, "runtime": RUNTIME,
+    receipt = {"result": "UNQUALIFIED", "phase": "build-and-test", "system": system_sha, "base": BASE, "runtime": RUNTIME,
                "system_status": status.splitlines(), "system_tree": git(ROOT, "rev-parse", "HEAD^{tree}"), "runtime_tree": git(runtime, "rev-parse", "HEAD^{tree}"), "sanitized": a.sanitize, "development": a.development,
                "expected_cases": 36, "runtime_headers": canonical, "commands": commands, "cases": results,
                "sanitizer_environment": {name: env[name] for name in ("ASAN_OPTIONS", "UBSAN_OPTIONS")}}
@@ -142,7 +160,10 @@ def main():
             run([cc, *flags, *defines, "-Dapp_main=monitor_real_main", "-c", ROOT/"Apps/serial_monitor.c", "-o", build/"monitor.o"])
             run([cc, *flags, *defines, "-shared", build/"adapter.o", build/"monitor.o", ROOT/"lib/PortableApps/src/PortableSerialClient.c", FIXTURE/"app_module.c", "-o", build/"default.elf"])
             runtime_sources = ["src/bootstrap/Json.cpp", "src/bootstrap/Board.cpp", "src/bootstrap/Runtime.cpp", "src/runtime/streams/ProviderQueueHost.cpp", "src/runtime/streams/AppStreamSessions.cpp", "src/runtime/drivers/ProviderGraphV2.cpp", "src/runtime/drivers/ProviderModuleV2.cpp"]
-            run([cxx, "-std=c++17", *common, "-Wno-missing-field-initializers", "-no-pie", "-rdynamic", "-DRISC_STREAM_HOST_TESTING",
+            # Runtime host matches the pinned upstream runner optimization (O0).
+            # Keep strict warnings and ASan/UBSan; do not suppress the O1
+            # ArduinoJson maybe-uninitialized diagnostic or alter its source.
+            run([cxx, "-std=c++17", *common, "-O0", "-Wno-missing-field-initializers", "-no-pie", "-rdynamic", "-DRISC_STREAM_HOST_TESTING",
                  *["-I"+str(runtime/part) for part in ("src", "sdk/app", "sdk/driver", "sdk/hardware", "lib/ArduinoJson/src", "test/drivers/stubs", "test")], "-I"+str(FIXTURE),
                  *[runtime/path for path in runtime_sources], FIXTURE/"runtime_test.cpp", "-ldl", "-pthread", "-o", build/"test"])
             # A symbol boundary gate prevents accidentally inheriting the fake Runtime fixture.
@@ -170,6 +191,7 @@ def main():
             assert git(ROOT, "status", "--porcelain") == status
             assert not git(runtime, "status", "--porcelain")
             receipt["result"] = "DEVELOPMENT_PASS" if a.development else "PASS"
+            receipt["phase"] = "complete"
         finally:
             log.flush()
             receipt["log_sha256"] = sha(log_path)
