@@ -4,14 +4,18 @@ on:
     paths:
       - scripts/audit_storage_refs.py
       - tests/test_storage_ref_inventory.py
+      - tests/test_storage_garden_inventory.py
       - docs/storage/inventory-20261022/**
+      - docs/storage/inventory-20261023-garden/**
       - .github/workflows/storage-inventory.yml
   push:
     branches: [main]
     paths:
       - scripts/audit_storage_refs.py
       - tests/test_storage_ref_inventory.py
+      - tests/test_storage_garden_inventory.py
       - docs/storage/inventory-20261022/**
+      - docs/storage/inventory-20261023-garden/**
       - .github/workflows/storage-inventory.yml
   workflow_dispatch:
 permissions:
@@ -32,3 +36,14 @@ jobs:
         run: python -m unittest discover -s tests -p test_storage_ref_inventory.py -v
       - name: Test repository Python regressions
         run: python -m unittest discover -s tests -v
+      - name: Fetch only the pinned Garden source for inventory reproduction
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: michaelrolphone-cmyk/Garden-Controller
+          ref: 2b01d37ac5a6b643b8bc25758a07787587d7ca7e
+          path: .inventory-sources/Garden-Controller
+          persist-credentials: false
+      - name: Reproduce the Garden source report without running Garden code
+        run: |
+          python scripts/audit_storage_refs.py --manifest docs/storage/inventory-20261023-garden/sources.json --checkout-root .inventory-sources --output-dir "$RUNNER_TEMP/garden-storage-report"
+          diff -ru docs/storage/inventory-20261023-garden/evidence "$RUNNER_TEMP/garden-storage-report"
