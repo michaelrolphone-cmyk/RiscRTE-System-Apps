@@ -1,0 +1,10 @@
+{
+  "repositories": [
+    {
+      "repository": "Free-Ink/freeink-sdk",
+      "commit": "425d200a8ea447326b4b9696e4e47dc84ad9d7f6",
+      "ref_kind": "nested_pinned_gitlink",
+      "source_ref": "crosspoint-reader/crosspoint-reader@3607ea7bb95d65b4cf3edf1aa89b2b0970985793:freeink-sdk"
+    }
+  ]
+}

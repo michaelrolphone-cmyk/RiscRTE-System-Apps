@@ -5,8 +5,10 @@ on:
       - scripts/audit_storage_refs.py
       - tests/test_storage_ref_inventory.py
       - tests/test_storage_garden_inventory.py
+      - tests/test_storage_freeink_inventory.py
       - docs/storage/inventory-20261022/**
       - docs/storage/inventory-20261023-garden/**
+      - docs/storage/inventory-20261023-freeink/**
       - .github/workflows/storage-inventory.yml
   push:
     branches: [main]
@@ -14,8 +16,10 @@ on:
       - scripts/audit_storage_refs.py
       - tests/test_storage_ref_inventory.py
       - tests/test_storage_garden_inventory.py
+      - tests/test_storage_freeink_inventory.py
       - docs/storage/inventory-20261022/**
       - docs/storage/inventory-20261023-garden/**
+      - docs/storage/inventory-20261023-freeink/**
       - .github/workflows/storage-inventory.yml
   workflow_dispatch:
 permissions:
@@ -47,3 +51,41 @@ jobs:
         run: |
           python scripts/audit_storage_refs.py --manifest docs/storage/inventory-20261023-garden/sources.json --checkout-root .inventory-sources --output-dir "$RUNNER_TEMP/garden-storage-report"
           diff -ru docs/storage/inventory-20261023-garden/evidence "$RUNNER_TEMP/garden-storage-report"
+      - name: Fetch pinned RiscRTE-Productivity source without submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Productivity
+          ref: bb8d0d99b3a857103d2b01e6b4c756b913aa14d3
+          path: .inventory-sources/RiscRTE-Productivity
+          persist-credentials: false
+      - name: Fetch pinned crosspoint-reader source without submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: crosspoint-reader/crosspoint-reader
+          ref: 3607ea7bb95d65b4cf3edf1aa89b2b0970985793
+          path: .inventory-sources/crosspoint-reader
+          persist-credentials: false
+      - name: Fetch pinned freeink-sdk source without submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Free-Ink/freeink-sdk
+          ref: 425d200a8ea447326b4b9696e4e47dc84ad9d7f6
+          path: .inventory-sources/freeink-sdk
+          persist-credentials: false
+      - name: Verify parent gitlinks and reproduce nested SDK report
+        run: |
+          python - <<'PYCODE'
+          import json, subprocess
+          from pathlib import Path
+          provenance = json.loads(Path('docs/storage/inventory-20261023-freeink/provenance.json').read_text())
+          for edge in provenance['gitlink_edges']:
+              def git(*args):
+                  return subprocess.check_output(['git', '--no-replace-objects', '-C', '.inventory-sources/' + edge['repository'].split('/')[-1], *args], text=True).strip()
+              assert git('ls-tree', edge['commit'], edge['path']) == '160000 commit ' + edge['child_commit'] + '\t' + edge['path']
+              assert git('rev-parse', edge['commit'] + ':.gitmodules') == edge['modules_blob']
+              assert git('config', '--blob', edge['modules_blob'], '--get', 'submodule.' + edge['path'] + '.url') == edge['url']
+          tree = subprocess.check_output(['git', '--no-replace-objects', '-C', '.inventory-sources/freeink-sdk', 'rev-parse', '425d200a8ea447326b4b9696e4e47dc84ad9d7f6^{tree}'], text=True).strip()
+          assert tree == provenance['source_tree']
+          PYCODE
+          python scripts/audit_storage_refs.py --manifest docs/storage/inventory-20261023-freeink/sources.json --checkout-root .inventory-sources --output-dir "$RUNNER_TEMP/freeink-storage-report"
+          diff -ru docs/storage/inventory-20261023-freeink/evidence "$RUNNER_TEMP/freeink-storage-report"

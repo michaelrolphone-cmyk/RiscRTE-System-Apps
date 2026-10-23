@@ -1,0 +1,21 @@
+{
+  "gitlink_edges": [
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+      "commit": "bb8d0d99b3a857103d2b01e6b4c756b913aa14d3",
+      "path": "third_party/crosspoint",
+      "child_commit": "3607ea7bb95d65b4cf3edf1aa89b2b0970985793",
+      "modules_blob": "0c725cd37269fcf0a0324f7ae3dfedcf4f17d0c1",
+      "url": "https://github.com/crosspoint-reader/crosspoint-reader.git"
+    },
+    {
+      "repository": "crosspoint-reader/crosspoint-reader",
+      "commit": "3607ea7bb95d65b4cf3edf1aa89b2b0970985793",
+      "path": "freeink-sdk",
+      "child_commit": "425d200a8ea447326b4b9696e4e47dc84ad9d7f6",
+      "modules_blob": "7c0ed75cb8b9b67aa05d0803d6f7a2ff7fad97e5",
+      "url": "https://github.com/Free-Ink/freeink-sdk.git"
+    }
+  ],
+  "source_tree": "31d7c76148c12e2111ea9d159e4271fa87075b98"
+}
