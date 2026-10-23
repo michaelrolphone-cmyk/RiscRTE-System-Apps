@@ -155,3 +155,21 @@ the neutral cancellation pass explicit; it does not turn it into a DOWN.
 Its 62 runs include held reset, no-contact cancellation, persistent failed-poll
 and invalid-snapshot recovery, while ordinary idle/wrap/refusal cases remain.
 The unselected-profile code remains preprocessor-excluded.
+
+## Immutable Runtime input reads
+
+Settings and Wi-Fi memory reporters read their fixed Runtime commit with Git
+replacement objects disabled and without inherited `GIT_*` routing/configuration
+variables. A local replacement commit, tree or blob must not silently substitute
+loader source while the receipt still names the original commit. Worktree edits
+remain irrelevant to these object-based reads; ordinary compiler environment
+variables are preserved. Missing objects still fail rather than falling back to
+the worktree or another revision.
+
+`tests/test_native_settings_memory_source.py` exercises eight real-Git controls,
+including commit/tree/blob replacements, a custom replacement namespace and
+ambient repository redirection. The previous reader reproduces substitution in
+all four replacement cases. This corrects the provenance of future reporter
+runs; it is not evidence that any previously published artifact was substituted.
+Existing release assets, dependency pins, allocation arithmetic and the separate
+linked-device/hardware qualification requirements are unchanged.

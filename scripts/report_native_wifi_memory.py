@@ -45,7 +45,7 @@ def qualify(args):
     out.mkdir(parents=True, exist_ok=True)
     runtime = out/'runtime'; hashes = {}
     for relative in RUNTIME_INPUTS:
-        content = subprocess.check_output(['git', '-C', str(args.runtime), 'show', RUNTIME_PIN+':'+relative])
+        content = shared.pinned_runtime_input(args.runtime, RUNTIME_PIN, relative)
         dest = runtime/relative
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_bytes(content)

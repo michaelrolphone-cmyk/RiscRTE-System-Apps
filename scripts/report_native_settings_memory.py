@@ -87,6 +87,20 @@ def inspect(path):
         'linked_device_memory_fit_qualified':False}
 
 
+def pinned_runtime_input(runtime, revision, relative):
+    """Read the named Git object, not a local replacement or redirected repo.
+
+    Worktree edits are intentionally irrelevant: qualification names an immutable
+    commit. Strip Git routing/config overrides only for this read; compiler and
+    other process environments are unchanged.
+    """
+    environment = {key: value for key, value in os.environ.items()
+                   if not key.startswith('GIT_')}
+    return subprocess.check_output(
+        ['git', '--no-replace-objects', '-C', str(runtime), 'show', revision+':'+relative],
+        env=environment)
+
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--elf',type=Path,required=True)
@@ -98,7 +112,7 @@ def main():
     out.mkdir(parents=True,exist_ok=True)
     runtime=out/'runtime';hashes={}
     for path in RUNTIME_INPUTS:
-        content=subprocess.check_output(['git','-C',str(args.runtime),'show',RUNTIME_PIN+':'+path])
+        content=pinned_runtime_input(args.runtime, RUNTIME_PIN, path)
         dest=runtime/path;dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(content);hashes[path]=sha(content)
     (out/'admit.cpp').write_text(ADMISSION_SOURCE)
     images={'native':args.elf.resolve()};records={'native':inspect(images['native'])}

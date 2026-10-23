@@ -100,7 +100,7 @@ class NativeWifiMemory(unittest.TestCase):
                 report = reporter.qualify(args)
             self.assertEqual(read.call_count, len(reporter.RUNTIME_INPUTS))
             self.assertEqual([call.args[0] for call in read.call_args_list], [
-                ['git', '-C', '/runtime', 'show', reporter.RUNTIME_PIN+':'+relative]
+                ['git', '--no-replace-objects', '-C', '/runtime', 'show', reporter.RUNTIME_PIN+':'+relative]
                 for relative in reporter.RUNTIME_INPUTS])
             self.assertEqual([r['sanitized'] for r in report['admission_runs']], [False, True])
             self.assertEqual(report['images'], {'native': layout})

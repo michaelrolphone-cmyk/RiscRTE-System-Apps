@@ -1,0 +1,155 @@
+{
+  "schema": 1,
+  "observed_at_utc": "2026-10-22T15:09:41Z",
+  "purpose": "Coverage evidence, not a limit on all-application migration scope. No consumer or provider behavior is changed.",
+  "repositories": [
+    {
+      "repository": "michaelrolphone-cmyk/T5S3-Reader",
+      "default_branch": "master",
+      "commit": "9c8783d6f20659a514bfaeb3847a77c7213dc4f6",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/T5S3-Reader/tree/9c8783d6f20659a514bfaeb3847a77c7213dc4f6",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/master"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/T5S3-GameBoy",
+      "default_branch": "master",
+      "commit": "46e74ba453243921695b29e06f5eaa25453645de",
+      "url": "https://github.com/michaelrolphone-cmyk/T5S3-GameBoy",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/T5S3-GameBoy/tree/46e74ba453243921695b29e06f5eaa25453645de",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/master"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Drivers",
+      "default_branch": "main",
+      "commit": "a7ae39994603c4545a3c014f09051ecfc12084d2",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Drivers",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Drivers/tree/a7ae39994603c4545a3c014f09051ecfc12084d2",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "default_branch": "main",
+      "commit": "7270a10ed9cefba6ec1368060196a13bb3370985",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/tree/7270a10ed9cefba6ec1368060196a13bb3370985",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-MCU-Dev-Tools",
+      "default_branch": "main",
+      "commit": "f11252265584da9b4c3f3dbcf0e4d1a894b28528",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-MCU-Dev-Tools",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-MCU-Dev-Tools/tree/f11252265584da9b4c3f3dbcf0e4d1a894b28528",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "default_branch": "main",
+      "commit": "6b2047500905f8f45087cb49989103a926fc5c63",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/tree/6b2047500905f8f45087cb49989103a926fc5c63",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Productivity",
+      "default_branch": "main",
+      "commit": "bb8d0d99b3a857103d2b01e6b4c756b913aa14d3",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Productivity",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Productivity/tree/bb8d0d99b3a857103d2b01e6b4c756b913aa14d3",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-3D",
+      "default_branch": "main",
+      "status": "empty_no_refs",
+      "evidence": "https://api.github.com/repos/michaelrolphone-cmyk/RiscRTE-3D/branches",
+      "note": "GitHub branches returned []; git ls-remote returned no refs on 2026-10-22. No source exists to scan at this observation.",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+      "default_branch": "main",
+      "commit": "81dbde86969615f7378cc03c5800960a9092e076",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-T-Watch-S3/tree/81dbde86969615f7378cc03c5800960a9092e076",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "default_branch": "main",
+      "commit": "13eca114cb58469cf6004fafc3da84fbd9d29beb",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE/tree/13eca114cb58469cf6004fafc3da84fbd9d29beb",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO",
+      "default_branch": "main",
+      "commit": "6b7d1abe9b2dcc236f6086d07c0f619244c907cb",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO/tree/6b7d1abe9b2dcc236f6086d07c0f619244c907cb",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+      "default_branch": "main",
+      "commit": "31ef3e34ffafddd4bb1a6ff4ed6e0f91236f6bb8",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06/tree/31ef3e34ffafddd4bb1a6ff4ed6e0f91236f6bb8",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Watch",
+      "default_branch": "main",
+      "commit": "401fcfd360825ec1cf4ad89e736093aa6ac4c5cc",
+      "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Watch",
+      "status": "scanned_immutable_source",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Watch/tree/401fcfd360825ec1cf4ad89e736093aa6ac4c5cc",
+      "ref_kind": "default_branch",
+      "source_ref": "refs/heads/main"
+    },
+    {
+      "repository": "crosspoint-reader/crosspoint-reader",
+      "commit": "3607ea7bb95d65b4cf3edf1aa89b2b0970985793",
+      "ref_kind": "pinned_gitlink",
+      "status": "scanned_immutable_source",
+      "url": "https://github.com/crosspoint-reader/crosspoint-reader",
+      "ref_url": "https://github.com/crosspoint-reader/crosspoint-reader/tree/3607ea7bb95d65b4cf3edf1aa89b2b0970985793",
+      "source_reason": "RiscRTE-Productivity bb8d0d99b3a857103d2b01e6b4c756b913aa14d3 gitlink third_party/crosspoint; third-party upstream, not proof of product integration or migration."
+    },
+    {
+      "repository": "michaelrolphone-cmyk/Garden-Controller",
+      "commit": "2b27fec49c2bb33914f53821f2a530578d5578cc",
+      "default_branch": "main",
+      "source_ref": "refs/heads/riscrte/garden-controller",
+      "ref_kind": "product_branch",
+      "status": "scanned_immutable_source",
+      "url": "https://github.com/michaelrolphone-cmyk/Garden-Controller",
+      "ref_url": "https://github.com/michaelrolphone-cmyk/Garden-Controller/tree/2b27fec49c2bb33914f53821f2a530578d5578cc",
+      "source_reason": "Followed Runtime docs/PROVENANCE.md link. The default main has no riscrte/ tree; this current product branch does. Do not conflate it with the Node.js main application or qualify uninspected branches."
+    }
+  ]
+}

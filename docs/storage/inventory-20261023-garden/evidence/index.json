@@ -1,0 +1,82 @@
+{
+  "schema": 2,
+  "source_manifest_sha256": "69209e3c3c82f141e76e72620a02b185b6ed2237d809ba6bba4c08dd06bcf90f",
+  "scope": "All RiscRTE applications remain required; this manifest bounds evidence only, not migration scope.",
+  "limitations": [
+    "Static lexical discovery, not proof of migration, semantic compatibility or absence of transitive storage use.",
+    "Only manifest commits are scanned; other branches, release tags, binaries and live devices are not qualified.",
+    "Role hints are path heuristics. Providers, headers, tests, configuration and historical hits are not automatically consumer defects.",
+    "Non-source extensions, symlinks, gitlinks, binary/non-UTF-8 and oversize blobs are explicitly outside this scan."
+  ],
+  "patterns": {
+    "physical_api": "\\b(?:SPIFFS|LittleFS|SD_MMC|SD|SdFat|sdmmc_card_t|nvs_open|esp_vfs_spiffs_register)\\b",
+    "physical_path": "/(?:sd|spiffs|sdcard|usb)(?:/|[\\\"'])",
+    "legacy_file_contract": "(?:storage\\.(?:volume|installed-files|user-files|app-data\\.export)|RiscStorageVolume|T5StorageApi|T5FileBrowserApi)",
+    "generic_file_contract": "(?:storage\\.files|RiscStorageFiles)",
+    "storage_contract": "\\bstorage\\.[A-Za-z0-9_.-]+",
+    "persistence_contract": "(?:storage\\.(?:app-data|key-value)|RiscAppData|RiscKeyValue|\\bfopen\\s*\\()",
+    "block_transport_contract": "(?:usb\\.device\\.msc|RiscStorageExport|RiscUsbDeviceMsc)",
+    "file_io": "\\b(?:fread|fwrite|fclose|opendir|readdir|closedir|fsync|fflush|fseek|ftell|unlink|rename|mkdir|rmdir)\\s*\\(",
+    "indirect_storage_api": "(?:->|\\.)\\s*(?:file_|dir_|storage_|sd_|usb_|read_file|write_file|remove_file|rename_file|installed_apps|app_data|key_value)|\\b(?:T5AppApi|T5AppRuntime|T5InstalledApps|RiscInstalledApps|RiscFileOpen|T5FileOpen)"
+  },
+  "max_blob_bytes": 2097152,
+  "source_suffixes": [
+    ".bash",
+    ".c",
+    ".cc",
+    ".cfg",
+    ".cmake",
+    ".cpp",
+    ".cxx",
+    ".h",
+    ".hh",
+    ".hpp",
+    ".hxx",
+    ".inc",
+    ".ini",
+    ".ino",
+    ".ipp",
+    ".js",
+    ".json",
+    ".ld",
+    ".mjs",
+    ".mk",
+    ".ps1",
+    ".py",
+    ".rs",
+    ".s",
+    ".sh",
+    ".toml",
+    ".ts",
+    ".yaml",
+    ".yml"
+  ],
+  "repositories": [
+    {
+      "repository": "michaelrolphone-cmyk/Garden-Controller",
+      "commit": "2b01d37ac5a6b643b8bc25758a07787587d7ca7e",
+      "default_branch": null,
+      "ref_kind": "product_branch_snapshot",
+      "source_ref": "refs/heads/riscrte/relay-boot-store",
+      "source_mode": "immutable Git blobs; worktree and index ignored",
+      "tracked_entries": 179,
+      "scanned_files": 149,
+      "scanned_by_role": {
+        "application": 4,
+        "configuration": 29,
+        "interface_or_header": 10,
+        "provider_or_service": 46,
+        "shared_or_runtime": 23,
+        "test_fixture": 26,
+        "tooling": 11
+      },
+      "skipped_by_reason": {
+        "non_source_extension": 30
+      },
+      "matching_files": 23,
+      "report_file": "michaelrolphone-cmyk--Garden-Controller.json",
+      "report_sha256": "d20eaeb25ce950d9c5aaeb39dea0dacb5ea9d6bb1d307ad2a4548407c57e0a0d",
+      "unresolved_paths": []
+    }
+  ]
+}

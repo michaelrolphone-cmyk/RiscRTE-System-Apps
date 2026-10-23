@@ -1,0 +1,10 @@
+{
+  "repositories": [
+    {
+      "repository": "michaelrolphone-cmyk/Garden-Controller",
+      "commit": "2b01d37ac5a6b643b8bc25758a07787587d7ca7e",
+      "ref_kind": "product_branch_snapshot",
+      "source_ref": "refs/heads/riscrte/relay-boot-store"
+    }
+  ]
+}
