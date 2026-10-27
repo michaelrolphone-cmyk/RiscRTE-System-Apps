@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+  "source_commit": "50684639efd155042d599ba8edc10c3268aac82d",
+  "source_tree": "2d35e30df3f10393bc640117301423ab6a7abd33",
+  "object_count": 10288,
+  "pack_sha256": "50ca1f8faefad629e199cf17dab5f0ec4dd7f2a4d576d7d1ad155a1fa40311ba",
+  "parts": [
+    {
+      "path": "objects-000.packpart",
+      "bytes": 524288,
+      "sha256": "5a815b91154eaf5a58609776f418e8f494b6e49a241c84a9b718b900894a04ce"
+    },
+    {
+      "path": "objects-001.packpart",
+      "bytes": 524288,
+      "sha256": "8f2e73a41620d5f1eb596a60b6e3c94cb875e7ca495df16f09aaaee94dd1ee08"
+    },
+    {
+      "path": "objects-002.packpart",
+      "bytes": 524288,
+      "sha256": "6a8b7b4bf3ecd3c23fe3cfc3bf68e56cfcec17cf4caeab73689fc3aeeba294fc"
+    },
+    {
+      "path": "objects-003.packpart",
+      "bytes": 524288,
+      "sha256": "85c1113f8dfe3a1ee4088ff434d70fcfcd64a3d601efbef38dd273d98f084340"
+    },
+    {
+      "path": "objects-004.packpart",
+      "bytes": 524288,
+      "sha256": "5fa940b22f763a57279a436fe425b110c735cf06dd33b77a59598ba89f59baad"
+    },
+    {
+      "path": "objects-005.packpart",
+      "bytes": 524288,
+      "sha256": "ce2affeea7f4fb5aaa3297d9c08b32a1bc53dffc33fb255f5cb2cc4993f871e6"
+    },
+    {
+      "path": "objects-006.packpart",
+      "bytes": 524288,
+      "sha256": "1b5b22a50bb66c9695d97c46aa596cac491ae585c8128f97cfcf435eb82255b6"
+    },
+    {
+      "path": "objects-007.packpart",
+      "bytes": 524288,
+      "sha256": "b0628650af9bd41dbb85d04baf4f7db0f9967e1e1250f759a52c295ade6e5da6"
+    },
+    {
+      "path": "objects-008.packpart",
+      "bytes": 524288,
+      "sha256": "0c0a414396da3b407f776f67244fbf3cd6412b964975875168850fb2a5aaee7a"
+    },
+    {
+      "path": "objects-009.packpart",
+      "bytes": 524288,
+      "sha256": "c9edf887f9cce60f2b3b94235fcdb33c120f787126e7adf3570ff60daba78641"
+    },
+    {
+      "path": "objects-010.packpart",
+      "bytes": 524288,
+      "sha256": "bb1463140771863e89caec78acb289ffdcf34f0b431d95ff8cba88299ab8b9e6"
+    },
+    {
+      "path": "objects-011.packpart",
+      "bytes": 524288,
+      "sha256": "9d2a511873236a15a43235f6cde26c01fc8935950dc3e5fa98ded117e3581a28"
+    },
+    {
+      "path": "objects-012.packpart",
+      "bytes": 524288,
+      "sha256": "1a001ca77fcb1b1c715add0f553b16ca7b35d27f8270c39f70b8ca04f644716e"
+    },
+    {
+      "path": "objects-013.packpart",
+      "bytes": 524288,
+      "sha256": "ec9af2d234c65dc88c090cbf5ad65529745833cbe76ec20f05d16d6eca70a759"
+    },
+    {
+      "path": "objects-014.packpart",
+      "bytes": 524288,
+      "sha256": "906a8cc2a34a90ca320a01aa7b0e768ed43c681f05f21beee5e21d5756c13848"
+    },
+    {
+      "path": "objects-015.packpart",
+      "bytes": 524288,
+      "sha256": "4da66f87769c0040ce9dc022682ed086391dd00ad41559f61ca48cad48dc2c55"
+    },
+    {
+      "path": "objects-016.packpart",
+      "bytes": 524288,
+      "sha256": "1e1d48ebaed8c66ead179b6343c1e45bb43cc6e0f22879ae0e2ac3d9d456cc50"
+    },
+    {
+      "path": "objects-017.packpart",
+      "bytes": 524288,
+      "sha256": "a726cba6ef7938f52e4dd5b1358db7cf0d127b8cccd45a93ab6260ab6363e882"
+    },
+    {
+      "path": "objects-018.packpart",
+      "bytes": 136668,
+      "sha256": "95406d7dc50eba53632b4b897aaa2517f41a5d1594300fb32e841ca9cb89a931"
+    }
+  ],
+  "shallow_boundaries": [
+    "55c94bde412dec7772bedac29b067bcd83aad802",
+    "ad4c433a8d1d69c94b6bdb8b400a964f7de5932a",
+    "bb0cadf3cec3445a64e11513b47b2676f3fdd92d",
+    "be142dbec17881ac09e4b1617606d161a8bf5204",
+    "ee0f51138c52060bd6e240cf0aa3e08c7e22cb43",
+    "f53d6456f270a15248df23243030fc0e4b21cf93",
+    "bed0b262d1141b52dc59eb8befa9b59ab62f155c",
+    "7d376c8d448abd86e7d18460952b3dc5170fdf70",
+    "0f52fe9ed330ae23868bf617f5511f55150993b7",
+    "b54a9b4ea277e95330463a74d2221cbc345edb3c",
+    "568d7ef4803a28a92d0a2f5270f93f89999aefc6"
+  ],
+  "scope": "Exact original Git objects recovered from source checkpoints, including canonical SDK and selected dependency anchors. Shallow boundaries are explicit; unavailable ancestors are not invented. Publication commit identity differs from original source identity."
+}
