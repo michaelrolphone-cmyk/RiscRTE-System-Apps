@@ -11,21 +11,13 @@ static const char *installed_deferred_return;
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
 static bool installed_home_started;
 #endif
-#include "home_provision.inc"
 int portable_installed_prepare_launch(void){
-#ifdef PORTABLE_HOME_PROVISION
- return home_provision_close();
-#else
  int rc=portable_installed_close(&installed_catalog_client,rt);
  if(rc==INSTALLED_APPS_RETAINED)portable_adapter_retain();
  return rc;
-#endif
 }
 void portable_installed_resume_discovery(void){portable_installed_resume(&installed_catalog_client);}
 static void installed_progress(void){
-#ifdef PORTABLE_HOME_PROVISION
- home_provision_progress();
-#else
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
  if(!installed_home_started){
   installed_home_started=true;
@@ -38,6 +30,5 @@ static void installed_progress(void){
                               portable_catalog,portable_catalog_count);
 #endif
  if(rc==INSTALLED_APPS_RETAINED)portable_adapter_retain();
-#endif
 }
 #endif

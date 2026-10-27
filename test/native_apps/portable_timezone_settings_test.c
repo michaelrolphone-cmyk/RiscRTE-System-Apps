@@ -46,11 +46,18 @@ static bool timezone_nav(void *c,risc_input_navigation_frame_v1 *out) {
 }
 static bool timezone_touch(void *c,risc_touch_snapshot_v1 *out) {
   (void)c;memset(out,0,sizeof(*out));out->width=width();out->height=height();
+#ifdef PORTABLE_SETTINGS_NATIVE_GEOMETRY
+  out->width=TEST_SETTINGS_RASTER_WIDTH;out->height=TEST_SETTINGS_RASTER_HEIGHT;
+#endif
   for(unsigned i=0;i<tz_contact_count;++i)if(tz_contacts[i].poll==timezone_step()) {
     out->contact_count=1;out->contacts[0]=(risc_touch_contact_v1){.id=timezone_step()==replace_at?2:1,.x=tz_contacts[i].x,.y=tz_contacts[i].y};
+#ifdef PORTABLE_SETTINGS_NATIVE_GEOMETRY
+    int px=sv_native_x(out->contacts[0].x),py=sv_native_y(out->contacts[0].y);native_point(&px,&py);
+    out->contacts[0].x=(uint16_t)px;out->contacts[0].y=(uint16_t)py;
+#endif
 #if PORTABLE_TOUCH_ROTATION == 180
-    out->contacts[0].x=(uint16_t)(width()-1-out->contacts[0].x);
-    out->contacts[0].y=(uint16_t)(height()-1-out->contacts[0].y);
+    out->contacts[0].x=(uint16_t)(out->width-1-out->contacts[0].x);
+    out->contacts[0].y=(uint16_t)(out->height-1-out->contacts[0].y);
 #endif
     break;
   }
@@ -91,13 +98,18 @@ static unsigned capture_no;
 static void capture(const char *name) {
   const char *dir=getenv("TIMEZONE_SETTINGS_FRAMES");if(!dir)return;
   char path[512];snprintf(path,sizeof(path),"%s/%u-%s-%u.%s",dir,mode,name,capture_no++,pp_enabled()?"pbm":"ppm");
+#ifdef PORTABLE_SETTINGS_NATIVE_GEOMETRY
+  /* Native466 frames are larger: retain the completed terminal scene per
+   * scenario rather than hundreds of intermediate navigation frames. */
+  snprintf(path,sizeof(path),"%s/%u-%s-final.ppm",dir,mode,name);
+#endif
   FILE *f=fopen(path,"wb");assert(f);
 #ifdef TEST_PAPER_SETTINGS
   fprintf(f,"P4\n%u %u\n",info.width,info.height);
   assert(fwrite(framebuffer,1,(size_t)info.width*info.height/8,f)==(size_t)info.width*info.height/8);
 #else
-  fprintf(f,"P6\n240 240\n255\n");
-  for(unsigned i=0;i<240*240;++i){unsigned v=framebuffer[i];uint8_t rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,f)==3);}
+  fprintf(f,"P6\n%d %d\n255\n",TEST_SETTINGS_RASTER_WIDTH,TEST_SETTINGS_RASTER_HEIGHT);
+  for(unsigned i=0;i<TEST_SETTINGS_RASTER_WIDTH*TEST_SETTINGS_RASTER_HEIGHT;++i){unsigned v=framebuffer[i];uint8_t rgb[]={(v>>11)*255/31,((v>>5)&63)*255/63,(v&31)*255/31};assert(fwrite(rgb,1,3,f)==3);}
 #endif
   assert(!fclose(f));
 }
@@ -130,11 +142,11 @@ static void nav(unsigned button) {assert(next_at<2048);nav_script[next_at]=butto
 static void contact_at(unsigned at,int x,int y) {assert(tz_contact_count<1024);tz_contacts[tz_contact_count++]=(contact){at,(uint16_t)x,(uint16_t)y};}
 static void touch_at(int x,int y) {contact_at(next_at,x,y);next_at+=4;}
 static int row_y(unsigned row) {return stz_top()+(int)(row%stz_rows())*stz_step()+stz_step()/2;}
-static void touch_page(bool forward) {touch_at(forward?stz_width()-stz_margin()-20:stz_margin()+20,pp_enabled()?stz_height()-164:190);}
+static void touch_page(bool forward) {int margin=stz_band_margin(stz_page_y(),stz_page_h());touch_at(forward?stz_width()-margin-20:margin+20,stz_page_y()+stz_page_h()/2);}
 static void touch_footer(unsigned slot,bool cities) {
-  int margin=stz_margin(),columns=cities?3:2,gap=pp_enabled()?12:6;
+  int margin=stz_band_margin(stz_foot_y(),stz_foot_h()),columns=cities?3:2,gap=pp_enabled()?12:6;
   int fw=(stz_width()-2*margin-(columns-1)*gap)/columns;
-  touch_at(margin+(int)slot*(fw+gap)+fw/2,pp_enabled()?stz_height()-68:224);
+  touch_at(margin+(int)slot*(fw+gap)+fw/2,stz_foot_y()+stz_foot_h()/2);
 }
 static unsigned city_number(unsigned index) {
   unsigned region=portable_timezone_get(index)->region;

@@ -7,7 +7,7 @@ void portable_adapter_retain(void);
 #include <stdbool.h>
 bool portable_adapter_retained(void);
 #endif
-#ifdef PORTABLE_ALARM_TERMINAL_RETENTION
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
 #include <stdbool.h>
 /* Terminal service results permit no stage diagnostic before the fence. */
 void portable_adapter_retain_silent(void);

@@ -454,11 +454,7 @@ static void nc_header(int y){
     fill(16*s,y+hh-(nc_paper()?2*s:s),(int)width-32*s,nc_paper()?2*s:s,line);
 }
 static void nc_modal(void){
-    int s=nc_scale(),w=((document.flags&3u)==RISC_COMPONENTS_ALERT?206:196)*s,h=140*s;
-    /* Narrow admitted displays must retain both the action pills and the
-     * dialog frame; canonical Watch/paper dimensions are unchanged. */
-    if(w>(int)width-16*s)w=(int)width-16*s;
-    int x=((int)width-w)/2,y=((int)height-h)/2;
+    int s=nc_scale(),w=((document.flags&3u)==RISC_COMPONENTS_ALERT?206:196)*s,h=140*s,x=((int)width-w)/2,y=((int)height-h)/2;
     uint16_t ink=nc_color(RISC_TONE_ACCENT);unsigned actions=0,body=0;
     for(unsigned i=0;i<document.node_count;i++)if(!(document.nodes[i].flags&RISC_SCENE_HIDDEN)){
         if(document.nodes[i].kind==RISC_SCENE_ACTION)actions++;
@@ -498,19 +494,14 @@ static void component_draw(void){
     if(document.flags&3u){nc_modal();return;}
     const risc_scene_node_v1 *keyboard=current_keyboard();
     if(keyboard){if(nc_paper())paper_keyboard(keyboard);else {
-        /* Match the key grid's display-height proportions. Fixed scaled Y
-         * coordinates overlap its first row on short native color surfaces. */
-        int s=nc_scale(),button_y=10*(int)height/240,button_h=28*(int)height/240;
-        int field_y=42*(int)height/240,field_h=32*(int)height/240;
-        nc_text(54*s,28*(int)height/240,(int)width-70*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
-        nc_box(16*s,button_y,28*s,button_h,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
-        int icon=button_h/2;if(icon>14*s)icon=14*s;
-        nc_icon(RISC_SYMBOL_BACK,16*s+(28*s-icon)/2,button_y+(button_h-icon)/2,icon,nc_color(RISC_TONE_ACCENT));
-        nc_hit(13*s,7*(int)height/240,34*s,34*(int)height/240,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
+        int s=nc_scale();nc_text(54*s,28*s,(int)width-70*s,keyboard->label,0,nc_color(RISC_TONE_ACCENT));
+        nc_box(16*s,10*s,28*s,28*s,14*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        nc_icon(RISC_SYMBOL_BACK,23*s,17*s,14*s,nc_color(RISC_TONE_ACCENT));
+        nc_hit(13*s,7*s,34*s,34*s,HIT_VALUE,keyboard,RISC_SCENE_KEY_CANCEL,true);
         keyboard_key visibility;bool password=keyboard_visibility_bounds(keyboard,&visibility);
         int field_width=password?visibility.x-24*s:(int)width-32*s;
-        nc_box(16*s,field_y,field_width,field_h,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
-        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>field_width-16*s)++tail;nc_text(24*s,field_y+(field_h+10*s)/2,field_width-16*s,tail,2,nc_fg());
+        nc_box(16*s,42*s,field_width,32*s,10*s,s,nc_color(RISC_TONE_ACCENT),nc_bg());
+        const char *tail=keyboard->text;while(*tail&&nc_measure(2,tail)>field_width-16*s)++tail;nc_text(24*s,63*s,field_width-16*s,tail,2,nc_fg());
         if(password){
             bool selected=keyboard->id==path.focus[path.depth-1]&&focus_part==KEYBOARD_VISIBILITY_INDEX;
             nc_box(visibility.x,visibility.y,visibility.w,visibility.h,6*s,selected?2*s:s,nc_color(RISC_TONE_ACCENT),nc_bg());
@@ -589,14 +580,7 @@ static void component_focus(int direction){
     if(document.nodes[target].kind==RISC_COMPONENT_TAB_BAR||document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION){invalidate_view();rebuild_hits();return;}
     int x,y,w,h;nc_layout(target,&x,&y,&w,&h);
     int min=nc_paper()?nc_header_height():0;if(y-model->scroll<min)model->scroll=y-min;
-    /* The fixed Back control is painted after content. Keep keyboard-focused
-     * controls above it, including on narrow displays where it covers the
-     * center of the entire action row. */
-    int footer=tm_footer();
-    if(nc_back_button()&&!tm_tabbed()){
-        int back=(nc_paper()?38:40)*nc_scale();if(footer<back)footer=back;
-    }
-    if(y+h-model->scroll>(int)height-footer)model->scroll=y+h-(int)height+footer;
+    if(y+h-model->scroll>(int)height-tm_footer())model->scroll=y+h-(int)height+tm_footer();
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){

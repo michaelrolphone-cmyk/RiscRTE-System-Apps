@@ -14,9 +14,13 @@ from pathlib import Path
 import portable_broadcast_build
 import portable_quick_build
 import portable_idle_build
+import portable_foreground_idle_build
 import portable_alarm_build
 import portable_performance_build
+import portable_native_performance_build
+import portable_raster_memory_build
 import portable_paper_build
+import settings_sleep_defaults
 import shutil
 import subprocess
 
@@ -60,20 +64,39 @@ def stage_native_time_sdk(out, sdk):
         (includes/name).write_bytes(sdk[name])
     return includes
 
+def replay_geometry_selection(args, parser):
+    """Independent explicit renderer switches; no deployment/default change."""
+    alpha=bool(getattr(args,'settings_alpha_geometry',False))
+    prepared=bool(getattr(args,'settings_prepared_text',False))
+    if (alpha or prepared) and (getattr(args,'settings_profile','default')!='native-time-touch' or
+            not getattr(args,'native_settings_ui',False) or
+            not getattr(args,'sliced_native_frames',False) or getattr(args,'paper_transitions',False)):
+        parser.error('--settings-alpha-geometry/--settings-prepared-text require native-time-touch, --native-settings-ui and --sliced-native-frames without paper transitions')
+    definitions=[]
+    if alpha: definitions.append('-DPORTABLE_SETTINGS_ALPHA_GEOMETRY')
+    if prepared: definitions.append('-DPORTABLE_SETTINGS_PREPARED_TEXT')
+    record=None
+    if alpha or prepared:
+        record={'alpha_geometry':alpha,'prepared_text':prepared,
+                'transparent_row_scope':'callback-free replay only; excludes PORTABLE_FILE_SETUP' if alpha else None,
+                'pixel_budget_and_512_checkpoints_preserved':True,
+                'completed_frame_hit_maps_unchanged':True,'physical_acceptance':False}
+    return definitions,record
+
 def build(args,parser=None):
     parser=parser or argparse.ArgumentParser(description=__doc__)
+    portable_foreground_idle_build.validate(args,parser)
     portable_performance_build.validate(args,parser)
     out = args.output_dir or ROOT/'dist/portable'
     profile=getattr(args,'settings_profile','default')
-    native_time=profile=='x4-native-time'
-    native_ui=getattr(args,'native_ui',False)
-    clock_change_control=getattr(args,'clock_change_control',False)
-    if native_ui and profile!='default':
-        parser.error('--native-ui requires --settings-profile default; X4 paper profiles use their own presentation')
-    if clock_change_control and not args.alarm_client:
-        parser.error('--clock-change-control requires --alarm-client')
-    if clock_change_control and native_time:
-        parser.error('--clock-change-control requires the raw RTC Settings controller, not x4-native-time')
+    portable_native_performance_build.validate(args,parser,profile)
+    sleep_default_flags=settings_sleep_defaults.configure(args,parser)
+    native_only=profile=='native-time-touch'
+    native_time=profile in ('x4-native-time','native-time-touch')
+    sliced=getattr(args,'sliced_native_frames',False)
+    if sliced and (not native_only or not getattr(args,'native_settings_ui',False) or args.paper_transitions):
+        parser.error('--sliced-native-frames requires native-time-touch native Settings geometry without paper transitions')
+    geometry_flags,geometry_record=replay_geometry_selection(args,parser)
     atomic=getattr(args,'experimental_atomic_settings',False)
     availability=getattr(args,'experimental_settings_availability',False)
     if availability and not atomic:
@@ -102,22 +125,25 @@ def build(args,parser=None):
     if getattr(args,'tagged_alarm_utilities',None) and not native_time:
         parser.error('Tagged alarm Settings requires --settings-profile x4-native-time')
     if native_time:
-        if args.display_rotation!=90 or args.nova_ui:
+        if not native_only and (args.display_rotation!=90 or args.nova_ui):
             parser.error('x4-native-time requires the portrait paper profile (--display-rotation 90, no --nova-ui)')
         if args.denver or args.wall_time:
             parser.error('x4-native-time cannot use --denver or --wall-time RTC policies')
-        args.navigation=True
+        if not native_only: args.navigation=True
         if portable_performance_build.selected(args):
             performance_source=portable_performance_build.read(args,parser)
             sdk=portable_performance_build.app_sdk(performance_source)
             runtime_commit=portable_performance_build.RUNTIME_COMMIT
+        elif portable_foreground_idle_build.selected(args):
+            sdk=portable_foreground_idle_build.runtime_app_sdk(args,parser,NATIVE_TIME_SDK_HEADERS)
+            runtime_commit=portable_foreground_idle_build.RUNTIME_COMMIT
         else:
             sdk=native_time_sdk(args,parser)
         missing=[p for p in (*NATIVE_TIME_SOURCES,*NATIVE_TIME_CONTROLLER) if not (ROOT/p).is_file()]
         if missing: parser.error('Missing native-time Settings implementation: '+', '.join(missing))
     elif getattr(args,'native_time_runtime_repo',None):
         parser.error('--native-time-runtime-repo requires --settings-profile x4-native-time')
-    flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation)]
+    flags=['-DPORTABLE_SETTINGS_APP','-DPORTABLE_DISPLAY_ROTATION='+str(args.display_rotation),*sleep_default_flags,*geometry_flags]
     if atomic: flags.append('-DPORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL')
     if availability: flags.append('-DPORTABLE_SETTINGS_AVAILABILITY')
     if args.return_app:
@@ -128,14 +154,19 @@ def build(args,parser=None):
     if native_time and args.resident_shell_client:
         flags.append('-DPORTABLE_DESK_POINTS_FACE')
     if desk_clock: flags.append('-DPORTABLE_SETTINGS_X4_DESK_CLOCK')
+    if native_only: flags.append('-DPORTABLE_SETTINGS_NATIVE_ONLY')
+    if getattr(args,'safe_viewport',False): flags.append('-DPORTABLE_SAFE_VIEWPORT')
     if native_time:
         flags+=['-DPORTABLE_SETTINGS_NATIVE_TIME','-DPORTABLE_SETTINGS_TIME_ZONE',
                 '-DPORTABLE_NATIVE_CUSTODY_FENCE']
     if args.alarm_settings: flags.append('-DPORTABLE_ALARM_SETTINGS')
-    if args.nova_ui or native_ui: flags.append('-DPORTABLE_NOVA_UI')
-    if native_ui: flags+=['-DPORTABLE_SETTINGS_NATIVE_UI','-DPORTABLE_NATIVE_CANVAS']
+    if args.nova_ui: flags.append('-DPORTABLE_NOVA_UI')
+    if getattr(args,'native_settings_ui',False): flags.append('-DPORTABLE_SETTINGS_NATIVE_GEOMETRY')
+    if getattr(args,'round_settings_ui',False):
+        if not getattr(args,'native_settings_ui',False): raise ValueError('round Settings requires native Settings UI')
+        flags.append('-DPORTABLE_SETTINGS_ROUND_GEOMETRY')
+    if sliced:flags += ['-DPORTABLE_SETTINGS_SLICED_FRAMES','-DPORTABLE_RASTER_WORK_BUDGET_MS=8','-DPORTABLE_FRAME_RECEIPTS','-DPORTABLE_RASTER_SNAPSHOT','-DPORTABLE_INPUT_SAMPLE_INTERVAL_MS=2u','-DPORTABLE_RASTER_COOPERATIVE_INPUT']
     if args.alarm_client: flags.append('-DPORTABLE_ALARM_CLIENT')
-    if clock_change_control: flags.append('-DPORTABLE_SETTINGS_CLOCK_CHANGE_CONTROL')
     if args.denver and args.wall_time:parser.error('Choose one explicit RTC policy')
     if args.denver: flags.append('-DPORTABLE_RTC_UTC8_DENVER')
     if args.wall_time:flags.append('-DPORTABLE_RTC_WALL_TIME')
@@ -143,10 +174,9 @@ def build(args,parser=None):
     if args.full_frames: flags.append('-DPORTABLE_FORCE_FULL_FRAMES')
     if args.navigation: flags.append('-DPORTABLE_INPUT_NAVIGATION')
     flags.append('-DPORTABLE_TOUCH_ROTATION='+str(args.touch_rotation))
-    version_path=('lib/PortableApps/profiles/native-settings.json' if native_ui else
-                  'lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
+    version_path=('lib/PortableApps/profiles/x4-native-time-settings.json' if native_time else
                   'lib/PortableApps/profiles/x4-desk-clock-settings.json' if desk_clock else 'Apps/settings.json')
-    version=json.loads((ROOT/version_path).read_text())['version']
+    version='1.4.0' if native_only else json.loads((ROOT/version_path).read_text())['version']
     if getattr(args,'tagged_alarm_utilities',None):version='1.3.9'
     if performance_source:version=portable_performance_build.version('settings',args)
     if native_time and args.paper_transitions:version=portable_paper_build.CORE_MOTION_VERSIONS['settings']
@@ -163,7 +193,10 @@ def build(args,parser=None):
         flags.append('-DPORTABLE_SETTINGS_LIST_SCROLL')
         version='1.3.18'
     version=portable_quick_build.version(args,'settings',version)
-    if native_ui: version=json.loads((ROOT/version_path).read_text())['version']
+    if getattr(args,'sleep_timer_settings',False):version='1.4.1'
+    if getattr(args,'native_settings_ui',False):version='1.4.2'
+    if sliced:version='1.4.3'
+    if getattr(args,'round_settings_ui',False):version='1.4.4'
     flags.append('-DPORTABLE_SETTINGS_VERSION=\"'+version+'\"')
     cc = resolve_compiler()
     out.mkdir(parents=True, exist_ok=True)
@@ -175,7 +208,16 @@ def build(args,parser=None):
         includes=stage_native_time_sdk(out,sdk) if native_time else ROOT/'lib/PortableApps/include'
     tagged_alarm=portable_alarm_build.stage(args,parser,out,includes)
     if tagged_alarm:flags.append('-DALARM_SERVICE_TAGGED_V2')
+    if getattr(args,'clock_edit_authority',False):
+        if not native_only: parser.error('Clock edit authority requires native-only Settings')
+        flags += ['-DALARM_SERVICE_CLOCK_EDIT_V2','-DPORTABLE_SETTINGS_CLOCK_EDIT_V2']
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
+    includes,idle_flags,idle_sources=portable_foreground_idle_build.configure(args,parser,ROOT,out,includes)
+    flags+=idle_flags
+    flags += portable_raster_memory_build.configure(args,parser,flags)
+    quick_sources+=idle_sources
+    native_perf_flags,native_perf_receipt=portable_native_performance_build.configure(args,parser,includes)
+    flags+=native_perf_flags
     exports=portable_quick_build.exports(args,{'app_main', 'app_module_init', 'app_module_fini'})
     mapping = out/'settings.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -185,11 +227,12 @@ def build(args,parser=None):
     entry = 'Apps/settings_native_entry.c' if native_time else 'Apps/settings.c'
     sources = [ROOT/entry, ROOT/'lib/PortableApps/src/adapter.c', catalog]+quick_sources
     if native_time: sources += [ROOT/p for p in NATIVE_TIME_SOURCES]
-    subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
+    compile_command=[cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror',
         *flags, '-I'+str(includes),
-        '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
+        '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)]
+    subprocess.run(compile_command, check=True, timeout=120)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -214,18 +257,22 @@ def build(args,parser=None):
     manifest['requires'].append({'capability':'storage.key-value','api':1})
     if atomic: manifest['requires'].append({'capability':'storage.key-value.atomic','api':1})
     if availability: manifest['requires'].append({'capability':'storage.key-value.availability','api':1})
-    if native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
+    if native_only:
+        manifest['requires']=[d for d in manifest['requires'] if d['capability']!='rtc.clock']
+        manifest['requires'].append({'capability':'runtime.realtime-control','api':1})
+    elif native_time: manifest['requires'] += [{'capability':'runtime.realtime-control','api':1},
                                               {'capability':'board.battery','api':1}]
     if args.navigation: manifest['requires'].append({'capability':'input.navigation','api':1})
     portable_quick_build.requirements(args,manifest['requires'])
     portable_broadcast_build.requirements(args,manifest['requires'])
+    portable_foreground_idle_build.requirements(args,manifest['requires'])
     (out/'settings.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/settings.c','Apps/settings.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/settings.inc','lib/PortableApps/include/PortableRtcClock.h',
             'lib/PortableApps/RTC_PROVENANCE.json','lib/PortableApps/SOURCES.json']
     inputs += ['lib/PortableApps/include/'+name for name in json.loads((ROOT/'lib/PortableApps/SOURCES.json').read_text())]
     inputs += [str(p.relative_to(ROOT)) for root in ['lib/PortableApps/time','lib/PortableApps/settings_fonts'] for p in sorted((ROOT/root).rglob('*')) if p.is_file()]
-    inputs += ['lib/PortableApps/src/settings_view.inc','lib/PortableApps/include/PortableTime.h']
+    inputs += ['lib/PortableApps/src/settings_view.inc','lib/PortableApps/include/PortableTime.h','lib/PortableApps/include/PortableRgb565Blend.h']
     inputs += ['lib/PortableApps/include/PortableApps.h','lib/PortableApps/include/PortableTouch.h',
                'lib/NativeApps/include/T5AppApi.h','lib/NativeApps/include/T5UiApi.h',
                'lib/NativeApps/include/T5StorageApi.h','lib/NativeApps/include/T5VideoApi.h']
@@ -235,7 +282,7 @@ def build(args,parser=None):
     if (ROOT/'Apps/SpringboardPresentation.h').exists(): inputs.append('Apps/SpringboardPresentation.h')
     inputs += ['Apps/PaperPresentation.h','Apps/PaperFrame.h']
     if tagged_alarm:inputs.append('scripts/portable_alarm_build.py')
-    inputs += ['scripts/build_portable_settings.py',version_path]
+    inputs += ['scripts/build_portable_settings.py','scripts/settings_sleep_defaults.py',version_path]
     if performance: inputs.append('scripts/portable_performance_build.py')
     if args.paper_transitions: inputs.append('scripts/portable_paper_build.py')
     if native_time: inputs += ['LICENSE','Apps/settings_native_entry.c']
@@ -244,7 +291,7 @@ def build(args,parser=None):
         source=ROOT/'lib/PortableApps'/group
         if source.exists():
             destination=out/'licenses'/group;destination.mkdir(parents=True,exist_ok=True)
-            for notice in [*source.glob('LICENSE-*.txt'),*source.glob('SOURCES.json')]:
+            for notice in [*source.glob('LICENSE-*.txt'),*source.glob('*SOURCES.json')]:
                 shutil.copyfile(notice,destination/notice.name)
     destination=out/'licenses'/'portable-settings';destination.mkdir(parents=True,exist_ok=True)
     shutil.copyfile(ROOT/'LICENSE',destination/'System-Apps-LICENSE.txt')
@@ -258,25 +305,31 @@ def build(args,parser=None):
             'source_sha256':{'LICENSE' if name=='LICENSE' else 'sdk/app/'+name:
                 hashlib.sha256(data).hexdigest() for name,data in sdk.items()}}
         (destination/'native-time-SDK-SOURCES.json').write_text(json.dumps(provenance,indent=2)+'\n')
-    record={'purpose':'portable-development-artifact-not-deployment','version':version,
+    inputs.append('scripts/portable_raster_memory_build.py')
+    record={'raster_memory':portable_raster_memory_build.record(args),'sliced_native_frames':sliced,'raster_work_budget_ms':8 if sliced else 2,'completed_frame_hit_maps':sliced,'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
         'compiler':subprocess.check_output([cc,'--version'],text=True).splitlines()[0],
         'sha256':hashlib.sha256(data).hexdigest(),'size_bytes':len(data),
         'imports':sorted(imports),'exports':sorted(exports),
-        'settings_profile':'native-settings' if native_ui else profile,'native_ui':native_ui,'clock_change_control':clock_change_control,
-        'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
-        'sleep_fallback':'light' if desk_clock else 'hybrid','desk_clock_faces':['Segments','Sans','Serif','Minimal','Railway','Deco'] if desk_clock else [],
+        'settings_profile':profile,'sleep_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],
+        'sleep_fallback':'light' if desk_clock else (getattr(args,'default_sleep_mode',None) or 'hybrid'),'desk_clock_faces':['Segments','Sans','Serif','Minimal','Railway','Deco'] if desk_clock else [],
         'preferences':{'instance':1,'sleep_key':'sleep_mode','face_key':'desk_clock_face' if desk_clock else None},
         'build_defines':flags,'time_policy':'rtc-utc8-to-America-Denver' if args.denver else 'identity-raw',
         'home_app':args.home_app,'quick_actions':args.quick_actions,'quick_radios':args.quick_radios,'return_app':args.return_app,'display_rotation':args.display_rotation,'full_frames':args.full_frames,'navigation':args.navigation,'touch_rotation':args.touch_rotation,
         'source_sha256':{p:hashlib.sha256((ROOT/p).read_bytes()).hexdigest() for p in inputs}}
-    if native_ui:
-        record['native_ui_contract']={'default_selected':False,'geometry':'capability-sized-native-pixels',
-            'version_profile':version_path,'version_identity':'standalone-development-only','hardware_verified':False}
+    if sleep_default_flags:
+        record['sleep_defaults']=settings_sleep_defaults.record(args)
+        if getattr(args,'idle_timer_settings',False) or getattr(args,'sleep_timer_settings',False):record['preferences']['idle_timer_key']='sleep_idle'
+        if getattr(args,'sleep_timer_settings',False):record['preferences']['deep_timer_key']='sleep_deep'
+    if geometry_record:record['settings_replay_geometry']=geometry_record
     if tagged_alarm:record['tagged_alarm_sdk']=tagged_alarm
     if performance:record['performance_trace']=performance
     if args.paper_transitions:record['paper_motion']=portable_paper_build.motion_receipt(ROOT)
+    if getattr(args,'native_settings_ui',False):record['native_settings_geometry']={'capability_safe_square':True,'native_font_rasters':True,'adaptive_color_scope':'RGB565 safe-content minimum side >= 300px; otherwise unchanged compact or paper layout','adaptive_color_min_content_side_px':300,'adaptive_color_button_min_height_px':44,'compact_fallback':'unchanged 240px reference geometry; no 44px minimum claimed','compact_240_unchanged':True,'physical_acceptance':False}
+    if getattr(args,'round_settings_ui',False):record['round_settings_geometry']={'requires_display_info_flag':'RISC_DISPLAY_INFO_ROUND','flag_value':64,'uses_physical_chords':True,'legacy_safe_insets_preserved':True,'physical_acceptance':False}
+    if getattr(args,'round_settings_ui',False):
+        record['native_settings_geometry'].update(capability_safe_square=False,compact_240_unchanged=False,non_round_compact_240_unchanged=True,adaptive_color_scope='Advertised RGB565 circle uses physical chord layout; non-round devices retain capability-safe rectangular layout')
     if scrolling:record['touch_scrolling']={'version':1,'lists':['timezone-regions','timezone-cities'],'momentum':True,'bounded_viewport':True,'coalesced_frames':True}
     if list_scrolling:
         record['touch_scrolling']['version']=2
@@ -295,7 +348,7 @@ def build(args,parser=None):
                 'bluetooth.hci':16,'storage.key-value.atomic':1,'storage.key-value.availability':1}.get(requirement['capability'],0)) for requirement in manifest['requires']],
             mode_capabilities={'foreground_settings':True,'native_realtime_read':True,
                 'explicit_checked_set_time':True,'timezone_preference_only':True,
-                'sleep_preference_modes':['light','deep'],'sleep_backend':False,
+                'sleep_preference_modes':(['light','deep'] if desk_clock else ['light','deep','hybrid']) if args.sleep_settings or desk_clock else [],'sleep_backend':False,
                 'alarm_overlay':bool(args.alarm_client),'quick_actions':bool(args.quick_actions),
                 'quick_radios':bool(args.quick_radios)})
         record['preferences'].update(time_zone_key='time_zone',rtc_basis_key='rtc_basis',
@@ -335,6 +388,8 @@ def build(args,parser=None):
             'draft_policy':'explicit save or discard; no automatic merge',
             'sdk_sha256':hashlib.sha256((includes/'RiscKeyValueAvailabilityV1.h').read_bytes()).hexdigest()}
         record.setdefault('grant_bindings',{})['storage.key-value.availability']=[1]
+    portable_foreground_idle_build.record(args,record,flags,compile_command=compile_command)
+    portable_native_performance_build.record(ROOT,native_perf_receipt,record)
     (out/'settings-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     portable_broadcast_build.write_settings_admission(args,ROOT,out,includes,manifest,record)
     print('Portable Settings: target layout, ELF validator, import/export checks passed')
@@ -343,16 +398,21 @@ def argument_parser():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--experimental-settings-availability',action='store_true',help='Default-off unavailable-state UI; requires explicit X4 atomic Settings')
     parser.add_argument('--experimental-atomic-settings',action='store_true',help='Default-off X4 Settings explicit namespace-1 atomic preference intents; no production activation')
-    parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
+    parser.add_argument('--settings-profile',choices=['default','x4-desk-clock','x4-native-time','native-time-touch'],default='default',help='Opt-in paper Settings profiles; do not qualify a sleep backend')
+    parser.add_argument('--safe-viewport',action='store_true',help='Use display capability safe insets for content and hit testing; preserve physical framebuffer')
     parser.add_argument('--native-time-runtime-repo',type=Path,help='Local Runtime Git checkout containing canonical '+NATIVE_TIME_RUNTIME_COMMIT+' SDK; x4-native-time only')
     parser.add_argument('--display-rotation',type=int,choices=[0,90],default=None,help='Default: 90 for x4-native-time, otherwise 0')
     parser.add_argument('--touch-scrolling',action='store_true',help='Select Settings 1.3.13 touch/momentum timezone lists; requires native paper motion')
     parser.add_argument('--settings-list-scrolling',action='store_true',help='Select Settings 1.3.18 smooth root and Time/Date lists; requires --touch-scrolling')
     parser.add_argument('--home-desk-lock',action='store_true',help='Select Settings 1.3.14 with readonly Top-right key / Desk clock row; requires native paper motion and touch scrolling')
+    parser.add_argument('--settings-alpha-geometry',action='store_true',help='Explicit transparent Settings geometry elimination; requires native sliced frames, preserves pixel/checkpoint budgets')
+    parser.add_argument('--settings-prepared-text',action='store_true',help='Independent explicit immutable-command text fitting reuse; requires native sliced frames')
+    portable_raster_memory_build.add_arguments(parser)
+    parser.add_argument('--sliced-native-frames',action='store_true',help='Explicit immutable native Settings replay with completed-frame hit maps')
+    parser.add_argument('--round-settings-ui',action='store_true',help='Use advertised circular panel chords for native Settings layout')
+    parser.add_argument('--native-settings-ui',action='store_true',help='Capability-safe native-size color Settings geometry and retained-family fonts')
     parser.add_argument('--nova-ui',action='store_true',help='Settings-derived 240x240 Nova utility profile')
-    parser.add_argument('--native-ui',action='store_true',help='Default-off capability-sized Settings 1.4.1 development profile with shared native canvas and Nova; default profile only')
     parser.add_argument('--alarm-client',action='store_true',help='Explicit alarm.service foreground overlay consumer')
-    parser.add_argument('--clock-change-control',action='store_true',help='Explicit tagged alarm clock-change boundary after verified raw RTC Save; requires --alarm-client, excludes x4-native-time')
     parser.add_argument('--alarm-settings',action='store_true',help='Explicit namespace-1 alert mode choice')
     parser.add_argument('--sleep-settings',action='store_true',help='Enable explicit namespace-1 sleep choice; requires storage.key-value@1 grant')
     parser.add_argument('--denver',action='store_true',help='Explicit deployment policy: RTC fixed UTC+08, display America/Denver')
@@ -363,10 +423,13 @@ def argument_parser():
     parser.add_argument('--output-dir',type=Path)
     parser.add_argument('--wall-time',action='store_true',help='Explicit unchanged RTC wall-time policy')
     parser.add_argument('--unpadded-hours',action='store_true',help='Select saved 12/24-hour text with unpadded hours')
+    settings_sleep_defaults.options(parser)
     portable_broadcast_build.options(parser)
     portable_quick_build.options(parser)
+    portable_foreground_idle_build.options(parser)
     portable_alarm_build.options(parser)
     portable_performance_build.options(parser)
+    portable_native_performance_build.options(parser)
     return parser
 
 

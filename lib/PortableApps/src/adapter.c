@@ -1,15 +1,43 @@
+#ifdef PORTABLE_QUICK_NATIVE_GEOMETRY
+#if !defined(PORTABLE_QUICK_ACTIONS) || !defined(PORTABLE_WATCH_NATIVE_HEIGHT) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || (defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_QUICK_SLICED_NATIVE))
+#error "native Quick geometry requires qualified direct or explicitly selected sliced frames"
+#endif
+#endif
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+#if !defined(PORTABLE_QUICK_NATIVE_GEOMETRY) || !defined(PORTABLE_QUICK_PENDING_FRAME) || !defined(PORTABLE_FRAME_RECEIPTS) || !defined(PORTABLE_QUICK_ATOMIC_PREFERENCES)
+#error "Sliced native Quick requires native pending-frame copied preferences and frame receipts"
+#endif
+#endif
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+#if !defined(PORTABLE_PERFORMANCE_TRACE) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Springboard gesture diagnostics require explicit native trace/custody selection"
+#endif
+#include "PortableSpringboardGestureTrace.h"
+#endif
+#include "PortableLastAttempt.h"
+#ifdef PORTABLE_SAFE_VIEWPORT
+#if (defined(PORTABLE_NOVA_UI) || defined(PORTABLE_WATCH_NATIVE_HEIGHT)) && !defined(PORTABLE_WATCH_SAFE_INSETS)
+#error Safe viewport requires the non-scaled content renderer; native-height/Nova profiles retain their existing geometry
+#endif
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+#if !defined(PORTABLE_WATCH_NATIVE_HEIGHT) || !defined(PORTABLE_WATCH_COLOR_ONLY)
+#error Watch safe insets require an explicit native-height color renderer
+#endif
+#endif
+#include "PortableSafeViewport.h"
+static portable_safe_viewport content_view;
+static bool safe_contact_blocked;
+#endif
 #include "RiscRuntimeHostControlV1.h"
-#if defined(PORTABLE_ALARM_NATIVE) && (!defined(PORTABLE_ALARM_CLIENT) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS))
-#error "Native alarm requires explicitly selected alarm client, Nova UI and native canvas"
+#include "RiscRuntimeClockV1.h"
+#ifdef PORTABLE_FOREGROUND_IDLE
+#include "PortableForegroundIdle.h"
+#if !defined(PORTABLE_APP_SLEEP_LOCAL) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
+#error "Foreground idle requires local returning sleep and native custody"
 #endif
-#if defined(PORTABLE_ALARM_NATIVE) && defined(PORTABLE_DESK_CLOCK_SPARSE_START)
-#error "Native alarm requires generic foreground initialization"
+#if defined(PORTABLE_X4_IDLE_POLICY) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_DESK_CLOCK)
+#error "Foreground idle is a separate ordinary-app returning policy"
 #endif
-#if defined(PORTABLE_QUICK_NATIVE) && !defined(PORTABLE_QUICK_ACTIONS)
-#error "Native Quick requires explicitly selected Quick Actions"
-#endif
-#if defined(PORTABLE_QUICK_NATIVE) && defined(PORTABLE_DESK_CLOCK_SPARSE_START)
-#error "Native Quick requires generic foreground initialization"
 #endif
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
 #if !defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
@@ -30,7 +58,7 @@
 #if defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
 #define PORTABLE_NATIVE_CUSTODY_FENCE
 #endif
-#if defined(PORTABLE_SETTINGS_NATIVE_TIME) && (!defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_SETTINGS_TIME_ZONE) || !defined(PORTABLE_SETTINGS_X4_DESK_CLOCK) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE))
+#if defined(PORTABLE_SETTINGS_NATIVE_TIME) && (!defined(PORTABLE_SETTINGS_APP) || !defined(PORTABLE_SETTINGS_TIME_ZONE) || (!defined(PORTABLE_SETTINGS_X4_DESK_CLOCK) && !defined(PORTABLE_SETTINGS_NATIVE_ONLY)) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE))
 #error "Native time Settings requires explicit Settings, timezone, X4 paper and native custody profiles"
 #endif
 #if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_SETTINGS_APP) && !defined(PORTABLE_SETTINGS_NATIVE_TIME)
@@ -106,11 +134,8 @@ static void quick_atomic_discard(void);
 #endif
 /* Client-side adapter for existing shared apps; no board/chip/pin knowledge. */
 #include "PortableApps.h"
-#include "PortableDisplayGeometry.h"
 #ifdef PORTABLE_SETTINGS_ATOMIC_EXPERIMENTAL
-#if !defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_RESIDENT_SHELL_HOST) || defined(PORTABLE_RESIDENT_SHELL_CLIENT) || defined(PORTABLE_SETTINGS_AVAILABILITY)
 static bool settings_atomic_owned(void);
-#endif
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
 static bool settings_availability_editing(void);
 static bool settings_availability_filter(t5_app_input_t *);
@@ -162,6 +187,9 @@ static void paper_orient_input(portable_touch_sample *sample);
 #endif
 #include "RiscBatteryGaugeV1.h"
 #include "RiscDisplayOutputV1.h"
+#ifdef PORTABLE_SETTINGS_ROUND_GEOMETRY
+#include "PortableRoundViewport.h"
+#endif
 #if defined(PORTABLE_PERFORMANCE_DISPLAY_METRICS) || defined(PORTABLE_STAGE_DISPLAY_METRICS)
 #include "RiscDisplayOutputMetricsV1.h"
 #endif
@@ -330,11 +358,6 @@ static bool paper_async_frames;
 static risc_display_present_token_v1 paper_token;
 #ifdef PORTABLE_INSTALLED_CATALOG
 #include "PortableInstalledCatalog.h"
-#ifdef PORTABLE_HOME_PROVISION
-static bool home_provision_busy;
-static int home_provision_close(void);
-static bool home_provision_alarm_busy(void);
-#endif
 int portable_installed_prepare_launch(void);
 static bool installed_first_frame_submitted;
 #if defined(PORTABLE_INSTALLED_CATALOG_HOST) && defined(PORTABLE_APP_SLEEP_LOCAL)
@@ -347,19 +370,6 @@ bool portable_paper_frame_ready(void);
 static bool paper_token_progress(void);
 bool portable_paper_frame_drain(void);
 static bool paper_token_clean;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-/* Owner follows the submitted frame, not whichever UI is active at callback.
- * Zero is an overlay/ordinary frame. Snapshot replay preserves this identity. */
-static unsigned native_present_owner,native_token_owner;
-static risc_display_present_token_v1 native_present_token;
-static void portable_native_present(unsigned owner,bool full);
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
-static void sn_presented(void);
-#endif
-#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
-void portable_wifi_native_presented(void);
-#endif
-#endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
 #include "PortableNativeCustody.h"
 #ifndef RISC_RUNTIME_RETAIN_INVOCATION_V1_SIZE
@@ -407,6 +417,9 @@ static bool desk_quick_acquire(const char *,uint32_t,uint64_t,risc_runtime_capab
 static bool desk_acquire(const char *,uint32_t,uint64_t,risc_runtime_capability_v1 *);
 static bool desk_release(risc_runtime_capability_v1 *);
 static bool desk_guard_health(risc_runtime_health_v1 *);
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+static bool desk_guard_monotonic(uint32_t *);
+#endif
 static void desk_guard_yield(uint32_t);
 static bool desk_guard_diagnostic(const char *);
 static bool desk_guard_launch(const char *);
@@ -484,10 +497,10 @@ static bool display_settled,alarm_pixels_valid,alarm_modal,native_sleep_retained
 bool portable_app_sleep_retained(void) { return native_sleep_retained; }
 static uint16_t *alarm_pixels;
 static bool alarm_foreground(bool *consumed);
-#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
+#if defined(PORTABLE_CONTEXTS_CLIENT) || (defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(PORTABLE_FOREGROUND_ALARM_SLEEP)) || (defined(PORTABLE_QUICK_ACTIONS) && !defined(ALARM_SERVICE_TAGGED_V2))
 static const alarm_service_v1 *alarm_sleep_api(void);
 #endif
-#if (defined(PORTABLE_QUICK_ACTIONS) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
+#if ((defined(PORTABLE_QUICK_ACTIONS) && !defined(PORTABLE_WATCH_COLOR_ONLY)) || defined(PORTABLE_CONTEXTS_CLIENT)) && defined(ALARM_SERVICE_TAGGED_V2)
 static uint32_t alarm_output_modes(void);
 #endif
 #if defined(PORTABLE_QUICK_ACTIONS) && (defined(ALARM_SERVICE_TAGGED_V2) || defined(PORTABLE_ALARM_TERMINAL_RETENTION))
@@ -496,6 +509,7 @@ static bool alarm_refresh(void);
 static bool alarm_failure(void);
 #endif
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#include "last_attempt.inc"
 #include "native_custody_adapter.inc"
 #ifdef PORTABLE_CONTEXTS_CLIENT
 #define PORTABLE_CONTEXTS_CUSTODY_SAFE() (!native_custody_retained)
@@ -560,112 +574,42 @@ static uint32_t millis_now(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(failed || desk_phase<DESK_STARTING || desk_phase>=DESK_FAILED)return 0;
 #endif
-#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
-  if(rt->struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && rt->monotonic_ms) {
-    uint32_t now=0;
-    if(!rt->monotonic_ms(&now)){failed=true;return 0;}
-    return now;
-  }
-#endif
-  risc_runtime_health_v1 h = {.struct_size = sizeof(h)};
-  if (!rt->health(&h)) {
-    failed = true;
-    return 0;
-  }
-  return h.uptime_ms;
+  uint32_t now=0;
+  if(!PORTABLE_ATTEMPT_BOOL("runtime.clock",risc_runtime_monotonic_ms_v1(rt,&now))){failed=true;return 0;}
+  return now;
 }
 /* Capture raw reports separately from ordered foreground reduction. */
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+static portable_sb_diag sb_diag;
+static portable_sb_diag_sample sb_diag_pending,sb_diag_delivery;
+static bool sb_diag_owner;
+void portable_springboard_gesture_cancel(void){portable_sb_diag_clear(&sb_diag);sb_diag_pending=(portable_sb_diag_sample){0};sb_diag_delivery=(portable_sb_diag_sample){0};}
+static bool sb_diag_allowed(void){
+ if(!sb_diag_owner||failed||native_custody_retained)return false;
+#ifdef PORTABLE_ALARM_CLIENT
+ if(alarm_modal||native_sleep_retained)return false;
+#endif
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(quick_modal||quick_restore_pending||quick_restoring||pqa_visible(&quick.ui)||pqa_capture(&quick.ui))return false;
+#endif
+ return true;
+}
+static void sb_diag_emit(void*unused,uint32_t value){(void)unused;if(sb_diag_allowed())portable_perf_event(RISC_PERF_COUNTER,value);}
+void portable_springboard_gesture_dispatch(unsigned kind,int x,int y,int dx,int dy){
+ if(!sb_diag_allowed()||x!=sb_diag_delivery.x||y!=sb_diag_delivery.y){portable_springboard_gesture_cancel();return;}
+ portable_sb_diag_step(&sb_diag,&sb_diag_delivery,kind,dx,dy,PORTABLE_TOUCH_ROTATION,sb_diag_emit,NULL);
+}
+#endif
 static portable_touch_sample input_sample;
 static bool input_pending,input_progressed;
 static uint32_t input_sampled_at,input_delivered_at,last_poll_at;
 static void input_reset(void) {
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+ portable_springboard_gesture_cancel();
+#endif
  input_pending=input_progressed=false;input_sample=(portable_touch_sample){0};
  if(!failed)portable_touch_reset(&touch);
 }
-#ifdef PORTABLE_BATTERY_NATIVE_UI
-#include "battery_native_input.inc"
-#endif
-#ifdef PORTABLE_ALARMS_NATIVE_UI
-#include "alarms_native_input.inc"
-#endif
-#ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
-#include "ble_buttons_native_input.inc"
-#endif
-#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
-#include "ble_touchpad_native_input.inc"
-#endif
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
-#include "ble_scanner_native_input.inc"
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
-#include "calculator_native_input.inc"
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-#include "files_native_input.inc"
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-#include "frequency_native_input.inc"
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
-#include "lora_native_input.inc"
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-#include "points_native_input.inc"
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-#include "timecard_native_input.inc"
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-#include "stopwatch_native_input.inc"
-#endif
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-static void portable_native_presented(risc_display_present_token_v1 token) {
- if(token!=native_present_token)return;
- unsigned owner=native_token_owner;native_present_token=0;native_token_owner=0;
-#ifdef PORTABLE_SETTINGS_NATIVE_UI
- if(owner==1)sn_presented();
-#endif
-#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
- if(owner==2)portable_wifi_native_presented();
-#endif
-#ifdef PORTABLE_BATTERY_NATIVE_UI
- if(owner==3)battery_native_presented();
-#endif
-#ifdef PORTABLE_ALARMS_NATIVE_UI
- if(owner==4)alarms_native_presented();
-#endif
-#ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
- if(owner==5)ble_buttons_native_presented();
-#endif
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
- if(owner==6)ble_scanner_native_presented();
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
- if(owner==8)calculator_native_presented();
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
- if(owner==9)files_native_presented();
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
- if(owner==10)frequency_native_presented();
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
- if(owner==11)lora_native_presented();
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
- if(owner==12)points_native_presented();
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
- if(owner==14)timecard_native_presented();
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
- if(owner==13)stopwatch_native_presented();
-#endif
-#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
- if(owner==7)ble_touchpad_native_presented();
-#endif
-}
-#endif
 #if defined(PORTABLE_RESIDENT_SHELL_CLIENT) && defined(PORTABLE_RESIDENT_POLICY)
 static bool resident_activity_pending=true;
 #endif
@@ -677,27 +621,10 @@ static int resident_checkpoint(uint32_t reason);
 static bool resident_queue_launch(const char *path);
 #endif
 static uint32_t navigation_pending;
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-void portable_frequency_native_back(void) {
- if(frequency_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
-}
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-void portable_points_native_back(void) {
- if(points_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
-}
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-void portable_timecard_native_back(void) {
- if(timecard_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
-}
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-void portable_stopwatch_native_back(void) {
- if(stopwatch_native_enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
-}
-#endif
 static bool home_pending,crown_pending,handoff_requested;
+#ifdef PORTABLE_NATIVE_SCENE
+#include "native_scene.inc"
+#endif
 #if defined(PORTABLE_WIFI_SESSION_APP) && (defined(PORTABLE_RETURN_APP) || defined(PORTABLE_HOME_APP))
 static const char *wifi_deferred_return;
 #endif
@@ -760,21 +687,21 @@ static bool input_navigation_open(void) {
  navigation_ready=true;
  const risc_input_foreground_v1 claims[]={{"input.touch.raw",1}};
  navigation_neutral=false;
- return navigation->foreground(navigation->context,claims,1) && navigation->reset(navigation->context);
+ return PORTABLE_ATTEMPT_BOOL("navigation.foreground",navigation->foreground(navigation->context,claims,1)) && PORTABLE_ATTEMPT_BOOL("navigation.reset",navigation->reset(navigation->context));
 }
 static inline void input_navigation_reset(void) {
  navigation_pending=0;navigation_neutral=false;
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
  if(native_custody_retained)return;
- if(navigation_ready && !navigation->reset(navigation->context))portable_adapter_retain();
+ if(navigation_ready && !PORTABLE_ATTEMPT_BOOL("navigation.reset",navigation->reset(navigation->context)))portable_adapter_retain();
 #else
- if(navigation_ready && !navigation->reset(navigation->context))failed=true;
+ if(navigation_ready && !PORTABLE_ATTEMPT_BOOL("navigation.reset",navigation->reset(navigation->context)))failed=true;
 #endif
 }
 #if !defined(PORTABLE_DESK_CLOCK_SPARSE_START) && !defined(PORTABLE_SETTINGS_NATIVE_TIME) && !defined(PORTABLE_NATIVE_TIME_TOOLBAR) && !defined(PORTABLE_RESIDENT_SHELL_CLIENT) && !defined(PORTABLE_CHECKED_STORAGE_RUNTIME)
 static void input_navigation_close(void) {
  if(navigation_ready) {
-  bool cleared=navigation->foreground(navigation->context,NULL,0),reset=navigation->reset(navigation->context);
+  bool cleared=PORTABLE_ATTEMPT_BOOL("navigation.foreground-clear",navigation->foreground(navigation->context,NULL,0)),reset=PORTABLE_ATTEMPT_BOOL("navigation.reset",navigation->reset(navigation->context));
   if(!cleared||!reset)rt->diagnostic("PORTABLE_APP error=navigation-reset");
   navigation_ready=false;
  }
@@ -806,6 +733,14 @@ static void input_service(void) {
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
  if(failed || desk_phase!=DESK_FOREGROUND || !touch.subscription)return;
 #endif
+#ifdef PORTABLE_INPUT_SAMPLE_INTERVAL_MS
+ /* Capture cadence and ordered reduction are separate. A just-completed raw
+  * sample need not be repeated by the outer poll after a raster checkpoint;
+  * input_dispatch still consumes one queued event on every controller pass. */
+ uint32_t sampled_now=millis_now();
+ if(failed)return;
+ if(input_sampled_at && (uint32_t)(sampled_now-input_sampled_at)<PORTABLE_INPUT_SAMPLE_INTERVAL_MS)return;
+#endif
  portable_perf_count(PORTABLE_PERF_INPUT_READS);
  (void)portable_touch_collect(&touch);
  if(failed)return;
@@ -834,9 +769,9 @@ static void input_dispatch(void) {
   const bool was_neutral=navigation_neutral;
   risc_input_navigation_frame_v1 frame={0};
 #ifdef PORTABLE_NATIVE_CUSTODY_FENCE
-  if(!navigation->poll(navigation->context,&frame)) {portable_adapter_retain();return;}
+  if(!PORTABLE_ATTEMPT_BOOL("navigation.poll",navigation->poll(navigation->context,&frame))) {portable_adapter_retain();return;}
 #else
-  if(!navigation->poll(navigation->context,&frame))navigation_neutral=false;
+  if(!PORTABLE_ATTEMPT_BOOL("navigation.poll",navigation->poll(navigation->context,&frame)))navigation_neutral=false;
 #endif
   else if(!navigation_neutral){if(!frame.buttons)navigation_neutral=true;}
   else {perf_navigation(frame.buttons,frame.pressed);navigation_pending|=frame.pressed;
@@ -863,6 +798,19 @@ static void input_dispatch(void) {
  if(failed)return;
  portable_touch_sample next;
  input_progressed=portable_touch_next(&touch,&next);
+#if defined(PORTABLE_SAFE_VIEWPORT) && !defined(PORTABLE_QUICK_NATIVE_GEOMETRY)
+ if(!paper_rotated && next.valid) {
+  bool contact=next.down||next.began||next.released;
+  bool outside=contact&&!portable_safe_viewport_touch(&content_view,&next.x,&next.y);
+#ifdef PORTABLE_SETTINGS_ROUND_GEOMETRY
+  if(contact&&(info.flags&RISC_DISPLAY_INFO_ROUND)&&!portable_round_contains(info.width,info.height,next.x,next.y,0))outside=true;
+#endif
+  bool blocked=safe_contact_blocked||outside;
+  if(outside)safe_contact_blocked=true;
+  if(next.released||next.cancelled||(!next.down&&!next.began))safe_contact_blocked=false;
+  if(blocked){next=(portable_touch_sample){.valid=true,.cancelled=true};input_reset();}
+ }
+#endif
  /* Hardware timestamps belong to ordered edges. Idle/held level passes use
   * current time so animation/inertia never freeze at the last report. */
  input_delivered_at=input_progressed&&next.timestamp_ms?(uint32_t)next.timestamp_ms:input_sampled_at;
@@ -901,57 +849,34 @@ static void input_dispatch(void) {
   next=(portable_touch_sample){.valid=true,.cancelled=true};input_reset();
  }
 #ifdef PORTABLE_APP_SLEEP_LOCAL
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI)
- /* Physical holds remain activity after a page reset gates their actions. */
- if(touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
- if(ble_scanner_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_LORA_NATIVE_UI)
- if(lora_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_CALCULATOR_NATIVE_UI)
- if(calculator_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_FILES_NATIVE_UI)
- if(files_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_FREQUENCY_NATIVE_UI)
- if(frequency_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_POINTS_NATIVE_UI)
- if(points_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_TIMECARD_NATIVE_UI)
- if(timecard_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_STOPWATCH_NATIVE_UI)
- if(stopwatch_native_enabled&&touch.contact_count)last_activity=input_sampled_at;
-#elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
- if(ble_touchpad_native_enabled()&&touch.contact_count)last_activity=input_sampled_at;
-#endif
  if(next.valid && (next.down || next.began || next.released))last_activity=input_sampled_at;
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
- lora_native_observe(&next);
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
  if(!alarm_modal) {
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-  frequency_native_quick_observe(&next);
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-  points_native_quick_observe(&next);
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-  timecard_native_quick_observe(&next);
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-  stopwatch_native_quick_observe(&next);
-#endif
   int quick_x=next.x,quick_y=next.y;bool quick_native=false;
-#ifdef PORTABLE_QUICK_NATIVE
-  if(!quick.ui.paper)quick_native=true;
-#elif defined(PORTABLE_WATCH_NATIVE_HEIGHT)
+#ifdef PORTABLE_QUICK_NATIVE_GEOMETRY
+  quick_native=quick.ui.native_width!=0;
+#endif
+#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_QUICK_NATIVE_GEOMETRY)
   if(!quick.ui.paper&&info.width&&info.height){quick_x=(uint32_t)next.x*240u/info.width;quick_y=(uint32_t)next.y*240u/info.height;quick_native=true;}
 #endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
+#ifdef PORTABLE_QUICK_PENDING_FRAME
+  /* Copied operations reserve input below, so pqa_input intentionally does
+   * not run. A new contact or broken report still cancels the pre-submit
+   * pending frame; never enqueue it as a later preference edit. */
+  if(quick.ui.save_pending&&(!next.valid||next.cancelled||next.down||next.began||next.released))
+   quick.ui.save_cancelled=true;
+#endif
   if(next.valid&&next.began&&!next.cancelled&&!quick_atomic_running&&!home_automatic_input_busy())++quick_atomic_contact;
+#ifdef PORTABLE_NATIVE_SCENE
+  native_scene_quick_capture(&next);
+#endif
   bool reserved=quick_atomic_running||home_automatic_input_busy()||pqa_input(&quick.ui,
 #else
+#ifdef PORTABLE_NATIVE_SCENE
+  native_scene_quick_capture(&next);
+#endif
   bool reserved=pqa_input(&quick.ui,
 #endif
       input_delivered_at,next.valid&&!next.cancelled,
@@ -965,18 +890,6 @@ static void input_dispatch(void) {
   if(quick.ui.paper && reserved && next.valid && !next.down && !next.cancelled &&
      !pqa_visible(&quick.ui) && !pqa_capture(&quick.ui))reserved=false;
   if(reserved) {
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-   frequency_native_gesture=false;
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-   points_native_gesture=false;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-   timecard_native_gesture=false;
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-   stopwatch_native_gesture=false;
-#endif
 #ifdef PORTABLE_SPRINGBOARD_TOUCH_SCROLL
    portable_springboard_scroll_interrupt();
 #endif
@@ -993,8 +906,29 @@ static void input_dispatch(void) {
   if(reserved)next=(portable_touch_sample){0};
  }
 #endif
+/* Native Quick owns physical top-edge gestures outside app-safe content.
+  * Only its unconsumed sample is then projected into the app viewport. */
+#if defined(PORTABLE_SAFE_VIEWPORT) && defined(PORTABLE_QUICK_NATIVE_GEOMETRY)
+ if(!paper_rotated && next.valid) {
+  bool contact=next.down||next.began||next.released;
+  bool outside=contact&&!portable_safe_viewport_touch(&content_view,&next.x,&next.y);
+#ifdef PORTABLE_SETTINGS_ROUND_GEOMETRY
+  if(contact&&(info.flags&RISC_DISPLAY_INFO_ROUND)&&!portable_round_contains(info.width,info.height,next.x,next.y,0))outside=true;
+#endif
+  bool blocked=safe_contact_blocked||outside;
+  if(outside)safe_contact_blocked=true;
+  if(next.released||next.cancelled||(!next.down&&!next.began))safe_contact_blocked=false;
+  if(blocked){next=(portable_touch_sample){.valid=true,.cancelled=true};input_reset();}
+ }
+#endif
+
 #ifdef PORTABLE_RESIDENT_SHELL_CLIENT
  resident_input(&next);
+#endif
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+ if(sb_diag_allowed()&&next.valid&&!next.cancelled&&!next.home_pressed){
+  sb_diag_pending=(portable_sb_diag_sample){touch.sequence,touch.x,touch.y,next.x,next.y,touch.width,touch.height,next.contact_id,true,next.began,next.released};
+ }else portable_springboard_gesture_cancel();
 #endif
  input_sample=next;input_pending=true;
 #ifdef PORTABLE_APP_SLEEP_LOCAL
@@ -1010,12 +944,42 @@ static void input_navigation_take(t5_app_input_t*out) {
  navigation_pending=0;
 }
 /* Raster work captures raw input without reentrant logical dispatch. */
+#ifdef PORTABLE_FRAME_RECEIPTS
+#include "PortableFrameReceipt.h"
+static uint64_t frame_requested_id,frame_completed_id,frame_replay_id,frame_token_id;
+static risc_display_present_token_v1 frame_receipt_token;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+/* All-image receipts are private to modal barriers; app receipts remain app-only. */
+static uint64_t presentation_requested_id,presentation_completed_id,presentation_replay_id,presentation_token_id;
+#endif
+uint64_t portable_frame_requested_id(void){return failed?0:frame_requested_id;}
+uint64_t portable_frame_completed_id(void){return failed?0:frame_completed_id;}
+static void frame_receipt_complete(risc_display_present_token_v1 token){
+ if(!failed && token && token==frame_receipt_token){
+  if(frame_token_id)frame_completed_id=frame_token_id;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+  if(presentation_token_id)presentation_completed_id=presentation_token_id;
+  presentation_token_id=0;
+#endif
+  frame_receipt_token=0;frame_token_id=0;
+ }
+}
+#endif
 static unsigned raster_pixels;
+#ifdef PORTABLE_RASTER_COOPERATIVE_INPUT
+static bool raster_input_slice;
+#endif
 static bool raster_checkpoint(void) {
 #ifdef PORTABLE_FILE_SETUP
  if(!file_setup_checkpoint())return false;
 #endif
  if(failed)return false;
+#ifdef PORTABLE_RASTER_COOPERATIVE_INPUT
+ /* Known callback-free one-row replay primitives return to the budget loop.
+  * Do not start a synchronous input transfer inside that bounded slice: its
+  * latency is not raster work. The slice exit captures once before returning. */
+ if(raster_input_slice)return !failed;
+#endif
 #ifdef PORTABLE_RESIDENT_LOADING
  if(resident_loading_present)return true;
 #endif
@@ -1064,8 +1028,18 @@ static void handoff_finish(void) {
  free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
 }
 #endif
-static int32_t width(void) { return paper_rotated?info.height:info.width; }
-static int32_t height(void) { return paper_rotated?info.width:info.height; }
+static int32_t width(void) {
+#ifdef PORTABLE_SAFE_VIEWPORT
+  if(!paper_rotated)return content_view.width;
+#endif
+  return paper_rotated?info.height:info.width;
+}
+static int32_t height(void) {
+#ifdef PORTABLE_SAFE_VIEWPORT
+  if(!paper_rotated)return content_view.height;
+#endif
+  return paper_rotated?info.width:info.height;
+}
 #ifdef PORTABLE_PAPER_PREFERENCES
 static void paper_orient_input(portable_touch_sample *sample) {
   if(paper_flip_ui && sample->valid && !sample->cancelled && (sample->down || sample->released)) {
@@ -1077,6 +1051,9 @@ static void paper_orient_input(portable_touch_sample *sample) {
 }
 #endif
 static void native_point(int *x,int *y) {
+#ifdef PORTABLE_SAFE_VIEWPORT
+  if(!paper_rotated){*x+=(int)content_view.x;*y+=(int)content_view.y;}
+#endif
 #ifdef PORTABLE_PAPER_PREFERENCES
   if(paper_flip_ui){*x=width()-1-*x;*y=height()-1-*y;}
 #endif
@@ -1097,11 +1074,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
 #ifdef PORTABLE_TOUCH_SCROLL
   if(raster_clip_active && !portable_scroll_clip(&raster_clip,&x,&y,&w,&h))return;
 #endif
-  /* Clip wide endpoints before narrowing, including off-screen INT_MIN/MAX. */
-  int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y;
-  int64_t right = (int64_t)x + w, bottom = (int64_t)y + h;
-  int x1 = right > width() ? width() : (int)right;
-  int y1 = bottom > height() ? height() : (int)bottom;
+  int x0 = x < 0 ? 0 : x, y0 = y < 0 ? 0 : y, x1 = x + w, y1 = y + h;
   if (x1 > width())
     x1 = width();
   if (y1 > height())
@@ -1147,6 +1120,33 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
     }
     return;
   }
+#if !defined(PORTABLE_CONTEXTS_CLIENT) /* RGB565 affine span default; legacy flag is compatible. */
+  if(surface_format==RISC_DISPLAY_FORMAT_RGB565) {
+    /* native_point is affine for the selected flip/rotation/safe-origin.
+     * Preserve logical write order and the exact checkpoint-before-pixel
+     * boundary, including a failed checkpoint's partial-buffer prefix. */
+    int ax=x0,ay=y0,bx=x0+1,by=y0,cx=x0,cy=y0+1;
+    native_point(&ax,&ay);native_point(&bx,&by);native_point(&cx,&cy);
+    ptrdiff_t origin=(ptrdiff_t)ay*(ptrdiff_t)surface.stride_bytes+(ptrdiff_t)ax*2;
+    ptrdiff_t column=(ptrdiff_t)(by-ay)*(ptrdiff_t)surface.stride_bytes+(ptrdiff_t)(bx-ax)*2;
+    ptrdiff_t row=(ptrdiff_t)(cy-ay)*(ptrdiff_t)surface.stride_bytes+(ptrdiff_t)(cx-ax)*2;
+    uint8_t low=(uint8_t)color,high=(uint8_t)(color>>8);
+    for(int j=y0;j<y1;j++)for(int i=x0;i<x1;) {
+      unsigned n=511u-(raster_pixels&511u);
+      if(!n){++raster_pixels;if(!raster_checkpoint())return;n=1;}
+      else {if(n>(unsigned)(x1-i))n=(unsigned)(x1-i);raster_pixels+=n;}
+      uint8_t *to=(uint8_t*)surface.pixels+origin+(ptrdiff_t)(j-y0)*row+(ptrdiff_t)(i-x0)*column;
+      if(low==high && (column==2 || column==-2)) {
+        if(column<0)to-=(ptrdiff_t)(n-1u)*2;
+        memset(to,low,(size_t)n*2);
+      } else for(unsigned k=0;k<n;k++) {
+        uint8_t *pixel=to+(ptrdiff_t)k*column;pixel[0]=low;pixel[1]=high;
+      }
+      i+=(int)n;
+    }
+    return;
+  }
+#endif
   for (int j = y0; j < y1; ++j)
     for (int i = x0; i < x1; ++i) {
       if(!(++raster_pixels&511u)&&!raster_checkpoint())return;
@@ -1159,7 +1159,7 @@ static void fill(int x, int y, int w, int h, uint16_t color) {
         unsigned luminance=((color>>11)&31)*299/31+((color>>5)&63)*587/63+(color&31)*114/31;
         uint8_t bit=(uint8_t)(0x80u>>(px&7));
         if(luminance<500)p[px/8]|=bit;else p[px/8]&=(uint8_t)~bit;
-      } else {p[i*2]=(uint8_t)color;p[i*2+1]=(uint8_t)(color>>8);}
+      } else {p[px*2]=(uint8_t)color;p[px*2+1]=(uint8_t)(color>>8);}
     }
 }
 static void display_failure(const char *detail) {
@@ -1213,7 +1213,8 @@ static bool initial_frame_visible(void) {
   return !failed;
 }
 /* Acquire the same checked surface for either painting or complete image copy. */
-static bool acquire_surface(void) {
+static bool acquire_surface_mode(bool complete_overwrite) {
+  (void)complete_overwrite;
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_checkpoint())return false;
 #endif
@@ -1238,17 +1239,33 @@ static bool acquire_surface(void) {
   }
   portable_stage_log(rt,"draw-begin","");
   portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,true);
-  if (!display->acquire(display->context, surface_format,
-                        &surface)) {
+  if (!PORTABLE_ATTEMPT_BOOL("display.acquire",display->acquire(display->context, surface_format,
+                        &surface))) {
     display_failure("PORTABLE_APP error=display-acquire");
     return false;
   }
   portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,false);
   perf_draw_begin();
-  if (!portable_display_surface_valid(&surface, info.width, info.height, surface_format)) {
+  if (!surface.frame || !surface.pixels || surface.width != info.width ||
+      surface.height != info.height ||
+      surface.pixel_format != surface_format ||
+      surface.stride_bytes < (surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2) ||
+      surface.stride_bytes > UINT32_MAX / info.height ||
+      surface.size_bytes < surface.stride_bytes * info.height) {
     display_failure("PORTABLE_APP error=display-surface");
     return false;
   }
+#ifdef PORTABLE_SAFE_VIEWPORT
+  bool initialize_surface=true;
+#if defined(PORTABLE_RASTER_OVERWRITE_CLEAR) && !defined(PORTABLE_RETAINED_RGB565_HANDOFF) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
+  /* Only the completed software-image copy calls this mode. No lease escapes
+   * before every active byte is overwritten; failed copy never submits. */
+  if(complete_overwrite && surface_format==RISC_DISPLAY_FORMAT_RGB565 && !paper_rotated)
+    initialize_surface=false;
+#endif
+  if(initialize_surface && surface_format==RISC_DISPLAY_FORMAT_RGB565 && !paper_rotated)
+    for(unsigned row=0;row<info.height;row++)memset((uint8_t*)surface.pixels+(size_t)row*surface.stride_bytes,0,info.width*2);
+#endif
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   if(handoff_pending) {
     handoff_pending=false;
@@ -1280,6 +1297,7 @@ static bool acquire_surface(void) {
 #endif
   return true;
 }
+static bool acquire_surface(void) {return acquire_surface_mode(false);}
 static void clear_color(uint16_t color) {
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_io_allowed())return;
@@ -1336,6 +1354,46 @@ static const uint8_t glyphs[][5] = {
     {127, 9, 25, 41, 70},  {70, 73, 73, 73, 49},  {1, 1, 127, 1, 1},
     {63, 64, 64, 64, 63},  {31, 32, 64, 32, 31},  {127, 32, 24, 32, 127},
     {99, 20, 8, 20, 99},   {3, 4, 120, 4, 3},     {97, 81, 73, 69, 67}};
+/* Original compact 5x7 punctuation. ASCII-only, no font/provider access.
+ * Existing minus/colon/percent columns are preserved exactly. Unspecified
+ * space and out-of-range bytes remain blank; alphanumerics use glyphs above. */
+static const uint8_t compact_symbols[95][5] = {
+    [1u] = {0, 0, 95, 0, 0}, /* ASCII 33 */
+    [2u] = {0, 7, 0, 7, 0}, /* ASCII 34 */
+    [3u] = {20, 127, 20, 127, 20}, /* ASCII 35 */
+    [4u] = {36, 42, 127, 42, 18}, /* ASCII 36 */
+    [5u] = {99, 8, 8, 8, 99}, /* ASCII 37 */
+    [6u] = {54, 73, 85, 34, 80}, /* ASCII 38 */
+    [7u] = {0, 0, 7, 0, 0}, /* ASCII 39 */
+    [8u] = {0, 28, 34, 65, 0}, /* ASCII 40 */
+    [9u] = {0, 65, 34, 28, 0}, /* ASCII 41 */
+    [10u] = {20, 8, 62, 8, 20}, /* ASCII 42 */
+    [11u] = {8, 8, 62, 8, 8}, /* ASCII 43 */
+    [12u] = {0, 64, 48, 0, 0}, /* ASCII 44 */
+    [13u] = {8, 8, 8, 8, 8}, /* ASCII 45 */
+    [14u] = {0, 96, 96, 0, 0}, /* ASCII 46 */
+    [15u] = {32, 16, 8, 4, 2}, /* ASCII 47 */
+    [26u] = {0, 0, 36, 0, 0}, /* ASCII 58 */
+    [27u] = {0, 64, 52, 0, 0}, /* ASCII 59 */
+    [28u] = {8, 20, 34, 65, 0}, /* ASCII 60 */
+    [29u] = {20, 20, 20, 20, 20}, /* ASCII 61 */
+    [30u] = {0, 65, 34, 20, 8}, /* ASCII 62 */
+    [31u] = {2, 1, 81, 9, 6}, /* ASCII 63 */
+    [32u] = {62, 65, 93, 85, 30}, /* ASCII 64 */
+    [59u] = {0, 127, 65, 65, 0}, /* ASCII 91 */
+    [60u] = {2, 4, 8, 16, 32}, /* ASCII 92 */
+    [61u] = {0, 65, 65, 127, 0}, /* ASCII 93 */
+    [62u] = {4, 2, 1, 2, 4}, /* ASCII 94 */
+    [63u] = {64, 64, 64, 64, 64}, /* ASCII 95 */
+    [64u] = {0, 1, 2, 0, 0}, /* ASCII 96 */
+    [91u] = {0, 8, 54, 65, 0}, /* ASCII 123 */
+    [92u] = {0, 0, 127, 0, 0}, /* ASCII 124 */
+    [93u] = {0, 65, 54, 8, 0}, /* ASCII 125 */
+    [94u] = {8, 4, 8, 16, 8}, /* ASCII 126 */
+};
+static unsigned compact_symbol_column(unsigned char c,unsigned column) {
+  return c >= 32 && c <= 126 && column < 5 ? compact_symbols[c-32][column] : 0;
+}
 static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_io_allowed())return;
@@ -1343,9 +1401,9 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_record(RS_TEXT,(int32_t[8]){x,y,limit,color},s))return;
 #endif
-  if (!s || limit<=0 || x>=width() || (int64_t)x+128*6<=0 || y>=height() || (int64_t)y+7<=0)
+  if (!s)
     return;
-  int row_first=y<0?-y:0,row_end=(int64_t)y+7>height()?height()-y:7;
+  int row_first=0,row_end=7;
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_rows(y,&row_first,&row_end);
 #endif
@@ -1356,27 +1414,18 @@ static void text_color(int x, int y, const char *s, int limit, uint16_t color) {
     int g = c >= '0' && c <= '9' ? c - '0'
                                  : (c >= 'A' && c <= 'Z' ? c - 'A' + 10 : -1);
     for (int col = 0; col < 5; ++col) {
-      int64_t px=(int64_t)x+k*6+col;
-      if(px<0||px>=width())continue;
       unsigned bits =
           g >= 0
               ? glyphs[g][col]
-              : (c == '-'
-                     ? 8
-                     : (c == ':' && col == 2
-                            ? 36
-                            : (c == '%' ? (col == 0 ? 99 : (col == 4 ? 99 : 8))
-                                        : 0)));
+              : compact_symbol_column((unsigned char)c,(unsigned)col);
       for (int row = row_first; row < row_end; ++row)
         if (bits & (1u << row))
-          fill((int)px, y + row, 1, 1, color);
+          fill(x + k * 6 + col, y + row, 1, 1, color);
     }
   }
 }
 static void text(int32_t x, int32_t y, const char *s) {
-  int64_t remaining=(int64_t)width()-x;
-  int available=remaining<0?0:remaining>128*6?128*6:(int)remaining;
-  text_color(x,y,s,available/6,0);
+  text_color(x, y, s, (width() - x) / 6, 0);
 }
 static void label(int32_t x, int32_t y, int32_t w, const char *s) {
   int n = 0;
@@ -1386,14 +1435,10 @@ static void label(int32_t x, int32_t y, int32_t w, const char *s) {
     ++n;
   if (n > w / 6)
     n = w / 6;
-  int64_t left=(int64_t)x+((int64_t)w-n*6)/2;
-  if(left>=INT_MIN&&left<=INT_MAX)text_color((int)left,y,s,n,0);
+  text_color(x + (w - n * 6) / 2, y, s, n, 0);
 }
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
 #include "native_toolbar.inc"
-#endif
-#if defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI) || (defined(PORTABLE_STOPWATCH_NATIVE_UI) && defined(PORTABLE_NATIVE_TIME_TOOLBAR))
-static void np_poll(t5_app_input_t *out);
 #endif
 #include "nova.inc"
 #ifdef PORTABLE_NOVA_UI
@@ -1428,10 +1473,19 @@ static bool icon(int32_t x, int32_t y, const char *name, uint8_t size, bool blac
 #ifdef PORTABLE_RASTER_SNAPSHOT
     raster_rows((int64_t)y+(size-h)/2,&row_first,&row_end);
 #endif
-    for (int j = row_first; j < row_end; ++j) for (int i = 0; i < w; ++i) {
+    for (int j = row_first; j < row_end; ++j) {
+#if PORTABLE_RGB565_ROW_WRITER
+      np_rgb565_row row;np_rgb565_row_begin(&row,y+(size-h)/2+j,0);
+#endif
+      for (int i = 0; i < w; ++i) {
       unsigned n = (unsigned)(j*g->height/h)*g->width+(unsigned)(i*g->width/w);
       unsigned a = (g->bits[n/4] >> (6-2*(n%4))) & 3;
+#if PORTABLE_RGB565_ROW_WRITER
+      np_rgb565_row_pixel(&row,x+(size-w)/2+i,a*85);
+#else
       np_pixel(x+(size-w)/2+i, y+(size-h)/2+j, 0, a*85);
+#endif
+      }
     }
     return true;
   }
@@ -1459,20 +1513,6 @@ bool portable_paper_frame_ready(void) {
   /* Queue the retained underlay before a later app paint, without delaying
    * input/state until the provider finishes its previous submission. */
   if(quick_restore_pending&&!quick_restoring&&!quick_restore_step())return false;
-#if defined(PORTABLE_STOPWATCH_NATIVE_UI) && defined(PORTABLE_RASTER_SNAPSHOT)
-  /* A running Stopwatch can repaint faster than the display completes. Once
-   * Quick requests the screen, stop admitting new app snapshots so its existing
-   * token/mailbox can drain and the modal can acquire custody. Quick's own
-   * painting and retained-underlay restoration must remain admissible. */
-  if(stopwatch_native_enabled&&!quick_modal&&!quick_restoring&&pqa_visible(&quick.ui))return false;
-#endif
-#if defined(PORTABLE_TIMECARD_NATIVE_UI) && defined(PORTABLE_RASTER_SNAPSHOT)
-  /* A scrolling Timecard can repaint faster than the display completes. Once
-   * Quick requests the screen, stop admitting new app snapshots so its existing
-   * token/mailbox can drain and the modal can acquire custody. Quick's own
-   * painting and retained-underlay restoration must remain admissible. */
-  if(timecard_native_enabled&&!quick_modal&&!quick_restoring&&pqa_visible(&quick.ui))return false;
-#endif
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   /* Latest-image mailbox: a completed software image which has not acquired
@@ -1495,6 +1535,25 @@ bool portable_paper_frame_ready(void) {
   return !paper_token;
 #endif
 }
+#ifdef PORTABLE_NATIVE_SCENE
+bool portable_native_scene_repaint(void) {
+ return native_scene.enabled&&native_scene.known&&!native_scene.visible&&!failed&&
+ !surface.frame&&!paper_token&&!home_pending&&!crown_pending&&!handoff_requested
+#ifdef PORTABLE_QUICK_ACTIONS
+ &&!quick_modal&&!quick_restore_pending&&!pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
+#endif
+#ifdef PORTABLE_ALARM_CLIENT
+ &&!alarm_modal&&!native_sleep_retained
+#endif
+#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
+ &&!handoff_active
+#endif
+ ;
+}
+void portable_native_scene_back(void) {
+ if(native_scene.enabled&&!failed)navigation_pending|=T5_APP_BUTTON_BACK;
+}
+#endif
 bool portable_paper_frame_idle(void) {
  return !failed&&!paper_token&&!surface.frame
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -1502,86 +1561,6 @@ bool portable_paper_frame_idle(void) {
 #endif
  ;
 }
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-bool portable_frequency_native_repaint(void) {
- return frequency_native_enabled&&!failed&&frequency_native_layout_known&&!frequency_native_visible&&
-   !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
-#ifdef PORTABLE_RASTER_SNAPSHOT
-   &&!raster_sealed&&!raster_recording&&!raster_replaying
-#endif
-#ifdef PORTABLE_ALARM_CLIENT
-   &&!alarm_modal&&!native_sleep_retained
-#endif
-#ifdef PORTABLE_QUICK_ACTIONS
-   &&!quick_modal&&!quick_restore_pending&&!quick_restoring&&!quick_launch_pending&&
-   !pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
-#endif
-#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
-   &&!handoff_pending&&!handoff_active
-#endif
-   ;
-}
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-bool portable_points_native_repaint(void) {
- return points_native_enabled&&!failed&&points_native_layout_known&&!points_native_visible&&
-   !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
-#ifdef PORTABLE_RASTER_SNAPSHOT
-   &&!raster_sealed&&!raster_recording&&!raster_replaying
-#endif
-#ifdef PORTABLE_ALARM_CLIENT
-   &&!alarm_modal&&!native_sleep_retained
-#endif
-#ifdef PORTABLE_QUICK_ACTIONS
-   &&!quick_modal&&!quick_restore_pending&&!quick_restoring&&!quick_launch_pending&&
-   !pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
-#endif
-#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
-   &&!handoff_pending&&!handoff_active
-#endif
-   ;
-}
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-bool portable_timecard_native_repaint(void) {
- return timecard_native_enabled&&!failed&&timecard_native_layout_known&&!timecard_native_visible&&
-   !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
-#ifdef PORTABLE_RASTER_SNAPSHOT
-   &&!raster_sealed&&!raster_recording&&!raster_replaying
-#endif
-#ifdef PORTABLE_ALARM_CLIENT
-   &&!alarm_modal&&!native_sleep_retained
-#endif
-#ifdef PORTABLE_QUICK_ACTIONS
-   &&!quick_modal&&!quick_restore_pending&&!quick_restoring&&!quick_launch_pending&&
-   !pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
-#endif
-#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
-   &&!handoff_pending&&!handoff_active
-#endif
-   ;
-}
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-bool portable_stopwatch_native_repaint(void) {
- return stopwatch_native_enabled&&!failed&&stopwatch_native_layout_known&&!stopwatch_native_visible&&
-   !surface.frame&&!paper_token&&!handoff_requested&&!home_pending&&!crown_pending
-#ifdef PORTABLE_RASTER_SNAPSHOT
-   &&!raster_sealed&&!raster_recording&&!raster_replaying
-#endif
-#ifdef PORTABLE_ALARM_CLIENT
-   &&!alarm_modal&&!native_sleep_retained
-#endif
-#ifdef PORTABLE_QUICK_ACTIONS
-   &&!quick_modal&&!quick_restore_pending&&!quick_restoring&&!quick_launch_pending&&
-   !pqa_visible(&quick.ui)&&!pqa_capture(&quick.ui)
-#endif
-#ifdef PORTABLE_RETAINED_RGB565_HANDOFF
-   &&!handoff_pending&&!handoff_active
-#endif
-   ;
-}
-#endif
 #ifdef PORTABLE_FILE_SETUP
 bool portable_file_browser_setup_frame_ready(void) {
   return !failed && !native_custody_retained && display && !surface.frame && !paper_token && !file_setup_present_pending
@@ -1612,7 +1591,7 @@ static bool paper_token_progress(void) {
   if(failed)return false;
   risc_display_present_status_v1 status={0};
   portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
-  if(!display->present_status(display->context,paper_token,&status)) {
+  if(!PORTABLE_ATTEMPT_BOOL("display.present-status",display->present_status(display->context,paper_token,&status))) {
     display_callback_failure("PORTABLE_APP error=display-status");return false;
   }
   if(failed)return false;
@@ -1625,15 +1604,15 @@ static bool paper_token_progress(void) {
     if(elapsed>=10000){display_failure("PORTABLE_APP error=display-timeout");return false;}
     return true;
   }
+#ifdef PORTABLE_NATIVE_SCENE
+  native_scene_completed(paper_token);
+#endif
+#ifdef PORTABLE_FRAME_RECEIPTS
+  frame_receipt_complete(paper_token);
+#endif
   stage_display_complete(paper_token);portable_stage_log(rt,"display-complete","result=complete");
   perf_metrics(paper_token);perf_complete(true);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-  risc_display_present_token_v1 native_completed_token=paper_token;
-#endif
   paper_token=0;paper_token_clean=false;
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-  portable_native_presented(native_completed_token);if(failed)return false;
-#endif
   if(!initial_frame_visible())return false;
 #ifdef PORTABLE_PAPER_PREFERENCES
   paper_orientation_dirty=false;
@@ -1701,6 +1680,32 @@ static uint32_t present_intent(bool full) {return
     full && (info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_DISPLAY_PRESENT_CLEAN:RISC_DISPLAY_PRESENT_DEFAULT;
 }
 static void present(bool full) {
+#ifdef PORTABLE_FRAME_RECEIPTS
+ uint64_t receipt_id=0;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+ uint64_t presentation_id=0;
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_replaying)presentation_id=presentation_replay_id;
+ else
+#endif
+ if(!failed){if(presentation_requested_id==UINT64_MAX){failed=true;return;}presentation_id=++presentation_requested_id;}
+#endif
+ bool receipt_app=true;
+#ifdef PORTABLE_ALARM_CLIENT
+ receipt_app=!alarm_modal;
+#endif
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+ receipt_app=receipt_app&&!quick_modal&&!quick_restore_pending&&!quick_restoring;
+#endif
+#ifdef PORTABLE_RASTER_SNAPSHOT
+ if(raster_replaying)receipt_id=frame_replay_id;
+ else
+#endif
+ if(!failed&&receipt_app){
+  if(frame_requested_id==UINT64_MAX){failed=true;return;}
+  receipt_id=++frame_requested_id;
+ }
+#endif
 #ifdef PORTABLE_FILE_SETUP
   if(!file_setup_checkpoint())return;
 #endif
@@ -1718,68 +1723,22 @@ static void present(bool full) {
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_recording&&!failed){
+#ifdef PORTABLE_FRAME_RECEIPTS
+    frame_replay_id=receipt_id;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+    presentation_replay_id=presentation_id;
+#endif
+#endif
     raster_recording=false;raster_sealed=true;raster_full=full;raster_saved_intent=present_intent(full);
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-    raster_native_present_owner=native_present_owner;
-#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
-    ble_touchpad_native_frame(raster_native_present_owner);
-    raster_ble_touchpad_native_generation=ble_touchpad_native_submit_generation;
-    raster_ble_touchpad_native_layout=ble_touchpad_native_submit_layout;
-#endif
-#ifdef PORTABLE_BATTERY_NATIVE_UI
-    raster_battery_native_generation=battery_native_submit_generation;
-    raster_battery_native_layout=battery_native_submit_layout;
-#endif
-#ifdef PORTABLE_ALARMS_NATIVE_UI
-    raster_alarms_native_generation=alarms_native_submit_generation;
-    raster_alarms_native_layout=alarms_native_submit_layout;
-#endif
-#ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
-    raster_ble_buttons_native_generation=ble_buttons_native_submit_generation;
-    raster_ble_buttons_native_layout=ble_buttons_native_submit_layout;
-#endif
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
-    raster_ble_scanner_native_generation=ble_scanner_native_submit_generation;
-    raster_ble_scanner_native_layout=ble_scanner_native_submit_layout;
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
-    raster_calculator_native_generation=calculator_native_submit_generation;
-    raster_calculator_native_layout=calculator_native_submit_layout;
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-    raster_files_native_generation=files_native_submit_generation;
-    raster_files_native_layout=files_native_submit_layout;
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-    frequency_native_frame(raster_native_present_owner);
-    raster_frequency_native_generation=frequency_native_submit_generation;
-    raster_frequency_native_layout=frequency_native_submit_layout;
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
-    raster_lora_native_generation=lora_native_submit_generation;
-    raster_lora_native_layout=lora_native_submit_layout;
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-    points_native_frame(raster_native_present_owner);
-    raster_points_native_generation=points_native_submit_generation;
-    raster_points_native_layout=points_native_submit_layout;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-    timecard_native_frame(raster_native_present_owner);
-    raster_timecard_native_generation=timecard_native_submit_generation;
-    raster_timecard_native_layout=timecard_native_submit_layout;
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-    stopwatch_native_frame(raster_native_present_owner);
-    raster_stopwatch_native_generation=stopwatch_native_submit_generation;
-    raster_stopwatch_native_layout=stopwatch_native_submit_layout;
-#endif
-#endif
 #if defined(PORTABLE_QUICK_ACTIONS)&&defined(PORTABLE_RESIDENT_SHELL_HOST)
     raster_saved_clean=quick_clean_present;
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
-    raster_saved_app_frame=!alarm_modal;display_settled=false;
+    raster_saved_app_frame=!alarm_modal;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+    raster_saved_app_frame=raster_saved_app_frame&&!quick_modal&&!quick_restore_pending&&!quick_restoring;
+#endif
+    display_settled=false;
 #else
     raster_saved_app_frame=true;
 #endif
@@ -1788,8 +1747,19 @@ static void present(bool full) {
 #endif
   if (failed || !surface.frame)
     return;
+#ifdef PORTABLE_NATIVE_SCENE
+  if(native_scene.enabled) {
+    native_scene_token_owned=native_scene_submitting;
+    if(native_scene_submitting){pns_submit(&native_scene);if(!native_scene.visible)previous_valid=paper_previous_valid=false;}
+    else native_scene_invalidate();
+    if(failed)return;
+  }
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
   bool app_owned_frame=!alarm_modal;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+  app_owned_frame=app_owned_frame&&!quick_modal&&!quick_restore_pending&&!quick_restoring;
+#endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   if(raster_replaying)app_owned_frame=raster_saved_app_frame;
 #endif
@@ -1842,6 +1812,12 @@ static void present(bool full) {
 #ifdef PORTABLE_DESK_CLOCK
       desk_present_complete=true;
 #endif
+#ifdef PORTABLE_FRAME_RECEIPTS
+      if(!failed&&receipt_id)frame_completed_id=receipt_id;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+      if(!failed&&presentation_id)presentation_completed_id=presentation_id;
+#endif
+#endif
       portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();
       portable_stage_log(rt,"display-skip","reason=pixels-unchanged");
       return;}
@@ -1860,28 +1836,6 @@ static void present(bool full) {
 #endif
   ) {
     unsigned first=info.height,last=0;
-#ifdef PORTABLE_POINTS_NATIVE_UI
-    /* Alarm/Quick may restore byte-identical app pixels under a foreign owner.
-     * A new Points generation still needs its own visibility completion. Do
-     * not let RGB damage elision strand that generation without a token. */
-    if(points_native_enabled&&!points_native_visible&&
-       (
-#ifdef PORTABLE_RASTER_SNAPSHOT
-        raster_replaying?raster_native_present_owner:
-#endif
-        native_present_owner)==12)previous_valid=false;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-    /* Alarm/Quick may restore byte-identical app pixels under a foreign owner.
-     * A new Timecard generation still needs its own visibility completion. Do
-     * not let RGB damage elision strand that generation without a token. */
-    if(timecard_native_enabled&&!timecard_native_visible&&
-       (
-#ifdef PORTABLE_RASTER_SNAPSHOT
-        raster_replaying?raster_native_present_owner:
-#endif
-        native_present_owner)==14)previous_valid=false;
-#endif
     if(previous_valid)for(unsigned y=0;y<info.height;y++) {
       if(!(y&7u) && !raster_checkpoint())return;
       if(memcmp(previous_pixels+(size_t)y*info.width,(uint8_t*)surface.pixels+(size_t)y*surface.stride_bytes,info.width*2)) {
@@ -1890,8 +1844,17 @@ static void present(bool full) {
       }
     }
     if(previous_valid && first==info.height){display->release(display->context,surface.frame);surface.frame=0;
+#ifdef PORTABLE_NATIVE_SCENE
+      native_scene_token_owned=false;native_scene_token=0;
+#endif
 #ifdef PORTABLE_ALARM_CLIENT
       display_settled=true;
+#endif
+#ifdef PORTABLE_FRAME_RECEIPTS
+      if(!failed&&receipt_id)frame_completed_id=receipt_id;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+      if(!failed&&presentation_id)presentation_completed_id=presentation_id;
+#endif
 #endif
       portable_perf_span(PORTABLE_PERF_SPAN_DAMAGE,false);perf_unchanged();return;}
     if(previous_valid){damage=(risc_display_rect_v1){0,(int32_t)first,info.width,last-first};damage_count=1;}
@@ -1916,177 +1879,89 @@ static void present(bool full) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
   display_settled=false;
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_RASTER_SNAPSHOT)
+  void *exchange_source=NULL;
+  uint16_t *exchange_underlay=NULL;
+  risc_display_frame_v1 exchange_frame=0;
+  /* Alarm may have pinned its saved pointer while this app plan was pending.
+   * Keep that stable-address copy, and all transformed/modal/immediate paths. */
+#if !defined(PORTABLE_RETAINED_RGB565_HANDOFF) && !defined(PORTABLE_PAPER_CROSSFADE) && !defined(PORTABLE_RESIDENT_SHELL_HOST)
+  if(app_owned_frame && !alarm_modal && raster_replaying &&
+     surface_format==RISC_DISPLAY_FORMAT_RGB565 && raster_offscreen && alarm_pixels &&
+     raster_offscreen!=(void*)alarm_pixels && surface.pixels!=raster_offscreen &&
+     surface.pixels!=(void*)alarm_pixels && raster_copied_source==raster_offscreen &&
+     raster_copied_frame && raster_copied_frame==surface.frame
+#ifdef PORTABLE_QUICK_ACTIONS
+     && !quick_modal && !quick_restoring && !quick_restore_pending
+#endif
+  ){exchange_source=raster_offscreen;exchange_underlay=alarm_pixels;exchange_frame=surface.frame;}
+#endif
+  raster_copy_forget();
+#endif
   if(app_owned_frame) {
     alarm_pixels_valid=false;
-    unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
-    for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)alarm_pixels+(size_t)y*bytes,
-      (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_RASTER_SNAPSHOT)
+    if(!exchange_source)
+#endif
+    {
+      unsigned bytes=surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2;
+      for(unsigned y=0;y<info.height;y++)memcpy((uint8_t*)alarm_pixels+(size_t)y*bytes,
+        (uint8_t *)surface.pixels+(size_t)y*surface.stride_bytes,bytes);
+    }
   }
 #endif
   perf_submit();portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,true);
-  if (!display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
-                       &token)) {
+  if (!PORTABLE_ATTEMPT_BOOL("display.submit",display->submit(display->context, surface.frame, damage_count?&damage:NULL, damage_count, &options,
+                       &token))) {
     display_callback_failure("PORTABLE_APP error=display-submit");
     return;
   }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-  native_present_token=token;native_token_owner=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_native_present_owner:
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_ALARM_CLIENT)
+  if(exchange_source) {
+    /* Provider owns a separate completed copy. No callback may follow a lost
+     * authority result, and role exchange never frees or borrows that lease. */
+    if(failed || raster_terminal())return;
+    if(!token){display_callback_failure("PORTABLE_APP error=display-token");return;}
+    /* The selected provider receives no app-owned pixel pointer. A callback
+     * that nevertheless changes these identities/pins violated that boundary;
+     * do not read, copy, exchange or free either allocation afterward. */
+    if(raster_offscreen!=exchange_source || alarm_pixels!=exchange_underlay ||
+       surface.frame!=exchange_frame || alarm_modal
+#ifdef PORTABLE_QUICK_ACTIONS
+       || quick_modal || quick_restoring || quick_restore_pending
 #endif
-    native_present_owner;
-#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
-  ble_touchpad_native_frame(native_token_owner);
-  ble_touchpad_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_touchpad_native_generation:
+    ) {
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+#if defined(PORTABLE_ALARM_TERMINAL_RETENTION) || defined(PORTABLE_FOREGROUND_IDLE)
+      portable_adapter_retain_silent();
+#else
+      portable_adapter_retain();
 #endif
-    ble_touchpad_native_submit_generation;
-  ble_touchpad_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_touchpad_native_layout:
+#else
+      failed=true;
 #endif
-    ble_touchpad_native_submit_layout;
+      return;
+    }
+  }
 #endif
-#ifdef PORTABLE_BATTERY_NATIVE_UI
-  battery_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_battery_native_generation:
+#ifdef PORTABLE_NATIVE_SCENE
+  if(native_scene.enabled) {
+    if(!token){portable_adapter_retain();return;}
+    native_scene_token=token;
+  }
 #endif
-    battery_native_submit_generation;
-  battery_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_battery_native_layout:
-#endif
-    battery_native_submit_layout;
-#endif
-#ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
-  ble_buttons_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_buttons_native_generation:
-#endif
-    ble_buttons_native_submit_generation;
-  ble_buttons_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_buttons_native_layout:
-#endif
-    ble_buttons_native_submit_layout;
-#endif
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
-  ble_scanner_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_scanner_native_generation:
-#endif
-    ble_scanner_native_submit_generation;
-  ble_scanner_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_ble_scanner_native_layout:
-#endif
-    ble_scanner_native_submit_layout;
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
-  calculator_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_calculator_native_generation:
-#endif
-    calculator_native_submit_generation;
-  calculator_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_calculator_native_layout:
-#endif
-    calculator_native_submit_layout;
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-  files_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_files_native_generation:
-#endif
-    files_native_submit_generation;
-  files_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_files_native_layout:
-#endif
-    files_native_submit_layout;
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-  frequency_native_frame(native_token_owner);
-  frequency_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_frequency_native_generation:
-#endif
-    frequency_native_submit_generation;
-  frequency_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_frequency_native_layout:
-#endif
-    frequency_native_submit_layout;
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
-  lora_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_lora_native_generation:
-#endif
-    lora_native_submit_generation;
-  lora_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_lora_native_layout:
-#endif
-    lora_native_submit_layout;
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-  points_native_frame(native_token_owner);
-  points_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_points_native_generation:
-#endif
-    points_native_submit_generation;
-  points_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_points_native_layout:
-#endif
-    points_native_submit_layout;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-  timecard_native_frame(native_token_owner);
-  timecard_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_timecard_native_generation:
-#endif
-    timecard_native_submit_generation;
-  timecard_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_timecard_native_layout:
-#endif
-    timecard_native_submit_layout;
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-  stopwatch_native_frame(native_token_owner);
-  stopwatch_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_stopwatch_native_generation:
-#endif
-    stopwatch_native_submit_generation;
-  stopwatch_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_stopwatch_native_layout:
-#endif
-    stopwatch_native_submit_layout;
-#endif
-#ifdef PORTABLE_ALARMS_NATIVE_UI
-  alarms_native_token_generation=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_alarms_native_generation:
-#endif
-    alarms_native_submit_generation;
-  alarms_native_token_layout=
-#ifdef PORTABLE_RASTER_SNAPSHOT
-    raster_replaying?raster_alarms_native_layout:
-#endif
-    alarms_native_submit_layout;
+#ifdef PORTABLE_FRAME_RECEIPTS
+  if(!token){display_callback_failure("PORTABLE_APP error=display-token");return;}
+  frame_receipt_token=token;frame_token_id=receipt_id;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+  presentation_token_id=presentation_id;
 #endif
 #endif
 #ifdef PORTABLE_INSTALLED_CATALOG
   installed_first_frame_submitted=true;
+#endif
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_ALARM_CLIENT)
+  if(exchange_source && token){alarm_pixels=(uint16_t*)exchange_source;raster_offscreen=exchange_underlay;}
 #endif
   portable_perf_span(PORTABLE_PERF_SPAN_SUBMIT,false);
   portable_stage_log(rt,"display-submit-end","result=accepted");
@@ -2128,19 +2003,22 @@ static void present(bool full) {
       (info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE) &&
       !(info.flags&RISC_DISPLAY_INFO_ASYNC_PRESENT) && display->wait_present;
     portable_perf_count(PORTABLE_PERF_STATUS_POLLS);
-    bool ok=waited?display->wait_present(display->context,token,10000-elapsed,&s):
-      display->present_status(display->context,token,&s);
+    bool ok=waited?PORTABLE_ATTEMPT_BOOL("display.wait-present",display->wait_present(display->context,token,10000-elapsed,&s)):
+      PORTABLE_ATTEMPT_BOOL("display.present-status",display->present_status(display->context,token,&s));
     if(!ok){display_callback_failure(waited?"PORTABLE_APP error=display-wait":"PORTABLE_APP error=display-status");break;}
     if(s.state==RISC_DISPLAY_PRESENT_FAILED || s.state==RISC_DISPLAY_PRESENT_SUPERSEDED) {
       display_failure("PORTABLE_APP error=display-failed");break;
     }
     if (s.state == RISC_DISPLAY_PRESENT_COMPLETE){
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-      portable_native_presented(token);if(failed)return;
-#endif
       if(!initial_frame_visible())return;
 #ifdef PORTABLE_FILE_SETUP
       file_setup_present_pending=false;
+#endif
+#ifdef PORTABLE_NATIVE_SCENE
+      native_scene_completed(token);
+#endif
+#ifdef PORTABLE_FRAME_RECEIPTS
+      frame_receipt_complete(token);
 #endif
       stage_display_complete(token);portable_stage_log(rt,"display-complete","result=complete");
       perf_metrics(token);perf_complete(true);
@@ -2174,13 +2052,17 @@ static void present(bool full) {
   }
   display_failure("PORTABLE_APP error=display-timeout");
 }
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-static void portable_native_present(unsigned owner,bool full) {
- native_present_owner=owner;present(full);native_present_owner=0;
-}
+#ifdef PORTABLE_FOREGROUND_IDLE
+static bool foreground_idle_live(void);
+static bool foreground_idle_due(uint32_t now,bool modal);
+static bool foreground_idle_retry(uint32_t now,bool modal);
+static bool foreground_idle_enter(void);
 #endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
 static bool idle_sleep(void) {
+#ifdef PORTABLE_FOREGROUND_IDLE
+ return foreground_idle_enter();
+#else
 #ifdef PORTABLE_INSTALLED_CATALOG
   int installed_close=portable_installed_prepare_launch();
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
@@ -2422,6 +2304,7 @@ static bool idle_sleep(void) {
   rt->diagnostic(status?"PORTABLE_APP sleep=resumed":"PORTABLE_APP sleep=refused");
   return !failed;
 #endif /* resident foreground never sleeps with a native child stack */
+#endif /* ordinary foreground returning policy */
 }
 #endif
 #ifdef PORTABLE_PAPER_PREFERENCES
@@ -2700,8 +2583,8 @@ bool portable_paper_scroll_available(void) {
 }
 #endif
 static void clear_contact_snapshots(void) {
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
- timecard_native_sample=(portable_touch_sample){.cancelled=true};
+#ifdef PORTABLE_NATIVE_SCENE
+ native_scene_cancel_contact();
 #endif
 #ifdef PORTABLE_APP_TOUCH_SCROLL
  paper_scroll_sample=(portable_touch_sample){.cancelled=true};paper_scroll_sampled_at=input_sampled_at;
@@ -2720,13 +2603,7 @@ static bool wifi_scroll_poll(t5_app_input_t *out);
 #include "installed_catalog_adapter.inc"
 #include "resident_adapter.inc"
 #include "resident_shell.inc"
-#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
-static bool wifi_native_poll(t5_app_input_t *out);
-#endif
 static bool poll_input(t5_app_input_t *out, uint32_t wait) {
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-  timecard_native_sample=(portable_touch_sample){.cancelled=true};
-#endif
 #ifdef PORTABLE_CONTEXTS_CLIENT
   if(!contexts_message_foreground())return false;
   if(context_launch_pending){memset(out,0,sizeof(*out));out->exit_requested=true;return true;}
@@ -2875,33 +2752,18 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
   portable_audio_capture_resume();
 #endif
 #if defined(PORTABLE_APP_SLEEP_LOCAL) && !defined(PORTABLE_SLEEP_MANUAL_ONLY)
+#ifdef PORTABLE_FOREGROUND_IDLE
+  uint32_t idle_now=millis_now();
+  if(!foreground_idle_retry(idle_now,false))return false;
+  bool idle_due=foreground_idle_due(idle_now,false);
+  if(!foreground_idle_live())return false;
+  if(idle_due) {
+    if(!idle_sleep())return false;
+    return !failed;
+  }
+#else
   if(!failed && (uint32_t)(millis_now()-last_activity)>=portable_idle_ms() &&
      !idle_capture_active() &&
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI)
-     /* A reset cancellation is ordered before newer raw edges. Give that
-      * stream another pass before sleeping; held gated contacts remain
-      * physical activity even when they cannot act on the current page. */
-     !input_progressed && !touch.contact_count && !touch.resync && !touch.poll_failed &&
-#elif defined(PORTABLE_BLE_SCANNER_NATIVE_UI)
-     (!ble_scanner_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_LORA_NATIVE_UI)
-     (!lora_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_CALCULATOR_NATIVE_UI)
-     (!calculator_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_FILES_NATIVE_UI)
-     (!files_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_FREQUENCY_NATIVE_UI)
-     (!frequency_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_POINTS_NATIVE_UI)
-     (!points_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_TIMECARD_NATIVE_UI)
-     (!timecard_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_STOPWATCH_NATIVE_UI)
-     (!stopwatch_native_enabled||(!input_progressed&&!touch.contact_count&&!touch.resync&&!touch.poll_failed)) &&
-#elif defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI)
-     (!ble_touchpad_native_enabled() ||
-       (!input_progressed && !touch.contact_count && !touch.resync && !touch.poll_failed)) &&
-#endif
 #ifdef PORTABLE_WIFI_SESSION_APP
      portable_wifi_idle_ready() &&
 #endif
@@ -2926,6 +2788,7 @@ static bool poll_input(t5_app_input_t *out, uint32_t wait) {
 #endif
     return !failed; /* Waking crown/contact never becomes an app action. */
   }
+#endif
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
   bool quick_consumed=false;
@@ -2971,103 +2834,16 @@ replay_input:
   if (settings_view_poll(out)) return !failed;
 #endif
   input_navigation_take(out);
-#if defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI)
-  if(wifi_native_poll(out))return !failed;
-#endif
 #if defined(PORTABLE_TOUCH_SCROLL) && defined(PORTABLE_WIFI_SETTINGS_APP)
   if(wifi_scroll_poll(out))return !failed;
 #endif
   if(out->buttons&T5_APP_BUTTON_BACK)return !failed;
+#ifdef PORTABLE_NATIVE_SCENE
+  native_scene_observe();if(failed)return false;
+#endif
   portable_touch_sample sample;input_take(&sample);
-#ifdef PORTABLE_BATTERY_NATIVE_UI
-  if(!battery_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_ALARMS_NATIVE_UI
-  if(!alarms_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_BLE_BUTTONS_NATIVE_UI
-  if(!ble_buttons_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
-  if(!ble_scanner_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
-  if(!calculator_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-  if(!files_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-#if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
-  if(frequency_native_enabled&&quick_replay_pending) {
-   quick_replay_pending=false;
-   if(frequency_native_quick_replay(&sample)) {
-    /* Quick reserved the original down. Replay it before the saved current
-     * sample so app-owned native chrome observes both edges in order. Keep
-     * the provider's original coordinates; never read ahead or poll here. */
-    input_sample=sample;input_sample.began=false;input_pending=true;quick_replay_delivery=true;
-    sample.began=sample.down=true;sample.released=sample.moved=false;
-    sample.x=frequency_native_quick_x;sample.y=frequency_native_quick_y;
-   }else sample=(portable_touch_sample){.cancelled=true};
-  }
-#endif
-  if(!frequency_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
-  if(!lora_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-#if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
-  if(points_native_enabled&&quick_replay_pending) {
-   quick_replay_pending=false;
-   if(points_native_quick_replay(&sample)) {
-    /* Quick reserved the original down. Replay it before the saved current
-     * sample so app-owned native chrome observes both edges in order. Keep
-     * the provider's original coordinates; never read ahead or poll here. */
-    input_sample=sample;input_sample.began=false;input_pending=true;quick_replay_delivery=true;
-    sample.began=sample.down=true;sample.released=sample.moved=false;
-    sample.x=points_native_quick_x;sample.y=points_native_quick_y;
-   }else sample=(portable_touch_sample){.cancelled=true};
-  }
-#endif
-  if(!points_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-  points_native_sample=sample;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-#if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
-  if(timecard_native_enabled&&quick_replay_pending) {
-   quick_replay_pending=false;
-   if(timecard_native_quick_replay(&sample)) {
-    /* Quick reserved the original down. Replay it before the saved current
-     * sample so app-owned native chrome observes both edges in order. Keep
-     * the provider's original coordinates; never read ahead or poll here. */
-    input_sample=sample;input_sample.began=false;input_pending=true;quick_replay_delivery=true;
-    sample.began=sample.down=true;sample.released=sample.moved=false;
-    sample.x=timecard_native_quick_x;sample.y=timecard_native_quick_y;
-   }else sample=(portable_touch_sample){.cancelled=true};
-  }
-#endif
-  if(!timecard_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-  timecard_native_sample=sample;
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-#if defined(PORTABLE_QUICK_ACTIONS) && defined(PORTABLE_APP_OWNS_TOUCH_CHROME)
-  if(stopwatch_native_enabled&&quick_replay_pending) {
-   quick_replay_pending=false;
-   if(stopwatch_native_quick_replay(&sample)) {
-    /* Quick reserved the original down. Replay it before the saved current
-     * sample so app-owned native chrome observes both edges in order. Keep
-     * the provider's original coordinates; never read ahead or poll here. */
-    input_sample=sample;input_sample.began=false;input_pending=true;quick_replay_delivery=true;
-    sample.began=sample.down=true;sample.released=sample.moved=false;
-    sample.x=stopwatch_native_quick_x;sample.y=stopwatch_native_quick_y;
-   }else sample=(portable_touch_sample){.cancelled=true};
-  }
-#endif
-  if(!stopwatch_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
-#endif
-#ifdef PORTABLE_BLE_TOUCHPAD_NATIVE_UI
-  if(!ble_touchpad_native_input_accept(&sample))sample=(portable_touch_sample){.cancelled=true};
+#ifdef PORTABLE_NATIVE_SCENE
+  native_scene_input(&sample);
 #endif
   uint16_t x=sample.x,y=sample.y;
 #if defined(PORTABLE_APP_OWNS_TOUCH_CHROME) && !defined(PORTABLE_SETTINGS_APP)
@@ -3356,6 +3132,12 @@ static bool poll(t5_app_input_t *out, uint32_t wait) {
 #endif
 #ifdef PORTABLE_ALARM_CLIENT
 #include "alarm.inc"
+#endif
+#ifdef PORTABLE_WIFI_TIME_SYNC
+#include "wifi_time_commit.inc"
+#endif
+#ifdef PORTABLE_FOREGROUND_IDLE
+#include "foreground_idle.inc"
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
 #include "text_input_handoff.inc"
@@ -3665,7 +3447,14 @@ static int initialize(void) {
   paper_handoff_old=NULL;paper_handoff_clock=false;
 #endif
   bg.struct_size = sizeof(bg);
-  failed = false;perf_initialize();
+  failed = false;
+#if defined(PORTABLE_RASTER_UNDERLAY_EXCHANGE) && defined(PORTABLE_RASTER_SNAPSHOT) && defined(PORTABLE_ALARM_CLIENT)
+  raster_copy_forget();
+#endif
+  perf_initialize();
+#ifdef PORTABLE_LAST_ATTEMPT_CHECKPOINT
+  last_attempt_initialize();
+#endif
 #ifdef PORTABLE_FILE_SETUP
   file_setup_callback_active=file_setup_present_pending=false;
 #endif
@@ -3673,9 +3462,6 @@ static int initialize(void) {
   installed_first_frame_submitted=false;
 #ifdef PORTABLE_INSTALLED_CATALOG_HOST
   installed_home_started=false;
-#ifdef PORTABLE_HOME_PROVISION
-  home_provision_busy=false;
-#endif
 #ifdef PORTABLE_APP_SLEEP_LOCAL
   installed_deferred_sleep=false;
 #endif
@@ -3725,6 +3511,9 @@ static int initialize(void) {
 #endif
 #endif
   nova_mode = false;
+#ifdef PORTABLE_SPRINGBOARD_GESTURE_TRACE
+  sb_diag_owner=false;portable_springboard_gesture_cancel();
+#endif
 #ifdef PORTABLE_APP_OWNS_TOUCH_CHROME
   back_exits_app=true;
 #ifndef PORTABLE_SETTINGS_APP
@@ -3744,6 +3533,12 @@ static int initialize(void) {
 #ifdef PORTABLE_DESK_LOCK_HOME
   desk_lock_armed=navigation_home_down=desk_quality_present=false;
 #endif
+#ifdef PORTABLE_FRAME_RECEIPTS
+  frame_requested_id=frame_completed_id=frame_replay_id=frame_token_id=frame_receipt_token=0;
+#ifdef PORTABLE_QUICK_SLICED_NATIVE
+  presentation_requested_id=presentation_completed_id=presentation_replay_id=presentation_token_id=0;
+#endif
+#endif
   input_progressed=false;raster_pixels=0;input_delivered_at=input_sampled_at=last_poll_at=0;previous_pixels=NULL;paper_previous=NULL;paper_previous_valid=false;
 #ifdef PORTABLE_RETAINED_RGB565_HANDOFF
   handoff_old=handoff_scratch=NULL;handoff_pending=false;handoff_active=false;handoff_first=false;
@@ -3756,6 +3551,10 @@ static int initialize(void) {
   /* A copied prefix must never advertise the uncopied native suffix. */
   desk_guarded_runtime.struct_size=rt->struct_size<sizeof(desk_guarded_runtime)?rt->struct_size:sizeof(desk_guarded_runtime);
   desk_guarded_runtime.acquire=desk_acquire;desk_guarded_runtime.release=desk_release;
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(desk_guarded_runtime.struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && desk_guarded_runtime.monotonic_ms)
+    desk_guarded_runtime.monotonic_ms=desk_guard_monotonic;
+#endif
   desk_guarded_runtime.health=desk_guard_health;desk_guarded_runtime.yield_ms=desk_guard_yield;
   desk_guarded_runtime.diagnostic=desk_guard_diagnostic;desk_guarded_runtime.request_launch=desk_guard_launch;
 #ifdef PORTABLE_QUICK_RADIOS
@@ -3774,6 +3573,10 @@ static int initialize(void) {
   /* A copied prefix must never advertise the uncopied native suffix. */
   settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(settings_runtime.struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && settings_runtime.monotonic_ms)
+    settings_runtime.monotonic_ms=custody_monotonic;
+#endif
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;settings_initialized=true;return 0;
@@ -3785,6 +3588,10 @@ static int initialize(void) {
   /* A copied prefix must never advertise the uncopied native suffix. */
   settings_runtime.struct_size=rt->struct_size<sizeof(settings_runtime)?rt->struct_size:sizeof(settings_runtime);
   settings_runtime.acquire=custody_acquire;settings_runtime.release=custody_release;
+#ifdef RISC_RUNTIME_MONOTONIC_V1_SIZE
+  if(settings_runtime.struct_size>=RISC_RUNTIME_MONOTONIC_V1_SIZE && settings_runtime.monotonic_ms)
+    settings_runtime.monotonic_ms=custody_monotonic;
+#endif
   settings_runtime.health=custody_health;settings_runtime.yield_ms=custody_yield;
   settings_runtime.diagnostic=custody_diagnostic;settings_runtime.request_launch=custody_launch;
   rt=&settings_runtime;
@@ -3884,7 +3691,7 @@ static void settings_native_finalize(void) {
   if(surface.frame){display->release(display->context,surface.frame);surface.frame=0;}
 #ifdef PORTABLE_INPUT_NAVIGATION
   if(navigation_ready) {
-    if(!navigation->foreground(navigation->context,NULL,0) || !navigation->reset(navigation->context)) {portable_adapter_retain();return;}
+    if(!PORTABLE_ATTEMPT_BOOL("navigation.foreground-clear",navigation->foreground(navigation->context,NULL,0)) || !PORTABLE_ATTEMPT_BOOL("navigation.reset",navigation->reset(navigation->context))) {portable_adapter_retain();return;}
     navigation_ready=false;
   }
 #ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
@@ -3948,15 +3755,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   }
 #endif
 #ifdef PORTABLE_INSTALLED_CATALOG
-#ifdef PORTABLE_HOME_PROVISION
-  /* Keep dependencies live until the foreground cancellation proves closure. */
-  unsigned provision_cleanup=0;int provision_rc;
-  while((provision_rc=portable_installed_prepare_launch())==INSTALLED_APPS_WORKING && provision_cleanup++<10000u)
-    rt->yield_ms(1);
-  if(provision_rc!=INSTALLED_APPS_OK){if(!native_custody_retained)portable_adapter_retain();return;}
-#else
   if(portable_installed_prepare_launch()!=INSTALLED_APPS_OK){portable_adapter_retain();return;}
-#endif
 #endif
 #ifdef PORTABLE_TEXT_INPUT_CLIENT
   if(text_input_retained)return;
@@ -4080,33 +3879,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 }
 
 __attribute__((visibility("default"))) int app_module_init(void) {
-#if defined(PORTABLE_SETTINGS_NATIVE_UI) || defined(PORTABLE_WIFI_NATIVE_UI) || defined(PORTABLE_UPDATE_NATIVE_UI) || defined(PORTABLE_BATTERY_NATIVE_UI) || defined(PORTABLE_ALARMS_NATIVE_UI) || defined(PORTABLE_BLE_BUTTONS_NATIVE_UI) || defined(PORTABLE_BLE_SCANNER_NATIVE_UI) || defined(PORTABLE_BLE_TOUCHPAD_NATIVE_UI) || defined(PORTABLE_CALCULATOR_NATIVE_UI) || defined(PORTABLE_FILES_NATIVE_UI) || defined(PORTABLE_FREQUENCY_NATIVE_UI) || defined(PORTABLE_LORA_NATIVE_UI) || defined(PORTABLE_POINTS_NATIVE_UI) || defined(PORTABLE_STOPWATCH_NATIVE_UI) || defined(PORTABLE_TIMECARD_NATIVE_UI)
-  native_present_owner=native_token_owner=0;native_present_token=0;
-#endif
   int status = initialize();
-#ifdef PORTABLE_BLE_SCANNER_NATIVE_UI
-  if(!status)ble_scanner_native_enabled=false;
-#endif
-#ifdef PORTABLE_CALCULATOR_NATIVE_UI
-  if(!status)calculator_native_enabled=false;
-#endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-  if(!status)files_native_enabled=false;
-#endif
-#ifdef PORTABLE_FREQUENCY_NATIVE_UI
-  if(!status)frequency_native_enabled=false;
-#endif
-#ifdef PORTABLE_LORA_NATIVE_UI
-  if(!status)lora_native_enabled=false;
-#endif
-#ifdef PORTABLE_POINTS_NATIVE_UI
-  if(!status)points_native_enabled=false;
-#endif
-#ifdef PORTABLE_TIMECARD_NATIVE_UI
-  if(!status)timecard_native_enabled=false;
-#endif
-#ifdef PORTABLE_STOPWATCH_NATIVE_UI
-  if(!status)stopwatch_native_enabled=false;
+#ifdef PORTABLE_NATIVE_SCENE
+  if(!status){native_scene=(portable_native_scene_state){0};native_scene_submitting=native_scene_token_owned=false;native_scene_token=0;native_scene_cancel_contact();}
 #endif
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
   if(status) {

@@ -1,6 +1,0 @@
-000013f8 D __bss_start
-         U __divdi3
-         U __moddi3
-000013f8 D _edata
-000013f8 D _end
-000001e0 T paper_project_probe

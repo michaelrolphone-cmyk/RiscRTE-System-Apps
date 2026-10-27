@@ -11,7 +11,9 @@ def run(runtime, manifests):
  out=ROOT/'build/wifi-manifest';out.mkdir(parents=True,exist_ok=True)
  sources=['src/bootstrap/Json.cpp','src/bootstrap/Board.cpp','src/bootstrap/Runtime.cpp',
           'src/runtime/drivers/ProviderGraphV2.cpp','src/runtime/drivers/ProviderModuleV2.cpp']
- includes=['src','sdk/app','sdk/driver','sdk/hardware','lib/ArduinoJson/src','test/drivers/stubs']
+ for source in ['src/runtime/streams/AppStreamSessions.cpp','src/runtime/streams/ProviderQueueHost.cpp']:
+  if (runtime/source).exists():sources.append(source)
+ includes=['src','sdk/app','sdk/driver','sdk/hardware','lib/ArduinoJson/src','test/drivers/stubs','test']
  binary=out/'admit'
  subprocess.run([os.environ.get('CXX','c++'),'-std=c++17','-Wall','-Wextra','-Werror','-Wno-missing-field-initializers',
                  *['-I'+str(runtime/p) for p in includes],*[str(runtime/p) for p in sources],

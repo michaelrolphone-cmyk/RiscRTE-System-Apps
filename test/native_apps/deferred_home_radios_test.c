@@ -130,27 +130,9 @@ static int32_t deferred_alarm_step(void *c) {
  }
  return step_alarm(c);
 }
-#ifdef PORTABLE_SETTINGS_AVAILABILITY
-#include "RiscKeyValueAvailabilityV1.h"
-static int32_t deferred_availability(void*c,risc_key_value_availability_state_v1*out){
- (void)c;safe();*out=(risc_key_value_availability_state_v1){.struct_size=sizeof(*out),
-  .namespace_id=1,.availability=RISC_KEY_VALUE_AVAILABLE,.generation=1};return RISC_KEY_VALUE_AVAILABILITY_OK;
-}
-static const risc_key_value_availability_v1 available_settings={1,sizeof(available_settings),NULL,deferred_availability};
-#endif
 static bool deferred_obtain(const char *name,uint32_t version,uint64_t id,risc_runtime_capability_v1 *g) {
  safe();assert(grants<16&&g->struct_size==sizeof(*g));
  const void *api=NULL;
-#ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
- /* This lifecycle fixture has no atomic writer. Model a clean optional
-  * refusal; current Home must never fall back to legacy preference writes. */
- if(!strcmp(name,"storage.key-value.atomic")){assert(version==1&&id==1);return false;}
-#endif
-#ifdef PORTABLE_SETTINGS_AVAILABILITY
- if(!strcmp(name,RISC_KEY_VALUE_AVAILABILITY_CAPABILITY)) {
-  assert(promoted&&version==1&&id==1);g->api=&available_settings;g->slot=++grants;g->generation=1;return true;
- }
-#endif
  if(!strcmp(name,"board.battery")) {
   assert(obtain(name,version,id,g));deferred_battery=*(const risc_battery_gauge_api_v1 *)g->api;
   deferred_battery.read=deferred_battery_read;g->api=&deferred_battery;return true;
@@ -305,10 +287,7 @@ static void once_loaded(void) {
  for(unsigned i=0;i<10;i++){assert(deferred_test_ready(false));assert(deferred_test_ready(true));}
  assert(radio_calls()==before&&!terminal&&!barriers);
 }
-#ifndef DEFERRED_FIXTURE_MAIN
-#define DEFERRED_FIXTURE_MAIN main
-#endif
-int DEFERRED_FIXTURE_MAIN(int argc,char **argv) {
+int main(int argc,char **argv) {
  assert(argc==2);deferred_case=argv[1];clock_run=!strncmp(deferred_case,"clock-",6);
  raw_async=is_case("low-battery-pending")||is_case("clock-async")||is_case("force-pending-frame")||is_case("failed-pending-frame");force_allowed=!clock_run;configure();
  if(clock_run) {
@@ -362,14 +341,8 @@ int DEFERRED_FIXTURE_MAIN(int argc,char **argv) {
  } else if(is_case("low-battery-pending")) {
   assert(deferred_test_submit()&&deferred_test_queue_token());
   assert(raw_present_pending&&!completed_frame&&!home_markers&&!radio_calls());
-  assert(deferred_test_low_battery());
-  assert(raw_present_pending&&!completed_frame&&!home_markers);
-#ifdef PORTABLE_HOME_AUTOMATIC_PREFERENCES
-  /* A cleanly unavailable atomic writer neither falls back nor applies radios. */
-  assert(!written_count&&!radio_calls()&&!deferred_test_loaded());
-#else
-  once_loaded();assert(written_count>=4);
-#endif
+  assert(deferred_test_low_battery());once_loaded();
+  assert(raw_present_pending&&!completed_frame&&!home_markers&&written_count>=4);
   unsigned before=radio_calls();assert(deferred_test_low_battery()&&radio_calls()==before);
  } else if(is_case("force-navigation")) {
   const t5_app_api_v1 *app=t5_app_get_api(1);assert(app);t5_app_input_t input={0};

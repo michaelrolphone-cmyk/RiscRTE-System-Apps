@@ -14,8 +14,11 @@ from pathlib import Path
 import portable_broadcast_build
 import portable_quick_build
 import portable_idle_build
+import portable_foreground_idle_build
 import portable_native_toolbar_build
 import portable_performance_build
+import portable_native_performance_build
+import portable_raster_memory_build
 import portable_paper_build
 import shutil
 import subprocess
@@ -63,12 +66,19 @@ def catalog_source(path,limit=18,authority_boot=None):
 
 def build():
     parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--springboard-gesture-diagnostics',action='store_true',help='Explicit bounded Springboard-only decoded/mapped/delta terminal gesture summaries; no keyboard/modal coordinates')
+    parser.add_argument("--last-attempt-checkpoint",action="store_true",help="Opt-in bounded RAM checkpoint before callbacks; names attempts, not failure causes")
+    parser.add_argument("--safe-viewport",action="store_true",help="Use capability safe insets without changing the physical raster")
     parser.add_argument("--touch-scrolling",action="store_true",help="Explicit native X4 horizontal paged paper app grid")
     parser.add_argument("--installed-catalog-volume-instance",type=int,help="Opt in to cached installed-app discovery on this async storage volume")
     parser.add_argument("--installed-authority-boot",type=Path,help="Exclude removable bootstrap identities from the compiled installed list; preserve them only as SD authority reservations")
     parser.add_argument("--catalog",type=Path,help="Explicit bounded installed/admitted deployment catalog JSON")
     parser.add_argument("--display-rotation",type=int,choices=[0,90],default=None,help="Software portrait mapping for a native retaining MONO1 surface; raw touch is already logical")
     parser.add_argument("--navigation",action="store_true",help="Bind generic input.navigation alongside raw touch")
+    parser.add_argument("--watch-native-ui",action="store_true",help="Explicit shared Watch color presentation at capability-native dimensions; unknown refresh is not a performance claim")
+    portable_raster_memory_build.add_arguments(parser)
+    parser.add_argument("--nova-mask-bounds",action="store_true",help="Prove untouched black mask regions from immutable native commands (default off)")
+    parser.add_argument("--sliced-native-frames",action="store_true",help="Explicit immutable native Nova replay with completed-frame hit maps")
     parser.add_argument("--nova-ui",action="store_true",help="Settings-derived 240x240 shared utility profile")
     parser.add_argument("--alarm-client",action="store_true",help="Explicit alarm.service foreground overlay consumer")
     parser.add_argument("--wall-time",action="store_true",help="Read RTC wall time without timezone conversion")
@@ -81,10 +91,15 @@ def build():
     parser.add_argument("--return-app", help="Explicit root-Back destination .elf")
     portable_broadcast_build.options(parser)
     portable_quick_build.options(parser)
+    portable_foreground_idle_build.options(parser)
     portable_native_toolbar_build.options(parser)
     portable_performance_build.options(parser)
+    portable_native_performance_build.options(parser)
     portable_paper_build.options(parser)
     args=parser.parse_args()
+    portable_native_performance_build.validate(args,parser,args.time_profile)
+    if args.springboard_gesture_diagnostics and (not args.native_performance_trace or not args.watch_native_ui):parser.error('Springboard gesture diagnostics require explicit native Watch RAM trace')
+    portable_foreground_idle_build.validate(args,parser)
     portable_native_toolbar_build.validate(args,parser)
     portable_broadcast_build.validate(args,parser,portable_native_toolbar_build.selected(args))
     portable_paper_build.validate(args,parser)
@@ -94,6 +109,11 @@ def build():
     if args.installed_catalog_volume_instance is not None:
         if args.installed_catalog_volume_instance<1 or not args.touch_scrolling or not args.resident_shell_client:
             parser.error('Installed catalog requires a positive volume instance and resident touch-scrolling Springboard')
+    if args.watch_native_ui and (args.safe_viewport or args.touch_scrolling):parser.error("Watch native presentation uses its own color geometry, not paper/safe-viewport profiles")
+    if args.sliced_native_frames and (not args.watch_native_ui or args.time_profile!='watch-native-time'):
+        parser.error("Sliced native frames require the current Watch native-time presentation")
+    if args.nova_mask_bounds and not args.sliced_native_frames:parser.error("Nova mask bounds require --sliced-native-frames")
+    if args.watch_native_ui:args.nova_ui=True
     if args.wall_time and args.denver:parser.error("Choose one explicit RTC policy")
     flags=["-DPORTABLE_TOUCH_ROTATION="+str(args.rotation)]+(["-DPORTABLE_RTC_UTC8_DENVER"] if args.denver else [])
     if args.touch_scrolling:flags += ["-DPORTABLE_TOUCH_SCROLL","-DPORTABLE_APP_TOUCH_SCROLL","-DPORTABLE_SPRINGBOARD_TOUCH_SCROLL","-DPORTABLE_NOVA_UI"]
@@ -101,8 +121,12 @@ def build():
     if args.handoff_ms!=180: flags.append("-DPORTABLE_HANDOFF_EAGER_MS="+str(args.handoff_ms))
     if args.return_app: flags.append('-DPORTABLE_RETURN_APP="'+args.return_app+'"')
     flags.append("-DPORTABLE_DISPLAY_ROTATION="+str(args.display_rotation))
+    if args.safe_viewport: flags.append('-DPORTABLE_SAFE_VIEWPORT')
     if args.navigation: flags.append("-DPORTABLE_INPUT_NAVIGATION")
     if args.nova_ui: flags.append("-DPORTABLE_NOVA_UI")
+    if args.watch_native_ui:flags += ["-DPORTABLE_WATCH_NATIVE_HEIGHT","-DPORTABLE_WATCH_COLOR_ONLY"]
+    if args.springboard_gesture_diagnostics:flags.append('-DPORTABLE_SPRINGBOARD_GESTURE_TRACE')
+    if args.sliced_native_frames:flags += ["-DPORTABLE_NOVA_SLICED_FRAMES","-DPORTABLE_RASTER_WORK_BUDGET_MS=8","-DPORTABLE_FRAME_RECEIPTS","-DPORTABLE_RASTER_SNAPSHOT","-DPORTABLE_INPUT_SAMPLE_INTERVAL_MS=2u","-DPORTABLE_RASTER_COOPERATIVE_INPUT","-DPORTABLE_RGB565_SPAN_FILL"]
     if args.alarm_client: flags.append("-DPORTABLE_ALARM_CLIENT")
     if args.full_frames: flags.append("-DPORTABLE_FORCE_FULL_FRAMES")
     if args.retained_rgb565_handoff: flags.append("-DPORTABLE_RETAINED_RGB565_HANDOFF")
@@ -122,6 +146,18 @@ def build():
         shutil.copyfile(args.native_time_runtime_repo/'sdk/app/RiscStorageVolumeV1.h',includes/'RiscStorageVolumeV1.h')
     quick_flags,quick_sources=portable_quick_build.configure(args,parser,ROOT,out,includes);flags+=quick_flags
     flags+=portable_broadcast_build.flags(args)
+    includes,idle_flags,idle_sources=portable_foreground_idle_build.configure(args,parser,ROOT,out,includes)
+    flags+=idle_flags
+    flags += portable_raster_memory_build.configure(args,parser,flags)
+    if args.nova_mask_bounds:flags.append("-DPORTABLE_NOVA_MASK_BOUNDS")
+    quick_sources+=idle_sources
+    native_perf_flags,native_perf_receipt=portable_native_performance_build.configure(args,parser,includes)
+    flags+=native_perf_flags
+    if args.last_attempt_checkpoint:
+        if "-DPORTABLE_NATIVE_CUSTODY_FENCE" not in flags:parser.error("Last-attempt checkpoint requires native custody fence")
+        flags.append("-DPORTABLE_LAST_ATTEMPT_CHECKPOINT")
+        for name in ["PortableLastAttempt.h", "RiscDiagnosticCheckpointV1.h"]:
+            shutil.copyfile(ROOT/"lib/PortableApps/include"/name,includes/name)
     exports=portable_quick_build.exports(args,{'app_main', 'app_module_init', 'app_module_fini'})
     mapping = out/'springboard.map'
     mapping.write_text('{ global: '+ '; '.join(sorted(exports))+'; local: *; };\n')
@@ -134,11 +170,12 @@ def build():
     elf = out/'springboard.elf'
     sources = [ROOT/'Apps/springboard.c', ROOT/'lib/PortableApps/src/adapter.c', ROOT/'lib/NativeApps/src/SingleFloatDivisionCompat.c', catalog]+quick_sources+native_sources
     if args.installed_catalog_volume_instance is not None:sources.append(ROOT/'lib/PortableApps/src/PortableInstalledCatalog.c')
-    subprocess.run([cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
+    compile_command=[cc, '-std=c11', '-Os', '-fPIC', '-mtext-section-literals', '-mlongcalls',
         '-fvisibility=hidden', '-ffreestanding', '-fno-builtin', '-nostdlib', '-nostartfiles', '-shared',
         '-Wl,--hash-style=sysv', '-Wl,--version-script='+str(mapping), '-Wall', '-Wextra', '-Werror', *flags,
         '-I'+str(includes),
-        '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)], check=True, timeout=120)
+        '-I'+str(ROOT/'lib/NativeApps/include'), *map(str, sources), '-o', str(elf)]
+    subprocess.run(compile_command, check=True, timeout=120)
     symbols = subprocess.check_output([cc.removesuffix('gcc')+'nm', '-D', str(elf)], text=True)
     imports = {line.split()[-1] for line in symbols.splitlines() if ' U ' in ' '+line}
     allowed = {'risc_runtime_get_api','memcpy','memset','memcmp','memchr','strcmp','strlen','snprintf','strcpy','malloc','free'}
@@ -177,6 +214,7 @@ def build():
     portable_quick_build.requirements(args,manifest['requires'])
     portable_native_toolbar_build.requirements(args,manifest['requires'])
     portable_broadcast_build.requirements(args,manifest['requires'])
+    portable_foreground_idle_build.requirements(args,manifest['requires'])
     (out/'springboard.json').write_text(json.dumps(manifest,indent=2)+'\n')
     inputs=['Apps/SpringboardPaperHeader.h','scripts/generate_springboard_header_fonts.py','Apps/springboard_pages.h','Apps/springboard_scroll.inc','Apps/PaperBattery.h','Apps/PaperFrame.h','scripts/portable_quick_build.py','Apps/PaperPresentation.h','Apps/springboard_paper.inc','lib/PortableApps/include/PortableTransition.h','Apps/springboard.c','Apps/springboard.json','lib/PortableApps/src/adapter.c',
             'lib/PortableApps/src/nova.inc','Apps/springboard_nova.inc','Apps/springboard_motion.h','Apps/SpringboardPresentation.h','lib/PortableApps/fonts/icons.inc','lib/PortableApps/fonts/text.inc','lib/PortableApps/fonts/SOURCES.json','lib/NativeApps/src/SingleFloatDivisionCompat.c','lib/PortableApps/include/PortableRtcClock.h',
@@ -188,7 +226,8 @@ def build():
                'lib/NativeApps/include/T5StorageApi.h','lib/NativeApps/include/T5VideoApi.h']
     inputs += [str(p.relative_to(ROOT)) for p in sorted((ROOT/'lib/PortableApps').rglob('*')) if p.is_file()]
     inputs=sorted(set(inputs))
-    record={'catalog':catalog_record,'purpose':'portable-development-artifact-not-deployment','version':version,
+    inputs.append('scripts/portable_raster_memory_build.py')
+    record={'nova_mask_bounds':args.nova_mask_bounds,'raster_memory':portable_raster_memory_build.record(args),'sliced_native_frames':args.sliced_native_frames,'raster_work_budget_ms':8 if args.sliced_native_frames else 2,'last_attempt_checkpoint':args.last_attempt_checkpoint,'watch_native_ui':args.watch_native_ui,'build_defines':flags,'catalog':catalog_record,'purpose':'portable-development-artifact-not-deployment','version':version,
         'repository_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         'full_frames':args.full_frames,'retained_rgb565_handoff':args.retained_rgb565_handoff,'touch_rotation':args.rotation,'clock_policy':'rtc-utc8-america-denver' if args.denver else 'rtc-wall-time' if args.wall_time else 'unavailable',
         'display_rotation':args.display_rotation,'navigation':args.navigation,'quick_actions':args.quick_actions,'quick_usb_transfer':args.quick_usb_transfer,'quick_radios':args.quick_radios,'home_app':args.home_app,'working_tree_dirty':bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True).strip()),
@@ -218,8 +257,12 @@ def build():
     portable_broadcast_build.record(args,ROOT,record,manifest,flags)
     portable_idle_build.record(args,record,flags)
     portable_quick_build.record(args,record)
-    portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
     portable_quick_build.record(args,record)
+    portable_foreground_idle_build.record(args,record,flags,compile_command=compile_command)
+    portable_native_toolbar_build.write_admission(ROOT,out,manifest,record)
+    portable_native_performance_build.record(ROOT,native_perf_receipt,record)
+    if args.springboard_gesture_diagnostics:
+        record['springboard_gesture_diagnostics']={'schema':1,'classification':'bounded-terminal-gesture-diagnostic-not-performance-metric','selector':'PORTABLE_SPRINGBOARD_GESTURE_TRACE','tags':[224,225,226,227,228],'max_records_per_gesture':14,'max_semantic_points':4,'provider_coordinates':'decoded-not-raw-CST-bytes','scope':'Springboard-owned only; suppress Quick/alarm/other apps','transport':'existing-owner-RAM-trace; explicit perf capture only','physical_verified':False}
     (out/'springboard-build-record.json').write_text(json.dumps(record,indent=2)+'\n')
     print('Portable Springboard: target layout, ELF validator, import/export checks passed')
 

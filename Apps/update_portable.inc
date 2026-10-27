@@ -5,14 +5,6 @@
  * selected service grant. Wi-Fi credentials and foreground radio belong here. */
 #include "T5AppApi.h"
 #include "PortableWifiView.h"
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-#ifndef PORTABLE_UPDATE_VERSION
-#error "Native update UI requires an explicit application version"
-#endif
-#if !defined(PORTABLE_UPDATE_FIRMWARE) || (PORTABLE_UPDATE_FIRMWARE != 0 && PORTABLE_UPDATE_FIRMWARE != 1) || !defined(PORTABLE_NOVA_UI) || !defined(PORTABLE_NATIVE_CANVAS) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE)
-#error "Native update UI requires explicit apps/firmware service, Nova, native canvas and checked custody"
-#endif
-#endif
 #include "PaperFrame.h"
 #include "PortableWifiSavedNetwork.h"
 #include "PortableRtcClock.h"
@@ -67,9 +59,6 @@ static uint32_t selected,confirm_choice,connect_started;
 static bool home_handoff;
 void portable_update_handoff(void){home_handoff=true;}
 static bool opened,dirty,armed,connecting,cleanup_pending,confirming,install_after_connect,restart_pending,radio_owned;
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-#include "update_native.inc"
-#endif
 #include "update_paper.inc"
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
 #include "update_scroll.inc"
@@ -93,9 +82,6 @@ bool portable_update_suspend(void) {
  if(portable_adapter_retained())return false;
 #endif
  if(!opened)return true;
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- portable_wifi_native_invalidate();un_model_valid=false;
-#endif
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
  if(up)ups_interrupt();
 #endif
@@ -117,11 +103,7 @@ bool portable_update_suspend(void) {
  if(us&&!us->status(us->context,&ust)){cleanup_pending=true;message="Service status unavailable";dirty=true;return false;}
  cleanup_pending=false;confirming=false;install_after_connect=false;armed=false;message="Cancelled; check again when ready";dirty=true;return true;
 }
-void portable_update_resume(void) {if(PORTABLE_APP_RETAINED())return;if(opened){
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- portable_wifi_native_invalidate();un_model_valid=false;
-#endif
-armed=false;dirty=true;message="Woke; check again when ready";}}
+void portable_update_resume(void) {if(PORTABLE_APP_RETAINED())return;if(opened){armed=false;dirty=true;message="Woke; check again when ready";}}
 bool portable_update_close(void) {
  if(PORTABLE_APP_RETAINED())return false;
  if(!opened)return true;if(!portable_update_suspend())return false;
@@ -232,9 +214,6 @@ static void update_tick(void) {
    }else
    #endif
    if(install_after_connect){
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-    if(!up&&!un_selected_current()){(void)portable_update_suspend();message="Release changed; choose and confirm again";return;}
-#endif
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
     if(up&&!ups_selected_current()){(void)portable_update_suspend();message="Release changed; choose and confirm again";return;}
 #endif
@@ -279,13 +258,7 @@ static void render_update(void) {
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
  if(up){ups_render();return;}
 #endif
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- un_candidate_valid=false;
-#endif
  memset(&uv,0,sizeof(uv));uv.title=PORTABLE_UPDATE_FIRMWARE?"FIRMWARE UPDATE":"APP STORE";uv.message=message;
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- uv.detail="Native " PORTABLE_UPDATE_VERSION;
-#endif
  if(restart_pending){uv.count=1;uv.rows[0]="Restart device";uv.values[0]=ust.state==SOFTWARE_UPDATE_ACTIVATION_UNKNOWN?"Activation uncertain; restart required":"Activation confirmed; restart required";}
  else if(cleanup_pending){uv.count=1;uv.rows[0]="Retry cleanup";uv.values[0]="Resources retained until cleanup succeeds";}
  else if(connecting||ust.state==SOFTWARE_UPDATE_CATALOG||(ust.state>=SOFTWARE_UPDATE_PREPARING&&ust.state<=SOFTWARE_UPDATE_READY)){
@@ -305,13 +278,6 @@ uv.values[1]=selected_row.version;uv.detail=selected_row.id;}
    if(!index){uv.rows[i]="Check / retry";uv.values[i]=up?"Repository release catalog":"Watch repository release catalog";continue;}
    software_update_row_v1 r={.struct_size=sizeof(r)};
    if(!us||!us->get(us->context,index-1,&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-   if(PORTABLE_APP_RETAINED())return;
-   /* Validate every displayed row before string formatting, not only the
-    * selected release before authorization. Malformed provider data is inert. */
-   if(!un_row_valid(&r)){uv.rows[i]="Unavailable";uv.values[i]="Retry Check";continue;}
-   if(index==selected){un_candidate=r;un_candidate_valid=true;}
-#endif
    snprintf(row_names[i],sizeof(row_names[i]),"%s",r.id);
    const char *state=r.availability==SOFTWARE_UPDATE_AVAILABLE?"Update":r.availability==SOFTWARE_UPDATE_CURRENT?"Current":
 #ifdef PORTABLE_APP_STORE_ACTIONS
@@ -326,35 +292,20 @@ r.availability==SOFTWARE_UPDATE_USB_ONLY?"USB only":"Unsupported";
   up_first=uv.selected/4*4;
   if(!paper_frame_ready())return;
   up_draw();
- }else {
-  portable_wifi_render(&uv);
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-  if(!portable_update_native_drawn(&uv))return;
-  un_remember();
-#endif
- }
+ }else portable_wifi_render(&uv);
  dirty=false;
 }
 static bool open_update(void) {
  if(PORTABLE_APP_RETAINED())return false;
-#if defined(PORTABLE_NATIVE_TIME_TOOLBAR) || defined(PORTABLE_UPDATE_NATIVE_UI)
+#ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(opened)return true;
 #endif
  ua=t5_app_get_api(1);ur=PORTABLE_APP_RUNTIME();
- if(!ua||!ua->poll||!ua->millis||!ua->screen_width||!ua->screen_height||ua->screen_width()<
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- 128||ua->screen_height()<128||
-#else
- 240||ua->screen_height()<240||
-#endif
-!ur||ur->api_version!=1||ur->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!ur->acquire||!ur->release||!ur->yield_ms||!ur->diagnostic)return false;
+ if(!ua||!ua->poll||!ua->millis||!ua->screen_width||!ua->screen_height||ua->screen_width()<240||ua->screen_height()<240||!ur||ur->api_version!=1||ur->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE||!ur->acquire||!ur->release||!ur->yield_ms||!ur->diagnostic)return false;
 #ifdef PORTABLE_BLE_BROADCAST
  if(!portable_broadcast_stop())return false;
 #endif
  home_handoff=false;up=paper_presentation_get();
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- portable_wifi_native_invalidate();un_model_valid=false;un_mode=~0u;
-#endif
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
  ups_reset();
 #endif
@@ -401,10 +352,6 @@ void app_main(void) {
  if(up)ups_prepare();
  if(PORTABLE_APP_RETAINED())return;
 #endif
-#ifdef PORTABLE_UPDATE_NATIVE_UI
- if(!up)un_prepare();
- if(PORTABLE_APP_RETAINED())return;
-#endif
  if(dirty)render_update();t5_app_input_t input;
   if(!ua->poll(&input,25)){
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
@@ -437,24 +384,6 @@ void app_main(void) {
 #endif
    return;
   }
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-  if(!up&&input.tapped){
-   if(!portable_wifi_native_accept(&uv))continue;
-   int hit=portable_wifi_hit(&uv,input.touch_x,input.touch_y);input.tapped=false;
-   if(hit==WIFI_HIT_BACK){
-    if(confirming&&!home_handoff){confirming=false;dirty=true;continue;}
-    if(!portable_update_close()){dirty=true;continue;}
-#ifdef UPDATE_RETURN_APP
-    if(!home_handoff&&!ur->request_launch(UPDATE_RETURN_APP))ur->diagnostic("UPDATE return-request-failed");
-#endif
-    return;
-   }
-   if(hit==WIFI_HIT_PREVIOUS)input.buttons=T5_APP_BUTTON_UP;
-   else if(hit==WIFI_HIT_NEXT)input.buttons=T5_APP_BUTTON_DOWN;
-   else if(hit==WIFI_HIT_SELECT)input.buttons=T5_APP_BUTTON_CONFIRM;
-   else {if(hit>=0){if(confirming)confirm_choice=(unsigned)hit;else if(!connecting&&ust.state==SOFTWARE_UPDATE_LIST)selected=selected/16*16+(unsigned)hit;dirty=true;}continue;}
-  }
-#endif
   bool activate=false;
   if(input.tapped&&up){
    if(input.touch_x>=32&&input.touch_x<ua->screen_width()-32&&input.touch_y>=108&&input.touch_y<492){
@@ -485,19 +414,10 @@ void app_main(void) {
   /* Cancel remains immediate while a progress/confirmation frame is BUSY. */
   if(up&&activate&&!cleanup_pending&&!busy&&!(confirming&&!confirm_choice)&&!ups_confirm_ready())continue;
 #endif
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-  /* Back and Cancel may preempt pending output; installation must belong to
-   * the completed native model and a still-identical selected release. */
-  if(!up&&activate&&!cleanup_pending&&!busy&&!(confirming&&!confirm_choice)&&
-     (!portable_wifi_native_accept(&uv)||!un_model_current()))continue;
-#endif
   if(!activate){update_tick();continue;}
   if(restart_pending){if(!us->restart(us->context)){message="Restart not accepted; retry Restart";dirty=true;}continue;}
   if(cleanup_pending||busy){(void)portable_update_suspend();dirty=true;continue;}
   if(confirming){bool install=confirm_choice==1;confirming=false;dirty=true;if(install){
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-   if(!up&&!un_selected_current())continue;
-#endif
 #ifdef PORTABLE_UPDATE_TOUCH_SCROLL
    if(up&&!ups_selected_current())continue;
 #endif
@@ -512,10 +432,6 @@ void app_main(void) {
   if(!selected){(void)connect_saved(false);continue;}
   selected_row=(software_update_row_v1){.struct_size=sizeof(selected_row)};
   if(us&&us->get(us->context,selected-1,&selected_row)){
-#ifdef PORTABLE_UPDATE_NATIVE_UI
-   if(PORTABLE_APP_RETAINED())return;
-   if(!un_row_valid(&selected_row)){un_changed();continue;}
-#endif
    message=selected_row.reason;
 #ifdef PORTABLE_APP_STORE_ACTIONS
    if((selected_row.availability==SOFTWARE_UPDATE_REMOVE||selected_row.availability==SOFTWARE_UPDATE_INSTALL_SD)&&inventory_choose(selected-1)){confirming=true;confirm_choice=0;}
