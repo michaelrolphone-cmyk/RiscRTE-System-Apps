@@ -28,8 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           python -m pip install Pillow==12.3.0
-          python scripts/generate_telemetry_fonts.py
-          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
+          python scripts/verify_telemetry_fonts.py
           git diff --exit-code
       - name: Test actual telemetry presenter and existing Reader/lifecycle behavior
         run: |

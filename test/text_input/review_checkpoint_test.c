@@ -72,7 +72,17 @@ int main(int argc,char**argv){
   if(!strcmp(mode,"flags")){pending=true;assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_PRESENTING);pending=false;review_input_busy=true;assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_INPUT_BUSY);review_input_busy=false;review_activity=true;assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY);assert(!(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY));finish_review();}
   else if(!strcmp(mode,"usb-flags")){key(4,0);assert(!strcmp(tick().text,"drafta"));assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY);assert(!(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY));flush();held=true;tick();assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_INPUT_BUSY);assert(checkpoint->pause(NULL,session)==RISC_TEXT_ENTRY_BUSY);held=false;consume_activity();assert(!checkpoint->pause(NULL,session));finish_review();}
   else if(!strcmp(mode,"usb-activity-race")){consume_activity();key(0x39,0);assert(checkpoint->pause(NULL,session)==RISC_TEXT_ENTRY_BUSY);assert(!review_paused&&kb_active);assert(snapshot_flags()&RISC_TEXT_ENTRY_CHECKPOINT_ACTIVITY);flush();assert(!checkpoint->pause(NULL,session));finish_review();}
-  else if(!strcmp(mode,"usb-queue")){for(unsigned i=0;i<34;i++)key(4,0);assert(checkpoint->pause(NULL,session)==RISC_TEXT_ENTRY_BUSY);assert(!review_paused);consume_activity();assert(!strcmp(tick().text,"draft"));assert(!checkpoint->pause(NULL,session));finish_review();}
+  else if(!strcmp(mode,"usb-queue")){
+  /* A full bounded batch is not an overflow. All34 valid events must be
+   * consumed in order; the25-byte request truncates only at its24-char limit. */
+  for(unsigned i=0;i<34;i++)key(4,0);
+  assert(checkpoint->pause(NULL,session)==RISC_TEXT_ENTRY_BUSY);assert(!review_paused);
+  assert(key_at==RISC_USB_INPUT_QUEUE_LENGTH);
+  risc_text_entry_state_v1 complete=tick();assert(key_at==key_count&&key_count==34);
+  assert(!strcmp(complete.text,"draftaaaaaaaaaaaaaaaaaaa"));
+  (void)snapshot_flags();flush();
+  assert(!checkpoint->pause(NULL,session));finish_review();
+ }
   else if(!strcmp(mode,"outcome-race")||!strcmp(mode,"home-race")||!strcmp(mode,"key-race")){
    if(!strcmp(mode,"home-race"))event=(risc_scene_event_v1){.struct_size=sizeof(event),.kind=RISC_SCENE_SUSPEND_EVENT,.document_revision=doc.revision};else scene_key(!strcmp(mode,"outcome-race")?RISC_SCENE_KEY_DONE:'Z');
    assert(checkpoint->pause(NULL,session)==RISC_TEXT_ENTRY_BUSY);assert(!review_paused);risc_text_entry_state_v1 s=tick();
@@ -116,6 +126,7 @@ int main(int argc,char**argv){
    }else if(!strcmp(kind,"sleep")){
     held=true;key(4,0);assert(!checkpoint->resume(NULL,session,RISC_TEXT_ENTRY_RESUME_FOCUS_CHANGED));assert(!strcmp(tick().text,"draft"));flush();held=false;tick();key(5,0);assert(!strcmp(tick().text,"draftb"));
    }else if(!strcmp(kind,"overflow")){
+    keys[key_count++]=(risc_usb_keyboard_event_v1){.kind=98}; /* Explicit provider overflow/GAP. */
     for(unsigned i=0;i<34;i++){key(4,0);}assert(!checkpoint->resume(NULL,session,0));assert(!strcmp(tick().text,"draft"));assert(!strcmp(tick().text,"draft"));flush();key(5,0);assert(!strcmp(tick().text,"draftb"));
    }else if(!strcmp(kind,"close")){key(4,0);assert(!api->close(NULL,session));assert(!kb_active&&unsubs==before_unsubs+1);assert(driver->quiesce());driver->stop();printf("review checkpoint %s PASS\n",mode);return 0;}
    else assert(0);

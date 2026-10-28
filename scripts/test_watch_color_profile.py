@@ -14,7 +14,8 @@ class WatchColorProfile(unittest.TestCase):
    self.assertNotRegex(s,r'^\s*#define\s+PORTABLE_WATCH_(COLOR_ONLY|FROZEN_ICONS)\b',name)
  def test_incompatible_panels_rejected(self):
   s=(ROOT/'lib/PortableApps/src/foreground_adapter_open.inc').read_text()
-  self.assertIn('#ifdef PORTABLE_WATCH_COLOR_ONLY\n  if(info.width!=240 || info.height!=240 ||',s)
+  self.assertIn('#ifdef PORTABLE_WATCH_COLOR_ONLY\n  if(!(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))return -1;\n#ifndef PORTABLE_WATCH_NATIVE_HEIGHT\n  if(info.width!=240 || info.height!=240)return -1;\n#endif',s)
+  self.assertIn('if(surface_format!=RISC_DISPLAY_FORMAT_RGB565 || !nu_layout_ready() || nu_height()<240)return -1;',s)
   self.assertIn('!(info.supported_formats&RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)))return -1;',s)
  def test_generic_paper_path_retained(self):
   s=(ROOT/'lib/PortableApps/src/quick_adapter.inc').read_text()
