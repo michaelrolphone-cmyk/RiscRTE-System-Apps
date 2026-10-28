@@ -62,6 +62,21 @@ class ForegroundIdleBuildTest(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
             idle.validate(self.parser.parse_args(argv), self.parser)
 
+    def test_unselected_native_recipe_does_not_grant_foreground_capabilities(self):
+        args = self.parser.parse_args([])
+        source = self.base/'native.c'
+        source.write_text('int native_entry(void){return 0;}\n')
+        command = ['target-gcc', '-DNATIVE_UI', '-I'+str(self.include), str(source), '-o', str(self.out/'native.elf')]
+        record = {'grant_bindings': {'storage.key-value': [5]}}
+        idle.record(args, record, ['-DNATIVE_UI'], compile_command=command)
+        self.assertEqual(record['compile_command'], command)
+        self.assertEqual(record['compile_inputs']['sources'], [str(source)])
+        self.assertEqual(record['compile_inputs']['source_sha256'][str(source)], hashlib.sha256(source.read_bytes()).hexdigest())
+        self.assertEqual(record['compile_inputs']['definitions'], ['-DNATIVE_UI'])
+        self.assertEqual(record['compile_inputs']['include_directories'], [str(self.include)])
+        self.assertNotIn('foreground_idle', record)
+        self.assertEqual(record['grant_bindings'], {'storage.key-value': [5]})
+
     def test_omission_has_no_io_flags_sources_or_requirements(self):
         args = self.parser.parse_args([])
         with patch.object(idle, '_runtime_headers', side_effect=AssertionError('unexpected read')):

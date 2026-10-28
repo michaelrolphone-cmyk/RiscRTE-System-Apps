@@ -260,10 +260,8 @@ def requirements(args, needs):
 
 
 def record(args, value, flags, private_kv=(), compile_command=None):
-    if not selected(args):
-        return
-    value['foreground_idle'] = args.foreground_idle_receipt
-    value['build_defines'] = flags
+    # Exact compiler provenance is required for every selected native UI,
+    # independently of whether the optional foreground sleep helper is used.
     if compile_command is not None:
         value['compile_command'] = compile_command
         sources = [argument for argument in compile_command
@@ -274,6 +272,10 @@ def record(args, value, flags, private_kv=(), compile_command=None):
             'definitions': [argument for argument in compile_command if argument.startswith('-D')],
             'source_sha256': {source: _sha(Path(source).read_bytes()) for source in sources},
         }
+    if not selected(args):
+        return
+    value['foreground_idle'] = args.foreground_idle_receipt
+    value['build_defines'] = flags
     bindings = value.setdefault('grant_bindings', {})
     existing = bindings.get('storage.key-value', [])
     if isinstance(existing, int):
