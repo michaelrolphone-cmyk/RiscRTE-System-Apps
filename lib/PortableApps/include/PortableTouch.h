@@ -1,4 +1,5 @@
 #pragma once
+#include "PortableLastAttempt.h"
 #include "RiscRuntimeV1.h"
 #include "RiscTouchV1.h"
 #include <string.h>
@@ -82,7 +83,16 @@ static inline bool portable_touch_snapshot_valid(const risc_touch_snapshot_v1 *s
 static inline bool portable_touch_sync(portable_touch *t,bool initial) {
   risc_touch_snapshot_v1 s={0};
   if(t->terminal || !t->subscription)return false;
-  if(!t->api->snapshot(t->api->context,&s)) {
+  /* poll(false) may discard a report and advertise GAP without a current
+   * snapshot (e.g. CST9217). Drain/cancel that interval, but do not ask for an
+   * authoritative snapshot until a later successful report service. This also
+   * covers reset/modal boundaries. A snapshot callback that is actually called
+   * and returns false remains terminal; next(-2) remains terminal independently. */
+  if(t->poll_failed) {
+    t->neutral=t->down=t->moved=t->home_neutral=t->home_down=false;
+    t->initial_pending=false;t->resync=true;return false;
+  }
+  if(!PORTABLE_ATTEMPT_BOOL("touch.snapshot",t->api->snapshot(t->api->context,&s))) {
     portable_touch_terminal(t,"snapshot",0);return false;
   }
   if(!portable_touch_snapshot_valid(&s)) {
@@ -157,7 +167,7 @@ static inline bool portable_touch_close(portable_touch *t,const risc_runtime_api
 static inline bool portable_touch_collect(portable_touch *t) {
   if(t->terminal || !t->subscription)return false;
   if(!t->initialized && !portable_touch_sync(t,true))return false;
-  if(!t->api->poll(t->api->context,1)) {
+  if(!PORTABLE_ATTEMPT_BOOL("touch.poll",t->api->poll(t->api->context,1))) {
     t->poll_failed=true;portable_touch_fault(t,"poll",0);return false;
   }
   t->poll_failed=false;return true;
@@ -199,6 +209,7 @@ static inline bool portable_touch_next(portable_touch *t,portable_touch_sample *
   }
   bool cancelled=t->cancel_pending;t->cancel_pending=false;
   risc_touch_event_v1 e={0};
+  PORTABLE_LAST_ATTEMPT("touch.next");
   int n=t->api->next(t->api->context,t->subscription,&e);
   if(n < -1) {portable_touch_terminal(t,"next",n);out->cancelled=true;return false;}
   if(n==-1) {
@@ -214,7 +225,7 @@ static inline bool portable_touch_next(portable_touch *t,portable_touch_sample *
       portable_touch_level(t,out);return false;
     }
     risc_touch_snapshot_v1 s={0};
-    if(!t->api->snapshot(t->api->context,&s)) {
+    if(!PORTABLE_ATTEMPT_BOOL("touch.snapshot",t->api->snapshot(t->api->context,&s))) {
       portable_touch_terminal(t,"snapshot",0);out->cancelled=true;return false;
     }
     /* Another subscriber may have polled between next(empty) and snapshot().
@@ -272,7 +283,7 @@ static inline bool portable_touch_next(portable_touch *t,portable_touch_sample *
      * ordered edges, including independent taps, are still consumed normally. */
     if(t->down && t->neutral) {
       risc_touch_snapshot_v1 latest={0};
-      if(!t->api->snapshot(t->api->context,&latest)) {
+      if(!PORTABLE_ATTEMPT_BOOL("touch.snapshot-latest",t->api->snapshot(t->api->context,&latest))) {
         portable_touch_terminal(t,"snapshot",0);out->cancelled=true;return false;
       }
       if(latest.sequence>e.sequence && latest.timestamp_ms==e.timestamp_ms &&

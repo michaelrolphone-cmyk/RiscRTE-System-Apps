@@ -1,21 +1,22 @@
 #include "PortableInstalledCatalog.h"
+#include "RiscRuntimeClockV1.h"
 #include <string.h>
 #ifdef PORTABLE_INSTALLED_AUTHORITY_STYLES
 extern const t5_app_manifest_t portable_catalog_legacy_styles[];
 extern const unsigned portable_catalog_legacy_style_count;
 #endif
 /* Retry unavailable/exported media at most every two monotonic seconds.
- * Minimal test/legacy runtimes without health use a bounded 128-poll cooldown. */
+ * Minimal test/legacy runtimes without a clock use a bounded 128-poll cooldown. */
 static void maintenance_delay(portable_installed_catalog*c,const risc_runtime_api_v1*r){
- risc_runtime_health_v1 h={.struct_size=sizeof(h)};
+ uint32_t now=0;
  c->maintenance_backoff=true;c->maintenance_retry_polls=128;
- c->maintenance_clock=r->health&&r->health(&h);
- if(c->maintenance_clock)c->maintenance_retry_at=h.uptime_ms+2000u;
+ c->maintenance_clock=risc_runtime_monotonic_ms_v1(r,&now);
+ if(c->maintenance_clock)c->maintenance_retry_at=now+2000u;
 }
 static bool maintenance_wait(portable_installed_catalog*c,const risc_runtime_api_v1*r){
  if(!c->maintenance_backoff)return false;
- if(c->maintenance_clock&&r->health){risc_runtime_health_v1 h={.struct_size=sizeof(h)};
-  if(r->health(&h)){if((int32_t)(h.uptime_ms-c->maintenance_retry_at)<0)return true;c->maintenance_backoff=false;return false;}
+ if(c->maintenance_clock){uint32_t now=0;
+  if(risc_runtime_monotonic_ms_v1(r,&now)){if((int32_t)(now-c->maintenance_retry_at)<0)return true;c->maintenance_backoff=false;return false;}
  }
  if(c->maintenance_retry_polls){--c->maintenance_retry_polls;return true;}
  c->maintenance_backoff=false;return false;
@@ -105,9 +106,9 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
   }
  }
  if(!c->service)return INSTALLED_APPS_OK;
- if(!c->requested&&c->rescan_clock&&r->health){
-  risc_runtime_health_v1 h={.struct_size=sizeof(h)};
-  if(r->health(&h)&&(int32_t)(h.uptime_ms-c->rescan_at)>=0){
+ if(!c->requested&&c->rescan_clock){
+  uint32_t now=0;
+  if(risc_runtime_monotonic_ms_v1(r,&now)&&(int32_t)(now-c->rescan_at)>=0){
    c->rescan_clock=false;int refreshed=c->service->refresh(c->service->context);
    if(refreshed==INSTALLED_APPS_RETAINED){c->retained=true;return refreshed;}
    c->requested=c->wanted=true;
@@ -134,8 +135,8 @@ int portable_installed_step(portable_installed_catalog*c,const risc_runtime_api_
  if(ended==INSTALLED_APPS_WORKING)return ended;
  if(ended!=INSTALLED_APPS_OK){c->retained=true;return INSTALLED_APPS_RETAINED;}
  if(rc==INSTALLED_APPS_OK){c->wanted=false;c->maintenance_backoff=false;}else maintenance_delay(c,r);
- risc_runtime_health_v1 h={.struct_size=sizeof(h)};
- c->rescan_clock=r->health&&r->health(&h);if(c->rescan_clock)c->rescan_at=h.uptime_ms+30000u;
+ uint32_t now=0;
+ c->rescan_clock=risc_runtime_monotonic_ms_v1(r,&now);if(c->rescan_clock)c->rescan_at=now+30000u;
  c->requested=false;if(release_volume(c,r)!=INSTALLED_APPS_OK)return INSTALLED_APPS_RETAINED;
  return rc;
 }

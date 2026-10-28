@@ -1,4 +1,5 @@
 #pragma once
+#include "PortableLastAttempt.h"
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
 #include "PortableAlarmTerminalClient.h"
 #else
@@ -65,16 +66,17 @@ static inline uint32_t portable_alarm_output_modes(const portable_alarm_client *
     return d?d->output_modes:ALARM_MODE_VISUAL;
 }
 static inline bool portable_alarm_refresh(portable_alarm_client *c) {
-    return portable_alarm_callable(c) && portable_alarm_result(c,c->api->refresh(c->api->context));
+    return portable_alarm_callable(c) && portable_alarm_result(c,(PORTABLE_LAST_ATTEMPT("alarm.refresh"),c->api->refresh(c->api->context)));
 }
 static inline bool portable_alarm_acknowledge(portable_alarm_client *c,const alarm_token_v1 *token) {
-    return portable_alarm_callable(c) && portable_alarm_result(c,c->api->acknowledge(c->api->context,token));
+    return portable_alarm_callable(c) && portable_alarm_result(c,(PORTABLE_LAST_ATTEMPT("alarm.acknowledge"),c->api->acknowledge(c->api->context,token)));
 }
 #endif
 static inline bool portable_alarm_status(portable_alarm_client *c) {
 #ifdef ALARM_SERVICE_TAGGED_V2
     if(!portable_alarm_callable(c))return false;
     c->status=(alarm_status_v1){.struct_size=sizeof(c->status)};
+    PORTABLE_LAST_ATTEMPT("alarm.status");
     int32_t result=c->api->status(c->api->context,&c->status);
     if(!portable_alarm_result(c,result) || result!=ALARM_OK ||
        !portable_alarm_result(c,c->status.error))return false;
@@ -92,6 +94,33 @@ static inline bool portable_alarm_status(portable_alarm_client *c) {
         c->status.api_version==1 && c->status.struct_size>=sizeof(c->status) &&
         c->status.state<=ALARM_STATE_CUE;
 }
+#ifdef PORTABLE_ALARM_READY_DRAIN
+#ifndef ALARM_SERVICE_TAGGED_V2
+#error "Ready-step drain requires typed tagged alarm results"
+#endif
+/* App-local result observation only; no service ABI or client-layout change.
+ * Commit the result only after both step and copied status remain callable. */
+static inline bool portable_alarm_pump_step(portable_alarm_client *c,int32_t *out) {
+    /* This opt-in boundary also honors retention installed outside the client. */
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!out || !portable_alarm_callable(c))return false;
+    int32_t result=(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!portable_alarm_result(c,result))return false;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    c->deferred=result==ALARM_PENDING;
+#endif
+    if(!portable_alarm_status(c))return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    *out=result;return true;
+}
+#endif
 static inline bool portable_alarm_pump(portable_alarm_client *c) {
 #ifdef PORTABLE_ALARM_BUSY_DEFER
 #if !defined(ALARM_SERVICE_TAGGED_V2)
@@ -99,18 +128,18 @@ static inline bool portable_alarm_pump(portable_alarm_client *c) {
 #endif
     c->deferred=false;
     if(!portable_alarm_callable(c))return false;
-    int32_t result=c->api->step(c->api->context);
+    int32_t result=(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
     if(!portable_alarm_result(c,result))return false;
     c->deferred=result==ALARM_PENDING;
     return portable_alarm_status(c);
 #else
 #ifdef ALARM_SERVICE_TAGGED_V2
-    if(!portable_alarm_callable(c) || !portable_alarm_result(c,c->api->step(c->api->context)))return false;
+    if(!portable_alarm_callable(c) || !portable_alarm_result(c,(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context))))return false;
 #elif defined(PORTABLE_NATIVE_CUSTODY_FENCE)
-    int32_t result=c->api->step(c->api->context);
+    int32_t result=(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
     if(result!=ALARM_OK && result!=ALARM_PENDING){portable_adapter_retain();return false;}
 #else
-    (void)c->api->step(c->api->context);
+    (void)(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
 #endif
     return portable_alarm_status(c);
 #endif

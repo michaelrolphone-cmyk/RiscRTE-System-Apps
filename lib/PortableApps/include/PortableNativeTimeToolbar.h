@@ -12,3 +12,7 @@ __attribute__((visibility("hidden"))) bool portable_app_native_local_time(twatch
 
 /* Closed native UTC sample for HTTPS; does not load or apply a timezone. */
 __attribute__((visibility("hidden"))) bool portable_app_native_utc_time(int64_t *out);
+
+#ifdef PORTABLE_WATCH_SAFE_INSETS
+__attribute__((visibility("hidden"))) bool portable_app_native_hour_24(void);
+#endif

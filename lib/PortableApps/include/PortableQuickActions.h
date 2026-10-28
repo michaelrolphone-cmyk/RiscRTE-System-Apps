@@ -40,6 +40,14 @@ typedef struct {
      * user choices have a 10% floor. Unknown values never become fake states. */
     uint16_t logical_height; /* Zero preserves the 240px canvas. */
     uint16_t native_width; /* Nonzero opts into native geometry and input. */
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+    uint16_t safe_left, safe_top, safe_width, safe_height;
+#endif
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    bool wifi_valid, bluetooth_valid, contexts_available, audio_available;
+    bool wifi_available, bluetooth_available;
+    bool save_pending, save_cancelled;
+#endif
     uint8_t brightness, volume, last_nonzero_volume;
 #ifdef PORTABLE_PAPER_TRANSITIONS
     uint8_t last_nonzero_brightness, applied_brightness;
@@ -86,6 +94,11 @@ bool pqa_set_height(pqa_state *s,unsigned logical_height);
  * 1..2048. Set only while closed/idle, before drawing or receiving contacts.
  * Legacy 240-wide and paper clients keep their existing geometry. */
 bool pqa_set_dimensions(pqa_state *s,unsigned width,unsigned height);
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+/* Provider-declared content bounds, full native coordinates. Never changes
+ * screen-edge gesture coordinates. Closed/idle only; reject invalid bounds. */
+bool pqa_set_safe_content(pqa_state *,unsigned left,unsigned top,unsigned width,unsigned height);
+#endif
 void pqa_init(pqa_state *s);
 #ifdef PORTABLE_RESIDENT_SHELL_HOST
 bool pqa_paper_tile(const pqa_state *s,unsigned tile,int *x,int *y);

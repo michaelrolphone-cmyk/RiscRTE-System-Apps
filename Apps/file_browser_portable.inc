@@ -59,10 +59,12 @@
 
 enum { FB_LIST, FB_OPTIONS, FB_FILTER, FB_DETAIL, FB_PREVIEW, FB_ACTIONS, FB_RENAME, FB_DESTINATION, FB_DELETE, FB_HANDLERS, FB_NOTICE, FB_REPLACE, FB_SHARING };
 static const t5_app_api_v1 *fb_app;
-#ifdef PORTABLE_FILES_NATIVE_UI
-#include "PortableFilesNative.h"
+#if defined(PORTABLE_WATCH_SAFE_INSETS) && defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+#include "PortableNativeTimeToolbar.h"
+static uint32_t fb_clock_sample_at;
+static int fb_clock_minute=-2;
 #endif
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_FILES_NATIVE_UI)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
 #include "file_browser_native_layout.inc"
 #endif
 static const risc_runtime_api_v1 *fb_runtime;
@@ -221,9 +223,7 @@ static unsigned fb_key_page;
 static uint32_t fb_matched;
 static bool fb_feedback;
 static bool fb_dirty,fb_armed,fb_hidden,fb_more,fb_hex,fb_loaded,fb_contact,fb_drag;
-#ifndef PORTABLE_FILES_NATIVE_UI
 static int fb_contact_y;
-#endif
 static uint64_t fb_offset,fb_size;
 static char fb_path[FB_PATH_CAP],fb_file_path[FB_PATH_CAP],fb_query[64],fb_editor[128],fb_status[96],fb_label[64];
 static unsigned char fb_preview[FB_PREVIEW_BYTES];
@@ -639,13 +639,7 @@ static void fb_activate(void);
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
 #include "file_browser_shared_input.inc"
 #endif
-#ifdef PORTABLE_FILES_NATIVE_UI
-#include "file_browser_native_ui.inc"
-#endif
 static void fb_draw(void) {
-#ifdef PORTABLE_FILES_NATIVE_UI
- if(!fb_paper){fbn_draw();return;}
-#endif
 #ifdef PORTABLE_FILE_BROWSER_SHARED_INPUT
  if(fb_text_active)return;
  if(fb_mode==FB_FILTER||fb_mode==FB_RENAME){fb_text_draw();return;}
@@ -707,9 +701,6 @@ static void fb_draw(void) {
  fb_app->present(false);fb_dirty=false;
 }
 static void fb_move(int direction) {
-#ifdef PORTABLE_FILES_NATIVE_UI
- if(!fb_paper&&fbn_text_length&&(fb_mode==FB_PREVIEW||fb_mode==FB_DETAIL||fb_mode==FB_NOTICE)){fbn_page(direction);return;}
-#endif
 #ifdef PORTABLE_FILE_BROWSER_SOURCE_HANDOFF
  if(fsource_busy())return;
 #endif
@@ -790,28 +781,18 @@ static bool fb_open(void) {
 #ifdef PORTABLE_NATIVE_TIME_TOOLBAR
  if(fb_opened)return true;
 #endif
+#if defined(PORTABLE_WATCH_SAFE_INSETS) && defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+ fb_clock_sample_at=0;fb_clock_minute=-2;
+#endif
  fb_app=t5_app_get_api(1);fb_runtime=PORTABLE_APP_RUNTIME();
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_FILES_NATIVE_UI)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
  if(!fb_app||!fb_app->screen_width||!fb_app->screen_height||!watch_layout_open(&fb_layout,fb_app->screen_width(),fb_app->screen_height(),NULL)||fb_layout.height<240)return false;
 #endif
- if(!fb_app || !fb_app->poll || !fb_app->millis || !fb_app->present || !fb_app->screen_width || !fb_app->screen_height || fb_app->screen_width()<
-#ifdef PORTABLE_FILES_NATIVE_UI
-160 || fb_app->screen_height()<160
-#else
-240 || fb_app->screen_height()<240
-#endif
- || !fb_runtime || fb_runtime->api_version!=1 || fb_runtime->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !fb_runtime->acquire || !fb_runtime->release || !fb_runtime->request_launch || !fb_runtime->yield_ms || !fb_runtime->diagnostic)return false;
+ if(!fb_app || !fb_app->poll || !fb_app->millis || !fb_app->present || !fb_app->screen_width || !fb_app->screen_height || fb_app->screen_width()<240 || fb_app->screen_height()<240 || !fb_runtime || fb_runtime->api_version!=1 || fb_runtime->struct_size<RISC_RUNTIME_CAPABILITIES_V1_SIZE || !fb_runtime->acquire || !fb_runtime->release || !fb_runtime->request_launch || !fb_runtime->yield_ms || !fb_runtime->diagnostic)return false;
 #ifndef PORTABLE_FILE_BROWSER_RGB_ONLY
  fb_paper=paper_presentation_get();
 #endif
-
-#ifdef PORTABLE_FILES_NATIVE_UI
- if(fb_paper&&(fb_app->screen_width()<240||fb_app->screen_height()<240))return false;
-#endif
  fb_page_rows=2;
-#ifdef PORTABLE_FILES_NATIVE_UI
- if(!fb_paper){if(fb_app->struct_size<offsetof(t5_app_api_v1,touch_contact)+sizeof(fb_app->touch_contact)||!fb_app->touch_contact)return false;fbn_width=fb_app->screen_width();fbn_height=fb_app->screen_height();fbn_rows=(unsigned)(fbn_height-110)/48;if(!fbn_rows)fbn_rows=1;if(fbn_rows>FB_MAX_PAGE_ROWS)fbn_rows=FB_MAX_PAGE_ROWS;fb_page_rows=fbn_rows;fbn_reset_view();}
-#endif
  if(fb_paper){if(fb_paper->struct_size<sizeof(*fb_paper)||!fb_paper->begin||!fb_paper->text||!fb_paper->measure||!fb_paper->contact)return false;fb_page_rows=(unsigned)(fb_app->screen_height()-256)/88;if(fb_page_rows>FB_MAX_PAGE_ROWS)fb_page_rows=FB_MAX_PAGE_ROWS;if(!fb_page_rows)fb_page_rows=1;}
 #ifdef PORTABLE_TOUCH_SCROLL
  if(fb_paper){fb_page_rows=FB_MAX_PAGE_ROWS;fbs_reset();}
@@ -879,6 +860,16 @@ void app_main(void) {
    return;
   }
 #endif
+#if defined(PORTABLE_WATCH_SAFE_INSETS) && defined(PORTABLE_NATIVE_TIME_TOOLBAR)
+  uint32_t clock_now=fb_app->millis();
+  if(fb_clock_minute==-2 || (uint32_t)(clock_now-fb_clock_sample_at)>=1000u){
+   fb_clock_sample_at=clock_now;twatch_rtc_time_v1 local;
+   bool known=portable_app_native_local_time(&local);
+   if(PORTABLE_APP_RETAINED())return;
+   int minute=known?(int)local.hour*60+local.minute:-1;
+   if(minute!=fb_clock_minute){fb_clock_minute=minute;fb_dirty=true;}
+  }
+#endif
   if(fb_dirty)fb_draw();
   t5_app_input_t input={0};
   if(!fb_app->poll(&input,
@@ -902,13 +893,10 @@ void app_main(void) {
   if(!portable_broadcast_stop())return;
 #endif
   if(fb_paper)fbp_input(&input);
-#ifdef PORTABLE_FILES_NATIVE_UI
-  if(!fb_paper)fbn_input(&input);
-#else
   if(!fb_paper&&fb_app->struct_size>=offsetof(t5_app_api_v1,touch_contact)+sizeof(fb_app->touch_contact) && fb_app->touch_contact) {
    t5_app_contact_t contact={0};if(fb_app->touch_contact(&contact)) {
     int y=contact.y-(fb_app->screen_height()-240)/2;
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_FILES_NATIVE_UI)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
     uint16_t lx,ly;if(!watch_layout_touch(&fb_layout,contact.x,contact.y,&lx,&ly))contact.down=false;
     else y=ly;
 #endif
@@ -923,7 +911,6 @@ void app_main(void) {
     fb_contact=contact.down;
    }
   }
-#endif
   /* A queued adapter handoff is terminal even while a folder/editor/preview
    * is open. Never reinterpret it as nested Back or replace its destination. */
   if(input.exit_requested) {
@@ -940,11 +927,8 @@ void app_main(void) {
   if(input.buttons&T5_APP_BUTTON_BACK){if(fb_back())return;continue;}
   if(input.tapped&&fb_paper){if(fbp_touch(input.touch_x,input.touch_y))return;continue;}
   if(input.tapped){
-#ifdef PORTABLE_FILES_NATIVE_UI
-   if(!fb_paper){if(fbn_touch(input.touch_x,input.touch_y))return;continue;}
-#endif
    int x=input.touch_x-(fb_app->screen_width()-240)/2,y=input.touch_y-(fb_app->screen_height()-240)/2;
-#if defined(PORTABLE_WATCH_NATIVE_HEIGHT) && !defined(PORTABLE_FILES_NATIVE_UI)
+#ifdef PORTABLE_WATCH_NATIVE_HEIGHT
    if(!fb_layout_touch(input.touch_x,input.touch_y,&x,&y))continue;
 #endif
    if(fb_touch(x,y))return;

@@ -1,5 +1,4 @@
 #pragma once
-#include "PortableNativeCanvas.h"
 #include <stdbool.h>
 #include <stdint.h>
 /* App-local presentation, linked with the portable adapter. No Runtime ABI,
@@ -29,14 +28,10 @@ bool portable_nova_hit(int x,int y,int left,int top,int width,int height);
  * always ends with a visible ellipsis; stored text is never changed. */
 bool portable_nova_wrap(unsigned face,int x,int y,int width,int line_height,unsigned max_lines,const char *text,uint32_t color);
 
-#ifdef PORTABLE_NATIVE_CANVAS
+#ifdef PORTABLE_RF_NATIVE_CANVAS
 /* Opt-in native canvas: coordinates and glyph pixels use capability-reported
  * screen dimensions. Legacy width-scaled Nova remains unchanged. */
 void portable_nova_native_fill(int x,int y,int width,int height,uint32_t color);
 void portable_nova_native_round(int x,int y,int width,int height,int radius,uint32_t color);
 void portable_nova_native_text(unsigned face,int x,int y,int width,const char *text,uint32_t color);
-/* Native top-left square, size 1..UINT16_MAX. Aspect ratio and profile glyph
- * bytes are retained; samples are clipped before raster work. Returns false
- * for an invalid size or unknown name, true for a known fully clipped icon. */
-bool portable_nova_native_icon(int x,int y,int size,const char *name,uint32_t color);
 #endif

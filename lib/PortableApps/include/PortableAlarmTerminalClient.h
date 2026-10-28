@@ -109,6 +109,33 @@ static inline bool portable_alarm_status(portable_alarm_client *c) {
         c->status.api_version==1 && c->status.struct_size>=sizeof(c->status) &&
         c->status.state<=ALARM_STATE_CUE;
 }
+#ifdef PORTABLE_ALARM_READY_DRAIN
+#ifndef ALARM_SERVICE_TAGGED_V2
+#error "Ready-step drain requires typed tagged alarm results"
+#endif
+/* App-local result observation only; no service ABI or client-layout change.
+ * Commit the result only after both step and copied status remain callable. */
+static inline bool portable_alarm_pump_step(portable_alarm_client *c,int32_t *out) {
+    /* This opt-in boundary also honors retention installed outside the client. */
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!out || !portable_alarm_callable(c))return false;
+    int32_t result=(PORTABLE_LAST_ATTEMPT("alarm.step"),c->api->step(c->api->context));
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    if(!portable_alarm_result(c,result))return false;
+#ifdef PORTABLE_ALARM_BUSY_DEFER
+    c->deferred=result==ALARM_PENDING;
+#endif
+    if(!portable_alarm_status(c))return false;
+#ifdef PORTABLE_NATIVE_CUSTODY_FENCE
+    if(portable_adapter_retained())return false;
+#endif
+    *out=result;return true;
+}
+#endif
 static inline bool portable_alarm_pump(portable_alarm_client *c) {
 #ifdef PORTABLE_ALARM_BUSY_DEFER
 #if !defined(ALARM_SERVICE_TAGGED_V2)

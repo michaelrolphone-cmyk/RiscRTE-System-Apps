@@ -33,13 +33,7 @@ jobs:
       - name: Generate and verify telemetry typography
         run: |
           python -m pip install Pillow==12.3.0
-          echo '928e6c01d863767a2fbb641963a8c9f63e76243c95d52208caaa62961909f7a6  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
-          cp Services/scene_host/fonts/telemetry.inc "$RUNNER_TEMP/qualified-telemetry.inc"
-          python scripts/generate_telemetry_fonts.py
-          echo '2d7501e42d6223ebbc191817715431182c435fea944a1a02166a0748a577eaf1  Services/scene_host/fonts/telemetry.inc' | sha256sum --check
-          # Provenance comments differ; every glyph declaration must still match.
-          cmp <(tail -n +2 "$RUNNER_TEMP/qualified-telemetry.inc") <(tail -n +2 Services/scene_host/fonts/telemetry.inc)
-          cp "$RUNNER_TEMP/qualified-telemetry.inc" Services/scene_host/fonts/telemetry.inc
+          python scripts/verify_telemetry_fonts.py
           git diff --exit-code
       - name: Verify shared components and all presenter lifecycles
         run: |

@@ -65,14 +65,23 @@ static void native_slider(pqa_row *r,const pqa_layout *l,int index,const pqa_ico
                 y+pqa_layout_scale(l,11),l->unit,error?RGB(255,135,65):RGB(207,233,238),a);
 }
 static void native_panel_row(pqa_row *r,const pqa_state *s,const pqa_layout *l,const char *time,bool bv,unsigned bp) {
-    native_text(r,NATIVE_GLYPHS(time),time?time:"--:--",8,pqa_layout_x(l,20),pqa_layout_scale(l,s->contexts_controls?19:31),l->unit,RGB(255,255,255),256);
+    native_text(r,NATIVE_GLYPHS(time),time?time:"--:--",8,pqa_layout_x(l,20),pqa_layout_y(l,s->contexts_controls?19:31),l->unit,RGB(255,255,255),256);
     char battery[5];percentage(battery,bv,bp);
     native_text(r,NATIVE_GLYPHS(percent),battery,4,pqa_layout_x(l,146)-native_text_width(NATIVE_GLYPHS(percent),battery,4,l->unit),
-                pqa_layout_scale(l,s->contexts_controls?18:30),l->unit,bv?GREEN:MUTED,256);
-    for(int i=0;i<10;++i)rect(r,pqa_layout_x(l,152+i*7),pqa_layout_scale(l,s->contexts_controls?12:24),
+                pqa_layout_y(l,s->contexts_controls?18:30),l->unit,bv?GREEN:MUTED,256);
+    for(int i=0;i<10;++i)rect(r,pqa_layout_x(l,152+i*7),pqa_layout_y(l,s->contexts_controls?12:24),
         pqa_layout_size(l,5),pqa_layout_size(l,4),pqa_layout_size(l,1),GREEN,bv&&(unsigned)i*10<bp?256:41);
     native_slider(r,l,0,&pqa_icon_sun,s->brightness,s->brightness_valid,false,(s->error_flags&PQA_ERROR_BRIGHTNESS)!=0);
-    native_text(r,NATIVE_GLYPHS(caption),"NOTIFICATIONS",13,l->slider_left,l->slider_y[1]-pqa_layout_scale(l,5),l->unit,MUTED,210);
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    const char *volume_caption=s->audio_available?"NOTIFICATIONS":"VOLUME PREF ONLY";
+#else
+    const char *volume_caption="NOTIFICATIONS";
+#endif
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    native_text(r,NATIVE_GLYPHS(caption),volume_caption,16,l->slider_left,l->slider_y[1]-pqa_layout_scale(l,5),l->unit,RGB(207,233,238),256);
+#else
+    native_text(r,NATIVE_GLYPHS(caption),volume_caption,13,l->slider_left,l->slider_y[1]-pqa_layout_scale(l,5),l->unit,MUTED,210);
+#endif
     native_slider(r,l,1,s->volume_valid&&!s->volume?&pqa_icon_muted:&pqa_icon_volume,s->volume,s->volume_valid,s->volume_valid&&!s->volume,(s->error_flags&PQA_ERROR_VOLUME)!=0);
     rect(r,pqa_layout_x(l,20),l->slider_y[1]+pqa_layout_scale(l,23),pqa_layout_x(l,220)-pqa_layout_x(l,20),pqa_layout_size(l,1),0,LINE,256);
     static const char *const labels[]={"SILENT","DND","AIRPLANE","WI-FI SETUP","BLUETOOTH","TORCH"};
@@ -80,30 +89,78 @@ static void native_panel_row(pqa_row *r,const pqa_state *s,const pqa_layout *l,c
     for(int i=0;i<6;++i) {
         pqa_rect tile=l->tiles[i];
         bool disabled=(i==1&&!s->dnd_valid)||((i==2||i==4||(i==3&&s->radio_controls))&&!s->radios_valid)||(i==0&&!s->volume_valid);
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        if(i==2)disabled=!s->radios_valid;
+        if(i==3 && s->radio_controls)disabled=!s->wifi_valid;
+        if(i==4)disabled=!s->bluetooth_valid;
+#endif
         bool on=(i==1&&s->dnd_valid&&s->dnd_enabled)||(i==0&&s->volume_valid&&!s->volume)||(i==5&&s->torch)||(s->radios_valid&&((i==2&&s->airplane)||(i==3&&s->wifi_enabled)||(i==4&&s->bluetooth_enabled)));
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        if(i==3)on=s->wifi_valid&&s->wifi_enabled;
+        if(i==4)on=s->bluetooth_valid&&s->bluetooth_enabled;
+#endif
         int border=pqa_layout_size(l,1),radius=pqa_layout_size(l,12);
         rect(r,tile.x,tile.y,tile.w,tile.h,radius,on?CYAN:LINE,256);
         if(!on)rect(r,tile.x+border,tile.y+border,tile.w-2*border,tile.h-2*border,radius-border,TILE,256);
+        #ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        uint16_t color=on?RGB(0,20,24):disabled?RGB(150,162,168):RGB(207,233,238);
+#else
         uint16_t color=on?RGB(0,20,24):disabled?RGB(66,82,88):MUTED;
+#endif
         if((i==3&&(s->error_flags&PQA_ERROR_WIFI))||(i==1&&(s->error_flags&PQA_ERROR_DND)))color=RGB(255,135,65);
         native_icon(r,l,icons[i],tile.x+tile.w/2,tile.y+pqa_layout_scale(l,6+(18-icons[i]->height)/2),color,256);
-        native_center(r,NATIVE_GLYPHS(label),i==3&&s->radio_controls?"WI-FI":labels[i],12,tile.x+tile.w/2,tile.y+pqa_layout_scale(l,36),l->unit,color,256);
+        const char *label=i==3&&s->radio_controls?"WI-FI":labels[i];
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        if(disabled&&i==2)label="NOT READY";
+        if(disabled&&i==3)label=s->wifi_available?"CHECK WI-FI":"NO WI-FI";
+        if(disabled&&i==4)label=s->bluetooth_available?"CHECK BT":"NO BT";
+#endif
+        native_center(r,NATIVE_GLYPHS(label),label,12,tile.x+tile.w/2,tile.y+pqa_layout_scale(l,36),l->unit,color,256);
         if(disabled)rect(r,tile.x+tile.w-pqa_layout_size(l,13),tile.y+pqa_layout_scale(l,6),pqa_layout_size(l,5),pqa_layout_size(l,1),0,RGB(66,82,88),256);
     }
     if(s->contexts_controls) {
-        pqa_rect tile=l->contexts;bool on=s->contexts_valid&&s->contexts_enabled;
-        uint16_t color=s->contexts_valid?CYAN:MUTED;int border=pqa_layout_size(l,1),radius=pqa_layout_size(l,12);
+        bool available=s->contexts_valid;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        available=available&&s->contexts_available;
+#endif
+        pqa_rect tile=l->contexts;bool on=available&&s->contexts_enabled;
+        uint16_t color=available?CYAN:MUTED;
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        if(!available)color=RGB(150,162,168);
+#endif
+        int border=pqa_layout_size(l,1),radius=pqa_layout_size(l,12);
         rect(r,tile.x,tile.y,tile.w,tile.h,radius,color,256);
         rect(r,tile.x+border,tile.y+border,tile.w-2*border,tile.h-2*border,radius-border,TILE,256);
         native_text(r,NATIVE_GLYPHS(label),"CONTEXT",7,pqa_layout_x(l,31),tile.y+pqa_layout_scale(l,16),l->unit,color,256);
         native_text(r,NATIVE_GLYPHS(label),"DETECTION",9,pqa_layout_x(l,31),tile.y+pqa_layout_scale(l,30),l->unit,color,256);
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        if(!s->contexts_available) {
+            native_center(r,NATIVE_GLYPHS(label),"UNAVAILABLE",12,pqa_layout_x(l,175),tile.y+pqa_layout_scale(l,23),l->unit,RGB(207,233,238),256);
+        } else {
+#endif
         rect(r,pqa_layout_x(l,143),tile.y+pqa_layout_scale(l,9),pqa_layout_x(l,208)-pqa_layout_x(l,143),pqa_layout_size(l,22),pqa_layout_size(l,10),LINE,256);
         rect(r,pqa_layout_x(l,on?176:145),tile.y+pqa_layout_scale(l,11),pqa_layout_x(l,175)-pqa_layout_x(l,145),pqa_layout_size(l,18),pqa_layout_size(l,8),on?CYAN:LINE,256);
-        native_center(r,NATIVE_GLYPHS(label),s->contexts_valid?"OFF":"?",3,pqa_layout_x(l,160),tile.y+pqa_layout_scale(l,23),l->unit,on?MUTED:RGB(255,255,255),256);
+        native_center(r,NATIVE_GLYPHS(label),available?"OFF":"?",3,pqa_layout_x(l,160),tile.y+pqa_layout_scale(l,23),l->unit,on?MUTED:RGB(255,255,255),256);
         native_center(r,NATIVE_GLYPHS(label),"ON",2,pqa_layout_x(l,192),tile.y+pqa_layout_scale(l,23),l->unit,on?RGB(0,20,24):MUTED,256);
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+        }
+#endif
     }
-    rect(r,l->width/2-pqa_layout_size(l,16),l->height-pqa_layout_size(l,s->contexts_controls?13:24),pqa_layout_size(l,32),pqa_layout_size(l,4),pqa_layout_size(l,2),CYAN,128);
-    if(s->error_flags&PQA_ERROR_SAVE)native_center(r,NATIVE_GLYPHS(caption),"SAVE UNCONFIRMED",16,l->width/2,l->height-pqa_layout_size(l,9),l->unit,RGB(255,135,65),256);
+#ifdef PORTABLE_QUICK_CAPABILITY_SAFE
+    const char *save_label=s->save_pending?"SAVE NOT CONFIRMED":
+        (s->gesture==PQA_BRIGHTNESS_DRAG||s->gesture==PQA_VOLUME_DRAG)?"PREVIEW - NOT SAVED":
+        (s->error_flags&PQA_ERROR_SAVE)?"SAVE UNCONFIRMED":NULL;
+    int handle_y=l->origin_y+l->content_height-pqa_layout_size(l,save_label?4:s->contexts_controls?13:24);
+    rect(r,l->origin_x+l->content_width/2-pqa_layout_size(l,16),handle_y,pqa_layout_size(l,32),pqa_layout_size(l,4),pqa_layout_size(l,2),CYAN,128);
+    if(save_label)native_center(r,NATIVE_GLYPHS(caption),save_label,strlen(save_label),l->origin_x+l->content_width/2,l->origin_y+l->content_height-pqa_layout_size(l,10),l->unit,RGB(255,135,65),256);
+#else
+    int handle_y=l->origin_y+l->content_height-pqa_layout_size(l,s->contexts_controls?13:24);
+#ifdef PORTABLE_QUICK_SAFE_CONTENT
+    if(s->error_flags&PQA_ERROR_SAVE)handle_y=l->origin_y+l->content_height-pqa_layout_size(l,4);
+#endif
+    rect(r,l->origin_x+l->content_width/2-pqa_layout_size(l,16),handle_y,pqa_layout_size(l,32),pqa_layout_size(l,4),pqa_layout_size(l,2),CYAN,128);
+    if(s->error_flags&PQA_ERROR_SAVE)native_center(r,NATIVE_GLYPHS(caption),"SAVE UNCONFIRMED",16,l->origin_x+l->content_width/2,l->origin_y+l->content_height-pqa_layout_size(l,9),l->unit,RGB(255,135,65),256);
+#endif
 }
 static bool native_render_rows(risc_display_surface_v1 *f,const pqa_state *s,const char *time,bool bv,uint8_t bp,unsigned first,unsigned count) {
     if(!s->native_width || s->native_width>2048 || !s->logical_height || s->logical_height>2048 ||
@@ -122,7 +179,7 @@ static bool native_render_rows(risc_display_surface_v1 *f,const pqa_state *s,con
         uint8_t *dst=(uint8_t*)f->pixels+(size_t)py*f->stride_bytes;
         if(s->torch) {
             row.y=(int)py;for(int x=0;x<l.width;++x)pixels[x]=RGB(255,243,214);
-            native_center(&row,NATIVE_GLYPHS(torch),"TAP TO TURN OFF",15,l.width/2,l.height-pqa_layout_size(&l,30),l.unit,RGB(106,90,48),256);
+            native_center(&row,NATIVE_GLYPHS(torch),"TAP TO TURN OFF",15,l.origin_x+l.content_width/2,l.origin_y+l.content_height-pqa_layout_size(&l,30),l.unit,RGB(106,90,48),256);
             for(int x=0;x<l.width;++x) {
                 unsigned a=torch_edge(x*240/l.unit,l.width*240/l.unit)*torch_edge((int)py*240/l.unit,l.height*240/l.unit)/256u;
                 write_pixel(dst+2*x,mix(0,pixels[x],a));
