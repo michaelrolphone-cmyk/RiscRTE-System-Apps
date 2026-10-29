@@ -1,0 +1,24 @@
+name: Shared application capability definitions
+on:
+  push:
+    branches: [badge/application-capability-contracts-2026-10-29]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  definition-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Existing optional tables and canvas ownership specification
+        run: python3 docs/application-capabilities/qualify_contract_examples.py --system . --output dist/application-capability-contracts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: application-capability-contract-evidence
+          path: dist/application-capability-contracts
+          if-no-files-found: error

@@ -1,0 +1,53 @@
+{
+  "pinned_searches": [
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-System-Apps",
+      "results": [],
+      "coverage": {
+        "complete": false,
+        "scope": "UTF-8 regular Git blobs up to 8 MiB; binary/non-UTF8 assets are outside text scope; symlinks and submodules are reported as gaps",
+        "missing": [],
+        "revisions": [],
+        "negative_result": "No matches in the scanned coverage; this does not prove no references exist.",
+        "ref_heads": [],
+        "ref_heads_total": 0,
+        "ref_heads_truncated": false,
+        "freshness_note": "Commit snapshots are immutable. ref_heads shows the last successful branch/tag resolution; it is not a guarantee that GitHub has not changed since checked_at."
+      },
+      "next_cursor": null
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+      "results": [],
+      "coverage": {
+        "complete": false,
+        "scope": "UTF-8 regular Git blobs up to 8 MiB; binary/non-UTF8 assets are outside text scope; symlinks and submodules are reported as gaps",
+        "missing": [],
+        "revisions": [],
+        "negative_result": "No matches in the scanned coverage; this does not prove no references exist.",
+        "ref_heads": [],
+        "ref_heads_total": 0,
+        "ref_heads_truncated": false,
+        "freshness_note": "Commit snapshots are immutable. ref_heads shows the last successful branch/tag resolution; it is not a guarantee that GitHub has not changed since checked_at."
+      },
+      "next_cursor": null
+    },
+    {
+      "repository": "michaelrolphone-cmyk/RiscRTE",
+      "results": [],
+      "coverage": {
+        "complete": false,
+        "scope": "UTF-8 regular Git blobs up to 8 MiB; binary/non-UTF8 assets are outside text scope; symlinks and submodules are reported as gaps",
+        "missing": [],
+        "revisions": [],
+        "negative_result": "No matches in the scanned coverage; this does not prove no references exist.",
+        "ref_heads": [],
+        "ref_heads_total": 0,
+        "ref_heads_truncated": false,
+        "freshness_note": "Commit snapshots are immutable. ref_heads shows the last successful branch/tag resolution; it is not a guarantee that GitHub has not changed since checked_at."
+      },
+      "next_cursor": null
+    }
+  ],
+  "conclusion": "Selected exact revisions are absent from indexed coverage; no global absence claim. Local verified source contains CanvasApp implementation, scene page/telemetry APIs, and no separately named ui.canvas contract found in the inspected SDKs."
+}
