@@ -28,7 +28,8 @@ static bool start(const risc_provider_dependency_v1*deps,size_t count){
  if(display->api_version!=1||display->struct_size<sizeof(*display)||!display->get_info||!display->acquire||!display->release||!display->submit||!display->present_status)return false;
  if(touch&&(touch->api_version!=1||touch->struct_size<sizeof(*touch)||!touch->subscribe||!touch->unsubscribe||!touch->poll||!touch->next||!touch->snapshot))return false;
  if(navigation&&(navigation->api_version!=1||navigation->struct_size<sizeof(*navigation)||!navigation->poll||!navigation->foreground||!navigation->reset))return false;
- if(!runtime_alive(NULL))return false;
+ /* Provider startup binds dependencies before an application invocation exists.
+  * API calls still require live Runtime authority through the installed hook. */
  canvas_provider_init(&provider,display,touch,profile->display_rotation/90);
  provider.preferred_format=profile->preferred_format;provider.navigation=navigation;provider.touch_rotation=profile->touch_rotation/90;
  provider.frames.alive=runtime_alive;provider.frames.cooperate=runtime_cooperate;

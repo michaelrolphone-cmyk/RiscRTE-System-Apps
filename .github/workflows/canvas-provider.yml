@@ -1,7 +1,7 @@
 name: Canvas provider
 on:
   pull_request:
-    paths: ['Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', 'test/canvas_provider/**', 'scripts/test_canvas_provider.py', 'scripts/build_canvas_services.py', '.github/workflows/canvas-provider.yml']
+    paths: ['Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', 'test/canvas_provider/**', 'test/canvas_runtime/**', 'scripts/test_canvas_runtime.py', 'scripts/test_canvas_provider.py', 'scripts/build_canvas_services.py', '.github/workflows/canvas-provider.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,6 +20,8 @@ jobs:
           path: Runtime
           persist-credentials: false
       - run: python3 System/scripts/test_canvas_provider.py --output evidence
+      - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-normal
+      - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-sanitized --sanitize
       - run: |
           python3 -m pip install platformio==6.1.19
           pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
@@ -30,4 +32,6 @@ jobs:
           name: canvas-provider-${{ github.sha }}
           path: |
             evidence/
+            runtime-normal/
+            runtime-sanitized/
             packages/

@@ -13,7 +13,7 @@ int main(void){
  risc_provider_dependency_v1 deps[]={{"display.output",1,&d},{"ui.presentation-profile",1,&profile}};
  assert(!driver->start(deps,1));risc_provider_dependency_v1 duplicate[]={deps[0],deps[0],deps[1]};assert(!driver->start(duplicate,3));
  for(unsigned display_rotation=0;display_rotation<4;display_rotation++)for(unsigned touch_rotation=0;touch_rotation<4;touch_rotation++){
-  profile.display_rotation=display_rotation*90;profile.touch_rotation=touch_rotation*90;assert(driver->start(deps,2));
+  profile.display_rotation=display_rotation*90;profile.touch_rotation=touch_rotation*90;invocation_live=false;assert(driver->start(deps,2));invocation_live=true;
   const risc_canvas_api_v1*a=risc_canvas_get_v1(driver->capability,sizeof(risc_canvas_api_v1));assert(a);
   risc_canvas_open_v1 request={sizeof(request),1,3,0,0};uint64_t session=0;assert(!a->open(a->context,&request,&session));assert(!driver->quiesce());
   int32_t x,y;assert(canvas_provider_touch_map(&provider,0,0,8,8,&x,&y));
