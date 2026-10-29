@@ -1,0 +1,192 @@
+{
+  "sources": [
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscRuntimeV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscRuntimeV1.h",
+      "bytes": 11172,
+      "sha256": "f1b59491473b268722306ce63a97228f90487493e13aa4f470b1ce0c864d4565"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscResidentShellV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscResidentShellV1.h",
+      "bytes": 6957,
+      "sha256": "1a84715c03fcc7fae7f75cb72c0daf875e761567dda5d1b39ec0dc8b14fba8bd"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscRuntimeSleepV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscRuntimeSleepV1.h",
+      "bytes": 990,
+      "sha256": "b21695ec84db931e58ddb1a2a916f7f017d55d7546707eb25ee4247df87e3a28"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscRetainedWakeV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscRetainedWakeV1.h",
+      "bytes": 2933,
+      "sha256": "7c7b6f0d56631f3aab521a43499d2ea840d075084536e4afa654a74c52e1e511"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscKeyValueV2.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscKeyValueV2.h",
+      "bytes": 744,
+      "sha256": "c66337a93c6f5fff6dac9507e011655f4827c3d0ec06b3e6d9d039084b3ec4d3"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscPreferenceStoreV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscPreferenceStoreV1.h",
+      "bytes": 1642,
+      "sha256": "dc5fb37d8158117cc4418957de0bb23b4723035860e6d27aa7d398887cb785a6"
+    },
+    {
+      "owner": "runtime",
+      "path": "sdk/app/RiscStorageVolumeV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-runtime/sdk/app/RiscStorageVolumeV1.h",
+      "bytes": 9048,
+      "sha256": "d477167a06004640b2c07c05d662c103be6e1b9e4a4d866f6fce13e754ef02f5"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneV1.h",
+      "bytes": 3641,
+      "sha256": "11d99e7e2cb1b598c53fba42ca19681bf4a68cc90e223cc8a7fbe391ff7d3b24"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneLifecycleV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneLifecycleV1.h",
+      "bytes": 2153,
+      "sha256": "52a3d5dcfc6a9be8d598e0c93bf9bf6c6f824674280ef03ee0c0043a01eb31f5"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneResidentV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneResidentV1.h",
+      "bytes": 3504,
+      "sha256": "145ef678f3330e4fab85430395b5799dde8dd05ce056f7b2f02ad5a9f58d0414"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneComponentsV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneComponentsV1.h",
+      "bytes": 5799,
+      "sha256": "763cd3595cee36ea6f399aefad0eb75e5b0c8cadc11c286e480bc7ccc87b84ce"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscScenePageV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscScenePageV1.h",
+      "bytes": 2428,
+      "sha256": "a4372273adf0e587fe3d8d70912302573273a2701d3892bedf27c00d45ba96ea"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneTelemetryV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneTelemetryV1.h",
+      "bytes": 1784,
+      "sha256": "df7ac07ce50e9a75b99eb03cf821ee7282373c8b29035525d91e77149e6aa7df"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscSceneCheckpointV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscSceneCheckpointV1.h",
+      "bytes": 1778,
+      "sha256": "478ca88a15aeeb5a906623fb67482b29a0b5fa37dd933a5c9ca3a856ec967e44"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscTextEntryV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscTextEntryV1.h",
+      "bytes": 9556,
+      "sha256": "a5733f06b1d8caf86f21d730abcd9ff833b603807c8b028a49544c997b6cdba3"
+    },
+    {
+      "owner": "system",
+      "path": "sdk/app/RiscCivilClockV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/sdk/app/RiscCivilClockV1.h",
+      "bytes": 563,
+      "sha256": "b3ef7e49bdfdedf6f5100b85587ad6714826feb3af69cc09a0811a8afd67022b"
+    },
+    {
+      "owner": "system",
+      "path": "lib/PortableApps/include/RiscDisplayOutputV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/lib/PortableApps/include/RiscDisplayOutputV1.h",
+      "bytes": 4736,
+      "sha256": "11e747aecadcdfd0b37c79d057208ca9249714cb7482ca32b4a7a3296648c619"
+    },
+    {
+      "owner": "system",
+      "path": "lib/PortableApps/include/RiscTouchV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/lib/PortableApps/include/RiscTouchV1.h",
+      "bytes": 2703,
+      "sha256": "fe18fab3ac20fda95747388f1428408b7795e5da3511c7a9fff07c16ddfd2c7d"
+    },
+    {
+      "owner": "system",
+      "path": "lib/PortableApps/include/RiscInputNavigationV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-system/lib/PortableApps/include/RiscInputNavigationV1.h",
+      "bytes": 1713,
+      "sha256": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/CanvasApp/include/CanvasApp.h",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/CanvasApp/include/CanvasApp.h",
+      "bytes": 794,
+      "sha256": "e91ba57dbe2c7daffac40582ad079f2867fe2926c5fe034999756e28c4a176b7"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/CanvasApp/canvas.c",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/CanvasApp/canvas.c",
+      "bytes": 22366,
+      "sha256": "a30c5513acea7e37c705ae1d9a064fc7efc7d404f614ad15ba5f9922866b4bcd"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/CanvasApp/README.md",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/CanvasApp/README.md",
+      "bytes": 3317,
+      "sha256": "371b3352c135392673627b5426f39ff64f5f63742c2e55c1da40d9c1c0bbf92d"
+    },
+    {
+      "owner": "utilities",
+      "path": "scripts/test_canvas_apps.py",
+      "workspace_path": "badge-headless-integration-20261029/published-current/scripts/test_canvas_apps.py",
+      "bytes": 1137,
+      "sha256": "a485c6f42cb3db948fc57aa22cdc2d42a69219d003cff75ac0c76913e42e4bcc"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/Alarm/include/AlarmControlV1.h",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/Alarm/include/AlarmControlV1.h",
+      "bytes": 2648,
+      "sha256": "4b86ed6a839193db5fbd35eca9e2d415541180eef1948b899b754632b25da7c3"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/Alarm/include/AlarmServiceV2.h",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/Alarm/include/AlarmServiceV2.h",
+      "bytes": 2769,
+      "sha256": "786007e521ac01fc6b2dedd9c3fa2314b779f386978856de9bc435c8b6dfda89"
+    },
+    {
+      "owner": "utilities",
+      "path": "lib/Alarm/include/AlarmClockEditV2.h",
+      "workspace_path": "badge-headless-integration-20261029/published-current/lib/Alarm/include/AlarmClockEditV2.h",
+      "bytes": 2587,
+      "sha256": "555e197063ae3c60fa9f2cf2766214f16bf2c6796bf28fddc3b4003471a259ef"
+    }
+  ],
+  "publication_pins": {
+    "runtime": "318d77283ba707b6f2820d2833e5d7ea3ff3f7e8",
+    "system": "a24bf10e64c95e12b8862f1c1bcc7600543f264e",
+    "utilities": "9190fd69dd172c9678b0171310af028cb11e6d5c"
+  },
+  "limit": "Selected published integration inputs, not asserted latest repository heads; source hashes bind every reviewed header."
+}

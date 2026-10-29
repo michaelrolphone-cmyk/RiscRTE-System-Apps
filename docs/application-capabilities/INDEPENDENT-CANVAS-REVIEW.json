@@ -1,0 +1,23 @@
+{
+  "at": "2026-10-29T20:04:52.092881+00:00",
+  "source_sha256": {
+    "badge-capability-contracts-20261029/canvas_ownership_examples.c": "a9b62b3a14b83abaacd693d22ed594beb0089da647cf9bec75a19d7b948f3016",
+    "badge-capability-contracts-20261029/proposed/RiscCanvasV1.h": "c5477628f454a7aefc37e398fdf2de941d23534b8046bf07c49ce9d029b11a02",
+    "badge-headless-integration-20261029/published-system/lib/PortableApps/include/RiscInputNavigationV1.h": "2644754feb7238d066908658ac9d4fe25537d4d5e424a6aef1365fabea600a26"
+  },
+  "runs": [
+    {
+      "variant": "normal",
+      "exit": 0,
+      "stdout": "19 canvas ownership specification cases passed; model only\n",
+      "stderr": ""
+    },
+    {
+      "variant": "sanitized",
+      "exit": 0,
+      "stdout": "19 canvas ownership specification cases passed; model only\n",
+      "stderr": ""
+    }
+  ],
+  "review": "Whole-frame and snapshot output exceptions corrected. Lease-bound geometry and retained receipt state now explicit. Specification model only; no production renderer, runtime integration or hardware claim."
+}
