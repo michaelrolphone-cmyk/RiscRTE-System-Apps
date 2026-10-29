@@ -1,7 +1,7 @@
 name: Canvas provider
 on:
   pull_request:
-    paths: ['Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', 'test/canvas_provider/**', 'test/canvas_runtime/**', 'scripts/test_canvas_runtime.py', 'scripts/test_canvas_provider.py', 'scripts/build_canvas_services.py', '.github/workflows/canvas-provider.yml']
+    paths: ['Services/canvas_host/**', 'sdk/app/RiscCanvasV1.h', 'test/canvas_provider/**', 'test/canvas_runtime/**', 'scripts/test_canvas_runtime.py', 'scripts/test_canvas_provider.py', 'scripts/build_canvas_services.py', 'scripts/normalize_xtensa_relocations.py', '.github/workflows/canvas-provider.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,6 +19,7 @@ jobs:
           ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
           path: Runtime
           persist-credentials: false
+      - run: python3 System/test/canvas_provider/test_linker_padding.py
       - run: python3 System/scripts/test_canvas_provider.py --output evidence
       - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-normal
       - run: python3 System/scripts/test_canvas_runtime.py --runtime Runtime --output runtime-sanitized --sanitize
