@@ -29,6 +29,7 @@ def stage_sdk(runtime: Path, system: Path, output: Path) -> Path:
                  'RiscCivilClockV1.h', 'RiscSceneResidentV1.h'):
         if name not in sources:
             canonical(system / ('lib/PortableApps/include' if name=='RiscRuntimeHostControlV1.h' else 'sdk/app') / name)
+    canonical(system / 'lib/PortableApps/include/PortableSafeViewport.h')
     canonical(system / 'Services/scene_profile/SceneProfileV1.h')
     canonical(system / 'Services/text_input/SceneKeyboardV1.h')
     manifest = include / '.scene-sdk-files.json'
