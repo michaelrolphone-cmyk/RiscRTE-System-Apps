@@ -4,7 +4,7 @@
   "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
   "size_bytes": 1492005,
   "implementation_complete": true,
-  "artifacts_delivered": "awaiting_remote_readback",
+  "artifacts_delivered": true,
   "live_integration_verified": "pending_external_environment",
   "hardware_qualified": "pending_external_environment",
   "profile": "esp32s3-infrastructure",
@@ -32,5 +32,23 @@
   ],
   "retention": "Committed Git repository assets; immutable commit URLs, no expiring download token",
   "provisioning": "Secret-free blocked template; private provisioning required before network operation",
-  "qualification": "Software tests and compilation do not certify achieved15s cadence, physical power cuts, flash wear or72-hour soak."
+  "qualification": "Software tests and compilation do not certify achieved15s cadence, physical power cuts, flash wear or72-hour soak.",
+  "remote_verification": {
+    "remote_readback": "passed",
+    "assets": [
+      {
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/esp32s3-infrastructure-v1.zip",
+        "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
+        "bytes": 1492005,
+        "matched_local": true
+      },
+      {
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/flash-manifest.json",
+        "sha256": "815388f004c0d95def56edca5e9fb474ef00fe92bdf2cbd8b50b623a52912b92",
+        "bytes": 11346,
+        "matched_local": true
+      }
+    ]
+  },
+  "artifact_commit": "38e76ac3c965397506df435dbe5919a4c7064fab"
 }
