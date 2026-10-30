@@ -1,0 +1,29 @@
+#include "Node.h"
+#include <new>
+namespace {
+alignas(Infra::Node) unsigned char storage[sizeof(Infra::Node)];Infra::Node* node=nullptr;uintptr_t generation=0;risc_infra_node_v1 api{};
+bool valid(void* c){return node&&c&&c==api.context;}
+int32_t bootstrap(void* c){return valid(c)?node->bootstrap():INFRA_INVALID;}
+int32_t advance(void* c){return valid(c)?node->advance():INFRA_INVALID;}
+int32_t memory(void* c,const risc_infra_memory_v1* m){if(!valid(c)||!m||m->struct_size<sizeof(*m))return INFRA_INVALID;if(node->phase==Infra::Phase::Retained)return INFRA_RETAINED;node->memory=*m;auto& s=node->status;auto min=[](uint64_t old,uint64_t n){return old&&old<n?old:n;};s.minimum_internal=min(s.minimum_internal,m->internal_free);s.minimum_dma=min(s.minimum_dma,m->dma_free);s.minimum_psram=min(s.minimum_psram,m->psram_free);s.minimum_stack=min(s.minimum_stack,m->stack_headroom);return 0;}
+int32_t snapshot(void* c,risc_infra_status_v1* out){if(!valid(c)||!out||out->struct_size<sizeof(*out))return INFRA_INVALID;if(node->phase==Infra::Phase::Retained)return INFRA_RETAINED;auto v=node->status;v.struct_size=sizeof(v);v.state=static_cast<unsigned>(node->phase);v.ready_for_boot_confirmation=node->bootReady()?1u:0u;v.uptime_ms=node->now();v.pending=node->journal.state["pending"].size();v.storage_writes=node->journal.writes;v.storage_bytes=node->journal.bytes;Infra::copy(v.participant_id,sizeof(v.participant_id),node->journal.state["participant_id"]|"");for(unsigned i=0;i<node->bindings().size();++i){v.coalesced+=node->cadence[i].coalesced;if(node->cadence[i].maxLag>v.maximum_lag_ms)v.maximum_lag_ms=node->cadence[i].maxLag;}*out=v;return 0;}
+int32_t shutdown(void* c){if(!valid(c))return INFRA_INVALID;if(node->phase==Infra::Phase::Retained)return INFRA_RETAINED;node->drain=true;if(node->phase==Infra::Phase::Cold){node->phase=Infra::Phase::Stopped;return 0;}if(node->phase==Infra::Phase::AuthBlocked||node->phase==Infra::Phase::ProtocolBlocked||node->phase==Infra::Phase::StorageBlocked){if(node->journal.writeToken){int r=node->journal.collect();if(r==-2)return node->retained();if(r)return r;}if(node->net.token)return node->net.close();auto r=node->station.close(node->station.context);if(r==-2)return node->retained();if(!r)node->phase=Infra::Phase::Stopped;return r;}return node->advance();}
+int32_t inventory(void* c,char* out,uint32_t cap,uint32_t* size){if(size)*size=0;if(!valid(c)||!out||!size||cap<128)return INFRA_INVALID;if(node->phase==Infra::Phase::Retained)return INFRA_RETAINED;int n=snprintf(out,cap,"{\"api\":1,\"tls_slots\":1,\"jobs\":1,\"bindings\":8,\"pending\":8,\"state_bytes\":49152,\"request_bytes\":16384,\"response_bytes\":32768,\"capacity_ready\":%s}",node->capacity()?"true":"false");if(n<0||static_cast<unsigned>(n)>=cap)return INFRA_INVALID;*size=n;return 0;}
+int32_t cancel(void* c){if(!valid(c))return INFRA_INVALID;node->drain=true;return 0;}
+bool quiesce(){if(!node)return true;if(node->phase!=Infra::Phase::Stopped&&node->phase!=Infra::Phase::Cold)return false;if(node->journal.writeToken||node->journal.retained||node->net.token||node->net.retained)return false;node->dispose();node->~Node();node=nullptr;api.context=nullptr;return true;}
+void stop(){(void)quiesce();}
+bool start(const risc_provider_dependency_v1* deps,size_t count){
+ if(node||!deps||count!=5)return false;node=new(storage)Infra::Node();bool http=false,time=false,random=false,station=false,storageReady=false;
+ for(size_t i=0;i<count;++i){auto& d=deps[i];if(!d.capability_id||!d.api)continue;
+  if(!strcmp(d.capability_id,"platform.http-client")&&d.api_version==2){auto b=static_cast<const risc_http_client_v2*>(d.api);if(b->api_version==2&&b->struct_size>=sizeof(*b)&&b->open&&b->advance&&b->read&&b->info&&b->close){node->net.api=*b;http=true;}}
+  if(!strcmp(d.capability_id,"platform.clock")&&d.api_version==1){auto b=static_cast<const risc_platform_clock_api_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->monotonic_ms){node->clock=*b;time=true;}}
+  if(!strcmp(d.capability_id,"platform.entropy")&&d.api_version==1){auto b=static_cast<const risc_entropy_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->fill){node->entropy=*b;random=true;}}
+  if(!strcmp(d.capability_id,"infra.station")&&d.api_version==1){auto b=static_cast<const infra_station_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->connect&&b->poll&&b->close){node->station=*b;station=true;}}
+  if(!strcmp(d.capability_id,"storage.app-data.bound")&&d.api_version==1)storageReady=node->journal.initialize(static_cast<const risc_bound_app_data_v1*>(d.api));
+ }
+ if(!http||!time||!random||!station||!storageReady){node->phase=Infra::Phase::Stopped;quiesce();return false;}
+ api={1,sizeof(api),reinterpret_cast<void*>(++generation),bootstrap,advance,memory,snapshot,shutdown,inventory,cancel};return true;
+}
+const risc_driver_v2 driver{2,sizeof(driver),"infra-node","infra.node",1,&api,start,stop,quiesce};
+}
+extern "C" __attribute__((visibility("default"))) const risc_driver_v2* t5_driver_get(uint32_t version){return version==2?&driver:nullptr;}

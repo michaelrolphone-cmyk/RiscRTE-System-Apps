@@ -1,0 +1,17 @@
+{
+  "remote_readback": "passed",
+  "assets": [
+    {
+      "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/esp32s3-infrastructure-v1.zip",
+      "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
+      "bytes": 1492005,
+      "matched_local": true
+    },
+    {
+      "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/flash-manifest.json",
+      "sha256": "815388f004c0d95def56edca5e9fb474ef00fe92bdf2cbd8b50b623a52912b92",
+      "bytes": 11346,
+      "matched_local": true
+    }
+  ]
+}

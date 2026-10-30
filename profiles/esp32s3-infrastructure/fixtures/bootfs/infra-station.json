@@ -1,0 +1,34 @@
+{
+  "type": "driver",
+  "id": "infra-station",
+  "version": "1.0.0",
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "infra-station.elf",
+  "requires": [
+    {
+      "capability": "platform.radio",
+      "api": 1
+    },
+    {
+      "capability": "hardware.device",
+      "api": 1
+    }
+  ],
+  "provides": [
+    {
+      "capability": "infra.station",
+      "api": 1
+    }
+  ],
+  "hardware_compatibility": [
+    {
+      "compatible": "espressif,esp32s3-wifi",
+      "revisions": [
+        "unspecified"
+      ],
+      "config_type": "radio.integrated",
+      "config_version": 1
+    }
+  ]
+}

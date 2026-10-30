@@ -1,0 +1,18 @@
+{
+  "type": "application",
+  "id": "infra-agent",
+  "version": "1.0.0",
+  "architecture": "xtensa-esp32s3",
+  "file_name": "default.elf",
+  "entry": "app_main",
+  "requires": [
+    {
+      "capability": "infra.node",
+      "api": 1
+    },
+    {
+      "capability": "memory.heap",
+      "api": 1
+    }
+  ]
+}

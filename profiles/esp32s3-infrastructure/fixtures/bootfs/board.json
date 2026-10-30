@@ -1,0 +1,24 @@
+{
+  "schema": "riscrte.board-hardware",
+  "schema_version": 1,
+  "board_id": "esp32s3-infrastructure",
+  "revision": "16mb-qio-octal-psram",
+  "buses": [],
+  "devices": [
+    {
+      "instance_id": 1,
+      "chip": {
+        "vendor": "espressif",
+        "model": "esp32s3",
+        "revision": "unspecified"
+      },
+      "compatible": "espressif,esp32s3-wifi",
+      "config_type": "radio.integrated",
+      "config_version": 1,
+      "config": {
+        "unit": 0,
+        "features": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schema": "esp32s3-infrastructure-delivery/1",
+  "bundle": "esp32s3-infrastructure-v1.zip",
+  "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
+  "size_bytes": 1492005,
+  "implementation_complete": true,
+  "artifacts_delivered": true,
+  "live_integration_verified": "pending_external_environment",
+  "hardware_qualified": "pending_external_environment",
+  "profile": "esp32s3-infrastructure",
+  "source": {
+    "runtime": "921a3d1e2f5b0224bc9175d3b8eae3e2bbcda968",
+    "system_apps": "b41350bf720a3ede85a416f2ca78022f0564c9b5",
+    "esp_idf": "fff9895c82d744c7237be8847347bdd1b07c6643",
+    "spec": "f0e52f9fb704bd984a1b7ed8d0bdc9c74b2596a875d58ea74b7354f2c6667ac2"
+  },
+  "service_sources": {
+    "capabilities": {
+      "commit": "eb73884da696d6c1253b9aec6730dfd92ee49849",
+      "deployment": "succeeded",
+      "url": "https://capabilities-service.cantikash.chatgpt.site"
+    },
+    "scheduler": {
+      "commit": "74cdbeeb9c935026ee1b4b211ad81a3667358f1d",
+      "deployment": "succeeded",
+      "url": "https://responsibility-scheduler.cantikash.chatgpt.site"
+    }
+  },
+  "source_prs": [
+    "https://github.com/michaelrolphone-cmyk/RiscRTE/pull/107",
+    "https://github.com/michaelrolphone-cmyk/RiscRTE-System-Apps/pull/169"
+  ],
+  "retention": "Committed Git repository assets; immutable commit URLs, no expiring download token",
+  "provisioning": "Secret-free blocked template; private provisioning required before network operation",
+  "qualification": "Software tests and compilation do not certify achieved15s cadence, physical power cuts, flash wear or72-hour soak.",
+  "remote_verification": {
+    "remote_readback": "passed",
+    "assets": [
+      {
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/esp32s3-infrastructure-v1.zip",
+        "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
+        "bytes": 1492005,
+        "matched_local": true
+      },
+      {
+        "url": "https://raw.githubusercontent.com/michaelrolphone-cmyk/RiscRTE-System-Apps/38e76ac3c965397506df435dbe5919a4c7064fab/releases/esp32s3-infrastructure-v1/flash-manifest.json",
+        "sha256": "815388f004c0d95def56edca5e9fb474ef00fe92bdf2cbd8b50b623a52912b92",
+        "bytes": 11346,
+        "matched_local": true
+      }
+    ]
+  },
+  "artifact_commit": "38e76ac3c965397506df435dbe5919a4c7064fab"
+}

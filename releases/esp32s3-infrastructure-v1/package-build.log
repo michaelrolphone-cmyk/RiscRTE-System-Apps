@@ -1,0 +1,73 @@
+{
+  "infra-node.elf": {
+    "sha256": "a7261319f9fe70333b9e7277895507131929380c658902330bb5a91bd1561e60",
+    "size_bytes": 214900,
+    "imports": [
+      "__adddf3",
+      "__bswapdi2",
+      "__bswapsi2",
+      "__eqdf2",
+      "__extendsfdf2",
+      "__fixdfdi",
+      "__fixdfsi",
+      "__fixsfdi",
+      "__fixunsdfdi",
+      "__fixunsdfsi",
+      "__fixunssfdi",
+      "__floatdidf",
+      "__floatsidf",
+      "__floatundidf",
+      "__floatunsidf",
+      "__gedf2",
+      "__gtdf2",
+      "__ledf2",
+      "__ltdf2",
+      "__muldf3",
+      "__nedf2",
+      "__subdf3",
+      "__truncdfsf2",
+      "__udivdi3",
+      "__umoddi3",
+      "free",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "realloc",
+      "snprintf",
+      "strcmp",
+      "strlen",
+      "strncmp"
+    ],
+    "entry": "t5_driver_get"
+  },
+  "infra-station.elf": {
+    "sha256": "fe0d49efb72df88f7c940ecbf98b9d16c01b131a2020114ccc570e0f845ca772",
+    "size_bytes": 5440,
+    "imports": [
+      "memcpy",
+      "memset",
+      "strcmp",
+      "strcpy",
+      "strlen"
+    ],
+    "entry": "t5_driver_get"
+  },
+  "default.elf": {
+    "sha256": "c4f2ed715cdc6899b10eb8f0b07f62ced325ea83794a5ee965fbf84c4ac1bcb2",
+    "size_bytes": 3540,
+    "imports": [
+      "memset",
+      "risc_runtime_get_api",
+      "snprintf"
+    ],
+    "entry": "app_main"
+  }
+}
+Seeded LittleFS2.1 image remounted and verified; no device operation.
+Bundle hashes, ranges and ABI verified.
+{
+  "bundle": "/workspace/scratch/872f492f65fd/esp32s3-infrastructure-v1.zip",
+  "sha256": "62de9f914acf00fbe9b1b17f55ff126225f5e8a42c123c619a1330d8ba18bb46",
+  "size_bytes": 1492005
+}
