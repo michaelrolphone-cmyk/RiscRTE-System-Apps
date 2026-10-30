@@ -16,6 +16,9 @@ def main():
  extracted=spiffs_image.read_image((out/'store.bin').read_bytes(),0x510000);expected={p.name:p.read_bytes() for p in stage.iterdir()};assert extracted==expected,'SPIFFS extraction mismatch'
  for src,name in [(b/'riscrte_native.bin','firmware.bin'),(b/'bootloader/bootloader.bin','bootloader.bin'),(b/'partition_table/partition-table.bin','partitions.bin')]:shutil.copy2(src,out/name)
  fw=(out/'firmware.bin').read_bytes();store=(out/'store.bin').read_bytes();assert b'RISC_PAIRED_STORE_ABI:2\0' in fw and b'RISC_RUNTIME_VERSION:' in fw;assert 'CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y' in (b/'config/sdkconfig.h').read_text().replace('#define CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE 1','CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y')
+ import re
+ identities=set(re.findall(rb'RTE_SOURCE=([0-9a-f]{40})\x00',fw))
+ if identities!={commit(r).encode()}:raise RuntimeError('Native binary source identity differs from Runtime HEAD; reconfigure and rebuild before packaging')
  (out/'otadata.bin').write_bytes(paired.initial_otadata());(out/'bank_state.bin').write_bytes(paired.initial_bank_state(fw,store,app_data=True));paired.parse_record((out/'bank_state.bin').read_bytes()[:96],app_data=True)
  seed(r,policy,state,out/'appdata-unprovisioned.bin')
  tools=out/'tools/littlefs';shutil.copytree(b/'esp-idf/risc_littlefs/pinned/littlefs',tools)

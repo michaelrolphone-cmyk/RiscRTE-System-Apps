@@ -4,18 +4,25 @@
 #include <cstdio>
 extern "C" __attribute__((visibility("default"))) void app_main(){
  const auto* rt=risc_runtime_get_api(1);if(!rt||rt->struct_size<RISC_RUNTIME_EXIT_REQUESTED_V1_SIZE||!rt->retain_invocation)return;
+ rt->diagnostic("infra startup=runtime-ready");
  risc_runtime_capability_v1 heap{sizeof(heap)},grant{sizeof(grant)};
- if(!rt->acquire("memory.heap",1,0,&heap))return;
- if(!rt->acquire("infra.node",1,0,&grant)){rt->release(&heap);return;}
+ rt->diagnostic("infra startup=memory-acquire");
+ if(!rt->acquire("memory.heap",1,0,&heap)){rt->diagnostic("infra startup=memory-acquire-failed");return;}
+ rt->diagnostic("infra startup=node-acquire");
+ if(!rt->acquire("infra.node",1,0,&grant)){rt->diagnostic("infra startup=node-acquire-failed");rt->release(&heap);return;}
+ rt->diagnostic("infra startup=node-ready");
  auto* node=static_cast<const risc_infra_node_v1*>(grant.api);auto* mem=static_cast<const risc_memory_heap_api_v1*>(heap.api);
- if(!node||node->api_version!=1||node->struct_size<sizeof(*node)||!mem||mem->api_version!=1||mem->struct_size<sizeof(*mem)){rt->retain_invocation();return;}
- bool bootConfirmed=false,stopping=false;uint64_t lastReport=0;uint32_t previousState=~0u;
+ if(!node||node->api_version!=1||node->struct_size<sizeof(*node)||!mem||mem->api_version!=1||mem->struct_size<sizeof(*mem)){rt->diagnostic("infra startup=api-rejected");rt->retain_invocation();return;}
+ bool bootConfirmed=false,stopping=false,firstAdvance=true;uint64_t lastReport=0;uint32_t previousState=~0u;
+ rt->diagnostic("infra startup=memory-snapshot");
  for(;;){
   risc_infra_memory_v1 m{};m.struct_size=sizeof(m);uint64_t* free[]={&m.internal_free,&m.psram_free,&m.dma_free};uint64_t* largest[]={&m.internal_largest,&m.psram_largest,&m.dma_largest};
   for(unsigned i=0;i<3;++i){risc_memory_heap_snapshot_v1 s{sizeof(s),i+1};if(mem->snapshot(mem->context,&s)==0){*free[i]=s.free_bytes;*largest[i]=s.largest_block;}}
   risc_memory_heap_snapshot_v1 stack{sizeof(stack),RISC_MEMORY_STACK_HEADROOM};if(mem->snapshot(mem->context,&stack)==0)m.stack_headroom=stack.free_bytes;
   int r=node->memory(node->context,&m);if(r==-2){rt->retain_invocation();return;}
+  if(firstAdvance)rt->diagnostic("infra startup=bootstrap");
   stopping|=rt->exit_requested&&rt->exit_requested();r=stopping?node->shutdown(node->context):node->advance(node->context);
+  if(firstAdvance){rt->diagnostic("infra startup=bootstrap-returned");firstAdvance=false;}
   if(r==-2){rt->retain_invocation();return;}
   if(stopping&&r==0)break;
   risc_infra_status_v1 s{};s.struct_size=sizeof(s);if(node->snapshot(node->context,&s)==-2){rt->retain_invocation();return;}
