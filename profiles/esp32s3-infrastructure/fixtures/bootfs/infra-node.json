@@ -1,0 +1,36 @@
+{
+  "type": "driver",
+  "id": "infra-node",
+  "version": "1.0.0",
+  "architecture": "xtensa-esp32s3",
+  "driver_abi": 2,
+  "file_name": "infra-node.elf",
+  "requires": [
+    {
+      "capability": "platform.http-client",
+      "api": 2
+    },
+    {
+      "capability": "platform.clock",
+      "api": 1
+    },
+    {
+      "capability": "platform.entropy",
+      "api": 1
+    },
+    {
+      "capability": "storage.app-data.bound",
+      "api": 1
+    },
+    {
+      "capability": "infra.station",
+      "api": 1
+    }
+  ],
+  "provides": [
+    {
+      "capability": "infra.node",
+      "api": 1
+    }
+  ]
+}

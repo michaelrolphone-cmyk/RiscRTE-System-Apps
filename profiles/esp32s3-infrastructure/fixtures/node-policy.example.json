@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "wifi": {
+    "ssid": "EXAMPLE-NETWORK",
+    "credential_ref": "wifi"
+  },
+  "service": {
+    "url": "https://capabilities.example/v1/call",
+    "credential_ref": "participant",
+    "site_credential_ref": "",
+    "time_server": "pool.ntp.org",
+    "contact_interval_ms": 30000,
+    "contracts": [
+      {
+        "capability_id": "scheduler.drive",
+        "api_version": 1,
+        "contract_digest": "1f191cd4ba541a1b13e5ab122e25ce25891f7157ecaa48e1da5f6a449b63fe97"
+      },
+      {
+        "capability_id": "service.reconcile",
+        "api_version": 1,
+        "contract_digest": "bf8c680a6667901ddc0e91f2bf982028b12a456679d50232d8b08ce88fdf3717"
+      },
+      {
+        "capability_id": "service.health.observe",
+        "api_version": 1,
+        "contract_digest": "742a986d123ececf60ad6c715c5587b081f691adad992b04abbffe6aefcf998f"
+      },
+      {
+        "capability_id": "source.poll",
+        "api_version": 1,
+        "contract_digest": "4f10b9ec48f8b47b43aed171d7b7074cf13663ae447c1a960026e52937a0e8c4"
+      }
+    ],
+    "providers": [
+      {
+        "capability_id": "scheduler.drive",
+        "provider_id": "esp32s3-infra-scheduler-drive",
+        "revision": 1,
+        "definition_digest": "2341f41af0fd48667f0035a94d85411d5de8076340b0e1135517ef56f613bd38",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "capability_id": "service.reconcile",
+        "provider_id": "esp32s3-infra-service-reconcile",
+        "revision": 1,
+        "definition_digest": "98c55c0e162dbc76a94976c6e545073eba99c4ff5fff1229352d4ac1cc1a014d",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "capability_id": "service.health.observe",
+        "provider_id": "esp32s3-infra-service-health-observe",
+        "revision": 1,
+        "definition_digest": "e1fbf06ae1b172bf51ae827259cae1ca0d5d57a4aba225b46ea78205c9c75499",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      {
+        "capability_id": "source.poll",
+        "provider_id": "esp32s3-infra-source-poll",
+        "revision": 1,
+        "definition_digest": "e61a7e6f021f31d2d5b89608e0517e80c17e5085565547fea4cf910c38c20c01",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ]
+  },
+  "endpoints": [
+    {
+      "endpoint_policy_id": "scheduler-main-endpoint",
+      "url": "https://scheduler.example/v1/maintenance/call",
+      "method": "POST",
+      "capability": "scheduler.drive",
+      "credential_ref": "scheduler-main-credential",
+      "site_credential_ref": "",
+      "authorization_scope": [
+        "scheduler.drive.maintain"
+      ],
+      "maintenance_qualified": true
+    },
+    {
+      "endpoint_policy_id": "capabilities-main-endpoint",
+      "url": "https://capabilities.example/v1/maintenance/call",
+      "method": "POST",
+      "capability": "service.reconcile",
+      "credential_ref": "capabilities-main-credential",
+      "site_credential_ref": "",
+      "authorization_scope": [
+        "service.reconcile.maintain"
+      ],
+      "maintenance_qualified": true
+    },
+    {
+      "endpoint_policy_id": "service-health-endpoint",
+      "url": "https://health.example/status",
+      "method": "GET",
+      "capability": "service.health.observe",
+      "credential_ref": "service-health-credential",
+      "site_credential_ref": "",
+      "authorization_scope": [
+        "service.health.observe.observe"
+      ],
+      "maintenance_qualified": false
+    },
+    {
+      "endpoint_policy_id": "source-main-endpoint",
+      "url": "https://source.example/status",
+      "method": "GET",
+      "capability": "source.poll",
+      "credential_ref": "source-main-credential",
+      "site_credential_ref": "",
+      "authorization_scope": [
+        "source.poll.poll"
+      ],
+      "maintenance_qualified": false
+    }
+  ],
+  "configuration": {
+    "schema_version": 1,
+    "revision": 1,
+    "bindings": [
+      {
+        "binding_id": "scheduler-main",
+        "revision": 1,
+        "capability": "scheduler.drive",
+        "api_version": 1,
+        "operation": "maintain",
+        "endpoint_policy_id": "scheduler-main-endpoint",
+        "credential_ref": "scheduler-main-credential",
+        "cadence_ms": 15000,
+        "timeout_ms": 5000,
+        "request_max_bytes": 16384,
+        "response_max_bytes": 4096,
+        "effect_class": "target_deduplicated",
+        "max_items": 4,
+        "max_elapsed_ms": 1000,
+        "continuation": "target-cursor",
+        "expires_at_ms": 1893456000000,
+        "authorization_scope": [
+          "scheduler.drive.maintain"
+        ],
+        "required": true,
+        "wake_semantics": "coalescible-durable-work"
+      },
+      {
+        "binding_id": "capabilities-main",
+        "revision": 1,
+        "capability": "service.reconcile",
+        "api_version": 1,
+        "operation": "maintain",
+        "endpoint_policy_id": "capabilities-main-endpoint",
+        "credential_ref": "capabilities-main-credential",
+        "cadence_ms": 15000,
+        "timeout_ms": 5000,
+        "request_max_bytes": 16384,
+        "response_max_bytes": 4096,
+        "effect_class": "target_deduplicated",
+        "max_items": 4,
+        "max_elapsed_ms": 1000,
+        "continuation": "target-cursor",
+        "expires_at_ms": 1893456000000,
+        "authorization_scope": [
+          "service.reconcile.maintain"
+        ],
+        "required": true,
+        "wake_semantics": "coalescible-durable-work"
+      },
+      {
+        "binding_id": "service-health",
+        "revision": 1,
+        "capability": "service.health.observe",
+        "api_version": 1,
+        "operation": "observe",
+        "endpoint_policy_id": "service-health-endpoint",
+        "credential_ref": "service-health-credential",
+        "cadence_ms": 60000,
+        "timeout_ms": 5000,
+        "request_max_bytes": 16384,
+        "response_max_bytes": 32768,
+        "effect_class": "repeatable_compute",
+        "max_items": 4,
+        "max_elapsed_ms": 1000,
+        "continuation": "accepted-checkpoint",
+        "expires_at_ms": 1893456000000,
+        "authorization_scope": [
+          "service.health.observe.observe"
+        ],
+        "required": false,
+        "format": "json",
+        "collection_bound": 32,
+        "projection": [
+          "status",
+          "version"
+        ],
+        "expected_status_min": 200,
+        "expected_status_max": 299,
+        "latest_state": true
+      },
+      {
+        "binding_id": "source-main",
+        "revision": 1,
+        "capability": "source.poll",
+        "api_version": 1,
+        "operation": "poll",
+        "endpoint_policy_id": "source-main-endpoint",
+        "credential_ref": "source-main-credential",
+        "cadence_ms": 60000,
+        "timeout_ms": 5000,
+        "request_max_bytes": 16384,
+        "response_max_bytes": 32768,
+        "effect_class": "repeatable_compute",
+        "max_items": 4,
+        "max_elapsed_ms": 1000,
+        "continuation": "accepted-checkpoint",
+        "expires_at_ms": 1893456000000,
+        "authorization_scope": [
+          "source.poll.poll"
+        ],
+        "required": false,
+        "format": "json",
+        "collection_bound": 32,
+        "projection": [
+          "status",
+          "version"
+        ],
+        "expected_status_min": 200,
+        "expected_status_max": 299,
+        "latest_state": true
+      }
+    ],
+    "enabled_providers": [
+      "scheduler.drive",
+      "service.reconcile",
+      "service.health.observe",
+      "source.poll"
+    ],
+    "retry": {
+      "initial_ms": 1000,
+      "maximum_ms": 300000,
+      "full_jitter": true
+    },
+    "telemetry": {
+      "interval_ms": 60000,
+      "diagnostic_bytes": 16384
+    },
+    "update_policy": {
+      "mode": "serial-owner"
+    }
+  },
+  "low_water": {
+    "internal_free": 49152,
+    "internal_largest": 16384,
+    "dma_free": 16384,
+    "dma_largest": 8192,
+    "psram_free": 1572864,
+    "psram_largest": 262144,
+    "stack_headroom": 4096
+  },
+  "provenance": {
+    "spec_revision": "f0e52f9fb704bd984a1b7ed8d0bdc9c74b2596a875d58ea74b7354f2c6667ac2",
+    "fixture": "synthetic-no-credentials"
+  }
+}

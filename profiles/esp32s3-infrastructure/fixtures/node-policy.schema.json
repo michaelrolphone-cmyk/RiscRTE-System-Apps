@@ -1,0 +1,542 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "wifi": {
+      "type": "object",
+      "properties": {
+        "ssid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "credential_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "ssid",
+        "credential_ref"
+      ],
+      "additionalProperties": false
+    },
+    "service": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string",
+          "pattern": "^https://",
+          "maxLength": 2048
+        },
+        "credential_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "site_credential_ref": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 128
+        },
+        "time_server": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 253
+        },
+        "contact_interval_ms": {
+          "type": "integer",
+          "minimum": 15000,
+          "maximum": 30000
+        },
+        "contracts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "capability_id": {
+                "enum": [
+                  "scheduler.drive",
+                  "service.reconcile",
+                  "service.health.observe",
+                  "source.poll"
+                ]
+              },
+              "api_version": {
+                "const": 1
+              },
+              "contract_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "capability_id",
+              "api_version",
+              "contract_digest"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 4
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "capability_id": {
+                "enum": [
+                  "scheduler.drive",
+                  "service.reconcile",
+                  "service.health.observe",
+                  "source.poll"
+                ]
+              },
+              "provider_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "definition_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "package_digest": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "capability_id",
+              "provider_id",
+              "revision",
+              "definition_digest",
+              "package_digest"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "url",
+        "credential_ref",
+        "site_credential_ref",
+        "time_server",
+        "contact_interval_ms",
+        "contracts",
+        "providers"
+      ],
+      "additionalProperties": false
+    },
+    "endpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "endpoint_policy_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://",
+            "maxLength": 2048
+          },
+          "method": {
+            "enum": [
+              "GET",
+              "POST"
+            ]
+          },
+          "capability": {
+            "enum": [
+              "scheduler.drive",
+              "service.reconcile",
+              "service.health.observe",
+              "source.poll"
+            ]
+          },
+          "credential_ref": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "site_credential_ref": {
+            "type": "string",
+            "minLength": 0,
+            "maxLength": 128
+          },
+          "authorization_scope": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "maxItems": 8
+          },
+          "maintenance_qualified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "endpoint_policy_id",
+          "url",
+          "method",
+          "capability",
+          "credential_ref",
+          "site_credential_ref",
+          "authorization_scope",
+          "maintenance_qualified"
+        ],
+        "additionalProperties": false
+      },
+      "maxItems": 8
+    },
+    "configuration": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9007199254740991
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "binding_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "revision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "capability": {
+                "enum": [
+                  "scheduler.drive",
+                  "service.reconcile",
+                  "service.health.observe",
+                  "source.poll"
+                ]
+              },
+              "api_version": {
+                "const": 1
+              },
+              "operation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "endpoint_policy_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "credential_ref": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "cadence_ms": {
+                "type": "integer",
+                "minimum": 1000,
+                "maximum": 86400000
+              },
+              "timeout_ms": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 30000
+              },
+              "request_max_bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 16384
+              },
+              "response_max_bytes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32768
+              },
+              "effect_class": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "max_items": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 32
+              },
+              "max_elapsed_ms": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 2000
+              },
+              "continuation": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "expires_at_ms": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              },
+              "authorization_scope": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "wake_semantics": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "format": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "semantic_field": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "semantic_value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "collection_bound": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 128
+              },
+              "projection": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "maxItems": 16
+              },
+              "expected_status_min": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "expected_status_max": {
+                "type": "integer",
+                "minimum": 100,
+                "maximum": 599
+              },
+              "latest_state": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "binding_id",
+              "revision",
+              "capability",
+              "api_version",
+              "operation",
+              "endpoint_policy_id",
+              "credential_ref",
+              "cadence_ms",
+              "timeout_ms",
+              "request_max_bytes",
+              "response_max_bytes",
+              "effect_class",
+              "max_items",
+              "max_elapsed_ms",
+              "continuation",
+              "expires_at_ms",
+              "authorization_scope",
+              "required"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8
+        },
+        "enabled_providers": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "scheduler.drive",
+              "service.reconcile",
+              "service.health.observe",
+              "source.poll"
+            ]
+          },
+          "maxItems": 4
+        },
+        "retry": {
+          "type": "object",
+          "properties": {
+            "initial_ms": {
+              "const": 1000
+            },
+            "maximum_ms": {
+              "const": 300000
+            },
+            "full_jitter": {
+              "const": true
+            }
+          },
+          "required": [
+            "initial_ms",
+            "maximum_ms",
+            "full_jitter"
+          ],
+          "additionalProperties": false
+        },
+        "telemetry": {
+          "type": "object",
+          "properties": {
+            "interval_ms": {
+              "type": "integer",
+              "minimum": 15000,
+              "maximum": 86400000
+            },
+            "diagnostic_bytes": {
+              "const": 16384
+            }
+          },
+          "required": [
+            "interval_ms",
+            "diagnostic_bytes"
+          ],
+          "additionalProperties": false
+        },
+        "update_policy": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "const": "serial-owner"
+            }
+          },
+          "required": [
+            "mode"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "revision",
+        "bindings",
+        "enabled_providers",
+        "retry",
+        "telemetry",
+        "update_policy"
+      ],
+      "additionalProperties": false
+    },
+    "low_water": {
+      "type": "object",
+      "properties": {
+        "internal_free": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "internal_largest": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "dma_free": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "dma_largest": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "psram_free": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "psram_largest": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        },
+        "stack_headroom": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16777216
+        }
+      },
+      "required": [
+        "internal_free",
+        "internal_largest",
+        "dma_free",
+        "dma_largest",
+        "psram_free",
+        "psram_largest",
+        "stack_headroom"
+      ],
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "spec_revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "fixture": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "spec_revision",
+        "fixture"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "wifi",
+    "service",
+    "endpoints",
+    "configuration",
+    "low_water",
+    "provenance"
+  ],
+  "additionalProperties": false
+}

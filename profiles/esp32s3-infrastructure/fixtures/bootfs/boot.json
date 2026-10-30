@@ -1,0 +1,50 @@
+{
+  "board": "board.json",
+  "default_app": "default.elf",
+  "provider_activation": "demand",
+  "drivers": [
+    {
+      "manifest": "infra-station.json",
+      "instance_id": 1
+    },
+    {
+      "manifest": "infra-node.json",
+      "bindings": [
+        {
+          "capability": "infra.station",
+          "api": 1,
+          "instance_id": 1
+        }
+      ],
+      "app_data": [
+        {
+          "name": "node-policy.json",
+          "namespace": 100,
+          "access": "read"
+        },
+        {
+          "name": "node-state.bin",
+          "namespace": 100,
+          "access": "read-write"
+        }
+      ]
+    }
+  ],
+  "app_capabilities": [
+    {
+      "manifest": "app.json",
+      "grants": [
+        {
+          "capability": "infra.node",
+          "api": 1,
+          "instance_id": 0
+        },
+        {
+          "capability": "memory.heap",
+          "api": 1,
+          "instance_id": 0
+        }
+      ]
+    }
+  ]
+}
