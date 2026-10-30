@@ -134,3 +134,9 @@ Paths without a repository prefix refer to System Apps. Runtime and service path
 5. Exercise missing PSRAM, allocation pressure, TLS date/hostname/time failures, credential rotation interruption and a hanging target. Refine low-water and timing bounds from the measurements. Record failed checks with their evidence; do not convert pending checks to passed because time elapsed.
 
 These follow-ups do not postpone delivering compiled software and a verified install bundle.
+
+## v1.2 captive setup amendment
+
+Explicit user request authorizes a temporary on-device AP, wildcard DNS and captive HTTP portal, replacing the original unprovisioned terminal block. The ELF owns all DNS/HTTP parsing and setup UI. The native optional UDP suffix retains explicit provider generations, bounded nonblocking calls and retained-close fencing. Runtime target flags enable AP transport only in this infrastructure profile.
+
+`test/infra_node/portal.cpp` exercises first setup, HTTP redirects/framing/CSRF, pin validation, durable saves, failed network correction, reboot and uncertain commits. `test/native_tcp_listener_test.cpp` adds UDP size/ownership/cleanup/loss-of-owner coverage. Existing service protocol and recovery tests remain required. Mobile/browser and physical RF behavior remain unqualified until flashed hardware is exercised.

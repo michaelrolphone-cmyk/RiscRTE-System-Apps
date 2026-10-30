@@ -25,6 +25,10 @@
     {
       "capability": "infra.station",
       "api": 1
+    },
+    {
+      "capability": "platform.tcp-listener",
+      "api": 1
     }
   ],
   "provides": [

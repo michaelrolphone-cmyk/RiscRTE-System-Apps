@@ -3,15 +3,16 @@
 #include "Journal.h"
 #include "Transport.h"
 #include "Station.h"
+#include "Portal.h"
 #include "RiscInfraNodeV1.h"
 #include <RiscPlatformClockV1.h>
 #include <RiscEntropyV1.h>
 namespace Infra {
-enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked};
+enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
 enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare};
 class Node {
  public:
- Journal journal;Transport net;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
+ Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
  Allocator configMemory{196608},exchangeMemory{262144},responseMemory{393216};JsonDocument config{&configMemory},request{&exchangeMemory},response{&responseMemory};
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
  Phase phase=Phase::Cold,afterSave=Phase::Ready;Action action=Action::None;bool durable=false,loaded=false,rebootRecovery=true,drain=false,initialized=false;
@@ -41,11 +42,12 @@ class Node {
   r=b.read(b.context,"node-policy.json",revision,encoded,16384,&bytes,&revision);if(r==RISC_APP_DATA_RETAINED)return retained();if(r==RISC_APP_DATA_BUSY||r==RISC_APP_DATA_STALE)return 1;
   if(r||!parse(config,encoded,bytes)||!policy(config))return block(Phase::StorageBlocked,"policy_invalid");
   r=journal.load();if(r==-2)return retained();if(r>0)return 1;if(r<0)return block(Phase::StorageBlocked,"state_missing_corrupt_or_schema");
+  if(!journal.state["setup_policy"].isNull()){config.set(journal.state["setup_policy"]);if(!policy(config))return block(Phase::StorageBlocked,"saved_setup_policy_invalid");}
   if(!Infra::configuration(configuration(),config["endpoints"],config["service"]["contact_interval_ms"]))return block(Phase::StorageBlocked,"configuration_invalid");
   for(auto kv:journal.state["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return block(Phase::StorageBlocked,"credential_invalid");
-  if(!credential(config["wifi"]["credential_ref"])[0]||!credential(config["service"]["credential_ref"])[0])return block(Phase::AuthBlocked,"provisioning_required");
+  if(!journal.state["credentials"][config["wifi"]["credential_ref"]|""].is<const char*>()||!credential(config["service"]["credential_ref"])[0]){reason(Phase::SetupStart,"phone_setup_required");return 1;}
   if(!text(journal.state["participant_id"],128)&&(!text(journal.state["bootstrap"],1024)||!text(journal.state["enrollment_id"],128)||!digest(journal.state["credential_sha256"])))return block(Phase::AuthBlocked,"enrollment_provisioning_required");
-  configureCadence();loaded=true;reason(Phase::Connect,"network_connecting");return 1;
+  configureCadence();loaded=true;reason(journal.state["setup_pending"]==true?Phase::SetupJoin:Phase::Connect,"network_connecting");return 1;
  }
  void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=false;cursors[i][0]=0;++i;}}
  bool capacity()const{
@@ -97,11 +99,12 @@ class Node {
  int advance(){
   if(phase==Phase::Retained||journal.retained||net.retained)return retained();
   if(phase==Phase::Cold)return bootstrap();
-  if(phase==Phase::Save){int r;if(journal.writeToken)r=journal.collect();else if(journal.reload){r=journal.load();if(!r){phase=Phase::Recover;return 1;}}else r=journal.save();if(r==-2)return retained();if(r<0)return block(Phase::StorageBlocked,"state_commit_failed");if(r)return 1;if(journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc){reason(Phase::Recover,"commit_unknown_reloaded");return 1;}phase=afterSave;return 1;}
+  if(phase>=Phase::SetupStart)return setupStep();
+  if(phase==Phase::Save){int r;if(journal.writeToken)r=journal.collect();else if(journal.reload){r=journal.load();}else r=journal.save();if(r==-2)return retained();if(r<0)return block(Phase::StorageBlocked,"state_commit_failed");if(r)return 1;if(journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc){reason(boot[0]?Phase::Recover:Phase::Nonce,"commit_unknown_reloaded");return 1;}phase=afterSave;return 1;}
   if(phase==Phase::Send)return transmit();
   if(phase==Phase::Receive){auto r=net.advance(now());if(r==-2)return retained();if(r)return 1;return received();}
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
-  if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();return r?1:backoff("offline");}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
+  if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;setupRecovery=true;reason(Phase::SetupRetry,"wifi_setup_recovery");return 1;}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
   if(phase==Phase::Nonce){uint8_t nonce[32];auto r=entropy.fill(entropy.context,nonce,sizeof(nonce));if(r==RISC_ENTROPY_RETAINED)return retained();if(r==RISC_ENTROPY_UNAVAILABLE||r==RISC_ENTROPY_BUSY)return 1;if(r)return block(Phase::ProtocolBlocked,"entropy_failed");for(unsigned i=0;i<32;++i)snprintf(boot+i*2,3,"%02x",nonce[i]);copy(status.boot_id,sizeof(status.boot_id),boot);phase=Phase::Recover;return 1;}
   if(phase==Phase::Recover){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();if(journal.state["pending"].size())return resume();auto job=journal.state["job"];if(!job.isNull()&&text(job["attempt_id"],128))return stopJob("reboot_or_reconnect_requires_reconciliation");if(snapshotNeeded&&text(journal.state["participant_id"],128))return snapshotStep();rebootRecovery=false;phase=Phase::Ready;}
   if(phase==Phase::Drain){if(net.token){auto r=net.close();if(r==-2)return retained();if(r)return 1;}if(journal.state["pending"].size()){phase=Phase::Recover;return 1;}if(!journal.state["job"].isNull())return stopJob("owner_shutdown");auto r=station.close(station.context);if(r==-2)return retained();if(r)return 1;phase=Phase::Stopped;return 0;}
@@ -126,7 +129,8 @@ class Node {
   return 1;
  }
  int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=capacity()&&journal.state["job"].isNull()?1:0;return send(false);}
+ int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
- void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
+ void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
 };
 }
