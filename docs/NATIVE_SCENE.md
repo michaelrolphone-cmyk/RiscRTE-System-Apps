@@ -103,3 +103,17 @@ It does not claim or require a Wi-Fi enable-toggle capability. The focused fixtu
 checks that destination through real shared Quick reduction and handoff. Native
 capability-safe rendering only disables the Wi-Fi tile for unavailable radio
 controls when that radio profile is actually selected.
+
+## Historical preservation versus current behavior
+
+Later accepted clock/raster changes are not byte-identical to the original scene
+feature snapshot. To qualify both without conflating them, `--parity-source`
+selects exactly scene55c94bde and `--baseline` exactly pre-scene be142dbe.
+All six original selector-off comparisons remain required. The behavioral cases
+still compile the current source; `--system-under-test` with `--system-revision`
+can explicitly bind a separately selected current product source. Source roles
+are checked clean and byte-matched to Git and recorded independently.
+Without `--parity-source`, the original direct comparison remains unchanged and
+still rejects current40e versus historical55c. No historical equality is claimed
+for the later implementation. This separation does not waive current behavioral,
+product, native-image or device qualification.

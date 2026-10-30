@@ -1,0 +1,15 @@
+#pragma once
+/* Current-profile facade only. Historical Points recipes are unchanged. */
+#if defined(PORTABLE_POINTS_NATIVE_UI) && defined(PORTABLE_NATIVE_SCENE)
+#include "PortableNativeScene.h"
+typedef portable_native_scene_contact portable_points_contact;
+#define portable_points_native_available portable_native_scene_available
+#define portable_points_native_begin portable_native_scene_begin
+#define portable_points_native_layout portable_native_scene_layout
+#define portable_points_native_present portable_native_scene_present
+#define portable_points_native_ready portable_native_scene_ready
+#define portable_points_native_repaint portable_native_scene_repaint
+#define portable_points_native_contact portable_native_scene_contact_read
+#define portable_points_native_back portable_native_scene_back
+#endif
+

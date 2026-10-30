@@ -15,6 +15,7 @@
 #include "RiscRuntimeV1.h"
 #include "RiscRuntimeHostControlV1.h"
 #include "RiscDisplayOutputV1.h"
+#include "PortableSafeViewport.h"
 #include "RiscTouchV1.h"
 #include "RiscInputNavigationV1.h"
 #include "RiscPlatformClockV1.h"
@@ -36,6 +37,8 @@ static const risc_platform_clock_api_v1 *clock_api;
 static const risc_scene_profile_v1 *profile;
 static risc_display_info_v1 info;
 static unsigned session_display_rotation,session_touch_rotation;
+static unsigned full_width,full_height;
+static portable_safe_viewport content_view;
 static risc_display_surface_v1 surface;
 static risc_display_present_token_v1 present_token;
 /* Logical state is owned by input/application work. Rasterization owns an
@@ -358,7 +361,9 @@ static bool touch_point(uint16_t raw_x,uint16_t raw_y,int *x,int *y){
     }
     // Snapshot dimensions <=8192 and display dimensions <=2048: products fit
     // 24 bits. Avoid expensive 64-bit compiler division helpers in this path.
-    *x=(int)(tx*width/tw);*y=(int)(ty*height/th);return true;
+    uint16_t cx=(uint16_t)(tx*full_width/tw),cy=(uint16_t)(ty*full_height/th);
+    if(!portable_safe_viewport_touch(&content_view,&cx,&cy))return false;
+    *x=cx;*y=cy;return true;
 }
 static bool keyboard_contact_key(void){
     const risc_scene_node_v1 *n=current_keyboard();if(!contact||!n)return false;
@@ -663,9 +668,7 @@ static int32_t poll_navigation(void){
 
 /* Bounded rasterization directly into a provider-owned surface. */
 static uint8_t luminance(uint16_t c){return (uint8_t)((((c>>11)&31)*299u*255u/31u+((c>>5)&63)*587u*255u/63u+(c&31)*114u*255u/31u)/1000u);}
-static void pixel(int x,int y,uint16_t color){
-    if(layout_only||x<0||y<0||(unsigned)x>=width||(unsigned)y>=height||
-       (unsigned)y<clip_top||(unsigned)y>=clip_bottom)return;
+static void physical_pixel(unsigned x,unsigned y,uint16_t color){
     unsigned px=(unsigned)x,py=(unsigned)y;
     switch(session_display_rotation){
     case 90:px=surface.width-1-(unsigned)y;py=(unsigned)x;break;
@@ -679,6 +682,11 @@ static void pixel(int x,int y,uint16_t color){
     unsigned maximum=(1u<<bits)-1u,level=(255u-luminance(color))*maximum/255u;
     unsigned offset=px*bits,shift=8u-bits-(offset&7u),mask=maximum<<shift;
     row[offset>>3]=(uint8_t)((row[offset>>3]&~mask)|(level<<shift));
+}
+static void pixel(int x,int y,uint16_t color){
+    if(layout_only||x<0||y<0||(unsigned)x>=width||(unsigned)y>=height||
+       (unsigned)y<clip_top||(unsigned)y>=clip_bottom)return;
+    physical_pixel((unsigned)x+content_view.x,(unsigned)y+content_view.y,color);
 }
 static void fill(int x,int y,int w,int h,uint16_t c){
     if(layout_only)return;
@@ -773,13 +781,14 @@ static bool valid_surface(void){
 #include "telemetry_draw.inc"
 #endif
 
+static unsigned header_button_width(void){return profile->font_scale*30u+8u;}
 static void draw_scene(void){
     if(model->page_view){if(model->reading_view)reading_draw();else page_draw();return;}
     if(model->components){component_draw();return;}
     fill(0,0,(int)width,(int)height,(uint16_t)profile->background_rgb565);
     upload=(hit_map){.revision=document.revision,.route=current_route(),.epoch=epoch,.keyboard=current_keyboard()!=NULL};
     int top=(int)top_height(),bottom=(int)bottom_height(),pad=(int)profile->padding;
-    int header_button=(int)(profile->font_scale*30u+8u);
+    int header_button=(int)header_button_width();
     const risc_scene_node_v1 *keyboard=current_keyboard();
     bool paper_keys=keyboard&&height>=width*3u/2u;
     if(keyboard&&!paper_keys)compact_keyboard_header();
@@ -810,6 +819,24 @@ static void draw_scene(void){
 static void rebuild_hits(void){
     layout_only=true;draw_scene();visible=upload;layout_only=false;
 }
+/* Clear only the reserved border in the same bounded bands as content.
+ * Zero-inset profiles retain their original pixel path and batch count. */
+static void paint_band(unsigned first,unsigned last){
+    if(last>full_height)last=full_height;
+    if(content_view.x||content_view.y||width!=full_width||height!=full_height){
+        for(unsigned y=first;y<last;y++){
+            bool outside=y<content_view.y||y>=content_view.y+height;
+            for(unsigned x=0;x<full_width;x++)
+                if(outside||x<content_view.x||x>=content_view.x+width)
+                    physical_pixel(x,y,(uint16_t)profile->background_rgb565);
+        }
+    }
+    clip_top=first>content_view.y?first-content_view.y:0;
+    clip_bottom=last>content_view.y?last-content_view.y:0;
+    if(clip_top>height)clip_top=height;
+    if(clip_bottom>height)clip_bottom=height;
+    if(clip_top<clip_bottom)draw_scene();
+}
 static int32_t paint(void){
     bool ok;
     if(!rasterizing){
@@ -830,22 +857,20 @@ static int32_t paint(void){
      * bounded batch, before yielding; neither operation changes the frame. */
     const unsigned rows=surface.pixel_format==RISC_DISPLAY_FORMAT_RGB565?32u:8u;
     if(!current_keyboard()){
-        model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+rows;
-        if(clip_bottom>height)clip_bottom=height;
-        draw_scene();raster_row=clip_bottom;model=&logical_model;
+        model=&frame_model;unsigned end=raster_row+rows;if(end>full_height)end=full_height;
+        paint_band(raster_row,end);raster_row=end;model=&logical_model;
     }else{
         uint64_t began=clock_api->monotonic_ms(clock_api->context);
         if(!alive()||began==UINT64_MAX)return fail_retained();
-        for(unsigned row=0;row<rows&&raster_row<height;row++){
-            model=&frame_model;clip_top=raster_row;clip_bottom=raster_row+1;
-            draw_scene();raster_row=clip_bottom;model=&logical_model;
+        for(unsigned row=0;row<rows&&raster_row<full_height;row++){
+            model=&frame_model;paint_band(raster_row,raster_row+1);++raster_row;model=&logical_model;
             uint64_t now=clock_api->monotonic_ms(clock_api->context);
             if(!alive()||now==UINT64_MAX||now<began)return fail_retained();
             /* Resume this same frame after input, regardless of text revisions. */
             if(now-began>=2u)break;
         }
     }
-    if(raster_row<height)return RISC_SCENE_AGAIN;
+    if(raster_row<full_height)return RISC_SCENE_AGAIN;
     risc_display_present_options_v1 options={RISC_DISPLAY_PRESENT_DEFAULT,RISC_DISPLAY_QUEUE_FIFO,0};
     if(frame_model.page_view&&frame_model.page_clean){
         options.intent=RISC_DISPLAY_PRESENT_CLEAN;
@@ -956,7 +981,17 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
         session_display_rotation=(session_display_rotation+90)%360;
         session_touch_rotation=(session_touch_rotation+270)%360;
     }
-    if(height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
+    full_width=width;full_height=height;
+    unsigned left=info.safe_insets.left,top=info.safe_insets.top,right=info.safe_insets.right,bottom=info.safe_insets.bottom;
+    switch(session_display_rotation){
+    case 90:{unsigned l=left;left=top;top=right;right=bottom;bottom=l;break;}
+    case 180:{unsigned l=left,t=top;left=right;top=bottom;right=l;bottom=t;break;}
+    case 270:{unsigned l=left,t=top,r=right;left=bottom;top=l;right=t;bottom=r;break;}
+    default:break;
+    }
+    if(!portable_safe_viewport_open(&content_view,full_width,full_height,left,top,right,bottom))return RISC_SCENE_UNAVAILABLE;
+    width=content_view.width;height=content_view.height;
+    if(width<=2u*profile->padding+6u*profile->font_scale||height<=top_height()+bottom_height()+profile->row_height)return RISC_SCENE_UNAVAILABLE;
     model->scroll=0;model->wheel_node=-1;model->toast_until=0;
     document=*d;path=(risc_scene_navigation_v1){.api_version=1,.struct_size=sizeof(path),.depth=1,.routes={d->root}};
     if(p)path=*p;

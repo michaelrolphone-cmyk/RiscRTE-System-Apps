@@ -4,7 +4,15 @@ import argparse,hashlib,json,os,shutil,subprocess,tempfile
 from pathlib import Path
 S=Path(__file__).resolve().parents[1]
 def main():
- p=argparse.ArgumentParser();p.add_argument('--runtime',type=Path,required=True);p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--baseline',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');a=p.parse_args();O=a.output.resolve();O.mkdir(parents=True,exist_ok=True)
+ p=argparse.ArgumentParser();p.add_argument('--runtime',type=Path,required=True);p.add_argument('--alarm-sdk',type=Path,required=True);p.add_argument('--baseline',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--sanitize',action='store_true');p.add_argument('--parity-source',type=Path);p.add_argument('--system-under-test',type=Path);p.add_argument('--system-revision');a=p.parse_args()
+ global S
+ from native_scene_provenance import bind,historical
+ if bool(a.system_under_test)!=bool(a.system_revision):p.error('system-under-test and system-revision must be supplied together')
+ current_role=bind(a.system_under_test,a.system_revision) if a.system_under_test else None
+ if a.system_under_test:S=a.system_under_test.resolve()
+ historical_roles=historical(a.parity_source,a.baseline) if a.parity_source else None
+ parity_source=a.parity_source or S
+ O=a.output.resolve();O.mkdir(parents=True,exist_ok=True)
  previous=O/'receipt.json'
  if previous.exists():previous.rename(O/('receipt-previous-'+hashlib.sha256(previous.read_bytes()).hexdigest()[:12]+'.json'))
  shutil.copytree(S/'lib/PortableApps/time',O/'time',dirs_exist_ok=True)
@@ -28,11 +36,11 @@ def main():
  parity={}
  for name,defines in profiles.items():
   bodies=[]
-  for root in [a.baseline,S]:
+  for root in [a.baseline,parity_source]:
    bodies.append(subprocess.check_output(['cc','-E','-P',*['-D'+x for x in defines],'-I'+str(inc),'-I'+str(root/'lib/NativeApps/include'),str(root/'lib/PortableApps/src/adapter.c')]))
   assert bodies[0]==bodies[1],name
   parity[name]=hashlib.sha256(bodies[1]).hexdigest()
- files=[S/'lib/PortableApps/src'/n for n in ['adapter.c','native_scene.inc','foreground_idle.inc','foreground_adapter_open.inc','quick_adapter.inc','alarm.inc','quick_actions.c','quick_render.c','quick_session.c']]+[S/'lib/PortableApps/include'/n for n in ['PortableNativeScene.h','PortableNativeSceneState.h','PortableTimecardNative.h']]+[S/'test/native_apps'/n for n in ['native_scene_state_test.c','native_scene_adapter_test.c']]+[Path(__file__)]
- receipt={'passed':True,'sanitized':a.sanitize,'runs':rows,'selector_off_exact_preprocessed_parity':parity,'hardware':False,'scope':'Actual shared adapter and foreground/alarm helpers; display/raw input/Runtime/Light and alarm-service media are doubles. Not target or product qualification.','source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in files}}
+ files=[S/'lib/PortableApps/src'/n for n in ['adapter.c','native_scene.inc','foreground_idle.inc','foreground_adapter_open.inc','quick_adapter.inc','alarm.inc','quick_actions.c','quick_render.c','quick_session.c']]+[S/'lib/PortableApps/include'/n for n in ['PortableNativeScene.h','PortableNativeSceneState.h','PortableTimecardNative.h']]+[S/'test/native_apps'/n for n in ['native_scene_state_test.c','native_scene_adapter_test.c']]+[Path(__file__),Path(__file__).with_name('native_scene_provenance.py')]
+ receipt={'passed':True,'sanitized':a.sanitize,'runs':rows,'selector_off_exact_preprocessed_parity':parity,'historical_parity_roles':historical_roles,'current_behavior_role':current_role,'parity_scope':'Exact historical scene feature preservation; not equality of later current source to historical source' if historical_roles else 'Direct selected source versus supplied baseline','hardware':False,'scope':'Actual shared adapter and foreground/alarm helpers; display/raw input/Runtime/Light and alarm-service media are doubles. Not target or product qualification.','source_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in files}}
  (O/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
 if __name__=='__main__':main()
