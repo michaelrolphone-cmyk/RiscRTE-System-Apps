@@ -15,9 +15,13 @@ bool Node::acceptSetup(){
   for(auto kv:pairing["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return false;
   // Published implementation/contract pins and low-water bounds stay tied to
   // this exact image; a provisioning file supplies endpoints and authority.
-  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b))return false;}
+  // v1.2/v1.2.1/v1.2.2 used this exact four-provider cohort. Accept those
+  // pairing files for first setup and replace only their implementation pins
+  // with this image's pins. No arbitrary older or mixed provider set is trusted.
+  bool upgradePins=false;
+  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17"))return false;upgradePins=true;}}
   char a[65],b[65];canonicalDigest(config["low_water"],a);canonicalDigest(pairing["policy"]["low_water"],b);if(strcmp(a,b))return false;
-  request.set(pairing["policy"]);request["wifi"]["ssid"]=response["ssid"];if(!policy(request))return false;
+  request.set(pairing["policy"]);if(upgradePins)request["service"]["providers"]=config["service"]["providers"];request["wifi"]["ssid"]=response["ssid"];if(!policy(request))return false;
   const char* ref=request["service"]["credential_ref"]|"";if(!text(pairing["credentials"][ref],1024))return false;
   dtls_sha256_data(reinterpret_cast<const uint8_t*>(pairing["credentials"][ref].as<const char*>()),strlen(pairing["credentials"][ref].as<const char*>()),a);if(pairing["credential_sha256"]!=a)return false;
   for(auto endpoint:request["endpoints"].as<JsonArrayConst>())for(const char* key:{"credential_ref","site_credential_ref"}){const char* ref=endpoint[key]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}

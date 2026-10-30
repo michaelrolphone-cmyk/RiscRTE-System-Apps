@@ -1,5 +1,8 @@
 #include "Node.h"
 #include "Digest.h"
+#ifdef NDEBUG
+#error Portal integration tests require active assertions after product headers
+#endif
 #include <cassert>
 #include <fstream>
 #include <string>
@@ -27,8 +30,19 @@ static void step(Node& n,unsigned count=1){while(count--){assert(n.advance()>=0)
 static void request(std::string v){wire=v;at=0;accepted=false;output.clear();}
 static std::string post(Node& n,JsonDocument& data,std::string extra=""){std::string body;serializeJson(data,body);return "POST /setup HTTP/1.1\r\nHost: 192.168.4.1\r\nContent-Type: application/json\r\nX-Setup-Token: "+std::string(n.portal.nonce)+"\r\nContent-Length: "+std::to_string(body.size())+"\r\n"+extra+"\r\n"+body;}
 static void stop(Node& n){n.drain=true;for(unsigned i=0;i<20&&n.phase!=Phase::Stopped;++i)step(n);assert(n.phase==Phase::Stopped);n.dispose();}
-int main(int argc,char** argv){assert(argc==2);std::ifstream file(argv[1]);policyBytes={std::istreambuf_iterator<char>(file),{}};
+int main(int argc,char** argv){assert(argc==3);std::ifstream file(argv[1]);policyBytes={std::istreambuf_iterator<char>(file),{}};
  const char* seed=R"({"schema_version":1,"installation_id":"example-installation","credential_generation":1,"credentials":{},"participant_id":"","cursor":0,"pending":[],"job":null,"checkpoints":{},"configuration_revision":1})";
+ // Request-line recognition must match actual browser HTTP, including the
+ // complete version suffix, rather than a hand-counted prefix length.
+ for(const char* version:{"HTTP/1.0","HTTP/1.1"}){
+  Portal parser;assert(parser.initialize()==false); // no listener API needed
+  strcpy(parser.nonce,"0123456789abcdef0123456789abcdef");
+  std::string header=std::string("POST /setup ")+version+"\r\nHost: 192.168.4.1\r\nContent-Type: application/json\r\nX-Setup-Token: "+parser.nonce+"\r\nContent-Length: 2\r\n\r\n{}";
+  memcpy(parser.input,header.data(),header.size());parser.used=header.size();parser.decodeHeaders();assert(parser.headers&&!parser.answered&&parser.bodySize==2);parser.dispose();
+ }
+ for(const char* line:{"POST /setup HTTP/1.","POST /setup HTTP/1.10","POST /setupX HTTP/1.1","POST /setup HTTP/2.0"}){
+  Portal parser;parser.initialize();std::string raw=std::string(line)+"\r\nHost: 192.168.4.1\r\n\r\n";memcpy(parser.input,raw.data(),raw.size());parser.used=raw.size();parser.decodeHeaders();assert(parser.answered&&strstr(parser.header,"405 Error"));parser.dispose();
+ }
  initial(seed);Node n;initialize(n);step(n,2);assert(n.phase==Phase::SetupPortal&&ap&&n.portal.dns&&n.portal.listener);
  request("GET /generate_204 HTTP/1.1\r\nHost: connectivitycheck.gstatic.com\r\n\r\n");step(n,30);assert(output.find("302 Found")!=std::string::npos&&output.find("Location: http://192.168.4.1/")!=std::string::npos);
  request("GET / HTTP/1.1\r\nHost: 192.168.4.1\r\n\r\n");step(n,100);assert(output.find("Set up your RiscRTE")!=std::string::npos&&output.find("Content-Length:")!=std::string::npos);
@@ -48,6 +62,16 @@ int main(int argc,char** argv){assert(argc==2);std::ifstream file(argv[1]);polic
  // DNS: A gets local address, AAAA gets an empty answer, compression/truncation rejected.
  uint8_t query[512]={0x12,0x34,1,0,0,1,0,0,0,0,0,0,1,'a',0,0,1,0,1};assert(Portal::dnsReply(query,19)==35&&query[7]==1&&query[34]==1);
  uint8_t aaaa[512]={0,1,1,0,0,1,0,0,0,0,0,0,1,'a',0,0,28,0,1};assert(Portal::dnsReply(aaaa,19)==19&&aaaa[7]==0);aaaa[2]=1;aaaa[12]=0xc0;assert(!Portal::dnsReply(aaaa,19));
+ // An exact published v1.2.2 pairing cohort is upgraded to this image's
+ // implementation pins. A modified/mixed older cohort must still fail closed.
+ std::ifstream legacyFile(argv[2]);std::string legacyBytes{std::istreambuf_iterator<char>(legacyFile),{}};JsonDocument legacy;assert(parse(legacy,legacyBytes.data(),legacyBytes.size())==false);assert(!deserializeJson(legacy,legacyBytes));
+ for(bool tampered:{true,false}){initial(seed);Node u;initialize(u);step(u,2);form["pairing"]=savedPairing;form["pairing"]["policy"]=policy;form["pairing"]["policy"]["service"]["providers"]=legacy;
+  if(tampered)form["pairing"]["policy"]["service"]["providers"][0]["revision"]=1;
+  request(post(u,form));for(unsigned i=0;i<400&&u.phase!=Phase::SetupSave;++i)step(u);
+  if(tampered)assert(u.phase==Phase::SetupPortal&&u.journal.writes==0&&output.find("400 Error")!=std::string::npos);
+  else{assert(u.phase==Phase::SetupSave);char expected[65],actual[65];canonicalDigest(policy["service"]["providers"],expected);canonicalDigest(u.config["service"]["providers"],actual);assert(!strcmp(expected,actual));}
+  stop(u);
+ }
  // Both uncertain commit outcomes: only a proven complete snapshot earns Saved.
  for(bool applied:{false,true}){initial(seed);Node u;initialize(u);step(u,2);form["pairing"]=savedPairing;form["pairing"]["policy"]=policy;request(post(u,form));commit=applied;outcome=RISC_APP_DATA_COMMIT_UNKNOWN;for(unsigned i=0;i<400&&u.phase!=Phase::SetupFinish;++i)step(u);assert(u.phase==Phase::SetupFinish&&u.setupFailed==!applied);assert(strstr(u.portal.body,applied?"Settings saved.":"could not be committed"));stop(u);}
  puts("Portal: captive redirect, page/session, CSRF and framing, pin validation, save-before-disconnect, wrong Wi-Fi retry, durable reboot, DNS bounds, uncertain commits PASS");

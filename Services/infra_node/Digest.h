@@ -1,6 +1,10 @@
 #pragma once
 #include "Core.h"
+// The vendor's target-only SHA configuration defines NDEBUG. Do not let that
+// header disable assertions in callers (including the host integration tests).
+#pragma push_macro("NDEBUG")
 #include "../../lib/RemoteFiles/vendor/tinydtls_sha2/sha2.h"
+#pragma pop_macro("NDEBUG")
 namespace Infra {
 class CanonicalHash {
  dtls_sha256_ctx ctx;

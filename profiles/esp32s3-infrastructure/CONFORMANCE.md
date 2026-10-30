@@ -140,3 +140,39 @@ These follow-ups do not postpone delivering compiled software and a verified ins
 Explicit user request authorizes a temporary on-device AP, wildcard DNS and captive HTTP portal, replacing the original unprovisioned terminal block. The ELF owns all DNS/HTTP parsing and setup UI. The native optional UDP suffix retains explicit provider generations, bounded nonblocking calls and retained-close fencing. Runtime target flags enable AP transport only in this infrastructure profile.
 
 `test/infra_node/portal.cpp` exercises first setup, HTTP redirects/framing/CSRF, pin validation, durable saves, failed network correction, reboot and uncertain commits. `test/native_tcp_listener_test.cpp` adds UDP size/ownership/cleanup/loss-of-owner coverage. Existing service protocol and recovery tests remain required. Mobile/browser and physical RF behavior remain unqualified until flashed hardware is exercised.
+
+## v1.2.3 setup correction and evidence correction
+
+The owner physically confirmed v1.2.2 AP discovery, phone association and captive
+page opening on 2026-10-30. Save was rejected with `Use the setup page.` before
+any station join. `POST /setup HTTP/1.1` has 20 characters; the parser incorrectly
+required 19. Request-line matching now derives the exact length from each literal
+and admits HTTP/1.0 and HTTP/1.1 without accepting truncated/prefix variants.
+
+The earlier portal PASS output was invalid: the vendor SHA configuration leaked
+`NDEBUG` through Digest.h and compiled out assertions in tests including it.
+Digest.h now preserves the caller's NDEBUG setting, and every infrastructure C++
+suite rejects disabled assertions at compile time. With assertions restored,
+the old parser fails its existing CSRF test; the corrected parser passes the
+full setup/save/retry/reboot/uncertain-commit suite and new exact-line checks.
+Earlier affected assertions must not be cited as evidence independently of this
+rerun. Core USB/radio tests that did not include Digest.h were unaffected.
+
+The page explains that Android's embedded sign-in window may not provide a file
+picker and directs the owner to stay connected and open http://192.168.4.1/ in
+Chrome. The file input remains available; paste remains supported and is exposed
+in Android WebViews. The local-network explanation cannot be mistaken for a
+router internet check; failed saves say settings were not saved and retain input.
+Page-script tests execute the delivered JavaScript with DOM/network mocks; they
+do not certify Android's native picker. Android's WebChromeClient default cancels
+file requests, and the AOSP captive-portal WebChromeClient does not override it:
+https://developer.android.com/reference/android/webkit/WebChromeClient#onShowFileChooser(android.webkit.WebView,android.webkit.ValueCallback%3Candroid.net.Uri[]%3E,android.webkit.WebChromeClient.FileChooserParams)
+https://android.googlesource.com/platform/packages/modules/CaptivePortalLogin/+/refs/heads/main/src/com/android/captiveportallogin/CaptivePortalLoginActivity.java
+
+The four immutable provider definitions advance to revision 3 with the rebuilt
+infra-node hash. First setup accepts the exact published v1.2/v1.2.1/v1.2.2
+pairing cohort and substitutes this image's implementation pins; tampered/mixed
+older cohorts remain rejected. Contract pins, authority credentials, endpoints
+and identity are preserved. Existing paired-device identity replacement remains
+prohibited. No new pairing file is required for the owner's existing download.
+Physical save/join/service reconciliation remain pending.

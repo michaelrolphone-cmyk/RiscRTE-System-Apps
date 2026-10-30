@@ -5,6 +5,9 @@
 #undef private
 #include "../../Services/infra_node/Station.h"
 #include <RiscProviderV2.h>
+#ifdef NDEBUG
+#error Infrastructure tests require active assertions after product headers
+#endif
 #include <cassert>
 #include <fstream>
 #include <string>

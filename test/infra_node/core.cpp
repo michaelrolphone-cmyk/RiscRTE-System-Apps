@@ -1,4 +1,7 @@
 #include "Core.h"
+#ifdef NDEBUG
+#error Infrastructure tests require active assertions after product headers
+#endif
 #include <cassert>
 #include <vector>
 #include <string>

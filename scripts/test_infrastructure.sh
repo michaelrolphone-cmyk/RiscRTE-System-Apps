@@ -3,6 +3,7 @@ set -euo pipefail
 root="$(cd "$(dirname "$0")/.." && pwd)"
 runtime="${RISC_RUNTIME_ROOT:-$root/../runtime}"
 RISC_RUNTIME_ROOT="$runtime" bash "$root/scripts/test_infrastructure_station.sh"
+node "$root/test/infra_node/portal_page.mjs"
 build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 flags=(-std=c++17 -Wno-deprecated-declarations -I"$runtime/lib/ArduinoJson/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$root/Services/infra_node")
@@ -13,7 +14,7 @@ for name in core policy journal transport boot_health;do
 done
 
 c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/portal.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/portal"
-"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v122-providers.json"
 
 if [[ -n "${CAPABILITIES_SOURCE:-}" && -n "${SCHEDULER_SOURCE:-}" ]];then
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"

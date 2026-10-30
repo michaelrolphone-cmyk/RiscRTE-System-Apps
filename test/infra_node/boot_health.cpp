@@ -1,4 +1,7 @@
 #include "Node.h"
+#ifdef NDEBUG
+#error Infrastructure tests require active assertions after product headers
+#endif
 #include <cassert>
 #include <cstdio>
 int main(){

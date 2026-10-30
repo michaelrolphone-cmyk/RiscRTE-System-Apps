@@ -1,5 +1,8 @@
 #include "Policy.h"
 #include "Journal.h"
+#ifdef NDEBUG
+#error Infrastructure tests require active assertions after product headers
+#endif
 #include <cassert>
 #include <fstream>
 #include <iterator>
