@@ -1,0 +1,22 @@
+{
+  "architecture": "xtensa-esp32s3",
+  "type": "application",
+  "entry": "app_main",
+  "id": "app_store",
+  "file_name": "app_store.elf",
+  "version": "1.7.0",
+  "display_name": "App Store",
+  "icon": "solid:f019",
+  "requires": [],
+  "optional": [
+    {"capability":"ui.scene","api":1},
+    {"capability":"software.update.apps","api":1},
+    {"capability":"software.installed-apps","api":1},
+    {"capability":"storage.volume","api":1},
+    {"capability":"storage.key-value","api":1},
+    {"capability":"net.wifi","api":1},
+    {"capability":"runtime.realtime","api":1},
+    {"capability":"telemetry.broadcast","api":1},
+    {"capability":"contexts.service","api":1}
+  ]
+}

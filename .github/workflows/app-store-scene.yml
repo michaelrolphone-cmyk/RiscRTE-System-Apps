@@ -1,0 +1,53 @@
+name: Shared App Store app-local qualification
+on:
+  pull_request:
+    paths: ['Apps/app_store_*', 'scripts/*app_store*', 'test/app_store_*/**', '.github/workflows/app-store-scene.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 13eca114cb58469cf6004fafc3da84fbd9d29beb
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: bf1117910f6d0f0e9fd48bc2a28bc03b1f8ad61e
+          path: Utilities
+          persist-credentials: false
+      - name: Controller, inventory, background and actual main-loop boundaries
+        run: |
+          set -eu
+          for mode in normal sanitized; do
+            flag=""; [ "$mode" = normal ] || flag="--sanitize"
+            python3 System/scripts/test_app_store_scene.py --runtime Runtime --output evidence/$mode/controller $flag
+            python3 System/scripts/test_app_store_inventory.py --runtime Runtime --output evidence/$mode/inventory $flag
+            python3 System/scripts/test_app_store_background.py --runtime Runtime --utilities Utilities --output evidence/$mode/background $flag
+            python3 System/scripts/test_app_store_main_loop.py --runtime Runtime --utilities Utilities --output evidence/$mode/main-loop $flag
+          done
+      - name: Actual Runtime and published presenter
+        run: |
+          python3 System/scripts/test_app_store_runtime.py --runtime Runtime --utilities Utilities --output evidence/runtime-normal
+          python3 System/scripts/test_app_store_runtime.py --runtime Runtime --utilities Utilities --output evidence/runtime-sanitized --sanitize
+      - name: One target recipe, repeat, selected Runtime validator and identical selections
+        run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/build_app_store_scene.py --runtime Runtime --utilities Utilities --output target
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-store-local-${{ github.sha }}
+          path: |
+            evidence/
+            target/
