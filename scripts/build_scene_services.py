@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Build one optional presenter and independently selected class-profile ELFs."""
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -38,9 +39,15 @@ def run(runtime: Path, output: Path, host_profile: str = 'full') -> None:
     with tempfile.TemporaryDirectory(prefix='scene-sdk-') as temporary:
         include=stage_sdk(runtime,ROOT,Path(temporary))
         host=host_manifest(host_profile)
-        rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c'],HOST_PROFILE_FLAGS[host_profile])]
+        support_sources=[ROOT/'lib/NativeApps/src/UnsignedDivisionCompat.c',ROOT/'lib/NativeApps/src/SignedDivisionCompat.c']
+        rows=[build(compiler,include,output/'scene-host',host,[ROOT/'Services/scene_host/host.c',*support_sources],HOST_PROFILE_FLAGS[host_profile],normalize_relocations=True)]
+        repeat=build(compiler,include,output/'scene-host-repeat',host,[ROOT/'Services/scene_host/host.c',*support_sources],HOST_PROFILE_FLAGS[host_profile],normalize_relocations=True)
+        if rows[0]['sha256']!=repeat['sha256']:raise ValueError('Repeated scene/canvas ELF differs')
+        rows[0]['repeat_sha256']=repeat['sha256']
+        closure=[*sorted((ROOT/'Services/canvas_host').glob('*.h')),ROOT/'Services/scene_host/scene_canvas.inc',ROOT/'scripts/scene_build.py',ROOT/'scripts/scene_sdk.py',Path(__file__)]
+        rows[0]['composition_inputs_sha256']={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in closure}
         rows[0]['host_profile']=host_profile
-        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True}
+        rows[0]['optional_apis']={'telemetry':host_profile=='full','components':True,'page':True,'checkpoint':True,'reading':True,'reading_links':True,'canvas':True}
         json_write(output/'scene-host/build.json',rows[0])
         license_dir=output/'scene-host/licenses';license_dir.mkdir()
         for name in ['LICENSE-Orbitron.txt','LICENSE-Rajdhani.txt','SOURCES.json','COMPONENT-SOURCES.json']:

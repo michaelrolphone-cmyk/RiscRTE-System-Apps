@@ -1,0 +1,55 @@
+name: Shared scene canvas composition
+on:
+  pull_request:
+    paths: ['Services/scene_host/**', 'Services/canvas_host/**', 'sdk/app/RiscSceneCanvasV1.h', 'scripts/scene_build.py', 'scripts/scene_sdk.py', 'scripts/build_scene_services.py', 'scripts/test_scene_canvas.py', 'scripts/test_native_division.py', 'lib/NativeApps/src/*DivisionCompat.c', 'test/scene_canvas/**', 'test/native_division/**', '.github/workflows/scene-canvas.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 13eca114cb58469cf6004fafc3da84fbd9d29beb
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: bf1117910f6d0f0e9fd48bc2a28bc03b1f8ad61e
+          path: Utilities
+          persist-credentials: false
+      - name: Prefix compatibility and composed custody
+        run: |
+          set -euo pipefail
+          mkdir evidence
+          for source in System Runtime Utilities; do printf '%s %s\n' "$source" "$(git -C "$source" rev-parse HEAD)"; done | tee evidence/source-heads.txt
+          for mode in normal sanitized; do
+            san=""; if [ "$mode" = sanitized ]; then san="--sanitize"; fi
+            python System/scripts/test_scene_host.py --runtime Runtime $san 2>&1 | tee evidence/original-$mode.log
+            python System/scripts/test_scene_canvas.py --runtime Runtime --output evidence/composition-$mode $san
+            python System/scripts/test_native_division.py --output evidence/division-$mode $san
+          done
+      - name: Repeated target packages
+        run: |
+          set -euo pipefail
+          bash Utilities/scripts/install_badge_catalog_toolchain.sh "$RUNNER_TEMP/shared-toolchain" 2>&1 | tee evidence/compiler.log
+          export NATIVE_APP_CC="$RUNNER_TEMP/shared-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          for profile in full color-dynamic watch-compact; do
+            python System/scripts/build_scene_services.py --runtime Runtime --host-profile "$profile" --output "packages-$profile" 2>&1 | tee "evidence/target-$profile.log"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scene-canvas-${{ github.sha }}
+          path: |
+            evidence/
+            packages-*/
+          retention-days: 30
