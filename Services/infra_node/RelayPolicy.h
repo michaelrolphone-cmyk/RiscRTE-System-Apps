@@ -39,7 +39,7 @@ inline bool relayPolicy(JsonObjectConst r){
 inline bool relayActivationEvent(JsonObjectConst event){return event["channel"]=="capabilities.events"&&event["type"]=="capabilities.assignment.changed"&&!event["payload"]["activation"].isNull();}
 inline bool relayActivationMatches(JsonObjectConst s,JsonObjectConst event){
  if(!relayActivationEvent(event))return true;auto a=event["payload"]["activation"].as<JsonObjectConst>();
- return a["schema_version"]=="agent-invocation/1"&&a["subscription_id"]==s["id"]&&a["routine_id"]==s["invocation"]["routine_id"]&&a["routine_version"]==s["invocation"]["routine_version"]&&text(a["assignment_ref"],200)&&text(a["effect_key"],200)&&integer(a["deadline"],1,9007199254740991ULL)&&text(a["attempt_id"],200)&&integer(a["generation"],1,9007199254740991ULL);
+ return a["schema_version"]=="agent-invocation/1"&&text(a["subscription_id"],128)&&!strcmp(a["subscription_id"],s["id"]|"")&&text(a["routine_id"],200)&&!strcmp(a["routine_id"],s["invocation"]["routine_id"]|"")&&text(a["routine_version"],200)&&!strcmp(a["routine_version"],s["invocation"]["routine_version"]|"")&&text(a["assignment_ref"],200)&&text(a["effect_key"],200)&&integer(a["deadline"],1,9007199254740991ULL)&&text(a["attempt_id"],200)&&integer(a["generation"],1,9007199254740991ULL);
 }
 inline bool relayMatches(JsonObjectConst s,JsonObjectConst event){
  if(s["enabled"]!=true||s["revoked"]==true||!relayWatches(s,event["channel"])||!relayActivationMatches(s,event))return false;bool type=false;for(auto t:s["match"]["types"].as<JsonArrayConst>())type|=t=="*"||t==event["type"];if(!type)return false;
