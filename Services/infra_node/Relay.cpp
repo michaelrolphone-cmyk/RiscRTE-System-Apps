@@ -10,7 +10,11 @@ static void projections(JsonObject a,JsonArrayConst subscriptions,const char* on
 }
 static JsonObjectConst target(JsonObjectConst p){return p["targets"][p["index"]|0].as<JsonObjectConst>();}
 int Node::relayPost(JsonObjectConst event){
- auto p=relayPending();auto s=target(p);action=Action::RelayPost;request.clear();
+ auto p=relayPending();auto s=target(p);
+ // Recheck after authenticated event load, including custody saved before an
+ // upgrade. A stale subscription pin cannot activate a different assignment.
+ if(!relayActivationMatches(s,event)){p["terminal"]=true;p["error_code"]="activation_target_mismatch";return persist(Phase::Ready);}
+ action=Action::RelayPost;request.clear();
  if(relayMcp(s)){request["eventId"]=event["id"];request["name"]=s["destination"]["event_name"];char stamp[32];relayIso(event["created"].as<uint64_t>(),stamp);request["timestamp"]=stamp;request["cursor"]=nullptr;relayBody(request["data"].to<JsonObject>(),config["relay"]["relay_id"],s,event);}
  else relayBody(request.to<JsonObject>(),config["relay"]["relay_id"],s,event);
  relayYield=true;return send(false);

@@ -33,8 +33,16 @@ inline bool relayPolicy(JsonObjectConst r){
  for(auto origin:r["allowed_origins"].as<JsonArrayConst>())if(!https(origin)||strlen(origin)>256||relayContains(origin.as<const char*>()+8,"/")||relayContains(origin.as<const char*>()+8,"?"))return false;
  const char* fields[8]{};unsigned count=0,i=0;for(auto s:r["subscriptions"].as<JsonArrayConst>()){if(!relaySubscription(s,r["allowed_origins"],r["webhook_credential_refs"]))return false;for(unsigned j=0;j<i;++j)if(r["subscriptions"][j]["id"]==s["id"])return false;++i;for(auto f:s["match"]["filters"].as<JsonArrayConst>()){bool seen=false;for(unsigned j=0;j<count;++j)seen|=!strcmp(fields[j],f["path"]);if(!seen){if(count==8)return false;fields[count++]=f["path"];}}}return true;
 }
+// Only Capabilities activation events may supply per-assignment invocation
+// fields. A subscription still pins the destination and routine; payloads never
+// choose credentials, URLs, routine versions or transport identity.
+inline bool relayActivationEvent(JsonObjectConst event){return event["channel"]=="capabilities.events"&&event["type"]=="capabilities.assignment.changed"&&!event["payload"]["activation"].isNull();}
+inline bool relayActivationMatches(JsonObjectConst s,JsonObjectConst event){
+ if(!relayActivationEvent(event))return true;auto a=event["payload"]["activation"].as<JsonObjectConst>();
+ return a["schema_version"]=="agent-invocation/1"&&a["subscription_id"]==s["id"]&&a["routine_id"]==s["invocation"]["routine_id"]&&a["routine_version"]==s["invocation"]["routine_version"]&&text(a["assignment_ref"],200)&&text(a["effect_key"],200)&&integer(a["deadline"],1,9007199254740991ULL)&&text(a["attempt_id"],200)&&integer(a["generation"],1,9007199254740991ULL);
+}
 inline bool relayMatches(JsonObjectConst s,JsonObjectConst event){
- if(s["enabled"]!=true||s["revoked"]==true||!relayWatches(s,event["channel"]))return false;bool type=false;for(auto t:s["match"]["types"].as<JsonArrayConst>())type|=t=="*"||t==event["type"];if(!type)return false;
+ if(s["enabled"]!=true||s["revoked"]==true||!relayWatches(s,event["channel"])||!relayActivationMatches(s,event))return false;bool type=false;for(auto t:s["match"]["types"].as<JsonArrayConst>())type|=t=="*"||t==event["type"];if(!type)return false;
  for(auto f:s["match"]["filters"].as<JsonArrayConst>()){auto v=event["fields"][f["path"]|""];if(!text(v,512,true))return false;const char* a=v;const char* b=f["value"];if(f["op"]=="prefix"?strncmp(a,b,strlen(b))!=0:strcmp(a,b)!=0)return false;}return true;
 }
 }
