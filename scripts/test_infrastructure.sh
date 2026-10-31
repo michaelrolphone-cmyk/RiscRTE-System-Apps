@@ -13,10 +13,20 @@ for name in core policy journal transport boot_health;do
  if [[ "$name" == policy ]];then "$build/$name" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json";else "$build/$name";fi
 done
 
-c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/portal.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/portal"
+c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/portal.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/portal"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v122-providers.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v123-providers.json"
+
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/relay"
+ "$build/relay" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
+ python3 - <<'HMAC'
+import json,hmac,hashlib
+v=json.load(open('/tmp/infra-relay-hmac-vector.json'))
+assert v['signature']=='sha256='+hmac.new(b'signing-secret',(v['timestamp']+'.'+v['body']).encode(),hashlib.sha256).hexdigest()
+print('Relay HMAC: independently verified exact body and timestamp PASS')
+HMAC
 
 if [[ -n "${CAPABILITIES_SOURCE:-}" && -n "${SCHEDULER_SOURCE:-}" ]];then
- c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"
  node "$root/scripts/test_infrastructure_service.mjs" "$build/node" "$CAPABILITIES_SOURCE" "$SCHEDULER_SOURCE"
 fi

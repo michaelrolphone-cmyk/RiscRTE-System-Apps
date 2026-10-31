@@ -10,7 +10,7 @@ def main():
  includes=[r/'sdk/driver',r/'sdk/app',r/'sdk/hardware',r/'lib/ArduinoJson/src']
  common += ['-I'+str(i) for i in includes]
  sha=out/'sha2.o';subprocess.run([a.cc,*common,'-std=c11','-c',str(ROOT/'lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c'),'-o',str(sha)],check=True)
- targets={'infra-node.elf':(['Services/infra_node/service.cpp','Services/infra_node/Node.cpp','Services/infra_node/Setup.cpp','Services/infra_node/cxx.cpp'],'t5_driver_get',[str(sha)]),'infra-station.elf':(['Services/infra_node/station.cpp'],'t5_driver_get',[]),'default.elf':(['Apps/infra_agent/main.cpp'],'app_main',[])}
+ targets={'infra-node.elf':(['Services/infra_node/service.cpp','Services/infra_node/Node.cpp','Services/infra_node/Relay.cpp','Services/infra_node/Setup.cpp','Services/infra_node/cxx.cpp'],'t5_driver_get',[str(sha)]),'infra-station.elf':(['Services/infra_node/station.cpp'],'t5_driver_get',[]),'default.elf':(['Apps/infra_agent/main.cpp'],'app_main',[])}
  records={}
  for name,(sources,entry,extra) in targets.items():
   export=out/(name+'.map');export.write_text('{ global: '+entry+'; local: *; };\n')

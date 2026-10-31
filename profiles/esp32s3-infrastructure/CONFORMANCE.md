@@ -176,3 +176,29 @@ older cohorts remain rejected. Contract pins, authority credentials, endpoints
 and identity are preserved. Existing paired-device identity replacement remains
 prohibited. No new pairing file is required for the owner's existing download.
 Physical save/join/service reconciliation remain pending.
+
+## v1.3.0 relay and Scheduler budget verification
+
+The relay host tests execute the production Node state machine under ASan/UBSan.
+They cover durable intent before POST, reboot before and after local success,
+ambiguous remote success with the same idempotency key/body, two-target progress,
+monotonic subscription updates and rejected origin/credential escapes, bounded
+five-attempt retry, dead-letter confirmation before ACK, and health during backoff.
+An independent Python HMAC calculation checks the actual signed bytes.
+LeakSanitizer is disabled because the host ptrace environment does not support it.
+The full service harness passes 173 calls, 28 maintenance wakes and four reboots.
+
+The Scheduler remote-database regression advances simulated D1 round trips by
+180 ms: a one-second budget cannot commit the due work, while the eight-second
+policy commits one responsibility and replays without duplication. The replay
+timestamp is fixed outside the lazy-read callback and admission latency is
+accounted separately. The merged Scheduler tests and built Worker test pass.
+Channel Bus relay tests include a built Worker/D1 allow/deny test for its scoped
+credential. Capabilities decision outbox tests confirm the narrow business-key
+routing field without leaking the answer or other source fields.
+
+The target application and native runtime compile for the pinned ESP32-S3 SDK;
+the native main-task stack is 24 KiB and the admission floor stays 4096 bytes.
+These are software results. Physical stack headroom, webhook latency, Wi-Fi
+outage, brownout recovery and live Grok receiver delivery remain unqualified.
+Grok's routine endpoint and private credentials have not been supplied.

@@ -118,6 +118,7 @@ int Node::probeResult(){
  auto a=make(Action::Observe,"observation","publish");char source[200];snprintf(source,sizeof(source),"%s:%s",journal.state["participant_id"]|"",bid);a["source_id"]=source;a["source_generation"]=b["revision"];auto obs=a["observations"].to<JsonArray>().add<JsonObject>();obs["sequence"]=journal.state["checkpoints"][bid]["sequence"].as<uint64_t>()+1;obs["measured_at"]=net.wall(now())*1000;obs["clock_quality"]="sntp_sample_tls_verified";obs["unit"]="latest_state";obs["data"]=response.as<JsonObjectConst>();auto r=send(true);if(r<0)return r;auto p=journal.state["pending"][0];p["binding_id"]=bid;auto cp=p["checkpoint"].to<JsonObject>();cp.set(journal.state["checkpoints"][bid]);cp["sequence"]=obs["sequence"];if(good&&!unchanged){cp["etag"]=net.info.etag;cp["last_modified"]=net.info.last_modified;cp["digest"]=digestValue;}return r;
 }
 int Node::received(){
+ if(relayAction())return relayReceived();
  if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();return backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");}
  if(action==Action::Probe){cadence[bindingIndex].lastCompleted=now();return probeResult();}
  if(net.info.status_code==401||net.info.status_code==403){if(action==Action::Maintain){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;copy(status.reason,sizeof(status.reason),"binding_auth_blocked");return 1;}return block(Phase::AuthBlocked,"participant_auth_blocked");}

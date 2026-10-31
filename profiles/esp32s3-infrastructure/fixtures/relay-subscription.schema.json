@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "channel": {
+      "enum": [
+        "capabilities.events",
+        "bpmn.events",
+        "scheduler.events"
+      ]
+    },
+    "match": {
+      "type": "object",
+      "properties": {
+        "types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "maxItems": 8
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "op": {
+                "enum": [
+                  "eq",
+                  "prefix"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "minLength": 0,
+                "maxLength": 256
+              }
+            },
+            "required": [
+              "path",
+              "op",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 4
+        }
+      },
+      "required": [
+        "types",
+        "filters"
+      ],
+      "additionalProperties": false
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https://",
+      "maxLength": 2048
+    },
+    "auth": {
+      "type": "object",
+      "properties": {
+        "header": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "credential_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "header",
+        "credential_ref"
+      ],
+      "additionalProperties": false
+    },
+    "signing_credential_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "enabled": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "id",
+    "channel",
+    "match",
+    "url",
+    "auth",
+    "signing_credential_ref",
+    "enabled"
+  ],
+  "additionalProperties": false
+}

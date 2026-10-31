@@ -19,18 +19,33 @@ bool Node::acceptSetup(){
   // pairing files for first setup and replace only their implementation pins
   // with this image's pins. No arbitrary older or mixed provider set is trusted.
   bool upgradePins=false;
-  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17"))return false;upgradePins=true;}}
+  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||(strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17")&&strcmp(b,"923e7355aefbca031c51348f26f93508cf083d5d90234fce50ade5bc93cb2652")))return false;upgradePins=true;}}
   char a[65],b[65];canonicalDigest(config["low_water"],a);canonicalDigest(pairing["policy"]["low_water"],b);if(strcmp(a,b))return false;
-  request.set(pairing["policy"]);if(upgradePins)request["service"]["providers"]=config["service"]["providers"];request["wifi"]["ssid"]=response["ssid"];if(!policy(request))return false;
+  request.set(pairing["policy"]);if(upgradePins)request["service"]["providers"]=config["service"]["providers"];
+  // Migrate the exact shipped starvation-prone Scheduler timing, preserving
+  // endpoint, authority, expiration and every unrelated binding.
+  for(auto b:request["configuration"]["bindings"].as<JsonArray>())if(b["capability"]=="scheduler.drive"&&b["max_elapsed_ms"]==1000&&b["max_items"]==4&&b["timeout_ms"]==5000&&b["cadence_ms"]==15000){b["max_elapsed_ms"]=8000;b["max_items"]=1;b["timeout_ms"]=12000;b["cadence_ms"]=60000;b["revision"]=b["revision"].as<uint64_t>()+1;}
+  request["wifi"]["ssid"]=response["ssid"];if(!policy(request))return false;
   const char* ref=request["service"]["credential_ref"]|"";if(!text(pairing["credentials"][ref],1024))return false;
   dtls_sha256_data(reinterpret_cast<const uint8_t*>(pairing["credentials"][ref].as<const char*>()),strlen(pairing["credentials"][ref].as<const char*>()),a);if(pairing["credential_sha256"]!=a)return false;
   for(auto endpoint:request["endpoints"].as<JsonArrayConst>())for(const char* key:{"credential_ref","site_credential_ref"}){const char* ref=endpoint[key]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}
   const char* site=request["service"]["site_credential_ref"]|"";if(site[0]&&!text(pairing["credentials"][site],1024))return false;
+  auto relay=request["relay"].as<JsonObjectConst>();if(!relay.isNull()){for(const char* k:{"credential_ref","site_credential_ref"}){const char* ref=relay[k]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!text(pairing["credentials"][s["auth"]["credential_ref"]|""],1024)||!text(pairing["credentials"][s["signing_credential_ref"]|""],1024))return false;}
   if(text(pairing["participant_id"],128)&&!text(pairing["installation_id"],64))return false;
   config.set(request);journal.state["credentials"]=pairing["credentials"];for(const char* k:{"bootstrap","enrollment_id","credential_sha256"})journal.state[k]=pairing[k];
   journal.state["configuration"]=config["configuration"];journal.state["configuration_revision"]=config["configuration"]["revision"];
   if(text(pairing["participant_id"],128)){journal.state["participant_id"]=pairing["participant_id"];journal.state["installation_id"]=pairing["installation_id"];}else journal.state["installation_id"]=portal.nonce;
  }else if(!credential(config["service"]["credential_ref"])[0]||(!text(journal.state["participant_id"],128)&&!text(journal.state["bootstrap"],1024)))return false;
+ // An authenticated existing pairing can add/rotate relay secrets through the
+ // phone portal. Never discard outstanding webhook custody to change config.
+ if(existing&&!pairing["policy"]["relay"].isNull()){
+  auto relay=pairing["policy"]["relay"].as<JsonObjectConst>();if(!relayPolicy(relay)||!journal.state["relay"]["pending"].isNull())return false;
+  request.clear();request["policy"]=config;request["policy"]["relay"]=relay;request["credentials"]=journal.state["credentials"];
+  auto candidate=request["credentials"].as<JsonObject>();auto add=[&](const char* ref){if(!ref[0])return true;if(!text(pairing["credentials"][ref],1024))return false;candidate[ref]=pairing["credentials"][ref];return true;};
+  for(const char* k:{"credential_ref","site_credential_ref"})if(!add(relay[k]|""))return false;for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!add(s["auth"]["credential_ref"]|"")||!add(s["signing_credential_ref"]|""))return false;
+  if(measureJson(candidate)>3500||measureJson(request["policy"])>PolicyMax||request.overflowed())return false;
+  config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
+ }
  config["wifi"]["ssid"]=response["ssid"];journal.state["credentials"][config["wifi"]["credential_ref"]|""]=response["password"];
  journal.state["setup_policy"]=config;journal.state["setup_pending"]=true;
  return journal.valid()&&!config.overflowed();

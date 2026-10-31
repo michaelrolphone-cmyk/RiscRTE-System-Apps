@@ -517,11 +517,11 @@
     {
       "provider": {
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 3,
+        "revision": 4,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
         },
         "provides": [
           {
@@ -556,26 +556,26 @@
         "cost_estimate": 1,
         "cost_model": {
           "network_transactions": 1,
-          "maximum_ms": 5000
+          "maximum_ms": 12000
         },
         "cost_evidence": "software_bounds_physical_qualification_pending"
       },
       "reference": {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 3,
-        "definition_digest": "b9ff188b4558d05acaef6445b7fc2ea5ebcc65ec404b958710faa7e59d24b298",
-        "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+        "revision": 4,
+        "definition_digest": "70c3ffe069630839f3814640183b48dc91ee61cb275ebb8ff6ef2ae9a52b0457",
+        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 3,
+        "revision": 4,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
         },
         "provides": [
           {
@@ -617,19 +617,19 @@
       "reference": {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 3,
-        "definition_digest": "a97c91b1156c6e364cbcc7977b4c7d84d4f94ba12fd7b4922dd97efc4435c494",
-        "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+        "revision": 4,
+        "definition_digest": "d28ed0215720a5010ce62f5e01b24db0b67c70d080700597b49e7e4de33a0748",
+        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 3,
+        "revision": 4,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
         },
         "provides": [
           {
@@ -671,19 +671,19 @@
       "reference": {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 3,
-        "definition_digest": "66f67a60589d8c71936d24b1329dd57e8fe75df07ec80e7db51917fed3366842",
-        "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+        "revision": 4,
+        "definition_digest": "966687e63bc998040d8db784d7da6b1f17872b43ba6a67c2a99894c84c21fe4d",
+        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 3,
+        "revision": 4,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
         },
         "provides": [
           {
@@ -725,9 +725,9 @@
       "reference": {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 3,
-        "definition_digest": "9c15785872bd064a07f04cdabef3e680aa8ba0eb061431513727767dc1a91116",
-        "package_digest": "55ccaa1c3d093b050af2aeeed3ff7150a348cca0274208be011ddb81838b0fcb"
+        "revision": 4,
+        "definition_digest": "60ad0d2803c068183c97ababe96d1b1f00ec9697e08727d2ca8403a0e10603c2",
+        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
       }
     }
   ]
