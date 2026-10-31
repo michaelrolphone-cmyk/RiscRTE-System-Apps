@@ -7,3 +7,8 @@ const list=[];for(const [id,operation]of [['first','add'],['rotate','rotate'],['
  const p=sealEnrollment({identity,request,secret:operation==='revoke'?{}:{...secret,auth_header_value:id==='rotate'?'Bearer rotated-secret':secret.auth_header_value}});if(id==='tampered')p.sealed.ciphertext=(p.sealed.ciphertext[0]==='0'?'1':'0')+p.sealed.ciphertext.slice(1);if(id==='wrong-key')p.sealed.key_id='00'.repeat(32);list.push(p);
 }
 writeFileSync(process.argv[2],JSON.stringify({identity,requests:list}));
+const mcp_key='whsec_'+Buffer.alloc(32,42).toString('base64'),mcp_old='whsec_'+Buffer.alloc(32,43).toString('base64');
+const mcpRequest={protocol_version:'relay-enroll/2',relay_id:'test-relay',enrollment_id:'mcp-native',subscriber_id:'chatgpt',requested_by:'chatgpt',operation:'add',origin:'https://hooks.example',subscription:{id:'chatgpt-native',channels:['capabilities.events','rhizome.events'],match:{types:['*'],filters:[{path:'source.business_key',op:'prefix',value:'codex:'}]},enabled:true,destination:{kind:'mcp_events',origin:'https://hooks.example',event_name:'relay.delivery'},principal:'owner-hash',generation:1,expires_at:1793486400000,invocation:{routine_id:'delegated-work',routine_version:'1',assignment_ref:'',deadline:0,effect_key:''}}};
+const mcp_enrollment=sealEnrollment({identity,request:mcpRequest,secret:{url_path:'/private-mcp-callback',signing:{alg:'standard-webhooks',key:mcp_key}}});
+const invocations=[1,2].map(i=>createHash('sha256').update('good|delegate-watch@sha256:fixed|capabilities.events|event-'+i).digest('hex'));
+writeFileSync(process.argv[2],JSON.stringify({identity,requests:list,mcp_key,mcp_old,mcp_enrollment,invocations,event_timestamp:new Date(1793400000000).toISOString()}));

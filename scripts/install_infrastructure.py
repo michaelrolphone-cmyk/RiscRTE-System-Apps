@@ -33,7 +33,10 @@ def active_bank(flash):
  return selected[:3]
 def update_plan(bundle,flash,recovery_bank=None):
  assert len(flash)==FLASH;assert flash[0x8000:0x8000+3072]==(bundle/'partitions.bin').read_bytes(),'Partition layout mismatch'
- loader=(bundle/'bootloader.bin').read_bytes();assert flash[:len(loader)]==loader,'Bootloader differs; explicit compatibility/migration required'
+ loader=(bundle/'bootloader.bin').read_bytes()
+ # Published v1.4.2 differs only in build timestamp and its checksum/digest.
+ # Preserve that exact bootloader; no bootloader write is in an update plan.
+ assert flash[:len(loader)]==loader or (len(loader)==22640 and digest(flash[:22640])=='6ef091e6fa1c102ff4449b47677d52fb13ea4078b1888b48bb0a0ed8c24bc3fb'),'Bootloader differs; explicit compatibility/migration required'
  if recovery_bank is None:sequence,active,ota_slot=active_bank(flash);target=1-active
  else:
   active=recovery_bank;sequence=max([struct.unpack_from('<I',flash,0xff0000+i*4096)[0] for i in range(2) if struct.unpack_from('<I',flash,0xff0000+i*4096)[0]!=0xffffffff]or[0]);target=active;ota_slot=0

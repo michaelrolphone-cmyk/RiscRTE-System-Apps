@@ -1,13 +1,13 @@
-# Channel Bus push delivery v1
+# Unified Channel Bus push delivery — firmware 1.5.0
 
 Shared contract for ESP32 relay task c81c7fff-7fef-4eec-ae35-4f384c8f5052,
 credential task a54ffdfc-95bf-4d4c-978a-90aa440e4a81, bot participants and
 Android receivers. No third-party broker or inbound device listener is needed.
 
 The relay polls its own event attachments on `capabilities.events`, `bpmn.events`,
-`scheduler.events` and `relay.enroll`. It does not compete for commands.
+`scheduler.events`, `rhizome.events` and `relay.enroll`. It does not compete for commands.
 Watched channels with enabled subscriptions and the enrollment control channel
-are checked every 5 seconds; unused channels every 30 seconds. These are target
+are checked every second; unused channels every 30 seconds. These are target
 cadences, not a hard latency guarantee: one shared TLS slot, service latency,
 maintenance and retries can delay a notification. A healthy webhook should be
 tested against the approximately 10-second acceptance target on the actual node.
@@ -68,7 +68,7 @@ A reboot before result publication retries the receipt without applying twice.
 The server retains enrollment-ID and nonce replay records. Approval accepted before
 the deadline remains recoverable if the node reconnects after that deadline.
 
-Bounds: four pending enrollments, four subscriptions, four distinct origins,
+Bounds: four pending enrollments, eight subscriptions, eight distinct origins,
 eight projected filter paths, eight event types and four filters per subscription.
 Requests are at most 6144 UTF-8 bytes; private sealed data fits within 1536 bytes
 including the tag. Filters use `eq` or `prefix` on strings; missing fields do not
@@ -100,7 +100,7 @@ own authorized bus credentials. Summaries contain no line breaks. Headers are:
 - The subscription's secret header, copied exactly from device-held credentials.
 
 The HMAC signs the exact bytes `timestamp + "." + HTTP body`, with the subscription
-signing key. Receivers verify the signature in constant time, accept a bounded
+signing key. Receivers using the optional generic signature verify it in constant time, accept a bounded
 timestamp skew (recommended five minutes), and durably deduplicate by relay,
 subscription and message ID before returning 2xx. Persist the received event or
 its effect before returning success. The signature timestamp may change on retry;
@@ -112,8 +112,11 @@ long as replay can occur; bus history is retained indefinitely in v1.
 Delivery is **at least once**. A power loss after webhook acceptance and before
 the local completion commit can repeat a POST with the same key. Exactly-once
 effects require receiver deduplication; a sender alone cannot promise them.
-The durable state includes the full compact event, selected subscription
-snapshots, completed target index, attempt count, retry time, and channel cursor.
+Legacy custody retains its compact event and target snapshots until drained.
+New custody retains one event identity and canonical digest per subscription,
+a selected subscription snapshot, attempt count, retry time and attachment cursor.
+The payload is reloaded from that unacknowledged Bus attachment and its digest
+verified before each send. This keeps eight large events out of the device journal.
 No matching event is acknowledged before all selected receivers return 2xx or
 the terminal failure is durably published to the bus dead-letter channel.
 Unmatched events are acknowledged after filtering. Each receive examines up to
@@ -121,15 +124,19 @@ Unmatched events are acknowledged after filtering. Each receive examines up to
 
 Retries follow 5 seconds, 30 seconds, 2 minutes and 10 minutes, for five total
 attempts. Non-2xx, TLS/network failures and uncertain outcomes all retry the
-same identity. After the fifth failure, publish `relay.deadletter` version 1
-with relay/subscription/message/channel/sequence, attempts and a fixed reason;
+same identity. After the fifth failure, publish `relay.deadletter` version 2
+with relay/subscription/message/channel/sequence, attempts and a short error code;
 omit URLs, secrets and response bodies. Retry that publication idempotently
-until confirmed before advancing the event. Delivery is serial and bounded to
-one event in flight; a failing recipient applies backpressure to further events.
+until confirmed before advancing the event. There is one TLS connection and one shared delivery transition loop, with an
+independent persisted retry slot and Bus attachment per subscription. Backoff
+on one destination does not block others. A subscription retains global Bus sequence ordering across its channels.
+The Bus selects the earliest retained next event and bounds filter scans before
+an earlier event on another channel; the device acknowledges that selected attachment.
 
-Publish `relay.health` version 1 every three minutes, including during a webhook
+Publish `relay.health` version 2 every three minutes, including during a webhook
 backoff: relay ID, uptime, last acknowledged sequence per channel, queue depth,
-subscription count and a bounded error code. Heartbeats are best effort and
+subscription count, per-subscription delivery sequence/failure count/error code
+and a bounded global error code. Heartbeats are best effort and
 never claim hardware qualification or guarantee agent execution.
 
 ## Scoped bus credential
@@ -145,7 +152,7 @@ OAuth and service-wide tokens are never provisioned to the node.
 Operations are `configuration`, `receive` (one event, requested field projections),
 `ack` (event cursor), and `publish`. Receive/ack are restricted to those exact
 attachments and their current channel identity. Publish is restricted to
-`relay.health` and `relay.deadletter` with matching relay ID. The route cannot
+`relay.health`, `relay.delivery` and `relay.deadletter` with matching relay ID. The route cannot
 claim command work, administer channels/attachments, invoke arbitrary connected tools,
 describe unrelated messages, or publish subscription changes. Owner tools create
 the attachments and register immutable event contracts before provisioning.
@@ -163,3 +170,83 @@ processing budget, a 12-second transport timeout and a 60-second cadence.
 The server policy is separately capped at 8 seconds for that binding. Other
 service bindings retain their own budgets. These bounds preserve time for bus
 polling and control contact; they do not certify physical timing.
+
+
+## ChatGPT MCP Events and v1.5.0 migration
+
+The same firmware subscription table accepts `destination.kind=webhook|mcp_events`
+and `channels` (up to four). Legacy `channel` records remain valid. The native
+MCP endpoint exposes `events/list`, `events/subscribe` and `events/unsubscribe`.
+Its `relay.delivery` event accepts the same types and path/op/value filters.
+Authenticated principal, canonical arguments, event name and callback URL bind
+the stable subscription ID. The front door writes sealed enrollment receipts
+in the existing Bus enrollment table; it has no HTTP delivery worker or separate
+subscription authority. The device journal is the installed subscription store.
+
+`relay-enroll/2` extends the existing seal: include `protocol_version` in canonical
+AAD and use HKDF info `relay-enroll/2`. The sealed payload is
+`{url_path,headers?,signing?:{alg,key}}`. MCP uses `standard-webhooks` and a
+`whsec_` base64 key decoding to 24–64 bytes. Public fields include destination,
+principal hash, monotonic generation, expiry and routine binding. V1 ciphertext,
+identity keys and current enrollments migrate unchanged. New destinations each
+require one owner Decisions approval. Authenticated renewal/rotation/revocation
+of an installed MCP destination reuses that decision through a checked enrollment
+parent; arbitrary bus publishers cannot grant this reuse.
+
+The ESP32 performs a signed, random, expiring verification challenge and checks
+the echo in constant time. This carries no application event and can run while
+the owner decision is pending. Only a successful device verification lets the
+front door return a subscription ID; only approval plus atomic installation
+permits event delivery. Rejected/expired questions never activate a subscription.
+A subscription request may return callback_verification_pending if the device
+cannot complete verification within 25 seconds; retry identical arguments.
+
+Every application delivery contains the same `relay-delivery/1` object and
+`agent-invocation/1` object. The invocation ID is lowercase SHA256 over UTF-8
+`subscription_id|routine_id@routine_version|channel|message_id`.
+The optional fanout group is preserved. Idempotency-Key remains message_id;
+receivers deduplicate (subscription_id,message_id). Existing notification-only
+subscriptions default to relay-notice@1 and have no execution assignment.
+HTTP acceptance never settles a Capabilities assignment or reports run completion;
+business effects still require an authorized fence and agent-outcome/1 receipt.
+
+The MCP adapter wraps that identical delivery as the native event's data:
+`{eventId,name,timestamp,cursor:null,data}`. It signs the exact transmitted bytes
+using Standard Webhooks: HMAC-SHA256(decoded secret,id+'.'+seconds+'.'+body),
+base64 with a v1, prefix. It sends webhook-id, webhook-timestamp,
+webhook-signature and X-MCP-Subscription-Id. Rotation sends both signatures for
+five minutes. 410 and 413 are terminal for that attempt; 410 also disables the
+subscription. Generic/Grok delivery keeps the relay body unchanged and supplies
+the stored Authorization header. Grok need not check a signature. A 2xx is trigger
+acceptance, never evidence that an agent ran to completion.
+
+Native RISC_HTTP_POST_PUBLIC is additive to the existing HTTP v2 ABI. It resolves
+DNS, denies private/reserved IPv4 ranges, connects only to that checked address,
+retains the original TLS hostname and does not redirect. IPv6-only callbacks are
+currently unsupported and fail closed. Old runtimes reject the new method;
+upgrade the paired native firmware and application store together.
+
+Each HTTP attempt durably stages a redacted relay.delivery v1 receipt before
+advancing. It contains only relay/subscription/message/invocation identifiers,
+attempt, HTTP status and observation time. URLs, bodies and credentials are absent.
+The immutable health v1 schema capped queue_depth at one and subscriptions at
+four, and deadletter v1 required exactly five attempts. Health/deadletter v2
+extend those contracts; old v1 readers and retained events remain untouched.
+The delivery body protocol stays relay-delivery/1.
+
+Upgrade using the preserving phone repair bundle. Drain any legacy pending
+request on its original attachment before enabling independent cursors. Preserve
+identity, enrollment queue, sealed requests, secrets, Wi-Fi settings and participant
+credentials; change only the pinned provider cohort. Never use the first-install
+full-flash image on an enrolled device. Historical enrollment seq 5163 is untouched.
+
+Host evidence covers 301-event independent cursor catch-up, failure isolation
+across reboot, signature vectors, owner approval, wrong challenge denial,
+legacy custody migration and terminal 410/413. These are software tests, not
+measurements of live device latency or a claim of native ChatGPT activation.
+
+The preserving installer additionally accepts the exact published 22,640-byte
+v1.4.2 bootloader, SHA256
+`6ef091e6fa1c102ff4449b47677d52fb13ea4078b1888b48bb0a0ed8c24bc3fb`.
+Binary comparison confirms identical code; only the build timestamp, checksum
+and image digest differ from the new build. The installer leaves it untouched.

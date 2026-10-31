@@ -11,7 +11,8 @@
       "enum": [
         "capabilities.events",
         "bpmn.events",
-        "scheduler.events"
+        "scheduler.events",
+        "rhizome.events"
       ]
     },
     "match": {
@@ -96,16 +97,134 @@
     },
     "enabled": {
       "type": "boolean"
+    },
+    "channels": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "capabilities.events",
+          "bpmn.events",
+          "scheduler.events",
+          "rhizome.events"
+        ]
+      },
+      "maxItems": 4
+    },
+    "destination": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "enum": [
+            "webhook",
+            "mcp_events"
+          ]
+        },
+        "origin": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "event_name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      },
+      "required": [
+        "kind",
+        "origin"
+      ],
+      "additionalProperties": false
+    },
+    "principal": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "expires_at": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "revoked": {
+      "type": "boolean"
+    },
+    "fanout_group": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "invocation": {
+      "type": "object",
+      "properties": {
+        "routine_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "routine_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "assignment_ref": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        },
+        "deadline": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "effect_key": {
+          "type": "string",
+          "minLength": 0,
+          "maxLength": 200
+        }
+      },
+      "required": [
+        "routine_id",
+        "routine_version",
+        "assignment_ref",
+        "deadline",
+        "effect_key"
+      ],
+      "additionalProperties": false
+    },
+    "previous_signing_credential_ref": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "rotation_until": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
     }
   },
   "required": [
     "id",
-    "channel",
     "match",
     "url",
-    "auth",
-    "signing_credential_ref",
     "enabled"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "anyOf": [
+    {
+      "required": [
+        "channel"
+      ]
+    },
+    {
+      "required": [
+        "channels"
+      ]
+    }
+  ]
 }

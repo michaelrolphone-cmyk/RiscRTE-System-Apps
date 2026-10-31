@@ -23,6 +23,7 @@ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v123-providers.json"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v140-providers.json"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v141-providers.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v142-providers.json"
 
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/relay"
  "$build/relay" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
@@ -31,6 +32,9 @@ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node
  node "$root/test/infra_node/enrollment_vectors.mjs" "$build/enrollment-vectors.json"
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/enrollment.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/enrollment"
  "$build/enrollment" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$build/enrollment-vectors.json"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/unified_relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/unified"
+ "$build/unified" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$build/enrollment-vectors.json"
+ node "$root/test/infra_node/unified_signature.mjs"
  python3 - <<'HMAC'
 import json,hmac,hashlib
 v=json.load(open('/tmp/infra-relay-hmac-vector.json'))
