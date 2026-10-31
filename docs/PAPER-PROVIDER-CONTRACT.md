@@ -1,0 +1,9 @@
+# X4 provider reconciliation
+
+Existing task2342a408-27a2-491e-bbde-130c4c3dbfdb, execution8974a788-a164-490d-a163-549b68b2fd14,8points unchanged.
+
+Existing full scene provider already supports paper pages, explicit clean-refresh intents, static-page pause/resume, overlay redraw, delayed presentation custody, shared controls and retained teardown. These implementations are not missing and are not being rewritten. Existing checkpoint fixture uses portrait480x800/profile rotation0 and navigation present. Existing legacy paper fixture uses800x480/display rotation90; the actual target builder's portrait-monochrome profile uses display rotation270. Existing Watch optional-navigation probe covers only watch-compact/color-dynamic RGB565 profiles.
+
+The independent uncovered intersection is the actual built paper presentation profile (including its270-degree display rotation), absent optional navigation, and paper checkpoint/clean-refresh behavior. Qualification will compile the unchanged production profile source with exact builder flags, use the real scene provider and existing guarded lower-capability fixture, and test that intersection. This is not duplicate implementation or a claim that previous tests failed. Custom canvas source/target PR approval remains separate. No dependency links or physical acceptance are removed.
+
+23:10 UTC measured result:16 cases pass (8 normal,8 ASan/UBSan) with actual compiled270-degree paper profile and unchanged full scene host. Touch-only navigation remains usable; static page pause/resume adds no refresh over3000 idle polls; external overlay restoration requests CLEAN and restores exact frame bytes; unresolved presentation blocks pause until settled; each required dependency omitted refuses without provider I/O. Full earlier test suites remain distinct and unchanged. No physical/panel or native product acceptance is inferred.
