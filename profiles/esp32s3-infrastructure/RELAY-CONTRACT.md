@@ -5,45 +5,81 @@ credential task a54ffdfc-95bf-4d4c-978a-90aa440e4a81, bot participants and
 Android receivers. No third-party broker or inbound device listener is needed.
 
 The relay polls its own event attachments on `capabilities.events`, `bpmn.events`,
-`scheduler.events` and `relay.subscriptions`. It does not compete for commands.
-Watched channels with enabled subscriptions and the subscription control channel
+`scheduler.events` and `relay.enroll`. It does not compete for commands.
+Watched channels with enabled subscriptions and the enrollment control channel
 are checked every 5 seconds; unused channels every 30 seconds. These are target
 cadences, not a hard latency guarantee: one shared TLS slot, service latency,
 maintenance and retries can delay a notification. A healthy webhook should be
 tested against the approximately 10-second acceptance target on the actual node.
 
-## Subscription and private setup
+## Register, rotate and revoke through the bus
 
-The private pairing policy may include `relay` with `schema_version:1`,
-`relay_id`, HTTPS `url` for `/v1/relay/call`, `credential_ref`, optional empty
-`site_credential_ref`, `allowed_origins`, `webhook_credential_refs`, and `subscriptions`. There are at most
-four allowed origins and four subscriptions. Exact HTTPS origins constrain
-destinations; redirects are never followed. Secrets are in the pairing file's
-`credentials` map, stored in the device's existing transactional nonvolatile
-app-data store. They are not compiled into the public binary or sent on the bus.
+Firmware v1.4.0 uses `relay-enroll/1`. No webhook URL, origin, secret or subscription
+needs to be entered into the captive portal. Pairing supplies only the relay ID,
+HTTPS bus URL and scoped bus credential. Legacy pairing fields are optional for
+migration. The old `relay.subscriptions` replacement command is drained without
+applying it; it cannot bypass approval.
 
-Each subscription has `id`, `channel`, `match:{types,filters}`, `url`,
-`auth:{header,credential_ref}`, `signing_credential_ref`, and `enabled`.
-`types` has up to eight exact event types or `*`. Up to four AND filters use
-`{path,op,value}`, where path is a dotted payload field and op is `eq` or
-`prefix`, comparing strings. Missing fields do not match. The polling projection
-is bounded to eight distinct paths across the entire table.
+1. Read the relay's newest `relay.identity` v1 event. Verify `relay_id`,
+   `installation_id`, `key_id` and `enroll_public_key` against the authenticated
+   Capabilities participant's `labels.relay_enrollment`. Do not trust a public
+   bus event alone. The key is persistent X25519; `key_id` is lowercase SHA256
+   of the 64-character lowercase public-key hex string.
+2. Generate a new enrollment ID and ephemeral key. Seal the private webhook
+   fields locally using `scripts/relay-enroll.mjs`. It reads private input on
+   stdin and writes only the public request plus ciphertext to stdout.
+3. Publish that output as type `relay.enroll`, version 1, channel `relay.enroll`.
+   Use the enrollment ID as a stable publisher idempotency key. Retry the same
+   message identity after an uncertain publish; do not reseal with an old ID.
+4. Michael receives one Decisions question showing the subscriber, HTTPS origin,
+   channel, types, filter, operation and enrollment digest. The question requires
+   an authenticated phone interaction and expires after 24 hours.
+5. Wait for `relay.enroll.result` v1 with the same relay/enrollment ID. Status is
+   `applied`, `rejected`, `expired` or `invalid`, with subscription ID, committed
+   revision and a redacted error code. Only `applied` confirms installation.
 
-Grok Worker 1's initial subscription uses channel `capabilities.events`, types
+The public request has `relay_id`, `enrollment_id`, `subscriber_id`, `requested_by`,
+`operation` (`add`, `rotate` or `revoke`; omitted means `add`), exact HTTPS `origin`,
+`subscription:{id,channel,match:{types,filters},enabled}` and `sealed`.
+The sealed object contains `alg:"x25519-hkdf-sha256-chacha20poly1305"`, `key_id`,
+`ephemeral_public_key`, `nonce` and `ciphertext`; all bytes are lowercase hex.
+The nonce is 12 bytes, the ephemeral X25519 public key 32 bytes. Ciphertext ends
+with the 16-byte Poly1305 tag. The helper uses Node/OpenSSL; firmware uses the
+unmodified pinned Monocypher 4.0.2 implementation.
+
+The helper's private input is `{identity,request,secret}`. For add/rotate, `secret`
+is `{url_path,auth_header_name,auth_header_value,signing_key}`. Paths start with
+one `/`; no origin, fragment or redirect is allowed. For revoke, seal `{}` and
+name the existing subscription. Every rotation and revocation needs a new
+approval. Never publish the helper input or its private file.
+
+AEAD associated data is canonical JSON with sorted keys:
+`{enrollment_id,key_id,operation,origin,relay_id,requested_by,subscriber_id,subscription_digest}`.
+`subscription_digest` is lowercase SHA256 of canonical public subscription JSON.
+The X25519 shared secret is fed to HKDF-SHA256 with salt SHA256(AAD), info UTF-8
+`relay-enroll/1`, and output length 32. ChaCha20-Poly1305 uses the AAD verbatim.
+
+The authenticated relay route fetches the original bus message, creates the
+idempotent owner question and validates the accepted answer's question digest,
+authorization scope, owner, participant and interaction assurance. The node checks
+the request digest before decrypting. Origins, local secret references, subscription,
+revision and completion receipt are saved in one existing journal transaction.
+A reboot before result publication retries the receipt without applying twice.
+The server retains enrollment-ID and nonce replay records. Approval accepted before
+the deadline remains recoverable if the node reconnects after that deadline.
+
+Bounds: four pending enrollments, four subscriptions, four distinct origins,
+eight projected filter paths, eight event types and four filters per subscription.
+Requests are at most 6144 UTF-8 bytes; private sealed data fits within 1536 bytes
+including the tag. Filters use `eq` or `prefix` on strings; missing fields do not
+match. Enrollment control calls have a 25-second transport bound; ordinary relay
+polls and webhook sends retain their five-second bound.
+
+Grok Worker 1 registers `grok-worker-1-decisions` on `capabilities.events`, with
 `decision.response_recorded` and `decision.accepted`, and a prefix filter on
-`source.business_key` with value `grok-worker-1:`. Its routine URL, secret header
-value and signing key must be supplied by Grok Worker 1; none is invented.
-The same format supports a BPMN step completion event and a process correlation
-filter for another attached agent.
-
-Publish an event of type `relay.subscriptions` version 1 on that channel with
-`{relay_id,revision,subscriptions}` to replace the table. Revisions increase
-monotonically. Only credential references on the explicit `webhook_credential_refs` allowlist, already held on the device, and origins
-admitted through its private pairing are accepted. Secret values never belong
-in an event. Bad updates are skipped with a health error; unrelated relay IDs
-are ignored. Existing deliveries retain their selected subscription snapshot.
-Use the captive portal and an authenticated updated private pairing to add or
-rotate secrets/origins. Pending delivery custody must finish first.
+`source.business_key` equal to `grok-worker-1:`. Grok supplies its actual private
+path, `Authorization` header value and signing key through the sealing helper.
+A software test callback is not evidence that the live Grok webhook is active.
 
 ## HTTPS delivery
 
@@ -80,7 +116,8 @@ The durable state includes the full compact event, selected subscription
 snapshots, completed target index, attempt count, retry time, and channel cursor.
 No matching event is acknowledged before all selected receivers return 2xx or
 the terminal failure is durably published to the bus dead-letter channel.
-Unmatched events are deliberately acknowledged after filtering.
+Unmatched events are acknowledged after filtering. Each receive examines up to
+25 events, returning the first match without advancing past it.
 
 Retries follow 5 seconds, 30 seconds, 2 minutes and 10 minutes, for five total
 attempts. Non-2xx, TLS/network failures and uncertain outcomes all retry the
@@ -99,16 +136,22 @@ never claim hardware qualification or guarantee agent execution.
 
 `POST /v1/relay/call` uses `Authorization: Bearer <relay token>` and protocol
 `relay/1`. Owner-deployed `RELAY_BINDINGS` entries contain relay ID, SHA256 of
-the token, enabled flag, expiry, and exact attachment IDs/channels. Raw owner
+the token, enabled flag, expiry, and exact attachment IDs/channels. A separate
+`RELAY_ENROLLMENT_BINDINGS` setting binds each relay to its Capabilities participant
+and its single enrollment attachment without replacing the existing credential.
+Raw owner
 OAuth and service-wide tokens are never provisioned to the node.
 
 Operations are `configuration`, `receive` (one event, requested field projections),
 `ack` (event cursor), and `publish`. Receive/ack are restricted to those exact
 attachments and their current channel identity. Publish is restricted to
 `relay.health` and `relay.deadletter` with matching relay ID. The route cannot
-claim command work, administer channels/attachments, invoke connected tools,
+claim command work, administer channels/attachments, invoke arbitrary connected tools,
 describe unrelated messages, or publish subscription changes. Owner tools create
 the attachments and register immutable event contracts before provisioning.
+The additional `identity`, `enrollment_review` and `enrollment_complete` operations
+are confined to the bound participant, original enrollment message and its exact
+owner decision. The device never receives the service bridge credential.
 
 ## Maintenance budget accompanying this release
 

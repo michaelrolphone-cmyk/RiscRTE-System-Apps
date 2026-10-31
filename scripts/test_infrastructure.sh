@@ -8,17 +8,22 @@ build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 flags=(-std=c++17 -Wno-deprecated-declarations -I"$runtime/lib/ArduinoJson/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$root/Services/infra_node")
 if [[ "${SANITIZE:-0}" == 1 ]];then flags+=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer);fi
+crypto_flags=();if [[ "${SANITIZE:-0}" == 1 ]];then crypto_flags=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer);fi
+cc "${crypto_flags[@]}" -c "$root/lib/EnrollmentCrypto/monocypher.c" -o "$build/monocypher.o"
 for name in core policy journal transport boot_health;do
  c++ "${flags[@]}" "$root/test/infra_node/$name.cpp" -o "$build/$name"
  if [[ "$name" == policy ]];then "$build/$name" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json";else "$build/$name";fi
 done
 
-c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/portal.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/portal"
+c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/portal.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/portal"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v122-providers.json"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v123-providers.json"
 
- c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/relay"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/relay"
  "$build/relay" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
+ node "$root/test/infra_node/enrollment_vectors.mjs" "$build/enrollment-vectors.json"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/enrollment.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/enrollment"
+ "$build/enrollment" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$build/enrollment-vectors.json"
  python3 - <<'HMAC'
 import json,hmac,hashlib
 v=json.load(open('/tmp/infra-relay-hmac-vector.json'))
@@ -27,6 +32,6 @@ print('Relay HMAC: independently verified exact body and timestamp PASS')
 HMAC
 
 if [[ -n "${CAPABILITIES_SOURCE:-}" && -n "${SCHEDULER_SOURCE:-}" ]];then
- c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"
  node "$root/scripts/test_infrastructure_service.mjs" "$build/node" "$CAPABILITIES_SOURCE" "$SCHEDULER_SOURCE"
 fi

@@ -202,3 +202,20 @@ the native main-task stack is 24 KiB and the admission floor stays 4096 bytes.
 These are software results. Physical stack headroom, webhook latency, Wi-Fi
 outage, brownout recovery and live Grok receiver delivery remain unqualified.
 Grok's routine endpoint and private credentials have not been supplied.
+
+## v1.4.0 encrypted bus enrollment verification
+
+The production node decrypts requests sealed independently by Node/OpenSSL.
+Host tests cover empty pairing configuration, new HTTPS origin, persistent key,
+approval digest binding, rotation, revocation, authentication-tag and key failures,
+rejection, expiry, journal recovery and redacted result traffic. Legacy unapproved
+replacement messages cannot change subscriptions. Run with SANITIZE=1; crypto C
+code is included in ASan/UBSan instrumentation. Leak detection is disabled where
+the execution host cannot support it.
+
+Service integration executes the actual Capabilities decision engine and a paired
+phone's P-256 signed interaction. It verifies one question, owner assurance,
+preapproval denial, deadline recovery, result idempotence, enrollment conflicts,
+pending capacity and catch-up without skipping a match. Compiled Worker/D1 tests
+check credential scope and apply all release migrations. These are software tests,
+not physical ESP32 or live Grok delivery qualification.

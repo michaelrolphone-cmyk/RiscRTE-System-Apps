@@ -4,7 +4,7 @@
 namespace Infra {
 class Journal {
  public:
-  Allocator allocator{196608};JsonDocument state{&allocator};
+  Allocator allocator{393216};JsonDocument state{&allocator};
   const risc_bound_app_data_async_v1* backend=nullptr;
   uint8_t* scratch=nullptr;uint64_t seq=0,revision=0,writeToken=0,desiredSeq=0,writes=0,bytes=0;uint32_t desiredCrc=0,loadedCrc=0;bool retained=false,blocked=false,reload=false;
   bool initialize(const risc_bound_app_data_v1* b){backend=risc_bound_app_data_async(b);scratch=static_cast<uint8_t*>(std::malloc(StateMax));return backend&&scratch;}
@@ -18,7 +18,7 @@ class Journal {
     seq=sequence;loadedCrc=crc32(payload,length);revision=fresh;blocked=false;reload=false;return 0;
   }
   bool valid(){
-   if(!keys(state.as<JsonObjectConst>(),{"schema_version","installation_id","credential_generation","credentials","participant_id","cursor","pending","job","checkpoints","configuration_revision"},{"bootstrap","enrollment_id","credential_sha256","rotation","configuration","target_epoch","configuration_desired_id","configuration_expires_at","setup_policy","setup_pending","relay"})||measureJson(state["relay"])>24576||state["schema_version"]!=1||!state["installation_id"].is<const char*>()||strlen(state["installation_id"]|"")>64||!state["pending"].is<JsonArray>()||state["pending"].size()>PendingMax||measureJson(state["credentials"])>4096||measureJson(state["job"])>RecordMax||measureJson(state["checkpoints"])>4096||measureJson(state["configuration"])>8192||measureJson(state["setup_policy"])>PolicyMax||(!state["setup_pending"].isNull()&&!state["setup_pending"].is<bool>()))return false;
+   if(!keys(state.as<JsonObjectConst>(),{"schema_version","installation_id","credential_generation","credentials","participant_id","cursor","pending","job","checkpoints","configuration_revision"},{"bootstrap","enrollment_id","credential_sha256","rotation","configuration","target_epoch","configuration_desired_id","configuration_expires_at","setup_policy","setup_pending","relay"})||measureJson(state["relay"])>65536||state["schema_version"]!=1||!state["installation_id"].is<const char*>()||strlen(state["installation_id"]|"")>64||!state["pending"].is<JsonArray>()||state["pending"].size()>PendingMax||measureJson(state["credentials"])>4096||measureJson(state["job"])>RecordMax||measureJson(state["checkpoints"])>4096||measureJson(state["configuration"])>8192||measureJson(state["setup_policy"])>PolicyMax||(!state["setup_pending"].isNull()&&!state["setup_pending"].is<bool>()))return false;
    for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>RecordMax)return false;return !state.overflowed();
   }
   int save(){

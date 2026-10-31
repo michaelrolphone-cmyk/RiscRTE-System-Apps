@@ -692,10 +692,7 @@
         "relay_id",
         "url",
         "credential_ref",
-        "site_credential_ref",
-        "allowed_origins",
-        "webhook_credential_refs",
-        "subscriptions"
+        "site_credential_ref"
       ],
       "additionalProperties": false
     }

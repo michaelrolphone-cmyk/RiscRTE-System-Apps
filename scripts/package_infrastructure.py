@@ -23,10 +23,10 @@ def main():
  seed(r,policy,state,out/'appdata-unprovisioned.bin')
  tools=out/'tools/littlefs';shutil.copytree(b/'esp-idf/risc_littlefs/pinned/littlefs',tools)
  scripts=out/'scripts';scripts.mkdir()
- for name in ['provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs']:shutil.copy2(ROOT/'scripts'/name,scripts/name)
+ for name in ['provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs','relay-enroll.mjs']:shutil.copy2(ROOT/'scripts'/name,scripts/name)
  if a.evidence:shutil.copytree(a.evidence,out/'evidence')
  docs=ROOT/'profiles/esp32s3-infrastructure';
- for name in ['README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md']:
+ for name in ['README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md']:
   if (docs/name).exists():shutil.copy2(docs/name,out/name)
  offsets={'bootloader.bin':(0,0x8000),'partitions.bin':(0x8000,0x1000),'firmware.bin':(0x10000,0x260000),'appdata-unprovisioned.bin':(0x270000,0x80000),'store.bin':(0x2f0000,0x510000),'otadata.bin':(0xff0000,0x2000),'bank_state.bin':(0xff2000,0x2000)}
  files=[]

@@ -9,7 +9,7 @@
 #include <RiscEntropyV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
-enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth};
+enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete};
 class Node {
  public:
  Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
@@ -21,14 +21,15 @@ class Node {
  unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
  char sessionId[128]{},boot[65]{},poolId[160]{},offerId[200]{},assignmentId[128]{},planId[128]{};
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
- bool relayReady=false,relayBlocked=false,relayYield=false;unsigned relayIndex=0;uint64_t relayPollAt[4]{},relayHealthAt=0,relayRetryAt=0;char relayError[64]{};
+ bool relayReady=false,relayBlocked=false,relayYield=false;unsigned relayIndex=0;uint64_t relayPollAt[5]{},relayHealthAt=0,relayRetryAt=0;char relayError[64]{};
+ bool relayIdentityReady=false;unsigned enrollmentIndex=0;uint64_t enrollmentPollAt=0;
  char* encoded=nullptr;bool bindingDisabled[8]{};
  uint64_t now()const{return clock.monotonic_ms(clock.context);}
  JsonObjectConst configuration()const{return journal.state["configuration"].is<JsonObjectConst>()?journal.state["configuration"].as<JsonObjectConst>():config["configuration"].as<JsonObjectConst>();}
  JsonArrayConst bindings()const{return configuration()["bindings"].as<JsonArrayConst>();}
  JsonObjectConst bindingAt(unsigned i)const{return bindings()[i].as<JsonObjectConst>();}
  JsonObjectConst endpoint(unsigned i)const{return find(config["endpoints"],"endpoint_policy_id",bindingAt(i)["endpoint_policy_id"]|"");}
- const char* credential(const char* ref)const{return journal.state["credentials"][ref]|"";}
+ const char* credential(const char* ref)const{return journal.state["relay"]["secrets"][ref].is<const char*>()?(journal.state["relay"]["secrets"][ref]|""):(journal.state["credentials"][ref]|"");}
  void reason(Phase p,const char* why){if(phase!=p||strcmp(status.reason,why)){auto& d=diagnostics[diagnosticNext++%128];d={};d.at=now();d.phase=static_cast<unsigned>(p);d.pending=journal.state["pending"].size();copy(d.reason,sizeof(d.reason),why);status.diagnostic_events=diagnosticNext;}phase=p;copy(status.reason,sizeof(status.reason),why);}
  int retained(){reason(Phase::Retained,"retained_fault");return INFRA_RETAINED;}
  int block(Phase p,const char* why){reason(p,why);return INFRA_BLOCKED;}
@@ -79,7 +80,8 @@ class Node {
  int resume(){auto p=journal.state["pending"][0];if(!p["request"].is<JsonObject>()||!durableAction(p["action"].as<unsigned>()))return block(Phase::StorageBlocked,"pending_record_invalid");if(!receiptChecked&&p["action"]!=static_cast<unsigned>(Action::Enroll)){auto a=make(Action::ReceiptLookup,"inspect","operation_get");a["lookup_operation_id"]=p["request"]["operation_id"];return send(false);}receiptChecked=false;request.set(p["request"]);action=static_cast<Action>(p["action"].as<unsigned>());durable=true;reason(Phase::Send,"replay_same_operation_identity");return 1;}
  int finish(Phase next=Phase::Ready){if(durable){journal.state["pending"].as<JsonArray>().remove(0);durable=false;return persist(next);}phase=next;return 1;}
  int backoff(const char* why){uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();if(e!=0)return block(Phase::ProtocolBlocked,"entropy_unavailable");waitUntil=now()+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
- bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayHealth;}
+ bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayEnrollmentComplete;}
+ bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject);
  int relayStep();int relayTransmit();int relayReceived();int relayFailure(const char*);
  int transmit(){
   if(relayAction())return relayTransmit();

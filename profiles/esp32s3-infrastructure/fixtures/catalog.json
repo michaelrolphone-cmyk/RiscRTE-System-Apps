@@ -517,11 +517,11 @@
     {
       "provider": {
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 4,
+        "revision": 5,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+          "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
         },
         "provides": [
           {
@@ -563,19 +563,19 @@
       "reference": {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 4,
-        "definition_digest": "70c3ffe069630839f3814640183b48dc91ee61cb275ebb8ff6ef2ae9a52b0457",
-        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+        "revision": 5,
+        "definition_digest": "469222312f052716eac555867b7dcd1454bf3f85fde16da32cd71a08d7762914",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 4,
+        "revision": 5,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+          "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
         },
         "provides": [
           {
@@ -617,19 +617,19 @@
       "reference": {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 4,
-        "definition_digest": "d28ed0215720a5010ce62f5e01b24db0b67c70d080700597b49e7e4de33a0748",
-        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+        "revision": 5,
+        "definition_digest": "5f7ffed262ecfc97bfd1baf4998012e9241baba1850f7e14e7572ca8d0861cc0",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 4,
+        "revision": 5,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+          "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
         },
         "provides": [
           {
@@ -671,19 +671,19 @@
       "reference": {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 4,
-        "definition_digest": "966687e63bc998040d8db784d7da6b1f17872b43ba6a67c2a99894c84c21fe4d",
-        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+        "revision": 5,
+        "definition_digest": "a770fa9b6fccdb1eb163b6129bea1bad390551533b7e6a2f71edd086cace415b",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 4,
+        "revision": 5,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
-          "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+          "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
         },
         "provides": [
           {
@@ -725,9 +725,9 @@
       "reference": {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 4,
-        "definition_digest": "60ad0d2803c068183c97ababe96d1b1f00ec9697e08727d2ca8403a0e10603c2",
-        "package_digest": "d351e278eab40dff094bed9a32ecfc770fd6eeb3ba8a0e6a9d9b07718390f1ca"
+        "revision": 5,
+        "definition_digest": "442c4882e667135c9b4c1a6fabbdc8f85ace9f2297c893a30f033aa4a19f79a7",
+        "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     }
   ]
