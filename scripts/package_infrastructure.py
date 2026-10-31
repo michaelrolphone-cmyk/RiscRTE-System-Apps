@@ -23,7 +23,7 @@ def main():
  seed(r,policy,state,out/'appdata-unprovisioned.bin')
  tools=out/'tools/littlefs';shutil.copytree(b/'esp-idf/risc_littlefs/pinned/littlefs',tools)
  scripts=out/'scripts';scripts.mkdir()
- for name in ['provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs','relay-enroll.mjs']:shutil.copy2(ROOT/'scripts'/name,scripts/name)
+ for name in ['provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs','relay-enroll.mjs','repair_infrastructure.py','inspect_infrastructure_state.py','infrastructure_read.c']:shutil.copy2(ROOT/'scripts'/name,scripts/name)
  if a.evidence:shutil.copytree(a.evidence,out/'evidence')
  docs=ROOT/'profiles/esp32s3-infrastructure';
  for name in ['README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md']:

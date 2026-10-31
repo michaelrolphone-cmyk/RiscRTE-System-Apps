@@ -236,3 +236,8 @@ gate's stale 48 KB bound. The portal harness now enforces the backend read limit
 and tests the exact published v1.4.0 provider cohort as well as older pairing
 cohorts. Native firmware and its storage ABI are unchanged. Physical access-point
 and portal confirmation on v1.4.1 remains pending until the device runs it.
+
+
+### v1.4.2 terminal request recovery
+
+Host regression coverage includes v1.4.1 pending-entry replay after reboot, matched `INVALID_REQUEST`/`not_applied` retirement, redacted durable history, preserved unrelated custody, health during participant quarantine, and observation checkpoint loss against the deployed Capabilities source. The offline repair is tested against the pinned LittleFS implementation and preserves private relay identity and pending entries while changing only provider pins. Physical recovery and processing of the existing sealed enrollment remain separate qualification requirements.

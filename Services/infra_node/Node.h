@@ -59,7 +59,7 @@ class Node {
  bool bootReady()const{
   // A timer, socket connection or early lifecycle phase is not installation
   // health. Preserve rollback eligibility until this boot has reconciled.
-  if(phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
+  if(journal.state["protocol_rejections"]["quarantined"]==true||phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
   unsigned i=0;for(auto b:bindings()){
    if(b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
    ++i;
@@ -83,6 +83,7 @@ class Node {
  bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayEnrollmentComplete;}
  bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject);
  int relayStep();int relayTransmit();int relayReceived();int relayFailure(const char*);
+ int rejectSavedRequest();
  int transmit(){
   if(relayAction())return relayTransmit();
   bool external=action==Action::Maintain||action==Action::Probe;
@@ -112,11 +113,19 @@ class Node {
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
   if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;setupRecovery=true;reason(Phase::SetupRetry,"wifi_setup_recovery");return 1;}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
   if(phase==Phase::Nonce){uint8_t nonce[32];auto r=entropy.fill(entropy.context,nonce,sizeof(nonce));if(r==RISC_ENTROPY_RETAINED)return retained();if(r==RISC_ENTROPY_UNAVAILABLE||r==RISC_ENTROPY_BUSY)return 1;if(r)return block(Phase::ProtocolBlocked,"entropy_failed");for(unsigned i=0;i<32;++i)snprintf(boot+i*2,3,"%02x",nonce[i]);copy(status.boot_id,sizeof(status.boot_id),boot);phase=Phase::Recover;return 1;}
+  if(phase==Phase::Recover&&journal.state["protocol_rejections"]["quarantined"]==true)phase=Phase::Ready;
   if(phase==Phase::Recover){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();if(journal.state["pending"].size())return resume();auto job=journal.state["job"];if(!job.isNull()&&text(job["attempt_id"],128))return stopJob("reboot_or_reconnect_requires_reconciliation");if(snapshotNeeded&&text(journal.state["participant_id"],128))return snapshotStep();rebootRecovery=false;phase=Phase::Ready;}
   if(phase==Phase::Drain){if(net.token){auto r=net.close();if(r==-2)return retained();if(r)return 1;}if(journal.state["pending"].size()){phase=Phase::Recover;return 1;}if(!journal.state["job"].isNull())return stopJob("owner_shutdown");auto r=station.close(station.context);if(r==-2)return retained();if(r)return 1;phase=Phase::Stopped;return 0;}
   if(phase==Phase::Stopped)return 0;
   if(phase!=Phase::Ready)return -1;
   if(drain){phase=Phase::Drain;return 1;}
+  // A terminal participant rejection must not suspend the independent relay.
+  // Keep all remaining custody intact; only the rejected request is retired.
+  if(journal.state["protocol_rejections"]["quarantined"]==true){
+   if(int r=relayStep())return r;
+   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&(b["capability"]=="scheduler.drive"||b["capability"]=="service.reconcile")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
+   return 1;
+  }
   if(journal.state["pending"].size()){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();return resume();}
   if(!text(journal.state["participant_id"],128)){auto a=make(Action::Enroll,"participant","enroll");a["bootstrap_credential"]=journal.state["bootstrap"];a["identity_binding"]["credential_sha256"]=journal.state["credential_sha256"];a["identity_binding"]["installation_id"]=journal.state["installation_id"];a["display_name"]="ESP32-S3 infrastructure";a["class"]="embedded";a["adapter_kind"]="esp32s3-infrastructure/1";return send(true);}
   if(snapshotNeeded&&(snapshotStage<2||sessionId[0]))return snapshotStep();
