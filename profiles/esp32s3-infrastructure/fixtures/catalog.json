@@ -517,7 +517,7 @@
     {
       "provider": {
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 5,
+        "revision": 6,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -563,15 +563,15 @@
       "reference": {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 5,
-        "definition_digest": "469222312f052716eac555867b7dcd1454bf3f85fde16da32cd71a08d7762914",
+        "revision": 6,
+        "definition_digest": "4760456bbfb8dce2acb268e173a1de02a62760804f2d75668ebbd84484cb91fb",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 5,
+        "revision": 6,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -617,15 +617,15 @@
       "reference": {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 5,
-        "definition_digest": "5f7ffed262ecfc97bfd1baf4998012e9241baba1850f7e14e7572ca8d0861cc0",
+        "revision": 6,
+        "definition_digest": "00d2553bb26ff3370ee9459b1662886dc543115e0c97273d491ca86b9f731919",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 5,
+        "revision": 6,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -671,15 +671,15 @@
       "reference": {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 5,
-        "definition_digest": "a770fa9b6fccdb1eb163b6129bea1bad390551533b7e6a2f71edd086cace415b",
+        "revision": 6,
+        "definition_digest": "8df8855306511594d7df072cb9683f0a48b90d5db6a1f830a58529e34068e49f",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     },
     {
       "provider": {
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 5,
+        "revision": 6,
         "implementation_ref": {
           "kind": "risc-elf",
           "profile": "esp32s3-infrastructure",
@@ -725,8 +725,8 @@
       "reference": {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 5,
-        "definition_digest": "442c4882e667135c9b4c1a6fabbdc8f85ace9f2297c893a30f033aa4a19f79a7",
+        "revision": 6,
+        "definition_digest": "f5e7bb5b2e73503472940f1c67655ae5629573eae62dddb86dcf729e252abc0a",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     }

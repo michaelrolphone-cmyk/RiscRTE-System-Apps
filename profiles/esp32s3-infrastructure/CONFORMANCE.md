@@ -219,3 +219,20 @@ preapproval denial, deadline recovery, result idempotence, enrollment conflicts,
 pending capacity and catch-up without skipping a match. Compiled Worker/D1 tests
 check credential scope and apply all release migrations. These are software tests,
 not physical ESP32 or live Grok delivery qualification.
+
+## v1.4.1 captive portal startup correction
+
+The v1.4.0 device log reached `state_missing_corrupt_or_schema` before setup.
+Its journal supplied a 98,304-byte read capacity to a backend whose published
+file limit is 65,536 bytes. Even a small valid first-install seed was rejected.
+The journal and JSON lexical gate now use the SDK file limit; inventory reports
+the same value. Existing snapshot framing and committed data remain compatible.
+
+The new integration test links the production `AppDataFiles.cpp`, reproduces
+the v1.4.0 first-load failure, and verifies the correction, a journal larger than
+60 KB across save/reload/reboot, and preservation of the last committed state
+after an oversized write is refused. This also caught and corrected the lexical
+gate's stale 48 KB bound. The portal harness now enforces the backend read limit
+and tests the exact published v1.4.0 provider cohort as well as older pairing
+cohorts. Native firmware and its storage ABI are unchanged. Physical access-point
+and portal confirmation on v1.4.1 remains pending until the device runs it.

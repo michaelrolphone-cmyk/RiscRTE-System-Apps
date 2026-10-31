@@ -16,7 +16,7 @@ int Node::enrollmentStep(){
   uint8_t sk[32],pk[32];auto result=entropy.fill(entropy.context,sk,sizeof(sk));if(result==RISC_ENTROPY_BUSY||result==RISC_ENTROPY_UNAVAILABLE)return 0;if(result==RISC_ENTROPY_RETAINED)return retained();if(result)return relayFailure("enroll_entropy_failed");
   crypto_x25519_public_key(pk,sk);identity=r["identity"].to<JsonObject>();char value[65];hexEncode(sk,32,value);identity["private_key"]=value;crypto_wipe(sk,32);hexEncode(pk,32,value);identity["public_key"]=value;dtls_sha256_data(reinterpret_cast<const uint8_t*>(value),64,value);identity["key_id"]=value;crypto_wipe(value,sizeof(value));crypto_wipe(pk,32);r["enrollments"].to<JsonArray>();return persist(Phase::Ready);
  }
- if(!relayIdentityReady){prepare(*this,Action::RelayIdentity,"identity");auto a=request["arguments"];a["relay_id"]=config["relay"]["relay_id"];a["installation_id"]=journal.state["installation_id"];a["enroll_public_key"]=identity["public_key"];a["key_id"]=identity["key_id"];a["firmware_version"]="1.4.0";return send(false);}
+ if(!relayIdentityReady){prepare(*this,Action::RelayIdentity,"identity");auto a=request["arguments"];a["relay_id"]=config["relay"]["relay_id"];a["installation_id"]=journal.state["installation_id"];a["enroll_public_key"]=identity["public_key"];a["key_id"]=identity["key_id"];a["firmware_version"]="1.4.1";return send(false);}
  if(now()<enrollmentPollAt)return 0;
  auto list=r["enrollments"].as<JsonArray>();if(!list.size())return 0;enrollmentIndex=(enrollmentIndex+1)%list.size();auto e=list[enrollmentIndex].as<JsonObject>();
  if(e["state"]=="result"){

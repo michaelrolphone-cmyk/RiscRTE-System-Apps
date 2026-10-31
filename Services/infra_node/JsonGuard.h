@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <RiscAppDataV1.h>
 
 namespace Infra {
 
@@ -15,7 +16,7 @@ namespace Infra {
 // aliases such as "id" and "\u0069d" from bypassing duplicate detection.
 class JsonGuard {
  public:
-  static constexpr size_t kMaxBytes = 49152;
+  static constexpr size_t kMaxBytes = RISC_APP_DATA_FILE_MAX;
   static constexpr size_t kMaxDepth = 16;
   static constexpr size_t kMaxActiveKeys = 64;
   static constexpr size_t kMaxKeyBytes = 63;

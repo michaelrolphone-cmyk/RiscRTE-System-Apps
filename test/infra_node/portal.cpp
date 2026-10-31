@@ -19,7 +19,7 @@ static int receive(void*,uint64_t,void*,uint32_t,uint32_t* n,risc_tcp_listen_v1*
 static int send(void*,uint64_t,const void*,uint32_t,const risc_tcp_listen_v1*){return 0;}
 static risc_tcp_listener_v1 sockets{1,sizeof(sockets),nullptr,listen,accept,read,write,close,0,nullptr,nullptr,RISC_DATAGRAM_TAG,bind,receive,send};
 static int stat(void*,const char* name,uint32_t* size,uint64_t* rev){*size=!strcmp(name,"node-policy.json")?policyBytes.size():disk.size();*rev=revision;return 0;}
-static int storedRead(void*,const char* name,uint64_t expected,void* p,uint32_t cap,uint32_t* size,uint64_t* rev){assert(expected==revision);*size=!strcmp(name,"node-policy.json")?policyBytes.size():disk.size();assert(*size<=cap);memcpy(p,!strcmp(name,"node-policy.json")?static_cast<const void*>(policyBytes.data()):disk.data(),*size);*rev=revision;return 0;}
+static int storedRead(void*,const char* name,uint64_t expected,void* p,uint32_t cap,uint32_t* size,uint64_t* rev){if(cap>RISC_APP_DATA_FILE_MAX)return RISC_APP_DATA_INVALID;assert(expected==revision);*size=!strcmp(name,"node-policy.json")?policyBytes.size():disk.size();assert(*size<=cap);memcpy(p,!strcmp(name,"node-policy.json")?static_cast<const void*>(policyBytes.data()):disk.data(),*size);*rev=revision;return 0;}
 static int begin(void*,const char*,uint64_t expected,const void* p,uint32_t n,uint64_t* h){assert(expected==revision);pending.assign(static_cast<const uint8_t*>(p),static_cast<const uint8_t*>(p)+n);*h=9;return 0;}
 static int collect(void*,uint64_t h,int32_t* result){assert(h==9);if(commit){disk=pending;++revision;}*result=outcome;return 0;}
 static risc_bound_app_data_async_v1 storage{{1,sizeof(storage),nullptr,stat,storedRead,nullptr},RISC_BOUND_APP_DATA_ASYNC_TAG,1,begin,collect};
