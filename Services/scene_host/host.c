@@ -1,5 +1,6 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
 #include "RiscSceneTelemetryV1.h"
+#include "RiscSceneKeypadV1.h"
 /* Explicit source profile: the default remains the complete presenter. */
 #ifndef SCENE_HOST_WATCH_240
 #define SCENE_HOST_WATCH_240 0
@@ -132,7 +133,7 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
     if(route_index(d,d->root)<0)return false;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];
-        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_CODE_ROW:RISC_SCENE_KEYBOARD_NODE)||
+        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_KEY:RISC_SCENE_KEYBOARD_NODE)||
            n->flags&~(15u|(n->kind==RISC_SCENE_KEYBOARD_NODE?RISC_SCENE_KEYBOARD_EXTENDED:0u))||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
         for(unsigned j=0;j<i;j++)if(d->nodes[j].id==n->id)return false;
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
@@ -1218,3 +1219,4 @@ static bool quiesce(void){return !retained&&!active&&!pending&&!rasterizing&&!su
 static void stop(void){if(!quiesce())return;started=false;display=NULL;touch=NULL;navigation=NULL;clock_api=NULL;profile=NULL;}
 static const risc_driver_v2 driver={2,sizeof(driver),"scene-host",RISC_SCENE_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t abi){return abi==2?&driver:NULL;}
+
