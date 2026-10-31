@@ -1,5 +1,6 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneTelemetryV1.h"
+#include "RiscSceneCanvasV1.h"
+#include "../canvas_host/canvas_provider.h"
 #include "RiscSceneKeypadV1.h"
 /* Explicit source profile: the default remains the complete presenter. */
 #ifndef SCENE_HOST_WATCH_240
@@ -103,6 +104,9 @@ static uint64_t session,serial,event_serial,subscription,last_sequence;
 static uint32_t epoch;
 static unsigned width,height;
 static bool started,active,dirty,pending,closing,retained,nav_claimed,have_event;
+static canvas_provider shared_canvas;
+static const risc_runtime_api_v1 *shared_owner;
+static bool canvas_call,scene_opening;
 static bool paused,pausing;
 static bool neutral,keyboard_waiting;
 static bool lifecycle_enabled,activity_pending,input_unsynchronized,top_pending,handoff_waiting;
@@ -165,12 +169,14 @@ static bool valid_path(const risc_components_document_v1 *d,const risc_scene_nav
     }
     return true;
 }
-static int32_t fail_retained(void){retained=true;have_event=false;key_count=0;return RISC_SCENE_RETAINED;}
+static int32_t fail_retained(void){retained=true;shared_canvas.frames.retained=true;have_event=false;key_count=0;return RISC_SCENE_RETAINED;}
 /* A dependency can revoke the native invocation while reporting success.
  * Recheck at every external callback boundary before any further provider I/O. */
 static bool alive(void){
-    if(retained)return false;
-    if(!risc_runtime_get_api(1)){(void)fail_retained();return false;}
+    if(retained||shared_canvas.frames.retained){(void)fail_retained();return false;}
+    const risc_runtime_api_v1 *current=risc_runtime_get_api(1);
+    if(!current||(shared_owner&&current!=shared_owner)){(void)fail_retained();return false;}
+    if(!shared_owner&&(active||scene_opening||canvas_call||shared_canvas.frames.session))shared_owner=current;
     return true;
 }
 static int32_t check(uint64_t s){
@@ -962,7 +968,7 @@ static int32_t close_owned(void){
 static int32_t open_document(void *c,const risc_components_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
     (void)c;if(!alive())return RISC_SCENE_RETAINED;
     if(!started||!out||!valid_document(d,model->components)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
-    if(active)return RISC_SCENE_BUSY;
+    if(active||canvas_call||shared_canvas.frames.session)return RISC_SCENE_BUSY;
     if(serial==UINT64_MAX)return RISC_SCENE_UNAVAILABLE;
     info=(risc_display_info_v1){.api_version=1,.struct_size=sizeof(info)};
     bool ok=display->get_info(display->context,&info);
@@ -1132,7 +1138,7 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
     }
     return RISC_SCENE_OK;
 }
-static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);return r?r:close_owned();}
+static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;r=close_owned();if(!r)shared_owner=NULL;return r;}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
@@ -1161,8 +1167,8 @@ static bool copy_legacy(const risc_scene_document_v1 *d){
 static int32_t scene_open(void *c,const risc_scene_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
     if(!alive())return RISC_SCENE_RETAINED;
     if(!copy_legacy(d)||!valid_document(&legacy_copy,false)||(p&&!valid_path(&legacy_copy,p)))return RISC_SCENE_INVALID;
-    if(active)return RISC_SCENE_BUSY;
-    model->components=false;return open_document(c,&legacy_copy,p,out);
+    if(active||scene_opening||canvas_call||shared_canvas.frames.session)return RISC_SCENE_BUSY;
+    model->components=false;scene_opening=true;int32_t rc=open_document(c,&legacy_copy,p,out);scene_opening=false;if(!active&&!subscription&&!nav_claimed&&!retained)shared_owner=NULL;return rc;
 }
 static int32_t scene_update(void *c,uint64_t s,const risc_scene_document_v1 *d){
     if(model->components||!copy_legacy(d))return RISC_SCENE_INVALID;
@@ -1171,26 +1177,25 @@ static int32_t scene_update(void *c,uint64_t s,const risc_scene_document_v1 *d){
 static int32_t components_open(void *c,const risc_components_document_v1 *d,const risc_scene_navigation_v1 *p,uint64_t *out){
     if(!alive())return RISC_SCENE_RETAINED;
     if(!valid_document(d,true)||(p&&!valid_path(d,p)))return RISC_SCENE_INVALID;
-    if(active)return RISC_SCENE_BUSY;
-    model->telemetry.count=0;model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;return open_document(c,d,p,out);
+    if(active||scene_opening||canvas_call||shared_canvas.frames.session)return RISC_SCENE_BUSY;
+    model->telemetry.count=0;model->components=true;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;scene_opening=true;int32_t rc=open_document(c,d,p,out);scene_opening=false;if(!active&&!subscription&&!nav_claimed&&!retained)shared_owner=NULL;return rc;
 }
 static int32_t components_update(void *c,uint64_t s,const risc_components_document_v1 *d){
     if(!model->components)return RISC_SCENE_INVALID;
     int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
-#if SCENE_HOST_TELEMETRY
-static const risc_scene_telemetry_api_v1 api={
-#else
-static const risc_scene_reading_links_api_v1 api=
-#endif
-{{{ { { {
+#include "scene_canvas.inc"
+static const risc_scene_canvas_api_v1 api={
+.scene={{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
     RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked}
 #if SCENE_HOST_TELEMETRY
-,RISC_SCENE_TELEMETRY_TAG,2,telemetry_present}
+,RISC_SCENE_TELEMETRY_TAG,2,telemetry_present
+#else
+,0,0,NULL
 #endif
-;
+},.canvas_tag=RISC_SCENE_CANVAS_TAG,.canvas_version=1,.canvas=&shared_canvas_api};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;
@@ -1213,10 +1218,13 @@ static bool start(const risc_provider_dependency_v1 *deps,size_t count){
        (profile->display_rotation!=0&&profile->display_rotation!=90&&profile->display_rotation!=180&&profile->display_rotation!=270)||
        (profile->touch_rotation!=0&&profile->touch_rotation!=90&&profile->touch_rotation!=180&&profile->touch_rotation!=270))return false;
     if(navigation&&(navigation->api_version!=1||navigation->struct_size<sizeof(*navigation)||!navigation->poll||!navigation->foreground||!navigation->reset))return false;
-    started=true;return true;
+    canvas_provider_init(&shared_canvas,display,touch,profile->display_rotation/90);
+    shared_canvas.preferred_format=profile->preferred_format;shared_canvas.navigation=navigation;shared_canvas.touch_rotation=profile->touch_rotation/90;
+    shared_canvas.frames.alive=shared_canvas_alive;shared_canvas.frames.cooperate=shared_canvas_cooperate;
+    shared_owner=NULL;canvas_call=scene_opening=false;started=true;return true;
 }
-static bool quiesce(void){return !retained&&!active&&!pending&&!rasterizing&&!subscription&&!nav_claimed;}
-static void stop(void){if(!quiesce())return;started=false;display=NULL;touch=NULL;navigation=NULL;clock_api=NULL;profile=NULL;}
+static bool quiesce(void){return !retained&&!active&&!pending&&!rasterizing&&!subscription&&!nav_claimed&&!scene_opening&&!canvas_call&&shared_canvas_clean();}
+static void stop(void){if(!quiesce())return;started=false;shared_owner=NULL;shared_canvas.frames.display=NULL;shared_canvas.touch=NULL;shared_canvas.navigation=NULL;display=NULL;touch=NULL;navigation=NULL;clock_api=NULL;profile=NULL;}
 static const risc_driver_v2 driver={2,sizeof(driver),"scene-host",RISC_SCENE_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t abi){return abi==2?&driver:NULL;}
 
