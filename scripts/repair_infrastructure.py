@@ -11,7 +11,7 @@ def migrate(policy,state,target):
   if document['service']['contracts']!=target['service']['contracts']:raise ValueError('Contract migration requires explicit review')
   old=document['service']['providers'];new=target['service']['providers']
   if [(p['provider_id'],p['capability_id']) for p in old]!=[(p['provider_id'],p['capability_id']) for p in new]:raise ValueError('Provider cohort mismatch')
-  if old!=new and any((p['revision'],p['package_digest']) not in [(6,'e8e06f34552ecf0df59b3b871310ccf7c842e5e67b3ede755462d065c3c330ac'),(7,'5d9e0a0bdf42eea15b57aa6eb1842cf2cd75f67d7daf20899af406f3c1372d93')] for p in old):raise ValueError('Repair accepts only the published v1.4.1/v1.4.2 cohort')
+  if old!=new and any((p['revision'],p['package_digest']) not in [(6,'e8e06f34552ecf0df59b3b871310ccf7c842e5e67b3ede755462d065c3c330ac'),(7,'5d9e0a0bdf42eea15b57aa6eb1842cf2cd75f67d7daf20899af406f3c1372d93'),(8,'758ec62dfcefc6ef4f296a8b0b5f2de46a1f42fceccbbabb5676b7c4f2a82fef')] for p in old):raise ValueError('Repair accepts only the published v1.4.1/v1.4.2/v1.5.0 cohort')
   document['service']['providers']=copy.deepcopy(new)
  # Only implementation pins change. In particular, preserve the key that opens
  # an enrollment request already sealed to this device, and every pending entry.
