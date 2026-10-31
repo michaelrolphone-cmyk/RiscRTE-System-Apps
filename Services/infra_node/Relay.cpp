@@ -17,7 +17,7 @@ int Node::relayStep(){
  if(r["schema_version"]!=1||r["subscriptions"].size()>4||r["attachments"].size()>5){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_state_invalid");return 0;}
  if(!relayReady){busRequest(*this,Action::RelayConfig,"configuration");relayYield=true;return send(false);}
  if(now()>=relayHealthAt){
-  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["queue_depth"]=r["pending"].isNull()?0:1;response["last_error"]=relayError;response["subscriptions"]=r["subscriptions"].size();for(auto a:r["attachments"].as<JsonArrayConst>())response["last_seq"][a["channel"]|""]=a["cursor"];
+  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["queue_depth"]=r["pending"].isNull()?0:1;response["last_error"]=relayError[0]?relayError:(journal.state["protocol_rejections"]["last_error"]|"");response["subscriptions"]=r["subscriptions"].size();for(auto a:r["attachments"].as<JsonArrayConst>())response["last_seq"][a["channel"]|""]=a["cursor"];
   char key[160];snprintf(key,sizeof(key),"health:%.32s:%llu",boot,static_cast<unsigned long long>(now()));publication(*this,Action::RelayHealth,"relay.health",key,response.as<JsonObjectConst>());relayYield=true;return send(false);
  }
  if(auto step=enrollmentStep())return step;

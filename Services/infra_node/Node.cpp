@@ -115,7 +115,27 @@ int Node::probeResult(){
  }
  response.set(request); // freeze output before rebuilding canonical envelope
  if(externalJob){auto r=result(response.as<JsonObjectConst>());if(r<0)return r;auto p=journal.state["pending"][0];p["binding_id"]=bid;if(good&&!unchanged){auto cp=p["checkpoint"].to<JsonObject>();cp["etag"]=net.info.etag;cp["last_modified"]=net.info.last_modified;cp["digest"]=digestValue;}return r;}
- auto a=make(Action::Observe,"observation","publish");char source[200];snprintf(source,sizeof(source),"%s:%s",journal.state["participant_id"]|"",bid);a["source_id"]=source;a["source_generation"]=b["revision"];auto obs=a["observations"].to<JsonArray>().add<JsonObject>();obs["sequence"]=journal.state["checkpoints"][bid]["sequence"].as<uint64_t>()+1;obs["measured_at"]=net.wall(now())*1000;obs["clock_quality"]="sntp_sample_tls_verified";obs["unit"]="latest_state";obs["data"]=response.as<JsonObjectConst>();auto r=send(true);if(r<0)return r;auto p=journal.state["pending"][0];p["binding_id"]=bid;auto cp=p["checkpoint"].to<JsonObject>();cp.set(journal.state["checkpoints"][bid]);cp["sequence"]=obs["sequence"];if(good&&!unchanged){cp["etag"]=net.info.etag;cp["last_modified"]=net.info.last_modified;cp["digest"]=digestValue;}return r;
+ auto a=make(Action::Observe,"observation","publish");char source[200];snprintf(source,sizeof(source),"%s:%s",journal.state["participant_id"]|"",bid);a["source_id"]=source;a["source_generation"]=b["revision"];auto obs=a["observations"].to<JsonArray>().add<JsonObject>();
+ // An initial image can reuse an enrolled participant while losing its local
+ // observation checkpoint. Start a new empty checkpoint at verified wall time,
+ // not sequence 1, so it cannot collide with the previous installation's sample.
+ const uint64_t accepted=journal.state["checkpoints"][bid]["sequence"]|0ULL;
+ obs["sequence"]=accepted?accepted+1:net.wall(now())*1000;obs["measured_at"]=net.wall(now())*1000;obs["clock_quality"]="sntp_sample_tls_verified";obs["unit"]="latest_state";obs["data"]=response.as<JsonObjectConst>();auto r=send(true);if(r<0)return r;auto p=journal.state["pending"][0];p["binding_id"]=bid;auto cp=p["checkpoint"].to<JsonObject>();cp.set(journal.state["checkpoints"][bid]);cp["sequence"]=obs["sequence"];if(good&&!unchanged){cp["etag"]=net.info.etag;cp["last_modified"]=net.info.last_modified;cp["digest"]=digestValue;}return r;
+}
+int Node::rejectSavedRequest(){
+ auto p=journal.state["pending"][0];
+ // Never retire ambiguous custody, a different operation, or a read response.
+ if(!durable||response["mutation_outcome"]!="not_applied"||!text(request["operation_id"],128)||response["operation_id"]!=request["operation_id"]||p["request"]["operation_id"]!=request["operation_id"])return block(Phase::ProtocolBlocked,"rejection_custody_unconfirmed");
+ auto report=journal.state["protocol_rejections"].as<JsonObject>();if(report.isNull())report=journal.state["protocol_rejections"].to<JsonObject>();
+ auto items=report["items"].as<JsonArray>();if(items.isNull())items=report["items"].to<JsonArray>();if(items.size()==8)items.remove(0);
+ auto item=items.add<JsonObject>();item["action"]=static_cast<unsigned>(action);item["operation_id"]=request["operation_id"];item["code"]="INVALID_REQUEST";char hash[65];semanticDigest(request,hash);item["request_hash"]=hash;item["observed_at_ms"]=net.wall(now())*1000;
+ report["count"]=(report["count"]|0ULL)+1;report["last_error"]="participant_INVALID_REQUEST";
+ // Observation publishing has no execution custody. A fresh sample can recover
+ // after a reset checkpoint. Other actions retain their job/rotation state for
+ // operator reconciliation while relay and required maintenance keep running.
+ report["quarantined"]=action!=Action::Observe;
+ journal.state["pending"].as<JsonArray>().remove(0);durable=false;receiptChecked=false;relayHealthAt=0;relayYield=false;
+ return persist(Phase::Ready);
 }
 int Node::received(){
  if(relayAction())return relayReceived();
@@ -133,6 +153,7 @@ int Node::received(){
   if(!strcmp(code,"STALE_SESSION")){sessionId[0]=0;if(durable){if(response["mutation_outcome"]!="not_applied")return block(Phase::ProtocolBlocked,"stale_session_unknown_custody");return finish(Phase::Recover);}phase=Phase::Recover;return 1;}
   if(action==Action::Maintain&&!strcmp(code,"CURSOR_GAP")){cursors[bindingIndex][0]=0;status.gaps++;phase=Phase::Ready;return 1;}
   if(!strcmp(code,"REVISION_CONFLICT")&&(action==Action::PoolPut||action==Action::OfferPut)){return finish();}
+  if(!strcmp(code,"INVALID_REQUEST")&&durable)return rejectSavedRequest();
   if(!strcmp(code,"BUSY")||!strcmp(code,"RATE_LIMITED")||net.info.status_code>=500)return backoff("service_retry_same_identity");
   return block(Phase::ProtocolBlocked,code[0]?code:"service_rejected");
  }

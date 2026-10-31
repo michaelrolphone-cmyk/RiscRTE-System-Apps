@@ -9,18 +9,18 @@ def unframe(data):
  version,size,seq,crc,headercrc=struct.unpack('<IIQII',data[8:32])
  if version!=1 or size!=len(data)-32 or not seq or zlib.crc32(data[32:])!=crc or zlib.crc32(data[:28])!=headercrc:raise ValueError('Corrupt snapshot')
  return json.loads(data[32:]),seq
-def compile_seed(runtime,out):
- core=ROOT/'tools/littlefs'
+def compile_seed(runtime,out,core=None):
+ core=core or ROOT/'tools/littlefs'
  if not core.exists():core=runtime.resolve().parent/'native-build/esp-idf/risc_littlefs/pinned/littlefs'
  pins={'lfs.c':'0b9845f350c33aa448a916847d2246b76c8e296eed8e7e296ae0430242cfda6c','lfs.h':'a8c8d70f0863fbbc46ce17c5dc7673b40f1b3c9e7e10f3bf33fd28f03dc67703','lfs_util.c':'f2fbde533670560434bd9f5a547174cc7c5a4670a02c47b4bd85180dced8b2ec','lfs_util.h':'03e912a6e9894c9d10c61f5da22b89ebe0bb778af67972d7b67a5f160731bf72'}
  for name,expected in pins.items():
   if hashlib.sha256((core/name).read_bytes()).hexdigest()!=expected:raise ValueError('LittleFS source pin mismatch: '+name)
  subprocess.run(['cc','-std=c11','-O2','-DLFS_NO_DEBUG','-DLFS_NO_WARN','-DLFS_NO_ERROR','-I'+str(core),str(ROOT/'scripts/infrastructure_seed.c'),str(core/'lfs.c'),str(core/'lfs_util.c'),'-o',str(out)],check=True)
  return out
-def seed(runtime,policy,state,output,existing=None):
+def seed(runtime,policy,state,output,existing=None,sequence=1):
  if len(json.dumps(policy,separators=(',',':')).encode())>16384:raise ValueError('Policy exceeds16KiB')
- data=frame(state)
- if len(data)>49152:raise ValueError('State exceeds48KiB')
+ data=frame(state,sequence)
+ if len(data)>65536:raise ValueError('State exceeds64KiB')
  output.parent.mkdir(parents=True,exist_ok=True)
  with tempfile.TemporaryDirectory(prefix='infra-private-') as d:
   t=pathlib.Path(d);os.chmod(t,0o700);p=t/'policy.json';q=t/'state.bin';p.write_text(json.dumps(policy,separators=(',',':')));q.write_bytes(data);os.chmod(p,0o600);os.chmod(q,0o600)

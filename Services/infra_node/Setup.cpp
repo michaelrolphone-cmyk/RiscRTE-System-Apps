@@ -19,7 +19,7 @@ bool Node::acceptSetup(){
   // pairing files for first setup and replace only their implementation pins
   // with this image's pins. No arbitrary older or mixed provider set is trusted.
   bool upgradePins=false;
-  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||(strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17")&&strcmp(b,"923e7355aefbca031c51348f26f93508cf083d5d90234fce50ade5bc93cb2652")&&strcmp(b,"a3d8b291323087aaf93b2122437df5a54368c07dc3d187e54cac8f3dd9ec2910")))return false;upgradePins=true;}}
+  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||(strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17")&&strcmp(b,"923e7355aefbca031c51348f26f93508cf083d5d90234fce50ade5bc93cb2652")&&strcmp(b,"a3d8b291323087aaf93b2122437df5a54368c07dc3d187e54cac8f3dd9ec2910")&&strcmp(b,"524419c3197e5558febc4e7bcb4d1ce40b5ecdb7f7c08662bb30a3bf4b6be89e")))return false;upgradePins=true;}}
   char a[65],b[65];canonicalDigest(config["low_water"],a);canonicalDigest(pairing["policy"]["low_water"],b);if(strcmp(a,b))return false;
   request.set(pairing["policy"]);if(upgradePins)request["service"]["providers"]=config["service"]["providers"];
   // Migrate the exact shipped starvation-prone Scheduler timing, preserving
