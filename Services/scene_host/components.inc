@@ -611,7 +611,12 @@ static void component_focus(int direction){
     if(!count)return;
     current=current<0?(direction>0?0:(int)count-1):(current+(int)count+direction)%(int)count;
     unsigned target=list[current];path.focus[path.depth-1]=document.nodes[target].id;focus_part=0;
-    if(document.nodes[target].kind==RISC_COMPONENT_TAB_BAR||document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION){invalidate_view();rebuild_hits();return;}
+    if(document.nodes[target].kind==RISC_COMPONENT_TAB_BAR||document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION){
+        /* Color headers participate in the scrolled document; paper headers
+         * are fixed. Native focus must reveal its hit before Confirm. */
+        if(document.nodes[target].kind==RISC_COMPONENT_HEADER_ACTION&&!nc_paper())model->scroll=0;
+        invalidate_view();rebuild_hits();return;
+    }
     int x,y,w,h;nc_layout(target,&x,&y,&w,&h);
     int min=nc_paper()?nc_header_height():0;if(y-model->scroll<min)model->scroll=y-min;
     if(y+h-model->scroll>(int)height-tm_footer())model->scroll=y+h-(int)height+tm_footer();
