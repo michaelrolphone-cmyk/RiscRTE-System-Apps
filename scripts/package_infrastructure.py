@@ -26,7 +26,7 @@ def main():
  for name in ['provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs','relay-enroll.mjs','repair_infrastructure.py','inspect_infrastructure_state.py','infrastructure_read.c']:shutil.copy2(ROOT/'scripts'/name,scripts/name)
  if a.evidence:shutil.copytree(a.evidence,out/'evidence')
  docs=ROOT/'profiles/esp32s3-infrastructure';
- for name in ['README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md','RECOVERY-QUALIFICATION.md']:
+ for name in ['AGENT-MODES.md','README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md','RECOVERY-QUALIFICATION.md']:
   if (docs/name).exists():shutil.copy2(docs/name,out/name)
  offsets={'bootloader.bin':(0,0x8000),'partitions.bin':(0x8000,0x1000),'firmware.bin':(0x10000,0x260000),'appdata-unprovisioned.bin':(0x270000,0x80000),'store.bin':(0x2f0000,0x510000),'otadata.bin':(0xff0000,0x2000),'bank_state.bin':(0xff2000,0x2000)}
  files=[]
@@ -43,3 +43,4 @@ def main():
    if f.is_file():archive.write(f,out.name+'/'+f.relative_to(out).as_posix())
  print(json.dumps({'bundle':str(out)+'.zip','sha256':sha(pathlib.Path(str(out)+'.zip')),'size_bytes':pathlib.Path(str(out)+'.zip').stat().st_size},indent=2))
 if __name__=='__main__':main()
+

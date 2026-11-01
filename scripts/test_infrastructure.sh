@@ -37,6 +37,8 @@ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node
  "$build/relay" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/rejection.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/rejection"
  "$build/rejection" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/modes.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/modes"
+ "$build/modes" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
  node "$root/test/infra_node/enrollment_vectors.mjs" "$build/enrollment-vectors.json"
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/enrollment.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/enrollment"
  "$build/enrollment" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$build/enrollment-vectors.json"
@@ -54,3 +56,4 @@ if [[ -n "${CAPABILITIES_SOURCE:-}" && -n "${SCHEDULER_SOURCE:-}" ]];then
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/node.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/node"
  node "$root/scripts/test_infrastructure_service.mjs" "$build/node" "$CAPABILITIES_SOURCE" "$SCHEDULER_SOURCE"
 fi
+

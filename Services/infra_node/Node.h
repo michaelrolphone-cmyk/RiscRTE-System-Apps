@@ -10,7 +10,7 @@
 #include <RiscPlatformRecoveryV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
-enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified};
+enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified,RelayLease,RelayCheckpoint,RelayChallenge,RelayChallengeStatus};
 class Node {
  public:
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
@@ -28,6 +28,10 @@ class Node {
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
  bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0;char relayError[64]{};
  bool relayIdentityReady=false,relayVerificationPrepared=false;unsigned enrollmentIndex=0;uint64_t enrollmentPollAt=0;
+ uint64_t relayFence=0,relayLeaseUntil=0,relayLeaseRetryAt=0;char relayCheckpointHash[65]{};
+ bool sharedRelay()const{return config["relay"]["shared"].is<JsonObjectConst>();}
+ bool relayMode()const{return !strcmp(agentMode(configuration()),"explorer")||!strcmp(agentMode(configuration()),"continuity");}
+ bool roleBusy()const{return journal.state["pending"].size()||!journal.state["job"].isNull()||!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size();}
  char* encoded=nullptr;bool bindingDisabled[8]{};
  uint64_t now()const{return clock.monotonic_ms(clock.context);}
  JsonObjectConst configuration()const{return journal.state["configuration"].is<JsonObjectConst>()?journal.state["configuration"].as<JsonObjectConst>():config["configuration"].as<JsonObjectConst>();}
@@ -45,6 +49,7 @@ class Node {
   reason(p,why);return INFRA_BLOCKED;
  }
  int serviceRetry(const char* why){
+  if(action==Action::Maintain){reason(Phase::Ready,"maintenance_retry_on_binding_cadence");return 1;}
   // HTTP status precedes body parsing: gateways need not return our JSON.
   // Unknown effects stay in pending and are reconciled by original identity.
   const unsigned shift=serviceFailures<4?serviceFailures:4;
@@ -72,7 +77,7 @@ class Node {
   if(!text(journal.state["participant_id"],128)&&(!text(journal.state["bootstrap"],1024)||!text(journal.state["enrollment_id"],128)||!digest(journal.state["credential_sha256"])))return block(Phase::AuthBlocked,"enrollment_provisioning_required");
   configureCadence();loaded=true;reason(journal.state["setup_pending"]==true?Phase::SetupJoin:Phase::Connect,"network_connecting");return 1;
  }
- void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=false;cursors[i][0]=0;++i;}}
+ void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=!modeAllows(configuration(),b["capability"]|"");cursors[i][0]=0;++i;}}
  bool capacity()const{
   auto l=config["low_water"];
   return memory.internal_free>=l["internal_free"].as<uint64_t>()&&memory.internal_largest>=l["internal_largest"].as<uint64_t>()&&memory.dma_free>=l["dma_free"].as<uint64_t>()&&memory.dma_largest>=l["dma_largest"].as<uint64_t>()&&memory.psram_free>=l["psram_free"].as<uint64_t>()&&memory.psram_largest>=l["psram_largest"].as<uint64_t>()&&memory.stack_headroom>=l["stack_headroom"].as<uint32_t>();
@@ -82,7 +87,7 @@ class Node {
   // health. Preserve rollback eligibility until this boot has reconciled.
   if(serviceBlocked||serviceRetryAt||journal.state["protocol_rejections"]["quarantined"]==true||phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
   unsigned i=0;for(auto b:bindings()){
-   if(b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
+   if(modeAllows(configuration(),b["capability"]|"")&&b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
    ++i;
   }
   return true;
@@ -102,14 +107,15 @@ class Node {
  int finish(Phase next=Phase::Ready){if(durable){journal.state["pending"].as<JsonArray>().remove(0);durable=false;return persist(next);}phase=next;return 1;}
  int backoff(const char* why){if(!strcmp(why,"transport_open_failed")||!strcmp(why,"network_failure")||!strcmp(why,"outcome_unknown_same_identity")||!strcmp(why,"wifi_reconnect_backoff"))networkFailed();uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();/* Retry jitter is not a security nonce. Entropy failure must not stop recovery. */if(e!=0)random=uint32_t(now());waitUntil=now()+1000+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
  void transportReason(){char line[112];snprintf(line,sizeof(line),"%s action=%u phase=%u err=%d sent=%u recv=%u ms=%llu",net.outcome==RISC_HTTP_TIMEOUT?"http_timeout":"http_error",unsigned(action),net.info.phase,net.outcome,net.info.sent_bytes,net.info.received_bytes,static_cast<unsigned long long>(now()-net.started));reason(phase,line);}
- bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayEnrollmentVerified;}
+ bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayChallengeStatus;}
  bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject,bool approved=true);
  JsonObject relayPending(){auto r=journal.state["relay"];return relaySlot[0]?r["deliveries"][relaySlot].as<JsonObject>():r["pending"].as<JsonObject>();}
- int enrollmentVerify();int enrollmentVerified();int relayPost(JsonObjectConst);int relayStep();int relayTransmit();int relayReceived();int relayFailure(const char*);
+ int enrollmentVerify();int enrollmentVerified();int sentinelStep();int relayPost(JsonObjectConst);int relayStep();int relayTransmit();int relayReceived();int relayFailure(const char*);
  int rejectSavedRequest();
  int transmit(){
   if(relayAction())return relayTransmit();
   bool external=action==Action::Maintain||action==Action::Probe;
+  if(external&&!modeAllows(configuration(),bindingAt(bindingIndex)["capability"]|"")){phase=Phase::Ready;return externalJob?stopJob("mode_changed_before_dispatch"):1;}
   if(external&&externalJob&&(drain||now()+cadence[bindingIndex].timeout+1000>=leaseUntil))return stopJob("grant_or_cancellation_before_dispatch");
   if(external&&net.wall(now())*1000>=bindingAt(bindingIndex)["expires_at_ms"].as<uint64_t>()){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;return externalJob?stopJob("binding_expired_before_dispatch"):1;}
   auto e=external?endpoint(bindingIndex):config["service"].as<JsonObjectConst>();
@@ -161,6 +167,8 @@ class Node {
    // Relay requests have separate saved custody. A successful relay request
    // must not close the participant circuit or clear its diagnostic.
    if(int r=relayStep())return r;
+   if(!strcmp(agentMode(configuration()),"reconciler")||!strcmp(agentMode(configuration()),"continuity"))
+    for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&modeAllows(configuration(),b["capability"]|"")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
    return 1;
   }
   serviceRetryAt=0;
@@ -195,3 +203,4 @@ class Node {
  void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
 };
 }
+

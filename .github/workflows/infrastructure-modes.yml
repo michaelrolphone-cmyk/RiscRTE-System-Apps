@@ -1,0 +1,72 @@
+name: ESP32-S3 infrastructure modes
+on:
+  pull_request:
+    paths:
+      - 'Services/infra_node/**'
+      - 'test/infra_node/**'
+      - 'profiles/esp32s3-infrastructure/**'
+      - 'scripts/*infrastructure*'
+      - '.github/workflows/infrastructure-modes.yml'
+  push:
+    branches: [work/esp32-agent-modes]
+permissions:
+  contents: read
+concurrency:
+  group: infrastructure-modes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: apps
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: f1b0c43eaa18ff099393a98d3a679e8319c512dd
+          path: runtime
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Firmware regression and sanitizers
+        run: |
+          bash apps/scripts/test_infrastructure.sh
+          ASAN_OPTIONS=detect_leaks=0 SANITIZE=1 bash apps/scripts/test_infrastructure.sh
+  target:
+    runs-on: ubuntu-24.04
+    container: espressif/idf:v6.1@sha256:81893c71bb5e570088901f21def8684c25cd2a9020281bd01b843a7655edb18c
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: apps
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: f1b0c43eaa18ff099393a98d3a679e8319c512dd
+          path: runtime
+          persist-credentials: false
+      - name: Compile the complete product ELF cohort and verify imports
+        run: |
+          . "$IDF_PATH/export.sh"
+          python apps/scripts/build_infrastructure.py --runtime runtime --cc "$(command -v xtensa-esp-elf-gcc)" --output target-elf
+      - name: Repackage the verified unchanged native runtime
+        run: |
+          . "$IDF_PATH/export.sh"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' https://github.com/michaelrolphone-cmyk/RiscRTE/releases/download/esp32s3-infrastructure-v1.6.3/riscrte-esp32s3-infrastructure-v1.6.3-repair.zip --output base-repair.zip
+          python apps/scripts/package_infrastructure_modes.py --base-archive base-repair.zip --runtime runtime --elf target-elf --idf "$IDF_PATH" --output package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: infrastructure-modes-elf-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            target-elf/
+            package/release/
+          if-no-files-found: error

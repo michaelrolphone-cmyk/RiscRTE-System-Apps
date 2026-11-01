@@ -11,6 +11,7 @@ static void projections(JsonObject a,JsonArrayConst subscriptions,const char* on
 static JsonObjectConst target(JsonObjectConst p){return p["targets"][p["index"]|0].as<JsonObjectConst>();}
 int Node::relayPost(JsonObjectConst event){
  auto p=relayPending();auto s=target(p);
+ if(sharedRelay()&&p["dispatching"]!=true){p["dispatching"]=true;p["attempts"]=(p["attempts"]|0)+1;p["not_before_ms"]=net.wall(now())*1000+60000;return persist(Phase::Ready);}
  // Recheck after authenticated event load, including custody saved before an
  // upgrade. A stale subscription pin cannot activate a different assignment.
  if(!relayActivationMatches(s,event)){p["terminal"]=true;p["error_code"]="activation_target_mismatch";return persist(Phase::Ready);}
@@ -19,23 +20,49 @@ int Node::relayPost(JsonObjectConst event){
  else relayBody(request.to<JsonObject>(),config["relay"]["relay_id"],s,event);
  relayYield=true;return send(false);
 }
+int Node::sentinelStep(){
+ if(config["relay"].isNull()||relayBlocked||now()<relayRetryAt)return 0;
+ const uint64_t wall=net.wall(now())*1000;if(!wall)return 0;
+ auto r=journal.state["relay"].as<JsonObject>();if(r.isNull()){r=journal.state["relay"].to<JsonObject>();r["schema_version"]=1;r["subscriptions"]=config["relay"]["subscriptions"];r["subscription_revision"]=0;r["attachments"].to<JsonArray>();r["pending"]=nullptr;r["allowed_origins"]=config["relay"]["allowed_origins"];r["webhook_credential_refs"]=config["relay"]["webhook_credential_refs"];r["secrets"].to<JsonObject>();r["deliveries"].to<JsonObject>();for(const char* k:{"subscriptions","allowed_origins","webhook_credential_refs"})if(r[k].isNull())r[k].to<JsonArray>();}
+ auto s=r["sentinel"].as<JsonObject>();if(s.isNull())s=r["sentinel"].to<JsonObject>();
+ if(!s["result"].isNull()){
+  if(serviceBlocked||serviceRetryAt||journal.state["pending"].size())return 0;
+  response.set(s["result"]);auto a=make(Action::Observe,"observation","publish");char source[200];snprintf(source,sizeof(source),"%s:sentinel.roundtrip",journal.state["participant_id"]|"");a["source_id"]=source;a["source_generation"]=configuration()["revision"];auto obs=a["observations"].to<JsonArray>().add<JsonObject>();auto cp=journal.state["checkpoints"]["sentinel.roundtrip"];obs["sequence"]=cp["sequence"].as<uint64_t>()?cp["sequence"].as<uint64_t>()+1:wall;obs["measured_at"]=wall;obs["clock_quality"]="sntp_sample_tls_verified";obs["unit"]="latest_state";obs["data"]=response;auto rc=send(true);if(rc<0)return rc;auto p=journal.state["pending"][0];p["binding_id"]="sentinel.roundtrip";p["checkpoint"]["sequence"]=obs["sequence"];s.remove("result");s.remove("id");s["next_at"]=wall+300000;return rc;
+ }
+ if(wall<s["next_at"].as<uint64_t>())return 0;
+ if(!text(s["id"],128)){char challenge[128];id(challenge,sizeof(challenge));s["id"]=challenge;s["phase"]="start";s["started"]=wall;return persist(Phase::Ready);}
+ auto a=busRequest(*this,s["phase"]=="start"?Action::RelayChallenge:Action::RelayChallengeStatus,s["phase"]=="start"?"challenge":"challenge_status");a["challenge_id"]=s["id"];relayYield=true;return send(false);
+}
 int Node::relayStep(){
- auto policy=config["relay"].as<JsonObjectConst>();if(policy.isNull()||relayBlocked||now()<relayRetryAt)return 0;
+ if(!strcmp(agentMode(configuration()),"sentinel"))return sentinelStep();
+ auto policy=config["relay"].as<JsonObjectConst>();if(!relayMode()||policy.isNull()||relayBlocked||now()<relayRetryAt)return 0;
  if(!relayPolicy(policy)){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_policy_invalid");return 0;}
  auto r=journal.state["relay"].as<JsonObject>();
  if(r.isNull()){r=journal.state["relay"].to<JsonObject>();r["schema_version"]=1;r["subscriptions"]=policy["subscriptions"];r["subscription_revision"]=0;r["attachments"].to<JsonArray>();r["pending"]=nullptr;r["allowed_origins"]=policy["allowed_origins"];r["webhook_credential_refs"]=policy["webhook_credential_refs"];r["secrets"].to<JsonObject>();r["deliveries"].to<JsonObject>();for(const char* k:{"subscriptions","allowed_origins","webhook_credential_refs"})if(r[k].isNull())r[k].to<JsonArray>();return persist(Phase::Ready);}
  if(r["schema_version"]!=1||r["subscriptions"].size()>RelaySubscriptionsMax||r["attachments"].size()>RelayAttachmentsMax||r["deliveries"].size()>RelaySubscriptionsMax){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_state_invalid");return 0;}
+ if(!strcmp(agentMode(configuration()),"continuity")&&!sharedRelay()){copy(relayError,sizeof(relayError),"standby_requires_shared_relay");return 0;}
+ if(sharedRelay()){
+  if(!relayFence||now()+60000>=relayLeaseUntil){
+   if(now()<relayLeaseRetryAt)return 0;
+   // Give an already-running primary first opportunity on standby boot.
+   if(!relayLeaseRetryAt&&!strcmp(agentMode(configuration()),"continuity")){relayLeaseRetryAt=now()+30000;return 0;}
+   response.clear();response["subscriptions"]=policy["subscriptions"];response["allowed_origins"]=policy["allowed_origins"];char hash[65];canonicalDigest(response.as<JsonObjectConst>(),hash);
+   auto a=busRequest(*this,Action::RelayLease,"lease");a["session"]=boot;a["configuration_digest"]=hash;relayYield=true;return send(false);
+  }
+  response.clear();for(const char* k:{"pending","deliveries","attachments"})response[k]=r[k];char hash[65];canonicalDigest(response.as<JsonObjectConst>(),hash);
+  if(strcmp(hash,relayCheckpointHash)){auto a=busRequest(*this,Action::RelayCheckpoint,"checkpoint");a["custody"]=response;relayYield=true;return send(false);}
+ }
  if(!relayReady){relayUpgradePending=!r["pending"].isNull()&&r["custody_version"]!=2;auto a=busRequest(*this,Action::RelayConfig,"configuration");if(r["pending"].isNull()){a["custody_version"]=2;auto subs=a["subscriptions"].to<JsonArray>();for(auto s:r["subscriptions"].as<JsonArrayConst>()){auto v=subs.add<JsonObject>();v["id"]=s["id"];auto channels=v["channels"].to<JsonArray>();if(s["channels"].is<JsonArrayConst>())channels.set(s["channels"]);else channels.add(s["channel"]);}}relayYield=true;return send(false);}
- if(!relayIdentityReady){if(auto step=enrollmentStep())return step;}
+ if(!sharedRelay()&&!relayIdentityReady){if(auto step=enrollmentStep())return step;}
  if(now()>=relayHealthAt){
-  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["queue_depth"]=r["deliveries"].size()+(r["pending"].isNull()?0:1);response["last_error"]=relayError[0]?relayError:(serviceError[0]?serviceError:(journal.state["protocol_rejections"]["last_error"]|""));response["subscriptions"]=r["subscriptions"].size();
+  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["mode"]=agentMode(configuration());response["lease_fence"]=relayFence;response["shared_custody"]=sharedRelay();response["queue_depth"]=r["deliveries"].size()+(r["pending"].isNull()?0:1);response["last_error"]=relayError[0]?relayError:(serviceError[0]?serviceError:(journal.state["protocol_rejections"]["last_error"]|""));response["subscriptions"]=r["subscriptions"].size();
   const char* resetNames[]={"unknown","power_on","external","software","panic","interrupt_watchdog","task_watchdog","watchdog","deep_sleep","brownout","sdio","usb","jtag","efuse","power_glitch","cpu_lockup"};response["reset_reason"]=recoveryHealth.reset_reason<16?resetNames[recoveryHealth.reset_reason]:"unknown";response["reset_reason_code"]=recoveryHealth.reset_reason;response["boot_count"]=recoveryHealth.boot_count;response["boot_count_valid"]=recoveryHealth.boot_count_valid==1;response["free_heap"]=recoveryHealth.free_heap;response["min_free_heap"]=recoveryHealth.min_free_heap;response["largest_free_block"]=recoveryHealth.largest_free_block;response["wifi_rssi"]=recoveryHealth.wifi_rssi;response["consecutive_network_failures"]=networkFailures;response["backlog_policy"]="ordered_catch_up";
 
   for(auto a:r["attachments"].as<JsonArrayConst>()){const char* c=a["channel"]|"";uint64_t cursor=a["cursor"];auto seq=response["last_seq"][c];if(seq.isNull()||cursor<seq.as<uint64_t>())response["last_seq"][c]=cursor;}
   auto health=response["subscription_health"].to<JsonArray>();for(auto s:r["subscriptions"].as<JsonArrayConst>()){auto h=health.add<JsonObject>();h["id"]=s["id"];h["enabled"]=relayEnabled(s,net.wall(now())*1000);auto old=r["health"][s["id"]|""];h["last_delivered_seq"]=old["last_delivered_seq"].as<uint64_t>();h["consecutive_failures"]=old["consecutive_failures"].as<unsigned>();h["last_error_code"]=old["last_error_code"]|"";}
   char key[160];snprintf(key,sizeof(key),"health:%.32s:%llu",boot,static_cast<unsigned long long>(now()));publication(*this,Action::RelayHealth,"relay.health",key,response.as<JsonObjectConst>());relayYield=true;return send(false);
  }
- if(auto step=enrollmentStep())return step;
+ if(!sharedRelay())if(auto step=enrollmentStep())return step;
  // All destinations and migrated v1 custody use this same delivery transition
  // loop. A slot owns one subscription; another slot can run during its backoff.
  const unsigned fair=relayFair;
@@ -48,11 +75,11 @@ int Node::relayStep(){
   if(index>=p["targets"].size()){
    auto a=busRequest(*this,Action::RelayAck,"ack");a["attachment_id"]=r["attachments"][relayIndex]["id"];a["event_cursor"]=p["cursor"];relayYield=true;return send(false);
   }
-  if(net.wall(now())*1000<p["not_before_ms"].as<uint64_t>())continue;
+  if(p["dispatching"]!=true&&net.wall(now())*1000<p["not_before_ms"].as<uint64_t>())continue;
   auto s=target(p);if(!relaySubscription(s,r["allowed_origins"],r["webhook_credential_refs"])||!secretsReady(*this,s)){p["terminal"]=true;p["error_code"]="relay_secret_or_subscription_invalid";}
   if(!relayEnabled(s,net.wall(now())*1000)){p["terminal"]=true;p["error_code"]="subscription_expired_or_revoked";}
   const char* message=p["event"]["id"]|"";
-  if((p["attempts"]|0)>=5||p["terminal"]==true){
+  if(((p["attempts"]|0)>=5&&p["dispatching"]!=true)||p["terminal"]==true){
    response.clear();response["relay_id"]=policy["relay_id"];response["subscription_id"]=s["id"];response["message_id"]=message;response["channel"]=p["event"]["channel"];response["seq"]=p["event"]["seq"];response["attempts"]=p["attempts"];response["reason"]=p["error_code"]|"webhook_delivery_failed";
    char key[65];canonicalDigest(response.as<JsonObjectConst>(),key);publication(*this,Action::RelayDeadletter,"relay.deadletter",key,response.as<JsonObjectConst>());relayYield=true;return send(false);
   }
@@ -72,6 +99,12 @@ int Node::relayTransmit(){
  auto scope=action==Action::RelayVerify?journal.state["relay"]["verification"].as<JsonObjectConst>():journal.state["relay"].as<JsonObjectConst>();
  if(post&&(!relaySubscription(sub,scope["allowed_origins"],scope["webhook_credential_refs"])||!secretsReady(*this,sub)))return relayFailure("relay_secret_missing");
  const char* bearer=credential(policy["credential_ref"]|"");if(!post&&!bearer[0]){relayBlocked=true;return relayFailure("relay_bus_credential_missing");}
+ if(sharedRelay()&&action!=Action::RelayLease&&action!=Action::RelayChallenge&&action!=Action::RelayChallengeStatus){
+  // Monotonic deadline includes network response time and drift allowance.
+  // Never begin an HTTP effect that could outlive this executor's lease.
+  if(!relayFence||now()+ServiceRequestTimeoutMs+2000>=relayLeaseUntil){relayFence=relayLeaseUntil=0;phase=Phase::Ready;return 1;}
+  if(!post){request["lease"]["session"]=boot;request["lease"]["fence"]=relayFence;}
+ }
  const size_t bytes=measureJson(request);if(request.overflowed()||bytes>16384)return relayFailure("relay_request_bound");serializeJson(request,encoded,16385);
  char auth[1032]{},site[1032]{},signature[104]{},timestamp[24]{};risc_http_header_v2 headers[8]{};unsigned count=0;headers[count++]={"Content-Type","application/json"};headers[count++]={"Accept","application/json"};
  if(post){snprintf(timestamp,sizeof(timestamp),"%llu",static_cast<unsigned long long>(net.wall(now())));if(!net.wall(now()))return relayFailure("relay_clock_unavailable");const char* id=action==Action::RelayVerify?journal.state["relay"]["verification"]["id"]|"":p["event"]["id"]|"";
@@ -86,24 +119,47 @@ int Node::relayTransmit(){
  const auto rc=net.begin(post?(sub["url"]|""):(policy["url"]|""),post&&relayMcp(sub)?RISC_HTTP_POST_PUBLIC:RISC_HTTP_POST,headers,count,encoded,bytes,post?4096:16384,ServiceRequestTimeoutMs,config["service"]["time_server"],now());Portal::wipe(auth,sizeof(auth));Portal::wipe(site,sizeof(site));Portal::wipe(signature,sizeof(signature));
  if(rc==-2)return retained();if(rc<0)return relayFailure("relay_transport_open");if(rc)return 1;status.requested++;reason(Phase::Receive,post?"relay_webhook_in_flight":"relay_bus_in_flight");return 1;
 }
-static void receipt(Node& n,bool accepted,const char* error){auto p=n.relayPending();auto s=target(p);unsigned attempts=(p["attempts"]|0)+1;p["attempts"]=attempts;auto r=p["receipt"].to<JsonObject>();r["relay_id"]=n.config["relay"]["relay_id"];r["subscription_id"]=s["id"];r["message_id"]=p["event"]["id"];char id[65];relayInvocationId(s,p["event"],id);r["invocation_id"]=id;r["attempt"]=attempts;r["http_status"]=n.net.info.status_code;r["observed_at"]=n.net.wall(n.now())*1000;p["accepted"]=accepted;p["error_code"]=error;auto h=n.journal.state["relay"]["health"][s["id"]|""];h["consecutive_failures"]=accepted?0:(h["consecutive_failures"]|0)+1;h["last_error_code"]=error;if(accepted)h["last_delivered_seq"]=p["event"]["seq"];}
+static void receipt(Node& n,bool accepted,const char* error){auto p=n.relayPending();auto s=target(p);unsigned attempts=(p["attempts"]|0)+(n.sharedRelay()?0:1);p["attempts"]=attempts;p.remove("dispatching");auto r=p["receipt"].to<JsonObject>();r["relay_id"]=n.config["relay"]["relay_id"];r["subscription_id"]=s["id"];r["message_id"]=p["event"]["id"];char id[65];relayInvocationId(s,p["event"],id);r["invocation_id"]=id;r["attempt"]=attempts;r["http_status"]=n.net.info.status_code;r["observed_at"]=n.net.wall(n.now())*1000;p["accepted"]=accepted;p["error_code"]=error;auto h=n.journal.state["relay"]["health"][s["id"]|""];h["consecutive_failures"]=accepted?0:(h["consecutive_failures"]|0)+1;h["last_error_code"]=error;if(accepted)h["last_delivered_seq"]=p["event"]["seq"];}
 int Node::relayFailure(const char* why){
  if(!strcmp(why,"relay_network_failure")||!strcmp(why,"relay_transport_open"))networkFailed();
  copy(relayError,sizeof(relayError),why);relayYield=true;phase=Phase::Ready;
  if(action==Action::RelayVerify){net.outcome=-1;return enrollmentVerified();}
  if(action==Action::RelayPost){auto p=relayPending();receipt(*this,false,why);if(relayMcp(target(p))&&(net.info.status_code==410||net.info.status_code==413)){p["terminal"]=true;p["error_code"]=net.info.status_code==410?"callback_gone":"payload_rejected";if(net.info.status_code==410)for(auto sub:journal.state["relay"]["subscriptions"].as<JsonArray>())if(sub["id"]==target(p)["id"])sub["enabled"]=false;}const unsigned failures=p["attempts"];const uint32_t delays[]={5000,30000,120000,600000};p["not_before_ms"]=net.wall(now())*1000+(failures<=4?delays[failures-1]:0);return persist(Phase::Ready);}
+ if(action==Action::RelayLease){relayFence=relayLeaseUntil=0;}
  if(action==Action::RelayLoad){relayPollAt[relayIndex]=now()+5000;auto p=relayPending();p["not_before_ms"]=net.wall(now())*1000+5000;return persist(Phase::Ready);}
  if(action==Action::RelayPoll){relayPollAt[relayIndex]=now()+5000;return 1;}
  relayRetryAt=now()+5000;return 1;
 }
 int Node::relayReceived(){
  if(action==Action::RelayVerify)return enrollmentVerified();
+ if(sharedRelay()&&net.info.status_code==409){relayFence=relayLeaseUntil=0;relayLeaseRetryAt=now()+10000;relayReady=false;return relayFailure("relay_lease_or_configuration_rejected");}
  if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;const auto result=relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");if(net.outcome&&result==1)transportReason();return result;}
  networkSucceeded();
  auto r=journal.state["relay"].as<JsonObject>();auto p=relayPending();
  if(action==Action::RelayPost){receipt(*this,true,"");relayError[0]=0;status.completed++;return persist(Phase::Ready);}
  if(!parse(response,net.body,net.size)||response["protocol_version"]!="relay/1"||response["status"]!="completed")return relayFailure("relay_response_invalid");
  auto data=response["result"].as<JsonObjectConst>();status.completed++;
+ if(action==Action::RelayChallenge||action==Action::RelayChallengeStatus){
+  auto s=r["sentinel"].as<JsonObject>();if(data["challenge_id"]!=s["id"]||!text(data["state"],16))return relayFailure("sentinel_receipt_mismatch");
+  if(data["state"]=="pending"&&net.wall(now())*1000<s["started"].as<uint64_t>()+120000){s["phase"]="poll";s["next_at"]=net.wall(now())*1000+15000;}
+  else {s["result"]=data;s["result"]["mode"]="sentinel";s["result"]["healthy"]=data["state"]=="verified";s["result"]["meaning"]="authenticated_relay_callback_received";s["result"]["business_completion_proven"]=false;}
+  return persist(Phase::Ready);
+ }
+ if(action==Action::RelayLease){
+  if(data["acquired"]!=true){relayFence=relayLeaseUntil=0;relayLeaseRetryAt=now()+10000;phase=Phase::Ready;return 1;}
+  if(data["executor_id"]!=config["relay"]["shared"]["executor_id"]||!integer(data["fence"],1,9007199254740991ULL)||data["lease_ms"]!=120000)return relayFailure("relay_lease_invalid");
+  const auto fence=data["fence"].as<uint64_t>();const bool changed=fence!=relayFence;
+  relayFence=fence;relayLeaseUntil=net.started+118000;relayLeaseRetryAt=now()+10000;
+  if(changed){
+   auto c=data["custody"].as<JsonObjectConst>();if(!c.isNull()){
+    if(!keys(c,{"pending","deliveries","attachments"})||!c["attachments"].is<JsonArrayConst>()||c["attachments"].size()>RelayAttachmentsMax||!c["deliveries"].is<JsonObjectConst>()||c["deliveries"].size()>RelaySubscriptionsMax||measureJson(c)>12000)return relayFailure("relay_custody_invalid");
+    for(const char* k:{"pending","deliveries","attachments"})r[k]=c[k];
+   }else{r["pending"]=nullptr;r["deliveries"].to<JsonObject>();r["attachments"].to<JsonArray>();}
+   for(auto kv:r["deliveries"].as<JsonObject>()){auto p=kv.value().as<JsonObject>();if(p["dispatching"]==true){p.remove("dispatching");p["error_code"]="previous_dispatch_outcome_unknown";}}
+   relayReady=false;relayCheckpointHash[0]=0;return persist(Phase::Ready);
+  }phase=Phase::Ready;return 1;
+ }
+ if(action==Action::RelayCheckpoint){if(data["saved"]!=true||data["fence"].as<uint64_t>()!=relayFence)return relayFailure("relay_checkpoint_unconfirmed");canonicalDigest(request["arguments"]["custody"],relayCheckpointHash);phase=Phase::Ready;return 1;}
  if(isEnrollment(action))return enrollmentReceived(data);
  if(action==Action::RelayConfig){
   if(data["relay_id"]!=config["relay"]["relay_id"]||!data["attachments"].is<JsonArrayConst>()||data["attachments"].size()>RelayAttachmentsMax||!data["attachments"].size())return relayFailure("relay_configuration_mismatch");
@@ -146,3 +202,4 @@ int Node::relayReceived(){
  return persist(Phase::Ready);
 }
 }
+

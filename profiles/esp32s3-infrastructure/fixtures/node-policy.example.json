@@ -36,29 +36,29 @@
       {
         "capability_id": "scheduler.drive",
         "provider_id": "esp32s3-infra-scheduler-drive",
-        "revision": 14,
-        "definition_digest": "c7e6a495408c9e757d049aa58d2228b8b789f20cef9405b0a75a8aa78c259a73",
+        "revision": 15,
+        "definition_digest": "0c93b3a4e9041a5d7f91bfa6ce4eb6a4f121fb9d28388f302367b62e5c5af044",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "service.reconcile",
         "provider_id": "esp32s3-infra-service-reconcile",
-        "revision": 14,
-        "definition_digest": "40d93709b7d6817243605518428599aebd24cbc2d7de9dbf8bb24f275a82a971",
+        "revision": 15,
+        "definition_digest": "33d64bf2c7539da215602515a7e7d0a1f216335c061406f7a8477e22162484f2",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "service.health.observe",
         "provider_id": "esp32s3-infra-service-health-observe",
-        "revision": 14,
-        "definition_digest": "5d6441921377b23687163e207ffd26a3fa6828de9499c6a8309fd1663369ddaa",
+        "revision": 15,
+        "definition_digest": "a9bd4e0e215f44a6fc14258916be6d64664b7a811ffebd299a2f6b4f8c82cccd",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       },
       {
         "capability_id": "source.poll",
         "provider_id": "esp32s3-infra-source-poll",
-        "revision": 14,
-        "definition_digest": "61ecac777551b1b56d7acfe2ad7ed470f8cb5206b9651017716a9424d3963b6d",
+        "revision": 15,
+        "definition_digest": "8221fdb54cad5eb8c00cadcad98e3f294e6294656fc6b496d6385e93ff31cce8",
         "package_digest": "0000000000000000000000000000000000000000000000000000000000000000"
       }
     ]

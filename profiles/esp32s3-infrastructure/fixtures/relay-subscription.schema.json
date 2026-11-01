@@ -12,7 +12,8 @@
         "capabilities.events",
         "bpmn.events",
         "scheduler.events",
-        "rhizome.events"
+        "rhizome.events",
+        "relay.diagnostics"
       ]
     },
     "match": {
@@ -98,6 +99,9 @@
     "enabled": {
       "type": "boolean"
     },
+    "deduplicates": {
+      "type": "boolean"
+    },
     "channels": {
       "type": "array",
       "items": {
@@ -105,7 +109,8 @@
           "capabilities.events",
           "bpmn.events",
           "scheduler.events",
-          "rhizome.events"
+          "rhizome.events",
+          "relay.diagnostics"
         ]
       },
       "maxItems": 4

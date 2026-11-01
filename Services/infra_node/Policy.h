@@ -21,8 +21,13 @@ inline bool binding(JsonObjectConst b){
  for(auto field:b["projection"].as<JsonArrayConst>())if(!text(field,64))return false;
  return (b["operation"]=="observe"||b["operation"]=="poll")&&integer(b["expected_status_min"],100,599)&&integer(b["expected_status_max"],b["expected_status_min"].as<unsigned>(),599);
 }
+// Missing mode is the original all-purpose deployment, for existing journals.
+inline const char* agentMode(JsonObjectConst c){return c["mode"]|"explorer";}
+inline bool validMode(const char* m){return !strcmp(m,"explorer")||!strcmp(m,"sentinel")||!strcmp(m,"reconciler")||!strcmp(m,"continuity");}
+inline bool modeAllows(JsonObjectConst c,const char* capability){const char* m=agentMode(c);if(!strcmp(m,"explorer"))return true;if(!strcmp(m,"sentinel"))return !strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll");return !strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile");}
 inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t contact){
- if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
+ if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"},{"mode"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
+ if((!c["mode"].isNull()&&!text(c["mode"],16))||!validMode(agentMode(c)))return false;
  if(!keys(c["retry"],{"initial_ms","maximum_ms","full_jitter"})||c["retry"]["initial_ms"]!=1000||c["retry"]["maximum_ms"]!=300000||c["retry"]["full_jitter"]!=true||!keys(c["telemetry"],{"interval_ms","diagnostic_bytes"})||!integer(c["telemetry"]["interval_ms"],15000,86400000)||c["telemetry"]["diagnostic_bytes"]!=16384||!keys(c["update_policy"],{"mode"})||c["update_policy"]["mode"]!="serial-owner")return false;
  Cadence cadences[8]{};size_t n=0;
  for(auto v:c["bindings"].as<JsonArrayConst>()){
@@ -31,7 +36,7 @@ inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t co
   const auto e=find(endpoints,"endpoint_policy_id",b["endpoint_policy_id"]);if(e.isNull()||e["capability"]!=b["capability"]||e["credential_ref"]!=b["credential_ref"])return false;
   for(auto scope:b["authorization_scope"].as<JsonArrayConst>()){bool allowed=false;for(auto permitted:e["authorization_scope"].as<JsonArrayConst>())allowed|=scope==permitted;if(!allowed)return false;}
   bool enabled=false;for(auto p:c["enabled_providers"].as<JsonArrayConst>())enabled|=p==b["capability"];if(!enabled)return false;
-  cadences[n].interval=b["cadence_ms"];cadences[n].timeout=b["timeout_ms"];cadences[n++].required=b["required"];
+  cadences[n].interval=b["cadence_ms"];cadences[n].timeout=b["timeout_ms"];cadences[n++].required=b["required"]==true&&modeAllows(c,b["capability"]|"");
  }
  // Reserve one5s control contact and one5s inventory refresh every90s.
  return schedulable(cadences,n,5000+(contact*5000+89999)/90000,contact);
@@ -57,3 +62,4 @@ inline bool policy(JsonDocument& p){
 }
 
 #include "RelayPolicy.h"
+
