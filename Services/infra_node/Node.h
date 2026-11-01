@@ -49,6 +49,7 @@ class Node {
   reason(p,why);return INFRA_BLOCKED;
  }
  int serviceRetry(const char* why){
+  if(action==Action::Maintain){reason(Phase::Ready,"maintenance_retry_on_binding_cadence");return 1;}
   // HTTP status precedes body parsing: gateways need not return our JSON.
   // Unknown effects stay in pending and are reconciled by original identity.
   const unsigned shift=serviceFailures<4?serviceFailures:4;
@@ -166,6 +167,8 @@ class Node {
    // Relay requests have separate saved custody. A successful relay request
    // must not close the participant circuit or clear its diagnostic.
    if(int r=relayStep())return r;
+   if(!strcmp(agentMode(configuration()),"reconciler")||!strcmp(agentMode(configuration()),"continuity"))
+    for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&modeAllows(configuration(),b["capability"]|"")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
    return 1;
   }
   serviceRetryAt=0;

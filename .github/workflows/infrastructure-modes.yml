@@ -58,8 +58,15 @@ jobs:
         run: |
           . "$IDF_PATH/export.sh"
           python apps/scripts/build_infrastructure.py --runtime runtime --cc "$(command -v xtensa-esp-elf-gcc)" --output target-elf
+      - name: Repackage the verified unchanged native runtime
+        run: |
+          . "$IDF_PATH/export.sh"
+          curl --fail --location --retry 3 --proto '=https' --proto-redir '=https' https://github.com/michaelrolphone-cmyk/RiscRTE/releases/download/esp32s3-infrastructure-v1.6.3/riscrte-esp32s3-infrastructure-v1.6.3-repair.zip --output base-repair.zip
+          python apps/scripts/package_infrastructure_modes.py --base-archive base-repair.zip --runtime runtime --elf target-elf --idf "$IDF_PATH" --output package
       - uses: actions/upload-artifact@v4
         with:
           name: infrastructure-modes-elf-${{ github.event.pull_request.head.sha || github.sha }}
-          path: target-elf/
+          path: |
+            target-elf/
+            package/release/
           if-no-files-found: error

@@ -9,6 +9,10 @@ int main(int argc,char** argv){
   }
   std::string disk;serializeJson(n.journal.state,disk);n.phase=Phase::Stopped;n.dispose();
  }
+ cfg["configuration"]["mode"]="reconciler";{
+  Node n;init(n,cfg);n.configureCadence();n.journal.state["credentials"]["scheduler-main-credential"]="test-maintenance";n.loaded=true;n.serviceBlocked=true;n.serviceRetryAt=ticks+60000;n.serviceFailures=3;strcpy(n.serviceError,"participant_unavailable");assert(n.advance()==1&&n.action==Action::Maintain);
+  reply(n,R"({"protocol_version":"maintenance/1","status":"completed","data":{"coalescible":true,"target_epoch":"test","progress":{"items_examined":1,"items_advanced":1}}})");assert(n.serviceBlocked&&n.serviceFailures==3&&n.serviceRetryAt>ticks);assert(n.cadence[n.bindingIndex].lastCompleted==ticks);n.phase=Phase::Stopped;n.dispose();
+ }
  cfg["configuration"]["mode"]="unknown";assert(!policy(cfg));cfg["configuration"]["mode"]=7;assert(!policy(cfg));cfg["configuration"].remove("mode");assert(policy(cfg));
  cfg["relay"]["schema_version"]=1;cfg["relay"]["relay_id"]="group";cfg["relay"]["url"]="https://bus.example/v1/relay/call";cfg["relay"]["credential_ref"]="relay-token";cfg["relay"]["site_credential_ref"]="";cfg["relay"]["shared"]["executor_id"]="backup";cfg["relay"]["subscriptions"].to<JsonArray>();cfg["relay"]["allowed_origins"].to<JsonArray>();cfg["relay"]["webhook_credential_refs"].to<JsonArray>();cfg["configuration"]["mode"]="continuity";
  Node n;init(n,cfg);assert(n.relayStep()==1);saved(n);assert(n.relayStep()==0);ticks+=30000;assert(n.relayStep()==1&&n.action==Action::RelayLease);
