@@ -7,11 +7,13 @@
 #include "RiscInfraNodeV1.h"
 #include <RiscPlatformClockV1.h>
 #include <RiscEntropyV1.h>
+#include <RiscPlatformRecoveryV1.h>
 namespace Infra {
 enum class Phase:uint32_t {Cold,Recover,Connect,Nonce,Ready,Send,Receive,Save,Backoff,Drain,Stopped,AuthBlocked,CapacityBlocked,StorageBlocked,Retained,ProtocolBlocked,SetupStart,SetupPortal,SetupSave,SetupFinish,SetupLeave,SetupJoin,SetupRetry};
 enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,OfferPut,Assignment,Plan,Claim,Prepare,Renew,Result,Stop,Observe,Maintain,Probe,Desired,Review,ProviderGet,DesiredReport,Inventory,ReceiptLookup,RotationPrepare,RotationActivate,RotationConfirm,Snapshot,Control,Progress,Heartbeat,BindingRenew,BindingResult,BindingStop,RejectPrepare,RelayConfig,RelayPoll,RelayPost,RelayDeadletter,RelayAck,RelayHealth,RelayIdentity,RelayEnrollmentReview,RelayEnrollmentComplete,RelayLoad,RelayReceipt,RelayVerify,RelayEnrollmentVerified};
 class Node {
  public:
+ risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
  Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
  Allocator configMemory{196608},exchangeMemory{262144},responseMemory{393216};JsonDocument config{&configMemory},request{&exchangeMemory},response{&responseMemory};
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
@@ -79,7 +81,7 @@ class Node {
  bool durableAction(unsigned a)const{switch(static_cast<Action>(a)){case Action::Enroll:case Action::Claim:case Action::Prepare:case Action::Result:case Action::Stop:case Action::Observe:case Action::DesiredReport:case Action::RotationPrepare:case Action::RotationActivate:case Action::RotationConfirm:case Action::BindingResult:case Action::BindingStop:case Action::RejectPrepare:return true;default:return false;}}
  int resume(){auto p=journal.state["pending"][0];if(!p["request"].is<JsonObject>()||!durableAction(p["action"].as<unsigned>()))return block(Phase::StorageBlocked,"pending_record_invalid");if(!receiptChecked&&p["action"]!=static_cast<unsigned>(Action::Enroll)){auto a=make(Action::ReceiptLookup,"inspect","operation_get");a["lookup_operation_id"]=p["request"]["operation_id"];return send(false);}receiptChecked=false;request.set(p["request"]);action=static_cast<Action>(p["action"].as<unsigned>());durable=true;reason(Phase::Send,"replay_same_operation_identity");return 1;}
  int finish(Phase next=Phase::Ready){if(durable){journal.state["pending"].as<JsonArray>().remove(0);durable=false;return persist(next);}phase=next;return 1;}
- int backoff(const char* why){uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();if(e!=0)return block(Phase::ProtocolBlocked,"entropy_unavailable");waitUntil=now()+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
+ int backoff(const char* why){if(!strcmp(why,"transport_open_failed")||!strcmp(why,"network_failure")||!strcmp(why,"outcome_unknown_same_identity")||!strcmp(why,"wifi_reconnect_backoff"))networkFailed();uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();/* Retry jitter is not a security nonce. Entropy failure must not stop recovery. */if(e!=0)random=uint32_t(now());waitUntil=now()+1000+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
  bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayEnrollmentVerified;}
  bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject,bool approved=true);
  JsonObject relayPending(){auto r=journal.state["relay"];return relaySlot[0]?r["deliveries"][relaySlot].as<JsonObject>():r["pending"].as<JsonObject>();}
@@ -104,7 +106,20 @@ class Node {
   if(r==-2)return retained();if(r<0)return backoff("transport_open_failed");if(r)return 1;status.requested++;reason(Phase::Receive,"request_in_flight");return 1;
  }
  int stopJob(const char* why){if(text(journal.state["job"]["binding_id"],128)){auto a=make(Action::BindingStop,"execution","binding_report");a["binding_id"]=journal.state["job"]["binding_id"];a["generation"]=journal.state["job"]["generation"];a["kind"]="stopped";a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}if(!text(journal.state["job"]["attempt_id"],128)){journal.state["job"]=nullptr;return persist(Phase::Ready);}auto a=make(Action::Stop,"execution","stop_report");attempt(a);a["evidence"]["quiescent"]=true;a["evidence"]["process_identity"]=boot;a["evidence"]["reason"]=why;return send(true);}
+ void networkFailed(){if(!networkFailures)networkFailedSince=now();if(networkFailures<UINT32_MAX)++networkFailures;}
+ void networkSucceeded(){networkFailures=0;networkFailedSince=0;}
+ void supervise(){
+  if(!recovery.feed)return;const auto at=now();
+  if(phase!=supervisedPhase){supervisedPhase=phase;phaseSince=at;}
+  // Idle/backoff/setup are legitimate long waits. Other asynchronous phases
+  // have their own deadline; a stuck phase stops feeding the hardware timer.
+  const bool waiting=phase==Phase::Ready||phase==Phase::Backoff||phase==Phase::SetupPortal;
+  if(waiting||at-phaseSince<30000)recovery.feed(recovery.context);
+  if(recovery.snapshot){recoveryHealth.struct_size=sizeof(recoveryHealth);recovery.snapshot(recovery.context,&recoveryHealth);}
+  if(networkFailures>=6&&at-networkFailedSince>=120000&&phase!=Phase::Save&&recovery.restart)recovery.restart(recovery.context);
+ }
  int advance(){
+  supervise();
   if(phase==Phase::Retained||journal.retained||net.retained)return retained();
   if(phase==Phase::Cold)return bootstrap();
   if(phase>=Phase::SetupStart)return setupStep();
@@ -112,7 +127,7 @@ class Node {
   if(phase==Phase::Send)return transmit();
   if(phase==Phase::Receive){auto r=net.advance(now());if(r==-2)return retained();if(r)return 1;return received();}
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
-  if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;setupRecovery=true;reason(Phase::SetupRetry,"wifi_setup_recovery");return 1;}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
+  if(phase==Phase::Connect){if(drain){phase=Phase::Drain;return 1;}auto r=station.connect(station.context,config["wifi"]["ssid"],credential(config["wifi"]["credential_ref"]));if(r==-2)return retained();if(r<0){r=station.close(station.context);if(r==-2)return retained();if(r)return 1;return backoff("wifi_reconnect_backoff");}if(r)return 1;phase=boot[0]?Phase::Recover:Phase::Nonce;return 1;}
   if(phase==Phase::Nonce){uint8_t nonce[32];auto r=entropy.fill(entropy.context,nonce,sizeof(nonce));if(r==RISC_ENTROPY_RETAINED)return retained();if(r==RISC_ENTROPY_UNAVAILABLE||r==RISC_ENTROPY_BUSY)return 1;if(r)return block(Phase::ProtocolBlocked,"entropy_failed");for(unsigned i=0;i<32;++i)snprintf(boot+i*2,3,"%02x",nonce[i]);copy(status.boot_id,sizeof(status.boot_id),boot);phase=Phase::Recover;return 1;}
   if(phase==Phase::Recover&&journal.state["protocol_rejections"]["quarantined"]==true)phase=Phase::Ready;
   if(phase==Phase::Recover){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();if(journal.state["pending"].size())return resume();auto job=journal.state["job"];if(!job.isNull()&&text(job["attempt_id"],128))return stopJob("reboot_or_reconnect_requires_reconciliation");if(snapshotNeeded&&text(journal.state["participant_id"],128))return snapshotStep();rebootRecovery=false;phase=Phase::Ready;}

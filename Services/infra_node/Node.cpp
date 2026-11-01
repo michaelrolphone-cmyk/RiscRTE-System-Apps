@@ -160,7 +160,7 @@ int Node::received(){
  if(!missing&&(response["status"]!="completed"&&response["status"]!="accepted"))return block(Phase::ProtocolBlocked,"unexpected_response_status");
  if(durable&&(!response["receipt"].is<JsonObjectConst>()||response["receipt"]["operation_id"]!=request["operation_id"]||!digest(response["receipt"]["request_hash"])))return block(Phase::ProtocolBlocked,"durable_receipt_missing_or_mismatched");
  if(durable){char expected[65];semanticDigest(request,expected);if(response["receipt"]["request_hash"]!=expected)return block(Phase::ProtocolBlocked,"receipt_semantic_hash_mismatch");}
- failures=0;status.completed++;
+ networkSucceeded();failures=0;status.completed++;
  switch(action){
  case Action::RotationPrepare:if(d["credential_sha256"]!=journal.state["rotation"]["credential_sha256"]||d["state"]!="prepared")return block(Phase::AuthBlocked,"rotation_prepare_mismatch");journal.state["rotation"]["phase"]="prepared";return finish();
  case Action::RotationActivate:{auto r=journal.state["rotation"];if(d["phase"]!="activated"||d["credential_sha256"]!=r["credential_sha256"])return block(Phase::AuthBlocked,"rotation_activate_mismatch");journal.state["credentials"][config["service"]["credential_ref"]|""]=journal.state["credentials"][r["new_credential_ref"]|""];journal.state["credential_generation"]=d["credential_epoch"];r["phase"]="activated";sessionId[0]=0;return finish();}
