@@ -107,6 +107,9 @@ static desk_kv_slot desk_kv_slots[16];
 static void desk_kv_reset(void){memset(desk_kv_slots,0,sizeof(desk_kv_slots));}
 static int32_t desk_kv_result(int32_t rc) {
  if(rc!=RISC_KEY_VALUE_OK && rc!=RISC_KEY_VALUE_NOT_FOUND && rc!=RISC_KEY_VALUE_BUFFER_SMALL &&
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+    rc!=RISC_KEY_VALUE_BUSY && /* Public no-I/O retry, including cached reading load. */
+#endif
     rc!=RISC_KEY_VALUE_INVALID && rc!=RISC_KEY_VALUE_IO)portable_desk_adapter_retain();
  return rc;
 }
@@ -135,6 +138,23 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
  if(!desk_runtime->acquire(name,version,instance,grant)) {
+#ifdef PORTABLE_HOME_PROVISION
+  /* Existing product-authorized unique optional volume; never add authority. */
+  if(!strcmp(name,"storage.volume") && version==1 && instance==0 &&
+     grant->struct_size==sizeof(*grant) && !grant->api && !grant->slot && !grant->generation) {
+   if(risc_runtime_get_api(1)!=desk_runtime){native_sleep_retained=native_custody_retained=failed=true;gauge=NULL;}
+   return false;
+  }
+#endif
+#ifdef PORTABLE_QUICK_REMOTE_BATTERY
+  /* A declared optional passive receiver may be cleanly absent. Never erase
+   * a partial grant or relax the exact native invocation fence. */
+  if(!strcmp(name,RISC_BLUETOOTH_SENSORS_CAPABILITY)&&version==1&&instance==0&&
+     grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
+   if(risc_runtime_get_api(1)!=desk_runtime){native_sleep_retained=native_custody_retained=failed=true;gauge=NULL;}
+   return false;
+  }
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
      grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
