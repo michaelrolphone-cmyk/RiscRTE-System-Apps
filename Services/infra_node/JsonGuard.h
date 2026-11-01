@@ -14,17 +14,18 @@ namespace Infra {
 // A bounded, immutable source is required; no heap, ELF load or storage I/O.
 // Object keys must be unescaped printable ASCII. This prevents escaped-key
 // aliases such as "id" and "\u0069d" from bypassing duplicate detection.
-class JsonGuard {
+template<size_t MaxDepth = 16, size_t MaxActiveKeys = 64>
+class BasicJsonGuard {
  public:
   static constexpr size_t kMaxBytes = RISC_APP_DATA_FILE_MAX;
-  static constexpr size_t kMaxDepth = 16;
-  static constexpr size_t kMaxActiveKeys = 64;
+  static constexpr size_t kMaxDepth = MaxDepth;
+  static constexpr size_t kMaxActiveKeys = MaxActiveKeys;
   static constexpr size_t kMaxKeyBytes = 63;
   static constexpr size_t kMaxArrayItems = 128;
 
   // A caller may explicitly supply its own bounded array policy. Ordinary
   // package/board metadata keeps the default 128-item limit.
-  JsonGuard(const char* data, size_t length, size_t maxArrayItems = kMaxArrayItems)
+  BasicJsonGuard(const char* data, size_t length, size_t maxArrayItems = kMaxArrayItems)
       : data_(data), length_(length), maxArrayItems_(maxArrayItems) {}
 
   bool objectOnly() {
@@ -209,6 +210,11 @@ class JsonGuard {
     }
   }
 };
+
+using JsonGuard = BasicJsonGuard<>;
+// A journal embeds already-bounded service documents inside custody envelopes.
+// Its aggregate lexical budget is distinct from a single network document.
+using JournalJsonGuard = BasicJsonGuard<24, 256>;
 
 inline bool safePackageJsonObject(const char* data, size_t bytes) {
   return JsonGuard(data, bytes).objectOnly();

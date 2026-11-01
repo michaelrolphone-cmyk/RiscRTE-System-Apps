@@ -64,7 +64,7 @@ class Node {
   if(r||bytes>PolicyMax||!bytes)return block(Phase::StorageBlocked,"policy_missing_or_oversize");
   r=b.read(b.context,"node-policy.json",revision,encoded,16384,&bytes,&revision);if(r==RISC_APP_DATA_RETAINED)return retained();if(r==RISC_APP_DATA_BUSY||r==RISC_APP_DATA_STALE)return 1;
   if(r||!parse(config,encoded,bytes)||!policy(config))return block(Phase::StorageBlocked,"policy_invalid");
-  r=journal.load();if(r==-2)return retained();if(r>0)return 1;if(r<0)return block(Phase::StorageBlocked,"state_missing_corrupt_or_schema");
+  r=journal.load();if(r==-2)return retained();if(r>0)return 1;if(r<0){char why[112];snprintf(why,sizeof(why),"%s rc=%d size=%u",journal.loadError,int(journal.loadBackendStatus),unsigned(journal.loadBytes));return block(Phase::StorageBlocked,why);}
   if(!journal.state["setup_policy"].isNull()){config.set(journal.state["setup_policy"]);if(!policy(config))return block(Phase::StorageBlocked,"saved_setup_policy_invalid");}
   if(!Infra::configuration(configuration(),config["endpoints"],config["service"]["contact_interval_ms"]))return block(Phase::StorageBlocked,"configuration_invalid");
   for(auto kv:journal.state["credentials"].as<JsonObjectConst>())if(!text(kv.value(),1024))return block(Phase::StorageBlocked,"credential_invalid");

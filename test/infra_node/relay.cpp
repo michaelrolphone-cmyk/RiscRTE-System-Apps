@@ -24,7 +24,7 @@ int main(int argc,char** argv){assert(argc==2);std::ifstream f(argv[1]);std::str
  // the same delivery identity, leaving receiver deduplication to settle effect.
  n->phase=Phase::Ready;n->journal.state["relay"]["pending"]=nullptr;n->journal.state["relay"]["attachments"][0]["cursor"]=0;receive(*n,event);std::string committed;serializeJson(n->journal.state,committed);
  assert(n->relayStep()==1&&n->action==Action::RelayPost);reply(*n,"",204);const auto originalBody=sent;const auto originalKey=headers["Idempotency-Key"];assert(n->phase==Phase::Save);
- auto power=std::make_unique<Node>();init(*power,cfg);assert(parse(power->journal.state,committed.data(),committed.size()));power->relayReady=true;power->relayIdentityReady=true;power->relayHealthAt=ticks+180000;n->phase=Phase::Stopped;n->dispose();n=std::move(power);
+ auto power=std::make_unique<Node>();init(*power,cfg);assert(parseJournal(power->journal.state,committed.data(),committed.size()));power->relayReady=true;power->relayIdentityReady=true;power->relayHealthAt=ticks+180000;n->phase=Phase::Stopped;n->dispose();n=std::move(power);
  assert(n->relayStep()==1&&n->action==Action::RelayPost);reply(*n,"",204);assert(sent==originalBody&&headers["Idempotency-Key"]==originalKey);saved(*n);
  // An incoming subscription must not select the high-privilege bus credential
  // merely because that secret exists on the node.

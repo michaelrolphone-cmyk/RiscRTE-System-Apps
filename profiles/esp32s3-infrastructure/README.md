@@ -70,3 +70,19 @@ python3 scripts/inspect_infrastructure_state.py --bundle . --flash /PRIVATE/BACK
 ```
 
 The catalog's current remote flash operation accepts only full images and erases saved data. It cannot perform this paired repair or read the running private journal. Hardware recovery is unverified until the repaired device's serial diagnostics, heartbeat and enrollment decision are observed.
+
+For `state=13` / `state_missing_corrupt_or_schema`, collect a private backup
+before attempting a repair. Close the browser's serial connection, then use the
+existing installer (replace PORT with the board's local serial port):
+
+```sh
+python3 scripts/install_infrastructure.py preflight --port PORT --backup private-backup
+python3 scripts/inspect_infrastructure_state.py --flash private-backup/flash-before.bin --diagnose
+```
+
+Preflight reads flash and enters the ROM loader; it performs no flash writes.
+The backup contains credentials and must remain private. The diagnostic output
+contains only sizes, checksum status and structural limits. It can distinguish a
+legacy parser-bound mismatch from some corruption cases without publishing the
+journal. It is not a full schema verdict. Keep the original backup if extraction
+fails; never erase or replace it with an unprovisioned image as recovery.

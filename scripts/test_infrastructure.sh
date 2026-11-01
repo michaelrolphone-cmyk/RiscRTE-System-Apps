@@ -4,6 +4,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 runtime="${RISC_RUNTIME_ROOT:-$root/../runtime}"
 RISC_RUNTIME_ROOT="$runtime" bash "$root/scripts/test_infrastructure_station.sh"
 node "$root/test/infra_node/portal_page.mjs"
+python3 "$root/scripts/test_infrastructure_diagnostics.py"
 build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 flags=(-std=c++17 -Wno-deprecated-declarations -I"$runtime/lib/ArduinoJson/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$root/Services/infra_node")

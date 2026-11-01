@@ -26,10 +26,10 @@ struct Allocator:ArduinoJson::Allocator{
  void deallocate(void* p)override{if(p){auto q=static_cast<size_t*>(p)-1;used-=*q;std::free(q);}}
  void* reallocate(void* p,size_t n)override{if(!p)return allocate(n);auto q=static_cast<size_t*>(p)-1;const auto old=*q;if(n>old&&n-old>limit-used)return nullptr;auto v=static_cast<size_t*>(std::realloc(q,n+sizeof(size_t)));if(!v)return nullptr;used=used-old+n;if(used>peak)peak=used;*v=n;return v+1;}
 };
-inline bool valueBounds(JsonVariantConst v,unsigned depth=0){
- if(depth>16)return false;
- if(v.is<JsonObjectConst>()){if(v.size()>64)return false;for(JsonPairConst p:v.as<JsonObjectConst>())if(!valueBounds(p.value(),depth+1))return false;}
- else if(v.is<JsonArrayConst>()){if(v.size()>128)return false;for(auto e:v.as<JsonArrayConst>())if(!valueBounds(e,depth+1))return false;}
+inline bool valueBounds(JsonVariantConst v,unsigned depth=0,unsigned maxDepth=16){
+ if(depth>maxDepth)return false;
+ if(v.is<JsonObjectConst>()){if(v.size()>64)return false;for(JsonPairConst p:v.as<JsonObjectConst>())if(!valueBounds(p.value(),depth+1,maxDepth))return false;}
+ else if(v.is<JsonArrayConst>()){if(v.size()>128)return false;for(auto e:v.as<JsonArrayConst>())if(!valueBounds(e,depth+1,maxDepth))return false;}
  else if(v.is<const char*>()){if(std::strlen(v.as<const char*>())>4096)return false;}
  else if(v.is<double>()&&!v.is<int64_t>()&&!v.is<uint64_t>())return false;
  else if(v.is<int64_t>()&&(v.as<int64_t>()>9007199254740991LL||v.as<int64_t>()< -9007199254740991LL))return false;
@@ -38,6 +38,10 @@ inline bool valueBounds(JsonVariantConst v,unsigned depth=0){
 inline bool parse(JsonDocument& doc,const char* data,size_t size){
  doc.clear();if(!size||size>StateMax||!JsonGuard(data,size).objectOnly())return false;
  return !deserializeJson(doc,data,size,DeserializationOption::NestingLimit(16))&&!doc.overflowed()&&valueBounds(doc.as<JsonVariantConst>());
+}
+inline bool parseJournal(JsonDocument& doc,const char* data,size_t size){
+ doc.clear();if(!size||size>StateMax||!JournalJsonGuard(data,size).objectOnly())return false;
+ return !deserializeJson(doc,data,size,DeserializationOption::NestingLimit(24))&&!doc.overflowed()&&valueBounds(doc.as<JsonVariantConst>(),0,24);
 }
 inline bool keys(JsonObjectConst o,std::initializer_list<const char*> required,std::initializer_list<const char*> optional={}){
  if(o.isNull())return false;for(auto k:required)if(!o.containsKey(k))return false;
