@@ -2,6 +2,11 @@
 static unsigned feeds=0,restarts=0;
 static int feed(void*){++feeds;return 0;}
 static void restart(void*){++restarts;}
+static uint64_t openedAt=0;static uint32_t requestBudget=0;
+static int delayedOpen(void* c,const risc_http_request_v2* r,uint64_t* token){openedAt=ticks;requestBudget=r->timeout_ms;return openHttp(c,r,token);}
+static int delayedAdvance(void*,uint64_t){if(ticks-openedAt>=requestBudget)return RISC_HTTP_TIMEOUT;return ticks-openedAt>=12000?RISC_HTTP_EOF:RISC_HTTP_AGAIN;}
+static int delayedRead(void*,uint64_t,void*,uint32_t,uint32_t* count){*count=0;return ticks-openedAt>=12000?RISC_HTTP_EOF:RISC_HTTP_AGAIN;}
+static int delayedInfo(void*,uint64_t,risc_http_response_v2* info){info->sent_bytes=128;info->phase=RISC_HTTP_PHASE_RECEIVE;return 0;}
 int main(int argc,char** argv){assert(argc==2);std::ifstream f(argv[1]);std::string bytes{std::istreambuf_iterator<char>(f),{}};JsonDocument cfg;assert(parse(cfg,bytes.data(),bytes.size()));auto n=std::make_unique<Node>();init(*n,cfg);
  n->recovery={1,sizeof(n->recovery),nullptr,feed,nullptr,restart};
  // Entropy isn't needed for non-secret retry jitter. Do not enter permanent
@@ -15,6 +20,25 @@ int main(int argc,char** argv){assert(argc==2);std::ifstream f(argv[1]);std::str
  n->networkFailures=6;n->networkFailedSince=ticks;ticks+=120000;n->phase=Phase::Save;n->supervise();assert(!restarts);n->phase=Phase::Ready;n->supervise();assert(restarts==1);n->networkSucceeded();n->supervise();assert(restarts==1);
  // HTTP provider that returns AGAIN forever still reaches bounded close.
  auto& t=n->net;t.token=1;t.started=ticks;t.timeoutMs=5000;t.api.close=[](void*,uint64_t)->int32_t{return 0;};assert(t.advance(ticks+6000)==0&&t.outcome==RISC_HTTP_TIMEOUT&&!t.token);
+ // Both service and relay transactions survive a 12-second response. The old
+ // five-second policy aborted these valid slow-day requests before completion.
+ n->config["service"]["credential_ref"]="relay-token";
+ n->net.api.open=delayedOpen;n->net.api.advance=delayedAdvance;n->net.api.read=delayedRead;n->net.api.info=delayedInfo;
+ for(bool relay:{false,true}){
+  if(relay){auto rp=n->config["relay"].to<JsonObject>();rp["url"]="https://bus.example/v1/relay/call";rp["credential_ref"]="relay-token";n->action=Action::RelayHealth;n->request.clear();}
+  else n->make(Action::Open,"participant","open_session");
+  n->send(false);assert(n->transmit()==1&&n->phase==Phase::Receive);
+  for(unsigned i=0;i<11;++i){ticks+=1000;assert(t.advance(ticks)==1&&t.token);}
+  ticks+=1000;assert(t.advance(ticks)==0&&!t.token&&t.outcome==0);
+ }
+ // Diagnostics preserve the transport outcome and request identity without
+ // including credentials, URLs or request bodies; bounded retries still count.
+ n->action=Action::Open;n->net.outcome=RISC_HTTP_TIMEOUT;n->net.info.sent_bytes=128;
+ const unsigned failures=n->networkFailures;assert(n->received()==1&&n->phase==Phase::Backoff);
+ assert(n->networkFailures==failures+1&&strstr(n->status.reason,"http_timeout")&&strstr(n->status.reason,"action=2")&&strstr(n->status.reason,"sent=128"));
+ assert(!strstr(n->status.reason,"secret")&&!strstr(n->status.reason,"https:"));
+ n->net.outcome=RISC_HTTP_NETWORK;n->net.info.sent_bytes=0;assert(n->received()==1&&strstr(n->status.reason,"http_error"));
+ n->net.api.open=openHttp;n->phase=Phase::Ready;n->networkSucceeded();
  // Production health carries bounded hardware diagnostics without secrets.
  auto rp=n->config["relay"].to<JsonObject>();rp["schema_version"]=1;rp["relay_id"]="node";rp["url"]="https://bus.example/v1/relay/call";rp["credential_ref"]="relay-token";rp["site_credential_ref"]="";
  auto state=n->journal.state["relay"].to<JsonObject>();state["schema_version"]=1;state["subscriptions"].to<JsonArray>();state["deliveries"].to<JsonObject>();state["pending"]=nullptr;state["attachments"].to<JsonArray>().add<JsonObject>()["id"]="attachment";state["attachments"][0]["channel"]="capabilities.events";state["attachments"][0]["cursor"]=0;

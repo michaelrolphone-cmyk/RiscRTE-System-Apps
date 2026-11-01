@@ -82,6 +82,7 @@ class Node {
  int resume(){auto p=journal.state["pending"][0];if(!p["request"].is<JsonObject>()||!durableAction(p["action"].as<unsigned>()))return block(Phase::StorageBlocked,"pending_record_invalid");if(!receiptChecked&&p["action"]!=static_cast<unsigned>(Action::Enroll)){auto a=make(Action::ReceiptLookup,"inspect","operation_get");a["lookup_operation_id"]=p["request"]["operation_id"];return send(false);}receiptChecked=false;request.set(p["request"]);action=static_cast<Action>(p["action"].as<unsigned>());durable=true;reason(Phase::Send,"replay_same_operation_identity");return 1;}
  int finish(Phase next=Phase::Ready){if(durable){journal.state["pending"].as<JsonArray>().remove(0);durable=false;return persist(next);}phase=next;return 1;}
  int backoff(const char* why){if(!strcmp(why,"transport_open_failed")||!strcmp(why,"network_failure")||!strcmp(why,"outcome_unknown_same_identity")||!strcmp(why,"wifi_reconnect_backoff"))networkFailed();uint32_t random=0;auto e=entropy.fill(entropy.context,&random,sizeof(random));if(e==RISC_ENTROPY_RETAINED)return retained();/* Retry jitter is not a security nonce. Entropy failure must not stop recovery. */if(e!=0)random=uint32_t(now());waitUntil=now()+1000+retryDelay(failures++,random);reason(Phase::Backoff,why);return 1;}
+ void transportReason(){char line[112];snprintf(line,sizeof(line),"%s action=%u phase=%u err=%d sent=%u recv=%u ms=%llu",net.outcome==RISC_HTTP_TIMEOUT?"http_timeout":"http_error",unsigned(action),net.info.phase,net.outcome,net.info.sent_bytes,net.info.received_bytes,static_cast<unsigned long long>(now()-net.started));reason(phase,line);}
  bool relayAction()const{return action>=Action::RelayConfig&&action<=Action::RelayEnrollmentVerified;}
  bool enrollmentQueue(JsonObjectConst);int enrollmentStep();int enrollmentReceived(JsonObjectConst);int enrollmentApply(JsonObject,bool approved=true);
  JsonObject relayPending(){auto r=journal.state["relay"];return relaySlot[0]?r["deliveries"][relaySlot].as<JsonObject>():r["pending"].as<JsonObject>();}
@@ -101,7 +102,7 @@ class Node {
   if(method==RISC_HTTP_POST){h[count++]={"Content-Type","application/json"};bytes=serializeJson(request,encoded,16385);}
   if(action==Action::Enroll)h[count++]={"X-Enrollment-Id",journal.state["enrollment_id"]|""};
   if(action==Action::Probe){auto cp=journal.state["checkpoints"][bindingAt(bindingIndex)["binding_id"]|""];if(text(cp["etag"],512))h[count++]={"If-None-Match",cp["etag"]};if(text(cp["last_modified"],128))h[count++]={"If-Modified-Since",cp["last_modified"]};}
-  auto r=net.begin(e["url"]|"",method,h,count,encoded,bytes,external?bindingAt(bindingIndex)["response_max_bytes"].as<unsigned>():32768,external?cadence[bindingIndex].timeout:5000,config["service"]["time_server"],now());
+  auto r=net.begin(e["url"]|"",method,h,count,encoded,bytes,external?bindingAt(bindingIndex)["response_max_bytes"].as<unsigned>():32768,external?cadence[bindingIndex].timeout:ServiceRequestTimeoutMs,config["service"]["time_server"],now());
   volatile char* secret=authorization;for(size_t i=0;i<sizeof(authorization);++i)secret[i]=0;secret=siteAuthorization;for(size_t i=0;i<sizeof(siteAuthorization);++i)secret[i]=0;
   if(r==-2)return retained();if(r<0)return backoff("transport_open_failed");if(r)return 1;status.requested++;reason(Phase::Receive,"request_in_flight");return 1;
  }

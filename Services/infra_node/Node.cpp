@@ -139,7 +139,7 @@ int Node::rejectSavedRequest(){
 }
 int Node::received(){
  if(relayAction())return relayReceived();
- if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();return backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");}
+ if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();const auto result=backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");if(result==1)transportReason();return result;}
  if(action==Action::Probe){cadence[bindingIndex].lastCompleted=now();return probeResult();}
  if(net.info.status_code==401||net.info.status_code==403){if(action==Action::Maintain){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;copy(status.reason,sizeof(status.reason),"binding_auth_blocked");return 1;}return block(Phase::AuthBlocked,"participant_auth_blocked");}
  if(!parse(response,net.body,net.size))return block(Phase::ProtocolBlocked,"malformed_or_oversize_response");

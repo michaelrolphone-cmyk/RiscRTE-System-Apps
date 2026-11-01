@@ -83,7 +83,7 @@ int Node::relayTransmit(){
   }else if(text(sub["signing_credential_ref"],128)){uint8_t mac[32];const char* key=credential(sub["signing_credential_ref"]);relayMac(reinterpret_cast<const uint8_t*>(key),strlen(key),nullptr,timestamp,encoded,bytes,mac);strcpy(signature,"sha256=");for(unsigned i=0;i<32;++i)snprintf(signature+7+2*i,3,"%02x",mac[i]);Portal::wipe(mac,sizeof(mac));headers[count++]={"X-Relay-Timestamp",timestamp};headers[count++]={"X-Relay-Signature",signature};}
   if(!sub["auth"].isNull()){if(count>=8)return relayFailure("relay_header_capacity");headers[count++]={sub["auth"]["header"]|"",credential(sub["auth"]["credential_ref"]|"")};}
  }else{snprintf(auth,sizeof(auth),"Bearer %s",bearer);headers[count++]={"Authorization",auth};const char* gate=credential(policy["site_credential_ref"]|"");if(gate[0]){snprintf(site,sizeof(site),"Bearer %s",gate);headers[count++]={"OAI-Sites-Authorization",site};}}
- const auto rc=net.begin(post?(sub["url"]|""):(policy["url"]|""),post&&relayMcp(sub)?RISC_HTTP_POST_PUBLIC:RISC_HTTP_POST,headers,count,encoded,bytes,post?4096:16384,isEnrollment(action)?25000:5000,config["service"]["time_server"],now());Portal::wipe(auth,sizeof(auth));Portal::wipe(site,sizeof(site));Portal::wipe(signature,sizeof(signature));
+ const auto rc=net.begin(post?(sub["url"]|""):(policy["url"]|""),post&&relayMcp(sub)?RISC_HTTP_POST_PUBLIC:RISC_HTTP_POST,headers,count,encoded,bytes,post?4096:16384,ServiceRequestTimeoutMs,config["service"]["time_server"],now());Portal::wipe(auth,sizeof(auth));Portal::wipe(site,sizeof(site));Portal::wipe(signature,sizeof(signature));
  if(rc==-2)return retained();if(rc<0)return relayFailure("relay_transport_open");if(rc)return 1;status.requested++;reason(Phase::Receive,post?"relay_webhook_in_flight":"relay_bus_in_flight");return 1;
 }
 static void receipt(Node& n,bool accepted,const char* error){auto p=n.relayPending();auto s=target(p);unsigned attempts=(p["attempts"]|0)+1;p["attempts"]=attempts;auto r=p["receipt"].to<JsonObject>();r["relay_id"]=n.config["relay"]["relay_id"];r["subscription_id"]=s["id"];r["message_id"]=p["event"]["id"];char id[65];relayInvocationId(s,p["event"],id);r["invocation_id"]=id;r["attempt"]=attempts;r["http_status"]=n.net.info.status_code;r["observed_at"]=n.net.wall(n.now())*1000;p["accepted"]=accepted;p["error_code"]=error;auto h=n.journal.state["relay"]["health"][s["id"]|""];h["consecutive_failures"]=accepted?0:(h["consecutive_failures"]|0)+1;h["last_error_code"]=error;if(accepted)h["last_delivered_seq"]=p["event"]["seq"];}
@@ -98,7 +98,7 @@ int Node::relayFailure(const char* why){
 }
 int Node::relayReceived(){
  if(action==Action::RelayVerify)return enrollmentVerified();
- if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;return relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");}
+ if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;const auto result=relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");if(net.outcome&&result==1)transportReason();return result;}
  networkSucceeded();
  auto r=journal.state["relay"].as<JsonObject>();auto p=relayPending();
  if(action==Action::RelayPost){receipt(*this,true,"");relayError[0]=0;status.completed++;return persist(Phase::Ready);}

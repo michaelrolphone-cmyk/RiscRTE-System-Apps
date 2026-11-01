@@ -11,6 +11,9 @@ namespace Infra {
 // The backend validates buffer capacity as well as the committed file length.
 // Keep the complete framed journal within the native storage contract.
 constexpr size_t StateMax=RISC_APP_DATA_FILE_MAX,PolicyMax=16384,RecordMax=4096,PendingMax=8,BindingsMax=8;
+// Slow Internet routinely exceeds nine seconds. Bound the entire DNS/TLS and
+// request/response transaction at the native V2 maximum, independently of WDT.
+constexpr uint32_t ServiceRequestTimeoutMs=30000;
 inline uint32_t crc32(const void* data,size_t n){uint32_t c=~0u;auto p=static_cast<const uint8_t*>(data);while(n--){c^=*p++;for(unsigned j=0;j<8;++j)c=(c>>1)^(0xedb88320u&(0u-(c&1)));}return ~c;}
 inline void put32(uint8_t* p,uint32_t n){for(unsigned i=0;i<4;++i)p[i]=n>>(i*8);}
 inline uint32_t get32(const uint8_t* p){uint32_t n=0;for(unsigned i=0;i<4;++i)n|=uint32_t(p[i])<<(i*8);return n;}
