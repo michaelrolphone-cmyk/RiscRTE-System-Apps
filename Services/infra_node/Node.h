@@ -14,6 +14,9 @@ enum class Action:uint32_t {None,Enroll,Open,Sync,PoolGet,PoolPut,OfferGet,Offer
 class Node {
  public:
  risc_platform_recovery_v1 recovery{};risc_recovery_snapshot_v1 recoveryHealth{};unsigned networkFailures=0;uint64_t networkFailedSince=0,phaseSince=0;Phase supervisedPhase=Phase::Cold;
+ // Participant failures have their own circuit. They must not silence the
+ // independently authenticated relay or overwrite unresolved request custody.
+ bool serviceBlocked=false;unsigned serviceFailures=0;uint64_t serviceRetryAt=0;char serviceError[64]{};
  Journal journal;Transport net;Portal portal;uint64_t setupDeadline=0;bool setupFailed=false,setupRecovery=false;infra_station_v1 station{};risc_platform_clock_api_v1 clock{};risc_entropy_v1 entropy{};
  Allocator configMemory{196608},exchangeMemory{262144},responseMemory{393216};JsonDocument config{&configMemory},request{&exchangeMemory},response{&responseMemory};
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
@@ -34,7 +37,23 @@ class Node {
  const char* credential(const char* ref)const{if(action==Action::RelayVerify&&journal.state["relay"]["verification"]["secrets"][ref].is<const char*>())return journal.state["relay"]["verification"]["secrets"][ref];return journal.state["relay"]["secrets"][ref].is<const char*>()?(journal.state["relay"]["secrets"][ref]|""):(journal.state["credentials"][ref]|"");}
  void reason(Phase p,const char* why){if(phase!=p||strcmp(status.reason,why)){auto& d=diagnostics[diagnosticNext++%128];d={};d.at=now();d.phase=static_cast<unsigned>(p);d.pending=journal.state["pending"].size();copy(d.reason,sizeof(d.reason),why);status.diagnostic_events=diagnosticNext;}phase=p;copy(status.reason,sizeof(status.reason),why);}
  int retained(){reason(Phase::Retained,"retained_fault");return INFRA_RETAINED;}
- int block(Phase p,const char* why){reason(p,why);return INFRA_BLOCKED;}
+ int block(Phase p,const char* why){
+  if(loaded&&boot[0]&&!relayAction()&&(p==Phase::AuthBlocked||p==Phase::ProtocolBlocked)){
+   serviceBlocked=true;copy(serviceError,sizeof(serviceError),why);relayHealthAt=0;relayYield=false;
+   reason(Phase::Ready,why);return 1;
+  }
+  reason(p,why);return INFRA_BLOCKED;
+ }
+ int serviceRetry(const char* why){
+  // HTTP status precedes body parsing: gateways need not return our JSON.
+  // Unknown effects stay in pending and are reconciled by original identity.
+  const unsigned shift=serviceFailures<4?serviceFailures:4;
+  const uint64_t delay=5000ULL<<shift;
+  if(serviceFailures<UINT32_MAX)++serviceFailures;
+  serviceRetryAt=now()+(delay>60000?60000:delay);
+  copy(serviceError,sizeof(serviceError),why);relayYield=false;
+  reason(Phase::Ready,why);return 1;
+ }
  void id(char* out,size_t size){snprintf(out,size,"infra:%.32s:%llu",boot,static_cast<unsigned long long>(++serial));}
  bool initialize(){if(initialized)return true;encoded=static_cast<char*>(std::malloc(16385));initialized=encoded&&net.initialize();return initialized;}
  int bootstrap(){
@@ -61,7 +80,7 @@ class Node {
  bool bootReady()const{
   // A timer, socket connection or early lifecycle phase is not installation
   // health. Preserve rollback eligibility until this boot has reconciled.
-  if(journal.state["protocol_rejections"]["quarantined"]==true||phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
+  if(serviceBlocked||serviceRetryAt||journal.state["protocol_rejections"]["quarantined"]==true||phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
   unsigned i=0;for(auto b:bindings()){
    if(b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
    ++i;
@@ -138,6 +157,13 @@ class Node {
   if(phase==Phase::Stopped)return 0;
   if(phase!=Phase::Ready)return -1;
   if(drain){phase=Phase::Drain;return 1;}
+  if(serviceBlocked||now()<serviceRetryAt){
+   // Relay requests have separate saved custody. A successful relay request
+   // must not close the participant circuit or clear its diagnostic.
+   if(int r=relayStep())return r;
+   return 1;
+  }
+  serviceRetryAt=0;
   // A terminal participant rejection must not suspend the independent relay.
   // Keep all remaining custody intact; only the rejected request is retired.
   if(journal.state["protocol_rejections"]["quarantined"]==true){

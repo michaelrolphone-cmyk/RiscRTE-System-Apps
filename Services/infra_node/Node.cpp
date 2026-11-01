@@ -141,8 +141,9 @@ int Node::received(){
  if(relayAction())return relayReceived();
  if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();const auto result=backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");if(result==1)transportReason();return result;}
  if(action==Action::Probe){cadence[bindingIndex].lastCompleted=now();return probeResult();}
+ if(net.info.status_code>=500||net.info.status_code==408||net.info.status_code==425||net.info.status_code==429)return serviceRetry("service_http_retry");
  if(net.info.status_code==401||net.info.status_code==403){if(action==Action::Maintain){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;copy(status.reason,sizeof(status.reason),"binding_auth_blocked");return 1;}return block(Phase::AuthBlocked,"participant_auth_blocked");}
- if(!parse(response,net.body,net.size))return block(Phase::ProtocolBlocked,"malformed_or_oversize_response");
+ if(!parse(response,net.body,net.size))return serviceRetry("service_response_unreadable");
  if(response["protocol_version"]!=(action==Action::Maintain?"maintenance/1":"1.0"))return block(Phase::ProtocolBlocked,"response_protocol_mismatch");
  if(!response["operation_id"].isNull()&&response["operation_id"]!=request["operation_id"])return block(Phase::ProtocolBlocked,"operation_receipt_identity_mismatch");
  auto d=response["data"].as<JsonObjectConst>();const char* code=response["code"]|"";bool missing=response["status"]=="rejected"&&!strcmp(code,"NOT_FOUND");
@@ -161,13 +162,13 @@ int Node::received(){
   if(action==Action::Maintain&&!strcmp(code,"CURSOR_GAP")){cursors[bindingIndex][0]=0;status.gaps++;phase=Phase::Ready;return 1;}
   if(!strcmp(code,"REVISION_CONFLICT")&&(action==Action::PoolPut||action==Action::OfferPut)){return finish();}
   if(!strcmp(code,"INVALID_REQUEST")&&durable)return rejectSavedRequest();
-  if(!strcmp(code,"BUSY")||!strcmp(code,"RATE_LIMITED")||net.info.status_code>=500)return backoff("service_retry_same_identity");
+  if(!strcmp(code,"BUSY")||!strcmp(code,"RATE_LIMITED"))return serviceRetry("service_retry_same_identity");
   return block(Phase::ProtocolBlocked,code[0]?code:"service_rejected");
  }
  if(!missing&&(response["status"]!="completed"&&response["status"]!="accepted"))return block(Phase::ProtocolBlocked,"unexpected_response_status");
  if(durable&&(!response["receipt"].is<JsonObjectConst>()||response["receipt"]["operation_id"]!=request["operation_id"]||!digest(response["receipt"]["request_hash"])))return block(Phase::ProtocolBlocked,"durable_receipt_missing_or_mismatched");
  if(durable){char expected[65];semanticDigest(request,expected);if(response["receipt"]["request_hash"]!=expected)return block(Phase::ProtocolBlocked,"receipt_semantic_hash_mismatch");}
- networkSucceeded();failures=0;status.completed++;
+ networkSucceeded();failures=0;serviceFailures=0;serviceRetryAt=0;serviceError[0]=0;status.completed++;
  switch(action){
  case Action::RotationPrepare:if(d["credential_sha256"]!=journal.state["rotation"]["credential_sha256"]||d["state"]!="prepared")return block(Phase::AuthBlocked,"rotation_prepare_mismatch");journal.state["rotation"]["phase"]="prepared";return finish();
  case Action::RotationActivate:{auto r=journal.state["rotation"];if(d["phase"]!="activated"||d["credential_sha256"]!=r["credential_sha256"])return block(Phase::AuthBlocked,"rotation_activate_mismatch");journal.state["credentials"][config["service"]["credential_ref"]|""]=journal.state["credentials"][r["new_credential_ref"]|""];journal.state["credential_generation"]=d["credential_epoch"];r["phase"]="activated";sessionId[0]=0;return finish();}

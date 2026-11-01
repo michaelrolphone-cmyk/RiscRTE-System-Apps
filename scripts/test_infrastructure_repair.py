@@ -10,6 +10,8 @@ class Repair(unittest.TestCase):
   self.check_migration("portal-v160-providers.json")
  def test_v161_private_state_and_pending_survive_policy_migration(self):
   self.check_migration("portal-v161-providers.json")
+ def test_v162_private_state_and_pending_survive_policy_migration(self):
+  self.check_migration("portal-v162-providers.json")
  def check_migration(self,fixture):
   policy=json.loads((ROOT/'profiles/esp32s3-infrastructure/fixtures/node-policy.example.json').read_text());old=copy.deepcopy(policy)
   old['service']['providers']=json.loads((ROOT/'test/infra_node/fixtures'/fixture).read_text())
