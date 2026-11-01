@@ -147,6 +147,13 @@ int Node::received(){
  if(!response["operation_id"].isNull()&&response["operation_id"]!=request["operation_id"])return block(Phase::ProtocolBlocked,"operation_receipt_identity_mismatch");
  auto d=response["data"].as<JsonObjectConst>();const char* code=response["code"]|"";bool missing=response["status"]=="rejected"&&!strcmp(code,"NOT_FOUND");
  if(response["status"]=="rejected"&&!((action==Action::PoolGet||action==Action::OfferGet)&&missing)){
+  // A release's provider definitions may not yet exist in the catalog. This
+  // read/replace inventory has no execution custody: retry without changing
+  // pins or suspending independent relay/maintenance work. Admission stays off.
+  if(missing&&!durable&&(action==Action::Inventory||action==Action::ProviderGet)){
+   networkSucceeded();inventoryNeeded=true;inventoryRetryAt=now()+60000;
+   reason(Phase::Ready,"inventory_provider_not_found_retry");return 1;
+  }
   if((!strcmp(code,"PLAN_STALE")||!strcmp(code,"STALE_ATTEMPT")||!strcmp(code,"REVISION_CONFLICT"))&&(action==Action::Claim||action==Action::Prepare||action==Action::Renew||action==Action::BindingRenew||action==Action::RejectPrepare)&&response["mutation_outcome"]=="not_applied"){
    if(action==Action::Claim)journal.state["job"]=nullptr;rebootRecovery=true;snapshotNeeded=true;snapshotStage=0;snapshotAfter[0]=0;return finish(Phase::Recover);
   }
@@ -183,7 +190,7 @@ int Node::received(){
  case Action::Control:{char hash[65];canonicalDigest(d["data"],hash);if(d["seq"]!=controlSequence||strcmp(hash,controlHash))return block(Phase::ProtocolBlocked,"control_reference_digest_mismatch");int r=control(d);if(r)return r;phase=Phase::Ready;nextSync=0;return 1;}
  case Action::RejectPrepare:if(d["state"]!="aborted")return block(Phase::ProtocolBlocked,"rejection_not_acknowledged");return finish();
  case Action::Progress:case Action::Heartbeat:return finish();
- case Action::Inventory:if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+90000;}return finish();
+ case Action::Inventory:if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");inventoryRetryAt=0;if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+90000;}return finish();
  case Action::Enroll:
   if(!text(d["id"],128))return block(Phase::ProtocolBlocked,"enrollment_identity_missing");journal.state["participant_id"]=d["id"];journal.state.remove("bootstrap");return finish();
  case Action::Open:

@@ -1,5 +1,30 @@
 # ESP32-S3 infrastructure agent: phone setup
 
+## v1.6.2: missing-provider recovery and watchdog loop repair
+
+The v1.6.0 serial trace repeatedly reached `ProtocolBlocked / NOT_FOUND`,
+continued logging for 120 seconds, then reset. The published provider revisions
+were absent from the live Capabilities catalog. A responsive blocked state lost
+its watchdog feed after 30 seconds, causing the 90-second hardware watchdog to
+reset the same unchanged state.
+
+Inventory now retries a missing provider after 60 seconds while relay and
+required maintenance continue. New work admission and installation health stay
+blocked until inventory succeeds; exact provider/package pins remain required.
+Responsive blocked states keep their watchdog feed. Stalled asynchronous HTTP
+or storage operations still stop feeding it. The 30-second service/relay HTTP
+deadlines from v1.6.1 remain in place.
+
+Release publication must register every exact provider definition from the
+**built bundle's** `fixtures/catalog.json`, then read each `provider_id@revision`
+back and compare both definition and package digests before offering the image.
+The checked-in synthetic fixture uses a placeholder package digest and must
+never be registered as a release. The missing v1.6.0 and v1.6.1 cohorts were
+repaired in the live catalog; hardware soak qualification is separate.
+
+The preserving repair accepts the exact published v1.6.0 and v1.6.1 cohorts and
+retains credentials, enrollment keys, subscriptions, cursors and pending work.
+
 The v1.2 release is a complete 16 MiB first-install binary. Download the `.bin` directly from RiscRTE.com / the GitHub release and flash it at offset `0x0`. No archive extraction, Python, build tools, editor changes or USB credential injection are required for phone setup.
 
 Target: ESP32-S3 with **16 MiB flash and octal PSRAM**, 80 MHz flash/PSRAM, 240 MHz CPU. This is a first-install image: it replaces existing flash contents and identity. Use the paired update tools for a data-preserving update.

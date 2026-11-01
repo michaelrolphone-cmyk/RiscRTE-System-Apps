@@ -19,7 +19,7 @@ class Node {
  risc_infra_memory_v1 memory{};risc_infra_status_v1 status{};Cadence cadence[8]{};char cursors[8][513]{};
  Phase phase=Phase::Cold,afterSave=Phase::Ready;Action action=Action::None;bool durable=false,loaded=false,rebootRecovery=true,drain=false,initialized=false;
  bool snapshotNeeded=true,snapshotComplete=false;unsigned snapshotStage=0;char snapshotAfter[129]{},controlHash[65]{};uint64_t controlSequence=0;
- uint64_t waitUntil=0,nextSync=0,nextInventory=0,leaseUntil=0,serial=0,saveSequence=0,sessionGeneration=0,cursor=0;
+ uint64_t waitUntil=0,nextSync=0,nextInventory=0,inventoryRetryAt=0,leaseUntil=0,serial=0,saveSequence=0,sessionGeneration=0,cursor=0;
  unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
  char sessionId[128]{},boot[65]{},poolId[160]{},offerId[200]{},assignmentId[128]{},planId[128]{};
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
@@ -112,12 +112,14 @@ class Node {
  void supervise(){
   if(!recovery.feed)return;const auto at=now();
   if(phase!=supervisedPhase){supervisedPhase=phase;phaseSince=at;}
-  // Idle/backoff/setup are legitimate long waits. Other asynchronous phases
-  // have their own deadline; a stuck phase stops feeding the hardware timer.
-  const bool waiting=phase==Phase::Ready||phase==Phase::Backoff||phase==Phase::SetupPortal;
+  // A returned, quiescent blocked state is not a stalled executor. Keep its
+  // diagnostic/custody available instead of rebooting into the same rejection.
+  // An asynchronous operation that stops progressing still loses its feed.
+  const bool blocked=phase==Phase::AuthBlocked||phase==Phase::CapacityBlocked||phase==Phase::StorageBlocked||phase==Phase::ProtocolBlocked;
+  const bool waiting=phase==Phase::Ready||phase==Phase::Backoff||phase==Phase::SetupPortal||phase==Phase::Stopped||blocked;
   if(waiting||at-phaseSince<30000)recovery.feed(recovery.context);
   if(recovery.snapshot){recoveryHealth.struct_size=sizeof(recoveryHealth);recovery.snapshot(recovery.context,&recoveryHealth);}
-  if(networkFailures>=6&&at-networkFailedSince>=120000&&phase!=Phase::Save&&recovery.restart)recovery.restart(recovery.context);
+  if(networkFailures>=6&&at-networkFailedSince>=120000&&phase!=Phase::Save&&phase!=Phase::Stopped&&!blocked&&recovery.restart)recovery.restart(recovery.context);
  }
  int advance(){
   supervise();
@@ -157,11 +159,11 @@ class Node {
   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
   if(!job.isNull()&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
   if(!job.isNull()&&job["phase"]=="running"){for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==job["spec"]["inputs"]["binding_id"]&&cadence[i].ready(now()))return jobStep();}
-  if(inventoryNeeded||now()>=nextInventory)return inventoryStep();
+  if((inventoryNeeded||now()>=nextInventory)&&now()>=inventoryRetryAt)return inventoryStep();
   for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}
   return 1;
  }
- int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=capacity()&&journal.state["job"].isNull()?1:0;return send(false);}
+ int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&journal.state["job"].isNull()?1:0;return send(false);}
  int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
  void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
