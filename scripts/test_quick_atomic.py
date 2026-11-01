@@ -16,7 +16,12 @@ def main():
  subprocess.run(cmd,check=True);results=[]
  # Compile the full RGB adapter without paper, tone, or resident-Home flags.
  shutil.copytree(ROOT/'lib/PortableApps/time',a.output/'time',dirs_exist_ok=True)
+ # This separate untagged RGB profile needs the V1 output suffix contract;
+ # selected Home stages Utilities' tagged V2 contract instead.
+ rgb_inc=a.output/'rgb-include';shutil.copytree(inc,rgb_inc,dirs_exist_ok=True)
+ shutil.copyfile(ROOT/'lib/PortableApps/include/AlarmServiceV1.h',rgb_inc/'AlarmServiceV1.h')
  rgb_cmd=['cc','-std=c11','-O0','-Wall','-Wextra','-Werror','-Wno-unused-function',*extra,*['-D'+x for x in ('PORTABLE_QUICK_ACTIONS','PORTABLE_QUICK_RADIOS','PORTABLE_QUICK_ATOMIC_PREFERENCES','PORTABLE_ALARM_CLIENT','PORTABLE_APP_SLEEP_LOCAL','PORTABLE_NATIVE_CUSTODY_FENCE','PORTABLE_CHECKED_STORAGE_RUNTIME','PORTABLE_SETTINGS_APP')],'-I'+str(inc),'-I'+str(ROOT/'lib/NativeApps/include'),'-c',str(ROOT/'lib/PortableApps/src/adapter.c'),'-o',str(a.output/'rgb-adapter.o')]
+ rgb_cmd=[('-I'+str(rgb_inc)) if value=='-I'+str(inc) else value for value in rgb_cmd]
  subprocess.run(rgb_cmd,check=True)
  for case in CASES:
   r=subprocess.run([binary,case],check=True,timeout=10,capture_output=True,text=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0',UBSAN_OPTIONS='halt_on_error=1'));print(r.stdout.strip());results.append({'case':case,'result':r.stdout.strip()})

@@ -1,0 +1,6 @@
+# Pillow is required by test_quick_usb_transfer.py for frame PNG output.
+# PyPI release metadata: https://pypi.org/pypi/pillow/12.3.0/json
+# CPython3.11 (hosted) and3.12 (local), Linux x86_64 manylinux2.27/2.28 wheels.
+Pillow==12.3.0 \
+    --hash=sha256:23d27a3e0307ec2244cc51e7287b919aa68d097504ebe19df4e76a98a3eea5bd \
+    --hash=sha256:78cb2c6865a35ab8ff8b75fd122f6033b92a62c82801110e48ddd6c936a45d91

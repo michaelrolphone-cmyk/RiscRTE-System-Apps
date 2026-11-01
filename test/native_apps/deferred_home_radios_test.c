@@ -287,7 +287,10 @@ static void once_loaded(void) {
  for(unsigned i=0;i<10;i++){assert(deferred_test_ready(false));assert(deferred_test_ready(true));}
  assert(radio_calls()==before&&!terminal&&!barriers);
 }
-int main(int argc,char **argv) {
+#ifndef DEFERRED_FIXTURE_MAIN
+#define DEFERRED_FIXTURE_MAIN main
+#endif
+int DEFERRED_FIXTURE_MAIN(int argc,char **argv) {
  assert(argc==2);deferred_case=argv[1];clock_run=!strncmp(deferred_case,"clock-",6);
  raw_async=is_case("low-battery-pending")||is_case("clock-async")||is_case("force-pending-frame")||is_case("failed-pending-frame");force_allowed=!clock_run;configure();
  if(clock_run) {
