@@ -113,6 +113,24 @@ static void nc_marker(unsigned marker,int x,int y,int size,bool inverse){
     default:nc_box(x,y,size,size,mid,2*st,c,inverse?nc_fg():nc_bg());break;
     }
 }
+static unsigned nc_hold_wrap(const char *text,unsigned role,int x,int y,int w,uint16_t color,bool draw){
+    unsigned lines=0;int line_height=nc_size(16);
+    while(*text){
+        char line[RISC_SCENE_TEXT];unsigned count=0,space=0;
+        while(text[count]&&count+1<sizeof(line)){
+            line[count]=text[count];line[count+1]=0;
+            if(nc_measure(role,line)>w)break;
+            if(text[count]==' ')space=count;
+            ++count;
+        }
+        if(text[count]&&space)count=space;
+        if(!count)count=1;
+        memcpy(line,text,count);line[count]=0;
+        if(draw)nc_center(x,y+(int)lines*line_height,w,line,role,color);
+        ++lines;text+=count;while(*text==' ')++text;
+    }
+    return lines;
+}
 static bool nc_keypad_route(void){
     for(unsigned i=0;i<document.node_count;i++)if(document.nodes[i].route==current_route()&&document.nodes[i].kind==RISC_COMPONENT_KEY&&!(document.nodes[i].flags&RISC_SCENE_HIDDEN))return true;
     return false;
@@ -132,6 +150,7 @@ static bool nc_work_screen(void){
 static int nc_header_height(void){if(nc_keypad_route())return nc_size(44);if(document.flags&RISC_COMPONENTS_TELEMETRY)return nc_size(nc_toolbar()?50:52);if(!nc_paper()&&nc_work_screen())return 44;return nc_size(nc_toolbar()?(nc_paper()?56:78):document.subtitle[0]?(nc_paper()?60:84):(nc_paper()?44:68));}
 static int nc_row_height(const risc_scene_node_v1 *n){
     switch(n->kind){
+    case RISC_COMPONENT_HOLD_KEY:return nc_size(16+16*(int)(nc_hold_wrap(n->label,1,0,0,(int)width-nc_size(48),0,false)+nc_hold_wrap(n->text,3,0,0,(int)width-nc_size(48),0,false)));
     case RISC_COMPONENT_HEADER_ACTION:case RISC_COMPONENT_TAB_BAR:return 0;
     case RISC_COMPONENT_INSTRUMENT:return nc_size(62);
     case RISC_COMPONENT_BAR_GAUGE:return nc_size(48);
@@ -364,6 +383,12 @@ static void nc_draw_node(unsigned index,int x,int y,int w,int h){
         const char *p=n->text;while(*p&&yy<y+h-8*s){char line[72];unsigned count=0,space=0;while(p[count]&&count<70){line[count]=p[count];line[count+1]=0;if(nc_measure(3,line)>w-8*s)break;if(p[count]==' ')space=count;++count;}if(p[count]&&space)count=space;if(!count)break;memcpy(line,p,count);line[count]=0;yy+=14*s;nc_center(x,yy,w,line,3,dim);p+=count;while(*p==' ')++p;}return;
     }
     if(n->kind==RISC_SCENE_ACTION){nc_control(x,y+8*s,w,34*s,n->label,!!(n->flags&RISC_SCENE_PRIMARY),HIT_ACTION,n,0);return;}
+    if(n->kind==RISC_COMPONENT_HOLD_KEY){
+        nc_box(x,y,w,h,8*s,s,nc_paper()?fg:accent,nc_bg());
+        unsigned lines=nc_hold_wrap(n->label,1,x+8*s,y+18*s,w-16*s,fg,true);
+        (void)nc_hold_wrap(n->text,3,x+8*s,y+18*s+(int)lines*16*s,w-16*s,dim,true);
+        nc_hit(x,y,w,h,HIT_ACTION,n,0,false);return;
+    }
     if(n->kind==RISC_COMPONENT_KEY||n->kind==RISC_COMPONENT_CHIP){nc_control(x,y,w,h,n->label,false,HIT_ACTION,n,0);return;}
     if(n->kind==RISC_COMPONENT_SEGMENTS){
         /* One capsule with an inset selection, not a row of outlined buttons.
@@ -636,7 +661,8 @@ static bool component_valid(const risc_components_document_v1 *d){
         if(a->symbol>RISC_SYMBOL_GEAR||a->marker>6||a->tone>RISC_TONE_MUTED||!terminated(a->badge,sizeof(a->badge))||!terminated(a->choices,sizeof(a->choices)))return false;
         if(n->kind==RISC_SCENE_ACTION&&n->action==d->cancel_action&&!(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_DESTRUCTIVE|RISC_SCENE_HIDDEN)))cancel=true;
         if(n->kind==RISC_COMPONENT_HEADER_ACTION&&++headers>2)return false;
-        if(n->kind==RISC_COMPONENT_KEY&&(!n->action||n->target||!n->label[0]||strlen(n->label)>7||n->text[0]||a->secondary_action))return false;
+        if((n->kind==RISC_COMPONENT_KEY||n->kind==RISC_COMPONENT_HOLD_KEY)&&(!n->action||n->target||!n->label[0]||(n->kind==RISC_COMPONENT_KEY&&(strlen(n->label)>7||n->text[0]))||a->secondary_action))return false;
+        if(n->kind==RISC_COMPONENT_HOLD_KEY&&(!hold_enabled||n->minimum||n->maximum||n->value||n->step<0||n->step>1))return false;
         if(n->kind>=RISC_COMPONENT_ROW&&n->kind!=RISC_COMPONENT_PROGRESS&&n->kind!=RISC_COMPONENT_EMPTY&&n->kind<RISC_COMPONENT_CARD&&!n->action)return false;
         if(tm_kind(n->kind)&&!(d->flags&RISC_COMPONENTS_TELEMETRY))return false;
         if(n->kind==RISC_COMPONENT_TAB_BAR&&(++tabs>1||!n->action||n->minimum!=0||n->maximum!=3||n->step!=1||n->value<0||n->value>3))return false;

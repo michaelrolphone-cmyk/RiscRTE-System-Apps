@@ -1,5 +1,5 @@
 /* Shared semantic presenter. No application/domain code or product IDs. */
-#include "RiscSceneCanvasV1.h"
+#include "RiscSceneHoldV1.h"
 #include "../canvas_host/canvas_provider.h"
 #include "RiscSceneKeypadV1.h"
 /* Explicit source profile: the default remains the complete presenter. */
@@ -121,6 +121,11 @@ static int route_index(const risc_components_document_v1 *d,uint32_t id){
     for(unsigned i=0;i<d->route_count;i++)if(d->routes[i].id==id)return (int)i;
     return -1;
 }
+static bool hold_enabled,hold_active,hold_pending,hold_nav,hold_confirm,hold_fault,hold_fault_delivered,hold_dispatch,hold_busy,hold_enter;
+static uint64_t hold_generation,hold_started,hold_now,hold_last;
+static uint32_t hold_nav_buttons;
+static risc_scene_event_v1 hold_identity;
+static risc_scene_hold_event_v1 hold_event;
 static int node_index(const risc_components_document_v1 *d,uint32_t id){
     for(unsigned i=0;i<d->node_count;i++)if(d->nodes[i].id==id)return (int)i;
     return -1;
@@ -137,7 +142,7 @@ static bool valid_document(const risc_components_document_v1 *d,bool components)
     if(route_index(d,d->root)<0)return false;
     for(unsigned i=0;i<d->node_count;i++){
         const risc_scene_node_v1 *n=&d->nodes[i];
-        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?RISC_COMPONENT_KEY:RISC_SCENE_KEYBOARD_NODE)||
+        if(!n->id||route_index(d,n->route)<0||n->kind<RISC_SCENE_TEXT_NODE||n->kind>(components?(hold_enabled?RISC_COMPONENT_HOLD_KEY:RISC_COMPONENT_KEY):RISC_SCENE_KEYBOARD_NODE)||
            n->flags&~(15u|(n->kind==RISC_SCENE_KEYBOARD_NODE?RISC_SCENE_KEYBOARD_EXTENDED:0u))||!terminated(n->label,sizeof(n->label))||!terminated(n->text,sizeof(n->text)))return false;
         for(unsigned j=0;j<i;j++)if(d->nodes[j].id==n->id)return false;
         if(n->kind==RISC_SCENE_KEYBOARD_NODE){
@@ -173,19 +178,24 @@ static int32_t fail_retained(void){retained=true;shared_canvas.frames.retained=t
 /* A dependency can revoke the native invocation while reporting success.
  * Recheck at every external callback boundary before any further provider I/O. */
 static bool alive(void){
-    if(retained||shared_canvas.frames.retained){(void)fail_retained();return false;}
+    if(retained||shared_canvas.frames.retained||hold_fault_delivered){(void)fail_retained();return false;}
     const risc_runtime_api_v1 *current=risc_runtime_get_api(1);
     if(!current||(shared_owner&&current!=shared_owner)){(void)fail_retained();return false;}
     if(!shared_owner&&(active||scene_opening||canvas_call||shared_canvas.frames.session))shared_owner=current;
     return true;
 }
 static int32_t check(uint64_t s){
+    if(hold_busy&&!hold_enter)return fail_retained();
+    hold_enter=false;
     if(!alive())return RISC_SCENE_RETAINED;
+    if(hold_fault_delivered)return fail_retained();
+    if(hold_fault&&!hold_dispatch)return RISC_SCENE_BUSY;
     return started&&active&&s&&s==session?RISC_SCENE_OK:RISC_SCENE_STALE;
 }
 static uint32_t current_route(void){return path.routes[path.depth-1];}
 static bool view_current(void){return visible.route==current_route()&&visible.epoch==epoch&&
     (visible.revision==document.revision||visible.keyboard);}
+#include "hold.inc"
 /* Word wrapping belongs to presentation, never to application labels. */
 static unsigned line_length(const char *s,unsigned columns){
     unsigned n=0,space=0;if(!columns)return 0;
@@ -245,8 +255,10 @@ static void restore_page(void){
         if(document.nodes[list[i]].id==path.focus[path.depth-1])page=p;
 }
 static void invalidate_view(void){
+    if(epoch==UINT32_MAX){(void)hold_local_fault();return;}
+    hold_cancel(RISC_HOLD_REASON_TOPOLOGY);
     dirty=true;if(contact)neutral=false;cancel_contacts();contact=false;have_event=false;top_pending=false;handoff_waiting=false;key_head=key_count=0;key_barrier=false;
-    if(epoch==UINT32_MAX){retained=true;return;}++epoch;
+    ++epoch;
 }
 static int32_t navigate_impl(uint32_t op,uint32_t route){
     if(op==RISC_SCENE_PUSH){
@@ -265,7 +277,7 @@ static int32_t navigate_impl(uint32_t op,uint32_t route){
 }
 static void emit(uint32_t kind,uint32_t node,uint32_t action,int32_t value){
     if(have_event||closing||retained)return;
-    if(event_serial==UINT64_MAX){retained=true;return;}
+    if(event_serial==UINT64_MAX){(void)hold_local_fault();return;}
     queued=(risc_scene_event_v1){sizeof(queued),kind,document.revision,node,action,value,++event_serial};have_event=true;
     if(kind==RISC_SCENE_SUSPEND_EVENT){key_count=0;keyboard_waiting=false;key_barrier=true;}
     if(lifecycle_enabled&&(kind==RISC_SCENE_SUSPEND_EVENT||kind==RISC_SCENE_CONTROLS_EVENT)){
@@ -314,6 +326,7 @@ static void turn_page(int direction){
     invalidate_view();rebuild_hits();
 }
 static void activate(const hit *h){
+    if(hold_node(h->node))return;
     if(!view_current()||have_event||(current_keyboard()&&!keyboard_ready()))return;
     if(h->kind==HIT_BACK){back();return;}
     if(h->kind==HIT_HOME){emit(RISC_SCENE_SUSPEND_EVENT,0,0,0);return;}
@@ -457,19 +470,24 @@ static void process_touch_event(const risc_touch_event_v1 *e){
     if(lifecycle_enabled)activity_pending=true;
     bool ambiguous=!current_keyboard()&&ambiguous_report(e);
     track_contact(dispatched_contacts,&dispatched_count,e);
-    if(ambiguous){contact=false;top_pending=false;neutral=false;return;}
+    if(ambiguous){hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);contact=false;top_pending=false;neutral=false;return;}
     int x=0,y=0;
     if(e->kind>=RISC_TOUCH_EVENT_DOWN&&e->kind<=RISC_TOUCH_EVENT_UP&&!touch_point(e->x,e->y,&x,&y)){
         if(keyboard_contact_key())dirty=true;
-        contact=false;neutral=false;return;
+        hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);contact=false;neutral=false;return;
     }
     if(key_contact_event(e,x,y))return;
+    if(hold_active&&hold_nav&&e->kind==RISC_TOUCH_EVENT_DOWN){hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);return;}
+    if(hold_active&&!hold_nav&&e->id==contact_id&&(e->kind==RISC_TOUCH_EVENT_MOVE||e->kind==RISC_TOUCH_EVENT_UP)){
+        (void)hold_touch_end(x,y,e->timestamp_ms,e->kind==RISC_TOUCH_EVENT_UP);return;
+    }
     if(e->kind==RISC_TOUCH_EVENT_DOWN){
-        if(contact){if(keyboard_contact_key())dirty=true;contact=false;neutral=false;return;}
+        if(contact){hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);if(keyboard_contact_key())dirty=true;contact=false;neutral=false;return;}
         if(!neutral||!view_current()||(lifecycle_enabled&&(have_event||handoff_waiting))||(current_keyboard()&&!keyboard_ready()))return;
         contact=true;contact_id=e->id;down_x=x;down_y=y;down_at=e->timestamp_ms;
         moved=false;down_revision=document.revision;down_epoch=epoch;
         if(keyboard_contact_key())dirty=true;
+        if(hold_touch_down(x,y,e->timestamp_ms))return;
         if(model->components)component_down(x,y);
         top_pending=lifecycle_enabled&&(lifecycle_features&RISC_SCENE_FEATURE_SHARED_CONTROLS)&&
             !current_keyboard()&&y<(int)(height*72u/800u);
@@ -521,7 +539,7 @@ static void process_touch_event(const risc_touch_event_v1 *e){
             if(x-down_x>(int)width/4 && x-down_x>2*(y>down_y?y-down_y:down_y-y))back();
             else (void)component_move(x,y,true);
         }else if(accepted)tap(x,y);
-    }else if(e->kind==RISC_TOUCH_EVENT_BUTTON_DOWN){if(keyboard_contact_key())dirty=true;contact=false;neutral=false;}
+    }else if(e->kind==RISC_TOUCH_EVENT_BUTTON_DOWN){hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);if(keyboard_contact_key())dirty=true;contact=false;neutral=false;}
 }
 /* Capture complete physical edges independently of logical acknowledgements
  * and raster work. The bounded transport FIFO fails explicitly on overflow;
@@ -541,7 +559,7 @@ static int32_t capture_touch(void){
         if(e.kind==RISC_TOUCH_EVENT_DOWN)captured_contacts[e.id]=true;
         else if(e.kind==RISC_TOUCH_EVENT_UP)captured_contacts[e.id]=false;
         if(!resync){
-            if(raw_count==RAW_QUEUE_SIZE)return fail_retained();
+            if(raw_count==RAW_QUEUE_SIZE)return hold_local_fault();
             raw_queue[(raw_head+raw_count++)%RAW_QUEUE_SIZE]=e;
         }
     }
@@ -550,13 +568,20 @@ static int32_t capture_touch(void){
     if(!alive()||!ok||!valid_snapshot(&snapshot))return fail_retained();
     if(snapshot.width!=touch_state.width||snapshot.height!=touch_state.height||snapshot.buttons)resync=true;
     for(unsigned i=0;i<snapshot.contact_count;i++)if(!captured_contacts[snapshot.contacts[i].id])resync=true;
-    if(drained==RAW_QUEUE_SIZE&&snapshot.sequence>capture_sequence)return fail_retained();
+    if(hold_enabled){
+        bool seen[256]={0};
+        for(unsigned i=0;i<snapshot.contact_count;i++)seen[snapshot.contacts[i].id]=true;
+        for(unsigned i=0;i<256;i++)if(seen[i]!=captured_contacts[i])resync=true;
+        if(snapshot.sequence!=capture_sequence)resync=true;
+    }
+    if(drained==RAW_QUEUE_SIZE&&snapshot.sequence>capture_sequence)return hold_local_fault();
     if(lifecycle_enabled){
         if(snapshot.sequence>last_sequence||snapshot.contact_count!=touch_state.contact_count||snapshot.buttons!=touch_state.buttons)activity_pending=true;
         input_unsynchronized=input_unsynchronized||resync;
     }
     touch_state=snapshot;
     if(resync){
+        hold_cancel(RISC_HOLD_REASON_AMBIGUOUS);
         dirty=true;cancel_contacts();contact=false;top_pending=false;neutral=false;
         raw_head=raw_count=key_count=0;if(have_event)handoff_waiting=false;have_event=false;
         last_sequence=capture_sequence=snapshot.sequence;
@@ -567,9 +592,9 @@ static int32_t capture_touch(void){
     return RISC_SCENE_OK;
 }
 static int32_t poll_touch(void){
-    int32_t r=capture_touch();if(r<0)return r;
+    int32_t r=capture_touch();if(r<0||hold_pending||hold_fault)return r;
     finish_contacts();
-    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting){
+    while(raw_count&&!have_event&&!key_count&&!keyboard_waiting&&!hold_pending){
         risc_touch_event_v1 event=raw_queue[raw_head];
         raw_head=(raw_head+1)%RAW_QUEUE_SIZE;--raw_count;
         process_touch_event(&event);if(retained)return RISC_SCENE_RETAINED;
@@ -612,14 +637,16 @@ static void keyboard_move(const risc_scene_node_v1 *n,uint32_t pressed){
     path.focus[path.depth-1]=n->id;focus_part=next;invalidate_view();rebuild_hits();
 }
 static int32_t poll_navigation(void){
-    if(!navigation||have_event||key_count||keyboard_waiting)return RISC_SCENE_OK;
+    if(!navigation||have_event||key_count||keyboard_waiting||(hold_pending&&hold_event.phase!=RISC_HOLD_PRESS))return RISC_SCENE_OK;
     risc_input_navigation_frame_v1 f={0};bool ok=navigation->poll(navigation->context,&f);
     if(!alive()||!ok)return fail_retained();
+    hold_nav_buttons=f.buttons;
     if(lifecycle_enabled){
         if(f.pressed||f.released||f.buttons!=navigation_buttons)activity_pending=true;
         navigation_buttons=f.buttons;
         if(handoff_waiting)return RISC_SCENE_OK;
     }
+    if(hold_navigation(&f)){if(f.pressed&RISC_NAV_HOME)emit(RISC_SCENE_SUSPEND_EVENT,0,0,0);return RISC_SCENE_OK;}
     if(f.pressed&RISC_NAV_HOME){emit(RISC_SCENE_SUSPEND_EVENT,0,0,0);return RISC_SCENE_OK;}
     if(!view_current()||have_event)return RISC_SCENE_OK;
     const risc_scene_node_v1 *keyboard=current_keyboard();
@@ -929,6 +956,7 @@ static int32_t detach_owned(bool preserve){
 }
 static int32_t scene_pause(void *c,uint64_t s){
     (void)c;int32_t r=check(s);if(r)return r;if(closing)return RISC_SCENE_BUSY;
+    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
     if(paused)return RISC_SCENE_OK;
     r=detach_owned(true);if(r)return r;
     paused=true;pausing=false;return RISC_SCENE_OK;
@@ -1024,6 +1052,7 @@ static int32_t open_document(void *c,const risc_components_document_v1 *d,const 
 }
 static int32_t update_document(void *c,uint64_t s,const risc_components_document_v1 *d){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
+    if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return RISC_SCENE_BUSY;
     if(!valid_document(d,model->components)||d->root!=document.root)return RISC_SCENE_INVALID;
     risc_scene_navigation_v1 next_path=path;
     if(model->components)for(unsigned i=0;i<next_path.depth;i++)if(node_index(d,next_path.focus[i])<0)next_path.focus[i]=0;
@@ -1094,8 +1123,10 @@ static int32_t update_document(void *c,uint64_t s,const risc_components_document
 static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     (void)c;int32_t r=check(s);if(r)return r;
     if(!event||event->struct_size!=sizeof(*event))return RISC_SCENE_INVALID;
+    if(hold_enabled&&!hold_dispatch)return RISC_SCENE_INVALID;
     if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(risc_runtime_exit_requested_v1(risc_runtime_get_api(1))){
+        if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
         // Native requests cannot sit behind touch/keyboard/render queues.
         cancel_contacts();raw_count=key_count=0;have_event=false;
         *event=(risc_scene_event_v1){.struct_size=sizeof(*event),.kind=RISC_SCENE_SUSPEND_EVENT,
@@ -1104,8 +1135,9 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     }
     input_unsynchronized=false;
     if(model->components&&model->toast_until){uint64_t now=clock_api->monotonic_ms(clock_api->context);if(!alive())return RISC_SCENE_RETAINED;if(now>=model->toast_until){model->toast_until=0;dirty=true;rebuild_hits();}}
-    r=poll_touch();if(r<0)return r;
-    r=poll_navigation();if(r<0)return r;
+    r=poll_touch();if(r<0||hold_fault)return r;
+    if(hold_pending){if(hold_event.phase==RISC_HOLD_PRESS){r=poll_navigation();if(r<0)return r;}return RISC_SCENE_OK;}
+    r=poll_navigation();if(r<0||hold_pending||hold_fault)return r;
     if(retained)return RISC_SCENE_RETAINED;
     if(key_count&&!keyboard_waiting){
         *event=key_queue[key_head];key_head=(key_head+1)%KEY_QUEUE_SIZE;--key_count;
@@ -1124,7 +1156,7 @@ static int32_t scene_next(void *c,uint64_t s,risc_scene_event_v1 *event){
     return RISC_SCENE_IDLE;
 }
 static int32_t scene_navigate(void *c,uint64_t s,uint32_t op,uint32_t route){
-    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;return navigate_impl(op,route);
+    (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;if(hold_boundary(RISC_HOLD_REASON_TOPOLOGY))return RISC_SCENE_BUSY;return navigate_impl(op,route);
 }
 static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uint32_t *flags){
     (void)c;int32_t r=check(s);if(r)return r;
@@ -1138,7 +1170,7 @@ static int32_t scene_snapshot(void *c,uint64_t s,risc_scene_navigation_v1 *p,uin
     }
     return RISC_SCENE_OK;
 }
-static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;r=close_owned();if(!r)shared_owner=NULL;return r;}
+static int32_t scene_close(void *c,uint64_t s){(void)c;int32_t r=check(s);if(r)return r;if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;r=close_owned();if(!r){shared_owner=NULL;hold_enabled=false;}return r;}
 static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
     (void)c;int32_t r=check(s);if(r)return r;if(closing||paused||pausing)return RISC_SCENE_BUSY;
     if(features&~(RISC_SCENE_FEATURE_SHARED_CONTROLS|RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY))return RISC_SCENE_INVALID;
@@ -1147,6 +1179,7 @@ static int32_t scene_configure(void *c,uint64_t s,uint32_t features){
         (features==lifecycle_features&&(features&RISC_SCENE_FEATURE_POLICY_INPUT_CONTINUITY)))){
         lifecycle_features=features;return RISC_SCENE_OK;
     }
+    if(hold_boundary(RISC_HOLD_REASON_BOUNDARY))return RISC_SCENE_BUSY;
     if(!synchronize_touch())return fail_retained();
     if(navigation){bool ok=navigation->reset(navigation->context);if(!alive()||!ok)return fail_retained();}
     if(!lifecycle_enabled)activity_pending=false;
@@ -1185,8 +1218,9 @@ static int32_t components_update(void *c,uint64_t s,const risc_components_docume
     int32_t rc=update_document(c,s,d);if(!rc){model->telemetry.count=0;model->page_view=false;model->reading_view=false;model->preview_view=false;model->page_clean=false;dirty=true;rebuild_hits();}return rc;
 }
 #include "scene_canvas.inc"
-static const risc_scene_canvas_api_v1 api={
-.scene={{{{ { { {
+#include "hold_api.inc"
+static const risc_scene_hold_api_v1 api={
+.base={.scene={{{{ { { {
     {{1,sizeof(api),NULL,scene_open,scene_update,scene_next,scene_navigate,scene_snapshot,scene_close},scene_configure},
     RISC_COMPONENTS_TAG,1,components_open,components_update},RISC_SCENE_PAGE_TAG,1,page_geometry,page_present},
     RISC_SCENE_PAGE_REFRESH_TAG,1,page_present_with_refresh},RISC_SCENE_CHECKPOINT_TAG,1,scene_pause,scene_resume},RISC_SCENE_READING_TAG,1,reading_geometry,reading_present,preview_geometry,preview_present},RISC_SCENE_READING_LINKS_TAG,1,reading_present_linked}
@@ -1195,7 +1229,7 @@ static const risc_scene_canvas_api_v1 api={
 #else
 ,0,0,NULL
 #endif
-},.canvas_tag=RISC_SCENE_CANVAS_TAG,.canvas_version=1,.canvas=&shared_canvas_api};
+},.canvas_tag=RISC_SCENE_CANVAS_TAG,.canvas_version=1,.canvas=&shared_canvas_api},.hold_tag=RISC_SCENE_HOLD_TAG,.hold_version=1,.open=hold_open,.update=hold_update,.next=hold_next};
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||active||retained||count<4||count>5||!deps)return false;
     display=NULL;touch=NULL;navigation=NULL;profile=NULL;clock_api=NULL;
