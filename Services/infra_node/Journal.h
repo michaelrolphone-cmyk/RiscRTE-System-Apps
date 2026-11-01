@@ -7,26 +7,37 @@ class Journal {
   Allocator allocator{393216};JsonDocument state{&allocator};
   const risc_bound_app_data_async_v1* backend=nullptr;
   uint8_t* scratch=nullptr;uint64_t seq=0,revision=0,writeToken=0,desiredSeq=0,writes=0,bytes=0;uint32_t desiredCrc=0,loadedCrc=0;bool retained=false,blocked=false,reload=false;
+  const char* loadError="state_not_loaded";int32_t loadBackendStatus=0;uint32_t loadBytes=0;
+  int loadFailure(const char* why){loadError=why;blocked=true;return -1;}
   bool initialize(const risc_bound_app_data_v1* b){backend=risc_bound_app_data_async(b);scratch=static_cast<uint8_t*>(std::malloc(StateMax));return backend&&scratch;}
   int load(){
     if(retained)return -2;uint32_t size=0;uint64_t fresh=0;auto r=backend->base.stat(backend->base.context,"node-state.bin",&size,&fresh);
-    if(r==RISC_APP_DATA_RETAINED){retained=true;return -2;}if(r==RISC_APP_DATA_BUSY||r==RISC_APP_DATA_STALE)return 1;if(r!=0||size<32||size>StateMax){blocked=true;return -1;}
+    loadBackendStatus=r;loadBytes=size;
+    if(r==RISC_APP_DATA_RETAINED){retained=true;return -2;}if(r==RISC_APP_DATA_BUSY||r==RISC_APP_DATA_STALE)return 1;
+    if(r!=0)return loadFailure(r==RISC_APP_DATA_NOT_FOUND?"state_file_missing":"state_stat_failed");
+    if(size<32||size>StateMax)return loadFailure("state_file_size_invalid");
     r=backend->base.read(backend->base.context,"node-state.bin",fresh,scratch,StateMax,&size,&fresh);
+    loadBackendStatus=r;loadBytes=size;
     if(r==RISC_APP_DATA_RETAINED){retained=true;return -2;}if(r==RISC_APP_DATA_STALE||r==RISC_APP_DATA_BUSY)return 1;
     const char* payload=nullptr;size_t length=0;uint64_t sequence=0;
-    if(r||!unframe(scratch,size,payload,length,sequence)||!parse(state,payload,length)||!valid()){blocked=true;return -1;}
-    seq=sequence;loadedCrc=crc32(payload,length);revision=fresh;blocked=false;reload=false;return 0;
+    if(r)return loadFailure("state_read_failed");
+    if(!unframe(scratch,size,payload,length,sequence))return loadFailure("state_frame_invalid");
+    if(!parseJournal(state,payload,length))return loadFailure("state_json_invalid_or_capacity");
+    if(!valid())return loadFailure("state_schema_invalid");
+    seq=sequence;loadedCrc=crc32(payload,length);revision=fresh;blocked=false;reload=false;loadError="state_loaded";return 0;
   }
   bool valid(){
    if(!keys(state.as<JsonObjectConst>(),{"schema_version","installation_id","credential_generation","credentials","participant_id","cursor","pending","job","checkpoints","configuration_revision"},{"bootstrap","enrollment_id","credential_sha256","rotation","configuration","target_epoch","configuration_desired_id","configuration_expires_at","setup_policy","setup_pending","relay","protocol_rejections"})||measureJson(state["relay"])>65536||state["schema_version"]!=1||!state["installation_id"].is<const char*>()||strlen(state["installation_id"]|"")>64||!state["pending"].is<JsonArray>()||state["pending"].size()>PendingMax||measureJson(state["credentials"])>4096||measureJson(state["job"])>RecordMax||measureJson(state["checkpoints"])>4096||measureJson(state["configuration"])>8192||measureJson(state["setup_policy"])>PolicyMax||(!state["setup_pending"].isNull()&&!state["setup_pending"].is<bool>()))return false;
    if(measureJson(state["protocol_rejections"])>4096||state["protocol_rejections"]["items"].size()>8)return false;
-   for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>RecordMax)return false;return !state.overflowed();
+   for(auto op:state["pending"].as<JsonArrayConst>())if(measureJson(op)>RecordMax)return false;return !state.overflowed()&&valueBounds(state.as<JsonVariantConst>(),0,24);
   }
   int save(){
    if(retained)return -2;if(blocked||reload)return -1;if(writeToken)return 1;
    if(!valid()||seq==UINT64_MAX){blocked=true;return -1;}
    const size_t size=measureJson(state);if(size>StateMax-33){blocked=true;return -1;}
-   serializeJson(state,reinterpret_cast<char*>(scratch+32),StateMax-32);
+   const auto serialized=serializeJson(state,reinterpret_cast<char*>(scratch+32),StateMax-32);
+   // Never commit bytes outside the very same lexical envelope used at reboot.
+   if(serialized!=size||!JournalJsonGuard(reinterpret_cast<char*>(scratch+32),size).objectOnly()){blocked=true;return -1;}
    desiredSeq=seq+1;desiredCrc=crc32(scratch+32,size);const auto total=frame(scratch,StateMax,reinterpret_cast<char*>(scratch+32),size,desiredSeq);
    uint32_t oldSize=0;uint64_t fresh=0;auto r=backend->base.stat(backend->base.context,"node-state.bin",&oldSize,&fresh);
    if(r==RISC_APP_DATA_RETAINED){retained=true;return -2;}if(r)return r==RISC_APP_DATA_BUSY?1:-1;

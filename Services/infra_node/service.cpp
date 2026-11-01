@@ -13,8 +13,9 @@ int32_t cancel(void* c){if(!valid(c))return INFRA_INVALID;node->drain=true;retur
 bool quiesce(){if(!node)return true;if(node->phase!=Infra::Phase::Stopped&&node->phase!=Infra::Phase::Cold)return false;if(node->portal.client||node->portal.listener||node->portal.dns||node->portal.fault||node->journal.writeToken||node->journal.retained||node->net.token||node->net.retained)return false;node->dispose();node->~Node();node=nullptr;api.context=nullptr;return true;}
 void stop(){(void)quiesce();}
 bool start(const risc_provider_dependency_v1* deps,size_t count){
- if(node||!deps||count!=6)return false;node=new(storage)Infra::Node();bool http=false,time=false,random=false,station=false,storageReady=false,portal=false;
+ if(node||!deps||count!=7)return false;node=new(storage)Infra::Node();bool http=false,time=false,random=false,station=false,storageReady=false,portal=false,recovery=false;
  for(size_t i=0;i<count;++i){auto& d=deps[i];if(!d.capability_id||!d.api)continue;
+  if(!strcmp(d.capability_id,"platform.recovery")&&d.api_version==1){auto b=static_cast<const risc_platform_recovery_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->feed&&b->snapshot&&b->restart){node->recovery=*b;recovery=true;}}
   if(!strcmp(d.capability_id,"platform.http-client")&&d.api_version==2){auto b=static_cast<const risc_http_client_v2*>(d.api);if(b->api_version==2&&b->struct_size>=sizeof(*b)&&b->open&&b->advance&&b->read&&b->info&&b->close){node->net.api=*b;http=true;}}
   if(!strcmp(d.capability_id,"platform.clock")&&d.api_version==1){auto b=static_cast<const risc_platform_clock_api_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->monotonic_ms){node->clock=*b;time=true;}}
   if(!strcmp(d.capability_id,"platform.entropy")&&d.api_version==1){auto b=static_cast<const risc_entropy_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->fill){node->entropy=*b;random=true;}}
@@ -22,7 +23,7 @@ bool start(const risc_provider_dependency_v1* deps,size_t count){
   if(!strcmp(d.capability_id,"platform.tcp-listener")&&d.api_version==1){auto b=static_cast<const risc_tcp_listener_v1*>(d.api);if(b->api_version==1&&b->struct_size>=sizeof(*b)&&b->datagram_tag==RISC_DATAGRAM_TAG&&b->listen&&b->accept&&b->read&&b->write&&b->close&&b->datagram_bind&&b->datagram_receive&&b->datagram_send){node->portal.api=*b;portal=true;}}
   if(!strcmp(d.capability_id,"storage.app-data.bound")&&d.api_version==1)storageReady=node->journal.initialize(static_cast<const risc_bound_app_data_v1*>(d.api));
  }
- if(!http||!time||!random||!station||!storageReady||!portal){node->phase=Infra::Phase::Stopped;quiesce();return false;}
+ if(!http||!time||!random||!station||!storageReady||!portal||!recovery){node->phase=Infra::Phase::Stopped;quiesce();return false;}
  api={1,sizeof(api),reinterpret_cast<void*>(++generation),bootstrap,advance,memory,snapshot,shutdown,inventory,cancel};return true;
 }
 const risc_driver_v2 driver{2,sizeof(driver),"infra-node","infra.node",1,&api,start,stop,quiesce};

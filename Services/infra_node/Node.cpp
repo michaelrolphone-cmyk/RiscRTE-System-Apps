@@ -139,14 +139,22 @@ int Node::rejectSavedRequest(){
 }
 int Node::received(){
  if(relayAction())return relayReceived();
- if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();return backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");}
+ if(net.outcome){if(net.outcome==RISC_HTTP_TIMEOUT)status.timed_out++;if(net.info.sent_bytes)status.unknown++;if(action==Action::Probe)return probeResult();const auto result=backoff(net.info.sent_bytes?"outcome_unknown_same_identity":"network_failure");if(result==1)transportReason();return result;}
  if(action==Action::Probe){cadence[bindingIndex].lastCompleted=now();return probeResult();}
+ if(net.info.status_code>=500||net.info.status_code==408||net.info.status_code==425||net.info.status_code==429)return serviceRetry("service_http_retry");
  if(net.info.status_code==401||net.info.status_code==403){if(action==Action::Maintain){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;copy(status.reason,sizeof(status.reason),"binding_auth_blocked");return 1;}return block(Phase::AuthBlocked,"participant_auth_blocked");}
- if(!parse(response,net.body,net.size))return block(Phase::ProtocolBlocked,"malformed_or_oversize_response");
+ if(!parse(response,net.body,net.size))return serviceRetry("service_response_unreadable");
  if(response["protocol_version"]!=(action==Action::Maintain?"maintenance/1":"1.0"))return block(Phase::ProtocolBlocked,"response_protocol_mismatch");
  if(!response["operation_id"].isNull()&&response["operation_id"]!=request["operation_id"])return block(Phase::ProtocolBlocked,"operation_receipt_identity_mismatch");
  auto d=response["data"].as<JsonObjectConst>();const char* code=response["code"]|"";bool missing=response["status"]=="rejected"&&!strcmp(code,"NOT_FOUND");
  if(response["status"]=="rejected"&&!((action==Action::PoolGet||action==Action::OfferGet)&&missing)){
+  // A release's provider definitions may not yet exist in the catalog. This
+  // read/replace inventory has no execution custody: retry without changing
+  // pins or suspending independent relay/maintenance work. Admission stays off.
+  if(missing&&!durable&&(action==Action::Inventory||action==Action::ProviderGet)){
+   networkSucceeded();inventoryNeeded=true;inventoryRetryAt=now()+60000;
+   reason(Phase::Ready,"inventory_provider_not_found_retry");return 1;
+  }
   if((!strcmp(code,"PLAN_STALE")||!strcmp(code,"STALE_ATTEMPT")||!strcmp(code,"REVISION_CONFLICT"))&&(action==Action::Claim||action==Action::Prepare||action==Action::Renew||action==Action::BindingRenew||action==Action::RejectPrepare)&&response["mutation_outcome"]=="not_applied"){
    if(action==Action::Claim)journal.state["job"]=nullptr;rebootRecovery=true;snapshotNeeded=true;snapshotStage=0;snapshotAfter[0]=0;return finish(Phase::Recover);
   }
@@ -154,13 +162,13 @@ int Node::received(){
   if(action==Action::Maintain&&!strcmp(code,"CURSOR_GAP")){cursors[bindingIndex][0]=0;status.gaps++;phase=Phase::Ready;return 1;}
   if(!strcmp(code,"REVISION_CONFLICT")&&(action==Action::PoolPut||action==Action::OfferPut)){return finish();}
   if(!strcmp(code,"INVALID_REQUEST")&&durable)return rejectSavedRequest();
-  if(!strcmp(code,"BUSY")||!strcmp(code,"RATE_LIMITED")||net.info.status_code>=500)return backoff("service_retry_same_identity");
+  if(!strcmp(code,"BUSY")||!strcmp(code,"RATE_LIMITED"))return serviceRetry("service_retry_same_identity");
   return block(Phase::ProtocolBlocked,code[0]?code:"service_rejected");
  }
  if(!missing&&(response["status"]!="completed"&&response["status"]!="accepted"))return block(Phase::ProtocolBlocked,"unexpected_response_status");
  if(durable&&(!response["receipt"].is<JsonObjectConst>()||response["receipt"]["operation_id"]!=request["operation_id"]||!digest(response["receipt"]["request_hash"])))return block(Phase::ProtocolBlocked,"durable_receipt_missing_or_mismatched");
  if(durable){char expected[65];semanticDigest(request,expected);if(response["receipt"]["request_hash"]!=expected)return block(Phase::ProtocolBlocked,"receipt_semantic_hash_mismatch");}
- failures=0;status.completed++;
+ networkSucceeded();failures=0;serviceFailures=0;serviceRetryAt=0;serviceError[0]=0;status.completed++;
  switch(action){
  case Action::RotationPrepare:if(d["credential_sha256"]!=journal.state["rotation"]["credential_sha256"]||d["state"]!="prepared")return block(Phase::AuthBlocked,"rotation_prepare_mismatch");journal.state["rotation"]["phase"]="prepared";return finish();
  case Action::RotationActivate:{auto r=journal.state["rotation"];if(d["phase"]!="activated"||d["credential_sha256"]!=r["credential_sha256"])return block(Phase::AuthBlocked,"rotation_activate_mismatch");journal.state["credentials"][config["service"]["credential_ref"]|""]=journal.state["credentials"][r["new_credential_ref"]|""];journal.state["credential_generation"]=d["credential_epoch"];r["phase"]="activated";sessionId[0]=0;return finish();}
@@ -183,7 +191,7 @@ int Node::received(){
  case Action::Control:{char hash[65];canonicalDigest(d["data"],hash);if(d["seq"]!=controlSequence||strcmp(hash,controlHash))return block(Phase::ProtocolBlocked,"control_reference_digest_mismatch");int r=control(d);if(r)return r;phase=Phase::Ready;nextSync=0;return 1;}
  case Action::RejectPrepare:if(d["state"]!="aborted")return block(Phase::ProtocolBlocked,"rejection_not_acknowledged");return finish();
  case Action::Progress:case Action::Heartbeat:return finish();
- case Action::Inventory:if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+90000;}return finish();
+ case Action::Inventory:if(d["profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"inventory_profile_mismatch");inventoryRetryAt=0;if(!poolsEstablished){poolsEstablished=true;inventoryNeeded=true;}else{inventoryNeeded=false;nextInventory=now()+90000;}return finish();
  case Action::Enroll:
   if(!text(d["id"],128))return block(Phase::ProtocolBlocked,"enrollment_identity_missing");journal.state["participant_id"]=d["id"];journal.state.remove("bootstrap");return finish();
  case Action::Open:

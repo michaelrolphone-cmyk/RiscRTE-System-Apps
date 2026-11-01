@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Build the product-owned infrastructure ELFs using a pinned native toolchain."""
 import argparse,hashlib,json,pathlib,subprocess
+from native_toolchain import compiler_path
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 def main():
  p=argparse.ArgumentParser();p.add_argument('--runtime',required=True,type=pathlib.Path);p.add_argument('--cc',required=True);p.add_argument('--output',required=True,type=pathlib.Path);a=p.parse_args()
- r=a.runtime.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True)
+ r=a.runtime.resolve();out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);a.cc=compiler_path(a.cc)
  cxx=a.cc.removesuffix('gcc')+'g++';readelf=a.cc.removesuffix('gcc')+'readelf'
  common=['-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-fno-builtin','-fno-unwind-tables','-fno-asynchronous-unwind-tables','-nostdlib','-nostartfiles','-DWITH_SHA256','-DARDUINOJSON_ENABLE_STD_STRING=0','-DARDUINOJSON_ENABLE_STD_STREAM=0','-Wno-deprecated-declarations']
  includes=[r/'sdk/driver',r/'sdk/app',r/'sdk/hardware',r/'lib/ArduinoJson/src']
@@ -16,6 +17,7 @@ def main():
  for name,(sources,entry,extra) in targets.items():
   export=out/(name+'.map');export.write_text('{ global: '+entry+'; local: *; };\n')
   subprocess.run([cxx,*common,'-std=c++17','-fno-exceptions','-fno-rtti','-shared','-Wl,--hash-style=sysv','-Wl,--version-script='+str(export),*[str(ROOT/s) for s in sources],*extra,'-o',str(out/name)],check=True)
+  if (out/name).read_bytes()[:6]!=b'\x7fELF\x01\x01':raise RuntimeError('Expected ELF32 little-endian ESP32-S3 image')
   syms=subprocess.check_output([readelf,'--dyn-syms','--wide',str(out/name)],text=True)
   imports=sorted({line.split()[-1] for line in syms.splitlines() if 'GLOBAL' in line and 'UND' in line})
   allowed={'risc_runtime_get_api','malloc','free','realloc','memcpy','memset','memcmp','strlen','strcmp','strncmp','strcpy','snprintf','strtod','strtoul','strtol','strtoll','strtoull','pow'}

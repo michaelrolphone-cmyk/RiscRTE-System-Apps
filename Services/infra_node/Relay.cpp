@@ -2,7 +2,7 @@
 #include "RelayWire.h"
 namespace Infra {
 static JsonObject busRequest(Node& n,Action a,const char* op){n.action=a;n.request.clear();n.request["protocol_version"]="relay/1";n.request["operation"]=op;return n.request["arguments"].to<JsonObject>();}
-static void publication(Node& n,Action a,const char* channel,const char* key,JsonObjectConst payload){auto p=busRequest(n,a,"publish");p["channel"]=channel;p["type"]=channel;p["version"]=(!strcmp(channel,"relay.health")||!strcmp(channel,"relay.deadletter"))?2:1;p["idempotency_key"]=key;p["payload"]=payload;}
+static void publication(Node& n,Action a,const char* channel,const char* key,JsonObjectConst payload){auto p=busRequest(n,a,"publish");p["channel"]=channel;p["type"]=channel;p["version"]=!strcmp(channel,"relay.health")?3:(!strcmp(channel,"relay.deadletter")?2:1);p["idempotency_key"]=key;p["payload"]=payload;}
 static bool secretsReady(Node& n,JsonObjectConst s){return (s["auth"].isNull()||n.credential(s["auth"]["credential_ref"]|"")[0])&&(s["signing_credential_ref"].isNull()||n.credential(s["signing_credential_ref"]|"")[0]);}
 static bool isEnrollment(Action a){return a==Action::RelayIdentity||a==Action::RelayEnrollmentReview||a==Action::RelayEnrollmentComplete||a==Action::RelayEnrollmentVerified;}
 static void projections(JsonObject a,JsonArrayConst subscriptions,const char* only=""){
@@ -26,8 +26,11 @@ int Node::relayStep(){
  if(r.isNull()){r=journal.state["relay"].to<JsonObject>();r["schema_version"]=1;r["subscriptions"]=policy["subscriptions"];r["subscription_revision"]=0;r["attachments"].to<JsonArray>();r["pending"]=nullptr;r["allowed_origins"]=policy["allowed_origins"];r["webhook_credential_refs"]=policy["webhook_credential_refs"];r["secrets"].to<JsonObject>();r["deliveries"].to<JsonObject>();for(const char* k:{"subscriptions","allowed_origins","webhook_credential_refs"})if(r[k].isNull())r[k].to<JsonArray>();return persist(Phase::Ready);}
  if(r["schema_version"]!=1||r["subscriptions"].size()>RelaySubscriptionsMax||r["attachments"].size()>RelayAttachmentsMax||r["deliveries"].size()>RelaySubscriptionsMax){relayBlocked=true;copy(relayError,sizeof(relayError),"relay_state_invalid");return 0;}
  if(!relayReady){relayUpgradePending=!r["pending"].isNull()&&r["custody_version"]!=2;auto a=busRequest(*this,Action::RelayConfig,"configuration");if(r["pending"].isNull()){a["custody_version"]=2;auto subs=a["subscriptions"].to<JsonArray>();for(auto s:r["subscriptions"].as<JsonArrayConst>()){auto v=subs.add<JsonObject>();v["id"]=s["id"];auto channels=v["channels"].to<JsonArray>();if(s["channels"].is<JsonArrayConst>())channels.set(s["channels"]);else channels.add(s["channel"]);}}relayYield=true;return send(false);}
+ if(!relayIdentityReady){if(auto step=enrollmentStep())return step;}
  if(now()>=relayHealthAt){
-  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["queue_depth"]=r["deliveries"].size()+(r["pending"].isNull()?0:1);response["last_error"]=relayError[0]?relayError:(journal.state["protocol_rejections"]["last_error"]|"");response["subscriptions"]=r["subscriptions"].size();
+  response.clear();response["relay_id"]=policy["relay_id"];response["uptime_ms"]=now();response["queue_depth"]=r["deliveries"].size()+(r["pending"].isNull()?0:1);response["last_error"]=relayError[0]?relayError:(serviceError[0]?serviceError:(journal.state["protocol_rejections"]["last_error"]|""));response["subscriptions"]=r["subscriptions"].size();
+  const char* resetNames[]={"unknown","power_on","external","software","panic","interrupt_watchdog","task_watchdog","watchdog","deep_sleep","brownout","sdio","usb","jtag","efuse","power_glitch","cpu_lockup"};response["reset_reason"]=recoveryHealth.reset_reason<16?resetNames[recoveryHealth.reset_reason]:"unknown";response["reset_reason_code"]=recoveryHealth.reset_reason;response["boot_count"]=recoveryHealth.boot_count;response["boot_count_valid"]=recoveryHealth.boot_count_valid==1;response["free_heap"]=recoveryHealth.free_heap;response["min_free_heap"]=recoveryHealth.min_free_heap;response["largest_free_block"]=recoveryHealth.largest_free_block;response["wifi_rssi"]=recoveryHealth.wifi_rssi;response["consecutive_network_failures"]=networkFailures;response["backlog_policy"]="ordered_catch_up";
+
   for(auto a:r["attachments"].as<JsonArrayConst>()){const char* c=a["channel"]|"";uint64_t cursor=a["cursor"];auto seq=response["last_seq"][c];if(seq.isNull()||cursor<seq.as<uint64_t>())response["last_seq"][c]=cursor;}
   auto health=response["subscription_health"].to<JsonArray>();for(auto s:r["subscriptions"].as<JsonArrayConst>()){auto h=health.add<JsonObject>();h["id"]=s["id"];h["enabled"]=relayEnabled(s,net.wall(now())*1000);auto old=r["health"][s["id"]|""];h["last_delivered_seq"]=old["last_delivered_seq"].as<uint64_t>();h["consecutive_failures"]=old["consecutive_failures"].as<unsigned>();h["last_error_code"]=old["last_error_code"]|"";}
   char key[160];snprintf(key,sizeof(key),"health:%.32s:%llu",boot,static_cast<unsigned long long>(now()));publication(*this,Action::RelayHealth,"relay.health",key,response.as<JsonObjectConst>());relayYield=true;return send(false);
@@ -60,7 +63,7 @@ int Node::relayStep(){
  // identity is committed. Independent Bus attachments retain unacknowledged data.
  for(unsigned k=0;k<r["attachments"].size();++k){unsigned i=(relayIndex+1+k)%r["attachments"].size();auto attachment=r["attachments"][i];const char* id=attachment["subscription_id"]|"";if((r["custody_version"]==2&&!*id&&relayChannel(attachment["channel"]|""))||now()<relayPollAt[i]||(*id&&!r["deliveries"][id].isNull()))continue;
   if(*id){auto s=find(r["subscriptions"],"id",id);if(s.isNull()||!relayEnabled(s,net.wall(now())*1000))continue;}
-  if(!*id&&!r["pending"].isNull())continue;relayIndex=i;copy(relaySlot,sizeof(relaySlot),id);auto a=busRequest(*this,Action::RelayPoll,"receive");a["attachment_id"]=attachment["id"];projections(a,r["subscriptions"],id);relayYield=true;return send(false);
+  if(!*id&&!r["pending"].isNull())continue;relayIndex=i;copy(relaySlot,sizeof(relaySlot),id);auto a=busRequest(*this,Action::RelayPoll,"receive");a["attachment_id"]=attachment["id"];a["scan_limit"]=250;projections(a,r["subscriptions"],id);relayYield=true;return send(false);
  }
  return 0;
 }
@@ -80,19 +83,23 @@ int Node::relayTransmit(){
   }else if(text(sub["signing_credential_ref"],128)){uint8_t mac[32];const char* key=credential(sub["signing_credential_ref"]);relayMac(reinterpret_cast<const uint8_t*>(key),strlen(key),nullptr,timestamp,encoded,bytes,mac);strcpy(signature,"sha256=");for(unsigned i=0;i<32;++i)snprintf(signature+7+2*i,3,"%02x",mac[i]);Portal::wipe(mac,sizeof(mac));headers[count++]={"X-Relay-Timestamp",timestamp};headers[count++]={"X-Relay-Signature",signature};}
   if(!sub["auth"].isNull()){if(count>=8)return relayFailure("relay_header_capacity");headers[count++]={sub["auth"]["header"]|"",credential(sub["auth"]["credential_ref"]|"")};}
  }else{snprintf(auth,sizeof(auth),"Bearer %s",bearer);headers[count++]={"Authorization",auth};const char* gate=credential(policy["site_credential_ref"]|"");if(gate[0]){snprintf(site,sizeof(site),"Bearer %s",gate);headers[count++]={"OAI-Sites-Authorization",site};}}
- const auto rc=net.begin(post?(sub["url"]|""):(policy["url"]|""),post&&relayMcp(sub)?RISC_HTTP_POST_PUBLIC:RISC_HTTP_POST,headers,count,encoded,bytes,post?4096:16384,isEnrollment(action)?25000:5000,config["service"]["time_server"],now());Portal::wipe(auth,sizeof(auth));Portal::wipe(site,sizeof(site));Portal::wipe(signature,sizeof(signature));
+ const auto rc=net.begin(post?(sub["url"]|""):(policy["url"]|""),post&&relayMcp(sub)?RISC_HTTP_POST_PUBLIC:RISC_HTTP_POST,headers,count,encoded,bytes,post?4096:16384,ServiceRequestTimeoutMs,config["service"]["time_server"],now());Portal::wipe(auth,sizeof(auth));Portal::wipe(site,sizeof(site));Portal::wipe(signature,sizeof(signature));
  if(rc==-2)return retained();if(rc<0)return relayFailure("relay_transport_open");if(rc)return 1;status.requested++;reason(Phase::Receive,post?"relay_webhook_in_flight":"relay_bus_in_flight");return 1;
 }
 static void receipt(Node& n,bool accepted,const char* error){auto p=n.relayPending();auto s=target(p);unsigned attempts=(p["attempts"]|0)+1;p["attempts"]=attempts;auto r=p["receipt"].to<JsonObject>();r["relay_id"]=n.config["relay"]["relay_id"];r["subscription_id"]=s["id"];r["message_id"]=p["event"]["id"];char id[65];relayInvocationId(s,p["event"],id);r["invocation_id"]=id;r["attempt"]=attempts;r["http_status"]=n.net.info.status_code;r["observed_at"]=n.net.wall(n.now())*1000;p["accepted"]=accepted;p["error_code"]=error;auto h=n.journal.state["relay"]["health"][s["id"]|""];h["consecutive_failures"]=accepted?0:(h["consecutive_failures"]|0)+1;h["last_error_code"]=error;if(accepted)h["last_delivered_seq"]=p["event"]["seq"];}
 int Node::relayFailure(const char* why){
+ if(!strcmp(why,"relay_network_failure")||!strcmp(why,"relay_transport_open"))networkFailed();
  copy(relayError,sizeof(relayError),why);relayYield=true;phase=Phase::Ready;
  if(action==Action::RelayVerify){net.outcome=-1;return enrollmentVerified();}
  if(action==Action::RelayPost){auto p=relayPending();receipt(*this,false,why);if(relayMcp(target(p))&&(net.info.status_code==410||net.info.status_code==413)){p["terminal"]=true;p["error_code"]=net.info.status_code==410?"callback_gone":"payload_rejected";if(net.info.status_code==410)for(auto sub:journal.state["relay"]["subscriptions"].as<JsonArray>())if(sub["id"]==target(p)["id"])sub["enabled"]=false;}const unsigned failures=p["attempts"];const uint32_t delays[]={5000,30000,120000,600000};p["not_before_ms"]=net.wall(now())*1000+(failures<=4?delays[failures-1]:0);return persist(Phase::Ready);}
+ if(action==Action::RelayLoad){relayPollAt[relayIndex]=now()+5000;auto p=relayPending();p["not_before_ms"]=net.wall(now())*1000+5000;return persist(Phase::Ready);}
+ if(action==Action::RelayPoll){relayPollAt[relayIndex]=now()+5000;return 1;}
  relayRetryAt=now()+5000;return 1;
 }
 int Node::relayReceived(){
  if(action==Action::RelayVerify)return enrollmentVerified();
- if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;return relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");}
+ if(net.outcome||net.info.status_code<200||net.info.status_code>=300){if(action!=Action::RelayPost&&action!=Action::RelayVerify&&(net.info.status_code==401||net.info.status_code==403))relayBlocked=true;const auto result=relayFailure(net.outcome?"relay_network_failure":"relay_http_failure");if(net.outcome&&result==1)transportReason();return result;}
+ networkSucceeded();
  auto r=journal.state["relay"].as<JsonObject>();auto p=relayPending();
  if(action==Action::RelayPost){receipt(*this,true,"");relayError[0]=0;status.completed++;return persist(Phase::Ready);}
  if(!parse(response,net.body,net.size)||response["protocol_version"]!="relay/1"||response["status"]!="completed")return relayFailure("relay_response_invalid");
@@ -125,7 +132,7 @@ int Node::relayReceived(){
   if(!found)return relayFailure("relay_selected_attachment_invalid");
  }
  auto attachment=r["attachments"][relayIndex];if(!integer(data["event_cursor"],attachment["cursor"].as<uint64_t>(),9007199254740991ULL)||!data["events"].is<JsonArrayConst>()||data["events"].size()>1)return relayFailure("relay_cursor_or_batch_invalid");
- bool active=attachment["channel"]=="relay.subscriptions"||attachment["channel"]=="relay.enroll";for(auto s:r["subscriptions"].as<JsonArrayConst>())active|=relayEnabled(s,net.wall(now())*1000)&&relayWatches(s,attachment["channel"]);relayPollAt[relayIndex]=now()+(active?1000:30000);
+ bool active=attachment["channel"]=="relay.subscriptions"||attachment["channel"]=="relay.enroll";for(auto s:r["subscriptions"].as<JsonArrayConst>())active|=relayEnabled(s,net.wall(now())*1000)&&relayWatches(s,attachment["channel"]);relayPollAt[relayIndex]=now()+(data["event_cursor"].as<uint64_t>()>attachment["cursor"].as<uint64_t>()?0:(active?1000:30000));
  if(data["event_cursor"]==attachment["cursor"]&&data["events"].size()==0){phase=Phase::Ready;return 1;}
  p=relaySlot[0]?r["deliveries"][relaySlot].to<JsonObject>():r["pending"].to<JsonObject>();p["attachment"]=relayIndex;p["cursor"]=data["event_cursor"];p["index"]=0;p["attempts"]=0;p["not_before_ms"]=0;auto targets=p["targets"].to<JsonArray>();
  if(data["events"].size()){

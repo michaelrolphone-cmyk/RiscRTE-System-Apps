@@ -26,5 +26,26 @@ int main(){
  // Retention fences both reads and writes permanently.
  statResult=RISC_APP_DATA_RETAINED;assert(j.load()==-2);statResult=0;assert(j.load()==-2&&j.save()==-2&&j.collect()==-2);
  initial();Infra::Journal corrupt;assert(corrupt.initialize(&api.base));disk[33]^=1;assert(corrupt.load()==-1&&corrupt.blocked);assert(corrupt.save()==-1);corrupt.dispose();
+ // A valid service document acquires more ancestor keys when held in the
+ // journal. The old 64-active-key network gate accepted save but refused reboot.
+ initial();Infra::Journal nested;assert(nested.initialize(&api.base));assert(nested.load()==0);
+ auto relay=nested.state["relay"].to<JsonObject>();
+ for(unsigned i=0;i<40;++i)relay[std::string("field")+std::to_string(i)]=i;
+ auto event=relay["pending"]["event"].to<JsonObject>();
+ for(unsigned i=0;i<30;++i)event[std::string("field")+std::to_string(i)]=i;
+ std::string saved;serializeJson(nested.state,saved);
+ assert(!Infra::JsonGuard(saved.data(),saved.size()).objectOnly());
+ assert(nested.save()==1&&nested.collect()==0);
+ Infra::Journal restarted;assert(restarted.initialize(&api.base));
+ assert(restarted.load()==0&&restarted.seq==2&&restarted.state["relay"]["pending"]["event"]["field29"]==29);
+ // Nesting added by custody is also distinct from the network envelope.
+ restarted.state["relay"].to<JsonObject>();auto deep=restarted.state["relay"].as<JsonObject>();
+ for(unsigned i=0;i<18;++i)deep=deep["nested"].to<JsonObject>();deep["value"]=7;
+ assert(restarted.save()==1&&restarted.collect()==0&&restarted.load()==0);
+ const auto committed=disk;
+ restarted.state["relay"]["oversize_string"]=std::string(4097,'x');
+ assert(restarted.save()==-1&&disk==committed&&!restarted.writeToken);
+ nested.dispose();restarted.dispose();
  puts("Journal: copied async writes, BUSY, both COMMIT_UNKNOWN outcomes, stale revision, corruption and retained fence PASS");
+ puts("Journal restart: embedded documents survive aggregate key/depth growth; unreadable values rejected before disk mutation PASS");
 }

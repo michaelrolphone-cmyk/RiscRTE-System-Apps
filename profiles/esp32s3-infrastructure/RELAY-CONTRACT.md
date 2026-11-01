@@ -250,3 +250,36 @@ v1.4.2 bootloader, SHA256
 `6ef091e6fa1c102ff4449b47677d52fb13ea4078b1888b48bb0a0ed8c24bc3fb`.
 Binary comparison confirms identical code; only the build timestamp, checksum
 and image digest differ from the new build. The installer leaves it untouched.
+
+## v1.6 autonomous recovery
+
+The product profile explicitly selects `platform.recovery@1`. The native
+execution watchdog starts before provider activation, panics on a 90-second
+missed heartbeat, and is fed only by the node's executing loop. A stuck
+asynchronous phase stops feeds after 30 seconds; the combined upper bound is
+120 seconds. Native interrupt watchdog protection remains enabled. No watchdog
+path erases, formats, or discards retained resources. NVS records one atomic boot
+counter update per boot; a failed counter commit is reported as invalid.
+
+Health now uses immutable `relay.health` version 3. It includes the ESP reset
+reason and numeric code, boot count/validity, current/minimum free heap, largest
+free block, Wi-Fi RSSI (0 when disconnected), consecutive network failures and
+`ordered_catch_up` backlog policy. Existing health version 2 remains unchanged.
+Identity retains the version 1 public payload and gets a boot-scoped publication
+identity so retries deduplicate while every boot republishes.
+
+Receive requests use `scan_limit=250`; the bus hydrates at most 25 payloads per
+page and returns at most one matching event. It stops before the first match or
+an earlier event on another channel. It never advances an acknowledgement while
+scanning. Legacy callers retain the 25-event default. Confirmed cursors persist
+after each bounded batch, and in-flight delivery identity persists before POST.
+Catch-up does not discard old events. A 12-hour/18,000-event software fixture
+uses 72 receive requests; this is a simulation, not physical outage evidence.
+
+Wi-Fi failure retries the saved network without opening setup on enrolled
+nodes. Retry jitter tolerates unavailable entropy; cryptographic key generation
+continues to require entropy. The HTTP wrapper closes an unfinished operation
+at its declared timeout plus one second. Six consecutive network failures
+spanning at least two minutes permit a final native restart outside a pending
+atomic save. Per-subscription retry, enrollment approvals, secrets, ordering,
+receiver deduplication and dead-letter custody remain the existing protocol.

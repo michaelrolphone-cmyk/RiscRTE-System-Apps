@@ -1,5 +1,30 @@
 # ESP32-S3 infrastructure agent: phone setup
 
+## v1.6.2: missing-provider recovery and watchdog loop repair
+
+The v1.6.0 serial trace repeatedly reached `ProtocolBlocked / NOT_FOUND`,
+continued logging for 120 seconds, then reset. The published provider revisions
+were absent from the live Capabilities catalog. A responsive blocked state lost
+its watchdog feed after 30 seconds, causing the 90-second hardware watchdog to
+reset the same unchanged state.
+
+Inventory now retries a missing provider after 60 seconds while relay and
+required maintenance continue. New work admission and installation health stay
+blocked until inventory succeeds; exact provider/package pins remain required.
+Responsive blocked states keep their watchdog feed. Stalled asynchronous HTTP
+or storage operations still stop feeding it. The 30-second service/relay HTTP
+deadlines from v1.6.1 remain in place.
+
+Release publication must register every exact provider definition from the
+**built bundle's** `fixtures/catalog.json`, then read each `provider_id@revision`
+back and compare both definition and package digests before offering the image.
+The checked-in synthetic fixture uses a placeholder package digest and must
+never be registered as a release. The missing v1.6.0 and v1.6.1 cohorts were
+repaired in the live catalog; hardware soak qualification is separate.
+
+The preserving repair accepts the exact published v1.6.0 and v1.6.1 cohorts and
+retains credentials, enrollment keys, subscriptions, cursors and pending work.
+
 The v1.2 release is a complete 16 MiB first-install binary. Download the `.bin` directly from RiscRTE.com / the GitHub release and flash it at offset `0x0`. No archive extraction, Python, build tools, editor changes or USB credential injection are required for phone setup.
 
 Target: ESP32-S3 with **16 MiB flash and octal PSRAM**, 80 MHz flash/PSRAM, 240 MHz CPU. This is a first-install image: it replaces existing flash contents and identity. Use the paired update tools for a data-preserving update.
@@ -45,3 +70,19 @@ python3 scripts/inspect_infrastructure_state.py --bundle . --flash /PRIVATE/BACK
 ```
 
 The catalog's current remote flash operation accepts only full images and erases saved data. It cannot perform this paired repair or read the running private journal. Hardware recovery is unverified until the repaired device's serial diagnostics, heartbeat and enrollment decision are observed.
+
+For `state=13` / `state_missing_corrupt_or_schema`, collect a private backup
+before attempting a repair. Close the browser's serial connection, then use the
+existing installer (replace PORT with the board's local serial port):
+
+```sh
+python3 scripts/install_infrastructure.py preflight --port PORT --backup private-backup
+python3 scripts/inspect_infrastructure_state.py --flash private-backup/flash-before.bin --diagnose
+```
+
+Preflight reads flash and enters the ROM loader; it performs no flash writes.
+The backup contains credentials and must remain private. The diagnostic output
+contains only sizes, checksum status and structural limits. It can distinguish a
+legacy parser-bound mismatch from some corruption cases without publishing the
+journal. It is not a full schema verdict. Keep the original backup if extraction
+fails; never erase or replace it with an unprovisioned image as recovery.

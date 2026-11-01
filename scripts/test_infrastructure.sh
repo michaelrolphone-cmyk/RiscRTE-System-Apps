@@ -4,6 +4,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 runtime="${RISC_RUNTIME_ROOT:-$root/../runtime}"
 RISC_RUNTIME_ROOT="$runtime" bash "$root/scripts/test_infrastructure_station.sh"
 node "$root/test/infra_node/portal_page.mjs"
+python3 "$root/scripts/test_infrastructure_diagnostics.py"
 build="$(mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 flags=(-std=c++17 -Wno-deprecated-declarations -I"$runtime/lib/ArduinoJson/src" -I"$runtime/sdk/app" -I"$runtime/sdk/driver" -I"$root/Services/infra_node")
@@ -24,7 +25,14 @@ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v140-providers.json"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v141-providers.json"
 "$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v142-providers.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v160-providers.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v161-providers.json"
+"$build/portal" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json" "$root/test/infra_node/fixtures/portal-v162-providers.json"
 
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/recovery.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/recovery"
+ "$build/recovery" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
+ c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/service_recovery.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/service_recovery"
+ "$build/service_recovery" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/relay.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$build/monocypher.o" "$root/Services/infra_node/Setup.cpp" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/relay"
  "$build/relay" "$root/profiles/esp32s3-infrastructure/fixtures/node-policy.example.json"
  c++ "${flags[@]}" -DWITH_SHA256 -I"$runtime/sdk/hardware" "$root/test/infra_node/rejection.cpp" "$root/Services/infra_node/Node.cpp" "$root/Services/infra_node/Relay.cpp" "$root/Services/infra_node/Enrollment.cpp" "$root/Services/infra_node/Setup.cpp" "$build/monocypher.o" "$root/lib/RemoteFiles/vendor/tinydtls_sha2/sha2.c" -o "$build/rejection"

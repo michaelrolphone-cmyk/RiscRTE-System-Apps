@@ -29,6 +29,10 @@
     {
       "capability": "platform.tcp-listener",
       "api": 1
+    },
+    {
+      "capability": "platform.recovery",
+      "api": 1
     }
   ],
   "provides": [
