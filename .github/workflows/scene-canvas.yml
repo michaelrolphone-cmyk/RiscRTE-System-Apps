@@ -1,7 +1,7 @@
 name: Shared scene canvas composition
 on:
   pull_request:
-    paths: ['Services/scene_host/**', 'Services/canvas_host/**', 'sdk/app/RiscSceneCanvasV1.h', 'scripts/scene_build.py', 'scripts/scene_sdk.py', 'scripts/build_scene_services.py', 'scripts/test_scene_canvas.py', 'scripts/test_native_division.py', 'lib/NativeApps/src/*DivisionCompat.c', 'test/scene_canvas/**', 'test/native_division/**', '.github/workflows/scene-canvas.yml']
+    paths: ['Services/scene_host/**', 'Services/canvas_host/**', 'sdk/app/RiscSceneCanvasV1.h', 'scripts/scene_build.py', 'scripts/scene_sdk.py', 'scripts/build_scene_services.py', 'scripts/test_scene_canvas.py', 'scripts/test_native_division.py', 'lib/NativeApps/src/*DivisionCompat.c', 'test/scene_canvas/**', 'test/native_division/**', 'test/header_focus/**', 'scripts/test_scene_header_focus.py', '.github/workflows/scene-canvas.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,6 +36,7 @@ jobs:
             python System/scripts/test_scene_host.py --runtime Runtime $san 2>&1 | tee evidence/original-$mode.log
             python System/scripts/test_scene_canvas.py --runtime Runtime --output evidence/composition-$mode $san
             python System/scripts/test_native_division.py --output evidence/division-$mode $san
+            python System/scripts/test_scene_header_focus.py --runtime Runtime --output evidence/header-focus-$mode $san
           done
       - name: Repeated target packages
         run: |
