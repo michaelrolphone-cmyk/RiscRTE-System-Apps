@@ -8,7 +8,7 @@ RUNTIME=pathlib.Path(os.environ['RISC_RUNTIME_ROOT'])
 class Repair(unittest.TestCase):
  def test_private_state_and_pending_survive_policy_migration(self):
   policy=json.loads((ROOT/'profiles/esp32s3-infrastructure/fixtures/node-policy.example.json').read_text());old=copy.deepcopy(policy)
-  for provider in old['service']['providers']:provider.update(revision=6,package_digest='e8e06f34552ecf0df59b3b871310ccf7c842e5e67b3ede755462d065c3c330ac')
+  old['service']['providers']=json.loads((ROOT/'test/infra_node/fixtures/portal-v160-providers.json').read_text())
   state=json.loads((ROOT/'profiles/esp32s3-infrastructure/fixtures/node-state.example.json').read_text());state.update(participant_id='participant-test',credentials={'private':'never-print'},setup_policy=copy.deepcopy(old),relay={'identity':{'private_key':'sealed-enrollment-target-key'},'enrollments':[{'payload':{'sealed':{'ciphertext':'unchanged-ciphertext'}}}]},pending=[{'action':15,'request':{'operation_id':'original-pending','family':'observation','operation':'publish','arguments':{'private':'never-print'}}}])
   migrated_policy,migrated_state=migrate(old,state,policy);self.assertEqual(state['pending'],migrated_state['pending']);self.assertEqual(state['relay'],migrated_state['relay']);self.assertEqual(state['credentials'],migrated_state['credentials']);self.assertNotIn('never-print',json.dumps(summary(state,16)))
   with tempfile.TemporaryDirectory() as folder:
