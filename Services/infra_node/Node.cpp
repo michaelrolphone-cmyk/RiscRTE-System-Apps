@@ -17,15 +17,16 @@ int Node::inventoryStep(){
  uint64_t amounts[]={1,capacity()?1ULL:0ULL,8,8,memory.internal_free,memory.psram_free};
  for(unsigned i=0;i<6;++i){auto p=pools.add<JsonObject>();char id[160],physical[160];snprintf(id,sizeof(id),"%s:%s",journal.state["participant_id"]|"",poolNames[i]);snprintf(physical,sizeof(physical),"%s:%s",journal.state["installation_id"]|"",poolNames[i]);p["pool_id"]=id;p["physical_identity"]=physical;p["resource_kind"]="stock";p["unit"]=poolUnits[i];p["allocatable_limit"]=amounts[i];p["external_usage"]=0;p["accounting_basis"]="external_only";p["inventory_revision"]=now();p["reservation_watermark"]=0;p["valid_until"]=net.wall(now())*1000+120000;}
  auto offers=a["offers"].to<JsonArray>();if(poolsEstablished)for(auto pin:config["service"]["providers"].as<JsonArrayConst>()){
-  auto item=offers.add<JsonObject>();item["provider_digest"]=pin["definition_digest"];item["package_digest"]=pin["package_digest"];auto o=item["offer"].to<JsonObject>();char id[200];snprintf(id,sizeof(id),"%s:%s@%u:infra",journal.state["participant_id"]|"",pin["provider_id"]|"",pin["revision"].as<unsigned>());o["offer_id"]=id;o["provider_id"]=pin["provider_id"];o["provider_revision"]=pin["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";bool enabled=false;for(auto b:bindings())enabled|=modeAllows(configuration(),b["capability"]|"")&&b["capability"]==pin["capability_id"];o["observed_health"]=capacity()&&enabled?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_storage_and_policy_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["hardware_qualification"]="pending";o["valid_until"]=net.wall(now())*1000+120000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}
+  auto item=offers.add<JsonObject>();item["provider_digest"]=pin["definition_digest"];item["package_digest"]=pin["package_digest"];auto o=item["offer"].to<JsonObject>();char id[200];snprintf(id,sizeof(id),"%s:%s@%u:infra",journal.state["participant_id"]|"",pin["provider_id"]|"",pin["revision"].as<unsigned>());o["offer_id"]=id;o["provider_id"]=pin["provider_id"];o["provider_revision"]=pin["revision"];o["local_instance_id"]="infra";o["offer_generation"]=sessionGeneration;o["installed_state"]="active";bool enabled=false;for(auto b:bindings())enabled|=bindingAllowed(configuration(),b)&&b["capability"]==pin["capability_id"];o["observed_health"]=capacity()&&roleReady(32000)&&enabled?"healthy":"capacity_blocked";o["probe_evidence"]["bootstrap"]="dependencies_storage_and_policy_verified";o["probe_evidence"]["mode"]=agentMode(configuration());o["probe_evidence"]["hardware_qualification"]="pending";o["valid_until"]=net.wall(now())*1000+120000;for(const char* name:poolNames){char key[160];snprintf(key,sizeof(key),"%s:%s",journal.state["participant_id"]|"",name);o["pool_bindings"][name]=key;}
  }
  return send(false);
 }
-bool Node::bindingMatches(unsigned i)const{auto b=bindingAt(i);auto s=journal.state["job"]["spec"];return modeAllows(configuration(),b["capability"]|"")&&b["binding_id"]==s["inputs"]["binding_id"]&&b["revision"]==s["inputs"]["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i];}
+bool Node::bindingMatches(unsigned i)const{auto b=bindingAt(i);auto s=journal.state["job"]["spec"];return bindingAllowed(configuration(),b)&&b["binding_id"]==s["inputs"]["binding_id"]&&b["revision"]==s["inputs"]["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i];}
 bool Node::localPlan(JsonObjectConst p)const{auto pin=find(config["service"]["providers"],"capability_id",p["capability"]["capability_id"]|"");if(p["participant_id"]!=journal.state["participant_id"]||p["session_id"]!=sessionId||p["provider_digest"]!=pin["definition_digest"]||p["dependencies"].size()||p["resources"].size()>8)return false;
  for(auto r:p["resources"].as<JsonArrayConst>()){const char* id=r["pool_id"]|"";bool found=false;uint64_t limits[]={1,1,8,8,memory.internal_free,memory.psram_free};for(unsigned i=0;i<6;++i){char name[160];snprintf(name,sizeof(name),"%s:%s",journal.state["participant_id"]|"",poolNames[i]);if(!strcmp(name,id)&&integer(r["amount"],0,limits[i]))found=true;}if(!found)return false;}return capacity();}
 int Node::bindingStep(bool job){
- auto b=bindingAt(bindingIndex);if(job&&!bindingMatches(bindingIndex))return stopJob("binding_revision_changed");if(!modeAllows(configuration(),b["capability"]|"")){phase=Phase::Ready;return job?stopJob("mode_binding_disabled"):1;}if(b.isNull())return block(Phase::ProtocolBlocked,"binding_not_found");
+ if(!roleReady(cadence[bindingIndex].timeout+2000)){phase=Phase::Ready;return job?stopJob("role_assignment_not_active"):1;}
+ auto b=bindingAt(bindingIndex);if(job&&!bindingMatches(bindingIndex))return stopJob("binding_revision_changed");if(!bindingAllowed(configuration(),b)){phase=Phase::Ready;return job?stopJob("mode_binding_disabled"):1;}if(b.isNull())return block(Phase::ProtocolBlocked,"binding_not_found");
  if(net.wall(now())&&net.wall(now())*1000>=b["expires_at_ms"].as<uint64_t>()){bindingDisabled[bindingIndex]=true;return job?stopJob("binding_expired"):1;}
  if(job&&(now()+cadence[bindingIndex].timeout+1000>=leaseUntil))return stopJob("insufficient_grant_budget");
  externalJob=job;cadence[bindingIndex].start(now());
@@ -36,6 +37,7 @@ int Node::bindingStep(bool job){
 }
 int Node::jobStep(){
  auto j=journal.state["job"].as<JsonObject>();if(j.isNull())return 1;
+ if(!roleReady(32000)&&j["phase"]!="awaiting_acceptance")return stopJob("role_handoff_or_lease_expired");
  if(j["phase"]=="offered"){
   auto s=j["spec"];auto a=make(Action::Plan,"resolve","plan");a["capability"]=s["capability"];a["requested_operation"]=s["operation"];a["inputs"]=s["inputs"];a["target_policy"]=s["target_policy"];a["resource_request"].set(s["resource_request"].isNull()?JsonObjectConst():s["resource_request"].as<JsonObjectConst>());if(a["resource_request"].isNull())a.remove("resource_request");a["budget"]=8;return send(false);
  }
@@ -66,7 +68,7 @@ int Node::control(JsonObjectConst c){
  }
  if(!strcmp(kind,"prepare")&&d["binding_ids"].size()){
   if(journal.state["job"]["group_id"]==d["group_id"]){cursor=c["seq"];return 0;}
-  if(!journal.state["job"].isNull()||d["binding_ids"].size()!=1||d["bindings"].size()!=1||!localPlan(d["bindings"][0])){cursor=c["seq"];auto a=make(Action::RejectPrepare,"execution","prepare_report");session(a);a["group_id"]=d["group_id"];a["confirmation"]="rejected";a["evidence"]["reason"]="dependency_capacity_or_pin_mismatch";return send(true);}
+  if(!roleReady(32000)||!journal.state["job"].isNull()||d["binding_ids"].size()!=1||d["bindings"].size()!=1||!localPlan(d["bindings"][0])){cursor=c["seq"];auto a=make(Action::RejectPrepare,"execution","prepare_report");session(a);a["group_id"]=d["group_id"];a["confirmation"]="rejected";a["evidence"]["reason"]="dependency_capacity_or_pin_mismatch";return send(true);}
   leaseUntil=grantDeadline(*this,d);auto plan=d["bindings"][0];auto j=journal.state["job"].to<JsonObject>();j["phase"]="prepared_dependency";j["boot_id"]=boot;j["binding_id"]=d["binding_ids"][0];j["attempt_id"]=d["attempt_id"];j["group_id"]=d["group_id"];j["generation"]=d["generation"];j["spec"]["capability"]=plan["capability"];j["spec"]["operation"]=plan["operation"];j["spec"]["mode"]="job";j["spec"]["inputs"]=plan["inputs"];for(auto b:bindings())if(b["binding_id"]==plan["inputs"]["binding_id"])j["spec"]["recovery_policy"]["effect_class"]=b["effect_class"];
   bool valid=false;for(unsigned i=0;i<bindings().size();++i)valid|=bindingMatches(i);if(!valid)return stopJob("dependency_binding_not_admitted");cursor=c["seq"];return persist(Phase::Ready);
  }
@@ -90,10 +92,12 @@ int Node::control(JsonObjectConst c){
 }
 int Node::applySync(JsonObjectConst data){
  if(data["generation"]!=sessionGeneration||!data["controls"].is<JsonArrayConst>()||data["controls"].size()>4||data["work_offers"].size()>1)return block(Phase::ProtocolBlocked,"sync_contract_bound");
+ if(text(data["target_epoch"],128)&&journal.state["target_epoch"]!=data["target_epoch"]){status.gaps++;roleLeaseUntil=0;journal.state.remove("allocation");snapshotNeeded=true;snapshotStage=0;snapshotAfter[0]=0;rebootRecovery=true;return persist(Phase::Recover);}
+ if(!roleGrant(data["role_assignment"]))return block(Phase::ProtocolBlocked,"role_assignment_invalid");
+ if(roleGrantDirty){roleGrantDirty=false;nextSync=0;return persist(Phase::Ready);}
  nextSync=data["coverage"]["complete"]==true?now()+config["service"]["contact_interval_ms"].as<unsigned>():now();status.last_sync_ms=now();
- if(text(data["target_epoch"],128)&&journal.state["target_epoch"]!=data["target_epoch"]){status.gaps++;snapshotNeeded=true;snapshotStage=0;snapshotAfter[0]=0;rebootRecovery=true;phase=Phase::Recover;return 1;}
  for(auto c:data["controls"].as<JsonArrayConst>()){int r=control(c);if(r){nextSync=now();return r;}}
- if(!drain&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
+ if(!drain&&roleReady(32000)&&capacity()&&journal.state["job"].isNull()&&data["work_offers"].size()){
   auto offer=data["work_offers"][0];if(!copy(assignmentId,sizeof(assignmentId),offer["assignment_id"]))return block(Phase::ProtocolBlocked,"assignment_identity_bound");auto a=make(Action::Assignment,"assignment","get");a["assignment_id"]=assignmentId;return send(false);
  }
  phase=Phase::Ready;return 1;
@@ -158,7 +162,8 @@ int Node::received(){
   if((!strcmp(code,"PLAN_STALE")||!strcmp(code,"STALE_ATTEMPT")||!strcmp(code,"REVISION_CONFLICT"))&&(action==Action::Claim||action==Action::Prepare||action==Action::Renew||action==Action::BindingRenew||action==Action::RejectPrepare)&&response["mutation_outcome"]=="not_applied"){
    if(action==Action::Claim)journal.state["job"]=nullptr;rebootRecovery=true;snapshotNeeded=true;snapshotStage=0;snapshotAfter[0]=0;return finish(Phase::Recover);
   }
-  if(!strcmp(code,"STALE_SESSION")){sessionId[0]=0;if(durable){if(response["mutation_outcome"]!="not_applied")return block(Phase::ProtocolBlocked,"stale_session_unknown_custody");return finish(Phase::Recover);}phase=Phase::Recover;return 1;}
+  if(!strcmp(code,"REVISION_CONFLICT")&&!durable&&(action==Action::Open||action==Action::Sync||action==Action::Inventory)&&response["mutation_outcome"]=="not_applied"){nextSync=0;return serviceRetry("allocation_conflict_retry");}
+  if(!strcmp(code,"STALE_SESSION")){roleLeaseUntil=0;sessionId[0]=0;if(durable){if(response["mutation_outcome"]!="not_applied")return block(Phase::ProtocolBlocked,"stale_session_unknown_custody");return finish(Phase::Recover);}phase=Phase::Recover;return 1;}
   if(action==Action::Maintain&&!strcmp(code,"CURSOR_GAP")){cursors[bindingIndex][0]=0;status.gaps++;phase=Phase::Ready;return 1;}
   if(!strcmp(code,"REVISION_CONFLICT")&&(action==Action::PoolPut||action==Action::OfferPut)){return finish();}
   if(!strcmp(code,"INVALID_REQUEST")&&durable)return rejectSavedRequest();
@@ -179,7 +184,7 @@ int Node::received(){
  }
  case Action::Snapshot:{
   if(!text(d["target_epoch"],128)||!d["items"].is<JsonArrayConst>()||d["items"].size()>4||!d["coverage"]["complete"].is<bool>())return block(Phase::ProtocolBlocked,"snapshot_bound");
-  if(journal.state["target_epoch"]!=d["target_epoch"]){journal.state["target_epoch"]=d["target_epoch"];snapshotStage=0;snapshotAfter[0]=0;snapshotNeeded=true;return persist(Phase::Recover);}
+  if(journal.state["target_epoch"]!=d["target_epoch"]){journal.state["target_epoch"]=d["target_epoch"];roleLeaseUntil=0;journal.state.remove("allocation");snapshotStage=0;snapshotAfter[0]=0;snapshotNeeded=true;return persist(Phase::Recover);}
   for(auto item:d["items"].as<JsonArrayConst>()){
    if(!text(item["id"],128))return block(Phase::ProtocolBlocked,"snapshot_identity_bound");copy(snapshotAfter,sizeof(snapshotAfter),item["id"]);
    if(snapshotStage<2){auto j=journal.state["job"].to<JsonObject>();j["attempt_id"]=snapshotStage==1?item["attempt_id"]:item["id"];if(snapshotStage==1)j["binding_id"]=item["id"];j["generation"]=item["generation"];j["assignment_id"]=item["assignment_id"];j["phase"]="reconciling";return stopJob("snapshot_recovered_old_authority");}
@@ -195,7 +200,7 @@ int Node::received(){
  case Action::Enroll:
   if(!text(d["id"],128))return block(Phase::ProtocolBlocked,"enrollment_identity_missing");journal.state["participant_id"]=d["id"];journal.state.remove("bootstrap");return finish();
  case Action::Open:
-  if(!copy(sessionId,sizeof(sessionId),d["id"])||!integer(d["generation"],1,9007199254740991ULL)||d["embedded_profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"embedded_profile_not_negotiated");sessionGeneration=d["generation"];cursor=d["cursor"]|0ULL;nextSync=0;inventoryNeeded=true;poolStage=true;inventoryIndex=0;return finish();
+  if(!copy(sessionId,sizeof(sessionId),d["id"])||!integer(d["generation"],1,9007199254740991ULL)||d["embedded_profile"]!="esp32s3-infrastructure/1")return block(Phase::ProtocolBlocked,"embedded_profile_not_negotiated");sessionGeneration=d["generation"];cursor=d["cursor"]|0ULL;nextSync=0;inventoryNeeded=true;poolStage=true;inventoryIndex=0;if(!roleGrant(d["role_assignment"]))return block(Phase::ProtocolBlocked,"role_assignment_invalid");if(roleGrantDirty){roleGrantDirty=false;return persist(Phase::Ready);}return finish();
  case Action::Sync:return applySync(d);
  case Action::PoolGet:{
   inventoryRevision=missing?0:d["revision"].as<uint64_t>();auto a=make(Action::PoolPut,"catalog","pool_observe");session(a);request["expected_revision"]=inventoryRevision;auto p=a["pool"].to<JsonObject>();p["pool_id"]=poolId;char physical[160];snprintf(physical,sizeof(physical),"%s:%s",journal.state["installation_id"]|"",poolNames[inventoryIndex]);p["physical_identity"]=physical;p["resource_kind"]="stock";p["unit"]=poolUnits[inventoryIndex];uint64_t capacities[]={1,capacity()?1ULL:0ULL,8,8,memory.internal_free,memory.psram_free};p["allocatable_limit"]=capacities[inventoryIndex];p["external_usage"]=0;p["accounting_basis"]="external_only";p["inventory_revision"]=now();p["reservation_watermark"]=d["reservation_watermark"]|0;p["valid_until"]=net.wall(now())*1000+90000;return send(false);
@@ -209,6 +214,7 @@ int Node::received(){
  }
  case Action::OfferPut:if(++inventoryIndex==4){inventoryIndex=0;poolStage=true;inventoryNeeded=false;nextInventory=now()+45000;}return finish();
  case Action::Assignment:{
+  if(!roleReady(32000)){phase=Phase::Ready;return 1;}
   auto s=d["spec"].as<JsonObjectConst>();auto input=s["inputs"].as<JsonObjectConst>();auto pin=find(config["service"]["contracts"],"capability_id",s["capability"]["capability_id"]|"");
   if(!keys(input,{"binding_id","binding_revision"})||measureJson(s)>1600||s["capability"]["contract_digest"]!=pin["contract_digest"]||s["capability"]["api_version"]!=1||!digest(d["spec_digest"])||!text(d["id"],128)||(s["mode"]!="job"&&s["mode"]!="desired_state")||s["artifact_refs"].size()||s["acceptance_policy"]["kind"]!="schema_only")return block(Phase::ProtocolBlocked,"assignment_not_admitted");
   bool admitted=false;for(unsigned i=0;i<bindings().size();++i){auto b=bindingAt(i);if(b["binding_id"]==input["binding_id"]&&b["revision"]==input["binding_revision"]&&b["capability"]==s["capability"]["capability_id"]&&b["operation"]==s["operation"]&&b["effect_class"]==s["recovery_policy"]["effect_class"]&&!bindingDisabled[i])admitted=true;}
@@ -240,10 +246,10 @@ int Node::received(){
    response["last_receipt"]=d;auto a=make(Action::Progress,"execution","progress");attempt(a);a["event_id"]="infra-current";a["observations"]["binding_id"]=bindingAt(bindingIndex)["binding_id"];a["observations"]["desired_revision"]=bindingAt(bindingIndex)["revision"];a["observations"]["last_receipt"]=response["last_receipt"];a["observations"]["freshness_ms"]=cadence[bindingIndex].interval;a["observations"]["observed_at_ms"]=net.wall(now())*1000;return send(false);
   }return result(d);}return finish();
  case Action::Desired:{
-  if(d["state"]=="withdrawn"||d["state"]=="expired"||d["expires_at"].as<uint64_t>()<=net.wall(now())*1000){if(journal.state["configuration_desired_id"]==d["id"]){journal.state["configuration"]["bindings"].to<JsonArray>();journal.state["configuration"]["enabled_providers"].to<JsonArray>();configureCadence();inventoryNeeded=true;return persist(snapshotNeeded?Phase::Recover:Phase::Ready);}return finish(snapshotNeeded?Phase::Recover:Phase::Ready);}
+  if(!automaticRole()&&(d["state"]=="withdrawn"||d["state"]=="expired"||d["expires_at"].as<uint64_t>()<=net.wall(now())*1000)){if(journal.state["configuration_desired_id"]==d["id"]){journal.state["configuration"]["bindings"].to<JsonArray>();journal.state["configuration"]["enabled_providers"].to<JsonArray>();configureCadence();inventoryNeeded=true;return persist(snapshotNeeded?Phase::Recover:Phase::Ready);}return finish(snapshotNeeded?Phase::Recover:Phase::Ready);}
   if(d["logical_target"]!="infra.configuration"||d["expires_at"].as<uint64_t>()<=net.wall(now())*1000||!Infra::configuration(d["desired"],config["endpoints"],config["service"]["contact_interval_ms"])||d["desired"]["revision"].as<uint64_t>()<configuration()["revision"].as<uint64_t>())return block(Phase::ProtocolBlocked,"desired_configuration_not_admitted");
-  if(strcmp(agentMode(configuration()),agentMode(d["desired"]))&&roleBusy()){
-   auto a=make(Action::DesiredReport,"desired","observe");a["desired_id"]=d["id"];a["desired_revision"]=d["desired_revision"];a["provider_generation"]=sessionGeneration;a["participant_id"]=journal.state["participant_id"];a["actual"]["mode"]=agentMode(configuration());a["actual"]["applied"]=false;a["actual"]["reason"]="mode_change_requires_quiescence";return send(true);
+  if(automaticRole()||(strcmp(agentMode(configuration()),agentMode(d["desired"]))&&roleBusy())){
+   auto a=make(Action::DesiredReport,"desired","observe");a["desired_id"]=d["id"];a["desired_revision"]=d["desired_revision"];a["provider_generation"]=sessionGeneration;a["participant_id"]=journal.state["participant_id"];a["actual"]["mode"]=agentMode(configuration());a["actual"]["applied"]=false;a["actual"]["reason"]=automaticRole()?"automatic_role_owns_configuration":"mode_change_requires_quiescence";return send(true);
   }
   if(strcmp(agentMode(configuration()),agentMode(d["desired"]))){relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
   journal.state["configuration_desired_id"]=d["id"];journal.state["configuration_expires_at"]=d["expires_at"];journal.state["configuration"]=d["desired"];journal.state["configuration_revision"]=d["desired"]["revision"];configureCadence();inventoryNeeded=true;auto a=make(Action::DesiredReport,"desired","observe");a["desired_id"]=d["id"];a["desired_revision"]=d["desired_revision"];a["provider_generation"]=sessionGeneration;a["participant_id"]=journal.state["participant_id"];a["actual"]["configuration_revision"]=configuration()["revision"];a["actual"]["binding_count"]=bindings().size();a["actual"]["mode"]=agentMode(configuration());a["actual"]["applied"]=true;a["actual"]["observed_at_ms"]=net.wall(now())*1000;return send(true);

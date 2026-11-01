@@ -30,3 +30,61 @@ A bounded shared snapshot (12 KB) retains attachment identities, selected target
 For this version, shared callback credentials are individually provisioned in each device's private pairing file. Shared groups refuse the existing single-executor sealed enrollment flow, which cannot reseal an old secret to another device. Never clone the primary's private enrollment key or participant identity. Subscription changes require a coordinated group configuration update; mismatched configuration digests fail closed. A Continuity device without shared relay configuration still supplies authorized maintenance and reports that relay standby is unconfigured.
 
 The existing serial-owner update and data-preserving repair procedures remain applicable. Software tests and target compilation are separate from physical power-cut, Wi-Fi and long-running hardware qualification.
+
+## Automatic role allocation (v1.8.0)
+
+New initial images select Automatic. Existing provisioned images preserve manual
+behavior until Automatic is selected in authenticated setup or a provisioning
+policy includes `"allocation":{"automatic":true}`. Wi-Fi corrections keep the
+existing choice. Each device needs its own participant identity and credentials.
+
+At attachment and on every participant sync, the device supplies eligible local
+profiles and its previous assignment's application state. Capabilities fills
+priority-ordered role demands using service and feature compatibility. Flexible
+devices can move so limited devices cover the roles they can perform. Assignments
+are reserved atomically; they count as active only after a matching session and
+generation reports a durably applied role. Unfilled demands remain visible.
+
+The lease is at most 120 seconds, conservatively reduced by network time. Losing
+contact or rebooting stops new automatically allocated work until renewed. A
+changed assignment is journaled as draining, stops new intake, reconciles existing
+jobs and finishes relay custody, then atomically saves the selected role and
+binding set. Pending human enrollment or an unavailable destination can delay a
+switch; this remains draining rather than falsely reporting coverage. Shared
+relay effects additionally require the existing Bus fencing lease and receiver
+idempotency. Allocation is not proof of completed business work.
+
+`catalog.infrastructure_demand_put` accepts an operation ID, expected revision
+(0 for creation), and `demand` with `demand_id`, `mode`, `services`, `features`,
+`count`, `priority`, and `expires_at` (Unix milliseconds). A service's authenticated
+operator/bridge can publish or renew its demand. Count 0 withdraws it. Different
+publishers should use distinct stable demand IDs: counts are additive. Higher
+priority wins; equal priorities use stable demand identity. Use
+`catalog.infrastructure_status` to inspect reserved, active, gap, unallocated,
+and per-device transition reports. Current bounds: 32 active demands, 64 slots,
+128 live participants, 8 profiles per device. Status declares truncated coverage.
+
+Default profiles derive services from provisioned `endpoint_policy_id` values,
+features from binding capability IDs, and omit unresolved or expired bindings.
+Sentinel can include `relay.roundtrip` only with a separate
+`relay.monitor_credential_ref`; it uses that credential solely for diagnostic
+challenge calls. Continuity requires shared relay configuration, valid static
+callback secrets and idempotent subscriptions; its feature is `relay.shared` and
+service is `relay:<relay_id>`. An unconfigured board never advertises these roles
+as available. Existing manual Sentinel credentials remain compatible.
+
+For finer service selection, provision `allocation.profiles` as an array of
+`{profile_id,mode,services,features,binding_ids}`. Each profile names existing local
+binding IDs, and its features must be implemented and provisioned. The coordinator
+can choose these profiles but cannot inject URLs or secrets. While Automatic is
+selected, `infra.configuration` desired updates are declined with `applied:false`;
+use authenticated setup to change local scope or return to a fixed role.
+
+Example service demand (one Reconciler for the default Scheduler binding):
+
+```json
+{"protocol_version":"1.0","family":"catalog","operation":"infrastructure_demand_put","operation_id":"scheduler-role-demand-1","expected_revision":0,"arguments":{"demand":{"demand_id":"scheduler.reconciler","mode":"reconciler","services":["scheduler-main-endpoint"],"features":["scheduler.drive"],"count":1,"priority":100,"expires_at":1893456000000}}}
+```
+
+Host regression and target compilation are software evidence. Physical attach,
+power-loss and prolonged network-partition qualification remain separate.

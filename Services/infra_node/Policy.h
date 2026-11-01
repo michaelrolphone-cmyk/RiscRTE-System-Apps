@@ -25,9 +25,21 @@ inline bool binding(JsonObjectConst b){
 inline const char* agentMode(JsonObjectConst c){return c["mode"]|"explorer";}
 inline bool validMode(const char* m){return !strcmp(m,"explorer")||!strcmp(m,"sentinel")||!strcmp(m,"reconciler")||!strcmp(m,"continuity");}
 inline bool modeAllows(JsonObjectConst c,const char* capability){const char* m=agentMode(c);if(!strcmp(m,"explorer"))return true;if(!strcmp(m,"sentinel"))return !strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll");return !strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile");}
+inline bool bindingAllowed(JsonObjectConst c,JsonObjectConst b){if(!modeAllows(c,b["capability"]|""))return false;if(c["active_bindings"].isNull())return true;for(auto id:c["active_bindings"].as<JsonArrayConst>())if(id==b["binding_id"])return true;return false;}
+inline bool allocationPolicy(JsonObjectConst a,JsonObjectConst c){
+ if(a.isNull())return true;if(!keys(a,{"automatic"},{"profiles"})||!a["automatic"].is<bool>())return false;
+ if(a["profiles"].isNull())return true;if(!a["profiles"].is<JsonArrayConst>()||a["profiles"].size()>8||measureJson(a)>4096)return false;
+ unsigned index=0;for(auto p:a["profiles"].as<JsonArrayConst>()){
+  if(!keys(p,{"profile_id","mode","services","features","binding_ids"})||!text(p["profile_id"],128)||!text(p["mode"],16)||!validMode(p["mode"]))return false;
+  for(const char* key:{"services","features","binding_ids"}){if(!p[key].is<JsonArrayConst>()||p[key].size()>8)return false;unsigned n=0;for(auto v:p[key].as<JsonArrayConst>()){if(!text(v,128))return false;for(unsigned j=0;j<n;++j)if(p[key][j]==v)return false;++n;}}
+  for(auto id:p["binding_ids"].as<JsonArrayConst>()){auto b=find(c["bindings"],"binding_id",id);if(b.isNull()||!modeAllows(p,b["capability"]|""))return false;}
+  for(unsigned j=0;j<index;++j)if(a["profiles"][j]["profile_id"]==p["profile_id"])return false;++index;
+ }return true;
+}
 inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t contact){
- if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"},{"mode"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
+ if(!keys(c,{"schema_version","revision","bindings","enabled_providers","retry","telemetry","update_policy"},{"mode","active_bindings"})||c["schema_version"]!=1||!integer(c["revision"],1,9007199254740991ULL)||measureJson(c)>8192||!c["bindings"].is<JsonArrayConst>()||c["bindings"].size()>8||!c["enabled_providers"].is<JsonArrayConst>()||c["enabled_providers"].size()>4)return false;
  if((!c["mode"].isNull()&&!text(c["mode"],16))||!validMode(agentMode(c)))return false;
+ if(!c["active_bindings"].isNull()){if(!c["active_bindings"].is<JsonArrayConst>()||c["active_bindings"].size()>8)return false;for(auto id:c["active_bindings"].as<JsonArrayConst>())if(!text(id,128)||find(c["bindings"],"binding_id",id).isNull())return false;}
  if(!keys(c["retry"],{"initial_ms","maximum_ms","full_jitter"})||c["retry"]["initial_ms"]!=1000||c["retry"]["maximum_ms"]!=300000||c["retry"]["full_jitter"]!=true||!keys(c["telemetry"],{"interval_ms","diagnostic_bytes"})||!integer(c["telemetry"]["interval_ms"],15000,86400000)||c["telemetry"]["diagnostic_bytes"]!=16384||!keys(c["update_policy"],{"mode"})||c["update_policy"]["mode"]!="serial-owner")return false;
  Cadence cadences[8]{};size_t n=0;
  for(auto v:c["bindings"].as<JsonArrayConst>()){
@@ -36,14 +48,14 @@ inline bool configuration(JsonObjectConst c,JsonArrayConst endpoints,uint32_t co
   const auto e=find(endpoints,"endpoint_policy_id",b["endpoint_policy_id"]);if(e.isNull()||e["capability"]!=b["capability"]||e["credential_ref"]!=b["credential_ref"])return false;
   for(auto scope:b["authorization_scope"].as<JsonArrayConst>()){bool allowed=false;for(auto permitted:e["authorization_scope"].as<JsonArrayConst>())allowed|=scope==permitted;if(!allowed)return false;}
   bool enabled=false;for(auto p:c["enabled_providers"].as<JsonArrayConst>())enabled|=p==b["capability"];if(!enabled)return false;
-  cadences[n].interval=b["cadence_ms"];cadences[n].timeout=b["timeout_ms"];cadences[n++].required=b["required"]==true&&modeAllows(c,b["capability"]|"");
+  cadences[n].interval=b["cadence_ms"];cadences[n].timeout=b["timeout_ms"];cadences[n++].required=b["required"]==true&&bindingAllowed(c,b);
  }
  // Reserve one5s control contact and one5s inventory refresh every90s.
  return schedulable(cadences,n,5000+(contact*5000+89999)/90000,contact);
 }
 inline bool relayPolicy(JsonObjectConst);
 inline bool policy(JsonDocument& p){
- if(!keys(p.as<JsonObjectConst>(),{"schema_version","wifi","service","endpoints","configuration","low_water","provenance"},{"relay"})||p["schema_version"]!=1)return false;
+ if(!keys(p.as<JsonObjectConst>(),{"schema_version","wifi","service","endpoints","configuration","low_water","provenance"},{"relay","allocation"})||p["schema_version"]!=1)return false;
  if(!keys(p["wifi"],{"ssid","credential_ref"})||!text(p["wifi"]["ssid"],32)||!text(p["wifi"]["credential_ref"],128))return false;
  auto s=p["service"].as<JsonObjectConst>();if(!keys(s,{"url","credential_ref","site_credential_ref","time_server","contact_interval_ms","contracts","providers"})||!https(s["url"])||!text(s["credential_ref"],128)||!text(s["site_credential_ref"],128,true)||!text(s["time_server"],253)||!integer(s["contact_interval_ms"],15000,30000)||s["contracts"].size()!=4||s["providers"].size()!=4)return false;
  for(auto pin:s["contracts"].as<JsonArrayConst>())if(!keys(pin,{"capability_id","api_version","contract_digest"})||pin["api_version"]!=1||!digest(pin["contract_digest"]))return false;
@@ -57,7 +69,7 @@ inline bool policy(JsonDocument& p){
   if(wake?(e["method"]!="POST"||e["maintenance_qualified"]!=true):e["method"]!="GET")return false;
  }
  auto low=p["low_water"].as<JsonObjectConst>();if(!keys(low,{"internal_free","internal_largest","dma_free","dma_largest","psram_free","psram_largest","stack_headroom"}))return false;for(auto kv:low)if(!integer(kv.value(),1,16777216))return false;
- return relayPolicy(p["relay"])&&configuration(p["configuration"],p["endpoints"],s["contact_interval_ms"]);
+ return allocationPolicy(p["allocation"],p["configuration"])&&relayPolicy(p["relay"])&&configuration(p["configuration"],p["endpoints"],s["contact_interval_ms"]);
 }
 }
 

@@ -19,8 +19,8 @@ def generate(output,package_digest):
   evidence={'type':'object','required':['observer','boot_id','observed_at_ms','monotonic_ms'],'properties':{'observer':string(),'boot_id':string(64),'observed_at_ms':integer(),'monotonic_ms':integer(),'quiescent':{'const':True},'executor_identity':string(64)},'additionalProperties':False}
   c={'capability_id':cap,'api_version':1,'operations':{operation:{'input_schema':input,'output_schema':out,'evidence_schema':evidence,'effect_semantics':'target_deduplicated' if maintenance else 'repeatable_compute','execution_modes':['desired_state','job'] if maintenance else ['job']}}}
   ref={'capability_id':cap,'api_version':1,'contract_digest':digest(c)};contracts.append({'contract':c,'reference':ref})
-  p={'provider_id':'esp32s3-infra-'+cap.replace('.','-'),'revision':15,'implementation_ref':{'kind':'risc-elf','profile':'esp32s3-infrastructure','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'tls','amount':1,'lifetime':'invocation'},{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':['infra.source/1']},'cost_estimate':1,'cost_model':{'network_transactions':1,'maximum_ms':12000 if cap=='scheduler.drive' else 5000},'cost_evidence':'software_bounds_physical_qualification_pending'}
-  providers.append({'provider':p,'reference':{'capability_id':cap,'provider_id':p['provider_id'],'revision':15,'definition_digest':digest(p),'package_digest':package_digest}})
+  p={'provider_id':'esp32s3-infra-'+cap.replace('.','-'),'revision':16,'implementation_ref':{'kind':'risc-elf','profile':'esp32s3-infrastructure','package_digest':package_digest},'provides':[ref],'requires':[],'resource_bindings':[{'name':'tls','amount':1,'lifetime':'invocation'},{'name':'job','amount':1,'lifetime':'invocation'},{'name':'pending','amount':2,'lifetime':'invocation'}],'recovery_support':{'checkpoint_formats':['infra.source/1']},'cost_estimate':1,'cost_model':{'network_transactions':1,'maximum_ms':12000 if cap=='scheduler.drive' else 5000},'cost_evidence':'software_bounds_physical_qualification_pending'}
+  providers.append({'provider':p,'reference':{'capability_id':cap,'provider_id':p['provider_id'],'revision':16,'definition_digest':digest(p),'package_digest':package_digest}})
  bindings=[];endpoints=[]
  for index,(cap,op) in enumerate(caps):
   bid=['scheduler-main','capabilities-main','service-health','source-main'][index];maintenance=index<2
@@ -41,6 +41,7 @@ def generate(output,package_digest):
  binding_properties['api_version']={'const':1};binding_properties['capability']={'enum':[c for c,_ in caps]};binding_properties['max_items']=integer(1,32);binding_properties['max_elapsed_ms']=integer(100,10000);binding_properties['timeout_ms']=integer(100,30000);binding_properties['request_max_bytes']=integer(1,16384);binding_properties['response_max_bytes']=integer(1,32768);binding_properties['cadence_ms']=integer(1000,86400000)
  required=[k for k in bindings[0] if k!='wake_semantics'];bs=obj(binding_properties,required)
  cs=obj({'schema_version':{'const':1},'revision':integer(1),'bindings':arr(bs),'enabled_providers':arr({'enum':[c for c,_ in caps]},4),'retry':obj({'initial_ms':{'const':1000},'maximum_ms':{'const':300000},'full_jitter':{'const':True}}),'telemetry':obj({'interval_ms':integer(15000,86400000),'diagnostic_bytes':{'const':16384}}),'update_policy':obj({'mode':{'const':'serial-owner'}})})
+ cs['properties']['active_bindings']=arr(string(),8)
  cs['properties']['mode']={'enum':['explorer','sentinel','reconciler','continuity']}
  digest_schema={'type':'string','pattern':'^[a-f0-9]{64}$'}
  contract_ref=obj({'capability_id':{'enum':[c for c,_ in caps]},'api_version':{'const':1},'contract_digest':digest_schema})
@@ -53,6 +54,8 @@ def generate(output,package_digest):
  relay_subscription['required']=['id','match','url','enabled']
  relay_subscription['anyOf']=[{'required':['channel']},{'required':['channels']}]
  ps['properties']['relay']=obj({'schema_version':{'const':1},'relay_id':string(),'url':{'type':'string','pattern':'^https://','maxLength':2048},'credential_ref':string(),'site_credential_ref':string(128,0),'allowed_origins':arr(string(256),8),'webhook_credential_refs':arr(string(),24),'subscriptions':arr(relay_subscription,8)},['schema_version','relay_id','url','credential_ref','site_credential_ref'])
+ ps['properties']['allocation']=obj({'automatic':{'type':'boolean'},'profiles':arr(obj({'profile_id':string(),'mode':{'enum':['explorer','sentinel','reconciler','continuity']},'services':arr(string()),'features':arr(string()),'binding_ids':arr(string())}),8)},['automatic'])
+ ps['properties']['relay']['properties']['monitor_credential_ref']=string()
  ps['properties']['relay']['properties']['shared']=obj({'executor_id':string()})
  write(output,'relay-subscription.schema.json',{'$schema':'https://json-schema.org/draft/2020-12/schema',**relay_subscription})
  write(output,'node-policy.schema.json',{'$schema':'https://json-schema.org/draft/2020-12/schema',**ps});write(output,'configuration.schema.json',{'$schema':'https://json-schema.org/draft/2020-12/schema',**cs})

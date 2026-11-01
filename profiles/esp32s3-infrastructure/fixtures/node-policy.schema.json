@@ -447,6 +447,15 @@
           ],
           "additionalProperties": false
         },
+        "active_bindings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "maxItems": 8
+        },
         "mode": {
           "enum": [
             "explorer",
@@ -818,6 +827,11 @@
           },
           "maxItems": 8
         },
+        "monitor_credential_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
         "shared": {
           "type": "object",
           "properties": {
@@ -839,6 +853,75 @@
         "url",
         "credential_ref",
         "site_credential_ref"
+      ],
+      "additionalProperties": false
+    },
+    "allocation": {
+      "type": "object",
+      "properties": {
+        "automatic": {
+          "type": "boolean"
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "profile_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "mode": {
+                "enum": [
+                  "explorer",
+                  "sentinel",
+                  "reconciler",
+                  "continuity"
+                ]
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              },
+              "binding_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              }
+            },
+            "required": [
+              "profile_id",
+              "mode",
+              "services",
+              "features",
+              "binding_ids"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "automatic"
       ],
       "additionalProperties": false
     }
