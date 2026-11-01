@@ -446,6 +446,14 @@
             "mode"
           ],
           "additionalProperties": false
+        },
+        "mode": {
+          "enum": [
+            "explorer",
+            "sentinel",
+            "reconciler",
+            "continuity"
+          ]
         }
       },
       "required": [
@@ -587,7 +595,8 @@
                   "capabilities.events",
                   "bpmn.events",
                   "scheduler.events",
-                  "rhizome.events"
+                  "rhizome.events",
+                  "relay.diagnostics"
                 ]
               },
               "match": {
@@ -673,6 +682,9 @@
               "enabled": {
                 "type": "boolean"
               },
+              "deduplicates": {
+                "type": "boolean"
+              },
               "channels": {
                 "type": "array",
                 "items": {
@@ -680,7 +692,8 @@
                     "capabilities.events",
                     "bpmn.events",
                     "scheduler.events",
-                    "rhizome.events"
+                    "rhizome.events",
+                    "relay.diagnostics"
                   ]
                 },
                 "maxItems": 4
@@ -804,6 +817,20 @@
             ]
           },
           "maxItems": 8
+        },
+        "shared": {
+          "type": "object",
+          "properties": {
+            "executor_id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": [
+            "executor_id"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

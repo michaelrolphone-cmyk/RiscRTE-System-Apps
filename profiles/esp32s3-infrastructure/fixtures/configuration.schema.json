@@ -241,6 +241,14 @@
         "mode"
       ],
       "additionalProperties": false
+    },
+    "mode": {
+      "enum": [
+        "explorer",
+        "sentinel",
+        "reconciler",
+        "continuity"
+      ]
     }
   },
   "required": [

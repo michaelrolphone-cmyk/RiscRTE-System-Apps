@@ -38,7 +38,7 @@ def main():
  paired.parse_record((out/'bank_state.bin').read_bytes()[:96],app_data=True)
  seed(r,policy,state,out/'appdata-unprovisioned.bin');shutil.copytree(base/'tools',out/'tools');(out/'scripts').mkdir()
  for name in ('provision_infrastructure.py','infrastructure_seed.c','install_infrastructure.py','configure_infrastructure.mjs','relay-enroll.mjs','repair_infrastructure.py','inspect_infrastructure_state.py','infrastructure_read.c'):shutil.copy2(ROOT/'scripts'/name,out/'scripts'/name)
- for name in ('README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md','RECOVERY-QUALIFICATION.md','INCIDENT-2026-11-01.md'):shutil.copy2(ROOT/'profiles/esp32s3-infrastructure'/name,out/name)
+ for name in ('AGENT-MODES.md','README.md','CONFORMANCE.md','WORKSTATION-MAINTENANCE.md','RELAY-CONTRACT.md','RECOVERY-QUALIFICATION.md','INCIDENT-2026-11-01.md'):shutil.copy2(ROOT/'profiles/esp32s3-infrastructure'/name,out/name)
  shutil.copytree(a.evidence,out/'evidence')
  manifest=copy.deepcopy(old);manifest['source']['system_apps']=commit(ROOT)
  manifest['source']['native_reuse']={'release':a.base_release_url,'archive_sha256':sha(a.base_archive),'manifest_sha256':sha(base/'flash-manifest.json'),'native_rebuilt':False}
@@ -57,3 +57,4 @@ def main():
    if f.is_file():z.write(f,out.name+'/'+f.relative_to(out).as_posix())
  print(json.dumps({'bundle':str(out)+'.zip','sha256':sha(pathlib.Path(str(out)+'.zip')),'native_rebuilt':False}))
 if __name__=='__main__':main()
+

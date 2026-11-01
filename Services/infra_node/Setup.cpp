@@ -2,7 +2,9 @@
 #include "Digest.h"
 namespace Infra {
 bool Node::acceptSetup(){
- if(!parse(response,portal.input+portal.bodyAt,portal.bodySize)||!keys(response.as<JsonObjectConst>(),{"ssid","password","pairing"})||!text(response["ssid"],32)||!text(response["password"],63,true))return false;
+ if(!parse(response,portal.input+portal.bodyAt,portal.bodySize)||!keys(response.as<JsonObjectConst>(),{"ssid","password","pairing"},{"mode"})||!text(response["ssid"],32)||!text(response["password"],63,true))return false;
+ if(!response["mode"].isNull()&&(!text(response["mode"],16)||!validMode(response["mode"])))return false;
+ if(!response["mode"].isNull()&&strcmp(response["mode"],agentMode(configuration()))&&(roleBusy()||(!journal.state["participant_id"].isNull()&&response["pairing"].isNull())))return false;
  const size_t pn=strlen(response["password"]);if(pn&&pn<8)return false;
  auto pairing=response["pairing"].as<JsonObjectConst>();
  const bool existing=text(journal.state["participant_id"],128);
@@ -39,13 +41,14 @@ bool Node::acceptSetup(){
  // An authenticated existing pairing can add/rotate relay secrets through the
  // phone portal. Never discard outstanding webhook custody to change config.
  if(existing&&!pairing["policy"]["relay"].isNull()){
-  auto relay=pairing["policy"]["relay"].as<JsonObjectConst>();if(!relayPolicy(relay)||!journal.state["relay"]["pending"].isNull())return false;
+  auto relay=pairing["policy"]["relay"].as<JsonObjectConst>();if(!relayPolicy(relay)||(!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size()))return false;
   request.clear();request["policy"]=config;request["policy"]["relay"]=relay;request["credentials"]=journal.state["credentials"];
   auto candidate=request["credentials"].as<JsonObject>();auto add=[&](const char* ref){if(!ref[0])return true;if(!text(pairing["credentials"][ref],1024))return false;candidate[ref]=pairing["credentials"][ref];return true;};
   for(const char* k:{"credential_ref","site_credential_ref"})if(!add(relay[k]|""))return false;for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!add(s["auth"]["credential_ref"]|"")||!add(s["signing_credential_ref"]|""))return false;
   if(measureJson(candidate)>3500||measureJson(request["policy"])>PolicyMax||request.overflowed())return false;
   config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
  }
+ if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
  config["wifi"]["ssid"]=response["ssid"];journal.state["credentials"][config["wifi"]["credential_ref"]|""]=response["password"];
  journal.state["setup_policy"]=config;journal.state["setup_pending"]=true;
  return journal.valid()&&!config.overflowed();
@@ -77,3 +80,4 @@ int Node::setupStep(){
  return 1;
 }
 }
+
