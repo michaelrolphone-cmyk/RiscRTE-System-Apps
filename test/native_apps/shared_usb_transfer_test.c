@@ -5,6 +5,8 @@
 #include "RiscRuntimeV1.h"
 #include "RiscSceneComponentsV1.h"
 #include "RiscUsbDeviceMscV1.h"
+static const char *fault="";static bool fault_hit;
+#define REVOKE(name,value) do { if(!strcmp(fault,name)){assert(live);fault_hit=true;live=false;return value;} } while(0)
 static int mode,ticks,begins,ends,steps,polls,releases,launches,retains;
 static unsigned model_state=RISC_USB_MSC_IDLE,pending;
 static uint32_t revision;static uint64_t sequence;
@@ -21,6 +23,7 @@ const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version
 #include "../../Apps/usb_sd_transfer.c"
 static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime_capability_v1*out){
  assert(live&&instance==0);
+ REVOKE("acquire",false);
  if(!strcmp(name,"alarm.service")){assert(api==2);if(mode!=7&&mode!=8)return false;out->api=&alarm_fixture;out->slot=3;out->generation=1;return true;}
  assert(api==1);
  if(!strcmp(name,"ui.scene"))out->api=&presenter;
@@ -28,53 +31,53 @@ static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime
  out->slot=!strcmp(name,"ui.scene")?1:2;out->generation=1;return true;
 }
 static bool release(risc_runtime_capability_v1*g){
- assert(live);if(g->slot==2&&mode==5)return false;
+ assert(live);REVOKE("release",true);if(g->slot==2&&mode==5)return false;
  ++releases;memset(g,0,sizeof(*g));return true;
 }
 static bool launch(const char*p){assert(live&&!token&&!scene_session);assert(!strcmp(p,"default.elf")||!strcmp(p,"springboard.elf"));++launches;return true;}
 static bool retain(void){++retains;live=false;return true;}
-static bool diagnostic(const char*p){assert(live&&p);return true;}
+static bool diagnostic(const char*p){assert(live&&p);REVOKE("diagnostic",true);return true;}
 static void yield(uint32_t ms){assert(live&&(ms==1||ms==2));assert(++ticks<100);}
 static int32_t begin(void*c,uint64_t*t){
- (void)c;assert(live);++begins;*t=mode==6?0:7;
+ (void)c;assert(live);REVOKE("begin",RISC_USB_MSC_OK);++begins;*t=mode==6?0:7;
  if(mode==9)live=false;
  model_state=RISC_USB_MSC_PREPARING;
  return mode==6?RISC_USB_MSC_RETAINED:RISC_USB_MSC_OK;
 }
 static int32_t poll(void*c,uint64_t t,risc_usb_device_msc_status_v1*s){
- (void)c;assert(live&&t==7);++polls;
+ (void)c;assert(live&&t==7);REVOKE("poll",RISC_USB_MSC_OK);++polls;
  if((mode==0||mode==12||((mode==7)&&alarm_dismissed&&ticks>=20))&&model_state==RISC_USB_MSC_WAITING&&ticks>=9)model_state=RISC_USB_MSC_EJECTED;
  if(mode==3&&model_state==RISC_USB_MSC_WAITING)model_state=RISC_USB_MSC_CONNECTED;
  s->state=model_state;s->local_media_ready=model_state==RISC_USB_MSC_EJECTED;
  return 0;
 }
 static int32_t end(void*c,uint64_t t,uint32_t reason){
- (void)c;assert(live&&t==7);++ends;
+ (void)c;assert(live&&t==7);REVOKE("end",RISC_USB_MSC_OK);++ends;
  if(mode==3&&reason!=RISC_USB_MSC_END_CABLE_REMOVED)return RISC_USB_MSC_REFUSED;
  if(reason==RISC_USB_MSC_END_CABLE_REMOVED)removed=true;
  model_state=RISC_USB_MSC_DISCONNECTED;return 0;
 }
-static bool last_error(void*c,char*out,size_t n){(void)c;assert(live);snprintf(out,n,"fixture reason");return true;}
+static bool last_error(void*c,char*out,size_t n){(void)c;assert(live);REVOKE("last_error",true);snprintf(out,n,"fixture reason");return true;}
 static int32_t prepare(void*c,uint64_t t){
- (void)c;assert(live&&t==7&&!pending&&preparing_presented);
+ (void)c;assert(live&&t==7&&!pending&&preparing_presented);REVOKE("prepare",RISC_USB_MSC_OK);
  assert(!dirty);++steps;if(steps==2)model_state=RISC_USB_MSC_WAITING;return 0;
 }
 static int32_t open_scene(void*c,const risc_components_document_v1*d,const risc_scene_navigation_v1*n,uint64_t*t){
- (void)c;assert(d->node_count&&n->depth==1);revision=d->revision;*t=9;pending=2;return 0;
+ (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);revision=d->revision;*t=9;pending=2;return 0;
 }
 static int32_t update_scene(void*c,uint64_t t,const risc_components_document_v1*d){
- (void)c;assert(live&&t==9&&d->revision>revision);revision=d->revision;pending=2;return 0;
+ (void)c;assert(live&&t==9&&d->revision>revision);REVOKE("update",RISC_SCENE_OK);revision=d->revision;pending=2;return 0;
 }
-static int32_t configure(void*c,uint64_t t,uint32_t f){(void)c;assert(t==9&&!f);configured=true;return 0;}
+static int32_t configure(void*c,uint64_t t,uint32_t f){(void)c;assert(live&&t==9&&!f);REVOKE("configure",RISC_SCENE_OK);configured=true;return 0;}
 static int32_t snapshot_scene(void*c,uint64_t t,risc_scene_navigation_v1*n,uint32_t*f){
- (void)c;(void)n;assert(live&&t==9&&configured);
+ (void)c;(void)n;assert(live&&t==9&&configured);REVOKE("snapshot",RISC_SCENE_OK);
  *f=pending?RISC_SCENE_PRESENTING:0;
  if(pending)--pending;
  if(mode==4&&ticks==7)return RISC_SCENE_RETAINED;
  return 0;
 }
 static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
- (void)c;assert(live&&t==9);
+ (void)c;assert(live&&t==9);REVOKE("next",RISC_SCENE_IDLE);
  unsigned action=0;
  if(ticks==3)action=mode==10?USB_CONTROLS:USB_START_STOP;
  if(mode==7&&ticks==14)action=USB_ALARM_DISMISS;
@@ -96,18 +99,18 @@ static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
  .document_revision=revision,.node=(mode==11&&ticks==3)?999:action==USB_BACK||action==USB_KEEP?21:action==USB_CONTROLS?23:20,.action=action,.sequence=++sequence};
  return 0;
 }
-static int32_t close_scene(void*c,uint64_t t){(void)c;assert(live&&t==9&&!token);return 0;}
+static int32_t close_scene(void*c,uint64_t t){(void)c;assert(live&&t==9&&!token);REVOKE("close",RISC_SCENE_OK);return 0;}
 
-static int32_t alarm_step(void*c){(void)c;assert(live);++alarm_steps;return 0;}
+static int32_t alarm_step(void*c){(void)c;assert(live);REVOKE("alarm_step",ALARM_OK);++alarm_steps;return 0;}
 static int32_t alarm_get(void*c,alarm_status_v1*s){
- (void)c;assert(live);s->api_version=1;s->struct_size=sizeof(*s);
+ (void)c;assert(live);REVOKE("alarm_status",ALARM_OK);s->api_version=1;s->struct_size=sizeof(*s);
  s->state=ticks>=8&&!alarm_dismissed?ALARM_STATE_ALERT:ALARM_STATE_READY;
  s->snapshot=s->state;s->output_uncertain=mode==8&&ticks>=8;
  if(s->state==ALARM_STATE_ALERT)s->occurrence.generation=1;
  snprintf(s->label,sizeof(s->label),"fixture alarm");return 0;
 }
 static int32_t alarm_ack(void*c,const alarm_token_v1*t){
- (void)c;assert(live&&t->generation==1);alarm_dismissed=true;return 0;
+ (void)c;assert(live&&t->generation==1);REVOKE("alarm_ack",ALARM_OK);alarm_dismissed=true;return 0;
 }
 static int32_t alarm_sleep(void*c,alarm_sleep_v1*t){(void)c;(void)t;assert(0);return ALARM_INVALID;}
 static int32_t checkpoint(uint64_t id,const risc_resident_request_v1*q,risc_resident_reply_v1*r){
@@ -121,7 +124,7 @@ static bool resident_get(struct risc_resident_client_v1*r){
 }
 
 int main(int argc,char**argv){
- assert(argc==2);mode=atoi(argv[1]);
+ assert(argc==2||argc==3);mode=atoi(argv[1]);if(argc==3)fault=argv[2];
  fake_runtime=(risc_runtime_api_v1){.api_version=1,.struct_size=sizeof(fake_runtime),
  .yield_ms=yield,.diagnostic=diagnostic,.request_launch=launch,.acquire=acquire,
  .release=release,.retain_invocation=retain,.resident_shell=resident_get};
@@ -133,6 +136,7 @@ int main(int argc,char**argv){
  .struct_size=sizeof(presenter),.next=next_scene,.snapshot=snapshot_scene,.close=close_scene},
  .configure=configure},.tag=RISC_COMPONENTS_TAG,.version=1,.open=open_scene,.update=update_scene};
  assert(app_module_init()==0);app_main();app_module_fini();
+ if(*fault){assert(fault_hit&&!live&&!launches&&!retains);printf("shared USB revoked callback %s PASS\n",fault);return 0;}
  if(mode==0){assert(begins==1&&steps==2&&ends==1&&launches==1&&!retains);}
  if(mode==1){assert(begins==1&&steps==0&&ends==1&&launches==1&&!retains);}
  if(mode==2){assert(!begins&&!steps&&launches==1&&!retains);}
