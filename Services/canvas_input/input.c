@@ -11,6 +11,7 @@ static const risc_touch_api_v1*touch;
 static const risc_input_navigation_api_v1*navigation;
 static bool started,retained,preparing;
 static uint64_t active;
+static risc_canvas_input_v1 api;
 static int32_t input_result(int32_t rc){if(rc<RISC_CANVAS_UNSUPPORTED||rc>RISC_CANVAS_AGAIN){retained=true;return RISC_CANVAS_RETAINED;}return rc;}
 static int32_t activate(void*c,uint64_t session){
  (void)c;if(retained)return RISC_CANVAS_RETAINED;
@@ -44,9 +45,9 @@ static int32_t prepare_sleep(void*c,uint64_t session,uint32_t budget){
  (void)c;if(retained)return RISC_CANVAS_RETAINED;
  if(!active||active!=session||budget>RISC_TOUCH_POWER_MAX_BUDGET_MS)return RISC_CANVAS_INVALID;
  const risc_touch_power_api_v1*power=risc_touch_power(touch);
- if(!power)return RISC_CANVAS_UNSUPPORTED;
+ if(touch&&!power)return RISC_CANVAS_UNSUPPORTED;
  if(!preparing){int rc=input_result(canvas->unbind_inputs(canvas->context,session));if(rc){if(rc==RISC_CANVAS_RETAINED)retained=true;return rc;}}
- preparing=true;return power_result(power->prepare(touch->context,budget));
+ preparing=true;return power?power_result(power->prepare(touch->context,budget)):RISC_CANVAS_OK;
 }
 static int32_t resume_sleep(void*c,uint64_t session,uint32_t budget){
  (void)c;if(retained)return RISC_CANVAS_RETAINED;
@@ -54,7 +55,7 @@ static int32_t resume_sleep(void*c,uint64_t session,uint32_t budget){
  if(!preparing)return RISC_CANVAS_OK;
  const risc_touch_power_api_v1*power=risc_touch_power(touch);
  if(!power)return RISC_CANVAS_UNSUPPORTED;
- int rc=power_result(power->resume(touch->context,budget));if(rc)return rc;
+ int rc=power?power_result(power->resume(touch->context,budget)):RISC_CANVAS_OK;if(rc)return rc;
  rc=input_result(canvas->bind_inputs(canvas->context,session,touch,navigation));
  if(rc==RISC_CANVAS_RETAINED)retained=true;
  if(!rc)preparing=false;
@@ -72,10 +73,11 @@ static bool start(const risc_provider_dependency_v1*deps,size_t count){
   else return false;
  }
  if(!core||!risc_canvas_get_v1(core,core->struct_size)||(!touch&&!navigation))return false;
+ api.flags=(!touch||risc_touch_power(touch))?RISC_CANVAS_INPUT_SLEEP_SUPPORTED:0;
  started=true;return true;
 }
 static bool quiesce(void){return !active&&!retained&&!preparing;}
 static void stop(void){if(!quiesce())return;started=false;core=NULL;canvas=NULL;touch=NULL;navigation=NULL;}
-static const risc_canvas_input_v1 api={1,sizeof(api),RISC_CANVAS_INPUT_TAG,NULL,activate,deactivate,prepare_sleep,resume_sleep};
+static risc_canvas_input_v1 api={1,sizeof(api),RISC_CANVAS_INPUT_TAG,NULL,activate,deactivate,prepare_sleep,resume_sleep,0};
 static const risc_driver_v2 driver={2,sizeof(driver),"canvas-input",RISC_CANVAS_INPUT_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2*t5_driver_get(uint32_t abi){return abi==2?&driver:NULL;}
