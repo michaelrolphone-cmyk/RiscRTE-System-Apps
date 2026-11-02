@@ -148,7 +148,7 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
       !strcmp(name,RISC_CANVAS_INPUT_CAPABILITY)||!strcmp(name,"software.installed-apps"))) ||
      (version==1&&(!strcmp(name,"storage.volume")||!strcmp(name,"storage.key-value")||
       !strcmp(name,"storage.key-value.availability"))) ||
-     (version==2&&instance==0&&!strcmp(name,"alarm.service"));
+     (version==2&&instance==0&&!strcmp(name,PORTABLE_ALARM_CAPABILITY));
   if(optional&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
    if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
    return false;

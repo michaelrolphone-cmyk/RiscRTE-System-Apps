@@ -40,10 +40,11 @@ static inline uint8_t home_canvas_touch_tag(home_canvas_touch*t){
 }
 static inline bool home_canvas_touch_sync(home_canvas_touch*t){
  home_canvas_surface*s=t->surface;
- if(s->retained||!home_canvas_resume(s))return false;
+ if(!home_canvas_live(s)||!home_canvas_resume(s))return false;
  size_t count=0;
  uint64_t sequence=0;
  int32_t rc=s->canvas->contacts(s->canvas->context,s->session,NULL,0,&count,&sequence);
+ if(!home_canvas_live(s))return false;
  if(rc!=RISC_CANVAS_OK&&rc!=RISC_CANVAS_AGAIN){(void)home_canvas_result(s,rc);
  return false;}
  if(count>SIZE_MAX/sizeof(risc_canvas_event_v1)){home_canvas_retain(s);
@@ -88,13 +89,13 @@ static inline bool home_canvas_touch_sync(home_canvas_touch*t){
   if(valid){t->snapshot=next;
  memcpy(t->identities,ids,sizeof(ids));}
  }
- if(data!=local&&!s->retained)free(data);
- if(!valid&&!s->retained)t->gap=true;
+ if(data!=local&&home_canvas_live(s))free(data);
+ if(!valid&&home_canvas_live(s))t->gap=true;
  return valid;
 }
 static uint64_t home_canvas_touch_subscribe(void*context){
  home_canvas_touch*t=context;
- if(t->subscribed||t->surface->retained)return 0;
+ if(t->subscribed||!home_canvas_live(t->surface))return 0;
  t->head=t->count=0;
  t->gap=false;
  t->navigation=(risc_input_navigation_frame_v1){0};
@@ -105,7 +106,7 @@ static uint64_t home_canvas_touch_subscribe(void*context){
 }
 static bool home_canvas_touch_unsubscribe(void*context,uint64_t id){
  home_canvas_touch*t=context;
- if(t->surface->retained||id!=1||!t->subscribed)return false;
+ if(!home_canvas_live(t->surface)||id!=1||!t->subscribed)return false;
  t->subscribed=false;
  t->head=t->count=0;
  t->navigation_head=t->navigation_count=0;
@@ -114,12 +115,13 @@ static bool home_canvas_touch_unsubscribe(void*context,uint64_t id){
 static bool home_canvas_touch_poll(void*context,size_t budget){
  home_canvas_touch*t=context;
  home_canvas_surface*s=t->surface;(void)budget;
- if(s->retained||!t->subscribed||!home_canvas_resume(s))return false;
+ if(!home_canvas_live(s)||!t->subscribed||!home_canvas_resume(s))return false;
  for(unsigned n=0;
  n<HOME_CANVAS_TOUCH_QUEUE&&t->count<HOME_CANVAS_TOUCH_QUEUE&&t->navigation_count<HOME_CANVAS_TOUCH_QUEUE;
  n++){
   risc_canvas_event_v1 e={.struct_size=sizeof(e)};
   int32_t rc=s->canvas->next(s->canvas->context,s->session,&e);
+  if(!home_canvas_live(s))return false;
   if(rc==RISC_CANVAS_IDLE||rc==RISC_CANVAS_AGAIN)return true;
   if(!home_canvas_result(s,rc)){t->gap=true;
  return false;}
@@ -178,7 +180,7 @@ static bool home_canvas_touch_poll(void*context,size_t budget){
 }
 static int32_t home_canvas_touch_next(void*context,uint64_t id,risc_touch_event_v1*out){
  home_canvas_touch*t=context;
- if(t->surface->retained)return -2;
+ if(!home_canvas_live(t->surface))return -2;
  if(!t->subscribed||id!=1||!out)return -1;
  if(t->gap){t->gap=false;
  return -1;}
@@ -189,7 +191,7 @@ static int32_t home_canvas_touch_next(void*context,uint64_t id,risc_touch_event_
 }
 static bool home_canvas_touch_snapshot(void*context,risc_touch_snapshot_v1*out){
  home_canvas_touch*t=context;
- if(t->surface->retained||!t->subscribed||!out)return false;
+ if(!home_canvas_live(t->surface)||!t->subscribed||!out)return false;
  *out=t->snapshot;
  return true;
 }

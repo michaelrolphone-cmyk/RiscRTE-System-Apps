@@ -20,6 +20,8 @@ static uint16_t *alarm_pixels,*previous_pixels,*quick_background;
 static uint8_t *paper_previous;
 static bool alarm_pixels_valid,previous_valid,paper_previous_valid;
 static unsigned brightness_calls,grant_releases;
+static bool runtime_lost;
+const risc_runtime_api_v1 *risc_runtime_get_api(uint32_t version){return version==1&&!runtime_lost?rt:NULL;}
 static void portable_adapter_retain_silent(void){native_custody_retained=true;}
 #include "../../lib/PortableApps/src/shared_home_canvas_adapter.inc"
 static canvas_provider provider;
@@ -33,10 +35,11 @@ static bool phys_status(void*c,uint64_t id,risc_display_present_status_v1*out){(
 static bool phys_brightness(void*c,uint16_t v,uint16_t m){(void)c;assert(v==43&&m==100);brightness_calls++;return true;}
 static const risc_display_output_api_v1 physical={1,sizeof(physical),NULL,phys_info,phys_acquire,phys_release,phys_submit,phys_status,NULL,phys_brightness};
 static unsigned input_activations,input_prepares,input_resumes;
+static bool lose_input,lose_prepare;
 static unsigned bad_kind;static bool release_failure,input_absent;
-static int32_t input_activate(void*c,uint64_t session){(void)c;assert(session);input_activations++;return RISC_CANVAS_OK;}
+static int32_t input_activate(void*c,uint64_t session){(void)c;assert(session);input_activations++;if(lose_input)runtime_lost=true;return RISC_CANVAS_OK;}
 static int32_t input_deactivate(void*c,uint64_t session){(void)c;assert(session);return RISC_CANVAS_OK;}
-static int32_t input_prepare(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_prepares++;return RISC_CANVAS_OK;}
+static int32_t input_prepare(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_prepares++;if(lose_prepare){runtime_lost=true;return RISC_CANVAS_UNSUPPORTED;}return RISC_CANVAS_OK;}
 static int32_t input_resume(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_resumes++;return RISC_CANVAS_OK;}
 static risc_canvas_input_v1 input_api={1,sizeof(input_api),RISC_CANVAS_INPUT_TAG,NULL,input_activate,input_deactivate,input_prepare,input_resume,RISC_CANVAS_INPUT_SLEEP_SUPPORTED};
 static bool acquire_cap(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*out){assert(v==1&&!i);if(input_absent&&!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))return false;out->slot=1;out->generation=1;if(!strcmp(n,"display.output"))out->api=bad_kind==1?NULL:&physical;else if(!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))out->api=bad_kind==3?NULL:&input_api;else{assert(!strcmp(n,RISC_CANVAS_RASTER_CAPABILITY));out->api=bad_kind==2?NULL:&provider.api;}return true;}
@@ -91,4 +94,62 @@ static void malformed(void){
  assert(!shared_canvas_close()&&native_custody_retained&&grant_releases==1);
  assert(!shared_canvas_close()&&grant_releases==1);
 }
-int main(void){for(unsigned f=0;f<2;f++)for(unsigned r=0;r<4;r++)run(f?RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1,r);absent_input();malformed();puts("Overview Canvas adapter:8 physicalformat/rotation combinations, logicalMONO, orderednavigation, brightness, checkedresize, orientation, sleep and grantclosure PASS");}
+
+static risc_canvas_api_v1 saved_api;
+static unsigned guard_kind,guard_calls;
+static int32_t guard_open(void*c,const risc_canvas_open_v1*r,uint64_t*out){
+ guard_calls++;int32_t rc=saved_api.open(c,r,out);if(guard_kind==1)runtime_lost=true;return rc;
+}
+static int32_t guard_geometry(void*c,uint64_t id,risc_canvas_geometry_v1*out){
+ assert(!runtime_lost);guard_calls++;return saved_api.geometry(c,id,out);
+}
+static int32_t guard_next(void*c,uint64_t id,risc_canvas_event_v1*out){
+ (void)c;(void)id;(void)out;assert(!runtime_lost);guard_calls++;runtime_lost=true;
+ return guard_kind==2?RISC_CANVAS_IDLE:RISC_CANVAS_AGAIN;
+}
+static int32_t guard_contacts(void*c,uint64_t id,risc_canvas_event_v1*out,size_t capacity,size_t*count,uint64_t*sequence){
+ assert(!runtime_lost);guard_calls++;int32_t rc=saved_api.contacts(c,id,out,capacity,count,sequence);
+ if(guard_kind==4)runtime_lost=true;
+ return rc;
+}
+static int32_t guard_poll(void*c,uint64_t id,uint64_t receipt,risc_canvas_receipt_v1*out){
+ assert(!runtime_lost);guard_calls++;int32_t rc=saved_api.poll(c,id,receipt,out);runtime_lost=true;return rc;
+}
+static int32_t guard_forget(void*c,uint64_t id,uint64_t receipt){
+ assert(!runtime_lost);guard_calls++;return saved_api.forget_receipt(c,id,receipt);
+}
+static void lost_context(void){
+ for(unsigned fault=1;fault<=8;fault++){
+  runtime_lost=native_custody_retained=false;release_failure=false;bad_kind=0;lease=token=0;
+  shared_canvas=(home_canvas_surface){0};shared_canvas_input_active=shared_canvas_input_owned=false;
+  shared_canvas_owned=shared_outputs_owned=shared_canvas_input_prepared=false;
+  shared_canvas_input=NULL;physical_format=RISC_DISPLAY_FORMAT_MONO1;
+  canvas_provider_init(&provider,&physical,NULL,0);saved_api=provider.api;guard_kind=fault;guard_calls=0;
+  provider.api.open=guard_open;provider.api.geometry=guard_geometry;
+  if(fault==1){assert(!shared_canvas_open()&&guard_calls==1);}
+  else {
+   assert(shared_canvas_open());
+   if(fault==2||fault==3){provider.api.next=guard_next;(void)home_canvas_capture(&shared_canvas);}
+   if(fault==4){provider.api.contacts=guard_contacts;assert(!home_canvas_touch_sync(&shared_canvas_touch));}
+   if(fault==5){portable_touch touch;lose_input=true;assert(!shared_canvas_touch_open(&touch,rt));lose_input=false;}
+   if(fault==6){portable_touch touch;assert(shared_canvas_touch_open(&touch,rt));lose_prepare=true;assert(portable_home_canvas_prepare_sleep()==-2);lose_prepare=false;}
+   if(fault==7){
+    risc_display_surface_v1 frame;uint64_t receipt;risc_display_present_status_v1 status;
+    assert(display->acquire(display->context,surface_format,&frame));
+    assert(display->submit(display->context,frame.frame,NULL,0,NULL,&receipt));
+    provider.api.poll=guard_poll;provider.api.forget_receipt=guard_forget;
+    assert(!display->present_status(display->context,receipt,&status));
+   }
+   if(fault==8){
+    portable_touch touch;assert(shared_canvas_touch_open(&touch,rt));provider.api.next=guard_next;
+    assert(!home_canvas_touch_poll(&shared_canvas_touch,1));
+   }
+  }
+  assert(runtime_lost&&shared_canvas.retained&&native_custody_retained);
+  unsigned before=guard_calls,releases=grant_releases;
+  assert(!shared_canvas_close()&&!home_canvas_resume(&shared_canvas));
+  assert(guard_calls==before&&grant_releases==releases);
+ }
+}
+
+int main(void){for(unsigned f=0;f<2;f++)for(unsigned r=0;r<4;r++)run(f?RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1,r);absent_input();malformed();lost_context();puts("Overview Canvas adapter:8 physicalformat/rotation combinations, logicalMONO, orderednavigation, brightness, checkedresize, orientation, sleep and grantclosure PASS");}

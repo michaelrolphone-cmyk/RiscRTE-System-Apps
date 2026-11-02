@@ -11,42 +11,54 @@ static const risc_canvas_input_v1 *shared_canvas_input;
 static bool shared_canvas_input_active,shared_canvas_input_prepared;
 static bool shared_canvas_owned,shared_canvas_input_owned,shared_outputs_owned;
 static const risc_display_output_api_v1 *shared_outputs;
+static const risc_runtime_api_v1 *shared_canvas_native_owner;
+static bool shared_canvas_safe(void *unused){
+ (void)unused;
+ return !native_custody_retained && shared_canvas_native_owner && risc_runtime_get_api(1)==shared_canvas_native_owner;
+}
 static void shared_canvas_retained(void *unused){(void)unused;portable_adapter_retain_silent();}
 static inline bool shared_canvas_open(void) {
+ shared_canvas_native_owner=risc_runtime_get_api(1);
+ if(!shared_canvas_safe(NULL))return false;
  if(!rt->acquire("display.output",1,0,&dg))return false;
+ if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
  shared_outputs_owned=true;
  shared_outputs=dg.api;
  if(!shared_outputs||shared_outputs->api_version!=1||shared_outputs->struct_size<sizeof(*shared_outputs))return false;
  shared_canvas_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_grant)};
  if(!rt->acquire(RISC_CANVAS_RASTER_CAPABILITY,1,0,&shared_canvas_grant))return false;
+ if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
  shared_canvas_owned=true;
  const risc_canvas_api_v1 *api=shared_canvas_grant.api;
  api=api?risc_canvas_get_v1(api,api->struct_size):NULL;
  if(!api)return false;
- if(!home_canvas_open_content_owned(&shared_canvas,api,RISC_DISPLAY_FORMAT_MONO1,true,
-     shared_outputs->set_brightness,shared_outputs->context,shared_canvas_retained,NULL))return false;
+ if(!home_canvas_open_content_guarded(&shared_canvas,api,RISC_DISPLAY_FORMAT_MONO1,true,
+     shared_outputs->set_brightness,shared_outputs->context,shared_canvas_retained,NULL,shared_canvas_safe,NULL))return false;
  display=&shared_canvas.display;surface_format=RISC_DISPLAY_FORMAT_MONO1;paper_rotated=false;
  home_canvas_touch_init(&shared_canvas_touch,&shared_canvas);
  return display->get_info(display->context,&info);
 }
 static inline bool shared_canvas_close(void) {
- if(shared_canvas.retained||native_custody_retained)return false;
+ if(!shared_canvas_safe(NULL)||shared_canvas.retained)return false;
  if(shared_canvas_input_active){
   if(!home_canvas_result(&shared_canvas,shared_canvas_input->deactivate(shared_canvas_input->context,shared_canvas.session))){portable_adapter_retain_silent();return false;}
   shared_canvas_input_active=false;
  }
  if(shared_canvas_input_owned){
   if(!rt->release(&shared_canvas_input_grant)){portable_adapter_retain_silent();return false;}
+  if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
   shared_canvas_input_owned=false;
  }
  shared_canvas_input=NULL;
  if(shared_canvas.session&&!home_canvas_close(&shared_canvas)){portable_adapter_retain_silent();return false;}
  if(shared_canvas_owned){
   if(!rt->release(&shared_canvas_grant)){portable_adapter_retain_silent();return false;}
+  if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
   shared_canvas_owned=false;
  }
  if(shared_outputs_owned){
   if(!rt->release(&dg)){portable_adapter_retain_silent();return false;}
+  if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
   shared_outputs_owned=false;dg=(risc_runtime_capability_v1){.struct_size=sizeof(dg)};
  }
  shared_outputs=NULL;return true;
@@ -60,6 +72,7 @@ static inline bool shared_canvas_touch_open(portable_touch*t,const risc_runtime_
       shared_canvas_input_grant.slot||shared_canvas_input_grant.generation)portable_adapter_retain_silent();
    return false;
   }
+  if(!shared_canvas_safe(NULL)){portable_adapter_retain_silent();return false;}
   shared_canvas_input_owned=true;
   const risc_canvas_input_v1 *api=shared_canvas_input_grant.api;
   shared_canvas_input=api?risc_canvas_input_get_v1(api,api->struct_size):NULL;
@@ -129,18 +142,19 @@ bool portable_home_canvas_sleep_available(void) {
   (!shared_canvas_input_active||risc_canvas_input_sleep_supported(shared_canvas_input));
 }
 int portable_home_canvas_prepare_sleep(void) {
- if(shared_canvas.retained||native_custody_retained)return -2;
+ if(!shared_canvas_safe(NULL)||shared_canvas.retained)return -2;
  if(!home_canvas_quiesce(&shared_canvas))return shared_canvas.retained?-2:0;
  if(!shared_canvas_input_active)return 1;
  if(!risc_canvas_input_sleep_supported(shared_canvas_input))return 0;
  shared_canvas_input_prepared=true;
  int32_t rc=shared_canvas_input->prepare_sleep(shared_canvas_input->context,shared_canvas.session,1000);
+ if(!home_canvas_live(&shared_canvas))return -2;
  if(rc==RISC_CANVAS_UNSUPPORTED){shared_canvas_input_prepared=false;return 0;}
  if(!home_canvas_result(&shared_canvas,rc))return shared_canvas.retained?-2:0;
  return 1;
 }
 int portable_home_canvas_resume_sleep(void) {
- if(shared_canvas.retained||native_custody_retained)return -2;
+ if(!shared_canvas_safe(NULL)||shared_canvas.retained)return -2;
  if(!shared_canvas_input_prepared)return 1;
  int32_t rc=shared_canvas_input->resume_sleep(shared_canvas_input->context,shared_canvas.session,1000);
  if(!home_canvas_result(&shared_canvas,rc)){portable_adapter_retain_silent();return -2;}
