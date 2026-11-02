@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: dd3c557d315475f0c4693f58b93f1066eeea5ded
+          ref: 334329b38314493f5912ef4fdd57667bc916ffd8
           path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -89,7 +89,10 @@ jobs:
         if: always()
         with:
           name: complete-shared-home-${{ github.event.pull_request.head.sha }}
-          path: out/
+          path: |
+            out/
+            !out/**/compiler/**
+            !out/**/linker-only/**
           include-hidden-files: true
           if-no-files-found: error
   delivered-cohort:
@@ -125,5 +128,6 @@ jobs:
           path: |
             cohort/composed/
             cohort/sources.json
+            cohort/inventory.json
           include-hidden-files: true
           if-no-files-found: error
