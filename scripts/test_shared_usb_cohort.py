@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Synthetic overlay invariants; actual bytes/packing/admission run separately."""
 import copy,json,unittest
-from assemble_shared_usb_cohort import overlay,OLD,MANIFEST,IMAGE,SD_IMAGE,grant,storage_record
+from assemble_shared_usb_cohort import overlay,OLD,MANIFEST,IMAGE,SD_IMAGE,grant,storage_record,fit_preserving_encoded,decode_store
 from compose_shared_app_cohort import encode
 from image_envelope import encode_image
 ELF=b'\x7fELF'+b'x'*1024
@@ -60,4 +60,49 @@ class Overlay(unittest.TestCase):
  def test_required_usb_rejected(self):
   b,s,d=fixture('watch');m=json.loads(COMMON);m['requires'].append({'capability':'usb.device.msc','api':1})
   with self.assertRaises(ValueError):overlay('watch',b,s,d,ELF,encode(m))
+class SpiffsFullError(Exception):pass
+class StorageFit(unittest.TestCase):
+ def candidate(self):
+  b,s,d=fixture('watch')
+  a,t,_=overlay('watch',b,s,d,ELF,COMMON)
+  boot=json.loads(a['boot.json'])
+  for name in ('extra','mirror'):
+   a[name+'.elf']=ELF+b'y'*1024
+   a[name+'.json']=encode({'type':'application','file_name':name+'.elf'})
+   row={'manifest':name+'.json','grants':[]}
+   if name=='mirror':row['image_source']={'path':'Apps/mirror.elf','volume_instance':12}
+   boot['app_capabilities'].append(row)
+  a['boot.json']=encode(boot)
+  t.update({n:v for n,v in a.items() if n!='default.elf'})
+  return a,t
+ def test_extra_encoding_preserves_existing_and_mirrors(self):
+  a,t=self.candidate();original=copy.deepcopy((a,t));attempts=[]
+  def build(entries,size):
+   self.assertEqual(size,12345);attempts.append(copy.deepcopy(entries))
+   if entries['extra.elf']==a['extra.elf']:raise SpiffsFullError()
+  out,changes=fit_preserving_encoded(a,t,12345,build)
+  self.assertEqual([r['path'] for r in changes],[IMAGE,'extra.elf'])
+  self.assertEqual(out['default.elf'],t['default.elf'])
+  self.assertEqual(out['scene/driver.elf'],t['scene/driver.elf'])
+  self.assertEqual(out['mirror.elf'],t['mirror.elf'])
+  self.assertEqual(decode_store(out),a)
+  self.assertEqual((a,t),original)
+  self.assertEqual(len(attempts),3)
+  again,record=fit_preserving_encoded(a,t,12345,build)
+  self.assertEqual((again,record),(out,changes))
+ def test_already_fits_no_transform(self):
+  a,t=self.candidate()
+  out,changes=fit_preserving_encoded(a,t,1,lambda entries,size:None)
+  self.assertEqual(out,t);self.assertEqual(changes,[])
+ def test_impossible_is_finite(self):
+  a,t=self.candidate();calls=[]
+  def build(entries,size):
+   calls.append(1);raise SpiffsFullError()
+  with self.assertRaises(ValueError):fit_preserving_encoded(a,t,1,build)
+  self.assertEqual(len(calls),3)
+ def test_other_packer_error_propagates(self):
+  a,t=self.candidate()
+  def build(entries,size):raise RuntimeError('corrupt geometry')
+  with self.assertRaisesRegex(RuntimeError,'corrupt geometry'):fit_preserving_encoded(a,t,1,build)
+
 if __name__=='__main__':unittest.main()

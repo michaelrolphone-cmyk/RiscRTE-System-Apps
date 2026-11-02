@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Cumulative USB overlay: preserve all non-USB canonical AND stored bytes."""
+"""Cumulative USB overlay: preserve canonical bytes; receipt eligible storage-only changes."""
 import argparse, copy, json, sys, zipfile
 from pathlib import Path
 from compose_shared_app_cohort import tree, write_tree, encode, digest, safe
 from assemble_shared_home_cohort import inventory, fingerprint, pack_candidate, providers
 from image_envelope import MAGIC, decode_image, encode_image, receipt as image_receipt
-from image_storage import ordinary_images
+from image_storage import ordinary_images, candidates
 ROOT=Path(__file__).resolve().parents[1]
 LANES=('watch','wave','x4')
 MANIFEST='usb_sd_transfer.json'
@@ -77,6 +77,34 @@ def overlay(lane,before,stored,sd,elf,manifest):
  if set(new_sd)!=set(sd) or any(new_sd[n]!=b for n,b in sd.items() if not(lane=='wave' and n==SD_IMAGE)):
   raise ValueError('Unrelated SD bytes changed')
  return out,packed,new_sd
+def fit_preserving_encoded(canonical,stored,size,build):
+ """Finite positive-savings prefix; never rewrite an existing envelope."""
+ if decode_store(stored)!=canonical:raise ValueError('Storage candidate differs')
+ out=dict(stored);selected=[]
+ def attempt():
+  try:build(out,size);return True
+  except Exception as error:
+   if type(error).__name__!='SpiffsFullError':raise
+   return False
+ if attempt():return out,selected
+ options={n:v for n,v in candidates(canonical).items()
+          if stored[n]==canonical[n] and not stored[n].startswith(MAGIC)}
+ order=sorted(options,key=lambda n:(n!=IMAGE,
+        -(options[n]['receipt']['canonical_bytes']-options[n]['receipt']['stored_bytes']),n))
+ for n in order:
+  value=options[n]
+  out[n]=value['encoded']
+  selected.append({'path':n,'before_stored_sha256':digest(stored[n]),
+                   'after_stored_sha256':digest(out[n]),
+                   'saved_bytes':len(stored[n])-len(out[n]),
+                   'canonical_sha256':digest(canonical[n]),
+                   'image':value['receipt']})
+  if attempt():
+   if decode_store(out)!=canonical:raise ValueError('Canonical bytes changed while fitting')
+   if any(out[n]!=b for n,b in stored.items() if b.startswith(MAGIC)):
+    raise ValueError('Existing envelope changed')
+   return out,selected
+ raise ValueError('Eligible ordinary application encoding cannot fit fixed store')
 def storage_record(canonical,stored):
  if decode_store(stored)!=canonical:raise ValueError('Canonical recovery differs')
  encoded={n:b for n,b in stored.items() if b.startswith(MAGIC)}
@@ -85,7 +113,7 @@ def storage_record(canonical,stored):
  return {'schema':1,'format':'RTEIMG1','images':{n:image_receipt(canonical[n],b) for n,b in encoded.items()},
          'canonical_files':{n:digest(b) for n,b in sorted(canonical.items())},
          'stored_files':{n:digest(b) for n,b in sorted(stored.items())},
-         'canonical_recovery_verified':True,'selection':'Preserve baseline encoding; encode only added USB if required'}
+         'canonical_recovery_verified':True,'selection':'Preserve every existing envelope; USB first then descending positive savings among raw ordinary internal apps, stopping at first successful fixed-size pack'}
 def run(baseline,application,tools,output):
  if output.exists():raise ValueError('Output exists')
  sys.path.insert(0,str(tools.resolve()))
@@ -110,15 +138,10 @@ def run(baseline,application,tools,output):
    if len(names)!=len(set(names)):raise ValueError('Duplicate baseline SD member')
    sd={safe(n):z.read(n) for n in names}
   after,candidate,after_sd=overlay(lane,before,stored,sd,elf,manifest)
-  try:build(candidate,len(raw))
-  except Exception as error:
-   if lane!='watch' or type(error).__name__!='SpiffsFullError':raise
-   # Runtime 0.4.20 baseline already carries the qualified decoder. Do not
-   # re-encode Home or providers, nor widen the eligible transformation set.
-   if not any(b.startswith(MAGIC) for b in stored.values()):raise ValueError('Expected encoded Home baseline')
-   encoded=encode_image(elf)
-   if len(encoded)>=len(elf):raise ValueError('USB encoding cannot improve fit')
-   candidate[IMAGE]=encoded
+  representation_changes=[]
+  if lane=='watch':
+   candidate,representation_changes=fit_preserving_encoded(after,candidate,len(raw),build)
+  else:build(candidate,len(raw))
   encoding=storage_record(after,candidate)
   path=output/lane;path.mkdir()
   for name,entries in [('before',before),('before-stored',stored),('before-sd',sd),
@@ -130,7 +153,11 @@ def run(baseline,application,tools,output):
           'changed_internal':[n for n in sorted(after) if after[n]!=before.get(n)],
           'changed_stored':[n for n in sorted(candidate) if candidate[n]!=stored.get(n)],
           'changed_sd':[n for n in sorted(after_sd) if after_sd[n]!=sd.get(n)],
-          'unrelated_canonical_bytes_preserved':True,'unrelated_stored_bytes_preserved':True,
+          'unrelated_canonical_bytes_preserved':True,
+          'additional_storage_encodings':representation_changes,
+          'unrelated_stored_bytes_preserved':not any(r['path']!=IMAGE for r in representation_changes),
+          'existing_encoded_bytes_preserved':all(candidate[n]==b for n,b in stored.items() if b.startswith(MAGIC)),
+          'storage_only_changes_lossless':decode_store(candidate)==after,
           'unrelated_sd_bytes_preserved':True,'provider_and_data_ownership_preserved':True}
   result.update(pack_candidate(path,candidate,after_sd,len(raw),build,read_image))
   results[lane]=result

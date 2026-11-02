@@ -7,6 +7,7 @@ static const risc_scene_components_api_v1 *components;
 static uint64_t scene_session,event_sequence;
 static uint32_t document_revision,painted_state;
 static bool shared_terminal,scene_owned,closing,controls_requested;
+static bool msc_available;
 static const char *destination="default.elf";
 static risc_components_document_v1 document;
 enum { USB_START_STOP=1,USB_BACK=2,USB_REMOVED=3,USB_KEEP=4,USB_ALARM_DISMISS=5,USB_ALARM_RETRY=6,USB_CONTROLS=7 };
@@ -99,6 +100,27 @@ static bool shared_result(int32_t rc) {
     if(!shared_live() || rc==RISC_SCENE_RETAINED){shared_retain();return false;}
     return rc==RISC_SCENE_OK;
 }
+static bool shared_probe_msc(void) {
+    risc_runtime_capability_v1 probe={.struct_size=sizeof(probe)};
+    bool got=runtime->acquire(RISC_USB_DEVICE_MSC_CAPABILITY,1,0,&probe);
+    if(!shared_live())return false;
+    if(!got) {
+        if(probe.api||probe.slot||probe.generation){shared_retain();return false;}
+        msc_available=false;
+    } else {
+        const risc_usb_device_msc_api_v1 *api=probe.api;
+        msc_available=api && api->api_version==1 && api->struct_size>=sizeof(*api) &&
+          api->begin && api->poll && api->end && api->last_error &&
+          risc_usb_device_msc_prepare(api);
+        if(!runtime->release(&probe)||!shared_live()){shared_retain();return false;}
+    }
+    if(!msc_available) {
+        state=RISC_USB_MSC_MEDIA_UNAVAILABLE;
+        snprintf(detail,sizeof(detail),"USB SD transfer is unavailable: no compatible authorized hardware provider.");
+    }
+    return true;
+}
+
 static void shared_node(uint32_t id,uint32_t kind,const char *label,
                         const char *text,uint32_t action,uint32_t flags) {
     unsigned i=document.node_count++;
@@ -158,9 +180,9 @@ static void shared_document(void) {
         if(state==RISC_USB_MSC_WAITING)
             shared_node(13,RISC_SCENE_TEXT_NODE,"Waiting",
                         "Connect the USB data cable to a computer.",0,0);
-        shared_node(20,RISC_SCENE_ACTION,state==RISC_USB_MSC_PREPARING?
+        shared_node(20,RISC_SCENE_ACTION,!msc_available?"USB TRANSFER UNAVAILABLE":state==RISC_USB_MSC_PREPARING?
                     "CANCEL PREPARATION":portable_usb_transfer_owned()?
-                    "STOP TRANSFER":"START TRANSFER","",USB_START_STOP,RISC_SCENE_PRIMARY);
+                    "STOP TRANSFER":"START TRANSFER","",USB_START_STOP,RISC_SCENE_PRIMARY|(!msc_available?RISC_SCENE_DISABLED:0));
         shared_node(21,RISC_SCENE_ACTION,portable_usb_transfer_owned()?
                     "HOME LOCKED DURING TRANSFER":"BACK TO APPS","",USB_BACK,
                     portable_usb_transfer_owned()?RISC_SCENE_DISABLED:0);
@@ -227,7 +249,7 @@ __attribute__((visibility("default"))) void app_main(void) {
        checkpoint_client.struct_size<sizeof(checkpoint_client) ||
        !checkpoint_client.invocation || !checkpoint_client.write)
         checkpoint_client=(risc_diagnostic_checkpoint_client_v1){0};
-    if(!shared_live()||!resident_bind()||!alarm_open())return;
+    if(!shared_live()||!shared_probe_msc()||!resident_bind()||!alarm_open())return;
     scene_grant=(risc_runtime_capability_v1){.struct_size=sizeof(scene_grant)};
     if(!runtime->acquire(RISC_SCENE_CAPABILITY,1,0,&scene_grant)) {
         if(scene_grant.api || scene_grant.slot || scene_grant.generation)shared_retain();
@@ -252,7 +274,7 @@ __attribute__((visibility("default"))) void app_main(void) {
         return;
     }
     if(!scene_session){shared_retain();return;}
-    if(!shared_result(components->lifecycle.configure(scene->context,scene_session,0))) {
+    if(!shared_result(components->lifecycle.configure(scene->context,scene_session,resident.invocation?RISC_SCENE_FEATURE_SHARED_CONTROLS:0))) {
         shared_retain();return;
     }
     dirty=false;
@@ -302,7 +324,7 @@ __attribute__((visibility("default"))) void app_main(void) {
             if(!shared_result(components->open(scene->context,&document,&nav,&scene_session))||!scene_session) {
                 shared_retain();return;
             }
-            if(!shared_result(components->lifecycle.configure(scene->context,scene_session,0))){shared_retain();return;}
+            if(!shared_result(components->lifecycle.configure(scene->context,scene_session,resident.invocation?RISC_SCENE_FEATURE_SHARED_CONTROLS:0))){shared_retain();return;}
             dirty=false;runtime->yield_ms(2);continue;
         }
         risc_scene_event_v1 event={.struct_size=sizeof(event)};
@@ -313,6 +335,11 @@ __attribute__((visibility("default"))) void app_main(void) {
         bool consumed=false;
         if(rc==RISC_SCENE_OK && event.sequence>event_sequence) {
             event_sequence=event.sequence;
+            if(event.document_revision==document.revision && event.kind==RISC_SCENE_CONTROLS_EVENT &&
+               !event.node && !event.action && !event.value && resident.invocation &&
+               !portable_usb_transfer_owned() && !alarm_owned() && !alarm_modal) {
+                controls_requested=true;consumed=true;action_gate=true;
+            }
             if(event.document_revision==document.revision &&
                event.kind==RISC_SCENE_ACTION_EVENT && shared_event_valid(&event)) {
                 /* A queued Cancel is handled before preparation, even while

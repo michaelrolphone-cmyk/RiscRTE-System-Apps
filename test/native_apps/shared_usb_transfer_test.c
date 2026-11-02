@@ -31,7 +31,7 @@ static bool acquire(const char *name,uint32_t api,uint64_t instance,risc_runtime
  out->slot=!strcmp(name,"ui.scene")?1:2;out->generation=1;return true;
 }
 static bool release(risc_runtime_capability_v1*g){
- assert(live);REVOKE("release",true);if(g->slot==2&&mode==5)return false;
+ assert(live);REVOKE("release",true);if(g->slot==2&&mode==5&&begins)return false;
  ++releases;memset(g,0,sizeof(*g));return true;
 }
 static bool launch(const char*p){assert(live&&!token&&!scene_session);assert(!strcmp(p,"default.elf")||!strcmp(p,"springboard.elf"));++launches;return true;}
@@ -63,12 +63,15 @@ static int32_t prepare(void*c,uint64_t t){
  assert(!dirty);++steps;if(steps==2)model_state=RISC_USB_MSC_WAITING;return 0;
 }
 static int32_t open_scene(void*c,const risc_components_document_v1*d,const risc_scene_navigation_v1*n,uint64_t*t){
- (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);revision=d->revision;*t=9;pending=2;return 0;
+ (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);if(mode==2){assert(state==RISC_USB_MSC_MEDIA_UNAVAILABLE);bool unavailable=false;
+ for(unsigned i=0;i<d->node_count;i++)if(d->nodes[i].action==USB_START_STOP)unavailable=(d->nodes[i].flags&RISC_SCENE_DISABLED)!=0;
+ assert(unavailable&&strstr(detail,"unavailable"));}
+ revision=d->revision;*t=9;pending=2;return 0;
 }
 static int32_t update_scene(void*c,uint64_t t,const risc_components_document_v1*d){
  (void)c;assert(live&&t==9&&d->revision>revision);REVOKE("update",RISC_SCENE_OK);revision=d->revision;pending=2;return 0;
 }
-static int32_t configure(void*c,uint64_t t,uint32_t f){(void)c;assert(live&&t==9&&!f);REVOKE("configure",RISC_SCENE_OK);configured=true;return 0;}
+static int32_t configure(void*c,uint64_t t,uint32_t f){(void)c;assert(live&&t==9&&f==(resident.invocation?RISC_SCENE_FEATURE_SHARED_CONTROLS:0));REVOKE("configure",RISC_SCENE_OK);configured=true;return 0;}
 static int32_t snapshot_scene(void*c,uint64_t t,risc_scene_navigation_v1*n,uint32_t*f){
  (void)c;(void)n;assert(live&&t==9&&configured);REVOKE("snapshot",RISC_SCENE_OK);
  *f=pending?RISC_SCENE_PRESENTING:0;
@@ -79,9 +82,9 @@ static int32_t snapshot_scene(void*c,uint64_t t,risc_scene_navigation_v1*n,uint3
 static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
  (void)c;assert(live&&t==9);REVOKE("next",RISC_SCENE_IDLE);
  unsigned action=0;
- if(ticks==3)action=mode==10?USB_CONTROLS:USB_START_STOP;
+ if(ticks==3)action=(mode==10||mode==13)?USB_CONTROLS:USB_START_STOP;
  if(mode==7&&ticks==14)action=USB_ALARM_DISMISS;
- if(mode==10&&ticks==10)action=USB_BACK;
+ if((mode==10||mode==13)&&ticks==10)action=USB_BACK;
  if(mode==11&&ticks==3)action=USB_BACK;
  if(mode==11&&ticks==9)action=USB_BACK;
  if(mode==1&&ticks==4)action=USB_START_STOP;
@@ -97,6 +100,7 @@ static int32_t next_scene(void*c,uint64_t t,risc_scene_event_v1*e){
  if(!action)return RISC_SCENE_IDLE;
  *e=(risc_scene_event_v1){.struct_size=sizeof(*e),.kind=RISC_SCENE_ACTION_EVENT,
  .document_revision=revision,.node=(mode==11&&ticks==3)?999:action==USB_BACK||action==USB_KEEP?21:action==USB_CONTROLS?23:20,.action=action,.sequence=++sequence};
+ if(mode==13&&ticks==3){e->kind=RISC_SCENE_CONTROLS_EVENT;e->node=e->action=0;}
  return 0;
 }
 static int32_t close_scene(void*c,uint64_t t){(void)c;assert(live&&t==9&&!token);REVOKE("close",RISC_SCENE_OK);return 0;}
@@ -118,7 +122,7 @@ static int32_t checkpoint(uint64_t id,const risc_resident_request_v1*q,risc_resi
  assert(q->reason==RISC_RESIDENT_CHECKPOINT_CONTROLS);r->flags=0;++controls;return 0;
 }
 static bool resident_get(struct risc_resident_client_v1*r){
- if(mode!=10&&mode!=12)return false;
+ if(mode!=10&&mode!=12&&mode!=13)return false;
  *r=(risc_resident_client_v1){.api_version=1,.struct_size=sizeof(*r),.invocation=77,
  .role=RISC_RESIDENT_ROLE_FOREGROUND,.checkpoint=checkpoint};return true;
 }
@@ -145,7 +149,7 @@ int main(int argc,char**argv){
  if(mode==7){assert(alarm_dismissed&&alarm_steps&&ends==1&&launches==1&&!retains);}
  if(mode==8){assert(retains==1&&!launches);}
  if(mode==9){assert(!live&&begins==1&&!polls&&!steps&&!ends&&!launches&&!retains);}
- if(mode==10){assert(controls==1&&!begins&&launches==1&&!retains);}
+ if(mode==10||mode==13){assert(controls==1&&!begins&&launches==1&&!retains);}
  if(mode==11){assert(!begins&&launches==1&&ticks>=9&&!retains);}
  if(mode==12){assert(begins==1&&ends==1&&!launches&&!retains);}
  printf("shared USB scenario %d PASS ticks=%d polls=%d steps=%d\n",mode,ticks,polls,steps);
