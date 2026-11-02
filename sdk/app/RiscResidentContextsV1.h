@@ -13,3 +13,7 @@ enum { RISC_CONTEXTS_FACE=0,RISC_CONTEXTS_POWER=1,RISC_CONTEXTS_SLEEP=2,
  * NOTIFY options:0 off/DND,1 vibrate,2 sound,3 both. Other field/option
  * combinations are INVALID; unsupported saved choices remain unchanged. */
 #define RISC_CONTEXTS_SETTING_OPTION_QUERY(field,option) (UINT32_C(0x43530200)+(field)*16u+(option))
+/* Explicit closed-scene preparation, separate from pure applicability reads.
+ * Settle existing preference/radio/alarm readiness only; no policy writes or
+ * toggles. OK ready, BUSY unsettled, RETAINED terminal; all flags/reserved zero. */
+#define RISC_CONTEXTS_SETTINGS_PREPARE UINT32_C(0x43530000)

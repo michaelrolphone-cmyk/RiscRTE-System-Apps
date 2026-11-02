@@ -66,7 +66,18 @@ static int32_t project_time(void*ctx,int64_t epoch,uint32_t nanoseconds,risc_civ
  risc_civil_calendar_v1 result={.struct_size=sizeof(result),.nanoseconds=nanoseconds};
  portable_timezone_rule rule;int rc=policy_rule(result.zone,&rule);if(rc)return rc;
  portable_timezone_civil local;
- if(portable_timezone_utc_to_local(&rule,epoch,&local,NULL)!=PORTABLE_TIMEZONE_OK||local.year<2000||local.year>2099)return -1;
+#ifdef CIVIL_NATIVE_UTC
+ if(portable_timezone_utc_to_local(&rule,epoch,&local,NULL)!=PORTABLE_TIMEZONE_OK)return -1;
+#else
+ /* Preserve the delivered historical Denver rules inside the provider. */
+ portable_timezone_civil raw;
+ if(epoch<INT64_C(946656000)||epoch>INT64_C(4102415999)||
+    portable_timezone_epoch_to_civil(epoch+INT64_C(28800),&raw)!=PORTABLE_TIMEZONE_OK)return -1;
+ twatch_rtc_time_v1 rtc_value={(uint16_t)raw.year,raw.month,raw.day,raw.weekday,raw.hour,raw.minute,raw.second},display;
+ if(!portable_time_forward(&rtc_value,&display))return -1;
+ local=(portable_timezone_civil){display.year,display.month,display.day,display.hour,display.minute,display.second,display.weekday};
+#endif
+ if(local.year<2000||local.year>2099)return -1;
  result.year=local.year;result.month=local.month;result.day=local.day;result.hour=local.hour;
  result.minute=local.minute;result.second=local.second;result.weekday=local.weekday;
  *out=result;return 0;
@@ -101,6 +112,32 @@ static int32_t interpret_rtc(void*ctx,const risc_civil_calendar_v1*raw,int64_t*o
 #endif
  *out=epoch;return 0;
 }
+static int32_t inverse_time(void *ctx,const risc_civil_calendar_v1 *civil,risc_civil_inverse_v1 *out) {
+ (void)ctx;if(!alive())return -9;
+ if(!started||!civil||civil->struct_size<sizeof(*civil)||civil->reserved||civil->nanoseconds||
+    civil->year<2000||civil->year>2099||!out||out->struct_size<sizeof(*out))return -1;
+ portable_timezone_civil value={civil->year,civil->month,civil->day,civil->hour,civil->minute,civil->second,civil->weekday};
+ int64_t checked;if(portable_timezone_civil_to_epoch(&value,&checked)!=PORTABLE_TIMEZONE_OK)return -1;
+ risc_civil_inverse_v1 result={.struct_size=sizeof(result)};
+#ifdef CIVIL_NATIVE_UTC
+ char zone[40];portable_timezone_rule rule;int rc=policy_rule(zone,&rule);if(rc)return rc;
+ portable_timezone_inverse candidates;
+ rc=portable_timezone_local_to_utc(&rule,&value,&candidates);
+ if(rc!=PORTABLE_TIMEZONE_OK&&rc!=PORTABLE_TIMEZONE_GAP&&rc!=PORTABLE_TIMEZONE_FOLD)return -1;
+ result.count=candidates.count;
+ for(unsigned i=0;i<result.count;i++)result.epoch[i]=candidates.candidate[i].epoch;
+#else
+ twatch_rtc_time_v1 local={(uint16_t)civil->year,civil->month,civil->day,civil->weekday,civil->hour,civil->minute,civil->second};
+ portable_time_candidate candidates[2];result.count=portable_time_inverse(&local,candidates);
+ for(unsigned i=0;i<result.count;i++) {
+  const twatch_rtc_time_v1 *r=&candidates[i].rtc;
+  portable_timezone_civil raw={r->year,r->month,r->day,r->hour,r->minute,r->second,r->weekday};
+  if(portable_timezone_civil_to_epoch(&raw,&result.epoch[i])!=PORTABLE_TIMEZONE_OK)return -1;
+  result.epoch[i]-=INT64_C(28800);
+ }
+#endif
+ *out=result;return 0;
+}
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||retained||!deps)return false;
 #ifdef CIVIL_NATIVE_UTC
@@ -120,6 +157,6 @@ static bool start(const risc_provider_dependency_v1 *deps,size_t count){
 }
 static bool quiesce(void){return !retained;}
 static void stop(void){if(!retained)started=false;}
-static const risc_civil_clock_policy_v1 api={1,sizeof(api),NULL,read_time,1,RISC_CIVIL_CLOCK_POLICY_TAG,project_time,interpret_rtc};
+static const risc_civil_clock_schedule_v1 api={{1,sizeof(api),NULL,read_time,1,RISC_CIVIL_CLOCK_POLICY_TAG,project_time,interpret_rtc},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse_time};
 static const risc_driver_v2 driver={2,sizeof(driver),CIVIL_CLOCK_ID,RISC_CIVIL_CLOCK_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t version){return version==2?&driver:NULL;}

@@ -27,6 +27,7 @@ static bool bindings(void){
  if(!runtime->release(&grant)){retain();return false;}
  policy_loaded=true;return true;
 }
+bool portable_home_bindings_retained(void){return terminal;}
 uint64_t portable_home_crash_namespace(void){return bindings()?policy.crash_namespace:0;}
 unsigned portable_home_points_schema(void){return bindings()?risc_home_points_schema(&policy):RISC_HOME_POINTS_UNSPECIFIED;}
 uint64_t portable_home_catalog_volume(void){return bindings()?policy.catalog_volume:0;}
