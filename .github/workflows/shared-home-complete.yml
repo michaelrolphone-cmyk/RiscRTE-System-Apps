@@ -513,7 +513,8 @@ jobs:
           set -euo pipefail
           python3 System/scripts/prepare_home_cohort_plan.py --cohort incoming/cohort/composed --packages closure/packages --output closure/plan.json
           python3 System/scripts/assemble_shared_home_cohort.py --cohort incoming/cohort/composed --plan closure/plan.json --home closure/application --packages closure/packages --output closure/assembly --inputs incoming/cohort/inputs --bootfs-tools Bootfs/scripts
-      - name: Actual final Runtime graph and ELF admission
+      - name: Actual candidate Runtime graph and ELF admission (independent of packing)
+        if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
         run: |
           set -euo pipefail
           for mode in normal sanitized; do
