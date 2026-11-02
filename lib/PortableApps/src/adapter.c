@@ -1,3 +1,10 @@
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#ifndef PORTABLE_NATIVE_CUSTODY_FENCE
+#define PORTABLE_NATIVE_CUSTODY_FENCE
+#endif
+#include "PortableHomeCanvas.h"
+#include "PortableNavigation.h"
+#endif
 #ifdef PORTABLE_QUICK_NATIVE_GEOMETRY
 #if !defined(PORTABLE_QUICK_ACTIONS) || !defined(PORTABLE_WATCH_NATIVE_HEIGHT) || !defined(PORTABLE_NATIVE_CUSTODY_FENCE) || (defined(PORTABLE_RASTER_SNAPSHOT) && !defined(PORTABLE_QUICK_SLICED_NATIVE))
 #error "native Quick geometry requires qualified direct or explicitly selected sliced frames"
@@ -311,6 +318,10 @@ static risc_runtime_capability_v1 dg, bg;
 static const risc_display_output_api_v1 *display;
 static const risc_battery_gauge_api_v1 *gauge;
 static portable_touch touch;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+static bool shared_canvas_controls;
+static inline const risc_input_navigation_api_v1 *shared_canvas_navigation_open(void);
+#endif
 static risc_display_info_v1 info;
 static risc_display_surface_v1 surface;
 static uint32_t surface_format=RISC_DISPLAY_FORMAT_RGB565;
@@ -675,7 +686,9 @@ static risc_runtime_capability_v1 navigation_grant;
 static const risc_input_navigation_api_v1 *navigation;
 static bool navigation_neutral,navigation_ready;
 static bool input_navigation_open(void) {
-#ifdef PORTABLE_INPUT_NAVIGATION_LOCAL
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ navigation=shared_canvas_navigation_open();
+#elif defined(PORTABLE_INPUT_NAVIGATION_LOCAL)
  navigation=portable_input_navigation_open(rt);
 #else
  navigation_grant.struct_size=sizeof(navigation_grant);
@@ -796,6 +809,16 @@ static void input_dispatch(void) {
  }
 #endif
  if(failed)return;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#ifdef PORTABLE_QUICK_ACTIONS
+ if(shared_canvas_controls){
+  shared_canvas_controls=false;
+#ifdef PORTABLE_HOME_POINTS_NATIVE_UTC
+  quick_open_requested=true;
+#endif
+ }
+#endif
+#endif
  portable_touch_sample next;
  input_progressed=portable_touch_next(&touch,&next);
 #if defined(PORTABLE_SAFE_VIEWPORT) && !defined(PORTABLE_QUICK_NATIVE_GEOMETRY)
@@ -1028,6 +1051,12 @@ static void handoff_finish(void) {
  free(handoff_old);free(handoff_scratch);handoff_old=handoff_scratch=NULL;handoff_active=handoff_pending=handoff_first=false;
 }
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+#include "shared_home_canvas_adapter.inc"
+#define shared_home_outputs(d) (shared_outputs?shared_outputs:(d))
+#else
+#define shared_home_outputs(d) (d)
+#endif
 static int32_t width(void) {
 #ifdef PORTABLE_SAFE_VIEWPORT
   if(!paper_rotated)return content_view.width;
@@ -1042,6 +1071,9 @@ static int32_t height(void) {
 }
 #ifdef PORTABLE_PAPER_PREFERENCES
 static void paper_orient_input(portable_touch_sample *sample) {
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ (void)sample;return;
+#endif
   if(paper_flip_ui && sample->valid && !sample->cancelled && (sample->down || sample->released)) {
     if(sample->x>=width() || sample->y>=height()) {
       *sample=(portable_touch_sample){.cancelled=true};input_reset();return;
@@ -1055,7 +1087,9 @@ static void native_point(int *x,int *y) {
   if(!paper_rotated){*x+=(int)content_view.x;*y+=(int)content_view.y;}
 #endif
 #ifdef PORTABLE_PAPER_PREFERENCES
+#ifndef PORTABLE_SHARED_HOME_CANVAS
   if(paper_flip_ui){*x=width()-1-*x;*y=height()-1-*y;}
+#endif
 #endif
   if(paper_rotated){int old=*x;*x=*y;*y=(int)info.height-1-old;}
 }
@@ -1237,6 +1271,9 @@ static bool acquire_surface_mode(bool complete_overwrite) {
     display->release(display->context, surface.frame);
     surface.frame = 0;
   }
+ #ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!shared_canvas_geometry_sync()){display_failure("HOME Canvas geometry unavailable");return false;}
+ #endif
   portable_stage_log(rt,"draw-begin","");
   portable_perf_span(PORTABLE_PERF_SPAN_ACQUIRE,true);
   if (!PORTABLE_ATTEMPT_BOOL("display.acquire",display->acquire(display->context, surface_format,
@@ -2198,6 +2235,9 @@ static bool idle_sleep(void) {
     return false;
   }
   input_pending=false;navigation_pending=0;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!home_canvas_quiesce(&shared_canvas)){portable_adapter_retain_silent();return false;}
+#endif
   rt->diagnostic("PORTABLE_APP sleep=idle");
 #ifdef PORTABLE_ALARM_CLIENT
 #ifdef PORTABLE_X4_IDLE_POLICY
@@ -2239,11 +2279,14 @@ static bool idle_sleep(void) {
 #endif
 #endif
   if(status<0){failed=true;return false;}
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!home_canvas_resume(&shared_canvas)||!shared_canvas_geometry_sync()){portable_adapter_retain_silent();return false;}
+#endif
 #ifdef PORTABLE_DESK_CLOCK_SPARSE_START
   if(status>0)portable_desk_clock_resumed();
 #endif
 #ifdef PORTABLE_FRONTLIGHT_TONE
-  if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)){
+  if(quick.ui.paper && !pqa_session_sync_tone(&quick,shared_home_outputs(display))){
 #ifdef PORTABLE_ALARM_TERMINAL_RETENTION
    /* A refused provider operation may already own terminal custody. */
    portable_adapter_retain_silent();
@@ -2348,6 +2391,9 @@ static inline bool paper_apply_flip(unsigned value) {
 #ifdef PORTABLE_INPUT_NAVIGATION
   input_navigation_reset();if(failed)return false;
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!home_canvas_orientation(&shared_canvas,shared_canvas_orientation,value!=0)||!shared_canvas_geometry_sync())return false;
+#endif
   paper_flip_ui=value!=0;paper_orientation_dirty=true;return true;
 }
 #ifndef PORTABLE_DESK_CLOCK_SPARSE_START
@@ -2390,6 +2436,13 @@ bool portable_desk_adapter_flip(unsigned value) {return paper_apply_flip(value);
 #ifdef PORTABLE_DESK_LOCK_HOME
 bool portable_desk_adapter_landscape(bool landscape,unsigned direction) {
  if(failed || direction>1u || !pp_enabled() || surface_format!=RISC_DISPLAY_FORMAT_MONO1)return false;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ uint32_t orientation=landscape?RISC_CANVAS_ORIENTATION_LANDSCAPE:RISC_CANVAS_ORIENTATION_DEFAULT;
+ if(!portable_paper_frame_drain()||surface.frame||!display_settled||native_sleep_retained||alarm_modal)return false;
+ if(!home_canvas_orientation(&shared_canvas,orientation,direction!=0)||!shared_canvas_geometry_sync())return false;
+ shared_canvas_orientation=orientation;paper_flip_ui=direction!=0;paper_orientation_dirty=true;
+ paper_previous_valid=previous_valid=alarm_pixels_valid=false;return true;
+#else
  const bool rotated=!landscape && PORTABLE_DISPLAY_ROTATION==90 && info.width>info.height;
  if(rotated==paper_rotated)return paper_apply_flip(direction);
  if(!portable_paper_frame_drain() || !display_settled || native_sleep_retained || alarm_modal)return false;
@@ -2401,6 +2454,7 @@ bool portable_desk_adapter_landscape(bool landscape,unsigned direction) {
  paper_rotated=rotated;paper_orientation_dirty=true;
  paper_previous_valid=previous_valid=alarm_pixels_valid=false;
  return true;
+#endif
 }
 #endif
 void portable_desk_adapter_caption(int y,const char *text) {
@@ -3683,7 +3737,7 @@ static void settings_native_finalize(void) {
   if(!portable_alarm_close(&alarms,rt))return;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
-  if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_adapter_retain();return;}
+  if(quick.ui.torch && !pqa_session_restore(&quick,shared_home_outputs(display))){portable_adapter_retain();return;}
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
   raster_discard();
@@ -3714,6 +3768,9 @@ static void settings_native_finalize(void) {
 #endif
 #endif
   if(bg.api && !rt->release(&bg))return;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!shared_canvas_close())return;
+#endif
   if(dg.api && !rt->release(&dg))return;
 #ifdef PORTABLE_ALARM_CLIENT
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
@@ -3846,7 +3903,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
 #endif
 #ifdef PORTABLE_QUICK_ACTIONS
-  if(quick.ui.torch && !pqa_session_restore(&quick,display))rt->diagnostic("QUICK brightness-restore-failed");
+  if(quick.ui.torch && !pqa_session_restore(&quick,shared_home_outputs(display)))rt->diagnostic("QUICK brightness-restore-failed");
   free(quick_background);quick_background=NULL;
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
@@ -3873,6 +3930,9 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
 #endif
   if (bg.api && !rt->release(&bg))
     rt->diagnostic("PORTABLE_APP error=battery-release");
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!shared_canvas_close())return;
+#endif
   if (dg.api && !rt->release(&dg))
     rt->diagnostic("PORTABLE_APP error=display-release");
 #endif

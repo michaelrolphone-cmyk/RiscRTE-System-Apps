@@ -282,7 +282,7 @@ static int desk_open_foreground(void) {
   * opening providers. Restore the persisted on/off and exact saved level only
   * for an interactive GPIO wake, never a minute timer or cold boot. */
  if(portable_desk_clock_boot_is_interactive() &&
-    !pqa_session_sync_brightness(&quick,display)) {
+    !pqa_session_sync_brightness(&quick,shared_home_outputs(display))) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
@@ -290,7 +290,7 @@ static int desk_open_foreground(void) {
 #ifdef PORTABLE_FRONTLIGHT_TONE
  /* Configure tone without changing cold-boot/off brightness. Sparse timer
   * execution never enters this foreground-only capability path. */
- if(quick.ui.paper && !pqa_session_sync_tone(&quick,display)) {
+ if(quick.ui.paper && !pqa_session_sync_tone(&quick,shared_home_outputs(display))) {
   portable_desk_adapter_retain();return desk_start_error();
  }
 #endif
@@ -324,6 +324,9 @@ int portable_desk_adapter_start(unsigned mode) {
  if(desk_phase==wanted && !failed)return 1;
  if(desk_phase!=DESK_INITIALIZED || failed)return 0;
  desk_phase=DESK_STARTING;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(!shared_canvas_open())return desk_start_error();
+#else
  if(!rt->acquire("display.output",1,0,&dg))return desk_start_error();
  display=dg.api;
  if(!display || display->api_version!=1 || display->struct_size<sizeof(*display) ||
@@ -340,6 +343,7 @@ int portable_desk_adapter_start(unsigned mode) {
  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && !pp_enabled())return desk_start_error();
 #ifdef PORTABLE_NOVA_UI
  if(!pp_enabled() && (info.width!=240 || info.height!=240))return desk_start_error();
+#endif
 #endif
  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
  if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return desk_start_error();
@@ -383,7 +387,7 @@ static void desk_finalize(void) {
  }
  if(!portable_alarm_close(&alarms,rt))return;
 #ifdef PORTABLE_QUICK_ACTIONS
- if(quick.ui.torch && !pqa_session_restore(&quick,display)){portable_desk_adapter_retain();return;}
+ if(quick.ui.torch && !pqa_session_restore(&quick,shared_home_outputs(display))){portable_desk_adapter_retain();return;}
 #endif
 #ifdef PORTABLE_RASTER_SNAPSHOT
  raster_discard();
@@ -402,6 +406,9 @@ static void desk_finalize(void) {
  if(!portable_touch_close(&touch,rt)){portable_desk_adapter_retain();return;}
  np_close();if(native_sleep_retained)return;
  if(bg.api && !rt->release(&bg))return;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(!shared_canvas_close())return;
+#endif
  if(dg.api && !rt->release(&dg))return;
  free(alarm_pixels);alarm_pixels=NULL;alarm_pixels_valid=false;
 #ifdef PORTABLE_QUICK_ACTIONS
