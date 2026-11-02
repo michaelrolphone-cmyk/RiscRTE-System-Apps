@@ -8,9 +8,14 @@ import argparse,hashlib,json,os,shlex,subprocess,sys
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('x4','runtime','reader','utilities','compiler','output'):p.add_argument('--'+name,type=Path,required=True)
+p.add_argument('--linker',type=Path)
 a=p.parse_args();root=Path(__file__).resolve().parents[1];out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);cc=a.compiler.resolve()
 attempts=[];chosen=None
 variants=[('no-ivopts',['-fno-ivopts']),('no-switch-tables',['-fno-ivopts','-fno-jump-tables','-fno-tree-switch-conversion']),('separate-literals',['-mno-text-section-literals']),('link-relax',['-Wl,--relax']),('optimization-one',['-O1']),('optimization-zero',['-O0'])]
+if a.linker:
+ bridge=out/'linker-only';bridge.mkdir(exist_ok=True);linker=a.linker.resolve()
+ for name in ('ld',cc.name.removesuffix('gcc')+'ld'):(bridge/name).symlink_to(linker)
+ variants.insert(0,('explicit-legacy-linker',['-B'+str(bridge)+'/']))
 for label,flags in variants:
  directory=out/label;bin=directory/'compiler';bin.mkdir(parents=True,exist_ok=True)
  wrapper=bin/cc.name;wrapper.write_text('#!/bin/sh\nexec '+shlex.quote(str(cc))+' "$@" '+shlex.join(flags)+'\n');wrapper.chmod(0o755)
@@ -27,7 +32,7 @@ for label,flags in variants:
   (directory/'repeat.log').write_text(second.stdout);second.check_returncode()
   elf=directory/'target/home/default.elf';assert elf.read_bytes()==(directory/'repeat/home/default.elf').read_bytes()
   chosen={'label':label,'flags':flags,'elf_sha256':hashlib.sha256(elf.read_bytes()).hexdigest(),'size_bytes':elf.stat().st_size,'repeat_identical':True};break
-receipt={'compiler':subprocess.check_output([str(cc),'--version'],text=True),'compiler_sha256':hashlib.sha256(cc.read_bytes()).hexdigest(),'attempts':attempts,'selected':chosen,'hardware_tested':False}
+receipt={'compiler':subprocess.check_output([str(cc),'--version'],text=True),'compiler_sha256':hashlib.sha256(cc.read_bytes()).hexdigest(),'linker':({'path':str(a.linker.resolve()),'sha256':hashlib.sha256(a.linker.read_bytes()).hexdigest(),'version':subprocess.check_output([str(a.linker.resolve()),'--version'],text=True)} if a.linker else None),'attempts':attempts,'selected':chosen,'hardware_tested':False}
 (out/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')
 assert chosen,'All modern code-generation alternatives failed; inspect archived build logs'
 print(json.dumps(chosen),flush=True)
