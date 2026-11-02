@@ -8,7 +8,7 @@ for test in ('presenter','selection','controller'):
  for mode in ('normal','sanitized'):
   name=test+'-'+mode;exe=a.output/name
   flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if mode=='sanitized' else []
-  includes=[root/'sdk/app',root/'Apps/driver_manager',a.runtime/'sdk/driver']
+  includes=[root/'sdk/app',root/'Apps/driver_manager',a.runtime/'sdk/driver',a.runtime/'sdk/app']
   subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-pedantic',*flags,*['-I'+str(x) for x in includes],str(root/('test/driver_manager/'+test+'_test.c')),'-o',str(exe)],check=True)
   env=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1')
   run=subprocess.run([str(exe.resolve())],env=env,text=True,capture_output=True)
