@@ -205,7 +205,7 @@ int portable_desk_clock_mode(void) {
 static bool desk_cancelled(void) {
  if(desk_retained || !portable_desk_adapter_ready() || !desk_ops)return true;
  int status=desk_ops->cancelled(desk_ops->context);
- if(status==-2)desk_fence();
+ if(status!=0&&status!=1)desk_fence();
  return status!=0;
 }
 static bool desk_rect(void *unused,int x,int y,int w,int h,bool black) {

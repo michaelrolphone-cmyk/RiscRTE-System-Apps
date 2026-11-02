@@ -74,7 +74,7 @@ static inline int portable_home_retained_run(const portable_desk_config *configu
   if(frame.has_previous) {
    if(!h->scene(h->context,&cycle.current.config,frame.previous_minute))break;
    int seeded=h->seed(h->context);
-   if(seeded<0)return portable_home_retained_fence(h);
+   if(seeded!=0&&seeded!=1)return portable_home_retained_fence(h);
    if(!seeded)frame.full=true;
   }
   if(!h->scene(h->context,&config,frame.minute))break;
