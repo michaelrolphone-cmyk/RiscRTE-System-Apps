@@ -42,7 +42,8 @@ static bool healthy,enabled=true,offer_ready;
 static uint8_t *frame;
 static const char *TAG="biome-monitor";
 static presentation visible;
-extern const uint8_t idle_logo[] asm("_binary_assets_idle_logo_bin_start");
+/* ESP-IDF 5.4.2 names embedded symbols from the file basename. */
+extern const uint8_t idle_logo[] asm("_binary_idle_logo_bin_start");
 static cJSON *get(const cJSON *o,const char *k){return cJSON_GetObjectItemCaseSensitive(o,k);}
 static const char *str(const cJSON *o,const char *k){cJSON *v=get(o,k);return cJSON_IsString(v)?v->valuestring:"";}
 static double num(const cJSON *o,const char *k){cJSON *v=get(o,k);return cJSON_IsNumber(v)?v->valuedouble:0;}
