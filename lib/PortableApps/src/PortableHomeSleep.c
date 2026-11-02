@@ -28,6 +28,7 @@ static const risc_display_power_api_v1 *home_display_power;
 static const risc_retained_wake_api_v1 *home_wake;
 static unsigned home_modes;
 static bool home_sleep_retained;
+static bool home_context_safe(void *unused){(void)unused;return !portable_adapter_retained()&&risc_runtime_get_api(1)!=NULL;}
 unsigned portable_home_sleep_modes(void){return home_sleep_retained||!portable_home_canvas_sleep_available()?0:home_modes;}
 static int home_sleep_fence(void){home_sleep_retained=true;home_modes=0;portable_adapter_retain_silent();return -2;}
 int portable_home_sleep_close(void){
@@ -76,12 +77,14 @@ static int home_radios_off(const risc_runtime_api_v1*rt) {
   bool ok=false;
   if(i==0){
    const wifi_api_v1*w=grant.api;
-   ok=w&&w->api_version==1&&w->struct_size>=WIFI_MANAGEMENT_V1_SIZE&&w->disconnect_checked&&w->status&&
-    w->disconnect_checked(w->context)&&w->status(w->context)==WIFI_LINK_DOWN;
+   ok=w&&w->api_version==1&&w->struct_size>=WIFI_MANAGEMENT_V1_SIZE&&w->disconnect_checked&&w->status;
+   if(ok){ok=w->disconnect_checked(w->context);if(!home_context_safe(NULL))return home_sleep_fence();}
+   if(ok){ok=w->status(w->context)==WIFI_LINK_DOWN;if(!home_context_safe(NULL))return home_sleep_fence();}
   }else{
    const portable_bluetooth_control_v1*b=grant.api;uint8_t state=PORTABLE_BLUETOOTH_RETAINED;
-   ok=b&&b->api_version==1&&b->struct_size>=sizeof(*b)&&b->set_enabled&&b->status&&
-    b->set_enabled(b->context,false)&&b->status(b->context,&state)&&state==PORTABLE_BLUETOOTH_OFF;
+   ok=b&&b->api_version==1&&b->struct_size>=sizeof(*b)&&b->set_enabled&&b->status;
+   if(ok){ok=b->set_enabled(b->context,false);if(!home_context_safe(NULL))return home_sleep_fence();}
+   if(ok){ok=b->status(b->context,&state)&&state==PORTABLE_BLUETOOTH_OFF;if(!home_context_safe(NULL))return home_sleep_fence();}
   }
   if(!ok||portable_adapter_retained())return home_sleep_fence();
   if(!rt->release(&grant))return home_sleep_fence();
@@ -189,7 +192,7 @@ static int desk_retain(home_desk_sleep*s){s->retained=true;return home_sleep_fen
 static int desk_cancelled(void*context){
  home_desk_sleep*s=context;if(s->retained)return -2;
  bool pending=true;
- if(!s->physical.power->sleep_wake_pending(s->physical.power->context,&pending))return desk_retain(s);
+ if(!s->physical.power->sleep_wake_pending(s->physical.power->context,&pending)||!home_context_safe(NULL))return desk_retain(s);
  return pending?1:0;
 }
 static int desk_resume(void*context){
@@ -348,12 +351,16 @@ int portable_home_light_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_di
  if(portable_home_sleep_admit(rt)!=1)return -2;
  if(!(portable_home_sleep_modes()&PORTABLE_HOME_MODE_LIGHT))return 0;
  if(home_radios_off(rt)!=1)return -2;
- home_desk_sleep s={.rt=rt,.alarms=alarms,.physical={.power=home_power,.display=home_display_power}};
+ home_desk_sleep s={.rt=rt,.alarms=alarms,.physical={.power=home_power,.display=home_display_power,.call_safe=home_context_safe}};
  bool shown=false;int result=0;
  s.physical.display_touched=true;
- if(!home_display_power->prepare_sleep(home_display_power->context))goto restore;
+ bool physical_ready=home_display_power->prepare_sleep(home_display_power->context);
+ if(!home_context_safe(NULL))return desk_retain(&s);
+ if(!physical_ready)goto restore;
  s.physical.power_touched=true;
- if(!home_power->prepare_sleep(home_power->context))goto restore;
+ physical_ready=home_power->prepare_sleep(home_power->context);
+ if(!home_context_safe(NULL))return desk_retain(&s);
+ if(!physical_ready)goto restore;
  int prepared=desk_alarm_prepare(&s);
  if(prepared==-2)return -2;
  if(prepared!=1)goto restore;
@@ -370,6 +377,7 @@ int portable_home_light_sleep_with_ui(const risc_runtime_api_v1*rt,const risc_di
  risc_light_sleep_result_v1 wake={.struct_size=sizeof(wake)};
  int32_t status=home_power->light_sleep_for(home_power->context,duration,&wake);
  if(status==RISC_LIGHT_SLEEP_RETAINED||status>0||status<RISC_LIGHT_SLEEP_UNSUPPORTED)return desk_retain(&s);
+ if(!home_context_safe(NULL))return desk_retain(&s);
  if(desk_resume(&s)!=1)return -2;
  result=0;
  if(status==RISC_LIGHT_SLEEP_OK){
@@ -398,7 +406,7 @@ int portable_app_alarm_sleep(const risc_runtime_api_v1*rt,const risc_display_out
  if(mode!=PORTABLE_SLEEP_DEEP)return portable_home_light_sleep_with_ui(rt,display,gauge,alarms,NULL);
  if(!(portable_home_sleep_modes()&PORTABLE_HOME_MODE_DEEP)){portable_desk_clock_refused();return 0;}
  home_desk_sleep state={.rt=rt,.alarms=alarms,.wake=home_wake,.timer_only=timer,
-  .physical={.power=home_power,.display=home_display_power}};
+  .physical={.power=home_power,.display=home_display_power,.call_safe=home_context_safe}};
  const portable_desk_sleep_ops ops={.context=&state,.cancelled=desk_cancelled,.stage=desk_stage,
   .prepare=desk_prepare,.resume=desk_resume,.stage_enter=desk_stage_enter};
  int result=portable_desk_clock_run(rt,&ops);

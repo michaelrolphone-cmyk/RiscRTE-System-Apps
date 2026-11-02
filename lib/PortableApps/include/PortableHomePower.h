@@ -11,6 +11,7 @@ typedef struct {
  const risc_power_sleep_api_v1 *power;
  bool enrolled_wake_sources;
  bool display_touched,power_touched,held,retained;
+ void *guard_context;bool (*call_safe)(void *);
 } portable_home_power;
 enum { PORTABLE_HOME_POWER_REFUSED=0,PORTABLE_HOME_POWER_READY=1,PORTABLE_HOME_POWER_RETAINED=-2 };
 static inline int portable_home_power_fence(portable_home_power *s) {
@@ -45,14 +46,18 @@ static inline unsigned portable_home_power_modes(const portable_home_power*s,boo
   modes|=PORTABLE_HOME_MODE_HYBRID;
  return modes;
 }
+static inline bool portable_home_power_live(const portable_home_power*s) {
+ return s&&!s->retained&&(!s->call_safe||s->call_safe(s->guard_context));
+}
 static inline int portable_home_power_restore(portable_home_power *s) {
  if(!s||s->retained)return PORTABLE_HOME_POWER_RETAINED;
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
  if(s->power_touched) {
-  if(!s->power->resume(s->power->context))return portable_home_power_fence(s);
+  if(!s->power->resume(s->power->context)||!portable_home_power_live(s))return portable_home_power_fence(s);
   s->power_touched=false;
  }
  if(s->display_touched) {
-  if(s->display->resume_status(s->display->context)!=0)return portable_home_power_fence(s);
+  if(s->display->resume_status(s->display->context)!=0||!portable_home_power_live(s))return portable_home_power_fence(s);
   s->display_touched=false;s->held=false;
  }
  return PORTABLE_HOME_POWER_READY;
@@ -65,22 +70,29 @@ static inline int portable_home_power_refuse(portable_home_power *s) {
  * with checked restoration. Ordinary refusal is already rolled back. */
 static inline int portable_home_power_prepare(portable_home_power *s) {
  if(!s||s->retained)return PORTABLE_HOME_POWER_RETAINED;
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
  if(s->display_touched||s->power_touched||s->held)return portable_home_power_fence(s);
  if(!portable_home_power_supported(s))return PORTABLE_HOME_POWER_REFUSED;
  s->display_touched=true;
- if(!s->display->prepare_sleep(s->display->context))return portable_home_power_refuse(s);
+ bool prepared=s->display->prepare_sleep(s->display->context);
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
+ if(!prepared)return portable_home_power_refuse(s);
  s->power_touched=true;
- if(!s->power->prepare_sleep(s->power->context))return portable_home_power_refuse(s);
+ prepared=s->power->prepare_sleep(s->power->context);
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
+ if(!prepared)return portable_home_power_refuse(s);
  return PORTABLE_HOME_POWER_READY;
 }
 /* Call only after app-owned alarm reconciliation and record staging. After
  * this boundary do not call services, storage, yield, acquire, or release. */
 static inline int portable_home_power_hold(portable_home_power *s) {
  if(!s||s->retained)return PORTABLE_HOME_POWER_RETAINED;
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
  if(!s->display_touched||!s->power_touched||s->held)return portable_home_power_fence(s);
  int32_t rc=s->display->prepare_deep_sleep(s->display->context);
- if(rc==0){s->held=true;return PORTABLE_HOME_POWER_READY;}
  if(rc==RISC_DEEP_SLEEP_RETAINED||rc>0||rc<RISC_DEEP_SLEEP_UNSUPPORTED)return portable_home_power_fence(s);
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
+ if(rc==0){s->held=true;return PORTABLE_HOME_POWER_READY;}
  return portable_home_power_refuse(s);
 }
 /* Purely supplied duration: the application subtracts elapsed processing and
@@ -88,14 +100,16 @@ static inline int portable_home_power_hold(portable_home_power *s) {
  * refusal still has holds: caller must restore before clearing any record. */
 static inline int portable_home_power_enter(portable_home_power *s,uint32_t duration_ms) {
  if(!s||s->retained)return PORTABLE_HOME_POWER_RETAINED;
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
  if(!s->held||!s->power_touched)return portable_home_power_fence(s);
  if(!duration_ms||duration_ms>RISC_TIMED_SLEEP_MAX_MS)return PORTABLE_HOME_POWER_REFUSED;
  bool pending=true;
- if(!s->power->sleep_wake_pending(s->power->context,&pending))return portable_home_power_fence(s);
+ if(!s->power->sleep_wake_pending(s->power->context,&pending)||!portable_home_power_live(s))return portable_home_power_fence(s);
  if(pending)return PORTABLE_HOME_POWER_REFUSED;
  int32_t rc=s->enrolled_wake_sources?
   s->power->deep_sleep_set(s->power->context,duration_ms):
   s->power->deep_sleep_for(s->power->context,duration_ms);
  if(rc>=0||rc==RISC_DEEP_SLEEP_RETAINED||rc<RISC_DEEP_SLEEP_UNSUPPORTED)return portable_home_power_fence(s);
+ if(!portable_home_power_live(s))return portable_home_power_fence(s);
  return PORTABLE_HOME_POWER_REFUSED;
 }
