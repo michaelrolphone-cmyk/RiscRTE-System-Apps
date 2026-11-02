@@ -20,7 +20,7 @@ def source_head(root):
  return result
 source_commit=source_head(ROOT)
 runtime_heads={role:source_head(root) for role,root in (('runtime',args.runtime),('x4_runtime',args.x4_runtime))}
-if runtime_heads!={'runtime':'a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21','x4_runtime':'0052d1fc42e9cfc82d626c5a247d460919c87935'}:raise ValueError('Exact selected shared Home Runtime required')
+if runtime_heads!={'runtime':'712ecc3f894dba99d9c9638941778a82f5856b97','x4_runtime':'0052d1fc42e9cfc82d626c5a247d460919c87935'}:raise ValueError('Exact selected shared Home Runtime required')
 profile=args.x4_product/'profiles/native-shared-home.cmake'
 if sha(profile)!='a08af0c1dac13b3727f87c8223583bb2a88fcad6802dab33ac98dd1d4779e3c8':raise ValueError('Qualified X4 profile differs')
 profile_text=profile.read_text()
@@ -38,8 +38,8 @@ native_profile={'source':source_head(args.x4_product),'path':'profiles/native-sh
 
 native_profiles={'x4':native_profile}
 for lane,root,expected,old in (
- ('watch',args.watch_product,'dc6dd585d82475a0200adb5d7bfb94de24944bee','native-provisioning.cmake'),
- ('wave',args.wave_product,'52ac81f86cca3f732090b95d795429a7b6edced0','serial-transfer-native.cmake')):
+ ('watch',args.watch_product,'c69d7914935fccdc04749f7bfa429c74219bf88a','native-provisioning.cmake'),
+ ('wave',args.wave_product,'97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b','serial-transfer-native.cmake')):
  if source_head(root)!=expected:raise ValueError('Exact owning capacity successor source required '+lane)
  root=root.resolve()
  expected_text='# Preserve the complete selected provisioning profile; increase provider rows only.\ninclude("${CMAKE_CURRENT_LIST_DIR}/'+old+'")\nlist(REMOVE_ITEM RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=40)\nlist(APPEND RISC_NATIVE_DEFINITIONS RISC_PROVIDER_CAPACITY=48)\n'
@@ -78,7 +78,7 @@ if not args.prepare_only:
  binding={'source_commit':source_commit,'assembly_sha256':sha(assembly_path),'products':{}}
  for lane in templates:
   if args.lane and lane!=args.lane:continue
-  product_pins[lane]={which:tree_pins(args.assembly/lane/which) for which in ('before','after','after-sd')}
+  product_pins[lane]={which:tree_pins(args.assembly/lane/which) for which in ('before','after','stored','after-sd')}
   binding['products'][lane]={'inventory_sha256':assembly['products'][lane]['inventory_sha256'],
     **{which.replace('-','_')+'_tree_sha256':canonical_digest(pins) for which,pins in product_pins[lane].items()}}
 
@@ -86,6 +86,7 @@ for lane,template in templates.items():
  if args.lane and lane!=args.lane:continue
  cmd=[x.format(runtime=args.runtime,x4_runtime=args.x4_runtime,fixtures=fixtures,output=args.output) for x in template]
  cmd[1:1]=['-DSTORE_ADMISSION_COHORT','-Wno-misleading-indentation']
+ if lane!='x4':cmd[1:1]=['-DSTORE_ADMISSION_ENCODED_IMAGES']
  cmd+=['-I'+str((args.x4_runtime if lane=='x4' else args.runtime)/'lib/elf_loader/include'),'-I'+str((args.x4_runtime if lane=='x4' else args.runtime)/'test/native_bank_stubs')]
  if args.sanitize:cmd[1:1]=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie']
  selected_runtime=args.x4_runtime if lane=='x4' else args.runtime
@@ -118,11 +119,17 @@ for lane,template in templates.items():
   print((q.stdout+q.stderr).decode(errors='replace'),flush=True);raise RuntimeError(lane+' compile failed; see retained log')
  rows=[]
  for which in (() if args.prepare_only else ('after',)):
-  q=subprocess.run([str(args.output/lane),str(args.assembly/lane/'before'),str(args.assembly/lane/which)],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
+  q=subprocess.run([str(args.output/lane),str(args.assembly/lane/'before'),str(args.assembly/lane/'stored')],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
   (args.output/(lane+'-'+which+'.log')).write_text(q.stdout+q.stderr)
   if q.returncode:
    print(q.stdout+q.stderr,flush=True);raise RuntimeError(lane+' '+which+' preparation failed, exit='+str(q.returncode))
   result=json.loads(q.stdout)
+  encoding=assembly['products'][lane].get('image_storage')
+  expected_encoded=len(encoding['images']) if encoding else 0
+  if result.get('encoded_image_count',0)!=expected_encoded:raise RuntimeError('Actual stored envelope read count differs '+lane)
+  if encoding:
+   if product_pins[lane]['after']!=encoding['canonical_files'] or product_pins[lane]['stored']!=encoding['stored_files']:raise RuntimeError('Encoding maps differ from exact candidate trees')
+  elif product_pins[lane]['after']!=product_pins[lane]['stored']:raise RuntimeError('Unrecorded storage representation change')
   print(json.dumps({'lane':lane,'input':which,'admission':result}),flush=True)
   if not result['prepared'] or not result['cohort_validated'] or not result['elf_count'] or result['hardware_calls'] or result['storage_calls']:raise RuntimeError(lane+' invalid preparation')
   if lane=='x4' and not result.get('retained_sd_serial_graph_bound'):raise RuntimeError('X4 retained SD graph missing')
@@ -130,6 +137,6 @@ for lane,template in templates.items():
  if {f:sha(f) for f in before}!=before:raise RuntimeError('Compiler input mutated')
  if binding:
   if sha(args.assembly/'assembly.json')!=binding['assembly_sha256']:raise RuntimeError('Assembly receipt mutated')
-  if {which:tree_pins(args.assembly/lane/which) for which in ('before','after','after-sd')}!=product_pins[lane]:raise RuntimeError('Candidate inventory mutated')
+  if {which:tree_pins(args.assembly/lane/which) for which in ('before','after','stored','after-sd')}!=product_pins[lane]:raise RuntimeError('Candidate inventory mutated')
  results[lane]={'command':cmd,'inputs':before,'per_tu_dependencies':per,'results':rows,'binary_sha256':sha(args.output/lane)}
  (args.output/'receipt.json').write_text(json.dumps({'schema':1,'sanitized':args.sanitize,'scope':__doc__,'products':results,'runtime_sources':runtime_heads,'native_profile':native_profile,'native_profiles':native_profiles,'product_binding':binding,'candidate_input_files':product_pins,'prepare_only':args.prepare_only},indent=2)+'\n');print(lane,'PASS',flush=True)

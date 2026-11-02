@@ -163,7 +163,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
           path: Runtime
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -175,13 +175,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
-          ref: dc6dd585d82475a0200adb5d7bfb94de24944bee
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
           path: WatchProduct
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
-          ref: 52ac81f86cca3f732090b95d795429a7b6edced0
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
           path: WaveProduct
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -421,7 +421,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE
-          ref: a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21
+          ref: 712ecc3f894dba99d9c9638941778a82f5856b97
           path: Runtime
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -433,13 +433,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-T-Watch-S3
-          ref: dc6dd585d82475a0200adb5d7bfb94de24944bee
+          ref: c69d7914935fccdc04749f7bfa429c74219bf88a
           path: WatchProduct
           persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06
-          ref: 52ac81f86cca3f732090b95d795429a7b6edced0
+          ref: 97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b
           path: WaveProduct
           persist-credentials: false
       - uses: actions/checkout@v4
