@@ -14,7 +14,10 @@ attempts=[];chosen=None
 variants=[('no-ivopts',['-fno-ivopts']),('no-switch-tables',['-fno-ivopts','-fno-jump-tables','-fno-tree-switch-conversion']),('separate-literals',['-mno-text-section-literals']),('link-relax',['-Wl,--relax']),('optimization-one',['-O1']),('optimization-zero',['-O0'])]
 if a.linker:
  bridge=out/'linker-only';bridge.mkdir(exist_ok=True);linker=a.linker.resolve()
- for name in ('ld',cc.name.removesuffix('gcc')+'ld'):(bridge/name).symlink_to(linker)
+ # Modern multi-target GCC supplies its dynamic core selector; legacy ld is
+ # statically configured for precisely ESP32-S3. Strip only that exact selector.
+ shim=bridge/'ld';shim.write_text('#!/usr/bin/env python3\\nimport os,sys\\na=sys.argv[1:]\\nassert not any(x.startswith("--dynconfig=") and x!="--dynconfig=xtensa_esp32s3.so" for x in a)\\nos.execv('+repr(str(linker))+',['+repr(str(linker))+']+[x for x in a if x!="--dynconfig=xtensa_esp32s3.so"])\\n');shim.chmod(0o755)
+ (bridge/(cc.name.removesuffix('gcc')+'ld')).symlink_to(shim)
  variants.insert(0,('explicit-legacy-linker',['-B'+str(bridge)+'/']))
 for label,flags in variants:
  directory=out/label;bin=directory/'compiler';bin.mkdir(parents=True,exist_ok=True)
