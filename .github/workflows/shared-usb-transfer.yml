@@ -8,8 +8,8 @@ on:
       - 'test/native_apps/shared_usb*'
       - 'sdk/usb/**'
       - 'docs/shared-usb/**'
-      - 'test/files_products/native/wave.cpp'
-      - 'scripts/test_home_product_admission.py'
+      - 'test/files_products/native/usb_wave.cpp'
+      - 'scripts/test_shared_usb_product_admission.py'
       - '.github/workflows/shared-usb-transfer.yml'
 permissions:
   contents: read
@@ -149,7 +149,7 @@ jobs:
           set -euo pipefail
           for mode in normal sanitized; do
             flags=(); if [ "$mode" = sanitized ]; then flags+=(--sanitize); fi
-            python3 System/scripts/test_home_product_admission.py --usb-transfer --runtime Runtime --x4-runtime X4Runtime --watch-product WatchProduct --wave-product WaveProduct --x4-product X4Product --assembly closure/assembly --output "closure/admission/$mode" "${flags[@]}"
+            python3 System/scripts/test_shared_usb_product_admission.py --usb-transfer --runtime Runtime --x4-runtime X4Runtime --watch-product WatchProduct --wave-product WaveProduct --x4-product X4Product --assembly closure/assembly --output "closure/admission/$mode" "${flags[@]}"
           done
       - uses: actions/upload-artifact@v4
         if: always()

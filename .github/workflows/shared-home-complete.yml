@@ -603,7 +603,8 @@ jobs:
 
   publish:
     needs: [product-assembly]
-    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    # Qualification is reusable; publication belongs only to the owning Home PR.
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 189 && github.event.pull_request.head.ref == 'work/shared-home-integration-20261102' && github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     permissions:
