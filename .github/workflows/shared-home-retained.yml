@@ -87,7 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           for source in System Baseline; do
-            python "$source/scripts/test_sparse_points_expiry.py" --candidate "qualification/$source-target/home" --sleep-source X4/minimal/apps/portable_sleep.c --output "qualification/$source-expiry"
+            python System/scripts/test_sparse_points_expiry.py --source-root "$source" --timer-storage --candidate "qualification/$source-target/home" --sleep-source X4/minimal/apps/portable_sleep.c --output "qualification/$source-expiry"
             python "$source/scripts/test_context_sparse_timer.py" --candidate "qualification/$source-target/home" --runtime-sdk Runtime/sdk/app --sleep-source X4/minimal/apps/portable_sleep.c --timer-storage --output "qualification/$source-timer"
           done
           python - <<'PY'
