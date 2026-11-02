@@ -31,6 +31,14 @@ def run(archives,output):
       if 'candidate/sd-apps.zip' in source.namelist():(sd/(lane+'.zip')).write_bytes(source.read('candidate/sd-apps.zip'))
   retained.append({'label':label,'repository':repo,'artifact_id':ident,'sha256':actual})
  compose([output/label/'products' for label in ARTIFACTS],output/'baseline-sd',output/'composed')
+ inventory={}
+ for lane in ('watch','wave','x4'):
+  base=output/'composed'/lane/'after'
+  boot=json.loads((base/'boot.json').read_text())
+  manifests={str(p.relative_to(base)):json.loads(p.read_text()) for p in base.rglob('*.json') if p.name in ('default.json','manifest.json')}
+  inventory[lane]={'boot':boot,'manifests':manifests}
+ (output/'inventory.json').write_text(json.dumps(inventory,indent=2)+'\n')
+ print('HOME_COHORT_INVENTORY '+json.dumps(inventory,sort_keys=True),flush=True)
  (output/'sources.json').write_text(json.dumps(retained,indent=2)+'\n')
  print('Independent Files, Lists and Viewer deltas composed without conflict; no Home acceptance claimed.')
 if __name__=='__main__':
