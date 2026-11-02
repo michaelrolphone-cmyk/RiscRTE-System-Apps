@@ -1,4 +1,4 @@
-# Biome Monitor firmware 1.1.0
+# Biome Monitor firmware 1.1.1
 
 This is a native ESP-IDF firmware for the **Seengreat ESP32-C6 E-Paper Driver Board v1.4 (ESP32-C6FH4)** and its **800×480, 7.5-inch black/white UC8179-class panel**. The recovered Vector Arcade `c6_0.3.2` archive is the hardware source of truth. It is an **ESP32-C6 image**, not an ESP32-C3 image.
 
@@ -6,7 +6,7 @@ Biome Monitor is an outbound Capabilities Service participant. It enrolls with t
 
 ## Default display
 
-The supplied Biome logo is built into the firmware as a centered black-on-white, 800×480 native 1-bit frame. It appears immediately after a successful panel probe, **before provisioning, Wi-Fi or service connectivity**. A validated remote frame replaces it. The logo returns when that frame expires or the device receives withdrawal of that desired state. Unrelated/stale withdrawals and invalid replacement frames do not erase a still-valid displayed frame. Reboot always starts with the logo and requires fresh authority before accepting remote content.
+The supplied borderless Biome emblem and `Biome Monitor` wordmark are built into the firmware as a centered black-on-white, 800×480 native 1-bit frame. The wordmark uses Archivo Bold (weight 700), matching the RiscRTE logo source. It appears immediately after a successful panel probe, **before provisioning, Wi-Fi or service connectivity**. A validated remote frame replaces it. The logo returns when that frame expires or the device receives withdrawal of that desired state. Unrelated/stale withdrawals and invalid replacement frames do not erase a still-valid displayed frame. Reboot always starts with the logo and requires fresh authority before accepting remote content.
 
 Expiry uses a monotonic deadline derived from the service timestamp, including while offline or retrying requests. Refresh is serviced by the same task that owns the display: an in-progress transport operation or physical refresh may delay fallback. The idle logo is refreshed once per transition, not at every poll. A controller fault makes the panel state unknown and disables further refreshes until reboot. A valid image can remain after activation expires; desired-frame expiry is what returns it to idle. Power loss retains the e-paper's last physical image.
 
@@ -52,11 +52,11 @@ The desired input is:
 
 ## Connection and provisioning
 
-The service endpoint is compiled to `https://capabilities-service.cantikash.chatgpt.site`. HTTPS certificate verification uses the ESP-IDF certificate bundle; redirects and alternative artifact origins are refused. The device uses Wi-Fi station mode, SNTP and outbound HTTPS. No inbound rendering port is opened. This first native build uses a private NVS provisioning image; the S3 phone setup portal is not included.
+The service endpoint is compiled to `https://capabilities-service.cantikash.chatgpt.site`. HTTPS certificate verification uses the ESP-IDF certificate bundle; redirects and alternative artifact origins are refused. The device uses Wi-Fi station mode, SNTP and outbound HTTPS. A private Wi-Fi-only configuration is also supported: it joins the network and retains the logo, but performs no service calls until service credentials are provisioned. No inbound rendering port is opened. This first native build uses a private NVS provisioning image; the S3 phone setup portal is not included.
 
 1. With operator credentials, run `python tools/client.py --credentials operator.json publish`. This publishes the contract/provider definitions. `operator.json` contains `site_access` and, if required for the deployment, `credential`. Do not distribute this file.
 2. Run `python tools/client.py --credentials operator.json enroll --out device-private.json`. The issuer saves a random bootstrap and separate participant credential before issuing a single-use enrollment valid for 24 hours. Edit `ssid` and `password` in that private file. Use a device-appropriate Site gate credential rather than distributing a broad operator credential.
-3. In the ESP-IDF 5.4.2 shell, run `python tools/provision.py device-private.json device-nvs.bin`. This creates a private 128 KiB NVS image. It contains secrets and must not be uploaded to the public catalog or source control.
+3. In the ESP-IDF 5.4.2 shell, run `python tools/provision.py device-private.json device-nvs.bin`. This creates a private 128 KiB NVS image. For a Wi-Fi-only installation, the JSON may contain just `ssid` and `password`; service fields are left empty. An explicit `--nvs-generator PATH` can select an installed ESP-IDF-compatible NVS generator when `IDF_PATH` is unavailable. It contains secrets and must not be uploaded to the public catalog or source control.
 4. After confirming the connected board is the recovered C6 board, flash the release files and private NVS image:
 
 ```sh
@@ -65,7 +65,7 @@ python -m esptool --chip esp32c6 --port PORT write_flash \
   0x9000 device-nvs.bin 0x30000 firmware.bin
 ```
 
-For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.0-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
+For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.1-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
 
 This is a new partition layout. Replacing NVS removes enrollment and outstanding local journal state; do not write the provisioning partition as a routine firmware update. The factory image requires 4 MiB flash. No OTA path is provided in this release.
 

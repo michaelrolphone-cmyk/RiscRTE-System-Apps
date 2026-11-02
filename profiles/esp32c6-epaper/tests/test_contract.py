@@ -2,11 +2,20 @@ import hashlib,json,pathlib,sys,tempfile,unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools'))
 from catalog import CONTRACT,PROVIDER,PROFILE,INPUT,digest,canonical
 from client import Client,read_frame
+from provision import validate_config
 class ContractTests(unittest.TestCase):
+ def test_wifi_only_provisioning_does_not_add_service_credentials(self):
+  c=validate_config({'ssid':'test-network','password':'test-password'})
+  for key in ['site_access','participant_credential','bootstrap','enrollment_id']:self.assertEqual(c[key],'')
+  with self.assertRaises(ValueError):validate_config({'ssid':'test','password':'test','site_access':'partial'})
+  with self.assertRaises(ValueError):validate_config({'ssid':'x'*33,'password':''})
+ def test_complete_service_provisioning_remains_supported(self):
+  c={'ssid':'test','password':'test','site_access':'test-site','participant_credential':'x'*32,'bootstrap':'test-bootstrap','enrollment_id':'test-enrollment'}
+  self.assertEqual(validate_config(c),c)
  def test_embedded_logo(self):
   data=(ROOT/'main/assets/idle_logo.bin').read_bytes()
   self.assertEqual(len(data),48000)
-  self.assertEqual(hashlib.sha256(data).hexdigest(),'e1dc01ea3e403af3a46fd75c24020e1c11a2b428b0de5924ef7bd6144dbc1af9')
+  self.assertEqual(hashlib.sha256(data).hexdigest(),'ff685207d93f71ff55537d42c891cd5a6caa2aba9c8af8090b8e2fcd8c23a421')
   self.assertEqual(data[:2400],bytes(2400));self.assertEqual(data[-2400:],bytes(2400))
   try:from PIL import Image
   except ImportError:return
