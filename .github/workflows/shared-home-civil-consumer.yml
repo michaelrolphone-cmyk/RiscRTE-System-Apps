@@ -1,0 +1,38 @@
+name: Shared Home foreground civil consumer
+on:
+  pull_request:
+    paths: ['Apps/paper_home_civil.inc', 'Apps/paper_sparse_clock.inc', 'lib/PortableApps/include/PortableRealtimeClient.h', 'lib/PortableApps/src/PortableRealtimeClient.c', 'test/native_apps/home_civil_policy_test.c', 'scripts/test_portable_realtime.py', '.github/workflows/shared-home-civil-consumer.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 341e6e38ce00b7c57d5daaf5f8c829c3575db931
+          path: deps/runtime
+          persist-credentials: false
+      - run: |
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --reconcile --evidence qualification/reconcile.json
+          python3 scripts/test_portable_realtime.py --runtime-repo deps/runtime --civil-policy --evidence qualification/civil-policy.json
+      - name: Exact source receipts
+        if: always()
+        run: |
+          mkdir -p qualification/source
+          git archive HEAD | gzip -n > qualification/source/system.tar.gz
+          git -C deps/runtime archive HEAD sdk/app | gzip -n > qualification/source/native-sdk.tar.gz
+          git rev-parse HEAD > qualification/source/system.head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-home-civil-consumer-${{ github.event.pull_request.head.sha || github.sha }}
+          path: qualification/
+          retention-days: 30

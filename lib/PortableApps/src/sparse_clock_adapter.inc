@@ -138,7 +138,7 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
 #ifdef PORTABLE_SHARED_HOME_CANVAS
   if(version==1&&instance==0&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation&&
      (!strcmp(name,"power.sleep")||!strcmp(name,"display.power")||!strcmp(name,"runtime.retained-wake")||
-      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci"))) {
+      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")||!strcmp(name,"board.battery")||!strcmp(name,"time.civil"))) {
    if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
    return false;
   }
@@ -278,10 +278,22 @@ static int desk_open_foreground(void) {
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(!input_navigation_open()){portable_desk_adapter_retain();return desk_start_error();}
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(rt->acquire("board.battery",1,0,&bg)){
+  gauge=bg.api;
+  if(!gauge||gauge->api_version!=1||gauge->struct_size<sizeof(*gauge)||!gauge->read){
+   portable_desk_adapter_retain();return desk_start_error();
+  }
+ }else{
+  if(native_sleep_retained)return desk_start_error();
+  gauge=NULL; /* Clean absence renders an unavailable battery, not a false level. */
+ }
+#else
  if(!rt->acquire("board.battery",1,0,&bg))return desk_start_error();
  gauge=bg.api;
  if(!gauge || gauge->api_version!=1 || gauge->struct_size<sizeof(*gauge) || !gauge->read)
   return desk_start_error();
+#endif
 #ifdef PORTABLE_QUICK_ACTIONS
  quick.ui.paper=pp_enabled();
  if(!pqa_session_load(&quick,rt) || native_sleep_retained)return desk_start_error();
