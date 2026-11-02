@@ -9,7 +9,7 @@ def run(system,output):
   for name in ('geometry','frames','provider','authority','entry'):
    for sanitized in (False,True):
     binary=pathlib.Path(temporary)/(name+('-san' if sanitized else ''))
-    command=[os.environ.get('CC','cc'),'-std=c11','-Wall','-Wextra','-Werror']
+    command=[os.environ.get('CC','cc'),'-std=c11','-O2','-Wall','-Wextra','-Werror']
     for include in (ROOT/'Services/canvas_host',ROOT/'sdk/app',system/'lib/PortableApps/include',system/'Services/scene_profile'):
      command+=['-I'+str(include)]
     command+=[str(ROOT/'test/canvas_provider'/f'{name}_test.c'),'-o',str(binary)]

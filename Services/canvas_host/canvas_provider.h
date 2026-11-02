@@ -21,7 +21,7 @@ static inline int32_t canvas_provider_geometry_refresh(canvas_provider*p){
  if(!canvas_mapping_open(&m,info.width,info.height,p->rotation,info.safe_insets.left,info.safe_insets.top,info.safe_insets.right,info.safe_insets.bottom,&p->request))return RISC_CANVAS_UNSUPPORTED;
  uint64_t stride=p->request.encoding==RISC_CANVAS_RGBA8?(uint64_t)m.width*4:((uint64_t)m.width+7)/8;
  if(stride>UINT32_MAX||m.height>SIZE_MAX/stride)return RISC_CANVAS_UNSUPPORTED;
- if(memcmp(&m,&p->frames.mapping,sizeof(m))){
+ if(!canvas_mapping_equal(&m,&p->frames.mapping)){
   if(p->frames.revision==UINT32_MAX)return RISC_CANVAS_UNAVAILABLE;
   p->frames.mapping=m;p->frames.revision++;p->frames.stride=(uint32_t)stride;p->frames.bytes=(size_t)stride*m.height;p->input_gap=true;p->gap_emitted=false;p->geometry_changed=true;
  }
