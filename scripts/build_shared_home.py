@@ -46,12 +46,28 @@ def run():
  '--shared-radio-source',a.watch/'apps/clock/quick_radios.c','--shared-view-output',out/'overview','--output-dir',out/'overview-stage']
  overview=list(map(str,[sys.executable,ROOT/'scripts/build_paper_clock.py',*host]));commands.append(overview)
  subprocess.run(overview,check=True,env=dict(os.environ,NATIVE_APP_CC=str(cc)))
+ # The common front controller must use one staged Runtime identity too.
+ # Quoted includes in PortableHomeBoot must not reopen its frozen local copy.
+ common_sdk=out/'common-sdk';shutil.copytree(a.runtime/'sdk/app',common_sdk)
+ from shared_home_sdk import stage_home_headers
+ common_closure=stage_home_headers(ROOT,common_sdk)
+ if (common_sdk/'RiscRuntimeV1.h').read_bytes()!=(a.runtime/'sdk/app/RiscRuntimeV1.h').read_bytes():raise ValueError('Common Runtime SDK identity changed')
+ common_records=[]
+ common_objects=[]
+ for index,source in enumerate((ROOT/'Apps/shared_home.c',ROOT/'lib/PortableApps/src/PortableHomeBoot.c')):
+  obj=out/('common-'+str(index)+'.o');dep=out/('common-'+str(index)+'.d')
+  compile_command=[str(cc),'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-Wall','-Wextra','-Werror','-I'+str(common_sdk),'-MMD','-MF',str(dep),'-c',str(source),'-o',str(obj)]
+  commands.append(compile_command);subprocess.run(compile_command,check=True)
+  dependency_text=dep.read_text().replace('\\\n',' ')
+  paths=[pathlib.Path(name) for name in shlex.split(dependency_text.split(':',1)[1])]
+  common_records.append({'source':str(source),'command':compile_command,'dependencies':{str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in paths},'object_sha256':hashlib.sha256(obj.read_bytes()).hexdigest()})
+  common_objects.append(obj)
+ (out/'common-sdk.json').write_text(json.dumps({'staged_closure':common_closure,'translation_units':common_records},indent=2)+'\n')
  exports={'app_main','app_module_init','app_module_fini','risc_resident_app_descriptor_v1'}
  mapping=out/'exports.map';mapping.write_text('{ global: '+'; '.join(sorted(exports))+'; local: *; };\n')
  elf=out/'default.elf'
  command=[str(cc),'-std=c11','-Os','-fPIC','-mtext-section-literals','-mlongcalls','-fvisibility=hidden','-ffreestanding','-fno-builtin','-nostdlib','-nostartfiles','-shared','-Wl,--gc-sections','-Wl,--no-relax','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),'-Wall','-Wextra','-Werror',
- *['-I'+str(d) for d in (a.runtime/'sdk/app',ROOT/'sdk/app',ROOT/'lib/PortableApps/include')],
- str(ROOT/'Apps/shared_home.c'),str(ROOT/'lib/PortableApps/src/PortableHomeBoot.c'),str(out/'faces/view.o'),str(out/'overview/view.o'),'-lgcc','-o',str(elf)]
+ *map(str,common_objects),str(out/'faces/view.o'),str(out/'overview/view.o'),'-lgcc','-o',str(elf)]
  commands.append(command);subprocess.run(command,check=True)
  sys.path.insert(0,str(a.watch/'scripts'))
  from normalize_xtensa_relocations import normalize
@@ -71,7 +87,7 @@ def run():
  if len(declarations)>32 or len({d['capability'] for d in declarations})!=len(declarations):raise ValueError('Common declaration capacity/identity mismatch')
  (out/'default.json').write_text(json.dumps(manifest,indent=2)+'\n')
  raw=elf.read_bytes();digest=hashlib.sha256(raw).hexdigest()
- receipt={'schema':1,'version':'1.0.0','shared_elf':digest,'size_bytes':len(raw),'views':['native-faces','overview-retained-desk'],'commands':commands,'imports':sorted(imports),'exports':sorted(actual),'compiler':version,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'linker_sha256':hashlib.sha256(linker.read_bytes()).hexdigest(),'compaction':compaction,'physical_testing':False,'manifest_sha256':hashlib.sha256((out/'default.json').read_bytes()).hexdigest(),'manifest_source_sha256':hashlib.sha256(manifest_path.read_bytes()).hexdigest(),'declared_capabilities':len(declarations)}
+ receipt={'schema':1,'version':'1.0.0','shared_elf':digest,'size_bytes':len(raw),'views':['native-faces','overview-retained-desk'],'commands':commands,'imports':sorted(imports),'exports':sorted(actual),'compiler':version,'compiler_sha256':hashlib.sha256(compiler.read_bytes()).hexdigest(),'linker_sha256':hashlib.sha256(linker.read_bytes()).hexdigest(),'compaction':compaction,'physical_testing':False,'common_sdk_receipt_sha256':hashlib.sha256((out/'common-sdk.json').read_bytes()).hexdigest(),'manifest_sha256':hashlib.sha256((out/'default.json').read_bytes()).hexdigest(),'manifest_source_sha256':hashlib.sha256(manifest_path.read_bytes()).hexdigest(),'declared_capabilities':len(declarations)}
  (out/'build.json').write_text(json.dumps(receipt,indent=2)+'\n')
  print('Complete shared Home target structural/import/export qualification PASS',digest,len(raw))
 if __name__=='__main__':run()
