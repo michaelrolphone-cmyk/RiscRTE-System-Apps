@@ -10,7 +10,7 @@ p=argparse.ArgumentParser(description=__doc__)
 for name in ('x4','runtime','reader','utilities','compiler','output'):p.add_argument('--'+name,type=Path,required=True)
 a=p.parse_args();root=Path(__file__).resolve().parents[1];out=a.output.resolve();out.mkdir(parents=True,exist_ok=True);cc=a.compiler.resolve()
 attempts=[];chosen=None
-variants=[('no-ivopts',['-fno-ivopts']),('no-switch-tables',['-fno-ivopts','-fno-jump-tables','-fno-tree-switch-conversion']),('separate-literals',['-mno-text-section-literals']),('link-relax',['-Wl,--relax'])]
+variants=[('no-ivopts',['-fno-ivopts']),('no-switch-tables',['-fno-ivopts','-fno-jump-tables','-fno-tree-switch-conversion']),('separate-literals',['-mno-text-section-literals']),('link-relax',['-Wl,--relax']),('optimization-one',['-O1']),('optimization-zero',['-O0'])]
 for label,flags in variants:
  directory=out/label;bin=directory/'compiler';bin.mkdir(parents=True,exist_ok=True)
  wrapper=bin/cc.name;wrapper.write_text('#!/bin/sh\nexec '+shlex.quote(str(cc))+' "$@" '+shlex.join(flags)+'\n');wrapper.chmod(0o755)
@@ -21,6 +21,7 @@ for label,flags in variants:
  (directory/'build.log').write_text(result.stdout)
  attempts.append({'label':label,'flags':flags,'command':command,'returncode':result.returncode})
  print(label,'PASS' if result.returncode==0 else 'FAILED',flush=True)
+ if result.returncode:print('\n'.join(result.stdout.splitlines()[-45:]),flush=True)
  if result.returncode==0:
   repeat=command[:-1]+[str(directory/'repeat')];second=subprocess.run(repeat,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True)
   (directory/'repeat.log').write_text(second.stdout);second.check_returncode()
