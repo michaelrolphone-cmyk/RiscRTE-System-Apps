@@ -97,6 +97,8 @@ typedef struct {
  const risc_canvas_rect_v1 *damage;
  size_t damage_count;
 } risc_canvas_present_v1;
+enum { RISC_CANVAS_PRESENT_RETAINS_IMAGE=1u,RISC_CANVAS_PRESENT_CLEAN_SUPPORTED=2u,
+ RISC_CANVAS_PRESENT_HISTORY_SUPPORTED=4u };
 typedef struct {
  uint32_t struct_size,version,tag;
  void *context;
@@ -105,6 +107,7 @@ typedef struct {
   * refreshing. The same logical lease remains writable and must later be
   * submitted or cancelled. Unsupported is explicit; never invent history. */
  int32_t (*seed_previous)(void*,uint64_t,uint64_t);
+ uint32_t flags; /* Actual semantic support for the opened session. */
 } risc_canvas_presentation_v1;
 typedef struct {
  risc_canvas_open_v1 base;

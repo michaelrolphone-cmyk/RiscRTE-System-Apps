@@ -36,6 +36,7 @@ static void run(unsigned rotation,unsigned physical_format){
  const risc_canvas_presentation_v1*present=NULL;
  risc_canvas_open_presentation_v1 request={.base={sizeof(request),RISC_CANVAS_RGB565_ADAPTIVE,RISC_CANVAS_RESPONSIVE,0,0},.presentation_tag=RISC_CANVAS_PRESENTATION_TAG,.presentation_out=&present};
  uint64_t session=0;assert(!p.api.open(&p,&request.base,&session)&&present&&risc_canvas_presentation_get_v1(present,sizeof(*present)));
+ assert(present->flags==RISC_CANVAS_PRESENT_HISTORY_SUPPORTED);
  risc_canvas_frame_v1 f={.struct_size=sizeof(f)};assert(!p.api.begin_frame(&p,session,&f));
  fill(&f,0x07e0);assert(!present->seed_previous(&p,session,f.lease));
  assert(seeds==1&&acquires==1&&!submits&&native_lease&&p.frames.seeded.frame==native_lease);

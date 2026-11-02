@@ -89,7 +89,11 @@ static int32_t canvas_provider_open(void*ctx,const risc_canvas_open_v1*request,u
  rc=canvas_provider_input_acquire(p);
  if(rc){int32_t cleanup=canvas_provider_input_release(p);return cleanup?cleanup:rc;}
  c->encoding=request->encoding;c->format=format;c->session=++c->serial;c->quiesced=false;
- memset(p->captured,0,sizeof(p->captured));memset(&p->previous_navigation,0,sizeof(p->previous_navigation));p->raw_sequence=0;p->geometry_changed=false;p->input_gap=true;p->gap_emitted=false;*out=c->session;if(extended)*extended->presentation_out=&p->presentation;return RISC_CANVAS_OK;
+ memset(p->captured,0,sizeof(p->captured));memset(&p->previous_navigation,0,sizeof(p->previous_navigation));p->raw_sequence=0;p->geometry_changed=false;p->input_gap=true;p->gap_emitted=false;
+ p->presentation.flags=((info.flags&RISC_DISPLAY_INFO_RETAINS_IMAGE)?RISC_CANVAS_PRESENT_RETAINS_IMAGE:0)|
+  ((info.flags&RISC_DISPLAY_INFO_CLEAN_PRESENT)?RISC_CANVAS_PRESENT_CLEAN_SUPPORTED:0)|
+  (risc_display_output_history(d)?RISC_CANVAS_PRESENT_HISTORY_SUPPORTED:0);
+ *out=c->session;if(extended)*extended->presentation_out=&p->presentation;return RISC_CANVAS_OK;
 }
 static int32_t canvas_provider_geometry(void*ctx,uint64_t session,risc_canvas_geometry_v1*out){
  canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
@@ -213,6 +217,6 @@ static int32_t canvas_provider_seed(void*ctx,uint64_t session,uint64_t lease){
 }
 static inline void canvas_provider_init(canvas_provider*p,const risc_display_output_api_v1*display,const risc_touch_api_v1*touch,uint32_t rotation){
  memset(p,0,sizeof(*p));p->frames.display=display;p->touch=touch;p->rotation=rotation;
- p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed};
+ p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0};
  p->api=(risc_canvas_api_v1){1,sizeof(p->api),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
 }
