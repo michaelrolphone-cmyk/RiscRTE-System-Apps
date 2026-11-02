@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Synthetic overlay contract regressions; not product binding evidence."""
+import copy,json,tempfile,unittest
+from pathlib import Path
+from assemble_shared_home_cohort import inventory,fingerprint,overlay
+from compose_shared_app_cohort import encode,digest
+class Overlay(unittest.TestCase):
+ def fixture(self):
+  row={'manifest':'default.json','grants':[{'capability':'storage.key-value','api':1,'namespace':5}]}
+  boot={'drivers':[],'app_capabilities':[row,{'manifest':'clock.json','grants':[]}],'namespace_map':{'points':5}}
+  before={'boot.json':encode(boot),'default.json':encode({'type':'application','id':'installed-home','label':'My Home','file_name':'default.elf','version':'old'}),
+          'default.elf':b'old','clock.json':encode({'type':'application','id':'twatch-clock-return','file_name':'clock.elf'}),
+          'clock.elf':b'return-trampoline','saved/points':b'PTC1 unchanged'}
+  sd={'books/read.epub':b'original book'}
+  alias={'role':'controller','manifest':'default.json','route':{'storage':'internal','path':'default.elf'},
+         'original_policy_rows':[copy.deepcopy(row)],'policy_rows':[copy.deepcopy(row)]}
+  plan={'inventory_sha256':fingerprint(inventory(before,sd)),'aliases':[alias],'providers':[]}
+  common={'type':'application','entry':'app_main','architecture':'xtensa-esp32s3','version':'1.0.0','requires':[],'optional':[]}
+  return before,sd,plan,common
+ def apply(self,b,sd,p,m):
+  return overlay(b,sd,p,b'\x7fELFcomplete-dual-view',m,Path('.'))
+ def test_preserve(self):
+  b,sd,p,m=self.fixture();a,s,r=self.apply(b,sd,p,m)
+  self.assertEqual(s,sd);self.assertEqual(a['clock.elf'],b['clock.elf']);self.assertEqual(a['clock.json'],b['clock.json'])
+  self.assertEqual(a['saved/points'],b['saved/points'])
+  self.assertEqual(json.loads(a['default.json'])['id'],'installed-home')
+  self.assertEqual(json.loads(a['default.json'])['label'],'My Home')
+  self.assertEqual(json.loads(a['boot.json']),json.loads(b['boot.json']))
+  self.assertFalse(r['packed'])
+ def test_inventory_lease(self):
+  b,sd,p,m=self.fixture();b['saved/points']=b'new user data'
+  with self.assertRaises(ValueError):self.apply(b,sd,p,m)
+ def test_no_removed_grant(self):
+  b,sd,p,m=self.fixture();p['aliases'][0]['policy_rows'][0]['grants']=[]
+  with self.assertRaises(ValueError):self.apply(b,sd,p,m)
+ def test_no_namespace_rewrite(self):
+  b,sd,p,m=self.fixture();p['aliases'][0]['policy_rows'][0]['namespace_map']={'points':6}
+  with self.assertRaises(ValueError):self.apply(b,sd,p,m)
+ def test_route_refusal(self):
+  b,sd,p,m=self.fixture();p['aliases'][0]['route']['path']='clock.elf'
+  with self.assertRaises(ValueError):self.apply(b,sd,p,m)
+ def test_all_boot_manifests(self):
+  b,sd,p,m=self.fixture();self.assertEqual(set(inventory(b,sd)['manifests']),{'default.json','clock.json'})
+ def test_trampoline_refusal(self):
+  b,sd,p,m=self.fixture();a=p['aliases'][0];a['manifest']='clock.json';a['route']['path']='clock.elf'
+  a['original_policy_rows']=[{'manifest':'clock.json','grants':[]}];a['policy_rows']=copy.deepcopy(a['original_policy_rows'])
+  with self.assertRaises(ValueError):self.apply(b,sd,p,m)
+ def test_provider_collision(self):
+  b,sd,p,m=self.fixture()
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);package=root/'raster';package.mkdir()
+   manifest={'type':'driver','file_name':'driver.elf','provides':[{'capability':'ui.canvas.raster','api':1}]}
+   raw=encode(manifest);elf=b'\x7fELFprovider'
+   (package/'manifest.json').write_bytes(raw);(package/'driver.elf').write_bytes(elf)
+   p['providers']=[{'package':'raster','manifest_sha256':digest(raw),'elf_sha256':digest(elf),'row':{'manifest':name+'/manifest.json','instance_id':0,'bindings':[]}} for name in ('one','two')]
+   with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_sd_route_preserved(self):
+  b,sd,p,m=self.fixture();row=json.loads(b['boot.json']);row['app_capabilities'][0]['image_source']={'path':'apps/home.elf'}
+  b['boot.json']=encode(row);del b['default.elf'];sd['apps/home.elf']=b'old'
+  p['inventory_sha256']=fingerprint(inventory(b,sd));a=p['aliases'][0]
+  a['route']={'storage':'sd','path':'apps/home.elf'}
+  a['original_policy_rows']=[row['app_capabilities'][0]];a['policy_rows']=copy.deepcopy(a['original_policy_rows'])
+  out,newsd,r=self.apply(b,sd,p,m)
+  self.assertEqual(newsd['apps/home.elf'],b'\x7fELFcomplete-dual-view');self.assertEqual(newsd['books/read.epub'],sd['books/read.epub'])
+if __name__=='__main__':unittest.main()
