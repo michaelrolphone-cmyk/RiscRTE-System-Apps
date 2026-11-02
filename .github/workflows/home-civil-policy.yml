@@ -1,7 +1,7 @@
 name: Home civil time policy
 on:
   pull_request:
-    paths: ['Services/civil_clock/**', 'sdk/app/RiscCivilClockV1.h', 'test/civil_clock/**', 'scripts/test_civil_clock.py', 'scripts/build_civil_clock.py', '.github/workflows/home-civil-policy.yml']
+    paths: ['lib/PortableApps/include/PortableTimeZone.h', 'lib/PortableApps/src/PortableTimeZone.c', 'Services/civil_clock/**', 'sdk/app/RiscCivilClockV1.h', 'test/civil_clock/**', 'scripts/test_civil_clock.py', 'scripts/build_civil_clock.py', '.github/workflows/home-civil-policy.yml']
 permissions:
   contents: read
 jobs:
@@ -19,10 +19,16 @@ jobs:
           ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
           path: Runtime
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 5ecf5fe5fe442b91d8fa66d895012f43ea581aa8
+          path: Utilities
+          persist-credentials: false
       - name: Existing civil contract and full policy normal/sanitized
         run: |
           mkdir -p out/civil-policy
-          python3 System/scripts/test_civil_clock.py --runtime Runtime 2>&1 | tee out/civil-policy/tests.log
+          python3 System/scripts/test_civil_clock.py --runtime Runtime --utilities Utilities 2>&1 | tee out/civil-policy/tests.log
       - name: Build and repeat both owning provider policies
         run: |
           python3 -m pip install platformio==6.1.19
@@ -37,6 +43,7 @@ jobs:
           git -C System rev-parse HEAD > source/system.head
           git -C System archive HEAD | gzip -n > source/system.tar.gz
           git -C Runtime rev-parse HEAD > source/runtime.head
+          git -C Utilities rev-parse HEAD > source/utilities.head
           find packages -type f -exec sha256sum {} + > source/packages.sha256 || true
       - uses: actions/upload-artifact@v4
         if: always()

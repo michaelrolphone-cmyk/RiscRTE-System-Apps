@@ -138,6 +138,19 @@ static int32_t inverse_time(void *ctx,const risc_civil_calendar_v1 *civil,risc_c
 #endif
  *out=result;return 0;
 }
+static int32_t cached_rule(void *ctx,char *out,uint32_t capacity) {
+ (void)ctx;if(!alive())return -9;
+ if(!started||!out||capacity<40)return -1;
+ char token[40]={0};
+#ifdef CIVIL_NATIVE_UTC
+ portable_timezone_rule rule;int rc=policy_rule(token,&rule);if(rc)return rc;
+#else
+ /* Explicit installed historical policy. Generic application resolver reads
+  * only the supplied era data; no application device/year special case. */
+ memcpy(token,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0",40);
+#endif
+ memcpy(out,token,40);return 0;
+}
 static bool start(const risc_provider_dependency_v1 *deps,size_t count){
     if(started||retained||!deps)return false;
 #ifdef CIVIL_NATIVE_UTC
@@ -157,6 +170,6 @@ static bool start(const risc_provider_dependency_v1 *deps,size_t count){
 }
 static bool quiesce(void){return !retained;}
 static void stop(void){if(!retained)started=false;}
-static const risc_civil_clock_schedule_v1 api={{1,sizeof(api),NULL,read_time,1,RISC_CIVIL_CLOCK_POLICY_TAG,project_time,interpret_rtc},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse_time};
+static const risc_civil_clock_retained_v1 api={{{1,sizeof(api),NULL,read_time,1,RISC_CIVIL_CLOCK_POLICY_TAG,project_time,interpret_rtc},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse_time},1,RISC_CIVIL_CLOCK_RETAINED_TAG,cached_rule};
 static const risc_driver_v2 driver={2,sizeof(driver),CIVIL_CLOCK_ID,RISC_CIVIL_CLOCK_CAPABILITY,1,&api,start,stop,quiesce};
 __attribute__((visibility("default"))) const risc_driver_v2 *t5_driver_get(uint32_t version){return version==2?&driver:NULL;}

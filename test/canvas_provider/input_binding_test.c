@@ -29,7 +29,7 @@ int main(void){
  assert(!subscriptions&&!claims&&!resets); /* Complete TIMER raster path. */
  risc_touch_power_api_v1 t={.base={1,sizeof(t),NULL,subscribe,unsubscribe,poll,next,snapshot},.power_tag=RISC_TOUCH_POWER_TAG,.power_version=1,.prepare=touch_prepare,.resume=touch_resume};
  risc_input_navigation_api_v1 n={.api_version=1,.struct_size=sizeof(n),.poll=navpoll,.foreground=foreground,.reset=reset};
- risc_provider_dependency_v1 deps[]={{.capability_id=RISC_CANVAS_CAPABILITY,.api_version=1,.api=&raster.api},{.capability_id="input.touch.raw",.api_version=1,.api=&t},{.capability_id="input.navigation",.api_version=1,.api=&n}};
+ risc_provider_dependency_v1 deps[]={{.capability_id=RISC_CANVAS_RASTER_CAPABILITY,.api_version=1,.api=&raster.api},{.capability_id="input.touch.raw",.api_version=1,.api=&t},{.capability_id="input.navigation",.api_version=1,.api=&n}};
  assert(start(deps,3)&&!subscriptions&&!claims&&risc_canvas_input_sleep_supported(&api));
  assert(!activate(NULL,session)&&subscriptions==1&&claims==1&&resets==1&&!quiesce());
  assert(!activate(NULL,session)&&subscriptions==1);
@@ -39,5 +39,10 @@ int main(void){
  assert(!deactivate(NULL,session)&&unsubscriptions==2&&claims==4&&quiesce()&&!raster.touch&&!raster.navigation);
  stop();assert(!raster.api.close(&raster,session));
  t.base.struct_size=sizeof(t.base);assert(start(deps,3)&&!risc_canvas_input_sleep_supported(&api));stop();
+ risc_provider_dependency_v1 navigation_only[]={deps[0],deps[2]};
+ assert(!raster.api.open(&raster,&request,&session));
+ assert(start(navigation_only,2)&&risc_canvas_input_sleep_supported(&api));
+ assert(!activate(NULL,session)&&!prepare_sleep(NULL,session,500)&&!resume_sleep(NULL,session,500));
+ assert(!deactivate(NULL,session)&&quiesce());stop();assert(!raster.api.close(&raster,session));
  puts("Canvas split input:complete raster path without input callbacks, dependency-bound foreground activation, idempotent ownership and exact deactivation PASS");
 }

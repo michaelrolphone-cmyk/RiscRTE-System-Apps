@@ -1,12 +1,17 @@
 #include "RiscRuntimeV1.h"
 #include "RiscCanvasV1.h"
+#include "RiscCanvasInputV1.h"
+#ifndef TEST_CANVAS_CAPABILITY
+#define TEST_CANVAS_CAPABILITY RISC_CANVAS_CAPABILITY
+#endif
+extern unsigned canvas_runtime_input_started(void);
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
 extern void canvas_runtime_complete(void);
 __attribute__((visibility("default"))) void app_main(void){
  const risc_runtime_api_v1*r=risc_runtime_get_api(1);assert(r);
- risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};assert(r->acquire("ui.canvas",1,0,&grant));
+ risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};assert(r->acquire(TEST_CANVAS_CAPABILITY,1,0,&grant));
  const risc_canvas_api_v1*a=risc_canvas_get_v1(grant.api,sizeof(risc_canvas_api_v1));assert(a);
  risc_canvas_open_v1 request={sizeof(request),RISC_CANVAS_MONO1,RISC_CANVAS_RESPONSIVE,0,0};uint64_t session=0;assert(!a->open(a->context,&request,&session));
  for(unsigned iteration=0;iteration<3;iteration++){
@@ -19,5 +24,15 @@ __attribute__((visibility("default"))) void app_main(void){
    r->yield_ms(1);assert(!a->poll(a->context,session,receipt,&status));}while(status.state==RISC_CANVAS_QUEUED||status.state==RISC_CANVAS_PRESENTING);
   assert(status.state==RISC_CANVAS_COMPLETE);assert(!a->forget_receipt(a->context,session,receipt));assert(!a->quiesce(a->context,session));assert(!a->resume(a->context,session));
  }
+#ifdef TEST_SPLIT_INPUT
+ assert(!canvas_runtime_input_started()); /* Legacy Canvas also selected, but no dependency activation. */
+ risc_runtime_capability_v1 input={.struct_size=sizeof(input)};
+ assert(r->acquire(RISC_CANVAS_INPUT_CAPABILITY,1,0,&input));
+ const risc_canvas_input_v1*i=risc_canvas_input_get_v1(input.api,((const risc_canvas_input_v1*)input.api)->struct_size);assert(i&&canvas_runtime_input_started()==1);
+ assert(!i->activate(i->context,session));
+ assert(risc_canvas_input_sleep_supported(i));
+ assert(!i->prepare_sleep(i->context,session,500)&&!i->resume_sleep(i->context,session,500));
+ assert(!i->deactivate(i->context,session));assert(r->release(&input));
+#endif
  assert(!a->close(a->context,session));assert(r->release(&grant));canvas_runtime_complete();
 }

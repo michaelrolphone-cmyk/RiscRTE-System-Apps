@@ -54,7 +54,7 @@ static int32_t resume_sleep(void*c,uint64_t session,uint32_t budget){
  if(!active||active!=session||budget>RISC_TOUCH_POWER_MAX_BUDGET_MS)return RISC_CANVAS_INVALID;
  if(!preparing)return RISC_CANVAS_OK;
  const risc_touch_power_api_v1*power=risc_touch_power(touch);
- if(!power)return RISC_CANVAS_UNSUPPORTED;
+ if(touch&&!power)return RISC_CANVAS_UNSUPPORTED;
  int rc=power?power_result(power->resume(touch->context,budget)):RISC_CANVAS_OK;if(rc)return rc;
  rc=input_result(canvas->bind_inputs(canvas->context,session,touch,navigation));
  if(rc==RISC_CANVAS_RETAINED)retained=true;
@@ -67,7 +67,7 @@ static bool start(const risc_provider_dependency_v1*deps,size_t count){
  for(size_t i=0;i<count;i++){
   if(!deps[i].capability_id||deps[i].api_version!=1||!deps[i].api)return false;
   for(size_t j=0;j<i;j++)if(!strcmp(deps[i].capability_id,deps[j].capability_id))return false;
-  if(!strcmp(deps[i].capability_id,RISC_CANVAS_CAPABILITY))core=deps[i].api;
+  if(!strcmp(deps[i].capability_id,RISC_CANVAS_RASTER_CAPABILITY))core=deps[i].api;
   else if(!strcmp(deps[i].capability_id,"input.touch.raw"))touch=deps[i].api;
   else if(!strcmp(deps[i].capability_id,"input.navigation"))navigation=deps[i].api;
   else return false;

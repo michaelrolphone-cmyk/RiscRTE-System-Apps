@@ -2,11 +2,11 @@
   "architecture": "xtensa-esp32s3",
   "driver_abi": 2,
   "file_name": "driver.elf",
-  "id": "canvas-host",
+  "id": "canvas-raster",
   "provides": [
     {
       "api": 1,
-      "capability": "ui.canvas"
+      "capability": "ui.canvas.raster"
     }
   ],
   "requires": [
