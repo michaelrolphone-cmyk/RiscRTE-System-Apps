@@ -16,7 +16,7 @@ ok(await invoke(e,operator,'catalog','provider_publish',{provider:catalog.provid
 const activation_request={protocol_version:'provider-activation/1',automatic:true,available:true,profiles:[catalog.profile],report:{generation:0,profile_id:'',state:'idle'}};
 const sync=async()=>ok(await invoke(e,f.p,'participant','sync',{session_id:f.session.id,generation:f.session.generation,cursor:'0',requested_work:0,activation_request}));
 check((await sync()).provider_activation.action==='deactivate','dormant without demand');
-const demand={demand_id:'vector-arcade-panel',capabilities:catalog.provider.provides,services:[],required_labels:{display:'uc8179-800x480-bw'},count:1,priority:100,expires_at:Date.now()+3600000};
+const demand={demand_id:'biome-monitor-panel',capabilities:catalog.provider.provides,services:[],required_labels:{display:'uc8179-800x480-bw'},count:1,priority:100,expires_at:Date.now()+3600000};
 const dem=ok(await invoke(e,operator,'catalog','capability_demand_put',{demand},{expected_revision:0}));
 let grant=(await sync()).provider_activation;check(grant.action==='activate','generic activation grants display');check(grant.profile_digest===catalog.profile_digest,'compiled exact profile digest');
 activation_request.report={generation:grant.generation,profile_id:grant.profile_id,state:'applied'};await sync();

@@ -1,8 +1,16 @@
-# Vector Arcade e-paper capability firmware 1.0.0
+# Biome Monitor firmware 1.1.0
 
 This is a native ESP-IDF firmware for the **Seengreat ESP32-C6 E-Paper Driver Board v1.4 (ESP32-C6FH4)** and its **800×480, 7.5-inch black/white UC8179-class panel**. The recovered Vector Arcade `c6_0.3.2` archive is the hardware source of truth. It is an **ESP32-C6 image**, not an ESP32-C3 image.
 
-The firmware replaces the games with an outbound Capabilities Service participant. It enrolls with the same credential mechanism as infrastructure providers, opens a session, checks in, advertises an exact pinned `provider-activation/1` profile and publishes an offer after activation and a successful controller BUSY probe. It supports one display profile and one in-flight frame. It does not implement the S3 runtime's Relay/Explorer/Sentinel/Reconciler/Continuity executors.
+Biome Monitor is an outbound Capabilities Service participant. It enrolls with the same credential mechanism as infrastructure providers, opens a session, checks in, advertises an exact pinned `provider-activation/1` profile and publishes an offer after activation and a successful controller BUSY probe. It supports one display profile and one in-flight frame. It does not implement the S3 runtime's Relay/Explorer/Sentinel/Reconciler/Continuity executors.
+
+## Default display
+
+The supplied Biome logo is built into the firmware as a centered black-on-white, 800×480 native 1-bit frame. It appears immediately after a successful panel probe, **before provisioning, Wi-Fi or service connectivity**. A validated remote frame replaces it. The logo returns when that frame expires or the device receives withdrawal of that desired state. Unrelated/stale withdrawals and invalid replacement frames do not erase a still-valid displayed frame. Reboot always starts with the logo and requires fresh authority before accepting remote content.
+
+Expiry uses a monotonic deadline derived from the service timestamp, including while offline or retrying requests. Refresh is serviced by the same task that owns the display: an in-progress transport operation or physical refresh may delay fallback. The idle logo is refreshed once per transition, not at every poll. A controller fault makes the panel state unknown and disables further refreshes until reboot. A valid image can remain after activation expires; desired-frame expiry is what returns it to idle. Power loss retains the e-paper's last physical image.
+
+The canonical preview is `assets/idle-logo.png`; `main/assets/idle_logo.bin` is its exact packed representation. Historical Vector Arcade mentions below identify the recovered hardware source only. Existing immutable capability/provider IDs and digests are retained for compatibility; the participant name and firmware identity are Biome Monitor.
 
 ## Hardware and display contract
 
@@ -57,6 +65,8 @@ python -m esptool --chip esp32c6 --port PORT write_flash \
   0x9000 device-nvs.bin 0x30000 firmware.bin
 ```
 
+For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.0-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
+
 This is a new partition layout. Replacing NVS removes enrollment and outstanding local journal state; do not write the provisioning partition as a routine firmware update. The factory image requires 4 MiB flash. No OTA path is provided in this release.
 
 5. Once enrolled, identify the participant in Capabilities Service and activate supply with `python tools/client.py --credentials operator.json demand --participant PARTICIPANT --expires-at FUTURE_UNIX_MS`. This creates one demand for one matching panel. The recovered project has one panel; a multi-panel deployment should set the required count and/or introduce distinct local profile labels explicitly. Wait for its offer to become `ready`.
@@ -87,7 +97,7 @@ Use the current desired entity's `revision` for subsequent updates. Keep the req
 
 The client uploads and finalizes the immutable artifact with `scope.participant_ids`, then calls `desired.put`, binding the offer and `slot: frame`. The firmware checks metadata, reads exactly 48,000 bytes, verifies SHA-256, renews authority and re-reads the desired revision before touching the panel. A fresh update may supersede an older frame; this interface converges to the latest state and is not a queue of animations.
 
-Acceptance is not completion. Poll until the expected `desired_revision` is observed and `actual.status` is `rendered`. `actual.controller_refresh_completed` means BUSY asserted and then cleared. It does not prove optical pixels through a camera. Timeout/fault results are `unknown`, never `rendered`; the provider becomes unhealthy until reboot/reprobe. A crash after refresh but before acknowledgement can cause a safe full repaint of the same desired bitmap. An ongoing physical refresh drains to completion; lease expiry prevents new refreshes. An e-paper image remains on the panel after activation expires, withdrawal or power loss.
+Acceptance is not completion. Poll until the expected `desired_revision` is observed and `actual.status` is `rendered`. `actual.controller_refresh_completed` means BUSY asserted and then cleared. It does not prove optical pixels through a camera. Timeout/fault results are `unknown`, never `rendered`; the provider becomes unhealthy until reboot/reprobe. A crash after refresh but before acknowledgement can cause a safe full repaint of the same desired bitmap. An ongoing physical refresh drains to completion; lease expiry prevents new refreshes. The local logo replaces withdrawn/expired content as described above; power loss retains the last physical image.
 
 ## Build and verification
 
@@ -101,6 +111,6 @@ gcc -std=c11 -Wall -Wextra -Werror -I main main/frame.c tests/frame_test.c -o /t
 /tmp/frame-test
 ```
 
-CI builds the C6 image and packages bootloader, partition table, firmware, checksums, this document and source. Host checks cover packing, exact geometry, bounded writes, path confinement, lease admission, mutation replay and contract pins. `tests/service_integration.mjs` runs against the real Capabilities Service source when `CAPABILITIES_SOURCE` is supplied. Software checks do not constitute hardware qualification.
+CI builds the C6 image and packages bootloader, partition table, firmware, the merged 0x0 image, checksums, this document and source. Host checks cover packing, exact geometry, bounded writes, path confinement, lease admission, mutation replay, contract pins, logo byte identity, idle expiry, stale withdrawal rejection and current-content deduplication. `tests/service_integration.mjs` runs against the real Capabilities Service source when `CAPABILITIES_SOURCE` is supplied. Software checks do not constitute hardware qualification.
 
 Source provenance: recovered archive SHA-256 `237000cff740f7abe1fae52f5ecd5a99dce3331f921b7c69d3d885677fb9528b`, project `c6_0.3.2`, display driver `components/epd/epd.c`. This firmware retains only its vendor-derived full-refresh path. The source archive records its own release as untested on hardware.

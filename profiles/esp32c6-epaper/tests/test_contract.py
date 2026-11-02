@@ -3,6 +3,17 @@ ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'too
 from catalog import CONTRACT,PROVIDER,PROFILE,INPUT,digest,canonical
 from client import Client,read_frame
 class ContractTests(unittest.TestCase):
+ def test_embedded_logo(self):
+  data=(ROOT/'main/assets/idle_logo.bin').read_bytes()
+  self.assertEqual(len(data),48000)
+  self.assertEqual(hashlib.sha256(data).hexdigest(),'e1dc01ea3e403af3a46fd75c24020e1c11a2b428b0de5924ef7bd6144dbc1af9')
+  self.assertEqual(data[:2400],bytes(2400));self.assertEqual(data[-2400:],bytes(2400))
+  try:from PIL import Image
+  except ImportError:return
+  from pack import pack
+  with Image.open(ROOT/'assets/idle-logo.png') as im:
+   self.assertEqual(im.size,(800,480));self.assertEqual(pack(im),data)
+
  def test_catalog_pins_and_generated_header(self):
   catalog=json.loads((ROOT/'catalog.json').read_text());self.assertEqual(catalog['contract'],CONTRACT);self.assertEqual(catalog['provider'],PROVIDER);self.assertEqual(PROVIDER['provides'][0]['contract_digest'],digest(CONTRACT));self.assertIn(digest(PROFILE),(ROOT/'main/catalog.h').read_text())
  def test_public_geometry(self):

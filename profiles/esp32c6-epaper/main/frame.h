@@ -7,7 +7,7 @@
 #define FRAME_STRIDE 100
 #define FRAME_BYTES 48000
 #define FRAME_FORMAT "mono1-msb-black1"
-/* Native Vector Arcade / UC8179 full-refresh representation. */
+/* Native UC8179 full-refresh representation. */
 typedef struct { unsigned width, height, stride, bytes; const char *format, *sha256; } frame_spec;
 bool frame_valid(const frame_spec *s);
 bool frame_add(size_t *received, uint8_t *dst, const uint8_t *src, size_t length);

@@ -1,4 +1,4 @@
-name: ESP32-C6 e-paper capability
+name: Biome Monitor ESP32-C6
 on:
   push:
     branches: ['native/esp32c6-epaper-capability']
@@ -21,6 +21,8 @@ jobs:
           /tmp/frame-test
           gcc -std=c11 -Wall -Wextra -Werror -I tests/stubs -I main main/panel.c tests/panel_test.c -o /tmp/panel-test
           /tmp/panel-test
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/presentation.c tests/presentation_test.c -o /tmp/presentation-test
+          /tmp/presentation-test
       - name: Build the recovered C6 board target
         shell: bash
         run: |
@@ -31,6 +33,6 @@ jobs:
           python3 tools/package.py
       - uses: actions/upload-artifact@v4
         with:
-          name: vector-arcade-epaper-esp32c6-v1.0.0
+          name: biome-monitor-esp32c6-v1.1.0
           path: profiles/esp32c6-epaper/dist/
           if-no-files-found: error

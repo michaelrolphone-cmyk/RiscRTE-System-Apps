@@ -28,6 +28,7 @@
 #include "panel.h"
 #include "frame.h"
 #include "catalog.h"
+#include "presentation.h"
 #define API_ORIGIN "https://capabilities-service.cantikash.chatgpt.site"
 #define JSON_LIMIT 18000
 #define JOURNAL_LIMIT 50000
@@ -39,7 +40,9 @@ static int generation;
 static int64_t deadline,activation_gen,server_anchor,mono_anchor;
 static bool healthy,enabled=true,offer_ready;
 static uint8_t *frame;
-static const char *TAG="epaper";
+static const char *TAG="biome-monitor";
+static presentation visible;
+extern const uint8_t idle_logo[] asm("_binary_assets_idle_logo_bin_start");
 static cJSON *get(const cJSON *o,const char *k){return cJSON_GetObjectItemCaseSensitive(o,k);}
 static const char *str(const cJSON *o,const char *k){cJSON *v=get(o,k);return cJSON_IsString(v)?v->valuestring:"";}
 static double num(const cJSON *o,const char *k){cJSON *v=get(o,k);return cJSON_IsNumber(v)?v->valuedouble:0;}
@@ -50,7 +53,15 @@ static void pn(cJSON *o,const char *k,double v){put(o,k,cJSON_CreateNumber(v));}
 static cJSON *json_copy(const cJSON *v){return v?cJSON_Duplicate(v,true):cJSON_CreateObject();}
 static int64_t ms(void){return esp_timer_get_time()/1000;}
 static int64_t server_now(void){return server_anchor+(ms()-mono_anchor);}
-static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)vTaskDelay(pdMS_TO_TICKS(10000));}
+/* Local fallback needs no network lease. Only this task owns the SPI panel. */
+static void idle_if_due(void){
+ if(!healthy||!presentation_needs_logo(&visible,ms()))return;
+ if(panel_render(idle_logo)==ESP_OK){presentation_set_logo(&visible);ESP_LOGI(TAG,"Biome Monitor idle logo displayed");}
+ else{healthy=false;deadline=0;ESP_LOGE(TAG,"Idle logo refresh failed; panel contents unknown");}
+}
+static void pause_ms(int64_t duration){int64_t until=ms()+duration;do{idle_if_due();int64_t remaining=until-ms();if(remaining<=0)break;vTaskDelay(pdMS_TO_TICKS(remaining>1000?1000:remaining));}while(ms()<until);}
+static void wait_wifi(void){idle_if_due();while(!(xEventGroupWaitBits(wifi_events,1,pdFALSE,pdTRUE,pdMS_TO_TICKS(1000))&1))idle_if_due();}
+static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)pause_ms(10000);}
 static void save(void){char *s=cJSON_PrintUnformatted(state);if(!s||strlen(s)>JOURNAL_LIMIT)stop("journal bound");esp_err_t e=nvs_set_blob(nv,"journal",s,strlen(s)+1);free(s);if(e!=ESP_OK||nvs_commit(nv)!=ESP_OK)stop("journal commit");}
 static cJSON *load_json(const char *key){size_t n=0;bool blob=!strcmp(key,"journal");if((blob?nvs_get_blob(nv,key,NULL,&n):nvs_get_str(nv,key,NULL,&n))!=ESP_OK)return NULL;if(n>JOURNAL_LIMIT)stop("stored data bound");char *s=malloc(n);if(!s)stop("memory");ESP_ERROR_CHECK(blob?nvs_get_blob(nv,key,s,&n):nvs_get_str(nv,key,s,&n));cJSON *v=cJSON_Parse(s);free(s);if(!v)stop("stored JSON invalid");return v;}
 static void hash(const void *p,size_t n,char out[65]){uint8_t d[32];mbedtls_sha256(p,n,d,0);for(int i=0;i<32;i++)sprintf(out+i*2,"%02x",d[i]);out[64]=0;}
@@ -61,15 +72,15 @@ static void wifi(void){
  wifi_init_config_t init=WIFI_INIT_CONFIG_DEFAULT();ESP_ERROR_CHECK(esp_wifi_init(&init));ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT,ESP_EVENT_ANY_ID,net_event,NULL));ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT,IP_EVENT_STA_GOT_IP,net_event,NULL));
  wifi_config_t w={0};snprintf((char*)w.sta.ssid,sizeof w.sta.ssid,"%s",str(cfg,"ssid"));snprintf((char*)w.sta.password,sizeof w.sta.password,"%s",str(cfg,"password"));
  ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA,&w));ESP_ERROR_CHECK(esp_wifi_start());ESP_ERROR_CHECK(esp_wifi_connect());
- xEventGroupWaitBits(wifi_events,1,pdFALSE,pdTRUE,portMAX_DELAY);
+ wait_wifi();
  esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);esp_sntp_setservername(0,"pool.ntp.org");esp_sntp_init();
- while(time(NULL)<1700000000)vTaskDelay(pdMS_TO_TICKS(1000));
+ while(time(NULL)<1700000000)pause_ms(1000);
 }
 /* Read a bounded authenticated response. Redirects and arbitrary destinations
  * are refused. Binary artifacts stay within this same configured service. */
 static int request(const char *path,const char *body,bool bootstrap,uint8_t *out,size_t capacity){
  if(path[0]!='/'||path[1]=='/'||strlen(path)>300)return -1;
- xEventGroupWaitBits(wifi_events,1,pdFALSE,pdTRUE,portMAX_DELAY);
+ wait_wifi();
  char url[400];snprintf(url,sizeof url,"%s%s",API_ORIGIN,path);
  esp_http_client_config_t hc={.url=url,.crt_bundle_attach=esp_crt_bundle_attach,.timeout_ms=12000,.disable_auto_redirect=true,.buffer_size=2048,.buffer_size_tx=2048};
  esp_http_client_handle_t h=esp_http_client_init(&hc);if(!h)return -1;
@@ -115,7 +126,7 @@ static cJSON *rpc(const char *family,const char *op,cJSON *args,bool write,int r
  char id[33];nonce(id);ps(q,"operation_id",id);if(revision>=0)pn(q,"expected_revision",revision);
  if(write){if(get(state,"pending"))stop("unresolved mutation");put(state,"pending",json_copy(q));save();}
  char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("request memory");cJSON *r=NULL;
- do{r=exchange(wire,!strcmp(op,"enroll"));if(r&&eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);r=NULL;}if(!r)vTaskDelay(pdMS_TO_TICKS(3000));}while(write&&!r);
+ do{r=exchange(wire,!strcmp(op,"enroll"));if(r&&eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);r=NULL;}if(!r)pause_ms(3000);}while(write&&!r);
  free(wire);
  if(r&&eq(r,"status","rejected")){
   /* A rejection is a known non-execution; retained controls remain actionable. */
@@ -125,7 +136,7 @@ static cJSON *rpc(const char *family,const char *op,cJSON *args,bool write,int r
  }else if(r&&write)receipt(q,r);
  cJSON_Delete(q);return r;
 }
-static void recover(void){cJSON *q=get(state,"pending");if(!q)return;char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("memory");for(;;){cJSON *r=exchange(wire,eq(q,"operation","enroll"));if(!r||eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);vTaskDelay(pdMS_TO_TICKS(3000));continue;}if(eq(r,"status","rejected")){cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}else receipt(q,r);cJSON_Delete(r);break;}free(wire);}
+static void recover(void){cJSON *q=get(state,"pending");if(!q)return;char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("memory");for(;;){cJSON *r=exchange(wire,eq(q,"operation","enroll"));if(!r||eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);pause_ms(3000);continue;}if(eq(r,"status","rejected")){cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}else receipt(q,r);cJSON_Delete(r);break;}free(wire);}
 static cJSON *activation(void){cJSON *a=cJSON_CreateObject();ps(a,"protocol_version","provider-activation/1");cJSON_AddBoolToObject(a,"automatic",true);cJSON_AddBoolToObject(a,"available",healthy&&enabled);cJSON *profiles=cJSON_CreateArray();cJSON_AddItemToArray(profiles,cJSON_Parse(PROFILE_JSON));cJSON_AddItemToObject(a,"profiles",profiles);cJSON *report=cJSON_CreateObject();pn(report,"generation",activation_gen);ps(report,"profile_id",str(state,"activation_profile"));ps(report,"state",deadline>ms()?"applied":"idle");cJSON_AddItemToObject(a,"report",report);return a;}
 static void activation_accept(cJSON *d,int64_t started){
  deadline=0;offer_ready=false;cJSON *g=get(d,"provider_activation");
@@ -141,7 +152,7 @@ static void activation_accept(cJSON *d,int64_t started){
 }
 static cJSON *session_args(void){cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"session_id",session_id);pn(a,"generation",generation);return a;}
 static bool open_session(void){
- cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version","esp32c6-epaper/1.0.0");pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON_AddItemToObject(a,"journal_summary",cJSON_CreateObject());cJSON_AddItemToObject(a,"activation_request",activation());
+ cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version","biome-monitor/1.1.0");pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON_AddItemToObject(a,"journal_summary",cJSON_CreateObject());cJSON_AddItemToObject(a,"activation_request",activation());
  int64_t started=ms();cJSON *r=rpc("participant","open_session",a,true,-1);if(!r)return false;cJSON *d=get(r,"data");snprintf(session_id,sizeof session_id,"%s",str(d,"id"));generation=(int)num(d,"generation");activation_accept(d,started);cJSON_Delete(r);return session_id[0]&&generation>0;
 }
 static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}activation_accept(get(r,"data"),started);cJSON_Delete(r);return true;}
@@ -161,31 +172,46 @@ static void pop_control(void){cJSON_DeleteItemFromArray(get(state,"controls"),0)
 static void desired(cJSON *control){
  cJSON *a=cJSON_CreateObject();ps(a,"desired_id",str(get(control,"data"),"desired_id"));cJSON *r=rpc("desired","get",a,false,-1);if(!r)return;cJSON *d=get(r,"data"),*input=get(d,"desired"),*artifact=get(input,"artifact");
  char own[256];offer_id(own);int revision=(int)num(d,"desired_revision");
- if(!eq(d,"provider_offer_id",own)||!eq(d,"slot","frame")||eq(d,"state","withdrawn")||num(d,"expires_at")<=server_now()){cJSON_Delete(r);pop_control();return;}
+ if(!eq(d,"provider_offer_id",own)||!eq(d,"slot","frame")){cJSON_Delete(r);pop_control();return;}
+ if(eq(d,"state","withdrawn")||num(d,"expires_at")<=server_now()){
+  presentation_withdraw(&visible,str(d,"id"),revision);idle_if_due();cJSON_Delete(r);pop_control();return;
+ }
+ /* Reads/withdrawal remain actionable without activation; new remote effects do not. */
+ if(!frame_can_render(ms(),deadline,healthy&&enabled,offer_ready)){cJSON_Delete(r);return;}
  frame_spec spec={(unsigned)num(input,"width"),(unsigned)num(input,"height"),(unsigned)num(input,"stride_bytes"),(unsigned)num(artifact,"size_bytes"),str(input,"format"),str(artifact,"sha256")};
  const char *status="failed",*reason="invalid_frame_spec";bool rendered=false;
- if(frame_valid(&spec)&&num(input,"width")==800&&num(input,"height")==480&&num(input,"stride_bytes")==100&&num(artifact,"size_bytes")==48000){
+ if(strlen(str(d,"id"))>0&&strlen(str(d,"id"))<sizeof visible.desired_id&&frame_valid(&spec)&&num(input,"width")==800&&num(input,"height")==480&&num(input,"stride_bytes")==100&&num(artifact,"size_bytes")==48000){
   int downloaded=download(artifact);if(downloaded<0){cJSON_Delete(r);return;}if(!downloaded){reason="artifact_verification_failed";goto report;}
   /* Refresh lease and re-read desired state after transfer. A superseded or
    * withdrawn image must not be committed just because its download finished. */
   if(!sync_now()||!publish_offer()){cJSON_Delete(r);return;}
   a=cJSON_CreateObject();ps(a,"desired_id",str(d,"id"));cJSON *fresh=rpc("desired","get",a,false,-1);cJSON *v=fresh?get(fresh,"data"):NULL;
-  bool current=v&&num(v,"desired_revision")==revision&&!eq(v,"state","withdrawn")&&num(v,"expires_at")-server_now()>30000;
+  if(v&&eq(v,"provider_offer_id",own)&&eq(v,"slot","frame")&&(eq(v,"state","withdrawn")||num(v,"expires_at")<=server_now())){
+   presentation_withdraw(&visible,str(v,"id"),(int)num(v,"desired_revision"));idle_if_due();
+  }
+  int64_t remaining=v?(int64_t)num(v,"expires_at")-server_now():0;
+  bool current=v&&eq(v,"id",str(d,"id"))&&eq(v,"provider_offer_id",own)&&eq(v,"slot","frame")&&num(v,"desired_revision")==revision&&!eq(v,"state","withdrawn")&&remaining>30000;
+  int64_t expires_ms=ms()+remaining;
   cJSON_Delete(fresh);
   if(!current||!frame_can_render(ms(),deadline,healthy&&enabled,true)){cJSON_Delete(r);return;}
   /* Durable physical-effect intent. On crash this remains unknown; convergence
    * safely repeats the latest complete frame under a new live lease. */
-  if(eq(get(state,"last_render"),"boot_id",boot_id)&&eq(get(state,"last_render"),"status","rendered")&&eq(get(state,"last_render"),"sha256",spec.sha256)){rendered=true;status="rendered";reason="same_frame_already_completed_this_boot";goto report;}
+  if(presentation_same_frame(&visible,spec.sha256,ms())){
+   presentation_set_frame(&visible,str(d,"id"),revision,spec.sha256,expires_ms);
+   rendered=true;status="rendered";reason="same_frame_still_displayed";goto report;
+  }
   cJSON *intent=cJSON_CreateObject();ps(intent,"boot_id",boot_id);ps(intent,"desired_id",str(d,"id"));pn(intent,"revision",revision);ps(intent,"sha256",spec.sha256);ps(intent,"status","unknown");put(state,"last_render",intent);save();
   esp_err_t e=panel_render(frame);rendered=e==ESP_OK;status=rendered?"rendered":"unknown";reason=rendered?"controller_busy_completed":"controller_error_or_busy_timeout";
-  ps(get(state,"last_render"),"status",status);save();if(!rendered){healthy=false;deadline=0;}
+  if(rendered)presentation_set_frame(&visible,str(d,"id"),revision,spec.sha256,expires_ms);
+  else{visible=(presentation){0};healthy=false;deadline=0;}
+  ps(get(state,"last_render"),"status",status);save();
  }
  report:
  a=cJSON_CreateObject();ps(a,"desired_id",str(d,"id"));pn(a,"desired_revision",revision);pn(a,"provider_generation",generation);ps(a,"participant_id",str(state,"participant_id"));cJSON *actual=cJSON_CreateObject();ps(actual,"status",status);ps(actual,"reason",reason);ps(actual,"sha256",spec.sha256);ps(actual,"boot_id",boot_id);cJSON_AddBoolToObject(actual,"controller_refresh_completed",rendered);cJSON_AddBoolToObject(actual,"optical_readback",false);cJSON_AddItemToObject(a,"actual",actual);
  cJSON *observed=rpc("desired","observe",a,true,-1);if(observed){/* stale observations have no id; still retire the handled control */if(!get(get(observed,"data"),"id"))pop_control();cJSON_Delete(observed);}cJSON_Delete(r);
 }
 static void process_control(void){cJSON *c=cJSON_GetArrayItem(get(state,"controls"),0);if(!c)return;
- if(eq(c,"kind","desired")){if(deadline>ms()&&offer_ready)desired(c);return;}
+ if(eq(c,"kind","desired")){desired(c);return;}
  if(eq(c,"kind","lifecycle")){enabled=eq(get(c,"data"),"lifecycle","enabled");if(!enabled)deadline=0;pop_control();return;}
  if(eq(c,"kind","recovery_requested")){pop_control();return;}
  /* No assignment executor is advertised. An unknown/control_reference record
@@ -193,15 +219,17 @@ static void process_control(void){cJSON *c=cJSON_GetArrayItem(get(state,"control
  deadline=0;enabled=false;ESP_LOGE(TAG,"Unsupported control retained: %s",str(c,"kind"));
 }
 void app_main(void){
+ /* Show the built-in logo before NVS, credentials, Wi-Fi or service availability. */
+ /* Seengreat ESP32-C6 E-Paper Driver Board v1.4: recovered source is authoritative. */
+ panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));healthy=panel_probe()==ESP_OK;
+ idle_if_due();
  ESP_ERROR_CHECK(nvs_flash_init());ESP_ERROR_CHECK(nvs_open("epaper",NVS_READWRITE,&nv));cfg=load_json("config");if(!cfg)stop("Provision config NVS first; see README");
  if(strlen(str(cfg,"participant_credential"))<32||strlen(str(cfg,"participant_credential"))>1024||strlen(str(cfg,"site_access"))<1||strlen(str(cfg,"site_access"))>1024||!strlen(str(cfg,"ssid"))||strlen(str(cfg,"ssid"))>32||strlen(str(cfg,"password"))>63)stop("invalid provisioning");
  state=load_json("journal");if(!state)state=cJSON_CreateObject();nonce(boot_id);activation_gen=(int64_t)num(state,"activation_generation");
- /* Seengreat ESP32-C6 E-Paper Driver Board v1.4: recovered source is authoritative. */
- panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));healthy=panel_probe()==ESP_OK;
  frame=malloc(FRAME_BYTES);if(!frame)stop("frame memory");wifi();recover();
- if(!strlen(str(state,"participant_id"))){cJSON *a=cJSON_CreateObject();ps(a,"bootstrap_credential",str(cfg,"bootstrap"));ps(a,"display_name","C6 800x480 e-paper");ps(a,"class","physical_device");ps(a,"adapter_kind","esp32");cJSON *identity=cJSON_CreateObject();char sha[65];hash(str(cfg,"participant_credential"),strlen(str(cfg,"participant_credential")),sha);ps(identity,"credential_sha256",sha);cJSON_AddItemToObject(a,"identity_binding",identity);cJSON *labels=cJSON_CreateObject();ps(labels,"arch","riscv32");ps(labels,"display","uc8179-800x480-bw");ps(labels,"firmware","esp32c6-epaper/1.0.0");cJSON_AddItemToObject(a,"labels",labels);cJSON *r=rpc("participant","enroll",a,true,-1);cJSON_Delete(r);if(!strlen(str(state,"participant_id")))stop("enrollment rejected");}
- for(;;){if(!open_session()){vTaskDelay(pdMS_TO_TICKS(10000));continue;}while(sync_now()){
+ if(!strlen(str(state,"participant_id"))){cJSON *a=cJSON_CreateObject();ps(a,"bootstrap_credential",str(cfg,"bootstrap"));ps(a,"display_name","Biome Monitor");ps(a,"class","physical_device");ps(a,"adapter_kind","esp32");cJSON *identity=cJSON_CreateObject();char sha[65];hash(str(cfg,"participant_credential"),strlen(str(cfg,"participant_credential")),sha);ps(identity,"credential_sha256",sha);cJSON_AddItemToObject(a,"identity_binding",identity);cJSON *labels=cJSON_CreateObject();ps(labels,"arch","riscv32");ps(labels,"display","uc8179-800x480-bw");ps(labels,"firmware","biome-monitor/1.1.0");cJSON_AddItemToObject(a,"labels",labels);cJSON *r=rpc("participant","enroll",a,true,-1);cJSON_Delete(r);if(!strlen(str(state,"participant_id")))stop("enrollment rejected");}
+ for(;;){if(!open_session()){pause_ms(10000);continue;}while(sync_now()){
    offer_ready=deadline>ms()&&publish_offer();process_control();
-   vTaskDelay(pdMS_TO_TICKS(15000));
+   pause_ms(15000);
   }}
 }
