@@ -18,7 +18,7 @@ def main():
  shutil.copytree(a.packages,a.output)
  records={}
  for path in sorted(a.output.rglob('*.elf')):
-  if 'debug' in path.relative_to(a.output).parts:continue
+  if 'debug' in path.relative_to(a.output).parts or path.relative_to(a.output).parts[0]=='contexts':continue
   original=path.read_bytes();relative=path.relative_to(a.output).as_posix()
   record=compact(path,a.compiler,debug_path=a.output/'debug'/relative)
   with tempfile.TemporaryDirectory(prefix='home-package-repeat-') as temp:
