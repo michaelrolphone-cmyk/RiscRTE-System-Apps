@@ -2,7 +2,7 @@
 """Synthetic overlay contract regressions; not product binding evidence."""
 import copy,json,tempfile,unittest
 from pathlib import Path
-from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata,validate_bootfs_names,payload_inventory
+from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata,validate_bootfs_names,payload_inventory,validate_grant_substitutions
 from compose_shared_app_cohort import encode,digest
 class Overlay(unittest.TestCase):
  def fixture(self):
@@ -204,6 +204,22 @@ class Overlay(unittest.TestCase):
      b['boot.json']=encode(boot);item['row']=copy.deepcopy(boot['drivers'][0])
     p['inventory_sha256']=fingerprint(inventory(b,sd))
     with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_explicit_grant_substitution_preserves_unrelated_authority(self):
+  old={'capability':'old.service','api':2,'instance_id':0}
+  new={'capability':'service.facade','api':2,'instance_id':0}
+  keep={'capability':'storage.key-value','api':1,'instance_id':5}
+  manifest={'requires':[],'optional':[{'capability':'service.facade','api':2}]}
+  providers={('old.service',2,0):'old',('service.facade',2,0):'new'}
+  change={'from':old,'to':new}
+  self.assertEqual(validate_grant_substitutions([old,keep],[new,keep],[change],manifest,providers),[old])
+  for before,after,changes,m,available in (
+    ([old,keep],[new],[change],manifest,providers),
+    ([old,keep],[new,keep],[],manifest,providers),
+    ([old,keep],[new,keep],[change],manifest,{}),
+    ([old,keep],[new,keep],[change,change],manifest,providers),
+    ([old,keep],[new,keep],[change],{'requires':[],'optional':[]},providers),
+    ([old,keep],[new,keep],[{'from':keep,'to':new}],manifest,providers)):
+   with self.assertRaises(ValueError):validate_grant_substitutions(before,after,changes,m,available)
  def test_payload_inventory_exact_delta(self):
   report=payload_inventory({'keep':b'ab','new':b'1234'},{'keep':b'a'},64)
   self.assertEqual(report['store_bytes'],64)

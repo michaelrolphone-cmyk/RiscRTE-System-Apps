@@ -107,6 +107,21 @@ def replace_native_metadata(entries,spec,packages):
  return {'path':'cohort.json','before_sha256':digest(oldbytes),'after_sha256':digest(entries['cohort.json']),
          'descriptor_sha256':spec['descriptor_sha256'],'native':native,'product_version':spec['product_version']}
 
+def validate_grant_substitutions(oldgrants,newgrants,substitutions,manifest,available):
+ declared=declarations(manifest,'requires')|declarations(manifest,'optional')
+ removed=[]
+ for item in substitutions:
+  if set(item)!={'from','to'}:raise ValueError('Invalid explicit capability substitution')
+  old=item['from'];new=item['to']
+  if set(old)!={'capability','api','instance_id'} or set(new)!=set(old):raise ValueError('Namespace-bearing grants cannot be substituted')
+  if old not in oldgrants or old in newgrants or new not in newgrants or old in removed:raise ValueError('Substitution differs from authority rows')
+  if (old['capability'],old['api']) in declared or (new['capability'],new['api']) not in declared:raise ValueError('Substitution does not match new declarations')
+  for grant in (old,new):
+   if (grant['capability'],grant['api'],grant['instance_id']) not in available:raise ValueError('Substitution provider absent')
+  removed.append(old)
+ if any(g not in newgrants and g not in removed for g in oldgrants):raise ValueError('Existing grant removed without explicit substitution')
+ return removed
+
 def overlay(before, before_sd, plan, elf, common, packages):
  original=inventory(before,before_sd)
  if plan['inventory_sha256']!=fingerprint(original):raise ValueError('Reviewed inventory differs')
@@ -148,8 +163,8 @@ def overlay(before, before_sd, plan, elf, common, packages):
   for oldrow,newrow in zip(rows,proposed):
    a=copy.deepcopy(oldrow);b=copy.deepcopy(newrow)
    oldgrants=a.pop('grants',[]);newgrants=b.pop('grants',[])
-   if a!=b:raise ValueError('Only explicit additive Home grants are permitted')
-   if any(g not in newgrants for g in oldgrants):raise ValueError('Existing grant removed')
+   if a!=b:raise ValueError('Only explicit grant changes are permitted')
+   validate_grant_substitutions(oldgrants,newgrants,alias.get('grant_substitutions',[]),common,providers(out,boot))
    if len({encode(g) for g in newgrants})!=len(newgrants):raise ValueError('Duplicate grant')
    boot['app_capabilities'][boot['app_capabilities'].index(oldrow)]=copy.deepcopy(newrow)
  # Provider packages and exact binding rows come only from the reviewed plan.
@@ -220,6 +235,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
    raise ValueError('Independent application baseline differs')
   alias={key:copy.deepcopy(item[key]) for key in ('manifest','route','original_policy_rows','policy_rows')}
   alias['role']='controller'
+  alias['grant_substitutions']=copy.deepcopy(item.get('grant_substitutions',[]))
   subplan={'inventory_sha256':fingerprint(inventory(out,sd)),'aliases':[alias]}
   out,sd,_=overlay(out,sd,subplan,abytes,new,packages)
   updates.append({'manifest':name,'elf_sha256':digest(abytes),'package_manifest_sha256':digest(mbytes),

@@ -122,44 +122,44 @@
       ]
     },
     "contexts": {
-      "tag": "contexts-shared-0.5.0-dev-59006b1d91cd",
+      "tag": "contexts-shared-0.5.0-dev-f4c0287f05d5",
       "repository": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities",
       "assets": [
         {
           "name": "build.json",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/build.json",
-          "bytes": 46988,
-          "sha256": "a5e43424418ca40a977d77f2d8bd515e788c41c0c4016f23a9ff8351212bfc68"
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/build.json",
+          "bytes": 47086,
+          "sha256": "50b5a2110e354665c4425185cc73fef7083ac9e7c983d564b98474292a5b39c7"
         },
         {
           "name": "contexts.elf",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/contexts.elf",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/contexts.elf",
           "bytes": 88316,
-          "sha256": "c756ed88cfa7a0a44a6de16a595e7e1a41d514c72846e842a1bd60f7f4d6fdb9"
+          "sha256": "0dc9b969ac299fe87848c1d8eb858ac0a3106912750161c3bebb72b9d5b2a8ed"
         },
         {
           "name": "contexts.json",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/contexts.json",
-          "bytes": 963,
-          "sha256": "bc6dedd9c853480d8bdb6a8204b0b95b9c9263d6bc23948822bdf5911873f818"
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/contexts.json",
+          "bytes": 1031,
+          "sha256": "2ee325d2f10ed98e90136ea435a57d9af711dfb98ce33058512513ede0b9d1f7"
         },
         {
           "name": "delivery.json",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/delivery.json",
-          "bytes": 48521,
-          "sha256": "8bc2eeaed322d2cb69c600312b63f28114b110041c69035dcc0fdd3716c60685"
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/delivery.json",
+          "bytes": 48621,
+          "sha256": "d573afd76d1b202c7b1329c94b8cb9b176702ac0114dde4070d58698cd5268ad"
         },
         {
           "name": "qualification.json",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/qualification.json",
-          "bytes": 636653,
-          "sha256": "d4606acc944d2046700055065038e82e6599c1603d8e9f2bdaf9f5ad879c8ed6"
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/qualification.json",
+          "bytes": 636749,
+          "sha256": "1156d678e88b471fea713f04279e45e3a9b08011cfd3ac75caa947b4558e8300"
         },
         {
           "name": "source-lock.json",
-          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-59006b1d91cd/source-lock.json",
+          "url": "https://github.com/michaelrolphone-cmyk/RiscRTE-Utilities/releases/download/contexts-shared-0.5.0-dev-f4c0287f05d5/source-lock.json",
           "bytes": 215,
-          "sha256": "901fcd953a881f4a51b75c1c5141486d5c7b3fda9d3c1679de3583ff6b460aa3"
+          "sha256": "3da9ed76ff21da785c2ffe1e84ff421a44dcfed23d392d65efda0c055915ed09"
         }
       ]
     }

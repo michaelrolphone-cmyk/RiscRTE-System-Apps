@@ -124,6 +124,12 @@ def generate(cohort,packages,baseline):
   rows=[r for r in boot['app_capabilities'] if r['manifest']=='contexts.json']
   if len(rows)!=1:raise ValueError('Contexts policy not unique')
   changed=copy.deepcopy(rows)
+  facade=grant('alarm.service.facade',2)
+  if facade not in changed[0]['grants']:changed[0]['grants'].append(facade)
+  substitutions=[]
+  legacy2=grant('alarm.service',2)
+  if legacy2 in changed[0]['grants']:
+   changed[0]['grants'].remove(legacy2);substitutions.append({'from':legacy2,'to':facade})
   if lane=='x4':changed[0]['grants'].append(grant('app.catalog'))
   source=rows[0].get('image_source')
   old_manifest=json.loads(entries['contexts.json'])
@@ -132,7 +138,7 @@ def generate(cohort,packages,baseline):
   ctx=packages/'contexts'
   update={'manifest':'contexts.json','package':'contexts','manifest_file':'contexts.json','elf_file':'contexts.elf',
           'manifest_sha256':digest((ctx/'contexts.json').read_bytes()),'elf_sha256':digest((ctx/'contexts.elf').read_bytes()),
-          'route':route,'original_policy_rows':rows,'policy_rows':changed,
+          'route':route,'original_policy_rows':rows,'policy_rows':changed,'grant_substitutions':substitutions,
           'replace':{'manifest_sha256':digest(entries['contexts.json']),'elf_sha256':digest(oldelf)}}
   plans[lane]={'inventory_sha256':fingerprint(actual),'aliases':[{'role':'controller','manifest':'default.json','route':{'storage':'internal','path':'default.elf'},'original_policy_rows':policy,'policy_rows':updated}],
                'providers':selected,'app_updates':[update],'native_metadata':native_metadata_plan(entries,packages,lane)}
