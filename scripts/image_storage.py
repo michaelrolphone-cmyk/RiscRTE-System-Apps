@@ -10,16 +10,17 @@ def image_path(entries,manifest_path):
  manifest_path=safe(manifest_path);m=json.loads(entries[manifest_path])
  return m,safe(str(PurePosixPath(manifest_path).parent/m['file_name']))
 def ordinary_images(entries):
- boot=json.loads(entries['boot.json']);drivers=set();apps=set()
+ boot=json.loads(entries['boot.json']);drivers=set();apps=set();forbidden=set()
  for row in boot.get('drivers',[]):
   _,path=image_path(entries,row['manifest']);drivers.add(path)
  for row in boot.get('app_capabilities',[]):
-  if 'image_source' in row or row.get('catalog_authority'):continue
   manifest,path=image_path(entries,row['manifest'])
+  if 'image_source' in row or row.get('catalog_authority'):
+   forbidden.add(path);continue
   if manifest.get('type')!='application':raise ValueError('Application policy names non-application')
   if path not in entries:raise ValueError('Missing ordinary application image')
   if path not in drivers:apps.add(path)
- return apps
+ return apps-drivers-forbidden
 def candidates(entries):
  result={}
  for path in sorted(ordinary_images(entries)):

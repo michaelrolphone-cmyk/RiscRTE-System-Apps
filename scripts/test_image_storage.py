@@ -22,4 +22,8 @@ class Storage(unittest.TestCase):
  def test_driver_app_alias_is_not_eligible(self):
   data=self.fixture();boot=json.loads(data['boot.json']);boot['drivers'].append({'manifest':'default.json'});data['boot.json']=json.dumps(boot).encode()
   self.assertEqual(ordinary_images(data),set())
+ def test_mirror_and_catalog_aliases_refuse_all_rows(self):
+  for field,value in [('image_source',{'path':'Apps/default.elf'}),('catalog_authority',True)]:
+   data=self.fixture();boot=json.loads(data['boot.json']);boot['app_capabilities'].append({'manifest':'default.json',field:value});data['boot.json']=json.dumps(boot).encode()
+   self.assertEqual(ordinary_images(data),set())
 if __name__=='__main__':unittest.main()
