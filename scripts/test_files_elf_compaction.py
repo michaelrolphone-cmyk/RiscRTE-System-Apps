@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Actual target ELF metadata compaction invariants and corruption rejection."""
-import argparse,hashlib,io,json,tempfile,unittest
+import argparse,hashlib,io,json,tempfile,unittest,subprocess
 from pathlib import Path
 from unittest.mock import patch
 from elftools.elf.elffile import ELFFile
@@ -23,7 +23,10 @@ class Compaction(unittest.TestCase):
  def test_invalid_tool_output_rejected_without_replacement(self):
   with tempfile.TemporaryDirectory() as tmp:
    f=Path(tmp)/'app.elf';full=Path(tmp)/'full.elf';f.write_bytes(before)
-   def corrupt(cmd,**kwargs):Path(cmd[-1]).write_bytes(mutated(before))
+   real_run=subprocess.run
+   def corrupt(cmd,**kwargs):
+    if '--version' in cmd:return real_run(cmd,**kwargs)
+    Path(cmd[-1]).write_bytes(mutated(before))
    with patch('compact_current_elf.subprocess.run',side_effect=corrupt):
     with self.assertRaises(ValueError):compact(f,a.cc,full)
    self.assertEqual(f.read_bytes(),before);self.assertFalse(full.exists())

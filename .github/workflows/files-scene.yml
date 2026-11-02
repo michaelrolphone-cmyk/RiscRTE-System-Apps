@@ -95,6 +95,8 @@ jobs:
           python System/scripts/link_files_scene.py --qualification qualification/prepared --version 1.6.1 --alarm-api 1 --cc "$CC_TARGET" --output qualification/target 2>&1 | tee qualification/logs/target.log
           echo "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9  qualification/target/file_browser.full.elf" | sha256sum -c -
           test "$(stat -c %s qualification/target/file_browser.full.elf)" = 391232
+          echo "8d19aa1d7f5115c8a21cc293d14178d9e0b2c3edb2b42f9f85ed1f8022f16d94  qualification/target/file_browser.elf" | sha256sum -c -
+          test "$(stat -c %s qualification/target/file_browser.elf)" = 250020
           python System/scripts/test_files_elf_compaction.py --full qualification/target/file_browser.full.elf --compact qualification/target/file_browser.elf --cc "$CC_TARGET" 2>&1 | tee qualification/logs/compaction.log
       - name: Complete root, storage, peer, sharing and actual Runtime
         shell: bash
