@@ -2,7 +2,10 @@
 #include <stdio.h>
 #include "canvas_provider.h"
 #include "../../Services/canvas_input/input.c"
-static unsigned subscriptions,unsubscriptions,claims,resets;
+static unsigned subscriptions,unsubscriptions,claims,resets,prepares,resumes;
+const risc_runtime_api_v1*risc_runtime_get_api(uint32_t version){static const risc_runtime_api_v1 rt={.api_version=1,.struct_size=sizeof(rt)};return version==1?&rt:NULL;}
+static int32_t touch_prepare(void*c,uint32_t budget){(void)c;assert(budget==500&&unsubscriptions);prepares++;return 0;}
+static int32_t touch_resume(void*c,uint32_t budget){(void)c;assert(budget==500);resumes++;return 0;}
 static bool info(void*c,risc_display_info_v1*out){(void)c;*out=(risc_display_info_v1){.width=7,.height=11,.supported_formats=RISC_DISPLAY_FORMAT_BIT(RISC_DISPLAY_FORMAT_RGB565)};return true;}
 static unsigned char pixels[154];
 static bool acquire_frame(void*c,uint32_t f,risc_display_surface_v1*out){(void)c;*out=(risc_display_surface_v1){1,pixels,7,11,14,154,f};return true;}
@@ -24,13 +27,16 @@ int main(void){
  assert(!raster.api.open(&raster,&request,&session));
  risc_canvas_frame_v1 frame={.struct_size=sizeof(frame)};assert(!raster.api.begin_frame(&raster,session,&frame));memset(frame.pixels,255,frame.byte_count);uint64_t receipt;assert(!raster.api.submit(&raster,session,frame.lease,&receipt));risc_canvas_receipt_v1 r={.struct_size=sizeof(r)};assert(!raster.api.poll(&raster,session,receipt,&r));assert(!raster.api.forget_receipt(&raster,session,receipt));
  assert(!subscriptions&&!claims&&!resets); /* Complete TIMER raster path. */
- risc_touch_api_v1 t={1,sizeof(t),NULL,subscribe,unsubscribe,poll,next,snapshot};
+ risc_touch_power_api_v1 t={.base={1,sizeof(t),NULL,subscribe,unsubscribe,poll,next,snapshot},.power_tag=RISC_TOUCH_POWER_TAG,.power_version=1,.prepare=touch_prepare,.resume=touch_resume};
  risc_input_navigation_api_v1 n={.api_version=1,.struct_size=sizeof(n),.poll=navpoll,.foreground=foreground,.reset=reset};
  risc_provider_dependency_v1 deps[]={{.capability_id=RISC_CANVAS_CAPABILITY,.api_version=1,.api=&raster.api},{.capability_id="input.touch.raw",.api_version=1,.api=&t},{.capability_id="input.navigation",.api_version=1,.api=&n}};
  assert(start(deps,3)&&!subscriptions&&!claims);
  assert(!activate(NULL,session)&&subscriptions==1&&claims==1&&resets==1&&!quiesce());
  assert(!activate(NULL,session)&&subscriptions==1);
- assert(!deactivate(NULL,session)&&unsubscriptions==1&&claims==2&&quiesce()&&!raster.touch&&!raster.navigation);
+ assert(!prepare_sleep(NULL,session,500)&&prepares==1&&unsubscriptions==1&&!raster.touch&&!quiesce());
+ assert(activate(NULL,session)==RISC_CANVAS_BUSY&&deactivate(NULL,session)==RISC_CANVAS_BUSY);
+ assert(!resume_sleep(NULL,session,500)&&resumes==1&&subscriptions==2);
+ assert(!deactivate(NULL,session)&&unsubscriptions==2&&claims==4&&quiesce()&&!raster.touch&&!raster.navigation);
  stop();assert(!raster.api.close(&raster,session));
  puts("Canvas split input:complete raster path without input callbacks, dependency-bound foreground activation, idempotent ownership and exact deactivation PASS");
 }

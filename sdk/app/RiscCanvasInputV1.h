@@ -8,11 +8,16 @@ typedef struct {
  void *context;
  int32_t (*activate)(void*,uint64_t);
  int32_t (*deactivate)(void*,uint64_t);
+ /* Optional physical input preparation; grant/dependencies remain pinned.
+  * No input power suffix means UNSUPPORTED, not invented sleep readiness. */
+ int32_t (*prepare_sleep)(void*,uint64_t,uint32_t);
+ int32_t (*resume_sleep)(void*,uint64_t,uint32_t);
 } risc_canvas_input_v1;
 static inline const risc_canvas_input_v1*risc_canvas_input_get_v1(const void*p,size_t bytes){
- if(!p||bytes<sizeof(risc_canvas_input_v1))return NULL;
+ const size_t prefix=offsetof(risc_canvas_input_v1,deactivate)+sizeof(((risc_canvas_input_v1*)0)->deactivate);
+ if(!p||bytes<prefix)return NULL;
  const risc_canvas_input_v1*a=p;
- return a->api_version==1&&a->struct_size>=sizeof(*a)&&a->struct_size<=bytes&&a->tag==RISC_CANVAS_INPUT_TAG&&a->activate&&a->deactivate?a:NULL;
+ return a->api_version==1&&a->struct_size>=prefix&&a->struct_size<=bytes&&a->tag==RISC_CANVAS_INPUT_TAG&&a->activate&&a->deactivate?a:NULL;
 }
 /* Provider-to-provider binding, never application hardware selection.
  * The input companion holds canonical dependencies until deactivation.
