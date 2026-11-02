@@ -242,13 +242,39 @@
       ],
       "additionalProperties": false
     },
+    "active_bindings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "maxItems": 8
+    },
     "mode": {
       "enum": [
+        "relay",
         "explorer",
         "sentinel",
         "reconciler",
-        "continuity"
+        "continuity",
+        "mixed"
       ]
+    },
+    "active_modes": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "relay",
+          "explorer",
+          "sentinel",
+          "reconciler",
+          "continuity"
+        ]
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "uniqueItems": true
     }
   },
   "required": [
@@ -260,5 +286,31 @@
     "telemetry",
     "update_policy"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "mixed"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "active_modes"
+        ]
+      },
+      "else": {
+        "not": {
+          "required": [
+            "active_modes"
+          ]
+        }
+      }
+    }
+  ]
 }

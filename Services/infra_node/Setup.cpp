@@ -3,7 +3,7 @@
 namespace Infra {
 bool Node::acceptSetup(){
  if(!parse(response,portal.input+portal.bodyAt,portal.bodySize)||!keys(response.as<JsonObjectConst>(),{"ssid","password","pairing"},{"mode"})||!text(response["ssid"],32)||!text(response["password"],63,true))return false;
- if(!response["mode"].isNull()&&(!text(response["mode"],16)||!validMode(response["mode"])))return false;
+ if(!response["mode"].isNull()&&(!text(response["mode"],16)||(!validMode(response["mode"])&&response["mode"]!="automatic")))return false;
  if(!response["mode"].isNull()&&strcmp(response["mode"],agentMode(configuration()))&&(roleBusy()||(!journal.state["participant_id"].isNull()&&response["pairing"].isNull())))return false;
  const size_t pn=strlen(response["password"]);if(pn&&pn<8)return false;
  auto pairing=response["pairing"].as<JsonObjectConst>();
@@ -21,18 +21,18 @@ bool Node::acceptSetup(){
   // pairing files for first setup and replace only their implementation pins
   // with this image's pins. No arbitrary older or mixed provider set is trusted.
   bool upgradePins=false;
-  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||(strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17")&&strcmp(b,"923e7355aefbca031c51348f26f93508cf083d5d90234fce50ade5bc93cb2652")&&strcmp(b,"a3d8b291323087aaf93b2122437df5a54368c07dc3d187e54cac8f3dd9ec2910")&&strcmp(b,"524419c3197e5558febc4e7bcb4d1ce40b5ecdb7f7c08662bb30a3bf4b6be89e")&&strcmp(b,"e59c56c36cea8a3c14a1b3d37c2321a217f968b566a196125b31857a070e71b8")&&strcmp(b,"d2f58c877bd96eaf8178c9fa7d1850cd5535df3f880a14b2d165483782b3c30f")&&strcmp(b,"0ab92c5eb3564a208d832f82b7d973e207c325016dc5afd993d0765bd31c9671")&&strcmp(b,"b474ed9eef6a30467f1ccd6fec09c7ef52ff0bfc936de48168421dad9afc3f20")))return false;upgradePins=true;}}
+  for(const char* k:{"contracts","providers"}){char a[65],b[65];canonicalDigest(config["service"][k],a);canonicalDigest(pairing["policy"]["service"][k],b);if(strcmp(a,b)){if(strcmp(k,"providers")||(strcmp(b,"ebe99dd0d6e2ccea607dcff1aa3ab0a06e994e7bf433ebac7462bb6a550afb17")&&strcmp(b,"923e7355aefbca031c51348f26f93508cf083d5d90234fce50ade5bc93cb2652")&&strcmp(b,"a3d8b291323087aaf93b2122437df5a54368c07dc3d187e54cac8f3dd9ec2910")&&strcmp(b,"524419c3197e5558febc4e7bcb4d1ce40b5ecdb7f7c08662bb30a3bf4b6be89e")&&strcmp(b,"e59c56c36cea8a3c14a1b3d37c2321a217f968b566a196125b31857a070e71b8")&&strcmp(b,"d2f58c877bd96eaf8178c9fa7d1850cd5535df3f880a14b2d165483782b3c30f")&&strcmp(b,"0ab92c5eb3564a208d832f82b7d973e207c325016dc5afd993d0765bd31c9671")&&strcmp(b,"b474ed9eef6a30467f1ccd6fec09c7ef52ff0bfc936de48168421dad9afc3f20")&&strcmp(b,"fb1e3cfb05ce55f50ea2da19d38fe3a9e26e0fc4ba14f22e2c979ea02cec2e71")))return false;upgradePins=true;}}
   char a[65],b[65];canonicalDigest(config["low_water"],a);canonicalDigest(pairing["policy"]["low_water"],b);if(strcmp(a,b))return false;
-  request.set(pairing["policy"]);if(upgradePins)request["service"]["providers"]=config["service"]["providers"];
+  request.set(pairing["policy"]);if(request["allocation"].isNull()&&!config["allocation"].isNull())request["allocation"]=config["allocation"];if(upgradePins)request["service"]["providers"]=config["service"]["providers"];
   // Migrate the exact shipped starvation-prone Scheduler timing, preserving
   // endpoint, authority, expiration and every unrelated binding.
   for(auto b:request["configuration"]["bindings"].as<JsonArray>())if(b["capability"]=="scheduler.drive"&&b["max_elapsed_ms"]==1000&&b["max_items"]==4&&b["timeout_ms"]==5000&&b["cadence_ms"]==15000){b["max_elapsed_ms"]=8000;b["max_items"]=1;b["timeout_ms"]=12000;b["cadence_ms"]=60000;b["revision"]=b["revision"].as<uint64_t>()+1;}
   request["wifi"]["ssid"]=response["ssid"];if(!policy(request))return false;
   const char* ref=request["service"]["credential_ref"]|"";if(!text(pairing["credentials"][ref],1024))return false;
   dtls_sha256_data(reinterpret_cast<const uint8_t*>(pairing["credentials"][ref].as<const char*>()),strlen(pairing["credentials"][ref].as<const char*>()),a);if(pairing["credential_sha256"]!=a)return false;
-  for(auto endpoint:request["endpoints"].as<JsonArrayConst>())for(const char* key:{"credential_ref","site_credential_ref"}){const char* ref=endpoint[key]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}
+  for(auto endpoint:request["endpoints"].as<JsonArrayConst>())for(const char* key:{"credential_ref","site_credential_ref","monitor_credential_ref"}){const char* ref=endpoint[key]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}
   const char* site=request["service"]["site_credential_ref"]|"";if(site[0]&&!text(pairing["credentials"][site],1024))return false;
-  auto relay=request["relay"].as<JsonObjectConst>();if(!relay.isNull()){for(const char* k:{"credential_ref","site_credential_ref"}){const char* ref=relay[k]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!text(pairing["credentials"][s["auth"]["credential_ref"]|""],1024)||!text(pairing["credentials"][s["signing_credential_ref"]|""],1024))return false;}
+  auto relay=request["relay"].as<JsonObjectConst>();if(!relay.isNull()){for(const char* k:{"credential_ref","site_credential_ref","monitor_credential_ref"}){const char* ref=relay[k]|"";if(ref[0]&&!text(pairing["credentials"][ref],1024))return false;}for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!text(pairing["credentials"][s["auth"]["credential_ref"]|""],1024)||!text(pairing["credentials"][s["signing_credential_ref"]|""],1024))return false;}
   if(text(pairing["participant_id"],128)&&!text(pairing["installation_id"],64))return false;
   config.set(request);journal.state["credentials"]=pairing["credentials"];for(const char* k:{"bootstrap","enrollment_id","credential_sha256"})journal.state[k]=pairing[k];
   journal.state["configuration"]=config["configuration"];journal.state["configuration_revision"]=config["configuration"]["revision"];
@@ -44,11 +44,11 @@ bool Node::acceptSetup(){
   auto relay=pairing["policy"]["relay"].as<JsonObjectConst>();if(!relayPolicy(relay)||(!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size()))return false;
   request.clear();request["policy"]=config;request["policy"]["relay"]=relay;request["credentials"]=journal.state["credentials"];
   auto candidate=request["credentials"].as<JsonObject>();auto add=[&](const char* ref){if(!ref[0])return true;if(!text(pairing["credentials"][ref],1024))return false;candidate[ref]=pairing["credentials"][ref];return true;};
-  for(const char* k:{"credential_ref","site_credential_ref"})if(!add(relay[k]|""))return false;for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!add(s["auth"]["credential_ref"]|"")||!add(s["signing_credential_ref"]|""))return false;
+  for(const char* k:{"credential_ref","site_credential_ref","monitor_credential_ref"})if(!add(relay[k]|""))return false;for(auto s:relay["subscriptions"].as<JsonArrayConst>())if(!add(s["auth"]["credential_ref"]|"")||!add(s["signing_credential_ref"]|""))return false;
   if(measureJson(candidate)>3500||measureJson(request["policy"])>PolicyMax||request.overflowed())return false;
   config.set(request["policy"]);journal.state["credentials"]=candidate;journal.state.remove("relay");relayReady=relayBlocked=false;relayHealthAt=relayRetryAt=0;for(auto& at:relayPollAt)at=0;
  }
- if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
+ if(!response["mode"].isNull()){if(!journal.state["configuration"].is<JsonObject>())journal.state["configuration"]=config["configuration"];config["allocation"]["automatic"]=response["mode"]=="automatic";journal.state.remove("allocation");roleLeaseUntil=0;journal.state["configuration"].remove("active_bindings");journal.state["configuration"].remove("active_modes");if(response["mode"]!="automatic"){journal.state["configuration"]["mode"]=response["mode"];config["configuration"]["mode"]=response["mode"];}relayFence=relayLeaseUntil=0;relayCheckpointHash[0]=0;relayBlocked=false;}
  config["wifi"]["ssid"]=response["ssid"];journal.state["credentials"][config["wifi"]["credential_ref"]|""]=response["password"];
  journal.state["setup_policy"]=config;journal.state["setup_pending"]=true;
  return journal.valid()&&!config.overflowed();

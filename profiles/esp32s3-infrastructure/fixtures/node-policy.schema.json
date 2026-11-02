@@ -447,13 +447,39 @@
           ],
           "additionalProperties": false
         },
+        "active_bindings": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "maxItems": 8
+        },
         "mode": {
           "enum": [
+            "relay",
             "explorer",
             "sentinel",
             "reconciler",
-            "continuity"
+            "continuity",
+            "mixed"
           ]
+        },
+        "active_modes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "relay",
+              "explorer",
+              "sentinel",
+              "reconciler",
+              "continuity"
+            ]
+          },
+          "maxItems": 5,
+          "minItems": 1,
+          "uniqueItems": true
         }
       },
       "required": [
@@ -465,7 +491,33 @@
         "telemetry",
         "update_policy"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "mixed"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "active_modes"
+            ]
+          },
+          "else": {
+            "not": {
+              "required": [
+                "active_modes"
+              ]
+            }
+          }
+        }
+      ]
     },
     "low_water": {
       "type": "object",
@@ -818,6 +870,11 @@
           },
           "maxItems": 8
         },
+        "monitor_credential_ref": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
         "shared": {
           "type": "object",
           "properties": {
@@ -839,6 +896,81 @@
         "url",
         "credential_ref",
         "site_credential_ref"
+      ],
+      "additionalProperties": false
+    },
+    "allocation": {
+      "type": "object",
+      "properties": {
+        "automatic": {
+          "type": "boolean"
+        },
+        "max_assignments": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "profile_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "mode": {
+                "enum": [
+                  "relay",
+                  "explorer",
+                  "sentinel",
+                  "reconciler",
+                  "continuity"
+                ]
+              },
+              "services": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              },
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              },
+              "binding_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                "maxItems": 8
+              }
+            },
+            "required": [
+              "profile_id",
+              "mode",
+              "services",
+              "features",
+              "binding_ids"
+            ],
+            "additionalProperties": false
+          },
+          "maxItems": 8
+        }
+      },
+      "required": [
+        "automatic"
       ],
       "additionalProperties": false
     }

@@ -5,6 +5,7 @@ const source=readFileSync(new URL('../../Services/infra_node/Portal.h',import.me
 const page=source.match(/R"HTML\(([\s\S]*?)\)HTML"/)[1],script=page.match(/<script>([\s\S]*?)<\/script>/)[1];
 assert(!page.includes('This setup network has no internet.'));
 assert(page.includes('Internet access is not needed to save settings.'));
+for(const mode of ['relay','explorer','sentinel','reconciler','continuity'])assert(page.includes('value="'+mode+'"'));
 async function scenario({embedded=false,file=false,status=200,token=true,invalid=false,mode=''}={}){
  const elements=Object.fromEntries(['intro','browser-help','paste','file','pairing','mode','ssid','password','submit','form','status'].map(id=>[id,{value:'',hidden:id==='browser-help',files:[],disabled:false,open:false,textContent:''}]));
  elements.mode.value=mode;elements.ssid.value='Home';elements.password.value='test-password';

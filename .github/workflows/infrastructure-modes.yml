@@ -8,7 +8,7 @@ on:
       - 'scripts/*infrastructure*'
       - '.github/workflows/infrastructure-modes.yml'
   push:
-    branches: [work/esp32-agent-modes]
+    branches: [work/esp32-agent-modes, work/esp32-dynamic-role-allocation]
 permissions:
   contents: read
 concurrency:

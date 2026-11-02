@@ -26,12 +26,18 @@ class Node {
  unsigned failures=0,bindingIndex=0,fairness=0,inventoryIndex=0;bool poolStage=true,inventoryNeeded=true,externalJob=false,poolsEstablished=false,lastCapacity=false,receiptChecked=false;uint64_t inventoryRevision=0;
  char sessionId[128]{},boot[65]{},poolId[160]{},offerId[200]{},assignmentId[128]{},planId[128]{};
  struct Diagnostic{uint64_t at;uint32_t phase,pending;char reason[112];};static_assert(sizeof(Diagnostic)==128,"diagnostic ring slot");Diagnostic diagnostics[128]{};uint32_t diagnosticNext=0;
- bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0;char relayError[64]{};
+ bool relayReady=false,relayBlocked=false,relayYield=false,relayUpgradePending=false;unsigned relayIndex=0,relayFair=0;char relaySlot[65]{};uint64_t relayPollAt[RelayAttachmentsMax]{},relayHealthAt=0,relayRetryAt=0,sentinelRetryAt=0;char relayError[64]{};
  bool relayIdentityReady=false,relayVerificationPrepared=false;unsigned enrollmentIndex=0;uint64_t enrollmentPollAt=0;
  uint64_t relayFence=0,relayLeaseUntil=0,relayLeaseRetryAt=0;char relayCheckpointHash[65]{};
  bool sharedRelay()const{return config["relay"]["shared"].is<JsonObjectConst>();}
- bool relayMode()const{return !strcmp(agentMode(configuration()),"explorer")||!strcmp(agentMode(configuration()),"continuity");}
- bool roleBusy()const{return journal.state["pending"].size()||!journal.state["job"].isNull()||!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size();}
+ bool relayMode()const{return (hasMode(configuration(),"relay")||hasMode(configuration(),"explorer")||hasMode(configuration(),"continuity"))&&(!automaticRole()||hasMode(configuration(),"relay")||sharedRelay()||roleBusy());}
+ uint64_t roleLeaseUntil=0,roleNotBefore=0;bool roleGrantDirty=false;
+ bool mixedAllocation()const{return (config["allocation"]["max_assignments"]|5)>1;}
+ bool roleConfiguration(JsonObjectConst,JsonObject)const;void roleOffer(JsonObject,const char*)const;
+ bool automaticRole()const{return config["allocation"]["automatic"]==true;}
+ bool roleReady(uint64_t budget=0)const{return !automaticRole()||(roleLeaseUntil>now()+budget&&now()>=roleNotBefore&&journal.state["allocation"]["state"]=="applied"&&journal.state["allocation"]["target"]["state"]=="assigned");}
+ bool roleProfiles(JsonArray)const;void roleRequest(JsonObject);bool roleGrant(JsonObjectConst);int roleStep();
+ bool roleBusy()const{return journal.state["pending"].size()||!journal.state["job"].isNull()||!journal.state["relay"]["pending"].isNull()||journal.state["relay"]["deliveries"].size()||journal.state["relay"]["enrollments"].size()||journal.state["relay"]["verification"].size()||text(journal.state["relay"]["sentinel"]["id"],128)||!journal.state["relay"]["sentinel"]["result"].isNull();}
  char* encoded=nullptr;bool bindingDisabled[8]{};
  uint64_t now()const{return clock.monotonic_ms(clock.context);}
  JsonObjectConst configuration()const{return journal.state["configuration"].is<JsonObjectConst>()?journal.state["configuration"].as<JsonObjectConst>():config["configuration"].as<JsonObjectConst>();}
@@ -77,7 +83,7 @@ class Node {
   if(!text(journal.state["participant_id"],128)&&(!text(journal.state["bootstrap"],1024)||!text(journal.state["enrollment_id"],128)||!digest(journal.state["credential_sha256"])))return block(Phase::AuthBlocked,"enrollment_provisioning_required");
   configureCadence();loaded=true;reason(journal.state["setup_pending"]==true?Phase::SetupJoin:Phase::Connect,"network_connecting");return 1;
  }
- void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=!modeAllows(configuration(),b["capability"]|"");cursors[i][0]=0;++i;}}
+ void configureCadence(){unsigned i=0;for(auto b:bindings()){cadence[i]={};cadence[i].interval=b["cadence_ms"];cadence[i].timeout=b["timeout_ms"];cadence[i].required=b["required"];bindingDisabled[i]=!bindingAllowed(configuration(),b);cursors[i][0]=0;++i;}}
  bool capacity()const{
   auto l=config["low_water"];
   return memory.internal_free>=l["internal_free"].as<uint64_t>()&&memory.internal_largest>=l["internal_largest"].as<uint64_t>()&&memory.dma_free>=l["dma_free"].as<uint64_t>()&&memory.dma_largest>=l["dma_largest"].as<uint64_t>()&&memory.psram_free>=l["psram_free"].as<uint64_t>()&&memory.psram_largest>=l["psram_largest"].as<uint64_t>()&&memory.stack_headroom>=l["stack_headroom"].as<uint32_t>();
@@ -87,7 +93,7 @@ class Node {
   // health. Preserve rollback eligibility until this boot has reconciled.
   if(serviceBlocked||serviceRetryAt||journal.state["protocol_rejections"]["quarantined"]==true||phase!=Phase::Ready||!loaded||rebootRecovery||snapshotNeeded||inventoryNeeded||!poolsEstablished||!sessionId[0]||!status.last_sync_ms||drain||!capacity()||journal.retained||journal.blocked||journal.reload||journal.writeToken||journal.state["pending"].size())return false;
   unsigned i=0;for(auto b:bindings()){
-   if(modeAllows(configuration(),b["capability"]|"")&&b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
+   if(bindingAllowed(configuration(),b)&&b["required"]==true&&(bindingDisabled[i]||!cadence[i].lastCompleted))return false;
    ++i;
   }
   return true;
@@ -115,7 +121,7 @@ class Node {
  int transmit(){
   if(relayAction())return relayTransmit();
   bool external=action==Action::Maintain||action==Action::Probe;
-  if(external&&!modeAllows(configuration(),bindingAt(bindingIndex)["capability"]|"")){phase=Phase::Ready;return externalJob?stopJob("mode_changed_before_dispatch"):1;}
+  if(external&&(!roleReady(cadence[bindingIndex].timeout+2000)||!bindingAllowed(configuration(),bindingAt(bindingIndex)))){phase=Phase::Ready;return externalJob?stopJob("mode_changed_before_dispatch"):1;}
   if(external&&externalJob&&(drain||now()+cadence[bindingIndex].timeout+1000>=leaseUntil))return stopJob("grant_or_cancellation_before_dispatch");
   if(external&&net.wall(now())*1000>=bindingAt(bindingIndex)["expires_at_ms"].as<uint64_t>()){bindingDisabled[bindingIndex]=true;phase=Phase::Ready;return externalJob?stopJob("binding_expired_before_dispatch"):1;}
   auto e=external?endpoint(bindingIndex):config["service"].as<JsonObjectConst>();
@@ -151,7 +157,7 @@ class Node {
   if(phase==Phase::Retained||journal.retained||net.retained)return retained();
   if(phase==Phase::Cold)return bootstrap();
   if(phase>=Phase::SetupStart)return setupStep();
-  if(phase==Phase::Save){int r;if(journal.writeToken)r=journal.collect();else if(journal.reload){r=journal.load();}else r=journal.save();if(r==-2)return retained();if(r<0)return block(Phase::StorageBlocked,"state_commit_failed");if(r)return 1;if(journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc){reason(boot[0]?Phase::Recover:Phase::Nonce,"commit_unknown_reloaded");return 1;}phase=afterSave;return 1;}
+  if(phase==Phase::Save){int r;if(journal.writeToken)r=journal.collect();else if(journal.reload){r=journal.load();}else r=journal.save();if(r==-2)return retained();if(r<0)return block(Phase::StorageBlocked,"state_commit_failed");if(r)return 1;if(journal.seq!=saveSequence||journal.loadedCrc!=journal.desiredCrc){roleLeaseUntil=0;nextSync=0;reason(boot[0]?Phase::Recover:Phase::Nonce,"commit_unknown_reloaded");return 1;}phase=afterSave;return 1;}
   if(phase==Phase::Send)return transmit();
   if(phase==Phase::Receive){auto r=net.advance(now());if(r==-2)return retained();if(r)return 1;return received();}
   if(phase==Phase::Backoff){if(now()<waitUntil)return 1;phase=Phase::Connect;return 1;}
@@ -167,8 +173,8 @@ class Node {
    // Relay requests have separate saved custody. A successful relay request
    // must not close the participant circuit or clear its diagnostic.
    if(int r=relayStep())return r;
-   if(!strcmp(agentMode(configuration()),"reconciler")||!strcmp(agentMode(configuration()),"continuity"))
-    for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&modeAllows(configuration(),b["capability"]|"")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
+   if(hasMode(configuration(),"reconciler")||hasMode(configuration(),"continuity"))
+    for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&bindingAllowed(configuration(),b)){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
    return 1;
   }
   serviceRetryAt=0;
@@ -176,31 +182,34 @@ class Node {
   // Keep all remaining custody intact; only the rejected request is retired.
   if(journal.state["protocol_rejections"]["quarantined"]==true){
    if(int r=relayStep())return r;
-   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&(b["capability"]=="scheduler.drive"||b["capability"]=="service.reconcile")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
+   for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())&&(b["capability"]=="scheduler.drive"||b["capability"]=="service.reconcile")){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}}
    return 1;
   }
   if(journal.state["pending"].size()){if(journal.state["job"]["phase"]=="awaiting_acceptance")return jobStep();return resume();}
   if(!text(journal.state["participant_id"],128)){auto a=make(Action::Enroll,"participant","enroll");a["bootstrap_credential"]=journal.state["bootstrap"];a["identity_binding"]["credential_sha256"]=journal.state["credential_sha256"];a["identity_binding"]["installation_id"]=journal.state["installation_id"];a["display_name"]="ESP32-S3 infrastructure";a["class"]="embedded";a["adapter_kind"]="esp32s3-infrastructure/1";return send(true);}
   if(snapshotNeeded&&(snapshotStage<2||sessionId[0]))return snapshotStep();
-  if(!sessionId[0]){auto a=make(Action::Open,"participant","open_session");a["participant_id"]=journal.state["participant_id"];a["boot_id"]=boot;a["adapter_protocols"].to<JsonArray>().add("1.0");a["adapter_version"]="infra.node/1";a["contact_interval_ms"]=config["service"]["contact_interval_ms"];a["journal_summary"]["unresolved"].to<JsonArray>();a["embedded_profile"]="esp32s3-infrastructure/1";a["response_bytes"]=32768;return send(false);}
+  if(!sessionId[0]){auto a=make(Action::Open,"participant","open_session");a["participant_id"]=journal.state["participant_id"];a["boot_id"]=boot;a["adapter_protocols"].to<JsonArray>().add("1.0");a["adapter_version"]="infra.node/1";a["contact_interval_ms"]=config["service"]["contact_interval_ms"];a["journal_summary"]["unresolved"].to<JsonArray>();a["embedded_profile"]="esp32s3-infrastructure/1";a["response_bytes"]=32768;roleRequest(a);return send(false);}
+  if(int r=roleStep())return r;
   if(!journal.state["rotation"].isNull()&&journal.state["job"].isNull())return rotationStep();
-  if(text(journal.state["configuration_desired_id"],128)&&net.wall(now())*1000>=journal.state["configuration_expires_at"].as<uint64_t>()&&bindings().size()){journal.state["configuration"]["bindings"].to<JsonArray>();journal.state["configuration"]["enabled_providers"].to<JsonArray>();configureCadence();inventoryNeeded=true;return persist(Phase::Ready);}
+  if(!automaticRole()&&text(journal.state["configuration_desired_id"],128)&&net.wall(now())*1000>=journal.state["configuration_expires_at"].as<uint64_t>()&&bindings().size()){journal.state["configuration"]["bindings"].to<JsonArray>();journal.state["configuration"]["enabled_providers"].to<JsonArray>();configureCadence();inventoryNeeded=true;return persist(Phase::Ready);}
   auto job=journal.state["job"];
   if(!job.isNull()&&job["phase"]=="running"&&now()>=leaseUntil)return stopJob("grant_expired");
   if(now()>=nextSync)return sync();
   const bool ready=capacity();if(ready!=lastCapacity){lastCapacity=ready;inventoryNeeded=true;}if(!ready)copy(status.reason,sizeof(status.reason),"low_water_optional_admission_blocked");
   if(!relayYield){int r=relayStep();if(r)return r;}relayYield=false;
-  for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
+  for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();if(roleReady(cadence[i].timeout+2000)&&!bindingDisabled[i]&&cadence[i].required&&cadence[i].ready(now())){bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(job["phase"]=="running"&&job["spec"]["inputs"]["binding_id"]==bindingAt(i)["binding_id"]);}}
   if(!job.isNull()&&(job["phase"]!="running"||now()+15000>=leaseUntil))return jobStep();
   if(!job.isNull()&&job["phase"]=="running"){for(unsigned i=0;i<bindings().size();++i)if(bindingAt(i)["binding_id"]==job["spec"]["inputs"]["binding_id"]&&cadence[i].ready(now()))return jobStep();}
   if((inventoryNeeded||now()>=nextInventory)&&now()>=inventoryRetryAt)return inventoryStep();
-  for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}
+  for(unsigned priority=0;priority<2;++priority)for(unsigned k=0;k<bindings().size();++k){unsigned i=(fairness+k)%bindings().size();auto b=bindingAt(i);if(!roleReady(cadence[i].timeout+2000)||bindingDisabled[i]||b["required"].as<bool>()!=(priority==0)||!cadence[i].ready(now())||(priority&&(!capacity()||now()+cadence[i].timeout+5000>=nextSync)))continue;bindingIndex=i;fairness=(i+1)%bindings().size();return bindingStep(false);}
   return 1;
  }
- int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&journal.state["job"].isNull()?1:0;return send(false);}
+ int sync(){auto a=make(Action::Sync,"participant","sync");a["session_id"]=sessionId;a["generation"]=sessionGeneration;char c[24];snprintf(c,sizeof(c),"%llu",static_cast<unsigned long long>(cursor));a["cursor"]=c;a["items"].to<JsonArray>();a["requested_work"]=!inventoryNeeded&&capacity()&&roleReady(32000)&&journal.state["job"].isNull()?1:0;roleRequest(a);return send(false);}
  int setupStep();bool acceptSetup();
  bool bindingMatches(unsigned)const;bool localPlan(JsonObjectConst)const;int snapshotStep();int control(JsonObjectConst);int inventoryStep();int jobStep();int bindingStep(bool job);int received();int result(JsonObjectConst data);int probeResult();int applySync(JsonObjectConst data);int rotationStep();
  void dispose(){if(phase!=Phase::Stopped&&phase!=Phase::Cold)return;portal.dispose();net.dispose();journal.dispose();config.clear();request.clear();response.clear();if(encoded){volatile char* p=encoded;for(unsigned i=0;i<16385;++i)p[i]=0;std::free(encoded);encoded=nullptr;}}
 };
 }
 
+
+#include "Allocation.h"
