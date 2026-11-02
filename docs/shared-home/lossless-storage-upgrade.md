@@ -6,7 +6,7 @@ The public Home ELF is the complete canonical application, identical on all thre
 
 Only explicitly installed internal ordinary applications may be encoded. Any driver alias, image_source/mirror alias, or catalog-authority alias excludes that path. Provider images, external paths, manifests, authority rows, native policy, app data, and stored settings are not transformed. The owning fixed-size SPIFFS packer chooses the shortest descending-positive-savings prefix that actually fits. It retains the original partition geometry and minimum free-block rule; failure never permits resizing or dropping files.
 
-Each 32-byte little-endian header contains magic RTEIMG1 NUL, header size, codec1 raw LZ4 block, canonical length, payload length, canonical CRC32, reserved zero. Exact physical length and caller bounds are checked before one canonical allocation. CRC32 detects corruption; it does not replace the existing authenticated/cohort artifact identities. Runtime uses bounded input scratch, checkpoints and exact ownership/close semantics. Uncertain custody is terminal, not a retry/fallback.
+Each 32-byte little-endian header contains magic RTEIMG1 NUL, header size, codec1 raw LZ4 block, canonical length, payload length, canonical CRC32, reserved zero. Exact physical length and caller bounds are checked before one canonical allocation. CRC32 detects corruption; it does not replace the existing artifact/cohort identity checks. Runtime uses bounded input scratch, checkpoints and exact ownership/close semantics. Uncertain custody is terminal, not a retry/fallback.
 
 ## Required Watch upgrade order
 

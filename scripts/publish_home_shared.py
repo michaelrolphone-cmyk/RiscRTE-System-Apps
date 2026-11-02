@@ -85,6 +85,11 @@ def run(root, publish):
     require(native['runtime_revision']=='712ecc3f894dba99d9c9638941778a82f5856b97' and native['runtime_version']=='0.4.20','Encoded store lacks exact decoder firmware')
    else:
     require(inputs['stored']==inputs['after'],'Raw store differs from canonical tree')
+   routes=assembly['products'][lane].get('routes')
+   require(isinstance(routes,list) and routes,'Complete Home routes missing')
+   for storage,route in routes:
+    require(storage in ('internal','sd'),'Unknown Home storage route')
+    require(inputs['after' if storage=='internal' else 'after-sd'].get(route)==elf_hash,'Canonical Home route is not the complete shared ELF')
    require(product['inputs'] and product['per_tu_dependencies'],'Exact compiled source closure missing')
    after=[entry['result'] for entry in product['results'] if entry['input']=='after']
    require(len(after)==1,'Exactly one actual after-product result required')

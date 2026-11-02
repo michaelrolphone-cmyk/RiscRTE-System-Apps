@@ -31,12 +31,13 @@ def make(root,fault):
  assembly={'packed':True,'byte_identical_home':elf['sha256'],'products':{}}
  for lane in ('watch','wave','x4'):
   assembly['products'][lane]={'home_sha256':elf['sha256'],'packed':True,'store_roundtrip':True,'sd_roundtrip':True,
-    'store_sha256':packed_store['sha256'],'sd_archive_sha256':packed_sd['sha256'],'inventory_sha256':'3'*64,'native_metadata':native_bindings[lane]}
+    'store_sha256':packed_store['sha256'],'sd_archive_sha256':packed_sd['sha256'],'inventory_sha256':'3'*64,'native_metadata':native_bindings[lane],'routes':[['internal','app.elf']]}
  if encoded:
-  mapping={'app.elf':'4'*64,'cohort.json':'6'*64};stored={**mapping,'app.elf':'a'*64}
-  assembly['products']['watch']['image_storage']={'format':'RTEIMG1','canonical_recovery_verified':True,'canonical_files':mapping,'stored_files':stored,'images':{'app.elf':{'canonical_sha256':'4'*64,'stored_sha256':'a'*64,'canonical_bytes':4096,'stored_bytes':512,'codec':'lz4-block','header_bytes':32,'roundtrip_verified':True}}}
+  mapping={'app.elf':elf['sha256'],'cohort.json':'6'*64};stored={**mapping,'app.elf':'a'*64}
+  assembly['products']['watch']['image_storage']={'format':'RTEIMG1','canonical_recovery_verified':True,'canonical_files':mapping,'stored_files':stored,'images':{'app.elf':{'canonical_sha256':elf['sha256'],'stored_sha256':'a'*64,'canonical_bytes':4096,'stored_bytes':512,'codec':'lz4-block','header_bytes':32,'roundtrip_verified':True}}}
   if fault=='encoded-no-recovery':assembly['products']['watch']['image_storage']['canonical_recovery_verified']=False
   if fault=='encoded-wrong-codec':assembly['products']['watch']['image_storage']['images']['app.elf']['codec']='other'
+ if fault=='missing-home-route':del assembly['products']['watch']['routes']
  if fault=='unpacked': assembly['packed']=False
  if fault=='different-elf':assembly['products']['wave']['home_sha256']='b'*64
  assembly_ref=put(root,'assembly.json',assembly)
@@ -59,7 +60,7 @@ def make(root,fault):
   binding={'source_commit':COMMIT,'assembly_sha256':assembly_ref['sha256'],'products':{}}
   receipt={'schema':1,'sanitized':mode=='sanitized','products':{},'product_binding':binding,'candidate_input_files':{}}
   for lane in ('watch','wave','x4'):
-   mapping={'app.elf':'4'*64,'cohort.json':'6'*64}
+   mapping={'app.elf':elf['sha256'],'cohort.json':'6'*64}
    tree_hash=hashlib.sha256((json.dumps(mapping,sort_keys=True,separators=(',',':'))+'\n').encode()).hexdigest()
    receipt['candidate_input_files'][lane]={which:dict(mapping) for which in ('before','after','stored','after-sd')}
    binding['products'][lane]={'inventory_sha256':'3'*64,'before_tree_sha256':tree_hash,'after_tree_sha256':tree_hash,'stored_tree_sha256':tree_hash,'after_sd_tree_sha256':tree_hash}
@@ -94,7 +95,7 @@ def make(root,fault):
  if fault=='traversal':delivery['application']['elf']['path']='../escape'
  (root/'home-delivery.json').write_text(json.dumps(delivery))
  if fault=='tampered':(root/'target/default.elf').write_bytes(b'changed')
-for fault in ('good','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','encoded-wrong-order','encoded-missing-guide','encoded-missing-sanitized-proof','missing-product-lane','missing-product-assets','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
+for fault in ('good','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','encoded-wrong-order','encoded-missing-guide','encoded-missing-sanitized-proof','missing-product-lane','missing-product-assets','missing-home-route','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
  with tempfile.TemporaryDirectory() as temporary:
   root=Path(temporary);make(root,fault)
   try:

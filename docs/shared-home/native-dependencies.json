@@ -1,24 +1,24 @@
 {
   "watch": {
-    "source_revision": "dc6dd585d82475a0200adb5d7bfb94de24944bee",
-    "runtime_revision": "a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21",
-    "runtime_version": "0.4.19",
+    "source_revision": "c69d7914935fccdc04749f7bfa429c74219bf88a",
+    "runtime_revision": "712ecc3f894dba99d9c9638941778a82f5856b97",
+    "runtime_version": "0.4.20",
     "artifact": {
       "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
-      "id": 13147620128,
-      "sha256": "ed658bc19cdf58664eb4ae02610d0c833412a7e76d483b7353c05fb1ec5225fa",
-      "run_id": 41454333505
+      "id": 13161732109,
+      "sha256": "3c31de5cdec25859c8f93cc0e412522920a4bd176cbda8556fbe4e70e1600031",
+      "run_id": 41483505761
     }
   },
   "wave": {
-    "source_revision": "52ac81f86cca3f732090b95d795429a7b6edced0",
-    "runtime_revision": "a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21",
-    "runtime_version": "0.4.19",
+    "source_revision": "97ca6157aa9c3bba7c7fee3858aa7d0ff896d13b",
+    "runtime_revision": "712ecc3f894dba99d9c9638941778a82f5856b97",
+    "runtime_version": "0.4.20",
     "artifact": {
       "repository": "michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
-      "id": 13146784394,
-      "sha256": "ebb5034d520fc8b68b66de5f23e4ef606566e83b348151d4d12066f4dc326f42",
-      "run_id": 41454354338
+      "id": 13160423506,
+      "sha256": "a25cec8fef1e5cf2cd0fb7e45b793440374a5ae399d870a57b63ab7c95801ab0",
+      "run_id": 41483518097
     }
   },
   "x4": {

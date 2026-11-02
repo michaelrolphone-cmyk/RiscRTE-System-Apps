@@ -67,6 +67,7 @@ jobs:
           python3 System/scripts/test_shared_home_manifest.py
           python3 System/scripts/test_image_envelope.py
           python3 System/scripts/test_image_storage.py
+          python3 System/scripts/test_stage_home_upgrade_qualification.py
           python3 System/scripts/test_shared_home_sdk.py
           python3 System/scripts/test_shared_home_common_sdk.py --runtime Runtime --output out/common-sdk-host
           python3 System/scripts/test_stage_home_native_dependencies.py
@@ -301,6 +302,7 @@ jobs:
           python3 System/scripts/test_shared_home_manifest.py
           python3 System/scripts/test_image_envelope.py
           python3 System/scripts/test_image_storage.py
+          python3 System/scripts/test_stage_home_upgrade_qualification.py
           python3 System/scripts/test_home_admission_binding.py
           python3 System/scripts/test_publish_home_shared.py
       - name: Exact owning source and compiler
@@ -402,6 +404,7 @@ jobs:
             gh api "repos/$repository/actions/artifacts/$artifact/zip" > "archives/$lane.zip"
           done < "$RUNNER_TEMP/native-artifacts.txt"
           python3 scripts/stage_home_native_dependencies.py --archives archives --lock docs/shared-home/native-dependencies.json --output out/native
+          python3 scripts/stage_home_upgrade_qualification.py --lock docs/shared-home/upgrade-qualification.json --output out/upgrade
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -509,6 +512,7 @@ jobs:
           cp -a incoming/published/published closure/dependencies/published
           cp -a incoming/x4/x4 closure/dependencies/x4
           cp -a incoming/native/native closure/dependencies/native
+          cp -a incoming/native/upgrade closure/upgrade
           cp incoming/native/owning-ci.json closure/qualification/
           python3 System/scripts/join_home_packages.py --built closure/dependencies/built --published closure/dependencies/published --x4 closure/dependencies/x4 --native closure/dependencies/native --output closure/raw-packages
           python3 System/scripts/compact_home_dependency_packages.py --packages closure/raw-packages --watch Watch --compiler "$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-gcc" --output closure/packages
@@ -516,7 +520,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 System/scripts/prepare_home_cohort_plan.py --cohort incoming/cohort/composed --packages closure/packages --output closure/plan.json
-          python3 System/scripts/assemble_shared_home_cohort.py --cohort incoming/cohort/composed --plan closure/plan.json --home closure/application --packages closure/packages --output closure/assembly --inputs incoming/cohort/inputs --bootfs-tools Bootfs/scripts
+          python3 System/scripts/assemble_shared_home_cohort.py --cohort incoming/cohort/composed --plan closure/plan.json --home closure/application --packages closure/packages --output closure/assembly --inputs incoming/cohort/inputs --bootfs-tools Bootfs/scripts --encoded-storage
       - name: Measure hypothetical lossless store fit only
         if: ${{ !cancelled() && hashFiles('closure/assembly/assembly.json') != '' }}
         run: python3 System/scripts/measure_home_image_storage.py --elf closure/application/default.elf --assembly closure/assembly --bootfs-tools Bootfs/scripts --output closure/storage-measurement/image.json
