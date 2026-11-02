@@ -2,7 +2,7 @@
 """Synthetic overlay contract regressions; not product binding evidence."""
 import copy,json,tempfile,unittest
 from pathlib import Path
-from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate
+from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate,replace_native_metadata
 from compose_shared_app_cohort import encode,digest
 class Overlay(unittest.TestCase):
  def fixture(self):
@@ -48,6 +48,44 @@ class Overlay(unittest.TestCase):
   record=inventory(b,sd)
   self.assertEqual(record['deployment_metadata'],{'cohort.json':value})
   self.assertEqual(record['files']['cohort.json'],digest(b['cohort.json']))
+ def native_fixture(self,root):
+  pkg=root/'native';pkg.mkdir()
+  firmware=b'firmware:RISC_RUNTIME_VERSION:0.4.19\0'
+  qualification=encode({'owner':'synthetic test only'})
+  (pkg/'firmware.bin').write_bytes(firmware);(pkg/'qualification.json').write_bytes(qualification)
+  native={'source_revision':'a'*40,'runtime_revision':'b'*40,'runtime_version':'0.4.19',
+          'firmware':{'path':'firmware.bin','bytes':len(firmware),'sha256':digest(firmware)},
+          'qualification':{'path':'qualification.json','bytes':len(qualification),'sha256':digest(qualification)},
+          'artifact':{'repository':'fixture','id':1,'sha256':'c'*64}}
+  raw=encode(native);(pkg/'native.json').write_bytes(raw)
+  old={'product':'preserved-product','version':'old','runtime_version':'old-runtime',
+       'firmware_size':1,'firmware_sha256':'old-hash','unrelated':{'data_namespace':5}}
+  entries={'cohort.json':encode(old)}
+  spec={'path':'cohort.json','before_sha256':digest(entries['cohort.json']),'package':'native',
+        'descriptor_sha256':digest(raw),'product_version':'new',
+        'fields':{k:{'path':[k],'before':old[k]} for k in ('version','runtime_version','firmware_size','firmware_sha256')}}
+  return entries,spec,native
+ def test_native_metadata_exact_bound_preservation(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);entries,spec,native=self.native_fixture(root)
+   receipt=replace_native_metadata(entries,spec,root);out=json.loads(entries['cohort.json'])
+   self.assertEqual(out['product'],'preserved-product');self.assertEqual(out['unrelated'],{'data_namespace':5})
+   self.assertEqual(out['firmware_sha256'],native['firmware']['sha256'])
+   self.assertEqual(out['firmware_size'],native['firmware']['bytes'])
+   self.assertEqual(out['version'],'new');self.assertEqual(receipt['native'],native)
+ def test_native_metadata_refuses_stale_or_unbound_input(self):
+  for fault in ('before','descriptor','firmware','qualification','field','missing','path','marker'):
+   with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
+    root=Path(tmp);entries,spec,native=self.native_fixture(root)
+    if fault=='before':spec['before_sha256']='stale'
+    elif fault=='descriptor':spec['descriptor_sha256']='stale'
+    elif fault in ('firmware','qualification'):(root/'native'/native[fault]['path']).write_bytes(b'changed')
+    elif fault=='field':spec['fields']['version']['before']='stale'
+    elif fault=='missing':del spec['fields']['firmware_size']
+    elif fault=='path':spec['fields']['version']['path']=['absent']
+    elif fault=='marker':
+     native['runtime_version']='0.4.99';raw=encode(native);(root/'native/native.json').write_bytes(raw);spec['descriptor_sha256']=digest(raw)
+    with self.assertRaises(ValueError):replace_native_metadata(entries,spec,root)
  def test_trampoline_refusal(self):
   b,sd,p,m=self.fixture();a=p['aliases'][0];a['manifest']='clock.json';a['route']['path']='clock.elf'
   a['original_policy_rows']=[{'manifest':'clock.json','grants':[]}];a['policy_rows']=copy.deepcopy(a['original_policy_rows'])

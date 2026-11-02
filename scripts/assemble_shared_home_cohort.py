@@ -57,6 +57,56 @@ def providers(entries,boot):
    result[key]=path
  return result
 
+def checked_native(packages,package,descriptor_sha256):
+ root=packages/safe(package)
+ raw=(root/'native.json').read_bytes()
+ if digest(raw)!=descriptor_sha256:raise ValueError('Native descriptor differs')
+ native=json.loads(raw)
+ for key in ('source_revision','runtime_revision'):
+  value=native.get(key)
+  if not isinstance(value,str) or len(value)!=40 or any(c not in '0123456789abcdef' for c in value):
+   raise ValueError('Invalid native source revision')
+ if not isinstance(native.get('runtime_version'),str) or not native['runtime_version']:
+  raise ValueError('Missing native runtime version')
+ for key in ('firmware','qualification'):
+  item=native[key];data=(root/safe(item['path'])).read_bytes()
+  if type(item['bytes']) is not int or item['bytes']<=0 or len(data)!=item['bytes'] or digest(data)!=item['sha256']:
+   raise ValueError('Native '+key+' bytes differ')
+  if key=='firmware' and ('RISC_RUNTIME_VERSION:'+native['runtime_version']).encode()+b'\0' not in data:
+   raise ValueError('Native firmware runtime marker differs')
+  if key=='qualification':json.loads(data)
+ return native
+
+def replace_native_metadata(entries,spec,packages):
+ if spec['path']!='cohort.json':raise ValueError('Only existing cohort deployment metadata may be replaced')
+ oldbytes=entries['cohort.json']
+ if digest(oldbytes)!=spec['before_sha256']:raise ValueError('Native metadata baseline differs')
+ native=checked_native(packages,spec['package'],spec['descriptor_sha256'])
+ values={'firmware_size':native['firmware']['bytes'],'firmware_sha256':native['firmware']['sha256'],
+         'runtime_version':native['runtime_version'],'version':spec['product_version'],
+         'source_revision':native['source_revision'],'runtime_revision':native['runtime_revision']}
+ fields=spec['fields']
+ if not {'firmware_size','firmware_sha256','runtime_version','version'}<=set(fields) or not set(fields)<=set(values):
+  raise ValueError('Incomplete or unknown native metadata binding')
+ if not isinstance(spec['product_version'],str) or not spec['product_version']:raise ValueError('Missing candidate product version')
+ old=json.loads(oldbytes);new=copy.deepcopy(old);seen=set()
+ for semantic,binding in fields.items():
+  path=binding['path']
+  if not isinstance(path,list) or not path or any(not isinstance(k,str) or not k for k in path):
+   raise ValueError('Invalid existing metadata field path')
+  key=tuple(path)
+  if key in seen or any(key[:len(p)]==p or p[:len(key)]==key for p in seen):raise ValueError('Overlapping metadata field bindings')
+  seen.add(key);node=new
+  for part in path[:-1]:
+   if not isinstance(node,dict) or part not in node:raise ValueError('Metadata field absent')
+   node=node[part]
+  if not isinstance(node,dict) or path[-1] not in node or node[path[-1]]!=binding['before']:
+   raise ValueError('Metadata field baseline differs')
+  node[path[-1]]=values[semantic]
+ entries['cohort.json']=encode(new)
+ return {'path':'cohort.json','before_sha256':digest(oldbytes),'after_sha256':digest(entries['cohort.json']),
+         'descriptor_sha256':spec['descriptor_sha256'],'native':native,'product_version':spec['product_version']}
+
 def overlay(before, before_sd, plan, elf, common, packages):
  original=inventory(before,before_sd)
  if plan['inventory_sha256']!=fingerprint(original):raise ValueError('Reviewed inventory differs')
@@ -174,8 +224,9 @@ def overlay(before, before_sd, plan, elf, common, packages):
   out,sd,_=overlay(out,sd,subplan,abytes,new,packages)
   updates.append({'manifest':name,'elf_sha256':digest(abytes),'package_manifest_sha256':digest(mbytes),
                   'installed_manifest_sha256':digest(out[name])})
+ native_metadata=replace_native_metadata(out,plan['native_metadata'],packages) if 'native_metadata' in plan else None
  receipt={'inventory_sha256':fingerprint(original),'home_sha256':digest(elf),
-          'aliases':sorted(names),'application_updates':updates,'routes':[list(r) for r in sorted(routes)],
+          'native_metadata':native_metadata,'aliases':sorted(names),'application_updates':updates,'routes':[list(r) for r in sorted(routes)],
           'changed_internal':[n for n in sorted(out) if out[n]!=before.get(n)],
           'changed_sd':[n for n in sorted(sd) if sd[n]!=before_sd.get(n)],
           'packed':False,'dependency_closure_verified':False,'target_execution':False}
