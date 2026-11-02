@@ -19,6 +19,8 @@ jobs:
           python3 -m unittest discover -s tests -v
           gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -I main main/frame.c tests/frame_test.c -o /tmp/frame-test
           /tmp/frame-test
+          gcc -std=c11 -Wall -Wextra -Werror -I tests/stubs -I main main/panel.c tests/panel_test.c -o /tmp/panel-test
+          /tmp/panel-test
       - name: Build the recovered C6 board target
         shell: bash
         run: |
