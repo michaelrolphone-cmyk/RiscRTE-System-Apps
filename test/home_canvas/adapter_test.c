@@ -39,7 +39,7 @@ static int32_t input_deactivate(void*c,uint64_t session){(void)c;assert(session)
 static int32_t input_prepare(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_prepares++;return RISC_CANVAS_OK;}
 static int32_t input_resume(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_resumes++;return RISC_CANVAS_OK;}
 static risc_canvas_input_v1 input_api={1,sizeof(input_api),RISC_CANVAS_INPUT_TAG,NULL,input_activate,input_deactivate,input_prepare,input_resume,RISC_CANVAS_INPUT_SLEEP_SUPPORTED};
-static bool acquire_cap(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*out){assert(v==1&&!i);out->slot=1;out->generation=1;if(!strcmp(n,"display.output"))out->api=bad_kind==1?NULL:&physical;else if(!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))out->api=bad_kind==3?NULL:&input_api;else{assert(!strcmp(n,RISC_CANVAS_CAPABILITY));out->api=bad_kind==2?NULL:&provider.api;}return true;}
+static bool acquire_cap(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*out){assert(v==1&&!i);out->slot=1;out->generation=1;if(!strcmp(n,"display.output"))out->api=bad_kind==1?NULL:&physical;else if(!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))out->api=bad_kind==3?NULL:&input_api;else{assert(!strcmp(n,RISC_CANVAS_RASTER_CAPABILITY));out->api=bad_kind==2?NULL:&provider.api;}return true;}
 static bool release_cap(risc_runtime_capability_v1*g){assert(g->slot&&g->generation);grant_releases++;if(release_failure)return false;memset(g,0,sizeof(*g));return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire_cap,.release=release_cap};
 static void run(unsigned format,unsigned rotation){

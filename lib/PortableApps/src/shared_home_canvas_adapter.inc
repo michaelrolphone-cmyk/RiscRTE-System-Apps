@@ -18,7 +18,7 @@ static inline bool shared_canvas_open(void) {
  shared_outputs=dg.api;
  if(!shared_outputs||shared_outputs->api_version!=1||shared_outputs->struct_size<sizeof(*shared_outputs))return false;
  shared_canvas_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_grant)};
- if(!rt->acquire(RISC_CANVAS_CAPABILITY,1,0,&shared_canvas_grant))return false;
+ if(!rt->acquire(RISC_CANVAS_RASTER_CAPABILITY,1,0,&shared_canvas_grant))return false;
  shared_canvas_owned=true;
  const risc_canvas_api_v1 *api=shared_canvas_grant.api;
  api=api?risc_canvas_get_v1(api,api->struct_size):NULL;
