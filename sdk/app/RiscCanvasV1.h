@@ -85,3 +85,35 @@ static inline const risc_canvas_api_v1* risc_canvas_get_v1(const void *p,size_t 
  if(a->api_version!=1||a->struct_size<sizeof(*a)||a->struct_size>bytes||a->tag!=RISC_CANVAS_TAG)return NULL;
  return a->open&&a->geometry&&a->begin_frame&&a->submit&&a->cancel_frame&&a->poll&&a->forget_receipt&&a->next&&a->contacts&&a->quiesce&&a->resume&&a->close?a:NULL;
 }
+
+/* Optional presentation semantics negotiated during open. The v1 table and
+ * base request remain byte-for-byte unchanged; old providers ignore the tail
+ * and leave presentation_out NULL. No caller pointer survives open(). */
+#define RISC_CANVAS_PRESENTATION_TAG UINT32_C(0x43505231)
+enum { RISC_CANVAS_PRESENT_DEFAULT=0,RISC_CANVAS_PRESENT_LOW_LATENCY=1,
+ RISC_CANVAS_PRESENT_QUALITY=2,RISC_CANVAS_PRESENT_CLEAN=3 };
+typedef struct {
+ uint32_t struct_size,intent;
+ const risc_canvas_rect_v1 *damage;
+ size_t damage_count;
+} risc_canvas_present_v1;
+typedef struct {
+ uint32_t struct_size,version,tag;
+ void *context;
+ int32_t (*submit)(void*,uint64_t,uint64_t,const risc_canvas_present_v1*,uint64_t*);
+ /* Copy reconstructed prior visible content into provider history, without
+  * refreshing. The same logical lease remains writable and must later be
+  * submitted or cancelled. Unsupported is explicit; never invent history. */
+ int32_t (*seed_previous)(void*,uint64_t,uint64_t);
+} risc_canvas_presentation_v1;
+typedef struct {
+ risc_canvas_open_v1 base;
+ uint32_t presentation_tag;
+ const risc_canvas_presentation_v1 **presentation_out;
+} risc_canvas_open_presentation_v1;
+static inline const risc_canvas_presentation_v1*risc_canvas_presentation_get_v1(const void*p,size_t bytes){
+ if(!p||bytes<sizeof(risc_canvas_presentation_v1))return NULL;
+ const risc_canvas_presentation_v1*a=p;
+ return a->struct_size>=sizeof(*a)&&a->struct_size<=bytes&&a->version==1&&
+  a->tag==RISC_CANVAS_PRESENTATION_TAG&&a->submit&&a->seed_previous?a:NULL;
+}
