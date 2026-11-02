@@ -19,6 +19,7 @@ jobs:
           path: Runtime
           persist-credentials: false
       - run: python3 scripts/test_driver_manager_presenter.py --runtime Runtime --output out/presenter
+      - run: python3 scripts/test_driver_manager_legacy.py --runtime Runtime --output out/presenter/legacy
       - uses: actions/upload-artifact@v4
         if: always()
         with:
