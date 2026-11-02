@@ -229,8 +229,10 @@ static void printPlatformReceipt(const RiscBoot::Runtime& runtime) {
 }
 static bool bindRetainedSd(RiscBoot::Runtime& runtime) {
   namespace S=RiscCpu::NativeSerialStorage;
-  if(!S::prepare(owner,owner) || !S::bindSd(runtime,owner,owner))return false;
+  if(!S::prepare(owner,owner)){fprintf(stderr,"SD prepare failed\n");return false;}
+  if(!S::bindSd(runtime,owner,owner)){fprintf(stderr,"SD bind failed platforms=%zu error=%s\n",runtime.platformCount_,runtime.error());return false;}
   const auto* admission=S::admission();
+  fprintf(stderr,"SD receipt count=%zu ready=%d namespace=%u writable=%d bound=%d retained=%d\n",admission?admission->count:0,admission?int(admission->ready()):0,admission&&admission->count?unsigned(admission->namespaces[0].id):0,admission&&admission->count?int(admission->namespaces[0].writable):0,int(S::sdFiles().bound()),int(S::sdFiles().retained()));
   return admission && admission->count==1 && admission->ready() &&
     admission->namespaces[0].id==12 && admission->namespaces[0].writable &&
     admission->namespaces[0].files==&S::sdFiles() &&

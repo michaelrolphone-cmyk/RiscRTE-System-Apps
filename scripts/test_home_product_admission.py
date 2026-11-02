@@ -121,7 +121,7 @@ for lane,template in templates.items():
   q=subprocess.run([str(args.output/lane),str(args.assembly/lane/'before'),str(args.assembly/lane/which)],capture_output=True,text=True,env={**os.environ,'ASAN_OPTIONS':'detect_leaks=0'})
   (args.output/(lane+'-'+which+'.log')).write_text(q.stdout+q.stderr)
   if q.returncode:
-   print(q.stdout+q.stderr,flush=True);raise RuntimeError(lane+' '+which+' preparation failed')
+   print(q.stdout+q.stderr,flush=True);raise RuntimeError(lane+' '+which+' preparation failed, exit='+str(q.returncode))
   result=json.loads(q.stdout)
   print(json.dumps({'lane':lane,'input':which,'admission':result}),flush=True)
   if not result['prepared'] or not result['cohort_validated'] or not result['elf_count'] or result['hardware_calls'] or result['storage_calls']:raise RuntimeError(lane+' invalid preparation')
