@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -90,5 +90,40 @@ jobs:
         with:
           name: complete-shared-home-${{ github.event.pull_request.head.sha }}
           path: out/
+          include-hidden-files: true
+          if-no-files-found: error
+  delivered-cohort:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify independent delta conflicts
+        run: python scripts/test_shared_app_cohort.py
+      - name: Retrieve exact completed app qualification archives
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p archives
+          gh api repos/michaelrolphone-cmyk/RiscRTE-System-Apps/actions/artifacts/13118207859/zip > archives/files.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Productivity/actions/artifacts/13120780374/zip > archives/lists.zip
+          gh api repos/michaelrolphone-cmyk/RiscRTE-Utilities/actions/artifacts/13122108650/zip > archives/viewer.zip
+          python scripts/prepare_delivered_app_cohort.py --archives archives --output cohort
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: preserved-shared-app-cohort-${{ github.event.pull_request.head.sha }}
+          path: |
+            cohort/composed/
+            cohort/sources.json
           include-hidden-files: true
           if-no-files-found: error
