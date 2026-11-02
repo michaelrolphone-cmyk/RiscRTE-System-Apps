@@ -8,6 +8,9 @@
 static uint64_t milliseconds,present_at;
 static unsigned width=240,height=240,format=5,frames,starts,stops;
 static bool held,pending,complete;
+static unsigned input_starts,input_stops;
+extern "C" unsigned canvas_runtime_input_started(){return input_starts;}
+extern "C" void canvas_runtime_input_event(bool start){if(start)input_starts++;else input_stops++;}
 static unsigned char pixels[466*466*2];
 static bool info(void*,risc_display_info_v1*out){*out={};out->api_version=1;out->struct_size=sizeof(*out);out->width=width;out->height=height;out->supported_formats=RISC_DISPLAY_FORMAT_BIT(format);out->preferred_format=format;return true;}
 static bool acquire(void*,uint32_t f,risc_display_surface_v1*out){assert(!held&&!pending&&f==format);held=true;unsigned stride=format==5?width*2:(width+7)/8;*out={frames+1,pixels,width,height,stride,stride*height,format};return true;}
@@ -21,5 +24,5 @@ extern "C" void canvas_runtime_complete(){complete=true;}
 int main(int argc,char**argv){assert(argc==2);
  RiscBoot::Port port{[](){return true;},[](risc_runtime_health_v1*h){h->uptime_ms=(uint32_t)milliseconds;return true;},[](uint32_t n){milliseconds+=n;},[](const char*s){fprintf(stderr,"diagnostic: %s\n",s);return true;}};
  RiscTest::FileSources sources({argv[1]}); auto runtime=std::make_unique<RiscBoot::Runtime>(port); assert(sources.bind(*runtime));bool prepared=runtime->prepare(argv[1]);if(!prepared)fprintf(stderr,"prepare: %s\n",runtime->error());assert(prepared);
- bool ok=runtime->run();if(!ok)fprintf(stderr,"run: %s\n",runtime->error());assert(ok&&complete&&frames==3&&!held&&!pending);runtime.reset();assert(starts==stops);puts("Actual Runtime/ProviderGraph canvas grant, three presentations, quiesce/resume and clean return passed");
+ bool ok=runtime->run();if(!ok)fprintf(stderr,"run: %s\n",runtime->error());assert(ok&&complete&&frames==3&&!held&&!pending);runtime.reset();assert(starts==stops&&input_starts==input_stops);puts("Actual Runtime/ProviderGraph canvas grant, three presentations, quiesce/resume and clean return passed");
 }

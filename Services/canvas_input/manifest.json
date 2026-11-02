@@ -12,7 +12,7 @@
   "requires": [
     {
       "api": 1,
-      "capability": "ui.canvas"
+      "capability": "ui.canvas.raster"
     },
     {
       "api": 1,

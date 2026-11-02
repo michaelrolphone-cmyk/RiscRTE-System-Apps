@@ -41,14 +41,16 @@ def run(runtime,output):
    json_write(output/f'manifest-{name}.json',variant);variants[name]=row['sha256']
   raster=json.loads((ROOT/'Services/canvas_host/manifest-raster.json').read_text())
   assert all(not r['capability'].startswith('input.') for r in raster['requires'])
-  shutil.copytree(output/'canvas-host',output/'canvas-raster')
-  json_write(output/'canvas-raster/manifest.json',raster)
+  raster_row=build(compiler,include,output/'canvas-raster',raster,[source,support],defines=['-DRISC_CANVAS_RASTER_PROVIDER'],normalize_relocations=True)
+  raster_repeat=build(compiler,include,output/'canvas-raster-repeat',raster,[source,support],defines=['-DRISC_CANVAS_RASTER_PROVIDER'],normalize_relocations=True)
+  assert raster_row['sha256']==raster_repeat['sha256']
+  subprocess.run([str(validator),str(output/'canvas-raster/driver.elf')],check=True)
   input_manifest=json.loads((ROOT/'Services/canvas_input/manifest.json').read_text())
   input_source=ROOT/'Services/canvas_input/input.c'
   input_row=build(compiler,include,output/'canvas-input',input_manifest,[input_source,support])
   input_repeat=build(compiler,include,output/'canvas-input-repeat',input_manifest,[input_source,support])
   assert input_row['sha256']==input_repeat['sha256']
   subprocess.run([str(validator),str(output/'canvas-input/driver.elf')],check=True)
-  json_write(output/'packages.json',{'schema':1,'provider':row,'foreground_input':input_row,'raster_sha256':row['sha256'],'same_elf_optional_input_variants':variants,'physical_testing':'not performed'})
+  json_write(output/'packages.json',{'schema':1,'provider':row,'foreground_input':input_row,'raster_provider':raster_row,'raster_sha256':raster_row['sha256'],'same_elf_optional_input_variants':variants,'physical_testing':'not performed'})
 if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__);p.add_argument('--runtime',type=pathlib.Path,required=True);p.add_argument('--output',type=pathlib.Path,required=True);a=p.parse_args();run(a.runtime.resolve(),a.output.resolve())
