@@ -15,8 +15,8 @@ class ContractTests(unittest.TestCase):
  def test_embedded_logo(self):
   data=(ROOT/'main/assets/idle_logo.bin').read_bytes()
   self.assertEqual(len(data),48000)
-  self.assertEqual(hashlib.sha256(data).hexdigest(),'ff685207d93f71ff55537d42c891cd5a6caa2aba9c8af8090b8e2fcd8c23a421')
-  self.assertEqual(data[:2400],bytes(2400));self.assertEqual(data[-2400:],bytes(2400))
+  self.assertEqual(hashlib.sha256(data).hexdigest(),'d2b80e90ea8d2b88e0242ef352bec4335e2dad2b89736f8992d117d5802108e2')
+  self.assertTrue(any(data));self.assertEqual(data[-100:],bytes(100))
   try:from PIL import Image
   except ImportError:return
   from pack import pack

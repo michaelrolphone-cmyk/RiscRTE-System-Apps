@@ -1,8 +1,43 @@
-# Biome Monitor firmware 1.1.2
+# Biome firmware 1.1.3
+
+## Reboot and intermittent-power recovery
+
+The selected node/synapse canopy and root artwork is embedded at exactly800×480,
+with the title **Biome**. Startup and expired/withdrawn-content fallback use it.
+The external dashboard publisher remains at its configured ten-minute cadence.
+
+Provisioning remains in the original0x9000 NVS partition. A separate256KiB
+`runtime` NVS partition at0x200000 holds alternating sequence-numbered journal
+snapshots with metadata/payload CRC and write-readback verification. A torn new
+snapshot falls back to the previous valid one. A new request is sent only after
+its exact intent is durably verified; an interrupted reply commit restores the
+same pending operation identity. The first upgrade migrates the old journal,
+including unresolved requests and control cursor, without erasing provisioning.
+Both corrupt slots fail closed instead of discarding unknown effects. This is
+power-loss recovery, not an assertion that failing flash or absent voltage can
+be repaired in software. Keep the new partition table with this firmware. The full initial0x0 image
+also blanks the new runtime partition (and replaces provisioning); app-only
+updates must preserve the already-installed runtime partition and credentials.
+
+Startup waits2seconds for supply settling,5seconds after a reported brownout;
+the existing idle guard is installed first. Initial network-time waiting ends
+after30seconds while SNTP continues in the background. TLS verification remains
+enabled. Wi-Fi retries association every15seconds without a tight callback loop,
+resets association after120seconds without an IP, and reconnects after repeated
+HTTP failures. HTTP timeout is45seconds for the owner's slow link. Wi-Fi settings
+use RAM instead of rewriting persistent driver configuration at every boot.
+A failed panel probe/render retries every60seconds while service connectivity
+continues. Existing interrupt and task watchdogs remain enabled and unchanged.
+
+`participant.report_status` now exposes the running adapter version, boot ID,
+reset reason, previous stage and panel condition. This avoids relying on stale
+participant enrollment labels to infer installed firmware. No reset cause can
+be established from an offline heartbeat alone. Hardware power-cycle/voltage
+and endurance tests remain required after installation.
 
 ## Watchdog and reflash recovery
 
-Version 1.1.2 restores an existing `participant_id` from private provisioning
+Version 1.1.3 restores an existing `participant_id` from private provisioning
 when the request journal is empty. Enrollment tickets are single-use: replaying
 an already redeemed ticket with a new request ID returns `UNAUTHENTICATED`.
 Existing-device provisioning needs `participant_id`, `participant_credential`
@@ -99,7 +134,7 @@ python -m esptool --chip esp32c6 --port PORT write_flash \
   0x9000 device-nvs.bin 0x30000 firmware.bin
 ```
 
-For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.2-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. A privately provisioned merged image must include the existing participant ID as described above. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
+For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.3-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. A privately provisioned merged image must include the existing participant ID as described above. The merged image overwrites existing NVS; for an already provisioned device use the separate application image at `0x30000` to preserve configuration.
 
 This is a new partition layout. Replacing NVS removes enrollment and outstanding local journal state; do not write the provisioning partition as a routine firmware update. The factory image requires 4 MiB flash. No OTA path is provided in this release.
 
