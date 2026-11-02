@@ -18,3 +18,13 @@ for test in ('presenter','selection','controller'):
 subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-pedantic',
  '-I'+str(a.runtime/'sdk/app'),'-I'+str(a.runtime/'sdk/driver'),'-I'+str(root/'sdk/app'),
  '-I'+str(root/'lib/PortableApps/include'),'-c',str(root/'Apps/driver_manager_scene.c'),'-o',str(a.output/'scene.o')],check=True)
+
+for mode in ('normal','sanitized'):
+ name='scene-'+mode;exe=a.output/name
+ flags=['-fsanitize=address,undefined','-fno-sanitize-recover=all','-fno-omit-frame-pointer','-no-pie'] if mode=='sanitized' else []
+ subprocess.run(['cc','-std=c11','-O1','-g','-Wall','-Wextra','-Werror','-pedantic',*flags,
+  '-I'+str(a.runtime/'sdk/app'),'-I'+str(a.runtime/'sdk/driver'),'-I'+str(root/'sdk/app'),
+  '-I'+str(root/'lib/PortableApps/include'),str(root/'test/driver_manager/scene_test.c'),
+  str(root/'lib/PortableApps/src/PortableNetworkSession.c'),'-o',str(exe)],check=True)
+ run=subprocess.run([str(exe.resolve())],timeout=30,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=1:halt_on_error=1',UBSAN_OPTIONS='halt_on_error=1'),text=True,capture_output=True)
+ (a.output/(name+'.log')).write_text(run.stdout+run.stderr);print(name+': '+run.stdout+run.stderr,flush=True);run.check_returncode()

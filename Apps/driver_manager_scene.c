@@ -156,7 +156,7 @@ reopen:
  risc_scene_navigation_v1 nav={.api_version=1,.struct_size=sizeof(nav),.depth=1,.routes={1}};
  int rc=components->open(scene->context,&document,&nav,&session);if(!live())return;
  if(rc!=RISC_SCENE_OK||!session){if(session||rc==RISC_SCENE_AGAIN||rc==RISC_SCENE_RETAINED){retain();return;}goto cleanup;}
- rc=components->lifecycle.configure(scene->context,session,0);if(!live())return;
+ rc=components->lifecycle.configure(scene->context,session,resident.enabled?RISC_SCENE_FEATURE_SHARED_CONTROLS:0);if(!live())return;
  if(rc!=RISC_SCENE_OK){retain();return;}gate=true;dirty=false;
  for(;;){
   if(!live())return;
@@ -228,7 +228,7 @@ reopen:
   }
   if(settled&&!model.view.busy&&!network_started&&!network_service&&!leaving){
    rc=risc_scene_resident_poll_v1(&resident,flags);if(!live()||rc==RISC_RESIDENT_RETAINED){retain();return;}
-   if((rc==RISC_RESIDENT_OK&&resident.policy)||(event.kind==RISC_SCENE_SUSPEND_EVENT&&rc==RISC_RESIDENT_OK)){
+   if((rc==RISC_RESIDENT_OK&&resident.policy)||(event.kind==RISC_SCENE_CONTROLS_EVENT&&event.document_revision==revision&&rc==RISC_RESIDENT_OK)){
     if(!close_scene(scene,session))return;
     session=0;
     rc=risc_scene_resident_dispatch_v1(&resident,resident.policy?RISC_RESIDENT_CHECKPOINT_POLICY:RISC_RESIDENT_CHECKPOINT_CONTROLS);
