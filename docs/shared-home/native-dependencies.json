@@ -1,0 +1,35 @@
+{
+  "watch": {
+    "source_revision": "dc6dd585d82475a0200adb5d7bfb94de24944bee",
+    "runtime_revision": "a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21",
+    "runtime_version": "0.4.19",
+    "artifact": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-T-Watch-S3",
+      "id": 13147620128,
+      "sha256": "ed658bc19cdf58664eb4ae02610d0c833412a7e76d483b7353c05fb1ec5225fa",
+      "run_id": 41454333505
+    }
+  },
+  "wave": {
+    "source_revision": "52ac81f86cca3f732090b95d795429a7b6edced0",
+    "runtime_revision": "a27c7541e0fcaa40290d7bb8dc6db07b2ea92f21",
+    "runtime_version": "0.4.19",
+    "artifact": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-Wavshare-S3-Touch-AMOLED-2.06",
+      "id": 13146784394,
+      "sha256": "ebb5034d520fc8b68b66de5f23e4ef606566e83b348151d4d12066f4dc326f42",
+      "run_id": 41454354338
+    }
+  },
+  "x4": {
+    "source_revision": "e361e73de14314bb4b8d2fb3a24eb81e2390b0ee",
+    "runtime_revision": "0052d1fc42e9cfc82d626c5a247d460919c87935",
+    "runtime_version": "0.4.18",
+    "artifact": {
+      "repository": "michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO",
+      "id": 13140950586,
+      "sha256": "dee2a5450313bb9ae1f601676adaac1281371b2809946829fb41302c0923d7a2",
+      "run_id": 41433032020
+    }
+  }
+}
