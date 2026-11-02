@@ -1,0 +1,48 @@
+name: Home civil time policy
+on:
+  pull_request:
+    paths: ['Services/civil_clock/**', 'sdk/app/RiscCivilClockV1.h', 'test/civil_clock/**', 'scripts/test_civil_clock.py', 'scripts/build_civil_clock.py', '.github/workflows/home-civil-policy.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: System
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: 318d77283ba707b6f2820d2833e5d7ea3ff3f7e8
+          path: Runtime
+          persist-credentials: false
+      - name: Existing civil contract and full policy normal/sanitized
+        run: |
+          mkdir -p out/civil-policy
+          python3 System/scripts/test_civil_clock.py --runtime Runtime 2>&1 | tee out/civil-policy/tests.log
+      - name: Build and repeat both owning provider policies
+        run: |
+          python3 -m pip install platformio==6.1.19
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+          python3 System/scripts/build_civil_clock.py --runtime Runtime --output packages
+          python3 System/scripts/build_civil_clock.py --runtime Runtime --output repeat
+          find packages -name '*.elf' -print0 | while IFS= read -r -d '' file; do cmp "$file" "repeat/${file#packages/}"; done
+      - name: Preserve exact source and artifact hashes
+        if: always()
+        run: |
+          mkdir -p source
+          git -C System rev-parse HEAD > source/system.head
+          git -C System archive HEAD | gzip -n > source/system.tar.gz
+          git -C Runtime rev-parse HEAD > source/runtime.head
+          find packages -type f -exec sha256sum {} + > source/packages.sha256 || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-civil-policy-${{ github.event.pull_request.head.sha }}
+          path: |
+            out/civil-policy/
+            packages/
+            source/
