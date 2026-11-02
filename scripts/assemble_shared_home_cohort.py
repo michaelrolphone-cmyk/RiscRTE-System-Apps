@@ -103,6 +103,7 @@ def overlay(before, before_sd, plan, elf, common, packages):
    boot['app_capabilities'][boot['app_capabilities'].index(oldrow)]=copy.deepcopy(newrow)
  # Provider packages and exact binding rows come only from the reviewed plan.
  # Existing provider bytes/rows cannot be silently replaced.
+ provider_paths=set()
  for item in plan.get('providers',[]):
   package=packages/safe(item['package'])
   mbytes=(package/'manifest.json').read_bytes();pbytes=(package/'driver.elf').read_bytes()
@@ -112,19 +113,51 @@ def overlay(before, before_sd, plan, elf, common, packages):
   if m.get('type')!='driver' or m.get('file_name')!='driver.elf' or not pbytes.startswith(b'\x7fELF'):
    raise ValueError('Invalid provider package')
   path=safe(item['row']['manifest']);binary=str(PurePosixPath(path).parent/'driver.elf')
-  if path in out or binary in out:raise ValueError('Provider would overwrite installed files')
-  out[path]=mbytes;out[binary]=pbytes
-  boot.setdefault('drivers',[]).append(copy.deepcopy(item['row']))
+  replacement=item.get('replace')
+  if replacement is None:
+   if path in out or binary in out:raise ValueError('Provider would overwrite installed files')
+   boot.setdefault('drivers',[]).append(copy.deepcopy(item['row']))
+  else:
+   if path not in out or binary not in out:raise ValueError('Replacement provider missing')
+   if digest(out[path])!=replacement['manifest_sha256'] or digest(out[binary])!=replacement['elf_sha256']:
+    raise ValueError('Replacement provider baseline differs')
+   existing=[r for r in boot.get('drivers',[]) if r.get('manifest')==path]
+   if not existing or any(r!=item['row'] for r in existing):
+    raise ValueError('Replacement provider authority differs')
+   previous=json.loads(out[path])
+   if {k:v for k,v in previous.items() if k!='version'}!={k:v for k,v in m.items() if k!='version'}:
+    raise ValueError('Replacement provider changes selected profile or contract')
+  out[path]=mbytes;out[binary]=pbytes;provider_paths.update((path,binary))
  providers(out,boot)
  # Top-level namespace maps and every unrelated app/driver field are unchanged.
  out['boot.json']=encode(boot)
  for name in before:
-  if name not in names|{'boot.json'} and ('internal',name) not in routes and out[name]!=before[name]:
+  if name not in names|provider_paths|{'boot.json'} and ('internal',name) not in routes and out[name]!=before[name]:
    raise ValueError('Unrelated internal bytes changed')
  for name in before_sd:
   if ('sd',name) not in routes and sd[name]!=before_sd[name]:raise ValueError('Unrelated SD bytes changed')
+ updates=[]
+ for item in plan.get('app_updates',[]):
+  name=safe(item['manifest'])
+  if name in names:raise ValueError('Independent app must not be a Home controller alias')
+  package=packages/safe(item['package'])
+  mbytes=(package/safe(item['manifest_file'])).read_bytes()
+  abytes=(package/safe(item['elf_file'])).read_bytes()
+  if digest(mbytes)!=item['manifest_sha256'] or digest(abytes)!=item['elf_sha256']:
+   raise ValueError('Independent application package differs')
+  old=json.loads(out[name]);new=json.loads(mbytes)
+  if old.get('id')!=new.get('id'):raise ValueError('Installed application identity changed')
+  route=item['route'];target=out if route['storage']=='internal' else sd
+  if digest(out[name])!=item['replace']['manifest_sha256'] or digest(target[safe(route['path'])])!=item['replace']['elf_sha256']:
+   raise ValueError('Independent application baseline differs')
+  alias={key:copy.deepcopy(item[key]) for key in ('manifest','route','original_policy_rows','policy_rows')}
+  alias['role']='controller'
+  subplan={'inventory_sha256':fingerprint(inventory(out,sd)),'aliases':[alias]}
+  out,sd,_=overlay(out,sd,subplan,abytes,new,packages)
+  updates.append({'manifest':name,'elf_sha256':digest(abytes),'package_manifest_sha256':digest(mbytes),
+                  'installed_manifest_sha256':digest(out[name])})
  receipt={'inventory_sha256':fingerprint(original),'home_sha256':digest(elf),
-          'aliases':sorted(names),'routes':[list(r) for r in sorted(routes)],
+          'aliases':sorted(names),'application_updates':updates,'routes':[list(r) for r in sorted(routes)],
           'changed_internal':[n for n in sorted(out) if out[n]!=before.get(n)],
           'changed_sd':[n for n in sorted(sd) if sd[n]!=before_sd.get(n)],
           'packed':False,'dependency_closure_verified':False,'target_execution':False}

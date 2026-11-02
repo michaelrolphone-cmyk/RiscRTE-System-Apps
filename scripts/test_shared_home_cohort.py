@@ -54,6 +54,46 @@ class Overlay(unittest.TestCase):
    (package/'manifest.json').write_bytes(raw);(package/'driver.elf').write_bytes(elf)
    p['providers']=[{'package':'raster','manifest_sha256':digest(raw),'elf_sha256':digest(elf),'row':{'manifest':name+'/manifest.json','instance_id':0,'bindings':[]}} for name in ('one','two')]
    with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_independent_app_not_home_alias(self):
+  b,sd,p,m=self.fixture()
+  old={'type':'application','id':'contexts','file_name':'contexts.elf','label':'Contexts','version':'old'}
+  row={'manifest':'contexts.json','grants':[{'capability':'ui.scene','api':1,'instance_id':0}]}
+  boot=json.loads(b['boot.json']);boot['app_capabilities'].append(row);b['boot.json']=encode(boot)
+  b['contexts.json']=encode(old);b['contexts.elf']=b'old-contexts'
+  p['inventory_sha256']=fingerprint(inventory(b,sd))
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);pkg=root/'contexts';pkg.mkdir()
+   new={**old,'entry':'app_main','version':'new','requires':[{'capability':'ui.scene','api':1}]}
+   raw=encode(new);elf=b'\x7fELFcontexts'
+   (pkg/'contexts.json').write_bytes(raw);(pkg/'contexts.elf').write_bytes(elf)
+   p['app_updates']=[{'manifest':'contexts.json','package':'contexts','manifest_file':'contexts.json','elf_file':'contexts.elf',
+     'manifest_sha256':digest(raw),'elf_sha256':digest(elf),'route':{'storage':'internal','path':'contexts.elf'},
+     'original_policy_rows':[row],'policy_rows':[copy.deepcopy(row)],
+     'replace':{'manifest_sha256':digest(b['contexts.json']),'elf_sha256':digest(b['contexts.elf'])}}]
+   out,_,receipt=overlay(b,sd,p,b'\x7fELFhome',m,root)
+   self.assertEqual(out['contexts.elf'],elf);self.assertEqual(out['default.elf'],b'\x7fELFhome')
+   self.assertEqual(receipt['aliases'],['default.json'])
+   self.assertEqual(receipt['application_updates'][0]['manifest'],'contexts.json')
+   self.assertEqual(json.loads(out['contexts.json'])['label'],'Contexts')
+ def test_exact_provider_replacement_preserves_authority(self):
+  b,sd,p,m=self.fixture()
+  old={'type':'driver','id':'scene-selected','file_name':'driver.elf','version':'0.4.14','provides':[{'capability':'ui.scene','api':1}],'requires':[]}
+  new={**old,'version':'0.4.15'};row={'manifest':'scene/manifest.json','instance_id':0,'bindings':[]}
+  boot=json.loads(b['boot.json']);boot['drivers']=[row];b['boot.json']=encode(boot)
+  b['scene/manifest.json']=encode(old);b['scene/driver.elf']=b'\x7fELFold-selected-profile'
+  p['inventory_sha256']=fingerprint(inventory(b,sd))
+  with tempfile.TemporaryDirectory() as tmp:
+   root=Path(tmp);pkg=root/'selected';pkg.mkdir()
+   raw=encode(new);elf=b'\x7fELFnew-selected-profile'
+   (pkg/'manifest.json').write_bytes(raw);(pkg/'driver.elf').write_bytes(elf)
+   item={'package':'selected','manifest_sha256':digest(raw),'elf_sha256':digest(elf),'row':row,
+         'replace':{'manifest_sha256':digest(b['scene/manifest.json']),'elf_sha256':digest(b['scene/driver.elf'])}}
+   p['providers']=[item]
+   out,_,_=overlay(b,sd,p,b'\x7fELFhome',m,root)
+   self.assertEqual(json.loads(out['boot.json'])['drivers'],[row])
+   self.assertEqual(out['scene/driver.elf'],elf)
+   item['replace']['elf_sha256']='wrong'
+   with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
  def test_pack_exact_size_and_sd_roundtrip(self):
   with tempfile.TemporaryDirectory() as tmp:
    entries={'default.elf':b'complete'};sd={'book.epub':b'unchanged'}
