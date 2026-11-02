@@ -113,6 +113,9 @@ typedef struct {
  /* Idle leases/receipts only. Provider maps semantic orientation and reverse180
   * (0/1) to native raster/input geometry. Base v1 consumers remain unchanged. */
  int32_t (*orientation)(void*,uint64_t,uint32_t,uint32_t);
+ /* Latest physically completed image in current logical encoding/geometry;
+  * no lease or presentation, unchanged destination on clean refusal. */
+ int32_t (*copy_completed)(void*,uint64_t,uint32_t,void*,size_t,uint32_t);
 } risc_canvas_presentation_v1;
 typedef struct {
  risc_canvas_open_v1 base;
@@ -128,5 +131,9 @@ static inline const risc_canvas_presentation_v1*risc_canvas_presentation_get_v1(
 }
 
 static inline bool risc_canvas_has_orientation(const risc_canvas_presentation_v1*p){
- return p&&p->struct_size>=sizeof(*p)&&p->orientation;
+ return p&&p->struct_size>=offsetof(risc_canvas_presentation_v1,orientation)+sizeof(p->orientation)&&p->orientation;
+}
+
+static inline bool risc_canvas_has_snapshot(const risc_canvas_presentation_v1*p){
+ return p&&p->struct_size>=sizeof(*p)&&p->copy_completed;
 }
