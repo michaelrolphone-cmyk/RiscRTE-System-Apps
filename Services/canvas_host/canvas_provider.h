@@ -19,7 +19,8 @@ static inline int32_t canvas_provider_geometry_refresh(canvas_provider*p){
  if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;
  if(!read)return RISC_CANVAS_UNAVAILABLE;
  if(!canvas_mapping_open(&m,info.width,info.height,p->rotation,info.safe_insets.left,info.safe_insets.top,info.safe_insets.right,info.safe_insets.bottom,&p->request))return RISC_CANVAS_UNSUPPORTED;
- uint64_t stride=p->request.encoding==RISC_CANVAS_RGBA8?(uint64_t)m.width*4:((uint64_t)m.width+7)/8;
+ uint64_t stride=p->request.encoding==RISC_CANVAS_RGBA8?(uint64_t)m.width*4:
+  p->request.encoding==RISC_CANVAS_RGB565_ADAPTIVE?(uint64_t)m.width*2:((uint64_t)m.width+7)/8;
  if(stride>UINT32_MAX||m.height>SIZE_MAX/stride)return RISC_CANVAS_UNSUPPORTED;
  if(!canvas_mapping_equal(&m,&p->frames.mapping)){
   if(p->frames.revision==UINT32_MAX)return RISC_CANVAS_UNAVAILABLE;
@@ -68,7 +69,7 @@ static int32_t canvas_provider_open(void*ctx,const risc_canvas_open_v1*request,u
  if(!canvas_frames_alive(c))return RISC_CANVAS_RETAINED;
  if(!request||request->struct_size<sizeof(*request)||!out)return RISC_CANVAS_INVALID;
  if(c->session)return RISC_CANVAS_BUSY; /* Single physical foreground owner. */
- if(request->encoding!=RISC_CANVAS_MONO1&&request->encoding!=RISC_CANVAS_RGBA8)return RISC_CANVAS_UNSUPPORTED;
+ if(request->encoding!=RISC_CANVAS_MONO1&&request->encoding!=RISC_CANVAS_RGBA8&&request->encoding!=RISC_CANVAS_RGB565_ADAPTIVE)return RISC_CANVAS_UNSUPPORTED;
  const risc_display_output_api_v1*d=c->display;
  if(!d||d->api_version!=1||d->struct_size<offsetof(risc_display_output_api_v1,present_status)+sizeof(d->present_status)||!d->get_info||!d->acquire||!d->release||!d->submit||!d->present_status)return RISC_CANVAS_UNAVAILABLE;
  risc_display_info_v1 info={0};bool read=d->get_info(d->context,&info);if(!canvas_frames_alive(c))return RISC_CANVAS_RETAINED;if(!read)return RISC_CANVAS_UNAVAILABLE;

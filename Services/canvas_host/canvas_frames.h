@@ -6,6 +6,15 @@
 /* Presentation ownership extracted from CanvasApp: logical writable image is
  * distinct from the physical submitted image. Receipts are dynamically retained
  * until explicitly forgotten, not expired by an invented time/count policy. */
+/* Explicit adaptive-color intent only. The provider, not Home or a device
+ * branch in an application, owns monochrome quantization. Ordered thresholds
+ * are tied to output pixels and require no additional retained image. */
+static inline bool canvas_rgb565_white(uint16_t pixel,uint32_t x,uint32_t y){
+ static const uint8_t bayer[16]={0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5};
+ unsigned r=((pixel>>11)&31u)*255u/31u,g=((pixel>>5)&63u)*255u/63u,b=(pixel&31u)*255u/31u;
+ unsigned luminance=(77u*r+150u*g+29u*b+128u)>>8;
+ return luminance>(unsigned)bayer[(y&3u)*4u+(x&3u)]*16u+7u;
+}
 typedef struct canvas_receipt_node {
  struct canvas_receipt_node *next;
  uint64_t id,token;
@@ -93,7 +102,12 @@ static inline int32_t canvas_frames_submit(canvas_frames*c,uint64_t session,uint
    * channel space, then quantized only to the actual RGB565 panel format. */
   canvas_mapping_physical(&c->mapping,x,y,&px,&py);
   unsigned char*p=(unsigned char*)s.pixels+(size_t)py*s.stride_bytes;
-  if(c->encoding==RISC_CANVAS_RGBA8){
+  if(c->encoding==RISC_CANVAS_RGB565_ADAPTIVE){
+   const unsigned char*source=c->writable+(size_t)sy*c->stride+(size_t)sx*2;
+   uint16_t value=(uint16_t)(source[0]|(uint16_t)source[1]<<8);
+   if(c->format==RISC_DISPLAY_FORMAT_RGB565)memcpy(p+px*2,&value,2);
+   else if(!canvas_rgb565_white(value,px,py))p[px/8]|=(unsigned char)(0x80u>>(px&7));
+  }else if(c->encoding==RISC_CANVAS_RGBA8){
    const unsigned char*rgba=c->writable+(size_t)sy*c->stride+(size_t)sx*4;
    unsigned a=rgba[3],r=(rgba[0]*a+255u*(255u-a)+127)/255,g=(rgba[1]*a+255u*(255u-a)+127)/255,b=(rgba[2]*a+255u*(255u-a)+127)/255;
    uint16_t v=(uint16_t)(((r*31u+127)/255)<<11|((g*63u+127)/255)<<5|((b*31u+127)/255));memcpy(p+px*2,&v,2);

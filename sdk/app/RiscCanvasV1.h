@@ -15,7 +15,12 @@ enum { RISC_CANVAS_OK=0, RISC_CANVAS_IDLE=1, RISC_CANVAS_AGAIN=2,
 /* Logical content encodings, never physical panel choices. MONO1 is MSB-first,
  * one=white; RGBA8 is byte-order R,G,B,A, straight alpha, sRGB color channels.
  * Providers report unsupported encodings, not implicit lossy conversion. */
-enum { RISC_CANVAS_MONO1=1, RISC_CANVAS_RGBA8=2 };
+/* RGB565_ADAPTIVE explicitly permits provider-owned grayscale/dither on a
+ * monochrome output. RGB565 bytes are little-endian. Color-capable providers
+ * preserve every RGB565 sample exactly. Existing RGBA8 remains strict color;
+ * adding this intent does not silently change its unsupported-format result. */
+enum { RISC_CANVAS_MONO1=1, RISC_CANVAS_RGBA8=2,
+       RISC_CANVAS_RGB565_ADAPTIVE=3 };
 enum { RISC_CANVAS_FIT=1, RISC_CANVAS_FILL=2, RISC_CANVAS_RESPONSIVE=3 };
 enum { RISC_CANVAS_QUEUED=1, RISC_CANVAS_PRESENTING=2,
  RISC_CANVAS_COMPLETE=3, RISC_CANVAS_SUPERSEDED=4,

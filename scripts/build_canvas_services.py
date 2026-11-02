@@ -29,7 +29,7 @@ def run(runtime,output):
   if row['sha256']!=repeat['sha256']:raise ValueError('Repeated normalized canvas ELF differs')
   row['source_sha256'].update({str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in (ROOT/'Services/canvas_host').glob('*.h')})
   row['build_inputs_sha256']={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in [libgcc,ROOT/'scripts/scene_build.py',ROOT/'scripts/scene_sdk.py',ROOT/'scripts/normalize_xtensa_relocations.py',ROOT/'Services/canvas_host/manifest.json',pathlib.Path(__file__)]}
-  row['repeat_sha256']=repeat['sha256'];row['content_encodings']={'MONO1':'MONO1 or RGB565 physical surfaces','RGBA8':'RGB565 only; source-over white in sRGB channel space'}
+  row['repeat_sha256']=repeat['sha256'];row['content_encodings']={'MONO1':'MONO1 or RGB565 physical surfaces','RGBA8':'RGB565 only; source-over white in sRGB channel space','RGB565_ADAPTIVE':'exact RGB565 or explicit provider-owned monochrome dither'}
   json_write(output/'canvas-host/build.json',row)
   validator=pathlib.Path(temporary)/'validate-elf'
   subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
