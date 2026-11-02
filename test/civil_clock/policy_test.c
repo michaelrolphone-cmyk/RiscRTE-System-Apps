@@ -59,6 +59,12 @@ int main(void){
  assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1); /* no silent DST fold choice */
  raw.month=3;raw.day=8;raw.hour=2;assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1);
 #endif
+#ifndef CIVIL_NATIVE_UTC
+ raw=(risc_civil_calendar_v1){.struct_size=sizeof(raw),.year=2000,.month=1,.day=1};
+ assert(!policy->interpret_rtc(NULL,&raw,&interpreted)&&interpreted==INT64_C(946656000));
+ raw.year=2100;assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1);
+ raw.year=1999;assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1);
+#endif
  live=false;assert(policy->project(NULL,epoch,0,&result)==-9);
  assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-9&&!driver->quiesce());
  puts("Civil policy: prefix compatibility, full fractional projection, DST edges, saved RTC basis, no clock I/O/writes and retained fence PASS");
