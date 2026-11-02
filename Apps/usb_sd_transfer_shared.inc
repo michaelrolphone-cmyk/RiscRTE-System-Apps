@@ -277,6 +277,7 @@ __attribute__((visibility("default"))) void app_main(void) {
         return;
     }
     if(!scene_session){shared_retain();return;}
+    event_sequence=0;
     if(!shared_result(components->lifecycle.configure(scene->context,scene_session,resident.invocation?RISC_SCENE_FEATURE_SHARED_CONTROLS:0))) {
         shared_retain();return;
     }
@@ -327,6 +328,7 @@ __attribute__((visibility("default"))) void app_main(void) {
             if(!shared_result(components->open(scene->context,&document,&nav,&scene_session))||!scene_session) {
                 shared_retain();return;
             }
+            event_sequence=0;
             if(!shared_result(components->lifecycle.configure(scene->context,scene_session,resident.invocation?RISC_SCENE_FEATURE_SHARED_CONTROLS:0))){shared_retain();return;}
             dirty=false;runtime->yield_ms(2);continue;
         }
