@@ -90,7 +90,7 @@ static uint32_t serial=0;
 if(serial==UINT32_MAX){fail("Transfer generation exhausted");
 return false;
 }const char*slash=strrchr(destination,'/');
-int n=snprintf(stage_,sizeof(stage_),"%.*s/.peer-%08x.tmp",int(slash-destination),destination,++serial);
+int n=snprintf(stage_,sizeof(stage_),"%.*s/.peer-%08x.tmp",int(slash-destination),destination,static_cast<unsigned>(++serial));
 if(n<0||size_t(n)>=sizeof(stage_)){fail("Destination path too long");
 return false;
 }
