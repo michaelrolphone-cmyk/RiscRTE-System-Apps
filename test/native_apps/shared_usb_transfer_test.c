@@ -64,7 +64,8 @@ static int32_t prepare(void*c,uint64_t t){
 }
 static int32_t open_scene(void*c,const risc_components_document_v1*d,const risc_scene_navigation_v1*n,uint64_t*t){
  (void)c;assert(live&&d->node_count&&n->depth==1);REVOKE("open",RISC_SCENE_OK);
- if(mode==16)return RISC_SCENE_UNAVAILABLE;if(mode==2){assert(state==RISC_USB_MSC_MEDIA_UNAVAILABLE);bool unavailable=false;
+ if(mode==16)return RISC_SCENE_UNAVAILABLE;
+ if(mode==2){assert(state==RISC_USB_MSC_MEDIA_UNAVAILABLE);bool unavailable=false;
  for(unsigned i=0;i<d->node_count;i++)if(d->nodes[i].action==USB_START_STOP)unavailable=(d->nodes[i].flags&RISC_SCENE_DISABLED)!=0;
  assert(unavailable&&strstr(detail,"unavailable"));}
  revision=d->revision;*t=9;pending=2;return 0;
