@@ -7,7 +7,7 @@ import argparse,pathlib,json,subprocess,hashlib,shlex,os
 ROOT=pathlib.Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('runtime','x4-runtime','assembly','output'):p.add_argument('--'+name,type=pathlib.Path,required=True)
-p.add_argument('--prepare-only',action='store_true');p.add_argument('--lane',choices=['watch','wave','x4']);p.add_argument('--source-pins',type=pathlib.Path);p.add_argument('--sanitize',action='store_true');args=p.parse_args();args.output.mkdir(parents=True,exist_ok=False)
+p.add_argument('--prepare-only',action='store_true');p.add_argument('--lane',choices=['watch','wave','x4']);p.add_argument('--source-pins',type=pathlib.Path);p.add_argument('--sanitize',action='store_true');args=p.parse_args();args.assembly=args.assembly.resolve();args.output.mkdir(parents=True,exist_ok=False)
 fixtures=ROOT/'test/files_products/native';templates=json.loads((fixtures/'commands.json').read_text());results={}
 sha=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 for lane,template in templates.items():

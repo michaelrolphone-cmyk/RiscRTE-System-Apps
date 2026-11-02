@@ -2,7 +2,7 @@
   "compiler_sha256": "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74",
   "sources": {
     "home": {
-      "base_commit": "e575bf4cb8be23e89cc1d0b219a33b1de7acb64c",
+      "base_commit": "f0c533c6c6c1fc808e8d085ed9921d2a80422753",
       "overlay": "Published owning Home settings-effects source with declared, hash-checked shared SDK header; no local Home overlay",
       "files": {
         "apps/clock/PortableSleepPolicy.h": "b0251ad4e4c25a4842ad19c1f998f9fb60a3ee2577f49784417d7db880d33995",
