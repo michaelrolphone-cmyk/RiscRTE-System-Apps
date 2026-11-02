@@ -30,7 +30,7 @@ class Node {
  bool relayIdentityReady=false,relayVerificationPrepared=false;unsigned enrollmentIndex=0;uint64_t enrollmentPollAt=0;
  uint64_t relayFence=0,relayLeaseUntil=0,relayLeaseRetryAt=0;char relayCheckpointHash[65]{};
  bool sharedRelay()const{return config["relay"]["shared"].is<JsonObjectConst>();}
- bool relayMode()const{return (!strcmp(agentMode(configuration()),"explorer")||!strcmp(agentMode(configuration()),"continuity"))&&(!automaticRole()||sharedRelay()||roleBusy());}
+ bool relayMode()const{return (!strcmp(agentMode(configuration()),"relay")||!strcmp(agentMode(configuration()),"explorer")||!strcmp(agentMode(configuration()),"continuity"))&&(!automaticRole()||!strcmp(agentMode(configuration()),"relay")||sharedRelay()||roleBusy());}
  uint64_t roleLeaseUntil=0;bool roleGrantDirty=false;
  bool automaticRole()const{return config["allocation"]["automatic"]==true;}
  bool roleReady(uint64_t budget=0)const{return !automaticRole()||(roleLeaseUntil>now()+budget&&journal.state["allocation"]["state"]=="applied"&&!journal.state["allocation"]["target"]["profile_id"].isNull()&&text(journal.state["allocation"]["target"]["profile_id"],128));}

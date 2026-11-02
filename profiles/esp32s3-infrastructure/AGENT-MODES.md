@@ -1,10 +1,11 @@
 # Headless agent modes
 
-One firmware supports four persistent roles. `configuration.mode` is optional; absent means `explorer` and retains existing behavior. Select a role in the setup portal with the device's private pairing file, preconfigure it in the pairing policy, or send a higher-revision `infra.configuration` desired document through the existing participant configuration offer. No display, buttons or host computer are needed after provisioning.
+One firmware supports five persistent roles. `configuration.mode` is optional; absent means `explorer` and retains existing behavior. Select a role in the setup portal with the device's private pairing file, preconfigure it in the pairing policy, or send a higher-revision `infra.configuration` desired document through the existing participant configuration offer. No display, buttons or host computer are needed after provisioning.
 
 | Mode | Responsibility | Work admitted |
 |---|---|---|
-| Explorer | Existing general infrastructure node | All configured bindings and relay |
+| Relay | Existing event-delivery and enrollment role | Relay delivery, retries, receipts and enrollment; no observation/maintenance bindings |
+| Explorer | General infrastructure exploration and configured work | All configured bindings and relay |
 | Sentinel | Independent service observations and relay round-trip evidence | Health/source GET bindings; one synthetic challenge every five minutes |
 | Reconciler | Recover missed notifications and advance retained work | Existing Scheduler and Capabilities bounded maintenance calls |
 | Continuity | Backup clock and shared relay executor | Maintenance bindings plus explicitly configured shared relay |
@@ -88,3 +89,9 @@ Example service demand (one Reconciler for the default Scheduler binding):
 
 Host regression and target compilation are software evidence. Physical attach,
 power-loss and prolonged network-partition qualification remain separate.
+
+## Five-mode inventory (v1.8.1)
+
+Relay is independently selectable and automatically assignable through the generic capability controller. Its potential feature is `relay.deliver`, scoped to `relay:<relay_id>`. Shared configurations also advertise `relay.shared`; single-executor configurations retain their existing enrollment path. A missing relay policy or credential does not advertise Relay availability. All five modes remain selectable even when some profiles are unavailable on a particular board. Existing configurations without a mode still use Explorer to preserve behavior.
+
+Baseline demand counts are staffing policy, not the inventory of modes. The three initial capability demands do not remove Explorer or Relay. Services can request Relay capacity using `relay.deliver`; the allocator sends a leased Relay assignment and drains existing custody before switching away.

@@ -458,6 +458,7 @@
         },
         "mode": {
           "enum": [
+            "relay",
             "explorer",
             "sentinel",
             "reconciler",
@@ -874,6 +875,7 @@
               },
               "mode": {
                 "enum": [
+                  "relay",
                   "explorer",
                   "sentinel",
                   "reconciler",

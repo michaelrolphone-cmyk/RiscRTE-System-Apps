@@ -8,11 +8,14 @@ inline bool Node::roleProfiles(JsonArray out)const{
  bool shared=sharedRelay()&&credential(relay["credential_ref"]|"")[0];
  for(auto sub:relay["subscriptions"].as<JsonArrayConst>()){if(sub["deduplicates"]!=true)shared=false;for(const char* ref:{sub["auth"]["credential_ref"]|"",sub["signing_credential_ref"]|""})if(*ref&&!credential(ref)[0])shared=false;}
  if((relay["site_credential_ref"]|"")[0]&&!credential(relay["site_credential_ref"])[0])shared=false;
+ // A dedicated Relay can preserve the original single-executor enrollment
+ // path. Shared Relay profiles still require fenced, recoverable custody.
+ const bool delivery=!relay.isNull()&&relayPolicy(relay)&&siteReady&&credential(relay["credential_ref"]|"")[0]&&(!sharedRelay()||shared);
  auto explicitProfiles=config["allocation"]["profiles"].as<JsonArrayConst>();
- for(unsigned i=0;i<(explicitProfiles.isNull()?4:explicitProfiles.size());++i){
-  const char* modes[]={"explorer","sentinel","reconciler","continuity"};auto source=explicitProfiles[i].as<JsonObjectConst>();const char* mode=source.isNull()?modes[i]:(source["mode"]|"");
+ for(unsigned i=0;i<(explicitProfiles.isNull()?5:explicitProfiles.size());++i){
+  const char* modes[]={"relay","explorer","sentinel","reconciler","continuity"};auto source=explicitProfiles[i].as<JsonObjectConst>();const char* mode=source.isNull()?modes[i]:(source["mode"]|"");
   auto p=out.add<JsonObject>();p["profile_id"]=source.isNull()?mode:(source["profile_id"]|"");p["mode"]=mode;auto ids=p["binding_ids"].to<JsonArray>();auto services=p["services"].to<JsonArray>();auto features=p["features"].to<JsonArray>();bool eligible=true;
-  auto addUnique=[](JsonArray a,JsonVariantConst value){for(auto x:a)if(x==value)return;a.add(value);};
+  auto addUnique=[](JsonArray a,auto value){for(auto x:a)if(x==value)return;a.add(value);};
   for(auto b:bindings()){
    bool selected=source.isNull()?modeAllows(p,b["capability"]|""):false;
    if(!source.isNull())for(auto id:source["binding_ids"].as<JsonArrayConst>())selected|=id==b["binding_id"];
@@ -20,7 +23,9 @@ inline bool Node::roleProfiles(JsonArray out)const{
    ids.add(b["binding_id"]);addUnique(services,b["endpoint_policy_id"]);addUnique(features,b["capability"]);
   }
   if(!strcmp(mode,"sentinel")&&monitor){features.add("relay.roundtrip");char id[129];snprintf(id,sizeof(id),"relay:%.122s",relay["relay_id"]|"");services.add(id);}
-  if((!strcmp(mode,"continuity")||!strcmp(mode,"explorer"))&&shared){features.add("relay.shared");char id[129];snprintf(id,sizeof(id),"relay:%.122s",relay["relay_id"]|"");services.add(id);}
+  if(!strcmp(mode,"relay")&&delivery){features.add("relay.deliver");char id[129];snprintf(id,sizeof(id),"relay:%.122s",relay["relay_id"]|"");addUnique(services,id);}
+  if((!strcmp(mode,"relay")||!strcmp(mode,"continuity")||!strcmp(mode,"explorer"))&&shared){features.add("relay.shared");char id[129];snprintf(id,sizeof(id),"relay:%.122s",relay["relay_id"]|"");addUnique(services,id);}
+  if(!strcmp(mode,"relay")&&!delivery)eligible=false;
   if(!strcmp(mode,"continuity")&&!shared)eligible=false;
   if(!source.isNull()){
    // Features must be actually implemented and provisioned on this board.

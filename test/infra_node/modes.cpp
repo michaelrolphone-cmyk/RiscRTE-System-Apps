@@ -1,9 +1,9 @@
 #include "relay_harness.h"
 int main(int argc,char** argv){
  assert(argc==2);std::ifstream file(argv[1]);std::string source((std::istreambuf_iterator<char>(file)),{});JsonDocument cfg;assert(!deserializeJson(cfg,source));
- for(const char* mode:{"explorer","sentinel","reconciler","continuity"}){
+ for(const char* mode:{"relay","explorer","sentinel","reconciler","continuity"}){
   cfg["configuration"]["mode"]=mode;assert(policy(cfg));Node n;init(n,cfg);n.configureCadence();
-  for(unsigned i=0;i<n.bindings().size();++i){bool maintenance=i<2;bool allowed=!strcmp(mode,"explorer")||(!strcmp(mode,"sentinel")?!maintenance:maintenance);assert(n.bindingDisabled[i]==!allowed);n.bindingIndex=i;
+  for(unsigned i=0;i<n.bindings().size();++i){bool maintenance=i<2;bool allowed=strcmp(mode,"relay")&&(!strcmp(mode,"explorer")||(!strcmp(mode,"sentinel")?!maintenance:maintenance));assert(n.bindingDisabled[i]==!allowed);n.bindingIndex=i;
    if(allowed){assert(n.bindingStep(false)==1);assert(n.phase==Phase::Send);assert(n.action==(maintenance?Action::Maintain:Action::Probe));n.phase=Phase::Ready;}
    else {assert(n.bindingStep(false)==1);assert(n.phase==Phase::Ready);}
   }
@@ -28,6 +28,23 @@ int main(int argc,char** argv){
   b->net.started=ticks-120000;g["expires_at"]=b->net.wall(ticks)*1000+120000;assert(b->roleGrant(g)&&!b->roleReady()); // slow response cannot extend authority
   g["generation"]=1;assert(!b->roleGrant(g));b->phase=Phase::Stopped;b->dispose();
  }cfg.remove("allocation");
+ // Mode inventory is five even when only three staffing demands exist.
+ // A fully provisioned board advertises all five; dedicated Relay preserves
+ // the original single-executor path and drains custody before reassignment.
+ {
+  JsonDocument rc;rc.set(cfg);rc["allocation"]["automatic"]=true;
+  auto r=rc["relay"].to<JsonObject>();r["schema_version"]=1;r["relay_id"]="group";r["url"]="https://bus.example/v1/relay/call";r["credential_ref"]="relay-token";r["site_credential_ref"]="";r["monitor_credential_ref"]="monitor-token";r["shared"]["executor_id"]="primary";r["subscriptions"].to<JsonArray>();r["allowed_origins"].to<JsonArray>();r["webhook_credential_refs"].to<JsonArray>();
+  assert(policy(rc));Node n;init(n,rc);for(auto e:rc["endpoints"].as<JsonArrayConst>())n.journal.state["credentials"][e["credential_ref"]|""]="endpoint-token";n.journal.state["credentials"]["relay-token"]="relay-secret";n.journal.state["credentials"]["monitor-token"]="monitor-secret";
+  JsonDocument ps;n.roleProfiles(ps.to<JsonArray>());assert(ps.size()==5);
+  for(const char* mode:{"relay","explorer","sentinel","reconciler","continuity"})assert(!find(ps.as<JsonArrayConst>(),"mode",mode).isNull());
+  n.journal.state["credentials"].remove("relay-token");ps.clear();n.roleProfiles(ps.to<JsonArray>());assert(find(ps.as<JsonArrayConst>(),"mode","relay").isNull());
+  n.journal.state["credentials"]["relay-token"]="relay-secret";n.config["relay"].remove("shared");ps.clear();n.roleProfiles(ps.to<JsonArray>());assert(ps.size()==4);assert(find(ps.as<JsonArrayConst>(),"mode","relay")["features"][0]=="relay.deliver");
+  JsonDocument target;auto g=target.to<JsonObject>();g["protocol_version"]="infra-allocation/1";g["generation"]=1;g["profile_id"]="relay";g["mode"]="relay";g["demand_id"]="delivery";g["services"].to<JsonArray>().add("relay:group");g["expires_at"]=n.net.wall(ticks)*1000+120000;g["lease_ms"]=120000;g["state"]="assigned";n.net.started=ticks;
+  assert(n.roleGrant(g));assert(n.roleStep()==1);saved(n);assert(n.roleReady()&&n.relayMode()&&!n.sharedRelay());for(unsigned i=0;i<n.bindings().size();++i)assert(n.bindingDisabled[i]);
+  assert(n.relayStep()==1);saved(n);assert(n.relayStep()==1&&n.action==Action::RelayConfig);n.phase=Phase::Ready;
+  g["generation"]=2;g["profile_id"]="sentinel";g["mode"]="sentinel";g["services"].clear();g["services"].to<JsonArray>().add("service-health-endpoint");n.journal.state["relay"]["deliveries"]["pending"]["cursor"]=1;
+  assert(n.roleGrant(g)&&!n.roleReady());assert(n.roleStep()==0&&!strcmp(agentMode(n.configuration()),"relay"));n.journal.state["relay"]["deliveries"].clear();assert(n.roleStep()==1);saved(n);assert(n.roleReady()&&!n.relayMode()&&!strcmp(agentMode(n.configuration()),"sentinel"));n.phase=Phase::Stopped;n.dispose();
+ }
  {
   Node retry;init(retry,cfg);retry.journal.state["credentials"]["participant"]="participant-test";retry.loaded=true;auto a=retry.make(Action::Open,"participant","open_session");a["participant_id"]="test";retry.send(false);reply(retry,R"({"protocol_version":"1.0","status":"rejected","code":"REVISION_CONFLICT","mutation_outcome":"not_applied"})");assert(!retry.serviceBlocked&&retry.serviceRetryAt>ticks&&retry.phase==Phase::Ready);retry.phase=Phase::Stopped;retry.dispose();
  }

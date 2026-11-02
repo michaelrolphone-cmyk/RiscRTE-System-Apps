@@ -23,8 +23,8 @@ inline bool binding(JsonObjectConst b){
 }
 // Missing mode is the original all-purpose deployment, for existing journals.
 inline const char* agentMode(JsonObjectConst c){return c["mode"]|"explorer";}
-inline bool validMode(const char* m){return !strcmp(m,"explorer")||!strcmp(m,"sentinel")||!strcmp(m,"reconciler")||!strcmp(m,"continuity");}
-inline bool modeAllows(JsonObjectConst c,const char* capability){const char* m=agentMode(c);if(!strcmp(m,"explorer"))return true;if(!strcmp(m,"sentinel"))return !strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll");return !strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile");}
+inline bool validMode(const char* m){return !strcmp(m,"relay")||!strcmp(m,"explorer")||!strcmp(m,"sentinel")||!strcmp(m,"reconciler")||!strcmp(m,"continuity");}
+inline bool modeAllows(JsonObjectConst c,const char* capability){const char* m=agentMode(c);if(!strcmp(m,"relay"))return false;if(!strcmp(m,"explorer"))return true;if(!strcmp(m,"sentinel"))return !strcmp(capability,"service.health.observe")||!strcmp(capability,"source.poll");return !strcmp(capability,"scheduler.drive")||!strcmp(capability,"service.reconcile");}
 inline bool bindingAllowed(JsonObjectConst c,JsonObjectConst b){if(!modeAllows(c,b["capability"]|""))return false;if(c["active_bindings"].isNull())return true;for(auto id:c["active_bindings"].as<JsonArrayConst>())if(id==b["binding_id"])return true;return false;}
 inline bool allocationPolicy(JsonObjectConst a,JsonObjectConst c){
  if(a.isNull())return true;if(!keys(a,{"automatic"},{"profiles"})||!a["automatic"].is<bool>())return false;
