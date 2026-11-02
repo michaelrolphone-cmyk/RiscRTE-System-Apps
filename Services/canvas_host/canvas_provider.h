@@ -1,5 +1,6 @@
 #pragma once
 #include "canvas_frames.h"
+#include "canvas_snapshot.h"
 #include "RiscTouchV1.h"
 typedef struct {
  canvas_frames frames;
@@ -231,8 +232,12 @@ static int32_t canvas_provider_orientation(void*ctx,uint64_t session,uint32_t or
  memset(p->captured,0,sizeof(p->captured));p->input_gap=true;p->gap_emitted=false;
  return RISC_CANVAS_OK;
 }
+static int32_t canvas_provider_copy_completed(void*ctx,uint64_t session,uint32_t revision,void*out,size_t size,uint32_t stride){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ rc=canvas_provider_geometry_refresh(p);return rc?rc:canvas_frames_copy_completed(&p->frames,session,revision,out,size,stride);
+}
 static inline void canvas_provider_init(canvas_provider*p,const risc_display_output_api_v1*display,const risc_touch_api_v1*touch,uint32_t rotation){
  memset(p,0,sizeof(*p));p->frames.display=display;p->touch=touch;p->rotation=rotation;
- p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0,canvas_provider_orientation};
+ p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0,canvas_provider_orientation,canvas_provider_copy_completed};
  p->api=(risc_canvas_api_v1){1,sizeof(p->api),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
 }

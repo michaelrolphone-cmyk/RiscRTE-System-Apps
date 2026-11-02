@@ -245,3 +245,13 @@ static inline bool home_canvas_orientation(home_canvas_surface*s,uint32_t orient
  if(!home_canvas_result(s,s->presentation->orientation(s->presentation->context,s->session,orientation,reverse?1u:0u)))return false;
  s->contact_known=false;return home_canvas_geometry(s);
 }
+
+static inline bool home_canvas_copy_completed(home_canvas_surface*s,void*pixels,size_t size,uint32_t stride){
+ if(!s||s->retained||s->lease||s->receipt||!risc_canvas_has_snapshot(s->presentation)||!home_canvas_geometry(s))return false;
+ if(!home_canvas_result(s,s->presentation->copy_completed(s->presentation->context,s->session,s->geometry.revision,pixels,size,stride)))return false;
+ if(s->format==RISC_DISPLAY_FORMAT_MONO1){
+  size_t row=((size_t)s->geometry.width+7)/8;
+  for(uint32_t y=0;y<s->geometry.height;y++)for(size_t x=0;x<row;x++)((unsigned char*)pixels)[(size_t)y*stride+x]^=255u;
+ }
+ return true;
+}
