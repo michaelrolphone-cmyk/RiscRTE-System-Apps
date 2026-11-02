@@ -568,3 +568,24 @@ jobs:
         with:
           name: home-legacy-metadata-measurement-${{ github.event.pull_request.head.sha }}
           path: measurement/
+
+  image-storage-measurement:
+    needs: [qualify]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: complete-shared-home-${{ github.event.pull_request.head.sha }}
+          path: incoming/home
+      - name: Measure lossless storage representation only
+        run: python3 System/scripts/measure_home_image_storage.py --elf incoming/home/target/default.elf --output measurement/image.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: home-image-storage-measurement-${{ github.event.pull_request.head.sha }}
+          path: measurement/
