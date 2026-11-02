@@ -71,6 +71,10 @@ def main():
  native_firmware={lane:{key:ref(root/'packages'/('native-'+lane)/filename) for key,filename in [('firmware','firmware.bin'),('qualification','qualification.json'),('descriptor','native.json')]} for lane in ('watch','wave','x4')}
  delivery={'native_firmware':native_firmware,'schema':1,'source_commit':head,'application':application,'assembly':assembly,'admissions':admissions,'dependencies':dependencies,'product_assets':product_assets,
   'source_archive':ref(archive),'source_lock':ref(root/'source-lock.json'),'provenance':ref(root/'provenance.zip'),'licenses':licenses,'qualification':ref(root/'qualification.zip')}
+ if any(p.get('image_storage') for p in json.loads((root/'assembly/assembly.json').read_text())['products'].values()):
+  guide=root/'UPGRADE.md';guide.write_bytes((a.system/'docs/shared-home/lossless-storage-upgrade.md').read_bytes())
+  delivery['upgrade']={'guide':ref(guide),'receipt':ref(root/'upgrade/receipt.json'),
+   'artifacts':{mode:ref(root/'upgrade'/(mode+'.zip')) for mode in ('normal','sanitized')}}
  (root/'home-delivery.json').write_text(json.dumps(delivery,sort_keys=True,indent=2)+'\n')
  print('Joined closure described; publisher must verify actual assembly and admission bindings')
 if __name__=='__main__':main()

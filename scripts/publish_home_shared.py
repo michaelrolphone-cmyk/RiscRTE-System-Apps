@@ -104,12 +104,26 @@ def run(root, publish):
     path=artifact(item)
     name='dependency-'+str(index)+'-'+category+'-'+item['sha256']+'-'+path.name
     files[name]=path
- for lane,assets in delivery.get('product_assets',{}).items():
+ require(set(delivery.get('product_assets',{}))=={'watch','wave','x4'},'All three packed product assets required')
+ for lane,assets in delivery['product_assets'].items():
   require(lane in assembly['products'],'Unknown product asset lane')
   for category,digest_field in (('store','store_sha256'),('sd','sd_archive_sha256')):
    item=assets[category]
    require(item['sha256']==assembly['products'][lane][digest_field],'Packed product asset differs: '+lane+'/'+category)
    files['product-'+lane+'-'+category+'-'+Path(item['path']).name]=artifact(item)
+ if any(product.get('image_storage') for product in assembly['products'].values()):
+  upgrade=delivery['upgrade'];guide=artifact(upgrade['guide']);proof=artifact(upgrade['receipt'])
+  require(guide.stat().st_size>0,'Upgrade guide missing')
+  q=json.loads(proof.read_text())
+  require(q['status']=='owning-upgrade-proofs-verified' and q['baseline_runtime']=='0052d1fc42e9cfc82d626c5a247d460919c87935' and q['decoder_runtime']=='712ecc3f894dba99d9c9638941778a82f5856b97','Upgrade source binding differs')
+  require(q['upgrade_order']==['firmware-only-current-raw-clone','reboot-health-confirm','decoder-admits-final-cohort','reboot-health-confirm'],'Unsafe upgrade ordering')
+  require(set(upgrade['artifacts'])==set(q['proofs'])=={'normal','sanitized'},'Both upgrade modes required')
+  for mode,item in upgrade['artifacts'].items():
+   path=artifact(item);require(item['sha256']==q['proofs'][mode]['sha256'],'Upgrade proof bytes differ')
+   from stage_home_upgrade_qualification import verify_archive
+   verify_archive(path.read_bytes())
+   files['upgrade-'+mode+'.zip']=path
+  files['UPGRADE.md']=guide;files['upgrade-qualification.json']=proof
  for field in ('source_archive','source_lock','provenance','licenses','qualification'):
   files[field+Path(delivery[field]['path']).suffix]=artifact(delivery[field])
  source=json.loads(artifact(delivery['source_lock']).read_text())

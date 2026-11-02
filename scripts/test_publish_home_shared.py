@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Offline tests of the actual publication validator; never calls GitHub."""
 import hashlib, importlib.util, json, os, tempfile
+from unittest.mock import patch
+import stage_home_upgrade_qualification
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 spec=importlib.util.spec_from_file_location('publisher',ROOT/'scripts/publish_home_shared.py')
@@ -43,6 +45,15 @@ def make(root,fault):
  delivery['product_assets']={lane:{'store':packed_store,'sd':packed_sd} for lane in ('watch','wave','x4')}
  if fault=='wrong-native':delivery['native_firmware']['wave']['firmware']=put(root,'wrong-native.bin',b'wrong firmware')
  if fault=='missing-native':del delivery['native_firmware']['x4']
+ if encoded:
+  proofs={mode:put(root,'upgrade/'+mode+'.zip',b'fixture proof') for mode in ('normal','sanitized')}
+  q={'status':'owning-upgrade-proofs-verified','baseline_runtime':'0052d1fc42e9cfc82d626c5a247d460919c87935','decoder_runtime':'712ecc3f894dba99d9c9638941778a82f5856b97','upgrade_order':['firmware-only-current-raw-clone','reboot-health-confirm','decoder-admits-final-cohort','reboot-health-confirm'],'proofs':{mode:{'sha256':item['sha256']} for mode,item in proofs.items()}}
+  if fault=='encoded-wrong-order':q['upgrade_order'].reverse()
+  delivery['upgrade']={'guide':put(root,'UPGRADE.md',b'fixture upgrade guide'),'receipt':put(root,'upgrade.json',q),'artifacts':proofs}
+  if fault=='encoded-missing-guide':del delivery['upgrade']['guide']
+  if fault=='encoded-missing-sanitized-proof':del delivery['upgrade']['artifacts']['sanitized']
+ if fault=='missing-product-lane':del delivery['product_assets']['x4']
+ if fault=='missing-product-assets':del delivery['product_assets']
  if fault=='wrong-product':delivery['product_assets']['wave']['store']=put(root,'wrong-store.bin',b'wrong')
  for mode in ('normal','sanitized'):
   binding={'source_commit':COMMIT,'assembly_sha256':assembly_ref['sha256'],'products':{}}
@@ -83,10 +94,15 @@ def make(root,fault):
  if fault=='traversal':delivery['application']['elf']['path']='../escape'
  (root/'home-delivery.json').write_text(json.dumps(delivery))
  if fault=='tampered':(root/'target/default.elf').write_bytes(b'changed')
-for fault in ('good','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
+for fault in ('good','encoded-good','encoded-wrong-runtime','encoded-no-recovery','encoded-wrong-codec','encoded-no-reader','encoded-wrong-order','encoded-missing-guide','encoded-missing-sanitized-proof','missing-product-lane','missing-product-assets','unrecorded-stored-change','missing-stored','unrecorded-decoding','wrong-native','missing-native','wrong-native-cohort','wrong-product','changed-input-map','null-binding','wrong-build','missing-view','unpacked','different-elf','prepare-only','failed-admission','wrong-tree','wrong-assembly','hardware','missing-sanitized','wrong-source','traversal','tampered'):
  with tempfile.TemporaryDirectory() as temporary:
   root=Path(temporary);make(root,fault)
-  try:publisher.run(root,False)
+  try:
+   # This unit fixture mocks only the independently tested archive parser.
+   # Owning CI supplies and verifies real bootloader/log archives end-to-end.
+   with patch.object(stage_home_upgrade_qualification,'verify_archive',side_effect=lambda raw:None if raw==b'fixture proof' else (_ for _ in ()).throw(ValueError('fixture bytes'))) as verifier:
+    publisher.run(root,False)
+    if fault=='encoded-good':assert verifier.call_count==2
   except (ValueError,TypeError,KeyError):
    assert fault not in ('good','encoded-good'),fault
   else:
