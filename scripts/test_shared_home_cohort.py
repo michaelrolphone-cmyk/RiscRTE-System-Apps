@@ -2,7 +2,7 @@
 """Synthetic overlay contract regressions; not product binding evidence."""
 import copy,json,tempfile,unittest
 from pathlib import Path
-from assemble_shared_home_cohort import inventory,fingerprint,overlay
+from assemble_shared_home_cohort import inventory,fingerprint,overlay,pack_candidate
 from compose_shared_app_cohort import encode,digest
 class Overlay(unittest.TestCase):
  def fixture(self):
@@ -54,6 +54,21 @@ class Overlay(unittest.TestCase):
    (package/'manifest.json').write_bytes(raw);(package/'driver.elf').write_bytes(elf)
    p['providers']=[{'package':'raster','manifest_sha256':digest(raw),'elf_sha256':digest(elf),'row':{'manifest':name+'/manifest.json','instance_id':0,'bindings':[]}} for name in ('one','two')]
    with self.assertRaises(ValueError):overlay(b,sd,p,b'\x7fELFhome',m,root)
+ def test_pack_exact_size_and_sd_roundtrip(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   entries={'default.elf':b'complete'};sd={'book.epub':b'unchanged'}
+   calls=[]
+   def build(values,size):
+    calls.append((values,size));return b'x'*size,{'fixture':True}
+   def read_image(image,size):return entries
+   result=pack_candidate(Path(tmp),entries,sd,32,build,read_image)
+   self.assertEqual(calls,[(entries,32)]);self.assertTrue(result['store_roundtrip'])
+   self.assertEqual((Path(tmp)/'store.bin').stat().st_size,32)
+ def test_pack_no_resize_or_tampered_decode(self):
+  with tempfile.TemporaryDirectory() as tmp:
+   for build,reader in ((lambda e,n:(b'x'*(n+1),{}),lambda b,n:{}),
+                        (lambda e,n:(b'x'*n,{}),lambda b,n:{'wrong':b'bytes'})):
+    with self.assertRaises(ValueError):pack_candidate(Path(tmp),{'keep':b'data'},{},32,build,reader)
  def test_sd_route_preserved(self):
   b,sd,p,m=self.fixture();row=json.loads(b['boot.json']);row['app_capabilities'][0]['image_source']={'path':'apps/home.elf'}
   b['boot.json']=encode(row);del b['default.elf'];sd['apps/home.elf']=b'old'

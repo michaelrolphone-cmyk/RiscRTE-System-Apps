@@ -3,7 +3,7 @@
 No product defaults, inferred bindings, store resizing, or alias shim generation.
 This writes unpacked candidates; owning qualification must pack and validate them.
 """
-import argparse, copy, hashlib, json
+import argparse, copy, hashlib, json, sys, zipfile
 from pathlib import Path, PurePosixPath
 from compose_shared_app_cohort import tree, safe, encode, digest, write_tree
 
@@ -130,7 +130,40 @@ def overlay(before, before_sd, plan, elf, common, packages):
           'packed':False,'dependency_closure_verified':False,'target_execution':False}
  return out,sd,receipt
 
-def run(cohort,plan_path,home,packages,output):
+def packing_inputs(inputs,tools,cohort):
+ # Reuse the already delivered Files store decoder/packer and exact inputs.
+ from derive_files_product_authority import INPUTS,TOOLS,digest as file_digest,read_member
+ for name in ('watch.zip','wave.zip','x4-store.bin'):
+  if file_digest(inputs/name)!=INPUTS[name]:raise ValueError('Original product input differs '+name)
+ for name,expected in TOOLS.items():
+  if file_digest(tools/name)!=expected:raise ValueError('Owning bootfs tool differs '+name)
+ sys.path.insert(0,str(tools.resolve()))
+ from read_only_spiffs import read_image
+ from current_bootfs import build
+ sizes={}
+ for lane in ('watch','wave','x4'):
+  raw=(inputs/'x4-store.bin').read_bytes() if lane=='x4' else read_member(inputs/(lane+'.zip'),'candidate/store.bin')
+  if read_image(raw,len(raw))!=tree(cohort/lane/'before'):raise ValueError('Original inventory differs '+lane)
+  sizes[lane]=len(raw)
+ return sizes,build,read_image
+
+def pack_candidate(directory,entries,sd,size,build,read_image):
+ image,packing=build(entries,size)
+ if len(image)!=size or read_image(image,size)!=entries:raise ValueError('Store roundtrip differs')
+ (directory/'store.bin').write_bytes(image)
+ # Canonical ZIP metadata; stored member bytes must remain exactly the candidate.
+ path=directory/'sd-apps.zip'
+ with zipfile.ZipFile(path,'w',compression=zipfile.ZIP_DEFLATED) as z:
+  for name,data in sorted(sd.items()):
+   info=zipfile.ZipInfo(safe(name),(1980,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
+   info.external_attr=0o100644<<16;z.writestr(info,data)
+ with zipfile.ZipFile(path) as z:
+  if {n:z.read(n) for n in z.namelist()}!=sd:raise ValueError('SD roundtrip differs')
+ return {'packed':True,'store_bytes':size,'store_sha256':digest(image),
+         'sd_archive_sha256':digest(path.read_bytes()),'packing':packing,
+         'store_roundtrip':True,'sd_roundtrip':True}
+
+def run(cohort,plan_path,home,packages,output,inputs=None,bootfs_tools=None):
  if output.exists():raise ValueError('Output exists')
  plan=json.loads(plan_path.read_text())
  elf=(home/'default.elf').read_bytes();common=json.loads((home/'default.json').read_text())
@@ -138,6 +171,8 @@ def run(cohort,plan_path,home,packages,output):
  if build.get('shared_elf')!=digest(elf) or set(build.get('views',[]))!={'native-faces','overview-retained-desk'}:
   raise ValueError('Missing complete dual-view Home build receipt; alias shims are not Home')
  if build.get('manifest_sha256')!=digest((home/'default.json').read_bytes()):raise ValueError('Home manifest receipt differs')
+ if bool(inputs)!=bool(bootfs_tools):raise ValueError('Both original inputs and pinned bootfs tools required')
+ packing=packing_inputs(inputs,bootfs_tools,cohort) if inputs else None
  results={};prepared={}
  for lane in ('watch','wave','x4'):
   before,sd=read_lane(cohort,lane)
@@ -145,14 +180,19 @@ def run(cohort,plan_path,home,packages,output):
  # Validate every lane before writing any candidate.
  output.mkdir(parents=True)
  for lane,(after,sd,receipt) in prepared.items():
+  write_tree(output/lane/'before',tree(cohort/lane/'before'))
   write_tree(output/lane/'after',after);write_tree(output/lane/'after-sd',sd)
+  if packing:
+   sizes,build,read_image=packing
+   receipt.update(pack_candidate(output/lane,after,sd,sizes[lane],build,read_image))
   results[lane]=receipt
- (output/'assembly.json').write_bytes(encode({'products':results,'byte_identical_home':digest(elf),'packed':False}))
+ (output/'assembly.json').write_bytes(encode({'products':results,'byte_identical_home':digest(elf),'packed':bool(packing)}))
  return results
 
 if __name__=='__main__':
  p=argparse.ArgumentParser(description=__doc__)
  p.add_argument('--cohort',type=Path,required=True);p.add_argument('--inventory-output',type=Path)
+ p.add_argument('--inputs',type=Path);p.add_argument('--bootfs-tools',type=Path)
  for name in ('plan','home','packages','output'):p.add_argument('--'+name,type=Path)
  a=p.parse_args()
  if a.inventory_output:
@@ -160,4 +200,4 @@ if __name__=='__main__':
   a.inventory_output.write_bytes(encode({lane:{'sha256':fingerprint(v),'inventory':v} for lane,v in records.items()}))
  else:
   if not all((a.plan,a.home,a.packages,a.output)):p.error('--plan, --home, --packages and --output required for overlay')
-  run(a.cohort,a.plan,a.home,a.packages,a.output)
+  run(a.cohort,a.plan,a.home,a.packages,a.output,a.inputs,a.bootfs_tools)
