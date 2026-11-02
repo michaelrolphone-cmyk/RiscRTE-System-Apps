@@ -13,14 +13,29 @@ static int32_t hold(void*p){(void)p;step('H');assert(!state.held);return hold_rc
 static bool wake(void*p,bool*out){(void)p;step('K');assert(state.held);*out=pending;return fault!=5;}
 static int32_t deep(void*p,uint32_t ms){(void)p;step('E');assert(state.held&&ms==1000);return entry_rc;}
 static int32_t deep_set(void*p,uint32_t ms){(void)p;step('W');assert(state.held&&ms==1000);return entry_rc;}
+static int32_t light(void*p,uint32_t ms,risc_light_sleep_result_v1*out){(void)p;(void)ms;(void)out;assert(!"Applicability must never call a provider");return 0;}
 static risc_display_power_api_v1 display={.api_version=1,.struct_size=sizeof(display),.prepare_sleep=panel_prepare,.prepare_deep_sleep=hold,.resume_status=panel_resume};
 static risc_power_sleep_api_v1 power={.api_version=1,.struct_size=sizeof(power),.prepare_sleep=power_prepare,.resume=power_resume,.sleep_wake_pending=wake,.deep_sleep_for=deep,.deep_sleep_set=deep_set};
 static void reset(void){state=(portable_home_power){.display=&display,.power=&power};n=0;order[0]=0;fault=0;hold_rc=0;entry_rc=RISC_DEEP_SLEEP_BUSY;pending=false;}
 static void prepared(void){assert(portable_home_power_prepare(&state)==1);step('A');assert(!state.held);assert(portable_home_power_hold(&state)==1);}
 int main(void){
+ reset();assert(portable_home_power_modes(&state,true)==PORTABLE_HOME_MODE_DEEP&&!n);
+ power.light_sleep_for=light;assert(portable_home_power_modes(&state,true)==7&&!n);assert(portable_home_power_modes(&state,false)==PORTABLE_HOME_MODE_LIGHT&&!n);
+ state.enrolled_wake_sources=true;assert(portable_home_power_modes(&state,true)==PORTABLE_HOME_MODE_DEEP&&!n);
+ power.light_sleep_set=light;assert(portable_home_power_modes(&state,true)==7&&!n);
+ power.struct_size=RISC_POWER_TIMED_SLEEP_SIZE;assert(portable_home_power_modes(&state,true)==0&&!n);
+ state.enrolled_wake_sources=false;assert(portable_home_power_modes(&state,true)==PORTABLE_HOME_MODE_LIGHT&&!n);
+ power.struct_size=sizeof(power);state.retained=true;assert(portable_home_power_modes(&state,true)==0&&!n);
+ state.retained=false;display.resume_status=NULL;assert(portable_home_power_modes(&state,true)==0&&!n);display.resume_status=panel_resume;
+ power.light_sleep_for=power.light_sleep_set=NULL;
+
  reset();prepared();assert(portable_home_power_enter(&state,1000)==0);assert(portable_home_power_restore(&state)==1);assert(!strcmp(order,"PUAHKERS")&&!state.held);
  reset();state.enrolled_wake_sources=true;prepared();assert(portable_home_power_enter(&state,1000)==0);assert(portable_home_power_restore(&state)==1);assert(!strcmp(order,"PUAHKWRS"));
  reset();state.display=NULL;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);
+ reset();display.struct_size=RISC_DISPLAY_POWER_LIGHT_SLEEP_SIZE;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);display.struct_size=sizeof(display);
+ reset();display.resume_status=NULL;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);display.resume_status=panel_resume;
+ reset();display.api_version=2;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);display.api_version=1;
+ reset();state.enrolled_wake_sources=true;power.struct_size=RISC_POWER_TIMED_DEEP_SLEEP_SIZE;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);power.struct_size=sizeof(power);
  reset();power.struct_size=RISC_POWER_TIMED_SLEEP_SIZE;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);power.struct_size=sizeof(power);
  reset();power.deep_sleep_for=NULL;assert(!portable_home_power_supported(&state)&&portable_home_power_prepare(&state)==0&&!n);power.deep_sleep_for=deep;
  reset();fault=1;assert(portable_home_power_prepare(&state)==0&&!strcmp(order,"PS"));

@@ -28,6 +28,23 @@ static inline bool portable_home_power_supported(const portable_home_power *s) {
   p->prepare_sleep&&p->resume&&p->sleep_wake_pending&&
   (s->enrolled_wake_sources?(p->struct_size>=RISC_POWER_WAKE_SET_SIZE&&p->deep_sleep_set):p->deep_sleep_for!=NULL);
 }
+enum { PORTABLE_HOME_MODE_LIGHT=1u,PORTABLE_HOME_MODE_DEEP=2u,PORTABLE_HOME_MODE_HYBRID=4u };
+/* Cached applicability only: no provider call, acquisition, preference read or
+ * mutation. Checkpoint support is app/native admission, not hardware identity. */
+static inline unsigned portable_home_power_modes(const portable_home_power*s,bool checkpoint_supported) {
+ if(!s||s->retained||!s->display||!s->power)return 0;
+ const risc_display_power_api_v1*d=s->display;const risc_power_sleep_api_v1*p=s->power;
+ if(d->api_version!=1||d->struct_size<RISC_DISPLAY_POWER_RESUME_STATUS_SIZE||
+    !d->prepare_sleep||!d->resume_status||p->api_version!=1||
+    p->struct_size<RISC_POWER_TIMED_SLEEP_SIZE||!p->prepare_sleep||!p->resume||!p->sleep_wake_pending)return 0;
+ unsigned modes=0;
+ if(s->enrolled_wake_sources?(p->struct_size>=RISC_POWER_WAKE_SET_SIZE&&p->light_sleep_set!=NULL):p->light_sleep_for!=NULL)
+  modes|=PORTABLE_HOME_MODE_LIGHT;
+ if(checkpoint_supported&&portable_home_power_supported(s))modes|=PORTABLE_HOME_MODE_DEEP;
+ if((modes&(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_DEEP))==(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_DEEP))
+  modes|=PORTABLE_HOME_MODE_HYBRID;
+ return modes;
+}
 static inline int portable_home_power_restore(portable_home_power *s) {
  if(!s||s->retained)return PORTABLE_HOME_POWER_RETAINED;
  if(s->power_touched) {
