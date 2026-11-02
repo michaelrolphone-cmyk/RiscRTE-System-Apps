@@ -37,3 +37,7 @@ qualification of this head. Current hosted receipts and logs are retained in the
 workflow artifact. Final hosted delivery is pending until that workflow passes.
 
 No physical-device test or complete native firmware rebuild is claimed.
+
+## Loader-metadata packaging correction
+
+The initial 391,232-byte Files 1.6.0 ELF exceeded the retained Watch store capacity. Files 1.6.1 uses the existing `loader-metadata-v3` compactor, copied byte-for-byte from System `5cdc71054f51489a2e6c654e25b1b0eb21953172:docs/shared-app-crashes/replay/compact_current_elf.py` (also used by Home). The full original ELF remains a sidecar and its known hash is checked. Allocated sections, program segments, entry point, dynamic symbols, retained static symbols and relocation targets must remain identical. Repeated compaction, deliberate corruption rejection, Runtime validation and all three product preservation/admission are required by CI. No app feature, authority, data file or partition geometry is removed to fit. Final compacted identity is recorded by the owning run; this note does not assert that the run has passed.

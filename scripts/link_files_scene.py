@@ -7,6 +7,7 @@ import argparse,hashlib,json,os,subprocess
 from pathlib import Path
 from native_toolchain import compiler_path
 from portable_file_sharing_build import MODULES
+from compact_current_elf import compact
 ROOT=Path(__file__).resolve().parents[1]
 def make_manifest(version,alarm_api):
  optional=[('ui.scene',1),('ui.text-input',1),('storage.installed-files',1),('storage.app-data.export',1),('storage.volume',1),('file.open',1),('file.open.source',1),('network.tcp.listener',1),('crypto.entropy',1),('net.wifi',1),('bluetooth.hci',1),('bluetooth.session-setup',1),('storage.key-value',1),('storage.key-value.atomic',1),('contexts.service',1),('storage.shared-data',1),('telemetry.broadcast',1),('rtc.clock',2),('board.battery',1),('alarm.service',alarm_api),('display.output',1),('input.touch.raw',1),('input.navigation',1),('input.power-key',1),('power.sleep',1),('display.power',1),('motion.accel',1),('app.catalog',1),('runtime.realtime',1)]
@@ -31,7 +32,11 @@ def main():
  objects+=support
  exports={'app_main','risc_resident_app_descriptor_v1'};mapping=out/'exports.map';mapping.write_text('{global:'+ ';'.join(sorted(exports))+';local:*;};\n')
  elf=out/'file_browser.elf';cmd=[cc,'-shared','-nostdlib','-nostartfiles','-Wl,--no-relax','-Wl,--gc-sections','-Wl,--hash-style=sysv','-Wl,--version-script='+str(mapping),*map(str,objects),'-o',str(elf)]
- subprocess.run(cmd,check=True);first=elf.read_bytes();subprocess.run(cmd,check=True);assert first==elf.read_bytes(),'Non-identical repeated link'
+ subprocess.run(cmd,check=True);linked=elf.read_bytes();subprocess.run(cmd,check=True);assert linked==elf.read_bytes(),'Non-identical repeated link'
+ compaction=compact(elf,cc,out/'file_browser.full.elf');first=elf.read_bytes()
+ repeat=out/'file_browser.repeat.elf';repeat.write_bytes(linked);compact(repeat,cc,out/'file_browser.repeat.full.elf')
+ assert first==repeat.read_bytes(),'Non-identical repeated compaction'
+ print(json.dumps({'canonical_bytes':len(first),'canonical_sha256':hashlib.sha256(first).hexdigest(),'compaction':compaction}),flush=True)
  syms=subprocess.check_output([cc.removesuffix('gcc')+'nm','-D',str(elf)],text=True);imports={s.split()[-1] for s in syms.splitlines() if ' U ' in ' '+s};actual={s.split()[-1] for s in syms.splitlines() if len(s.split())>=3 and s.split()[-2] in ('T','D','B','R')}
  allowed={'risc_runtime_get_api','memcpy','memset','memcmp','strcmp','strlen','strncmp','strrchr','snprintf','malloc','free','strcpy','memchr','strchr','strstr'}
  if not imports<=allowed or actual!=exports:raise ValueError('Unresolved/invalid application ABI: '+repr((imports-allowed,actual)))
@@ -40,5 +45,5 @@ def main():
  # Requirements describe optional discovery, never grant authority. Product
  # composition must preserve the exact original rows/export namespace maps.
  manifest=make_manifest(a.version,a.alarm_api)
- (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n');(out/'link-receipt.json').write_text(json.dumps({'compiler_support_archive_sha256':hashlib.sha256(libgcc.read_bytes()).hexdigest(),'command':cmd,'sha256':hashlib.sha256(first).hexdigest(),'repeat_identical':True,'hardware_tested':False,'imports':sorted(imports),'exports':sorted(exports),'objects_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in objects},'qualification_sha256':hashlib.sha256((q/'qualification.json').read_bytes()).hexdigest(),'product_admission':'pending parent composition; no new grants authorized'},indent=2)+'\n')
+ (out/'file_browser.json').write_text(json.dumps(manifest,indent=2)+'\n');(out/'link-receipt.json').write_text(json.dumps({'compaction':compaction,'bytes':len(first),'packaging_source_sha256':hashlib.sha256((ROOT/'scripts/compact_current_elf.py').read_bytes()).hexdigest(),'compiler_support_archive_sha256':hashlib.sha256(libgcc.read_bytes()).hexdigest(),'command':cmd,'sha256':hashlib.sha256(first).hexdigest(),'repeat_identical':True,'hardware_tested':False,'imports':sorted(imports),'exports':sorted(exports),'objects_sha256':{str(f):hashlib.sha256(f.read_bytes()).hexdigest() for f in objects},'qualification_sha256':hashlib.sha256((q/'qualification.json').read_bytes()).hexdigest(),'product_admission':'pending parent composition; no new grants authorized'},indent=2)+'\n')
 if __name__=='__main__':main()

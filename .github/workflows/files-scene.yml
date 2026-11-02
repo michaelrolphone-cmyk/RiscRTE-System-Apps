@@ -85,14 +85,17 @@ jobs:
           CC_TARGET="$RUNNER_TEMP/files-toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
           echo "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74  $CC_TARGET" | sha256sum -c -
           echo "CC_TARGET=$CC_TARGET" >> "$GITHUB_ENV"
+      - name: Install declared Home recipe dependencies
+        run: python3 -m pip install -r Home/scripts/requirements.txt
       - name: Focused suites and canonical repeated target
         shell: bash
         run: |
           set -euo pipefail
           python System/scripts/qualify_files_scene.py --runtime Runtime --utilities Utilities --target-cc "$CC_TARGET" --output qualification/prepared 2>&1 | tee qualification/logs/prepared.log
-          python System/scripts/link_files_scene.py --qualification qualification/prepared --version 1.6.0 --alarm-api 1 --cc "$CC_TARGET" --output qualification/target 2>&1 | tee qualification/logs/target.log
-          echo "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9  qualification/target/file_browser.elf" | sha256sum -c -
-          test "$(stat -c %s qualification/target/file_browser.elf)" = 391232
+          python System/scripts/link_files_scene.py --qualification qualification/prepared --version 1.6.1 --alarm-api 1 --cc "$CC_TARGET" --output qualification/target 2>&1 | tee qualification/logs/target.log
+          echo "8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9  qualification/target/file_browser.full.elf" | sha256sum -c -
+          test "$(stat -c %s qualification/target/file_browser.full.elf)" = 391232
+          python System/scripts/test_files_elf_compaction.py --full qualification/target/file_browser.full.elf --compact qualification/target/file_browser.elf --cc "$CC_TARGET" 2>&1 | tee qualification/logs/compaction.log
       - name: Complete root, storage, peer, sharing and actual Runtime
         shell: bash
         run: |
@@ -146,8 +149,6 @@ jobs:
           python System/scripts/test_derive_files_product_authority.py
           python System/scripts/derive_files_product_authority.py --inputs qualification/inputs --bootfs-tools Bootfs/scripts --output qualification/original-product-authority.json
           python System/scripts/prepare_files_selections.py --authority qualification/original-product-authority.json --linked qualification/target --parser qualification/prepared/manifest-test --output qualification/selections
-      - name: Install declared Home recipe dependencies
-        run: python3 -m pip install -r Home/scripts/requirements.txt
       - name: Verify Home shared SDK closure
         run: python3 Home/tests/test_shared_sdk_headers.py
       - name: Build exact Home packages twice

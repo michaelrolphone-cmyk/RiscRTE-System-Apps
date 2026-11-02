@@ -78,6 +78,7 @@ for lane in ([a.lane] if a.lane else ['watch','wave','x4']):
  allowed={'boot.json','file_browser.elf','file_browser.json'}|({'default.elf','default.json','rtc/driver.elf','rtc/manifest.json'} if lane!='x4' else set())
  assert before.keys()==after.keys();changed={n for n in before if before[n]!=after[n]};assert changed<=allowed
  assert nextboot['drivers']==boot['drivers'];assert [r for r in nextboot['app_capabilities'] if r.get('manifest')!='file_browser.json']==[r for r in boot['app_capabilities'] if r.get('manifest')!='file_browser.json']
+ print(json.dumps({'lane':lane,'store_bytes':len(raw),'before_payload_bytes':sum(map(len,before.values())),'after_payload_bytes':sum(map(len,after.values())),'changed_sizes':{n:{'before':len(before[n]),'after':len(after[n])} for n in sorted(changed)}}),flush=True)
  image,packing=build(after,len(raw));assert read_image(image,len(raw))==after;(d/'store.bin').write_bytes(image)
  for which,entries in [('before',before),('after',after)]:
   for n,b in entries.items():f=d/which/safe(n);f.parent.mkdir(parents=True,exist_ok=True);f.write_bytes(b)
