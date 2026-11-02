@@ -12,6 +12,7 @@ import portable_loading_build
 ROOT=Path(__file__).resolve().parents[1]
 def build():
  p=argparse.ArgumentParser(description=__doc__)
+ p.add_argument('--shared-radio-source',type=Path,help='Exact owning generic Home radio implementation')
  p.add_argument('--shared-view-output',type=Path,help='Emit complete overview relocatable view for the single shared Home assembly; no standalone app artifact')
  p.add_argument('--experimental-settings-availability',action='store_true',help='Default-off Home temporary settings status and safe reload; requires atomic Home automatic')
  p.add_argument('--experimental-atomic-home-automatic',action='store_true',help='Default-off X4 Home automatic origins; requires atomic Quick and RF contexts')
@@ -143,10 +144,14 @@ def build():
   for source in list((ROOT/'sdk/app').glob('RiscCanvas*.h'))+[ROOT/'sdk/app/RiscHomePresentationV1.h',ROOT/'sdk/app/RiscResidentContextsV1.h']:
    shutil.copyfile(source,includes/source.name)
   for source in (ROOT/'lib/PortableApps/include').glob('PortableHome*.h'):shutil.copyfile(source,includes/source.name)
-  extra=['-DPORTABLE_ALARM_BUSY_DEFER','-DPORTABLE_SHARED_HOME_CANVAS','-DPORTABLE_SHARED_HOME_BOOT',
+  extra=['-DPORTABLE_QUICK_RADIO_AVAILABILITY','-DPORTABLE_ALARM_BUSY_DEFER','-DPORTABLE_SHARED_HOME_CANVAS','-DPORTABLE_SHARED_HOME_BOOT',
    '-include',str(includes/'PortableHomeBindings.h'),
    '-DPORTABLE_CRASH_REPORT_NAMESPACE=portable_home_crash_namespace()',
    '-DPORTABLE_INSTALLED_VOLUME_INSTANCE=portable_home_catalog_volume()']
+  if not a.shared_radio_source or not a.shared_radio_source.is_file():p.error('Shared overview requires generic radio source')
+  legacy_radio=str(ROOT/'lib/PortableApps/src/quick_radios.c')
+  if command.count(legacy_radio)!=1:p.error('Expected one owning radio source')
+  command=[str(a.shared_radio_source) if x==legacy_radio else x for x in command]
   command=[x for x in command if not x.startswith(('-DPORTABLE_CRASH_REPORT_NAMESPACE=','-DPORTABLE_INSTALLED_VOLUME_INSTANCE='))]
   command[1:1]=extra
   from shared_home_objects import emit_command

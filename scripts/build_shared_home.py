@@ -43,7 +43,7 @@ def run():
  '--raster-snapshot','--frontlight-tone','--frontlight-tone-sdk',sdk,'--display-settled-sdk',sdk,'--crash-report-sd',
  '--boot-animation','--relocation-tools',a.reader/'scripts','--stage-logs','--installed-catalog-volume-instance','0','--deferred-foreground-services',
  '--experimental-atomic-quick','--experimental-atomic-home-automatic','--experimental-settings-availability',
- '--shared-view-output',out/'overview','--output-dir',out/'overview-stage']
+ '--shared-radio-source',a.watch/'apps/clock/quick_radios.c','--shared-view-output',out/'overview','--output-dir',out/'overview-stage']
  overview=list(map(str,[sys.executable,ROOT/'scripts/build_paper_clock.py',*host]));commands.append(overview)
  subprocess.run(overview,check=True,env=dict(os.environ,NATIVE_APP_CC=str(cc)))
  exports={'app_main','app_module_init','app_module_fini','risc_resident_app_descriptor_v1'}

@@ -1,0 +1,92 @@
+name: Complete shared Home ELF
+on:
+  pull_request:
+    paths: ['Apps/shared_home.c', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/shared_home_objects.py', 'scripts/build_paper_clock.py', '.github/workflows/shared-home-complete.yml']
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: System
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Watch
+          ref: 63a3015e622ef2f3a960a46060aedf3e3f24eef7
+          path: Watch
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-System-Apps
+          ref: bb0cadf3cec3445a64e11513b47b2676f3fdd92d
+          path: WatchSystem
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: 4fdcad2495c33fe63f5f6faca9b11ced3c739a5b
+          path: WatchUtilities
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE
+          ref: a91edf3fada6a559ec107186dd163d0c8da10d29
+          path: Runtime
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/T5S3-Reader
+          ref: c98e4222048244b1e729869ed47aa99130025fd3
+          path: Reader
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-XTEINK-X4-PRO
+          ref: 6b7d1abe9b2dcc236f6086d07c0f619244c907cb
+          path: Interfaces
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: michaelrolphone-cmyk/RiscRTE-Utilities
+          ref: e80172353fcb9e6519ca9d9b2a4d43c69c1bc91d
+          path: AlarmUtilities
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact owning source and compiler
+        run: |
+          set -euo pipefail
+          mkdir -p out/source toolchain
+          for repo in System Watch WatchSystem WatchUtilities Runtime Reader Interfaces AlarmUtilities; do
+            git -C "$repo" archive HEAD | gzip -n > "out/source/$repo.tar.gz"
+            git -C "$repo" rev-parse HEAD > "out/source/$repo.head"
+          done
+          curl --fail --location --retry 2 --max-time 180 https://github.com/espressif/crosstool-NG/releases/download/esp-15.2.0_20251204/xtensa-esp-elf-15.2.0_20251204-x86_64-linux-gnu.tar.xz -o "$RUNNER_TEMP/toolchain.tar.xz"
+          echo "3d50f5cd5f173acfd524e07c1cd69bc99585731a415ca2e5bce879997fe602b8  $RUNNER_TEMP/toolchain.tar.xz" | sha256sum --check
+          tar -xJf "$RUNNER_TEMP/toolchain.tar.xz" -C toolchain
+          python3 -m pip install platformio==6.1.19 pyelftools==0.32
+          python3 -m pip install -r Watch/scripts/requirements.txt
+          pio pkg install --global --tool 'espressif/toolchain-xtensa-esp32s3@8.4.0+2021r2-patch5'
+      - name: Complete one-ELF build and exact repeat
+        run: |
+          set -euo pipefail
+          CC_TARGET="$PWD/toolchain/xtensa-esp-elf/bin/xtensa-esp32s3-elf-gcc"
+          LD_TARGET="$HOME/.platformio/packages/toolchain-xtensa-esp32s3/bin/xtensa-esp32s3-elf-ld"
+          for target in target repeat; do
+            python3 System/scripts/build_shared_home.py --watch Watch --watch-system WatchSystem --watch-utilities WatchUtilities --runtime Runtime --reader Reader --interfaces Interfaces/minimal/interfaces --alarm-utilities AlarmUtilities --catalog Interfaces/minimal/sd-app-catalog.json --compiler "$CC_TARGET" --legacy-linker "$LD_TARGET" --output "out/$target" 2>&1 | tee "out/$target.log"
+          done
+          cmp out/target/default.elf out/repeat/default.elf
+          sha256sum out/target/default.elf out/repeat/default.elf > out/byte-identity.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-shared-home-${{ github.event.pull_request.head.sha }}
+          path: out/
+          include-hidden-files: true
+          if-no-files-found: error
