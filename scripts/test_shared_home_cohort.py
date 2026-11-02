@@ -73,6 +73,23 @@ class Overlay(unittest.TestCase):
    self.assertEqual(out['firmware_sha256'],native['firmware']['sha256'])
    self.assertEqual(out['firmware_size'],native['firmware']['bytes'])
    self.assertEqual(out['version'],'new');self.assertEqual(receipt['native'],native)
+ def test_observed_native_cohort_mapping(self):
+  from prepare_home_cohort_plan import native_metadata_plan,NATIVE_COHORT_BASELINE,CANDIDATE_PRODUCT_VERSIONS
+  for lane in ('watch','wave','x4'):
+   with self.subTest(lane=lane),tempfile.TemporaryDirectory() as tmp:
+    root=Path(tmp);entries,spec,native=self.native_fixture(root)
+    (root/'native').rename(root/('native-'+lane))
+    native['artifact']['repository']=NATIVE_COHORT_BASELINE[lane]['source_repo']
+    (root/('native-'+lane)/'native.json').write_bytes(encode(native))
+    entries['cohort.json']=encode(NATIVE_COHORT_BASELINE[lane])
+    plan=native_metadata_plan(entries,root,lane)
+    replace_native_metadata(entries,plan,root);updated=json.loads(entries['cohort.json'])
+    self.assertEqual(updated['version'],CANDIDATE_PRODUCT_VERSIONS[lane])
+    self.assertEqual(updated['source_revision'],native['source_revision'])
+    self.assertNotIn('runtime_revision',updated)
+    for key in ('product','layout','store_abi','source_repo','schema','schema_version'):
+     self.assertEqual(updated[key],NATIVE_COHORT_BASELINE[lane][key])
+    with self.assertRaises(ValueError):native_metadata_plan(entries,root,lane)
  def test_native_metadata_refuses_stale_or_unbound_input(self):
   for fault in ('before','descriptor','firmware','qualification','field','missing','path','marker'):
    with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
