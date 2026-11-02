@@ -1,0 +1,18 @@
+{
+  "runtime": {
+    "repository": "michaelrolphone-cmyk/RiscRTE",
+    "revision": "712ecc3f894dba99d9c9638941778a82f5856b97",
+    "paths": [
+      "sdk/app/RiscRuntimeV1.h",
+      "sdk/app/RiscResidentShellV1.h"
+    ]
+  },
+  "alarm": {
+    "repository": "michaelrolphone-cmyk/RiscRTE-Utilities",
+    "revision": "452c57bd4f59f3c1d1463763e6ea5b0f90e7d012",
+    "paths": [
+      "lib/Alarm/include/AlarmServiceV1.h",
+      "lib/Alarm/include/AlarmServiceV2.h"
+    ]
+  }
+}

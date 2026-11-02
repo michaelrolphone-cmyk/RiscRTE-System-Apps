@@ -13,9 +13,17 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifndef PORTABLE_USB_TRANSFER_SHARED
 static const t5_app_api_v1 *app;
 static const paper_presentation *paper;
+#endif
 static const risc_runtime_api_v1 *runtime;
+#ifdef PORTABLE_USB_TRANSFER_SHARED
+static bool shared_live(void);
+#define USB_AUTH() shared_live()
+#else
+#define USB_AUTH() true
+#endif
 static risc_runtime_capability_v1 grant;
 static const risc_usb_device_msc_api_v1 *usb;
 static const risc_usb_device_msc_api_v1_prepare *preparation;
@@ -40,6 +48,7 @@ static bool terminal(uint32_t s) {
 }
 bool portable_usb_transfer_owned(void) {return token || unknown_custody || release_failed;}
 static void error_text(const char *fallback) {
+    if(!USB_AUTH())return ;
     detail[0]=0;
     if(usb && usb->last_error)usb->last_error(usb->context,detail,sizeof(detail));
     detail[sizeof(detail)-1]=0;
@@ -47,10 +56,11 @@ static void error_text(const char *fallback) {
     dirty=true;
 }
 static void log_result(const char *operation,int32_t result) {
+    if(!USB_AUTH())return ;
     char line[240];
     snprintf(line,sizeof(line),"USB transfer %s: result=%ld state=%s step=%lu%s%s",
         operation,(long)result,status_name(),(unsigned long)prepare_steps,detail[0]?" reason=":"",detail);
-    if(runtime->diagnostic)runtime->diagnostic(line);
+    if(USB_AUTH() && runtime->diagnostic)runtime->diagnostic(line);
 }
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
 static const char *command_name(uint32_t opcode) {
@@ -68,6 +78,7 @@ static const char *command_name(uint32_t opcode) {
  * write or console recovery is attempted from this app. Log commands, never
  * individual USB packets or mouse/touch samples. */
 static void read_protocol(void) {
+    if(!USB_AUTH())return ;
     if(!protocol_api || !token)return;
     risc_usb_device_msc_diagnostics_v1 next={.struct_size=sizeof(next)};
 #ifdef RISC_USB_MSC_DIAGNOSTICS_V2
@@ -77,6 +88,7 @@ static void read_protocol(void) {
 #else
     if(protocol_api->diagnostics(usb->context,token,&next)!=RISC_USB_MSC_OK)return;
 #endif
+    if(!USB_AUTH())return;
     protocol=next;
     char line[248];
     if(next.commands_started!=logged_started) {
@@ -86,7 +98,7 @@ static void read_protocol(void) {
             (unsigned long)next.current_lba,(unsigned long)next.current_block_count,
             (unsigned long long)next.command_started_ms,(unsigned long long)next.last_poll_gap_ms,
             (unsigned long long)(next.commands_started-logged_started));
-        if(runtime->diagnostic)runtime->diagnostic(line);
+        if(USB_AUTH() && runtime->diagnostic)runtime->diagnostic(line);
         logged_started=next.commands_started;
     }
     if(next.commands_completed!=logged_completed) {
@@ -97,7 +109,7 @@ static void read_protocol(void) {
             (long)next.last_io_result,(unsigned long long)next.blocks_read,
             (unsigned long long)next.blocks_written,(unsigned long)next.stalls,
             (unsigned long long)(next.commands_completed-logged_completed));
-        if(runtime->diagnostic)runtime->diagnostic(line);
+        if(USB_AUTH() && runtime->diagnostic)runtime->diagnostic(line);
         logged_completed=next.commands_completed;
     }
 }
@@ -107,6 +119,7 @@ static void read_protocol(void) {}
 /* Capture while the invocation is still authoritative. No provider pointer,
  * file content or borrowed text is retained by this generic Runtime service. */
 static void checkpoint_summary(const char *outcome,int32_t result,uint32_t reason) {
+    if(!USB_AUTH())return ;
     if(!checkpoint_client.write)return;
     char text[RISC_DIAGNOSTIC_CHECKPOINT_TEXT_MAX+1];
     int count;
@@ -144,6 +157,7 @@ static void checkpoint_summary(const char *outcome,int32_t result,uint32_t reaso
     if(count>0)(void)checkpoint_client.write(checkpoint_client.invocation,text,(uint32_t)count);
 }
 static bool release_grant(void) {
+    if(!USB_AUTH())return false;
     if(!grant.api)return true;
     if(!runtime->release(&grant)) {
         release_failed=true;state=RISC_USB_MSC_FAULT_RETAINED;
@@ -154,6 +168,7 @@ static bool release_grant(void) {
          * Do not call the provider again through the now-invalid grant. */
         snprintf(detail,sizeof(detail),"Provider release failed. Retry Stop.");dirty=true;return false;
     }
+    if(!USB_AUTH())return false;
     grant=(risc_runtime_capability_v1){0};usb=NULL;preparation=NULL;release_failed=false;
 #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
     protocol_api=NULL;
@@ -161,12 +176,15 @@ static bool release_grant(void) {
     return true;
 }
 static bool end_session(uint32_t reason, bool automatic) {
+    if(!USB_AUTH())return false;
     if(unknown_custody) {error_text("Ownership is uncertain. Restart required.");return false;}
     if(!token)return release_grant();
     const bool cancelling=state==RISC_USB_MSC_PREPARING;
     log_result(cancelling?"cancel preparation requested":"stop requested",(int32_t)reason);
     read_protocol();checkpoint_summary("end-pending",0,reason);
+    if(!USB_AUTH())return false;
     int32_t result=usb->end(usb->context,token,reason);
+    if(!USB_AUTH())return false;
     if(result==RISC_USB_MSC_OK) {
         token=0;confirm_removed=false;
         if(!terminal(state))state=RISC_USB_MSC_DISCONNECTED;
@@ -189,10 +207,13 @@ static bool end_session(uint32_t reason, bool automatic) {
     return false;
 }
 void portable_usb_transfer_service(void) {
+    if(!USB_AUTH())return ;
     if(!usb || !token)return;
     risc_usb_device_msc_status_v1 status={.struct_size=sizeof(status)};
     int32_t result=usb->poll(usb->context,token,&status);
+    if(!USB_AUTH())return;
     read_protocol();
+    if(!USB_AUTH())return;
     const bool had_media_io=host_reads || host_writes;
     host_reads=status.blocks_read;host_writes=status.blocks_written;
     if(!had_media_io && (host_reads || host_writes)) {
@@ -236,6 +257,7 @@ bool portable_app_before_launch(const char *destination) {
     return portable_usb_transfer_close();
 }
 static void start(void) {
+    if(!USB_AUTH())return ;
     if(portable_usb_transfer_owned())return;
     confirm_removed=local_ready=auto_cleanup_failed=preparing_presented=preparation_blocked=false;prepare_steps=0;detail[0]=0;
     host_reads=host_writes=0;
@@ -247,8 +269,11 @@ static void start(void) {
 #endif
     grant=(risc_runtime_capability_v1){.struct_size=sizeof(grant)};
     if(!runtime->acquire(RISC_USB_DEVICE_MSC_CAPABILITY,1,0,&grant)) {
+        if(!USB_AUTH())return;
+        if(grant.api || grant.slot || grant.generation){release_failed=true;return;}
         state=RISC_USB_MSC_MEDIA_UNAVAILABLE;error_text("USB transfer is unavailable. Retry Start.");return;
     }
+    if(!USB_AUTH())return;
     usb=grant.api;preparation=risc_usb_device_msc_prepare(usb);
     if(!preparation || !usb || usb->api_version!=1 || usb->struct_size<sizeof(*usb) || !usb->begin || !usb->poll || !usb->end || !usb->last_error) {
         usb=NULL;state=RISC_USB_MSC_MEDIA_UNAVAILABLE;error_text("USB transfer provider is incompatible.");release_grant();return;
@@ -256,7 +281,9 @@ static void start(void) {
     #ifdef RISC_USB_MSC_DIAGNOSTICS_TAG
     protocol_api=risc_usb_device_msc_diagnostics(usb);
 #endif
-    token=0;log_result("begin requested",0);int32_t result=usb->begin(usb->context,&token);
+    token=0;log_result("begin requested",0);if(!USB_AUTH())return;
+    int32_t result=usb->begin(usb->context,&token);
+    if(!USB_AUTH())return;
     if(result==RISC_USB_MSC_OK && token) {state=RISC_USB_MSC_PREPARING;dirty=true;log_result("SD lease acquired",result);return;}
     unknown_custody=(result==RISC_USB_MSC_RETAINED || result==RISC_USB_MSC_OK) && !token;
     if(token || unknown_custody){state=RISC_USB_MSC_FAULT_RETAINED;preparation_blocked=true;}
@@ -268,9 +295,12 @@ static void start(void) {
 /* This is deliberately separate from service(): display/input waits may poll
  * status, but never perform an SD preparation transaction or claim the PHY. */
 static void prepare_once(void) {
+    if(!USB_AUTH())return ;
     if(!preparation || !token || state!=RISC_USB_MSC_PREPARING || !preparing_presented || preparation_blocked || dirty)return;
     ++prepare_steps;log_result("prepare step requested",0);
+    if(!USB_AUTH())return;
     const int32_t result=preparation->prepare_step(usb->context,token);
+    if(!USB_AUTH())return;
     if(result!=RISC_USB_MSC_OK) {
         preparation_blocked=true;
         error_text("SD preparation failed. Cancel and retry.");
@@ -289,6 +319,7 @@ static void prepare_once(void) {
     }
     portable_usb_transfer_service();log_result("prepare step completed",result);
 }
+#ifndef PORTABLE_USB_TRANSFER_SHARED
 static int sx(int x){return x*app->screen_width()/480;}
 static int sy(int y){return y*app->screen_height()/800;}
 static void text(int y,const char *s,bool heading) {paper->text(sx(32),sy(y),sx(416),s,(heading?2u:1u)|PAPER_TEXT_FIT,heading,true);}
@@ -311,6 +342,7 @@ static void button(int x,int y,int w,const char *label) {
     app->fill_rect(sx(x+3),sy(y+3),sx(w-6),sy(62),false);
     paper->text(sx(x+12),sy(y+22),sx(w-24),label,1|PAPER_TEXT_FIT,false,true);
 }
+#endif
 static const char *status_name(void) {
     switch(state) {
     case RISC_USB_MSC_PREPARING:return "PREPARING SD";
@@ -324,7 +356,14 @@ static const char *status_name(void) {
     default:return "READY TO TRANSFER";
     }
 }
+#ifndef PORTABLE_USB_TRANSFER_SHARED
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+#include "usb_sd_transfer_native.inc"
+#endif
 static void render(void) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native){usb_native_render();return;}
+#endif
     /* Clear before drawing: servicing a display wait may set dirty again. */
     const uint32_t painted_state=state;
     dirty=false;paper->begin();text(28,"USB SD TRANSFER",true);
@@ -368,11 +407,18 @@ static void render(void) {
     preparing_presented=painted_state==RISC_USB_MSC_PREPARING && state==painted_state && !dirty;
 }
 static bool hit(const t5_app_input_t *in,int y) {
+#ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    if(usb_native)return in->tapped && usb_native_rect_hit(y==612?usb_layout.primary:usb_layout.secondary,in->touch_x,in->touch_y);
+#endif
     return in->tapped && in->touch_x>=sx(32) && in->touch_x<sx(448) && in->touch_y>=sy(y) && in->touch_y<sy(y+68);
 }
 void app_main(void) {
     app=t5_app_get_api(1);paper=paper_presentation_get();runtime=risc_runtime_get_api(1);
     if(!app || !paper || !runtime || !runtime->acquire || !runtime->release || !runtime->request_launch)return;
+    #ifdef PORTABLE_USB_TRANSFER_NATIVE_UI
+    usb_native=portable_usb_transfer_native_available();
+    if(usb_native && !usb_native_layout_open(&usb_layout,app->screen_width(),app->screen_height()))return;
+    #endif
     checkpoint_client=(risc_diagnostic_checkpoint_client_v1){.struct_size=sizeof(checkpoint_client)};
     if(!risc_runtime_diagnostic_checkpoint_client(runtime,&checkpoint_client) ||
        checkpoint_client.api_version!=1 || checkpoint_client.struct_size<sizeof(checkpoint_client) ||
@@ -441,3 +487,7 @@ void app_main(void) {
         if(!contact.down)prepare_once();
     }
 }
+
+#else
+#include "usb_sd_transfer_shared.inc"
+#endif
