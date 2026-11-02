@@ -29,6 +29,12 @@ int main(void){
  const risc_civil_clock_api_v1*base=driver->capability;
  const risc_civil_clock_policy_v1*policy=risc_civil_clock_get_policy(base,base->struct_size);assert(policy);
  assert(!risc_civil_clock_get_policy(base,sizeof(*base)));
+ const risc_civil_clock_schedule_v1 *schedule=risc_civil_clock_get_schedule(base,base->struct_size);assert(schedule);
+ risc_civil_clock_policy_v1 old_prefix=*policy;old_prefix.struct_size=sizeof(old_prefix);
+ assert(risc_civil_clock_get_policy(&old_prefix,sizeof(old_prefix)));
+ assert(!risc_civil_clock_get_schedule(&old_prefix,sizeof(old_prefix)));
+ risc_civil_clock_schedule_v1 short_schedule=*schedule;short_schedule.schedule_tag=0;
+ assert(!risc_civil_clock_get_schedule(&short_schedule,sizeof(short_schedule)));
  risc_civil_clock_policy_v1 malformed=*policy;malformed.policy_tag=0;
  assert(!risc_civil_clock_get_policy(&malformed,sizeof(malformed)));
  bad=true; /* Projection/interpretation must not read either native or RTC clock. */
@@ -65,7 +71,35 @@ int main(void){
  raw.year=2100;assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1);
  raw.year=1999;assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-1);
 #endif
+ /* Provider inverse owns historical policy and never selects a fold. */
+ risc_civil_inverse_v1 inverse={.struct_size=sizeof(inverse)};
+ risc_civil_calendar_v1 input={.struct_size=sizeof(input),.year=2026,.month=3,.day=8,.hour=2,.minute=30};
+ assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==0);
+ input.month=11;input.day=1;input.hour=1;
+ assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==2&&inverse.epoch[0]<inverse.epoch[1]);
+ for(unsigned i=0;i<inverse.count;i++) {
+  result.struct_size=sizeof(result);assert(!policy->project(NULL,inverse.epoch[i],0,&result));
+  assert(result.year==input.year&&result.month==input.month&&result.day==input.day&&result.hour==input.hour&&result.minute==input.minute);
+ }
+ input=(risc_civil_calendar_v1){.struct_size=sizeof(input),.year=2000,.month=3,.day=20,.hour=12};
+ assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==1);
+#ifdef CIVIL_NATIVE_UTC
+ assert(inverse.epoch[0]==epoch_at(2000,3,20,18,0,0));
+#else
+ assert(inverse.epoch[0]==epoch_at(2000,3,20,19,0,0));
+#endif
+ assert(!policy->project(NULL,inverse.epoch[0],765432100,&result));
+ assert(result.hour==12&&result.minute==0&&result.nanoseconds==765432100);
+#ifndef CIVIL_NATIVE_UTC
+ input.month=4;input.day=2;input.hour=2;input.minute=30;
+ assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==0);
+ input.month=10;input.day=29;input.hour=1;
+ assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==2);
+#endif
+ risc_civil_inverse_v1 unchanged_inverse=inverse;
+ input.month=13;assert(schedule->inverse(NULL,&input,&inverse)==-1&&!memcmp(&inverse,&unchanged_inverse,sizeof(inverse)));
  live=false;assert(policy->project(NULL,epoch,0,&result)==-9);
+ assert(schedule->inverse(NULL,&input,&inverse)==-9&&!memcmp(&inverse,&unchanged_inverse,sizeof(inverse)));
  assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-9&&!driver->quiesce());
  puts("Civil policy: prefix compatibility, full fractional projection, DST edges, saved RTC basis, no clock I/O/writes and retained fence PASS");
 }
