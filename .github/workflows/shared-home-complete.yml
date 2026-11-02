@@ -66,6 +66,7 @@ jobs:
           python3 System/scripts/test_shared_home_cohort.py
           python3 System/scripts/test_shared_home_manifest.py
           python3 System/scripts/test_image_envelope.py
+          python3 System/scripts/test_image_storage.py
           python3 System/scripts/test_shared_home_sdk.py
           python3 System/scripts/test_shared_home_common_sdk.py --runtime Runtime --output out/common-sdk-host
           python3 System/scripts/test_stage_home_native_dependencies.py
@@ -299,6 +300,7 @@ jobs:
           python3 System/scripts/test_shared_home_cohort.py
           python3 System/scripts/test_shared_home_manifest.py
           python3 System/scripts/test_image_envelope.py
+          python3 System/scripts/test_image_storage.py
           python3 System/scripts/test_home_admission_binding.py
           python3 System/scripts/test_publish_home_shared.py
       - name: Exact owning source and compiler
