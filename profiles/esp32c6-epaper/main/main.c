@@ -33,6 +33,7 @@
 #include "esp_attr.h"
 #include "idle_guard.h"
 #include "recovery.h"
+#include "diagnostics.h"
 #include "esp_private/startup_internal.h"
 #include "hal/modem_syscon_ll.h"
 #define API_ORIGIN "https://capabilities-service.cantikash.chatgpt.site"
@@ -43,8 +44,16 @@ static uint32_t journal_sequence;
 static bool journal_loaded;
 static int64_t last_panel_retry,last_wifi_retry,last_wifi_repair;
 static unsigned network_failures;
-static char network_error[80];
-#define FW_VERSION "biome-monitor/1.1.3"
+static char network_error[80],service_error[64],operation_name[48],failed_operation[48];
+static volatile int wifi_reason;
+static bool wifi_started,diagnostic_visible;
+static const char *fatal_error;
+static int http_status,tls_error,socket_error;
+static int64_t last_sync=-1;
+static diagnostic_display diagnostic;
+static void retry_panel(void);
+static const char *reset_name(void);
+#define FW_VERSION "biome-monitor/1.1.4"
 static cJSON *cfg,*state;
 static EventGroupHandle_t wifi_events;
 static char boot_id[33],session_id[128];
@@ -60,6 +69,16 @@ RTC_NOINIT_ATTR static struct {uint32_t magic,stage;} boot_trace;
 static uint32_t previous_stage;
 static esp_reset_reason_t reset_reason;
 static void stage(unsigned n){boot_trace.stage=n;}
+static const char *reset_name(void){
+ switch(reset_reason){case ESP_RST_POWERON:return "power on";case ESP_RST_BROWNOUT:return "brownout";case ESP_RST_PANIC:return "panic";case ESP_RST_INT_WDT:return "interrupt watchdog";case ESP_RST_TASK_WDT:return "task watchdog";case ESP_RST_WDT:return "watchdog";case ESP_RST_SW:return "software reboot";case ESP_RST_DEEPSLEEP:return "deep sleep wake";default:return "other / unknown";}
+}
+static void failure_operation(void){snprintf(failed_operation,sizeof failed_operation,"%s",operation_name);}
+static void protocol_failure(const char *code){
+ /* Only a short error identifier reaches the display, never server payloads. */
+ unsigned i=0;for(;code&&code[i]&&i<sizeof service_error-1;i++){
+  char c=code[i];service_error[i]=((c>='A'&&c<='Z')||(c>='a'&&c<='z')||(c>='0'&&c<='9')||c=='_'||c=='-')?c:'?';
+ }service_error[i]=0;if(!i)snprintf(service_error,sizeof service_error,"invalid_service_response");failure_operation();
+}
 /* HP watchdog/USB resets do not necessarily reset the Wi-Fi MAC domain.
  * Stop any old RX DMA before startup creates the new heap (heap priority100).
  * See espressif/esp-idf#19223; independent of the WFI avoidance below. */
@@ -81,6 +100,43 @@ static int64_t ms(void){return esp_timer_get_time()/1000;}
 static int64_t server_now(void){return server_anchor+(ms()-mono_anchor);}
 /* Local fallback needs no network lease. Only this task owns the SPI panel. */
 static void idle_if_due(void){
+ retry_panel();
+ bool ip=wifi_events&&(xEventGroupGetBits(wifi_events)&1);
+ bool failing=fatal_error||(wifi_started&&(!ip||network_error[0]||service_error[0]||!enabled||deadline<=ms()||!offer_ready));
+ bool due=diagnostic_due(&diagnostic,ms(),failing,fatal_error!=NULL);
+ if(due&&healthy){
+  uint8_t *image=malloc(DIAGNOSTIC_BYTES);
+  if(image){
+   char rows[16][49];const char *lines[16];for(unsigned i=0;i<16;i++){rows[i][0]=0;lines[i]=rows[i];}
+   snprintf(rows[0],49,"BIOME - LOCAL DIAGNOSTICS");
+   snprintf(rows[1],49,"%s",FW_VERSION);
+   const char *why=fatal_error?"STOPPED - action required":!ip?"Wi-Fi / IP unavailable":time(NULL)<1700000000?"Clock unsynced - TLS may fail":service_error[0]?"Service rejected request":network_error[0]?"Service transport failing":!enabled?"Device disabled by service":deadline<=ms()?"Waiting for active display lease":"Display offer not ready";
+   snprintf(rows[2],49,"%s",why);
+   snprintf(rows[3],49,"Wi-Fi/IP: %s",ip?"connected":"not connected");
+   const char *w=wifi_reason==201?"Access point not found":wifi_reason==202?"Authentication failed":wifi_reason==15||wifi_reason==204?"Wi-Fi handshake timeout":wifi_reason==200?"Beacon timeout / signal lost":wifi_reason==203?"Association failed":"see reason code";
+   snprintf(rows[4],49,"Last drop: %.26s (%d)",w,wifi_reason);
+   snprintf(rows[5],49,"Clock: %s",time(NULL)>=1700000000?"valid for TLS":"waiting for network time");
+   snprintf(rows[6],49,"Operation: %.36s",failed_operation[0]?failed_operation:operation_name);
+   snprintf(rows[7],49,"Error: %.41s",fatal_error?fatal_error:service_error[0]?service_error:network_error[0]?network_error:"No transport error recorded");
+   snprintf(rows[8],49,"HTTP: %d TLS: %d socket: %d",http_status,tls_error,socket_error);
+   snprintf(rows[9],49,"Transport failures: %u",network_failures);
+   if(last_sync<0)snprintf(rows[10],49,"Successful service sync: none this boot");
+   else snprintf(rows[10],49,"Last service sync: %lld seconds ago",(long long)((ms()-last_sync)/1000));
+   snprintf(rows[11],49,"Reset: %s (%d)",reset_name(),(int)reset_reason);
+   snprintf(rows[12],49,"Previous boot stage: %s",stage_names[previous_stage]);
+   snprintf(rows[13],49,"Snapshot uptime: %lld seconds",(long long)(ms()/1000));
+   snprintf(rows[14],49,"%s",fatal_error?"Fault retained; configuration not erased.":"Recovery retries continue automatically.");
+   snprintf(rows[15],49,"Snapshot updates every 10 min while failing.");
+   diagnostic_render(image,lines,16);
+   if(panel_render(image)==ESP_OK){diagnostic_shown(&diagnostic,ms());diagnostic_visible=true;visible=(presentation){0};}
+   else{healthy=false;deadline=0;last_panel_retry=ms();}
+   free(image);
+  }
+ }
+ if(diagnostic_visible){
+  if(failing)return;
+  diagnostic_visible=false;visible=(presentation){0};
+ }
  if(!healthy||!presentation_needs_logo(&visible,ms()))return;
  if(panel_render(idle_logo)==ESP_OK){presentation_set_logo(&visible);ESP_LOGI(TAG,"Biome Monitor idle logo displayed");}
  else{healthy=false;deadline=0;ESP_LOGE(TAG,"Idle logo refresh failed; panel contents unknown");}
@@ -93,7 +149,8 @@ static void wait_wifi(void){
   if(ms()-last_wifi_retry>=15000){last_wifi_retry=ms();ESP_LOGW(TAG,"Wi-Fi/IP unavailable; retrying association");if(ms()-last_wifi_repair>=120000){last_wifi_repair=ms();esp_wifi_disconnect();}esp_wifi_connect();}
  }
 }
-static void stop(const char *why){deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)pause_ms(10000);}
+static void stop(const char *why){fatal_error=why;failure_operation();deadline=0;ESP_LOGE(TAG,"Stopped: %s",why);for(;;)pause_ms(10000);}
+static void checked(esp_err_t e){if(e!=ESP_OK)stop(esp_err_to_name(e));}
 static void hash(const void *p,size_t n,char out[65]);
 static void save(void){
  stage(STAGE_JOURNAL);char *s=cJSON_PrintUnformatted(state);
@@ -110,7 +167,7 @@ static void save(void){
   if(!check)e=ESP_ERR_NO_MEM;
   else{e=nvs_get_blob(journal_nv,key,check,&n);if(e==ESP_OK&&(n!=packed_length||memcmp(check,packed,n)))e=ESP_FAIL;free(check);}}
  free(packed);
- if(e!=ESP_OK){ESP_LOGE(TAG,"Journal write failed: %s; rebooting without sending mutation",esp_err_to_name(e));pause_ms(5000);esp_restart();}
+ if(e!=ESP_OK){fatal_error="Journal write/readback failed";failure_operation();ESP_LOGE(TAG,"Journal write failed: %s; rebooting without sending mutation",esp_err_to_name(e));pause_ms(5000);esp_restart();}
  journal_sequence=next;journal_loaded=true;
 }
 static cJSON *load_json(const char *key){
@@ -153,12 +210,20 @@ static void remember_identity(const char *id){
 }
 static void hash(const void *p,size_t n,char out[65]){uint8_t d[32];mbedtls_sha256(p,n,d,0);for(int i=0;i<32;i++)sprintf(out+i*2,"%02x",d[i]);out[64]=0;}
 static void nonce(char *out){uint8_t b[16];esp_fill_random(b,sizeof b);for(int i=0;i<16;i++)sprintf(out+i*2,"%02x",b[i]);out[32]=0;}
-static void net_event(void *arg,esp_event_base_t base,int32_t id,void *data){(void)arg;(void)data;if(base==WIFI_EVENT&&id==WIFI_EVENT_STA_DISCONNECTED){xEventGroupClearBits(wifi_events,1);}if(base==IP_EVENT&&id==IP_EVENT_STA_GOT_IP){xEventGroupSetBits(wifi_events,1);ESP_LOGI(TAG,"Wi-Fi connected");}}
+static void net_event(void *arg,esp_event_base_t base,int32_t id,void *data){
+ (void)arg;
+ if(base==WIFI_EVENT&&id==WIFI_EVENT_STA_DISCONNECTED){
+  if(data)wifi_reason=((wifi_event_sta_disconnected_t*)data)->reason;
+  xEventGroupClearBits(wifi_events,1);
+ }
+ if(base==IP_EVENT&&id==IP_EVENT_STA_LOST_IP)xEventGroupClearBits(wifi_events,1);
+ if(base==IP_EVENT&&id==IP_EVENT_STA_GOT_IP){xEventGroupSetBits(wifi_events,1);ESP_LOGI(TAG,"Wi-Fi connected");}
+}
 static void wifi(void){
- wifi_events=xEventGroupCreate();ESP_ERROR_CHECK(esp_netif_init());ESP_ERROR_CHECK(esp_event_loop_create_default());esp_netif_create_default_wifi_sta();
- wifi_init_config_t init=WIFI_INIT_CONFIG_DEFAULT();ESP_ERROR_CHECK(esp_wifi_init(&init));ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT,ESP_EVENT_ANY_ID,net_event,NULL));ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT,IP_EVENT_STA_GOT_IP,net_event,NULL));
+ snprintf(operation_name,sizeof operation_name,"wifi.initialize");wifi_events=xEventGroupCreate();if(!wifi_events)stop("Wi-Fi event memory");checked(esp_netif_init());checked(esp_event_loop_create_default());esp_netif_create_default_wifi_sta();
+ wifi_init_config_t init=WIFI_INIT_CONFIG_DEFAULT();checked(esp_wifi_init(&init));checked(esp_event_handler_register(WIFI_EVENT,ESP_EVENT_ANY_ID,net_event,NULL));checked(esp_event_handler_register(IP_EVENT,ESP_EVENT_ANY_ID,net_event,NULL));
  wifi_config_t w={0};snprintf((char*)w.sta.ssid,sizeof w.sta.ssid,"%s",str(cfg,"ssid"));snprintf((char*)w.sta.password,sizeof w.sta.password,"%s",str(cfg,"password"));
- ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA,&w));ESP_ERROR_CHECK(esp_wifi_start());ESP_ERROR_CHECK(esp_wifi_connect());
+ checked(esp_wifi_set_storage(WIFI_STORAGE_RAM));checked(esp_wifi_set_mode(WIFI_MODE_STA));checked(esp_wifi_set_config(WIFI_IF_STA,&w));checked(esp_wifi_start());wifi_started=true;checked(esp_wifi_connect());
  wait_wifi();
  esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);esp_sntp_setservername(0,"pool.ntp.org");esp_sntp_setservername(1,"time.google.com");esp_sntp_init();
  /* Time sync is retried by SNTP; never trap startup here forever. TLS still
@@ -175,7 +240,8 @@ static int request(const char *path,const char *body,bool bootstrap,uint8_t *out
  wait_wifi();
  char url[400];snprintf(url,sizeof url,"%s%s",API_ORIGIN,path);
  esp_http_client_config_t hc={.url=url,.crt_bundle_attach=esp_crt_bundle_attach,.timeout_ms=45000,.disable_auto_redirect=true,.buffer_size=2048,.buffer_size_tx=2048};
- esp_http_client_handle_t h=esp_http_client_init(&hc);if(!h)return -1;
+ esp_http_client_handle_t h=esp_http_client_init(&hc);if(!h){snprintf(network_error,sizeof network_error,"HTTP client memory unavailable");failure_operation();return -1;}
+ snprintf(network_error,sizeof network_error,"incomplete HTTP response");http_status=0;tls_error=0;socket_error=0;
  char auth[1100];snprintf(auth,sizeof auth,"Bearer %s",bootstrap?str(cfg,"bootstrap"):str(cfg,"participant_credential"));esp_http_client_set_header(h,"Authorization",auth);
  snprintf(auth,sizeof auth,"Bearer %s",str(cfg,"site_access"));esp_http_client_set_header(h,"OAI-Sites-Authorization",auth);memset(auth,0,sizeof auth);
  if(bootstrap)esp_http_client_set_header(h,"x-enrollment-id",str(cfg,"enrollment_id"));
@@ -183,16 +249,16 @@ static int request(const char *path,const char *body,bool bootstrap,uint8_t *out
  int result=-1;size_t sent=0,len=body?strlen(body):0;
  esp_err_t opened=esp_http_client_open(h,len);if(opened!=ESP_OK){snprintf(network_error,sizeof network_error,"http_open:%s",esp_err_to_name(opened));goto done;}
  while(sent<len){int n=esp_http_client_write(h,body+sent,len-sent);if(n<=0)goto done;sent+=n;}
- int64_t declared=esp_http_client_fetch_headers(h);int status=esp_http_client_get_status_code(h);
+ int64_t declared=esp_http_client_fetch_headers(h);int status=esp_http_client_get_status_code(h);http_status=status;
  if(status<200||status>=500||status==429||(status>=300&&status<400)||declared>(int64_t)capacity){snprintf(network_error,sizeof network_error,"http_status:%d",status);goto done;}
  size_t total=0;while(total<capacity){int n=esp_http_client_read(h,(char*)out+total,capacity-total);if(n<0)goto done;if(!n)break;total+=n;}
  if(total==capacity){char extra;int n=esp_http_client_read(h,&extra,1);if(n!=0)goto done;}
  if(!esp_http_client_is_complete_data_received(h))goto done;
  result=(int)total;
- done:esp_http_client_close(h);esp_http_client_cleanup(h);if(result<0){network_failures++;ESP_LOGW(TAG,"Transport retry %u: %s",network_failures,network_error);if(network_failures%8==0){esp_wifi_disconnect();esp_wifi_connect();}}else{network_failures=0;network_error[0]=0;}return result;
+ done:if(result<0){int flags=0;esp_http_client_get_and_clear_last_tls_error(h,&tls_error,&flags);socket_error=esp_http_client_get_errno(h);failure_operation();}esp_http_client_close(h);esp_http_client_cleanup(h);if(result<0){network_failures++;ESP_LOGW(TAG,"Transport retry %u: %s",network_failures,network_error);if(network_failures%8==0){esp_wifi_disconnect();esp_wifi_connect();}}else{network_failures=0;network_error[0]=0;}return result;
 }
 static cJSON *exchange(const char *wire,bool bootstrap){
- char *buf=malloc(JSON_LIMIT+1);if(!buf)stop("response memory");int n=request("/v1/call",wire,bootstrap,(uint8_t*)buf,JSON_LIMIT);cJSON *r=NULL;if(n>=0){buf[n]=0;r=cJSON_ParseWithLength(buf,n+1);if(r&&(!eq(r,"protocol_version","1.0")||(!eq(r,"status","completed")&&!eq(r,"status","rejected")))){cJSON_Delete(r);r=NULL;}}free(buf);return r;
+ char *buf=malloc(JSON_LIMIT+1);if(!buf)stop("response memory");int n=request("/v1/call",wire,bootstrap,(uint8_t*)buf,JSON_LIMIT);cJSON *r=NULL;if(n>=0){buf[n]=0;r=cJSON_ParseWithLength(buf,n+1);if(r&&(!eq(r,"protocol_version","1.0")||(!eq(r,"status","completed")&&!eq(r,"status","rejected")))){cJSON_Delete(r);r=NULL;}}free(buf);if(n>=0&&!r)protocol_failure("invalid_service_response");return r;
 }
 /* Pending replies are finalized atomically with their durable consequences.
  * A replayed lease is never used; callers obtain a fresh sync after recovery. */
@@ -214,21 +280,22 @@ static void receipt(cJSON *req,cJSON *r){
  cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();
 }
 static cJSON *rpc(const char *family,const char *op,cJSON *args,bool write,int revision){
+ snprintf(operation_name,sizeof operation_name,"%s.%s",family,op);
  cJSON *q=cJSON_CreateObject();ps(q,"protocol_version","1.0");ps(q,"family",family);ps(q,"operation",op);cJSON_AddItemToObject(q,"arguments",args);
  char id[33];nonce(id);ps(q,"operation_id",id);if(revision>=0)pn(q,"expected_revision",revision);
  if(write){if(get(state,"pending"))stop("unresolved mutation");put(state,"pending",json_copy(q));save();}
  char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("request memory");cJSON *r=NULL;
- do{r=exchange(wire,!strcmp(op,"enroll"));if(r&&eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);r=NULL;}if(!r)pause_ms(3000);}while(write&&!r);
+ do{r=exchange(wire,!strcmp(op,"enroll"));if(r&&eq(r,"mutation_outcome","unknown")){protocol_failure("mutation_outcome_unknown");cJSON_Delete(r);r=NULL;}if(!r)pause_ms(3000);}while(write&&!r);
  free(wire);
  if(r&&eq(r,"status","rejected")){
   /* A rejection is a known non-execution; retained controls remain actionable. */
-  ESP_LOGW(TAG,"%s.%s rejected: %s",family,op,str(r,"code"));
+  ESP_LOGW(TAG,"%s.%s rejected: %s",family,op,str(r,"code"));protocol_failure(str(r,"code"));
   if(write){cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}
   cJSON_Delete(r);r=NULL;
- }else if(r&&write)receipt(q,r);
+ }else if(r){service_error[0]=0;failed_operation[0]=0;if(write)receipt(q,r);}
  cJSON_Delete(q);return r;
 }
-static void recover(void){cJSON *q=get(state,"pending");if(!q)return;char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("memory");for(;;){cJSON *r=exchange(wire,eq(q,"operation","enroll"));if(!r||eq(r,"mutation_outcome","unknown")){cJSON_Delete(r);pause_ms(3000);continue;}if(eq(r,"status","rejected")){cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}else receipt(q,r);cJSON_Delete(r);break;}free(wire);}
+static void recover(void){cJSON *q=get(state,"pending");if(!q)return;snprintf(operation_name,sizeof operation_name,"replay.%.39s",str(q,"operation"));char *wire=cJSON_PrintUnformatted(q);if(!wire)stop("memory");for(;;){cJSON *r=exchange(wire,eq(q,"operation","enroll"));if(!r||eq(r,"mutation_outcome","unknown")){if(r)protocol_failure("mutation_outcome_unknown");cJSON_Delete(r);pause_ms(3000);continue;}if(eq(r,"status","rejected")){protocol_failure(str(r,"code"));cJSON_DeleteItemFromObjectCaseSensitive(state,"pending");save();}else{service_error[0]=0;receipt(q,r);}cJSON_Delete(r);break;}free(wire);}
 static cJSON *activation(void){cJSON *a=cJSON_CreateObject();ps(a,"protocol_version","provider-activation/1");cJSON_AddBoolToObject(a,"automatic",true);cJSON_AddBoolToObject(a,"available",healthy&&enabled);cJSON *profiles=cJSON_CreateArray();cJSON_AddItemToArray(profiles,cJSON_Parse(PROFILE_JSON));cJSON_AddItemToObject(a,"profiles",profiles);cJSON *report=cJSON_CreateObject();pn(report,"generation",activation_gen);ps(report,"profile_id",str(state,"activation_profile"));ps(report,"state",deadline>ms()?"applied":"idle");cJSON_AddItemToObject(a,"report",report);return a;}
 static void activation_accept(cJSON *d,int64_t started){
  deadline=0;offer_ready=false;cJSON *g=get(d,"provider_activation");
@@ -247,7 +314,7 @@ static bool open_session(void){
  cJSON *a=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));ps(a,"boot_id",boot_id);cJSON *p=cJSON_CreateArray();cJSON_AddItemToArray(p,cJSON_CreateString("1.0"));cJSON_AddItemToObject(a,"adapter_protocols",p);ps(a,"adapter_version",FW_VERSION);pn(a,"contact_interval_ms",15000);pn(a,"response_bytes",12000);cJSON *diag=cJSON_CreateObject();pn(diag,"reset_reason",reset_reason);ps(diag,"previous_stage",stage_names[previous_stage]);pn(diag,"uptime_ms",ms());ps(diag,"firmware",FW_VERSION);cJSON_AddBoolToObject(diag,"panel_healthy",healthy);pn(diag,"network_failures",network_failures);cJSON_AddItemToObject(a,"journal_summary",diag);cJSON_AddItemToObject(a,"activation_request",activation());
  int64_t started=ms();cJSON *r=rpc("participant","open_session",a,true,-1);if(!r)return false;cJSON *d=get(r,"data");snprintf(session_id,sizeof session_id,"%s",str(d,"id"));generation=(int)num(d,"generation");activation_accept(d,started);cJSON_Delete(r);return session_id[0]&&generation>0;
 }
-static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}activation_accept(get(r,"data"),started);cJSON_Delete(r);return true;}
+static bool sync_now(void){cJSON *a=cJSON_CreateObject();ps(a,"session_id",session_id);pn(a,"generation",generation);char cursor[32];snprintf(cursor,sizeof cursor,"%.0f",num(state,"cursor"));ps(a,"cursor",cursor);pn(a,"requested_work",0);cJSON_AddItemToObject(a,"activation_request",activation());int64_t started=ms();cJSON *r=rpc("participant","sync",a,true,-1);if(!r){deadline=0;return false;}activation_accept(get(r,"data"),started);last_sync=ms();cJSON_Delete(r);return true;}
 static void offer_id(char out[256]){snprintf(out,256,"%s:riscrte.esp32c6.epaper@1:panel",str(state,"participant_id"));}
 static bool publish_offer(void){
  if(deadline<=ms())return false;
@@ -294,7 +361,7 @@ static void desired(cJSON *control){
   }
   cJSON *intent=cJSON_CreateObject();ps(intent,"boot_id",boot_id);ps(intent,"desired_id",str(d,"id"));pn(intent,"revision",revision);ps(intent,"sha256",spec.sha256);ps(intent,"status","unknown");put(state,"last_render",intent);save();
   stage(STAGE_RENDER);esp_err_t e=panel_render(frame);rendered=e==ESP_OK;status=rendered?"rendered":"unknown";reason=rendered?"controller_busy_completed":"controller_error_or_busy_timeout";
-  if(rendered)presentation_set_frame(&visible,str(d,"id"),revision,spec.sha256,expires_ms);
+  if(rendered){diagnostic_visible=false;presentation_set_frame(&visible,str(d,"id"),revision,spec.sha256,expires_ms);}
   else{visible=(presentation){0};healthy=false;deadline=0;}
   ps(get(state,"last_render"),"status",status);save();
  }
@@ -305,7 +372,7 @@ static void desired(cJSON *control){
 static void retry_panel(void){
  if(healthy||ms()-last_panel_retry<60000)return;
  last_panel_retry=ms();stage(STAGE_PANEL);healthy=panel_probe()==ESP_OK;
- if(healthy){visible=(presentation){0};ESP_LOGW(TAG,"Panel recovered; local Biome splash and fresh remote frame allowed");idle_if_due();}
+ if(healthy){visible=(presentation){0};ESP_LOGW(TAG,"Panel recovered; local Biome splash and fresh remote frame allowed");}
 }
 static void report_boot(void){
  cJSON *a=cJSON_CreateObject(),*report=cJSON_CreateObject();ps(a,"participant_id",str(state,"participant_id"));
@@ -320,7 +387,7 @@ static void process_control(void){cJSON *c=cJSON_GetArrayItem(get(state,"control
  if(eq(c,"kind","recovery_requested")){pop_control();return;}
  /* No assignment executor is advertised. An unknown/control_reference record
   * remains durably queued, prevents admission, and needs operator diagnosis. */
- deadline=0;enabled=false;ESP_LOGE(TAG,"Unsupported control retained: %s",str(c,"kind"));
+ deadline=0;enabled=false;protocol_failure("unsupported_control_retained");ESP_LOGE(TAG,"Unsupported control retained: %s",str(c,"kind"));
 }
 void app_main(void){
  reset_reason=esp_reset_reason();previous_stage=boot_trace.magic==0x42494f4d&&boot_trace.stage<=STAGE_IDLE?boot_trace.stage:STAGE_START;
@@ -334,7 +401,7 @@ void app_main(void){
  /* Seengreat ESP32-C6 E-Paper Driver Board v1.4: recovered source is authoritative. */
  stage(STAGE_PANEL);panel_pins pins={2,6,3,7,4,5};ESP_ERROR_CHECK(panel_init(pins));healthy=panel_probe()==ESP_OK;
  idle_if_due();
- stage(STAGE_NVS);ESP_ERROR_CHECK(nvs_flash_init());ESP_ERROR_CHECK(nvs_open("epaper",NVS_READWRITE,&nv));ESP_ERROR_CHECK(nvs_flash_init_partition("runtime"));ESP_ERROR_CHECK(nvs_open_from_partition("runtime","epaper",NVS_READWRITE,&journal_nv));cfg=load_json("config");if(!cfg)stop("Provision config NVS first; see README");
+ stage(STAGE_NVS);snprintf(operation_name,sizeof operation_name,"storage.initialize");esp_err_t ne=nvs_flash_init();if(ne!=ESP_OK)stop(esp_err_to_name(ne));ne=nvs_open("epaper",NVS_READWRITE,&nv);if(ne!=ESP_OK)stop(esp_err_to_name(ne));ne=nvs_flash_init_partition("runtime");if(ne!=ESP_OK)stop(esp_err_to_name(ne));ne=nvs_open_from_partition("runtime","epaper",NVS_READWRITE,&journal_nv);if(ne!=ESP_OK)stop(esp_err_to_name(ne));cfg=load_json("config");if(!cfg)stop("Provision config NVS first; see README");
  if(!strlen(str(cfg,"ssid"))||strlen(str(cfg,"ssid"))>32||strlen(str(cfg,"password"))>63)stop("invalid Wi-Fi provisioning");
  state=load_journal();if(!state)state=cJSON_CreateObject();if(!journal_loaded)save();nonce(boot_id);activation_gen=(int64_t)num(state,"activation_generation");
  identity_action identity=identity_resolve(str(state,"participant_id"),str(cfg,"participant_id"));

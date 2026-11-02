@@ -1,4 +1,19 @@
-# Biome firmware 1.1.3
+# Biome firmware 1.1.4
+
+## Local diagnostic display
+
+Persistent connectivity or availability failures replace the splash/content with a
+readable local diagnostic snapshot after 60 seconds. It shows Wi-Fi/IP and the last
+disconnect reason, clock validity, failing operation, safe HTTP/TLS/socket and
+protocol error identifiers, retry count, seconds since successful sync, firmware,
+reset reason and previous boot stage. Fatal provisioning/storage failures display
+immediately when the panel works. No credentials, SSID, tokens or service payloads
+are displayed. The snapshot includes uptime so its age is visible even if power
+is subsequently lost. Recovery retries continue; the same failure refreshes at
+most once per ten minutes. Successful recovery resumes the normal splash/fresh
+remote content. A temporary loss under one minute keeps the current content.
+A failed display or power loss cannot produce a new diagnostic snapshot; the
+last physical E Ink image remains. Serial logs remain available.
 
 ## Reboot and intermittent-power recovery
 
@@ -37,7 +52,7 @@ and endurance tests remain required after installation.
 
 ## Watchdog and reflash recovery
 
-Version 1.1.3 restores an existing `participant_id` from private provisioning
+Version 1.1.4 restores an existing `participant_id` from private provisioning
 when the request journal is empty. Enrollment tickets are single-use: replaying
 an already redeemed ticket with a new request ID returns `UNAUTHENTICATED`.
 Existing-device provisioning needs `participant_id`, `participant_credential`
@@ -134,7 +149,7 @@ python -m esptool --chip esp32c6 --port PORT write_flash \
   0x9000 device-nvs.bin 0x30000 firmware.bin
 ```
 
-For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.3-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. A privately provisioned merged image must include the existing participant ID as described above. The merged image overwrites existing NVS; when upgrading from an older partition layout, install the new partition table as well. Once this layout is installed, application-only updates at `0x30000` preserve configuration and the runtime journal.
+For manual installation, the release also contains `biome-monitor-esp32c6-v1.1.4-0x0.bin`: flash that single file at **0x0** on the recovered C6 board. It contains bootloader, partition table and application, with **blank NVS**. It shows the logo without provisioning, but Wi-Fi and service access still need the separate private NVS image at `0x9000`. A privately provisioned merged image must include the existing participant ID as described above. The merged image overwrites existing NVS; when upgrading from an older partition layout, install the new partition table as well. Once this layout is installed, application-only updates at `0x30000` preserve configuration and the runtime journal.
 
 This is a new partition layout. Replacing NVS removes enrollment and outstanding local journal state; do not write the provisioning partition as a routine firmware update. The factory image requires 4 MiB flash. No OTA path is provided in this release.
 

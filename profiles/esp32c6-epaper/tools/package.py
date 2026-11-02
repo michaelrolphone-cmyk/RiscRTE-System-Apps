@@ -14,8 +14,9 @@ for line in subprocess.check_output(['riscv32-esp-elf-nm','-an',str(build/'biome
  if len(fields)==3:symbols[fields[2]]=int(fields[0],16)
 assert symbols['esp_system_init_fn_biome_radio_boot_reset']<symbols['esp_system_init_fn_init_heap']
 assert 'biome_idle_guard_install' in symbols and 'keep_idle_responsive' in symbols
+assert 'diagnostic_render' in symbols and 'diagnostic_due' in symbols
 (dist/'runtime-empty.bin').write_bytes(b'\xff'*0x40000)
-merged='biome-monitor-esp32c6-v1.1.3-0x0.bin'
+merged='biome-monitor-esp32c6-v1.1.4-0x0.bin'
 subprocess.run([sys.executable,'-m','esptool','--chip','esp32c6','merge_bin','-o',str(dist/merged),'0x0',str(dist/'bootloader.bin'),'0x8000',str(dist/'partition-table.bin'),'0x30000',str(dist/'firmware.bin'),'0x200000',str(dist/'runtime-empty.bin')],check=True)
 # Verify exact placement and blank provisioning region in the delivery image.
 image=(dist/merged).read_bytes()
@@ -23,12 +24,13 @@ for offset,name in [(0,'bootloader.bin'),(0x8000,'partition-table.bin'),(0x30000
  data=(dist/name).read_bytes();assert image[offset:offset+len(data)]==data
 assert image[0x9000:0x29000]==b'\xff'*0x20000
 assert image[0x200000:0x240000]==b'\xff'*0x40000
-manifest={'name':'Biome','version':'1.1.3','target':'esp32c6','board':'Seengreat ESP32-C6 E-Paper Driver Board v1.4 (ESP32-C6FH4)','display':'UC8179 7.5 inch 800x480 B/W','idf':'5.4.2','source_revision':os.environ.get('GITHUB_SHA','local'),'pins':{'busy':2,'rst':6,'dc':3,'cs':7,'mosi':4,'sck':5},'hardware_tested':False,'flash_files':{'0x0':'bootloader.bin','0x8000':'partition-table.bin','0x30000':'firmware.bin','0x200000':'runtime-empty.bin'},'sha256':{name:hashlib.sha256((dist/name).read_bytes()).hexdigest() for name in [*files.values(),'runtime-empty.bin']}}
+manifest={'name':'Biome','version':'1.1.4','target':'esp32c6','board':'Seengreat ESP32-C6 E-Paper Driver Board v1.4 (ESP32-C6FH4)','display':'UC8179 7.5 inch 800x480 B/W','idf':'5.4.2','source_revision':os.environ.get('GITHUB_SHA','local'),'pins':{'busy':2,'rst':6,'dc':3,'cs':7,'mosi':4,'sck':5},'hardware_tested':False,'flash_files':{'0x0':'bootloader.bin','0x8000':'partition-table.bin','0x30000':'firmware.bin','0x200000':'runtime-empty.bin'},'sha256':{name:hashlib.sha256((dist/name).read_bytes()).hexdigest() for name in [*files.values(),'runtime-empty.bin']}}
 manifest['merged_image']={'file':merged,'offset':'0x0','provisioned':False,'sha256':hashlib.sha256(image).hexdigest()}
 manifest['idle_logo']={'format':'mono1-msb-black1','width':800,'height':480,'size_bytes':48000,'sha256':hashlib.sha256((root/'main/assets/idle_logo.bin').read_bytes()).hexdigest()}
 debug=dist/'debug';debug.mkdir(exist_ok=True)
 for name in ['biome_monitor.elf','biome_monitor.map']:
  shutil.copy2(build/name,debug/name)
+manifest['local_diagnostics']={'grace_seconds':60,'refresh_seconds':600,'fatal_immediate':True,'credential_free':True,'native_font_pixels':[16,24]}
 manifest['debug']={name:hashlib.sha256((debug/name).read_bytes()).hexdigest() for name in ['biome_monitor.elf','biome_monitor.map']}
 manifest['recovery']={'interrupt_watchdog_enabled':True,'interrupt_watchdog_timeout_ms':300,'idle_wfi':False,'wifi_mac_reset_before_heap':True,'identity_restore_from_private_config':True,'idle_power_note':'CPU stays responsive instead of using WFI; idle power is higher.'}
 manifest['recovery']['startup_table_radio_before_heap_verified']=True
