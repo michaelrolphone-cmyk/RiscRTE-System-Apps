@@ -141,6 +141,9 @@ static bool nc_toolbar(void){
     return false;
 }
 static bool nc_back_button(void){int r=route_index(&document,current_route());return !(document.flags&RISC_COMPONENTS_ROOT_HEADER)&&!nc_toolbar()&&r>=0&&document.routes[r].back_action;}
+/* Fixed controls own viewport space, including their touch targets. Body
+ * focus/scroll must never reveal an action behind the persistent Back pill. */
+static int nc_footer(void){int footer=tm_footer();return nc_back_button()&&!tm_tabbed()?nc_size(48):footer;}
 /* Focused work screens keep the status and cancel control in the watch viewport. */
 static bool nc_work_screen(void){
     for(unsigned i=0;i<document.node_count;i++)if(document.nodes[i].route==current_route()&&
@@ -183,7 +186,7 @@ static int nc_row_height(const risc_scene_node_v1 *n){
 static void nc_hit(int x,int y,int w,int h,uint32_t kind,const risc_scene_node_v1 *n,int value,bool header){
     if(n&&(n->flags&(RISC_SCENE_DISABLED|RISC_SCENE_HIDDEN)))return;
     int miny=nc_paper()&&!header?nc_header_height():0;
-    if(y<miny){h-=miny-y;y=miny;}if(y+h>(int)height-(header?0:tm_footer()))h=(int)height-(header?0:tm_footer())-y;
+    if(y<miny){h-=miny-y;y=miny;}if(y+h>(int)height-(header?0:nc_footer()))h=(int)height-(header?0:nc_footer())-y;
     if(w>0&&h>0)add_hit(x,y,w,h,kind,n?n->id:0,0,value);
 }
 static void nc_control(int x,int y,int w,int h,const char *label,bool selected,uint32_t kind,const risc_scene_node_v1 *n,int value){
@@ -214,7 +217,7 @@ static int nc_layout(unsigned target,int *ox,int *oy,int *ow,int *oh){
                   document.nodes[end].kind==RISC_COMPONENT_KEY)++end;
             unsigned count=0;for(unsigned k=i;k<end;k++)if(!(document.nodes[k].flags&RISC_SCENE_HIDDEN))++count;
             unsigned columns=4,rows=(count+columns-1)/columns;
-            int gap=4*s,available=(int)height-tm_footer()-y-8*s;
+            int gap=4*s,available=(int)height-nc_footer()-y-8*s;
             int cell=rows?available/(int)rows:0;
             if(cell<24*s)cell=24*s;
             for(unsigned k=i,offset=0;k<end;k++){
@@ -576,12 +579,12 @@ static void component_draw(void){
         }
     }return;}
     int hh=nc_header_height(),x,y,w,h,content=nc_layout(document.node_count,&x,&y,&w,&h)+nc_size(nc_keypad_route()?0:nc_back_button()?64:30);
-    model->scroll_limit=content>(int)height-tm_footer()?content-(int)height+tm_footer():0;
+    model->scroll_limit=content>(int)height-nc_footer()?content-(int)height+nc_footer():0;
     if(model->scroll>model->scroll_limit)model->scroll=model->scroll_limit;
     if(model->scroll<0)model->scroll=0;
     if(!nc_paper())nc_header(-model->scroll);
     unsigned original_top=clip_top,original_bottom=clip_bottom;
-    if(clip_bottom>height-(unsigned)tm_footer())clip_bottom=height-(unsigned)tm_footer();
+    if(clip_bottom>height-(unsigned)nc_footer())clip_bottom=height-(unsigned)nc_footer();
     if(nc_paper()&&clip_top<(unsigned)hh)clip_top=(unsigned)hh;
     for(unsigned i=0;i<document.node_count;i++){
         const risc_scene_node_v1 *n=&document.nodes[i];if(n->route!=current_route()||n->flags&RISC_SCENE_HIDDEN)continue;
@@ -598,7 +601,7 @@ static void component_draw(void){
         nc_center(bx,by+17*s,76*s,"< BACK",1,nc_color(RISC_TONE_ACCENT));nc_hit(bx,by,76*s,26*s,HIT_BACK,NULL,0,true);
     }
     if(!(document.flags&3u)&&model->toast_until&&document.toast[0]){
-        int s=nc_scale(),ty=(int)height-tm_footer()-42*s;uint16_t bg=nc_paper()?nc_fg():0x09c8,fg=nc_paper()?nc_bg():nc_fg();
+        int s=nc_scale(),ty=(int)height-nc_footer()-42*s;uint16_t bg=nc_paper()?nc_fg():0x09c8,fg=nc_paper()?nc_bg():nc_fg();
         nc_round(12*s,ty,(int)width-24*s,34*s,6*s,bg);nc_text(20*s,ty+21*s,(int)width-(document.toast_action&&!nc_paper()?90:40)*s,document.toast,3,fg);
         if(document.toast_action&&!nc_paper()){nc_text((int)width-58*s,ty+21*s,48*s,"UNDO",1,fg);add_hit((int)width-70*s,ty,58*s,34*s,HIT_TOAST,0,0,0);}
     }
@@ -644,7 +647,7 @@ static void component_focus(int direction){
     }
     int x,y,w,h;nc_layout(target,&x,&y,&w,&h);
     int min=nc_paper()?nc_header_height():0;if(y-model->scroll<min)model->scroll=y-min;
-    if(y+h-model->scroll>(int)height-tm_footer())model->scroll=y+h-(int)height+tm_footer();
+    if(y+h-model->scroll>(int)height-nc_footer())model->scroll=y+h-(int)height+nc_footer();
     invalidate_view();rebuild_hits();
 }
 static bool component_valid(const risc_components_document_v1 *d){
