@@ -1,7 +1,7 @@
 name: Complete shared Home ELF
 on:
   pull_request:
-    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/stage_home_native_dependencies.py', 'scripts/test_stage_home_native_dependencies.py', 'scripts/join_home_packages.py', 'scripts/build_home_delivery.py', 'scripts/archive_home_evidence.py', 'scripts/verify_home_owning_ci.py', 'scripts/stage_home_x4_bridge.py', 'scripts/test_stage_home_x4_bridge.py', 'scripts/shared_home_sdk.py', 'scripts/test_shared_home_sdk.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
+    paths: ['Apps/shared_home.c', 'Apps/shared_home.json', 'scripts/test_shared_home_manifest.py', 'lib/PortableApps/src/PortableHome*.c', 'scripts/build_shared_home.py', 'scripts/build_home_dependencies.py', 'scripts/stage_home_native_dependencies.py', 'scripts/test_stage_home_native_dependencies.py', 'scripts/join_home_packages.py', 'scripts/build_home_delivery.py', 'scripts/archive_home_evidence.py', 'scripts/verify_home_owning_ci.py', 'scripts/stage_home_x4_bridge.py', 'scripts/test_stage_home_x4_bridge.py', 'scripts/test_home_overview_adapter_compile.py', 'scripts/shared_home_sdk.py', 'scripts/test_shared_home_sdk.py', 'scripts/prepare_home_cohort_plan.py', 'scripts/compact_home_dependency_packages.py', 'scripts/stage_home_published_dependencies.py', 'docs/shared-home/**', 'scripts/shared_home_objects.py', 'scripts/compose_shared_app_cohort.py', 'scripts/test_shared_app_cohort.py', 'scripts/assemble_shared_home_cohort.py', 'scripts/test_shared_home_cohort.py', 'scripts/prepare_delivered_app_cohort.py', 'scripts/build_paper_clock.py', 'lib/PortableApps/include/PortableAlarm*.h', 'scripts/test_home_alarm_facade_client.py', 'test/native_apps/portable_alarm_v2_test.c', 'scripts/test_home_points_custody.py', 'test/native_apps/home_points_custody_test.c', 'scripts/test_home_crash_bindings.py', 'scripts/test_home_product_admission.py', 'scripts/test_home_admission_binding.py', 'scripts/publish_home_shared.py', 'scripts/test_publish_home_shared.py', '.github/workflows/shared-home-complete.yml']
 permissions:
   contents: read
 jobs:
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: bbf277d731e1a543aa74610200231aae02531602
+          ref: 9cc148ee607cdc8abefaa83f820a7f6fd6ef1d82
           path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -92,6 +92,7 @@ jobs:
           for target in target repeat; do
             python3 System/scripts/build_shared_home.py --watch Watch --watch-system WatchSystem --watch-utilities WatchUtilities --runtime Runtime --reader Reader --interfaces Interfaces/minimal/interfaces --alarm-utilities AlarmUtilities --catalog Interfaces/minimal/sd-app-catalog.json --compiler "$CC_TARGET" --legacy-linker "$LD_TARGET" --output "out/$target" 2>&1 | tee "out/$target.log"
           done
+          python3 System/scripts/test_home_overview_adapter_compile.py --view-receipt out/target/overview/view.json --output out/overview-adapter-compile
           cmp out/target/default.elf out/repeat/default.elf
           sha256sum out/target/default.elf out/repeat/default.elf > out/byte-identity.txt
       - uses: actions/upload-artifact@v4
@@ -247,7 +248,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: bbf277d731e1a543aa74610200231aae02531602
+          ref: 9cc148ee607cdc8abefaa83f820a7f6fd6ef1d82
           path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
@@ -349,6 +350,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Retrieve exact owning qualified singleton providers
         env:
           GH_TOKEN: ${{ github.token }}
@@ -374,6 +378,9 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Verify exact owning native and application qualification
         env:
           GH_TOKEN: ${{ github.token }}
@@ -445,7 +452,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: bbf277d731e1a543aa74610200231aae02531602
+          ref: 9cc148ee607cdc8abefaa83f820a7f6fd6ef1d82
           path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
