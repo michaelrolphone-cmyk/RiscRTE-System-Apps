@@ -135,6 +135,14 @@ static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
  if(!desk_runtime->acquire(name,version,instance,grant)) {
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(version==1&&instance==0&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation&&
+     (!strcmp(name,"power.sleep")||!strcmp(name,"display.power")||!strcmp(name,"runtime.retained-wake")||
+      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci"))) {
+   if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
+   return false;
+  }
+#endif
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
   if(!strcmp(name,"storage.key-value.atomic")&&version==1&&instance==1&&
      grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
@@ -315,6 +323,9 @@ static int desk_open_foreground(void) {
 #endif
  last_activity=last_poll_at=input_sampled_at=millis_now();
  if(failed)return desk_start_error();
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(portable_home_sleep_admit(rt)!=1)return desk_start_error();
+#endif
  desk_phase=DESK_FOREGROUND;return 1;
 }
 int portable_desk_adapter_start(unsigned mode) {
@@ -407,6 +418,7 @@ static void desk_finalize(void) {
  np_close();if(native_sleep_retained)return;
  if(bg.api && !rt->release(&bg))return;
 #ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(portable_home_sleep_close()!=1)return;
  if(!shared_canvas_close())return;
 #endif
  if(dg.api && !rt->release(&dg))return;

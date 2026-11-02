@@ -172,4 +172,7 @@
   foreground_idle_retry_delay=0;
   if(!foreground_idle_configure_once(millis_now()))return -1;
 #endif
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(portable_home_sleep_admit(rt)!=1)return -1;
+#endif
   return failed?-1:0;

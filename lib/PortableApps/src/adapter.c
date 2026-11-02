@@ -1053,6 +1053,9 @@ static void handoff_finish(void) {
 #endif
 #ifdef PORTABLE_SHARED_HOME_CANVAS
 #include "shared_home_canvas_adapter.inc"
+extern int portable_home_sleep_admit(const risc_runtime_api_v1*);
+extern int portable_home_sleep_close(void);
+extern unsigned portable_home_sleep_modes(void);
 #define shared_home_outputs(d) (shared_outputs?shared_outputs:(d))
 #else
 #define shared_home_outputs(d) (d)
@@ -2206,7 +2209,7 @@ static bool idle_sleep(void) {
    * output. Wake never restarts capture/playback without a fresh user action. */
   if(!portable_audio_suspend()){failed=true;return false;}
 #endif
-#ifdef PORTABLE_QUICK_RADIOS
+#if defined(PORTABLE_QUICK_RADIOS) && !defined(PORTABLE_SHARED_HOME_CANVAS)
   if(
 #ifdef PORTABLE_DESK_CLOCK
      desk_mode==0 &&
@@ -3769,6 +3772,7 @@ static void settings_native_finalize(void) {
 #endif
   if(bg.api && !rt->release(&bg))return;
 #ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(portable_home_sleep_close()!=1)return;
   if(!shared_canvas_close())return;
 #endif
   if(dg.api && !rt->release(&dg))return;
@@ -3931,6 +3935,7 @@ __attribute__((visibility("default"))) void app_module_fini(void) {
   if (bg.api && !rt->release(&bg))
     rt->diagnostic("PORTABLE_APP error=battery-release");
 #ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(portable_home_sleep_close()!=1)return;
   if(!shared_canvas_close())return;
 #endif
   if (dg.api && !rt->release(&dg))

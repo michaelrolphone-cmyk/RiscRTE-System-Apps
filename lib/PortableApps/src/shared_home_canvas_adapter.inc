@@ -2,10 +2,13 @@
  * brightness/tone; its geometry, pixel format and rotation are never read. */
 #include "PortableHomeCanvas.h"
 #include "PortableHomeCanvasTouch.h"
+#include "RiscCanvasInputV1.h"
 static home_canvas_surface shared_canvas;
 static uint32_t shared_canvas_orientation=RISC_CANVAS_ORIENTATION_DEFAULT;
 static home_canvas_touch shared_canvas_touch;
-static risc_runtime_capability_v1 shared_canvas_grant;
+static risc_runtime_capability_v1 shared_canvas_grant,shared_canvas_input_grant;
+static const risc_canvas_input_v1 *shared_canvas_input;
+static bool shared_canvas_input_active,shared_canvas_input_prepared;
 static const risc_display_output_api_v1 *shared_outputs;
 static void shared_canvas_retained(void *unused){(void)unused;portable_adapter_retain_silent();}
 static inline bool shared_canvas_open(void) {
@@ -25,12 +28,30 @@ static inline bool shared_canvas_open(void) {
 }
 static inline bool shared_canvas_close(void) {
  if(shared_canvas.retained||native_custody_retained)return false;
+ if(shared_canvas_input_active){
+  if(!home_canvas_result(&shared_canvas,shared_canvas_input->deactivate(shared_canvas_input->context,shared_canvas.session))){portable_adapter_retain_silent();return false;}
+  shared_canvas_input_active=false;
+ }
+ if(shared_canvas_input_grant.api&&!rt->release(&shared_canvas_input_grant)){portable_adapter_retain_silent();return false;}
+ shared_canvas_input=NULL;
  if(shared_canvas.session&&!home_canvas_close(&shared_canvas)){portable_adapter_retain_silent();return false;}
  if(shared_canvas_grant.api&&!rt->release(&shared_canvas_grant)){portable_adapter_retain_silent();return false;}
  shared_outputs=NULL;return true;
 }
 static inline bool shared_canvas_touch_open(portable_touch*t,const risc_runtime_api_v1 *runtime) {
- (void)runtime;memset(t,0,sizeof(*t));t->api=&shared_canvas_touch.api;
+ if(shared_canvas.retained)return false;
+ if(!shared_canvas_input_grant.api){
+  shared_canvas_input_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_input_grant)};
+  if(!runtime->acquire(RISC_CANVAS_INPUT_CAPABILITY,1,0,&shared_canvas_input_grant))return false;
+  const risc_canvas_input_v1 *api=shared_canvas_input_grant.api;
+  shared_canvas_input=api?risc_canvas_input_get_v1(api,api->struct_size):NULL;
+  if(!shared_canvas_input)return false;
+ }
+ if(!shared_canvas_input_active){
+  if(!home_canvas_result(&shared_canvas,shared_canvas_input->activate(shared_canvas_input->context,shared_canvas.session)))return false;
+  shared_canvas_input_active=true;
+ }
+ memset(t,0,sizeof(*t));t->api=&shared_canvas_touch.api;
  t->subscription=t->api->subscribe(t->api->context);
  return t->subscription&&portable_touch_sync(t,true);
 }
@@ -81,4 +102,30 @@ static inline bool shared_canvas_geometry_sync(void) {
 #endif
  info=next;paper_rotated=false;paper_orientation_dirty=true;
  return true;
+}
+
+/* Generic sleep source calls these only after alarm reconciliation, and resumes
+ * all physical resources before the alarm ticket. TIMER has no input grant. */
+bool portable_home_canvas_sleep_available(void) {
+ return !shared_canvas.retained&&!native_custody_retained&&
+  (!shared_canvas_input_active||(shared_canvas_input&&shared_canvas_input->struct_size>=sizeof(*shared_canvas_input)&&
+   shared_canvas_input->prepare_sleep&&shared_canvas_input->resume_sleep));
+}
+int portable_home_canvas_prepare_sleep(void) {
+ if(shared_canvas.retained||native_custody_retained)return -2;
+ if(!home_canvas_quiesce(&shared_canvas))return shared_canvas.retained?-2:0;
+ if(!shared_canvas_input_active)return 1;
+ if(shared_canvas_input->struct_size<sizeof(*shared_canvas_input)||!shared_canvas_input->prepare_sleep||!shared_canvas_input->resume_sleep)return 0;
+ shared_canvas_input_prepared=true;
+ int32_t rc=shared_canvas_input->prepare_sleep(shared_canvas_input->context,shared_canvas.session,1000);
+ if(rc==RISC_CANVAS_UNSUPPORTED){shared_canvas_input_prepared=false;return 0;}
+ if(!home_canvas_result(&shared_canvas,rc))return shared_canvas.retained?-2:0;
+ return 1;
+}
+int portable_home_canvas_resume_sleep(void) {
+ if(shared_canvas.retained||native_custody_retained)return -2;
+ if(!shared_canvas_input_prepared)return 1;
+ int32_t rc=shared_canvas_input->resume_sleep(shared_canvas_input->context,shared_canvas.session,1000);
+ if(!home_canvas_result(&shared_canvas,rc)){portable_adapter_retain_silent();return -2;}
+ shared_canvas_input_prepared=false;return 1;
 }

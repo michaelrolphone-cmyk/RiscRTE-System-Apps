@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "PortableHomePower.h"
+#include "PortableHomeContextReadiness.h"
 static char order[128];static unsigned n;static int fault,hold_rc,entry_rc;static bool pending;
 static portable_home_power state;
 static void step(char c){assert(!state.retained);order[n++]=c;order[n]=0;}
@@ -19,6 +20,18 @@ static risc_power_sleep_api_v1 power={.api_version=1,.struct_size=sizeof(power),
 static void reset(void){state=(portable_home_power){.display=&display,.power=&power};n=0;order[0]=0;fault=0;hold_rc=0;entry_rc=RISC_DEEP_SLEEP_BUSY;pending=false;}
 static void prepared(void){assert(portable_home_power_prepare(&state)==1);step('A');assert(!state.held);assert(portable_home_power_hold(&state)==1);}
 int main(void){
+ portable_home_readiness applicability={.power_modes=PORTABLE_HOME_MODE_LIGHT,.sleep_settings=true,.dnd=true};
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_QUERY(RISC_CONTEXTS_SLEEP))==1);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_QUERY(RISC_CONTEXTS_DEEP))==0);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_POWER,0))==0);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_POWER,1))==1);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_NOTIFY,0))==1);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_NOTIFY,1))==0);
+ applicability.sound=true;assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_NOTIFY,2))==1);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_NOTIFY,3))==0);
+ assert(portable_home_readiness_query(&applicability,RISC_CONTEXTS_SETTING_OPTION_QUERY(RISC_CONTEXTS_BRIGHTNESS,0))==-1);
+ assert(portable_home_readiness_query(&applicability,0)==-1);
+
  reset();assert(portable_home_power_modes(&state,true)==PORTABLE_HOME_MODE_DEEP&&!n);
  power.light_sleep_for=light;assert(portable_home_power_modes(&state,true)==7&&!n);assert(portable_home_power_modes(&state,false)==PORTABLE_HOME_MODE_LIGHT&&!n);
  state.enrolled_wake_sources=true;assert(portable_home_power_modes(&state,true)==PORTABLE_HOME_MODE_DEEP&&!n);
