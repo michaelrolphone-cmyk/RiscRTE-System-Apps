@@ -31,8 +31,10 @@ already authorized. Crash storage keeps its provider-declared existing
 namespace; zero means unavailable, not an app-data fallback. Product authority
 must be derived from existing policies, not synthesized from this document.
 
-Alarm API2 is the single declared service version; the common native and
-overview clients must both use the same qualified contract. Runtime's exact
-API matching does not permit pretending API1 and API2 are interchangeable.
+The additive `alarm.service.facade@2` is the single Home alarm declaration; the common native and
+overview clients must both use the same qualified contract. The facade forwards to each existing scheduler owner, preserving original
+API1/API2 consumers and storage/RTC/retry policy without a second scheduler.
+Runtime's exact API matching does not permit pretending API1 and API2 are
+interchangeable.
 Delivery remains in progress until the complete target and cumulative
 three-product admission qualify.

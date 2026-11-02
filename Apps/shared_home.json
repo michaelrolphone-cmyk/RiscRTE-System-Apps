@@ -49,7 +49,7 @@
       "api": 1
     },
     {
-      "capability": "alarm.service",
+      "capability": "alarm.service.facade",
       "api": 2
     },
     {

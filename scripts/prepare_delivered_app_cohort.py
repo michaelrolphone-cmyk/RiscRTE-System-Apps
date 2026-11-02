@@ -30,6 +30,13 @@ def run(archives,output):
      with zipfile.ZipFile(io.BytesIO(z.read('inputs/'+lane+'.zip'))) as source:
       if 'candidate/sd-apps.zip' in source.namelist():(sd/(lane+'.zip')).write_bytes(source.read('candidate/sd-apps.zip'))
   retained.append({'label':label,'repository':repo,'artifact_id':ident,'sha256':actual})
+ (output/'sources.json').write_text(json.dumps(retained,indent=2)+'\n')
+ baseline={}
+ for lane in ('watch','wave','x4'):
+  base=output/'files'/'products'/lane/'before'
+  baseline[lane]={'boot':json.loads((base/'boot.json').read_text()),'manifests':{str(p.relative_to(base)):json.loads(p.read_text()) for p in base.rglob('*.json') if p.name in ('default.json','manifest.json')}}
+ (output/'baseline-inventory.json').write_text(json.dumps(baseline,indent=2)+'\n')
+ print('HOME_BASELINE_INVENTORY '+json.dumps(baseline,sort_keys=True),flush=True)
  compose([output/label/'products' for label in ARTIFACTS],output/'baseline-sd',output/'composed')
  inventory={}
  for lane in ('watch','wave','x4'):

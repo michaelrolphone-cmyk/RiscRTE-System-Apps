@@ -40,6 +40,14 @@ class Merge(unittest.TestCase):
  def test_duplicate_rows_rejected(self):
   b=self.base();a=dict(b);j=json.loads(a['boot.json']);j['drivers']*=2;a['boot.json']=encode(j)
   with self.assertRaises(ValueError):apply(b,b,a)
+ def test_same_driver_multiple_hardware_instances(self):
+  b=self.base();j=json.loads(b['boot.json'])
+  j['drivers']=[{'manifest':'bus/manifest.json','instance_id':1,'bindings':[]},{'manifest':'bus/manifest.json','instance_id':2,'bindings':[]}]
+  b['boot.json']=encode(j);a=dict(b);v=dict(b)
+  ja=copy.deepcopy(j);ja['drivers'][0]['bindings']=[{'capability':'one','instance_id':1,'api':1}];a['boot.json']=encode(ja)
+  jv=copy.deepcopy(j);jv['drivers'][1]['bindings']=[{'capability':'two','instance_id':2,'api':1}];v['boot.json']=encode(jv)
+  out=json.loads(apply(b,apply(b,b,a),v)['boot.json'])
+  self.assertEqual(out['drivers'],[ja['drivers'][0],jv['drivers'][1]])
  def test_unsafe_paths(self):
   for n in ('../x','/absolute','a/../../b','a\\b',''):
    with self.assertRaises(ValueError):safe(n)

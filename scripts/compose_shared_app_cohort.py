@@ -26,23 +26,27 @@ def unzip(path):
 def encode(v): return (json.dumps(v,sort_keys=True,indent=2)+'\n').encode()
 def digest(v): return hashlib.sha256(v).hexdigest()
 
-def merge_rows(original, current, proposed, key):
+def merge_rows(original, current, proposed, key, instances=False):
+ def identity(row):
+  ident=row.get(key)
+  if not isinstance(ident,str):raise ValueError('Missing authority '+key)
+  return (ident,row.get('instance_id',0)) if instances else ident
  def index(rows):
   result={}
   for row in rows:
-   ident=row.get(key)
-   if not isinstance(ident,str) or ident in result: raise ValueError('Ambiguous authority '+key)
+   ident=identity(row)
+   if ident in result: raise ValueError('Ambiguous authority '+repr(ident))
    result[ident]=row
   return result
  old=index(original); now=index(current); new=index(proposed)
  for ident in set(old)|set(new):
   if old.get(ident)==new.get(ident):continue
-  if now.get(ident)!=old.get(ident) and now.get(ident)!=new.get(ident):raise ValueError('Conflicting authority '+ident)
+  if now.get(ident)!=old.get(ident) and now.get(ident)!=new.get(ident):raise ValueError('Conflicting authority '+repr(ident))
   if ident in new:now[ident]=copy.deepcopy(new[ident])
   else:now.pop(ident,None)
  # Preserve prior order; append genuinely new rows in their published order.
- order=[r[key] for r in current if r[key] in now]
- order += [r[key] for r in proposed if r[key] not in order and r[key] in now]
+ order=[identity(r) for r in current if identity(r) in now]
+ order += [identity(r) for r in proposed if identity(r) not in order and identity(r) in now]
  return [now[k] for k in order]
 
 def merge_boot(original,current,proposed):
@@ -50,7 +54,7 @@ def merge_boot(original,current,proposed):
  for key in set(old)|set(new):
   if old.get(key)==new.get(key):continue
   if key in ('drivers','app_capabilities'):
-   now[key]=merge_rows(old.get(key,[]),now.get(key,[]),new.get(key,[]),'manifest')
+   now[key]=merge_rows(old.get(key,[]),now.get(key,[]),new.get(key,[]),'manifest',instances=(key=='drivers'))
   elif now.get(key)==old.get(key) or now.get(key)==new.get(key):
    if key in new:now[key]=copy.deepcopy(new[key])
    else:now.pop(key,None)
