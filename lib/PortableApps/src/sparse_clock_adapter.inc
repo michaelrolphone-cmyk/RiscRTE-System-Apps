@@ -238,12 +238,15 @@ static bool desk_radios_apply(pqa_radios *state,pqa_state *ui,const risc_runtime
  return !native_sleep_retained;
 }
 #endif
+#ifndef PORTABLE_SHARED_HOME_CANVAS
+/* Shared Home drains Wi-Fi and Bluetooth in PortableHomeSleep before holds. */
 static bool desk_radios_suspend(const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;
  if(!pqa_radios_suspend(&desk_quick_runtime)){portable_desk_adapter_retain();return false;}
  return !native_sleep_retained;
 }
+#endif
 static bool desk_radios_resume(pqa_radios *state,pqa_state *ui,const risc_runtime_api_v1 *runtime) {
  (void)runtime;
  if(native_sleep_retained)return false;

@@ -449,7 +449,9 @@ static bool desk_radios_apply_user(pqa_radios *,pqa_state *,const risc_runtime_a
 #else
 static bool desk_radios_apply(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *,uint32_t);
 #endif
+#ifndef PORTABLE_SHARED_HOME_CANVAS
 static bool desk_radios_suspend(const risc_runtime_api_v1 *);
+#endif
 static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v1 *);
 #define pqa_radios_load desk_radios_load
 #ifdef PORTABLE_QUICK_ATOMIC_PREFERENCES
@@ -457,7 +459,9 @@ static bool desk_radios_resume(pqa_radios *,pqa_state *,const risc_runtime_api_v
 #else
 #define pqa_radios_apply desk_radios_apply
 #endif
+#ifndef PORTABLE_SHARED_HOME_CANVAS
 #define pqa_radios_suspend desk_radios_suspend
+#endif
 #define pqa_radios_resume desk_radios_resume
 #endif
 #endif

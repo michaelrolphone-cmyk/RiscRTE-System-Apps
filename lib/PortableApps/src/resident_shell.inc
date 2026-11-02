@@ -52,10 +52,11 @@ static bool shared_home_contexts_safe(void *unused) {
  (void)unused;return !native_custody_retained&&!failed&&!quick.retained;
 }
 static int shared_home_contexts_query(uint32_t reason) {
+ const alarm_service_v1 *alarm=alarm_sleep_api();
  unsigned output=alarm_output_modes();
  portable_home_readiness state={.power_modes=portable_home_sleep_modes(),.sleep_settings=quick.loaded,
   .brightness=shared_outputs&&shared_outputs->set_brightness&&quick.ui.brightness_valid,
-  .volume=quick.ui.audio_controls&&quick.ui.volume_valid,.dnd=quick.ui.dnd_valid&&alarms.api!=NULL,
+  .volume=quick.ui.audio_controls&&quick.ui.volume_valid,.dnd=quick.ui.dnd_valid&&alarm!=NULL,
   .sound=!!(output&ALARM_MODE_SOUND),.vibrate=!!(output&ALARM_MODE_VIBRATE)};
 #if defined(PORTABLE_QUICK_RADIO_AVAILABILITY) || defined(PORTABLE_QUICK_CAPABILITY_SAFE)
  state.wifi=quick.ui.wifi_available&&quick.ui.wifi_valid;
@@ -64,7 +65,7 @@ static int shared_home_contexts_query(uint32_t reason) {
 #ifdef PORTABLE_SETTINGS_AVAILABILITY
  if(!portable_home_settings_available())state=(portable_home_readiness){0};
 #endif
- const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarms.api);
+ const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarm);
  if(!descriptor)state.power_modes=0;
  else if(!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);
  /* FACE addresses watch_face, not the independent desk_clock_face key.
