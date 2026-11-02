@@ -79,8 +79,8 @@ def run():
   for kind,args in (('symbols',['nm','-S','--size-sort','--radix=d']),('sections',['readelf','-SW'])):
    text=subprocess.check_output([str(cc).removesuffix('gcc')+args[0],*args[1:],str(path)],text=True)
    report=out/(label+'-'+kind+'.txt');report.write_text(text);reports[report.name]=hashlib.sha256(report.read_bytes()).hexdigest()
-   print('TARGET SIZE REPORT '+label+' '+kind+'\\n'+text)
- (out/'size-reports.json').write_text(json.dumps(reports,sort_keys=True,indent=2)+'\\n')
+   print('TARGET SIZE REPORT '+label+' '+kind+'\n'+text)
+ (out/'size-reports.json').write_text(json.dumps(reports,sort_keys=True,indent=2)+'\n')
  validator=out/'validate-elf'
  subprocess.run(['cc','-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'test/native_apps/stubs'),'-I'+str(ROOT/'lib/elf_loader/include'),str(ROOT/'lib/elf_loader/src/esp_elf_validate.c'),str(ROOT/'test/native_apps/validate_test.c'),'-o',str(validator)],check=True)
  subprocess.run([str(validator),str(elf)],check=True)
