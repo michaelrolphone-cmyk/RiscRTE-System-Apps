@@ -96,10 +96,33 @@ int main(void){
  input.month=10;input.day=29;input.hour=1;
  assert(!schedule->inverse(NULL,&input,&inverse)&&inverse.count==2);
 #endif
+ const risc_civil_clock_retained_v1 *cache=risc_civil_clock_get_retained(base,base->struct_size);assert(cache);
+ risc_civil_clock_schedule_v1 old_schedule=*schedule;old_schedule.base.struct_size=sizeof(old_schedule);
+ assert(risc_civil_clock_get_schedule(&old_schedule,sizeof(old_schedule)));
+ assert(!risc_civil_clock_get_retained(&old_schedule,sizeof(old_schedule)));
+ risc_civil_clock_retained_v1 wrong_cache=*cache;wrong_cache.retained_tag=0;
+ assert(!risc_civil_clock_get_retained(&wrong_cache,sizeof(wrong_cache)));
+ char token[40],untouched[40];memset(token,0x55,sizeof(token));memcpy(untouched,token,sizeof(token));
+ assert(cache->cached_rule(NULL,token,39)==-1&&!memcmp(token,untouched,40));
+ assert(!cache->cached_rule(NULL,token,sizeof(token)));
+#ifdef CIVIL_NATIVE_UTC
+ assert(!strcmp(token,"America/Denver"));
+#else
+ assert(strlen(token)==39&&!strcmp(token,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0"));
+#endif
+ portable_timezone_rule cached;assert(!portable_timezone_resolve(token,sizeof(token),&cached));
+ const unsigned cached_years[]={2000,2006,2007,2026,2099};
+ for(unsigned y=0;y<sizeof(cached_years)/sizeof(cached_years[0]);y++)for(unsigned month=1;month<=12;month++) {
+  int64_t sample=epoch_at(cached_years[y],month,15,18,0,0);portable_timezone_civil local;
+  assert(!portable_timezone_utc_to_local(&cached,sample,&local,NULL));
+  assert(!policy->project(NULL,sample,0,&result));
+  assert(local.year==result.year&&local.month==result.month&&local.day==result.day&&local.hour==result.hour&&local.minute==result.minute);
+ }
  risc_civil_inverse_v1 unchanged_inverse=inverse;
  input.month=13;assert(schedule->inverse(NULL,&input,&inverse)==-1&&!memcmp(&inverse,&unchanged_inverse,sizeof(inverse)));
  live=false;assert(policy->project(NULL,epoch,0,&result)==-9);
  assert(schedule->inverse(NULL,&input,&inverse)==-9&&!memcmp(&inverse,&unchanged_inverse,sizeof(inverse)));
+ memcpy(untouched,token,40);assert(cache->cached_rule(NULL,token,40)==-9&&!memcmp(token,untouched,40));
  assert(policy->interpret_rtc(NULL,&raw,&interpreted)==-9&&!driver->quiesce());
  puts("Civil policy: prefix compatibility, full fractional projection, DST edges, saved RTC basis, no clock I/O/writes and retained fence PASS");
 }
