@@ -34,7 +34,7 @@ int main(void){
  else {assert(portable_home_boot_read_bytes(&wake,0x44434c4b,3,payload,128,&n,&why)==RISC_RETAINED_WAKE_INVALID&&n==999);assert(!portable_home_boot_read_bytes(&wake,0x44434c4b,3,payload,sizeof(payload),&n,&why));assert(n==408);for(unsigned i=0;i<n;i++)assert(payload[i]==0x5a);}
  assert(portable_home_boot_read_bytes(&wake,7,7,payload,sizeof(payload),&n,&why)==RISC_RETAINED_WAKE_ABSENT&&reads==before);
  }
- available=0;assert(!portable_home_boot_begin(&rt)&&!portable_home_boot_view());
+ cause=RISC_BOOT_RESET;available=0;assert(!portable_home_boot_begin(&rt)&&!portable_home_boot_view());
  available=1;release_ok=0;assert(portable_home_boot_begin(&rt)<0&&retains==1);
  puts("Home bootstrap:10 native boot/schema cases, exact408/1byte records, nonconsuming mismatch/capacity refusal, exactly-once delivery and retention fence PASS");
 }
