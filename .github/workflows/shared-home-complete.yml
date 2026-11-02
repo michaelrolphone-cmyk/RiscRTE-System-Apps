@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: f31b5a7ce1cde52880ed54e8220dbdee95a556ed
+          ref: 3910c97388f3b870505353530647a4aae2e67a15
           path: Watch
           persist-credentials: false
       - uses: actions/checkout@v4
