@@ -2,6 +2,7 @@
 #include "canvas_frames.h"
 #include "canvas_snapshot.h"
 #include "RiscTouchV1.h"
+#include "RiscCanvasInputV1.h"
 typedef struct {
  canvas_frames frames;
  risc_canvas_open_v1 request;
@@ -12,7 +13,8 @@ typedef struct {
  risc_input_navigation_frame_v1 previous_navigation;
  bool claimed,input_gap,gap_emitted,geometry_changed;
  bool captured[UINT8_MAX+1u];
- risc_canvas_api_v1 api;
+ union {risc_canvas_api_v1 api;risc_canvas_binding_v1 binding;};
+ bool companion_bound;
  risc_canvas_presentation_v1 presentation;
 } canvas_provider;
 static inline int32_t canvas_provider_geometry_refresh(canvas_provider*p){
@@ -236,8 +238,28 @@ static int32_t canvas_provider_copy_completed(void*ctx,uint64_t session,uint32_t
  canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
  rc=canvas_provider_geometry_refresh(p);return rc?rc:canvas_frames_copy_completed(&p->frames,session,revision,out,size,stride);
 }
+static int32_t canvas_provider_bind_inputs(void*ctx,uint64_t session,const risc_touch_api_v1*t,const risc_input_navigation_api_v1*n){
+ canvas_provider*p=ctx;int32_t rc=canvas_frames_fence(&p->frames,session);if(rc)return rc;
+ if(p->frames.lease||p->frames.receipts||p->companion_bound)return RISC_CANVAS_BUSY;
+ if(p->touch||p->navigation||(!t&&!n))return RISC_CANVAS_UNSUPPORTED;
+ p->touch=t;p->navigation=n;
+ rc=canvas_provider_input_acquire(p);
+ if(rc){int32_t cleanup=canvas_provider_input_release(p);if(cleanup)return cleanup;p->touch=NULL;p->navigation=NULL;return rc;}
+ p->companion_bound=true;p->input_gap=true;p->gap_emitted=false;return RISC_CANVAS_OK;
+}
+static int32_t canvas_provider_unbind_inputs(void*ctx,uint64_t session){
+ canvas_provider*p=ctx;
+ if(!canvas_frames_alive(&p->frames))return RISC_CANVAS_RETAINED;
+ if(session!=p->frames.session&&p->frames.session)return RISC_CANVAS_STALE;
+ if(!p->companion_bound)return RISC_CANVAS_OK;
+ if(p->frames.lease||p->frames.receipts)return RISC_CANVAS_BUSY;
+ int32_t rc=canvas_provider_input_release(p);if(rc)return rc;
+ p->touch=NULL;p->navigation=NULL;p->companion_bound=false;p->input_gap=true;p->gap_emitted=false;
+ memset(p->captured,0,sizeof(p->captured));return RISC_CANVAS_OK;
+}
 static inline void canvas_provider_init(canvas_provider*p,const risc_display_output_api_v1*display,const risc_touch_api_v1*touch,uint32_t rotation){
  memset(p,0,sizeof(*p));p->frames.display=display;p->touch=touch;p->rotation=rotation;
  p->presentation=(risc_canvas_presentation_v1){sizeof(p->presentation),1,RISC_CANVAS_PRESENTATION_TAG,p,canvas_provider_present,canvas_provider_seed,0,canvas_provider_orientation,canvas_provider_copy_completed};
- p->api=(risc_canvas_api_v1){1,sizeof(p->api),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
+ p->api=(risc_canvas_api_v1){1,sizeof(p->binding),RISC_CANVAS_TAG,p,canvas_provider_open,canvas_provider_geometry,canvas_provider_begin,canvas_provider_submit,canvas_provider_cancel,canvas_provider_poll,canvas_provider_forget,canvas_provider_next,canvas_provider_contacts,canvas_provider_quiesce,canvas_provider_resume,canvas_provider_close};
+ p->binding.binding_tag=RISC_CANVAS_BINDING_TAG;p->binding.binding_version=1;p->binding.bind_inputs=canvas_provider_bind_inputs;p->binding.unbind_inputs=canvas_provider_unbind_inputs;
 }

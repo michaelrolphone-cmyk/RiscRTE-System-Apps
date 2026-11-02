@@ -7,7 +7,7 @@ with tempfile.TemporaryDirectory() as temp:
   for sanitized in (False,True):
    binary=pathlib.Path(temp)/(str(view)+'-'+str(namespace)+'-'+str(sanitized))
    command=['cc','-std=c11','-Wall','-Wextra','-Werror','-O1','-I'+str(ROOT/'sdk/app'),'-I'+str(ROOT/'lib/PortableApps/include'),
-    f'-DHOME_POLICY_VIEW={view}',f'-DHOME_POLICY_CRASH_NAMESPACE={namespace}','-DHOME_POLICY_ID="test-policy"',
+    f'-DHOME_POLICY_VIEW={view}',f'-DHOME_POLICY_CRASH_NAMESPACE={namespace}',f'-DHOME_POLICY_POINTS_SCHEMA={1 if view==1 else 3}','-DHOME_POLICY_ID="test-policy"',
     str(ROOT/'Services/home_presentation/policy.c'),str(ROOT/'test/home_presentation/selection_test.c'),'-o',str(binary)]
    if sanitized:command+=['-fsanitize=address,undefined','-fno-sanitize-recover=all']
    subprocess.run(command,check=True);result=subprocess.run([str(binary)],check=True,text=True,capture_output=True,env=dict(os.environ,ASAN_OPTIONS='detect_leaks=0'))

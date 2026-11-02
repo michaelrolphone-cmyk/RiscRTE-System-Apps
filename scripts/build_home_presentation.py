@@ -12,7 +12,7 @@ def run(runtime,output):
   compiler=compiler_path()
   for name,view,namespace in [('faces',1,61),('overview',2,62)]:
    manifest=json.loads((ROOT/'Services/home_presentation'/f'{name}.json').read_text())
-   flags=[f'-DHOME_POLICY_VIEW={view}',f'-DHOME_POLICY_CRASH_NAMESPACE={namespace}',f'-DHOME_POLICY_ID="home-presentation-{name}"']
+   flags=[f'-DHOME_POLICY_VIEW={view}',f'-DHOME_POLICY_CRASH_NAMESPACE={namespace}',f'-DHOME_POLICY_POINTS_SCHEMA={1 if view==1 else 3}',f'-DHOME_POLICY_ID="home-presentation-{name}"']
    row=build(compiler,include,output/name,manifest,[ROOT/'Services/home_presentation/policy.c'],flags)
    repeat=build(compiler,include,output/(name+'-repeat'),manifest,[ROOT/'Services/home_presentation/policy.c'],flags)
    if row['sha256']!=repeat['sha256']:raise ValueError('Policy repeated ELF differs')

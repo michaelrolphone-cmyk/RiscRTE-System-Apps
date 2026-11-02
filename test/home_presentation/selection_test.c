@@ -11,6 +11,9 @@ int main(void){
  assert(!risc_home_presentation_get_v1(p,sizeof(*p)-1));
  risc_home_presentation_v1 changed=*p;changed.tag=0;assert(!risc_home_presentation_get_v1(&changed,sizeof(changed)));
  changed=*p;changed.crash_namespace=0;assert(!risc_home_presentation_get_v1(&changed,sizeof(changed)));
+ assert(risc_home_points_schema(p)==HOME_POLICY_POINTS_SCHEMA);
+ changed=*p;changed.struct_size=offsetof(risc_home_presentation_v1,points_schema);
+ assert(risc_home_presentation_get_v1(&changed,changed.struct_size)&&!risc_home_points_schema(&changed));
  const risc_key_value_v1 kv={1,sizeof(kv),NULL,get,NULL};unsigned saved=99;
  for(unsigned view=1;view<=2;view++){assert(portable_home_view_encode(view,record));assert(portable_home_view_load(&kv,&saved)==0&&saved==view);assert(portable_home_view_choose(p,0,saved)==view);}
  saved=99;status=RISC_KEY_VALUE_NOT_FOUND;assert(portable_home_view_load(&kv,&saved)==1&&saved==99);assert(portable_home_view_choose(p,1,saved)==p->default_view);
