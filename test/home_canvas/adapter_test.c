@@ -33,13 +33,13 @@ static bool phys_status(void*c,uint64_t id,risc_display_present_status_v1*out){(
 static bool phys_brightness(void*c,uint16_t v,uint16_t m){(void)c;assert(v==43&&m==100);brightness_calls++;return true;}
 static const risc_display_output_api_v1 physical={1,sizeof(physical),NULL,phys_info,phys_acquire,phys_release,phys_submit,phys_status,NULL,phys_brightness};
 static unsigned input_activations,input_prepares,input_resumes;
-static unsigned bad_kind;static bool release_failure;
+static unsigned bad_kind;static bool release_failure,input_absent;
 static int32_t input_activate(void*c,uint64_t session){(void)c;assert(session);input_activations++;return RISC_CANVAS_OK;}
 static int32_t input_deactivate(void*c,uint64_t session){(void)c;assert(session);return RISC_CANVAS_OK;}
 static int32_t input_prepare(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_prepares++;return RISC_CANVAS_OK;}
 static int32_t input_resume(void*c,uint64_t session,uint32_t budget){(void)c;assert(session&&budget==1000);input_resumes++;return RISC_CANVAS_OK;}
 static risc_canvas_input_v1 input_api={1,sizeof(input_api),RISC_CANVAS_INPUT_TAG,NULL,input_activate,input_deactivate,input_prepare,input_resume,RISC_CANVAS_INPUT_SLEEP_SUPPORTED};
-static bool acquire_cap(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*out){assert(v==1&&!i);out->slot=1;out->generation=1;if(!strcmp(n,"display.output"))out->api=bad_kind==1?NULL:&physical;else if(!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))out->api=bad_kind==3?NULL:&input_api;else{assert(!strcmp(n,RISC_CANVAS_RASTER_CAPABILITY));out->api=bad_kind==2?NULL:&provider.api;}return true;}
+static bool acquire_cap(const char*n,uint32_t v,uint64_t i,risc_runtime_capability_v1*out){assert(v==1&&!i);if(input_absent&&!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))return false;out->slot=1;out->generation=1;if(!strcmp(n,"display.output"))out->api=bad_kind==1?NULL:&physical;else if(!strcmp(n,RISC_CANVAS_INPUT_CAPABILITY))out->api=bad_kind==3?NULL:&input_api;else{assert(!strcmp(n,RISC_CANVAS_RASTER_CAPABILITY));out->api=bad_kind==2?NULL:&provider.api;}return true;}
 static bool release_cap(risc_runtime_capability_v1*g){assert(g->slot&&g->generation);grant_releases++;if(release_failure)return false;memset(g,0,sizeof(*g));return true;}
 static const risc_runtime_api_v1 runtime={.api_version=1,.struct_size=sizeof(runtime),.acquire=acquire_cap,.release=release_cap};
 static void run(unsigned format,unsigned rotation){
@@ -72,6 +72,15 @@ static void run(unsigned format,unsigned rotation){
  assert(shared_canvas_close()&&grant_releases==3&&!dg.api&&!dg.slot&&!dg.generation);
  free(alarm_pixels);alarm_pixels=NULL;free(quick_background);quick_background=NULL;free(previous_pixels);previous_pixels=NULL;free(paper_previous);paper_previous=NULL;
 }
+static void absent_input(void){
+ native_custody_retained=false;input_absent=true;grant_releases=0;
+ assert(shared_canvas_open());
+ portable_touch touch;unsigned before=input_activations;
+ assert(!shared_canvas_touch_open(&touch,rt)&&!native_custody_retained&&!shared_canvas_input_owned);
+ assert(portable_home_canvas_prepare_sleep()==1&&input_activations==before);
+ assert(home_canvas_resume(&shared_canvas)&&shared_canvas_close()&&grant_releases==2);
+ input_absent=false;
+}
 static void malformed(void){
  for(unsigned i=1;i<=3;i++){
   bad_kind=i;grant_releases=0;native_custody_retained=false;
@@ -82,4 +91,4 @@ static void malformed(void){
  assert(!shared_canvas_close()&&native_custody_retained&&grant_releases==1);
  assert(!shared_canvas_close()&&grant_releases==1);
 }
-int main(void){for(unsigned f=0;f<2;f++)for(unsigned r=0;r<4;r++)run(f?RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1,r);malformed();puts("Overview Canvas adapter:8 physicalformat/rotation combinations, logicalMONO, orderednavigation, brightness, checkedresize, orientation, sleep and grantclosure PASS");}
+int main(void){for(unsigned f=0;f<2;f++)for(unsigned r=0;r<4;r++)run(f?RISC_DISPLAY_FORMAT_RGB565:RISC_DISPLAY_FORMAT_MONO1,r);absent_input();malformed();puts("Overview Canvas adapter:8 physicalformat/rotation combinations, logicalMONO, orderednavigation, brightness, checkedresize, orientation, sleep and grantclosure PASS");}

@@ -164,7 +164,15 @@ static bool desk_config(portable_desk_config *out,unsigned *mode) {
 #endif
  portable_desk_config config={0};
  risc_runtime_capability_v1 grant={.struct_size=sizeof(grant)};
- if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){desk_fence();return false;}
+ if(!rt->acquire(RISC_KEY_VALUE_CAPABILITY,1,1,&grant)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(!portable_app_sleep_retained()&&grant.struct_size==sizeof(grant)&&!grant.api&&!grant.slot&&!grant.generation){
+   desk_config_pending=true;desk_config_retry_at=app->millis()+1000u;
+   portable_desk_adapter_settings_pending(true);return false;
+  }
+#endif
+  desk_fence();return false;
+ }
  if(!grant.api || !grant.slot || !grant.generation){desk_fence();return false;}
  unsigned face,time_format,language,flip,sleep_mode;
  portable_rtc_basis next_basis;

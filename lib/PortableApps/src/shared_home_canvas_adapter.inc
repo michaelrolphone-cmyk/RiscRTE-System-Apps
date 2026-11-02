@@ -55,7 +55,11 @@ static inline bool shared_canvas_touch_open(portable_touch*t,const risc_runtime_
  if(shared_canvas.retained)return false;
  if(!shared_canvas_input_owned){
   shared_canvas_input_grant=(risc_runtime_capability_v1){.struct_size=sizeof(shared_canvas_input_grant)};
-  if(!runtime->acquire(RISC_CANVAS_INPUT_CAPABILITY,1,0,&shared_canvas_input_grant))return false;
+  if(!runtime->acquire(RISC_CANVAS_INPUT_CAPABILITY,1,0,&shared_canvas_input_grant)){
+   if(shared_canvas_input_grant.struct_size!=sizeof(shared_canvas_input_grant)||shared_canvas_input_grant.api||
+      shared_canvas_input_grant.slot||shared_canvas_input_grant.generation)portable_adapter_retain_silent();
+   return false;
+  }
   shared_canvas_input_owned=true;
   const risc_canvas_input_v1 *api=shared_canvas_input_grant.api;
   shared_canvas_input=api?risc_canvas_input_get_v1(api,api->struct_size):NULL;

@@ -31,7 +31,12 @@ static uint32_t alarm_output_modes(void) { return portable_alarm_output_modes(&a
 #ifdef PORTABLE_WIFI_SERVICE_LEASE
 static bool alarm_refresh(void) { alarm_refresh_pending=true;return alarm_commit_pending(); }
 #else
-static bool alarm_refresh(void) { return portable_alarm_refresh(&alarms); }
+static bool alarm_refresh(void) {
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+ if(!alarms.api)return !native_sleep_retained;
+#endif
+ return portable_alarm_refresh(&alarms);
+}
 #endif
 #endif
 static bool alarm_error_seen,alarm_failed_cleaned;
@@ -307,6 +312,9 @@ static bool alarm_defer_loading(bool *consumed) {
  * or touch from leaking into the suspended app after a modal closes. */
 static bool alarm_foreground(bool *consumed) {
     *consumed=false;
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+    if(!alarms.api)return !failed&&!native_sleep_retained;
+#endif
 #ifdef PORTABLE_FILE_BROWSER_APP
     if(!portable_file_browser_safe())return !failed;
 #endif

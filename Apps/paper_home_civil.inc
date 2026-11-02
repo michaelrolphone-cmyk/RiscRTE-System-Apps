@@ -49,7 +49,7 @@ static int desk_civil_project(int64_t epoch,uint32_t ns,risc_civil_calendar_v1*o
  if(!rc){
   portable_timezone_civil checked={value.year,value.month,value.day,value.hour,value.minute,value.second,value.weekday};
   int64_t ignored;
-  if(value.struct_size!=sizeof(value)||value.reserved||value.nanoseconds!=ns||
+  if(value.struct_size!=sizeof(value)||value.reserved||value.weekday>6||value.nanoseconds!=ns||
      !memchr(value.zone,0,sizeof(value.zone))||!value.zone[0]||
      portable_timezone_civil_to_epoch(&checked,&ignored)!=PORTABLE_TIMEZONE_OK)rc=PORTABLE_REALTIME_MALFORMED;
  }

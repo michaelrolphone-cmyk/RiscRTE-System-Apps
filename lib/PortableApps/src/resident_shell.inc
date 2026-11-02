@@ -48,6 +48,9 @@ static bool resident_touch_open(void) {
 #ifdef PORTABLE_SHARED_HOME_CANVAS
 #include "PortableHomeContextReadiness.h"
 extern unsigned portable_home_sleep_modes(void);
+static bool shared_home_contexts_safe(void *unused) {
+ (void)unused;return !native_custody_retained&&!failed&&!quick.retained;
+}
 static int shared_home_contexts_query(uint32_t reason) {
  unsigned output=alarm_output_modes();
  portable_home_readiness state={.power_modes=portable_home_sleep_modes(),.sleep_settings=quick.loaded,
@@ -59,7 +62,8 @@ static int shared_home_contexts_query(uint32_t reason) {
  state.bluetooth=quick.ui.bluetooth_available&&quick.ui.bluetooth_valid;
 #endif
  const alarm_service_descriptor_v2*descriptor=alarm_service_descriptor(alarms.api);
- if(!descriptor||!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);
+ if(!descriptor)state.power_modes=0;
+ else if(!(descriptor->features&ALARM_DESCRIPTOR_RESUME_SLEEP))state.power_modes&=~(PORTABLE_HOME_MODE_LIGHT|PORTABLE_HOME_MODE_HYBRID);
  /* FACE addresses watch_face, not the independent desk_clock_face key.
   * This overview controller has no active canonical native-face owner. */
  return portable_home_readiness_query(&state,reason);
@@ -82,7 +86,19 @@ static int32_t resident_dispatch(void *context,const risc_resident_request_v1 *r
   /* Admission is explicit and separate from the pure field queries below.
    * Do not call radio policy loaders here: those may toggle hardware. */
   if(portable_home_sleep_admit(rt)!=1)return native_custody_retained?RISC_RESIDENT_RETAINED:RISC_RESIDENT_BUSY;
-  return quick.loaded?RISC_RESIDENT_OK:RISC_RESIDENT_BUSY;
+  if(!pqa_session_load(&quick,rt)||!shared_home_contexts_safe(NULL))return RISC_RESIDENT_RETAINED;
+#ifdef PORTABLE_QUICK_RADIOS
+  if(!pqa_radios_inspect(&quick_radios,&quick.ui,rt,shared_home_contexts_safe,NULL)){
+   if(!native_custody_retained)portable_adapter_retain_silent();
+   return RISC_RESIDENT_RETAINED;
+  }
+#endif
+  quick_paper_capabilities();
+#ifdef PORTABLE_SETTINGS_AVAILABILITY
+  if(!portable_home_settings_poll())return RISC_RESIDENT_RETAINED;
+  home_settings_readonly_controls();
+#endif
+  return shared_home_contexts_safe(NULL)?RISC_RESIDENT_OK:RISC_RESIDENT_RETAINED;
  }
  if(request->reason>=UINT32_C(0x43530100)&&request->reason<UINT32_C(0x43530300)){
   int ready=shared_home_contexts_query(request->reason);

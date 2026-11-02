@@ -134,11 +134,22 @@ static int32_t desk_kv_put(void *context,const char *key,const void *data,uint32
 static bool desk_acquire(const char *name,uint32_t version,uint64_t instance,
                          risc_runtime_capability_v1 *grant) {
  if(native_sleep_retained || desk_phase==DESK_FINALIZED)return false;
- if(!desk_runtime->acquire(name,version,instance,grant)) {
+ bool acquired=desk_runtime->acquire(name,version,instance,grant);
 #ifdef PORTABLE_SHARED_HOME_CANVAS
-  if(version==1&&instance==0&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation&&
+ if(risc_runtime_get_api(1)!=desk_runtime){
+  native_sleep_retained=native_custody_retained=failed=true;return false;
+ }
+#endif
+ if(!acquired) {
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  bool optional=(version==1&&instance==0&&
      (!strcmp(name,"power.sleep")||!strcmp(name,"display.power")||!strcmp(name,"runtime.retained-wake")||
-      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")||!strcmp(name,"board.battery")||!strcmp(name,"time.civil"))) {
+      !strcmp(name,"net.wifi")||!strcmp(name,"bluetooth.hci")||!strcmp(name,"board.battery")||!strcmp(name,"time.civil")||
+      !strcmp(name,RISC_CANVAS_INPUT_CAPABILITY)||!strcmp(name,"software.installed-apps"))) ||
+     (version==1&&(!strcmp(name,"storage.volume")||!strcmp(name,"storage.key-value")||
+      !strcmp(name,"storage.key-value.availability"))) ||
+     (version==2&&instance==0&&!strcmp(name,"alarm.service"));
+  if(optional&&grant->struct_size==sizeof(*grant)&&!grant->api&&!grant->slot&&!grant->generation) {
    if(risc_runtime_get_api(1)!=desk_runtime)portable_desk_adapter_retain();
    return false;
   }
@@ -274,7 +285,14 @@ static int desk_open_foreground(void) {
 #endif
  /* A failure after a subscription/claim may conceal retained native state.
   * No cleanup is attempted on these ambiguous outcomes. */
- if(!portable_touch_open(&touch,rt)){portable_desk_adapter_retain();return desk_start_error();}
+ if(!portable_touch_open(&touch,rt)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(shared_canvas_input_owned||shared_canvas.retained)portable_desk_adapter_retain();
+#else
+  portable_desk_adapter_retain();
+#endif
+  return desk_start_error();
+ }
 #ifdef PORTABLE_INPUT_NAVIGATION
  if(!input_navigation_open()){portable_desk_adapter_retain();return desk_start_error();}
 #endif
@@ -369,7 +387,17 @@ int portable_desk_adapter_start(unsigned mode) {
 #endif
 #endif
  alarm_pixels=malloc((size_t)(surface_format==RISC_DISPLAY_FORMAT_MONO1?(info.width+7)/8:info.width*2)*info.height);
- if(!alarm_pixels || !portable_alarm_open(&alarms,rt))return desk_start_error();
+ if(!alarm_pixels)return desk_start_error();
+ if(!portable_alarm_open(&alarms,rt)){
+#ifdef PORTABLE_SHARED_HOME_CANVAS
+  if(native_sleep_retained||alarms.grant.api||alarms.grant.slot||alarms.grant.generation||
+     alarms.grant.struct_size!=sizeof(alarms.grant)){
+   portable_desk_adapter_retain();return desk_start_error();
+  }
+#else
+  return desk_start_error();
+#endif
+ }
 #ifndef PORTABLE_FORCE_FULL_FRAMES
  if(surface_format==RISC_DISPLAY_FORMAT_MONO1 && (info.flags&RISC_DISPLAY_INFO_PARTIAL_DAMAGE))
   paper_previous=malloc((size_t)((info.width+7)/8)*info.height);

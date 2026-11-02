@@ -5,7 +5,7 @@
 #include "RiscCivilClockV1.h"
 static bool desk_promoted=true,desk_retained,civil_owned,civil_absent,civil_short,civil_release_fail;
 static unsigned civil_acquires,civil_releases,interpret_calls,project_calls;
-static int policy_status;static int64_t policy_offset;
+static int policy_status;static int64_t policy_offset;static bool malformed_project;
 static portable_realtime_reconcile_state desk_rtc_check;
 static int desk_fence(void){desk_retained=true;f.phase=PORTABLE_REALTIME_GUARD_RETAINED;return -2;}
 static int desk_phase_guard(void*p){(void)p;return desk_retained?PORTABLE_REALTIME_GUARD_RETAINED:f.phase;}
@@ -39,6 +39,7 @@ static int32_t project(void*p,int64_t epoch,uint32_t ns,risc_civil_calendar_v1*o
  portable_timezone_civil value;if(portable_timezone_epoch_to_civil(epoch,&value))return -1;
  *out=(risc_civil_calendar_v1){.struct_size=sizeof(*out),.year=value.year,.month=value.month,.day=value.day,
   .hour=value.hour,.minute=value.minute,.second=value.second,.weekday=value.weekday,.nanoseconds=ns,.zone="UTC"};
+ if(malformed_project)out->weekday=7;
  return 0;
 }
 static int32_t inverse(void*p,const risc_civil_calendar_v1*c,risc_civil_inverse_v1*out){(void)p;(void)c;(void)out;assert(0);return -1;}
@@ -48,7 +49,7 @@ static int32_t cached(void*p,char*out,uint32_t size){
 }
 static void policy_reset(void){
  reset();desk_promoted=true;desk_retained=civil_owned=civil_absent=civil_short=civil_release_fail=false;
- civil_acquires=civil_releases=interpret_calls=project_calls=0;policy_status=0;policy_offset=0;
+ civil_acquires=civil_releases=interpret_calls=project_calls=0;policy_status=0;policy_offset=0;malformed_project=false;
  desk_rtc_check=(portable_realtime_reconcile_state){0};
  civil_api=(risc_civil_clock_retained_v1){{{1,sizeof(civil_api),NULL,NULL,1,RISC_CIVIL_CLOCK_POLICY_TAG,project,convert},1,RISC_CIVIL_CLOCK_SCHEDULE_TAG,inverse},1,RISC_CIVIL_CLOCK_RETAINED_TAG,cached};
 }
@@ -90,6 +91,10 @@ int main(void){
  assert(desk_civil_reconcile(&c,&result)==PORTABLE_REALTIME_RETAINED&&desk_retained&&civil_owned&&f.rtc_releases==1);
  policy_reset();desk_promoted=false;risc_civil_calendar_v1 untouched={.year=77};
  assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_DENIED&&untouched.year==77&&!civil_acquires&&!f.rtc_acquires);
+ policy_reset();malformed_project=true;untouched=(risc_civil_calendar_v1){.year=77};
+ assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_MALFORMED&&untouched.year==77&&!civil_owned&&civil_releases==1);
+ policy_reset();policy_status=-9;
+ assert(desk_civil_project(epoch,0,&untouched)==PORTABLE_REALTIME_RETAINED&&desk_retained&&civil_owned&&!civil_releases);
  policy_reset();char token[40]={0};
  assert(!desk_civil_cached_rule(token)&&!strcmp(token,"@2007:7,6;M4.1.0,M10.5.0;M3.2.0,M11.1.0"));
  portable_timezone_rule rule;assert(!portable_timezone_resolve(token,sizeof(token),&rule));
