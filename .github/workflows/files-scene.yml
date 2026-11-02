@@ -1,4 +1,4 @@
-name: Shared Files 1.6.0 qualification
+name: Shared Files qualification
 on:
   pull_request:
     paths: ['Apps/files_scene*', 'test/files*/**', 'scripts/*files*', 'lib/RemoteFiles/**', '.github/workflows/files-scene.yml']
@@ -37,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: michaelrolphone-cmyk/RiscRTE-Watch
-          ref: 2da6054be3b5f78215cda90e9bcf3f761d17d924
+          ref: e575bf4cb8be23e89cc1d0b219a33b1de7acb64c
           path: Home
           persist-credentials: false
       - uses: actions/checkout@v4

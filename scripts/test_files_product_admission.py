@@ -49,6 +49,7 @@ for lane,template in templates.items():
   (args.output/(lane+'-'+which+'.log')).write_text(q.stdout+q.stderr)
   if q.returncode:raise RuntimeError(lane+' '+which+' preparation failed')
   result=json.loads(q.stdout)
+  print(json.dumps({'lane':lane,'input':which,'admission':result}),flush=True)
   if not result['prepared'] or not result['cohort_validated'] or not result['elf_count'] or result['hardware_calls'] or result['storage_calls']:raise RuntimeError(lane+' invalid preparation')
   if lane=='x4' and not result.get('retained_sd_serial_graph_bound'):raise RuntimeError('X4 retained SD graph missing')
   rows.append({'input':which,'result':result})

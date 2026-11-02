@@ -2,7 +2,7 @@
   "compiler_sha256": "f556eb8b42ff8c0bb748243afa391a216b3482b7d3724e5c2aa6870952b76b74",
   "sources": {
     "home": {
-      "base_commit": "2da6054be3b5f78215cda90e9bcf3f761d17d924",
+      "base_commit": "e575bf4cb8be23e89cc1d0b219a33b1de7acb64c",
       "overlay": "Published owning Home settings-effects source with declared, hash-checked shared SDK header; no local Home overlay",
       "files": {
         "apps/clock/PortableSleepPolicy.h": "b0251ad4e4c25a4842ad19c1f998f9fb60a3ee2577f49784417d7db880d33995",
@@ -140,7 +140,7 @@
         "include/twatch_caps.h": "86ef4a9c1d92cc6ed9c4d8d18f4d09d9bebf148419852f63eb6e9c963cd60d32",
         "include/twatch_power.h": "3e805e4b6b195f0d6ecd32db28a2b41c2b72f8cebd37aad5a2a6a4b024ea3b8d",
         "include/twatch_util.h": "8303bef501c6638953c66318bb6df84e416aaa38b2718079609b2e167765cc04",
-        "scripts/build.py": "249987fdecec23f3d575eb375e5537955974d92227f778e52b52b55b636bba56",
+        "scripts/build.py": "2d97d58f2ff2e515f2fc35183c5b880ea109a0ee4ebd0d055f9041303da16f14",
         "scripts/build_inputs.py": "c84720dec45195ec40f182f40d6a43c76637068b2f2f3d8a2b5308d69a749a47",
         "scripts/compact_current_elf.py": "07936b7ccbc53809ef8d907b19d434b047e4b7e4a2a8501bd32bd9465f691d55",
         "scripts/merged_sdk.py": "06ce2a697b36c922bfe155dbdeb12f30d3096e4239a85f7b004f77a495bbe73d",

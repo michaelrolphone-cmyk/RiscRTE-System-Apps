@@ -27,5 +27,5 @@ def checked(root,expected,paths):
 build_inputs.verify_dependency=checked
 sys.argv=[str(roots['home']/'scripts/build.py'),'--system',str(roots['system']),'--utilities',str(roots['utilities']),'--output',str(a.output),'--cc',str(a.cc),'--role','default','--automatic-provision']+(['--serial-transfer-mode'] if a.serial_transfer_mode else [])
 runpy.run_path(str(roots['home']/'scripts/build.py'),run_name='__main__');verify()
-m=a.output/'default.json';manifest=json.loads(m.read_text());manifest['version']='0.26.2' if a.serial_transfer_mode else '0.26.1';m.write_text(json.dumps(manifest,indent=2)+'\n')
-receipt=a.output/'build.json';b=json.loads(receipt.read_text());b['files_effects_source_pins_sha256']=sha(a.pins);b['owning_recipe_sha256']=sha(roots['home']/'scripts/build.py');b['package_version']=manifest['version'];b['version_projection']='New package version for settings-effects bytes; no other manifest change';receipt.write_text(json.dumps(b,indent=2)+'\n')
+m=a.output/'default.json';manifest=json.loads(m.read_text());assert manifest['version']==('0.26.2' if a.serial_transfer_mode else '0.26.1'),'Owning Home package version differs'
+receipt=a.output/'build.json';b=json.loads(receipt.read_text());b['files_effects_source_pins_sha256']=sha(a.pins);b['owning_recipe_sha256']=sha(roots['home']/'scripts/build.py');b['package_version']=manifest['version'];b['package_version_provenance']='Owning Home recipe version; wrapper asserts without mutation';receipt.write_text(json.dumps(b,indent=2)+'\n')

@@ -1,9 +1,10 @@
-# Shared Files 1.6.0 delivery
+# Shared Files 1.6.1 delivery
 
 The application is a single shared Files controller with scene/intent presentation.
-The qualified canonical ELF is 391,232 bytes, SHA-256
-`8f9860dc07c65345a9bb20ac7686e4d4eca39694f00345b6f87e44e2a89692d9`.
-The owning workflow rechecks that identity, repeated link and ELF admission.
+The canonical compact ELF is 250,020 bytes, SHA-256
+`8d19aa1d7f5115c8a21cc293d14178d9e0b2c3edb2b42f9f85ed1f8022f16d94`.
+The owning workflow rechecks that identity, the full original ELF sidecar, repeated
+link/compaction and ELF admission.
 
 This successor preserves file browsing, storage operations, text input, handler/source
 handoffs, peer files, sharing/setup, Context audio and RF, automatic preset/rule
